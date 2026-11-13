@@ -994,118 +994,7 @@ public static class People
                 {
                     var tone = skin.GetShaderParameter("tone").AsColor();
                     float deep = 1f - Mathf.SmoothStep(0.4f, 0.6f, 0.2126f * tone.R + 0.7152f * tone.G + 0.0722f * tone.B);
-                    // (face 40 r2: on deep skin a multiply over her lit skin (heroine_paint_mul.gdshader): as a lit pass of
-                    // their own they took only the night's blue, every stroke's core blue-black. Chosen before any parameter:
-                    // a shader set after them dropped them)
-                    var m = new ShaderMaterial { Shader = deep >= BrowMulAt ? (paintMulShader ??= GD.Load<Shader>("res://shaders/heroine_paint_mul.gdshader")) : paintShader };
-                    m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
-                    m.SetShaderParameter("dyed", true);
-                    // (darker than her hair and a little warmer, as brows are: the fairer
-                    // her hair the more, so a platinum blonde has ash-brown brows, not grey)
-                    // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
-                    // darkened, read olive; red hair's read crimson)
-                    // (face 39 dye2: on deep skin (her tone multiplier's luminance under 0.6: Deep's 0.34, Fair's 1.0) a brow
-                    // dye with little colour of its own a warm dark brown: a black's, near neutral, mixed in ratio with
-                    // her red-brown skin, drew blue-grey strokes, #1e171c, hue 320)
-                    var dye = BrowDye(b);
-                    if (deep > 0f)
-                    {
-                        var (dL, dC, dH) = Oklch(dye);
-                        float plain = deep * (1f - Mathf.SmoothStep(0.03f, 0.06f, Oklch(b).C));
-                        dye = FromOklch(dL, Mathf.Lerp(dC, Mathf.Max(dC, BrowDeepWarm), plain), Mathf.Lerp(dH, 45f, plain));
-                    }
-                    // (face 40 b3, the judge: a copper's brows on fair skin read like marker (#783d1b, saturation 0.77): its
-                    // dye's chroma down and darker, its hue toward auburn, as grown brows. Env BROWCOP "chroma,light,hue" in a
-                    // shot: tried without a build)
-                    float fairRed = (1f - deep) * BrowRed(b);
-                    if (fairRed > 0f)
-                    {
-                        var (cc, cl, ch) = (BrowCopper.X, BrowCopper.Y, BrowCopper.Z);
-                        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("BROWCOP") is { Length: > 0 } bc
-                            && bc.Split(',') is [var a0, var a1, var a2])
-                        {
-                            var ci = System.Globalization.CultureInfo.InvariantCulture;
-                            (cc, cl, ch) = (float.Parse(a0, ci), float.Parse(a1, ci), float.Parse(a2, ci));
-                        }
-                        var (rL, rC, rH) = Oklch(dye);
-                        dye = FromOklch(rL * Mathf.Lerp(1f, cl, fairRed), rC * Mathf.Lerp(1f, cc, fairRed), rH + ch * fairRed);
-                    }
-                    m.SetShaderParameter("dye", dye);
-                    // (face 41, judge j2 fix 3: a copper's brows on fair skin a touch thinner, so the close-up by day reads auburn, not a dark band)
-                    if (fairRed > 0f) m.SetShaderParameter("strength", Mathf.Lerp(1f, 0.87f, fairRed));
-                    // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
-                    m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
-                    m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
-                    m.SetShaderParameter("soften", HerBrows.Soften);
-                    // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
-                    // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
-                    // olive; a near-black's 0.85, warmed in the shader instead)
-                    float red = SurvivorUnchained.Args.Get("brows") != null ? 1f : BrowRed(b);
-                    float sat = Mathf.Lerp(Mathf.Lerp(0.7f, 0.6f, BrowBlonde(b)), HerBrows.Sat, red) / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance));
-                    // (face 39 dye2: on deep skin a red's or brown's brows held darker took the held dye's whole colour and
-                    // more (dye_sat_held 1.6, dye_sat to 1.7): pure red-black, #440600 copper's; held at 0.7 and 0.8 a dark
-                    // auburn-brown, #34150d. A blonde's there kept a grey-mauve haze at dye_fair_sat 0.85: 1.2 and hair_lo 0.2, a warm brown)
-                    m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, Mathf.Min(sat, 0.8f), deep));
-                    m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 0.7f, deep));
-                    m.SetShaderParameter("dye_fair_sat", Mathf.Lerp(0.85f, 1.2f, deep));
-                    m.SetShaderParameter("rough", 0.8f);
-                    // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
-                    // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
-                    // texels filled the strokes into one felt block)
-                    m.SetShaderParameter("dye_gamma", Mathf.Lerp(0.5f, 0.9f, red));
-                    m.SetShaderParameter("dye_deep", 0.25f);
-                    // (face 39 dye2: on deep skin the faint texels left skin too, a blonde's grey-mauve haze over its strokes)
-                    m.SetShaderParameter("hair_lo", Mathf.Lerp(Mathf.Lerp(0.08f, 0.2f, red), 0.2f, deep));
-                    m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
-                    // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
-                    // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
-                    // black's least, a blonde's most (r2: 0.25 to 0.34 of her lit skin under the multiply, was 0.75 for all, which held every dye alike), each
-                    // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
-                    // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
-                    // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
-                    // (face 40 b3: a blonde's at most 0.29, was 0.34: with each brow's darkening evened (heroine_paint.gdshaderinc's
-                    // mul_side) a blonde's lighter brow went past 0.6 of the skin beside it)
-                    if (deep > 0f)
-                    {
-                        float room = Mathf.Lerp(0.25f, 0.29f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
-                        m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
-                        m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
-                        m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
-                        m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
-                        // (face 40 r2: the hue her brows take her lit skin toward (heroine_paint_mul.gdshader's deep_tint, linear),
-                        // found against the Look's night grade, which takes a neutral or cool dark to mauve and her skin's own warm
-                        // light a warm one to red: a near-neutral warm for black, a yellow-brown for a brown or blonde, an orange-
-                        // brown for a copper)
-                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
-                        var tint = new Vector3(1f, 0.95f, 0.55f).Lerp(new Vector3(1f, 0.85f, 0.4f), wc).Lerp(new Vector3(1f, 0.75f, 0.4f), wr);
-                        m.SetShaderParameter("deep_tint", tint);
-                    }
-                    // (face 41, judge j2: every hair one faint red-brown at ~0.55 of the skin, black's auburn. Each hair's brow
-                    // core now a target (hue 0-1, saturation, value over the skin's own): black near-neutral and darkest,
-                    // brown dark brown, copper auburn, blonde a lighter taupe; the multiply is it over her painted skin)
-                    if (deep >= BrowMulAt)
-                    {
-                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
-                        float wb = BrowBlonde(b);
-                        var tg = BrowTargets.Black.Lerp(BrowTargets.Brown, wc).Lerp(BrowTargets.Copper, wr).Lerp(BrowTargets.Blonde, wb);
-                        m.SetShaderParameter("target_mode", 1f);
-                        // (the value as seen: deep skin's toe and grade crush a brow's darkness, so it is held 0.07 lighter there)
-                        m.SetShaderParameter("brow_target", new Vector3(tg.X / 360f, tg.Y, tg.Z + 0.07f * deep));
-                        m.SetShaderParameter("mul_side_a", 1f);
-                        m.SetShaderParameter("mul_side_b", 1f);
-                    }
-                    // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
-                    if (SurvivorUnchained.Args.Get("brow-set") is string bs)
-                        foreach (var kv in bs.Split(','))
-                            if (kv.Split('=') is [var k, var v])
-                            {
-                                var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
-                                    System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
-                                if (xs.Any(float.IsNaN)) continue;
-                                if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
-                                else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
-                            }
-                    Then(m);
+                    Then(BrowPass(b, deep, brows, (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"), skin.GetShaderParameter("tone")));
                 }
                 // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
                 // light exactly; --paint-pass draws it over her as a pass of its own again (as before
@@ -1140,6 +1029,125 @@ public static class People
                 if (last != null && HairDraw.Eraser() is { } er) Then(er);
                 skin.NextPass = first;
             }
+    }
+
+    /// <summary>The brows' dye pass over a head's skin (heroine_paint.gdshader, or heroine_paint_mul.gdshader on deep skin), its
+    /// dye from hair colour b: browsFile the brow strokes' map on the head's UVs, deep how deep the skin is (0 fair to 1 deep),
+    /// skinPaint and skinTone the skin's own paint and tone under it. Hers (HerPaint) and an NPC's on our base head (NpcSkin).</summary>
+    static ShaderMaterial BrowPass(Color b, float deep, string browsFile, Variant skinPaint, Variant skinTone)
+    {
+        // (face 40 r2: on deep skin a multiply over her lit skin (heroine_paint_mul.gdshader): as a lit pass of
+        // their own they took only the night's blue, every stroke's core blue-black. Chosen before any parameter:
+        // a shader set after them dropped them)
+        var m = new ShaderMaterial { Shader = deep >= BrowMulAt ? (paintMulShader ??= GD.Load<Shader>("res://shaders/heroine_paint_mul.gdshader")) : (paintShader ??= GD.Load<Shader>("res://shaders/heroine_paint.gdshader")) };
+        m.SetShaderParameter("paint", GD.Load<Texture2D>(browsFile));
+        m.SetShaderParameter("dyed", true);
+        // (darker than her hair and a little warmer, as brows are: the fairer
+        // her hair the more, so a platinum blonde has ash-brown brows, not grey)
+        // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
+        // darkened, read olive; red hair's read crimson)
+        // (face 39 dye2: on deep skin (her tone multiplier's luminance under 0.6: Deep's 0.34, Fair's 1.0) a brow
+        // dye with little colour of its own a warm dark brown: a black's, near neutral, mixed in ratio with
+        // her red-brown skin, drew blue-grey strokes, #1e171c, hue 320)
+        var dye = BrowDye(b);
+        if (deep > 0f)
+        {
+            var (dL, dC, dH) = Oklch(dye);
+            float plain = deep * (1f - Mathf.SmoothStep(0.03f, 0.06f, Oklch(b).C));
+            dye = FromOklch(dL, Mathf.Lerp(dC, Mathf.Max(dC, BrowDeepWarm), plain), Mathf.Lerp(dH, 45f, plain));
+        }
+        // (face 40 b3, the judge: a copper's brows on fair skin read like marker (#783d1b, saturation 0.77): its
+        // dye's chroma down and darker, its hue toward auburn, as grown brows. Env BROWCOP "chroma,light,hue" in a
+        // shot: tried without a build)
+        float fairRed = (1f - deep) * BrowRed(b);
+        if (fairRed > 0f)
+        {
+            var (cc, cl, ch) = (BrowCopper.X, BrowCopper.Y, BrowCopper.Z);
+            if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("BROWCOP") is { Length: > 0 } bc
+                && bc.Split(',') is [var a0, var a1, var a2])
+            {
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                (cc, cl, ch) = (float.Parse(a0, ci), float.Parse(a1, ci), float.Parse(a2, ci));
+            }
+            var (rL, rC, rH) = Oklch(dye);
+            dye = FromOklch(rL * Mathf.Lerp(1f, cl, fairRed), rC * Mathf.Lerp(1f, cc, fairRed), rH + ch * fairRed);
+        }
+        m.SetShaderParameter("dye", dye);
+        // (face 41, judge j2 fix 3: a copper's brows on fair skin a touch thinner, so the close-up by day reads auburn, not a dark band)
+        if (fairRed > 0f) m.SetShaderParameter("strength", Mathf.Lerp(1f, 0.87f, fairRed));
+        // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
+        m.SetShaderParameter("skin_paint", skinPaint);
+        m.SetShaderParameter("skin_tone", skinTone);
+        m.SetShaderParameter("soften", HerBrows.Soften);
+        // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
+        // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
+        // olive; a near-black's 0.85, warmed in the shader instead)
+        float red = SurvivorUnchained.Args.Get("brows") != null ? 1f : BrowRed(b);
+        float sat = Mathf.Lerp(Mathf.Lerp(0.7f, 0.6f, BrowBlonde(b)), HerBrows.Sat, red) / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance));
+        // (face 39 dye2: on deep skin a red's or brown's brows held darker took the held dye's whole colour and
+        // more (dye_sat_held 1.6, dye_sat to 1.7): pure red-black, #440600 copper's; held at 0.7 and 0.8 a dark
+        // auburn-brown, #34150d. A blonde's there kept a grey-mauve haze at dye_fair_sat 0.85: 1.2 and hair_lo 0.2, a warm brown)
+        m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, Mathf.Min(sat, 0.8f), deep));
+        m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 0.7f, deep));
+        m.SetShaderParameter("dye_fair_sat", Mathf.Lerp(0.85f, 1.2f, deep));
+        m.SetShaderParameter("rough", 0.8f);
+        // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
+        // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
+        // texels filled the strokes into one felt block)
+        m.SetShaderParameter("dye_gamma", Mathf.Lerp(0.5f, 0.9f, red));
+        m.SetShaderParameter("dye_deep", 0.25f);
+        // (face 39 dye2: on deep skin the faint texels left skin too, a blonde's grey-mauve haze over its strokes)
+        m.SetShaderParameter("hair_lo", Mathf.Lerp(Mathf.Lerp(0.08f, 0.2f, red), 0.2f, deep));
+        m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
+        // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
+        // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
+        // black's least, a blonde's most (r2: 0.25 to 0.34 of her lit skin under the multiply, was 0.75 for all, which held every dye alike), each
+        // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
+        // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
+        // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
+        // (face 40 b3: a blonde's at most 0.29, was 0.34: with each brow's darkening evened (heroine_paint.gdshaderinc's
+        // mul_side) a blonde's lighter brow went past 0.6 of the skin beside it)
+        if (deep > 0f)
+        {
+            float room = Mathf.Lerp(0.25f, 0.29f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+            m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
+            m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
+            m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
+            m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
+            // (face 40 r2: the hue her brows take her lit skin toward (heroine_paint_mul.gdshader's deep_tint, linear),
+            // found against the Look's night grade, which takes a neutral or cool dark to mauve and her skin's own warm
+            // light a warm one to red: a near-neutral warm for black, a yellow-brown for a brown or blonde, an orange-
+            // brown for a copper)
+            float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+            var tint = new Vector3(1f, 0.95f, 0.55f).Lerp(new Vector3(1f, 0.85f, 0.4f), wc).Lerp(new Vector3(1f, 0.75f, 0.4f), wr);
+            m.SetShaderParameter("deep_tint", tint);
+        }
+        // (face 41, judge j2: every hair one faint red-brown at ~0.55 of the skin, black's auburn. Each hair's brow
+        // core now a target (hue 0-1, saturation, value over the skin's own): black near-neutral and darkest,
+        // brown dark brown, copper auburn, blonde a lighter taupe; the multiply is it over her painted skin)
+        if (deep >= BrowMulAt)
+        {
+            float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+            float wb = BrowBlonde(b);
+            var tg = BrowTargets.Black.Lerp(BrowTargets.Brown, wc).Lerp(BrowTargets.Copper, wr).Lerp(BrowTargets.Blonde, wb);
+            m.SetShaderParameter("target_mode", 1f);
+            // (the value as seen: deep skin's toe and grade crush a brow's darkness, so it is held 0.07 lighter there)
+            m.SetShaderParameter("brow_target", new Vector3(tg.X / 360f, tg.Y, tg.Z + 0.07f * deep));
+            m.SetShaderParameter("mul_side_a", 1f);
+            m.SetShaderParameter("mul_side_b", 1f);
+        }
+        // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
+        if (SurvivorUnchained.Args.Get("brow-set") is string bs)
+            foreach (var kv in bs.Split(','))
+                if (kv.Split('=') is [var k, var v])
+                {
+                    var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                    if (xs.Any(float.IsNaN)) continue;
+                    if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                    else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                }
+        return m;
     }
 
     /// <summary>Her look changed where she stands (creation's choices, as they
@@ -1918,40 +1926,9 @@ public static class People
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
             if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
-            // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
-            m.SetShaderParameter("mouth_in", 1f);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
-            // (her eyes, brows and lips deepened when her face is small on
-            // screen, so a face still reads from the game's camera)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
-                m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
-            // (and her head's own shade, under her jaw most: unshaded, her neck under
-            // it was lit as her cheeks were, a pale band down to her collar)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
-            {
-                var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
-                    ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
-                m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
-                m.SetShaderParameter("ao_light", 0.55f);
-                // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
-                // at the graft's rough, shine and pore depth, set above as every body part's)
-                m.SetShaderParameter("seam_ease", true);
-                // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
-                m.SetShaderParameter("thin_map", 1f);
-                // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
-                // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
-                m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
-            }
-            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
-            // --ear-ao off: without it, for judging it)
-            if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
-            {
-                m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
-                m.SetShaderParameter("ear_amount", 1f);
-                m.SetShaderParameter("ear_light", 0.7f);
-                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));   // (HerEarWarmth's too)
-            }
+            BaseHead(m);
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);
@@ -1984,6 +1961,54 @@ public static class People
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
         return m;
+    }
+
+    /// <summary>The maps our base head (the heroine's, body_p1's) carries in the skin shader: mouth, features, head shade, ears.
+    /// Hers (Skin) and an NPC's on the same head (NpcSkin).</summary>
+    static void BaseHead(ShaderMaterial m)
+    {
+        // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
+        m.SetShaderParameter("mouth_in", 1f);
+        // (the cel half-tone on the whole head cooler than the skin's warm CEL_MID: on the warm toned paint it read as a
+        // saturated orange band from temple to cheek at a close framing in the sun, across the eye with the head bowed
+        // (NPC skin judge r1; on her as much: face Oklab C p98 .195 against the NPC's .197). heroine_skin.gdshader's
+        // face_mid; --face-mid off: as before, for before/after pictures)
+        if (!FaceMidOff)
+        {
+            m.SetShaderParameter("face_mid", HeadMid);
+            m.SetShaderParameter("face_mid_w", 1f);
+            m.SetShaderParameter("face_mid_mask", 0f);
+        }
+        // (her eyes, brows and lips deepened when her face is small on
+        // screen, so a face still reads from the game's camera)
+        if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
+            m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
+        // (and her head's own shade, under her jaw most: unshaded, her neck under
+        // it was lit as her cheeks were, a pale band down to her collar)
+        if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
+        {
+            var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
+                ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
+            m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
+            m.SetShaderParameter("ao_light", 0.55f);
+            // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
+            // at the graft's rough, shine and pore depth, set above as every body part's)
+            m.SetShaderParameter("seam_ease", true);
+            // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
+            m.SetShaderParameter("thin_map", 1f);
+            // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
+            // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
+            m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
+        }
+        // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
+        // --ear-ao off: without it, for judging it)
+        if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
+        {
+            m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
+            m.SetShaderParameter("ear_amount", 1f);
+            m.SetShaderParameter("ear_light", 0.7f);
+            m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));   // (HerEarWarmth's too)
+        }
     }
 
     /// <summary>--skin-set "part:k=v,k=a/b/c;...": a part's skin uniforms tried without a build ("*" every part); applied
@@ -2019,7 +2044,7 @@ public static class People
     /// same rough, shine and light, so the neck's seam between the two maps has no step in sheen; pores shallower on the
     /// body, as hers. A man's skin as his (HisSkin: rougher). Before 20 Oct the package kept its imported
     /// StandardMaterial3D: a flat, plastic beige beside every other person in town.</summary>
-    public static Material NpcSkin(BaseMaterial3D src, Mesh mesh, bool woman)
+    public static Material NpcSkin(BaseMaterial3D src, Mesh mesh, bool woman, Color? hair = null, Godot.Collections.Dictionary? skin = null)
     {
         var m = (ShaderMaterial)Skin(src, new Look(woman ? "female" : "male", System.Array.Empty<string>()), mesh, Colors.White, "npc");
         m.ResourceName = src.ResourceName;
@@ -2038,7 +2063,162 @@ public static class People
         // NPC's reddish skin read magenta on the shaded cheek (the generated guard, judge r4: shade hue 22-28 deg
         // against the paint's 41-50; with it 37-43, warm tan; Marionette lead 12 solver I2, 21 Oct 2026).
         m.SetShaderParameter("ambient_tint", HerAmbientTint);
+        // Her skin's treatment, derived for the package: in play her albedo is paint * tone * cel_tone / body_tone, which
+        // for her fair skin is paint * NpcCelTone; the package's tone is white, so the factor goes in whole.
+        m.SetShaderParameter("cel_tone", NpcCelTone);
+        m.SetShaderParameter("back_spec", HerBackSpec);
+        m.SetShaderParameter("back_neutral", HerBackNeutral);
+        m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+        SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
+        bool isHead = src.ResourceName == "skin_head";
+        float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
+            ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);
+        bool baseHead = isHead && (skin != null && skin.TryGetValue("base_head", out var bh) && bh.VariantType == Variant.Type.Bool
+            ? bh.AsBool() : mesh != null && HeadVertexCount(mesh) is int hv && hv > 0 && hv == BaseHeadVerts());
+        if (!isHead) SkinZones(m, deep, false);
+        else if (baseHead) { SkinZones(m, deep, true); BaseHead(m); }
+        ShaderMaterial? brows = null;
+        if (baseHead && !(skin != null && skin.TryGetValue("brows", out var bw) && bw.VariantType == Variant.Type.Bool && !bw.AsBool())
+            && ResourceLoader.Exists(NpcBrowsFile))
+        {
+            Color bc = hair ?? HisHairColour;
+            if (skin != null && skin.TryGetValue("brow_colour", out var bcv) && bcv.VariantType == Variant.Type.String
+                && Color.HtmlIsValid(bcv.AsString())) bc = new Color(bcv.AsString());
+            brows = BrowPass(bc, deep, NpcBrowsFile, src.AlbedoTexture, Colors.White);
+            m.NextPass = brows;
+            if (HairDraw.Eraser() is { } er) brows.NextPass = er;
+        }
+        // The manifest's own overrides, last: "*" then the part's own key; "brows" on the brow pass.
+        if (skin != null && skin.TryGetValue("uniforms", out var uv) && uv.VariantType == Variant.Type.Dictionary)
+        {
+            var u = uv.AsGodotDictionary();
+            if (u.TryGetValue("*", out var all) && all.VariantType == Variant.Type.Dictionary) ApplyUniforms(m, all.AsGodotDictionary());
+            if (u.TryGetValue(src.ResourceName, out var own) && own.VariantType == Variant.Type.Dictionary) ApplyUniforms(m, own.AsGodotDictionary());
+            if (brows != null && u.TryGetValue("brows", out var bu) && bu.VariantType == Variant.Type.Dictionary) ApplyUniforms(brows, bu.AsGodotDictionary());
+        }
+        SkinSet(m, src.ResourceName);   // (the --skin-set switch still wins)
         return m;
+    }
+
+    const string NpcBrowsFile = "res://art/people/paint/brows.png";
+
+    /// <summary>The factor her own paint takes in play (paint * tone * cel_tone / body_tone, her fair skin): the NPC's tone is white.</summary>
+    public static Vector3 NpcCelTone
+    {
+        get
+        {
+            var l = SkinTone(new Look("female", System.Array.Empty<string>())).SrgbToLinear();
+            var f = HerToneFit["fair"];
+            return new Vector3(l.R * f.X * HerCelTone.X, l.G * f.Y * HerCelTone.Y, l.B * f.Z * HerCelTone.Z);
+        }
+    }
+
+    static readonly Dictionary<ulong, float> npcMean = new();
+    static float? refHeadMean, refBodyMean;
+    static int baseHeadVerts = -1;
+
+    static float PaintMean(Texture2D? tex)
+    {
+        var img = tex?.GetImage();
+        if (img == null) return 0f;
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        img.Resize(32, 32);
+        double sum = 0;
+        for (int y = 0; y < 32; y++)
+            for (int x = 0; x < 32; x++)
+            {
+                var c = img.GetPixel(x, y);
+                sum += 0.2126f * SrgbToLin(c.R) + 0.7152f * SrgbToLin(c.G) + 0.0722f * SrgbToLin(c.B);
+            }
+        return (float)(sum / 1024.0);
+    }
+
+    /// <summary>How deep an NPC's skin paint is (0 as her fair paint, 1 deep), from its mean linear luminance against the
+    /// base head's or body's own paint.</summary>
+    static float NpcDeep(Texture2D? tex, bool head)
+    {
+        try
+        {
+            if (tex == null) return 0f;
+            ulong id = tex.GetInstanceId();
+            if (!npcMean.TryGetValue(id, out var mean)) npcMean[id] = mean = PaintMean(tex);
+            float r;
+            if (head) r = refHeadMean ??= RefMean("res://art/people/head_tex/heroine_head.jpg");
+            else r = refBodyMean ??= RefMean("res://art/people/body_p1/albedo.png");
+            if (r <= 0f) return 0f;
+            return Mathf.Clamp((0.55f - mean / r) / 0.49f, 0f, 1f);
+        }
+        catch { return 0f; }
+    }
+
+    static float RefMean(string path) => ResourceLoader.Exists(path) ? PaintMean(GD.Load<Texture2D>(path)) : 0f;
+
+    static int? HeadVertexCount(Mesh mesh)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head") return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+        return null;
+    }
+
+    static int BaseHeadVerts()
+    {
+        if (baseHeadVerts >= 0) return baseHeadVerts;
+        baseHeadVerts = 0;
+        try
+        {
+            var inst = GD.Load<PackedScene>(P1Body.Dir + "body.glb")?.Instantiate();
+            if (inst != null)
+            {
+                var stack = new Stack<Node>();
+                stack.Push(inst);
+                while (stack.Count > 0 && baseHeadVerts == 0)
+                {
+                    var n = stack.Pop();
+                    if (n is MeshInstance3D { Mesh: { } mm } && HeadVertexCount(mm) is int c) baseHeadVerts = c;
+                    foreach (var ch in n.GetChildren()) stack.Push(ch);
+                }
+                inst.Free();
+            }
+        }
+        catch { }
+        return baseHeadVerts;
+    }
+
+    /// <summary>A manifest's uniforms onto a skin material: number, bool, [2-4 numbers] a vector, "#rrggbb" a colour, "" clears a
+    /// texture, "res://..." or an absolute file a texture.</summary>
+    public static void ApplyUniforms(ShaderMaterial m, Godot.Collections.Dictionary? set)
+    {
+        if (set == null) return;
+        foreach (var kv in set)
+        {
+            string k = kv.Key.AsString();
+            var v = kv.Value;
+            switch (v.VariantType)
+            {
+                case Variant.Type.Float: case Variant.Type.Int: m.SetShaderParameter(k, (float)v.AsDouble()); break;
+                case Variant.Type.Bool: m.SetShaderParameter(k, v.AsBool()); break;
+                case Variant.Type.Array:
+                    {
+                        var a = v.AsGodotArray();
+                        var xs = new float[a.Count];
+                        for (int i = 0; i < xs.Length; i++) xs[i] = (float)a[i].AsDouble();
+                        if (xs.Length == 2) m.SetShaderParameter(k, new Vector2(xs[0], xs[1]));
+                        else if (xs.Length == 3) m.SetShaderParameter(k, new Vector3(xs[0], xs[1], xs[2]));
+                        else if (xs.Length == 4) m.SetShaderParameter(k, new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                        break;
+                    }
+                case Variant.Type.String:
+                    {
+                        string t = v.AsString();
+                        if (t == "") m.SetShaderParameter(k, new Variant());
+                        else if (t.StartsWith('#')) { if (Color.HtmlIsValid(t)) m.SetShaderParameter(k, new Color(t)); }
+                        else if (t.StartsWith("res://")) { if (ResourceLoader.Exists(t)) m.SetShaderParameter(k, GD.Load<Texture2D>(t)); }
+                        else if (Image.LoadFromFile(t) is { } img) { img.GenerateMipmaps(); m.SetShaderParameter(k, ImageTexture.CreateFromImage(img)); }
+                        break;
+                    }
+            }
+        }
     }
 
     /// <summary>How far light carried under her skin spreads on screen (the skin shader's `scatter`, Godot's
@@ -2097,10 +2277,13 @@ public static class People
             : new Vector3(0.6f, 0.15f, 0.08f)
         : new Vector3(0.6f, 0.15f, 0.08f);
 
-    static void HerShade(ShaderMaterial m, Look look)
+    static void HerShade(ShaderMaterial m, Look look) => SkinShade(m, HerAmbient(look), BodyTone(look));
+
+    /// <summary>HerShade's body from an ambient tint and a body tone (hers by her look; an NPC's: HerAmbientTint, white).</summary>
+    static void SkinShade(ShaderMaterial m, Vector3 ambient, Vector3 bodyTone)
     {
-        m.SetShaderParameter("ambient_tint", HerAmbient(look));
-        m.SetShaderParameter("body_tone", BodyTone(look));
+        m.SetShaderParameter("ambient_tint", ambient);
+        m.SetShaderParameter("body_tone", bodyTone);
         // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
         // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
         m.SetShaderParameter("throat_terminator", HerThroatTerminator);
@@ -2120,7 +2303,7 @@ public static class People
         m.SetShaderParameter("deep_tint", (float)SurvivorUnchained.Args.Num("deep-tint", 0.6f));
         var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
         if (mode == "off") return;
-        var b = BodyTone(look);
+        var b = bodyTone;
         m.SetShaderParameter("shade_tint", new Vector3(1 / b.X, 1 / b.Y, 1 / b.Z));
         bool down = mode == "ndl" || SurvivorUnchained.Args.Get("shade-down") == "on";
         m.SetShaderParameter("shade_down", down ? 1f : 0f);
@@ -2148,12 +2331,15 @@ public static class People
     /// Look's zoom). Her colour zones scaled by her skin's lightness: on deep skin a subtler, browner flush. head: her
     /// head's own material (the zone maps laid on it); null: a material already made (HerRestyle), its maps kept.
     /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
-    static void HerZones(ShaderMaterial m, Look look, bool? head)
+    static void HerZones(ShaderMaterial m, Look look, bool? head) => SkinZones(m, deep0(look), head);
+
+    /// <summary>HerZones' body from the skin's darkness (0 fair to 1 deep): hers by her look, an NPC's from its paint.</summary>
+    static void SkinZones(ShaderMaterial m, float deep, bool? head)
     {
         // (face 46 skin C, the night skin-line hold's lamp (HerSkinHold): an amber, a redder one on deep skin; its gain
         // keeps her lightness (on deep the night grade's toe took 0.025 Oklab L off her face at the lamps' own luminance))
-        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
-        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep));
+        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep));
         m.SetShaderParameter("hold_chroma", 0f);
         if (SkinZonesOff) return;
         if (head == true)
@@ -2165,7 +2351,6 @@ public static class People
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
                 m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
         }
-        float deep = deep0(look);
         m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
         m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
         m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
@@ -2546,6 +2731,9 @@ public static class People
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
     static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
+    static readonly bool FaceMidOff = SurvivorUnchained.Args.Get("face-mid") == "off";
+    /// <summary>The head's cel half-tone level (heroine_skin.gdshader face_mid; the skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
+    static readonly Vector3 HeadMid = new(0.45f, 0.55f, 0.65f);
 
     // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
     static float lookRig;

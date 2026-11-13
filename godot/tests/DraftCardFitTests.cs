@@ -10,6 +10,7 @@ namespace SurvivorUnchained.Tests;
 /// medallions, titles and footers level across the row (tools_scenes/CardFit.cs, docs/team/DEMO_GATE.md item 3).
 /// The one engine test in this suite: it builds the game and runs Godot headless on the harness (a short layout
 /// pass, no turn needed). Without the engine or an imported project here, it says so and passes.</summary>
+[Collection("engine")]
 public sealed class DraftCardFitTests(ITestOutputHelper log)
 {
     const string GodotExe = @"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe";
