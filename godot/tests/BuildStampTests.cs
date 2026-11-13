@@ -22,4 +22,19 @@ public sealed class BuildStampTests
         Assert.NotEqual(s1, b.BuildStamp);
         Assert.NotEqual(b.BuildStamp, BattleTests.Arena(4).BuildStamp);
     }
+    [Fact]
+    public void The_reaver_hand_flipping_below_half_moves_the_stamp()
+    {
+        // (Codex audit 11 L1) old: the Hand's area bonus moved the card's radius but not its key
+        var b = BattleTests.Arena(3, ("cleaver", 1));
+        b.Lamps = new LampLoadout();
+        b.Calling = "reaver";
+        Assert.Equal(1, b.HandAreaMul(b.Weapons[0]));
+        long s0 = b.BuildStamp;
+        b.Player.Hp = b.MaxHp * 0.4;
+        Assert.NotEqual(1, b.HandAreaMul(b.Weapons[0]));
+        Assert.NotEqual(s0, b.BuildStamp);
+        b.Player.Hp = b.MaxHp;
+        Assert.Equal(s0, b.BuildStamp);
+    }
 }

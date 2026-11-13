@@ -18,6 +18,9 @@ public sealed partial class Battle
             h.Add(RuntimeHelpers.GetHashCode(Lamps));
             h.Add(Lamps.Version);
             h.Add(Weapons.Count);
+            // Flips that move a card's area: the reaver's Hand below half, the bound storm's reach once enough are bound.
+            h.Add(ReaverHand && Player.Hp < MaxHp * HR.Below);
+            h.Add(Lamp("bound.storm_reach") && boundTotal >= (int)Lamps.Full("bound.storm_reach", "at", 3));
             foreach (var w in Weapons)
             {
                 h.Add(w.Id); h.Add(w.Rank); h.Add(w.Slot); h.Add(w.Slot2); h.Add(w.Evolution?.Id); h.Add(w.Cast); h.Add(w.Hold); h.Add(w.Pressed); h.Add(w.KindledNow);

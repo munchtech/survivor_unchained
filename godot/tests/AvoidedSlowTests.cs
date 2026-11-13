@@ -35,4 +35,18 @@ public sealed class AvoidedSlowTests
         Assert.True(SlowAfter(10, 0) > 0);
         Assert.True(SlowAfter(0, 0) > 0);
     }
+    [Fact]
+    public void A_ring_does_not_root_her_while_she_is_beyond_control()
+    {
+        // (Codex audit 11 L2) old: the root asked only DashT and Leap, so i-frames from anything else still rooted her
+        var b = BattleTests.Arena(7);
+        b.Tell("ring", null, b.Player.X, b.Player.Z);
+        b.Player.Iframes = 5;
+        for (int i = 0; i < 60; i++) b.Tick(1 / 60.0, 0, 0);
+        Assert.Equal(0, b.Player.RootT);
+        var c = BattleTests.Arena(7);
+        c.Tell("ring", null, c.Player.X, c.Player.Z);
+        for (int i = 0; i < 60; i++) c.Tick(1 / 60.0, 0, 0);
+        Assert.True(c.Player.RootT > 0);
+    }
 }
