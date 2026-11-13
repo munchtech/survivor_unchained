@@ -27,7 +27,11 @@ public static class Arms
     /// Seated: its Grip has been measured against her fitted fist (Seat lays it on her fist's pocket for its kind,
     /// WeaponSockets.Pocket: her right fist's, and her left's where that is fitted); an unseated piece without an anchor
     /// keeps the plain mount (its hilt not yet checked against the fist: the viking sword's guard would sit 25 mm into her forefinger at its Grip).
-    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0, WeaponKind Kind = WeaponKind.None, bool Seated = false);
+    /// Lamp: carried, not wielded: in a package NPC's fist by the lamp carry (PersonView.LampFist, NpcTorchArm), naming no swings.
+    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0, WeaponKind Kind = WeaponKind.None, bool Seated = false, bool Lamp = false);
+
+    /// <summary>A table row carried as a lamp (Spec.Lamp).</summary>
+    public static bool IsLamp(string? id) => id != null && All.TryGetValue(id, out var s) && s.Lamp;
 
     public static readonly Dictionary<string, Spec> All = new()
     {
@@ -45,7 +49,8 @@ public static class Arms
         // Corvane's keeper's lamp (vault_opened's doorway): the lamp-iron (LampIron.Make), its glass violet and lit, held
         // by its top in his right fist, held up (PersonView.LampFist). A stand-in until his own lamp is made. 0.9 m: at 0.42 it
         // did not read at all from the play camera (P6 r4), and at 0.6 it was about 35 px, too small to carry a boss (judge r1).
-        ["keeper_lamp"] = new("", 0.9f, 0.92f, Build: KeeperLamp),
+        // (a package's own lamp, at its own size, goes by its manifest's "held" instead: World.NpcHeld)
+        ["keeper_lamp"] = new("", 0.9f, 0.92f, Build: KeeperLamp, Lamp: true),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
         ["viking_axe"] = new("viking_axe", 0.7702f, 0.15f, Roll: Mathf.Pi, Lean: 35, Kind: WeaponKind.Axe, Seated: true),  // haft conformed to her one-handed fist (anim-40: tapered haft, an oval wrap 34.7 x 21.7 mm over the fist, anchor_grip on the haft's line); seated on BladeAtR (PocketR Axe), Length keeps the old scale; fistfit axe
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),

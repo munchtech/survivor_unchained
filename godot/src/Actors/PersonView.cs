@@ -31,7 +31,7 @@ public partial class PersonView : Node3D, INpcView
     {
         person = People.Build(spec);
         // (a carried lamp is not a weapon: it names no swings)
-        person.Kind = HerClips.Kind(arms?.Right is Lamp ? null : arms?.Right, arms?.Left, arms?.Forearm);
+        person.Kind = HerClips.Kind(Arms.IsLamp(arms?.Right) ? null : arms?.Right, arms?.Left, arms?.Forearm);
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04) * person.Jitter;
         AddChild(person.Root);
@@ -39,10 +39,14 @@ public partial class PersonView : Node3D, INpcView
         if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
         // (a package's carried lamp goes by Hold: the carry's arm (NpcTorchArm) and the lamp upright in its fist, which the
         // crowd's bake lays over every clip; by Arms.Hold it hung stiff from the hand at his hip, P6 judge r1)
-        if (arms?.Right is Lamp && person.Package != null) Hold("handslot.r", null, Lamp);
+        if (Arms.IsLamp(arms?.Right) && person.Package != null) Hold("handslot.r", null, arms!.Right);
         else if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
-        if (arms?.Left is Lamp && person.Package != null) Hold("handslot.l", null, Lamp);
+        if (Arms.IsLamp(arms?.Left) && person.Package != null) Hold("handslot.l", null, arms!.Left);
         else if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
+        // (a package's own props, its manifest's "held", in the hands its arms leave free: World.NpcHeld)
+        if (person.Package is string own && NpcPackage.Read(own)?.Held is { } props)
+            foreach (var slot in props.Keys)
+                if (!held.ContainsKey(slot)) Hold(slot, null, Own);
         if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
     }
 
@@ -504,15 +508,26 @@ public partial class PersonView : Node3D, INpcView
         pieces.Remove(slot);
         if (piece == null) return;
         var bone = BoneOf(slot);
-        // A package's fist holding a lamp up (Corvane's keeper's lamp, in his right: the hand his cast raises): the torch's
-        // carry (NpcTorchArm) on that arm, the lamp hanging straight down from the fist ahead of the shoulder, lifted
-        // overhead as the clip raises the hand.
-        if (piece == "keeper_lamp" && person.Package != null && slot is "handslot.l" or "handslot.r" && LampFist(piece, slot == "handslot.r") is { } lampAt)
+        // A package's own prop ("own": its manifest's "held" for this slot, at its own size) or a table row, routed by its
+        // carry (World.NpcHeld.RouteOf). The lamp carry: a package's fist holding a lamp up (Corvane's keeper's lamp, in his
+        // right: the hand his cast raises; a keeper's own lamp), the torch's carry (NpcTorchArm) on that arm, the lamp hanging
+        // straight down from the fist ahead of the shoulder, lifted overhead as the clip raises the hand.
+        var prop = piece == Own && person.Package is string pkg && NpcPackage.Read(pkg)?.Held is { } hp && hp.TryGetValue(slot, out var pp) ? pp : null;
+        if (piece == Own && prop == null) return;
+        bool right = slot == "handslot.r";
+        switch (World.NpcHeld.RouteOf(person.Package != null, slot, prop, Arms.All.ContainsKey(piece), Arms.IsLamp(piece)))
         {
-            held[slot] = lampAt; pieces[slot] = piece;
-            return;
+            case World.NpcHeld.Route.Lamp:
+                if (LampFist(prop != null ? NpcPackage.HeldProp(person.Package!, prop.File) : Arms.Make(piece), right) is { } lampAt) { held[slot] = lampAt; pieces[slot] = piece; }
+                return;
+            case World.NpcHeld.Route.Hand:
+                if (HandFist(NpcPackage.HeldProp(person.Package!, prop!.File), right) is { } handAt) { held[slot] = handAt; pieces[slot] = piece; }
+                return;
+            case World.NpcHeld.Route.Table:
+                held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece;
+                return;
         }
-        if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece; return; }
+        if (piece == Own) return;
         // A package's left fist round a lit torch, the arm brought up to carry it (NpcTorchArm), the torch kept upright.
         if (piece == "torch_lit" && person.Package != null && slot == "handslot.l" && Carried(piece) is Node3D torch)
         {
@@ -572,17 +587,19 @@ public partial class PersonView : Node3D, INpcView
         return (p.X, p.Y, p.Z);
     }
 
-    const string Lamp = "keeper_lamp";
+    /// <summary>Hold's piece for a package's own prop: its manifest's "held" entry for the slot (World.NpcHeld).</summary>
+    public const string Own = "own";
 
     /// <summary>A held lamp in the carrying fist (NpcTorchArm), turned in the fist so it hangs upright when the chest is
     /// (the arm's lay is fixed in the chest's frame: NpcTorchArm.FistIn), its grip in the fist's pocket. Fixed in the hand,
     /// not kept upright each frame (UprightNode), so a crowd bake (Vat: rigid with the hand bone) holds it the same.</summary>
-    Node3D? LampFist(string piece, bool right = false)
+    Node3D? LampFist(Node3D? lamp, bool right = false)
     {
         var sk = person.Skeleton;
+        if (lamp == null) return null;
         string side = right ? "r" : "l";
         int ul = sk.FindBone("upperarm_l"), ur = sk.FindBone("upperarm_r"), sp = P1Body.Bone(sk, "spine_01"), nk = P1Body.Bone(sk, "neck_01");
-        if (ul < 0 || ur < 0 || sp < 0 || nk < 0 || sk.FindBone($"hand_{side}") < 0) return null;
+        if (ul < 0 || ur < 0 || sp < 0 || nk < 0 || sk.FindBone($"hand_{side}") < 0) { lamp.Free(); return null; }
         if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
         {
             var arm = new NpcTorchArm { Right = right };
@@ -605,8 +622,29 @@ public partial class PersonView : Node3D, INpcView
         var grip = new Node3D { Name = "LampGrip", Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f) };
         grip.Basis = fist.Inverse() * upright;
         at.AddChild(grip);
-        var lamp = Arms.Make(piece);
         grip.AddChild(lamp);
+        return at;
+    }
+
+    /// <summary>A package's own prop in its closed fist on the plain hand mount (the folk's: Arms.MountTransform with no
+    /// lean, the prop's +Y out of the fist along the hand's +Z), at its own size; its grip (the file's origin) in the fist's
+    /// pocket as the lamp's and the torch's are.</summary>
+    Node3D? HandFist(Node3D? prop, bool right)
+    {
+        if (prop == null) return null;
+        var sk = person.Skeleton;
+        string side = right ? "r" : "l";
+        if (sk.FindBone($"hand_{side}") < 0) { prop.Free(); return null; }
+        if (sk.GetNodeOrNull<NpcHands>("NpcHands") is { } hands) { if (right) hands.FistR = true; else hands.FistL = true; }
+        var at = new BoneAttachment3D { BoneName = P1Body.BoneName(sk, $"hand_{side}") };
+        sk.AddChild(at);
+        int mid = sk.FindBone($"middle_01_{side}");
+        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
+        var x = new Vector3(0, 1, 0);
+        var y = new Vector3(0, 0, 1);
+        var grip = new Node3D { Name = "PropGrip", Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f), Basis = new Basis(x, y, x.Cross(y)) };
+        at.AddChild(grip);
+        grip.AddChild(prop);
         return at;
     }
 

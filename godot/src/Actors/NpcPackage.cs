@@ -28,7 +28,8 @@ public static class NpcPackage
     public const string Prefix = "npc:";
 
     public sealed record Piece(string Id, string Slot, string File, Variant Hide, Variant Springs = default, Variant Correctives = default);
-    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null, Godot.Collections.Dictionary? Skin = null);
+    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null, Godot.Collections.Dictionary? Skin = null,
+        Dictionary<string, SurvivorUnchained.World.NpcHeld.Prop>? Held = null);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
@@ -48,7 +49,8 @@ public static class NpcPackage
         if (!FileAccess.FileExists(file)) GD.PushWarning($"npc: no package {name} ({file})");
         else
         {
-            var d = Json.ParseString(FileAccess.GetFileAsString(file)).AsGodotDictionary();
+            var text = FileAccess.GetFileAsString(file);
+            var d = Json.ParseString(text).AsGodotDictionary();
             var pieces = new List<Piece>();
             if (d.TryGetValue("pieces", out var pv))
                 foreach (var e in pv.AsGodotArray())
@@ -78,7 +80,9 @@ public static class NpcPackage
                 d.TryGetValue("lod", out var lv) && lv.VariantType == Variant.Type.Dictionary && lv.AsGodotDictionary().TryGetValue("file", out var lf) && lf.VariantType == Variant.Type.String ? (string)lf : null,
                 // (its walk: "lurch", the crowd's undead lurch (NpcWalks); none, the townsfolk's walk)
                 d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null, HairUniforms: hairUniforms,
-                Skin: d.TryGetValue("skin", out var skv) && skv.VariantType == Variant.Type.Dictionary ? skv.AsGodotDictionary() : null);
+                Skin: d.TryGetValue("skin", out var skv) && skv.VariantType == Variant.Type.Dictionary ? skv.AsGodotDictionary() : null,
+                // (what it holds of its own, at its own size: "held": {SLOT: {"file", "carry"}}, World.NpcHeld; PersonView lays it)
+                Held: Held(name, text));
             // (its arm set over the shared clips: "arms": {"in": DEG, "wrist": SHARE}, World.NpcArmSet; a shot's --npc-arms IN,WRIST overrides)
             if (d.TryGetValue("arms", out var av) && av.VariantType == Variant.Type.Dictionary)
             {
@@ -106,8 +110,21 @@ public static class NpcPackage
             foreach (var p in m.Pieces) yield return $"{Dir(name)}/{p.File}";
             if (m.HairFile != null) yield return $"{Dir(name)}/{m.HairFile}";
             if (m.Baked && m.LodFile != null) yield return $"{Dir(name)}/{m.LodFile}";
+            if (m.Held != null) foreach (var h in m.Held.Values) yield return $"{Dir(name)}/{h.File}";
         }
     }
+
+    static Dictionary<string, SurvivorUnchained.World.NpcHeld.Prop>? Held(string name, string text)
+    {
+        var skipped = new List<string>();
+        var held = SurvivorUnchained.World.NpcHeld.Parse(text, skipped);
+        foreach (var s in skipped) GD.PushWarning($"npc: {name}'s held {s}");
+        return held.Count > 0 ? held : null;
+    }
+
+    /// <summary>A package's own held prop (its manifest's "held" file), as drawn: the glb's scene at its own size and frame
+    /// (World.NpcHeld: the origin the grip, +Y out of the fist, +Z its face), or null.</summary>
+    public static Node3D? HeldProp(string name, string file) => Scene($"{Dir(name)}/{file}")?.Instantiate<Node3D>();
 
     /// <summary>--npc-overlay NAME=DIR (a test's package overlay, outside the project: its manifest.json and any piece
     /// file it has are read from DIR, the glb loaded at run time; everything else from the package): null if none.</summary>
