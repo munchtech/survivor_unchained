@@ -331,7 +331,7 @@ public sealed partial class Battle
             double share = Math.Clamp((bl.Delay - bl.T) / Math.Max(1e-6, bl.Delay), 0, 1);
             double d = Dist(p.X, p.Z, bl.X, bl.Z);
             // The ring's fill grows from its heart to its edge: inside it, she wades.
-            if (t.K.Slow > 0 && d <= bl.Radius * share + p.Radius * 0.5) SlowPlayer(1 - t.K.Slow, 0.15);
+            if (t.K.Slow > 0 && d <= bl.Radius * share + p.Radius * 0.5 && ControlReaches()) SlowPlayer(1 - t.K.Slow, 0.15);
             // At its moment, its heart roots her (unless she is dashing through it).
             if (t.K.Root > 0 && !t.RootTried && share >= t.K.RootAt)
             {

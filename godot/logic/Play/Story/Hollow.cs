@@ -401,7 +401,7 @@ public sealed class HollowByNight : StoryFight
             var p = B.Player;
             // The shallows: slurry underfoot slows as well as stings.
             foreach (var zn in shallows)
-                if (zn.Alive && Dist(p.X, p.Z, zn.X, zn.Z) < zn.Radius) B.SlowPlayer(0.6, 0.3);
+                if (zn.Alive && Dist(p.X, p.Z, zn.X, zn.Z) < zn.Radius && B.ControlReaches()) B.SlowPlayer(0.6, 0.3);   // (not leapt over: SU-065)
             // The first light wakes the reeds (or her waiting long enough at the water's edge); then they
             // empty on their own time.
             if (pulses == 0 && (Lit > 0 || T > 45)) Pulse();

@@ -1671,11 +1671,14 @@ public sealed partial class Battle
     }
 
     /// <summary>Whether bad ground can touch her now: not through i-frames, a leap, or a lamp that spares it.</summary>
-    bool GroundReaches(School school)
+    bool GroundReaches(School school) => ControlReaches() && !(Lamps.Board && BoardGroundSpares(school));
+
+    /// <summary>Whether damage-free control (a slow, a wade) can touch her now: not through i-frames or a leap. A blow
+    /// that deals damage slows only if its damage landed; this is the rule for what has none (SU-065).</summary>
+    public bool ControlReaches()
     {
         var p = Player;
-        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return false;
-        return !(Lamps.Board && BoardGroundSpares(school));
+        return p.Alive && p.Iframes <= 0 && p.Leap == null;
     }
 
     /// <summary>What of bad ground's damage reaches her: armour, resistance, the bulwark, half a ghost.</summary>
@@ -2413,7 +2416,8 @@ public sealed partial class Battle
                     blowLabel = b.Label;
                     if (b.Damage > 0 && (b.Dealt = HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true)) > 0 && b.From?.Boss == true) BossBlowsTaken++;
                     blowLabel = null;
-                    if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
+                    // A leapt, dodged or blocked blow lames no one (SU-065): its slow rides its damage, or, with none, the control rule.
+                    if (b.Slow > 0 && (b.Damage > 0 ? b.Dealt > 0 : ControlReaches())) SlowPlayer(b.Slow, b.SlowFor);
                 }
             }
             b.After?.Invoke(this);
