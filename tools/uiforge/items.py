@@ -28,6 +28,7 @@ ITEMS = {
     "axe": "a pair of crossed hand axes with leather-wrapped hafts",
     "bandage": "a roll of clean linen bandages",
     "bomb": "a small keg of blasting ember with a lit fuse, bound in iron",
+    "boot": "a pair of worn brown leather traveller's boots, knee-high, with iron-capped toes and two buckled straps",
     "bone": "a knucklebone charm hung on a fine gold chain",
     "book": "an old leather-bound manual with brass corners",
     "bow": "a hunter's crossbow of dark wood and iron",
@@ -136,6 +137,10 @@ T2I = {
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
                   "green-black sludge oozing from under the lid and dripping down one side",
     # The crafting lead's flask, repainted: its first came cool and flat-lit, a mark on it reading as a letter.
+    # The boots slot's (travelers_boots, hobnail_boots, quakers_boots share the key). ItemModels has no boot model, so no
+    # photograph: painted from words (seed 1150).
+    "boot": "a pair of worn brown leather traveller's boots standing side by side, knee-high, scuffed, with iron-capped "
+            "toes and two buckled straps each, warm candlelight on the leather",
     "flask": "a flat pewter hip flask in a stitched brown leather sleeve, a small screw cap on a short chain, worn and "
              "dented, warm candlelight gleaming on the pewter, plain metal with no marks, no engraving, no letters",
 }
@@ -150,6 +155,8 @@ PICKS: dict = {
     "slurry_jar": (1100, 0), "hunt_bone": (1120, 2), "gate_nail": (1110, 0),
     # UI art's repaints, fitted at the set's 0.82.
     "red_cord": (1130, 2), "lamp_glass": (1140, 3), "scar_glass": (1130, 3), "flask": (1130, 2),
+    # The boots slot (no model photograph; seed 1150).
+    "boot": (1150, 1),
 }
 
 
