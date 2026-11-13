@@ -154,9 +154,16 @@ void fragment() {
             }
         }
         var headP = sk.GlobalTransform * sk.GetBoneGlobalPose(hi).Origin;
+        // (bare-headed: the hair's boxes run 0.075 m over the hair, so the span's top is the hair top, 0.23 m over the head bone, measured on the 1:1 frame)
+        bool bare = Ch.Headgear == false || Wardrobe.PiecesOf(Ch, "head").Count == 0;
+        if (bare)
+        {
+            tip = headY + 0.23f;
+            top = cam.UnprojectPosition(new Vector3(headP.X, tip, headP.Z)).Y / rows;
+        }
         float bottom = cam.UnprojectPosition(new Vector3(headP.X, collar, headP.Z)).Y / rows;
         float cur = (headNow ?? HeadFrame).Distance;
-        float off = top < bottom && x1 > x0 ? Mathf.Max((bottom - top) / ((group is { } hg && hg.End.Y > headY + 0.3f ? 0.62f : 0.45f) * 1080f), (x1 - x0) / 835f) : 1f;
+        float off = top < bottom && x1 > x0 ? Mathf.Max((bottom - top) / ((bare ? 0.45f : 0.62f) * 1080f), (x1 - x0) / 835f) : 1f;
         // (bare-headed, head to collarbone at 62% was a face filling the frame: 45%, her shoulders in)
         float d = Mathf.Clamp(cur * off, 0.8f, 4.5f);
         float centre = (tip + collar) / 2 - pv.GlobalPosition.Y;
@@ -169,6 +176,8 @@ void fragment() {
             float errPx = cam.UnprojectPosition(spanMid).Y / rows - 540f;
             float curH = (headNow ?? HeadFrame).Height;
             if (depthM > 0.1f && !float.IsNaN(errPx)) centre = curH - errPx * rows * perPxM;
+            if (Args.Get("ward-log") != null && Engine.GetProcessFrames() % 3 == 0) GD.Print($"WARD head midY {errPx + 540:F0} top {top:F0} bottom {bottom:F0} depth {depthM:F2} H {curH:F3} -> {centre:F3} D {cur:F2} -> {d:F2}");
+
         }
         // (the shift that puts the head's middle at x 483.5, the middle of the free ground: where it is on screen now, less the camera's own
         // sideways offset, tells where it would be with none; no feedback on the camera's easing)
