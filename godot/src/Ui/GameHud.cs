@@ -1677,6 +1677,7 @@ public partial class GameHud : CanvasLayer
                 FootFor = CardFoot,
                 RowTop = CardRowTop,
                 TopOf = CardTopOf,
+                Avoid = CardAvoid,
                 From = DgPanel.Coin,
             };
             play.AddChild(levelCard);
@@ -1773,6 +1774,16 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>bd-ui W8: the status shelf's top (global; the cards stay 8 px above it) in the campaign, else null (the arena's card is as it was).</summary>
+    /// <summary>bd-ui W13: the auto tiles' and stance discs' global rects (the card's tail breaks around them).</summary>
+    List<Rect2> CardAvoid()
+    {
+        var l = new List<Rect2>();
+        if (!campaignNow) return l;
+        if (irons.Autos.Visible) l.AddRange(irons.Autos.GlobalRects());
+        if (irons.Stance.Visible) { l.Add(irons.Stance.DiscRect(0)); l.Add(irons.Stance.DiscRect(1)); }
+        return l;
+    }
+
     float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(AutoRow.RowTop))).Y : null;
 
     /// <summary>bd-ui W6: the card's tail ends on the top of what opened: its key seat's cap, its auto tile, the front stance disc.</summary>

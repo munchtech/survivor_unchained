@@ -528,7 +528,7 @@ public partial class Socket : Control
         // (M4 lead 3: looked up when the glyph or school changes, not each frame: the path string and the key cost 6 seats x 80 B a frame)
         var newArt = art;
         if (art == null || glyph != glyphKey || school != this.school)
-            newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
+            newArt = SeatPicture.Of(glyph, school);
         if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
@@ -656,14 +656,14 @@ public partial class Socket : Control
                 // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
                 bool short_ = shortNow;
                 var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                if (wiped) DrawTextureRect(Desat(gold), gr, false, new Color(0.5f, 0.5f, 0.5f));
+                if (wiped) DrawTextureRect(Desat(gold), gr, false, new Color(SeatLook.WipeIcon, SeatLook.WipeIcon, SeatLook.WipeIcon));
                 else DrawTextureRect(gold, gr, false, (tone *Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
                 if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
-                if (wiped) DrawTextureRect(Desat(art), new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(0.5f, 0.5f, 0.5f));
+                if (wiped) DrawTextureRect(Desat(art), new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(SeatLook.WipeIcon, SeatLook.WipeIcon, SeatLook.WipeIcon));
                 else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
@@ -685,9 +685,19 @@ public partial class Socket : Control
         if (!filled && locked && keyed) DrawLocked(c);
         if (filled && (evolved || ripe))
         {
-            float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
-            DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
-            DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+            if (ripe && !evolved)
+            {
+                float a = 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
+                DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+            }
+            else if (evolved)
+            {
+                // (bd-ui W13: evolved = an 8 px gold crown pip at 1:30 on the bezel, not a full ring: the stance ring shows whole)
+                var pc = c + new Vector2(Mathf.Sin(Mathf.Pi / 4), -Mathf.Cos(Mathf.Pi / 4)) * (hr + 1);
+                DrawColoredPolygon([pc + new Vector2(0, -4), pc + new Vector2(4, 0), pc + new Vector2(0, 4), pc + new Vector2(-4, 0)], new Color(0.04f, 0.03f, 0.02f, 0.9f));
+                DrawColoredPolygon([pc + new Vector2(0, -3), pc + new Vector2(3, 0), pc + new Vector2(0, 3), pc + new Vector2(-3, 0)], Style.Gold);
+            }
         }
         if (filled)
         {
@@ -1064,11 +1074,18 @@ public partial class KeyTag : Control
 
     public override void _Draw()
     {
+        DrawCap();
         if (Chip && underline)
         {
+            // (bd-ui W13: held down = a 1 px gold bar INSIDE the cap, under the numeral, drawn over the chip)
             var bx = ChipBox();
-            DrawRect(new Rect2(bx.Position.X - 1, bx.End.Y + 1, bx.Size.X + 2, 2), Style.Gold, true);
+            float w = Math.Min(bx.Size.X - 6, Math.Max(6, ChipTextW(Shown)));
+            DrawRect(new Rect2(Mathf.Round(bx.GetCenter().X - w / 2), bx.End.Y - 4, w, 1), Style.Gold, true);
         }
+    }
+
+    void DrawCap()
+    {
         if (Chip && padName != null) { DrawPadCap(); return; }
         if (Chip && mouse >= 0 && padName == null) { DrawMouse(); return; }
         if (Chip && padName == null && text != "")

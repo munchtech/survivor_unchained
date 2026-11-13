@@ -14,7 +14,7 @@ public static class AutoRowModel
     public const float Tile = 34, Gap = 6, HerRight = 910;
     /// <summary>Where the item tiles start with no stance block, the stance block's front disc's left edge, the gap from the
     /// Swap chip to the first item tile, and the right edge nothing is drawn past.</summary>
-    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 10, RightEdge = 1216;
+    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 10, RightEdge = 1263;   // (bd-ui W13: the keeper statue's left silhouette at the row's height, screen x 1226 in .shots/bdui_r5_items4.png, minus 8 screen px: design 1263 at HUD 0.85)
     /// <summary>The row control's left edge.</summary>
     public const float Floor = 716;
     public const int HerSlots = 3;
@@ -66,6 +66,9 @@ public static class AutoRowModel
     /// <summary>The set a NewStance card's tail goes to: set II (index 1), the back disc while set I is up.</summary>
     public const int CardSet = 1;
 
+    /// <summary>The level her auto slot opens at (a locked tile shows it): the first with her, the second at 7, the third at 10.</summary>
+    public static int OpensAt(int index) => index switch { <= 0 => 1, 1 => 7, _ => 10 };
+
     public enum Kind { Her, Item, More }
 
     /// <summary>One place in the row: its kind, its index (her: 0-2 left of the coin outward; item: its order in the bar;
@@ -75,7 +78,7 @@ public static class AutoRowModel
     /// <summary>Where the item tiles start: the Swap chip's right edge + 10 with the stance block shown, else 1012.</summary>
     public static float ItemStart(bool stanceShown, float swapRight) => stanceShown ? swapRight + SwapGap : RightStart;
 
-    /// <summary>How many item places fit from start with the last tile's right edge at or before 1216.</summary>
+    /// <summary>How many item places fit from start with the last tile's right edge at or before RightEdge.</summary>
     public static int ItemCapacity(float start) => Math.Max(0, (int)Math.Floor((RightEdge - start + Gap) / (Tile + Gap)));
 
     /// <summary>Her three places (always, left of the coin), then the item autos right of the stance block from itemStart:

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
 
@@ -40,6 +42,9 @@ public partial class LevelCard : Control
     public Func<float?> RowTop = () => null;
     /// <summary>bd-ui W6: the global top-middle of what opened (a key seat's cap, an auto tile, the stance disc), null: the coin.</summary>
     public Func<LevelCardSpec, Vector2?> TopOf = _ => null;
+    /// <summary>bd-ui W13: the global rects of the auto tiles and the stance discs, which the tail breaks around (3 px clear).</summary>
+    public Func<List<Rect2>> Avoid = () => new();
+
     /// <summary>Where it rises from (the coin's middle).</summary>
     public Vector2 From = new(960, 1042);
 
@@ -89,6 +94,14 @@ public partial class LevelCard : Control
         return (a, string.Join(" ", words[i..]));
     }
 
+    /// <summary>(bd-ui W13) Wrap, then narrow the body width by 10 px steps (never under 300) until the last line holds at least 3 words.</summary>
+    static (string, string) Balanced(string text, float room)
+    {
+        var (a, b) = Wrap(text, room);
+        for (float r = room - 10; b != "" && b.Split(' ').Length < 3 && r >= 300; r -= 10) (a, b) = Wrap(text, r);
+        return (a, b);
+    }
+
     static float TextW(Font f, string s, int size) => f.GetStringSize(s, HorizontalAlignment.Left, -1, size).X;
 
     /// <summary>A card begins: its words, glyph, chips and size, once.</summary>
@@ -109,7 +122,7 @@ public partial class LevelCard : Control
             string gk = SeatIcon.For(s.Skill, wd.Art);
             // (bd-ui W9: a NewAuto card shows its tile's drawing, the line glyph in the tile's colour, not the painting)
             glyph = s.Kind == LevelCardKind.NewAuto ? AutoRow.LineGlyph(gk, 78, ItemViews.SchoolColors[wd.School])
-                : s.Kind == LevelCardKind.NewKey ? UiArt.Icon("glyph_color", Glyphs.IconKey(gk)) ?? Glyphs.Texture(gk, 78, GlyphGold, line: true)
+                : s.Kind == LevelCardKind.NewKey ? SeatPicture.Of(gk, ItemViews.SchoolColors[wd.School])
                 : Glyphs.Texture(gk, 80, GlyphGold, line: true);
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }
@@ -147,7 +160,7 @@ public partial class LevelCard : Control
                 : TextW(Style.Ui, line, LineSize);
             // (bd-ui W8: at most 470 wide; a longer body wraps to two lines)
             float room = LevelCardPlace.MaxW - NameX - Pad;
-            if (s.Kind != LevelCardKind.LampLit && lineW > room) { (line, line2) = Wrap(line, room); lineW = Math.Max(TextW(Style.Ui, line, LineSize), line2 == "" ? 0 : TextW(Style.Ui, line2, LineSize)); }
+            if (s.Kind != LevelCardKind.LampLit && lineW > room) { (line, line2) = Balanced(line, room); lineW = Math.Max(TextW(Style.Ui, line, LineSize), line2 == "" ? 0 : TextW(Style.Ui, line2, LineSize)); }
             need = Math.Max(need, NameX + Math.Max(nameW + capW, lineW) + Pad);
         }
         float headW = TextW(Style.Display, header, HeadSize) + 2 * Pad;
@@ -261,8 +274,14 @@ public partial class LevelCard : Control
         {
             float m = Mathf.Round(tailX);
             var far = Rule with { A = 0.5f };
-            DrawRect(new Rect2(m - 2, h, 4, stem), new Color(0, 0, 0, 0.45f));
-            DrawPolygon([new(m - 1, h), new(m + 1, h), new(m + 1, h + stem), new(m - 1, h + stem)], [RuleGold, RuleGold, far, far]);
+            var gp = GetGlobalTransform().Origin;
+            var avoid = Avoid().Select(r => (r.Position.X - gp.X, r.Position.Y - gp.Y, r.End.X - gp.X, r.End.Y - gp.Y));
+            foreach (var (a0, a1) in LevelCardPlace.StemSpans(m, h, h + stem, avoid))
+            {
+                var c0 = RuleGold.Lerp(far, (a0 - h) / stem); var c1 = RuleGold.Lerp(far, (a1 - h) / stem);
+                DrawRect(new Rect2(m - 2, a0, 4, a1 - a0), new Color(0, 0, 0, 0.45f));
+                DrawPolygon([new(m - 1, a0), new(m + 1, a0), new(m + 1, a1), new(m - 1, a1)], [c0, c0, c1, c1]);
+            }
             DrawColoredPolygon([new(m - 7, h - 1), new(m, h - 7), new(m + 7, h - 1), new(m, h + 5)], new Color(0.035f, 0.028f, 0.02f));
             DrawColoredPolygon([new(m - 5, h - 1), new(m, h - 5), new(m + 5, h - 1), new(m, h + 3)], RuleGold);
         }
@@ -293,7 +312,7 @@ public partial class LevelCard : Control
                 DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, 2, true);
                 DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, 1, true);
             }
-            if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : -8), false);
+            if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : s.Kind == LevelCardKind.NewKey ? -7 : -8), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
             if (s.Kind != LevelCardKind.LampLit)
             {

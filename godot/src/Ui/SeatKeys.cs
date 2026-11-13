@@ -275,7 +275,7 @@ public partial class Socket
         if (bond != null)
         {
             if (bond.Visible != bd) bond.Visible = bd;
-            if (bd) bond.Modulate = new Color(1, 1, 1, 0.45f + 0.5f * breath);
+            if (bd) { bond.Modulate = new Color(1, 1, 1, 0.75f + 0.25f * breath); bond.Pulse = (float)(t % 0.8 / 0.8); bond.QueueRedraw(); }
         }
         if (Cap == null) return;
         bool vis = keyed;   // (bd-ui W7: a locked seat keeps its cap chip)
@@ -364,13 +364,13 @@ public partial class Socket
         return o;
     }
 
-    /// <summary>The cooling wipe (bd-ui W7): 60% black clockwise from 12 o'clock over the share not yet ready, a 2 px cream
-    /// edge from the middle to the rim at its front.</summary>
+    /// <summary>The cooling wipe (bd-ui W7, W13): 50% black over the share not yet ready, ending at 12 o'clock, a 2 px cream
+    /// edge from 0.6 r to the rim at its start (it sweeps clockwise as the seat readies).</summary>
     void DrawWipe(Vector2 c, float hr)
     {
         float share = SeatLook.WipeShare(ready);
         if (share <= 0.002f) return;
-        float a0 = -Mathf.Pi / 2, a1 = a0 + Mathf.Tau * share;
+        float a0 = SeatLook.WipeStart(share), a1 = -Mathf.Pi / 2 + Mathf.Tau;
         int n = Math.Max(3, (int)(64 * share) + 2);
         var pts = new Vector2[n + 1];
         pts[0] = c;
@@ -379,8 +379,9 @@ public partial class Socket
             float a = a0 + (a1 - a0) * i / (n - 1);
             pts[i + 1] = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr - 0.5f);
         }
-        DrawColoredPolygon(pts, new Color(0, 0, 0, 0.6f));
-        DrawLine(c, c + new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * (hr - 0.5f), new Color("#F2E6C8") with { A = 0.9f }, 2, true);
+        DrawColoredPolygon(pts, new Color(0, 0, 0, SeatLook.WipeAlpha));
+        var dir = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
+        DrawLine(c + dir * hr * SeatLook.EdgeFrom, c + dir * (hr - 0.5f), new Color("#F2E6C8") with { A = 0.9f }, 2, true);
     }
 
     /// <summary>The wait's seconds over a wiped icon: bold, 19 px, white, a 2 px dark outline (bd-ui W7).</summary>
@@ -451,6 +452,8 @@ public partial class SeatFx : Control
     readonly Mode mode;
     /// <summary>The held ring stood out past an ink gap, plain (held under the cost: judge r3c S6).</summary>
     public bool Wide;
+    /// <summary>Bond: the pulse ring's share of its 0.8 s (0 at the rim, 1 grown 6 px and gone).</summary>
+    public float Pulse;
     readonly float hr;
     public float Hr => hr;
     /// <summary>Ink: the glyph's white shape and the px it is shown across (the seat's gold inlay's).</summary>
@@ -552,6 +555,8 @@ public partial class SeatFx : Control
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, Style.Gold with { A = 0.55f });
                 DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Head with { A = 0.9f }, 2.5f, true);
                 DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.4f }, 4, true);
+                // (bd-ui W13: the break key's pulse: a ring growing 0 -> 6 px outward and fading, every 0.8 s)
+                DrawArc(c, hr + 5f + 6 * Pulse, 0, Mathf.Tau, 64, Head with { A = 0.7f * (1 - Pulse) }, 2, true);
                 break;
         }
     }

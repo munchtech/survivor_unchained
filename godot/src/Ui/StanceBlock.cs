@@ -18,10 +18,12 @@ public partial class StanceBlock : Control
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
     static readonly FontVariation NameFont = new() { BaseFont = Style.UiBold, SpacingGlyph = 1 };
     /// <summary>bd-ui W8: the swap name rises 10 px over 400 ms, holds to 1.0 s, fades over 300 ms.</summary>
-    public const double NameRise = 0.4, NameHold = 1.0, NameFade = 0.3, ReadyFlash = 0.15;
+    public const double NameRise = 0.4, NameHold = 1.0, NameFade = 0.3, ReadyFlash = 0.3;
     public const int NameSize = 16;
-    public const float R = AutoRowModel.StanceR, BackScale = AutoRowModel.StanceBackR / AutoRowModel.StanceR, BackDim = 0.65f, EaseLen = 0.18f, NameLen = 1.3f, GlyphPx = AutoRowModel.StanceGlyph, RingW = 3.5f;
+    public const float R = AutoRowModel.StanceR, BackScale = AutoRowModel.StanceBackR / AutoRowModel.StanceR, BackDim = 0.65f, EaseLen = 0.18f, NameLen = 1.3f, GlyphPx = AutoRowModel.StanceGlyph, RingW = 3f;
     static readonly Color Cream = new("#F2E6C8"), FieldIn = new("#6a5236"), FieldRim = new("#3b2c1d");
+    /// <summary>(bd-ui W13) The Swap chip sits 8 px right and 6 px down of where it was: the back disc's strike ring was hidden under it.</summary>
+    public const float SwapDX = 8, SwapDY = 6;
     static readonly Vector2 Back = new(AutoRowModel.StanceBack.X, AutoRowModel.StanceBack.Y);
     /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
     public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
@@ -54,7 +56,7 @@ public partial class StanceBlock : Control
         Size = new Vector2(1920, 1080);
         ZIndex = 2;
         AddChild(swapKey);
-        swapKey.Place(1080, Front.Y - Instrument.TagH / 2);
+        swapKey.Place(1080 + SwapDX, Front.Y - Instrument.TagH / 2 + SwapDY);
         Visible = false;
     }
 
@@ -188,9 +190,16 @@ public partial class StanceBlock : Control
             float k = Math.Min(1f, (float)(nameT / NameRise));
             float rise = 10 * (1 - (1 - k) * (1 - k));
             float fade = nameT <= NameHold ? 1 : (float)Math.Max(0, 1 - (nameT - NameHold) / NameFade);
-            var at = new Vector2(Front.X - 95, Front.Y - R - 6 - rise);
+            // (bd-ui W13: on a dark pill, black 55%, 5 x 2 px padding, 3 px corners; its bottom starts 4 px above the status row's top, then rises)
+            float tw = NameFont.GetStringSize(nameText, HorizontalAlignment.Left, -1, NameSize).X;
+            float asc = NameFont.GetAscent(NameSize), desc = NameFont.GetDescent(NameSize);
+            float bottom = AutoRowModel.ShelfTop(AutoRow.RowTop) - 4 - rise;
+            var pill = new Rect2(Front.X - tw / 2 - 5, bottom - (asc + desc + 4), tw + 10, asc + desc + 4);
+            var sb = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.55f * fade) };
+            sb.SetCornerRadiusAll(3);
+            DrawStyleBox(sb, pill);
+            var at = new Vector2(Front.X - 95, pill.Position.Y + 2 + asc);
             var dark = new Color(0.02f, 0.015f, 0.01f, 0.9f * fade);
-            DrawStringOutline(NameFont, at + new Vector2(0, 2), nameText, HorizontalAlignment.Center, 190, NameSize, 4, new Color(0, 0, 0, 0.5f * fade));
             DrawStringOutline(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, 2, dark);
             DrawString(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, nameColor with { A = fade });
         }
@@ -216,9 +225,10 @@ public partial class StanceBlock : Control
         if (isBack)
         {
             float rr = r + 1 + RingW / 2;
-            DrawArc(c, rr, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.5f * a), RingW, true);
+            var rc = set == 1 ? ColorOf(stance!.Id) : Cream;
+            DrawArc(c, rr, 0, Mathf.Tau, 48, rc with { A = 0.3f * a }, RingW, true);
             float sh = share[set];
-            if (sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), Cream with { A = a }, RingW, true);
+            if (sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), rc with { A = a }, RingW, true);
             double since = now - readyAt[set];
             if (readyAt[set] >= 0 && since < ReadyFlash) DrawArc(c, rr, 0, Mathf.Tau, 48, Colors.White with { A = (float)(1 - since / ReadyFlash) }, RingW, true);
             else if (readyAt[set] >= 0) readyAt[set] = -1;

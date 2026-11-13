@@ -177,6 +177,9 @@ public partial class AutoRow : Control
         return (t.Id, t.Slot, t.At.Kind == AutoRowModel.Kind.More, GetGlobalTransform() * Local(t));
     }
 
+    /// <summary>(bd-ui W13) Every tile's global rect (filled or not): the level card's tail breaks around them.</summary>
+    public List<Rect2> GlobalRects() { var xf = GetGlobalTransform(); return tiles.Select(t => xf * Local(t)).ToList(); }
+
     public override void _Draw()
     {
         foreach (var t in tiles)
@@ -206,6 +209,14 @@ public partial class AutoRow : Control
                 float fill = AutoRowModel.BarFill(t.Ready);
                 if (fill > 0.2f) DrawRect(new Rect2(track.Position, new Vector2(fill, track.Size.Y)), Cream with { A = 0.95f }, true);
                 DrawSetTransform(Vector2.Zero, 0, Vector2.One);
+            }
+            else if (t.Locked && t.At.Kind == AutoRowModel.Kind.Her)
+            {
+                // (bd-ui W13: the level it opens at, as a locked key shows "Lv 9": 11 px, 35%, centred)
+                var f = Vessel.Figures;
+                string lv = "Lv " + DgMeters.Figures(AutoRowModel.OpensAt(t.At.Index));
+                var ts = f.GetStringSize(lv, HorizontalAlignment.Left, -1, 11);
+                DrawString(f, new Vector2(Mathf.Round(r.GetCenter().X - ts.X / 2), Mathf.Round(r.GetCenter().Y + 4)), lv, HorizontalAlignment.Left, -1, 11, Cream with { A = 0.35f });
             }
             else if (more)
                 DrawString(Style.UiBold, new Vector2(r.Position.X, r.Position.Y + 21), $"+{t.At.Index}", HorizontalAlignment.Center, r.Size.X, 15, Style.RarityOf(4));
@@ -246,4 +257,12 @@ public static class DiscIcon
         if (ch?.Equipment[slot] is not { } it || SurvivorUnchained.Rpg.Items.Get(it.Def) is not { } def || def.Icon == "") return (null, null);
         return (def.Icon, ItemPhotos.Real(def.Icon));
     }
+}
+
+/// <summary>(bd-ui W13) The picture a skill's seat draws: its painting where there is one, else its line glyph in the school's
+/// colour. The seat (Instrument.Socket.Show) and the new-key card both call this, so they can never differ.</summary>
+public static class SeatPicture
+{
+    public static Texture2D? Of(string glyphKey, Color school, int px = 78) =>
+        UiArt.Icon("glyph_color", Glyphs.IconKey(glyphKey)) ?? Glyphs.Texture(glyphKey, px, school, line: true);
 }

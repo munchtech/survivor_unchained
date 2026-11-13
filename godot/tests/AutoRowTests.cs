@@ -11,7 +11,7 @@ public class AutoRowTests
     const float TopY = 1003, SeatY = 1042, SeatR = 35, Chip = 21;
 
     [Theory]
-    [InlineData(0, 3)] [InlineData(1, 4)] [InlineData(2, 5)] [InlineData(5, 8)] [InlineData(6, 8)] [InlineData(40, 8)]
+    [InlineData(0, 3)] [InlineData(1, 4)] [InlineData(2, 5)] [InlineData(6, 9)] [InlineData(7, 9)] [InlineData(40, 9)]
     public void The_row_holds_her_three_then_the_item_places_from_1012(int items, int places) =>
         Assert.Equal(places, AutoRowModel.Places(items).Count);
 
@@ -27,14 +27,14 @@ public class AutoRowTests
     }
 
     [Fact]
-    public void Item_autos_grow_right_from_1012_and_never_pass_1216()
+    public void Item_autos_grow_right_from_1012_and_never_pass_the_statue_edge_1263()
     {
         var p = AutoRowModel.Places(3);
         Assert.Equal(1012, p[3].X);
         Assert.Equal(p[3].X + 40, p[4].X);
         Assert.Equal(p[4].X + 40, p[5].X);
         foreach (float start in new[] { 1012f, 1100f, 1111f })
-            Assert.All(AutoRowModel.Places(9, start).Where(x => x.Kind != AutoRowModel.Kind.Her), x => Assert.True(x.X + 34 <= 1216 && x.X >= start));
+            Assert.All(AutoRowModel.Places(9, start).Where(x => x.Kind != AutoRowModel.Kind.Her), x => Assert.True(x.X + 34 <= 1263 && x.X >= start));
         Assert.All(AutoRowModel.Places(9).Where(x => x.Kind == AutoRowModel.Kind.Her), x => Assert.True(x.X < 1008));
     }
 
@@ -44,22 +44,22 @@ public class AutoRowTests
         Assert.Equal(1100, AutoRowModel.ItemStart(true, 1090));
         Assert.Equal(1012, AutoRowModel.ItemStart(false, 1090));
         Assert.Equal(1100, AutoRowModel.Places(1, AutoRowModel.ItemStart(true, 1090))[3].X);
-        Assert.Equal(5, AutoRowModel.ItemCapacity(1012));
-        Assert.Equal(3, AutoRowModel.ItemCapacity(1100));
+        Assert.Equal(6, AutoRowModel.ItemCapacity(1012));
+        Assert.Equal(4, AutoRowModel.ItemCapacity(1100));
     }
 
     [Theory]
-    [InlineData(6, 2)] [InlineData(7, 3)] [InlineData(9, 5)]
+    [InlineData(7, 2)] [InlineData(8, 3)] [InlineData(10, 5)]
     public void With_more_items_than_places_the_last_place_shows_plus_N(int items, int rest)
     {
         var p = AutoRowModel.Places(items);
-        Assert.Equal(AutoRowModel.Kind.Item, p[6].Kind);
-        Assert.Equal(AutoRowModel.Kind.More, p[7].Kind);
-        Assert.Equal(rest, p[7].Index);
-        // (3 places from the swap chip: two items and "+N")
+        Assert.Equal(AutoRowModel.Kind.Item, p[7].Kind);
+        Assert.Equal(AutoRowModel.Kind.More, p[8].Kind);
+        Assert.Equal(rest, p[8].Index);
+        // (4 places from the swap chip: three items and "+N")
         var q = AutoRowModel.Places(items, 1100);
         Assert.Equal(AutoRowModel.Kind.More, q[^1].Kind);
-        Assert.Equal(items - 2, q[^1].Index);
+        Assert.Equal(items - 3, q[^1].Index);
     }
 
     [Fact]

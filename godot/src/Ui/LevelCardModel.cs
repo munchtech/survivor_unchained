@@ -24,6 +24,30 @@ public static class LevelCardPlace
 
     /// <summary>The card's left x, top y, the tail's x (card space; the card's own centre when no target) and its length
     /// below the card (0 when the target is not below it).</summary>
+    /// <summary>(bd-ui W13) The spans of a tail (a vertical line at x from y0 to y1, drawn halfW each side) that stay clear of
+    /// the rects (left, top, right, bottom) by clear px on every side: where it would cross a tile or a disc it breaks. A rect
+    /// the tail only reaches (its top at or below y1: the target) is not avoided.</summary>
+    public static List<(float Y0, float Y1)> StemSpans(float x, float y0, float y1, IEnumerable<(float L, float T, float R, float B)> avoid, float clear = 3, float halfW = 2)
+    {
+        var cuts = new List<(float, float)>();
+        foreach (var (l, t, r, b) in avoid)
+        {
+            if (t >= y1 - 0.5f || b <= y0) continue;
+            if (x + halfW <= l - clear || x - halfW >= r + clear) continue;
+            cuts.Add((t - clear, b + clear));
+        }
+        cuts.Sort();
+        var l2 = new List<(float, float)>();
+        float at = y0;
+        foreach (var (c0, c1) in cuts)
+        {
+            if (c0 > at) l2.Add((at, Math.Min(c0, y1)));
+            at = Math.Max(at, c1);
+        }
+        if (at < y1) l2.Add((at, y1));
+        return l2;
+    }
+
     public static (float X, float Y, float TailX, float Stem) Compute(float w, float h, float foot, float? rowTop, (float X, float Y)? target)
     {
         float bottom = rowTop is { } r ? Math.Min(foot, r - Clear) : foot;

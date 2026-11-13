@@ -21,6 +21,19 @@ public class SeatLookTests
     [InlineData(2.0, 0f)]
     public void The_wipe_covers_the_share_not_ready(double ready, float share) => Assert.Equal((double)share, (double)SeatLook.WipeShare(ready), 4);
 
+    [Theory]
+    [InlineData(1f, -1.5707964f)]
+    [InlineData(0.75f, 0f)]
+    [InlineData(0.5f, 1.5707964f)]
+    [InlineData(0f, 4.712389f)]
+    public void The_wipe_starts_at_the_share_and_its_edge_sweeps_clockwise_as_the_seat_readies(float share, float start)
+    {
+        Assert.Equal((double)start, (double)SeatLook.WipeStart(share), 4);
+        Assert.True(SeatLook.WipeStart(0.4f) > SeatLook.WipeStart(0.6f));
+        Assert.Equal(0.5f, SeatLook.WipeAlpha);
+        Assert.Equal(0.7f, SeatLook.WipeIcon);
+    }
+
     [Fact]
     public void Desaturate_keeps_luma_and_pulls_chroma()
     {

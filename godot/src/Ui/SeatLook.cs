@@ -10,6 +10,13 @@ public static class SeatLook
     /// <summary>The share of the circle the cooling wipe covers, clockwise from 12 o'clock (the share not yet ready).</summary>
     public static float WipeShare(double ready) => (float)Math.Clamp(1 - ready, 0, 1);
 
+    /// <summary>(bd-ui W13) Where the wipe's dark wedge starts: it runs from here clockwise to 12 o'clock's full turn, so the
+    /// cream edge at its start sweeps clockwise as the seat readies (it ran backward, and its hand hit the seconds).</summary>
+    public static float WipeStart(float share) => -(float)Math.PI / 2 + (float)(2 * Math.PI) * (1 - share);
+
+    /// <summary>The wipe's wedge alpha, the icon's tint under it, and where its cream edge starts (share of the radius).</summary>
+    public const float WipeAlpha = 0.5f, WipeIcon = 0.7f, EdgeFrom = 0.6f;
+
     /// <summary>A colour pulled toward its own luma: keep = 1 whole, 0.6 sixty percent of its colour (Rec. 709 weights).</summary>
     public static (float R, float G, float B) Desaturate(float r, float g, float b, float keep)
     {

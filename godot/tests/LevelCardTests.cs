@@ -256,4 +256,21 @@ public sealed class LevelCardPlaceTests
         Assert.Equal(Act.Skill4, LevelCardPlace.CapAct(3));
         Assert.Equal(Act.Skill3, LevelCardPlace.CapAct(2));
     }
+
+    [Fact]
+    public void The_tail_breaks_3_px_clear_around_a_tile_it_would_cross()
+    {
+        var tile = (L: 860f, T: 100f, R: 894f, B: 134f);
+        var spans = LevelCardPlace.StemSpans(875, 40, 200, new[] { tile });
+        Assert.Equal(2, spans.Count);
+        Assert.Equal((40f, 97f), spans[0]);
+        Assert.Equal((137f, 200f), spans[1]);
+        // beside it (more than 3 + the tail's half width away) it runs whole
+        Assert.Single(LevelCardPlace.StemSpans(900, 40, 200, new[] { tile }));
+        // the target the tail only reaches is not avoided
+        Assert.Equal((40f, 100f), Assert.Single(LevelCardPlace.StemSpans(875, 40, 100, new[] { tile })));
+    }
+
+    [Fact]
+    public void An_auto_tile_opens_at_1_7_and_10() => Assert.Equal(new[] { 1, 7, 10 }, new[] { AutoRowModel.OpensAt(0), AutoRowModel.OpensAt(1), AutoRowModel.OpensAt(2) });
 }
