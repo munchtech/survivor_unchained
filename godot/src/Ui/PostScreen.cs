@@ -165,7 +165,7 @@ public partial class PostScreen : Overlay
         {
             var c = Style.H(6, Glyphs.Icon(GlyphOfSkill(id), 22, Style.GoldHi, true), Style.Label(SkillName(id), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false));
             c.MouseFilter = MouseFilterEnum.Stop;
-            c.TooltipText = $"{SkillName(id)}: {SkillText(id)}";
+            AttachLeanTip(c, panel, $"{SkillName(id)}: {SkillText(id)}", id);
             lean.AddChild(c);
         }
         v.AddChild(lean);
@@ -180,6 +180,37 @@ public partial class PostScreen : Overlay
             v.AddChild(held);
         }
         return panel;
+    }
+
+    /// <summary>A hover note for a "leans toward" glyph: opaque (the window's own ground), set above the glyph row and
+    /// clamped inside its own card, so it never lies over the hold pad below or shows its words through.</summary>
+    static void AttachLeanTip(Control target, Control card, string text, string id)
+    {
+        const float TipW = 360;
+        var tip = new PanelContainer { TopLevel = true, Visible = false, MouseFilter = MouseFilterEnum.Ignore, ZIndex = 20, CustomMinimumSize = new Vector2(TipW, 0) };
+        var sb = new StyleBoxFlat { BgColor = Kit.Ground with { A = 1f }, BorderColor = Kit.Edge };
+        sb.SetBorderWidthAll(1);
+        sb.SetCornerRadiusAll(3);
+        sb.SetContentMarginAll(10);
+        tip.AddThemeStyleboxOverride("panel", sb);
+        tip.AddChild(Style.Label(text, Style.Ui, 15, Kit.Ink, true));
+        card.AddChild(tip);
+        // dev flag (pictures): --hover-skill groundbreaker holds that glyph's note open
+        bool held = Args.Get("hover-skill") == id;
+        System.Action show = () =>
+        {
+            tip.Visible = true;
+            tip.ResetSize();
+            var size = tip.GetCombinedMinimumSize();
+            var c = card.GetGlobalRect();
+            float x = Mathf.Clamp(target.GlobalPosition.X, c.Position.X + 10, Mathf.Max(c.Position.X + 10, c.End.X - 10 - size.X));
+            float y = Mathf.Max(c.Position.Y + 4, target.GlobalPosition.Y - size.Y - 6);
+            tip.GlobalPosition = new Vector2(x, y);
+            tip.Size = size;
+        };
+        target.MouseEntered += show;
+        target.MouseExited += () => tip.Visible = held ? tip.Visible : false;
+        if (held) target.TreeEntered += () => target.GetTree().CreateTimer(0.3, true, false, true).Timeout += show;
     }
 
     /// <summary>A labelled line: the small caption, then its glyph and name, then the words from data under it.</summary>
