@@ -245,3 +245,4 @@ Rulings:
   the flake: baseline run 13 logged the array-index exception, and parsing the
   reports' `Calling` values confirmed the missing callings. It also occurs in
   green runs, independently of the fatal native-script race. Not fixed in this branch.
+- Coordinator, 13 Nov (merge b996c38d3): on current content the gather no longer throws: the merged suite checked 3,338 cards over all four callings (1,428 rows). The unchecked `Evolutions[0]` stays; it is latent, not losing coverage today.
