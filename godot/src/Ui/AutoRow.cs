@@ -16,6 +16,21 @@ public partial class AutoRow : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
     const float GlyphPx = 26;
+    /// <summary>(bd-ui judge r1, 4: the 256 px paintings drawn at 26 px without mipmaps sparkle into "speckled blobs")
+    /// the icon once resized to 2x its drawn size with Lanczos, cached by texture.</summary>
+    static readonly Dictionary<ulong, Texture2D> small = new();
+    static Texture2D? Small(Texture2D? tex)
+    {
+        if (tex == null) return null;
+        ulong id = tex.GetInstanceId();
+        if (small.TryGetValue(id, out var have)) return have;
+        var img = tex.GetImage();
+        if (img == null) return small[id] = tex;
+        if (img.IsCompressed()) img.Decompress();
+        int px = (int)(GlyphPx * 2);
+        if (img.GetWidth() > px) img.Resize(px, px, Image.Interpolation.Lanczos);
+        return small[id] = ImageTexture.CreateFromImage(img);
+    }
     static readonly Color Cream = new("#F2E6C8");
 
     sealed class Tile
@@ -96,7 +111,9 @@ public partial class AutoRow : Control
                     t.School = ItemViews.SchoolColors[w.School];
                     // (bd-ui W8: the seats' own icon source, Instrument.Socket.Show: the skill's painting, else its drawn line glyph)
                     string gk = Glyphs.ForSkill(w.Id, w.Art);
-                    t.Glyph = UiArt.Icon("glyph_color", Glyphs.IconKey(gk)) ?? Glyphs.Texture(gk, 78, t.School, line: true);
+                    // (bd-ui judge r1, 4: a painting at 26 px is mush even resized well: a tile shows the skill's drawn line glyph,
+                    // a crisp silhouette in its school's colour lifted toward cream, as the status marks do)
+                    t.Glyph = Glyphs.Texture(gk, (int)(GlyphPx * 2), t.School.Lerp(new Color("#F2E6C8"), 0.35f), 2.4f, line: true);
                     t.Rarity = p.Kind == AutoRowModel.Kind.Item ? itemRarity.GetValueOrDefault(w.Id, 4) : -1;
                     if (old.TryGetValue(w.Id, out var o)) { t.Ready = o.Ready; t.Last = o.Last; t.Fired = o.Fired; }
                 }
