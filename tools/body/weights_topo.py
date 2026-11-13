@@ -1136,6 +1136,13 @@ def fold_relax(out, glb, rig_name, n, ring, cfg):
     reg = np.zeros(len(sk.Tw), bool)
     for r in regs:
         reg |= sk.reg_tw[r]
+    # cfg "sharp": regions whose sharp creases (dihedral past 120 deg, degenerate slivers excepted) count as folds too:
+    # her raised arm's acromion ridge (round_39d fight:19-21, right shoulder at x -192, y 1454, z 21 mm) turns no
+    # triangle over but stands as a peak at the close camera
+    shr = np.zeros(len(sk.Tw), bool)
+    for r in cfg.get("sharp", []):
+        shr |= sk.reg_tw[r]
+    shr &= ~sk.degen
     E, nw, X = sk.Ew, sk.nw, sk.Xw0
     w = 1.0 / np.maximum(np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1), 1e-4)
     A = sp.coo_matrix((np.r_[w, w], (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), (nw, nw)).tocsr()
@@ -1156,8 +1163,8 @@ def fold_relax(out, glb, rig_name, n, ring, cfg):
         p.W = np.take_along_axis(p.D, p.J, 1)
         for lab, G, kd in src:
             V = md.pose(G, kd, "laws")[:sk.nb][sk.first]
-            nb_, _ = fc.inverted(sk.Xw0, V, sk.Tw, sk.Aw, sk.EPw)
-            m = nb_ & reg
+            nb_, sh_ = fc.inverted(sk.Xw0, V, sk.Tw, sk.Aw, sk.EPw)
+            m = (nb_ & reg) | (sh_ & shr)
             cnt += int(m.sum())
             bad[sk.Tw[m].ravel()] = True
         hist.append(cnt)
