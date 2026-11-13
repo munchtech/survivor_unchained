@@ -51,8 +51,17 @@ def mat(name, color=None, tex=None, rough=0.5):
     return m
 
 
-M_BODY = mat("body", tex=job["albedo"])
 M_CLOTH = mat("cloth", color=(0.32, 0.37, 0.45, 1), rough=0.6)
+_M = {}
+
+
+def part_mat(tag):
+    d = job["mats"].get(tag)
+    if d is None:
+        return M_CLOTH
+    if tag not in _M:
+        _M[tag] = mat(tag, color=tuple(d.get("color", (0.05, 0.05, 0.05, 1))), tex=d.get("tex"), rough=d.get("rough", 0.5))
+    return _M[tag]
 
 cam_d = bpy.data.cameras.new("cam")
 cam = bpy.data.objects.new("cam", cam_d)
@@ -94,8 +103,8 @@ def load(fn, material):
 ts = []
 for pose, pi in job["poses"].items():
     frames = [f for f in job["frames"] if f["pose"] == pose]
-    body = load(pi["files"]["body"], M_BODY)
-    cloth = [load(fn, M_CLOTH) for t, fn in pi["files"].items() if t != "body"]
+    body = [load(fn, part_mat(t)) for t, fn in pi["files"].items() if t not in ("top", "skirt")]
+    cloth = [load(fn, M_CLOTH) for t, fn in pi["files"].items() if t in ("top", "skirt")]
     ax, az_ = pi["aim_xz"]
     for f in frames:
         c = CAMS[f["cam"]]
@@ -120,6 +129,6 @@ for pose, pi in job["poses"].items():
             bpy.ops.render.render(write_still=True)
             ts.append(time.time() - t0)
             print("rendered", sc.render.filepath, f"{ts[-1]:.1f}s", flush=True)
-    for o in [body] + cloth:
+    for o in body + cloth:
         bpy.data.objects.remove(o)
 print(f"FRAMES {len(ts)} mean {sum(ts) / max(len(ts), 1):.1f}s")

@@ -82,14 +82,76 @@ def skin_piece(c, G):
     return out[c["first"]]
 
 
+def glb_images(path, od):
+    """Extract a glb's embedded images to od; returns {material name: png path of its base-color texture}."""
+    import struct
+    raw = Path(path).read_bytes()
+    jl = struct.unpack_from("<I", raw, 12)[0]
+    js = json.loads(raw[20:20 + jl])
+    off = 20 + jl
+    bl = struct.unpack_from("<I", raw, off)[0]
+    bin0 = raw[off + 8:off + 8 + bl]
+    out = {}
+    for m in js.get("materials", []):
+        t = m.get("pbrMetallicRoughness", {}).get("baseColorTexture")
+        if not t:
+            continue
+        img = js["images"][js["textures"][t["index"]]["source"]]
+        bv = js["bufferViews"][img["bufferView"]]
+        fn = od / f"_tex_{m['name']}.png"
+        fn.write_bytes(bin0[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]])
+        out[m["name"]] = str(fn)
+    return out
+
+
+def write_part(path, Vrest, V, T, UV):
+    """Posed points welded by rest position (smooth across UV seams), UVs per raw point."""
+    rep = weld(Vrest, 1e-6)
+    first = np.full(int(rep.max()) + 1, -1)
+    first[rep[::-1]] = np.arange(len(rep))[::-1]
+    Tw = rep[T]
+    keep = (Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 0] != Tw[:, 2])
+    write_obj(path, V[first], Tw[keep], UV, T[keep])
+
+
 def build_objs(rd, od, frames):
     rd = Path(rd)
     rig = json.loads((rd / "rig.json").read_text())
     p = posers.make_poser("lbs", str(rd / "body.glb"), rig)
     sk = fc.Skin(p)
     md = fc.Modes(p, rig)
-    body = p.glb.mesh(rig.get("body_mesh") or posers.guess_body(p.glb))
+    glb = p.glb
+    body = glb.mesh(rig.get("body_mesh") or posers.guess_body(glb))
     UV = body.UV.astype(float)[:sk.nb]
+    texs = glb_images(rd / "body.glb", od)
+    # the poser poses the body and the close meshes (the head); the other skinned head pieces (eyes, lashes, teeth,
+    # tongue) are skinned here by the same bone worlds, no shapes
+    posed_head = rig.get("close_meshes", [m.node for m in glb.meshes if m.node.endswith("Head")])
+    base = sk.nb
+    parts = []     # (tag, mesh, offset in the poser's points or None, material)
+    for nm in posed_head:
+        m = glb.mesh(nm)
+        if m is not None and m.J is not None and len(m.T):
+            parts.append((nm, m, base))
+            base += len(m.P)
+    for m in glb.meshes:
+        if m.J is not None and m.node != body.node and m.node not in posed_head and len(m.T) and m.node.endswith(posers.HEAD_PARTS):
+            parts.append((m.node, m, None))
+    mats = {}
+    for nm, m, _ in parts:
+        mn = m.materials[0]
+        low = nm.lower()
+        d = {"rough": 0.5}
+        if "lashes" in low or "brow" in low:
+            d.update(color=[0.02, 0.015, 0.015, 1], rough=0.8)
+        elif mn in texs:
+            d.update(tex=texs[mn], rough=0.1 if "eyes" in low else 0.5)
+        elif nm in posed_head:
+            d.update(tex=str(ALBEDO))
+        else:
+            d.update(color=[0.05, 0.05, 0.05, 1])
+        mats[nm] = d
+    mats["body"] = {"tex": str(ALBEDO), "rough": 0.5}
     cl = load_clothes(p)
     need = {f[0] for f in frames}
     poses = {}
@@ -110,12 +172,24 @@ def build_objs(rd, od, frames):
         keep = (T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 0] != T[:, 2])
         write_obj(od / f"_{stem}_body.obj", Vw, T[keep], UV, sk.T[keep])
         files = {"body": f"_{stem}_body.obj"}
+        S = G @ p.skel.ibm
+        for nm, m, off in parts:
+            if off is not None:
+                Vp = V[off:off + len(m.P)]
+            else:
+                Ph = np.c_[m.P.astype(float), np.ones(len(m.P))]
+                Vp = np.zeros((len(Ph), 3))
+                Wn = m.W / np.maximum(m.W.sum(1, keepdims=True), 1e-12)
+                for k in range(m.J.shape[1]):
+                    Vp += Wn[:, k:k + 1] * np.einsum("nij,nj->ni", S[m.J[:, k]][:, :3, :], Ph)
+            write_part(od / f"_{stem}_{nm}.obj", m.P.astype(float), Vp, m.T, m.UV.astype(float))
+            files[nm] = f"_{stem}_{nm}.obj"
         for tag, c in cl.items():
             write_obj(od / f"_{stem}_{tag}.obj", skin_piece(c, G), c["T"])
             files[tag] = f"_{stem}_{tag}.obj"
         ph = G[pelvis][:3, 3]
         info[label] = {"files": files, "aim_xz": [float(ph[0]), float(ph[2])]}
-    return info, bool(cl)
+    return info, bool(cl), mats
 
 
 def main(argv=None):
@@ -132,9 +206,9 @@ def main(argv=None):
     od.mkdir(parents=True, exist_ok=True)
     frames = [tuple(s.split("/")) for s in a.frames.split(",")]
     t0 = time.time()
-    info, clothed = build_objs(rd, od, frames)
+    info, clothed, mats = build_objs(rd, od, frames)
     print(f"posed {len(info)} poses in {time.time() - t0:.0f} s", flush=True)
-    job = {"name": name, "dir": str(od), "albedo": str(ALBEDO), "clothed": clothed, "poses": info,
+    job = {"name": name, "dir": str(od), "albedo": str(ALBEDO), "clothed": clothed, "mats": mats, "poses": info,
            "frames": [{"pose": f[0], "az": f[1], "cam": f[2]} for f in frames]}
     (od / "job.json").write_text(json.dumps(job, indent=1))
     if a.no_render:
@@ -151,7 +225,7 @@ def main(argv=None):
     finally:
         subprocess.call([py, str(REPO / "tools/turn.py"), "give", "blender"])
     sheet(od, name, job)
-    for f in od.glob("_*.obj"):
+    for f in list(od.glob("_*.obj")) + list(od.glob("_tex_*.png")):
         f.unlink()
 
 
