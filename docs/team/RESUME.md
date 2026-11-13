@@ -27,6 +27,8 @@
 
 **Disk:** 42.6 GB free on C: at the start, under CLAUDE.md's 50 GB guard. The sweep found only `body-p1b` (8.8 GB, 41 commits unmerged) and `films-p9` (8.7 GB, clean, 9 days) - neither removable by rule 1. So these five code lanes take worktrees **without** the 3.3 GB `.godot/imported` seed (`wt_new.ps1 -NoImport`; no lane here shoots pictures except bd-ui, which gets the seed), about 5 GB each instead of 9.
 
+**LIVE (13 Nov, owner said "Go"):** wave 1 spawned as background subagents of coordinator #9 (session "Build direction coordinator"), each in its own `-NoImport` worktree with its brief in `tools/scratch/coordinator/briefs/bd/` (`common.md` + `keys.md` / `gear.md` / `ranks.md`): **bd-keys** `a086f73603d42c614` (su-lead-high, high), **bd-gear** `a1dadd1e78ca944ca` (su-lead-sonnet), **bd-ranks** `aa18ff9b543458297` (su-lead-high, medium). Each ends with `MR READY <branch>@<sha>`; the coordinator merges one at a time (suite green on the merged tip, push, `wt_remove.ps1` in the same turn). Wave 2 (bd-sockets, bd-ui) starts once bd-keys and bd-gear are merged. Disk after wave 1's worktrees: 33.5 GB. Weekly usage at the start: 72% of all models (resets 15 Nov 05:00 UTC), so a lane may hit the limit before it lands: commit-as-you-go keeps its work.
+
 **Done =** each lane merged to integration with `dotnet test` green in `godot/tests` (baseline 2349+ passed / 0 failed / 11 skipped), its worktree removed in the same turn as the merge, and this block updated.
 
 
