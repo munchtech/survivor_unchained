@@ -30,7 +30,12 @@ public partial class GemSocket : Control
             int px = (int)Mathf.Round(44 * s);
             var pic = ItemPhotos.Icon(key, px, GemLook.Of(gem).Lightened(0.25f));
             pic.Position = new Vector2((size - px) / 2f, (size - px) / 2f);
-            pic.Modulate = new Color(1, 1, 1, look == Look.Closed ? 0.4f : 1f);
+            if (look == Look.Closed)
+            {
+                // kept but closed: the stone at 45%, drawn toward grey
+                var sh = new Shader { Code = "shader_type canvas_item; void fragment(){ vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.3, 0.59, 0.11)); COLOR = vec4(mix(c.rgb, vec3(g), 0.75), c.a * 0.45); }" };
+                pic.Material = new ShaderMaterial { Shader = sh };
+            }
             AddChild(pic);
         }
     }

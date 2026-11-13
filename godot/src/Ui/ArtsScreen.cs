@@ -519,7 +519,7 @@ public partial class ArtsScreen : Overlay
         if (SocketModel.Halves(w.Id) is { } halves) { UnionSockets(d, ch, halves, w.Id); return; }
         int rank = SkillBook.RankOf(ch, w.Id), open = Supports.SocketsAt(rank), n = Supports.File.Sockets.Ranks.Count;
         d.AddChild(Kit.Head("Sockets", SocketModel.Note(rank)));
-        var wells = Style.H(18);
+        var wells = Style.H(8);
         for (int i = 0; i < n; i++)
         {
             int idx = i;
@@ -529,6 +529,7 @@ public partial class ArtsScreen : Overlay
             var well = new GemSocket(look, gem);
             var col = Style.V(4, well);
             col.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+            col.CustomMinimumSize = new Vector2(130, 0); // a fixed column, so the wells sit in the same places in every state
             if (isOpen)
             {
                 well.Clickable();
@@ -544,9 +545,8 @@ public partial class ArtsScreen : Overlay
                 col.AddChild(Style.Label($"at rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
                 if (gem != null)
                 {
-                    var kept = Style.Label($"kept; adds nothing below rank {at}", Style.TextItalic, 13, Kit.Dim, true, HorizontalAlignment.Center);
-                    kept.CustomMinimumSize = new Vector2(150, 0);
-                    col.AddChild(kept);
+                    col.AddChild(Style.Label(gem.Name, Style.UiBold, 14, Kit.Ink2, false, HorizontalAlignment.Center));
+                    col.AddChild(Style.Label($"kept, adds nothing\nbelow rank {at}", Style.TextItalic, 13, Kit.Dim, false, HorizontalAlignment.Center));
                 }
             }
             wells.AddChild(col);
