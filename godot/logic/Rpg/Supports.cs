@@ -108,4 +108,15 @@ public static class Supports
                 foreach (var (k, v) in g.Effects) sum[k] = sum.GetValueOrDefault(k) + v;
         return sum;
     }
+
+    /// <summary>(bd-sockets) What the battle reads (Battle.WearSupports): a skill's gems by its id and rank in the fight;
+    /// a Union's weapon takes both halves' gems.</summary>
+    public static Func<string, int, IReadOnlyDictionary<string, double>> SourceFor(CharacterData ch) => (id, rank) =>
+    {
+        var u = Content.Unions.All.FirstOrDefault(x => x.Into == id);
+        if (u == null) return EffectsFor(ch.Gems, id, rank);
+        var sum = EffectsFor(ch.Gems, u.A, rank);
+        foreach (var (k, v) in EffectsFor(ch.Gems, u.B, rank)) sum[k] = sum.GetValueOrDefault(k) + v;
+        return sum;
+    };
 }

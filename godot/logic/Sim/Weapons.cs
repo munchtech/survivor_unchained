@@ -18,8 +18,21 @@ public sealed class WeaponMods
 /// field. Nothing here aims or fires on input - the survivor's whole job is
 /// where they stand.
 /// </summary>
+/// <summary>What a skill's socketed support gems add besides its numbers (Battle.RewearSupport).</summary>
+public sealed class SupportFx
+{
+    public readonly WeaponMods Mods = new();
+    /// <summary>Stun seconds per firing, bleed (share of the blow), block chance while it plays, extra pulses.</summary>
+    public double Stun, Bleed, Block;
+    public int Echo;
+}
+
 public sealed class WeaponInst
 {
+    /// <summary>Its socketed gems' effects (null: none), and until when a cast of it counts as "playing" for Block.</summary>
+    public SupportFx? Support;
+    public double SupportPlayUntil;
+    public int SupportStunKey = -1;
     public readonly string Id;
     public readonly WeaponDef Def;
     public int Rank;
@@ -579,7 +592,12 @@ public static partial class Firing
         if (fired) Blows.Count(ref w.BlowN, ref w.BlowPart, cw);
         b.HandEndCast(w, fired);
         if (fired) { w.HeavyCast = heavy; w.CastW = cw; }
-        if (fired && cw > 0 && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
+        if (fired && w.Support is { Block: > 0 }) w.SupportPlayUntil = b.Time + 0.6;
+        {
+            // (bd-sockets) an Echo gem adds a pulse each firing (not to a pulse's own refiring)
+            int pulses = (w.Wick is { Pulses: > 1 } pw ? pw.Pulses - 1 : 0) + (!b.Refiring ? w.Support?.Echo ?? 0 : 0);
+            if (fired && cw > 0 && pulses > 0) { w.PulseLeft = pulses; w.PulseT = w.Wick is { Pulses: > 1 } pg ? pg.PulseGap : 0.3; }
+        }
         b.ArcanistAfterCast(w, fired);
         if (b.Lamps.Board) b.BoardAfterFire(w, fired);
         return fired;
