@@ -34,7 +34,7 @@ namespace SurvivorUnchained.Sim;
  *     and spends all of it; its key heaves at full strength from its cost and with what she has from half its cost.
  *   - (bd-keys) Pacing is per skill, in its press record (skills.json): a builder fills (the basic attack, Sunder), a
  *     spender spends (Dawnpulse, Groundbreaker), and the rest run on their own cooldowns with no cost (Heroic Leap,
- *     Shield Charge). A stance changes no cost; its blows fill as any blow does. ResolvePacingTests holds the mix.
+ *     Shield Charge). A stance changes no cost; its blows fill as any blow does. KeyBarTests.Resolve_pacing_is_per_skill holds the mix.
  */
 /// <summary>The meter's numbers (data/content/resolve.json).</summary>
 public sealed class ResolveDef
