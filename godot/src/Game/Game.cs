@@ -327,6 +327,10 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
         // (bd-ui2) --road ID: that road of her calling walked (after --veteran, which walks the first), for pictures of the road page.
         if (Args.Get("road") is string roadId) LampBook.ChooseRoad(Journey.Ch, roadId);
+        // (bd-ui2) --unequip amulet,offhand,ring2,feet: those places emptied (after --veteran dresses), for pictures of empty places.
+        if (Args.Get("unequip") is string une)
+            foreach (var n in une.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                if (Enum.TryParse<EquipSlot>(n, true, out var us)) Journey.Ch.Equipment[us] = null;
         // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)

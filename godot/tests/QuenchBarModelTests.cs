@@ -43,11 +43,19 @@ public class QuenchEffectsTests
     public void One_shared_grade_reads_from_to()
     {
         var e = QuenchBarModel.Effects(new[] { 2, 2 }, 3, 4, 2, 2, 2, G);
-        Assert.Equal("III -> V", e["perfect"]);
-        Assert.Equal("III -> IV", e["up"]);
+        Assert.Equal("III › V", e["perfect"]);
+        Assert.Equal("III › IV", e["up"]);
         Assert.Equal("stays III", e["nothing"]);
-        Assert.Equal("III -> II", e["down"]);
-        Assert.Equal("III -> I", e["ruin"]);
+        Assert.Equal("III › II", e["down"]);
+        Assert.Equal("III › I", e["ruin"]);
+    }
+
+    [Fact]
+    public void Ruin_that_lands_where_a_grade_lost_does_says_floor()
+    {
+        var e = QuenchBarModel.Effects(new[] { 1, 1 }, 3, 4, 2, 2, 2, G);
+        Assert.Equal("II › I", e["down"]);
+        Assert.Equal("II › I · floor", e["ruin"]);
     }
 
     [Fact]

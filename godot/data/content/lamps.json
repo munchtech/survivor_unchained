@@ -187,7 +187,7 @@
   },
   {
    "id": "bell_of_the_morning",
-   "icon": "shield",
+   "icon": "watch_bell",
    "name": "Bell of the Morning",
    "calling": "warden",
    "road": "bulwark",
@@ -223,7 +223,7 @@
   },
   {
    "id": "sixty_on_the_wall",
-   "icon": "aegis",
+   "icon": "wall",
    "name": "Sixty on the Wall",
    "calling": "warden",
    "road": "bulwark",
