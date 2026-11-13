@@ -2362,8 +2362,16 @@ public sealed partial class Battle
         foreach (var pr in Projectiles.Items)
             if (pr.Alive && pr.Lob && pr.Owner == Side.Enemy) yield return (pr.LandX, pr.LandZ, 1.6, pr.Life, pr.Life - pr.Age, pr.Damage);
     }
-    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
-    public void CancelBlows() { blows.Clear(); if (tells.Count > 0 || Player.RootT > 0) CancelTells(); }
+    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint), and its mark with it: the
+    /// ground and the HUD hear an Off for each, so no warning outlives the blow it warned of (SU-067).</summary>
+    public void CancelBlows()
+    {
+        foreach (var b in blows)
+            if (!b.OwnMark)
+                Events.Emit(new Ev.Telegraph { Id = b.MarkId, Tell = b.Tell, Phase = TellPhase.Off, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, Radius = b.Radius, Hostile = true });
+        blows.Clear();
+        if (tells.Count > 0 || Player.RootT > 0) CancelTells();
+    }
 
     /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
     /// if they are still in its shape (a blow slipped by a dash in time is a
