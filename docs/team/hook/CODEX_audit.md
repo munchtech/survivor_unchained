@@ -179,3 +179,25 @@ Rulings:
 - **SU-074 S4** `src/Ui/GameHud.cs:1135` the old passive renderer after `return DgMeters.Passive(...)` is unreachable. Fix: delete it. Status: fixed 8af8fd9bc (deleted). Engine-side, no xUnit.
 - **L1 S3** `logic/Sim/SkillNumbers.cs` `Battle.BuildStamp` left out the reaver Hand's below-half area bonus (and the bound storm's reach once enough are bound), so a card's radius stayed stale when either flipped. Fix: the stamp hashes both flips. Status: fixed 00859634e (BuildStampTests.The_reaver_hand_flipping_below_half_moves_the_stamp).
 - **L2 S3** `logic/Sim/Tells.cs` a ring's root asked only DashT and Leap, so she was rooted through i-frames from anything else. Fix: the root asks the shared `ControlReaches` rule (a dash's i-frames outlast its 0.2 s, so dashing through is still spared). Status: fixed 00859634e (AvoidedSlowTests.A_ring_does_not_root_her_while_she_is_beyond_control).
+
+## Installment 12 (12 November): SU-075..SU-083
+
+Hit-sized procs, the Hand's ground ring, her poison, the blessings' status gates, chests and draft guarantees. Every cited line was checked at 9e61bcbcb (integration; su_audit_copy is the same code).
+
+Rulings:
+- **A proc sized from her hit is part of that hit (SU-078).** Her side (global and calling multipliers, crit included) is already in the hit and is not applied again; each target's own defenses and state apply once per target; a proc does not roll a second crit. Flat and weapon-sized procs are unchanged. One explicit flag for this (`HitOpts.FromHit`), not the tick-oriented `Resolved` reused blindly.
+- **An effect's origin is explicit (SU-083).** Each proc says where it bursts (her or the target); Corran's ring is around her.
+- **Unused chest slots are not lost (SU-081).** One draught (the 30% heal, once) plus 25 gold for every slot left; the chest shows it as one line with the total.
+- **A draft keeps its size (SU-082).** Guarantees are resolved inside the final card count and checked against the returned list; never a 4th card. If they can't all fit, a written priority order decides.
+- **A status counts for blessings if the build can actually apply it now (SU-080),** from the same rules that apply it (active lamps, Hand, board rules), not a parallel list.
+- **Build changes reconcile both ways (SU-076/077):** dynamic contributions and caps follow the current lamps and Hand; on shrink the newest live grounds stay.
+
+- **SU-075 S2** `logic/Sim/Hands.cs:175` the Hand's ground ring holds pooled `GroundZone` refs; an expired one is released without clearing its slot, and a reused object still reads `Alive && Credit == "hand"`, so laying a ground releases a fresh one (fill 12, expire, refill 12: 6 stay). The ground rite (BoardRules.cs:336) shares `LayHandGround`. Verified. Status: open.
+- **SU-076 S3** `logic/Sim/ReaverLamps.cs:59` Chainbound's dynamic armor (`lamp:bound.armor`) is never removed when a layout without `bound.armor` replaces it (the tick skips the block). Verified. Status: open.
+- **SU-077 S3** `logic/Sim/Hands.cs:173` the ring is sized once from the cap: lighting More Hearths (12 -> 16) or putting it out never resizes it. Verified. Status: open.
+- **SU-078 S2** `logic/Sim/Battle.cs:3362/3409/3467/3477` a hit-sized proc (`Basis.Hit`: damage x `ctx.Damage`, the resolved hit) goes back through `HitEnemy`, which applies `Stats.DamageMult`, the calling multipliers and a crit roll again (global x2 quadruples it); it also carries the first target's state (mark, resists) to every other target. Paths: nova (Corran's Sword, Ford-Warden's Evening Chain), chain (Static Charge, Spark Storm, The Tempest), explosion (Fracture, Overload, Frostfire Comet), scheduled strike (Arcweb's Skycaller), and missiles (Starfall's). Verified. Status: open.
+- **SU-079 S2** `logic/Sim/Battle.cs:1885` her `PoisonDps = Max(old, new)` survives natural expiry and the antidote (Journey.cs:544 clears only the time), so a weak bite restarts poison at an old strong rate. Verified. Status: open.
+- **SU-080 S2** `logic/Sim/LevelUp.cs:116` `BuildStatuses` ignores statuses laid by lamp rules and the Hand (ArcanistLamps 267/269/276, StalkerLamps 203, Hands 183, BoardRules 252/272/290), so status-gated blessings (Death's Due, Shatter, Deep Chill...) stay ineligible. Verified. Status: open.
+- **SU-081 S2** `logic/Sim/LevelUp.cs:658` `OpenChest` breaks after one fallback when nothing can rank up: a 3- or 5-slot chest gives one 25 gold. Verified. Status: open.
+- **SU-082 S3** `logic/Sim/LevelUp.cs:561` the advancement guarantee appends a 4th card when the protected slots are full (catalyst and new-weapon guarantees), and `Take(3)` drops it. Verified. Status: open.
+- **SU-083 S2** `logic/Sim/Battle.cs:3463` Corran's Sword's ring ("a ring of steel round you", items.json:1484) bursts on the struck enemy: a proc's origin is always the event's place. Verified. Status: open.
