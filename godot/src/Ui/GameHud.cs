@@ -774,7 +774,7 @@ public partial class GameHud : CanvasLayer
             {
                 if (i >= socks.Length) break;
                 socks[i].Unkeyed();
-                socks[i++].Show(w.Id, Glyphs.ForSkill(w.Id, w.Art), ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), w.Timer);
+                socks[i++].Show(w.Id, SeatIcon.For(w.Id, w.Art), ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), w.Timer);
             }
             for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
         }
@@ -1649,7 +1649,7 @@ public partial class GameHud : CanvasLayer
             if (i >= socks.Length) break;
             if (!Weapons.All.TryGetValue(id, out var wd)) continue;
             socks[i].Unkeyed();
-            socks[i++].Show(id, Glyphs.ForSkill(id, wd.Art), ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
+            socks[i++].Show(id, SeatIcon.For(id, wd.Art), ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
         }
         for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
     }
@@ -1799,6 +1799,7 @@ public partial class GameHud : CanvasLayer
     /// (w.Slot, w.Slot2: never b.Weapons' order) with its key's kind. A union shows on both its keys' seats: the first
     /// key the union itself, the second its other part (Bladestorm: the Sunder) when it has one. Values only, each
     /// frame; the seats redraw only on change.</summary>
+    readonly bool[] bondLogged = new bool[8];
     void CampaignSeats(Battle b, int level)
     {
         var socks = irons.Sockets;
@@ -1816,7 +1817,7 @@ public partial class GameHud : CanvasLayer
             var shown = second && w.Half != null ? w.Half : w;
             // (a channel running keeps its well lit)
             double ready = w.Channeling && !second ? 1 : b.WeaponReady(shown);
-            s.Show(shown.Id, Glyphs.ForSkill(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
+            s.Show(shown.Id, SeatIcon.For(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
             // (M4 lead 14, r3c M3: a kindled key's riposte, flare or command spends nothing: no arc; its "now" heaves from
             // half the cost: the floor)
             bool now = w.KindledNow && w.KindleKey == KindlePress.Now;
@@ -1824,6 +1825,9 @@ public partial class GameHud : CanvasLayer
             int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
             // (side by side: not across the coin, which stands between seats 1 and 2)
             bool adjacent = other >= 0 && Math.Abs(other - k) == 1 && Math.Min(other, k) != 1;
+            bool bondNow = second ? w.Channeling || b.Time < w.BreakUntil : b.BreaksAStorm(w);
+            // (bd-ui W9: once on change, under --dev-log or --press: does the seat get its Bond?)
+            if (bondLogged[k] != bondNow && (Args.Has("dev-log") || Args.Has("press"))) { bondLogged[k] = bondNow; GD.Print($"seat {k} ({shown.Id}): bond {bondNow} t={b.Time:0.00}"); }
             s.Feed(new Socket.SeatState
             {
                 Kind = w.KindledNow ? Socket.SeatKind.Kindled : !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
@@ -1836,7 +1840,7 @@ public partial class GameHud : CanvasLayer
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,
                 // (bd-ui) a union's second key in its storm, or (bd-sockets) the key that breaks her own storm (Sunder breaks Bladestorm)
-                Bond = second ? w.Channeling || b.Time < w.BreakUntil : b.BreaksAStorm(w),
+                Bond = bondNow,
                 Tint = tint,
                 CostNum = (int)Math.Ceiling(cost),
             });

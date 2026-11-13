@@ -106,8 +106,10 @@ public partial class LevelCard : Control
         {
             name = wd.Name;
             // (bd-ui W8: the seat's own icon source, Instrument.Socket.Show: the skill's painting, else its gold line glyph)
-            string gk = Glyphs.ForSkill(s.Skill, wd.Art);
-            glyph = s.Kind is LevelCardKind.NewKey or LevelCardKind.NewAuto ? UiArt.Icon("glyph_color", Glyphs.IconKey(gk)) ?? Glyphs.Texture(gk, 78, GlyphGold, line: true)
+            string gk = SeatIcon.For(s.Skill, wd.Art);
+            // (bd-ui W9: a NewAuto card shows its tile's drawing, the line glyph in the tile's colour, not the painting)
+            glyph = s.Kind == LevelCardKind.NewAuto ? AutoRow.LineGlyph(gk, 78, ItemViews.SchoolColors[wd.School])
+                : s.Kind == LevelCardKind.NewKey ? UiArt.Icon("glyph_color", Glyphs.IconKey(gk)) ?? Glyphs.Texture(gk, 78, GlyphGold, line: true)
                 : Glyphs.Texture(gk, 80, GlyphGold, line: true);
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }

@@ -264,7 +264,7 @@ public partial class Instrument : Control
             int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
             // (c3: filled at rank 3 and coming back, a quarter, half or three quarters ready by its place)
             double ready = c.StartsWith("c") ? 0.25 + 0.25 * (i % 3) : 1;
-            Sockets[i].Show(d.Id, Glyphs.ForSkill(d.Id, d.Art), ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
+            Sockets[i].Show(d.Id, SeatIcon.For(d.Id, d.Art), ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
         }
     }
 }

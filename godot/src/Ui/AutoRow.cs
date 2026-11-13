@@ -33,6 +33,9 @@ public partial class AutoRow : Control
     }
     static readonly Color Cream = new("#F2E6C8");
 
+    /// <summary>(bd-ui W9) An auto's line glyph: the tile's and the NewAuto card's one drawing and colour rule (school lifted toward cream).</summary>
+    public static Texture2D? LineGlyph(string key, int px, Color school) => Glyphs.Texture(key, px, school.Lerp(Cream, 0.35f), 2.4f, line: true);
+
     sealed class Tile
     {
         public AutoRowModel.Place At;
@@ -110,10 +113,10 @@ public partial class AutoRow : Control
                     t.Id = w.Id; t.Slot = w.Slot;
                     t.School = ItemViews.SchoolColors[w.School];
                     // (bd-ui W8: the seats' own icon source, Instrument.Socket.Show: the skill's painting, else its drawn line glyph)
-                    string gk = Glyphs.ForSkill(w.Id, w.Art);
+                    string gk = SeatIcon.For(w.Id, w.Art);
                     // (bd-ui judge r1, 4: a painting at 26 px is mush even resized well: a tile shows the skill's drawn line glyph,
                     // a crisp silhouette in its school's colour lifted toward cream, as the status marks do)
-                    t.Glyph = Glyphs.Texture(gk, (int)(GlyphPx * 2), t.School.Lerp(new Color("#F2E6C8"), 0.35f), 2.4f, line: true);
+                    t.Glyph = LineGlyph(gk, (int)(GlyphPx * 2), t.School);
                     t.Rarity = p.Kind == AutoRowModel.Kind.Item ? itemRarity.GetValueOrDefault(w.Id, 4) : -1;
                     if (old.TryGetValue(w.Id, out var o)) { t.Ready = o.Ready; t.Last = o.Last; t.Fired = o.Fired; }
                 }

@@ -19,17 +19,17 @@ public class SeatLookTests
     [InlineData(0.0, 1f)]
     [InlineData(-1.0, 1f)]
     [InlineData(2.0, 0f)]
-    public void The_wipe_covers_the_share_not_ready(double ready, float share) => Assert.Equal(share, SeatLook.WipeShare(ready), 4);
+    public void The_wipe_covers_the_share_not_ready(double ready, float share) => Assert.Equal((double)share, (double)SeatLook.WipeShare(ready), 4);
 
     [Fact]
     public void Desaturate_keeps_luma_and_pulls_chroma()
     {
         var (r, g, b) = SeatLook.Desaturate(1f, 0f, 0f, 0.6f);
-        Assert.Equal(0.2126f + 0.7874f * 0.6f, r, 4);
-        Assert.Equal(0.2126f * 0.4f, g, 4);
+        Assert.Equal((double)(0.2126f + 0.7874f * 0.6f), (double)r, 4);
+        Assert.Equal((double)(0.2126f * 0.4f), (double)g, 4);
         var (r1, g1, b1) = SeatLook.Desaturate(0.3f, 0.5f, 0.7f, 1f);
         Assert.Equal((0.3f, 0.5f, 0.7f), (r1, g1, b1));
         var (r0, g0, b0) = SeatLook.Desaturate(0.3f, 0.5f, 0.7f, 0f);
-        Assert.Equal(r0, g0, 4); Assert.Equal(g0, b0, 4);
+        Assert.Equal((double)r0, (double)g0, 4); Assert.Equal((double)g0, (double)b0, 4);
     }
 }
