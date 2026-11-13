@@ -1926,40 +1926,9 @@ public static class People
         if (src.ResourceName == "skin_head" && who == "heroine")
         {
             if (HeadPaint(look.FaceShape) is Texture2D painted) m.SetShaderParameter("paint", painted);
-            // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
-            m.SetShaderParameter("mouth_in", 1f);
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
-            // (her eyes, brows and lips deepened when her face is small on
-            // screen, so a face still reads from the game's camera)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
-                m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
-            // (and her head's own shade, under her jaw most: unshaded, her neck under
-            // it was lit as her cheeks were, a pale band down to her collar)
-            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
-            {
-                var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
-                    ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
-                m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
-                m.SetShaderParameter("ao_light", 0.55f);
-                // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
-                // at the graft's rough, shine and pore depth, set above as every body part's)
-                m.SetShaderParameter("seam_ease", true);
-                // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
-                m.SetShaderParameter("thin_map", 1f);
-                // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
-                // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
-                m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
-            }
-            // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
-            // --ear-ao off: without it, for judging it)
-            if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
-            {
-                m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
-                m.SetShaderParameter("ear_amount", 1f);
-                m.SetShaderParameter("ear_light", 0.7f);
-                m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));   // (HerEarWarmth's too)
-            }
+            BaseHead(m);
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);
@@ -1992,6 +1961,44 @@ public static class People
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
         return m;
+    }
+
+    /// <summary>The maps our base head (the heroine's, body_p1's) carries in the skin shader: mouth, features, head shade, ears.
+    /// Hers (Skin) and an NPC's on the same head (NpcSkin).</summary>
+    static void BaseHead(ShaderMaterial m)
+    {
+        // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
+        m.SetShaderParameter("mouth_in", 1f);
+        // (her eyes, brows and lips deepened when her face is small on
+        // screen, so a face still reads from the game's camera)
+        if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
+            m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
+        // (and her head's own shade, under her jaw most: unshaded, her neck under
+        // it was lit as her cheeks were, a pale band down to her collar)
+        if (ResourceLoader.Exists("res://art/people/head_tex/heroine_ao.png"))
+        {
+            var aoFile = HerSoftLipAo && ResourceLoader.Exists("res://art/people/head_tex/heroine_ao_softlip.png")
+                ? "res://art/people/head_tex/heroine_ao_softlip.png" : "res://art/people/head_tex/heroine_ao.png";
+            m.SetShaderParameter("ao_map", GD.Load<Texture2D>(aoFile));
+            m.SetShaderParameter("ao_light", 0.55f);
+            // (her head's skin eased into the graft's over the 3 cm above her neck's seam: the shader's seam_*,
+            // at the graft's rough, shine and pore depth, set above as every body part's)
+            m.SetShaderParameter("seam_ease", true);
+            // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
+            m.SetShaderParameter("thin_map", 1f);
+            // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
+            // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
+            m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
+        }
+        // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
+        // --ear-ao off: without it, for judging it)
+        if (!EarAoOff && ResourceLoader.Exists("res://art/people/head_tex/heroine_ear_ao.png"))
+        {
+            m.SetShaderParameter("ear_ao", GD.Load<Texture2D>("res://art/people/head_tex/heroine_ear_ao.png"));
+            m.SetShaderParameter("ear_amount", 1f);
+            m.SetShaderParameter("ear_light", 0.7f);
+            m.SetShaderParameter("ear_tint", new Vector3(0.80f, 0.52f, 0.44f));   // (HerEarWarmth's too)
+        }
     }
 
     /// <summary>--skin-set "part:k=v,k=a/b/c;...": a part's skin uniforms tried without a build ("*" every part); applied
@@ -2027,7 +2034,7 @@ public static class People
     /// same rough, shine and light, so the neck's seam between the two maps has no step in sheen; pores shallower on the
     /// body, as hers. A man's skin as his (HisSkin: rougher). Before 20 Oct the package kept its imported
     /// StandardMaterial3D: a flat, plastic beige beside every other person in town.</summary>
-    public static Material NpcSkin(BaseMaterial3D src, Mesh mesh, bool woman)
+    public static Material NpcSkin(BaseMaterial3D src, Mesh mesh, bool woman, Color? hair = null, Godot.Collections.Dictionary? skin = null)
     {
         var m = (ShaderMaterial)Skin(src, new Look(woman ? "female" : "male", System.Array.Empty<string>()), mesh, Colors.White, "npc");
         m.ResourceName = src.ResourceName;
@@ -2046,7 +2053,162 @@ public static class People
         // NPC's reddish skin read magenta on the shaded cheek (the generated guard, judge r4: shade hue 22-28 deg
         // against the paint's 41-50; with it 37-43, warm tan; Marionette lead 12 solver I2, 21 Oct 2026).
         m.SetShaderParameter("ambient_tint", HerAmbientTint);
+        // Her skin's treatment, derived for the package: in play her albedo is paint * tone * cel_tone / body_tone, which
+        // for her fair skin is paint * NpcCelTone; the package's tone is white, so the factor goes in whole.
+        m.SetShaderParameter("cel_tone", NpcCelTone);
+        m.SetShaderParameter("back_spec", HerBackSpec);
+        m.SetShaderParameter("back_neutral", HerBackNeutral);
+        m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+        SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
+        bool isHead = src.ResourceName == "skin_head";
+        float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
+            ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);
+        bool baseHead = isHead && (skin != null && skin.TryGetValue("base_head", out var bh) && bh.VariantType == Variant.Type.Bool
+            ? bh.AsBool() : mesh != null && HeadVertexCount(mesh) is int hv && hv > 0 && hv == BaseHeadVerts());
+        if (!isHead) SkinZones(m, deep, false);
+        else if (baseHead) { SkinZones(m, deep, true); BaseHead(m); }
+        ShaderMaterial? brows = null;
+        if (baseHead && !(skin != null && skin.TryGetValue("brows", out var bw) && bw.VariantType == Variant.Type.Bool && !bw.AsBool())
+            && ResourceLoader.Exists(NpcBrowsFile))
+        {
+            Color bc = hair ?? HisHairColour;
+            if (skin != null && skin.TryGetValue("brow_colour", out var bcv) && bcv.VariantType == Variant.Type.String
+                && Color.HtmlIsValid(bcv.AsString())) bc = new Color(bcv.AsString());
+            brows = BrowPass(bc, deep, NpcBrowsFile, src.AlbedoTexture, Colors.White);
+            m.NextPass = brows;
+            if (HairDraw.Eraser() is { } er) brows.NextPass = er;
+        }
+        // The manifest's own overrides, last: "*" then the part's own key; "brows" on the brow pass.
+        if (skin != null && skin.TryGetValue("uniforms", out var uv) && uv.VariantType == Variant.Type.Dictionary)
+        {
+            var u = uv.AsGodotDictionary();
+            if (u.TryGetValue("*", out var all) && all.VariantType == Variant.Type.Dictionary) ApplyUniforms(m, all.AsGodotDictionary());
+            if (u.TryGetValue(src.ResourceName, out var own) && own.VariantType == Variant.Type.Dictionary) ApplyUniforms(m, own.AsGodotDictionary());
+            if (brows != null && u.TryGetValue("brows", out var bu) && bu.VariantType == Variant.Type.Dictionary) ApplyUniforms(brows, bu.AsGodotDictionary());
+        }
+        SkinSet(m, src.ResourceName);   // (the --skin-set switch still wins)
         return m;
+    }
+
+    const string NpcBrowsFile = "res://art/people/paint/brows.png";
+
+    /// <summary>The factor her own paint takes in play (paint * tone * cel_tone / body_tone, her fair skin): the NPC's tone is white.</summary>
+    public static Vector3 NpcCelTone
+    {
+        get
+        {
+            var l = SkinTone(new Look("female", System.Array.Empty<string>())).SrgbToLinear();
+            var f = HerToneFit["fair"];
+            return new Vector3(l.R * f.X * HerCelTone.X, l.G * f.Y * HerCelTone.Y, l.B * f.Z * HerCelTone.Z);
+        }
+    }
+
+    static readonly Dictionary<ulong, float> npcMean = new();
+    static float? refHeadMean, refBodyMean;
+    static int baseHeadVerts = -1;
+
+    static float PaintMean(Texture2D? tex)
+    {
+        var img = tex?.GetImage();
+        if (img == null) return 0f;
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        img.Resize(32, 32);
+        double sum = 0;
+        for (int y = 0; y < 32; y++)
+            for (int x = 0; x < 32; x++)
+            {
+                var c = img.GetPixel(x, y);
+                sum += 0.2126f * SrgbToLin(c.R) + 0.7152f * SrgbToLin(c.G) + 0.0722f * SrgbToLin(c.B);
+            }
+        return (float)(sum / 1024.0);
+    }
+
+    /// <summary>How deep an NPC's skin paint is (0 as her fair paint, 1 deep), from its mean linear luminance against the
+    /// base head's or body's own paint.</summary>
+    static float NpcDeep(Texture2D? tex, bool head)
+    {
+        try
+        {
+            if (tex == null) return 0f;
+            ulong id = tex.GetInstanceId();
+            if (!npcMean.TryGetValue(id, out var mean)) npcMean[id] = mean = PaintMean(tex);
+            float r;
+            if (head) r = refHeadMean ??= RefMean("res://art/people/head_tex/heroine_head.jpg");
+            else r = refBodyMean ??= RefMean("res://art/people/body_p1/albedo.png");
+            if (r <= 0f) return 0f;
+            return Mathf.Clamp((0.55f - mean / r) / 0.49f, 0f, 1f);
+        }
+        catch { return 0f; }
+    }
+
+    static float RefMean(string path) => ResourceLoader.Exists(path) ? PaintMean(GD.Load<Texture2D>(path)) : 0f;
+
+    static int? HeadVertexCount(Mesh mesh)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head") return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+        return null;
+    }
+
+    static int BaseHeadVerts()
+    {
+        if (baseHeadVerts >= 0) return baseHeadVerts;
+        baseHeadVerts = 0;
+        try
+        {
+            var inst = GD.Load<PackedScene>(P1Body.Dir + "body.glb")?.Instantiate();
+            if (inst != null)
+            {
+                var stack = new Stack<Node>();
+                stack.Push(inst);
+                while (stack.Count > 0 && baseHeadVerts == 0)
+                {
+                    var n = stack.Pop();
+                    if (n is MeshInstance3D { Mesh: { } mm } && HeadVertexCount(mm) is int c) baseHeadVerts = c;
+                    foreach (var ch in n.GetChildren()) stack.Push(ch);
+                }
+                inst.Free();
+            }
+        }
+        catch { }
+        return baseHeadVerts;
+    }
+
+    /// <summary>A manifest's uniforms onto a skin material: number, bool, [2-4 numbers] a vector, "#rrggbb" a colour, "" clears a
+    /// texture, "res://..." or an absolute file a texture.</summary>
+    public static void ApplyUniforms(ShaderMaterial m, Godot.Collections.Dictionary? set)
+    {
+        if (set == null) return;
+        foreach (var kv in set)
+        {
+            string k = kv.Key.AsString();
+            var v = kv.Value;
+            switch (v.VariantType)
+            {
+                case Variant.Type.Float: case Variant.Type.Int: m.SetShaderParameter(k, (float)v.AsDouble()); break;
+                case Variant.Type.Bool: m.SetShaderParameter(k, v.AsBool()); break;
+                case Variant.Type.Array:
+                    {
+                        var a = v.AsGodotArray();
+                        var xs = new float[a.Count];
+                        for (int i = 0; i < xs.Length; i++) xs[i] = (float)a[i].AsDouble();
+                        if (xs.Length == 2) m.SetShaderParameter(k, new Vector2(xs[0], xs[1]));
+                        else if (xs.Length == 3) m.SetShaderParameter(k, new Vector3(xs[0], xs[1], xs[2]));
+                        else if (xs.Length == 4) m.SetShaderParameter(k, new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                        break;
+                    }
+                case Variant.Type.String:
+                    {
+                        string t = v.AsString();
+                        if (t == "") m.SetShaderParameter(k, new Variant());
+                        else if (t.StartsWith('#')) { if (Color.HtmlIsValid(t)) m.SetShaderParameter(k, new Color(t)); }
+                        else if (t.StartsWith("res://")) { if (ResourceLoader.Exists(t)) m.SetShaderParameter(k, GD.Load<Texture2D>(t)); }
+                        else if (Image.LoadFromFile(t) is { } img) { img.GenerateMipmaps(); m.SetShaderParameter(k, ImageTexture.CreateFromImage(img)); }
+                        break;
+                    }
+            }
+        }
     }
 
     /// <summary>How far light carried under her skin spreads on screen (the skin shader's `scatter`, Godot's
@@ -2105,10 +2267,13 @@ public static class People
             : new Vector3(0.6f, 0.15f, 0.08f)
         : new Vector3(0.6f, 0.15f, 0.08f);
 
-    static void HerShade(ShaderMaterial m, Look look)
+    static void HerShade(ShaderMaterial m, Look look) => SkinShade(m, HerAmbient(look), BodyTone(look));
+
+    /// <summary>HerShade's body from an ambient tint and a body tone (hers by her look; an NPC's: HerAmbientTint, white).</summary>
+    static void SkinShade(ShaderMaterial m, Vector3 ambient, Vector3 bodyTone)
     {
-        m.SetShaderParameter("ambient_tint", HerAmbient(look));
-        m.SetShaderParameter("body_tone", BodyTone(look));
+        m.SetShaderParameter("ambient_tint", ambient);
+        m.SetShaderParameter("body_tone", bodyTone);
         // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
         // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
         m.SetShaderParameter("throat_terminator", HerThroatTerminator);
@@ -2128,7 +2293,7 @@ public static class People
         m.SetShaderParameter("deep_tint", (float)SurvivorUnchained.Args.Num("deep-tint", 0.6f));
         var mode = SurvivorUnchained.Args.Get("shade-tint") is string st && st != "" ? st : "soft";
         if (mode == "off") return;
-        var b = BodyTone(look);
+        var b = bodyTone;
         m.SetShaderParameter("shade_tint", new Vector3(1 / b.X, 1 / b.Y, 1 / b.Z));
         bool down = mode == "ndl" || SurvivorUnchained.Args.Get("shade-down") == "on";
         m.SetShaderParameter("shade_down", down ? 1f : 0f);
@@ -2156,12 +2321,15 @@ public static class People
     /// Look's zoom). Her colour zones scaled by her skin's lightness: on deep skin a subtler, browner flush. head: her
     /// head's own material (the zone maps laid on it); null: a material already made (HerRestyle), its maps kept.
     /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
-    static void HerZones(ShaderMaterial m, Look look, bool? head)
+    static void HerZones(ShaderMaterial m, Look look, bool? head) => SkinZones(m, deep0(look), head);
+
+    /// <summary>HerZones' body from the skin's darkness (0 fair to 1 deep): hers by her look, an NPC's from its paint.</summary>
+    static void SkinZones(ShaderMaterial m, float deep, bool? head)
     {
         // (face 46 skin C, the night skin-line hold's lamp (HerSkinHold): an amber, a redder one on deep skin; its gain
         // keeps her lightness (on deep the night grade's toe took 0.025 Oklab L off her face at the lamps' own luminance))
-        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
-        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep));
+        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep));
         m.SetShaderParameter("hold_chroma", 0f);
         if (SkinZonesOff) return;
         if (head == true)
@@ -2173,7 +2341,6 @@ public static class People
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
                 m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
         }
-        float deep = deep0(look);
         m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
         m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
         m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
