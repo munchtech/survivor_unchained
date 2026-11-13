@@ -19,7 +19,8 @@ Per pose and mode, on the body's own triangles (head pieces left out, as the R&D
                 counted as edges, new against rest (at rest only the toes cross, 380 edges a side).
 The four routed faults per side (rest centroid boxes, mm; her left is +x):
   shoulder_{s}  x 60..280, y 1380..1600 (the deltoid-trapezius seam, shoulder_flex);
-  strap_{s}     within 35 mm of the fitted top's open edges (x14/r19 p1_top_rest.glb; the strike's keys 18-21);
+  strap_{s}     the skin within 35 mm of the fitted top (x14/r19 p1_top_rest.glb, a closed shell: its whole surface;
+                the strike's keys 18-21 folded under its strap edge);
   lumbar_{s}    y 1080..1130, |x| < 60, z < -40 (walk:10's lumbar midline);
   belly_{s}     front torso self-crossing: edges with rest y 950..1250, z > 20, |x| < 170 through triangles of that
                 band (spine_flex: the upper belly through the lower).
@@ -189,11 +190,7 @@ class Skin:
         if top is not None and Path(top).exists():
             g = Glb(str(top))
             m = next(m for m in g.meshes if m.node.startswith("piece_"))
-            r = weld(m.P.astype(float), 1e-6)
-            be = boundary_edges(r[m.T])
-            fp = np.zeros(len(m.P), int)
-            fp[r[::-1]] = np.arange(len(m.P))[::-1]
-            pts = m.P.astype(float)[fp[np.unique(be.ravel())]] * 1e3
+            pts = m.P.astype(float)[::7] * 1e3          # (the top is a closed shell: its whole surface, thinned)
             strap = cKDTree(pts)
         for s, sg in SIDES:
             for tag, cc, out in (("raw", c, self.reg_t), ("w", cw, self.reg_tw)):
@@ -432,5 +429,51 @@ def main(argv=None):
     print(f"wrote {a.out} ({len(out['poses'])} poses, {time.time() - t0:.0f}s)")
 
 
+
+
+def summary(path, base=None):
+    """The four faults per side and mode (probe poses, the R&D clips, the game clips) and the whole-body totals, with
+    the rise against a baseline foldcheck.json:  python tools/body/foldcheck.py --summary NEW.json [BASE.json]"""
+    d = json.loads(Path(path).read_text())["poses"]
+    b = json.loads(Path(base).read_text())["poses"] if base else None
+    groups = {"probe": lambda l: l in ("rom:shoulder_flex_l", "rom:shoulder_flex_r", "rom:spine_flex"),
+              "rom": lambda l: l.startswith("rom:"), "walk": lambda l: l.startswith("rnd:walk:"),
+              "fight": lambda l: l.startswith("rnd:fight:"), "game": lambda l: l.startswith("game:")}
+    fk = [f"{f}_{s}" for f in FAULTS for s, _ in SIDES]
+    for g, sel in groups.items():
+        for mode in ("plain", "laws", "full"):
+            rows = [(l, m[mode]) for l, m in d.items() if sel(l) and mode in m]
+            if not rows:
+                continue
+            cells = []
+            for k in fk:
+                q = "x" if k.startswith("belly") else "inv"
+                n = sum(r.get(k, {}).get(q, 0) for _, r in rows)
+                sh = sum(r.get(k, {}).get("sharp", 0) for _, r in rows) if q == "inv" else None
+                cells.append(f"{k} {n}" + (f"/{sh}" if sh is not None else ""))
+            w = {q: sum(r["whole"].get(q, 0) for _, r in rows) for q in ("inv", "sharp", "x")}
+            line = f"{g:5s} {mode:5s} ({len(rows)}) " + " ".join(cells) + f" | whole inv {w['inv']} sharp {w['sharp']} x {w['x']}"
+            if b is not None:
+                rise = {q: 0 for q in ("inv", "sharp", "x")}
+                np_ = 0
+                for l, r in rows:
+                    o = b.get(l, {}).get(mode)
+                    if o is None:
+                        continue
+                    up = False
+                    for q in rise:
+                        dq = r["whole"].get(q, 0) - o["whole"].get(q, 0)
+                        if dq > 0:
+                            rise[q] += dq
+                            up = True
+                    np_ += up
+                wb = {q: sum(b.get(l, {}).get(mode, {}).get("whole", {}).get(q, 0) for l, _ in rows) for q in rise}
+                line += f" (base {wb['inv']}/{wb['sharp']}/{wb['x']}; poses rising {np_}, summed rises {rise['inv']}/{rise['sharp']}/{rise['x']})"
+            print(line)
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--summary":
+        summary(*sys.argv[2:4])
+    else:
+        main()
