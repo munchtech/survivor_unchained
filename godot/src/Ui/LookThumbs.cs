@@ -16,7 +16,7 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class LookThumbs : Node
 {
-    const int Version = 6;
+    const int Version = 7;
     static LookThumbs? studio;
     static readonly Dictionary<string, ImageTexture> done = new();
     static readonly Dictionary<string, List<TextureRect>> waiting = new();
@@ -26,11 +26,29 @@ public partial class LookThumbs : Node
     /// <summary>Whose looks are pictured (her); null = the running game's character.</summary>
     public static CharacterData? Her;
 
-    static string Key(string def, string slot, int size) => $"{def}.{slot}.{size}";
+    static string Key(string def, string slot, int size, bool own = false) => own ? $"own:{def}:{slot}.{size}" : $"{def}.{slot}.{size}";
+    static readonly Color Dark = new("#141010");
+
+    /// <summary>Asks for every look photograph of her cut now (each slot's looks and her own piece), so none waits for its first draw.</summary>
+    public static void Prefetch(CharacterData ch, int size)
+    {
+        foreach (var slot in Wardrobe.LookSlots)
+        {
+            var worn = ch.Equipment[Wardrobe.EquipOf(slot)];
+            Ask(Key(worn?.Def ?? "none", slot, size, true), worn?.Def ?? "none", slot, size);
+            foreach (var d in Wardrobe.All(ch, slot)) Ask(Key(d.Id, slot, size), d.Id, slot, size);
+        }
+    }
+
+    static void Ask(string key, string def, string slot, int size)
+    {
+        if (done.ContainsKey(key) || FileAccess.FileExists(PathOf(key))) return;
+        Request(key, def, slot, size);
+    }
     static string PathOf(string key) => $"user://icons/look_{key.Replace(':', '_').Replace('/', '_')}.v{Version}.png";
 
     /// <summary>The look's thumbnail as a size x size control. Locked: 15% brightness, desaturated, an 18 px lock at 80% bottom-right.</summary>
-    public static Control For(string defId, string slot, int size, bool locked)
+    public static Control For(string defId, string slot, int size, bool locked, bool own = false)
     {
         var box = new Control { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         var r = new TextureRect
@@ -38,13 +56,13 @@ public partial class LookThumbs : Node
             AnchorRight = 1, AnchorBottom = 1, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
             MouseFilter = Control.MouseFilterEnum.Ignore, TextureFilter = CanvasItem.TextureFilterEnum.LinearWithMipmaps,
         };
+        box.AddChild(new ColorRect { Color = Dark, AnchorRight = 1, AnchorBottom = 1, MouseFilter = Control.MouseFilterEnum.Ignore });
         box.AddChild(r);
-        var key = Key(defId, slot, size);
+        var key = Key(defId, slot, size, own);
         if (Get(key) is { } t) r.Texture = t;
         else
         {
-            // (until she is photographed: the item's own picture)
-            if (Items.Find(defId) is { } def && ItemPhotos.Real(def.Icon) is { } pic) r.Texture = pic;
+            // (a dark tile until she is photographed, then the photograph fades in over 120 ms)
             if (!waiting.TryGetValue(key, out var l)) waiting[key] = l = new();
             l.Add(r);
             Request(key, defId, slot, size);
@@ -127,13 +145,20 @@ public partial class LookThumbs : Node
         int hi = Named("head"), pi = Named("pelvis", "hips", "hip"), fi = Named("foot_l", "foot.l", "leftfoot", "foot");
         Vector3 head = Pose(hi >= 0 ? hi : Extreme(true)), pelvis = Pose(pi >= 0 ? pi : 0), foot = Pose(fi >= 0 ? fi : Extreme(false));
         float knee = foot.Y + (pelvis.Y - foot.Y) * 0.5f;
+        // (the head tile is framed from the look's meshes, not the bones: the highest point of anything drawn, so a tall hat fits;
+        // body tiles start 0.06 m under the head bone, so no tile shows half a face)
+        float tip = head.Y + 0.3f;
+        if (framing == "head")
+            foreach (var n in stage.FindChildren("*", "MeshInstance3D", true, false))
+                if (n is MeshInstance3D { Visible: true, Mesh: not null } mi && mi.IsVisibleInTree())
+                    tip = Mathf.Max(tip, (mi.GlobalTransform * mi.GetAabb()).End.Y);
         var (top, bottom) = framing switch
         {
-            "head" => (head.Y + 0.3f, head.Y - 0.2f),
+            "head" => (tip, head.Y - 0.2f),
             "feet" => (knee + 0.04f, foot.Y - 0.05f),
-            _ => (head.Y + 0.03f, knee),
+            _ => (head.Y - 0.06f, knee),
         };
-        float h = (top - bottom) * (framing == "head" ? 1.5f : 1.1f);
+        float h = (top - bottom) * (framing == "head" ? 1.12f : 1.1f);
         var at = new Vector3(head.X, (top + bottom) / 2, 0);
         float dist = h / 2 / Mathf.Tan(Mathf.DegToRad(cam.Fov / 2));
         var from = at + new Vector3(0, 0.02f, dist);
@@ -176,12 +201,20 @@ public partial class LookThumbs : Node
     };
 
     /// <summary>Her with only this look shown: her own equipment off, no dyes, the look collected.</summary>
-    static CharacterData? Wearing(string defId, string slot)
+    static CharacterData? Wearing(string key, string defId, string slot)
     {
         var src = Her ?? (Engine.GetMainLoop() is SceneTree t ? FindGame(t.Root)?.Journey.Ch : null);
         if (src == null) return null;
         var ch = Core.Json.Clone(src);
+        var own = ch.Equipment[Wardrobe.EquipOf(slot)];
         ch.Equipment = new Equipment();
+        if (key.StartsWith("own:"))
+        {
+            // her own piece of this place alone (nothing in it: the calling's fill), no look shown, no wardrobe dyes
+            if (own != null && own.Def == defId) ch.Equipment[Wardrobe.EquipOf(slot)] = own;
+            ch.Shown = new(); ch.Dyes = new(); ch.Headgear = true;
+            return ch;
+        }
         ch.Looks ??= new(); ch.Looks.Add(defId);
         ch.Shown = new() { [slot] = defId };
         ch.Dyes = new();
@@ -208,7 +241,7 @@ public partial class LookThumbs : Node
         while (queue.Count > 0)
         {
             var (key, def, slot, size) = queue.Dequeue();
-            if (!Stage(def, slot, size)) { queued.Remove(key); continue; }
+            if (!Stage(key, def, slot, size)) { queued.Remove(key); continue; }
             taking = (key, slot, size);
             wait = 6;
             view.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
@@ -216,10 +249,10 @@ public partial class LookThumbs : Node
         }
     }
 
-    bool Stage(string defId, string slot, int size)
+    bool Stage(string key, string defId, string slot, int size)
     {
         foreach (var c in stage.GetChildren()) if (c is PersonView) { stage.RemoveChild(c); c.QueueFree(); }
-        if (Wearing(defId, slot) is not { } ch) return false;
+        if (Wearing(key, defId, slot) is not { } ch) return false;
         var lo = Loadouts.Of(ch);
         var v = new PersonView(lo.Person, null, 0.8);
         EraseNoMore(v);
@@ -242,7 +275,14 @@ public partial class LookThumbs : Node
         img.GenerateMipmaps();
         var tex = ImageTexture.CreateFromImage(img);
         done[key] = tex;
-        if (waiting.Remove(key, out var l)) foreach (var r in l) if (GodotObject.IsInstanceValid(r)) r.Texture = tex;
+        if (waiting.Remove(key, out var l))
+            foreach (var r in l)
+                if (GodotObject.IsInstanceValid(r))
+                {
+                    r.Texture = tex;
+                    r.Modulate = new Color(1, 1, 1, 0);
+                    r.CreateTween().TweenProperty(r, "modulate:a", 1.0f, 0.12);
+                }
     }
 
     /// <summary>Her hair, brows and paint carry a last pass that erases the picture's alpha (the world's FSR 2 reactive mask); off here, as Portrait does.</summary>

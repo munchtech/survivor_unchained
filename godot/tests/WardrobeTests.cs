@@ -101,12 +101,12 @@ public class WardrobeTests
         var a = Own(ch, "wt_top_a");
         a.Dye = new Dictionary<string, string> { ["cloth"] = "#111111", ["metal"] = "#222222" };
         Inventory.AddToPack(ch, a); Inventory.Equip(ch, a, EquipSlot.Body);
-        Wardrobe.SetDye(ch, "body", "metal", "gilt");
+        Wardrobe.SetDye(ch, "body", "metal", "steel");
         var d = Wear.DyeOf(ch)["wt.top"];
-        Assert.Equal("#e0b050:metal", d["metal"]);
+        Assert.Equal("#aab0b8:metal", d["metal"]);
         Assert.Equal("#111111", d["cloth"]);
         // a dye the zone does not take is not applied
-        Wardrobe.SetDye(ch, "body", "cloth", "gilt");
+        Wardrobe.SetDye(ch, "body", "cloth", "steel");
         Assert.Equal("#111111", Wear.DyeOf(ch)["wt.top"]["cloth"]);
     }
 
@@ -115,7 +115,10 @@ public class WardrobeTests
     {
         var ch = Her();
         Assert.DoesNotContain(Wardrobe.Offered(ch), d => d.Id == "bronze");
-        Assert.Contains(Wardrobe.Offered(ch), d => d.Id == "gilt");
+        Assert.Contains(Wardrobe.Offered(ch), d => d.Id == "steel");
+        // a held dye (gilt reads mustard on the art) is known but not offered, and not applied
+        Assert.True(Wardrobe.Dye("gilt")!.Hold && Wardrobe.Dye("silvered")!.Hold);
+        Assert.DoesNotContain(Wardrobe.Offered(ch), d => d.Id is "gilt" or "silvered");
         Wardrobe.SetDye(ch, "body", "metal", "bronze");
         var a = Own(ch, "wt_top_a"); Inventory.AddToPack(ch, a); Inventory.Equip(ch, a, EquipSlot.Body);
         Assert.False(Wear.DyeOf(ch).ContainsKey("wt.top"));

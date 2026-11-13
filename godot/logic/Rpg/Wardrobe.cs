@@ -13,6 +13,8 @@ public sealed class DyeDef
     public string Id = "", Name = "", Hex = "";
     public List<string> Zones = new();
     public bool Known;
+    /// <summary>Held back: the screen does not offer it yet (it reads wrong on the art).</summary>
+    public bool Hold;
 }
 
 public sealed class DyesFile { public List<DyeDef> Dyes = new(); }
@@ -131,7 +133,7 @@ public static class Wardrobe
     }
 
     /// <summary>The dyes she may use: the known ones and those she has learned.</summary>
-    public static List<DyeDef> Offered(CharacterData ch) => Dyes.Where(d => d.Known || ch.DyesKnown?.Contains(d.Id) == true).ToList();
+    public static List<DyeDef> Offered(CharacterData ch) => Dyes.Where(d => !d.Hold && (d.Known || ch.DyesKnown?.Contains(d.Id) == true)).ToList();
 
     public static bool LearnDye(CharacterData ch, string id)
     {

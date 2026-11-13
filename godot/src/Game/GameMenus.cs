@@ -110,6 +110,9 @@ public partial class Game
         hud.Prompt(promptShown = null);
     }
 
+    /// <summary>The world camera's attributes (a screen's depth of field, put back on its close).</summary>
+    public Godot.CameraAttributes? WorldLens { get => cam.Camera.Attributes; set => cam.Camera.Attributes = value; }
+
     /// <summary>The view as a screen asks it (its shift, nearness and frame), and her pose with it: on open, and when a
     /// screen changes its view while open (the Lamps' Open wide: the book's frame goes, the play camera holds).</summary>
     public void Reframe(Overlay o)

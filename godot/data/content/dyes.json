@@ -25,7 +25,8 @@
    "zones": [
     "metal"
    ],
-   "known": true
+   "known": true,
+   "hold": true
   },
   {
    "id": "gilt",
@@ -34,7 +35,8 @@
    "zones": [
     "metal"
    ],
-   "known": true
+   "known": true,
+   "hold": true
   },
   {
    "id": "bronze",
