@@ -20,7 +20,7 @@ public sealed class SocketPanelTests
     public void The_head_note_follows_the_rank()
     {
         Assert.Equal("rank III opens the first, VI the second", SocketModel.Note(2));
-        Assert.Equal("rank III opens the first, VI the second", SocketModel.Note(4));
+        Assert.Equal("the second opens at rank VI", SocketModel.Note(4));
         Assert.Equal("both open", SocketModel.Note(6));
     }
 
@@ -48,6 +48,26 @@ public sealed class SocketPanelTests
         Assert.True(here.Here); Assert.Equal(1, here.Free);
         Assert.Equal("3 of your gems don't fit Sunder.", SocketModel.DontFitLine(3, "Sunder"));
         Assert.Equal("1 of your gems doesn't fit Sunder.", SocketModel.DontFitLine(1, "Sunder"));
+    }
+
+    [Fact]
+    public void Gems_that_do_not_fit_are_named_with_what_they_fit()
+    {
+        var s = new SupportState();
+        s.Owned["bulwark"] = 1;
+        Assert.Equal(new[] { "Bulwark fits shield skills only." }, SocketModel.DontFitLines(s, "sunder"));
+        s.Owned["haste"] = 1; // fits anything: never listed
+        Assert.Single(SocketModel.DontFitLines(s, "sunder"));
+        Assert.Empty(SocketModel.DontFitLines(new SupportState(), "sunder"));
+    }
+
+    [Fact]
+    public void Support_texts_speak_to_you_in_plain_numbers()
+    {
+        Assert.Equal("Your blows hit 25% harder, over 15% less ground.", Supports.Find("brutality")!.Text);
+        Assert.Equal("While it plays you block one blow in five.", Supports.Find("bulwark")!.Text);
+        Assert.Equal("It plays out 15% faster.", Supports.Find("haste")!.Text);
+        Assert.Equal("The swing sweeps a third wider, a tenth lighter.", Supports.Find("wide_arc")!.Text);
     }
 
     [Fact]

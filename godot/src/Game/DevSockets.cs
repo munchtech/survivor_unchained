@@ -21,6 +21,16 @@ public static class DevSockets
             if (!ch.UnionsKnown.Contains(ju)) ch.UnionsKnown.Add(ju);
             GD.Print($"join-union {ju}: {UnionJoin.Join(ch, ju)}");
         }
+        // --socket-raw skill:index:gem (pictures): sets it with no rank check, so a closed socket can keep a gem (the "kept" frame)
+        if (Args.Get("socket-raw") is string raw)
+            foreach (var p in raw.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split(':')))
+            {
+                if (!ch.Gems.Sockets.TryGetValue(p[0], out var row)) ch.Gems.Sockets[p[0]] = row = new();
+                int ix = int.Parse(p[1]);
+                while (row.Count <= ix) row.Add(null);
+                row[ix] = p[2];
+                GD.Print($"socket-raw {string.Join(":", p)}: set");
+            }
         if (Args.Get("socket") is string socks)
             foreach (var p in socks.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split(':')))
             {
