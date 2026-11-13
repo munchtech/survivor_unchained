@@ -1,12 +1,15 @@
 """Publish a P1 build into the game (P1 F): B behind the --body p1 flag (godot/src/Actors/P1Body.cs).
 
-    python tools/body/publish_p1.py <build_out> [--import]
+    python tools/body/publish_p1.py <build_out> [--import] [--no-maps]
 
 Copies <build_out>/{body.glb, play.glb, rig.json, play_rig.json} and its baked maps (<build_out>/maps/*, the bake
 stage's own, when its gates passed: bake.json "gates.pass") into godot/art/people/body_p1/, and writes
 body_p1/publish.json (the source build, each file's sha1, the build's spec). Re-runnable: every run copies the
 build's current outputs, so a revised build (the hip, the correctives) is one command away; nothing in body_p1/ is
 edited by hand. --import then takes a Godot turn (tools/turn.py), runs Godot's headless import and gives it back.
+--no-maps publishes the bodies alone (the glbs, rigs, pieces and B's cavity map): the published maps stay as they are,
+for a build whose change is the mesh's (base folds, 13 Nov: 88 points moved; the build's rebake differs from the gate
+body's judged maps away from them, so it is not carried in by a mesh fix).
 
 Materials: the maps ride IN the glbs (build_topo's bake stage, glbwrite.attach_maps: the body material's
 baseColorTexture = albedo.png, normalTexture = normal.png); the game binds nothing of its own. Derivation: (a) the
@@ -141,7 +144,7 @@ def body_laws(src, out):
         print(f"publish_p1: carry head_move_m {carry.get('head_move_m')}, ref_move_m {len(carry.get('ref_move_m', {}))} bones")
 
 
-def publish(src):
+def publish(src, with_maps=True):
     for f in FILES:
         if not os.path.exists(os.path.join(src, f)):
             raise SystemExit(f"publish_p1: {src} has no {f}")
@@ -163,12 +166,12 @@ def publish(src):
             print(f"publish_p1: {src} has no {f}; the published one is an earlier build's")
     maps = os.path.join(src, "maps")
     bake = os.path.join(maps, "bake.json")
-    if os.path.exists(bake) and json.load(open(bake)).get("gates", {}).get("pass"):
+    if with_maps and os.path.exists(bake) and json.load(open(bake)).get("gates", {}).get("pass"):
         for f in sorted(os.listdir(maps)):
             shutil.copy2(os.path.join(maps, f), os.path.join(PUB, f))
             out["files"][f] = sha1(os.path.join(PUB, f))
     else:
-        out["maps"] = "not copied (no passing bake.json in the build)"
+        out["maps"] = "not copied (no passing bake.json in the build)" if with_maps else "not copied (--no-maps: the published maps stay as they were)"
         # (B's own cavity map (topo_bake cavity_keep: its own AO about her armpits, P1 R1 round 33) is this build's surface,
         # not the carry the gates judge (the albedo's dE, the normal map's tangent frames): published with the glbs)
         for f in ("cavity.png",):
@@ -262,6 +265,6 @@ if __name__ == "__main__":
     if dest:
         publish_var(os.path.abspath(args[0]), dest)
     else:
-        publish(os.path.abspath(args[0]))
+        publish(os.path.abspath(args[0]), with_maps="--no-maps" not in sys.argv)
     if "--import" in sys.argv:
         godot_import()
