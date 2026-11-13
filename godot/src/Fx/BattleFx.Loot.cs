@@ -140,13 +140,13 @@ public partial class BattleFx
             {
                 // A cut stone in its own colour; it flashes once as it lands, then every 1.7 s catches the light (a star at 0.4 m).
                 var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
-                Light(p.X, gy, p.Z, Lit.Glow, 0, 0.45f, 1.1f * grow, gc, 0.85f * flare);
+                Light(p.X, gy, p.Z, Lit.Glow, 0, 0.7f, 1.6f * grow, gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
                 var star = gc.Lerp(Colors.White, 0.4f) * 1.1f;
                 if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
                     Sparks.Spawn(V(p.X, gy + 0.5, p.Z), Vector3.Zero, 0.28f, 0.5f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
                 else if (age >= 0.5f) gemLanded.Add(p.Id);
                 if (age >= 0 && frameDt > 0 && (t + p.Id * 0.37f) % 1.7f < frameDt)
-                    Sparks.Spawn(V(p.X, gy + 0.4, p.Z), Vector3.Zero, 0.35f, 0.22f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                    Sparks.Spawn(V(p.X, gy + 0.4, p.Z), Vector3.Zero, 0.35f, 0.34f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
                 break;
             }
             case LootTier.Chart:
