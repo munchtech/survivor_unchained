@@ -8,6 +8,8 @@
     <LangVersion>12</LangVersion>
     <IsPackable>false</IsPackable>
     <RootNamespace>SurvivorUnchained.Tests</RootNamespace>
+    <!-- Keep the simulations' full samples without the Debug compiler overhead. -->
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../logic/**/*.cs" LinkBase="logic" />

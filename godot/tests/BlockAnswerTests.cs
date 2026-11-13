@@ -42,7 +42,7 @@ public sealed class BlockAnswerTests
         {
             B = new Battle(new BattleSetup
             {
-                Seed = seed, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
+                Seed = seed, Collision = new CollisionWorld(TestContent.StationaryArenaSize), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
                 Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash,
             });
             B.Calling = "warden";
