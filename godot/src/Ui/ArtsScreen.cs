@@ -499,21 +499,21 @@ public partial class ArtsScreen : Overlay
         bool carried = !union && ch.Slotted.Contains(id), meets = union || SkillBook.Meets(ch, id), on = selSkill == id;
         var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand, CustomMinimumSize = new Vector2(0, 50) };
         foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
-        if (on && union)
+        if (on)
         {
-            // The selected Union: the wardrobe tile's selection (WardrobeScreen.LookTile): a Kit.Tile fill in a 2 px ember frame.
+            // The selected row (a skill or a Union): the wardrobe tile's selection (WardrobeScreen.LookTile): a Kit.Tile fill in a 2 px ember frame.
             var sb = new StyleBoxFlat { BgColor = Kit.Tile, BorderColor = Style.Ember };
             sb.SetCornerRadiusAll(4);
             sb.SetBorderWidthAll(2);
             b.AddThemeStyleboxOverride("normal", sb);
+            b.Flat = false;   // (a Flat button draws no "normal" box at all: that is why no frame ever showed)
         }
-        else if (on) b.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthLeft = 2 });
         b.Pressed += () => { selSkill = id; Sound.Sfx.Click(); Refresh(); };
         Nav.Id(b, $"skill:{id}");
         var col = ItemViews.SchoolColors[w.School];
         var r = Style.H(12, Glyphs.Icon(Glyphs.ForSkill(w.Id, w.Art), 26, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
-        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.DisplayLight, 16, known ? (carried || (on && union) ? Kit.Ink : Kit.Ink2) : Kit.Dim),
+        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.DisplayLight, 16, known ? (carried || on ? Kit.Ink : Kit.Ink2) : Kit.Dim),
             Style.Label(union ? SocketModel.UnionLine(id) : $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}", Style.Ui, 13, union ? Kit.Dim : meets ? Style.Good : Style.Bad));
         r.AddChild(words);
         r.Position = new Vector2(10, 4);
