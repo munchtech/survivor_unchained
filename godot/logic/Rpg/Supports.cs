@@ -32,6 +32,8 @@ public sealed class SupportsFile
     public SocketRule Sockets = new();
     public BadLuckRule BadLuck = new();
     public List<SupportDef> Gems = new();
+    public sealed class DropRule { public int Level = 12; public Dictionary<string, double> Chance = new(); }
+    public DropRule Drop = new();
 }
 
 /// <summary>Her gems: how many of each she owns, and what sits in each skill's sockets (index = socket).</summary>
@@ -47,6 +49,11 @@ public static class Supports
     public static SupportsFile File => file ??= Json.Parse<SupportsFile>(Json.ReadContent("supports.json"));
     public static IReadOnlyList<SupportDef> All => File.Gems;
     public static SupportDef? Find(string id) => File.Gems.FirstOrDefault(g => g.Id == id);
+
+    public const string ItemPrefix = "gem.";
+    public static string ItemId(string gem) => ItemPrefix + gem;
+    public static SupportDef? OfItem(string itemId) => itemId.StartsWith(ItemPrefix, StringComparison.Ordinal) ? Find(itemId[ItemPrefix.Length..]) : null;
+    public static IEnumerable<ItemDef> ItemDefs() => All.Select(g => new ItemDef { Id = ItemId(g.Id), Name = g.Name, Kind = ItemKind.Gem, Rarity = 2, Description = g.Text });
 
     /// <summary>Open sockets at a skill's rank: one per threshold reached.</summary>
     public static int SocketsAt(int rank) => File.Sockets.Ranks.Count(r => rank >= r);

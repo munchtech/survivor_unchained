@@ -1,6 +1,7 @@
 {
-  "_doc": "Support gems (BUILD_DIRECTION 'Supports', BUILD_UNLOCKS level 12): items that slot into a skill to make fun combinations. A skill's socket 1 opens at its rank sockets.ranks[0], socket 2 at sockets.ranks[1]. Gems drop with bad-luck protection: each copy she owns multiplies that gem's drop weight by badLuck.perOwned, so the others come. fits: the skill tags a gem takes (empty = any skill). effects: summed per skill and read by the battle (wired after bd-keys lands). Read by Rpg/Supports.cs.",
+  "_doc": "Support gems (BUILD_DIRECTION 'Supports', BUILD_UNLOCKS level 12): items that slot into a skill to make fun combinations. A skill's socket 1 opens at its rank sockets.ranks[0], socket 2 at sockets.ranks[1]. Gems drop with bad-luck protection: each copy she owns multiplies that gem's drop weight by badLuck.perOwned, so the others come. fits: the skill tags a gem takes (empty = any skill). effects: summed per skill and read by the battle (wired after bd-keys lands). They drop from her level 12 (BUILD_UNLOCKS): drop.chance is per source key, rolled once per carrier. Read by Rpg/Supports.cs.",
   "sockets": { "ranks": [3, 6] },
+  "drop": { "level": 12, "chance": { "champion": 0.06, "elite": 0.1, "miniboss": 0.35, "herald": 0.35, "boss": 1, "mapPack": 0.04, "mapPackFine": 0.08, "mapKeeper": 0.3, "mapRuler": 1, "strongbox": 0.25 } },
   "badLuck": { "perOwned": 0.5 },
   "gems": [
     { "id": "brutality", "name": "Brutality", "fits": ["Melee"], "weight": 1, "text": "Her blows hit 25% harder and lose their reach.", "effects": { "damage": 0.25, "area": -0.15 } },

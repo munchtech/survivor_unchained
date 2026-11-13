@@ -85,4 +85,52 @@ public sealed class SupportsTests
         }
         Assert.True(b * 4 < a, $"owned 3: {b} drops against {a} fresh");
     }
+
+    [Fact]
+    public void Every_gem_has_a_registered_gem_item()
+    {
+        foreach (var g in Supports.All)
+        {
+            var d = Items.Get(Supports.ItemId(g.Id));
+            Assert.Equal(ItemKind.Gem, d.Kind);
+            Assert.Equal(g.Id, Supports.OfItem(d.Id)!.Id);
+            Assert.Equal(Store.Gems, Drops.StoreOf(d, null));
+        }
+    }
+
+    [Fact]
+    public void Gems_survive_a_save_round_trip()
+    {
+        var ch = new CharacterData { Ability = Content.Abilities.All.Values.First().Id };
+        ch.Gems.Owned["haste"] = 2;
+        ch.Gems.Sockets["sunder"] = new() { "haste", null };
+        var back = Core.Json.Parse<CharacterData>(Core.Json.Write(ch));
+        Assert.Equal(2, back.Gems.Owned["haste"]);
+        Assert.Equal(new string?[] { "haste", null }, back.Gems.Sockets["sunder"].ToArray());
+    }
+
+    [Fact]
+    public void A_gem_item_goes_to_the_gem_store_not_the_pack()
+    {
+        var ch = new CharacterData();
+        var it = Inventory.Make(ch, Supports.ItemId("haste"), dropped: true);
+        Assert.True(Inventory.AddToPack(ch, it));
+        Assert.Equal(1, ch.Gems.Owned["haste"]);
+        Assert.All(ch.Pack, p => Assert.Null(p));
+        Assert.Equal(1, Inventory.Count(ch, Supports.ItemId("haste")));
+    }
+
+    [Fact]
+    public void A_boss_drops_one_gem_from_level_12_and_none_before()
+    {
+        int Gems(int level)
+        {
+            var ch = new CharacterData { Level = level };
+            var x = new DropCtx { Ch = ch, Source = DropSource.Boss, Level = level, R = () => 0.5 };
+            return Drops.Roll(x).Count(d => d.Tier == LootTier.Gem);
+        }
+        Assert.Equal(1, Gems(12));
+        Assert.Equal(0, Gems(11));
+        Assert.True(Drops.Jackpot(LootTier.Gem));
+    }
 }

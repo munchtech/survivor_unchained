@@ -141,7 +141,7 @@ void fragment() {
     /// a tile's edge to a card's name to a label on the ground. Set is verdigris, old bronze's patina.</summary>
     public static Color TierColour(LootTier t) => t switch
     {
-        LootTier.Common => new("#c8c0b0"), LootTier.Uncommon => new("#6fd46a"), LootTier.Rare => new("#5aa8ff"),
+        LootTier.Common => new("#c8c0b0"), LootTier.Uncommon => new("#6fd46a"), LootTier.Rare or LootTier.Gem => new("#5aa8ff"),
         LootTier.Epic => new("#c070ff"), LootTier.Set => SetColour, LootTier.Legendary => new("#ffb040"),
         LootTier.Storied => new("#ff6a3a"), LootTier.Book or LootTier.Chart => new("#dccba4"), LootTier.Quest => new("#f3d9a0"),
         _ => new("#c8c0b0"),
@@ -185,6 +185,7 @@ void fragment() {
         {
             Store.Pouch => def.Kind == ItemKind.Trophy ? "Trophy  ·  in the pouch" : "Material  ·  in the pouch",
             Store.Belt => "Draught  ·  on the belt",
+            Store.Gems => "Support gem  ·  set it in a skill's socket",
             Store.Satchel => t == LootTier.Chart ? "Chart  ·  in the satchel" : "Book  ·  in the satchel",
             Store.Keys => def.Kind == ItemKind.Quest ? "Quest  ·  on the key ring" : "Tool  ·  on the key ring",
             _ => KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString()),

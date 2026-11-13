@@ -177,6 +177,8 @@ public sealed class CharacterData
     public List<string> DashSteps = new();
     /// <summary>The Unions she has learned (Rpg/UnionJoin.cs: paid for once); which are joined is the lamp layout's.</summary>
     public List<string> UnionsKnown = new();
+    /// <summary>(bd-sockets) Her support gems: copies owned and what sits in each skill's sockets (Rpg/Supports.cs).</summary>
+    public SupportState Gems = new();
 
     /// <summary>Take a step of the dash's growth (the design lead's route calls this, a Wick or a level-up; or
     /// Journey.GrantDashStep, which also tells the fight). False if unknown or already taken as often as it may be.</summary>
@@ -340,6 +342,12 @@ public static class Inventory
             }
             case Store.Satchel: Shelve(ch.Satchel, it, def); return true;
             case Store.Keys: Shelve(ch.Keys, it, def); return true;
+            case Store.Gems:
+            {
+                var gid = Supports.OfItem(it.Def)!.Id;
+                ch.Gems.Owned[gid] = ch.Gems.Owned.GetValueOrDefault(gid) + Math.Max(1, it.Qty);
+                return true;
+            }
         }
         if (def.Stack is { } stack)
             foreach (var p in ch.Pack)
@@ -403,7 +411,7 @@ public static class Inventory
         switch (Drops.StoreOf(def, null))
         {
             case Store.Belt: return Math.Max(0, Drops.Rules.Belt - ch.Belt.GetValueOrDefault(defId));
-            case Store.Pouch or Store.Satchel or Store.Keys: return int.MaxValue;
+            case Store.Pouch or Store.Satchel or Store.Keys or Store.Gems: return int.MaxValue;
         }
         int stack = Math.Max(1, def.Stack ?? 1), n = Free(ch) * stack;
         foreach (var p in ch.Pack) if (p != null && p.Def == defId) n += Math.Max(0, stack - p.Qty);
@@ -413,6 +421,7 @@ public static class Inventory
     public static int Count(CharacterData ch, string defId)
     {
         int n = ch.Materials.GetValueOrDefault(defId) + ch.Belt.GetValueOrDefault(defId);
+        if (Supports.OfItem(defId) is { } gd) n += ch.Gems.Owned.GetValueOrDefault(gd.Id);
         foreach (var p in ch.Pack) if (p?.Def == defId) n += p.Qty;
         foreach (var p in ch.Satchel) if (p.Def == defId) n += p.Qty;
         foreach (var p in ch.Keys) if (p.Def == defId) n += p.Qty;

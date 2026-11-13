@@ -17,7 +17,7 @@ namespace SurvivorUnchained.Rpg;
  * (data/content/loot.json). */
 
 /// <summary>A drop's tier for the eye: the rarity's, with Set apart; then what is not gear.</summary>
-public enum LootTier { Common, Uncommon, Rare, Epic, Set, Legendary, Storied, Material, Book, Chart, Draught, Quest }
+public enum LootTier { Common, Uncommon, Rare, Epic, Set, Legendary, Storied, Material, Book, Chart, Draught, Quest, Gem }
 
 /// <summary>How well a base was made, by its level: the word on its tooltip.</summary>
 public enum Make { Worn, Sound, Wrought, Legion, Heartwrought }
@@ -25,7 +25,7 @@ public enum Make { Worn, Sound, Wrought, Legion, Heartwrought }
 /// <summary>Where a carried thing lives: the pack's places (gear only), what is worn, and the
 /// slotless stores that never fill (docs/design/LOOT_DESIGN.md §6); Kit: worn in the kit not on now
 /// (crafting's two kits, Rpg/Kits.cs).</summary>
-public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt, Kit }
+public enum Store { Pack, Worn, Pouch, Satchel, Keys, Belt, Kit, Gems }
 
 /// <summary>What carried the gear: each pays its own way (§5.1).</summary>
 public enum DropSource { Champion, Miniboss, Herald, Boss, Elite, MapPack, MapPackFine, MapKeeper, MapRuler, Strongbox }
@@ -178,6 +178,7 @@ public static class Drops
         {
             Store.Pouch => LootTier.Material,
             Store.Belt => LootTier.Draught,
+            Store.Gems => LootTier.Gem,
             Store.Satchel => def.Id == Maps.Charts.Item ? LootTier.Chart : def.Kind == ItemKind.Trophy ? LootTier.Material : LootTier.Book,
             _ => LootTier.Quest,
         };
@@ -186,7 +187,7 @@ public static class Drops
     public static LootTier TierOf(ItemInstance it) => TierOf(Items.Get(it.Def), it.Rarity);
 
     /// <summary>Gear the eye should never lose: these the filter can never hide.</summary>
-    public static bool Jackpot(LootTier t) => t is LootTier.Set or LootTier.Legendary or LootTier.Storied or LootTier.Quest;
+    public static bool Jackpot(LootTier t) => t is LootTier.Set or LootTier.Legendary or LootTier.Storied or LootTier.Quest or LootTier.Gem;
 
     /* ---------------------------------------------------------- stores -- */
 
@@ -205,6 +206,7 @@ public static class Drops
                 return def.Consumable is { Teaches: null, Skill: null } c && (c.Heal != null || c.Cure != null || c.Buff != null) ? Store.Belt : Store.Satchel;
             case ItemKind.Tool: return def.Id == Maps.Charts.Item || it?.Chart != null ? Store.Satchel : Store.Keys;
             case ItemKind.Quest: return Store.Keys;
+            case ItemKind.Gem: return Store.Gems;
             default: return Store.Pack;
         }
     }
@@ -501,6 +503,11 @@ public static class Drops
                 if (tier is LootTier.Legendary or LootTier.Set) w.Owned.Add(it.Def);
             }
             o.Add(new Dropped(it, null, 1, tier, GiftOf(Items.Get(it.Def), x.Ch?.Archetype)));
+        }
+        if (x.Ch is { } gch && gch.Level >= Supports.File.Drop.Level && Supports.File.Drop.Chance.GetValueOrDefault(x.Source.Key()) is > 0 and var gc && R() < gc)
+        {
+            var g = Supports.Roll(gch.Gems, R());
+            o.Add(new Dropped(Inventory.Make(gch, Supports.ItemId(g.Id), dropped: true), null, 1, LootTier.Gem));
         }
         if (src.Materials > 0 && material != null) o.Add(new Dropped(null, material, src.Materials, LootTier.Material));
         return o;

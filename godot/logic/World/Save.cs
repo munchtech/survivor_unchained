@@ -106,6 +106,7 @@ public sealed class Saves
         // pouch, books, charts and marked things to the satchel, quest things and tools to the key
         // ring, draughts to the belt. A draught kind past the belt's limit stays in the pack.
         ch.Satchel ??= new();
+        ch.Gems ??= new(); ch.Gems.Owned ??= new(); ch.Gems.Sockets ??= new();
         ch.Keys ??= new();
         ch.Belt ??= new();
         ch.Filter ??= new();
