@@ -255,7 +255,8 @@ public sealed class Projectile : Pooled
     /// <summary>(SU-056) The thrower by lifetime (a slot reused in flight is not them) and what it needs of them at impact.</summary>
     public Lifetime OwnerLife = Lifetime.None;
     public Shot? OwnerShot;
-    /// <summary>(SU-056) Fired by e: its slot, its lifetime and its snapshot.</summary>
+    /// <summary>(SU-072) The thrower's side when it threw (null: not a creature's, or the old way: her alone).</summary>
+    public Allegiance? Allegiance;
     /// <summary>A child of this missile (a split, a mote's halves) takes the parent's context whole: its weapon, champion
     /// multiplier, credit, weight, status, look and rank, one deeper. The one way a derived missile is made (SU-066).</summary>
     public void Derive(Projectile c)
@@ -263,7 +264,8 @@ public sealed class Projectile : Pooled
         c.Weapon = Weapon; c.BossDamage = BossDamage; c.Credit = Credit; c.W = W; c.Status = Status; c.Art = Art; c.Rank = Rank;
         c.Tags = Tags; c.Depth = Depth + 1;
     }
-    public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); }
+    /// <summary>(SU-056) Fired by e: its slot, its lifetime and its snapshot.</summary>
+    public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); Allegiance = Sim.Allegiance.Of(e); }
     public double X, Z, Y = 1, Vx, Vz, Vy, Speed, Damage;
     public School School;
     public Tag[] Tags = Array.Empty<Tag>();
@@ -323,7 +325,7 @@ public sealed class Projectile : Pooled
 
     public void Reset()
     {
-        Owner = Side.Player; OwnerId = -1; OwnerLife = Lifetime.None; OwnerShot = null; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
+        Owner = Side.Player; OwnerId = -1; OwnerLife = Lifetime.None; OwnerShot = null; Allegiance = null; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Radius = 0.2; Pierce = 0; Bounces = 0; Life = 1; Age = 0;
         Homing = 0; Seek = null; Target = -2; TargetLife = Lifetime.None; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;

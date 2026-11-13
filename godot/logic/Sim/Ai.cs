@@ -22,7 +22,6 @@ public static class Ai
     /// (the clips' holds and get-ups, animation's numbers).</summary>
     public const double SlamPlant = 0.65, ShotPlant = 0.7;
     static readonly Tag[] Physical = [Tag.Physical];
-    static readonly Tag[] AllyStrike = [Tag.Summon, Tag.Melee, Tag.Physical];
 
     struct Tgt { public double X, Z, R; public Enemy? Enemy; public bool Player; }
 
@@ -656,6 +655,7 @@ public static class Ai
         int best = -2;
         double bd = double.PositiveInfinity;
         bool hostileToPlayer = e.Disposition == Disposition.Hostile || e.Provoked;
+        var side = Allegiance.Of(e);
         // A reflection of the survivor is the first thing anything hunting them goes for.
         // Champions and bosses are not fooled by a reflection: Mirror Step saves you from the crowd, not from them.
         if (hostileToPlayer && b.Decoys.Count > 0 && !e.Elite && !e.Boss)
@@ -688,8 +688,7 @@ public static class Ai
         {
             var o = b.Enemies.Items[id];
             if (!o.Alive || o == e || o.State == EnemyState.Dying) continue;
-            bool war = o.Disposition == Disposition.Ally ? hostileToPlayer : b.FactionsAtWar(e.Faction, o.Faction);
-            if (!war) continue;
+            if (!b.MayHarm(side, o)) continue;   // (the rule a blow or missile strikes by: SU-072)
             double d = Dist(o.X, o.Z, e.X, e.Z);
             if (d < bd) { bd = d; best = o.Id; }
         }
@@ -845,18 +844,8 @@ public static class Ai
     /// the survivor, so their damage runs through the survivor's pipeline.</summary>
     static void Strike(Battle b, Enemy e, Enemy o, double mult)
     {
-        if (e.Disposition == Disposition.Ally)
-        {
-            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing), Credit = e.SummonedBy ?? e.Def.Id,
-                BossDamage = e.SummonedBy != null && Content.Weapons.All.TryGetValue(e.SummonedBy, out var by) ? by.BossDamage : null });
-            return;
-        }
-        // Rival factions: real damage, no credit, and it draws attention.
-        o.Hp -= e.Damage * mult;
-        o.Flash = 1;
-        b.Events.Emit(new Ev.Hit { X = o.X, Z = o.Z, Amount = e.Damage * mult, Crit = false, School = School.Physical, Target = o.Id });
-        if (o.Target != e.Id && b.Rng.Next() < 0.6) o.Target = e.Id;
-        if (o.Hp <= 0) b.KillEnemy(o, false, null);
+        // (one path for a bite, a charge and a missile: Battle.CreatureStrike, SU-072)
+        b.CreatureStrike(o, e.Damage * mult, School.Physical, Allegiance.Of(e), e, Math.Cos(e.Facing), Math.Sin(e.Facing));
     }
 
     static void Shoot(Battle b, Enemy e, in Tgt tgt)

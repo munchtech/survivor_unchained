@@ -2508,7 +2508,8 @@ public sealed partial class Battle
 
             if (pr.Owner == Side.Enemy)
             {
-                if (p.Alive && Art.WraithT <= 0 && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
+                // (SU-072) Her only if its thrower is hostile to her; else whatever creature it touches that its thrower may harm.
+                if (pr.Allegiance is not { HostileToPlayer: false } && p.Alive && Art.WraithT <= 0 && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
                 {
                     if (p.BulwarkT > 0)
                     {
@@ -2531,6 +2532,7 @@ public sealed partial class Battle
                     if (landed > 0 && pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }
+                else if (pr.Allegiance is { } al && MissileStrikesCreature(pr, al)) Projectiles.Release(pr);
                 continue;
             }
 
@@ -2675,10 +2677,11 @@ public sealed partial class Battle
                 var p = Player;
                 const double r = 1.6;
                 Events.Emit(new Ev.Explosion { X = pr.X, Z = pr.Z, Radius = r, School = pr.School, Power = 0.6 });
-                if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
+                if (pr.Allegiance is not { HostileToPlayer: false } && Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
                     ShotHurt(pr, Live(pr.OwnerLife));
                 }
+                if (pr.Allegiance is { } al) LobStrikesCreatures(pr, al, r);   // (SU-072)
                 if (pr.GroundOnHit is { } g)
                 {
                     var zn = SpawnZone(Side.Enemy, pr.X, pr.Z, g.Radius, g.Duration, pr.Damage * g.DpsPct, pr.School);
