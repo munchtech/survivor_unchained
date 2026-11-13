@@ -80,6 +80,9 @@ public static class VergeDaySim
         b.HandsOn = spec.Setup is "new" or "swap";
         var r0 = new VergeDayResult { Spec = spec, Carried = string.Join("+", b.Weapons.Select(w => $"{w.Id}:{w.Rank}")) };
         var keys = b.Weapons.Where(w => w.Slot >= 0 && w.Slot < b.KeyCount).Select(w => w.Id).ToList();
+        // (bd-keys) Her hands on the press plan (press_plan.json), as MapSim's: deft with --bot deft, else a human's
+        // (0.25 s to react, a press missed now and then); without hands nobody pressed a key, and every key but the grip lay dead.
+        var hands = spec.Deft ? PressHands.Deft((uint)spec.Seed) : PressHands.Human((uint)spec.Seed, 0.25);
         var fired = new HashSet<string>();
         void Tally(List<CombatEvent> evs)
         {
@@ -125,7 +128,7 @@ public static class VergeDaySim
                 // "swap": the new bar, swapping weapon sets every four seconds once the stance has opened (bd-keys).
                 if (spec.Setup == "swap" && b.StanceB != null && (int)((t + ArenaSim.Dt) / 4) > (int)(t / 4)) b.Swap();
                 var (mx, mz) = Pilot.Steer(b, spec.Deft);
-                if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
+                if (Pilot.Act(b, j, mx, mz, hands: hands)) r.Quaffs++;
                 b.Tick(ArenaSim.Dt, mx, mz);
                 Tally(b.Events.Drain());
                 r.Low = Math.Min(r.Low, b.Player.Hp / Math.Max(1, b.MaxHp));
@@ -136,7 +139,7 @@ public static class VergeDaySim
             r.Seconds = t;
             r.Lost = (b.DamageTaken - taken0) / Math.Max(1, b.MaxHp);
             r.Keys = keys;
-            r.Dead = keys.Where(k => !fired.Contains(k)).ToList();
+            r.Dead = keys.Where(k => !fired.Contains(k) && (b.Weapons.Find(w => w.Id == k)?.Casts ?? 0) == 0).ToList();
             all.Add(r);
             foreach (var e in pack.Where(e => e.Alive).ToList()) b.KillEnemy(e, false, null);
             // A breath between packs (the walk on): what lingers (zones, shots) goes out.
