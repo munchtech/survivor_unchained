@@ -164,6 +164,15 @@ public sealed class CharacterData
     /// <summary>(M3) The taught build's levels granted so far (Content/TaughtBuilds.Grant): a slot the player took off
     /// is not put back.</summary>
     public int TaughtUpTo;
+    /// <summary>(bd-keys) Skills offered both ways (pressed or kindled) that she runs in an auto slot (Rpg/SkillBook.IsAuto);
+    /// every other skill's place is its own record's.</summary>
+    public List<string> AutoForm = new();
+    /// <summary>(bd-keys) Her second weapon set's stance (data/content/stances.json), or "" for her calling's taught one; it
+    /// opens at the ladder's level (SkillBook.StanceOf).</summary>
+    public string Stance = "";
+    /// <summary>(bd-keys) The bar this save was carried under: 0 the six keys, 2 four keys and three auto slots (an older
+    /// save's taught build is granted again into the new bar: Content/TaughtBuilds.Grant).</summary>
+    public int Bar;
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
@@ -574,6 +583,10 @@ public sealed class CombatKit
     public List<(string Id, int Rank)> Weapons = new();
     /// <summary>Learned skills carried by day (not into the night's arenas: the ember starts from nothing).</summary>
     public List<(string Id, int Rank)> Learned = new();
+    /// <summary>(bd-keys) A campaign fight's skills in the order the battle takes them up (Character.Bar): her keys in key
+    /// order, her auto slots, then the auto skills her gear grants (no cap); and those that run themselves (kindled).</summary>
+    public List<(string Id, int Rank)> Bar = new();
+    public HashSet<string> Autos = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
     public AbilityKind Ability;
     public int ArtRank = 1;
@@ -678,7 +691,7 @@ public static class Character
         if (!SkillBook.Learn(ch, pick) && !SkillBook.Knows(ch, pick))
         {
             ch.Skills.Add(pick);
-            if (ch.Slotted.Count < SkillBook.Slots(ch)) ch.Slotted.Add(pick);
+            SkillBook.TakeUp(ch, pick);
         }
     }
 
@@ -802,6 +815,7 @@ public static class Character
         }
         foreach (var (id, rank) in SkillBook.Carried(ch))
             if (kit.Weapons.All(w => w.Id != id)) kit.Learned.Add((id, rank));
+        kit.Bar = Bar(ch, kit.Weapons, kit.Autos);
         foreach (var t in ch.Traits)
         {
             var td = Callings.Trait(t);
@@ -835,9 +849,10 @@ public static class Character
     /// room), then its weapon's own (Kit and DaySkills share it).</summary>
     static void GearSkills(CharacterData ch, ItemInstance it, ItemDef def, EquipSlot s, List<(string Id, int Rank)> into)
     {
-        // Skills the gear grants, while there is room for them.
+        // Skills the gear grants (bd-keys: no cap here; Character.Bar puts a pressed one in a free key, and an auto one
+        // runs beside her three auto slots, as many as she wears).
         foreach (var ar in it.Affixes)
-            if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g) && Content.Weapons.SlotsOf(into.Select(w => w.Id)) + Content.Weapons.SlotCost(g) <= Content.Weapons.MaxWeapons)
+            if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g))
                 into.Add((g, 1 + ar.Tier / 2));
         // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
         if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
@@ -848,19 +863,62 @@ public static class Character
         }
     }
 
-    /// <summary>The skills she fights with by day, in the order the fight takes them up (Journey: the gear's, then those
-    /// learned, MaxWeapons at most), each at its rank: the Battle's Weapons before any draft.</summary>
-    /// <param name="gearOnly">Only the gear's (by night these come in at their ranks; the rest the ember drafts).</param>
+    /// <summary>The skills she fights with by day, in the order the fight takes them up (Character.Bar: her keys, her auto
+    /// slots, her gear's auto skills), each at its rank: the Battle's Weapons before any draft.</summary>
+    /// <param name="gearOnly">Only the gear's, every one (by night these come in at their ranks; the rest the ember drafts).</param>
     public static List<(string Id, int Rank)> DaySkills(CharacterData ch, bool gearOnly = false)
     {
         var gear = new List<(string Id, int Rank)>();
         foreach (var s in Items.EquipSlots)
             if (ch.Equipment[s] is { } it) GearSkills(ch, it, Items.Get(it.Def), s, gear);
-        // Battle.AddWeapon's rule: a known skill, once, MaxWeapons slots at most (a union takes two).
+        if (!gearOnly) return Bar(ch, gear, new HashSet<string>());
         var o = new List<(string Id, int Rank)>();
-        foreach (var (id, rank) in gearOnly ? gear : gear.Concat(SkillBook.Carried(ch)))
-            if (o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id) && Content.Weapons.SlotsOf(o.Select(w => w.Id)) + Content.Weapons.SlotCost(id) <= Content.Weapons.MaxWeapons) o.Add((id, rank));
+        foreach (var (id, rank) in gear)
+            if (o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id)) o.Add((id, rank));
         return o;
+    }
+
+    /// <summary>(bd-keys) Her gear grants this skill now (an affix's or its weapon's): she may carry it while she wears it.</summary>
+    public static bool Worn(CharacterData ch, string id) => DaySkills(ch, gearOnly: true).Any(w => w.Id == id);
+
+    /// <summary>(bd-keys, BUILD_DIRECTION.md rounds 7-8) Her bar for a campaign fight, in the order the battle takes it up:
+    /// the keys open at her level in key order (ch.Slotted's: learned skills, and worn ones she put in a key), a pressed
+    /// skill her gear grants in a key still free, her auto slots open at her level, then every auto skill her gear grants
+    /// (item auto skills stack with no cap). A skill learned and worn takes its learned rank. `autos` gets what runs itself.</summary>
+    public static List<(string Id, int Rank)> Bar(CharacterData ch, List<(string Id, int Rank)> gear, HashSet<string> autos)
+    {
+        var learned = new Dictionary<string, int>();
+        foreach (var (id, rank) in SkillBook.Carried(ch)) learned[id] = rank;
+        var worn = new Dictionary<string, int>();
+        foreach (var (id, rank) in gear) if (!worn.ContainsKey(id) && Content.Weapons.All.ContainsKey(id)) worn[id] = rank;
+        int keys = SkillBook.KeysAt(ch.Level), mine = SkillBook.AutosAt(ch.Level);
+        var keyed = new List<(string Id, int Rank)>();
+        var auto = new List<(string Id, int Rank)>();
+        bool On(string id) => keyed.Exists(w => w.Id == id) || auto.Exists(w => w.Id == id);
+        foreach (var id in ch.Slotted.ToList())
+        {
+            if (On(id) || !SkillBook.Carries(ch, id)) continue;
+            int rank;
+            if (learned.TryGetValue(id, out var lr)) rank = lr;
+            else if (!SkillBook.Knows(ch, id) && worn.TryGetValue(id, out var wr)) rank = wr;
+            else continue;
+            if (SkillBook.IsAuto(ch, id)) { if (mine-- > 0) auto.Add((id, rank)); }
+            else if (Content.Weapons.SlotCost(id) <= keys) { keys -= Content.Weapons.SlotCost(id); keyed.Add((id, rank)); }
+        }
+        var items = new List<(string Id, int Rank)>();
+        foreach (var (id, rank) in worn)
+        {
+            if (On(id) || items.Exists(w => w.Id == id)) continue;
+            // A pressed skill she wears and has not put anywhere takes a key still free; one that can run itself runs.
+            if (Content.Weapons.KeyOnly(id) || Content.Weapons.IsUnion(id))
+            {
+                if (Content.Weapons.SlotCost(id) <= keys) { keys -= Content.Weapons.SlotCost(id); keyed.Add((id, rank)); }
+            }
+            else items.Add((id, rank));
+        }
+        autos.Clear();
+        foreach (var (id, _) in auto.Concat(items)) autos.Add(id);
+        return keyed.Concat(auto).Concat(items).ToList();
     }
 
     static void Kindle(CombatKit kit, string key)

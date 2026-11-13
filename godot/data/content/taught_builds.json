@@ -1,16 +1,20 @@
 {
-  "_doc": "Each calling's taught build in Act 1 (ARPG.md 3.1, the hands rule; the coordinator approved the warden's on 9 Nov, Dawnpulse offered later). grip: the held swing (LMB). slots: the six keys in order, each skill with its cast form (one its press record in skills.json allows: hold, press, channel, or kindle for a skill offered kindled) and the level it is taught at. later: offered after the six. union: the first Union and how it takes its keys. Read by Content/TaughtBuilds.cs (M6/M7: the tutorial and the lamp offer); Battle.SetForm applies a cast. HandsRuleTests holds the rule: at most two press or channel slots beside the grip (the dash is not a slot), at most six slots, and at least half the calling's kit offered kindled.",
+  "_doc": "Each calling's taught build in Act 1 (docs/design/BUILD_DIRECTION.md rounds 7-8; every level from docs/design/BUILD_UNLOCKS.md, the ladder). grip: the basic attack, the first key's skill (a real skill: its own wick, it ranks, and she may swap it for another). keys: the four keys in key order, each skill with its cast form (one its press record in skills.json allows: hold, press or channel) and the level it is taught at. autos: the three auto slots in the order they open, each run kindled (cast kindle) and always on, through a stance change too; auto skills her gear grants stack beside them with no cap. stance: the level her second weapon set opens (a stance that flavors the same four keys, never a second bar; data/content/stances.json), the one she takes up then, and those offered. later: offered after the build. union: the first Union and how it takes its keys (two). The dash, the Flare and the swap are never keys. Read by Content/TaughtBuilds.cs (Grant; M6/M7: the tutorial and the lamp offer); Battle.SetForm applies a cast. HandsRuleTests holds the rule: at most four keys, the basic attack held in the first and at most three pressed beside it, exactly three autos all kindled, every slot at its ladder level, and at least half the calling's kit offered kindled.",
   "warden": {
     "grip": "sunder",
-    "slots": [
+    "keys": [
       { "skill": "sunder", "cast": "hold", "level": 1 },
-      { "skill": "groundbreaker", "cast": "kindle", "level": 1 },
       { "skill": "heroic_leap", "cast": "press", "level": 4 },
       { "skill": "shield_charge", "cast": "press", "level": 5 },
-      { "skill": "iron_vow", "cast": "kindle", "level": 7 },
-      { "skill": "watch_bell", "cast": "kindle", "level": 9 }
+      { "skill": "dawnpulse", "cast": "press", "level": 9 }
     ],
-    "later": ["dawnpulse"],
-    "union": { "id": "bladestorm", "note": "takes Cleaver's and Sunder's keys when it comes" }
+    "autos": [
+      { "skill": "groundbreaker", "cast": "kindle", "level": 1 },
+      { "skill": "iron_vow", "cast": "kindle", "level": 7 },
+      { "skill": "watch_bell", "cast": "kindle", "level": 10 }
+    ],
+    "stance": { "level": 8, "default": "shield", "offers": ["shield", "twin_blades", "mace"] },
+    "later": [],
+    "union": { "id": "bladestorm", "note": "takes Cleaver's and Sunder's keys (two of the four) when it comes" }
   }
 }

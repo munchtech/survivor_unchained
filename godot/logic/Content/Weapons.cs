@@ -253,8 +253,15 @@ public sealed class WeaponDef
 public static class Weapons
 {
     public const int MaxRank = 8;
-    /// <summary>Skill slots (keys 1-6), not weapons: a union holds two (SlotCost).</summary>
+    /// <summary>The arena's skill slots (the night's ember drafts six, every one self-firing), not weapons: a union holds
+    /// two (SlotCost). The campaign's are MaxKeys and AutoSlots (docs/design/BUILD_DIRECTION.md rounds 7-8).</summary>
     public const int MaxWeapons = 6;
+    /// <summary>(bd-keys) The campaign's keys: four a weapon set, the basic attack in one (a pad's four face buttons). The
+    /// dash, the Flare and the swap are never among them. A union takes two.</summary>
+    public const int MaxKeys = 4;
+    /// <summary>(bd-keys) Her own auto slots, always on through a stance change: kindled skills, auras, summons, triggers.
+    /// Skills her gear grants that run themselves (item auto skills) stack beside them with no cap.</summary>
+    public const int AutoSlots = 3;
     public const double DamageStep = 0.2, AreaStep = 0.04, DurationStep = 0.06;
     public const int ProjRankA = 4, ProjRankB = 7;
 
@@ -296,6 +303,12 @@ public static class Weapons
     /// <summary>The skill slots a weapon takes: two for a union (the owner, 8 Nov: "unions are 2 skills combined but
     /// still take up both skill slots"), one otherwise. MaxWeapons counts slots, not weapons.</summary>
     public static int SlotCost(string id) => IsUnion(id) ? 2 : 1;
+
+    /// <summary>(bd-keys) Only ever runs itself in the campaign (no press record, or a kindle-kind one): an auto slot's.</summary>
+    public static bool AutoOnly(string id) => All.TryGetValue(id, out var d) && (d.Press == null || d.Press.Kind == PressKind.Kindle);
+
+    /// <summary>(bd-keys) Only ever pressed in the campaign (a hold, press or channel record with no kindled option): a key's.</summary>
+    public static bool KeyOnly(string id) => All.TryGetValue(id, out var d) && d.Press is { } r && r.Kind != PressKind.Kindle && r.Kindled == null;
 
     /// <summary>The slots a list of weapons takes.</summary>
     public static int SlotsOf(IEnumerable<string> ids) => ids.Sum(SlotCost);

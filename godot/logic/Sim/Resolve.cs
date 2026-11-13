@@ -32,6 +32,9 @@ namespace SurvivorUnchained.Sim;
  *   - Spend: Battle.CostOf, read by Firing.Press and the kindled spenders. A channel with a Drain drains it while held
  *     and ends at 0. (M3) A kindled spender whose key heaves (press "now") fires itself only at SelfAt of the cap (full)
  *     and spends all of it; its key heaves at full strength from its cost and with what she has from half its cost.
+ *   - (bd-keys) Pacing is per skill, in its press record (skills.json): a builder fills (the basic attack, Sunder), a
+ *     spender spends (Dawnpulse, Groundbreaker), and the rest run on their own cooldowns with no cost (Heroic Leap,
+ *     Shield Charge). A stance changes no cost; its blows fill as any blow does. ResolvePacingTests holds the mix.
  */
 /// <summary>The meter's numbers (data/content/resolve.json).</summary>
 public sealed class ResolveDef
@@ -322,7 +325,18 @@ public sealed partial class Battle
         return true;
     }
 
-    /// <summary>The taught build's form for a carried skill (taught_builds.json "cast"; campaign only). False: not
-    /// carried, no record, or a form its record does not allow.</summary>
-    public bool SetForm(string id, string cast) => WeaponById(id) is { } w && w.SetForm(cast);
+    /// <summary>A carried skill's form (taught_builds.json "cast", or where she put it; campaign only). (bd-keys) It moves
+    /// to where that form runs: a key when pressed, an auto slot when kindled. False: not carried, no record, a form its
+    /// record does not allow, or a pressed form with no key free (nothing changes).</summary>
+    public bool SetForm(string id, string cast)
+    {
+        if (WeaponById(id) is not { } w) return false;
+        bool was = w.KindledForm;
+        if (!w.SetForm(cast)) return false;
+        if (cast == "kindle") Kindles.Add(id); else Kindles.Remove(id);
+        if (Reslot(w)) return true;
+        w.KindledForm = was;
+        if (was) Kindles.Add(id); else Kindles.Remove(id);
+        return false;
+    }
 }

@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Balance;
 
 /// <summary>One Verge day fight: a calling at a character level, against one of the Verge's day packs at the
 /// level the Verge spawns it (Verge.Level: 1 + (level + day) / 2), with the day loadout a real Act 1 player has
-/// by then. Setup: "old" (1/2/3 day slots at 1/4/8, Hands off), "new" (SkillBook.SlotsAt, Hands on), "nohand"
+/// by then. Setup: "old" (1/2/3 day slots at 1/4/8, Hands off), "new" (SkillBook.SlotsAt: her keys and auto slots, Hands on), "swap" (new, swapping sets every 4 s once the stance opens), "nohand"
 /// (new slots, Hands off). Learned: how many skills she has learned by day (the calling's own first, as
 /// SkillBook.Calling picks them); the slots decide how many she carries.</summary>
 public sealed record VergeDaySpec(int Seed, string Calling, int Level, int Day, string Pack, string Setup, int Learned, bool Deft = false)
@@ -27,6 +27,9 @@ public sealed class VergeDayResult
     public double Seconds, Lost, Low = 1;
     public int Falls, Quaffs, Foes, HandActs, Wave;
     public string Carried = "";
+    /// <summary>(bd-keys) The skills on her keys this fight, and those that never fired (a cast, a swing let go or a
+    /// channel begun): a dead key is a key the build wastes.</summary>
+    public List<string> Keys = new(), Dead = new();
 }
 
 /// <summary>The Verge by day, one pack at a time on open ground (Play/Zones/Verge.cs's day spawns: their kinds,
@@ -74,8 +77,20 @@ public static class VergeDaySim
         ch.Slotted.AddRange(learn.Take(slots));
 
         var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)spec.Seed);
-        b.HandsOn = spec.Setup == "new";
+        b.HandsOn = spec.Setup is "new" or "swap";
         var r0 = new VergeDayResult { Spec = spec, Carried = string.Join("+", b.Weapons.Select(w => $"{w.Id}:{w.Rank}")) };
+        var keys = b.Weapons.Where(w => w.Slot >= 0 && w.Slot < b.KeyCount).Select(w => w.Id).ToList();
+        var fired = new HashSet<string>();
+        void Tally(List<CombatEvent> evs)
+        {
+            foreach (var ev in evs)
+                switch (ev)
+                {
+                    case Ev.Cast c: fired.Add(c.Weapon); break;
+                    case Ev.SwingRelease s: fired.Add(s.Weapon); break;
+                    case Ev.Channel { On: true } ch2: fired.Add(ch2.Weapon); break;
+                }
+        }
         VergeDayResult fallen = r0;
         b.Hooks.OnPlayerDeath = _ => { fallen.Falls++; b.Player.Hp = b.MaxHp; b.Player.Iframes = Math.Max(b.Player.Iframes, 2); return true; };
         // The pack, ten metres off in a seeded direction, awake and hunting (Verge: spread 4, leash 22).
@@ -107,10 +122,12 @@ public static class VergeDaySim
             double t = 0, cap = 120, taken0 = b.DamageTaken;
             while (t < cap && pack.Any(e => e.Alive))
             {
+                // "swap": the new bar, swapping weapon sets every four seconds once the stance has opened (bd-keys).
+                if (spec.Setup == "swap" && b.StanceB != null && (int)((t + ArenaSim.Dt) / 4) > (int)(t / 4)) b.Swap();
                 var (mx, mz) = Pilot.Steer(b, spec.Deft);
                 if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
                 b.Tick(ArenaSim.Dt, mx, mz);
-                b.Events.Drain();
+                Tally(b.Events.Drain());
                 r.Low = Math.Min(r.Low, b.Player.Hp / Math.Max(1, b.MaxHp));
                 t += ArenaSim.Dt;
             }
@@ -118,6 +135,8 @@ public static class VergeDaySim
             r.Cleared = !pack.Any(e => e.Alive);
             r.Seconds = t;
             r.Lost = (b.DamageTaken - taken0) / Math.Max(1, b.MaxHp);
+            r.Keys = keys;
+            r.Dead = keys.Where(k => !fired.Contains(k)).ToList();
             all.Add(r);
             foreach (var e in pack.Where(e => e.Alive).ToList()) b.KillEnemy(e, false, null);
             // A breath between packs (the walk on): what lingers (zones, shots) goes out.
@@ -165,6 +184,15 @@ public static class VergeDaySim
         sb.AppendLine("Hard packs (a fall, uncleared in two minutes, or over 60% of her health taken), by grip:");
         foreach (var g in rs.Where(r => r.Falls > 0 || !r.Cleared || r.Lost > 0.6).GroupBy(r => (r.Spec.Calling, r.Spec.Level, r.Spec.Learned, r.Spec.Pack, r.Spec.Setup, Grip: r.Carried.Split('+')[0])).OrderBy(g => g.Key.ToString()))
             sb.AppendLine($"- {g.Key.Calling} L{g.Key.Level} k{g.Key.Learned} {g.Key.Pack} {g.Key.Setup} grip {g.Key.Grip}: {g.Count()} of {rs.Count(r => r.Spec.Calling == g.Key.Calling && r.Spec.Level == g.Key.Level && r.Spec.Learned == g.Key.Learned && r.Spec.Pack == g.Key.Pack && r.Spec.Setup == g.Key.Setup && r.Carried.Split('+')[0] == g.Key.Grip)} packs, falls {g.Sum(r => r.Falls)}, uncleared {g.Count(r => !r.Cleared)}, lost up to {100 * g.Max(r => r.Lost):0}%, {g.Max(r => r.Seconds):0} s");
+        sb.AppendLine();
+        // (bd-keys) A key no fight of a stage ever fired is a dead key (counted over all its waves and packs).
+        sb.AppendLine("Dead keys (on her keys, never fired in any fight of the stage):");
+        foreach (var g in rs.GroupBy(r => (r.Spec.Calling, r.Spec.Level, r.Spec.Learned, r.Spec.Setup)).OrderBy(g => g.Key.ToString()))
+        {
+            var keyed = g.SelectMany(r => r.Keys).Distinct().ToList();
+            var dead = keyed.Where(k => g.All(r => !r.Keys.Contains(k) || r.Dead.Contains(k))).ToList();
+            sb.AppendLine($"- {g.Key.Calling} L{g.Key.Level} k{g.Key.Learned} {g.Key.Setup}: keys {string.Join(", ", keyed)}; dead {(dead.Count == 0 ? "none" : string.Join(", ", dead))}");
+        }
         sb.AppendLine();
         sb.AppendLine("Carried by day (per calling, stage and setup; grip first):");
         foreach (var g in rs.GroupBy(r => (r.Spec.Calling, r.Spec.Level, r.Spec.Learned, r.Spec.Setup)).OrderBy(g => g.Key.ToString()))

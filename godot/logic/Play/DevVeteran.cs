@@ -38,7 +38,7 @@ public static class DevVeteran
             if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
             if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
             ch.Skills.Add(id);
-            ch.Slotted.Add(id);
+            SkillBook.TakeUp(ch, id);
         }
         var rng = new Rng((uint)seed * 31 + 5);
         (EquipSlot Slot, string Def)[] dress =
