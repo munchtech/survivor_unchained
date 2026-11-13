@@ -14,14 +14,18 @@ public static class SocketModel
     public static string RomanOf(int n) => n >= 0 && n < Roman.Length ? Roman[n] : n.ToString();
 
     /// <summary>A gem's colour as hex: takes any skill = clear, Shield first = sapphire, else garnet.</summary>
-    public static string GemHex(SupportDef g) =>
-        g.Fits.Count == 0 ? "#E6EEFF" : g.Fits[0].Equals("Shield", StringComparison.OrdinalIgnoreCase) ? "#3F7FD8" : "#C42B3A";
+    public static string GemHex(SupportDef g) => Supports.Family(g) switch
+    {
+        "clear" => "#E6EEFF", "sapphire" => "#3F7FD8", "bicolor" => "#B37AB6", _ => "#C42B3A",
+    };
 
     /// <summary>The head's note: which ranks open the sockets while any is closed, else "both open".</summary>
     public static string Note(int rank)
     {
         var r = Supports.File.Sockets.Ranks;
-        if (Supports.SocketsAt(rank) >= r.Count) return "both open";
+        int open = Supports.SocketsAt(rank);
+        if (open >= r.Count) return "both open";
+        if (open == 1) return $"the second opens at rank {RomanOf(r[1])}";
         return $"rank {RomanOf(r[0])} opens the first, {RomanOf(r[1])} the second";
     }
 
@@ -50,6 +54,24 @@ public static class SocketModel
             rows.Add(new Row(g, owned, Math.Max(0, owned - used), here == g.Id));
         }
         return (rows, dont);
+    }
+
+    /// <summary>The gems she owns that do not fit the skill, as at most two lines: "Bulwark fits shield skills only."
+    /// (gems with the same fit share a line: "Bulwark and Concussion fit ..."), then "and N more" for the rest.</summary>
+    public static List<string> DontFitLines(SupportState s, string skill)
+    {
+        var bad = Supports.All.Where(g => s.Owned.GetValueOrDefault(g.Id) > 0 && !Supports.Fits(g, skill)).ToList();
+        var groups = bad.GroupBy(g => string.Join(" or ", g.Fits.Select(f => f.ToLowerInvariant()))).ToList();
+        var lines = new List<string>();
+        foreach (var gr in groups.Take(2))
+        {
+            var names = gr.Select(g => g.Name).ToList();
+            string who = names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+            lines.Add($"{who} {(names.Count == 1 ? "fits" : "fit")} {gr.Key} skills only.");
+        }
+        int more = groups.Skip(2).Sum(g => g.Count());
+        if (more > 0) lines.Add($"and {more} more");
+        return lines;
     }
 
     public static string DontFitLine(int n, string skillName) => $"{n} of your gems {(n == 1 ? "doesn't" : "don't")} fit {skillName}.";

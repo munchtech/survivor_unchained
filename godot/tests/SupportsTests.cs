@@ -138,15 +138,16 @@ public sealed class SupportsTests
     public void Gem_colour_family_and_icon_follow_what_it_fits()
     {
         var fam = Supports.All.ToDictionary(g => g.Id, Supports.Family);
-        Assert.Equal(["clear", "garnet", "sapphire"], fam.Values.Distinct().OrderBy(x => x).ToArray());
+        Assert.Equal(["bicolor", "clear", "garnet", "sapphire"], fam.Values.Distinct().OrderBy(x => x).ToArray());
         foreach (var g in Supports.All)
         {
-            var want = g.Fits.Count == 0 ? "clear" : g.Fits[0] == "Shield" ? "sapphire" : "garnet";
+            var want = g.Fits.Count == 0 ? "clear" : g.Fits.Contains("Melee") && g.Fits.Contains("Shield") ? "bicolor" : g.Fits.Contains("Shield") ? "sapphire" : "garnet";
             Assert.Equal(want, Supports.Family(g));
         }
         Assert.Equal("sapphire", fam["bulwark"]);
         Assert.Equal("garnet", fam["brutality"]);
         Assert.Equal("clear", fam["haste"]);
+        Assert.Equal("bicolor", fam["concussion"]);
         foreach (var d in Supports.ItemDefs()) Assert.Equal("gem_" + fam[d.Id[Supports.ItemPrefix.Length..]], d.Icon);
     }
 
