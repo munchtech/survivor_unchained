@@ -19,8 +19,12 @@ public sealed class SocketPanelTests
     [Fact]
     public void The_head_note_follows_the_rank()
     {
-        Assert.Equal("rank III opens the first, VI the second", SocketModel.Note(2));
-        Assert.Equal("the second opens at rank VI", SocketModel.Note(4));
+        Assert.Equal("both closed", SocketModel.Note(0));
+        Assert.Equal("one of two open", SocketModel.Note(4));
+        Assert.Equal("SOCKET I · BRUTALITY", SocketModel.ChooserHead(0, "Brutality"));
+        Assert.Equal("SOCKET II · EMPTY", SocketModel.ChooserHead(1, null));
+        Assert.Equal($"Support gems drop from level {Supports.File.Drop.Level}.", SocketModel.NoGemsLine());
+        Assert.Equal("falling_wall", SocketModel.JoinedUnion("heroic_leap", new[] { "falling_wall" }));
         Assert.Equal("both open", SocketModel.Note(6));
     }
 

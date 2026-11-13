@@ -27,18 +27,30 @@ public partial class GemSocket : Control
         if (gem != null && look != Look.Empty)
         {
             string key = Items.Get(Supports.ItemId(gem.Id)).Icon;
-            int px = (int)Mathf.Round(44 * s);
+            // the stone is about 71% of its picture across: a 56 px picture shows it 40 x 30 in a 56 px well
+            int px = (int)Mathf.Round(StonePicture * s);
             var pic = ItemPhotos.Icon(key, px, GemLook.Of(gem).Lightened(0.25f));
             pic.Position = new Vector2((size - px) / 2f, (size - px) / 2f);
             if (look == Look.Closed)
             {
-                // kept but closed: the stone drawn toward grey and dimmed by half (a clear stone at 45% alpha still read bright)
-                var sh = new Shader { Code = "shader_type canvas_item; void fragment(){ vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.3, 0.59, 0.11)); COLOR = vec4(mix(c.rgb, vec3(g), 0.85) * 0.5, c.a * 0.7); }" };
+                // kept but closed: the stone at 40% value and 40% saturation
+                var sh = new Shader { Code = "shader_type canvas_item; void fragment(){ vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.3, 0.59, 0.11)); COLOR = vec4(mix(vec3(g), c.rgb, 0.4) * 0.4, c.a); }" };
                 pic.Material = new ShaderMaterial { Shader = sh };
+                if (pic.GetChildCount() > 0 && pic.GetChild(0) is CanvasItem ci) ci.UseParentMaterial = true;
             }
             AddChild(pic);
         }
+        if (look == Look.Closed)
+        {
+            // the lock, 16 px of ink (a 24 px glyph box) at 70%, centred (above a kept stone)
+            var lk = new TextureRect { Texture = Glyphs.Texture("lock", 24, new Color("#F2E6C8") with { A = 0.7f }), MouseFilter = MouseFilterEnum.Ignore, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, Size = new Vector2(24, 24) };
+            lk.Position = new Vector2((size - 24) / 2f, (size - 24) / 2f);
+            AddChild(lk);
+        }
     }
+
+    /// <summary>The picture's side that shows the stone 40 px across (its full width is about 71% of the picture).</summary>
+    public const int StonePicture = 56;
 
     /// <summary>Make it a button: the mouse clicks it, the pad presses it (Nav.Mark by the caller).</summary>
     public GemSocket Clickable()
@@ -91,20 +103,22 @@ public partial class GemSocket : Control
             float t = i / (float)(steps - 1);
             DrawCircle(c + new Vector2(-r * 0.08f, -r * 0.08f) * t, r * (1 - t * 0.9f), edge.Lerp(mid, t));
         }
-        // the crescent of light at the top left
-        DrawArc(c, r * 0.8f, Mathf.Pi * 1.08f, Mathf.Pi * 1.42f, 14, new Color(1, 1, 1, 0.25f), 3f * Mathf.Max(s, 0.8f), true);
-        // the gem's picture sits above (a child); marks
+        // a soft radial highlight at the top left: 0 -> 18% white, feathered 6 px (open wells only)
+        if (look != Look.Closed)
+        {
+            var hc = c + new Vector2(-r * 0.3f, -r * 0.32f); float hr = r * 0.42f;
+            float per = 1f - Mathf.Pow(1f - 0.18f, 1f / 6f);
+            for (int i = 0; i < 6; i++) DrawCircle(hc, hr - i, new Color(1, 1, 1, per));
+        }
         var cream = new Color("#F2E6C8");
-        if (look == Look.Closed)
-            DrawTextureRect(Glyphs.Texture("lock", 16, cream with { A = 0.6f }), new Rect2(c - new Vector2(8, 8) + (gem == null ? Vector2.Zero : new Vector2(r * 0.55f, r * 0.55f)), new Vector2(16, 16)), false);
-        else if (look == Look.Empty)
+        if (look == Look.Empty)
             DrawProfile(this, c, 24 * s, cream with { A = 0.35f });
         // the one bezel: bronze 3 px, light at the top left to dark at the bottom right, a 1 px dark line inside
         bool hot = Selected;
         if (hot) for (int i = 6; i >= 1; i--) DrawArc(c, r + 1.5f + i * 0.5f, 0, Mathf.Tau, 48, Style.Ember with { A = 0.07f + 0.02f * (6 - i) }, 1.5f + i, true);
         const int n = 48;
         var pts = new Vector2[n + 1]; var cols = new Color[n + 1];
-        var dark = new Color("#8A6A3C"); var lite = new Color("#C9A266");
+        var dark = look == Look.Closed ? new Color("#4A4440") : new Color("#8A6A3C"); var lite = look == Look.Closed ? new Color("#6A625A") : new Color("#C9A266");
         float hl = hover && !hot ? 0.18f : 0;
         for (int i = 0; i <= n; i++)
         {

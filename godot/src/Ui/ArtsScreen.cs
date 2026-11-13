@@ -56,6 +56,9 @@ public partial class ArtsScreen : Overlay
         }
     }
 
+    /// <summary>The Arts window on every Skills page: from y 16 to y 1046.</summary>
+    const float SkillsH = 1030;
+
     bool Safe => G.Battle is not { Combat: true };
 
     /// <summary>Its two pages turn with LT and RT (, and .).</summary>
@@ -105,6 +108,12 @@ public partial class ArtsScreen : Overlay
             ? Kit.Prompts(Kit.Prompt(Act.Confirm, "Choose"), Kit.Prompt(Act.SubNext, PageNames[(page + 1) % Pages]), Kit.Prompt(Act.TabNext, "Turn"), Kit.Prompt(Act.Cancel, "Close"))
             : Kit.Prompts(Kit.Prompt("Click", "Choose"), Kit.Prompt(G.Key(Act.SubPrev) + " " + G.Key(Act.SubNext), PageNames[(page + 1) % Pages]), Kit.Prompt("[ ]", "Turn"), Kit.Prompt(G.Key(Act.Arts), "Close"));
         p.CustomMinimumSize = new Vector2(0, 30);
+        if (skills)
+        {
+            // the Skills pages are one fixed height (bottom edge at y 1046), whatever the chooser holds
+            v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+            if (v.GetParent() is Control pc) pc.CustomMinimumSize = new Vector2(pc.CustomMinimumSize.X, SkillsH);
+        }
         v.AddChild(p);
     }
 
@@ -508,7 +517,6 @@ public partial class ArtsScreen : Overlay
     // The socket block (bd-ui W11): which socket's chooser is open (one at a time).
     string? sockSkill;
     int sockIdx = -1;
-    bool sockMore;
 
     static SupportDef? Held(CharacterData ch, string skill, int i) =>
         ch.Gems.Sockets.TryGetValue(skill, out var row) && i < row.Count && row[i] != null ? Supports.Find(row[i]!) : null;
@@ -519,6 +527,7 @@ public partial class ArtsScreen : Overlay
         if (SocketModel.Halves(w.Id) is { } halves) { UnionSockets(d, ch, halves, w.Id); return; }
         int rank = SkillBook.RankOf(ch, w.Id), open = Supports.SocketsAt(rank), n = Supports.File.Sockets.Ranks.Count;
         d.AddChild(Kit.Head("Sockets", SocketModel.Note(rank)));
+        int ownedAny = ch.Gems.Owned.Values.Count(v => v > 0);
         var wells = Style.H(8);
         for (int i = 0; i < n; i++)
         {
@@ -529,7 +538,7 @@ public partial class ArtsScreen : Overlay
             var well = new GemSocket(look, gem);
             var col = Style.V(4, well);
             col.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
-            col.CustomMinimumSize = new Vector2(130, 0); // a fixed column, so the wells sit in the same places in every state
+            col.CustomMinimumSize = new Vector2(150, 0); // a fixed column, so the wells sit in the same places in every state
             if (isOpen)
             {
                 well.Clickable();
@@ -542,18 +551,27 @@ public partial class ArtsScreen : Overlay
             else
             {
                 string at = SocketModel.RomanOf(Supports.File.Sockets.Ranks[i]);
-                // (a kept gem's note says the rank: "at rank VI" above its name would say it twice)
+                // (a kept gem's note says the rank once: name #8C847A regular, then one line)
                 if (gem == null) col.AddChild(Style.Label($"at rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
                 else
                 {
-                    col.AddChild(Style.Label(gem.Name, Style.UiBold, 14, Kit.Ink2, false, HorizontalAlignment.Center));
-                    col.AddChild(Style.Label($"kept, adds nothing\nbelow rank {at}", Style.TextItalic, 13, Kit.Dim, false, HorizontalAlignment.Center));
+                    col.AddChild(Style.Label(gem.Name, Style.Ui, 14, new Color("#8C847A"), false, HorizontalAlignment.Center));
+                    col.AddChild(Style.Label($"kept · wakes at rank {at}", Style.TextItalic, 13, Kit.Dim, false, HorizontalAlignment.Center));
                 }
             }
             wells.AddChild(col);
         }
         d.AddChild(wells);
-        if (SocketModel.HalfLine(w.Id, UnionJoin.Joined(ch)) is { } joinedIn) d.AddChild(Style.Label(joinedIn, Style.TextItalic, 13, Kit.Dim, true));
+        if (ownedAny == 0) d.AddChild(Style.Label(SocketModel.NoGemsLine(), Style.TextItalic, 14, Kit.Dim, true));
+        if (SocketModel.JoinedUnion(w.Id, UnionJoin.Joined(ch)) is { } uid && Weapons.All.TryGetValue(uid, out var udef))
+        {
+            var lk = new LinkButton { Text = udef.Name, Underline = LinkButton.UnderlineMode.OnHover, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
+            Style.Font(lk, Style.TextItalic, 14, Style.Ember, false);
+            lk.AddThemeColorOverride("font_hover_color", Style.EmberHi);
+            lk.Pressed += () => { selSkill = uid; sockSkill = null; sockIdx = -1; Refresh(); };
+            Nav.Id(lk, $"union:{uid}");
+            d.AddChild(Style.H(0, Style.Label("Joined in ", Style.TextItalic, 14, Kit.Dim), lk, Style.Label(": these gems feed it too.", Style.TextItalic, 14, Kit.Dim)));
+        }
         if (sockSkill == w.Id && sockIdx >= 0 && sockIdx < open) Chooser(d, ch, w);
     }
 
@@ -567,19 +585,23 @@ public partial class ArtsScreen : Overlay
             G.Gear((j, _) => Supports.Socket(j.Ch.Gems, w.Id, SkillBook.RankOf(j.Ch, w.Id), idx, gem));
             if (gem != null) Sound.Sfx.Equip(); else Sound.Sfx.Click();
         }
-        const int cap = 6;
-        bool more = rows.Count > cap && sockMore;
-        foreach (var r in more || rows.Count <= cap ? rows : rows.Take(cap))
+        var held = Held(ch, w.Id, idx);
+        d.AddChild(Style.Label(SocketModel.ChooserHead(idx, held?.Name), Style.UiHeavy, 13, Kit.HeadInk, false, HorizontalAlignment.Left, false));
+        var list = Style.V(0); // rows 46 px apart: no gap between them
+        foreach (var r in rows)
         {
             var g = r.Gem;
             bool free = r.Free > 0 && !r.Here;
             var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 46), MouseDefaultCursorShape = free ? CursorShape.PointingHand : CursorShape.Arrow };
             foreach (var st in new[] { "normal", "pressed", "focus" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
-            b.AddThemeStyleboxOverride("hover", free ? new StyleBoxFlat { BgColor = Style.Ember with { A = 0.08f } } : new StyleBoxEmpty());
+            b.AddThemeStyleboxOverride("hover", free ? new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.06f) } : new StyleBoxEmpty());
             if (free) b.Pressed += () => Set(g.Id);
             Nav.Id(b, $"gem:{g.Id}");
-            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, 36, GemLook.Of(g).Lightened(0.25f));
-            pic.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, RowPicture, GemLook.Of(g).Lightened(0.25f));
+            // the stone 30 x 24 in a 32 px box (the picture is wider than the box, centred on it)
+            var box = new Control { CustomMinimumSize = new Vector2(32, 32), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
+            pic.Position = new Vector2((32 - RowPicture) / 2f, (32 - RowPicture) / 2f);
+            box.AddChild(pic);
             var count = Style.Label(r.Here ? $"set here · {r.Owned} owned · {r.Free} free" : free ? $"{r.Owned} owned · {r.Free} free" : "all set elsewhere", Style.Ui, 14, r.Here ? Style.Ember : Kit.Dim, false, HorizontalAlignment.Right);
             var nm = Style.Label(g.Name, Style.DisplayLight, 16, Kit.Ink);
             nm.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -587,31 +609,38 @@ public partial class ArtsScreen : Overlay
             var words = Style.V(0, nameLine, Style.Label(g.Text, Style.Text, 14, Kit.Ink2, false));
             words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             words.SizeFlagsVertical = SizeFlags.ShrinkBegin;
-            var h = Style.H(12, pic, words);
+            var h = Style.H(12, box, words);
             h.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             h.OffsetLeft = 8; h.OffsetRight = -8;
             h.MouseFilter = MouseFilterEnum.Ignore;
             b.AddChild(h);
             if (!free && !r.Here) b.Modulate = new Color(1, 1, 1, 0.45f);
-            d.AddChild(b);
+            list.AddChild(b);
         }
-        if (rows.Count > cap)
-            d.AddChild(Kit.Word(sockMore ? "Fewer gems" : $"More gems ({rows.Count - cap})", () => { sockMore = !sockMore; Refresh(); }, Kit.Ink2, 14));
-        foreach (var line in SocketModel.DontFitLines(ch.Gems, w.Id)) d.AddChild(Style.Label(line, Style.TextItalic, 14, Kit.Dim, true));
-        if (ch.Gems.Owned.Values.All(v => v <= 0))
-            d.AddChild(Style.Label($"Support gems drop from the {SocketModel.Ordinal(Supports.File.Drop.Level)} level on: champions, bosses, strongboxes.", Style.TextItalic, 14, Kit.Dim, true));
-        if (Held(ch, w.Id, idx) is { } held)
+        // "Take X out" a row right under the last gem, with a 14 px x mark
+        if (held != null)
         {
-            var o = new Button { Text = $"Take {held.Name} out", FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 30), MouseDefaultCursorShape = CursorShape.PointingHand, Alignment = HorizontalAlignment.Left };
-            Style.Font(o, Style.TextItalic, 14, Kit.Ink2, false);
-            o.AddThemeColorOverride("font_hover_color", Kit.Ink);
+            var o = new Button { FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 46), MouseDefaultCursorShape = CursorShape.PointingHand };
             foreach (var st in new[] { "normal", "pressed", "focus" }) o.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
-            o.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = Style.Ember with { A = 0.08f } });
+            o.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.06f) });
+            var lab = Style.Label($"Take {held.Name} out", Style.TextItalic, 14, Kit.Ink2, false);
+            var xm = new XMark { CustomMinimumSize = new Vector2(32, 14), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+            var oh = Style.H(12, xm, lab);
+            oh.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            oh.OffsetLeft = 8; oh.OffsetRight = -8;
+            oh.MouseFilter = MouseFilterEnum.Ignore;
+            lab.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            o.AddChild(oh);
             o.Pressed += () => Set(null);
             Nav.Id(o, "gem:out");
-            d.AddChild(o);
+            list.AddChild(o);
         }
+        d.AddChild(list);
+        foreach (var line in SocketModel.DontFitLines(ch.Gems, w.Id)) d.AddChild(Style.Label(line, Style.TextItalic, 14, Kit.Dim, true));
     }
+
+    /// <summary>The picture side that shows a stone 30 px across (see GemSocket.StonePicture: 71% of the picture).</summary>
+    const int RowPicture = 42;
 
     /// <summary>A Union has no sockets of its own: it takes both halves' gems, shown read-only under each half's name.</summary>
     void UnionSockets(VBoxContainer d, CharacterData ch, (string A, string B) halves, string sockUnion)
@@ -635,7 +664,7 @@ public partial class ArtsScreen : Overlay
                 wells.AddChild(new GemSocket(i >= open ? GemSocket.Look.Closed : gem != null ? GemSocket.Look.Filled : GemSocket.Look.Empty, gem, 44).ReadOnly());
             }
             string hid = id;
-            var link = new LinkButton { Text = half.Name, Underline = LinkButton.UnderlineMode.OnHover, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
+            var link = new LinkButton { Text = half.Name + " ›", Underline = LinkButton.UnderlineMode.OnHover, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
             Style.Font(link, Style.UiBold, 16, Style.Ember, false);
             link.AddThemeColorOverride("font_hover_color", Style.EmberHi);
             link.Pressed += () => { selSkill = hid; sockSkill = null; sockIdx = -1; Refresh(); };
@@ -647,7 +676,7 @@ public partial class ArtsScreen : Overlay
 
     Control SkillDetail(CharacterData ch, WeaponDef w)
     {
-        var d = Style.V(8);
+        var d = Style.V(6); // (6, so all eight gems fit the fixed window)
         d.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool known = SkillBook.Knows(ch, w.Id), carried = ch.Slotted.Contains(w.Id), meets = SkillBook.Meets(ch, w.Id);
         var col = ItemViews.SchoolColors[w.School];
@@ -732,5 +761,17 @@ public partial class RoadTrack : Control
             var gs = g.GetStringSize(Gives[k - 1], HorizontalAlignment.Left, -1, 13);
             DrawString(g, new Vector2(p.X - gs.X / 2, y + 36), Gives[k - 1], HorizontalAlignment.Left, -1, 13, reached ? Kit.Ink2 : Kit.Faint);
         }
+    }
+}
+
+/// <summary>A small x mark (two strokes), for "take it out".</summary>
+public partial class XMark : Control
+{
+    public override void _Draw()
+    {
+        var c = new Vector2(7, Size.Y / 2f);
+        var ink = Kit.Ink2;
+        DrawLine(c + new Vector2(-6, -6), c + new Vector2(6, 6), ink, 1.5f, true);
+        DrawLine(c + new Vector2(6, -6), c + new Vector2(-6, 6), ink, 1.5f, true);
     }
 }

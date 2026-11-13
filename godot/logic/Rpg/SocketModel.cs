@@ -19,15 +19,23 @@ public static class SocketModel
         "clear" => "#E6EEFF", "sapphire" => "#3F7FD8", "bicolor" => "#B37AB6", _ => "#C42B3A",
     };
 
-    /// <summary>The head's note: which ranks open the sockets while any is closed, else "both open".</summary>
+    /// <summary>The head's note: how many of the wells are open (the closed wells name their own rank).</summary>
     public static string Note(int rank)
     {
-        var r = Supports.File.Sockets.Ranks;
-        int open = Supports.SocketsAt(rank);
-        if (open >= r.Count) return "both open";
-        if (open == 1) return $"the second opens at rank {RomanOf(r[1])}";
-        return $"rank {RomanOf(r[0])} opens the first, {RomanOf(r[1])} the second";
+        int open = Supports.SocketsAt(rank), n = Supports.File.Sockets.Ranks.Count;
+        if (open >= n) return "both open";
+        return open <= 0 ? "both closed" : "one of two open";
     }
+
+    /// <summary>The chooser's head: "SOCKET I · BRUTALITY", or "SOCKET II · EMPTY" (index from 0).</summary>
+    public static string ChooserHead(int index, string? gemName) => $"SOCKET {RomanOf(index + 1)} · {(gemName ?? "empty").ToUpperInvariant()}";
+
+    /// <summary>The line under the wells while she owns no gem at all.</summary>
+    public static string NoGemsLine() => $"Support gems drop from level {Supports.File.Drop.Level}.";
+
+    /// <summary>The Union (id) a joined half feeds, else null.</summary>
+    public static string? JoinedUnion(string skill, IEnumerable<string> joined) =>
+        joined.FirstOrDefault(id => Halves(id) is { } h && (h.A == skill || h.B == skill));
 
     /// <summary>The rank line: her rank, and what gear adds on top.</summary>
     public static string RankLine(int baseRank, int total)
