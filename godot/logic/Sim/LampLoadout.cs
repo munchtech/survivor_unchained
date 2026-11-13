@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 
 namespace SurvivorUnchained.Sim;
 
@@ -57,13 +58,21 @@ public sealed class LampLoadout
         rule is "rite" or "link" or "hand" or "tags.more" or "tags.sooner" or "tags.duration" or "tags.status" or "tags.kill_mend"
         || rule.StartsWith("hand.", StringComparison.Ordinal) || rule.StartsWith("blue.", StringComparison.Ordinal);
 
-    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit (read once).</summary>
-    static readonly HashSet<string> Off = new((Environment.GetEnvironmentVariable("LAMPS_OFF") ?? "")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit. Read through the dev gate
+    /// when used, never cached before the host sets it, so a release build lights every lamp (Codex audit SU-052).</summary>
+    static (string Raw, HashSet<string> Ids)? offCache;
+    static bool Off(string rule)
+    {
+        if (DevOverrides.Env("LAMPS_OFF") is not { } raw) return false;
+        var c = offCache;
+        if (c is not { } hit || hit.Raw != raw)
+            offCache = c = (raw, new HashSet<string>(raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)));
+        return c.Value.Ids.Contains(rule);
+    }
 
     public void Add(LampEffect e)
     {
-        if (e.Rule == null || Off.Contains(e.Rule)) return;
+        if (e.Rule == null || Off(e.Rule)) return;
         Version++;
         if (IsBoardRule(e.Rule)) { Board = true; if (e.Rule == "blue.unhoused") Unhoused = true; }
         Rules.TryAdd(e.Rule, e);
@@ -89,7 +98,7 @@ public sealed class LampLoadout
         }
         wick.Clear();
         Version++;
-        foreach (var e in fx) { if (e.Rule == null || Off.Contains(e.Rule)) continue; Add(e); wick.Add(e); }
+        foreach (var e in fx) { if (e.Rule == null || Off(e.Rule)) continue; Add(e); wick.Add(e); }
     }
 
     /// <summary>A rule's size, at a quarter by night: summed over every lamp lighting it.</summary>

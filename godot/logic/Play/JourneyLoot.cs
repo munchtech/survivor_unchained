@@ -116,16 +116,15 @@ public sealed partial class Journey
     public Gathered Gather(Battle b)
     {
         int home = 0, stored = 0, broken = 0, iron = 0, shards = 0, left = 0, held = 0;
-        foreach (var p in b.Pickups.Items)
+        foreach (var p in b.Lying())
         {
-            if (!p.Alive) continue;
             if (p.Payload is not ItemInstance it)
             {
                 // The people's material left lying is the night's too.
-                if (p.Kind == PickupKind.Material && p.Ref != null) { Inventory.AddToPack(Ch, Inventory.Make(Ch, p.Ref, Math.Max(1, MathX.RoundInt(p.Value)))); b.Pickups.Release(p); }
+                if (p.Kind == PickupKind.Material && p.Ref != null) { Inventory.AddToPack(Ch, Inventory.Make(Ch, p.Ref, Math.Max(1, MathX.RoundInt(p.Value)))); b.Remove(p); }
                 // A chart or a ruler's thing left lying comes home as if picked up (they go to the
                 // satchel, which never fills): left, the ruler's charts and Marks were lost with the map.
-                else if (p.Kind == PickupKind.Item && p.Ref != null && p.Look != Verdict.Hidden && PickedUp(p)) { home++; b.Pickups.Release(p); }
+                else if (p.Kind == PickupKind.Item && p.Ref != null && p.Look != Verdict.Hidden && PickedUp(p)) { home++; b.Remove(p); }
                 continue;
             }
             bool shown = p.Look != Verdict.Hidden;
@@ -144,7 +143,7 @@ public sealed partial class Journey
                 broken++;
             }
             else { left++; continue; }
-            b.Pickups.Release(p);
+            b.Remove(p);
         }
         if (home + stored + broken + held > 0) OnTouch();
         SayHeld(held);
@@ -157,13 +156,13 @@ public sealed partial class Journey
     public int Abandon(Battle b)
     {
         int kept = 0, held = 0;
-        foreach (var p in b.Pickups.Items)
+        foreach (var p in b.Lying())
         {
-            if (!p.Alive || p.Payload is not ItemInstance it || p.Look == Verdict.Hidden) continue;
+            if (p.Payload is not ItemInstance it || p.Look == Verdict.Hidden) continue;
             if (!Protected(it)) continue;
             // (her shelves full: held by the door, not lost with the ground, SU-019)
             if (Keep(it)) kept++; else held++;
-            b.Pickups.Release(p);
+            b.Remove(p);
         }
         SayHeld(held);
         if (kept > 0)

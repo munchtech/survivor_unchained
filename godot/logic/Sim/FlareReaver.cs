@@ -21,7 +21,8 @@ public sealed partial class Battle
 {
     /* ------------------------------------------------------------ Drag Them Under -- */
 
-    readonly List<(Enemy E, int Id)> dragHooked = new();
+    /// <summary>(SU-053) Who is on a hook, by lifetime: a reused slot is not hooked.</summary>
+    readonly List<Lifetime> dragHooked = new();
     double knotX, knotZ;
 
     /// <summary>The bite (first blow), the knot, Grinder's shreds, and the slam (the last).</summary>
@@ -49,7 +50,7 @@ public sealed partial class Battle
                 hitstop = 0;
                 FlareHit(e, f.Arg("hook", 0.5), f.School, 0, p.X, p.Z);
                 if (!e.Alive || e.State == EnemyState.Dying) continue;
-                dragHooked.Add((e, e.Id));
+                dragHooked.Add(Lifetime.Of(e));
                 // The haul: a slide to the knot (knockback settles at 9 a second, so v = 9 x the distance), each to its
                 // place round it; a boss only 3 m, a fixed thing not at all.
                 double kx = knotX - e.X, kz = knotZ - e.Z, kd = Len(kx, kz);
@@ -87,8 +88,8 @@ public sealed partial class Battle
         }
         // The slam: what is in the knot and every thing still on a hook.
         var struck = HostilesInRadius(knotX, knotZ, slamR).Where(e => !e.Boss || FlareCanHurt(e)).ToList();
-        foreach (var (e, id) in dragHooked)
-            if (e.Id == id && e.Alive && e.State != EnemyState.Dying && !struck.Contains(e)) struck.Add(e);
+        foreach (var h in dragHooked)
+            if (Live(h) is { } hooked && hooked.State != EnemyState.Dying && !struck.Contains(hooked)) struck.Add(hooked);
         foreach (var e in struck)
         {
             if (!e.Alive || e.State == EnemyState.Dying) continue;
@@ -108,8 +109,9 @@ public sealed partial class Battle
 
     /* --------------------------------------------------------- The Butcher's Bill -- */
 
-    Enemy? billOn;
-    int billOnId = -1, billVaults;
+    /// <summary>(SU-053) What the Bill is on, by lifetime (None: nothing picked).</summary>
+    Lifetime billOn = Lifetime.None;
+    int billVaults;
     double billX, billZ;
 
     /// <summary>The leap (at "leap", before the landing): the strongest within reach, or 6 m along her aim with nothing near.
@@ -118,12 +120,12 @@ public sealed partial class Battle
     {
         var p = Player;
         billVaults = 0;
-        billOn = BillPick(p.X, p.Z, flareReach);
-        billOnId = billOn?.Id ?? -1;
+        var aimed = BillPick(p.X, p.Z, flareReach);
+        billOn = Lifetime.Of(aimed);
         billX = p.X + Math.Cos(flareAngle) * f.Arg("emptyLeap", 6);
         billZ = p.Z + Math.Sin(flareAngle) * f.Arg("emptyLeap", 6);
-        if (billOn != null) { billX = billOn.X; billZ = billOn.Z; }
-        Events.Emit(new Ev.Flare { Phase = FlarePhase.Blow, Id = f.Id, X = p.X, Z = p.Z, TX = billX, TZ = billZ, Target = billOn?.Id ?? 0, Part = "leap", Clutch = flareClutch });
+        if (aimed != null) { billX = aimed.X; billZ = aimed.Z; }
+        Events.Emit(new Ev.Flare { Phase = FlarePhase.Blow, Id = f.Id, X = p.X, Z = p.Z, TX = billX, TZ = billZ, Target = aimed?.Id ?? 0, Part = "leap", Clutch = flareClutch });
     }
 
     /// <summary>The Bill's chops: one per tenth of health missing at the press (at least "minChops", at most "maxChops").</summary>
@@ -162,28 +164,30 @@ public sealed partial class Battle
         // She lands with the first chop (beside it where it stands now; on open ground where she aimed).
         if (flareBlow == 1)
         {
-            var at = billOn != null && billOn.Id == billOnId && billOn.Alive && billOn.State != EnemyState.Dying ? billOn : BillPick(billX, billZ, f.Arg("vault", 6) * FlareGrow(f));
-            if (at != billOn) { billOn = at; billOnId = at?.Id ?? -1; BillDecide(f, at); }
-            BillLand(f, billOn, billX, billZ, "land");
+            var kept = Live(billOn) is { State: not EnemyState.Dying } k0 ? k0 : null;
+            var at = kept ?? BillPick(billX, billZ, f.Arg("vault", 6) * FlareGrow(f));
+            if (at != kept) { billOn = Lifetime.Of(at); BillDecide(f, at); }
+            else if (at == null) billOn = Lifetime.None;
+            BillLand(f, at, billX, billZ, "land");
         }
-        var on = billOn != null && billOn.Id == billOnId && billOn.Alive && billOn.State != EnemyState.Dying ? billOn : null;
-        if (on == null && billOn != null)
+        var on = Live(billOn) is { State: not EnemyState.Dying } k1 ? k1 : null;
+        if (on == null && billOn.Id >= 0)
         {
             // It fell: the chops left go with her to the next strongest near it (Running Tab: twice).
             if (billVaults < (FlareMod("bill.running_tab") ? 2 : 1) && BillPick(p.X, p.Z, f.Arg("vault", 6) * FlareGrow(f)) is { } next)
             {
                 billVaults++;
-                billOn = on = next;
-                billOnId = next.Id;
+                on = next;
+                billOn = Lifetime.Of(next);
                 BillDecide(f, next);
                 BillLand(f, next, 0, 0, "vault");
             }
-            else billOn = null;
+            else billOn = Lifetime.None;
         }
         double cx = on?.X ?? p.X + Math.Cos(flareAngle) * 0.9, cz = on?.Z ?? p.Z + Math.Sin(flareAngle) * 0.9;
         if (on != null)
         {
-            double dealt = FlareHit(on, f.Arg("chop", 1.5) * (last ? f.Arg("lastChop", 1.5) : 1), f.School, last ? 1.5 : 0, p.X, p.Z);
+            double dealt = FlareHit(on, f.Arg("chop", 1.5) * (last ? f.Arg("lastChop", 1.5) : 1), f.School, last ? 1.5 : 0, p.X, p.Z), taken = LastTaken;
             HealPlayer(MaxHp * f.Arg("mend", 0.02), "flare", true);
             // The splash: what stands 2 m round bleeds (Wide Chops: struck too).
             double r = f.Arg("splash", 2) * FlareGrow(f);
@@ -191,7 +195,7 @@ public sealed partial class Battle
             {
                 if (e != on && FlareMod("bill.wide_chops") && !e.Boss) FlareHit(e, f.Arg("chop", 1.5) * f.Arg("wide", 0.6), f.School, 0.6, cx, cz);
                 if (e.Alive && e.State != EnemyState.Dying && dealt > 0)
-                    ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3)), dealt);
+                    ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3)), dealt, taken: taken);
             });
         }
         FlareBlowEvent(f, "chop", last, cx, cz, on, on != null ? f.Arg("splash", 2) * FlareGrow(f) : 0);

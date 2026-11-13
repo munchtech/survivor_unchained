@@ -323,6 +323,7 @@ public static class CelLib
     static readonly HashSet<ulong> lineHairIds = new();
     static readonly Dictionary<Material, ShaderMaterial> lineOver = new();   // (another's overlay -> our passes with it after them)
     static bool lineWas;
+    static readonly HashSet<Material> liveChains = new(), liveCut = new(), worn = new();   // (SU-055: what LineStep found worn this step)
 
     static ShaderMaterial LineChain(bool hair, ShaderMaterial? cutBy = null)
     {
@@ -490,10 +491,29 @@ public static class CelLib
                 g.MaterialOverlay = over;
             }
         }
+        // (SU-055) An entry lives while a lined mesh wears its material (a hair surface, another's overlay, or our chain):
+        // the rest die with their owner (a hero swapped, a zone left), and only the chains worn are updated.
+        liveChains.Clear(); liveCut.Clear(); worn.Clear();
+        foreach (var (g, _) in lined)
+        {
+            if (g.MaterialOverlay is { } o) { worn.Add(o); if (IsLine(o)) liveChains.Add(o); }
+            if (lineCut.Count == 0 || !lineHairIds.Contains(g.GetInstanceId())) continue;
+            int n = g.Mesh?.GetSurfaceCount() ?? 0;
+            for (int s = 0; s < n; s++)
+                if (SurfaceMat(g, s) is ShaderMaterial m && lineCut.TryGetValue(m, out var chain)) { liveCut.Add(m); liveChains.Add(chain); }
+        }
+        foreach (var k in lineCut.Keys.Where(k => !liveCut.Contains(k)).ToList()) lineCut.Remove(k);
+        // (another's overlay keeps its chain while any lined mesh wears either: her x-ray comes and goes)
+        foreach (var k in lineOver.Where(kv => !worn.Contains(kv.Value) && !worn.Contains(kv.Key)).Select(kv => kv.Key).ToList()) lineOver.Remove(k);
+        if (lineIds.Count > lined.Count)
+        {
+            lineIds.RemoveWhere(id => !GodotObject.IsInstanceValid(GodotObject.InstanceFromId(id)));
+            lineHairIds.RemoveWhere(id => !GodotObject.IsInstanceValid(GodotObject.InstanceFromId(id)));
+        }
         if (on && at != null && at.IsInsideTree())
         {
             float y = at.GlobalPosition.Y;
-            foreach (var first in lineOver.Values.Append(line).Concat(lineCut.Values))
+            foreach (var first in liveChains)
                 for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter("floor_y", y);
         }
     }

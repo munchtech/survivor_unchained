@@ -109,7 +109,8 @@ public class SkillTipTests(ITestOutputHelper output)
                 Assert.Equal(SkillTipModel.Damage(w.Damage), SkillTipModel.Damage(SkillTipModelDamage(j.Ch, skill, cast)));
                 double cd = Firing.CooldownOf(b, w);
                 Assert.True(System.Math.Abs(cd - Firing.CampaignCooldownOf(Mirror(j.Ch, skill, cast, w), b.Resolve.On, SkillTipModel.StatMul(j.Ch))) < 1e-6, $"{at} cooldown sim {cd} twin {Firing.CampaignCooldownOf(Mirror(j.Ch, skill, cast, w), b.Resolve.On, SkillTipModel.StatMul(j.Ch))} stat {b.Stats.Get(Stat.Cooldown)} mods {w.Mods.Cooldown}");
-                Assert.Equal(b.CostOf(w), b.Resolve.On ? w.Press?.Resolve ?? 0 : 0, 6);
+                // (SU-063) the lit wick's rules are the fight's from the draft: the Cleaver's pace (big_game, light_grip) prices its press
+                Assert.Equal(b.CostOf(w), b.Resolve.On ? (w.Press?.Resolve ?? 0) * Battle.CleaverPaceOf(w) : 0, 6);
             }
         }
     }

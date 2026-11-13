@@ -87,9 +87,10 @@ public sealed partial class Battle
 
     /// <summary>Where each split leaves the arrow and on what angle (chosen at the arrow's blow), and Through the Heart's
     /// mark (the champion or boss it stopped in).</summary>
-    readonly List<(double X, double Z, double Ang, int From)> arrowSplits = new();
-    Enemy? arrowHeart;
-    int arrowHeartId = -1;
+    readonly List<(double X, double Z, double Ang, Lifetime From)> arrowSplits = new();
+    /// <summary>(SU-053) The heart it stopped in, by lifetime (None: no heart), and where it last stood.</summary>
+    Lifetime arrowHeart = Lifetime.None;
+    double arrowHeartX, arrowHeartZ;
 
     /// <summary>The arrow (its first blow) and then each split. The arrow pierces the whole line; what it leaves below
     /// "execute" of its health dies (champions and bosses never); a boss takes "bossCrit" times its share. It splits on the
@@ -102,16 +103,18 @@ public sealed partial class Battle
         if (flareBlow == 1)
         {
             arrowSplits.Clear();
-            arrowHeart = null;
-            arrowHeartId = -1;
+            arrowHeart = Lifetime.None;
+            Enemy? stopE = null;
             double len = f.Arg("line", 30) * FlareGrow(f);
             bool heart = FlareMod("arrow.heart");
             var line = LineHostiles(p.X, p.Z, flareAngle, len, half);
             // Through the Heart: it stops dead in the first champion or boss.
             if (heart && line.FirstOrDefault(x => x.E.Elite || x.E.Boss) is { E: not null } stop)
             {
-                arrowHeart = stop.E;
-                arrowHeartId = stop.E.Id;
+                stopE = stop.E;
+                arrowHeart = Lifetime.Of(stopE);
+                arrowHeartX = stopE.X;
+                arrowHeartZ = stopE.Z;
                 len = Math.Max(0.5, stop.Along);
                 line = line.Where(x => x.Along <= stop.Along).ToList();
             }
@@ -123,13 +126,13 @@ public sealed partial class Battle
                 struck.Add(e);
             }
             double dx = Math.Cos(flareAngle), dz = Math.Sin(flareAngle);
-            if (arrowHeart != null)
+            if (stopE != null)
                 // Its splits turn back into it: three arcs closing on one point, from ahead of it and either side.
                 for (int i = 0; i < splits; i++)
                 {
                     double a = flareAngle + Math.PI + (i - (splits - 1) / 2.0) * f.Arg("heartFan", 0.7);
                     double r = f.Arg("heartFrom", 4);
-                    arrowSplits.Add((arrowHeart.X - Math.Cos(a) * r, arrowHeart.Z - Math.Sin(a) * r, a, arrowHeart.Id));
+                    arrowSplits.Add((stopE.X - Math.Cos(a) * r, stopE.Z - Math.Sin(a) * r, a, arrowHeart));
                 }
             else
             {
@@ -138,26 +141,27 @@ public sealed partial class Battle
                 for (int i = 0; i < splits; i++)
                 {
                     double side = i % 2 == 0 ? 1 : -1, a = flareAngle + side * f.Arg("splitAngle", 0.4) * (1 + i / 2);
-                    if (i < tough.Count) arrowSplits.Add((tough[i].X, tough[i].Z, a, tough[i].Id));
+                    if (i < tough.Count) arrowSplits.Add((tough[i].X, tough[i].Z, a, Lifetime.Of(tough[i])));
                     else
                     {
                         double at = line.Count == 0 ? len : len * (i + 1) / (splits + 1.0);
-                        arrowSplits.Add((p.X + dx * at, p.Z + dz * at, a, -1));
+                        arrowSplits.Add((p.X + dx * at, p.Z + dz * at, a, Lifetime.None));
                     }
                 }
             }
-            LineEvent(f, "arrow", last, p.X, p.Z, flareAngle, len, half, arrowHeart ?? line.Select(x => x.E).FirstOrDefault(e => e.Boss), FlareHitstop(f, false));
+            LineEvent(f, "arrow", last, p.X, p.Z, flareAngle, len, half, stopE ?? line.Select(x => x.E).FirstOrDefault(e => e.Boss), FlareHitstop(f, false));
             return;
         }
         int k = flareBlow - 2;
         if (k >= arrowSplits.Count) return;
         var (sx, sz, ang, from) = arrowSplits[k];
         double slen = f.Arg("splitLength", 12) * FlareGrow(f), shalf = f.Arg("splitWidth", 0.8) * FlareGrow(f);
-        var heartOn = arrowHeart != null && arrowHeart.Id == arrowHeartId && arrowHeart.Alive && arrowHeart.State != EnemyState.Dying ? arrowHeart : null;
-        if (arrowHeart != null)
+        var heartOn = Live(arrowHeart) is { State: not EnemyState.Dying } hl ? hl : null;
+        if (heartOn != null) { arrowHeartX = heartOn.X; arrowHeartZ = heartOn.Z; }
+        if (arrowHeart.Id >= 0)
         {
             // Back into the heart: the split flies from its start onto the one it stopped in, and strikes nothing else.
-            double hx = arrowHeart.X, hz = arrowHeart.Z, l = Math.Max(0.5, Dist(sx, sz, hx, hz));
+            double hx = arrowHeartX, hz = arrowHeartZ, l = Math.Max(0.5, Dist(sx, sz, hx, hz));
             if (heartOn != null)
             {
                 FlareHit(heartOn, f.Arg("heart", 0.6) * (heartOn.Boss ? f.Arg("bossCrit", 2) : 1), f.School, 0, sx, sz);
@@ -168,7 +172,7 @@ public sealed partial class Battle
         }
         foreach (var (e, _) in LineHostiles(sx, sz, ang, slen, shalf))
         {
-            if (e.Id == from) continue;
+            if (Lifetime.Of(e) == from) continue;
             FlareHit(e, f.Arg("split", 0.6) * (e.Boss ? f.Arg("bossCrit", 2) : 1), f.School, 0.8, sx, sz);
             ArrowAfter(f, e);
         }

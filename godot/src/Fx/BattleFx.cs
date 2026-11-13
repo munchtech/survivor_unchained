@@ -1423,6 +1423,18 @@ public partial class BattleFx : Node3D
                         Hits.Tally(fh.Target, fat, fh.Amount, fh.MaxHp, fh.Crit);
                     break;
                 }
+                case Ev.Immune im:
+                {
+                    // (SU-060) A protected boss: nothing landed. The blocked floater's footprint, read "immune".
+                    if (time - lastBlocked > 0.35)
+                    {
+                        lastBlocked = time;
+                        var iat = V(im.X, Y(im.X, im.Z) + 1.0, im.Z);
+                        if (Lines?.ClearOfLines(ref iat, 1.7f, 0.3f, 0.53f, 0.75) != false) Hits.Text(iat, "immune", new Color(0.7f, 0.75f, 0.8f), 44);
+                        if (!Flare.HushesHitSparks) Burst(iat, School.Physical, 5, 3, 2, 0.06f);
+                    }
+                    break;
+                }
                 case Ev.Hit e:
                 {
                     var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);

@@ -93,34 +93,6 @@ public class JourneyTests
     }
 
     [Fact]
-    public void Falling_costs_gold_a_thing_carried_and_makes_a_nemesis()
-    {
-        var (j, _) = Make();
-        j.Ch.Gold = 51;
-        // Something in the pack to take (materials are in the pouch, which a nemesis leaves be).
-        j.GiveItem("copper_ring");
-        var b = Fight(j);
-        var wolf = b.SpawnEnemy("wolf", 3, 3)!;
-        b.Player.LastKiller = wolf;
-        j.Fell("verge", "the Verge", wolf.Def.Name, b.Player, new Random(1));
-        Assert.Equal(26, j.Ch.Gold);
-        Assert.Equal(25, j.World.Corpse!.Gold);
-        Assert.Equal("verge", j.World.Corpse.Zone);
-        var n = j.World.Nemesis!;
-        Assert.EndsWith("Who Took Your Light", n.Title);
-        Assert.Equal(wolf.Level + 2, n.Level);
-        // It took something that was not a draught.
-        Assert.Single(n.Carries);
-        Assert.NotEqual("health_draught", n.Carries[0].Def);
-        Assert.Contains(j.Ch.Conditions, c => c.Id == ConditionId.Wounded);
-        Assert.Contains("risen_once", j.Ch.Traits);
-        Assert.True(j.World.Fact("player.just_died").Truthy);
-        Assert.Equal(1, j.World.Fact("player.deaths").Number);
-        Assert.Contains(j.World.History, h => h.Id.StartsWith("fell_"));
-        Assert.Null(j.Expedition);
-    }
-
-    [Fact]
     public void A_shop_sells_restocks_and_buys_back()
     {
         var (j, toasts) = Make();

@@ -1,0 +1,19 @@
+{
+  "integration": "e54402034",
+  "nativeDependency": "531307d9b",
+  "baselineSeconds": 812.3616593,
+  "afterSeconds": [
+    370.8239212,
+    523.2466551,
+    339.6118808
+  ],
+  "medianSeconds": 370.8239212,
+  "reductionPercent": 54.352360558284666,
+  "consecutiveGreen": 3,
+  "passed": 2386,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsMatched": 35,
+  "stationaryOutputsSha256": "c96b8911f193905de131608add26e26acd48e9c88e1b6bbfd1871f9045f52ff2"
+}

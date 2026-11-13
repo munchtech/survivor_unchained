@@ -344,7 +344,7 @@
       "tags": ["projectile", "thrown", "steel", "physical"],
       "findable": true,
       "growth": 0.34,
-      "bossDamage": 2.9,
+      "bossDamage": 3.2,
       "art": "dagger",
       "description": "A whirling ring of thrown steel in every direction.",
       "base": {
@@ -471,7 +471,7 @@
       "tags": ["projectile", "thrown", "fire", "explosion"],
       "access": ["arcanist", "stalker"],
       "findable": true,
-      "bossDamage": 1.3,
+      "bossDamage": 1.4,
       "art": "firepot",
       "description": "A Kerchief's trick: a pot of blasting ember thrown at the biggest thing in reach. It bursts, and the ground burns where it broke.",
       "base": {
@@ -985,7 +985,7 @@
       "access": ["warden", "arcanist"],
       "findable": true,
       "growth": 0.16,
-      "bossDamage": 2.8,
+      "bossDamage": 4.0,
       "art": "nova_holy",
       "description": "A ring of Light erupts outward from you, throwing back what it touches. The dead hate it.",
       "base": {
@@ -1027,7 +1027,7 @@
       "access": ["warden", "arcanist"],
       "findable": true,
       "growth": 0.16,
-      "bossDamage": 2.5,
+      "bossDamage": 3.2,
       "art": "zone_holy",
       "description": "Hallows the ground beneath your feet. Whatever stands in it burns.",
       "base": {

@@ -37,6 +37,9 @@ public sealed class StatusSlot
     public double Age;
     /// <summary>Whose it is (Battle.DamageBy's key): what its damage is credited to.</summary>
     public string? From;
+    /// <summary>(L1) Her side of its ticks, taken when it was laid (Battle.HerTick): a tick deals Power x Her and applies
+    /// only the target's state. Power stays at the base (what the bursts that read it build their blows on).</summary>
+    public double Her = 1;
     public StatusSlot(double t, double stacks, double power, double tick) { T = t; Stacks = stacks; Power = power; Tick = tick; }
 }
 
@@ -58,6 +61,20 @@ public abstract class Pooled
 {
     public int Id;
     public bool Alive;
+    /// <summary>(SU-053) Its slot's lifetime count: bumped each time the slot is spawned into, so a Lifetime kept past a
+    /// tick stops matching when the slot is reused.</summary>
+    public int Gen;
+}
+
+/// <summary>(Codex audit SU-053) A pooled thing known by its lifetime, never its slot: anything kept past a tick (a poison,
+/// a ring's captives, a missile's owner, a brand or hook target) holds one; it stops matching when the slot is reused
+/// (or the thing dies), and the effect ends. The default matches nothing.</summary>
+public readonly record struct Lifetime(int Id, int Gen)
+{
+    public static readonly Lifetime None = new(-1, 0);
+    public static Lifetime Of(Pooled? p) => p == null ? None : new(p.Id, p.Gen);
+    /// <summary>p is this very thing, still alive.</summary>
+    public bool Is(Pooled? p) => p != null && p.Alive && Gen != 0 && p.Id == Id && p.Gen == Gen;
 }
 
 public sealed class Named
@@ -144,6 +161,9 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>(SU-060) While protected (TakenMul 0) nothing lands; the mechanic named here still hears each hit (its boss
+    /// script's OnBossHit, with no damage): the Barrow Lord's laying hastened by holy. Null: none (the default).</summary>
+    public string? HearsWhileProtected;
     /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
     public double SunderUntil, Sunder;
     /// <summary>Thrown up (Groundbreaker's upheaval): until this time it can't move or strike (a stun holds it) and
@@ -224,10 +244,19 @@ public sealed class Enemy : Pooled
     public Enemy(int id) { Id = id; }
 }
 
+/// <summary>(SU-056) What an enemy's missile needs of its thrower at impact, copied when it is fired: its kind (family,
+/// bite, name) and its damage (the bite's poison).</summary>
+public readonly record struct Shot(EnemyDef Def, double Damage);
+
 public sealed class Projectile : Pooled
 {
     public Side Owner;
     public int OwnerId = -1;
+    /// <summary>(SU-056) The thrower by lifetime (a slot reused in flight is not them) and what it needs of them at impact.</summary>
+    public Lifetime OwnerLife = Lifetime.None;
+    public Shot? OwnerShot;
+    /// <summary>(SU-056) Fired by e: its slot, its lifetime and its snapshot.</summary>
+    public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); }
     public double X, Z, Y = 1, Vx, Vz, Vy, Speed, Damage;
     public School School;
     public Tag[] Tags = Array.Empty<Tag>();
@@ -236,6 +265,10 @@ public sealed class Projectile : Pooled
     public double Life = 1, Age, Homing;
     public Seek? Seek;
     public int Target = -2;
+    /// <summary>(SU-056, L3) The homing target's lifetime: a slot reused in flight is not the target (set with Home).</summary>
+    public Lifetime TargetLife = Lifetime.None;
+    /// <summary>(L3) Homes on t, by lifetime (null: none yet, picks its own).</summary>
+    public void Home(Pooled? t) { Target = t?.Id ?? -2; TargetLife = Lifetime.Of(t); }
     public string? Weapon;
     public string Art = "bolt";
     public StatusPayload? Status;
@@ -282,9 +315,9 @@ public sealed class Projectile : Pooled
 
     public void Reset()
     {
-        Owner = Side.Player; OwnerId = -1; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
+        Owner = Side.Player; OwnerId = -1; OwnerLife = Lifetime.None; OwnerShot = null; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Radius = 0.2; Pierce = 0; Bounces = 0; Life = 1; Age = 0;
-        Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
+        Homing = 0; Seek = null; Target = -2; TargetLife = Lifetime.None; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
         Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null;
@@ -378,8 +411,23 @@ public sealed class Pool<T> where T : Pooled
         if (free.Count == 0) return null;
         var it = Items[free.Pop()];
         it.Alive = true;
+        it.Gen++;
         Count++;
         return it;
+    }
+
+    /// <summary>(SU-061) A thing made outside the pool taken into a free slot as it is (its id becomes the slot's),
+    /// so whoever holds it keeps a live reference. False: no slot free.</summary>
+    public bool Adopt(T it)
+    {
+        if (free.Count == 0) return false;
+        int i = free.Pop();
+        it.Id = i;
+        it.Alive = true;
+        it.Gen = Items[i].Gen + 1;
+        Items[i] = it;
+        Count++;
+        return true;
     }
 
     public void Release(T it)

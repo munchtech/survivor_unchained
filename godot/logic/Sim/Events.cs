@@ -56,6 +56,10 @@ public static class Ev
         public bool ByFlare;
     }
 
+    /// <summary>(SU-060) A blow on a protected creature (TakenMul 0: a boss between phases, laid down): nothing landed, it
+    /// shows it is immune.</summary>
+    public sealed class Immune : CombatEvent { public double X, Z; public int Target; public School School; }
+
     /// <summary>A calling's Hand at work (HandKind); Target is the creature it touched, -1 for none.</summary>
     public sealed class Hand : CombatEvent { public HandKind Kind; public double X, Z; public int Target = -1; }
 

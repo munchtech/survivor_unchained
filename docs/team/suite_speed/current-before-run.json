@@ -1,0 +1,21 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 812.3616593,
+  "finishedUtc": "2026-11-13T01:48:41.5565566Z",
+  "otherTestHostsAtStart": [],
+  "integration": "e54402034",
+  "optimize": false,
+  "stationaryArenaSize": 120,
+  "boardFixture": false,
+  "lifetimeDependency": "531307d9b",
+  "passed": 2386,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsSha256": "c96b8911f193905de131608add26e26acd48e9c88e1b6bbfd1871f9045f52ff2",
+  "configuration": "Debug",
+  "jit": {
+    "JitOptimizerDisabled": true,
+    "DebuggingFlags": "Default, IgnoreSymbolStoreSequencePoints, EnableEditAndContinue, DisableOptimizations"
+  }
+}

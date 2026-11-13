@@ -273,7 +273,7 @@ public sealed partial class Battle
             ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2 * ReflexSize, 8), 0); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
             e.Prey = true;
             e.PreySize = ReflexSize;
-            if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower);
+            if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower, resolved: false);
             Events.Emit(new Ev.Ability { Id = def.Id, X = e.X, Z = e.Z, Angle = angle, Radius = 1 });
         }
         return true;

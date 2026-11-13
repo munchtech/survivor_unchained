@@ -195,7 +195,7 @@ public sealed partial class Battle
         var near = HostilesInRadius(Player.X, Player.Z, 14);
         if (near.Count == 0 || pr.Seek is Seek.Elite or Seek.Strongest or Seek.Marked) return;
         near.Sort((a, c) => Dist(a.X, a.Z, Player.X, Player.Z).CompareTo(Dist(c.X, c.Z, Player.X, Player.Z)));
-        pr.Target = near[(v.N - 1) % near.Count].Id;
+        pr.Home(near[(v.N - 1) % near.Count]);
     }
 
     /// <summary>moonweaver.crowded_sky: no two of a volley strike the same thing.</summary>

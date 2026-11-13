@@ -16,7 +16,9 @@ namespace SurvivorUnchained.Balance;
 /// does not die, the survivor untouchable and walking a slow circle. Fast
 /// enough for the tests (a second or so), steady enough to compare builds.</summary>
 /// <param name="Wicks">The skills' wicks lit (false: as before the Wicks, for a floor measured without them).</param>
-public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead", bool Wicks = true, bool Unevolved = true)
+/// <param name="Fight">Which roll of the test the build meets (0: the seed's own): the same build, drafted the same, through another fight.</param>
+/// <param name="Champion">The champion's duel after the crowd (false: the crowd alone, for what only the crowd measures).</param>
+public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead", bool Wicks = true, bool Unevolved = true, int Fight = 0, bool Champion = true)
 {
     public string Key => $"{Calling}/{Policy}/L{Level}/s{Seed}/w{Weapon}";
 }
@@ -96,7 +98,10 @@ public static class Probe
         var path = Picker.Make(spec.Policy).Path;
         if (path != null) res.OnPath = b.Weapons.Count(w => path.Weapons.Contains(w.Id));
         b.Time = MinuteOf(spec.Level) * 60;
-        Measure(b, res, FoeLevel(spec.Level), spec.People, spec.Seed, drafts: true, spec.Policy);
+        // Another roll of the fight: the battle's stream and the test's both reseeded, the build untouched.
+        int fightSeed = spec.Seed;
+        if (spec.Fight != 0) { fightSeed = spec.Seed + spec.Fight * 100003; b.Rng.State = (uint)fightSeed * 2654435761u; }
+        Measure(b, res, FoeLevel(spec.Level), spec.People, fightSeed, drafts: true, spec.Policy, spec.Champion);
         return res;
     }
 
@@ -177,7 +182,7 @@ public static class Probe
     /// horde kept at its number, in groups from out of sight, for half a minute
     /// (after it has had time to arrive); then a champion that does not fall
     /// and chases, half the horde about it.</summary>
-    static void Measure(Battle b, ProbeResult res, int level, string peopleId, int seed, bool drafts, string? policy = null)
+    static void Measure(Battle b, ProbeResult res, int level, string peopleId, int seed, bool drafts, string? policy = null, bool champion = true)
     {
         var people = MapOffers.People(peopleId);
         double minute = b.Time / 60;
@@ -234,6 +239,7 @@ public static class Probe
         res.KillsPerSec = (b.KillCount - kills) / crowd;
         res.Intake = (b.DamageTaken - taken) / crowd;
         foreach (var (k, v) in b.DamageBy) res.DamageBy[k] = v;
+        if (!champion) return;
         foreach (var e in b.Enemies.Items) if (e.Alive && e.Disposition == Disposition.Hostile) b.Enemies.Release(e);
         double ca = rng.Next() * Math.PI * 2;
         var boss = b.SpawnEnemy(people.Champion, b.Player.X + Math.Cos(ca) * 8, b.Player.Z + Math.Sin(ca) * 8, new Battle.SpawnOpts { Level = level + 1, Elite = true });

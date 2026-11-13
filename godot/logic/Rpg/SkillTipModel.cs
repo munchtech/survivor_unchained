@@ -50,7 +50,7 @@ public static class SkillTipModel
         }
         var unresolved = new List<string>();
         double cooldown = live ? Firing.CooldownOf(b!, w) : Firing.CampaignCooldownOf(w, resolveOn, StatMul(ch));
-        double resolve = live ? b!.CostOf(w) : resolveOn ? def.Press?.Resolve ?? 0 : 0;
+        double resolve = live ? b!.CostOf(w) : resolveOn ? (def.Press?.Resolve ?? 0) * Battle.CleaverPaceOf(w) : 0;
         double drain = def.Press?.Drain ?? 0;
         double dmg = w.Damage;
         double? cut = null, every = null;

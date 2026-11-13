@@ -127,9 +127,9 @@ public sealed partial class Battle
         double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 0.15);
         ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
         {
-            double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z);
+            double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z), taken = LastTaken;
             if (!e.Alive || e.State == EnemyState.Dying) return;
-            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, 0.2, sear), dealt);
+            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, 0.2, sear), dealt, taken: taken);
             if (e.Boss || e.Elite) { Interrupt(e); AddStagger(e, e.Boss ? stagger : 2 * stagger); }
             else ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, stun), 0);
         });
@@ -152,9 +152,9 @@ public sealed partial class Battle
 
     readonly List<(double X, double Z)> emberFell = new();
     /// <summary>Each ember's aim (where it will fall, and on whom; -1 none), taken "aim" seconds before it lands.</summary>
-    readonly List<(double X, double Z, int Target)> emberAims = new();
-    /// <summary>Called Down's target (an enemy id; -1 none).</summary>
-    int calledDown = -1;
+    readonly List<(double X, double Z, Lifetime Target)> emberAims = new();
+    /// <summary>Called Down's target (SU-053: by lifetime, never its slot; None when there is none).</summary>
+    Lifetime calledDown = Lifetime.None;
 
     /// <summary>Called Down's choice: the toughest it can hurt (a boss, then champions, then the most health),
     /// frozen first among the rest.</summary>
@@ -185,7 +185,7 @@ public sealed partial class Battle
         double r = f.Arg("emberRadius", 2.5) * FlareGrow(f);
         var (tx, tz, target) = EmberPick(f, flareAim, embers, r);
         emberFell.Add((tx, tz));
-        emberAims.Add((tx, tz, target?.Id ?? -1));
+        emberAims.Add((tx, tz, Lifetime.Of(target)));
         FlareBlowEvent(f, "aim", flareAim == embers, tx, tz, target, r, hitstop: 0);
     }
 
@@ -197,7 +197,7 @@ public sealed partial class Battle
     /// <summary>EmberPick on the state it is given (what has fallen, what is aimed, the blows done, Called Down's target),
     /// so the marks (FlareMarks.cs) can run the picks ahead on copies; "iceAhead" stands in for the ice before the frost.</summary>
     (double X, double Z, Enemy? Target) EmberPickFrom(FlareDef f, int ember, int embers, double r, List<(double X, double Z)> emberFell,
-        List<(double X, double Z, int Target)> emberAims, int flareBlow, ref int calledDown, Func<Enemy, bool>? iceAhead)
+        List<(double X, double Z, Lifetime Target)> emberAims, int flareBlow, ref Lifetime calledDown, Func<Enemy, bool>? iceAhead)
     {
         var p = Player;
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
@@ -210,9 +210,9 @@ public sealed partial class Battle
         if (FlareMod("burns.called_down"))
         {
             // Called Down keeps the target it chose at the frost, and when that falls moves to the next toughest.
-            var held = calledDown >= 0 && calledDown < Enemies.Items.Length ? Enemies.Items[calledDown] : null;
+            var held = Live(calledDown);
             target = held != null && near.Contains(held) && FlareCanHurt(held) ? held : CalledDownPick(near);
-            calledDown = target?.Id ?? -1;
+            calledDown = Lifetime.Of(target);
         }
         else if (seek) target = boss;
         if (target == null)
@@ -251,7 +251,7 @@ public sealed partial class Battle
                 else Freeze(e, f.Arg("freeze", 2));
             });
             calledDown = FlareMod("burns.called_down")
-                ? CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())?.Id ?? -1 : -1;
+                ? Lifetime.Of(CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList())) : Lifetime.None;
             // The first impact lands harder than an ember (hitstopFrost, 3 frames).
             FlareBlowEvent(f, "frost", false, p.X, p.Z, null, flareReach, f.Beat.ContainsKey("hitstopFrost") ? "hitstopFrost" : "hitstop");
             return;
@@ -265,11 +265,11 @@ public sealed partial class Battle
             // Aimed: it follows its target while that stands (a frozen one hasn't moved; a chilled boss has stepped),
             // else it lands where it was aimed. A slot re-used by a new thing far from the aim is not its target.
             var (ax, az, id) = emberAims[ember - 1];
-            var held = id >= 0 && id < Enemies.Items.Length ? Enemies.Items[id] : null;
+            var held = Live(id);
             target = held != null && held.Alive && held.State != EnemyState.Dying && FlareCanHurt(held) && Dist(held.X, held.Z, ax, az) < r + 2 ? held : null;
             // Its target fell while it fell (an ember aimed four ahead, 13 October: 23 of 360 fell on nothing, a press
             // killed 5 points fewer): it bends to the thickest pack still standing near its aim, never a boss.
-            if (target == null && id >= 0)
+            if (target == null && id.Id >= 0)
             {
                 var near = HostilesInRadius(ax, az, r + f.Arg("aimBend", 3)).Where(e => e.Alive && e.State != EnemyState.Dying && !e.Boss).ToList();
                 target = near.OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).ThenBy(e => Dist(e.X, e.Z, ax, az)).FirstOrDefault();
@@ -341,7 +341,8 @@ public sealed partial class Battle
 
     /* -------------------------------------------------------- The Road's Toll -- */
 
-    readonly List<int> tollPlan = new();
+    /// <summary>(SU-053) The planned picks, by lifetime (None where nothing was planned).</summary>
+    readonly List<Lifetime> tollPlan = new();
     /// <summary>Each boss cut's share of a blow: the boss's cuts carry a fixed worth between them (four cuts, "onBoss";
     /// grown with Toll Doubled), so what a boss takes doesn't swing threefold with how many things stand round it.</summary>
     double tollBossShare = 1;
@@ -363,10 +364,10 @@ public sealed partial class Battle
             PlanToll(f, n);
             // (the marks: the plan is made at the first cut; one no earlier tick foresaw, a pick freed by a death in this
             // very tick, is marked at this decision)
-            foreach (int id in tollPlan) if (id >= 0 && id < Enemies.Items.Length) FlareDecide(Enemies.Items[id]);
+            foreach (var h in tollPlan) FlareDecide(Live(h));
         }
-        int slot = flareBlow - 1 < tollPlan.Count ? tollPlan[flareBlow - 1] : -1;
-        Enemy? e = slot >= 0 && slot < Enemies.Items.Length ? Enemies.Items[slot] : null;
+        var slot = flareBlow - 1 < tollPlan.Count ? tollPlan[flareBlow - 1] : Lifetime.None;
+        Enemy? e = Live(slot);
         if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e) || !FlareCanHurt(e))
         {
             var near = HostilesInRadius(p.X, p.Z, flareReach).Where(x => x.Alive && x.State != EnemyState.Dying).ToList();
@@ -380,11 +381,11 @@ public sealed partial class Battle
         if (e != null)
         {
             // A planned boss cut carries its share of the boss's worth; a re-picked one a plain boss cut's (onBoss of Blows).
-            double share = !e.Boss ? 1 : e.Id == slot ? tollBossShare : f.Arg("onBoss", 4) / Math.Max(1.0, f.Blows);
+            double share = !e.Boss ? 1 : slot.Is(e) ? tollBossShare : f.Arg("onBoss", 4) / Math.Max(1.0, f.Blows);
             double dealt = FlareHit(e, share, f.School, 0, p.X, p.Z);
             if (e.Alive && e.State != EnemyState.Dying)
             {
-                TollVenom(e, dealt, f);
+                TollVenom(e, dealt, LastTaken, f);
                 double below = last && FlareMod("toll.last_cut") ? f.Arg("lastCut", 0.4) : f.Arg("execute", 0.25);
                 if (!e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * below) KillEnemy(e, true, null);
             }
@@ -403,17 +404,19 @@ public sealed partial class Battle
     /// <summary>The cut's poison: half its damage again over 4 s, the Flare's own. It marks the thing poisoned (a stack at
     /// the poison it already carries) but never lifts her poison's strength: a stack of hers ticks at its strongest
     /// poison's rate, so a cut's rate on it made her whole stack the Flare's (70% of a boss at T4, 12 October).</summary>
-    void TollVenom(Enemy e, double dealt, FlareDef f)
+    void TollVenom(Enemy e, double dealt, double taken, FlareDef f)
     {
         ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, 0, f.Arg("poisonSeconds", 4)), 0, from: "flare");
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(StatusKind.Poison));
         double ticks = Math.Max(1, Math.Round(f.Arg("poisonSeconds", 4) / 0.5));
-        if (dealt > 0) venom.Add(new TollPoison(e.Id, dealt * f.Arg("poison", 0.5) * sd / ticks, (int)ticks, Time + 0.5));
+        // (SU-057, L1) dealt is resolved: her side counts once, from it (damage over time's own added); the target's share
+        // of it (taken) is out, since each tick applies the target's state as it then is
+        if (dealt > 0) venom.Add(new TollPoison(Lifetime.Of(e), dealt * f.Arg("poison", 0.5) * sd / ticks * DotOwn() / Math.Max(1e-9, taken), (int)ticks, Time + 0.5));
     }
 
-    sealed class TollPoison(int target, double tick, int left, double next)
+    sealed class TollPoison(Lifetime target, double tick, int left, double next)
     {
-        public readonly int Target = target;
+        public readonly Lifetime Target = target;
         public readonly double Tick = tick;
         public int Left = left;
         public double Next = next;
@@ -429,12 +432,13 @@ public sealed partial class Battle
         for (int i = venom.Count - 1; i >= 0; i--)
         {
             var v = venom[i];
-            var e = v.Target >= 0 && v.Target < Enemies.Items.Length ? Enemies.Items[v.Target] : null;
-            if (e == null || !e.Alive || e.State == EnemyState.Dying) { venom.RemoveAt(i); continue; }
+            var e = Live(v.Target);
+            // (SU-053) a slot reused by a newcomer is not the poisoned: the poison ends
+            if (e == null || e.State == EnemyState.Dying) { venom.RemoveAt(i); continue; }
             if (Time < v.Next) continue;
             v.Next += 0.5;
             v.Left--;
-            HitEnemy(e, v.Tick, School.Nature, DotPoison, new HitOpts { Dot = true, NoCrit = true, NoProcs = true, Depth = 2, Credit = "flare" });
+            HitEnemy(e, v.Tick, School.Nature, DotPoison, new HitOpts { Dot = true, Resolved = true, NoCrit = true, NoProcs = true, Depth = 2, Credit = "flare" });
             if (v.Left <= 0) venom.RemoveAt(i);
         }
         credit = was;
@@ -444,7 +448,7 @@ public sealed partial class Battle
 
     /// <summary>PlanToll into the list it is given, within reach r; returns the boss cuts' share (the marks plan on a copy,
     /// finding what stands round her as the next tick's grid will list it).</summary>
-    double PlanTollInto(FlareDef f, int n, double r, List<int> tollPlan, Func<double, double, double, List<Enemy>>? find = null)
+    double PlanTollInto(FlareDef f, int n, double r, List<Lifetime> tollPlan, Func<double, double, double, List<Enemy>>? find = null)
     {
         tollPlan.Clear();
         var p = Player;
@@ -457,8 +461,8 @@ public sealed partial class Battle
         int k = picks.Count;
         for (int i = 0; i < n - bossCuts; i++)
             // Fewer things than cuts: they go round again, the last still on the strongest.
-            tollPlan.Add(k == 0 ? -1 : picks[((k - 1 + (i - (n - bossCuts - 1))) % k + k) % k].Id);
-        for (int i = 0; i < bossCuts; i++) tollPlan.Add(boss!.Id);
+            tollPlan.Add(k == 0 ? Lifetime.None : Lifetime.Of(picks[((k - 1 + (i - (n - bossCuts - 1))) % k + k) % k]));
+        for (int i = 0; i < bossCuts; i++) tollPlan.Add(Lifetime.Of(boss));
         // The boss's cuts carry a fixed worth between them ("bossWorth" blows, grown with Toll Doubled), however many.
         // Four cuts' worth: at 2100 a cut, what the plain form's twelve 700s gave everything in reach.
         return bossCuts > 0 ? f.Arg("bossWorth", f.Arg("onBoss", 4)) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;

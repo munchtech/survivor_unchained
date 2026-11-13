@@ -1,0 +1,28 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 523.2466551,
+  "finishedUtc": "2026-11-13T02:05:56.8499772Z",
+  "otherTestHostsAtStart": [
+    {
+      "ProcessId": 31300,
+      "CreationDate": "2026-11-12T17:53:20.499889-08:00",
+      "ExecutablePath": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\codex-merge\\godot\\tests\\bin\\Debug\\net8.0\\testhost.exe"
+    }
+  ],
+  "integration": "e54402034",
+  "optimize": true,
+  "stationaryArenaSize": 16,
+  "boardFixture": true,
+  "lifetimeDependency": "531307d9b",
+  "passed": 2386,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsMatched": 35,
+  "stationaryOutputsSha256": "c96b8911f193905de131608add26e26acd48e9c88e1b6bbfd1871f9045f52ff2",
+  "configuration": "Debug",
+  "jit": {
+    "JitOptimizerDisabled": false,
+    "DebuggingFlags": "IgnoreSymbolStoreSequencePoints"
+  }
+}
