@@ -12,11 +12,11 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>The Lamps board's geometry (src/Ui/LampBoardModel.cs; LAMPS_SCREEN_BRIEF.md §5, §13, §16): the pad's
 /// neighbor lists, the hit grid, and the labels' placement at every stop (no label on a lamp or another label).</summary>
-public sealed class LampBoardTests
+public sealed class LampBoardTests(TestContent content) : IClassFixture<TestContent>
 {
     static readonly string File_ = Path.Combine(DataFiles.Dir, "content", "lamps_v2.json");
     static bool HasData => File.Exists(File_);
-    static LampBoardModel M => LampBoardModel.FromJson(File.ReadAllText(File_));
+    LampBoardModel M => content.LampBoard;
     static readonly Box Window = new(0, 0, 846, 642);       // C's board window
 
     /// <summary>Cinzel 600's advance, near enough: 0.78 em a letter (caps), plus the 0.16 em tracking.</summary>
@@ -204,7 +204,7 @@ public sealed class LampBoardTests
 /// preview, the view centered as the open centers it (her lit lamps, the path and the focus): the card never covers a
 /// lit lamp, her hearth, the path or the focus (§16), its edge band tested against every lamp drawn.</summary>
 [Collection("Balance")]
-public sealed class LampCardDemoTests
+public sealed class LampCardDemoTests(TestContent content) : IClassFixture<TestContent>
 {
     static readonly string File_ = Path.Combine(DataFiles.Dir, "content", "lamps_v2.json");
     static readonly string[] MockLit =
@@ -223,7 +223,7 @@ public sealed class LampCardDemoTests
         Lamps.UseV2(true);
         try
         {
-            var m = LampBoardModel.FromJson(File.ReadAllText(File_));
+            var m = content.LampBoard;
             var a = Callings.Archetype("warden");
             var ch = Character.Create(new CreationChoice
             {

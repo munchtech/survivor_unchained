@@ -1,0 +1,33 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 860.0825072,
+  "finishedUtc": "2026-11-13T17:44:34.0704683Z",
+  "otherTestHostsAtStart": [],
+  "integration": "0af0bc73f01617d70e9f5de2a05404ffbe81cc20",
+  "cleanIntegration": true,
+  "cards": 3338,
+  "cases": 2614,
+  "outcomes": {
+    "Passed": 2603,
+    "NotExecuted": 11
+  },
+  "counters": {
+    "total": "2614",
+    "executed": "2603",
+    "passed": "2603",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "summedCaseSeconds": 2988.3857103
+}
