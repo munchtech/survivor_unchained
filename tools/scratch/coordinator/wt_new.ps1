@@ -34,4 +34,4 @@ $dst = Join-Path $wt "godot\.godot\imported"
 if ($NoImport) { Write-Output "imported cache NOT seeded (-NoImport): code lane, dotnet test only" }
 elseif (Test-Path $src) { robocopy $src $dst /E /MT:8 /NFL /NDL /NJH /NJS /NP | Out-Null }
 $head = git -C $wt rev-parse --short HEAD
-Write-Output "worktree $wt on branch $Name @ $head; junction godot\assets -> own public\assets; imported cache seeded"
+Write-Output "worktree $wt on branch $Name @ $head; junction godot\assets -> own public\assets; imported cache $(if ($NoImport) { 'skipped' } else { 'seeded' })"
