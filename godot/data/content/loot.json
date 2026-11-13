@@ -1,14 +1,14 @@
 {
   "_doc": "Loot's numbers (docs/design/LOOT_DESIGN.md). Makes by level: Worn, Sound, Wrought, Legion, Heartwrought. A gear roll's tier at level L: Common = commonBase x commonFall^(L-1), Uncommon flat, Rare and Epic = base + per x L, Set and Legendary flat when one may fall there. The balance lab's to move.",
-  "makeFrom": [1, 8, 16, 24, 32],
+  "makeFrom": [1, 15, 30, 45, 60],
   "makeMult": [1, 1.8, 2.8, 4.0, 5.5],
   "makeDamage": [0, 0.1, 0.25, 0.45, 0.7],
   "_curves": "A stat's own make curve where the general one is too steep: armor saturates (armor / (armor + 20)), so a full Heartwrought set at x5.5 was about 75% reduction (combat). 'trigger' scales a piece's flat rule damage (Kell's Lamp by day).",
   "curves": { "armor": [1, 1.8, 2.8, 3.4, 4.0], "trigger": [1, 1.8, 2.8, 4.0, 5.5] },
   "unscaled": ["block", "moveSpeed"],
-  "maxLevel": 40,
-  "gradeUp": [25, 35],
-  "commonBase": 40, "commonFall": 0.93, "uncommon": 34, "rareBase": 18, "rarePer": 0.5, "epicBase": 3.5, "epicPer": 0.2,
+  "maxLevel": 75,
+  "gradeUp": [47, 66],
+  "commonBase": 40, "commonFall": 0.962, "uncommon": 34, "rareBase": 18, "rarePer": 0.267, "epicBase": 3.5, "epicPer": 0.107,
   "set": 0.9, "legendary": 0.4,
   "luckShare": 0.5,
   "weaponShare": 0.25, "callingShare": 0.67,
@@ -19,7 +19,7 @@
   "material": 0.1, "iron": 0.2,
   "belt": 20,
   "upgradeMargin": 1.05,
-  "_plusSkills": "(M9, ARPG.md 9) The skills a '+1 to a skill' suffix is made for (Ring, Amulet, Head, Relic; Rare and up; one more lamp lit on its wick while worn), and the short name each goes by in the suffix's name ('of the Leap'); without one, the skill's own name.",
+  "_plusSkills": "(M9, ARPG.md 9) The skills a '+1 to a skill' suffix is made for (Ring, Amulet, Head; Rare and up; one more lamp lit on its wick while worn), and the short name each goes by in the suffix's name ('of the Leap'); without one, the skill's own name.",
   "plusSkills": ["sunder", "groundbreaker", "oathblade", "cleaver", "heroic_leap", "shield_charge", "iron_vow", "watch_bell", "dawnpulse"],
   "plusNames": { "sunder": "Sunderer", "groundbreaker": "Groundbreaker", "oathblade": "Oath", "cleaver": "Cleaver", "heroic_leap": "Leap", "shield_charge": "Charge", "iron_vow": "Vow", "watch_bell": "Bell", "dawnpulse": "Daybreak" },
   "_power": "What a unit of each stat is worth to the power score (never shown): 'stat:kind', 'stat', or 'prefix.*'. Fractions are the stats' own (0.05 is 5%).",
@@ -64,8 +64,8 @@
         { "worn": 2, "text": "+6% critical chance; Kerchiefs take you for one of theirs",
           "mods": [{ "stat": "critChance", "kind": "flat", "value": 0.06, "source": "set" }],
           "tags": ["kerchief_colors"] },
-        { "worn": 3, "text": "Your thrown and loosed skills fly one more; your critical strikes bleed",
-          "mods": [{ "stat": "projectiles", "kind": "flat", "value": 1, "source": "set" }],
+        { "worn": 3, "text": "Your critical strikes hit 15% harder, and bleed",
+          "mods": [{ "stat": "critDamage", "kind": "flat", "value": 0.15, "source": "set" }],
           "triggers": [{ "on": "crit", "chance": 1, "icd": 0.2, "effects": [{ "do": "status", "target": "hit", "status": { "kind": "bleed", "chance": 1, "power": 0.35, "duration": 3 } }], "text": "Critical strikes bleed" }] }
       ]
     }

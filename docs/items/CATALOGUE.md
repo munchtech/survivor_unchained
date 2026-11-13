@@ -608,3 +608,34 @@ Each recipe is found in the world, written somewhere it belongs.
    Steel skills ✶ 37% faster while you stand still (bright) · every third swing a crescent of 108% (lifted) · +2 Might (Storied)
    *History:* "Held at his post. Found at the Old Watch-post, day 3." · "Taken back from Ash-Fang, who took your light, night 12." · "Named by Brannoc: Corran's Answer." · "The Barrow Lord, beyond the half hour, night 41."
    This is the known jackpot: a story item, reworked to the last tier, made Storied by four deeds, with a bright roll.
+
+
+---
+
+## Build direction, wave 1 (bd-gear, 13 Nov 2026)
+
+**Eight places:** weapon, offhand, head, body, boots, amulet, two rings. Belt, legs, cloak, bracers, shoulders, hands and relic are cut: body armor covers the whole body below the neck, the skill-granting affixes (`of_motes`, `of_the_gyre`, `of_cinders`, `of_dawn`, `of_knives`) roll on amulet and rings only, and an old save's worn cut piece is mended into the pack or dropped (`Inventory.Mend`). Item levels run to 75.
+
+**Great drops** (rarity 4, three kinds; a Legendary-tier fall of its own):
+
+| Id | Name | Place | Kind | What it does |
+|---|---|---|---|---|
+| `fordwardens_evening_chain` | The Ford-Warden's Evening Chain | amulet | rewrite | +1 to Heroic Leap. Its landing rings a second time, in light. +12 armor and more maximum health. |
+| `quakers_boots` | Quaker's Boots | feet | rewrite | Groundbreaker's crack runs twice: a second wave breaks round your feet for half the blow. |
+| `ramhorn_helm` | Ramhorn Helm | head | rewrite | Every foe Shield Charge strikes adds a barrier of 4% of your health, to 40%. |
+| `heartsplitter_mail` | Heartsplitter Mail | body | rewrite | Sunder's cuts finish what they leave: a foe it brings under 15% health dies to it. |
+| `bellfounders_ring` | Bellfounder's Ring | ring | rewrite | The Watch Bell tolls twice: a second ring of light, four fifths of the blow, goes out from you. |
+| `unmoved_door` | The Unmoved Door | offhand | build | A bulwark build: you block more, and every block throws a ring of light round you for 20 damage. |
+| `briar_cuirass` | The Briar Cuirass | body | build | A thorns build: every blow you take comes back at whatever is close, half again as hard. |
+| `tally_iron` | Tally-Iron | amulet | build | A momentum build: every kill adds 2% damage for 6 s, to 40%. |
+| `ramfoot_boots` | Ramfoot Boots | feet | build | A dash build: your dash breaks what it passes (14 damage in a ring round you) and quickens you for 2 s. |
+| `herd_callers_horn` | The Herd-Caller's Horn | amulet | auto | Grants Spirit Herd, always on: spirit beasts run from behind you at the nearest foe. No Warden is taught this. |
+| `stormwrights_ring` | The Stormwright's Ring | ring | auto | Grants Arcweb, always on: lightning leaps from foe to foe. No Warden is taught this. |
+| `firebrands_bandolier` | The Firebrand's Bandolier | body | auto | Grants Firepot, always on: a pot of blasting ember thrown at the biggest thing in reach. No Warden is taught this. |
+| `thornwreath` | The Thornwreath | head | auto | Grants Thornbloom, always on: brambles burst up under the nearest crowd and hold it. No Warden is taught this. |
+
+An item's `auto` skills are on top of her three auto slots, stacked and uncapped (the Battle runs `CombatKit.AutoSkills`). A piece whose auto skill her calling cannot carry any other way raises `Journey.OnGift` and its own announcement (`Drops.GiftFalls`, a placeholder line) when it falls.
+
+**Sets:** two or three pieces, minor perks (watch_kit, levy_red); never the build.
+
+**The forge's gamble, the Quench** (Brannoc, `crafting.json` "quench"): six ember shards, 120 gold, the piece's last heat; once a piece, and it is set after. By weight: perfect 6% (every power to the bright grade), up 24% (two powers a grade, to the cap), nothing 30%, down 25% (two powers a grade lower), ruin 15% (every power two grades lower). Heat's steps stay the safe path.

@@ -99,11 +99,11 @@ public class DyeHelmTests
         Assert.Equal("#aa8844", back.Dye["thread"]);
         Assert.Null(Json.Clone(new ItemInstance { Uid = "v", Def = "d" }).Dye);
 
-        var def = new ItemDef { Id = "d", Name = "d", Kind = ItemKind.Shoulders, Rarity = 1, Icon = "x", Description = "A test piece for the dye map.", Wear = ["warden.pauldrons"] };
-        var eq = new Equipment { Shoulders = it };
+        var def = new ItemDef { Id = "d", Name = "d", Kind = ItemKind.Body, Rarity = 1, Icon = "x", Description = "A test piece for the dye map.", Wear = ["warden.pauldrons"] };
+        var eq = new Equipment { Body = it };
         var dyes = Wear.DyeOf(eq, id => id == "d" ? def : null);
         Assert.Equal("#336699", dyes["warden.pauldrons"]["metal"]);
-        Assert.Empty(Wear.DyeOf(new Equipment { Shoulders = new ItemInstance { Uid = "v", Def = "d" } }, id => def));
+        Assert.Empty(Wear.DyeOf(new Equipment { Body = new ItemInstance { Uid = "v", Def = "d" } }, id => def));
     }
 
     static Dictionary<string, JsonElement> Materials()

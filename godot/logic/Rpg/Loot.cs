@@ -67,20 +67,20 @@ public sealed class LootRules
 {
     /// <summary>The level each make starts at, its multiplier on a base's own numbers, and the
     /// increased damage a weapon of it carries.</summary>
-    public List<int> MakeFrom = new() { 1, 8, 16, 24, 32 };
+    public List<int> MakeFrom = new() { 1, 15, 30, 45, 60 };
     public List<double> MakeMult = new() { 1, 1.8, 2.8, 4.0, 5.5 };
     public List<double> MakeDamage = new() { 0, 0.1, 0.25, 0.45, 0.7 };
     /// <summary>A stat's own make curve where the general one is too steep for it (armour saturates).</summary>
     public Dictionary<string, List<double>> Curves = new();
     /// <summary>A base's numbers the make never scales (a shield's block rank, speed).</summary>
     public List<string> Unscaled = new() { "block", "moveSpeed" };
-    public int MaxLevel = 40;
+    public int MaxLevel = 75;
     /// <summary>The levels from which a drop's grades rise one, then two (to VI at most).</summary>
-    public List<int> GradeUp = new() { 25, 35 };
+    public List<int> GradeUp = new() { 47, 66 };
 
     /* A gear roll's tier, by level L: Common = CommonBase × CommonFall^(L−1); Uncommon flat;
      * Rare and Epic = Base + Per × L; Set and Legendary flat, when one may drop here. */
-    public double CommonBase = 40, CommonFall = 0.93, Uncommon = 34, RareBase = 18, RarePer = 0.5, EpicBase = 3.5, EpicPer = 0.2;
+    public double CommonBase = 40, CommonFall = 0.962, Uncommon = 34, RareBase = 18, RarePer = 0.267, EpicBase = 3.5, EpicPer = 0.107;
     public double Set = 0.9, Legendary = 0.4;
     /// <summary>The share of what luck adds above 1 that raises Rare and up.</summary>
     public double LuckShare = 0.5;
@@ -146,8 +146,9 @@ public sealed class DropCtx
     public Func<double> R = () => Random.Shared.NextDouble();
 }
 
-/// <summary>A thing rolled to fall: gear (rolled whole) or a material, with its tier.</summary>
-public sealed record Dropped(ItemInstance? Item, string? Material, int Qty, LootTier Tier);
+/// <summary>A thing rolled to fall: gear (rolled whole) or a material, with its tier. Gift: the skill the piece grants that her calling can get no other way (Drops.GiftOf): the big
+/// moment of a drop, with an event of its own (Journey.OnGift) and, until bd-ui gives it a sound and a look, the Legendary's.</summary>
+public sealed record Dropped(ItemInstance? Item, string? Material, int Qty, LootTier Tier, string? Gift = null);
 
 public static class Drops
 {
@@ -159,6 +160,9 @@ public static class Drops
     /// <summary>The story lead's words (WRITING_PASS §25): the HUD's line when a Legendary falls, the
     /// debt's label, and its line when it pays.</summary>
     public const string NamedFalls = "This one has a name.", DebtLabel = "What the dark owes you", DebtPaid = "The dark settles up.";
+
+    /// <summary>PLACEHOLDER copy for the story lead and bd-ui: the kicker over a skill a piece grants that her calling can get no other way.</summary>
+    public const string GiftFalls = "A skill no one taught you";
 
     /* ----------------------------------------------------------- tiers -- */
 
@@ -222,7 +226,7 @@ public static class Drops
     /// <summary>Whether a piece carries a level and a make: anything worn.</summary>
     public static bool Leveled(ItemDef def) => Items.SlotFor(def) != null;
 
-    /// <summary>How many grades a drop's affixes rise for its level (none below 25).</summary>
+    /// <summary>How many grades a drop's affixes rise for its level (none below 47).</summary>
     public static int GradeShift(int? level) => level is int l ? Rules.GradeUp.Count(f => l >= f) : 0;
 
     /// <summary>The base a piece's own numbers come from: itself if it is a base, or the base a
@@ -496,10 +500,18 @@ public static class Drops
                 else w.LootDebt++;
                 if (tier is LootTier.Legendary or LootTier.Set) w.Owned.Add(it.Def);
             }
-            o.Add(new Dropped(it, null, 1, tier));
+            o.Add(new Dropped(it, null, 1, tier, GiftOf(Items.Get(it.Def), x.Ch?.Archetype)));
         }
         if (src.Materials > 0 && material != null) o.Add(new Dropped(null, material, src.Materials, LootTier.Material));
         return o;
+    }
+
+    /// <summary>The skill a piece grants (ItemDef.Auto) that the survivor's calling cannot carry from any other source: what makes
+    /// its fall an event of its own. Null for every other piece, and for a survivor with no calling to ask.</summary>
+    public static string? GiftOf(ItemDef def, string? calling)
+    {
+        if (string.IsNullOrEmpty(calling) || def.Auto == null) return null;
+        return def.Auto.Keys.OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault(k => Content.Weapons.All.ContainsKey(k) && !Content.Weapons.CanCarry(calling, k));
     }
 
     /// <summary>The material a people's carriers drop (crafting's night yields, by people).</summary>

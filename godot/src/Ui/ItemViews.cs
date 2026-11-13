@@ -92,10 +92,9 @@ void fragment() {
 
     static readonly Dictionary<ItemKind, string> KindNames = new()
     {
-        [ItemKind.Weapon] = "Weapon", [ItemKind.Offhand] = "Off-hand", [ItemKind.Head] = "Head", [ItemKind.Body] = "Body", [ItemKind.Cloak] = "Cloak",
-        [ItemKind.Amulet] = "Amulet", [ItemKind.Ring] = "Ring", [ItemKind.Relic] = "Relic", [ItemKind.Material] = "Material",
+        [ItemKind.Weapon] = "Weapon", [ItemKind.Offhand] = "Off-hand", [ItemKind.Head] = "Head", [ItemKind.Body] = "Body", [ItemKind.Feet] = "Boots",
+        [ItemKind.Amulet] = "Amulet", [ItemKind.Ring] = "Ring", [ItemKind.Material] = "Material",
         [ItemKind.Consumable] = "Consumable", [ItemKind.Quest] = "Quest item", [ItemKind.Tool] = "Tool", [ItemKind.Trophy] = "Trophy",
-        [ItemKind.Shoulders] = "Shoulders", [ItemKind.Bracers] = "Bracers", [ItemKind.Hands] = "Hands", [ItemKind.Belt] = "Belt", [ItemKind.Legs] = "Legs", [ItemKind.Feet] = "Feet",
     };
 
     /// <summary>A kind of thing in words, as its tooltip names it ("Rare Head").</summary>
@@ -166,9 +165,8 @@ void fragment() {
     /// <summary>What a thing is, in a word, after its tier ("Epic helm").</summary>
     static readonly Dictionary<ItemKind, string> Nouns = new()
     {
-        [ItemKind.Weapon] = "weapon", [ItemKind.Offhand] = "off-hand", [ItemKind.Head] = "helm", [ItemKind.Body] = "body armor", [ItemKind.Cloak] = "cloak",
-        [ItemKind.Amulet] = "amulet", [ItemKind.Ring] = "ring", [ItemKind.Relic] = "relic",
-        [ItemKind.Shoulders] = "pauldrons", [ItemKind.Bracers] = "bracers", [ItemKind.Hands] = "gloves", [ItemKind.Belt] = "belt", [ItemKind.Legs] = "leggings", [ItemKind.Feet] = "boots",
+        [ItemKind.Weapon] = "weapon", [ItemKind.Offhand] = "off-hand", [ItemKind.Head] = "helm", [ItemKind.Body] = "body armor", [ItemKind.Feet] = "boots",
+        [ItemKind.Amulet] = "amulet", [ItemKind.Ring] = "ring",
     };
 
     /// <summary>The line under a card's name: tier and kind, then for gear its level and make
