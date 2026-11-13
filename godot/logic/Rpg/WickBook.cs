@@ -221,20 +221,15 @@ public static class WickBook
 
     /// <summary>SU-046: what the wick panel shows, as the fight takes the skill. By day: lit = the lamps the day fight
     /// lights (DayPath to DayRank, as Battle.Relight does), held = the lamps her held points would light next, apart;
-    /// rank = DayRank. By night (an arena): the night build (Path to the night's starting rank, RankIn), read-only.</summary>
+    /// rank = RankIn. By night (an arena): the night build, read-only.</summary>
     public static WickPanel Panel(CharacterData ch, string skill, bool night)
     {
         if (NoWickYet(skill)) return new WickPanel([], [], [], RankIn(ch, skill, night), true, true);
         var path = Path(ch, skill);
-        if (night)
-        {
-            int nr = RankIn(ch, skill, true);
-            return new WickPanel(path, path.Take(System.Math.Max(0, nr)).ToArray(), [], nr, true);
-        }
-        int rank = DayRank(ch, skill);
-        var lit = DayPath(ch, skill).Take(System.Math.Max(0, rank)).ToArray();
-        var held = path.Skip(lit.Length).Take(Held(ch, skill)).ToArray();
-        return new WickPanel(path, lit, held, rank, false);
+        int rank = RankIn(ch, skill, night);
+        var lit = Weapon(ch, skill, rank, night).Wick?.Lit ?? System.Array.Empty<string>();
+        var held = night ? System.Array.Empty<string>() : path.Skip(lit.Length).Take(Held(ch, skill)).ToArray();
+        return new WickPanel(path, lit, held, rank, night);
     }
 
     /// <summary>(SU-051) A skill with no strands to light (no wick in the data yet): the wick tabs and panel show

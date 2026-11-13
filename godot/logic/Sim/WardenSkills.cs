@@ -50,8 +50,7 @@ public static partial class Firing
     static bool FireCrack(Battle b, WeaponInst w)
     {
         var p = At(b);
-        double range = w.Num(s => s.Range) ?? 10;
-        if (b.SkillRule(w, "fault_line")) range = Math.Max(range, b.SkillFull(w, "fault_line", "reach", 14));
+        double range = b.CrackRangeOf(w);
         // A campaign press: the crack runs to the pack under the cursor (the hover foe's), else to the point.
         var t = b.CastAt is { } ca ? ca.Foe : b.DensestHostile(p.X, p.Z, range, 2.5);
         if (t == null && b.CastAt == null) return false;
@@ -98,7 +97,7 @@ public static partial class Firing
     static void CrackOne(Battle b, WeaponInst w, double x0, double z0, double a, double len)
     {
         double x1 = x0 + Math.Cos(a) * len, z1 = z0 + Math.Sin(a) * len;
-        double width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2), r = AreaOf(b, w, w.Num(s => s.Radius) ?? 2.5);
+        double width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2), r = b.CrackRadiusOf(w);
         b.Events.Emit(new Ev.Beam { X0 = x0, Z0 = z0, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.35, Art = w.Art + "_crack", Rank = w.Rank });
         double dmg = w.Damage, trail = dmg * (w.Num(s => s.Trail) ?? 0.5);
         // Along the crack, at the trail's share; what stands where it heaves is the heave's.
@@ -176,7 +175,7 @@ public sealed partial class Battle
 
     /// <summary>Rebuke carried: her block chance (its Block at rank 1, BlockStep more a rank).</summary>
     double RebukeBlock() =>
-        WeaponById("rebuke") is { DisabledT: <= 0 } w ? (w.Num(s => s.Block) ?? 0.08) + (w.Num(s => s.BlockStep) ?? 0.01) * (w.Rank - 1) : 0;
+        WeaponById("rebuke") is { DisabledT: <= 0 } w ? RebukeBlockOf(w) : 0;
 
     /// <summary>A blow that reaches her, blocked (lamp's or the Warding light's) or not: Rebuke strikes the one who struck
     /// if it stands within reach of her, and the three nearest it; a missile's (no striker near), the three nearest her.
@@ -202,8 +201,8 @@ public sealed partial class Battle
     internal bool RebukeStrike(WeaponInst w, double x, double z, Enemy? blocker)
     {
         var p = Player;
-        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5);
-        int others = (int)(w.Num(s => s.Others) ?? 5);
+        double r = RebukeRadiusOf(w);
+        int others = RebukeOthersOf(w);
         // A champion is struck again only after its gap: pinned by one, she isn't a turret that fires at it twice a second.
         double gap = w.Num(s => s.ChampionGap) ?? 0;
         bool Ready(Enemy e) => !(e.Elite || e.Boss) || Time >= e.RebukedAt + gap;
@@ -300,14 +299,14 @@ public sealed partial class Battle
         }
         if (drawn > 0)
         {
-            double share = SkillRule(w, "barrier") ? SkillFull(w, "barrier", "share", 0.015) : w.Num(s => s.Barrier) ?? 0.01;
+            double share = BellShareOf(w);
             // A Pulse's tolls are smaller: each one's barrier scaled as its damage is.
             if (w.Wick is { Pulses: > 1 } pw)
                 foreach (var t in pw.Turns) if (Content.Wicks.Turn(t) is { Pulses: > 1 } pt) share *= pt.Damage;
             // It tops her barrier up toward a ceiling (15% of health held; the lamp doesn't raise it), never past it;
             // barrier from elsewhere is untouched (at 5% a toll and 17 tolls a minute it gave 72-77% of health a minute).
-            double amount = StonesBarrier(MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 5)));
-            amount = Math.Min(amount, Math.Max(0, MaxHp * (w.Num(s => s.BarrierCap) ?? 0.15) - Math.Max(0, Player.Shield)));
+            double amount = StonesBarrier(MaxHp * share * Math.Min(drawn, BellDrawMostOf(w)));
+            amount = Math.Min(amount, Math.Max(0, MaxHp * BellCapOf(w) - Math.Max(0, Player.Shield)));
             if (amount > 0)
             {
                 BellBarrier += amount;

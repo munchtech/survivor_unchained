@@ -337,7 +337,7 @@ public static partial class Firing
     }
 
     /// <summary>bulwark.skill.reach: metres of reach a skill's lamp adds (Oathblade, 1.5).</summary>
-    static double ReachAdd(Battle b, WeaponInst w) => b.Lamps.SizeOn("skill.reach", "add", w.Def.Id, w.Def.Tags) + b.ChainReach(w);
+    internal static double ReachAdd(Battle b, WeaponInst w) => b.Lamps.SizeOn("skill.reach", "add", w.Def.Id, w.Def.Tags) + b.ChainReach(w);
 
     /// <summary>The status a skill strikes with: its own, or the one its lamp gives (sunderer.skill.status).</summary>
     public static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
@@ -907,7 +907,7 @@ public static partial class Firing
     static bool FireNova(Battle b, WeaponInst w)
     {
         var p = At(b);
-        double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.5) + ReachAdd(b, w);
+        double r = b.NovaRadiusOf(w);
         if (b.NearestHostile(p.X, p.Z, r + 1) == null) return false;
         int rings = 1 + (w.Rank >= Content.Weapons.ProjRankA ? 1 : 0) + (w.Rank >= Content.Weapons.ProjRankB ? 1 : 0);
         b.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = w.School, Duration = w.Num(s => s.ExpandTime) ?? 0.35, Rings = rings, Art = w.Art, Rank = w.Rank });
@@ -1190,7 +1190,7 @@ public static partial class Firing
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
         // same rule as her swing, measured from where it fell); none near, and the echo doesn't go off.
         var p = At(b);
-        double reach = AreaOf(b, w, b.RuleReach(w, w.Num(s => s.Reach) ?? 2.6)) * b.SkillStillReach(w) + ReachAdd(b, w);
+        double reach = b.SlashReachOf(w, true);
         double a;
         // A campaign press swings toward its aim (the hover foe, else the point), struck or not: every press is seen.
         if (b.CastAt is { } ca) a = AimAngle(b, ca.X, ca.Z);

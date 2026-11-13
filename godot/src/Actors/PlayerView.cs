@@ -108,6 +108,7 @@ public partial class PlayerView : Node3D
     double lastAttack = -1, hurtSeen, flare, castT, time, lastMuzzle = -1;
     int swing;
     bool dashing, dead;
+    SurvivorUnchained.Sim.Leap? leapSeen;   // the leap whose clip started (SU-068)
     float speed;
     const float LightBase = 5;
     /// <summary>How much of her carried light lights her (1: all): the book open by day dims it
@@ -1177,8 +1178,11 @@ public partial class PlayerView : Node3D
         }
         else if (p.DashT <= 0) dashing = false;
         // A leap or a vault (hers are timed to the art already).
-        if (p.Leap is { } l2 && l2.T < dt * 2)
+        if (p.Leap == null) leapSeen = null;
+        // A new leap by identity, not by a render-delta window (above 120 FPS the first sim tick had aged it past) (SU-068).
+        if (p.Leap is { } l2 && !ReferenceEquals(l2, leapSeen))
         {
+            leapSeen = l2;
             bool vault = l2.Kind == Content.AbilityKind.Vault;
             float dx = (float)(l2.X1 - l2.X0), dz = (float)(l2.Z1 - l2.Z0);
             // A vault against the way she faces (standing, she springs back

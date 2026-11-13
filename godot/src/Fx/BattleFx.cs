@@ -65,7 +65,7 @@ public partial class BattleFx : Node3D
     readonly List<(OmniLight3D Light, float T, float Life, float Peak)> flashes = new();
     readonly List<Mark> marks = new();
     readonly Dictionary<int, Mark> keyed = new();
-    readonly Dictionary<int, Mark> zoneMarks = new();
+    readonly Dictionary<Sim.Lifetime, Mark> zoneMarks = new();
     readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> beams = new();
     readonly List<(double At, Action Fn)> pending = new();
     int nextBeam;
@@ -88,6 +88,9 @@ public partial class BattleFx : Node3D
         /// old key's next warning never switches off another owner's mark (SU-017).</summary>
         public int? Key;
         public float T, Life, Radius;
+        /// <summary>A ground's owner and art it was made for: a slot reused for another zone retires it (SU-069).</summary>
+        public Sim.Side MadeOwner;
+        public string? MadeArt;
         /// <summary>Called off (TellPhase.Off): seconds left of its fade out (0: not fading).</summary>
         public float FadeLeft;
         /// <summary>A closing's band or way out while its wall stands (Ev.ClosingWall Up, H6): past its landing it is held
@@ -2374,8 +2377,8 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>
-    readonly HashSet<int> zonesAlive = new();
-    readonly List<int> zonesGone = new();
+    readonly HashSet<Sim.Lifetime> zonesAlive = new();
+    readonly List<Sim.Lifetime> zonesGone = new();
 
     void Zones(Battle b, double now)
     {
@@ -2383,7 +2386,8 @@ public partial class BattleFx : Node3D
         alive.Clear();
         foreach (var z in b.Zones.Living())
         {
-            alive.Add(z.Id);
+            var zl = Sim.Lifetime.Of(z);
+            alive.Add(zl);
             if (z.Owner != Sim.Side.Enemy && SkillGround(z, now)) continue;
             var school = Palette.OfArt(z.Art);
             // The enemy's ground is the danger language's "this ground stays bad": violet and hatched,
@@ -2392,11 +2396,14 @@ public partial class BattleFx : Node3D
             // Hallowed and arcane ground is a turning circle of runes, burning
             // ground a spread of fire; the rest, and the enemy's, a glow.
             bool mine = z.Owner != Sim.Side.Enemy, runes = mine && school is School.Holy or School.Arcane;
-            if (!zoneMarks.TryGetValue(z.Id, out var m) || !m.Active)
+            if (zoneMarks.TryGetValue(zl, out var old) && old.Active && (old.MadeOwner != z.Owner || old.MadeArt != z.Art))
+            { old.Active = false; old.Decal.Visible = false; zoneMarks.Remove(zl); }   // (SU-069)
+            if (!zoneMarks.TryGetValue(zl, out var m) || !m.Active)
             {
                 var tex = !mine ? hatchTex! : school switch { School.Holy => Premul(Sprites.Runes(0)), School.Arcane => Premul(Sprites.Runes(0)), School.Fire => Premul(Sprites.Burning), _ => discTex! };
                 m = Ground(z.X, z.Z, (float)z.Radius, tex, col, 1e6f, runes ? 2.2f : 1.2f);
-                zoneMarks[z.Id] = m;
+                m.MadeOwner = z.Owner; m.MadeArt = z.Art;
+                zoneMarks[zl] = m;
             }
             m.T = 0;
             if (runes) m.Decal.Rotation = new Vector3(0, (float)(now * 0.3 + z.Id), 0);

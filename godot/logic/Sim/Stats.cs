@@ -154,7 +154,11 @@ public sealed class StatBlock
         if (m != activeMask) { activeMask = m; Invalidate(); }
     }
 
-    void Invalidate() { cache.Clear(); cacheRaw.Clear(); }
+    /// <summary>(SU-070) Bumped on every change to what it reads (a mod in or out, a base, a condition): a cache of
+    /// numbers drawn from it keys on this.</summary>
+    public int Version { get; private set; }
+
+    void Invalidate() { cache.Clear(); cacheRaw.Clear(); Version++; }
 
     double Fold(string stat, double flat)
     {

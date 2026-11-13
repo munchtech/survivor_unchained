@@ -1198,9 +1198,12 @@ public sealed partial class Battle
 
     public void KillEnemy(Enemy e, bool byPlayer, WeaponInst? weapon, int depth = 0)
     {
+        // A death is entered once: a second blow on a body already falling (an execute behind the killing hit, a death
+        // hook's burst) is no second kill, ember or event; it falls before its hooks run so none of them re-enters (SU-064).
+        if (!e.Alive || e.State == EnemyState.Dying) return;
+        e.State = EnemyState.Dying;
         RuleOnDeath(e);
         e.Hp = 0;
-        e.State = EnemyState.Dying;
         e.StateT = 0;
         e.DieT = 0;
         e.Anim = EnemyAnim.Die;
@@ -1668,11 +1671,14 @@ public sealed partial class Battle
     }
 
     /// <summary>Whether bad ground can touch her now: not through i-frames, a leap, or a lamp that spares it.</summary>
-    bool GroundReaches(School school)
+    bool GroundReaches(School school) => ControlReaches() && !(Lamps.Board && BoardGroundSpares(school));
+
+    /// <summary>Whether damage-free control (a slow, a wade) can touch her now: not through i-frames or a leap. A blow
+    /// that deals damage slows only if its damage landed; this is the rule for what has none (SU-065).</summary>
+    public bool ControlReaches()
     {
         var p = Player;
-        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return false;
-        return !(Lamps.Board && BoardGroundSpares(school));
+        return p.Alive && p.Iframes <= 0 && p.Leap == null;
     }
 
     /// <summary>What of bad ground's damage reaches her: armour, resistance, the bulwark, half a ghost.</summary>
@@ -2359,8 +2365,16 @@ public sealed partial class Battle
         foreach (var pr in Projectiles.Items)
             if (pr.Alive && pr.Lob && pr.Owner == Side.Enemy) yield return (pr.LandX, pr.LandZ, 1.6, pr.Life, pr.Life - pr.Age, pr.Damage);
     }
-    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
-    public void CancelBlows() { blows.Clear(); if (tells.Count > 0 || Player.RootT > 0) CancelTells(); }
+    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint), and its mark with it: the
+    /// ground and the HUD hear an Off for each, so no warning outlives the blow it warned of (SU-067).</summary>
+    public void CancelBlows()
+    {
+        foreach (var b in blows)
+            if (!b.OwnMark)
+                Events.Emit(new Ev.Telegraph { Id = b.MarkId, Tell = b.Tell, Phase = TellPhase.Off, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, Radius = b.Radius, Hostile = true });
+        blows.Clear();
+        if (tells.Count > 0 || Player.RootT > 0) CancelTells();
+    }
 
     /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
     /// if they are still in its shape (a blow slipped by a dash in time is a
@@ -2402,7 +2416,8 @@ public sealed partial class Battle
                     blowLabel = b.Label;
                     if (b.Damage > 0 && (b.Dealt = HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true)) > 0 && b.From?.Boss == true) BossBlowsTaken++;
                     blowLabel = null;
-                    if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
+                    // A leapt, dodged or blocked blow lames no one (SU-065): its slow rides its damage, or, with none, the control rule.
+                    if (b.Slow > 0 && (b.Damage > 0 ? b.Dealt > 0 : ControlReaches())) SlowPlayer(b.Slow, b.SlowFor);
                 }
             }
             b.After?.Invoke(this);
@@ -2493,7 +2508,8 @@ public sealed partial class Battle
 
             if (pr.Owner == Side.Enemy)
             {
-                if (p.Alive && Art.WraithT <= 0 && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
+                // (SU-072) Her only if its thrower is hostile to her; else whatever creature it touches that its thrower may harm.
+                if (pr.Allegiance is not { HostileToPlayer: false } && p.Alive && Art.WraithT <= 0 && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
                 {
                     if (p.BulwarkT > 0)
                     {
@@ -2516,6 +2532,7 @@ public sealed partial class Battle
                     if (landed > 0 && pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }
+                else if (pr.Allegiance is { } al && MissileStrikesCreature(pr, al)) Projectiles.Release(pr);
                 continue;
             }
 
@@ -2610,11 +2627,11 @@ public sealed partial class Battle
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
         ArcanistOnProjectileHit(pr, e, weapon);
-        if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id, pr.W);
+        if (pr.Splash > 0) Explode(pr, pr.Splash, pr.Damage * 0.75, weapon, e.Id);
         if (pr.GroundOnHit is { } g)
         {
             var zn = SpawnZone(Side.Player, pr.X, pr.Z, g.Radius * Stats.Get(Stat.Area), g.Duration, pr.Damage * g.DpsPct, pr.School);
-            if (zn != null) { zn.Tags = [Tag.Zone, pr.School.AsTag()]; zn.Art = pr.Art + "_ground"; zn.Weapon = pr.Weapon; }
+            if (zn != null) { zn.Tags = [Tag.Zone, pr.School.AsTag()]; zn.Art = pr.Art + "_ground"; zn.DeriveFrom(pr); }
         }
         if (pr.SplitOnHit > 0 && pr.Depth < 1)
         {
@@ -2624,9 +2641,9 @@ public sealed partial class Battle
                 double sp = pr.Speed * 0.85;
                 var c = SpawnProjectile(pr.Owner, pr.X, pr.Z, pr.Damage * 0.45, pr.School);
                 if (c == null) continue;
-                c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Tags = pr.Tags; c.Radius = pr.Radius * 0.7;
-                c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3); c.Weapon = pr.Weapon; c.Art = pr.Art; c.Status = pr.Status;
-                c.Depth = pr.Depth + 1; c.Rank = pr.Rank; c.W = pr.W;
+                pr.Derive(c);
+                c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
+                c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
                 c.AimAlongVelocity();
                 c.Hits.Add(e.Id); c.HitTimes.Add(Time);
             }
@@ -2660,10 +2677,11 @@ public sealed partial class Battle
                 var p = Player;
                 const double r = 1.6;
                 Events.Emit(new Ev.Explosion { X = pr.X, Z = pr.Z, Radius = r, School = pr.School, Power = 0.6 });
-                if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
+                if (pr.Allegiance is not { HostileToPlayer: false } && Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
                     ShotHurt(pr, Live(pr.OwnerLife));
                 }
+                if (pr.Allegiance is { } al) LobStrikesCreatures(pr, al, r);   // (SU-072)
                 if (pr.GroundOnHit is { } g)
                 {
                     var zn = SpawnZone(Side.Enemy, pr.X, pr.Z, g.Radius, g.Duration, pr.Damage * g.DpsPct, pr.School);
@@ -2675,7 +2693,7 @@ public sealed partial class Battle
             }
         }
         else if (pr.Splash > 0 && hitWall && pr.Owner == Side.Player)
-            Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1, pr.W);
+            Explode(pr, pr.Splash, pr.Damage * 0.75, WeaponById(pr.Weapon), -1);
         // (b1) a banked cut's projectile gone: the last of its cut's, with nothing struck, refunds the cut's weight
         if (pr.Bill is { } bl) { pr.Bill = null; bl.Gone(); }
         Projectiles.Release(pr);
@@ -2683,7 +2701,8 @@ public sealed partial class Battle
 
     /// <summary>An area blast from the survivor's side. Raises Explode for procs. w: the weight of a blast that goes
     /// off after its cast (a projectile's splash carries its stamp, HitOpts.W); null: the weapon's live CutW.</summary>
-    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null, double? cast = null)
+    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null, double? cast = null,
+        double? bossDamage = null, string? credit = null, bool summon = false)
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
@@ -2693,11 +2712,17 @@ public sealed partial class Battle
         {
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
-            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Cast = cast, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
+            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Cast = cast, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status,
+                BossDamage = bossDamage, Credit = credit, Summon = summon });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
     }
+
+    /// <summary>A missile's own blast (its splash on a hit or a wall): the missile's context whole, its champion
+    /// multiplier, credit and summoner's side with it (SU-066).</summary>
+    void Explode(Projectile pr, double r, double dmg, WeaponInst? weapon, int skip) =>
+        Explode(pr.X, pr.Z, r, dmg, pr.School, pr.Tags, weapon, pr.Depth, skip, pr.W, null, pr.BossDamage, pr.Credit, pr.Owner == Side.Ally);
 
     /* ============================================================= zones == */
 
@@ -3428,7 +3453,7 @@ public sealed partial class Battle
                 });
                 break;
             case Effect.Execute fx:
-                if (ctx.Target is { Alive: true } t && t.Hp / t.MaxHp < fx.Threshold && !t.Boss)
+                if (ctx.Target is { Alive: true } t && t.State != EnemyState.Dying && t.Hp / t.MaxHp < fx.Threshold && !t.Boss)   // (SU-064)
                 {
                     ExecutedBark(t);
                     KillEnemy(t, true, ctx.Weapon, depth);

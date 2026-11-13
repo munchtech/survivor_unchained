@@ -234,8 +234,8 @@ public sealed class Greymuzzle : StoryBoss, IBound
             if (pd > frostR && !lit)
             {
                 // The moon cleared bites in earnest: there is no stopping it, only the fires.
-                B.HurtByGround(E.Damage * (unbreakable ? 0.45 : 0.15) * dt, School.Frost, dt, "the cold");
-                B.SlowPlayer(0.7, 0.3);
+                // (the cold slows only where it bit: SU-065)
+                if (B.HurtByGround(E.Damage * (unbreakable ? 0.45 : 0.15) * dt, School.Frost, dt, "the cold")) B.SlowPlayer(0.7, 0.3);
             }
             if ((frostDrawT -= dt) <= 0)
             {

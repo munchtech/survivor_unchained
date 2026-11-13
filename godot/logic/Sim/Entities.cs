@@ -255,8 +255,17 @@ public sealed class Projectile : Pooled
     /// <summary>(SU-056) The thrower by lifetime (a slot reused in flight is not them) and what it needs of them at impact.</summary>
     public Lifetime OwnerLife = Lifetime.None;
     public Shot? OwnerShot;
+    /// <summary>(SU-072) The thrower's side when it threw (null: not a creature's, or the old way: her alone).</summary>
+    public Allegiance? Allegiance;
+    /// <summary>A child of this missile (a split, a mote's halves) takes the parent's context whole: its weapon, champion
+    /// multiplier, credit, weight, status, look and rank, one deeper. The one way a derived missile is made (SU-066).</summary>
+    public void Derive(Projectile c)
+    {
+        c.Weapon = Weapon; c.BossDamage = BossDamage; c.Credit = Credit; c.W = W; c.Status = Status; c.Art = Art; c.Rank = Rank;
+        c.Tags = Tags; c.Depth = Depth + 1;
+    }
     /// <summary>(SU-056) Fired by e: its slot, its lifetime and its snapshot.</summary>
-    public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); }
+    public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); Allegiance = Sim.Allegiance.Of(e); }
     public double X, Z, Y = 1, Vx, Vz, Vy, Speed, Damage;
     public School School;
     public Tag[] Tags = Array.Empty<Tag>();
@@ -295,7 +304,8 @@ public sealed class Projectile : Pooled
     public int Volley;
     /// <summary>The volley's rule is whole (the Crowded Sky looses its extra motes): it bars a second strike. Otherwise it only steers.</summary>
     public bool VolleyHard;
-    public double BossDamage = 1;
+    /// <summary>What a champion takes of it; null: its weapon's own (SU-066: a 1 here once shadowed the weapon's).</summary>
+    public double? BossDamage;
     /// <summary>(M3 MR 3) The share of a written blow each of its hits stands for (the cast's CutW at the launch: a
     /// chained cut's projectile lands after its cast, when the weapon's live weight is 1 again); 1 for everything else.</summary>
     public double W = 1;
@@ -315,12 +325,12 @@ public sealed class Projectile : Pooled
 
     public void Reset()
     {
-        Owner = Side.Player; OwnerId = -1; OwnerLife = Lifetime.None; OwnerShot = null; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
+        Owner = Side.Player; OwnerId = -1; OwnerLife = Lifetime.None; OwnerShot = null; Allegiance = null; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Radius = 0.2; Pierce = 0; Bounces = 0; Life = 1; Age = 0;
         Homing = 0; Seek = null; Target = -2; TargetLife = Lifetime.None; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = null; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>
@@ -344,7 +354,10 @@ public sealed class GroundZone : Pooled
     public bool Follow;
     /// <summary>Armour for the player standing in it (Sanctified Earth).</summary>
     public double Armor;
-    public double BossDamage = 1;
+    /// <summary>What a champion takes of it; null: its weapon's own (SU-066).</summary>
+    public double? BossDamage;
+    /// <summary>Ground a missile leaves takes its context: weapon, champion multiplier and credit (SU-066).</summary>
+    public void DeriveFrom(Projectile pr) { Weapon = pr.Weapon; BossDamage = pr.BossDamage; Credit = pr.Credit; }
     /// <summary>What a boss takes of it, bosses alone (BossDamage lifts champions too): a staged Flare's fires carry its
     /// "bossMul", as its blows do.</summary>
     public double BossMul = 1;
@@ -359,7 +372,7 @@ public sealed class GroundZone : Pooled
     {
         Owner = Side.Player; X = Z = 0; Radius = 1; Life = 1; Age = 0; Tick = 0.5; TickT = 0; Dps = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Slow = 0; Status = null; Art = "zone"; Weapon = null;
-        Follow = false; Armor = 0; BossDamage = 1; BossMul = 1; Credit = null; Echo = false;
+        Follow = false; Armor = 0; BossDamage = null; BossMul = 1; Credit = null; Echo = false;
     }
 }
 

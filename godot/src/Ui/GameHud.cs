@@ -1051,7 +1051,7 @@ public partial class GameHud : CanvasLayer
             read = pin == "card" || !HudPin.Active && (c != null && c.Held(Act.Experience) || !captured && inView && r.HasPoint(mp));
             if (read)
             {
-                string f = "card|" + card.Skill + "|" + card.Slot;
+                string f = "card|" + card.Skill + "|" + card.Slot + "|" + b.BuildStamp;   // (SU-070: the build is in the key)
                 if (f != tipFor) { tipFor = f; tipView = SkillTip.For(ch, b, card.Skill, card.Kind == LevelCardKind.NewKey ? card.Slot : b.Weapons.Find(x => x.Id == card.Skill)?.Slot ?? ch.Slotted.IndexOf(card.Skill)); }
                 Tip().SetBeside(true, HudBottom.GlobalRect(levelCard), tipView);
             }
@@ -1076,7 +1076,7 @@ public partial class GameHud : CanvasLayer
             if (w != null) shown = w.Slot2 == slot && w.Half != null ? w.Half : w;
             if (shown != null)
             {
-                string f = $"seat|{seat}|{shown.Id}|{SkillTip.CastOf(shown)}|{shown.Rank}";
+                string f = $"seat|{seat}|{shown.Id}|{SkillTip.CastOf(shown)}|{shown.Rank}|{b.BuildStamp}";
                 if (f != tipFor)
                 {
                     tipFor = f;
@@ -1084,7 +1084,7 @@ public partial class GameHud : CanvasLayer
                 }
             }
         }
-        if (shown == null) { tipSeat = -1; skillTip?.Set(false, default, null); return; }
+        if (shown == null) { tipSeat = -1; tipFor = ""; skillTip?.Set(false, default, null); return; }
         // (0.15 s on one seat; moving on to another while it shows switches at once)
         bool up = skillTip is { Visible: true };
         if (seat != tipSeat) { tipSeat = seat; tipSeatSince = Time.GetTicksMsec(); }
@@ -1098,7 +1098,7 @@ public partial class GameHud : CanvasLayer
             var (capL, capR) = CapSpan.Of(top - 14 - 164, top - 14);
             Tip().SetSeat(true, mid.X, top, tipView, capL, capR);
         }
-        else skillTip?.Set(false, default, null);
+        else { tipFor = ""; skillTip?.Set(false, default, null); }
     }
 
     /// <summary>The level's name over the coin as last written, and what it was written for.</summary>
@@ -1133,18 +1133,6 @@ public partial class GameHud : CanvasLayer
         var col = Style.RarityOf((int)bd.Rarity);
         // (the Drowned Girl: a small bronze stud, its glyph in gold, DgMeters)
         return DgMeters.Passive(bd.Icon, rank, bd.Max > 1, col);
-        var holder = new Control { CustomMinimumSize = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
-        var gl = Glyphs.Icon(bd.Icon, 22, col, line: true);
-        gl.Position = new Vector2(2, 0);
-        gl.Size = new Vector2(22, 22);
-        holder.AddChild(gl);
-        if (bd.Max > 1)
-        {
-            var r = Style.Label($"{rank}", Style.UiHeavy, 12, Colors.White);
-            r.Position = new Vector2(18, 12);
-            holder.AddChild(r);
-        }
-        return holder;
     }
     /// <summary>What the header shows now (the game asks every frame; it is redrawn only when this changes).</summary>
     (string Name, string? Region, int Day, TimeOfDay Time)? zoneShown;
@@ -2068,7 +2056,7 @@ public partial class GameHud : CanvasLayer
         irons.DayNight(barEmber);
         XpTick(irons.Panel, delta);
         // (the tips are fed from Frame; a HUD not fed this frame hides its tip)
-        if (skillTip is { Visible: true } && Time.GetTicksMsec() - tipTickMs > 100) { skillTip.Set(false, default, null); if (levelCard != null) levelCard.Read = false; }
+        if (skillTip is { Visible: true } && Time.GetTicksMsec() - tipTickMs > 100) { skillTip.Set(false, default, null); tipFor = ""; if (levelCard != null) levelCard.Read = false; }
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;

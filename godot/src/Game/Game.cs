@@ -1229,6 +1229,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
     // (hud24 r2: each with its damage footprint; the statues fade for the area of it they hide, Ui.HudMask.Hidden)
     readonly List<Ui.HudMark> marks = new();
+    Battle? marksOf;   // the battle the marks belong to (SU-067)
     // (the fade log, --shot only: what each HUD part's fade is for now)
     readonly Dictionary<string, string?> fadeLog = new();
     const float FadeArea = 1500;
@@ -1239,10 +1240,16 @@ public partial class Game : Node, IZoneHost
         sound.Events(evs, Battle);
         zone?.Events(evs);
         int crits = 0;
+        if (!ReferenceEquals(marksOf, Battle)) { marks.Clear(); marksOf = Battle; }
         foreach (var e in evs)
         {
-            if (e is Ev.Telegraph tg && tg.Hostile && tg.Duration > 0.02)
-                if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
+            // (SU-067: on the sim's clock; a Land, an Off or a re-mark of the same id ends the mark)
+            if (e is Ev.Telegraph tg && tg.Hostile)
+            {
+                if (tg.Id != 0) marks.RemoveAll(m => m.Id == tg.Id);
+                if (tg.Phase == TellPhase.Warn && tg.Duration > 0.02 && tg.Kind != TelegraphKind.Safe && Battle is { } mb0)
+                    marks.Add(new Ui.HudMark(tg, mb0.Time + tg.Duration));
+            }
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
             if (Shots.On("h6")) H6Shot(e);
@@ -1661,7 +1668,8 @@ public partial class Game : Node, IZoneHost
                     if (why == null)
                         foreach (var e in fb2.Enemies.Living())
                             if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { why = "elite"; break; }
-                    marks.RemoveAll(m => m.Until < playedT);
+                    if (!ReferenceEquals(marksOf, Battle)) { marks.Clear(); marksOf = Battle; }
+                    if (Battle is { } mb1) marks.RemoveAll(m => m.Until < mb1.Time);   // (SU-067)
                     if (why == null && marks.Count > 0)
                     {
                         // (the art's set cells cast onto the ground at her feet: fire when >= 1500 px2 of it lies in a blow's footprint)

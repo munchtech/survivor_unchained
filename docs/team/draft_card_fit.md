@@ -1,7 +1,7 @@
 # DraftCardFitTests: native script lifetime
 
 Branch: `codex/draft-card-fit`; original base `ede4bf910`.
-Current integration merge: `e544020349742c9dbdccaf744c320178b6031715`.
+Current integration merge: `9e61bcbcb8264dcd36078257e9bb6916bd92017b`.
 Status: Round 3 validation in progress on the merged result.
 
 ## Round 3
@@ -15,7 +15,9 @@ The separate coverage defect is recorded under "Noted by Codex job 6" in
 
 The first merged checkpoint, `e54402034`, passed three full suites with 2,386
 passed, 0 failed, and 11 skipped each. A newer ruling names `d310d57db`; the next
-fetch returned `9e61bcbcb`. Merge and validate that current tip before reporting.
+fetch returned `9e61bcbcb`, now merged. Three full suites on that current tip
+are required before the updated MR line. The first passed with 2,457 passed,
+0 failed, and 11 skipped; the remaining two are in progress.
 
 ## Cause and fix
 
