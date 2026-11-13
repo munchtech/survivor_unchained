@@ -37,9 +37,10 @@ public class SkillTipTests(ITestOutputHelper output)
         foreach (var s in t.Later) Add(s, "kindle");
         if (t.Union != null)
         {
-            Add(t.Union.Id, Cast(t.Union.Id));
-            Add("cleaver", Cast("cleaver"));
-            Add("sunder", Cast("sunder"));
+            var un = Unions.Find(t.Union.Id)!;
+            Add(un.Into, Cast(un.Into));
+            Add(un.A, Cast(un.A));
+            Add(un.B, Cast(un.B));
         }
         Add("rebuke", "kindle");
         return set;

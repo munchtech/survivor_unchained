@@ -17,7 +17,7 @@ namespace SurvivorUnchained.Tests;
 [Collection("Balance")]
 public class UnionJoinTests(ITestOutputHelper output)
 {
-    const string Dawn = "dawns_judgement", Pulse = "dawnpulse", Disc = "judgement_disc";
+    const string Dawn = "dawns_judgement", Pulse = "dawnpulse", Disc = "judgement_disc", Wall = "falling_wall";
 
     /// <summary>A Warden carrying both halves of Dawn's Judgment at a level, each with its first strand's Turn planned.</summary>
     static CharacterData Ready(int level = UnionJoin.Level, bool turns = true)
@@ -269,26 +269,55 @@ public class UnionJoinTests(ITestOutputHelper output)
         return b;
     }
 
-    /// <summary>ARPG.md 3.3: a Union beats its two skills apart at equal gear (the band x1.15-1.3). Dawn's Judgment, joined
-    /// by UnionJoin.Apply at its halves' rank, against Dawnpulse and the Judgment Disc at that rank, both self-firing, for
-    /// a minute: a pack of six around her at 4 m, one at 3 m, one at 8 m.</summary>
-    [Fact]
-    public void A_joined_union_out_damages_its_two_halves_apart_at_equal_rank()
+    /// <summary>ARPG.md 3.3: a Union beats its two skills apart at equal gear, in the band x1.15-1.3. Each Warden Union,
+    /// joined by UnionJoin.Apply at its halves' rank, against its two halves at that rank, all self-firing, for a minute:
+    /// a pack of six around her at 4 m, one at 3 m, one at 8 m. Never weaker than the two apart in any case; the band
+    /// holds over the three together (their mean).</summary>
+    [Theory]
+    [InlineData(Dawn)]
+    [InlineData(Wall)]
+    public void A_joined_union_out_damages_its_two_halves_apart_at_equal_rank(string id)
     {
         const int Rank = 6;
         const double Seconds = 60;
+        // Pressed skills (Heroic Leap, Shield Charge, Falling Wall) wait for a key: when she is free (no leap, no run), she
+        // stands back on her mark and presses each ready key at the nearest dummy. Self-firing skills fire as they do.
+        void Pilot(Battle b, Enemy[] es, List<(double X, double Z)> at)
+        {
+            var p = b.Player;
+            double hx = p.X, hz = p.Z;
+            for (double t = 0; t < Seconds - 1e-9; t += Dt)
+            {
+                if (p.Leap == null && b.Art.Rush == null)
+                {
+                    p.X = hx; p.Z = hz;
+                    var near = at.OrderBy(q => (q.X - hx) * (q.X - hx) + (q.Z - hz) * (q.Z - hz)).First();
+                    foreach (var w in b.Weapons.Where(w => w.Pressed && w.Timer <= 0).ToList()) b.PressSkill(w.Slot, near.X, near.Z);
+                }
+                Pin(b, es, at);
+                b.Tick(Dt, 0, 0);
+                b.Events.Drain();
+            }
+        }
+        var un = Unions.Find(id)!;
         var pack = Enumerable.Range(0, 6).Select(i => (4 * Math.Sin(i * Math.PI / 3), 4 * Math.Cos(i * Math.PI / 3))).ToList();
         var cases = new (string Name, List<(double, double)> Offs)[] { ("a pack of six at 4 m", pack), ("one at 3 m", [(3, 0)]), ("one at 8 m", [(8, 0)]) };
+        var ratios = new List<double>();
         foreach (var (name, offs) in cases)
         {
-            double a = Dealt(Fight(Pulse, Disc, Rank), offs, Seconds);
-            var b = Fight(Pulse, Disc, Rank);
-            var w = Assert.Single(UnionJoin.Apply(b, [Unions.Find(Dawn)!]));
+            var h = Fight(un.A, un.B, Rank);
+            double a = Dealt(h, offs, Seconds, (es, at) => Pilot(h, es, at));
+            var b = Fight(un.A, un.B, Rank);
+            var w = Assert.Single(UnionJoin.Apply(b, [un]));
             Assert.Equal(Rank, w.Rank);
-            double u = Dealt(b, offs, Seconds);
-            output.WriteLine($"{name}: dawnpulse+disc {a:0.0}/s, dawn's judgment joined {u:0.0}/s (x{u / a:0.00}), rank {Rank}");
+            double u = Dealt(b, offs, Seconds, (es, at) => Pilot(b, es, at));
+            output.WriteLine($"{name}: {un.A}+{un.B} {a:0.0}/s, {un.Name} joined {u:0.0}/s (x{u / a:0.00}), rank {Rank}");
             Assert.True(u / a > 1.0, $"{name}: x{u / a:0.00}");
+            ratios.Add(u / a);
         }
+        double mean = ratios.Average();
+        output.WriteLine($"{un.Name}: mean x{mean:0.00}");
+        Assert.InRange(mean, 1.15, 1.3);
     }
 
     /// <summary>Bladestorm measured, not held (the Warden's own skill since 13 Nov 2026, on its own key beside Sunder; its economy is

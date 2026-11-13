@@ -103,48 +103,76 @@ public class SupportsFightTests
 
     // ---- Journey ----
 
-    static CharacterData Joined()
+    const string Wall = "falling_wall";
+
+    /// <summary>A campaign Warden levelled to 15 the way play does, her taught build granted and her points lit (Light my
+    /// way), two rare items in her pack.</summary>
+    static Journey AtFifteen()
     {
         var a = Callings.Archetype("warden");
-        var ch = Character.Create(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, seed: 7);
-        ch.Level = UnionJoin.Level;
-        foreach (var s in new[] { "dawnpulse", "judgement_disc" })
-        {
-            ch.Skills.Add(s); ch.Slotted.Add(s);
-            var st = Wicks.StrandsOf(s).First();
-            for (int n = 1; n <= Wicks.PerStrand; n++) Assert.Equal(WickNo.None, WickBook.Plan(ch, s, $"{st.Id}.{n}"));
-        }
+        var j = Journey.Begin(new CreationChoice { Name = "A", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 42);
+        while (j.Ch.Level < UnionJoin.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 0.01);
+        j.Teach(null);
+        WickBook.LightAll(j.Ch);
         for (int i = 0; i < 2; i++)
         {
-            var it = Inventory.Make(ch, a.Weapons[0], rarity: 2, seed: (uint)(ch.NextUid + 11));
+            var it = Inventory.Make(j.Ch, a.Weapons[0], rarity: 2, seed: (uint)(j.Ch.NextUid + 11));
             it.Rarity = 2;
-            ch.Pack[ch.Pack.IndexOf(null)] = it;
+            j.Ch.Pack[j.Ch.Pack.IndexOf(null)] = it;
         }
-        Assert.Equal(UnionNo.None, UnionJoin.Join(ch, "dawns_judgement"));
-        return ch;
+        return j;
     }
 
     static Battle Fight(Journey j) => j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7);
 
+    /// <summary>BUILD_UNLOCKS.md level 15: the Warden's first Union is reachable on her taught build. Its two halves are
+    /// keys she is taught (Heroic Leap, key 2; Shield Charge, key 4), both carried at 15 and both burning a Turn, so she
+    /// joins it at a lamp-post for its price (two rare items), and not a level before.</summary>
+    [Fact]
+    public void A_campaign_warden_at_15_on_her_taught_build_can_join_her_first_union()
+    {
+        var t = TaughtBuilds.Of("warden")!;
+        Assert.Equal(Wall, t.Union?.Id);
+        var u = Unions.Find(Wall)!;
+        Assert.Contains(t.Keys, k => k.Skill == u.A && k.Level < UnionJoin.Level);
+        Assert.Contains(t.Keys, k => k.Skill == u.B && k.Level < UnionJoin.Level);
+        Assert.True(Weapons.CanCarry("warden", u.Id));
+        Assert.Equal(2, u.Price);
+        var j = AtFifteen();
+        Assert.Contains(u.A, j.Ch.Slotted);
+        Assert.Contains(u.B, j.Ch.Slotted);
+        Assert.False(SkillBook.IsAuto(j.Ch, u.A));
+        Assert.False(SkillBook.IsAuto(j.Ch, u.B));
+        Assert.True(UnionJoin.TurnBurning(j.Ch, u.A), u.A);
+        Assert.True(UnionJoin.TurnBurning(j.Ch, u.B), u.B);
+        Assert.Contains(UnionJoin.Offered(j.Ch), o => o.Id == Wall);
+        // A level short, it waits.
+        j.Ch.Level = UnionJoin.Level - 1;
+        Assert.Equal(UnionNo.Level, UnionJoin.CanJoin(j.Ch, Wall));
+        j.Ch.Level = UnionJoin.Level;
+        int had = j.Ch.Pack.Count(x => x != null);
+        Assert.Equal(UnionNo.None, UnionJoin.Join(j.Ch, Wall));
+        Assert.Equal(had - 2, j.Ch.Pack.Count(x => x != null));
+        Assert.True(UnionJoin.Known(j.Ch, Wall));
+        Assert.Single(UnionJoin.Live(j.Ch));
+    }
+
     [Fact]
     public void A_joined_union_is_in_the_campaign_fight_and_kept_by_the_kit_refresh()
     {
-        var ch = Joined();
-        var j = Journey.Begin(new CreationChoice { Name = "A", Archetype = "warden", Background = "hunter", Palette = Callings.Archetype("warden").Palettes[0].Id, WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = Callings.Archetype("warden").Abilities[0] }, 42);
-        j.Ch.Level = ch.Level; j.Ch.Skills.Clear(); j.Ch.Skills.AddRange(ch.Skills);
-        j.Ch.Slotted.Clear(); j.Ch.Slotted.AddRange(ch.Slotted);
-        j.Ch.Lamps = ch.Lamps; j.Ch.Pack = ch.Pack;
-        // (13 Nov 2026: Dawnpulse is offered after her build, no longer taught in a key, so it runs itself by default; this
-        // pair is carried on keys as the union's parts, the way she would put them)
-        SkillBook.SetAuto(j.Ch, "dawnpulse", false);
-        var u = Unions.Find("dawns_judgement")!;
+        var j = AtFifteen();
+        Assert.Equal(UnionNo.None, UnionJoin.Join(j.Ch, Wall));
+        var u = Unions.Find(Wall)!;
         var b = Fight(j);
         Assert.Equal(1, b.Weapons.Count(w => w.Id == u.Into));
         Assert.DoesNotContain(b.Weapons, w => w.Id == u.A || w.Id == u.B);
+        // It holds both halves' keys.
+        var joined = b.Weapons.Single(x => x.Id == u.Into);
+        Assert.True(joined.Slot >= 0 && joined.Slot2 >= 0 && joined.Slot != joined.Slot2);
         for (int i = 0; i < 3; i++) j.RefreshKit(b);
         Assert.Equal(1, b.Weapons.Count(w => w.Id == u.Into));
         Assert.DoesNotContain(b.Weapons, w => w.Id == u.A || w.Id == u.B);
-        Assert.Equal(UnionNo.None, UnionJoin.Unjoin(j.Ch, "dawns_judgement"));
+        Assert.Equal(UnionNo.None, UnionJoin.Unjoin(j.Ch, Wall));
         j.RefreshKit(b);
         Assert.DoesNotContain(b.Weapons, w => w.Id == u.Into);
         Assert.Contains(b.Weapons, w => w.Id == u.A);

@@ -55,9 +55,9 @@ public class RecipeTests
         Assert.True(b.DamageBy.GetValueOrDefault(weapon) > before, $"{branch} dealt nothing");
     }
 
-    /// <summary>Unions that are granted, not drafted, for now: Sunder has no evolution, so Bladestorm has no two evolved
-    /// halves to be made from (console --grant-union, Battle.GrantUnion). Drop it from here when Sunder evolves.</summary>
-    static readonly HashSet<string> GrantedOnlyUnions = ["bladestorm"];
+    /// <summary>Unions that are joined in the campaign, never drafted: Falling Wall's halves (the Warden's Heroic Leap and
+    /// Shield Charge) are granted, not found, so the night draft never has both (UnionJoin; console --grant-union).</summary>
+    static readonly HashSet<string> GrantedOnlyUnions = ["falling_wall"];
 
     public static IEnumerable<object[]> AllUnions() => Unions.All.Where(u => !GrantedOnlyUnions.Contains(u.Id)).Select(u => new object[] { u.Id });
 
@@ -160,7 +160,7 @@ public class RecipeTests
                 foreach (var c in e.Catalysts) Assert.Equal(BoonKind.Passive, Boons.Find(c)?.Kind);
         foreach (var u in Unions.All)
         {
-            Assert.True(Weapons.All[u.A].Findable && Weapons.All[u.B].Findable);
+            Assert.True(GrantedOnlyUnions.Contains(u.Id) || Weapons.All[u.A].Findable && Weapons.All[u.B].Findable, u.Id);
             Assert.True(Weapons.All.ContainsKey(u.Into));
         }
     }

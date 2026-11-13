@@ -53,6 +53,10 @@
       "line": "Charge behind your shield, striking and throwing aside all in your way. A champion that stops you is stunned.",
       "numbers": [ [ "Damage", "{damage}" ], [ "Charge", "{base.range} m" ], [ "Barrier", "{base.barrier:%} health, {base.duration} s" ] ]
     },
+    "falling_wall": {
+      "line": "Leap where you aim and land shield first, knocking down a wide ring. Each one struck shields you.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
+    },
     "iron_vow": {
       "line": "Plant your feet: for {base.brace} s, blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
       "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ],

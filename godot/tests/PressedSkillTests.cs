@@ -27,9 +27,9 @@ public class PressedSkillTests
     }
 
     [Fact]
-    public void Every_skill_but_the_wardens_three_pressed_ones_still_fires_itself()
+    public void Every_skill_but_the_wardens_pressed_ones_still_fires_itself()
     {
-        string[] pressed = ["heroic_leap", "shield_charge", "bladestorm"];
+        string[] pressed = ["heroic_leap", "shield_charge", "bladestorm", "falling_wall"]; // (Falling Wall: her Leap + Charge Union)
         foreach (var w in Weapons.All.Values.Where(w => !pressed.Contains(w.Id)))
         {
             Assert.Equal(CastMode.Auto, w.Cast);
@@ -40,6 +40,7 @@ public class PressedSkillTests
         Assert.Equal(CastMode.Auto, Weapons.Get("iron_vow").Cast);
         Assert.NotNull(Weapons.Get("iron_vow").Kindle);
         Assert.Equal(CastMode.Channel, Weapons.Get("bladestorm").Cast);
+        Assert.Equal(CastMode.Press, Weapons.Get("falling_wall").Cast);
     }
 
     [Fact]
@@ -48,7 +49,7 @@ public class PressedSkillTests
         var once = SkillsJson.File;
         string written = SkillsJson.Write(once);
         Assert.Contains("\"cast\": \"channel\"", written);
-        Assert.Equal(3, written.Split("\"cast\"").Length - 1);
+        Assert.Equal(4, written.Split("\"cast\"").Length - 1);
         Assert.Equal(CastMode.Channel, SkillsJson.Parse(written).Skills.Single(s => s.Id == "bladestorm").Cast);
     }
 

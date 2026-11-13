@@ -1380,17 +1380,17 @@
       "tags": ["projectile", "thrown", "bounce", "nova", "holy"],
       "bossDamage": 2.2,
       "art": "disc_reckon",
-      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike.",
+      "description": "A shield of morning that ricochets through the crowd, searing, and breaks into light wherever it strikes.",
       "base": {
         "cooldown": 1.8,
-        "damage": 15,
+        "damage": 13.5,
         "speed": 10.5,
         "range": 16,
         "radius": 0.32,
         "life": 3.5,
         "bounces": 9,
         "knockback": 0.3,
-        "projectiles": 2,
+        "projectiles": 1,
         "status": { "kind": "sear", "chance": 1, "power": 1, "duration": 3 }
       },
       "triggers": [
@@ -1512,6 +1512,26 @@
       ]
     },
     {
+      "id": "falling_wall",
+      "name": "Falling Wall",
+      "school": "physical",
+      "behavior": "leap",
+      "cast": "press",
+      "press": { "kind": "press", "aim": "point" },
+      "tags": ["melee", "physical", "area", "heavy", "shield"],
+      "bossDamage": 1.5,
+      "art": "heroic_leap",
+      "description": "Shield first, you leap where you aim and come down like a falling wall: everything in a wide ring is struck, thrown back and knocked down, and each one struck shields you.",
+      "base": { "cooldown": 7, "damage": 175, "range": 10, "minRange": 3, "radius": 4.5, "air": 0.62, "knockback": 3, "stun": 1, "stagger": 0.4 },
+      "triggers": [
+        {
+          "on": "hit",
+          "when": { "weapon": "falling_wall" },
+          "effects": [{ "do": "barrier", "fraction": 0.03, "cap": 0.2, "duration": 4 }]
+        }
+      ]
+    },
+    {
       "id": "iron_vow",
       "name": "Iron Vow",
       "school": "physical",
@@ -1615,7 +1635,16 @@
       "b": "judgement_disc",
       "into": "dawns_judgement",
       "price": 2,
-      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike."
+      "description": "A shield of morning that ricochets through the crowd, searing, and breaks into light wherever it strikes."
+    },
+    {
+      "id": "falling_wall",
+      "name": "Falling Wall",
+      "a": "heroic_leap",
+      "b": "shield_charge",
+      "into": "falling_wall",
+      "price": 2,
+      "description": "The leap and the charge are one: you come down shield first on the crowd, a wider ring knocked flat, and every one struck wards you."
     },
     {
       "id": "barrow_host",
