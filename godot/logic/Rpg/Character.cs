@@ -621,6 +621,9 @@ public sealed class CombatKit
     public List<(string Id, int Rank)> Weapons = new();
     /// <summary>Learned skills carried by day (not into the night's arenas: the ember starts from nothing).</summary>
     public List<(string Id, int Rank)> Learned = new();
+    /// <summary>The auto skills her gear grants (ItemDef.Auto), each at its rank: on top of her auto slots, no limit, whatever her
+    /// calling may carry (13 Nov build direction; the Battle runs them).</summary>
+    public List<(string Id, int Rank)> AutoSkills = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
     public AbilityKind Ability;
     public int ArtRank = 1;
@@ -834,6 +837,9 @@ public static class Character
                 Kindle(kit, kin.Kindled!);
             }
             GearSkills(ch, it, def, s, kit.Weapons);
+            // Auto skills a great piece grants: every one worn, stacked, none refused for her calling.
+            foreach (var (skill, rank) in def.Auto ?? new())
+                if (Content.Weapons.All.ContainsKey(skill) && kit.AutoSkills.All(w => w.Id != skill)) kit.AutoSkills.Add((skill, rank));
             // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
             // twice is the finer of the two (design 20.3).
             if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk

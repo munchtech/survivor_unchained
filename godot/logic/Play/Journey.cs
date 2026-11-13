@@ -25,6 +25,10 @@ public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, stri
 /// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
 public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
 
+/// <summary>A piece fell that grants a skill her calling can get no other way (Drops.GiftOf): the biggest drop in the game. Its own
+/// event, beside the Legendary's sound and beam it borrows until bd-ui gives it a voice and a look.</summary>
+public sealed record GiftDrop(ItemInstance Item, string Skill);
+
 /// <summary>What the road has taken out of the survivor, carried between
 /// zones until they rest (the ember is an arena's, and stays in it).</summary>
 public sealed class Expedition
@@ -48,6 +52,8 @@ public sealed partial class Journey
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
     public Action<Announcement> OnAnnounce = _ => { };
+    /// <summary>A skill-granting great piece has fallen (see <see cref="GiftDrop"/>); raised once per piece, as it is rolled.</summary>
+    public Action<GiftDrop> OnGift = _ => { };
     /// <summary>The first Legendary (or Storied) piece this world has ever seen taken, and where it lay:
     /// the experience director stages its moment on it (docs/design/LOOT_DESIGN.md §8.2).</summary>
     public Action<ItemInstance, double, double> FirstLegendaryTaken = (_, _, _) => { };

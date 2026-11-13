@@ -80,6 +80,13 @@ public sealed class ItemDef
     public World.Cond? DropsWhen;
     /// <summary>(M9) A named piece's own ranks to skills while worn (items.json "plus": { "heroic_leap": 1 }).</summary>
     public Dictionary<string, int>? Plus;
+    /// <summary>(13 Nov build direction) Great uniques. Auto: skills the piece grants as always-on auto skills, by skill id -> rank. They
+    /// stack on top of her auto slots without a limit (CombatKit.AutoSkills; Battle reads them) and are granted whether or not her
+    /// calling may carry the skill: the piece is the key. Rewrites: the skills whose use the piece changes (its triggers key on the
+    /// skill, TriggerCond.Weapon). Build: the build the piece makes possible (a short key, shown on the piece).</summary>
+    public Dictionary<string, int>? Auto;
+    public List<string>? Rewrites;
+    public string? Build;
 }
 
 public sealed class AffixDef
