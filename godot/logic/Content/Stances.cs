@@ -43,6 +43,8 @@ public sealed class SwapStrike
 public sealed class StanceDef
 {
     public string Id = "", Name = "", Weapon = "", Flavor = "";
+    /// <summary>(bd-wire) The weapon kinds (an item's icon) that pick this stance when worn as her second set.</summary>
+    public List<string> Kinds = new();
     public List<StanceMod> Mods = new();
     public StanceBlow Blow = new();
     public SwapStrike Strike = new();
@@ -70,6 +72,10 @@ public static class Stances
     public static IReadOnlyList<StanceDef> All => File.Stances;
 
     public static StanceDef? Find(string? id) => id == null ? null : File.Stances.FirstOrDefault(s => s.Id == id);
+
+    /// <summary>(bd-wire) The stance a weapon of this kind picks (an item's icon: shield, sword, mace...), or null.</summary>
+    public static string? ForKind(string? kind) =>
+        string.IsNullOrEmpty(kind) ? null : File.Stances.FirstOrDefault(s => s.Kinds.Contains(kind))?.Id;
 
     /// <summary>Set A's swap strike (her calling weapon's), or null when the calling has none.</summary>
     public static SwapStrike? SetA(string? calling) => calling != null && File.Sets.TryGetValue(calling, out var s) ? s.Strike : null;
