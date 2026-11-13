@@ -197,10 +197,11 @@ public sealed class ResolveTests
         b.Resolve.Set(100);
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));
+        double drain = w.Press!.Drain!.Value;
         Run(b, 3.3, () => b.HoldSkill(w.Slot, true));
         Assert.True(w.Channeling, "past the arena's 3 s cap it spins on");
-        Assert.InRange(b.Resolve.Value, 100 - 28 * 3.3 - 1, 100 - 28 * 3.3 + 1);
-        Run(b, 1, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+        Assert.InRange(b.Resolve.Value, 100 - drain * 3.3 - 1, 100 - drain * 3.3 + 1);
+        Run(b, 100 / drain, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
         Assert.False(w.Channeling);
         Assert.Equal(0, b.Resolve.Value, 9);
         Assert.InRange(b.Resolve.SpentInStorm, 99.9, 100.0001);
@@ -224,9 +225,10 @@ public sealed class ResolveTests
         b.Resolve.Set(100);
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));
-        Run(b, 2.0, () => b.HoldSkill(w.Slot, true));
+        double drain = w.Press!.Drain!.Value;
+        Run(b, 0.5 * 100 / drain, () => b.HoldSkill(w.Slot, true));
         Assert.True(w.Channeling, "it spins on with no break key");
-        Run(b, 2.0, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+        Run(b, 0.6 * 100 / drain, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
         Assert.False(w.Channeling);
         Assert.Equal(0, b.Resolve.Value, 9);
         Assert.InRange(b.Resolve.SpentInStorm, 99.9, 100.0001);
@@ -240,14 +242,17 @@ public sealed class ResolveTests
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));
         Run(b, 1.8, () => b.HoldSkill(w.Slot, true));
-        double spent = b.Resolve.SpentInStorm;
-        Assert.InRange(spent, 45, 55);
+        double spent = b.Resolve.SpentInStorm, drain = w.Press!.Drain!.Value;
+        Assert.InRange(spent, 1.8 * drain * 0.9, 1.8 * drain * 1.1);
         b.Events.Drain();
         Assert.True(b.PressSkill(b.BreakSlot(w), 0, 0));
         var brk = b.Events.Drain().OfType<Ev.Spin>().Single(e => e.Phase == SpinPhase.Break);
-        Assert.Equal(1 + 0.6 * spent / 100, brk.Grow, 6);
-        Assert.Equal(1.6, Firing.BreakGrowthSpent(w, 250), 9);
-        Assert.Equal(1.0, Firing.BreakGrowthSpent(w, 0), 9);
+        // (bd-storm) From BreakFloor at none to BreakGrow at BreakSpent: a tapped spin breaks small, a held one great.
+        double floor = w.Def.Base.BreakFloor ?? 1, most = w.Def.Base.BreakGrow ?? 1.6, at = w.Def.Base.BreakSpent ?? 100;
+        Assert.True(floor < 1, "a tapped storm's break is less than a full blow");
+        Assert.Equal(floor + (most - floor) * Math.Min(1, spent / at), brk.Grow, 6);
+        Assert.Equal(most, Firing.BreakGrowthSpent(w, 250), 9);
+        Assert.Equal(floor, Firing.BreakGrowthSpent(w, 0), 9);
     }
 
     [Fact]
