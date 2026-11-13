@@ -376,7 +376,7 @@ public sealed class WickRulesTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Bladestorms_spin_carries_the_cleavers_lamps()
+    public void Bladestorm_is_its_own_skill_and_carries_none_of_the_cleavers_lamps()
     {
         double Bleeding(bool lit)
         {
@@ -388,7 +388,7 @@ public sealed class WickRulesTests(ITestOutputHelper output)
             b.Calling = "warden";
             b.Lamps = new LampLoadout();
             if (lit) b.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "cleaver.laid_open", Args = new Dictionary<string, double>() });
-            var w = b.GrantUnion("bladestorm")!;
+            var w = b.AddWeapon("bladestorm", Weapons.MaxRank)!;
             w.Timer = 0;
             b.Resolve.Set(100);
             var p = b.Player;
@@ -410,7 +410,8 @@ public sealed class WickRulesTests(ITestOutputHelper output)
             foreach (var e in foes) if (e.Status.Has(StatusKind.Bleed)) bleeding++;
             return bleeding;
         }
+        // (13 Nov 2026: Bladestorm is no union of the Cleaver's; a lit Cleaver lamp makes it bleed no one)
         Assert.Equal(0, Bleeding(false));
-        Assert.Equal(6, Bleeding(true));
+        Assert.Equal(0, Bleeding(true));
     }
 }

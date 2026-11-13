@@ -148,6 +148,7 @@ switch (cmd)
     case "lowford-day": LowfordDay(); break;
     case "zone": ZoneRuns(); break;
     case "density": Density(); break;
+    case "storm": StormRuns(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
     case "board": BoardPlan.Run(opt.Get("people", "pack"), opt.Int("tier", 1), opt.Get("seed", "311").Split(',').Select(int.Parse).ToArray(), opt.Get("out", ""), double.Parse(opt.Get("ppm", "4"), System.Globalization.CultureInfo.InvariantCulture)); break;
@@ -431,6 +432,53 @@ void Place()
  * (2/3/4, Hands on), nohand (new slots, Hands off). --stages 1:1:0,4:2:2,8:4:4 (level:day:learned)
  * --packs wolves,boars,footpads,lamplings,elitewolves --setups old,new,nohand --seeds N --waves N (packs a fight) --bot plain|deft --out PATH */
 // Density keeps one JSON per walk and regenerates the baseline table.
+// storm (bd-sockets): the Verge by day with the taught build granted at each level and every point lit, a run a
+// level x bot x seed, run in parallel; --drop bladestorm takes skills off her bar to measure what one adds:
+// --levels 5,9,12 --bots human,deft,idler --seeds 16 --tier 2 --drop a,b --wall 600 --out PATH.md
+void StormRuns()
+{
+    var levels = opt.List("levels", "5").Select(int.Parse).ToArray();
+    var bots = opt.List("bots", "human,deft,idler");
+    int seeds = opt.Int("seeds", 16), seed0 = opt.Int("seed0", 1), tier = opt.Int("tier", 2);
+    VergeZoneSim.Lit = opt.Get("lit", "1") != "0";
+    // (--thin N: the plan's bladestorm thinBelow for this run, in memory only, data/content/press_plan.json untouched)
+    if (opt.Has("thin")) SurvivorUnchained.Sim.PressPlan.Def.For("bladestorm").ThinBelow = opt.Int("thin", 4);
+    VergeZoneSim.Drop = opt.Has("drop") ? opt.List("drop", "") : Array.Empty<string>();
+    var wall = TimeSpan.FromSeconds(opt.Int("wall", 600));
+    var specs = new List<VergeZoneSpec>();
+    foreach (var lv in levels) foreach (var bot in bots) for (int s = 0; s < seeds; s++) specs.Add(new VergeZoneSpec(seed0 + s, "warden", bot, tier, lv, opt.Int("day", 1)));
+    Console.WriteLine($"{specs.Count} verge runs{(VergeZoneSim.Drop.Length > 0 ? " without " + string.Join(",", VergeZoneSim.Drop) : "")}");
+    var results = new ConcurrentBag<VergeZoneResult>();
+    var gate = new object();
+    int done = 0, built = 0;
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        VergeZoneResult r;
+        try { r = VergeZoneSim.Play(spec, wall); }
+        catch (Exception e) { Console.Error.WriteLine($"L{spec.Level}/{spec.Bot}/s{spec.Seed}: {e}"); return; }
+        results.Add(r);
+        lock (gate)
+        {
+            if (built++ < levels.Length * 2) Console.WriteLine($"  L{spec.Level}/{spec.Bot}/s{spec.Seed} {r.Build}");
+            Console.WriteLine($"[{++done}/{specs.Count}] L{spec.Level}/{spec.Bot}/s{spec.Seed}: {(r.Reached ? "through" : r.StopReason)} {r.Density.Seconds / 60:0.0} min falls {r.Falls} kpm {r.Density.KillsPerMinute:0.0} {r.Measures!.Line()}");
+        }
+    });
+    static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
+    static double Share(VergeZoneResult r, string k) => r.Measures!.DamageShare.GetValueOrDefault(k);
+    var sb = new StringBuilder();
+    sb.AppendLine("| level | bot | runs | through % | falls/run | kills/min (med) | minutes (med) | storm % (mean) | sunder % | leap % | groundbreaker % | storms/run | breaks/run | dry/run | released/run | spun s/run | Resolve at start | crowd-ready s/run | starved s/run |");
+    sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+    foreach (var g in results.GroupBy(r => (r.Spec.Level, r.Spec.Bot)).OrderBy(g => g.Key.Level).ThenBy(g => Array.IndexOf(bots, g.Key.Bot)))
+    {
+        var l = g.ToList(); var m = l.Select(r => r.Measures!).ToList();
+        sb.AppendLine($"| {g.Key.Level} | {g.Key.Bot} | {l.Count} | {100.0 * l.Count(r => r.Reached) / l.Count:0} | {l.Average(r => r.Falls):0.00} | {Med(l.Select(r => r.Density.KillsPerMinute)):0.0} | {Med(l.Select(r => r.Density.Seconds / 60)):0.0} | " +
+            $"{l.Average(r => Share(r, "bladestorm")):0.0} | {l.Average(r => Share(r, "sunder")):0.0} | {l.Average(r => Share(r, "heroic_leap")):0.0} | {l.Average(r => Share(r, "groundbreaker")):0.0} | " +
+            $"{m.Average(x => x.StormStarts):0.0} | {m.Average(x => x.StormBreaks):0.0} | {m.Average(x => x.StormDry):0.0} | {m.Average(x => x.StormReleased):0.0} | {m.Average(x => x.StormSec):0} | {Med(m.Select(x => x.StormResolveAtStart)):0} | {m.Average(x => x.StormCrowdSec):0} | {m.Average(x => x.StormStarvedSec):0} |");
+    }
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "storm.md"), sb.ToString());
+    Console.WriteLine(sb);
+}
+
 void Density()
 {
     string root = Directory.GetParent(Directory.GetParent(DataFiles.Dir)!.FullName)!.FullName;
@@ -444,7 +492,7 @@ void Density()
     var bots = opt.List("bots", "human");
     var calling = opt.Get("calling", "warden");
     if (zones.Length == 0 || zones.Any(z => z is not ("lowford" or "verge"))) throw new ArgumentException("--zones lowford,verge");
-    if (bots.Length == 0 || bots.Any(b => b is not ("human" or "careless" or "deft" or "plain"))) throw new ArgumentException("--bots human,careless,deft,plain");
+    if (bots.Length == 0 || bots.Any(b => b is not ("human" or "careless" or "deft" or "plain" or "idler"))) throw new ArgumentException("--bots human,careless,deft,plain,idler");
     Directory.CreateDirectory(outDir);
     var runs = new List<DensityRun>();
     var files = new List<string>();
@@ -622,6 +670,7 @@ void Maps()
     var bots = opt.Has("bots") ? opt.List("bots", "deft") : [opt.Get("bot", "deft")];
     if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
     if (opt.Has("grant-union")) SurvivorUnchained.Balance.MapSim.GrantUnion = opt.Get("grant-union", "");
+    if (opt.Has("drop")) VergeZoneSim.Drop = opt.List("drop", "");
     foreach (var bot in bots)
     foreach (var c in Callers())
         foreach (int tier in tiers)

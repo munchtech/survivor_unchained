@@ -1193,6 +1193,17 @@ public sealed partial class Battle
         // (at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
         if (Lamps.Board) { double w1 = statusW; statusW = cw; BoardOnHit(e, school, tags, o, blowDmg, heavy, crit, cw); statusW = w1; }
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
+        if (o.Weapon is { Support: { } sf } sw && !o.Dot && !o.Summon && e.Alive)
+        {
+            double w1 = statusW; statusW = cw;
+            if (sf.Bleed > 0) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, sf.Bleed, 3), blowDmg, o.Depth + 1);
+            if (sf.Stun > 0 && sw.SupportStunKey != sw.FiringKey)
+            {
+                sw.SupportStunKey = sw.FiringKey;
+                ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, sf.Stun * (e.Elite || e.Boss ? 0.5 : 1)), blowDmg, o.Depth + 1);
+            }
+            statusW = w1;
+        }
         { double w1 = statusW; statusW = cw; FlareOnHit(e, o, blowDmg); statusW = w1; }
         // (bd-keys) In set B the stance flavors a key skill's blow (Sim/Stance.cs).
         if (StanceFlavors(o) && e.Hp > 0) StanceBlow(e, o.Weapon!, blowDmg);
@@ -1634,6 +1645,15 @@ public sealed partial class Battle
         // Rebuke's riposte (campaign): the blow is blocked and answered.
         if (TryRiposte(amount, school, source, from)) return 0;
         if (RuleShieldBlock(amount, school, source, from)) return 0;
+        // (bd-sockets) a Block gem on a skill she is playing may turn a blow
+        foreach (var sw in Weapons)
+            if (sw.Support is { Block: > 0 } bf && (sw.Channeling || Time < sw.SupportPlayUntil) && Rng.Next() < bf.Block)
+            {
+                Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
+                Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
+                OnBlocked(amount, from);
+                return 0;
+            }
         // Warding light.
         int blockRank = RoundInt(st.Get(Stat.Block));
         // blue.feral's price: she can't block.
@@ -2987,6 +3007,7 @@ public sealed partial class Battle
         if (Campaign) { w.Press = w.Def.Press; if (auto && Kindles.Contains(id)) w.SetForm("kindle"); }
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
+        RewearSupport(w);
         // (SU-063) Lit once it is carried, so its lit lamps' rules join the fight's (SyncWickRules walks Weapons).
         Relight(w, false);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
@@ -3050,6 +3071,7 @@ public sealed partial class Battle
         rank = Math.Clamp(rank, 1, Content.Weapons.MaxRank);
         if (w.Rank == rank) return;
         w.Rank = rank;
+        RewearSupport(w);
         Relight(w, false);
     }
 

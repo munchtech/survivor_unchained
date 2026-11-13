@@ -19,6 +19,14 @@ public static class DevGrants
     public static List<string> Apply(Battle b, string? grant, string? union, string? steps, bool makeRoom = true)
     {
         var said = new List<string>();
+        // (13 Nov 2026) A union id that is no union but a skill (--grant-union bladestorm: the Warden's own skill now) is
+        // granted as that skill at full rank into a free key, so old command lines keep working.
+        string? asSkill = null;
+        if (!string.IsNullOrWhiteSpace(union) && Content.Unions.Find(union.Trim()) == null && Content.Weapons.All.ContainsKey(union.Trim()))
+        {
+            asSkill = union.Trim(); union = null;
+            grant = string.IsNullOrWhiteSpace(grant) ? $"{asSkill}:{Content.Weapons.MaxRank}" : $"{grant},{asSkill}:{Content.Weapons.MaxRank}";
+        }
         if (makeRoom) said.AddRange(MakeRoom(b, grant, union));
         if (!string.IsNullOrWhiteSpace(grant))
             foreach (var raw in grant.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -34,6 +42,7 @@ public static class DevGrants
                     : !Content.Weapons.All.ContainsKey(id) ? $"grant: {id} not added (no such skill)"
                     : $"grant: {id} not added (needs {Content.Weapons.SlotCost(id)} of the keys, {b.KeyCount - b.SlotsUsed} free: {b.SlotsUsed}/{b.KeyCount} held)");
             }
+        if (asSkill != null) said.Add($"grant-union: {asSkill} is no union now, granted as the skill at full rank (like --grant)");
         if (!string.IsNullOrWhiteSpace(union))
         {
             var u = Content.Unions.Find(union.Trim());

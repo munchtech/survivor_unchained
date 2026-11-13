@@ -180,8 +180,9 @@ public sealed class ResolveTests
 
     static (Battle B, WeaponInst W) Storm()
     {
-        var b = Warden();
-        var w = b.GrantUnion("bladestorm")!;
+        // (13 Nov 2026) Bladestorm is the Warden's own skill: Sunder on key 1 (its break), Bladestorm on key 2.
+        var b = Warden(("sunder", 8), ("bladestorm", 8));
+        var w = b.Weapons.Single(x => x.Id == "bladestorm");
         w.Timer = 0;
         // Within 12 m (in a fight: no fade), out of the spin's reach.
         var e = Dummy(b, 7, 0);
@@ -210,6 +211,27 @@ public sealed class ResolveTests
         Assert.False(b.PressSkill(w.Slot, 1, 0));
     }
 
+    /// <summary>(13 Nov 2026) With Sunder swapped out of the keys there is no break key: the storm still spins on its key and
+    /// ends when Resolve runs dry, as it does for a hand that never presses the break.</summary>
+    [Fact]
+    public void With_Sunder_swapped_out_the_storm_spins_and_ends_when_Resolve_runs_dry()
+    {
+        var b = Warden(("bladestorm", 8));
+        var w = b.Weapons.Single();
+        w.Timer = 0;
+        Assert.Equal(-1, b.BreakSlot(w));
+        Dummy(b, 7, 0);
+        b.Resolve.Set(100);
+        b.HoldSkill(w.Slot, true);
+        Assert.True(b.PressSkill(w.Slot, 1, 0));
+        Run(b, 2.0, () => b.HoldSkill(w.Slot, true));
+        Assert.True(w.Channeling, "it spins on with no break key");
+        Run(b, 2.0, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+        Assert.False(w.Channeling);
+        Assert.Equal(0, b.Resolve.Value, 9);
+        Assert.InRange(b.Resolve.SpentInStorm, 99.9, 100.0001);
+    }
+
     [Fact]
     public void The_break_grows_with_the_resolve_the_storm_spent()
     {
@@ -221,7 +243,7 @@ public sealed class ResolveTests
         double spent = b.Resolve.SpentInStorm;
         Assert.InRange(spent, 45, 55);
         b.Events.Drain();
-        Assert.True(b.PressSkill(w.Slot2, 0, 0));
+        Assert.True(b.PressSkill(b.BreakSlot(w), 0, 0));
         var brk = b.Events.Drain().OfType<Ev.Spin>().Single(e => e.Phase == SpinPhase.Break);
         Assert.Equal(1 + 0.6 * spent / 100, brk.Grow, 6);
         Assert.Equal(1.6, Firing.BreakGrowthSpent(w, 250), 9);
@@ -236,7 +258,7 @@ public sealed class ResolveTests
         var at = new List<(double, double)> { (2, 0) };
         Pin(b, [e], at);
         Assert.False(Firing.InStorm(b, w));
-        Assert.True(b.PressSkill(w.Slot2, 2, 0));
+        Assert.True(b.PressSkill(b.BreakSlot(w), 2, 0));
         Run(b, Land, () => Pin(b, [e], at));
         // (sw1) the half is Sunder's shipped record, chained: one cut builds its weight's part of the blow's 12.
         // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): weight 1, so 12 x 1.
@@ -245,21 +267,16 @@ public sealed class ResolveTests
     }
 
     [Fact]
-    public void Bladestorms_halves_keep_their_parts_lamps()
+    public void Bladestorm_beside_Sunder_keeps_each_skills_own_lamps()
     {
-        var b = Warden(("cleaver", 8), ("sunder", 8));
+        var b = Warden(("sunder", 8), ("bladestorm", 8));
         b.SetWickPath("sunder", Enumerable.Range(1, 4).Select(n => $"sunder.stroke.{n}").ToArray());
         var sunder = b.Weapons.First(x => x.Id == "sunder");
+        var storm = b.Weapons.First(x => x.Id == "bladestorm");
         Assert.NotNull(sunder.Wick);
-        var lit = sunder.Wick!.Lit;
-        var u = b.GrantUnion("bladestorm")!;
-        var half = Firing.HalfOf(u)!;
-        Assert.Equal("sunder", half.Id);
-        Assert.NotNull(half.Wick);
-        Assert.Equal(lit, half.Wick!.Lit);
-        Assert.True(half.Wick.TurnLit);
-        // Cleaver has no wick: the spin half carries none of Sunder's.
-        Assert.Null(u.Wick);
+        // Bladestorm is no union: no half, and it carries none of Sunder's lamps.
+        Assert.Null(Firing.HalfOf(storm));
+        Assert.Null(storm.Wick);
     }
 
     /* ------------------------------------------------------- hold and aim -- */

@@ -105,7 +105,7 @@ public sealed class KeyBarTests
         Assert.False(SkillBook.SetAuto(j.Ch, "groundbreaker", false));
         Assert.True(SkillBook.IsAuto(j.Ch, "groundbreaker"));
         // A key freed, it can.
-        SkillBook.Unslot(j.Ch, "dawnpulse");
+        SkillBook.Unslot(j.Ch, "shield_charge");
         Assert.True(SkillBook.SetAuto(j.Ch, "groundbreaker", false));
         var b = Fight(j);
         var gb = b.Weapons.Single(w => w.Id == "groundbreaker");
@@ -164,8 +164,8 @@ public sealed class KeyBarTests
     public void A_pressed_skill_on_her_gear_takes_a_free_key_and_waits_when_none_is()
     {
         var j = New(5);
-        Fight(j);
-        SkillBook.Unslot(j.Ch, "shield_charge");
+        Fight(j); // (level 5: three keys, sunder, leap, Bladestorm; Shield Charge is taught at 9: she wears it, and it takes the key Bladestorm leaves)
+        SkillBook.Unslot(j.Ch, "bladestorm");
         var autos = new HashSet<string>();
         var bar = Character.Bar(j.Ch, [("shield_charge", 3)], autos);
         Assert.Contains(bar, x => x.Id == "shield_charge");
@@ -185,15 +185,17 @@ public sealed class KeyBarTests
     [Fact]
     public void A_union_still_takes_two_keys()
     {
-        Assert.Equal(2, Weapons.SlotCost("bladestorm"));
+        // (13 Nov 2026: Bladestorm is no union, one key; Butcher's Wheel, axe gyre + cleaver, is the pair that stands in)
+        Assert.Equal(1, Weapons.SlotCost("bladestorm"));
+        Assert.Equal(2, Weapons.SlotCost("butchers_wheel"));
         var b = new Battle(new BattleSetup
         {
             Seed = 3, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
-            Weapons = [("cleaver", 8), ("sunder", 8), ("heroic_leap", 1), ("shield_charge", 1), ("groundbreaker", 1)],
+            Weapons = [("axe_gyre", 8), ("cleaver", 8), ("heroic_leap", 1), ("shield_charge", 1), ("groundbreaker", 1)],
             Kindled = ["groundbreaker"], Calling = "warden", Ability = AbilityKind.ShieldBash,
         });
         Assert.Equal(4, b.SlotsUsed);
-        var u = b.GrantUnion("bladestorm")!;
+        var u = b.GrantUnion("butchers_wheel")!;
         Assert.NotNull(u);
         Assert.Equal((0, 1), (u.Slot, u.Slot2));
         Assert.Equal(4, b.SlotsUsed);
@@ -201,11 +203,12 @@ public sealed class KeyBarTests
         // In her book: with three keys used, a union has no room; with two, it has.
         var j = New(9);
         Fight(j);
-        SkillBook.Unslot(j.Ch, "dawnpulse");
-        Assert.Equal(3, SkillBook.KeysUsed(j.Ch));
-        Assert.False(SkillBook.HasRoom(j.Ch, "bladestorm"));
         SkillBook.Unslot(j.Ch, "shield_charge");
-        Assert.True(SkillBook.HasRoom(j.Ch, "bladestorm"));
+        Assert.Equal(3, SkillBook.KeysUsed(j.Ch));
+        Assert.False(SkillBook.HasRoom(j.Ch, "butchers_wheel"));
+        Assert.True(SkillBook.HasRoom(j.Ch, "dawnpulse")); // (one key: it fits)
+        SkillBook.Unslot(j.Ch, "heroic_leap");
+        Assert.True(SkillBook.HasRoom(j.Ch, "butchers_wheel"));
     }
 
     [Fact]
@@ -222,7 +225,7 @@ public sealed class KeyBarTests
         ch.Slotted.AddRange(["sunder", "groundbreaker", "heroic_leap", "shield_charge", "iron_vow", "watch_bell"]);
         var b = Fight(j);
         Assert.Equal(TaughtBuilds.BarShape, ch.Bar);
-        Assert.Equal(["sunder", "heroic_leap", "shield_charge", "dawnpulse"], Enumerable.Range(0, 4).Select(i => b.OnSlot(i)?.Id).ToArray());
+        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "shield_charge"], Enumerable.Range(0, 4).Select(i => b.OnSlot(i)?.Id).ToArray());
         Assert.Equal(["groundbreaker", "iron_vow", "watch_bell"], b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).OrderBy(w => w.Slot).Select(w => w.Id).ToArray());
         // Once: a skill she then takes off stays off.
         SkillBook.Unslot(ch, "heroic_leap");

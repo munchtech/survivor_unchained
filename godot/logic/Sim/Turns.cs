@@ -201,7 +201,7 @@ public sealed partial class Battle
     /// Turn while its own weapon still suits it (Turns.Works); the rest go dark.</summary>
     internal void CarryTurns(WeaponInst into, params WeaponInst?[] parts)
     {
-        // A two-key union whose second key swings its other part (a spin: Bladestorm), ARPG.md 3.3: each half keeps its
+        // A two-key union whose second key swings its other part (a spin; none in data since 13 Nov 2026), ARPG.md 3.3: each half keeps its
         // own part's lamps and Turns: the first part's on the union (the spin), the second's on its half (Sunder's swing).
         if (into.Behavior == WeaponBehavior.Spin && into.Slot2 >= 0 && parts.Length == 2)
         {

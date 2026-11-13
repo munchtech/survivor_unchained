@@ -142,7 +142,7 @@ public static class PressPlan
             if (h.Gaps.Down(b, w.Slot, w, near != null, near?.X ?? 0, near?.Z ?? 0, w.Held, h, out var at)) b.HoldSkill(w.Slot, true, at.X, at.Z);
             else b.HoldSkill(w.Slot, false);
         }
-        // A union that took the grip's key (Bladestorm: Sunder's is its break): out of a storm that key still swings Sunder,
+        // A spin union that took the grip's key (no spin union in data since 13 Nov 2026; Bladestorm now breaks on Sunder's own key): out of a storm that key still swings Sunder,
         // and the hand HOLDS it as it held the grip, every step, before any return below (a dash, a leap, a rush, another
         // press going off or the storm's press waiting never lets it go), and through the storm's spin, as a player's would.
         foreach (var w in b.Weapons)
@@ -200,15 +200,18 @@ public static class PressPlan
         if (w.Channeling)
         {
             bool late = w.ChannelMax - w.ChannelT <= (r.BreakLate ?? 0.5);
-            if (w.Slot2 >= 0 && (w.Lines.Count >= (r.BreakLines ?? 2) || late || (n < thin && w.Lines.Count > 0)))
+            int bs = b.BreakSlot(w);
+            if (bs >= 0 && (w.Lines.Count >= (r.BreakLines ?? 2) || late || (n < thin && w.Lines.Count > 0)))
             {
-                // The break is a FRESH press of the second key (a grip held from before the storm never breaks it): the
-                // held key comes up and goes down again, and stays down after if the hand is holding the grip this step.
+                // The break is a FRESH press of the break key (Sunder's, or a union's second; a grip held from before the storm
+                // never breaks it): the held key comes up and goes down again. A union's stays down after only if the hand is holding
+                // its half this step; Sunder's (the grip's own key) stays down, the grip loop in Run re-reads it next step, and
+                // Sunder never swings in a storm (Battle.BreaksAStorm).
                 b.HoldSkill(w.Slot, false);
-                b.HoldSkill(w.Slot2, false);
-                b.HoldSkill(w.Slot2, true);
-                b.PressSkill(w.Slot2, p.X, p.Z);
-                if (!HalfGrip(b, h, w, out _)) b.HoldSkill(w.Slot2, false);
+                b.HoldSkill(bs, false);
+                b.HoldSkill(bs, true);
+                b.PressSkill(bs, p.X, p.Z);
+                if (w.Slot2 >= 0 && !HalfGrip(b, h, w, out _)) b.HoldSkill(bs, false);
                 return true;
             }
             b.HoldSkill(w.Slot, n >= thin || full && n > 0);

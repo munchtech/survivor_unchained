@@ -25,9 +25,9 @@ public sealed class TaughtGrantTests
     [Theory]
     [InlineData(1, new[] { "sunder" }, new[] { "groundbreaker" })]
     [InlineData(4, new[] { "sunder", "heroic_leap" }, new[] { "groundbreaker" })]
-    [InlineData(5, new[] { "sunder", "heroic_leap", "shield_charge" }, new[] { "groundbreaker" })]
-    [InlineData(9, new[] { "sunder", "heroic_leap", "shield_charge", "dawnpulse" }, new[] { "groundbreaker", "iron_vow" })]
-    [InlineData(10, new[] { "sunder", "heroic_leap", "shield_charge", "dawnpulse" }, new[] { "groundbreaker", "iron_vow", "watch_bell" })]
+    [InlineData(5, new[] { "sunder", "heroic_leap", "bladestorm" }, new[] { "groundbreaker" })]
+    [InlineData(9, new[] { "sunder", "heroic_leap", "bladestorm", "shield_charge" }, new[] { "groundbreaker", "iron_vow" })]
+    [InlineData(10, new[] { "sunder", "heroic_leap", "bladestorm", "shield_charge" }, new[] { "groundbreaker", "iron_vow", "watch_bell" })]
     public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys, string[] autos)
     {
         var j = New();
@@ -44,9 +44,30 @@ public sealed class TaughtGrantTests
             var w = b.Weapons.First(x => x.Id == s.Skill);
             if (s.Cast == "hold") Assert.True(w.Hold, s.Skill);
             else if (s.Cast == "kindle") Assert.Equal(CastMode.Auto, w.Cast);
+            else if (s.Cast == "channel") Assert.Equal(CastMode.Channel, w.Cast);
             else Assert.Equal(CastMode.Press, w.Cast);
         }
         Assert.DoesNotContain(t.Slots, s => s.Level > level && b.Weapons.Any(w => w.Id == s.Skill));
+    }
+
+    /// <summary>(13 Nov 2026) Bladestorm is the Warden's own skill: taught at level 5 into key 3, a channel, with a fresh
+    /// press of Sunder's key (key 1) as its break.</summary>
+    [Fact]
+    public void Level_five_teaches_Bladestorm_into_key_three_as_a_channel()
+    {
+        var j = New();
+        j.Ch.Level = 4;
+        var b = Fight(j);
+        Assert.DoesNotContain(b.Weapons, w => w.Id == "bladestorm");
+        j.Ch.Level = 5;
+        var got = j.Teach(b);
+        Assert.Equal("bladestorm", Assert.Single(got).Skill);
+        var storm = b.Weapons.First(w => w.Id == "bladestorm");
+        Assert.Equal(2, storm.Slot);
+        Assert.Equal(CastMode.Channel, storm.Cast);
+        Assert.Equal(-1, storm.Slot2);
+        Assert.Equal("sunder", Key(b, 0));
+        Assert.Equal(0, b.BreakSlot(storm));
     }
 
     [Fact]

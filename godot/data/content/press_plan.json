@@ -6,7 +6,7 @@
   "skills": {
     "iron_vow": { "priority": 1, "aim": "self", "when": { "any": [ { "when": "windup", "big": true, "radius": 0.3, "within": 0.6 }, { "when": "crowd", "count": 3, "radius": 3 } ] } },
     "rebuke": { "priority": 1, "aim": "self", "when": { "when": "windup", "radius": 0.3, "within": 0.5 } },
-    "bladestorm": { "priority": 2, "aim": "storm", "when": { "when": "crowd", "count": 4, "radius": 3.5 }, "breakLines": 2, "breakLate": 0.5, "thinBelow": 4 },
+    "bladestorm": { "priority": 2, "aim": "storm", "when": { "when": "crowd", "count": 4, "radius": 3.5 }, "breakLines": 2, "breakLate": 0.5, "thinBelow": 2 },
     "heroic_leap": { "priority": 3, "aim": "pack", "packRadius": 3.5, "packMin": 5, "reach": 9, "when": { "when": "crowd", "count": 5, "radius": 9 } },
     "shield_charge": { "priority": 4, "aim": "line", "line": 8, "lineHalf": 1.2, "lineMin": 4 },
     "groundbreaker": { "priority": 5, "aim": "pack", "packRadius": 3, "packMin": 3, "when": { "when": "crowd", "count": 3, "radius": 4 } },

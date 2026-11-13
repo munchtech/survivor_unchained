@@ -29,7 +29,7 @@ public sealed partial class Battle
     // Concurrent: the balance probes run battles in parallel and share this cache.
     static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> cleaves = new();
 
-    /// <summary>The Cleaver, or a union whose first part (its spin) is the Cleaver's: Bladestorm.</summary>
+    /// <summary>The Cleaver, or a union whose first part is the Cleaver's (none in data since 13 Nov 2026: Bladestorm is the Warden's own skill and carries none of the Cleaver's lamps).</summary>
     internal static bool Cleaves(WeaponInst w)
     {
         if (w.Def.Id == "cleaver") return true;

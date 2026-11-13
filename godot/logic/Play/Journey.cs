@@ -233,12 +233,16 @@ public sealed partial class Journey
         // By day, the skills learned for it.
         else if (combat && !campaign)
             foreach (var (id, rank) in kit.Learned) b.AddWeapon(id, rank);
+        // (bd-sockets) The Unions she has joined go in before the kit's learned set is read (their halves leave the fight).
+        if (campaign) UnionJoin.Apply(b, Ch);
         b.KitLearned = combat && campaign && !b.EmberOn ? kit.Learned.Select(w => w.Id).Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet() : null;
         campaignFight = campaign ? b : null;
         // (M6, TUTORIAL_COPY.md A3) A story fight with the ember out: the dead still spill their light, and it pays her
         // experience as it reaches her (Battle.DropXpStones). Arena runs pay at their end, as before.
         stoneFight = combat && !arena && !b.EmberOn ? b : null;
         if (stoneFight != null) b.PayXp = Learn;
+        // (bd-sockets) The gems in her skills' sockets.
+        if (combat) b.WearSupports(Supports.SourceFor(Ch));
         return b;
     }
 
@@ -682,12 +686,25 @@ public sealed partial class Journey
         // What a fresh battle keys (StartBattle): (bd-keys) her bar (Character.Bar) in the campaign, while the keys have
         // room (the keys a skill the kit did not give holds stay its; auto slots never run out); the gear's elsewhere.
         var want = new List<(string Id, int Rank)>();
+        // (bd-sockets) The Unions live now: one no longer live leaves the fight (its halves come back through the bar); a live
+        // one already in keeps its halves out of it.
+        var live = b.Campaign && learns ? UnionJoin.Live(Ch) : new List<Content.UnionDef>();
+        var heldHalves = new HashSet<string>();
+        if (b.Campaign && learns)
+        {
+            foreach (var u in Content.Unions.All)
+            {
+                if (!b.Weapons.Any(x => x.Id == u.Into)) continue;
+                if (!live.Contains(u)) b.RemoveWeapon(u.Into);
+                else { heldHalves.Add(u.A); heldHalves.Add(u.B); }
+            }
+        }
         if (learns)
         {
             int room = b.KeyCount - b.Weapons.Where(w => !ours.Contains(w.Id) && w.Slot < b.KeyCount).Sum(w => Content.Weapons.SlotCost(w.Id));
             foreach (var s in kit.Bar)
             {
-                if (!Content.Weapons.All.ContainsKey(s.Id) || want.Any(x => x.Id == s.Id)) continue;
+                if (!Content.Weapons.All.ContainsKey(s.Id) || want.Any(x => x.Id == s.Id) || heldHalves.Contains(s.Id)) continue;
                 int cost = kit.Autos.Contains(s.Id) ? 0 : Content.Weapons.SlotCost(s.Id);
                 if (cost > room) continue;
                 room -= cost; want.Add(s);
@@ -712,6 +729,8 @@ public sealed partial class Journey
             if (b.Weapons.Any(x => x.Id == id)) { if (learnedIds.Contains(id)) b.SetRank(id, rank); continue; }
             b.AddWeapon(id, rank);
         }
+        // (bd-sockets) A Union newly live joins the halves she carries.
+        if (b.Campaign && learns) UnionJoin.Apply(b, live);
         // (bd-keys) Her stance as the build has it now (a stance weapon taken up at a lamp-post).
         if (b.Campaign) b.SetStance(SkillBook.StanceOf(Ch));
         if (learns) b.KitLearned = learnedIds.Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet();
@@ -721,12 +740,20 @@ public sealed partial class Journey
             var carried = SkillBook.Carried(Ch).ToDictionary(c => c.Id, c => c.Rank);
             foreach (var w in b.Weapons.ToList())
                 if (carried.TryGetValue(w.Id, out var r)) b.SetRank(w.Id, r);
+            // (bd-sockets) A Union runs at the better of its halves' ranks.
+            foreach (var u in Content.Unions.All)
+                if (b.Weapons.Find(x => x.Id == u.Into) is { } uw && carried.TryGetValue(u.A, out var ra) && carried.TryGetValue(u.B, out var rb))
+                {
+                    b.SetRank(u.Into, Math.Max(ra, rb));
+                    if (uw.Half != null) uw.Half.Rank = uw.Rank;
+                }
         }
         // In a map (and only there) its Marks and skill numbers are worn again: replaced, not merged (SU-041).
         if (b.WearsMarks) b.Wear(kit.Marks, kit.SkillMods);
         b.GearIds.Clear(); b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.Clear(); b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp);
+        if (b.Combat) b.WearSupports(Supports.SourceFor(Ch));
     }
 
     /// <summary>The Flare is out for the story (taken at the Low Ford's dawn, not yet lit at the Waystation).</summary>
