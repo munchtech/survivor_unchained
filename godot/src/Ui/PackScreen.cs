@@ -98,6 +98,8 @@ public partial class InventoryScreen : Overlay
 {
     public override string Kind => "inventory";
     public override Act? Toggle => Act.Inventory;
+    /// <summary>A little more solid than the other pages: the grass must not show through the empty left column.</summary>
+    protected override float PanelAlpha => 0.97f;
     public override float CameraShift => -330;
     public override float CameraNear => 0.56f;
     public override (float Pitch, float Distance, float Height)? CameraFrame => BookFrame;
@@ -160,7 +162,7 @@ public partial class InventoryScreen : Overlay
     /* --------------------------------------------------------- the doll -- */
 
     // (the real her stands left of the panel in the world; no second figure here)
-    const int DollW = 352, SlotS = 60, SlotGap = 8, BlockH = 4 * SlotS + 3 * SlotGap, DollH = BlockH + 36;
+    const int DollW = 352, SlotS = 70, SlotGap = 8, BlockH = 4 * SlotS + 3 * SlotGap, DollH = BlockH + 110;
 
     /// <summary>The kit looked at (by day or by night, crafting's design 20.2); null: the one worn now.</summary>
     static KitKind? kitShown;
@@ -169,27 +171,53 @@ public partial class InventoryScreen : Overlay
     Control DollView(CharacterData ch)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(DollW, DollH), MouseFilter = MouseFilterEnum.Ignore };
-        // (headed like the carried grid beside it, so the two grids start level)
+        // (headed like the carried grid beside it, so the two grids start level; 3 px down so the headers and their rules share a line)
         var head = Kit.Head("Worn");
-        if (!Kits.Shown(ch)) { kitShown = null; return Style.V(4, head, Doll_(ch, holder)); }
-        // Two kits once a coal or a Mark is owned: the switch over the doll, the one worn now marked
-        // with an ember; the night kit's empty places wear the day's piece, faint, "as by day".
-        var on = Kits.On(ch);
-        var tabs = Kit.Tabs(new[] { "By day", "By night" }, (int)KitLooked, k => { kitShown = (KitKind)k; Refresh(); }, 15, 26);
-        tabs.Alignment = BoxContainer.AlignmentMode.Center;
-        var worn = Style.Label(on == KitKind.Night ? "the night kit is on" : "the day kit is on", Style.TextItalic, 13, Style.Ember, false, HorizontalAlignment.Center, false);
-        var col = Style.V(4, head, tabs, worn, Doll_(ch, holder));
-        return col;
+        var headBox = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        headBox.AddThemeConstantOverride("margin_top", 3);
+        headBox.AddThemeConstantOverride("margin_bottom", 4);
+        headBox.AddChild(head);
+        if (!Kits.Shown(ch)) kitShown = null;
+        // (the carried grid's head is a few px taller: 4 px under ours puts the two grids' tops on one line, measured at 1080p)
+        return Style.V(Style.Gap3, headBox, Doll_(ch, holder));
     }
 
     Control Doll_(CharacterData ch, Control holder)
     {
-        // (bd-ui W18) Her looks and dyes: the wardrobe, hers only.
+        // (bd-ui W18) Her looks and dyes: the wardrobe, hers only; drawn as the footer's key-chip + word, 20 px under the block.
+        float below = BlockH + 20;
         if (ch.Sex == Sex.Female)
         {
-            var wardrobe = Nav.Skip(Kit.Word("Wardrobe", () => { Sound.Sfx.Page(); G.Open("wardrobe"); }));
-            wardrobe.Position = new Vector2(DollW / 2 - 40, BlockH + 8);
+            var wardrobe = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand };
+            foreach (var st in new[] { "normal", "hover", "pressed", "focus" }) wardrobe.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
+            var word = Style.Label("Wardrobe", Style.Ui, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
+            var row = Style.H(8, Style.Key("Click"), word);
+            foreach (var c in row.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            Kit.Quiet(row);
+            wardrobe.AddChild(row);
+            var size = row.GetCombinedMinimumSize();
+            wardrobe.CustomMinimumSize = size;
+            wardrobe.Size = size;
+            wardrobe.MouseEntered += () => word.AddThemeColorOverride("font_color", Kit.Ink);
+            wardrobe.MouseExited += () => word.AddThemeColorOverride("font_color", Kit.Dim);
+            wardrobe.Pressed += () => { Sound.Sfx.Page(); G.Open("wardrobe"); };
+            Nav.Skip(wardrobe);
+            wardrobe.Position = new Vector2((DollW - size.X) / 2, below);
             holder.AddChild(wardrobe);
+            below += 40;
+        }
+        if (Kits.Shown(ch))
+        {
+            // Two kits once a coal or a Mark is owned: the switch under the doll, the one worn now marked
+            // with an ember; the night kit's empty places wear the day's piece, faint, "as by day".
+            var on = Kits.On(ch);
+            var tabs = Kit.Tabs(new[] { "By day", "By night" }, (int)KitLooked, k => { kitShown = (KitKind)k; Refresh(); }, 15, 26);
+            tabs.Alignment = BoxContainer.AlignmentMode.Center;
+            var worn = Style.Label(on == KitKind.Night ? "the night kit is on" : "the day kit is on", Style.TextItalic, 13, Style.Ember, false, HorizontalAlignment.Center, false);
+            var col = Style.V(4, tabs, worn);
+            col.Position = new Vector2(0, below);
+            col.Size = new Vector2(DollW, 60);
+            holder.AddChild(col);
         }
         var kit = KitLooked;
         bool two = Kits.Shown(ch);
@@ -203,7 +231,7 @@ public partial class InventoryScreen : Overlay
             var piece = it;
             Action? off = piece != null && slot != EquipSlot.Weapon && !asDay ? () => TakeOff(piece.Uid) : null;
             var view = ItemViews.Slot(it, SlotS, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
-                over => Hover(it, over), glyph, name, $"eq:{slot}", null, false, false, false, ch, engraved: true);
+                over => Hover(it, over), glyph, name, $"eq:{slot}", null, false, false, false, ch, engraved: true, doll: true);
             view.Position = new Vector2(x0 + col * (SlotS + SlotGap), row * (SlotS + SlotGap));
             if (asDay) { view.Modulate = new Color(1, 1, 1, 0.4f); view.TooltipText = "As by day: the night kit wears the day's piece here"; }
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.

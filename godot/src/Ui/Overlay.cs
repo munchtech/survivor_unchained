@@ -306,6 +306,8 @@ public abstract partial class Overlay : Control
     /// <summary>How much of the world shows through a panel's ground (the owner: "the whole
     /// backdrop can get a ever so slight transparency"): evenly, everywhere, never in a fade.</summary>
     public const float GroundAlpha = 0.93f;
+    /// <summary>The book panel's fill alpha (a page may be more solid).</summary>
+    protected virtual float PanelAlpha => GroundAlpha;
 
     /// <summary>
     /// The day's book as a panel at the right, over the live world (the owner: "we like to see our
@@ -337,7 +339,7 @@ public abstract partial class Overlay : Control
         panel.CustomMinimumSize = new Vector2(width, 0);
         panel.MouseFilter = MouseFilterEnum.Stop;
         // (only the ground is see-through: what is on it stays whole)
-        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        panel.SelfModulate = Colors.White with { A = PanelAlpha };
         AddChild(panel);
         var v = Style.V(Style.Gap3);
         panel.AddChild(v);

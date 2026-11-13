@@ -209,11 +209,11 @@ void fragment() {
     /// marks are judged against `ch` (what they wear), when given.</summary>
     public static SlotView Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
         Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null,
-        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false, CharacterData? ch = null, bool engraved = false)
+        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false, CharacterData? ch = null, bool engraved = false, bool doll = false)
     {
         var box = new SlotView { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Stop, Item = it };
         // An empty place on the body is no box: the shape of what goes there, cut faintly into the page.
-        box.AddThemeStyleboxOverride("panel", it == null && engraved ? new StyleBoxEmpty() : Kit.TileBox(it, selected));
+        box.AddThemeStyleboxOverride("panel", it == null && engraved && !doll ? new StyleBoxEmpty() : Kit.TileBox(it, selected));
         if (it != null)
         {
             var def = Items.Get(it.Def);
@@ -268,11 +268,11 @@ void fragment() {
         else if (engraved && emptyGlyph != null)
         {
             float g = size * 0.6f;
-            var cut = Glyphs.Icon(emptyGlyph, (int)g, new Color(0, 0, 0, 0.55f));
+            var cut = Glyphs.Icon(emptyGlyph, (int)g, new Color(0, 0, 0, 0.55f), doll);
             cut.Position = new Vector2((size - g) / 2 + 1, (size - g) / 2 + 1.5f);
             cut.Size = new Vector2(g, g);
             box.AddChild(cut);
-            var lit = Glyphs.Icon(emptyGlyph, (int)g, Kit.Glyph.Lightened(0.12f));
+            var lit = Glyphs.Icon(emptyGlyph, (int)g, Kit.Glyph.Lightened(0.12f), doll);
             lit.Position = new Vector2((size - g) / 2, (size - g) / 2);
             lit.Size = new Vector2(g, g);
             box.AddChild(lit);

@@ -159,5 +159,5 @@ public static class StanceText
     }
 
     /// <summary>The weapon glyph of a stance (glyphs.json has no crossed blades: the nearest; the mace has its own).</summary>
-    public static string Glyph(string? stanceId) => stanceId switch { "shield" => "shield", "twin_blades" => "dagger", "mace" => "mace", _ => "sword" };
+    public static string Glyph(string? stanceId) => stanceId switch { "shield" => "shield", "twin_blades" => "twin_blades", "mace" => "mace", _ => "sword" };
 }
