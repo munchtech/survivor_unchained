@@ -184,12 +184,15 @@ void fragment() {
 			float mx = (hash(float(i) * 3.7 + cyc * 1.31) - 0.5) * 0.7;
 			float my = 0.1 + f * max(tall - 0.1, 0.0);
 			vec2 d = vec2(x - mx, y - my) * ppm;
-			float arms = max(exp(-pow(d.y / 0.9, 2.0)) * (1.0 - clamp(abs(d.x) / 3.5, 0.0, 1.0)), exp(-pow(d.x / 0.9, 2.0)) * (1.0 - clamp(abs(d.y) / 3.5, 0.0, 1.0)));
+			float arms = max(exp(-pow(d.y / 0.9, 2.0)) * (1.0 - clamp(abs(d.x) / 4.0, 0.0, 1.0)), exp(-pow(d.x / 0.9, 2.0)) * (1.0 - clamp(abs(d.y) / 4.0, 0.0, 1.0)));
 			float star = clamp(arms + exp(-dot(d, d) / 2.6), 0.0, 1.0);
 			mt += star * smoothstep(0.0, 0.1, f) * smoothstep(1.0, 0.7, f);
 		}
-		vec3 mote_c = mix(tint, vec3(top), 0.45);
-		light = tint * (0.35 * pl + 0.2 * ray) + mote_c * clamp(mt, 0.0, 1.0) * 0.7 * above;
+		// W24: motes are the gem's own light colour, 85%, 8 px (they read as dust in a pale mix). A red pool has a lighter core (#FF8090, +25%).
+		float red = smoothstep(1.4, 2.4, tint.r / max(tint.b, 0.01));
+		float coreW = red * smoothstep(0.55, 0.0, rr) * hole;
+		vec3 pool_c = mix(tint, vec3(1.0, 0.502, 0.565), coreW * 0.8);
+		light = pool_c * (0.35 * pl + 0.2 * ray) * (1.0 + 0.25 * coreW) + tint * clamp(mt, 0.0, 1.0) * 0.85 * above;
 		veil = 0.0;
 	} else if (kind > 7.5) {
 		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint

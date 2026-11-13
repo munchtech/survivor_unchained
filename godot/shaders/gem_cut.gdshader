@@ -15,16 +15,26 @@ uniform bool split = false;
 uniform float ripple = 0.3;
 uniform float alt = 0.0;        // 1: every facet alternates dark / body / bright by its own hash (the clear stone)
 uniform float glow = 0.0;       // the ground stone's own light: 0.6 of its bright at the table, no facet darker than its body (a lit jewel, not a dark rock)
+uniform float bright_share = 0.24; // the share of the pavilion's wedges that catch the light (a garnet on the ground takes more)
+uniform float tab_lo = 0.75;    // how far down the crown the stone's own light reaches (a garnet's reaches the kites and stars)
+uniform float floor_k = 0.6;    // the ground stone's darkest facet as a fraction of its body
+uniform float lit_min = 0.3;    // how much of the light the non-table facets take
+uniform float glow_b = -1.0;    // the B half's own glow when it differs (bicolor: garnet 0.9, sapphire 0.6)
 uniform float split_turn = 0.0; // the split plane's turn about the axis, so a photograph's turned stone splits down the screen
 uniform bool split_view = false; // the ground stone: split down the screen through its own centre, whatever its turn (round 2: a local split went edge-on as it spun)
 
 varying vec3 lpos;
 varying vec3 lnorm;
 varying vec3 vpos;
+varying vec3 tcen;  // the table's centre and the stone's scale in view space (the table strip is laid in screen terms)
+varying float sc;
 
 void vertex() {
 	lpos = VERTEX; lnorm = NORMAL;
-	vpos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - (MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vec3 mid0 = (MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+	vpos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - mid0;
+	tcen = (MODELVIEW_MATRIX * vec4(0.0, 0.25, 0.0, 1.0)).xyz - mid0;
+	sc = length(MODELVIEW_MATRIX[0].xyz);
 }
 
 void fragment() {
@@ -38,8 +48,6 @@ void fragment() {
 	vec3 c_body = b ? body_b : body, c_bright = b ? bright_b : bright, c_dark = b ? dark_b : dark;
 
 	// The studio, as what a direction sees.
-	float strip1 = step(0.0, r.z + 0.1) * step(abs(r.x * 0.94 - r.y * 0.34 + 0.3), 0.05);
-	float strip2 = step(-0.3, r.z) * step(abs(r.y + 0.3 * r.x - 0.5), 0.045);
 	float cards = max(step(0.66, abs(r.x)), step(r.y, -0.6));
 	float box = step(0.15, r.y) * step(abs(r.x), 0.5) * step(-0.4, r.z);
 	vec3 col = c_body;
@@ -53,14 +61,20 @@ void fragment() {
 	float sector = floor(atan(lpos.z, lpos.x) / 0.7853982);
 	float hp = fract(sector * 0.381966 + 0.17);
 	float hh = low > 0.5 ? hp : h;
-	col = mix(col, hh < 0.38 ? c_dark : (hh < 0.76 ? c_body : c_bright), max(low * 0.9, alt));
+	col = mix(col, hh < 0.3 ? c_dark : (hh < 1.0 - bright_share ? c_body : c_bright), max(low * 0.9, alt));
 	col *= 0.9 + 0.2 * h;
 	// Lit from inside (the ground stone): the table glows, nothing is darker than the body.
-	float tab = smoothstep(0.75, 0.95, normalize(lnorm).y);
-	col = max(col, c_body * glow);
-	col = mix(col, c_bright, glow * (0.3 + 0.7 * tab));
+	float tab = smoothstep(tab_lo, tab_lo + 0.2, normalize(lnorm).y);
+	float gl = (b && glow_b >= 0.0) ? glow_b : glow;
+	col = max(col, c_body * floor_k * step(0.001, gl));   // (the floor: how dark a facet may go; a garnet's is low so its #5E0B16 facets show)
+	col = mix(col, c_bright, gl * (lit_min + (1.0 - lit_min) * tab));
 	vec3 white = mix(c_bright, vec3(1.0), 0.72);
 	// One strip on the pavilion (two made venetian-blind stripes there), both on the crown.
-	col = mix(col, white, max(strip1, strip2 * (1.0 - low)));
+	// W24: one soft strip across the table at 60% (two crossed as a white X on the stone); pure white lives only in the glint.
+	// Laid across the table on screen, 30 degrees up to the right, soft-edged.
+	vec2 tp = (vpos.xy - tcen.xy) / sc;
+	float tdist = tp.y - 0.577 * tp.x + 0.03;
+	float tabm = smoothstep(0.85, 0.95, normalize(lnorm).y);
+	col = mix(col, mix(c_bright, vec3(1.0), 0.3), tabm * smoothstep(0.075, 0.025, abs(tdist)) * 0.6);
 	ALBEDO = col;
 }

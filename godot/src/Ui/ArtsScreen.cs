@@ -547,6 +547,7 @@ public partial class ArtsScreen : Overlay
                 Nav.Mark(well, $"socket:{i}", well.Press);
                 col.AddChild(gem != null ? Style.Label(gem.Name, Style.UiBold, 14, Kit.Ink, false, HorizontalAlignment.Center)
                     : Style.Label("empty", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
+                col.AddChild(new WellCaret { CustomMinimumSize = new Vector2(0, 6), MouseFilter = MouseFilterEnum.Ignore, On = well.Selected });
             }
             else
             {
@@ -586,7 +587,10 @@ public partial class ArtsScreen : Overlay
             if (gem != null) Sound.Sfx.Equip(); else Sound.Sfx.Click();
         }
         var held = Held(ch, w.Id, idx);
-        d.AddChild(Style.Label(SocketModel.ChooserHead(idx, held?.Name), Style.UiHeavy, 13, Kit.HeadInk, false, HorizontalAlignment.Left, false));
+        // W24: the head is 20 px under the wells' labels (the caret inside that) and 8 px over the first row: it and the rows are one
+        // block with no gap of its own, the page's 6 px between blocks.
+        var block = Style.V(0);
+        block.AddChild(Style.Label(SocketModel.ChooserHead(idx, held?.Name), Style.UiHeavy, 13, Kit.HeadInk, false, HorizontalAlignment.Left, false));
         var list = Style.V(0); // rows 46 px apart: no gap between them
         foreach (var r in rows)
         {
@@ -635,7 +639,8 @@ public partial class ArtsScreen : Overlay
             Nav.Id(o, "gem:out");
             list.AddChild(o);
         }
-        d.AddChild(list);
+        block.AddChild(list);
+        d.AddChild(block);
         foreach (var line in SocketModel.DontFitLines(ch.Gems, w.Id)) d.AddChild(Style.Label(line, Style.TextItalic, 14, Kit.Dim, true));
     }
 
@@ -771,5 +776,18 @@ public partial class XMark : Control
         var ink = Kit.Ink2;
         DrawLine(c + new Vector2(-6, -6), c + new Vector2(6, 6), ink, 1.5f, true);
         DrawLine(c + new Vector2(6, -6), c + new Vector2(-6, 6), ink, 1.5f, true);
+    }
+}
+
+/// <summary>A 6 px ember caret (an upward triangle) centred under the selected well's label; the space is kept when it is not drawn,
+/// so the wells sit in the same places in every state (bd-ui W24).</summary>
+public partial class WellCaret : Control
+{
+    public bool On;
+    public override void _Draw()
+    {
+        if (!On) return;
+        float cx = Size.X / 2f;
+        DrawColoredPolygon([new Vector2(cx, 0), new Vector2(cx + 5, Size.Y), new Vector2(cx - 5, Size.Y)], Style.Ember);
     }
 }

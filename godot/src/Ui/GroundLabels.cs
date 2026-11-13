@@ -81,7 +81,9 @@ public partial class GroundLabels : Control
                 if (link != null) DrawTextureRect(link, r, false, l.Color);
                 else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, 2, true);
             }
-            if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), l.Mark ?? l.Color);
+            // (W24: the bicolor stone's mark, its label's lilac #B37AB6, is split down the middle: garnet left, sapphire right.)
+            bool split = l.Gem && l.Mark is { } lm && lm.IsEqualApprox(BicolorLilac);
+            if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), split ? new Color("#C8283C") : l.Mark ?? l.Color, split ? new Color("#2F6BFF") : null);
             int outline = grand ? 6 : 5;
             DrawStringOutline(font, at + new Vector2(0, 2), text, HorizontalAlignment.Left, -1, size, outline + 2, new Color(0, 0, 0, 0.45f));
             DrawStringOutline(font, at, text, HorizontalAlignment.Left, -1, size, outline, new Color(0.03f, 0.02f, 0.02f, 0.85f));
@@ -91,7 +93,9 @@ public partial class GroundLabels : Control
 
     /// <summary>The 14 px faceted-gem mark before a gem's name (no gear tier has one): the brilliant's side, a crown over a
     /// pavilion, its facet lines dark, on a dark underlay so it reads over grass.</summary>
-    void DrawGemMark(Rect2 r, Color c)
+    static readonly Color BicolorLilac = new("#B37AB6");
+
+    void DrawGemMark(Rect2 r, Color c, Color? right = null)
     {
         Vector2 P(float x, float y) => r.Position + new Vector2(x * r.Size.X, y * r.Size.Y);
         Vector2[] outline = [P(0.22f, 0.12f), P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 1f), P(0f, 0.42f)];
@@ -99,10 +103,16 @@ public partial class GroundLabels : Control
         for (int i = 0; i < outline.Length; i++) under[i] = outline[i];
         under[^1] = outline[0];
         DrawPolyline(under, new Color(0.03f, 0.02f, 0.02f, 0.9f), 3.2f, true);
-        DrawColoredPolygon(outline, c);
+        var cr = right ?? c;
+        if (right == null) DrawColoredPolygon(outline, c);
+        else
+        {
+            DrawColoredPolygon([P(0.22f, 0.12f), P(0.5f, 0.12f), P(0.5f, 1f), P(0f, 0.42f)], c);
+            DrawColoredPolygon([P(0.5f, 0.12f), P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 1f)], cr);
+        }
         var lite = c.Lerp(Colors.White, 0.7f);
         DrawColoredPolygon([P(0.22f, 0.12f), P(0.5f, 0.42f), P(0f, 0.42f)], lite);
-        DrawColoredPolygon([P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 0.42f)], c.Lerp(Colors.Black, 0.25f));
+        DrawColoredPolygon([P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 0.42f)], cr.Lerp(Colors.Black, 0.25f));
         var ink = new Color(0.04f, 0.02f, 0.03f, 0.85f);
         DrawLine(P(0f, 0.42f), P(1f, 0.42f), ink, 1);
         DrawLine(P(0.22f, 0.12f), P(0.5f, 0.42f), ink, 1);

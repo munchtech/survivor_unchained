@@ -21,7 +21,7 @@ public static class GemCut
     // and an inner glow so it reads lit from inside on the grass.
     static readonly Dictionary<string, (string Body, string Bright, string Dark)> GroundColours = new()
     {
-        ["garnet"] = ("#9E1626", "#FF5A6A", "#3C0812"),
+        ["garnet"] = ("#9E1626", "#FF5A6A", "#5E0B16"),
         ["sapphire"] = ("#1D4FD0", "#8AB8FF", "#0A1C66"),
         ["clear"] = ("#AEBBCD", "#F4F8FF", "#5C6878"),
     };
@@ -38,7 +38,7 @@ public static class GemCut
         var mat = new ShaderMaterial { Shader = shader };
         var set = ground ? GroundColours : Colours;
         var a = set[family == "bicolor" ? "garnet" : family];
-        if (ground) mat.SetShaderParameter("glow", 0.6f);
+        if (ground) { mat.SetShaderParameter("glow", family is "garnet" or "bicolor" ? 0.9f : 0.6f); if (family == "bicolor") mat.SetShaderParameter("glow_b", 0.6f); if (family is "garnet" or "bicolor") { mat.SetShaderParameter("floor_k", 0.55f); mat.SetShaderParameter("lit_min", 0.2f); mat.SetShaderParameter("bright_share", 0.5f); mat.SetShaderParameter("tab_lo", 0.57f); } }
         mat.SetShaderParameter("body", new Color(a.Body));
         mat.SetShaderParameter("bright", new Color(a.Bright));
         mat.SetShaderParameter("dark", new Color(a.Dark));

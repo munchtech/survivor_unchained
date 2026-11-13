@@ -142,7 +142,11 @@ public partial class BattleFx
                 // with four feathered rays 0.25 m wide at 20%, turning slowly, and nine star motes (7 px, 70%) rising 1.2 s each.
                 // It flashes once as it lands, then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s.
                 var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
-                Light(p.X, gy, p.Z, Lit.Stars, 0, 1.0f, 1.8f * grow, gc, 1.0f * flare);
+                // W24: the pool sits on the ground under the landing spot (the item's own ground height, never the stone's bob), at its
+                // full extent (a quad grown from nothing cut the pool with a hard line at the foot), hidden until the stone is down
+                // (Arrive) and then fading in over 0.25 s.
+                float poolIn = age < 0 ? 1 : Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
+                if (poolIn > 0.001f) Light(p.X, Y(p.X, p.Z), p.Z, Lit.Stars, 0, 1.0f, 1.8f, gc, 1.0f * poolIn);
                 var star = gc.Lerp(Colors.White, 0.4f) * 2.2f;
                 if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
                     Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
