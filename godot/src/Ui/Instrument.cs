@@ -58,10 +58,9 @@ public partial class Instrument : Control
         {
             float s = DgPanel.GroupScale;
             var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s + DgPanel.GirlOffset;
-            var bar = DgPanel.Rect;
-            var girl = new Rect2(tl.X, tl.Y, Math.Max(0, bar.Position.X - tl.X), 1080 - tl.Y);
-            var shelf = new Rect2(bar.Position.X, bar.Position.Y - 40, bar.Size.X, 1080 - (bar.Position.Y - 40));
-            return [HudBottom.Map(girl), HudBottom.Map(shelf), HudBottom.Map(DgPanel.KeeperRect)];
+            var (b, k) = (DgPanel.Rect, DgPanel.KeeperRect);
+            return Array.ConvertAll(HudKeepOut.Pieces((tl.X, tl.Y), (b.Position.X, b.Position.Y, b.Size.X, b.Size.Y),
+                (k.Position.X, k.Position.Y, k.Size.X, k.Size.Y)), r => HudBottom.Map(new Rect2(r.X, r.Y, r.W, r.H)));
         }
     }
 
