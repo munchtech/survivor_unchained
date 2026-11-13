@@ -88,8 +88,9 @@ public sealed class SeatGlyphTests
     {
         Assert.Equal(Weapons.All["sunder"].Art, Weapons.All["cleaver"].Art);
         Assert.NotEqual(Line("sunder"), Line("cleaver"));
-        // (a skill with no line of its own shows its art's)
-        Assert.Equal("slash_quake", GlyphPaths.ForSkill("groundbreaker", "slash_quake"));
+        // (a skill with no line of its own shows its art's; bd-ui2: Groundbreaker has its own now, its painting stays slash_quake's)
+        Assert.Equal("slash_quake", GlyphPaths.ForSkill("no_such_skill", "slash_quake"));
+        Assert.Equal("groundbreaker", GlyphPaths.ForSkill("groundbreaker", "slash_quake"));
     }
 
     [Fact]
@@ -102,7 +103,8 @@ public sealed class SeatGlyphTests
             Assert.Equal("sunder", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "sunder", Icon = art }));
             Assert.Equal("butchers_cleaver", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "cleaver", Icon = art }));
             // (a skill with no glyph of its own: the art it carries, an evolution's where it has one)
-            Assert.Equal("slash_quake", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "groundbreaker", Icon = "slash_quake" }));
+            Assert.Equal("slash_quake", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "no_such_skill", Icon = "slash_quake" }));
+            Assert.Equal("groundbreaker", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "groundbreaker", Icon = "slash_quake" }));
         }
         // a union: the skill it becomes
         var un = Unions.All[0];
