@@ -52,7 +52,7 @@ public partial class AutoRow : Control
 
     /// <summary>bd-ui W5: the stance block's Swap chip's right edge when the block is shown (else null): the item tiles start SwapGap (3) px after.</summary>
     public float? StanceRight;
-    float ItemStart => AutoRowModel.ItemStart(StanceRight != null, StanceRight ?? 0);
+    float ItemStart => AutoRowModel.ItemStart(StanceRight != null);
 
     readonly List<Tile> tiles = new();
     string lastLog = "";

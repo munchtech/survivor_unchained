@@ -27,25 +27,38 @@ public class AutoRowTests
     }
 
     [Fact]
-    public void Item_autos_grow_right_from_1012_and_never_pass_the_statue_edge_1263()
+    public void Item_autos_grow_right_from_1012_and_never_pass_the_statue_edge_1264()
     {
         var p = AutoRowModel.Places(3);
         Assert.Equal(1012, p[3].X);
         Assert.Equal(p[3].X + 40, p[4].X);
         Assert.Equal(p[4].X + 40, p[5].X);
         foreach (float start in new[] { 1012f, 1100f, 1111f })
-            Assert.All(AutoRowModel.Places(9, start).Where(x => x.Kind != AutoRowModel.Kind.Her), x => Assert.True(x.X + 34 <= 1263 && x.X >= start));
+            Assert.All(AutoRowModel.Places(9, start).Where(x => x.Kind != AutoRowModel.Kind.Her), x => Assert.True(x.X + 34 <= 1264.5f + 2 && x.X >= start));
         Assert.All(AutoRowModel.Places(9).Where(x => x.Kind == AutoRowModel.Kind.Her), x => Assert.True(x.X < 1008));
     }
 
     [Fact]
-    public void The_item_tiles_start_10_px_after_the_swap_chip_or_at_1012_without_the_stance_block()
+    public void The_item_tiles_start_a_constant_after_the_swap_chip_or_at_1012_without_the_stance_block()
     {
-        Assert.Equal(1100, AutoRowModel.ItemStart(true, 1097));
-        Assert.Equal(1012, AutoRowModel.ItemStart(false, 1097));
-        Assert.Equal(1100, AutoRowModel.Places(1, AutoRowModel.ItemStart(true, 1097))[3].X);
+        float st = AutoRowModel.SwapChipRight + AutoRowModel.SwapGap;
+        Assert.Equal(8, AutoRowModel.SwapGap);
+        Assert.Equal(st, AutoRowModel.ItemStart(true));
+        Assert.Equal(1012, AutoRowModel.ItemStart(false));
         Assert.Equal(6, AutoRowModel.ItemCapacity(1012));
-        Assert.Equal(4, AutoRowModel.ItemCapacity(1100));   // (W14: four gear tiles still fit with the chip 7 px right)
+        Assert.Equal(4, AutoRowModel.ItemCapacity(st));
+    }
+
+    [Theory]
+    [InlineData(1, 1, 0)] [InlineData(4, 4, 0)] [InlineData(5, 3, 2)] [InlineData(6, 3, 3)]
+    public void With_the_stance_shown_four_items_fill_four_places_and_more_is_3_plus_N_taking_the_last(int items, int tiles, int rest)
+    {
+        float st = AutoRowModel.ItemStart(true);
+        var p = AutoRowModel.Places(items, st).Where(x => x.Kind != AutoRowModel.Kind.Her).ToList();
+        Assert.Equal(tiles, p.Count(x => x.Kind == AutoRowModel.Kind.Item));
+        Assert.All(p, x => Assert.Equal(st + p.IndexOf(x) * 40, x.X));
+        if (rest > 0) { Assert.Equal(AutoRowModel.Kind.More, p[^1].Kind); Assert.Equal(rest, p[^1].Index); Assert.Equal(4, p.Count); }
+        else Assert.DoesNotContain(p, x => x.Kind == AutoRowModel.Kind.More);
     }
 
     [Theory]
@@ -57,7 +70,7 @@ public class AutoRowTests
         Assert.Equal(AutoRowModel.Kind.More, p[8].Kind);
         Assert.Equal(rest, p[8].Index);
         // (4 places from the swap chip: three items and "+N")
-        var q = AutoRowModel.Places(items, 1100);
+        var q = AutoRowModel.Places(items, AutoRowModel.ItemStart(true));
         Assert.Equal(AutoRowModel.Kind.More, q[^1].Kind);
         Assert.Equal(items - 3, q[^1].Index);
     }

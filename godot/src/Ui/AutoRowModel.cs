@@ -14,7 +14,7 @@ public static class AutoRowModel
     public const float Tile = 34, Gap = 6, HerRight = 910;
     /// <summary>Where the item tiles start with no stance block, the stance block's front disc's left edge, the gap from the
     /// Swap chip to the first item tile, and the right edge nothing is drawn past.</summary>
-    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 3, RightEdge = 1263;   // (bd-ui W13: the keeper statue's left silhouette at the row's height, screen x 1226 in .shots/bdui_r5_items4.png, minus 8 screen px: design 1263 at HUD 0.85)
+    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 8, RightEdge = 1264.5f, FitSlack = 2.5f, SwapChipRight = 1105;   // (bd-ui W15: RightEdge = silhouette 1226 minus 6 screen px; SwapChipRight = the Swap chip's settled right edge, a constant so the start never drifts; W13: the keeper statue's left silhouette at the row's height, screen x 1226 in .shots/bdui_r5_items4.png, minus 8 screen px: design 1263 at HUD 0.85)
     /// <summary>The row control's left edge.</summary>
     public const float Floor = 716;
     public const int HerSlots = 3;
@@ -76,10 +76,10 @@ public static class AutoRowModel
     public readonly record struct Place(Kind Kind, int Index, float X);
 
     /// <summary>Where the item tiles start: the Swap chip's right edge + 10 with the stance block shown, else 1012.</summary>
-    public static float ItemStart(bool stanceShown, float swapRight) => stanceShown ? swapRight + SwapGap : RightStart;
+    public static float ItemStart(bool stanceShown) => stanceShown ? SwapChipRight + SwapGap : RightStart;
 
     /// <summary>How many item places fit from start with the last tile's right edge at or before RightEdge.</summary>
-    public static int ItemCapacity(float start) => Math.Max(0, (int)Math.Floor((RightEdge - start + Gap) / (Tile + Gap)));
+    public static int ItemCapacity(float start) => Math.Max(0, (int)Math.Floor((RightEdge + FitSlack - start + Gap) / (Tile + Gap)));
 
     /// <summary>Her three places (always, left of the coin), then the item autos right of the stance block from itemStart:
     /// with more items than places, the last place holds "+N" (N = the items it stands for).</summary>
