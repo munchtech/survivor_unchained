@@ -142,35 +142,75 @@ public partial class WardrobeScreen : Overlay
         grid.AddThemeConstantOverride("h_separation", 6);
         grid.AddThemeConstantOverride("v_separation", 6);
         var shownDef = Wardrobe.ShownDef(ch, Slot);
-        // Your own: what is equipped, or an empty place.
+        // Your own first: what is equipped, or an empty place. A look has no level and no rarity.
         var worn = ch.Equipment[Wardrobe.EquipOf(Slot)];
-        var own = ItemViews.Slot(worn, Tile, shownDef == null, null, false, () => Set(null), null, over => { if (over != null) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {Items.Get(worn.Def).Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } },
-            null, null, $"look:own");
-        if (worn == null)
-        {
-            var l = Style.Label("Nothing worn", Style.TextItalic, 12, Kit.Dim, true, HorizontalAlignment.Center);
-            l.Size = new Vector2(Tile - 8, Tile - 8); l.Position = new Vector2(4, 22);
-            own.AddChild(l);
-        }
-        own.TooltipText = worn != null ? "Your own" : "Nothing worn";
-        grid.AddChild(own);
-        foreach (var def in Wardrobe.All(ch, Slot))
+        grid.AddChild(LookTile(worn != null ? Items.Get(worn.Def) : null, worn != null ? ItemViews.ColourOf(worn) : Kit.Dim, worn != null ? "Your own" : "Nothing worn", shownDef == null, true,
+            () => Set(null), over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {Items.Get(worn.Def).Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } },
+            "look:own", worn != null ? "Your own" : "Nothing worn"));
+        // Then the found looks, then the ones not yet found.
+        foreach (var def in Wardrobe.All(ch, Slot).OrderBy(d => ch.Looks.Contains(d.Id) ? 0 : 1))
         {
             bool have = ch.Looks.Contains(def.Id);
-            var inst = Inventory.Make(null, def.Id);
             var id = def.Id;
-            var t = ItemViews.Slot(inst, Tile, have && shownDef?.Id == id, null, false, have ? () => Set(id) : null, null,
-                have ? over => { if (over != null) { Preview(c => Wardrobe.SetShown(c, Slot, id)); Describe(def.Name); } else { Preview(null); Describe(null); } } : null, null, null, have ? $"look:{id}" : null);
-            if (!have)
-            {
-                // A look not yet found: a dim silhouette, no name.
-                foreach (var c in t.GetChildren().OfType<Control>()) c.Modulate = new Color(0, 0, 0, 1);
-                t.Modulate = new Color(1, 1, 1, 0.4f);
-            }
-            else t.TooltipText = def.Name;
-            grid.AddChild(t);
+            var col = ItemViews.ColourOf(Inventory.Make(null, id));
+            grid.AddChild(LookTile(def, col, null, have && shownDef?.Id == id, have, have ? () => Set(id) : null,
+                have ? over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, id)); Describe(def.Name); } else { Preview(null); Describe(null); } } : null,
+                have ? $"look:{id}" : null, have ? def.Name : null));
         }
         return grid;
+    }
+
+    /// <summary>A look's tile: a dark neutral fill, a 1 px quiet line, the item's picture; no level, rarity, badge or count.
+    /// Selected is an ember frame, hover a 6% white fill; not found is a dim silhouette with a small lock.</summary>
+    static Control LookTile(ItemDef? def, Color col, string? caption, bool selected, bool found, Action? press, Action<bool>? hover, string? navId, string? tip)
+    {
+        var box = new Panel { CustomMinimumSize = new Vector2(Tile, Tile), MouseFilter = Control.MouseFilterEnum.Stop };
+        var sb = new StyleBoxFlat { BgColor = Kit.Tile };
+        sb.SetCornerRadiusAll(4);
+        sb.SetBorderWidthAll(selected ? 2 : 1);
+        sb.BorderColor = selected ? Style.Ember : Kit.Rule;
+        box.AddThemeStyleboxOverride("panel", sb);
+        if (def != null)
+        {
+            float k = caption != null ? 0.58f : 0.8f;
+            float sz = Tile * k;
+            var icon = ItemPhotos.Icon(def.Icon, (int)sz, col.Lightened(0.25f));
+            icon.Position = new Vector2((Tile - sz) / 2, caption != null ? 6 : (Tile - sz) / 2);
+            icon.Size = new Vector2(sz, sz);
+            icon.MouseFilter = Control.MouseFilterEnum.Ignore;
+            if (!found) icon.Modulate = new Color(0, 0, 0, 0.45f);
+            box.AddChild(icon);
+        }
+        if (caption != null)
+        {
+            var l = Style.Label(caption, Style.TextItalic, 12, Kit.Dim, false, HorizontalAlignment.Center, false);
+            l.Size = new Vector2(Tile, 16);
+            l.Position = new Vector2(0, def != null ? Tile - 19 : (Tile - 16) / 2f);
+            l.MouseFilter = Control.MouseFilterEnum.Ignore;
+            box.AddChild(l);
+        }
+        if (!found)
+        {
+            var lk = Glyphs.Icon("lock", 14, Kit.Ink2);
+            lk.Modulate = new Color(1, 1, 1, 0.5f);
+            lk.Position = new Vector2((Tile - 14) / 2f, (Tile - 14) / 2f);
+            lk.Size = new Vector2(14, 14);
+            lk.MouseFilter = Control.MouseFilterEnum.Ignore;
+            box.AddChild(lk);
+        }
+        if (found)
+        {
+            var wash = new ColorRect { Color = new Color(1, 1, 1, 0.06f), Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+            wash.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            box.AddChild(wash);
+            box.MouseEntered += () => { wash.Visible = true; hover?.Invoke(true); };
+            box.MouseExited += () => { wash.Visible = false; hover?.Invoke(false); };
+            box.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) press?.Invoke(); };
+            box.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+            if (navId != null) Nav.Mark(box, navId, press ?? (() => { }), null, null, () => hover?.Invoke(true), () => hover?.Invoke(false));
+        }
+        if (tip != null) box.TooltipText = tip;
+        return box;
     }
 
     void Set(string? id)
