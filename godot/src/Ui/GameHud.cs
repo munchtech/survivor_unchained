@@ -1032,7 +1032,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>bd-ui W3: the skills her worn gear grants as autos (ItemDef.Auto), by the granting piece's rarity: read again
     /// when the build changes, not each frame.</summary>
     readonly Dictionary<string, int> itemAutoRarity = new(StringComparer.Ordinal);
-    string itemAutoStamp = " ";
+    string itemAutoStamp = "\u0001";
     void ItemAutosTick(Battle b)
     {
         string stamp = b.BuildStamp.ToString();
@@ -1689,7 +1689,7 @@ public partial class GameHud : CanvasLayer
     /// trait/attribute row; a lamp has none. (Its own method: in Frame, its search's closure was made every HUD frame.)</summary>
     void StagedCard(Battle b, LevelCardSpec cardDue)
     {
-        if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1;
+        if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1; if (cardDue.Slot >= SurvivorUnchained.Content.Weapons.MaxKeys) cardDue.Kind = LevelCardKind.NewAuto;
         if (b.Campaign && (cardDue.Kind is LevelCardKind.NewKey or LevelCardKind.Plain) && (GetParent() as Game)?.Journey.Ch is { } dch)
         { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
         LevelCard(cardDue);
