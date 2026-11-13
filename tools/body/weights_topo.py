@@ -1109,3 +1109,69 @@ def head(PH, TH, ring_ids, ring_W, names, reach=0.035):
     x /= np.maximum(x.sum(1, keepdims=True), 1e-12)
     return x, {"ring_points": int(len(ring_ids)), "head_zone_points": int(zone.sum()), "blend_points": int(len(free)),
                "reach_m": reach}
+
+
+def fold_relax(out, glb, rig_name, n, ring, cfg):
+    """P1 posed folds (13 Nov): weights relaxed only where the posed skin folds. The exported tier (out/glb, out/rig_name)
+    posed by foldcheck.py's own poses (cfg "sets": rom and the R&D clips "rnd") in its "laws" mode (helpers driven, no
+    shapes): each round, the welded points of every triangle inverted in cfg "regions" (foldcheck's fault boxes) on any
+    pose, grown `rows` rings and mirrored, have their whole weight vector relaxed `iters` times (each point half to its
+    ring's mean, the ring weighted by 1/edge length so points 1-2 mm apart, as her right posterior axilla's slivers are,
+    end up with near-equal weights: the uniform mean left a 0.07 spine_04 step over 1.4 mm there and plateaued at 77
+    inverted), until none folds or `rounds`. Everything else, and the head's ring, held. Returns the dense weights of the
+    first n points (our topology's, in order) and a report. Why the weights and not shapes: the laws mode has none, and
+    the folds are steep weight steps between bones turning far apart (the raised arm's share/clavicle/trap/spine_04 seam
+    at the acromion; the hanging arm's twist/spine_04 at the back armpit), which a smooth field turns without folding."""
+    import json
+    import os
+    import foldcheck as fc
+    from posers import make_poser
+    from scipy.spatial import cKDTree
+    rig = json.load(open(os.path.join(out, rig_name)))
+    p = make_poser("lbs", os.path.join(out, glb), rig)
+    sk, md = fc.Skin(p), fc.Modes(p, rig)
+    sets = cfg.get("sets", ["rom", "rnd"])
+    src = (list(fc.rom_poses(p)) if "rom" in sets else []) + (list(fc.rnd_poses(p, cfg.get("rnd", ["walk", "fight"]))) if "rnd" in sets else [])
+    regs = cfg.get("regions", ["shoulder_l", "shoulder_r"])
+    reg = np.zeros(len(sk.Tw), bool)
+    for r in regs:
+        reg |= sk.reg_tw[r]
+    E, nw, X = sk.Ew, sk.nw, sk.Xw0
+    w = 1.0 / np.maximum(np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1), 1e-4)
+    A = sp.coo_matrix((np.r_[w, w], (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), (nw, nw)).tocsr()
+    L = sp.diags(1.0 / np.asarray(A.sum(1)).ravel()) @ A
+    Ab = (A > 0).astype(float)
+    _, mir = cKDTree(X).query(X * [-1, 1, 1])
+    held = np.zeros(nw, bool)
+    held[sk.rep[np.asarray(ring)]] = True
+    D0 = p.D.copy()
+    Dw = D0[:sk.nb][sk.first].copy()
+    hist, touched = [], np.zeros(nw, bool)
+    for _ in range(int(cfg.get("rounds", 8))):
+        bad, cnt = np.zeros(nw, bool), 0
+        p.D = D0.copy()
+        p.D[:sk.nb] = Dw[sk.rep]
+        k = int((p.D > 1e-9).sum(1).max())
+        p.J = np.argsort(-p.D, 1)[:, :k]
+        p.W = np.take_along_axis(p.D, p.J, 1)
+        for lab, G, kd in src:
+            V = md.pose(G, kd, "laws")[:sk.nb][sk.first]
+            nb_, _ = fc.inverted(sk.Xw0, V, sk.Tw, sk.Aw, sk.EPw)
+            m = nb_ & reg
+            cnt += int(m.sum())
+            bad[sk.Tw[m].ravel()] = True
+        hist.append(cnt)
+        if cnt == 0:
+            break
+        for _ in range(int(cfg.get("rows", 3))):
+            bad = bad | ((Ab @ bad.astype(float)) > 0)
+        bad = (bad | bad[mir]) & ~held
+        touched |= bad
+        for _ in range(int(cfg.get("iters", 10))):
+            Dn = 0.5 * Dw + 0.5 * (L @ Dw)
+            Dw[bad] = Dn[bad]
+        Dw /= Dw.sum(1, keepdims=True)
+    Dw[Dw < float(cfg.get("min_w", 0.01))] = 0.0
+    Dw /= Dw.sum(1, keepdims=True)
+    D = Dw[sk.rep][:n]
+    return D, {"inverted_per_round": hist, "points": int(touched.sum())}

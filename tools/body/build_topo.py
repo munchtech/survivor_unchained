@@ -1059,6 +1059,17 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
     stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv)
+    fr = (wrules or {}).get("fold_relax")
+    if fr and tier in fr.get("tiers", ["close"]):
+        # (P1 posed folds: the weights relaxed where the exported tier folds in foldcheck's laws mode, then exported
+        # again; weights_topo.fold_relax)
+        import weights as wt_
+        g_, r_ = GLB[tier]
+        Dn, rep.setdefault("weights", {})["fold_relax"] = wtp.fold_relax(out, g_, r_, len(V), ring, fr)
+        J_, W_ = wt_.cap(Dn, wt_.RULES["cap"])
+        wts = dict(wts, J=J_, W=W_)
+        stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv)
+        print("FOLD_RELAX", tier, rep["weights"]["fold_relax"], flush=True)
     tim["export"] = round(time.time() - t, 2)
     if correct:
         t = time.time()
