@@ -26,7 +26,7 @@ public sealed class LevelCardTests
     [Fact]
     public void The_keys_open_at_4_5_and_9_and_the_autos_at_7_and_10_say_so()
     {
-        static int SlotOf(string id) => id switch { "heroic_leap" => 1, "shield_charge" => 2, "dawnpulse" => 3, "iron_vow" => 5, "watch_bell" => 6, _ => -1 };
+        static int SlotOf(string id) => id switch { "heroic_leap" => 1, "bladestorm" => 2, "shield_charge" => 3, "iron_vow" => 5, "watch_bell" => 6, _ => -1 };
         foreach (var l in new[] { 4, 5, 9 }) Assert.Equal(LevelCardKind.NewKey, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
         var auto = LevelCards.ForCampaignLevel(7, Warden, SlotOf, 0);
         Assert.Equal((LevelCardKind.NewAuto, "iron_vow", 5), (auto.Kind, auto.Skill, auto.Slot));
