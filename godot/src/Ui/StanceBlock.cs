@@ -16,9 +16,11 @@ namespace SurvivorUnchained.Ui;
 public partial class StanceBlock : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
-    const float R = 16, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.2f, GlyphPx = 18;
+    const float R = 17, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.2f, GlyphPx = 18;
     static readonly Vector2 Back = new(22, -6);
-    static readonly Vector2 Front = new(1034, DgPanel.TopY - 13);
+    /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
+    public static Vector2 FrontAt => new(1034, AutoRow.RowTop + AutoRowModel.Tile / 2);
+    static Vector2 Front => FrontAt;
 
     /// <summary>A stance's color: set II's bezel and tint (set I: the plate's bronze).</summary>
     public static Color ColorOf(string? stanceId) => stanceId switch
@@ -36,6 +38,9 @@ public partial class StanceBlock : Control
     readonly float[] share = [1, 1];
     readonly Texture2D?[] glyphs = new Texture2D?[2];
     string glyphFor = "";
+    readonly string?[] iconKey = new string?[2];
+    readonly Texture2D?[] icons = new Texture2D?[2], iconFallback = new Texture2D?[2];
+    double openedAt = -1;
     bool dirty = true;
 
     public StanceBlock()
@@ -51,6 +56,16 @@ public partial class StanceBlock : Control
 
     public void Keys() => swapKey.Refresh();
 
+    /// <summary>The front disc's global rect (the level card folds into it).</summary>
+    public Rect2 DiscRect()
+    {
+        var (c, sc, _) = Disc(active);
+        return GetGlobalTransform() * new Rect2(c - Vector2.One * R * sc, Vector2.One * 2 * R * sc);
+    }
+
+    /// <summary>The level card folded into the front disc: a brief light (0.6 s).</summary>
+    public void Opened() { openedAt = now; dirty = true; }
+
     /// <summary>The key's label as the device in hand has it ("X", a pad button): the tip's last line.</summary>
     public string KeyName => swapKey.Shown2;
 
@@ -58,7 +73,7 @@ public partial class StanceBlock : Control
     public Color SeatTint(Battle b) => b.StanceNow is { } s ? ColorOf(s.Id) : Colors.Transparent;
 
     /// <summary>What the battle holds, each frame (values only).</summary>
-    public void Feed(Battle b)
+    public void Feed(Battle b, SurvivorUnchained.Rpg.CharacterData? ch = null)
     {
         bool on = b.Campaign && b.StanceB != null;
         if (Visible != on) Visible = on;
@@ -81,6 +96,13 @@ public partial class StanceBlock : Control
             glyphs[0] = Glyphs.Texture(StanceText.Glyph(null), (int)GlyphPx, Bronze);
             glyphs[1] = Glyphs.Texture(StanceText.Glyph(st.Id), (int)GlyphPx, ColorOf(st.Id));
         }
+        // (bd-ui W4: the discs wear what she wears: set I her main hand's icon, set II the off hand's, which picks the stance)
+        for (int s = 0; s < 2; s++)
+        {
+            var (key, tex) = DiscIcon.Of(ch, s == 0 ? SurvivorUnchained.Rpg.EquipSlot.Weapon : SurvivorUnchained.Rpg.EquipSlot.Offhand);
+            if (key != iconKey[s]) { iconKey[s] = key; iconFallback[s] = key == null ? null : Glyphs.Texture(key, 36, s == 1 ? ColorOf(st.Id) : Bronze); icons[s] = tex; dirty = true; }
+            else if (key != null && icons[s] == null && tex != null) { icons[s] = tex; dirty = true; }
+        }
         for (int s = 0; s < 2; s++)
         {
             float v = AutoRowModel.StrikeShare(b.StrikeReadyIn(s), b.StrikeOf(s)?.Cooldown ?? 6);
@@ -93,6 +115,7 @@ public partial class StanceBlock : Control
         now += delta;
         if (swapT < EaseLen) { swapT += delta; dirty = true; }
         if (nameT < NameLen) { nameT += delta; dirty = true; }
+        if (openedAt >= 0) { dirty = true; if (now - openedAt >= 0.6) openedAt = -1; }
         if (dirty && Visible) { dirty = false; QueueRedraw(); }
     }
 
@@ -169,10 +192,12 @@ public partial class StanceBlock : Control
         var col = set == 1 ? ColorOf(stance!.Id) : Bronze;
         float a = dim;
         DrawCircle(c, r, Glass with { A = a }, true, -1, true);
-        if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
+        if ((icons[set] ?? iconFallback[set]) is { } ic) DiscIcon.Draw(this, c, r - 1.5f, ic, new Color(1, 1, 1, a), icons[set] != null ? 0.06f : -0.25f);
+        else if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
         float sh = share[set];
         if (sh < 0.996f) DrawColoredPolygon(CirclePie(c, r - 1, 1 - sh), Veil with { A = Veil.A * a });
         DrawArc(c, r, 0, Mathf.Tau, 48, col with { A = a }, 1.5f, true);
+        if (openedAt >= 0 && set == active) DrawCircle(c, r, new Color(1f, 0.80f, 0.45f, 0.5f * (float)Math.Max(0, 1 - (now - openedAt) / 0.6)), true, -1, true);
         // (the back disc's strike ready: a thin bright rim, the swap would fire it)
         if (isBack && sh >= 0.996f) DrawArc(c, r + 2, 0, Mathf.Tau, 48, col.Lightened(0.35f) with { A = 0.9f }, 1, true);
     }

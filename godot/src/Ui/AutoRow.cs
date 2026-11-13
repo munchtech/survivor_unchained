@@ -23,12 +23,16 @@ public partial class AutoRow : Control
         public string Id = "";
         public int Slot = -1, Rarity = -1;
         public bool Locked;
-        public double Ready = 1, Last = 1, Fired = -1;
+        public double Ready = 1, Last = 1, Fired = -1, Opened = -1;
         public Texture2D? Glyph;
         public Color School = Colors.White;
     }
 
+    /// <summary>bd-ui W4: the row's top, its bottom 3 px above the key caps' top edge (the tallest chip, the mouse's).</summary>
+    public static float RowTop => AutoRowModel.RowTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
+
     readonly List<Tile> tiles = new();
+    string lastLog = "";
     double now;
     bool dirty = true;
     string lastShape = "";
@@ -40,7 +44,7 @@ public partial class AutoRow : Control
     {
         MouseFilter = MouseFilterEnum.Ignore;
         TextureFilter = TextureFilterEnum.Linear;
-        Position = new Vector2(AutoRowModel.Floor, DgPanel.TopY + 1 - AutoRowModel.Tile);
+        Position = new Vector2(AutoRowModel.Floor, RowTop);
         Size = new Vector2(AutoRowModel.HerRight - AutoRowModel.Floor, AutoRowModel.Tile);
         ZIndex = 2;
     }
@@ -61,6 +65,12 @@ public partial class AutoRow : Control
             else items.Add(w);
         }
         var places = AutoRowModel.Places(items.Count);
+        if (Position.Y != RowTop) Position = new Vector2(Position.X, RowTop);
+        if (Args.Has("dev-log") || Args.Has("hud-pin") || Args.Has("equip") || Args.Has("hud-scale"))
+        {
+            string log = $"autorow: her {hers.Count} items {items.Count} ({string.Join(",", items.Select(w => w.Id))}) rarities {itemRarity.Count} bar {string.Join(",", b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).Select(w => w.Id + "@" + w.Slot))}";
+            if (log != lastLog) { lastLog = log; GD.Print(log); }
+        }
         // (rebuilt only when the places or what is in them changed; the timers below are values)
         string shape = string.Join(",", places.Select(p => $"{p.Kind}{p.Index}")) + "|" + string.Join(",", hers.Concat(items).Select(w => w.Id)) + "|" + open;
         if (shape != lastShape)
@@ -101,9 +111,22 @@ public partial class AutoRow : Control
     {
         now += delta;
         bool flashing = false;
-        foreach (var t in tiles) if (t.Fired >= 0 && AutoRowModel.Flash(now - t.Fired) > 0) flashing = true;
+        foreach (var t in tiles) if ((t.Fired >= 0 && AutoRowModel.Flash(now - t.Fired) > 0) || (t.Opened >= 0 && now - t.Opened < 0.6)) flashing = true;
         if (flashing || dirty) { dirty = false; QueueRedraw(); }
     }
+
+    /// <summary>Tile k's (the places' order) global rect; null when there is none.</summary>
+    public Rect2? TileRect(int k) => TileNo(k)?.Rect;
+
+    /// <summary>The place holding the skill on this slot (the card that opened it folds there); -1 none.</summary>
+    public int TileOfSlot(int slot)
+    {
+        for (int i = 0; i < tiles.Count; i++) if (tiles[i].Id != "" && tiles[i].Slot == slot) return i;
+        return -1;
+    }
+
+    /// <summary>The level card folded into tile k: a brief light (0.6 s).</summary>
+    public void Opened(int k) { if (k >= 0 && k < tiles.Count) { tiles[k].Opened = now; dirty = true; } }
 
     Rect2 Local(Tile t) => new(t.At.X - Position.X, 0, AutoRowModel.Tile, AutoRowModel.Tile);
 
@@ -149,6 +172,8 @@ public partial class AutoRow : Control
             }
             else if (more)
                 DrawString(Style.UiBold, new Vector2(r.Position.X, r.Position.Y + 21), $"+{t.At.Index}", HorizontalAlignment.Center, r.Size.X, 15, Style.RarityOf(4));
+            if (t.Opened >= 0 && now - t.Opened < 0.6)
+                DrawRect(r.Grow(-1), new Color(1f, 0.80f, 0.45f, 0.55f * (float)(1 - (now - t.Opened) / 0.6)), true);
             Color bez = t.Rarity >= 0 ? Style.RarityOf(t.Rarity) : more ? Style.RarityOf(4) : Bronze;
             float bezA = filled ? 1 : t.Locked ? 0.35f : 0.4f;
             DrawRect(r, bez with { A = bezA }, false, 1);
@@ -170,5 +195,34 @@ public partial class AutoRow : Control
             pts.Add(c + d * k);
         }
         return pts.ToArray();
+    }
+}
+
+/// <summary>bd-ui W4: a texture clipped to a circle, drawn as a textured polygon (no shader): the item icons in the weapon-set
+/// discs and the stance card's ring.</summary>
+public static class DiscIcon
+{
+    public static void Draw(CanvasItem ci, Vector2 c, float r, Texture2D tex, Color mod, float inset = 0)
+    {
+        const int N = 40;
+        var pts = new Vector2[N];
+        var uv = new Vector2[N];
+        var cols = new Color[N];
+        float k = 1 - inset;
+        for (int i = 0; i < N; i++)
+        {
+            var d = new Vector2(Mathf.Cos(Mathf.Tau * i / N), Mathf.Sin(Mathf.Tau * i / N));
+            pts[i] = c + d * r;
+            uv[i] = new Vector2(0.5f, 0.5f) + d * 0.5f * k;
+            cols[i] = mod;
+        }
+        ci.DrawPolygon(pts, cols, uv, tex);
+    }
+
+    /// <summary>What she wears in a slot as a drawable: its icon key (null: nothing worn) and its real texture if there is one.</summary>
+    public static (string? Key, Texture2D? Tex) Of(SurvivorUnchained.Rpg.CharacterData? ch, SurvivorUnchained.Rpg.EquipSlot slot)
+    {
+        if (ch?.Equipment[slot] is not { } it || SurvivorUnchained.Rpg.Items.Get(it.Def) is not { } def || def.Icon == "") return (null, null);
+        return (def.Icon, ItemPhotos.Real(def.Icon));
     }
 }

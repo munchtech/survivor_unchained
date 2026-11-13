@@ -20,6 +20,9 @@ public sealed class LevelCardSpec
     /// <summary>NewKey: the slot that opened (0-3, KeyMap.Skills[Slot] is its key; the card folds toward its seat);
     /// -1 none (the card folds toward the coin).</summary>
     public int Slot = -1;
+    /// <summary>NewStance (bd-ui W4): the stance's id (its glyph when no off-hand item is worn) and the off-hand item's icon key
+    /// ("" none: the ring shows the stance's glyph).</summary>
+    public string StanceId = "", Icon = "";
     /// <summary>NewAuto: a skill taught on an auto slot (slot >= Weapons.MaxKeys): no key cap. NewStance: Skill is the stance's
     /// name and the card's cap is Act.Swap.</summary>
     /// <summary>NewKey / NewSkill / NewAuto / NewStance: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
@@ -112,7 +115,9 @@ public static class LevelCards
     {
         if (build?.Stance is not { } st) return null;
         string id = ch != null && ch.Stance != "" && System.Array.IndexOf(st.Offers, ch.Stance) >= 0 ? ch.Stance : st.Default;
-        return StanceCard(level, id);
+        var card = StanceCard(level, id);
+        if (card != null && ch?.Equipment[Rpg.EquipSlot.Offhand] is { } oh && Rpg.Items.Get(oh.Def) is { } od) card.Icon = od.Icon;
+        return card;
     }
 
     public static LevelCardSpec? StanceCard(int level, string id)
@@ -120,7 +125,7 @@ public static class LevelCards
         if (Content.Stances.Find(id) is not { } d) return null;
         string line = Line(d.Flavor);
         if (line == "") line = d.Strike.Name != "" ? "Swap strike: " + d.Strike.Name : "";
-        return new LevelCardSpec { Kind = LevelCardKind.NewStance, Level = level, Skill = d.Name, Line = line, PromptKey = Act.Character };
+        return new LevelCardSpec { Kind = LevelCardKind.NewStance, Level = level, Skill = d.Name, StanceId = d.Id, Line = line, PromptKey = Act.Character };
     }
 
     /// <summary>M7a: the lamp card for a level whose carried skill (first in slot order) holds a point: Kind LampLit, Offer,

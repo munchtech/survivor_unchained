@@ -710,6 +710,7 @@ public partial class GameHud : CanvasLayer
         if (p.InvisibleT > 0) Status("smoke", "smoke", p.InvisibleT, true);
         if (b.WorldRate < 1) Status("world", "hourglass", b.WorldRateT, true);
         foreach (var (id, bf) in b.Buffs) Status("buff:" + id, id == "warcry" ? "howl" : id, bf.T, true, bf.Stacks);
+        StatusRow.Raise = b.Campaign && irons.Autos.Visible ? AutoRowModel.ShelfRaise(AutoRow.RowTop) : 0;
         irons.Statuses.Show(HudPin.Status ?? (IReadOnlyList<StatusShelf.Entry>)statusNow);
 
         // The chain: the ember while it burns; by day, the survivor's own growing.
@@ -756,7 +757,7 @@ public partial class GameHud : CanvasLayer
             ItemAutosTick(b);
             irons.Autos.Visible = !lampsWide;
             irons.Autos.Feed(b, level.Level, itemAutoRarity);
-            irons.Stance.Feed(b);
+            irons.Stance.Feed(b, (GetParent() as Game)?.Journey.Ch);
             if (lampsWide) irons.Stance.Visible = false;
         }
         SkillTipTick(b, b.Campaign && !(lampsWide && lampsSeats != null));
@@ -1065,7 +1066,7 @@ public partial class GameHud : CanvasLayer
         if (on && !cardRead && ch != null && skillTip is not { Visible: true })
         {
             if (pin != null && pin.StartsWith("tile:") && int.TryParse(pin[5..], out var tk)) tile = irons.Autos.TileNo(tk);
-            else if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * new Vector2(1034, DgPanel.TopY - 13 - 16); }
+            else if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * (StanceBlock.FrontAt - new Vector2(0, 17)); }
             else if (!HudPin.Active && !captured && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition()))
             {
                 var mp = play.GetGlobalMousePosition();
@@ -1760,6 +1761,9 @@ public partial class GameHud : CanvasLayer
 
     Vector2? CardFoldTo(LevelCardSpec s)
     {
+        // (bd-ui W4: a stance card folds into the stance block's front disc, an auto card into the tile that opened)
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) return irons.Stance.DiscRect().GetCenter();
+        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return tr.GetCenter();
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return irons.GetGlobalTransform() * DgPanel.Coin;
         return irons.Sockets[k].GetGlobalRect().GetCenter();
@@ -1767,6 +1771,8 @@ public partial class GameHud : CanvasLayer
 
     void CardFolded(LevelCardSpec s)
     {
+        if (s.Kind == LevelCardKind.NewStance) { irons.Stance.Opened(); return; }
+        if (s.Kind == LevelCardKind.NewAuto) { irons.Autos.Opened(irons.Autos.TileOfSlot(s.Slot)); return; }
         int k = SeatFor(s);
         if (k >= 0 && k < irons.Sockets.Length) irons.Sockets[k].Opened();
     }

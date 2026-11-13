@@ -11,11 +11,27 @@ public static class AutoRowModel
 {
     /// <summary>A tile's side, the gap between her three, and the right edge of her first tile (design px at 1.0, the
     /// bar's space: the coin stands at 960, her tiles grow leftward from its left).</summary>
-    public const float Tile = 32, Gap = 6, HerRight = 910;
+    public const float Tile = 34, Gap = 6, HerRight = 910;
     /// <summary>The item autos' places (the 4th and 5th tiles) and the left edge nothing is drawn past.</summary>
-    public static readonly float[] ItemX = [754, 716];
+    public static readonly float[] ItemX = [756, 716];
     public const float Floor = 716;
     public const int HerSlots = 3;
+
+    /// <summary>The gap between the tile row's bottom and the key caps' top edge, and between the status shelf's bottom and the
+    /// tiles' top (design px).</summary>
+    public const float CapGap = 3, ShelfGap = 5;
+    /// <summary>The status shelf's marks are 30 px round centred on y 950: its bottom edge.</summary>
+    public const float ShelfBottom = 950 + 15;
+
+    /// <summary>The key caps' top edge: each cap's chip is centred on the seat's 12 o'clock, midway between the plate's top
+    /// line and the ring's top (SeatKeys.Socket.SetCap), chipH tall (the tallest chip drawn: the mouse glyph's).</summary>
+    public static float CapTop(float plateTopY, float seatY, float seatR, float chipH) => (plateTopY + seatY - seatR) / 2 - chipH / 2;
+
+    /// <summary>The tile row's top: its bottom CapGap above the caps' top edge.</summary>
+    public static float RowTop(float plateTopY, float seatY, float seatR, float chipH) => CapTop(plateTopY, seatY, seatR, chipH) - CapGap - Tile;
+
+    /// <summary>How far the status shelf rises (campaign, tiles shown) so its bottom is ShelfGap above the tiles' top.</summary>
+    public static float ShelfRaise(float rowTop) => Math.Max(0, ShelfBottom - (rowTop - ShelfGap));
 
     public enum Kind { Her, Item, More }
 

@@ -40,7 +40,8 @@ public partial class LevelCard : Control
     public Vector2 From = new(960, 1042);
 
     string header = "", name = "", line = "", before = "", after = "", measure = "", arrow = " → ", prompt = "";
-    Texture2D? glyph;
+    Texture2D? glyph, discIcon;
+    bool discReal;
     float h = 110, w = MinW, stem;
     Vector2 rest, fold;
     readonly Control capHost = new() { MouseFilter = MouseFilterEnum.Ignore };
@@ -80,7 +81,7 @@ public partial class LevelCard : Control
         if (!again && (s.Kind != LevelCardKind.NewSkill || s.Level > 0)) SurvivorUnchained.Sound.Sfx.Stinger("triumph");
         bool body = s.Kind != LevelCardKind.Plain;
         name = line = before = after = measure = "";
-        glyph = null;
+        glyph = null; discIcon = null;
         if (body && Content.Weapons.All.TryGetValue(s.Skill, out var wd))
         {
             name = wd.Name;
@@ -104,6 +105,10 @@ public partial class LevelCard : Control
         }
         else if (s.Kind == LevelCardKind.NewStance)
         {
+            // (bd-ui W4: the ring holds the off-hand item she wears, else the stance's glyph)
+            discIcon = s.Icon != "" ? ItemPhotos.Real(s.Icon) ?? Glyphs.Texture(s.Icon, 80, GlyphGold) : null;
+            discReal = s.Icon != "" && ItemPhotos.Real(s.Icon) != null;
+            if (discIcon == null) glyph = Glyphs.Texture(StanceText.Glyph(s.StanceId), 80, GlyphGold, line: true);
             cap?.QueueFree();
             cap = new KeyTag(Act.Swap) { Chip = true };
             capHost.AddChild(cap);
@@ -239,7 +244,8 @@ public partial class LevelCard : Control
             DrawCircle(wc, WellD / 2, WellInk);
             DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, 2, true);
             DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, 1, true);
-            if (glyph != null) DrawTextureRect(glyph, well.Grow(-8), false);
+            if (discIcon != null) DiscIcon.Draw(this, wc, WellD / 2 - 3, discIcon, Colors.White, discReal ? 0.04f : -0.25f);
+            else if (glyph != null) DrawTextureRect(glyph, well.Grow(-8), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
             if (s.Kind != LevelCardKind.LampLit)
                 DrawString(Style.Ui, new Vector2(NameX, top + 44), line, HorizontalAlignment.Left, -1, LineSize, Parch);

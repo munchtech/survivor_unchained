@@ -26,6 +26,7 @@
     <Compile Include="../src/Game/KeyMap.cs" LinkBase="src" />
     <Compile Include="../src/Ui/ResolveMotion.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/AutoRowModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/GlyphPaths.cs" LinkBase="src" />
     <Compile Include="../src/Fx/HitsPlace.cs" LinkBase="src" />
     <Compile Include="../src/Fx/FeelRules.cs" LinkBase="src" />

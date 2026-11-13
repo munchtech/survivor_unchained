@@ -79,6 +79,9 @@ public partial class ItemPhotos : Node
     /// <summary>An item's photograph, if it has been taken.</summary>
     public static Texture2D? Photo(string key) => photos.GetValueOrDefault(key);
 
+    /// <summary>An item's painted icon or photograph as a texture (null until one exists), for a view that draws it itself.</summary>
+    public static Texture2D? Real(string key) => UiArt.Icon("item", key) ?? Photo(key);
+
     /// <summary>An item's picture as a control: its photograph, or its glyph
     /// (smaller, in the colour given) until the photograph is taken.</summary>
     public static Control Icon(string key, int size, Color glyph)

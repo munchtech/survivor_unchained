@@ -828,7 +828,9 @@ public partial class KeyTag : Control
         get => underline;
         set { if (value == underline) return; underline = value; QueueRedraw(); }
     }
-    const float MouseW = 13, MouseH = 17, MouseChip = 21;
+    const float MouseW = 13, MouseH = 17;
+    /// <summary>The mouse glyph's chip, the tallest cap (bd-ui W4: the tile row clears it).</summary>
+    public const float MouseChip = 21;
     /// <summary>Fix A (judge r1, 1): every cap in lining figures. Alegreya Sans' default numerals are old-style, 7 px
     /// tall at 16 beside the letters' 11: the skill keys were the smallest text on the bar.</summary>
     static Font CapFont => Vessel.Figures;

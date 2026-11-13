@@ -311,6 +311,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         // --veteran L[:G]: the balance harness's survivor of level L in gear of rarity G (Play/DevVeteran.cs: its `--level L`, g2).
         if (Args.Get("veteran") is string vet) GD.Print(DevVeteran.Apply(Journey.Ch, vet, (int)Args.Num("seed", 1)));
+        // (bd-ui W4: --veteran dresses Head, Body, Amulet and both Rings over what Begin wore for --equip: wear those again)
+        if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
