@@ -117,19 +117,23 @@ public partial class PostScreen : Overlay
     {
         var ch = G.Journey.Ch;
         var pg = RoadPageModel.Of(ch);
-        const float PW = 600;
-        var root = Style.V(14);
-        root.Position = new Vector2((1920 - (pg.Roads.Count * PW + (pg.Roads.Count - 1) * 36)) / 2, 110);
-        AddChild(root);
-        var head = Style.V(2);
-        head.AddChild(new Title(LampBook.Roadless(ch) ? "Choose your road" : "Your road", 30, false));
-        head.AddChild(Style.Label(post.Name, Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
-        root.AddChild(head);
-        var row = Style.H(36);
+        const float PW = 560;
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        centre.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        AddChild(centre);
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        centre.AddChild(panel);
+        var root = Style.V(Style.Gap3);
+        panel.AddChild(root);
+        root.AddChild(new Title(LampBook.Roadless(ch) ? "Choose your road" : "Your road", 30, false));
+        root.AddChild(Style.Label(post.Name, Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+        var row = Style.H(24);
         root.AddChild(row);
         foreach (var r in pg.Roads) row.AddChild(RoadPanelOf(r, pg, PW));
-        var foot = Style.Label(RoadPageModel.Foot, Style.TextItalic, 18, Kit.Ink, false, HorizontalAlignment.Center, true);
-        root.AddChild(foot);
+        root.AddChild(Kit.RuleH());
+        root.AddChild(Style.Label(RoadPageModel.Foot, Style.Text, 18, Kit.Ink, true, HorizontalAlignment.Center, false));
         var back = Kit.Word("Back", Back, Kit.Ink, 20);
         back.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         root.AddChild(back);
@@ -137,17 +141,12 @@ public partial class PostScreen : Overlay
 
     Control RoadPanelOf(RoadPageModel.RoadPanel r, RoadPageModel.Page pg, float width)
     {
-        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
-        panel.CustomMinimumSize = new Vector2(width, 0);
-        panel.MouseFilter = MouseFilterEnum.Stop;
-        panel.SelfModulate = Colors.White with { A = GroundAlpha };
-        if (r.Walked && panel.GetThemeStylebox("panel") is StyleBoxFlat sb)
-        {
-            var lit = (StyleBoxFlat)sb.Duplicate();
-            lit.BorderColor = Style.GoldHi;
-            lit.SetBorderWidthAll(2);
-            panel.AddThemeStyleboxOverride("panel", lit);
-        }
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(width, 0), MouseFilter = MouseFilterEnum.Stop };
+        var sb = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.22f), BorderColor = r.Walked ? Style.GoldHi : Kit.Faint };
+        sb.SetBorderWidthAll(r.Walked ? 2 : 1);
+        sb.SetCornerRadiusAll(3);
+        sb.SetContentMarginAll(18);
+        panel.AddThemeStyleboxOverride("panel", sb);
         var v = Style.V(Style.Gap3);
         panel.AddChild(v);
         var top = Style.H(10, new Title(r.Name, 24, false));

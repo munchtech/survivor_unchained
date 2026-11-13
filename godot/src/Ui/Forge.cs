@@ -718,17 +718,21 @@ public partial class ForgeScreen : Overlay
     {
         new("#ffd45a"), new("#d98a2b"), new("#7a6a58"), new("#4f7fae"), new("#6b1a1e"),
     };
+    /// <summary>The same five as type on the dark: readable (the ruin red and the grey-bronze lifted).</summary>
+    static readonly Color[] QuenchType =
+    {
+        new("#ffd45a"), new("#e9a040"), new("#b3a48e"), new("#8fb4d8"), new("#e0525a"),
+    };
 
-    /// <summary>The odds strip: a bar in an engraved frame, a segment per outcome as wide as its real chance, thin dark
-    /// separators, each % centred under its segment and each outcome's words on hover.</summary>
+    /// <summary>The odds strip: a bar in an engraved frame filled exactly by five segments, each as wide as its real
+    /// chance, thin dark separators; under each segment's centre its word and % as one two-line label, its words on hover.</summary>
     Control QuenchStrip()
     {
         var segs = QuenchBarModel.Build(Crafting.QuenchOdds());
-        const float W = 420, H = 16;
+        const float W = 760, H = 14, Edge = 3;
         var col = Style.V(2);
-        col.CustomMinimumSize = new Vector2(W + 10, 0);
         col.MouseFilter = MouseFilterEnum.Ignore;
-        var frame = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(W + 6, H + 6) };
+        var frame = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(W + 2 * Edge, H + 2 * Edge), SizeFlagsHorizontal = SizeFlags.ShrinkBegin };
         var fb = new StyleBoxFlat { BgColor = new Color("#0c0907"), BorderColor = Style.GoldDim, CornerRadiusBottomLeft = 2, CornerRadiusBottomRight = 2, CornerRadiusTopLeft = 2, CornerRadiusTopRight = 2 };
         fb.SetBorderWidthAll(1);
         fb.BorderWidthTop = 2;
@@ -736,28 +740,27 @@ public partial class ForgeScreen : Overlay
         frame.AddThemeStyleboxOverride("panel", fb);
         var bar = new Control { CustomMinimumSize = new Vector2(W, H), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(bar);
-        var labels = new Control { CustomMinimumSize = new Vector2(W + 6, 34), MouseFilter = MouseFilterEnum.Ignore };
+        var labels = new Control { CustomMinimumSize = new Vector2(W + 2 * Edge, 42), MouseFilter = MouseFilterEnum.Ignore };
         float x = 0;
         for (int i = 0; i < segs.Count; i++)
         {
             var sg = segs[i];
-            float w = (float)(sg.Fraction * W);
+            // The last segment takes what is left, so the five fill the frame exactly.
+            float w = i == segs.Count - 1 ? W - x : (float)(sg.Fraction * W);
             string said = $"{sg.Label}: {Crafting.QuenchWords(sg.Id)}";
-            var r = new ColorRect { Color = QuenchInk[i], Position = new Vector2(x, 0), Size = new Vector2(w, H), TooltipText = said, MouseFilter = MouseFilterEnum.Stop };
-            bar.AddChild(r);
-            // A sheen on the upper half, as the house's bars have.
+            bar.AddChild(new ColorRect { Color = QuenchInk[i], Position = new Vector2(x, 0), Size = new Vector2(w, H), TooltipText = said, MouseFilter = MouseFilterEnum.Stop });
             bar.AddChild(new ColorRect { Color = new Color(1, 1, 1, 0.12f), Position = new Vector2(x, 0), Size = new Vector2(w, H * 0.4f), MouseFilter = MouseFilterEnum.Ignore });
             if (i > 0) bar.AddChild(new ColorRect { Color = new Color(0.04f, 0.03f, 0.03f, 0.95f), Position = new Vector2(x - 1, 0), Size = new Vector2(2, H), MouseFilter = MouseFilterEnum.Ignore });
-            // % under the segment's middle; the narrow one may overhang its bar. The word above it is small and dim.
-            var pct = Style.Label(QuenchBarModel.Percent(sg.Fraction), Style.UiBold, 12, sg.Cold ? new Color("#8fb4d8") : sg.Warm ? Style.GoldHi : Kit.Dim, false, HorizontalAlignment.Center, false);
-            var word = Style.Label(sg.Label, Style.Ui, 11, Kit.Faint, false, HorizontalAlignment.Center, false);
-            float lw = 64, cx = 3 + x + w / 2;
-            foreach (var (lab, y) in new[] { (word, 0f), (pct, 14f) })
-            {
-                lab.Position = new Vector2(cx - lw / 2, y); lab.Size = new Vector2(lw, 14);
-                lab.MouseFilter = MouseFilterEnum.Ignore; lab.TooltipText = said;
-                labels.AddChild(lab);
-            }
+            // Word (as the cost line's type) over % (the segment's colour, bold), centred under the segment; a label wider than
+            // its narrow segment overhangs, but never past the bar's start.
+            const float lw = 90;
+            var two = Style.V(0,
+                Style.Label(sg.Label, Style.Ui, 14, Kit.Ink2, false, HorizontalAlignment.Center, false),
+                Style.Label(QuenchBarModel.Percent(sg.Fraction), Style.UiBold, 14, QuenchType[i], false, HorizontalAlignment.Center, false));
+            two.CustomMinimumSize = new Vector2(lw, 0); two.Size = new Vector2(lw, 36);
+            two.Position = new Vector2(Edge + x + w / 2 - lw / 2, 3);
+            two.MouseFilter = MouseFilterEnum.Ignore;
+            labels.AddChild(two);
             x += w;
         }
         col.AddChild(frame);
