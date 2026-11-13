@@ -631,6 +631,8 @@ public partial class Socket : Control
         }
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
         bool cooling = filled && ready < 0.98 && !Fast;
+        // (bd-ui W7: a pressed or channeled key coming back keeps its icon under a wipe, not a black disc: it must not read as locked)
+        bool wiped = cooling && keyed && st.Kind != SeatKind.Kindled;
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
@@ -647,24 +649,27 @@ public partial class Socket : Control
                 var (gold, glowTex) = DgGold.Of(glyphKey, gi);
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
-                if (glow > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
+                if (glow > 0.003 && !Numbered && !wiped) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
                 // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
                 // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
-                bool num = Numbered;
+                bool num = Numbered && !wiped;
                 // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
                 bool short_ = shortNow;
                 var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
+                if (wiped) DrawTextureRect(Desat(gold), gr, false, new Color(0.5f, 0.5f, 0.5f));
+                else DrawTextureRect(gold, gr, false, (tone *Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
                 if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
-                DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
+                if (wiped) DrawTextureRect(Desat(art), new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(0.5f, 0.5f, 0.5f));
+                else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
             // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
-            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
+            if (wiped) DrawWipe(c, hr);
+            else if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }
         // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
         if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)
@@ -672,10 +677,12 @@ public partial class Socket : Control
             var rs = ring.GetSize();
             DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false);
         }
-        // (bd-ui W3: the stance she wears, a 2 px ring just inside the bezel)
-        if (keyed && st.Tint.A > 0.01f) DrawArc(c, hr - 1f, 0, Mathf.Tau, 64, st.Tint with { A = 0.75f }, 2, true);
         // (M4 §1: the union's gold edge and clasp, the cost arc: SeatKeys.cs)
         DrawSeatMarks(c, hr);
+        // (bd-ui W7: the stance she wears REPLACES the inner ring: 2.5 px, full opacity, every open seat in every state; drawn
+        // after the marks, since the cost arc's groove used to cover it on the one seat that was short)
+        if (keyed && st.Tint.A > 0.01f && (filled || !locked)) DrawArc(c, hr - 1.25f, 0, Mathf.Tau, 64, st.Tint with { A = 1f }, 2.5f, true);
+        if (!filled && locked && keyed) DrawLocked(c);
         if (filled && (evolved || ripe))
         {
             float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
@@ -690,7 +697,8 @@ public partial class Socket : Control
             if (Numbered)
             {
                 int n = (int)Math.Ceiling(waitSecs);
-                DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, new Color(240 / 255f, 230 / 255f, 208 / 255f), 5);
+                if (wiped) DrawSeconds(c, DgMeters.Figures(n));
+                else DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, new Color(240 / 255f, 230 / 255f, 208 / 255f), 5);
                 TraceWait(n);
             }
             else TraceWait(-1);
@@ -943,6 +951,7 @@ public partial class KeyTag : Control
         // the mouse: 13 x 17, a full bone outline on ink, the button meant solid bone, the other ink
         var r = new Rect2(chip.Position + new Vector2((MouseChip - MouseW) / 2, (MouseChip - MouseH) / 2), new Vector2(MouseW, MouseH));
         var bone = Bone;
+        var cream = new Color("#F2E6C8");   // (bd-ui W7: the pressed button solid cream, the other outlined only)
         var body = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
         body.SetBorderWidthAll(1);
         body.CornerRadiusTopLeft = body.CornerRadiusTopRight = 6;
@@ -957,7 +966,8 @@ public partial class KeyTag : Control
             var btn = new StyleBoxFlat { BgColor = bone, AntiAliasing = true };
             btn.CornerRadiusTopLeft = left ? 6 : 0;
             btn.CornerRadiusTopRight = left ? 0 : 6;
-            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 8));
+            btn.BgColor = cream;
+            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX, r.Position.Y, 7, 8));
             DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 7), bone, true);
         }
         DrawRect(new Rect2(r.Position.X + 1, split, MouseW - 2, 1), bone, true);

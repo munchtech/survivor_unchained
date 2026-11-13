@@ -1765,21 +1765,21 @@ public partial class GameHud : CanvasLayer
     Vector2? CardFoldTo(LevelCardSpec s)
     {
         // (bd-ui W4: a stance card folds into the stance block's front disc, an auto card into the tile that opened)
-        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) return irons.Stance.DiscRect().GetCenter();
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) return irons.Stance.DiscRect(AutoRowModel.CardSet).GetCenter();
         if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return tr.GetCenter();
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return irons.GetGlobalTransform() * DgPanel.Coin;
         return irons.Sockets[k].GetGlobalRect().GetCenter();
     }
 
-    /// <summary>bd-ui W6: the auto-tile row's top (global) in the campaign, else null (the arena's card is as it was).</summary>
-    float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRow.RowTop)).Y : null;
+    /// <summary>bd-ui W8: the status shelf's top (global; the cards stay 8 px above it) in the campaign, else null (the arena's card is as it was).</summary>
+    float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(AutoRow.RowTop))).Y : null;
 
     /// <summary>bd-ui W6: the card's tail ends on the top of what opened: its key seat's cap, its auto tile, the front stance disc.</summary>
     Vector2? CardTopOf(LevelCardSpec s)
     {
         if (!campaignNow) return null;
-        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(); return new Vector2(d.GetCenter().X, d.Position.Y); }
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y); }
         if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y);
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return null;
@@ -1811,7 +1811,7 @@ public partial class GameHud : CanvasLayer
             int slot = KeyMap.SeatSlot[k];
             var s = socks[k];
             var w = b.OnSlot(slot);
-            if (w == null) { s.Empty(locked: slot < Weapons.MaxKeys ? slot >= keysOpen : slot - Weapons.MaxKeys >= autosOpen); s.Feed(new Socket.SeatState { Cost = -1, Tint = tint }); continue; }
+            if (w == null) { bool lk = slot < Weapons.MaxKeys ? slot >= keysOpen : slot - Weapons.MaxKeys >= autosOpen; s.Empty(lk, lk ? SeatLook.OpensAt(slot, Weapons.MaxKeys) : 0); s.Feed(new Socket.SeatState { Cost = -1, Tint = tint }); continue; }
             bool second = w.Slot2 == slot;
             var shown = second && w.Half != null ? w.Half : w;
             // (a channel running keeps its well lit)
@@ -1837,6 +1837,7 @@ public partial class GameHud : CanvasLayer
                 Rings = w.Slot2 >= 0 && !adjacent,
                 Bond = second && (w.Channeling || b.Time < w.BreakUntil),
                 Tint = tint,
+                CostNum = (int)Math.Ceiling(cost),
             });
         }
     }

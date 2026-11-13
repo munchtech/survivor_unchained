@@ -137,19 +137,20 @@ public partial class DgSmall : Control
         for (int i = 0; i < m; i++)
         {
             var p = c + Vector2.FromAngle(Mathf.DegToRad(PearlDeg(i, m))) * pr;
-            DrawCircle(p + new Vector2(0.5f, 0.8f), 4.6f, new Color(0, 0, 0, 0.6f), true, -1, true);
-            DrawCircle(p, 4.1f, new Color(0.331f, 0.247f, 0.140f), true, -1, true);   // (UI 18: round 3's bronze grade)
-            DrawCircle(p, 3.1f, new Color(0.05f, 0.045f, 0.04f), true, -1, true);
+            // (bd-ui W7: 5 px pearls, each with a 1 px dark ring)
+            DrawCircle(p + new Vector2(0.5f, 0.8f), 6.6f, new Color(0, 0, 0, 0.6f), true, -1, true);
+            DrawCircle(p, 6.0f, new Color(0.03f, 0.02f, 0.015f), true, -1, true);
+            DrawCircle(p, 5.0f, new Color(0.05f, 0.045f, 0.04f), true, -1, true);
             if (i < o.Count)
             {
-                DrawCircle(p, 3.0f, new Color(0.90f, 0.86f, 0.77f), true, -1, true);
-                DrawCircle(p + new Vector2(0.6f, 0.8f), 1.8f, new Color(0.70f, 0.64f, 0.55f, 0.6f), true, -1, true);
-                DrawCircle(p + new Vector2(-0.9f, -1f), 1.1f, new Color(1, 1, 1, 0.95f), true, -1, true);
+                DrawCircle(p, 5.0f, new Color(0.90f, 0.86f, 0.77f), true, -1, true);
+                DrawCircle(p + new Vector2(0.8f, 1.1f), 3.0f, new Color(0.70f, 0.64f, 0.55f, 0.6f), true, -1, true);
+                DrawCircle(p + new Vector2(-1.4f, -1.5f), 1.6f, new Color(1, 1, 1, 0.95f), true, -1, true);
             }
             else if (i == o.Count && o.Recharge > 0)
             {
-                DrawCircle(p, 2.6f, new Color(0.90f, 0.86f, 0.77f, 0.25f + 0.35f * o.Recharge), true, -1, true);
-                DrawArc(p, 4.1f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Recharge, 20, new Color(1f, 0.86f, 0.55f, 0.95f), 1.3f, true);
+                DrawCircle(p, 4.2f, new Color(0.90f, 0.86f, 0.77f, 0.25f + 0.35f * o.Recharge), true, -1, true);
+                DrawArc(p, 5.8f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Recharge, 20, new Color(1f, 0.86f, 0.55f, 0.95f), 1.3f, true);
             }
         }
     }

@@ -32,6 +32,7 @@
     <Compile Include="../src/Fx/FeelRules.cs" LinkBase="src" />
     <Compile Include="../src/Fx/TeleRank.cs" LinkBase="src" />
     <Compile Include="../src/Ui/SeatCostModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/SeatLook.cs" LinkBase="src" />
     <Compile Include="../src/Ui/RoadKeep.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
