@@ -61,7 +61,7 @@ public partial class GroundLabels : Control
             int size = l.Loud switch { >= 3 => 21, 2 => 17, 1 => 15, _ => 14 };
             var text = grand ? l.Text.ToUpperInvariant() : l.Text;
             var ts = font.GetStringSize(text, HorizontalAlignment.Left, -1, size);
-            float seal = l.Glyph != null ? font.GetAscent(size) * 0.72f + 6 : 0;
+            float seal = l.Glyph != null ? 26 : 0;
             float markW = l.Glyph != null ? seal + 6 : l.Set || l.Gem ? 18 : 0;
             var box = new Rect2(l.At.X - (ts.X + markW) / 2, l.At.Y - ts.Y - 20, ts.X + markW, ts.Y + 2);
             for (int k = 0; k < 8 && placed.Exists(r => r.Grow(2).Intersects(box)); k++) box.Position -= new Vector2(0, box.Size.Y + 3);
@@ -86,10 +86,10 @@ public partial class GroundLabels : Control
             if (l.Glyph != null)
             {
                 var c = new Vector2(box.Position.X + seal / 2, box.Position.Y + box.Size.Y / 2);
-                DrawCircle(c, seal / 2, new Color(0.04f, 0.03f, 0.03f, 0.92f));
-                DrawArc(c, seal / 2 - 1, 0, Mathf.Tau, 28, new Color("#d3a464"), 2, true);
+                DrawCircle(c, seal / 2, new Color("#2A1E12"));
+                DrawArc(c, seal / 2 - 1, 0, Mathf.Tau, 32, new Color("#B8862E"), 2, true);
                 float g = seal * 0.7f;
-                DrawTextureRect(l.Glyph, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false);
+                DrawTextureRect(l.Glyph, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false, new Color("#F2C66B"));
             }
             // (W24: the bicolor stone's mark, its label's lilac #B37AB6, is split down the middle: garnet left, sapphire right.)
             bool split = l.Gem && l.Mark is { } lm && lm.IsEqualApprox(BicolorLilac);
@@ -97,7 +97,9 @@ public partial class GroundLabels : Control
             int outline = grand ? 6 : 5;
             DrawStringOutline(font, at + new Vector2(0, 2), text, HorizontalAlignment.Left, -1, size, outline + 2, new Color(0, 0, 0, 0.45f));
             DrawStringOutline(font, at, text, HorizontalAlignment.Left, -1, size, outline, new Color(0.03f, 0.02f, 0.02f, 0.85f));
-            DrawString(font, at, text, HorizontalAlignment.Left, -1, size, l.Loud == 0 ? l.Color with { A = 0.82f } : l.Color);
+            // (bd-ui2) A gift's name: pale gold with a 1 px bronze-gold outline (a Legendary's own stays as it was).
+            if (l.Glyph != null) DrawStringOutline(font, at, text, HorizontalAlignment.Left, -1, size, 1, new Color("#B8862E"));
+            DrawString(font, at, text, HorizontalAlignment.Left, -1, size, l.Glyph != null ? new Color("#FFF1C9") : l.Loud == 0 ? l.Color with { A = 0.82f } : l.Color);
         }
     }
 

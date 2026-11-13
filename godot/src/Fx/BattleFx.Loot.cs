@@ -177,12 +177,12 @@ public partial class BattleFx
         lootCalling is { } c && p.Payload is Rpg.ItemInstance it && Rpg.Drops.GiftSkill(it, c) is { } sk && Content.Weapons.All.TryGetValue(sk, out var wd)
             ? Ui.ItemViews.SchoolColors[wd.School] : null;
 
-    static readonly Color GiftCore = Hdr("#fff1c8", 2.6f), GiftRim = Hdr("#ffd77a", 2.2f);
-    sealed class GiftRig { public required Decal Ring1, Ring2; public long Frame; }
+    static readonly Color GiftCore = Hdr("#fff4d6", 2.4f), GiftSheath = new("#FFF4D6");
+    sealed class GiftRig { public required Decal Ring; public long Frame; public float Acc; }
     readonly Dictionary<int, GiftRig> giftRigs = new();
     static Texture2D? giftRingTex;
 
-    /// <summary>A thin ring (about 5% of its half-width) for a decal.</summary>
+    /// <summary>A soft gradient ring for a decal: a bright thin edge at 0.93 of its half-width fading to nothing about a quarter inward.</summary>
     static Texture2D GiftRingTexture()
     {
         if (giftRingTex != null) return giftRingTex;
@@ -192,8 +192,8 @@ public partial class BattleFx
             for (int x = 0; x < N; x++)
             {
                 float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
-                float r = Mathf.Sqrt(u * u + v * v), d = (r - 0.95f) / 0.035f;
-                float a = Mathf.Exp(-d * d);
+                float r = Mathf.Sqrt(u * u + v * v);
+                float a = r <= 0.93f ? Mathf.Pow(Mathf.Max(0, 1 - (0.93f - r) / 0.26f), 2f) : Mathf.Exp(-Mathf.Pow((r - 0.93f) / 0.025f, 2f));
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
         return giftRingTex = ImageTexture.CreateFromImage(img);
@@ -206,51 +206,61 @@ public partial class BattleFx
         return d;
     }
 
-    /// <summary>Hides the gift rigs not drawn last frame (a gift taken or gone).</summary>
+    /// <summary>Per frame: hides the gift rigs not drawn last frame (a gift taken or gone), and runs the swap rings.</summary>
     void GiftSweep()
     {
+        SwapTick();
         long now = (long)Engine.GetProcessFrames();
         List<int>? gone = null;
         foreach (var (id, r) in giftRigs) if (now - r.Frame > 2) (gone ??= new()).Add(id);
-        if (gone != null) foreach (var id in gone) { giftRigs[id].Ring1.QueueFree(); giftRigs[id].Ring2.QueueFree(); giftRigs.Remove(id); }
+        if (gone != null) foreach (var id in gone) { giftRigs[id].Ring.QueueFree(); giftRigs.Remove(id); }
     }
 
     /// <summary>(bd-ui2) A gift's light, on top of the Legendary's pillar: white-gold, never the school's color, so it reads on any ground.
-    /// Two thin white-gold rings round the amber pool (0.9 m and 1.3 m, the near one pulsing), a persistent slowly turning four-point star at the
-    /// foot (0.55 m, flaring to 2x for 0.25 s every 1.2 s), a dozen star motes always rising 2.6 m (school-tinted tails), and a white-gold
-    /// sheath round the pillar. The school's color is only on the label's glyph and the mote tails.</summary>
+    /// ONE soft gradient ring at 0.9 m pulsing 1.0 to 1.15 scale and 0.8 to 0.3 alpha every 1.2 s; a white-gold sheath 2.2x the amber core's
+    /// width at 35% alpha, shimmering up on a 0.6 s period (and shorter than the pillar, which runs off the screen); a crisp 48 px
+    /// four-point star at the foot that stays, turning 15 degrees a second and twinkling every 0.8 s; and 14 motes (3.5 px) rising 1.5 m
+    /// over 1.2 s, staggered. The school's color is only on the label's seal now.</summary>
     void GiftLook(Pickup p, float gy, float t, float age, Color school)
     {
-        if (age >= StrikeLife) Light(p.X, gy, p.Z, Lit.Pillar, 0, 2.2f, 1f, new Color("#fff1c8"), 0.3f);
+        if (age >= StrikeLife)
+        {
+            // The sheath: the shaft light with a 0.11 m core (the pillar's is 0.045), pulsing up the column every 0.6 s.
+            float sh = 0.75f + 0.25f * Mathf.Sin(t * Mathf.Tau / 0.6f);
+            Light(p.X, gy, p.Z, Lit.Shaft, 0, 1.1f, 4.5f, GiftSheath, 0.35f * sh);
+        }
         if (age < 0 || frameDt <= 0) return;
         float poolIn = Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
-        if (!giftRigs.TryGetValue(p.Id, out var rig)) giftRigs[p.Id] = rig = new GiftRig { Ring1 = GiftRing(), Ring2 = GiftRing() };
+        if (!giftRigs.TryGetValue(p.Id, out var rig)) giftRigs[p.Id] = rig = new GiftRig { Ring = GiftRing() };
         rig.Frame = (long)Engine.GetProcessFrames();
         var g = V(p.X, Y(p.X, p.Z), p.Z);
-        float pulse = 0.85f + 0.15f * (0.5f + 0.5f * Mathf.Sin(t * Mathf.Tau / 1.2f));
-        void Place(Decal d, float r, float a)
-        {
-            d.Visible = poolIn > 0.001f;
-            d.Position = g;
-            d.Size = new Vector3(r * 2, 4, r * 2);
-            d.Modulate = new Color(1f, 0.9f, 0.62f, a * poolIn);
-            d.EmissionEnergy = 3.2f;
-        }
-        Place(rig.Ring1, 0.9f, pulse);
-        Place(rig.Ring2, 1.3f, 0.4f);
+        float k = ((t + p.Id * 0.37f) % 1.2f) / 1.2f;
+        var d = rig.Ring;
+        d.Visible = poolIn > 0.001f;
+        d.Position = g;
+        float rr = 0.9f * (1 + 0.15f * k) / 0.93f;
+        d.Size = new Vector3(rr * 2, 0.8f, rr * 2);
+        d.Modulate = new Color(1f, 0.957f, 0.84f, (0.8f - 0.5f * k) * poolIn);
+        d.EmissionEnergy = 3.2f;
         if (poolIn < 0.5f) return;
         var at = V(p.X, gy + 0.3, p.Z);
-        // The star: always there, turning 20 degrees a second; every 1.2 s it flares to 2x for 0.25 s.
-        float ph = (t + p.Id * 0.37f) % 1.2f;
-        bool flare = ph < 0.25f;
-        Sparks.Spawn(new Sparks.P { At = at, Life = frameDt * 1.5f, Size = flare ? 1.8f : 0.9f, SizeEnd = flare ? 1.8f : 0.9f, Color = flare ? GiftCore * 1.4f : GiftCore, ColorEnd = flare ? GiftCore * 1.4f : GiftCore,
-            Sprite = Sprites.Of("star"), Spin = 0.01f + t * Mathf.DegToRad(20), SpinV = 0 });
-        // Motes: about a dozen alive at once (2.6 m at 1.0 m/s, 4.6 a second).
-        if (R() < 4.6f * frameDt || age < 0.6f && R() < 0.5f)
+        float ppm = PxPerM(g);
+        // The star: always there, crisp at 48 px, turning 15 degrees a second; every 0.8 s it twinkles brighter for 0.2 s.
+        float ph = (t + p.Id * 0.37f) % 0.8f;
+        float tw = ph < 0.2f ? Mathf.Sin(ph / 0.2f * Mathf.Pi) : 0;
+        var sc = GiftCore * (1f + 0.9f * tw);
+        float sz = 48f / ppm;
+        Sparks.Spawn(new Sparks.P { At = at, Life = frameDt * 1.5f, Size = sz, SizeEnd = sz, Color = sc, ColorEnd = sc, Sprite = Sprites.Of("star"), Spin = Mathf.DegToRad(15) * t, SpinV = 0 });
+        // Motes: 14 alive at once (3.5 px, 1.5 m up over 1.2 s), staggered.
+        rig.Acc += frameDt * 14f / 1.2f;
+        for (; rig.Acc >= 1; rig.Acc -= 1)
         {
             float a = R() * Mathf.Tau;
-            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.35f, 0, Mathf.Sin(a) * 0.35f), new Vector3(0, 1.0f, 0), 2.6f, 0.15f, GiftCore, school * 1.4f, 0.08f, sprite: Sprites.Of("star"), spinV: 1.5f);
+            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.35f, 0, Mathf.Sin(a) * 0.35f), new Vector3(0, 1.25f, 0), 1.2f, 3.5f / ppm, GiftCore, null, 3.5f / ppm, sprite: -1);
         }
+        // The sheath's shimmer: a pale streak climbing the column every 0.6 s.
+        if ((t + p.Id * 0.37f) % 0.6f < frameDt)
+            Sparks.Spawn(new Sparks.P { At = at, V = new Vector3(0, 4f, 0), Life = 0.7f, Size = 0.14f, SizeEnd = 0.14f, Color = GiftSheath.SrgbToLinear() * 1.5f, Alpha = 0.35f, Stretch = 0.14f, Sprite = -1 });
     }
 
     /// <summary>The hoard stone's light (Battle.Hoard): a short red one to find it by.</summary>
