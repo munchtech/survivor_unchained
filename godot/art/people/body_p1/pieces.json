@@ -99,5 +99,9 @@
    "a_godot_name": "lod_ink",
    "tier": "play"
   }
+ },
+ "carried_by_ref": {
+  "close": false,
+  "play": false
  }
 }

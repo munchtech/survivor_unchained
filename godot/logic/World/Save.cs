@@ -138,6 +138,9 @@ public sealed class Saves
         // Lamps v2 (behind its flag): lit ids the v2 board lacks are dropped (save v6 does the real migration).
         if (Content.Lamps.V2) LampBook.DropUnknown(ch);
         // The armor slots (Shoulders...Feet): anything worn in a slot its kind does not belong to is re-slotted.
+        // The 13 November cut (8 places: cloak, relic, shoulders, bracers, hands, belt, legs gone): what an old save wore there, and
+        // every piece whose id the cut removed, is mended (needs no version: it is safe to run on every load).
+        Inventory.Mend(ch, d.World);
         Inventory.Reslot(ch);
         d.Version = Version;
         return d;

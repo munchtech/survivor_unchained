@@ -8,7 +8,7 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>Six day slots by level 9, and the type chosen at creation
+/// <summary>(bd-keys) Seven places by level 10 (four keys at 1/4/5/9, three auto slots at 1/7/10: BUILD_UNLOCKS.md), and the type chosen at creation
 /// (docs/design/CLASS_IDENTITY_AND_TALENTS.md §3.7; Rpg/SkillBook.cs, Rpg/LampBook.cs).</summary>
 public class DaySlotsTests
 {
@@ -23,8 +23,8 @@ public class DaySlotsTests
 
     [Theory]
     [InlineData(1, 2)] [InlineData(3, 2)] [InlineData(4, 3)] [InlineData(5, 4)] [InlineData(6, 4)]
-    [InlineData(7, 5)] [InlineData(8, 5)] [InlineData(9, 6)] [InlineData(30, 6)]
-    public void Slots_grow_to_six_by_the_ninth_level(int level, int slots)
+    [InlineData(7, 5)] [InlineData(8, 5)] [InlineData(9, 6)] [InlineData(10, 7)] [InlineData(30, 7)]
+    public void Slots_grow_to_seven_by_the_tenth_level(int level, int slots)
     {
         var ch = Make();
         ch.Level = level;
@@ -65,10 +65,12 @@ public class DaySlotsTests
     [InlineData("")]
     [InlineData("nonsense")]
     [InlineData("butcher")] // a reaver's road, not hers
-    public void A_type_she_cannot_walk_falls_back_to_the_default(string road)
+    public void A_type_she_cannot_walk_leaves_her_roadless(string road)
     {
+        // (bd-ranks: no road before level 6; it was the default road)
         var ch = Make("warden", road);
-        Assert.All(LampBook.State(ch).Layouts, l => Assert.Equal(LampBook.DefaultType("warden"), l.Type));
+        Assert.All(LampBook.State(ch).Layouts, l => Assert.Equal("", l.Type));
+        Assert.True(LampBook.Roadless(ch));
     }
 
     [Fact]

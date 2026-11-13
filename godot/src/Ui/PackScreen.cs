@@ -104,15 +104,14 @@ public partial class InventoryScreen : Overlay
     string? sel;
     bool filterOpen;
 
-    /// <summary>Where each thing is worn on the doll: the body's pieces down the left, head to feet; the jewels,
-    /// the hands and what is held down the right, staggered. Every EquipSlot has a place (EquipPlacesTests);
-    /// the names and glyphs are Items.Places. (Layout functional, 15 places since SU-040; the look is the UI lead's.)</summary>
+    /// <summary>Where each thing is worn on the doll: the body's pieces down the left, head to boots; the jewels
+    /// and what is held down the right, staggered. Every EquipSlot has a place (EquipPlacesTests);
+    /// the names and glyphs are Items.Places. (Layout functional, 8 places since 13 November; the look is the UI lead's.)</summary>
     static readonly (EquipSlot Slot, bool Right, float Y)[] Doll =
     {
-        (EquipSlot.Head, false, 8), (EquipSlot.Shoulders, false, 63), (EquipSlot.Cloak, false, 118), (EquipSlot.Body, false, 173),
-        (EquipSlot.Bracers, false, 228), (EquipSlot.Belt, false, 283), (EquipSlot.Legs, false, 338), (EquipSlot.Feet, false, 393),
-        (EquipSlot.Amulet, true, 35), (EquipSlot.Weapon, true, 90), (EquipSlot.Offhand, true, 145), (EquipSlot.Hands, true, 200),
-        (EquipSlot.Ring1, true, 255), (EquipSlot.Ring2, true, 310), (EquipSlot.Relic, true, 365),
+        (EquipSlot.Head, false, 30), (EquipSlot.Body, false, 135), (EquipSlot.Feet, false, 240),
+        (EquipSlot.Amulet, true, 35), (EquipSlot.Weapon, true, 90), (EquipSlot.Offhand, true, 145),
+        (EquipSlot.Ring1, true, 200), (EquipSlot.Ring2, true, 255),
     };
 
     // What has been looked at this session: anything else carried is marked new.

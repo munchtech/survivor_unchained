@@ -39,6 +39,8 @@ public sealed partial class Journey
         // The slurry's outcome is said as what the survivor sees (the story lead's narration), after
         // whatever Snib says over it.
         string? seen = q.Verb == Verb.Steep ? Crafting.Line(Crafting.Rules.Slurry.Crafter, $"steep.{q.Outcome}") : null;
+        if (q.Verb == Verb.Quench && Crafting.Line(q.Crafter, $"quench.{q.Outcome}") is { } flame)
+            CraftSaid = (CraftSaid ?? new Said(null, null, null)) with { After = flame };
         if (seen != null) CraftSaid = (CraftSaid ?? new Said(null, null, null)) with { After = seen };
         if (q.Verb == Verb.Steep && q.Outcome == "down" && q.Crafter != "" && CraftSaid is { Before: null } said && Crafting.Line(q.Crafter, "steep.bad") is { } bad)
             CraftSaid = said with { Line = bad };
@@ -47,6 +49,7 @@ public sealed partial class Journey
         {
             Verb.BreakDown => string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value))),
             Verb.Steep => seen ?? "Steeped: it is set for good.",
+            Verb.Quench => Crafting.QuenchOutcome(q).Text,
             Verb.Bind => $"{q.After}. What it came from is gone.",
             Verb.Remake => $"{Inventory.RarityName(it)} now. A seam opens.",
             Verb.Rekindle => $"Heat {it.Heat} of {it.HeatFull}",

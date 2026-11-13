@@ -26,11 +26,15 @@ public static class DevVeteran
     {
         string calling = ch.Archetype;
         while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
+        Road(ch);
         switch (calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
         ch.Points = 0;
         // (M3) A calling with a taught build carries it first (taught_builds.json, as a campaign survivor of that level does);
         // the path's skills fill what slots are left.
         TaughtBuilds.Grant(ch, ch.Level);
+        // (bd-keys) and every point lit, as a player of that level has lit them: the levels gained above held each carried
+        // skill's points (WickBook.Grew), which left her basic attack at rank 1 at level 30.
+        WickBook.LightAll(ch);
         var path = Content.Paths.All.Where(p => p.Callings.Contains(calling)).OrderBy(p => p.Id).ToList();
         var pick = path[seed % path.Count];
         foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
@@ -38,16 +42,23 @@ public static class DevVeteran
             if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
             if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
             ch.Skills.Add(id);
-            ch.Slotted.Add(id);
+            SkillBook.TakeUp(ch, id);
         }
         var rng = new Rng((uint)seed * 31 + 5);
         (EquipSlot Slot, string Def)[] dress =
         [
             (EquipSlot.Head, rng.Chance(0.5) ? "iron_helm" : "leather_cap"), (EquipSlot.Body, rng.Chance(0.5) ? "chain_shirt" : "padded_jerkin"),
-            (EquipSlot.Cloak, "travelers_cloak"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
+            (EquipSlot.Feet, "travelers_boots"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
         ];
         foreach (var (slot, def) in dress)
             ch.Equipment[slot] = Inventory.Make(ch, def, 1, gearRarity, (uint)rng.Int(1, 1 << 30));
+    }
+
+    /// <summary>(bd-ranks) A survivor made at a level past the road's choice (the harness's, --veteran) walks a road as a player of
+    /// that level has: her calling's first (LampBook.DefaultType), unless she walks one already.</summary>
+    public static void Road(CharacterData ch)
+    {
+        if (LampBook.Roadless(ch) && LampBook.RoadOpen(ch)) LampBook.ChooseRoad(ch, LampBook.DefaultType(ch.Archetype));
     }
 
     /// <summary>The map survivor's belt: the harness's draughts on top of the journey's own.</summary>

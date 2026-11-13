@@ -77,6 +77,14 @@ public readonly record struct Lifetime(int Id, int Gen)
     public bool Is(Pooled? p) => p != null && p.Alive && Gen != 0 && p.Id == Id && p.Gen == Gen;
 }
 
+/// <summary>(Codex audit SU-088) A creature a zone or script keeps past a tick (a camp's crew, a guard): the creature
+/// with its lifetime. Up only while that very one lives; a newcomer in its slot is not it.</summary>
+public readonly record struct Kept(Enemy E, Lifetime L)
+{
+    public static Kept Of(Enemy e) => new(e, Lifetime.Of(e));
+    public bool Up => L.Is(E) && E.State != EnemyState.Dying;
+}
+
 public sealed class Named
 {
     public string Title = "";
@@ -290,7 +298,8 @@ public sealed class Projectile : Pooled
     public bool Lob;
     public double LandX, LandZ;
     public GroundSpec? GroundOnHit;
-    public readonly List<int> Hits = new();
+    /// <summary>What it has struck, by lifetime (SU-091): a newcomer in a struck thing's slot is a fresh target.</summary>
+    public readonly List<Lifetime> Hits = new();
     /// <summary>When each of Hits was struck, for weapons that can hit the same
     /// creature again after Rehit seconds (orbits, herds).</summary>
     public readonly List<double> HitTimes = new();

@@ -2,6 +2,7 @@ using System.Linq;
 using Godot;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Rpg;
 
 namespace SurvivorUnchained.Ui;
 
@@ -12,7 +13,7 @@ public partial class PostScreen : Overlay
     public override string Kind => "post";
     readonly LampPosts.Post post;
     readonly MenuList menu;
-    /// <summary>"" (the menu), "travel", "tier" or "unions".</summary>
+    /// <summary>"" (the menu), "travel", "tier", "unions" or "road".</summary>
     string page = "";
 
     public PostScreen(Game g, LampPosts.Post post) : base(g)
@@ -41,6 +42,21 @@ public partial class PostScreen : Overlay
                     var to = p;
                     menu.Add(p.Name, () => G.PostTravel(post, to), grp.Name);
                 }
+            menu.Add("Back", Back);
+        }
+        else if (page == "road")
+        {
+            // (bd-ranks) Her calling's roads, the one walked marked: the road's choice at level 6 until the story's scene, then a change.
+            var walked = LampBook.Walked(G.Journey.Ch)?.Id;
+            foreach (var rd in Lamps.RoadsOf(G.Journey.Ch.Archetype))
+            {
+                var id = rd.Id;
+                menu.Add(rd.Id == walked ? $"{rd.Name}  (now)" : rd.Name, () =>
+                {
+                    if (id != walked) G.PostRoad(post, id);
+                    page = ""; menu.Focus = 0; Refresh();
+                }, rd.Line, rd.Id == walked);
+            }
             menu.Add("Back", Back);
         }
         else if (page == "tier")
@@ -83,6 +99,10 @@ public partial class PostScreen : Overlay
                         break;
                     case PostMenu.Option.Tier:
                         menu.Add("World tier", () => Go("tier", null), tier.Name);
+                        break;
+                    case PostMenu.Option.Road:
+                        bool due = LampBook.Roadless(G.Journey.Ch);
+                        menu.Add(due ? "Choose your road" : "Road", () => Go("road", refused), refused ?? (due ? "Two roads lie open to you" : $"{LampBook.Walked(G.Journey.Ch)?.Name}: change it, free"));
                         break;
                     case PostMenu.Option.Lamps:
                         menu.Add("Lamps", () => { if (refused != null) G.Toast(new Toast(ToastKind.Warning, refused)); else G.PostLamps(post); }, refused ?? "Put lamps out, change layouts");

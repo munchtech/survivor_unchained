@@ -25,6 +25,10 @@ public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, stri
 /// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
 public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
 
+/// <summary>A piece fell that grants a skill her calling can get no other way (Drops.GiftOf): the biggest drop in the game. Its own
+/// event, beside the Legendary's sound and beam it borrows until bd-ui gives it a voice and a look.</summary>
+public sealed record GiftDrop(ItemInstance Item, string Skill);
+
 /// <summary>What the road has taken out of the survivor, carried between
 /// zones until they rest (the ember is an arena's, and stays in it).</summary>
 public sealed class Expedition
@@ -48,6 +52,8 @@ public sealed partial class Journey
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
     public Action<Announcement> OnAnnounce = _ => { };
+    /// <summary>A skill-granting great piece has fallen (see <see cref="GiftDrop"/>); raised once per piece, as it is rolled.</summary>
+    public Action<GiftDrop> OnGift = _ => { };
     /// <summary>The first Legendary (or Storied) piece this world has ever seen taken, and where it lay:
     /// the experience director stages its moment on it (docs/design/LOOT_DESIGN.md §8.2).</summary>
     public Action<ItemInstance, double, double> FirstLegendaryTaken = (_, _, _) => { };
@@ -136,6 +142,7 @@ public sealed partial class Journey
     public void Apply(IEnumerable<Change> e)
     {
         Rules.Apply(e, Ctx);
+        TakeRoadPick();
         OnTouch();
     }
 
@@ -173,8 +180,10 @@ public sealed partial class Journey
             // the ARPG tutorial replaces it).
             Campaign = campaign,
             StartX = x, StartZ = z, StartFacing = facing,
-            // (M3) In the campaign the taught build takes the first keys (the grip on the first), a worn skill it does not name after.
-            Weapons = campaign ? Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(kit.Learned)) : kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            // (bd-keys) In the campaign her bar (Character.Bar): her keys in key order (the basic attack on the first), her
+            // auto slots, her gear's auto skills; those that run themselves come in kindled; set B's stance once it opens.
+            Weapons = campaign ? kit.Bar : kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            Kindled = campaign ? kit.Autos : null, Stance = campaign ? SkillBook.StanceOf(Ch) : null, Calling = Ch.Archetype,
             ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
@@ -201,8 +210,8 @@ public sealed partial class Journey
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.Calling = Ch.Archetype;
-        // The campaign runs each carried skill in its taught form (taught_builds.json: the grip held, the rest kindled or pressed).
-        if (b.Campaign) Content.TaughtBuilds.Apply(b, b.Calling);
+        // (bd-keys) The campaign runs each carried skill in the form its place gives it (Character.Bar: a key pressed, an
+        // auto slot kindled), set as it came in (BattleSetup.Kindled), no longer the taught build's over her choice.
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.
@@ -275,6 +284,7 @@ public sealed partial class Journey
         if (World.NightLessons <= 0) return 0;
         int levels = Character.GainXp(Ch, World.NightLessons);
         World.NightLessons = 0;
+        if (levels > 0) RaiseRoad();
         return levels;
     }
 
@@ -313,16 +323,75 @@ public sealed partial class Journey
     /// <summary>The fight whose kills spill experience stones (a story fight with the ember out), else null.</summary>
     Battle? stoneFight;
 
-    /// <summary>Experience reaching her (a kill's, or its stone's as it lands): a level teaches and is named.</summary>
-    void Learn(double xp)
+    /// <summary>Experience reaching her (a kill's, or its stone's as it lands): a level teaches and is named, and the
+    /// road's choice is raised when she reaches it (RaiseRoad).</summary>
+    public void Learn(double xp)
     {
         int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {
             Teach(campaignFight);
             Grew();
+            RaiseRoad();
             OnTouch();
         }
+    }
+
+    /* ---------------------------------------------- the road (subclass) -- */
+
+    /* Her road is chosen at LampBook.RoadLevel (BUILD_UNLOCKS: level 6), a story beat with weight. The game raises it
+     * (RaiseRoad: the fact road.open, an announcement, OnRoadOpen); a story scene makes the choice by setting the fact
+     * road.pick to a road's id (TakeRoadPick, after any Apply), and until that scene exists the lamp-post's menu offers it
+     * (PostMenu.Option.Road). Afterwards she changes it at any lamp-post, free (WalkRoad). The fact road.walked holds the
+     * road she walks, for the story's conditions. */
+
+    /// <summary>World facts of the road's beat: raised, the scene's pick, and the road walked.</summary>
+    public const string RoadOpenFact = "road.open", RoadPickFact = "road.pick", RoadWalkedFact = "road.walked";
+
+    /// <summary>The road's choice was raised (the view may stage it; the story lead's scene will).</summary>
+    public Action OnRoadOpen = () => { };
+
+    /// <summary>The road's choice waits on her: her level has reached it and she walks none.</summary>
+    public bool RoadDue => LampBook.RoadOpen(Ch) && LampBook.Roadless(Ch);
+
+    /// <summary>Raise the road's choice once, when it is due: the fact road.open, the announcement, OnRoadOpen. True when raised now.</summary>
+    public bool RaiseRoad()
+    {
+        if (!RoadDue || World.Fact(RoadOpenFact).Truthy) return false;
+        World.Facts[RoadOpenFact] = true;
+        OnAnnounce(new Announcement("Choose your road", "Two roads lie open to you. Take one at a lamp-post", "boon", 4.5, "Your road"));
+        OnRoadOpen();
+        return true;
+    }
+
+    /// <summary>A story scene's choice (the fact road.pick set to a road's id): walked as WalkRoad's first choice, and the fact cleared.</summary>
+    void TakeRoadPick()
+    {
+        if (World.Fact(RoadPickFact).Str is not { Length: > 0 } pick) return;
+        World.Facts.Remove(RoadPickFact);
+        WalkRoad(pick, null);
+    }
+
+    /// <summary>Walk a road of her calling: her first choice (anywhere the beat is offered), or a change at a lamp-post or in a
+    /// town by day (LampBook.LayoutsOpen, as the layouts; free). The layout in use is refunded to the road's free lamps
+    /// (LampBook.ChooseRoad), and its own skill is learned if she does not know it. Null when walked; else why not.</summary>
+    public string? WalkRoad(string road, string? zone, string? atPost = null)
+    {
+        if (!LampBook.RoadOpen(Ch)) return $"Your road opens at level {LampBook.RoadLevel}";
+        if (Content.Lamps.Roads.GetValueOrDefault(road) is not { } r || r.Calling != Ch.Archetype) return "Not a road of your calling";
+        if (LampBook.Walked(Ch)?.Id == road) return "You already walk this road";
+        if (!LampBook.Roadless(Ch) && !LampBook.LayoutsOpen(World, zone, atPost)) return "Change your road at a lamp-post";
+        if (!LampBook.ChooseRoad(Ch, road)) return "Not now";
+        World.Facts[RoadWalkedFact] = road;
+        string? taught = null;
+        if (LampBook.RoadSkill(Ch, road) is { } id && !SkillBook.Knows(Ch, id))
+        {
+            if (!Ch.Discovered.Contains(id)) Ch.Discovered.Add(id);
+            if (SkillBook.Learn(Ch, id)) { WickBook.Arrived(Ch, id); taught = id; }
+        }
+        OnToast(new Toast(ToastKind.Level, $"You walk {r.Name}", taught != null && Content.Weapons.All.TryGetValue(taught, out var wd) ? $"{r.Line} {wd.Name} is yours." : r.Line));
+        OnTouch();
+        return null;
     }
 
     /// <summary>The campaign fight running (its levels teach the taught build into it), else null.</summary>
@@ -342,13 +411,18 @@ public sealed partial class Journey
             int slot = -1;
             if (b != null && b.Campaign && !b.Weapons.Exists(w => w.Id == s.Skill))
             {
+                // (bd-keys) a kindled one comes into an auto slot (never full); a pressed one into a key, a worn key the
+                // build does not name giving it up when the keys are full
+                if (s.Cast == "kindle") b.Kindles.Add(s.Skill); else b.Kindles.Remove(s.Skill);
                 if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
-                    && b.Weapons.LastOrDefault(w => t.Slots.All(x => x.Skill != w.Id)) is { } spare)
+                    && b.Weapons.LastOrDefault(w => w.Slot < b.KeyCount && t.Slots.All(x => x.Skill != w.Id)) is { } spare)
                     b.RemoveWeapon(spare.Id);
                 if (b.AddWeapon(s.Skill, WickBook.DayRank(Ch, s.Skill)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
             }
             b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
         }
+        // (bd-keys) The stance opens on its level (BUILD_UNLOCKS.md: the eighth), in the fight running too.
+        if (b != null && b.Campaign) b.SetStance(SkillBook.StanceOf(Ch));
         return got;
     }
 
@@ -440,13 +514,13 @@ public sealed partial class Journey
     public void ReturnItem(ItemInstance it)
     {
         var def = Items.Get(it.Def);
-        if (Inventory.AddToPack(Ch, it)) OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Yours again", def.Icon, it.Rarity));
-        else
+        var landed = Inventory.Deliver(Ch, World, it);
+        OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), landed switch
         {
-            int j = World.Stash.IndexOf(null);
-            if (j >= 0) { World.Stash[j] = it; OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Your pack is full: Rook will keep it for you", def.Icon, it.Rarity)); }
-            else Warn($"{Inventory.Name(it)} is lost: no room anywhere");
-        }
+            Inventory.Landed.Pack => "Yours again",
+            Inventory.Landed.Shelf => "Your pack is full: Rook will keep it for you",
+            _ => "Your pack and Rook's shelves are full: she is holding it by the door",
+        }, def.Icon, it.Rarity));
         OnTouch();
     }
 
@@ -604,16 +678,16 @@ public sealed partial class Journey
         var learned = learns ? kit.Learned : new List<(string Id, int Rank)>();
         var learnedIds = learned.Select(w => w.Id).ToHashSet();
         var ours = GearWeapons.Concat(b.KitLearned ?? []).ToHashSet();
-        // What a fresh battle keys (StartBattle): the taught order over worn and learned, while the keys have room (the
-        // keys a skill the kit did not give holds stay its).
+        // What a fresh battle keys (StartBattle): (bd-keys) her bar (Character.Bar) in the campaign, while the keys have
+        // room (the keys a skill the kit did not give holds stay its; auto slots never run out); the gear's elsewhere.
         var want = new List<(string Id, int Rank)>();
         if (learns)
         {
-            int room = Content.Weapons.MaxWeapons - b.Weapons.Where(w => !ours.Contains(w.Id)).Sum(w => Content.Weapons.SlotCost(w.Id));
-            foreach (var s in Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(learned)))
+            int room = b.KeyCount - b.Weapons.Where(w => !ours.Contains(w.Id) && w.Slot < b.KeyCount).Sum(w => Content.Weapons.SlotCost(w.Id));
+            foreach (var s in kit.Bar)
             {
                 if (!Content.Weapons.All.ContainsKey(s.Id) || want.Any(x => x.Id == s.Id)) continue;
-                int cost = Content.Weapons.SlotCost(s.Id);
+                int cost = kit.Autos.Contains(s.Id) ? 0 : Content.Weapons.SlotCost(s.Id);
                 if (cost > room) continue;
                 room -= cost; want.Add(s);
             }
@@ -622,13 +696,23 @@ public sealed partial class Journey
         var wantIds = want.Select(s => s.Id).ToHashSet();
         foreach (var id in ours) if (!wantIds.Contains(id)) b.RemoveWeapon(id);
         GearWeapons = kitIds;
-        var taught = Content.TaughtBuilds.Of(Ch.Archetype);
+        if (b.Campaign && learns)
+        {
+            // Where each runs now (she moved one between a key and an auto slot): the autos first, so a key they free
+            // is free for one moving the other way.
+            foreach (var w in b.Weapons.Where(w => wantIds.Contains(w.Id)).OrderBy(w => kit.Autos.Contains(w.Id) ? 0 : 1).ToList())
+                b.SetForm(w.Id, kit.Autos.Contains(w.Id) ? "kindle" : (w.Def.Press?.Kind ?? Content.PressKind.Press).ToString().ToLowerInvariant());
+            b.Kindles.Clear();
+            b.Kindles.UnionWith(kit.Autos);
+        }
+        // Keys in her bar's order: a skill new to the fight takes the lowest key free.
         foreach (var (id, rank) in want)
         {
             if (b.Weapons.Any(x => x.Id == id)) { if (learnedIds.Contains(id)) b.SetRank(id, rank); continue; }
-            if (b.AddWeapon(id, rank) is null) continue;
-            if (b.Campaign && taught?.Slots.FirstOrDefault(x => x.Skill == id) is { } slot) b.SetForm(id, slot.Cast);
+            b.AddWeapon(id, rank);
         }
+        // (bd-keys) Her stance as the build has it now (a stance weapon taken up at a lamp-post).
+        if (b.Campaign) b.SetStance(SkillBook.StanceOf(Ch));
         if (learns) b.KitLearned = learnedIds.Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet();
         // (M9) A campaign fight's carried skills at their rank with the gear worn now ("+1 to a skill" on or off).
         if (b.Campaign)

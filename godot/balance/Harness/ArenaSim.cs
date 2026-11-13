@@ -257,6 +257,7 @@ public static class ArenaSim
         }, (uint)spec.Seed);
         // A survivor further on: the levels, and the points put into the calling's own.
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        SurvivorUnchained.Play.DevVeteran.Road(j.Ch);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
         // The lamps lit.
@@ -279,7 +280,7 @@ public static class ArenaSim
         // --flare stand: carry the road's Stand (its lamp lit past its gate if the board hasn't reached it; a measuring aid).
         if (spec.Flare == "stand")
         {
-            var road = Lamps.Road(LampBook.Now(j.Ch).Type);
+            var road = LampBook.FlareRoad(j.Ch);
             if (Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
             if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
         }
@@ -321,7 +322,7 @@ public static class ArenaSim
             };
             string grip = b.Weapons.Count > 0 ? b.Weapons[0].Id : "";
             var kit = order.Select(id => id == "grip" ? grip : id).Where(id => id != "").Distinct()
-                .Where(id => SurvivorUnchained.Content.Weapons.CanCarry(spec.Calling, id)).Take(SkillBook.SlotsAt(spec.Level)).ToList();
+                .Where(id => SurvivorUnchained.Content.Weapons.CanCarry(spec.Calling, id)).Take(Math.Min(SkillBook.SlotsAt(spec.Level), SurvivorUnchained.Content.Weapons.MaxWeapons)).ToList();
             int kr = Math.Min(8, 1 + (spec.Level - 1) / 3);
             foreach (var id in kit)
             {

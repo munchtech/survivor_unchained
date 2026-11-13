@@ -60,7 +60,8 @@ public sealed class Verge : ZoneRuntime
     readonly HashSet<string> seen = new();
     readonly double[] brambleHp;
     Enemy? greymuzzle, redcowl, snib;
-    readonly List<Enemy> roostCrew = new(), digCrew = new();
+    // (SU-088) by lifetime: a newcomer in a fallen crewman's slot is not the crew
+    readonly List<Kept> roostCrew = new(), digCrew = new();
     // Retain the spawner's groups for measurement; seeds protect pooled members.
     public readonly Dictionary<string, List<(Enemy E, double Seed)>> Packs = new();
     void RememberPack(string id, IEnumerable<Enemy> foes)
@@ -103,6 +104,7 @@ public sealed class Verge : ZoneRuntime
     // long enough for Greymuzzle to come out and look.
     bool HollowCalm() => Standings.HollowCalm(C);
     static bool Up(Enemy? e) => e is { Alive: true } && e.State != EnemyState.Dying;
+    static bool Up(Kept k) => k.Up;
 
     void SetDisposition(Enemy e)
     {
@@ -186,7 +188,13 @@ public sealed class Verge : ZoneRuntime
 
     /* ------------------------------------------------------ ember scars -- */
 
+    /// <summary>(Codex audit SU-090) A scar is known by its people (its stable id), never by its place in tonight's list:
+    /// completion (`scar.{day}.{people}`), its arena's identity and its seed, its interactable. Index is the people's fixed
+    /// ordinal (ScarOrder), for the seed and its spot.</summary>
     sealed record Scar(int Index, double X, double Z, string People, string Name, int Tier);
+    static readonly string[] ScarOrder = ["pack", "dead", "kerchiefs", "lamplings"];
+    /// <summary>Whether tonight's scar of a people has been won (SU-090: keyed by the people, not its position).</summary>
+    bool ScarWon(string people) => F($"scar.{W.Day}.{people}").Str == "won";
     readonly List<Scar> scars = new();
     readonly List<int> scarLights = new();
 
@@ -195,7 +203,7 @@ public sealed class Verge : ZoneRuntime
 
     /// <summary>The nearest open ember scar's arena (answering the night in the wood), or none.</summary>
     public Arena.ArenaSpec? NearestScar(double x, double z) =>
-        scars.Where(s => F($"scar.{W.Day}.{s.Index}").Str != "won").OrderBy(s => Dist(s.X, s.Z, x, z)).Select(s => ScarArena(s, s.Tier)).FirstOrDefault();
+        scars.Where(s => !ScarWon(s.People)).OrderBy(s => Dist(s.X, s.Z, x, z)).Select(s => ScarArena(s, s.Tier)).FirstOrDefault();
 
     /// <summary>The clock turned while she is in the wood: the scars open at nightfall and go out
     /// at dawn (a night that passed by itself).</summary>
@@ -219,18 +227,17 @@ public sealed class Verge : ZoneRuntime
     void OpenScars()
     {
         if (B == null || W.Time != TimeOfDay.Night) return;
-        var rng = new Core.Rng((uint)(W.Day * 104729 + 7));
         var where = new List<(string People, XZ At, string Name)>();
         if (!WolvesFriendly() && (F("beasts.population").IsNull || F("beasts.population").Number > 10)) where.Add(("pack", V("sample"), "The Scar by the Stream"));
         where.Add(("dead", V("vault"), "The Scar at the Sealed Door"));
         if (KerchiefsOut()) where.Add(("kerchiefs", RutsAt, "The Scar in the Ruts"));
         if (!DiggersFriendly()) where.Add(("lamplings", V("sinkhole"), "The Scar by the Pit"));
-        int i = 0;
         foreach (var (people, at, name) in where)
         {
-            int k = i++;
-            if (F($"scar.{W.Day}.{k}").Str == "won") continue;
-            // A little way off the landmark, on open ground.
+            int k = Array.IndexOf(ScarOrder, people);
+            if (ScarWon(people)) continue;
+            // A little way off the landmark, on open ground; its own draw, so it keeps its spot all night whatever else opens or is won.
+            var rng = new Core.Rng((uint)(W.Day * 104729 + 7 + k * 7919));
             double x = at.X, z = at.Z;
             for (int t = 0; t < 30; t++)
             {
@@ -243,7 +250,7 @@ public sealed class Verge : ZoneRuntime
             scarLights.Add(G.Look.AddLight(x, G.Look.HeightAt(x, z) + 1.4, z, "#ff5a1e", 7, 13, 0.22, 0.16, "#ff9a48"));
             Interactables.Add(new Interactable
             {
-                Id = $"scar:{k}", X = x, Z = z, R = 3.2, Verb = "Step into the ember", Name = name,
+                Id = $"scar:{people}", X = x, Z = z, R = 3.2, Verb = "Step into the ember", Name = name,
                 Hint = () => $"Tier {scar.Tier} · held by {Maps.MapOffers.People(people).Name} · an ember arena",
                 Act = () => G.EnterArena(ScarArena(scar, scar.Tier)),
             });
@@ -261,10 +268,10 @@ public sealed class Verge : ZoneRuntime
         var people = Maps.MapOffers.People(s.People);
         return new Arena.ArenaSpec
         {
-            Id = $"scar:{W.Day}:{s.Index}", Name = s.Name, Sub = $"Tier {tier} · held by {people.Name}",
+            Id = $"scar:{W.Day}:{s.People}", Name = s.Name, Sub = $"Tier {tier} · held by {people.Name}",
             Seed = W.Day * 131 + s.Index * 17 + 3, Tier = tier, People = s.People, Theme = s.People == "dead" ? "blight" : "wood",
             ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing, Minutes = Arena.Arenas.TableMinutes(tier),
-            OnWin = $$"""[{ "set": { "scar.{{W.Day}}.{{s.Index}}": "won" } }]""",
+            OnWin = $$"""[{ "set": { "scar.{{W.Day}}.{{s.People}}": "won" } }]""",
         };
     }
 
@@ -373,9 +380,9 @@ public sealed class Verge : ZoneRuntime
         {
             roostSpawned = true;
             if (seen.Add("roost")) G.Apply("""[{ "quest": { "id": "caravan", "status": "active", "entry": "roost_found" } }, { "learn": "hint.roost" }]""");
-            roostCrew.AddRange(SpawnGroup("footpad", 4, roost.X, roost.Z + 4, 10, "roost", 16));
-            roostCrew.AddRange(SpawnGroup("pillager", 2, roost.X + 6, roost.Z - 2, 6, "roost", 14));
-            roostCrew.AddRange(SpawnGroup("bruiser", 2, roost.X - 4, roost.Z + 8, 6, "roost", 12));
+            roostCrew.AddRange(SpawnGroup("footpad", 4, roost.X, roost.Z + 4, 10, "roost", 16).Select(Kept.Of));
+            roostCrew.AddRange(SpawnGroup("pillager", 2, roost.X + 6, roost.Z - 2, 6, "roost", 14).Select(Kept.Of));
+            roostCrew.AddRange(SpawnGroup("bruiser", 2, roost.X - 4, roost.Z + 8, 6, "roost", 12).Select(Kept.Of));
             if (!KerchiefsFriendly() && F("redcowl").Str != "dead") PromoteRedcowl();
             else if (F("redcowl").Str is not ("dead" or "furious")) PlaceRedcowl();
             if (KerchiefsFriendly())
@@ -406,8 +413,8 @@ public sealed class Verge : ZoneRuntime
                 snib = B.SpawnEnemy("lampling", pump.X + 4, pump.Z + 3, new Battle.SpawnOpts { Level = Level(), Tag = "dig:snib", Home = (pump.X + 4, pump.Z + 3, 3) });
                 if (snib != null) { snib.Named = new Named { Title = "Snib, Foreman" }; SetDisposition(snib); }
             }
-            digCrew.AddRange(SpawnGroup("lampling", 6, dig.X - 4, dig.Z + 4, 12, "dig", 16));
-            digCrew.AddRange(SpawnGroup("lampling_sapper", 2, dig.X, dig.Z, 8, "dig", 14));
+            digCrew.AddRange(SpawnGroup("lampling", 6, dig.X - 4, dig.Z + 4, 12, "dig", 16).Select(Kept.Of));
+            digCrew.AddRange(SpawnGroup("lampling_sapper", 2, dig.X, dig.Z, 8, "dig", 14).Select(Kept.Of));
         }
         if (digSpawned && DiggersFriendly() && Near(pump, 5) && !(W.Npcs.TryGetValue("snib", out var sn) && sn.Flags.TryGetValue("met", out var met) && met.Truthy) && Up(snib))
             B.Events.Emit(new Ev.Bark { X = pump.X + 4, Z = pump.Z + 3, Text = "OI! No surface-meat past the pump!", Speaker = "Snib" });
@@ -564,7 +571,7 @@ public sealed class Verge : ZoneRuntime
                 When = () => !CageOpen(k) && F("caravan.survivors").IsNull,
                 Locked = () =>
                 {
-                    bool watching = roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cages.X, cages.Z) < 16);
+                    bool watching = roostCrew.Any(k => k.Up && Dist(k.E.X, k.E.Z, cages.X, cages.Z) < 16);
                     if (!watching || F("redcowl").Str == "tricked" || F("redcowl.releases").Truthy) return null;
                     return KerchiefsFriendly() ? "Redcowl's men are watching the cages" : "Too many eyes. Deal with them first";
                 },
@@ -591,7 +598,7 @@ public sealed class Verge : ZoneRuntime
         // they are gone.
         bool CratesFree() => F("be.crates").IsNull && !Test("""{ "history": "burned_roost" }""") && Knows("clue.blasting_ember") &&
             (F("redcowl").Str is "dead" or "tricked" || F("roost.cleared").Truthy);
-        string? CratesWatched() => roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cargo.X, cargo.Z) < 16) ? "Too many eyes. Deal with them first" : null;
+        string? CratesWatched() => roostCrew.Any(k => k.Up && Dist(k.E.X, k.E.Z, cargo.X, cargo.Z) < 16) ? "Too many eyes. Deal with them first" : null;
         I.Add(new()
         {
             Id = "crates_charge", X = cargo.X - 1.6, Z = cargo.Z + 1.2, R = 2.4, Verb = "Take a charge", Name = "The B.E. crates",
@@ -621,7 +628,7 @@ public sealed class Verge : ZoneRuntime
         {
             Id = "pump", X = pump.X, Z = pump.Z, R = 3.4, Verb = "Break", Name = "The Pump",
             When = Pumping,
-            Locked = () => digCrew.Concat(snib != null ? [snib] : Array.Empty<Enemy>()).Any(e => Up(e) && Dist(e.X, e.Z, pump.X, pump.Z) < 14) ? "The crew would never let you" : null,
+            Locked = () => digCrew.Where(Up).Select(k => k.E).Concat(snib != null ? [snib] : Array.Empty<Enemy>()).Any(e => Up(e) && Dist(e.X, e.Z, pump.X, pump.Z) < 14) ? "The crew would never let you" : null,
             Act = () => BreakPump("broken"),
         });
         I.Add(new()
@@ -966,7 +973,7 @@ public sealed class Verge : ZoneRuntime
         // with it, and nobody is left to call you a thief or watch the crates.
         if (F("redcowl").Str == "tricked" && (roostCrew.Any(Up) || Actors.ContainsKey("redcowl")))
         {
-            foreach (var e in roostCrew.Where(Up).ToList()) B?.Enemies.Release(e);
+            foreach (var k in roostCrew.Where(Up).ToList()) B?.Enemies.Release(k.E);
             roostCrew.Clear();
             if (Actors.Remove("redcowl", out var rc)) rc.Dispose();
         }

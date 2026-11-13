@@ -1,0 +1,13 @@
+# bd-wire: what wave 1 left between its lanes (coordinator #11, 13 Nov 2026)
+
+Read `common.md` first. Worktree `.claude/worktrees/bd-wire` (branch `bd-wire`, from integration `2b08130a4`, which has bd-gear, bd-ranks and bd-keys merged; `-NoImport`, code only). Integration is LOCAL until its suite is green: merge the local branch `claude/vigilant-galileo-l6jqyx` (worktrees share refs), not `origin/...`. Small lane: aim under ~150k.
+
+Ship, each with a test:
+1. **Gear auto skills reach the fight.** bd-gear fills `CombatKit.AutoSkills` from `ItemDef.Auto` (`Character.Kit`, ~line 895), but bd-keys' `Character.Bar(ch, gear, autos)` (~line 981) builds the campaign bar from `kit.Weapons` only, so the 4 auto uniques do nothing in a fight. Feed them into `Bar` as item auto skills: they run themselves (into `autos`), stack beside her 3 auto slots with no cap, never take a key (even a key-only skill granted as an auto runs kindled; if a skill cannot run kindled at all, say so and skip it), and a skill she already carries keeps its learned rank. `DaySkills` and `Journey` (lines ~183, ~681) must see the same list. Test: a worn auto unique puts its skill in the bar and in `autos` at level 1 with all 3 auto slots full.
+2. **A set-B weapon picks her stance.** bd-keys made the stance (`stances.json`, `Content/Stances`, `CharacterData.Stance`, set B defaults to shield); bd-gear's items know nothing of it. Map the item worn as her second set (find how bd-gear/bd-keys model set B) to a stance id by weapon kind (shield -> shield, a second blade -> twin_blades, mace/hammer -> mace), falling back to the taught default; the stance only opens at its ladder level (8, BUILD_UNLOCKS.md). Test both the mapping and the fallback.
+3. **`Save.cs` fills `AutoForm` when an old save has none** (the taught build's kindled skills go kindled, so an old save's autos don't jump into keys). Test: a save without the field loads with the taught autos kindled.
+4. **MapSim's 7th slot** (RESUME: the sim still assumes the old slot count somewhere in `MapSim`): make it read `SkillBook.SlotsAt` / the bar like the game. Test or harness line.
+
+Files: `godot/logic/Rpg/Character.cs` (Kit, Bar, DaySkills), `godot/logic/Play/Journey.cs` (battle setup only), `godot/logic/Rpg/Save.cs`, the stance lookup, `MapSim`. bd-sockets runs at the same time and touches `CharacterData` (a `SupportState` field), `Journey`'s battle setup (Union apply) and Bladestorm's press code: keep your Journey edit small and stay out of `PressedSkills`, `Supports`, `UnionJoin`, `taught_builds.json` and `skills.json`.
+
+Done: `MR READY bd-wire@<sha>` with suite numbers (the full suite ~39 min under load: run it as a background job and wait on its notice).

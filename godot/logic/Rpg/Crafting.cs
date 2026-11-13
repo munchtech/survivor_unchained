@@ -20,7 +20,7 @@ namespace SurvivorUnchained.Rpg;
  * before and after) and only then done, so the screen and the tests read the
  * same numbers. The numbers are data (data/content/crafting.json). */
 
-public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep, Mark, Ink, Burn, Pin, Scrape, Annotate }
+public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep, Mark, Ink, Burn, Pin, Scrape, Annotate, Quench }
 
 public sealed class CraftStep { public int Iron, Gold, GoldPerRarity; public int[] Heat = { 0, 0 }; }
 public sealed class CageRules { public int Shards = 4, Gold = 30, Redraw = 1, Offered = 3, MinRarity = 2; public int[] Heat = { 5, 7 }; }
@@ -58,6 +58,17 @@ public sealed class SlurryRules
     public Cond? Sold;
     public Dictionary<string, int> Odds = new() { ["up"] = 25, ["affix"] = 25, ["nothing"] = 30, ["down"] = 20 };
     public List<string> Affixes = new();
+}
+/// <summary>The forge's one gamble (bd-gear): a piece quenched in open flame for a shot at a perfect one.
+/// Shards and gold, the piece's remaining heat (it is set after, whatever it comes to), and once a piece.
+/// Odds by weight: perfect (every power to the bright grade), up (two powers a grade, to the forge's cap),
+/// nothing, down (two powers a grade lower), ruin (every power two grades lower).</summary>
+public sealed class QuenchRules
+{
+    public string Crafter = "brannoc", Mark = "quenched";
+    public int Shards = 6, Gold = 120, Up = 2, Down = 2, Ruin = 2;
+    public int[] Heat = { 3, 4 };
+    public Dictionary<string, int> Odds = new() { ["perfect"] = 6, ["up"] = 24, ["nothing"] = 30, ["down"] = 25, ["ruin"] = 15 };
 }
 /// <summary>Where one of a crafter's verbs opens later than the crafter does (Wenna's
 /// tinctures, after the stream's cure), and what they say until it does.</summary>
@@ -141,6 +152,7 @@ public sealed class CraftingRules
     /// <summary>Rook's words over a shelf sold: the first, then any after (the story lead's).</summary>
     public RookLines Rook = new();
     public SlurryRules Slurry = new();
+    public QuenchRules Quench = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
     public NightRules Night = new();
@@ -200,7 +212,7 @@ public static partial class Crafting
     /// <summary>Plain bases and weapons can be worked; a named piece only if it is one of
     /// the Waystation's own (the wolfhide cloak). Somebody else's work is left be.</summary>
     public static bool Workable(ItemDef def) =>
-        def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Cloak or ItemKind.Amulet or ItemKind.Ring or ItemKind.Relic
+        def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Feet or ItemKind.Amulet or ItemKind.Ring
         && (def.Base || def.Weapon != null || def.Workable)
         // A Legendary or a set piece is somebody's work, never the forge's (docs/design/LOOT_DESIGN.md §9).
         && def.Rarity < 4 && def.Set == null;
@@ -1017,6 +1029,101 @@ public static partial class Crafting
         (it.History ??= new()).Add(History(x, s.Crafter, "steep", "Steeped in the Dig's slurry, day {day}"));
     }
 
+
+    /* ----------------------------------------------------------- the quench -- */
+
+    public static bool Quenched(ItemInstance it) => it.Marks?.Contains(Rules.Quench.Mark) == true;
+
+    /// <summary>Quench: the forge's one gamble. The piece goes into open flame for a shot at a perfect one
+    /// (every power to the bright grade), with a real chance of coming out worse. Once a piece, and it
+    /// is set after (no more heat), whatever it comes to. Said in full, odds and all, before it is done.</summary>
+    public static Quote Quench(CraftCtx x, ItemInstance it, string crafter = "brannoc")
+    {
+        var r = Rules.Quench;
+        var q = Begin(Verb.Quench, crafter, "Quench in open flame");
+        q.Takes[Shard] = r.Shards;
+        var (top, _, _) = Terms(crafter, x.Ctx);
+        q.Gold = Price(x, crafter, r.Gold);
+        (q.HeatLo, q.HeatHi) = HeatRange(r.Heat, top);
+        if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
+        else if (Quenched(it)) q.Blocked = "It has been quenched. Once is all a piece takes.";
+        else if (Slurried(it)) q.Blocked = SetForGood;
+        else if (it.Affixes.Count(a => Bindable(Items.Affix(a.Id))) == 0) q.Blocked = "Nothing in it for the flame to take.";
+        else Hot(it, q);
+        q.After = "It is set after, whatever it comes to.";
+        Afford(x, q);
+        return q;
+    }
+
+    /// <summary>The chances of each outcome of a quench, as shares of one (for the card that says them).</summary>
+    public static IEnumerable<(string Outcome, double Chance)> QuenchOdds()
+    {
+        double total = Math.Max(1, Rules.Quench.Odds.Values.Sum());
+        return Rules.Quench.Odds.Select(kv => (kv.Key, kv.Value / total));
+    }
+
+    /// <summary>What each outcome of a quench means, in a few words.</summary>
+    public static string QuenchWords(string outcome) => outcome switch
+    {
+        "perfect" => "every power to the bright grade",
+        "up" => $"{Rules.Quench.Up} powers a grade finer",
+        "nothing" => "nothing changes but the heat",
+        "down" => $"{Rules.Quench.Down} powers a grade lower",
+        _ => $"every power {Rules.Quench.Ruin} grades lower",
+    };
+
+    /// <summary>What a quench came to, said plainly, and how it went (1 a gain, -1 a loss, 0 nothing).</summary>
+    public static (string Text, int Mood) QuenchOutcome(Quote q) => q.Outcome switch
+    {
+        "perfect" => ($"Perfect: every power at the bright grade. {q.After}", 1),
+        "up" => ($"Finer: {q.After}", 1),
+        "down" => ($"A grade lost: {q.Before} to {q.After}", -1),
+        "ruin" => ($"Ruined: {q.Before} to {q.After}", -1),
+        _ => ("The flame took nothing, and gave nothing.", 0),
+    };
+
+    static void Quenching(CraftCtx x, ItemInstance it, Quote q, Rng rng)
+    {
+        var r = Rules.Quench;
+        string pick = rng.Weighted(r.Odds.Keys.ToList(), k => r.Odds[k]);
+        var plain = it.Affixes.Where(a => Bindable(Items.Affix(a.Id))).ToList();
+        var before = new List<string>();
+        var after = new List<string>();
+        void Move(AffixRoll a, int tier)
+        {
+            tier = Math.Clamp(tier, 0, Bright);
+            if (tier == a.Tier) return;
+            before.Add(Line(a.Id, a.Tier));
+            a.Tier = tier;
+            after.Add(Line(a.Id, a.Tier));
+            q.Affix ??= a.Id;
+        }
+        // Up to n of the powers that qualify, picked without repeat, in the order the dice give.
+        List<AffixRoll> Choose(List<AffixRoll> from, int n)
+        {
+            var left = from.ToList();
+            var got = new List<AffixRoll>();
+            while (got.Count < n && left.Count > 0) { int k = rng.Int(0, left.Count - 1); got.Add(left[k]); left.RemoveAt(k); }
+            return got;
+        }
+        q.Affix = null;
+        switch (pick)
+        {
+            case "perfect": foreach (var a in plain) Move(a, Bright); break;
+            case "up": foreach (var a in Choose(plain.Where(a => a.Tier < Cap(it)).ToList(), r.Up)) Move(a, a.Tier + 1); break;
+            case "down": foreach (var a in Choose(plain.Where(a => a.Tier > 0).ToList(), r.Down)) Move(a, a.Tier - 1); break;
+            case "ruin": foreach (var a in plain) Move(a, a.Tier - r.Ruin); break;
+        }
+        // A roll that found nothing to move is nothing, said as such.
+        if (before.Count == 0) pick = "nothing";
+        q.Outcome = pick;
+        q.Before = before.Count == 0 ? null : string.Join("; ", before);
+        q.After = before.Count == 0 ? null : string.Join("; ", after);
+        it.Heat = 0;
+        (it.Marks ??= new()).Add(r.Mark);
+        (it.History ??= new()).Add(History(x, q.Crafter, "quench", "Quenched in open flame, day {day}"));
+    }
+
     /* ------------------------------------------------------------- doing -- */
 
     /// <summary>Do a quoted craft that makes something new rather than working a piece: a brew, the
@@ -1070,6 +1177,7 @@ public static partial class Crafting
             Steeped(x, it, q, rng);
             return true;
         }
+        if (q.Verb == Verb.Quench && (Quenched(it) || Slurried(it))) return false;
         if (q.Verb is Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
         if (q.Verb is Verb.Mark or Verb.Annotate && (q.Donor == null || !Inventory.Holds(ch, q.Donor))) return false;
         if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
@@ -1083,6 +1191,14 @@ public static partial class Crafting
             if (it.Chart == null) return false;
             int spent = ChartDone(it, q, rng, ch);
             it.Heat = Math.Max(0, (it.Heat ?? 0) - spent);
+            Worked(x, q.Crafter);
+            return true;
+        }
+        if (q.Verb == Verb.Quench)
+        {
+            // The flame takes the piece's heat as any craft does (one draw), then the dice are thrown.
+            if (q.HeatLo != q.HeatHi) rng.Int(q.HeatLo, q.HeatHi);
+            Quenching(x, it, q, rng);
             Worked(x, q.Crafter);
             return true;
         }

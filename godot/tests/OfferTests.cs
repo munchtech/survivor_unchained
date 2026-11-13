@@ -141,10 +141,13 @@ public class OfferTests
         var a = Callings.Archetype("stalker");
         var j = Journey.Begin(new CreationChoice { Name = "A", Archetype = "stalker", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 9);
         j.Ch.Discovered.AddRange(["gale_chakram", "thornbloom"]);
+        // (bd-keys) A first-level survivor has one key and one auto slot: the type's first calling skill, learned at
+        // creation, would lead the drafts, so it gives up its key before she learns the one she carries.
+        SkillBook.Unslot(j.Ch, "knifestorm");
         Assert.True(SkillBook.Learn(j.Ch, "gale_chakram"));
         Assert.True(SkillBook.Learn(j.Ch, "thornbloom"));
         SkillBook.Unslot(j.Ch, "thornbloom");
-        SkillBook.Unslot(j.Ch, "knifestorm"); // the type's first calling skill, learned at creation, would lead the drafts
+        Assert.Contains("gale_chakram", j.Ch.Slotted);
         var night = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3, arena: true);
         Assert.Equal(SkillBook.NightRank(j.Ch), night.Attuned["gale_chakram"]);
         Assert.Contains("thornbloom", night.Familiar);

@@ -18,8 +18,11 @@ namespace SurvivorUnchained.Rpg;
  * The items themselves are data (data/content/items.json, the web game's
  * own list); the affixes are rules, and are written here. */
 
-public enum ItemKind { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring, Relic, Material, Consumable, Quest, Tool, Trophy, Shoulders, Bracers, Hands, Belt, Legs, Feet }
-public enum EquipSlot { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic, Shoulders, Bracers, Hands, Belt, Legs, Feet }
+/// <summary>Eight places are worn (BUILD_DIRECTION, round 8): weapon, off-hand, head, body (a whole matching set from the
+/// neck down, the boots apart), boots (`Feet`), amulet and two rings. Belt, legs, cloak, bracers, shoulders, hands and relic
+/// were cut on 13 November 2026; <see cref="Items.Retired"/> and <see cref="Inventory.Mend"/> carry old saves over.</summary>
+public enum ItemKind { Weapon, Offhand, Head, Body, Feet, Amulet, Ring, Material, Consumable, Quest, Tool, Trophy }
+public enum EquipSlot { Weapon, Offhand, Head, Body, Feet, Amulet, Ring1, Ring2 }
 
 public sealed class ItemWeapon { public string Id = ""; public int Rank = 1; }
 public sealed class Consumable
@@ -77,6 +80,13 @@ public sealed class ItemDef
     public World.Cond? DropsWhen;
     /// <summary>(M9) A named piece's own ranks to skills while worn (items.json "plus": { "heroic_leap": 1 }).</summary>
     public Dictionary<string, int>? Plus;
+    /// <summary>(13 Nov build direction) Great uniques. Auto: skills the piece grants as always-on auto skills, by skill id -> rank. They
+    /// stack on top of her auto slots without a limit (CombatKit.AutoSkills; Battle reads them) and are granted whether or not her
+    /// calling may carry the skill: the piece is the key. Rewrites: the skills whose use the piece changes (its triggers key on the
+    /// skill, TriggerCond.Weapon). Build: the build the piece makes possible (a short key, shown on the piece).</summary>
+    public Dictionary<string, int>? Auto;
+    public List<string>? Rewrites;
+    public string? Build;
 }
 
 public sealed class AffixDef
@@ -148,10 +158,24 @@ public static class Items
     public static readonly IReadOnlyDictionary<EquipSlot, (string Name, string Glyph)> Places = new Dictionary<EquipSlot, (string Name, string Glyph)>
     {
         [EquipSlot.Weapon] = ("Weapon", "sword"), [EquipSlot.Offhand] = ("Off-hand", "shield"), [EquipSlot.Head] = ("Head", "helm"),
-        [EquipSlot.Body] = ("Body", "armor"), [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"),
-        [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
-        [EquipSlot.Shoulders] = ("Shoulders", "armor"), [EquipSlot.Bracers] = ("Bracers", "fist"), [EquipSlot.Hands] = ("Hands", "hand"),
-        [EquipSlot.Belt] = ("Belt", "chain"), [EquipSlot.Legs] = ("Legs", "armor"), [EquipSlot.Feet] = ("Feet", "boot"),
+        [EquipSlot.Body] = ("Body", "armor"), [EquipSlot.Feet] = ("Boots", "boot"), [EquipSlot.Amulet] = ("Amulet", "amulet"),
+        [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"),
+    };
+
+    /// <summary>The equipment slots the 13 November 2026 cut removed, by the name an old save wrote them under
+    /// (the camel-cased property names of Equipment and the entries of a kit's NightOwn).</summary>
+    public static readonly string[] RetiredSlots = ["cloak", "relic", "shoulders", "bracers", "hands", "belt", "legs"];
+
+    /// <summary>Item ids the cut removed, and what a copy in an old save becomes (null: nothing, it is let go). A piece a
+    /// story or a shop still names kept its id and changed kind instead (items.json), so it is not here.</summary>
+    public static readonly IReadOnlyDictionary<string, string?> Retired = new Dictionary<string, string?>
+    {
+        ["travelers_cloak"] = "travelers_boots",
+        ["reaver_loinbelt"] = null, ["reaver_gstring"] = null, ["reaver_wristfurs"] = null,
+        ["ranger_belt"] = null, ["ranger_breeches"] = null, ["ranger_spaulders"] = null, ["ranger_bracers"] = null, ["ranger_gloves"] = null,
+        ["warden_tassets"] = null, ["warden_legplate"] = null, ["warden_pauldrons"] = null, ["warden_vambraces"] = null,
+        ["riveted_bracers_cut_for_her"] = null, ["riveted_pauldrons_cut_for_her"] = null,
+        ["lamed_pauldrons"] = null, ["forged_gstring"] = null,
     };
 
     /// <summary>Adds a def (tests, and pieces not yet in items.json). Copy-on-write, so readers on other threads never see a dictionary change under them.</summary>
@@ -176,7 +200,7 @@ public static class Items
     static string F1(double v) => v.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>Every kind of piece that is worn (declared before the affixes, which read it).</summary>
-    static readonly ItemKind[] Gear = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic];
+    static readonly ItemKind[] Gear = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Feet, ItemKind.Amulet, ItemKind.Ring];
 
     /// <summary>A Mark's strength from its grade: 0 at grade I, 1 at grade VI (combat lerps across it).</summary>
     public static double MarkStrength(int tier) => Math.Clamp(tier / 5.0, 0, 1);
@@ -198,7 +222,7 @@ public static class Items
                 list.Add(new AffixDef
                 {
                     Id = PlusId(id), Name = $"of the {shortName}", Prefix = false, Plus = id, MinRarity = 2,
-                    Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
+                    Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head],
                     Text = _ => $"+1 to {skill}",
                 });
             }
@@ -213,11 +237,11 @@ public static class Items
 
     public static readonly AffixDef[] BaseAffixes =
     [
-        new() { Id = "sturdy", Name = "Sturdy", Prefix = true, Slots = [ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Offhand],
+        new() { Id = "sturdy", Name = "Sturdy", Prefix = true, Slots = [ItemKind.Head, ItemKind.Body, ItemKind.Feet, ItemKind.Offhand],
             Mods = t => [M(Stat.Armor, ModKind.Flat, 1 + t)], Text = t => $"+{1 + t} armor" },
         new() { Id = "hale", Name = "Hale", Prefix = true, Slots = [ItemKind.Body, ItemKind.Amulet, ItemKind.Ring, ItemKind.Head],
             Mods = t => [M(Stat.MaxHealth, ModKind.Flat, 10 + t * 8)], Text = t => $"+{10 + t * 8} maximum health" },
-        new() { Id = "fleet", Name = "Fleet", Prefix = true, Slots = [ItemKind.Cloak, ItemKind.Ring, ItemKind.Amulet],
+        new() { Id = "fleet", Name = "Fleet", Prefix = true, Slots = [ItemKind.Feet, ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.MoveSpeed, ModKind.Inc, 0.03 + t * 0.02)], Text = t => $"+{Pct(0.03 + t * 0.02)} movement speed" },
         new() { Id = "keen", Name = "Keen", Prefix = true, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head],
             Mods = t => [M(Stat.CritChance, ModKind.Flat, 0.02 + t * 0.015)], Text = t => $"+{F1(2 + t * 1.5)}% critical chance" },
@@ -227,19 +251,19 @@ public static class Items
             Mods = t => [M(Stat.DamageOf(School.Frost), ModKind.Inc, 0.08 + t * 0.05)], Text = t => $"+{Pct(0.08 + t * 0.05)} frost damage" },
         new() { Id = "honed", Name = "Honed", Prefix = true, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Offhand],
             Mods = t => [M(Stat.DamageOf(School.Physical), ModKind.Inc, 0.08 + t * 0.05)], Text = t => $"+{Pct(0.08 + t * 0.05)} physical damage" },
-        new() { Id = "hallowed", Name = "Hallowed", Prefix = true, Slots = [ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+        new() { Id = "hallowed", Name = "Hallowed", Prefix = true, Slots = [ItemKind.Amulet, ItemKind.Ring],
             Mods = t => [M(Stat.DamageOf(School.Holy), ModKind.Inc, 0.1 + t * 0.05)], Text = t => $"+{Pct(0.1 + t * 0.05)} holy damage" },
-        new() { Id = "of_haste", Name = "of Haste", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Cloak],
+        new() { Id = "of_haste", Name = "of Haste", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Feet],
             Mods = t => [M(Stat.Cooldown, ModKind.More, -(0.03 + t * 0.02))], Text = t => $"{Pct(0.03 + t * 0.02)} faster weapons" },
         new() { Id = "of_reach", Name = "of Reach", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head],
             Mods = t => [M(Stat.Area, ModKind.Inc, 0.05 + t * 0.03)], Text = t => $"+{Pct(0.05 + t * 0.03)} area" },
-        new() { Id = "of_the_wolf", Name = "of the Wolf", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Head, ItemKind.Amulet],
+        new() { Id = "of_the_wolf", Name = "of the Wolf", Prefix = false, Slots = [ItemKind.Feet, ItemKind.Body, ItemKind.Head, ItemKind.Amulet],
             Mods = t => [M(Stat.FromOf(Family.Wolf), ModKind.Flat, 0.1 + t * 0.05)], Text = t => $"{Pct(0.1 + t * 0.05)} less damage from wolves" },
-        new() { Id = "of_embers", Name = "of Embers", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Relic],
+        new() { Id = "of_embers", Name = "of Embers", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.XpGain, ModKind.Inc, 0.05 + t * 0.03)], Text = t => $"+{Pct(0.05 + t * 0.03)} ember gained" },
         new() { Id = "of_mending", Name = "of Mending", Prefix = false, Slots = [ItemKind.Body, ItemKind.Amulet, ItemKind.Ring],
             Mods = t => [M(Stat.Regen, ModKind.Flat, 0.2 + t * 0.2)], Text = t => $"+{F1(0.2 + t * 0.2)} health per second" },
-        new() { Id = "of_the_grave", Name = "of the Grave", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Amulet],
+        new() { Id = "of_the_grave", Name = "of the Grave", Prefix = false, Slots = [ItemKind.Feet, ItemKind.Body, ItemKind.Amulet],
             Mods = t => [M(Stat.ResistOf(School.Shadow), ModKind.Flat, 0.08 + t * 0.05), M(Stat.FromOf(Family.Undead), ModKind.Flat, 0.05 + t * 0.03)],
             Text = t => $"+{Pct(0.08 + t * 0.05)} shadow resistance; less from the dead" },
 
@@ -257,19 +281,19 @@ public static class Items
             Text = t => $"+{Pct(0.15 + t * 0.08)} damage to Kerchiefs and outlaws" },
         new() { Id = "cruel", Name = "Cruel", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.CritDamage, ModKind.Flat, 0.15 + t * 0.1)], Text = t => $"+{Pct(0.15 + t * 0.1)} critical damage" },
-        new() { Id = "surefooted", Name = "Surefooted", Prefix = true, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Ring],
+        new() { Id = "surefooted", Name = "Surefooted", Prefix = true, Slots = [ItemKind.Feet, ItemKind.Body, ItemKind.Ring],
             Mods = t => [M(Stat.Tenacity, ModKind.Flat, 0.15 + t * 0.1)], Text = t => $"Slows on you {Pct(0.15 + t * 0.1)} shorter and weaker" },
-        new() { Id = "of_the_hearth", Name = "of the Hearth", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Head, ItemKind.Amulet],
+        new() { Id = "of_the_hearth", Name = "of the Hearth", Prefix = false, Slots = [ItemKind.Feet, ItemKind.Body, ItemKind.Head, ItemKind.Amulet],
             Mods = t => [M(Stat.ResistOf(School.Frost), ModKind.Flat, 0.1 + t * 0.06), M(Stat.Tenacity, ModKind.Flat, 0.08 + t * 0.04)],
             Text = t => $"+{Pct(0.1 + t * 0.06)} frost resistance; the cold slows you less" },
-        new() { Id = "of_the_salamander", Name = "of the Salamander", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Head, ItemKind.Ring],
+        new() { Id = "of_the_salamander", Name = "of the Salamander", Prefix = false, Slots = [ItemKind.Feet, ItemKind.Body, ItemKind.Head, ItemKind.Ring],
             Mods = t => [M(Stat.ResistOf(School.Fire), ModKind.Flat, 0.12 + t * 0.07)], Text = t => $"+{Pct(0.12 + t * 0.07)} fire resistance" },
         new() { Id = "of_the_physician", Name = "of the Physician", Prefix = false, Slots = [ItemKind.Body, ItemKind.Amulet, ItemKind.Ring],
             Mods = t => [M(Stat.ResistOf(School.Nature), ModKind.Flat, 0.12 + t * 0.07), M(Stat.Healing, ModKind.Inc, 0.05 + t * 0.04)],
             Text = t => $"+{Pct(0.12 + t * 0.07)} poison resistance; +{Pct(0.05 + t * 0.04)} mending" },
-        new() { Id = "of_the_lantern", Name = "of the Lantern", Prefix = false, Slots = [ItemKind.Head, ItemKind.Amulet, ItemKind.Relic],
+        new() { Id = "of_the_lantern", Name = "of the Lantern", Prefix = false, Slots = [ItemKind.Head, ItemKind.Amulet],
             Mods = t => [M(Stat.LightRadius, ModKind.Inc, 0.15 + t * 0.1)], Text = t => $"Your light carries {Pct(0.15 + t * 0.1)} further" },
-        new() { Id = "of_the_art", Name = "of the Art", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
+        new() { Id = "of_the_art", Name = "of the Art", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head],
             Mods = t => [M(Stat.AbilityCooldown, ModKind.More, -(0.05 + t * 0.03)), M(Stat.AbilityPower, ModKind.Inc, 0.05 + t * 0.05)],
             Text = t => $"Your art {Pct(0.05 + t * 0.03)} sooner and {Pct(0.05 + t * 0.05)} stronger" },
 
@@ -280,13 +304,13 @@ public static class Items
 
         /* The slurry's, past the seams (design 9): strong, and each with its price. */
         new() { Id = "fevered", Name = "Fevered", Prefix = true, Unique = true, Slurry = true,
-            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Slots = Gear,
             Mods = _ => [M(Stat.Damage, ModKind.Inc, 0.2), M(Stat.Healing, ModKind.Inc, -0.15)], Text = _ => "+20% damage; you mend 15% less" },
         new() { Id = "of_the_sump", Name = "of the Sump", Prefix = false, Unique = true, Slurry = true,
-            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Slots = Gear,
             Mods = _ => [M(Stat.Area, ModKind.Inc, 0.25), M(Stat.MoveSpeed, ModKind.Inc, -0.1)], Text = _ => "+25% area; you are 10% slower" },
         new() { Id = "pipe_lads", Name = "Pipe-Lad's", Prefix = true, Unique = true, Slurry = true,
-            Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
+            Slots = Gear,
             Mods = _ => [M(Stat.CritChance, ModKind.Flat, 0.15), M(Stat.MaxHealth, ModKind.Inc, -0.1)], Text = _ => "+15% critical chance; 10% less health" },
 
         /* Marks (design 20.3; combat's behaviours in Sim/Marks.cs): inscribed, never rolled; a grade I to VI
@@ -301,28 +325,28 @@ public static class Items
             Text = t => $"In the maps: Axe Gyre gains an axe for every {MathX.RoundInt(Sim.Marks.Lerp(6, 3, MarkStrength(t)))} foes within 5 m, to three more" },
 
         /* Skills worn: fine gear that fights for you. */
-        new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,
+        new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,
             Text = _ => "Grants the skill Seeking Motes" },
-        new() { Id = "of_the_gyre", Name = "of the Gyre", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "axe_gyre", MinRarity = 2,
+        new() { Id = "of_the_gyre", Name = "of the Gyre", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Grants = "axe_gyre", MinRarity = 2,
             Text = _ => "Grants the skill Axe Gyre" },
-        new() { Id = "of_cinders", Name = "of Cinders", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "cinderfall", MinRarity = 2,
+        new() { Id = "of_cinders", Name = "of Cinders", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Grants = "cinderfall", MinRarity = 2,
             Text = _ => "Grants the skill Cinderfall" },
-        new() { Id = "of_dawn", Name = "of Dawn", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "dawnpulse", MinRarity = 2,
+        new() { Id = "of_dawn", Name = "of Dawn", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Grants = "dawnpulse", MinRarity = 2,
             Text = _ => "Grants the skill Dawnpulse" },
-        new() { Id = "of_knives", Name = "of Knives", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "knifestorm", MinRarity = 2,
+        new() { Id = "of_knives", Name = "of Knives", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Grants = "knifestorm", MinRarity = 2,
             Text = _ => "Grants the skill Knifestorm" },
 
         /* Kindled: gear that shapes the ember without owning it. Rare and up,
          * one to an item, two to a survivor (Inventory.MaxKindled). */
-        new() { Id = "of_the_first_spark", Name = "of the First Spark", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic], Kindled = "spark", MinRarity = 2,
+        new() { Id = "of_the_first_spark", Name = "of the First Spark", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Kindled = "spark", MinRarity = 2,
             Text = _ => "Kindled: the ember starts a level higher" },
         new() { Id = "of_second_thoughts", Name = "of Second Thoughts", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Head], Kindled = "reroll", MinRarity = 2,
             Text = _ => "Kindled: one more redraw in the ember's drafts" },
         new() { Id = "of_refusal", Name = "of Refusal", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Head], Kindled = "refusal", MinRarity = 2,
             Text = _ => "Kindled: one more banishing in the ember's drafts" },
-        new() { Id = "of_many_roads", Name = "of Many Roads", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Cloak], Kindled = "roads", MinRarity = 2,
+        new() { Id = "of_many_roads", Name = "of Many Roads", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Head], Kindled = "roads", MinRarity = 2,
             Text = _ => "Kindled: the ember's drafts show a fourth card" },
-        new() { Id = "of_omens", Name = "of Omens", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic], Kindled = "omens", MinRarity = 2,
+        new() { Id = "of_omens", Name = "of Omens", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Ring], Kindled = "omens", MinRarity = 2,
             Text = _ => "Kindled: great blessings offer a fourth choice" },
         Stand("of_the_whetstone", "of the Whetstone", "serration"),
         Stand("of_rime", "of Rime", "chilling"),
@@ -349,7 +373,7 @@ public static class Items
     /// passive slot to spare (never without the rank-8 climb).</summary>
     static AffixDef Stand(string id, string name, string passive) => new()
     {
-        Id = id, Name = name, Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Cloak, ItemKind.Body], Kindled = $"stand:{passive}", MinRarity = 2,
+        Id = id, Name = name, Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Feet, ItemKind.Body], Kindled = $"stand:{passive}", MinRarity = 2,
         Text = _ => $"Kindled: counts as {Content.Boons.Find(passive)?.Name ?? passive} in the ember's evolutions",
     };
 
@@ -360,15 +384,8 @@ public static class Items
         ItemKind.Offhand => EquipSlot.Offhand,
         ItemKind.Head => EquipSlot.Head,
         ItemKind.Body => EquipSlot.Body,
-        ItemKind.Cloak => EquipSlot.Cloak,
         ItemKind.Amulet => EquipSlot.Amulet,
         ItemKind.Ring => EquipSlot.Ring1,
-        ItemKind.Relic => EquipSlot.Relic,
-        ItemKind.Shoulders => EquipSlot.Shoulders,
-        ItemKind.Bracers => EquipSlot.Bracers,
-        ItemKind.Hands => EquipSlot.Hands,
-        ItemKind.Belt => EquipSlot.Belt,
-        ItemKind.Legs => EquipSlot.Legs,
         ItemKind.Feet => EquipSlot.Feet,
         _ => null,
     };
@@ -379,4 +396,28 @@ public static class Items
         EquipSlot.Offhand => def.Kind == ItemKind.Offhand || (def.Kind == ItemKind.Weapon && def.Weapon != null),
         _ => def.Kind.Key() == slot.Key(),
     };
+}
+
+/// <summary>A list of slots read tolerantly: a place an old save names that the 13 November cut removed (its night kit's cloak) is let
+/// go, never an error (the save would be set aside as broken); the piece itself is in the kit's Equipment.Retired (Inventory.Mend).</summary>
+public sealed class EquipSlotListConverter : System.Text.Json.Serialization.JsonConverter<List<EquipSlot>>
+{
+    public override List<EquipSlot> Read(ref System.Text.Json.Utf8JsonReader r, Type t, System.Text.Json.JsonSerializerOptions o)
+    {
+        var list = new List<EquipSlot>();
+        if (r.TokenType != System.Text.Json.JsonTokenType.StartArray) { r.Skip(); return list; }
+        while (r.Read() && r.TokenType != System.Text.Json.JsonTokenType.EndArray)
+        {
+            string? name = r.TokenType == System.Text.Json.JsonTokenType.String ? r.GetString() : null;
+            if (name != null && Enum.TryParse<EquipSlot>(name, true, out var slot)) list.Add(slot);
+        }
+        return list;
+    }
+
+    public override void Write(System.Text.Json.Utf8JsonWriter w, List<EquipSlot> v, System.Text.Json.JsonSerializerOptions o)
+    {
+        w.WriteStartArray();
+        foreach (var s in v) w.WriteStringValue(char.ToLowerInvariant(s.ToString()[0]) + s.ToString()[1..]);
+        w.WriteEndArray();
+    }
 }

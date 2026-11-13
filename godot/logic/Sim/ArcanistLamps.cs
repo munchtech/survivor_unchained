@@ -18,7 +18,7 @@ public sealed partial class Battle
     int lastSide, pendingSide, volleyId;
     WeaponInst? castingW, statusWeapon;
     readonly List<(double Due, WeaponInst W)> echoes = new();
-    readonly Dictionary<int, (double T, HashSet<int> Hit)> volleyHit = new();
+    readonly Dictionary<int, (double T, HashSet<Lifetime> Hit)> volleyHit = new();   // (SU-091) struck things by lifetime
     readonly Dictionary<string, (int Id, double T, int N)> volleyOf = new();
     static readonly Tag[] ShatterTags = [Tag.Explosion, Tag.Frost];
 
@@ -190,7 +190,7 @@ public sealed partial class Battle
         volleyOf[w.Id] = v;
         pr.Volley = v.Id;
         pr.VolleyHard = CrowdShare(w) >= 1;
-        volleyHit.TryAdd(v.Id, (Time, new HashSet<int>()));
+        volleyHit.TryAdd(v.Id, (Time, new HashSet<Lifetime>()));
         // Each looses at a different thing: the k-th nearest.
         var near = HostilesInRadius(Player.X, Player.Z, 14);
         if (near.Count == 0 || pr.Seek is Seek.Elite or Seek.Strongest or Seek.Marked) return;
@@ -199,12 +199,12 @@ public sealed partial class Battle
     }
 
     /// <summary>moonweaver.crowded_sky: no two of a volley strike the same thing.</summary>
-    bool VolleyTaken(Projectile pr, int enemy) => pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(enemy);
+    bool VolleyTaken(Projectile pr, Enemy enemy) => pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(Lifetime.Of(enemy));
 
     /// <summary>A player projectile struck: the volley remembers it, and Split Motes split on a kill.</summary>
     void ArcanistOnProjectileHit(Projectile pr, Enemy e, WeaponInst? weapon)
     {
-        if (pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v)) v.Hit.Add(e.Id);
+        if (pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v)) v.Hit.Add(Lifetime.Of(e));
         // moonweaver.seeking_motes.split_motes: a mote that kills splits in two (design pick: each at half).
         if (weapon?.Def.Id != "seeking_motes" || !Lamp("motes.split") || e.State != EnemyState.Dying || pr.Depth >= 1) return;
         for (int i = 0; i < 2; i++)
@@ -216,7 +216,7 @@ public sealed partial class Battle
             c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
             c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
             c.AimAlongVelocity();
-            c.Hits.Add(e.Id); c.HitTimes.Add(Time);
+            c.Hits.Add(Lifetime.Of(e)); c.HitTimes.Add(Time);
         }
     }
 

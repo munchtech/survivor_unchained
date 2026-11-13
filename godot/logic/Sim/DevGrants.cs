@@ -32,7 +32,7 @@ public static class DevGrants
                 // (what happened, said as it is: a union holds two keys; an unknown id is not "no slot free")
                 said.Add(w != null ? $"grant: {id} rank {rank} on slot {w.Slot + 1}{(w.Slot2 >= 0 ? $" and {w.Slot2 + 1}" : "")}"
                     : !Content.Weapons.All.ContainsKey(id) ? $"grant: {id} not added (no such skill)"
-                    : $"grant: {id} not added (needs {Content.Weapons.SlotCost(id)} of the keys, {Content.Weapons.MaxWeapons - b.SlotsUsed} free: {b.SlotsUsed}/{Content.Weapons.MaxWeapons} held)");
+                    : $"grant: {id} not added (needs {Content.Weapons.SlotCost(id)} of the keys, {b.KeyCount - b.SlotsUsed} free: {b.SlotsUsed}/{b.KeyCount} held)");
             }
         if (!string.IsNullOrWhiteSpace(union))
         {
@@ -42,7 +42,7 @@ public static class DevGrants
             said.Add(w != null ? $"grant-union: {union} on slots {w.Slot + 1} and {w.Slot2 + 1}"
                 : u == null ? $"grant-union: {union} not added (no such union)"
                 : had != null ? $"grant-union: {union} already carried on slots {had.Slot + 1} and {had.Slot2 + 1}"
-                : $"grant-union: {union} not added (no two keys free once its parts give theirs: {b.SlotsUsed}/{Content.Weapons.MaxWeapons} held)");
+                : $"grant-union: {union} not added (no two keys free once its parts give theirs: {b.SlotsUsed}/{b.KeyCount} held)");
         }
         if (!string.IsNullOrWhiteSpace(steps))
             foreach (var id in steps.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -72,7 +72,7 @@ public static class DevGrants
             need += Content.Weapons.SlotCost(u.Into) - b.Weapons.Count(w => w.Id == u.A || w.Id == u.B);
         }
         var said = new List<string>();
-        while (need > 0 && b.SlotsUsed + need > Content.Weapons.MaxWeapons && b.Weapons.LastOrDefault(w => !keep.Contains(w.Id)) is { } give)
+        while (need > 0 && b.SlotsUsed + need > b.KeyCount && b.Weapons.LastOrDefault(w => w.Slot < b.KeyCount && !keep.Contains(w.Id)) is { } give)
         {
             b.RemoveWeapon(give.Id);
             said.Add($"grant: {give.Id} gives up its key");

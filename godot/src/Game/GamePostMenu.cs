@@ -90,6 +90,15 @@ public partial class Game
         screens.Current?.Refresh();
     }
 
+    /// <summary>(bd-ranks) Her road walked at the post: the first choice, or a change (Journey.WalkRoad, refunding the board), and saved.</summary>
+    public void PostRoad(LampPosts.Post at, string road)
+    {
+        if (!PostMenu.LampsOpen(World, Battle, at)) { Toast(new Toast(ToastKind.Warning, "Not with them on you")); return; }
+        if (Journey.WalkRoad(road, at.Zone, at.Id) is { } no) { Toast(new Toast(ToastKind.Warning, no)); return; }
+        Journey.RefreshKit(Battle);
+        Save("road");
+    }
+
     /// <summary>The Lamps at the post, layouts open there while she stays by it, out of a fight (LampBook.Bench).</summary>
     public void PostLamps(LampPosts.Post p)
     {

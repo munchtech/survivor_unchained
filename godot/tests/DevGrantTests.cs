@@ -13,13 +13,13 @@ namespace SurvivorUnchained.Tests;
 public class DevGrantTests
 {
     [Fact]
-    public void A_union_granted_on_six_full_keys_takes_two_and_the_grip_stays()
+    public void A_union_granted_on_four_full_keys_takes_two_and_the_grip_stays()
     {
         var j = MapSim.Survivor("warden", 30, 2, 5);
         var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
         Assert.True(b.Campaign);
         var taught = TaughtBuilds.Of("warden")!;
-        Assert.Equal(Weapons.MaxWeapons, b.SlotsUsed);
+        Assert.Equal(b.KeyCount, b.SlotsUsed); // (bd-keys) her four keys full
         var grip = b.Weapons.Single(w => w.Id == taught.Grip);
         Assert.Equal(0, grip.Slot);
         // (the bare grant is refused: no two keys free)
@@ -31,7 +31,7 @@ public class DevGrantTests
         var storm = b.Weapons.Single(w => w.Id == u.Into);
         Assert.True(storm.Slot >= 0 && storm.Slot2 >= 0 && storm.Slot != storm.Slot2);
         Assert.Contains(said, l => l.StartsWith("grant-union: bladestorm on slots"));
-        Assert.True(b.SlotsUsed <= Weapons.MaxWeapons);
+        Assert.True(b.SlotsUsed <= b.KeyCount);
         // The grip is still carried on the first key, or is the union's own part (then the union answers its key).
         var gripNow = b.Weapons.Find(w => w.Id == taught.Grip);
         if (taught.Grip == u.A || taught.Grip == u.B) Assert.True(storm.Slot == 0 || storm.Slot2 == 0);
@@ -60,9 +60,9 @@ public class DevGrantTests
         {
             Name = "Wren", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, 99);
-        // The clip's old veteran: --xp 100000000.
+        // The clip's old veteran: --xp to level 30 (bd-ranks: 100000000 was the old cap's; the cap is 75 now).
         var bare = Quick();
-        Character.GainXp(bare.Ch, 100000000);
+        Character.GainXp(bare.Ch, Enumerable.Range(1, 29).Sum(Character.XpForLevel));
         var bb = Fight(bare);
         Assert.Equal(30, bare.Ch.Level);
         Assert.True(bare.Ch.Points > 50, $"{bare.Ch.Points} points unspent");
@@ -75,7 +75,7 @@ public class DevGrantTests
         foreach (bool xp in new[] { false, true })
         {
             var game = Quick();
-            if (xp) Character.GainXp(game.Ch, 100000000);
+            if (xp) Character.GainXp(game.Ch, Enumerable.Range(1, 29).Sum(Character.XpForLevel));
             Assert.StartsWith("veteran: level 30, gear rarity 2", DevVeteran.Apply(game.Ch, "30:2", 5));
             Assert.Equal(simLine, DevVeteran.Line(Fight(game), game));
         }
