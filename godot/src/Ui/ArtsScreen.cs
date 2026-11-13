@@ -44,7 +44,16 @@ public partial class ArtsScreen : Overlay
     static int Pages => BoardOn ? 4 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills", "Lamps", "Wicks"];
 
-    public ArtsScreen(Game g) : base(g) { }
+    public ArtsScreen(Game g) : base(g)
+    {
+        // --arts-skill ID[:index] (pictures): the Skills page with that skill chosen, and that socket's chooser open.
+        if (Args.Get("arts-skill") is string a)
+        {
+            var p = a.Split(':');
+            page = 1; selSkill = p[0];
+            if (p.Length > 1 && int.TryParse(p[1], out var i)) { sockSkill = p[0]; sockIdx = i; }
+        }
+    }
 
     bool Safe => G.Battle is not { Combat: true };
 
@@ -492,6 +501,113 @@ public partial class ArtsScreen : Overlay
         return b;
     }
 
+    // The socket block (bd-ui W11): which socket's chooser is open (one at a time).
+    string? sockSkill;
+    int sockIdx = -1;
+
+    static SupportDef? Held(CharacterData ch, string skill, int i) =>
+        ch.Gems.Sockets.TryGetValue(skill, out var row) && i < row.Count && row[i] != null ? Supports.Find(row[i]!) : null;
+
+    /// <summary>The skill's sockets: two wells and, on a click, the chooser of the gems she owns that fit it.</summary>
+    void SocketBlock(VBoxContainer d, CharacterData ch, WeaponDef w)
+    {
+        if (SocketModel.Halves(w.Id) is { } halves) { UnionSockets(d, ch, halves); return; }
+        int rank = SkillBook.RankOf(ch, w.Id), open = Supports.SocketsAt(rank), n = Supports.File.Sockets.Ranks.Count;
+        d.AddChild(Kit.Head("Sockets", SocketModel.Note(rank)));
+        var wells = Style.H(18);
+        for (int i = 0; i < n; i++)
+        {
+            int idx = i;
+            var gem = Held(ch, w.Id, i);
+            bool isOpen = i < open;
+            var look = !isOpen ? GemSocket.Look.Closed : gem != null ? GemSocket.Look.Filled : GemSocket.Look.Empty;
+            var well = new GemSocket(look, gem);
+            var col = Style.V(4, well);
+            col.CustomMinimumSize = new Vector2(190, 0);
+            if (isOpen)
+            {
+                well.Clickable();
+                well.Selected = sockSkill == w.Id && sockIdx == i;
+                well.Pressed += () => { bool same = sockSkill == w.Id && sockIdx == idx; sockSkill = same ? null : w.Id; sockIdx = same ? -1 : idx; Sound.Sfx.Click(); Refresh(); };
+                Nav.Mark(well, $"socket:{i}", well.Press);
+                col.AddChild(gem != null ? Style.Label(gem.Name, Style.UiBold, 14, Kit.Ink, false, HorizontalAlignment.Center)
+                    : Style.Label("empty", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
+            }
+            else
+            {
+                string at = SocketModel.RomanOf(Supports.File.Sockets.Ranks[i]);
+                col.AddChild(Style.Label($"rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
+                if (gem != null) col.AddChild(Style.Label($"kept; adds nothing below rank {at}", Style.TextItalic, 13, Kit.Dim, true, HorizontalAlignment.Center));
+            }
+            wells.AddChild(col);
+        }
+        d.AddChild(wells);
+        if (sockSkill == w.Id && sockIdx >= 0 && sockIdx < open) Chooser(d, ch, w);
+    }
+
+    void Chooser(VBoxContainer d, CharacterData ch, WeaponDef w)
+    {
+        int idx = sockIdx;
+        var (rows, dont) = SocketModel.Chooser(ch.Gems, w.Id, idx);
+        void Set(string? gem)
+        {
+            sockSkill = null; sockIdx = -1;
+            G.Gear((j, _) => Supports.Socket(j.Ch.Gems, w.Id, SkillBook.RankOf(j.Ch, w.Id), idx, gem));
+            if (gem != null) Sound.Sfx.Equip(); else Sound.Sfx.Click();
+        }
+        if (Held(ch, w.Id, idx) != null) d.AddChild(Nav.Id(Kit.Word("Take it out", () => Set(null), Kit.Ink2, 16), "gem:out"));
+        foreach (var r in rows)
+        {
+            var g = r.Gem;
+            bool free = r.Free > 0;
+            var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 62), MouseDefaultCursorShape = free ? CursorShape.PointingHand : CursorShape.Arrow };
+            foreach (var st in new[] { "normal", "pressed", "focus" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
+            b.AddThemeStyleboxOverride("hover", free ? new StyleBoxFlat { BgColor = Style.Ember with { A = 0.08f } } : new StyleBoxEmpty());
+            if (free) b.Pressed += () => Set(g.Id);
+            Nav.Id(b, $"gem:{g.Id}");
+            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, 32, GemLook.Of(g).Lightened(0.25f));
+            pic.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            var words = Style.V(0, Style.Label(g.Name, Style.DisplayLight, 16, Kit.Ink), Style.Label(g.Text, Style.Text, 14, Kit.Ink2, true));
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            var count = Style.Label(free ? $"{r.Owned} owned · {r.Free} free" : "all set elsewhere", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Right);
+            count.CustomMinimumSize = new Vector2(140, 0);
+            count.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            var h = Style.H(12, pic, words, count);
+            h.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            h.OffsetLeft = 8; h.OffsetRight = -8;
+            h.MouseFilter = MouseFilterEnum.Ignore;
+            b.AddChild(h);
+            if (!free) b.Modulate = new Color(1, 1, 1, 0.45f);
+            d.AddChild(b);
+        }
+        if (dont > 0) d.AddChild(Style.Label(SocketModel.DontFitLine(dont, w.Name), Style.TextItalic, 14, Kit.Dim, true));
+        if (ch.Gems.Owned.Values.All(v => v <= 0))
+            d.AddChild(Style.Label($"Support gems drop from the {SocketModel.Ordinal(Supports.File.Drop.Level)} level on: champions, bosses, strongboxes.", Style.TextItalic, 14, Kit.Dim, true));
+    }
+
+    /// <summary>A Union has no sockets of its own: it takes both halves' gems, shown read-only under each half's name.</summary>
+    void UnionSockets(VBoxContainer d, CharacterData ch, (string A, string B) halves)
+    {
+        d.AddChild(Kit.Head("Sockets"));
+        d.AddChild(Style.Label("A Union takes the gems of both its halves.", Style.TextItalic, 14, Kit.Dim, true));
+        var cols = Style.H(30);
+        foreach (var id in new[] { halves.A, halves.B })
+        {
+            if (!Weapons.All.TryGetValue(id, out var half)) continue;
+            int rank = SkillBook.RankOf(ch, id), open = Supports.SocketsAt(rank);
+            var wells = Style.H(18);
+            for (int i = 0; i < Supports.File.Sockets.Ranks.Count; i++)
+            {
+                var gem = Held(ch, id, i);
+                wells.AddChild(new GemSocket(i >= open ? GemSocket.Look.Closed : gem != null ? GemSocket.Look.Filled : GemSocket.Look.Empty, gem, 44));
+            }
+            string hid = id;
+            cols.AddChild(Style.V(4, Nav.Id(Kit.Word(half.Name, () => { selSkill = hid; sockSkill = null; sockIdx = -1; Refresh(); }, Kit.Ink2, 16), $"half:{id}"), wells));
+        }
+        d.AddChild(cols);
+    }
+
     Control SkillDetail(CharacterData ch, WeaponDef w)
     {
         var d = Style.V(8);
@@ -508,8 +624,9 @@ public partial class ArtsScreen : Overlay
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"It is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every second level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+        d.AddChild(Style.Label($"It is {SocketModel.RankLine(SkillBook.Rank(ch), SkillBook.RankOf(ch, w.Id))}, and grows with you (every second level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
             (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Kit.Dim, true));
+        if (known) SocketBlock(d, ch, w);
         if (!known)
             d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Kit.Dim, true));
         else if (!Safe)
@@ -519,7 +636,7 @@ public partial class ArtsScreen : Overlay
         else if (ch.Slotted.Count < SkillBook.Slots(ch))
             d.AddChild(Nav.Id(Kit.Word($"Carry {w.Name}", () => G.Gear((j, _) => SkillBook.Slot(j.Ch, w.Id)), Style.EmberHi, 17), "carry"));
         else
-            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level, the eighth, the fourteenth and the twentieth.", Style.TextItalic, 14, Kit.Dim, true));
+            d.AddChild(Style.Label($"Your hands are full: put one down first. {SocketModel.MoreRoomLine(ch.Level)}", Style.TextItalic, 14, Kit.Dim, true));
         return d;
     }
 }

@@ -313,6 +313,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Get("veteran") is string vet) GD.Print(DevVeteran.Apply(Journey.Ch, vet, (int)Args.Num("seed", 1)));
         // (bd-ui W4: --veteran dresses Head, Body, Amulet and both Rings over what Begin wore for --equip: wear those again)
         if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
+        // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
+        DevSockets.Apply(Journey.Ch);
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
