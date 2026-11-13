@@ -134,6 +134,7 @@ public partial class BattleFx
                 Light(p.X, gy, p.Z, Lit.Set, 0, 0.6f, 2.8f * grow, Verdigris, 0.95f * flare);
                 break;
             case LootTier.Legendary or LootTier.Storied:
+                if (tier == LootTier.Legendary && GiftSchool(p) is { } gs) GiftLook(p, gy, t, age, gs);
                 Pillar(p, gy, t, tier == LootTier.Legendary ? LegendAmber : StoriedRed, tier == LootTier.Storied);
                 break;
             case LootTier.Gem:
@@ -165,6 +166,31 @@ public partial class BattleFx
                 // (a chest, or a book: a short glow in its colour to find it by)
                 Light(p.X, gy, p.Z, Lit.Glow, 0, 0.55f, 1.2f * grow, fallback, 0.6f);
                 break;
+        }
+    }
+
+    /// <summary>(bd-ui2) The calling of the battle being drawn (set by Pickups), so a drop can tell whether it is a gift.</summary>
+    string? lootCalling;
+
+    /// <summary>The school of the skill a Legendary on the ground grants that her calling is not taught (a gift), else null.</summary>
+    Color? GiftSchool(Pickup p) =>
+        lootCalling is { } c && p.Payload is Rpg.ItemInstance it && Rpg.Drops.GiftSkill(it, c) is { } sk && Content.Weapons.All.TryGetValue(sk, out var wd)
+            ? Ui.ItemViews.SchoolColors[wd.School] : null;
+
+    /// <summary>(bd-ui2) A gift's light, on top of the Legendary's pillar (drawn after this): the gem family's language. A pool of the granted
+    /// skill's school color under the amber, a white-gold four-point star glint every 1.2 s (bigger than the gem's 0.9), and star motes rising in the school color.</summary>
+    void GiftLook(Pickup p, float gy, float t, float age, Color school)
+    {
+        float poolIn = age < 0 ? 1 : Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
+        if (poolIn > 0.001f) Light(p.X, Y(p.X, p.Z), p.Z, Lit.Glow, 0, 1.3f, 0.5f, school, 0.85f * poolIn);
+        if (age < 0 || frameDt <= 0) return;
+        var at = V(p.X, gy + 0.3, p.Z);
+        if ((t + p.Id * 0.37f) % 1.2f < frameDt)
+            Sparks.Spawn(at, Vector3.Zero, 0.5f, 1.5f, new Color(1f, 0.92f, 0.62f) * 2.6f, null, 0.15f, sprite: Sprites.Of("star"), spinV: 3);
+        if (R() < 9 * frameDt)
+        {
+            float a = R() * Mathf.Tau, d = 0.2f + R() * 0.6f;
+            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * d, 0, Mathf.Sin(a) * d), new Vector3(0, 0.8f + R() * 0.5f, 0), 1.2f, 0.14f, school.Lerp(Colors.White, 0.3f) * 2.2f, null, 0.04f, sprite: Sprites.Of("star"), spinV: 2);
         }
     }
 

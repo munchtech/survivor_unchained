@@ -521,6 +521,21 @@ public static class Drops
         return def.Auto.Keys.OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault(k => Content.Weapons.All.ContainsKey(k) && !Content.Weapons.CanCarry(calling, k));
     }
 
+    /// <summary>(bd-ui2) The skill a dropped piece gives that the calling is not taught: a great unique's Auto skill (GiftOf, else its first
+    /// Auto skill), or a rolled affix's Grants the calling cannot carry. Null for every other piece.</summary>
+    public static string? GiftSkill(ItemInstance it, string calling)
+    {
+        var def = Items.Get(it.Def);
+        if (def.Auto is { Count: > 0 } auto)
+            return GiftOf(def, calling) ?? auto.Keys.OrderBy(k => k, StringComparer.Ordinal).First();
+        foreach (var a in it.Affixes)
+            if (Items.Affix(a.Id)?.Grants is { } g && !Content.Weapons.CanCarry(calling, g)) return g;
+        return null;
+    }
+
+    /// <summary>(bd-ui2) A gift: a piece that grants a skill the calling is not taught (a great unique, or a rolled Grants the calling cannot carry).</summary>
+    public static bool IsGift(ItemInstance it, string calling) => GiftSkill(it, calling) != null;
+
     /// <summary>The material a people's carriers drop (crafting's night yields, by people).</summary>
     public static string? PeopleMaterial(string people) => people switch
     {

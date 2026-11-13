@@ -307,12 +307,26 @@ public partial class Game : Node, IZoneHost
         if (Args.Get("met") is string met) foreach (var n in met.Split(',')) World.Npc(n).Flags["met"] = true;
         // --gold N: that much gold in the purse (pictures of a counter with money to spend).
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
+        // (bd-ui2) --anvil DEF:rarity (rare, 2...): that piece made and put in the pack; the forge opens on it (Forge.Build
+        // picks it). Brannoc known, the day (unless --time), and shards and gold enough for his quench so its card is not blocked.
+        if (Args.Get("anvil") is string anv && anv.Split(':') is [var adef, var arar])
+        {
+            int ar = Items.RarityNames.ToList().FindIndex(n => n.Equals(arar, StringComparison.OrdinalIgnoreCase));
+            if (ar < 0) int.TryParse(arar, out ar);
+            Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, adef, rarity: Math.Max(0, ar)));
+            World.Npc("brannoc").Flags["met"] = true;
+            if (!Args.Has("time")) World.Time = TimeOfDay.Day;
+            Journey.Ch.Gold = Math.Max(Journey.Ch.Gold, 400);
+            if (Inventory.Count(Journey.Ch, Crafting.Shard) < 12) Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, Crafting.Shard, 12));
+        }
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         // --veteran L[:G]: the balance harness's survivor of level L in gear of rarity G (Play/DevVeteran.cs: its `--level L`, g2).
         if (Args.Get("veteran") is string vet) GD.Print(DevVeteran.Apply(Journey.Ch, vet, (int)Args.Num("seed", 1)));
         // (bd-ui W4: --veteran dresses Head, Body, Amulet and both Rings over what Begin wore for --equip: wear those again)
         if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
+        // (bd-ui2) --road ID: that road of her calling walked (after --veteran, which walks the first), for pictures of the road page.
+        if (Args.Get("road") is string roadId) LampBook.ChooseRoad(Journey.Ch, roadId);
         // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)
@@ -1946,7 +1960,10 @@ public partial class Game : Node, IZoneHost
                 else quietLabels[key] = (sp, d2, n, name, col);
                 continue;
             }
-            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem, gemDef != null ? GemLook.Of(gemDef) : null));
+            Texture2D? giftGlyph = null;
+            if (tier == LootTier.Legendary && p.Payload is ItemInstance giftIt && b.Calling is { } gcall && Drops.GiftSkill(giftIt, gcall) is { } gsk && Content.Weapons.All.TryGetValue(gsk, out var gdef))
+                giftGlyph = Ui.AutoRow.LineGlyph(Ui.SeatIcon.For(gsk, gdef.Art), 32, Ui.ItemViews.SchoolColors[gdef.School]);
+            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem, gemDef != null ? GemLook.Of(gemDef) : null, giftGlyph));
             labelNear.Add(d2);
         }
         // The loud first (a gem's name loud 2, before every Rare), nearest first; the quiet after them, nearest first: at most LabelsMost, QuietMost of them quiet.
@@ -2110,8 +2127,10 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("loot") && Battle is { } lootB && lootI < (gemLoot ? gemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode == "legendary" ? LootRing.Length - 1 : lootI];
-            lootI = lootMode == "legendary" ? LootRing.Length : lootI + 1;
+            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootI];
+            // --loot gift: the same drop as --loot legendary (same place and time), but a gift unique (herd_callers_horn) in the Legendary's place.
+            if (lootMode == "gift") { def = "herd_callers_horn"; rarity = null; look = Verdict.Emphasised; }
+            lootI = lootMode is "legendary" or "gift" ? LootRing.Length : lootI + 1;
             int ringLen = gemLoot ? gemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)

@@ -1570,6 +1570,9 @@ public partial class BattleFx : Node3D
                     if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
                 }
+                case Ev.Swap e:
+                    Swapped(e);
+                    break;
                 case Ev.Rise e:
                     Rise(e);
                     break;
@@ -2533,6 +2536,7 @@ public partial class BattleFx : Node3D
 
     void Pickups(Battle b, double now)
     {
+        lootCalling = b.Calling;
         // In play's night (her ember's gain over 1) the stones glow up to 1.6 times, so a blue one still reads on the
         // moon's blue-dark ground (E1 round 3: one was lost at the camp's edge).
         float emit = Mathf.Lerp(1f, 1.6f, Mathf.Clamp((Atmosphere.EmberGain - 1) / 0.7f, 0, 1));

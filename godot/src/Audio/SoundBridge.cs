@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
@@ -97,7 +98,12 @@ public sealed class SoundBridge
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;
                 // Loot landing where the filter lets it be heard (docs/design/LOOT_DESIGN.md §8).
-                case Ev.Drop dr when !dr.Quiet: Sfx.Drop(dr.Tier, At(dr.X, dr.Z)); break;
+                case Ev.Drop dr when !dr.Quiet:
+                    Sfx.Drop(dr.Tier, At(dr.X, dr.Z));
+                    // (bd-ui2) A gift's fall: the toll, then the gem's two glass pings a fifth up.
+                    if (dr.Tier == (int)Rpg.LootTier.Legendary && b is { Calling: { } gcall } && b.Pickups.Items.Any(k => k.Alive && Math.Abs(k.X - dr.X) < 0.01 && Math.Abs(k.Z - dr.Z) < 0.01 && k.Payload is Rpg.ItemInstance gi && Rpg.Drops.IsGift(gi, gcall)))
+                        Sfx.GiftPings();
+                    break;
                 case Ev.Ability ab: Sfx.Art(ab.Id); break;
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
                 case Ev.LevelUp: Sfx.LevelUp(b != null && LevelUp.BlessingNext(b)); break;

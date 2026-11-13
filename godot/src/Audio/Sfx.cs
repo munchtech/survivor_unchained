@@ -486,6 +486,14 @@ public static partial class Sfx
         }
     }
 
+    /// <summary>(bd-ui2) A gift's fall, after the toll: the gem's two glass pings, a fifth up (pitch x1.5), about 0.35 s later.</summary>
+    public static void GiftPings()
+    {
+        if (A is not { } a) return;
+        a.Play(new Fm { T = Now + 0.35, F = 1760 * 1.5, Ratio = 3.0, Index = 0.7, A = 0.001, D = 0.55, G = 0.03, Verb = 0.5 });
+        a.Play(new Fm { T = Now + 0.42, F = 2637 * 1.5, Ratio = 3.0, Index = 0.5, A = 0.001, D = 0.5, G = 0.022, Verb = 0.5 });
+    }
+
     /// <summary>A Legendary has fallen: the horde's sound drops by half for a moment, and the toll
     /// sounds, a deep bell with its fifth and octave, long in the air, heard for nothing else; a
     /// rising shimmer after. Faint: the reminder while it lies untaken.</summary>
