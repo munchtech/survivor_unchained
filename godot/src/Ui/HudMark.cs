@@ -11,9 +11,12 @@ public sealed class HudMark
     public TelegraphShape Shape;
     public double X, Z, X1, Z1, Radius, Inner, Width, Angle, Arc, Until;
     public string Name = "";
+    /// <summary>The telegraph's id (0: none): a Land, Off or re-mark of the same id ends it (SU-067).</summary>
+    public int Id;
 
     public HudMark(Ev.Telegraph t, double until)
     {
+        Id = t.Id;
         Shape = t.Shape; X = t.X; Z = t.Z; X1 = t.X1 ?? t.X; Z1 = t.Z1 ?? t.Z; Radius = t.Radius; Inner = t.Inner;
         Width = t.Width ?? 1; Angle = t.Angle ?? 0; Arc = t.Arc ?? Math.PI / 2; Until = until;
         Name = t.Label ?? t.Shape.ToString().ToLowerInvariant();

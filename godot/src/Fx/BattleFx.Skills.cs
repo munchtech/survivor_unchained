@@ -1308,7 +1308,7 @@ public partial class BattleFx
         _ => (Colors.Transparent, Inside.Runes, 0),
     };
 
-    readonly System.Collections.Generic.Dictionary<int, (Mark Edge, Mark Fill)> grounds = new();
+    readonly System.Collections.Generic.Dictionary<Lifetime, (Mark Edge, Mark Fill)> grounds = new();
 
     /// <summary>The colour inside a ground: its edge's, but for frostfire's burning inside its frost.</summary>
     static Color FillOf(string art, Color edge) => art == "frostfire_ground" ? Hdr("#ff8a2a", 1.6f) : edge;
@@ -1323,7 +1323,14 @@ public partial class BattleFx
         rimTex ??= RimTexture();
         veinTex ??= VeinTexture();
         float r = (float)z.Radius;
-        if (!grounds.TryGetValue(z.Id, out var g) || !g.Edge.Active)
+        var zl = Lifetime.Of(z);
+        if (grounds.TryGetValue(zl, out var og) && og.Edge.Active && (og.Edge.MadeOwner != z.Owner || og.Edge.MadeArt != z.Art))
+        {
+            og.Edge.Active = false; og.Edge.Decal.Visible = false;   // (SU-069: a reused slot's old view)
+            og.Fill.Active = false; og.Fill.Decal.Visible = false;
+            grounds.Remove(zl);
+        }
+        if (!grounds.TryGetValue(zl, out var g) || !g.Edge.Active)
         {
             // Lit by the colour alone (a decal's emission ignores alpha), so each
             // is premultiplied: the importer bleeds colour into the clear pixels,
@@ -1338,8 +1345,9 @@ public partial class BattleFx
             };
             var fill = Ground(z.X, z.Z, r, fillTex, FillOf(z.Art, edgeCol), 1e6f, 1.0f);
             var edge = Ground(z.X, z.Z, r, rimTex, edgeCol, 1e6f, 2.2f);
+            edge.MadeOwner = fill.MadeOwner = z.Owner; edge.MadeArt = fill.MadeArt = z.Art;
             g = (edge, fill);
-            grounds[z.Id] = g;
+            grounds[zl] = g;
             // Thornbloom bursts up all at once under the crowd: brambles across the whole of it,
             // standing as long as it holds them (a green ring with a few thorns read as any circle).
             if (inside == Inside.Roots)
@@ -1378,8 +1386,8 @@ public partial class BattleFx
         // hid her), turning slowly.
         g.Fill.Decal.Modulate = Dim(FillOf(z.Art, edgeCol), fade * (inside == Inside.Runes ? 0.14f : inside == Inside.Veins ? 0.12f : 0.2f) * hush);
         g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
-        if (inside == Inside.Runes) RuneRing(z.Id, at, r, fade * hush, now);
-        else if (inside == Inside.Embers) FirePatch(z.Id, at, r, fade);
+        if (inside == Inside.Runes) RuneRing(zl, at, r, fade * hush, now);
+        else if (inside == Inside.Embers) FirePatch(zl, at, r, fade);
         // What lives in it, sparse.
         var pal = Palette.Of(Palette.OfArt(z.Art));
         if (R() < 0.12f + 0.03f * r)
@@ -1420,11 +1428,11 @@ public partial class BattleFx
     /// emission ignores alpha) and its alpha the same, for what it lays as paint.</summary>
     static Color Dim(Color c, float k) => new(c.R * k, c.G * k, c.B * k, k);
 
-    readonly System.Collections.Generic.Dictionary<int, (MeshInstance3D Mesh, ShaderMaterial Mat)> runeRings = new();
+    readonly System.Collections.Generic.Dictionary<Lifetime, (MeshInstance3D Mesh, ShaderMaterial Mat)> runeRings = new();
 
     /// <summary>A hallowed ground's ring of runes in the air at her waist, at its edge, turning
     /// slowly (shaders/rune_ring.gdshader): seen over a packed crowd as its ground is not.</summary>
-    void RuneRing(int id, Vector3 ground, float r, float strength, double now)
+    void RuneRing(Lifetime id, Vector3 ground, float r, float strength, double now)
     {
         if (!runeRings.TryGetValue(id, out var ring))
         {
@@ -1443,13 +1451,13 @@ public partial class BattleFx
         ring.Mesh.Scale = new Vector3(r, 1, r);
     }
 
-    readonly System.Collections.Generic.Dictionary<int, (MeshInstance3D Mesh, ShaderMaterial Mat)> firePatches = new();
+    readonly System.Collections.Generic.Dictionary<Lifetime, (MeshInstance3D Mesh, ShaderMaterial Mat)> firePatches = new();
 
     /// <summary>Ground left burning: low tongues of flame standing round its edge and lapping in
     /// (the rise's wall in small, shaders/fire_wall.gdshader), so it burns over a packed crowd's
     /// feet where its embers on the ground are hidden. (A firepot's burst alone was a soft orange
     /// blob.)</summary>
-    void FirePatch(int id, Vector3 ground, float r, float strength)
+    void FirePatch(Lifetime id, Vector3 ground, float r, float strength)
     {
         if (!firePatches.TryGetValue(id, out var patch))
         {
@@ -1556,24 +1564,24 @@ public partial class BattleFx
         Scars.Add("frost", ground + side, r * 0.5f, 6);
     }
 
-    void GroundsGone(System.Collections.Generic.HashSet<int> alive)
+    void GroundsGone(System.Collections.Generic.HashSet<Lifetime> alive)
     {
         if (firePatches.Count > 0)
         {
-            var out1 = new System.Collections.Generic.List<int>();
+            var out1 = new System.Collections.Generic.List<Lifetime>();
             foreach (var (id, patch) in firePatches)
                 if (!alive.Contains(id)) { patch.Mesh.QueueFree(); out1.Add(id); }
             foreach (var id in out1) firePatches.Remove(id);
         }
         if (runeRings.Count > 0)
         {
-            var over = new System.Collections.Generic.List<int>();
+            var over = new System.Collections.Generic.List<Lifetime>();
             foreach (var (id, ring) in runeRings)
                 if (!alive.Contains(id)) { ring.Mesh.QueueFree(); over.Add(id); }
             foreach (var id in over) runeRings.Remove(id);
         }
         if (grounds.Count == 0) return;
-        var gone = new System.Collections.Generic.List<int>();
+        var gone = new System.Collections.Generic.List<Lifetime>();
         foreach (var (id, g) in grounds)
             if (!alive.Contains(id))
             {
