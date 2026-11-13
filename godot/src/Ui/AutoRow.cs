@@ -16,21 +16,6 @@ public partial class AutoRow : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
     const float GlyphPx = 26;
-    /// <summary>(bd-ui judge r1, 4: the 256 px paintings drawn at 26 px without mipmaps sparkle into "speckled blobs")
-    /// the icon once resized to 2x its drawn size with Lanczos, cached by texture.</summary>
-    static readonly Dictionary<ulong, Texture2D> small = new();
-    static Texture2D? Small(Texture2D? tex)
-    {
-        if (tex == null) return null;
-        ulong id = tex.GetInstanceId();
-        if (small.TryGetValue(id, out var have)) return have;
-        var img = tex.GetImage();
-        if (img == null) return small[id] = tex;
-        if (img.IsCompressed()) img.Decompress();
-        int px = (int)(GlyphPx * 2);
-        if (img.GetWidth() > px) img.Resize(px, px, Image.Interpolation.Lanczos);
-        return small[id] = ImageTexture.CreateFromImage(img);
-    }
     static readonly Color Cream = new("#F2E6C8");
 
     /// <summary>(bd-ui W9) An auto's line glyph: the tile's and the NewAuto card's one drawing and colour rule (school lifted toward cream).</summary>

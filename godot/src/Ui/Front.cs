@@ -376,7 +376,7 @@ public partial class CreateScreen : Overlay
     {
         var a = Callings.Archetype(id);
         d.Archetype = id; d.WeaponItem = a.Weapons[0]; d.Ability = a.Abilities[0]; d.Palette = a.Palettes[0].Id; d.Model = a.Model; d.Headgear = true;
-        d.Type = Content.Lamps.RoadsOf(id).FirstOrDefault()?.Id ?? "";
+        d.Type = ""; // (bd-ui2) no road at creation: it is chosen in play at level 6 (BUILD_UNLOCKS)
     }
 
     bool CanBegin => d.Name.Trim().Length > 0;
@@ -681,7 +681,6 @@ public partial class CreateScreen : Overlay
             Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))));
     }
 
-    static string TypeName(RoadDef rd) => rd.Name.StartsWith("Road of the ") ? rd.Name["Road of the ".Length..] : rd.Name;
 
     Control ArmsDetail()
     {
@@ -696,7 +695,6 @@ public partial class CreateScreen : Overlay
         if (it.Lore != null) v.AddChild(DBody(it.Lore, true));
         if (w != null && w.Evolutions.Length > 0)
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
-        if (Content.Lamps.Roads.GetValueOrDefault(d.Type) is { } rd) v.AddChild(Line("Type", $"{TypeName(rd)} · {rd.Line}"));
         v.AddChild(Kit.RuleH());
         // The art in hand: its mark, its name and key, what it does.
         var name = Style.H(Style.Gap2, Style.Label(ab.Name.ToUpperInvariant(), Style.Display, 18, Kit.Ink, false, HorizontalAlignment.Left, false), Style.Prompt(Act.Flare));
