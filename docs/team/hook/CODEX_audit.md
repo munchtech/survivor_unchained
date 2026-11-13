@@ -205,3 +205,25 @@ Rulings:
 - **L2 (SU-081)** `balance/Harness/ArenaSim.cs:352` the harness's chest replay credited a fixed 25 gold. Fixed 641500918 (pays `ChestItem.To`).
 - **L3 (SU-076)** `logic/Sim/Forms.cs` Stand in Your Fire's armor (`lamp:stand_in_fire`) stayed after a layout without it. Fixed 383f57744 (`ReconcileBuild`). Test: BuildReconcileTests.Standing_in_fires_armor_goes_with_its_lamp.
 - Known gaps: `Effect.Zone` with `Basis.Hit` is not yet FromHit (no data uses it); Spark Storm's Hurt chain is not her hit, so her multipliers apply to it once, as before; the draft keeps showing every Evolve/Union offer past the count (an existing exception).
+
+## Installment 13 (13 November): SU-084..SU-092
+
+Scripted rewards, rivals' blows, chart oaths, the atlas, the Verge's scars and crews, missile grounds and pooled identity. Every cited line was checked at ce80e3136 (integration; su_audit_copy is ca64d558b, the same code at these lines).
+
+Rulings:
+- **A reward is never lost (SU-087).** As the capacity ruling: the exact item goes to World.Held and arrives as space frees; the notice says truthfully where it went. Costs and flags are consumed only once delivery is guaranteed this way.
+- **Every damage to a creature passes the defender's rules (SU-089).** One defender-side resolution (TakenMul, HpFloor, protected/immune, statuses) shared by her, allies and rivals; rivals keep no-player-credit.
+- **A chart modifier does what it says (SU-085).** Swarm, Champions and Deep Dark apply their pack size, elites and levels on charts through the real map runtime; one that can't has its text changed to what it does. BalanceTests and the map tests run; movement reported.
+- **Ids, not positions (SU-090/084).** Scars get stable ids for completion, arena identity and lookup; old saves' ordinal flags may be dropped (the owner's saves are expendable). The atlas reaches every carried chart (selection kept by UID). The atlas's look is the UI lead's: it works with the existing visuals (paging), no restyle.
+- **Lifetimes everywhere (SU-086/088/091).** Guards, carriers, missile hit history and volley exclusions use Lifetime handles; carriers clear on any death while a credited kill still pays its grade.
+- **Duration through the one calculation (SU-092),** taken at launch and carried to impact.
+
+- **SU-084 S2** `src/Ui/MapTable.cs:262` the atlas lists the other charts as `carried.Where(o => o != chosen).Take(6)`: with eight or more carried, the rest can never be chosen. Verified. Status: pending.
+- **SU-085 S2** `logic/Maps/Charts.cs:87` the oath-to-chart adapter drops the Swarm's PackSize 1.5 (its chart mod adds 0), the Champions' Elites 2 and the Deep Dark's Levels 2 (their Rule is null and MapGen ignores MapSpec.Oaths); the text and the quantity/rarity pay still show. Verified. Status: pending.
+- **SU-086 S2** `logic/Play/Zones/MapRun.cs:629` `carriers` is keyed by `e.Id` and removed only in OnLoot (credited kills): a rival's uncredited kill leaves the entry for the slot's newcomer. Verified. Status: pending.
+- **SU-087 S2** `logic/World/Logic.cs:254` a scripted `give` (and `chart`) with pack and storeroom full drops the item (no fallback when the stash has no free place; the notice says "sent to the inn"); costs and Once flags are still spent. Routes: Wenna's Blightward Mask and antidotes, Maeca's Braid of Shed Fur, Brannoc's Wolfhide Cloak (three crafting choices), Rav's Red Kerchief, the Moonsilver Circlet (Verge.cs:687 sets `grove.circlet` first). Verified. Status: pending.
+- **SU-088 S2** `logic/Play/Zones/Verge.cs:63` `roostCrew`/`digCrew` hold Enemy refs and `Up(e)` passes for a pool newcomer: cage watchers (567), strongbox theft (584), crates (594), the pump (624), the camp's clearing (872/875) and the bluff's cleanup (967-969, which can release newcomers). Verified. Status: pending.
+- **SU-089 S2** `logic/Sim/CreatureStrikes.cs:38` a rival's blow does `o.Hp -= dmg` and KillEnemy, skipping TakenMul and HpFloor (Battle.cs:944/1064): a rival can hurt a transitioning ruler or kill it through its phase floor and complete the encounter. Verified. Status: pending.
+- **SU-090 S2** `logic/Play/Zones/Verge.cs:231/267` scar completion is keyed `scar.{Day}.{k}` by position in a list that changes with eligibility (the Pack, the Kerchiefs, the lamplings): peace with Greymuzzle reopens a won scar or suppresses an unwon one. Verified. Status: pending.
+- **SU-091 S3** `logic/Sim/Battle.cs:2558` `pr.Hits` by `e.Id` and `ArcanistLamps.cs:202` `volleyHit` (HashSet<int>): a struck slot's memory excludes the newcomer in it. Verified. Status: pending.
+- **SU-092 S2** `logic/Sim/Battle.cs:2644` a missile's ground uses the raw `g.Duration`, bypassing `DurationOf` (Weapons.cs:346): Firepot, Wildfire, Fallen Star, Frostfire Comet, the Falling Star Mark; Evergreen does not lengthen them. Verified. Status: pending.
