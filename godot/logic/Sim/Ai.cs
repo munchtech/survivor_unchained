@@ -158,14 +158,7 @@ public static class Ai
                 e.X += e.LungeX * lunge.Speed * dt;
                 e.Z += e.LungeZ * lunge.Speed * dt;
                 e.Vx = e.LungeX * lunge.Speed; e.Vz = e.LungeZ * lunge.Speed;
-                var p = b.Player;
-                if (tgt.Player && Dist(p.X, p.Z, e.X, e.Z) < e.Radius + p.Radius + 0.2 && e.AttackT <= 0)
-                {
-                    b.HurtPlayer(e.Damage * 1.5, School.Physical, def.Name, e, true);
-                    e.AttackT = 0.8;
-                }
-                else if (tgt.Enemy is { } te && Dist(te.X, te.Z, e.X, e.Z) < e.Radius + te.Radius + 0.2 && e.AttackT <= 0)
-                    Strike(b, e, te, 1.5);
+                ChargeHit(b, e, tgt);
                 e.AttackT -= dt;
                 // A charge that ends in a tree ends the charger for a while.
                 if (b.Collision.Resolve(ref e.X, ref e.Z, e.Radius))
@@ -832,6 +825,20 @@ public static class Ai
                 e.RetargetT = 1.5;
             }
         }
+    }
+
+    /// <summary>A charge's contact, one path for whoever it runs into: the blow lands at most once per 0.8 s, her or a
+    /// creature alike (a charge into a rival or a summon used to strike it every tick of contact) (SU-073).</summary>
+    static void ChargeHit(Battle b, Enemy e, in Tgt tgt)
+    {
+        if (e.AttackT > 0) return;
+        var p = b.Player;
+        if (tgt.Player && Dist(p.X, p.Z, e.X, e.Z) < e.Radius + p.Radius + 0.2)
+            b.HurtPlayer(e.Damage * 1.5, School.Physical, e.Def.Name, e, true);
+        else if (tgt.Enemy is { } te && Dist(te.X, te.Z, e.X, e.Z) < e.Radius + te.Radius + 0.2)
+            Strike(b, e, te, 1.5);
+        else return;
+        e.AttackT = 0.8;
     }
 
     /// <summary>One creature striking another. The survivor's allies strike for
