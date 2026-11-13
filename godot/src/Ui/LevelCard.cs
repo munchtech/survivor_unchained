@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Ui;
 /// card's foot down to the coin it rose from (judge r1, 9: "a tooltip, not a moment"). The card is as wide as its words
 /// (no dead half). A new key: the skill's gold glyph in a round ringed well (the seats' own shape), its name (display
 /// serif 26, cream), its key cap chip (the bar's own KeyTag, 16 px tall on screen), one line of what it does (UI sans 16,
-/// parchment 80%). A lamp lit: the glyph, the name, "a blow 42 → 47" (before dim, after bright). A new skill (the calling's, on
+/// parchment 80%). A lamp lit: the glyph, the name, "42 → 47 a blow" (before dim, after bright). A new skill (the calling's, on
 /// no key yet): the glyph, the name, its one line, no key cap; its prompt row names the skills screen. Plain: the header and the prompt
 /// row. The prompt row: a key chip and words; the card then holds 3 s. In 0.18 s, hold 2.2 s, out 0.3 s folding toward
 /// the seat that opened (its ring flashes). Words built once a card; drawn once a card; per frame only its transform.
@@ -88,7 +88,9 @@ public partial class LevelCard : Control
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }
         else if (body) name = s.Skill;
-        if (s.Kind == LevelCardKind.LampLit) { measure = s.Measure + " "; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After); }
+        if (s.Kind == LevelCardKind.LampLit) { measure = " " + s.Measure; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
+            // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
+            if (s.Measure is "a blow" or "a cut") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }
         prompt = s.HasPrompt ? s.PromptText! : "";
 
         // the skill's key chip (a new key only), after its name
@@ -106,7 +108,7 @@ public partial class LevelCard : Control
         {
             float capW = cap != null ? cap.ChipBox().Size.X * CapK + 12 : 0;
             float lineW = s.Kind == LevelCardKind.LampLit
-                ? TextW(Style.Ui, measure + before + arrow + after, LineSize)
+                ? TextW(Style.Ui, before + arrow + after + measure, LineSize)
                 : TextW(Style.Ui, line, LineSize);
             need = Math.Max(need, NameX + Math.Max(nameW + capW, lineW) + Pad);
         }
@@ -150,10 +152,18 @@ public partial class LevelCard : Control
         QueueRedraw();
     }
 
+    /// <summary>U1 §5B: the card being read (the pointer on it, or the pad's LB held while it shows): its hold clock stops
+    /// (it does not fold while read) and resumes from where it was.</summary>
+    public bool Read;
+    /// <summary>The card a skill tip can be read from (a new key, a new skill or a lamp lit, risen or holding), or null.</summary>
+    public LevelCardSpec? Readable => Visible && Queue.Current is { Skill: not "" } c
+        && c.Kind is LevelCardKind.NewKey or LevelCardKind.NewSkill or LevelCardKind.LampLit
+        && Queue.Now is LevelCardQueue.Phase.In or LevelCardQueue.Phase.Hold ? c : null;
+
     public override void _Process(double delta)
     {
         bool held = Held();
-        Queue.Tick(delta, held);
+        Queue.Tick(Read && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
         if (Queue.Began && Queue.Current != null) Begin(Queue.Current);
         if (Queue.Current == null) { if (Visible) Visible = false; return; }
         if (held) { if (Visible) Visible = false; return; }
@@ -229,13 +239,13 @@ public partial class LevelCard : Control
             else
             {
                 float x = NameX;
-                DrawString(Style.Ui, new Vector2(x, top + 44), measure, HorizontalAlignment.Left, -1, LineSize, Parch);
-                x += TextW(Style.Ui, measure, LineSize);
                 DrawString(Style.Ui, new Vector2(x, top + 44), before, HorizontalAlignment.Left, -1, LineSize, Dim);
                 x += TextW(Style.Ui, before, LineSize);
                 DrawString(Style.Ui, new Vector2(x, top + 44), arrow, HorizontalAlignment.Left, -1, LineSize, Dim);
                 x += TextW(Style.Ui, arrow, LineSize);
                 DrawString(Style.UiBold, new Vector2(x, top + 44), after, HorizontalAlignment.Left, -1, LineSize, Cream);
+                x += TextW(Style.UiBold, after, LineSize);
+                DrawString(Style.Ui, new Vector2(x, top + 44), measure, HorizontalAlignment.Left, -1, LineSize, Parch);
             }
         }
         if (prompt != "" && promptCap != null)

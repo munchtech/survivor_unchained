@@ -80,10 +80,14 @@ public partial class WorldScene : Node3D, IZoneLook
     public float Hold;
     /// <summary>A freeze frame (a tutorial callout): the effects hold still with the fight.</summary>
     public bool FxStill;
-    double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
-    // Her auto-attack's first hit (BattleFx.FirstHitStop): a short hitstop that lands as the blade meets the body.
-    double stopDue = -1, stopLen;
-    bool chargeHitStopped;
+    double acc, fightTime, viewTime, damageFlash, slowmo, fall;
+    // Local hit-stop (data/content/hit_stop.json): the attacker and the struck bodies hold, view only; the fight's clock never waits.
+    readonly SurvivorUnchained.Look.HitStops stops = new();
+    readonly SurvivorUnchained.Look.HitStopClassifier stopClass = new();
+    // (her Oathblade's asks land first_hit_delay after the blow, so the sweep is up when the frame holds)
+    readonly List<(double Due, SurvivorUnchained.Look.StopAsk Ask, int OnScreen)> stopLater = new();
+    /// <summary>The local hit-stop's holds (CrowdView reads each enemy's from here).</summary>
+    public SurvivorUnchained.Look.HitStops Stops => stops;
     // (--aa-beats: the beats are shot with hitstops on, whatever the saved Motion setting)
     static readonly bool AaBeats = Args.Has("aa-beats");
     static readonly bool WorldClockLive = Args.Has("world-clock-live");
@@ -257,24 +261,20 @@ public partial class WorldScene : Node3D, IZoneLook
         if (incoming != null && !HerWear.Busy(incoming.Person)) { var next = incoming; incoming = null; Show(next, look); }
         var b = Battle;
         Time += dt;
-        hitstopCd = Math.Max(0, hitstopCd - dt);
-        if (stopDue >= 0 && (stopDue -= dt) < 0)
+        stops.Tick(dt);
+        for (int i = stopLater.Count - 1; i >= 0; i--)
         {
-            stopDue = -1;
-            if (hitstop <= 0 && (Hitstop || AaBeats) && !Fx.Flare.Active)
-            {
-                hitstop = stopLen; hitstopCd = Math.Max(hitstopCd, stopLen + 0.3);
-                if (AaBeats) GD.Print($"[aa-beats] first-hit hitstop {stopLen:F3} s at frame {Engine.GetFramesDrawn()}");
-            }
+            var (due, ask, n) = stopLater[i];
+            if ((due -= dt) > 0) { stopLater[i] = (due, ask, n); continue; }
+            stopLater.RemoveAt(i);
+            if (!Fx.Flare.Active) GiveStop(ask, n);
         }
-        bool held = hitstop > 0;
-        if (held) hitstop -= dt;
         // A perfect dodge: the world slows round you for a breath.
         if (slowmo > 0) slowmo -= dt;
         if (fall > 0) fall -= dt;
         // The fall eases from a tenth of the speed back to all of it, the last of it quickest.
         double falling = fall > 0 ? 0.1 + 0.9 * Math.Pow(1 - fall / Fall, 2.2) : 1;
-        double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
+        double fightDt = slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
         // A Flare holds the world's clock itself (FLARE_LOOK §1.2): 8% from the press to the Spend, its own hitstops.
         var flare = Fx.Flare;
         if (flare.Active) fightDt = dt * flare.WorldRate;
@@ -357,42 +357,58 @@ public partial class WorldScene : Node3D, IZoneLook
         }
     }
 
-    /// <summary>Heavy blows hold the world still for a few frames: a boss or
-    /// an elite going down, a critical that takes a third of what something
-    /// had, a blow that really hurt, a shield bash landing. Never twice in
-    /// quick succession, so a crowd going down does not stutter.</summary>
+    /// <summary>The slow-motion beats (a perfect dodge, the victory fall), then local hit-stop: from this step's events
+    /// the classifier names the bodies to hold (her and the struck: heavy and crit hits, her arts, an elite or boss
+    /// kill, a hard hit on her) and HitStops keeps their clocks. View only: the fight never waits.</summary>
+    static readonly bool MassTraceArg = Args.Has("mass-trace");
+
     void Weigh(List<CombatEvent> evs, Battle b)
     {
+        bool cut = false;
         foreach (var e in evs)
         {
+            // a mass kill: the Reaving Arc's crescents fade out in 3 frames so the thrown bodies are the loudest thing
+            if (!cut && e is Ev.Kill mk && mk.Mass)
+            {
+                cut = true;
+                int n = Fx.Blades.Cut(3 / 60f);
+                if (MassTraceArg) GD.Print($"[blades-cut] f={Engine.GetFramesDrawn()} live={n}");
+            }
             if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }
-        if (hitstopCd > 0 || !(Hitstop || AaBeats)) return;
-        double s = 0;
-        foreach (var e in evs)
+        if (!(Hitstop || AaBeats) || Fx.Flare.Active) return;
+        var asks = stopClass.Of(evs, b.MaxHp, b.Player.X, b.Player.Z);
+        if (asks.Count == 0) return;
+        // (the crowd rule counts once per step that asks: living enemies drawn inside the camera's frame)
+        int onScreen = 0;
+        foreach (var en in b.Enemies.Items)
         {
-            if (e is Ev.Kill k && k.ByPlayer && (k.Boss || k.Elite)) s = Math.Max(s, k.Boss ? 0.14 : 0.08);
-            else if (e is Ev.Hit h && h.Crit && !h.Dot && h.MaxHp > 0 && h.Amount >= h.MaxHp * 0.35) s = Math.Max(s, 0.045);
-            else if (e is Ev.PlayerHit ph && ph.Amount > b.MaxHp * 0.12) s = Math.Max(s, 0.07);
-            // Her arts land with their own weight (S-17): the leap's landing, the rush's stop, the bash.
-            else if (e is Ev.Ability a && a.Id is "shield_bash" or "bull_rush") s = Math.Max(s, 0.05);
-            else if (e is Ev.Ability l && l.Id == "leap") s = Math.Max(s, 0.06);
-            // (P7) the skills' weight: 2-3 frames, the charge's first impact only, the champion's stop heavier
-            else if (e is Ev.Leap { Phase: LeapPhase.Land }) s = Math.Max(s, 0.045);
-            else if (e is Ev.Charge { Phase: ChargePhase.Stop }) s = Math.Max(s, 0.05);
-            else if (e is Ev.Charge { Phase: ChargePhase.Slam }) s = Math.Max(s, 0.04);
-            else if (e is Ev.Charge { Phase: ChargePhase.Impact } && !chargeHitStopped) { chargeHitStopped = true; s = Math.Max(s, 0.034); }
-            else if (e is Ev.Charge { Phase: ChargePhase.Start }) chargeHitStopped = false;
-            // (P7) the storm's break and the vow's burst: 3 frames
-            else if (e is Ev.Spin { Phase: SpinPhase.Break } || e is Ev.Brace { Phase: BracePhase.Burst }) s = Math.Max(s, 0.05);
+            if (!en.Alive || en.State == EnemyState.Dying) continue;
+            var (ex, ez) = Drawn.Of(en);
+            if (cam.Camera.IsPositionInFrustum(new Vector3((float)ex, (float)HeightAt(ex, ez), (float)ez))) onScreen++;
         }
-        if (s > 0) { hitstop = s; hitstopCd = s + 0.3; return; }
-        // Her auto-attack's first hit only (one a swing: its hits all land in one step), on the blade's contact.
-        if (stopDue >= 0) return;
-        foreach (var e in evs)
-            if (e is Ev.Hit h && SurvivorUnchained.View.BattleFx.FirstHitStop(h) is { Len: > 0 } fs) { stopLen = fs.Len; stopDue = fs.Delay; break; }
+        foreach (var a0 in asks)
+        {
+            // (a body the Warden's line or heave strikes holds when the view's blow lands on it, not while it stands)
+            double late = a0.Body == SurvivorUnchained.Look.HitStops.Her ? 0 : Fx.WgLate(a0.Body);
+            // (a mass-kill body's freeze waits two frames past its view blow: it catches a pose already knocked, not the standing one)
+            if (a0.Body >= 0 && a0.Body < b.Enemies.Capacity && b.Enemies.Items[a0.Body].MassKill) late += SurvivorUnchained.Sim.DeathShow.T.MassStopLag;
+            var ask = late > 0 ? a0 with { Delay = a0.Delay + late } : a0;
+            if (ask.Delay > 0) stopLater.Add((ask.Delay, ask, onScreen));
+            else GiveStop(ask, onScreen);
+        }
     }
+
+    void GiveStop(SurvivorUnchained.Look.StopAsk a, int onScreen)
+    {
+        if (stops.Ask(a.Body, a.Seconds, onScreen, a.Dx, a.Dz) && a.Body == SurvivorUnchained.Look.HitStops.Her && AaBeats)
+            GD.Print($"[aa-beats] local hitstop {a.Seconds:F3} s at frame {Engine.GetFramesDrawn()}");
+        else if (StopTrace && a.Body == SurvivorUnchained.Look.HitStops.Her && stops.Held(a.Body))
+            GD.Print($"[stop-trace] her {stops.Left(a.Body):F3} s (asked {a.Seconds:F3}) on screen {onScreen} frame={Engine.GetFramesDrawn()}");
+    }
+    // (--kill-trace: her local stops are told too, with the frame, to find them in a clip)
+    static readonly bool StopTrace = Args.Has("kill-trace");
 
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName SurvivorParam = "survivor";
@@ -401,7 +417,7 @@ public partial class WorldScene : Node3D, IZoneLook
     PlayerView? staffOf;
     Node3D? staff, blade;
     bool bladeSaid, staffSaid;
-    int staffLook;
+    int staffLook, bladeLook;
 
 
     void Draw(double dt, double fightDt)
@@ -412,6 +428,7 @@ public partial class WorldScene : Node3D, IZoneLook
             var p = b.Player;
             // Where she is drawn: between the last two steps (Interp), as everything else is.
             var (hx, hz, leap) = Drawn.Her(b);
+            CrowdView.Project ??= v => cam.Camera.UnprojectPosition(v);
             float y = (float)HeightAt(hx, hz);
             HerDrawn = new Vector3((float)hx, y, (float)hz);
             // The living's own clock: the fight's, all but stopped while the world is held.
@@ -419,7 +436,7 @@ public partial class WorldScene : Node3D, IZoneLook
             viewTime += viewDt;
             // She runs on her own clock through a Flare's freeze and its hitstops (full speed; 10% in a hitstop).
             var flare = Fx.Flare;
-            double herDt = flare.Frozen || flare.Stop > 0 ? dt * flare.HerRate : viewDt;
+            double herDt = flare.Frozen || flare.Stop > 0 ? dt * flare.HerRate : viewDt * stops.Rate(SurvivorUnchained.Look.HitStops.Her);
             Perf.Begin(Perf.Part.Player);
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
@@ -433,6 +450,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
+            Crowd.StopOf = flare.Active ? null : stops;
             Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = HerDrawn;
@@ -440,12 +458,13 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.Her3D = Player;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
+            Fx.SimHeld = SimPaused;
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
             flare.Her = HerDrawn;
             // The staff in her hand (under a mount_, not one hung at her back); looked for again while there is none (the
             // arms are built after the person), at most every 30 frames. VFX 12: "arm:mage_staff" never matched (Godot's
             // node names turn ':' into '_'), so the staff light never rode the staff.
-            if (staffOf != Player) { staffOf = Player; staff = null; staffLook = 0; blade = null; }
+            if (staffOf != Player) { staffOf = Player; staff = null; staffLook = 0; blade = null; bladeLook = 0; }
             if ((staff == null || !IsInstanceValid(staff) || !staff.IsInsideTree()) && Player != null && staffLook-- <= 0)
             {
                 staff = null; staffLook = 30;
@@ -457,9 +476,12 @@ public partial class WorldScene : Node3D, IZoneLook
             }
             flare.Staff = staff;
             // The blade in her hand (not one hung at her back), for the Long Cut's steel.
-            if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())
+            // (looked for at most every 30 frames while there is none, as the staff is: a hero with no blade searched
+            // her whole tree every frame)
+            if (blade != null && (!IsInstanceValid(blade) || !blade.IsInsideTree())) { blade = null; bladeLook = 0; }
+            if (blade == null && bladeLook-- <= 0)
             {
-                blade = null;
+                bladeLook = 30;
                 if (Player != null)
                     foreach (var n in Player.FindChildren("arm?*", "", true, false))
                         // ("arm?*": Godot turns the ":" in "arm:id" into "_", so "arm:*" never matched and the steel had no light)

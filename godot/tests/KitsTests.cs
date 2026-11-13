@@ -167,4 +167,85 @@ public class KitsTests
         Assert.Equal(KitKind.Day, Kits.On(old));
         Assert.All(Items.EquipSlots, s => Assert.False(Kits.HasOwn(old, KitKind.Night, s)));
     }
+
+    // SU-037: every Pack act goes through the kits, on the kit the piece belongs to.
+
+    [Fact]
+    public void By_night_a_piece_worn_in_a_borrowed_slot_leaves_the_day_piece_in_the_day_kit()
+    {
+        var (p, coal, plain) = Dressed();
+        var ch = p.J.Ch;
+        Kits.Wear(ch, KitKind.Night);
+        // The night kit borrows the day's amulet: it is the day's.
+        Assert.Equal((KitKind.Day, EquipSlot.Amulet), Kits.Of(ch, plain.Uid));
+        // The Pack's wear by night, looking at the night kit (the kit-free Journey.Equip put the day's into the pack).
+        p.J.PutOn(coal.Uid, KitKind.Night, null, null);
+        Assert.Same(coal, ch.Equipment.Amulet);
+        Assert.Equal((KitKind.Night, EquipSlot.Amulet), Kits.Of(ch, coal.Uid));
+        Assert.Same(plain, Kits.Piece(ch, KitKind.Day, EquipSlot.Amulet));
+        Assert.DoesNotContain(plain, ch.Pack);
+        Assert.Equal((KitKind.Day, EquipSlot.Amulet), Kits.Of(ch, plain.Uid));
+        Kits.Wear(ch, KitKind.Day);
+        Assert.Same(plain, ch.Equipment.Amulet);
+    }
+
+    [Fact]
+    public void Taking_off_the_night_kits_amulet_while_the_day_kit_is_on_leaves_the_day_amulet_worn()
+    {
+        var (p, coal, plain) = Dressed();
+        var ch = p.J.Ch;
+        Assert.True(Kits.Put(ch, KitKind.Night, coal, EquipSlot.Amulet));
+        Assert.Equal(KitKind.Day, Kits.On(ch));
+        Assert.Equal((KitKind.Night, EquipSlot.Amulet), Kits.Of(ch, coal.Uid));
+        // Dragged off the night kit's doll into the pack (the drag carries the uid; Unequip took the day's off).
+        p.J.TakeOff(coal.Uid, null);
+        Assert.Same(plain, ch.Equipment.Amulet);
+        Assert.Contains(coal, ch.Pack);
+        Assert.False(Kits.HasOwn(ch, KitKind.Night, EquipSlot.Amulet));
+        Assert.Null(Kits.Of(ch, coal.Uid));
+    }
+
+    [Fact]
+    public void Until_two_kits_are_shown_a_night_wear_goes_into_the_one_kit()
+    {
+        var p = Route.New();
+        var ch = p.J.Ch;
+        Assert.False(Kits.Shown(ch));
+        Kits.Wear(ch, KitKind.Night);
+        var amulet = Inventory.Make(ch, "bone_amulet", 1, 2, affixes: new());
+        Assert.True(Inventory.AddToPack(ch, amulet));
+        Assert.False(Kits.Shown(ch));
+        p.J.PutOn(amulet.Uid, KitKind.Night, null, null);
+        Assert.Same(amulet, ch.Equipment.Amulet);
+        Assert.False(Kits.HasOwn(ch, KitKind.Night, EquipSlot.Amulet));
+        Kits.Wear(ch, KitKind.Day);
+        Assert.Same(amulet, ch.Equipment.Amulet);
+    }
+
+    /// <summary>The ruling kept with SU-038/039 (CODEX_audit.md installment 6): the caged coals' draft gifts are set
+    /// when the ember is lit and do not follow a mid-night gear change (her numbers do).</summary>
+    [Fact]
+    public void The_coals_draft_gifts_stay_as_the_ember_was_lit_through_a_mid_night_swap()
+    {
+        var p = Route.New();
+        var ch = p.J.Ch;
+        var roads = Inventory.Make(ch, "bone_amulet", 1, 2, affixes: new() { new AffixRoll { Id = "of_many_roads", Tier = 1 } });
+        var omens = Inventory.Make(ch, "bone_amulet", 1, 2, affixes: new() { new AffixRoll { Id = "of_omens", Tier = 1 } });
+        Assert.True(Inventory.AddToPack(ch, roads));
+        Assert.True(Inventory.AddToPack(ch, omens));
+        Assert.True(Kits.Put(ch, KitKind.Night, roads, EquipSlot.Amulet));
+        var b = p.J.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3, arena: true);
+        Assert.True(b.Roads);
+        Assert.False(b.Omens);
+        int rerolls = b.Rerolls, banishes = b.Banishes, stands = b.Stands.Count;
+        // The swap mid-night: the omens amulet worn, the roads one into the pack.
+        p.J.PutOn(omens.Uid, KitKind.Night, EquipSlot.Amulet, b);
+        Assert.Same(omens, ch.Equipment.Amulet);
+        Assert.Contains("of_omens", Character.Kit(ch, true).Kindled);
+        Assert.True(b.Roads);
+        Assert.False(b.Omens);
+        Assert.Equal(rerolls, b.Rerolls);
+        Assert.Equal(banishes, b.Banishes);
+        Assert.Equal(stands, b.Stands.Count);
+    }
 }

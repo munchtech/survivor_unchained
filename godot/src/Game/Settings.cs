@@ -37,7 +37,10 @@ public sealed class Settings
     public bool Tips = true;
     public List<string> SeenTips = new();
 
-    const string File = "user://settings.json";
+    /// <summary>The owner's profile; a tool's run (any switch, Args.Tool) keeps its own beside it and never reads or
+    /// writes his (B1, 10 Nov: his demo-arpg1 played with motion off, sound quiet and the lessons all seen, left in his
+    /// settings by our runs).</summary>
+    static string File => Args.Tool ? "user://settings_runs.json" : "user://settings.json";
     public static Settings Current { get; private set; } = Load();
 
     static Settings Load()
@@ -78,15 +81,18 @@ public sealed class Settings
     {
         // (a picture of the notice never unsets the owner's own answer)
         if (Args.Has("adults") || Args.Has("clip")) return;
-        using var f = FileAccess.Open(File, FileAccess.ModeFlags.Write);
-        f?.StoreString(Core.Json.Write(this));
+        // (written beside, then moved over: a failed write keeps the old settings, SU-010)
+        if (!Core.AtomicFile.Write(ProjectSettings.GlobalizePath(File), Core.Json.Write(this))) GD.PushWarning("settings: could not be saved");
     }
 
     /// <summary>How much blood and how much of a body comes apart (1, 0.35, 0).</summary>
     public float GoreLevel => Gore switch { "reduced" => 0.35f, "off" => 0, _ => 1 };
-    /// <summary>How much the camera shakes (the heavy blow's pause goes with it when off).</summary>
+    /// <summary>How much the camera shakes (the menu's "Screen shake": shake, jolts, kicks, the Flare's push).</summary>
     public float ShakeLevel => Motion switch { "reduced" => 0.4f, "off" => 0, _ => 1 };
-    public bool Hitstop => Motion != "off";
+    /// <summary>The heavy blow's pause, the perfect dodge's slow and the Flare's held time stay at every setting (F1 lead 18,
+    /// 10 Nov: the owner's run at "off" had no pause at all and nothing felt satisfying; a stop is time, not camera motion,
+    /// and the menu's row says "Screen shake"). Off keeps the flash, the sound, the gore and the death show too.</summary>
+    public bool Hitstop => true;
     public float Volume => Sound switch { "quiet" => 0.4f, "off" => 0, _ => 1 };
 
     public static string Next(string now, params string[] among) => among[(Array.IndexOf(among, now) + 1) % among.Length];

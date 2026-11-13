@@ -15,3 +15,7 @@ Rules: the ElevenLabs key is read from the environment or the Windows user varia
 written. `--reserve` (default 15000 credits) is left for the owner's voice work; a run refuses to start below it.
 `--max-credits` (default 3000) caps a run. Takes are cached by prompt, seconds, influence, loop, model and index in
 `tools/audio/cache/` (git-ignored); a cached take costs nothing.
+
+`crack.py` layers a 2-5 kHz crack into every hit take (`hit_flesh/hide/bone`, plus `_crit`) whose first 60 ms is more than 6 dB under the set median in 1-6 kHz, so no lead take is a dull thump.
+Its sources are the untouched takes in `tools/audio/raw_takes/` (seeded from git HEAD on first run); it writes `godot/art/sound/` and is idempotent.
+Rerun it after any new hit take is generated (put the new raw take in `raw_takes/` first).

@@ -191,6 +191,14 @@ public partial class Voices : Node3D
     /// dropped (Ev.Hush: Corvane's "Lie down." as its slam lands).</summary>
     public void Hush(string speaker)
     {
+        // ("@said:<text>": a line by its words, whoever said it: a boss's tell put away when its move is over)
+        if (speaker.StartsWith("@said:"))
+        {
+            string text = speaker[6..];
+            foreach (var q in waiting.Values) { var keep = q.Where(w => w.Text != text).ToList(); q.Clear(); foreach (var w in keep) q.Enqueue(w); }
+            foreach (var b in barks) if (b.Text == text) b.Life = Math.Min(b.Life, b.T + 0.25);
+            return;
+        }
         waiting.Remove(speaker);
         foreach (var b in barks) if (b.Key == speaker) b.Life = Math.Min(b.Life, b.T + 0.25);
     }

@@ -112,15 +112,17 @@ public class BlessingTests
     [Fact]
     public void Restless_hands_trade_an_art_for_a_dash()
     {
+        // (Live path: the dash form fires TriggerEvent.Ability; a reflex does not.)
         var b = BattleTests.Arena(10);
+        b.Rules.DashForms = true;
+        b.SetArt(AbilityKind.Sprint, 1, []);
         b.AddBoon("restless_hands");
-        b.Player.DashCharges = 0;
-        var r = b.SpawnEnemy("risen", b.Player.X + 2, b.Player.Z)!;
-        Tick(b, 1 / 60.0);
-        Assert.True(b.UseAbility(1, 0));
+        b.Player.DashCharges = 1;
+        Assert.True(b.Dash(1, 0));
+        Assert.Equal(0, b.Player.DashCharges);
         Tick(b, 1 / 60.0);
         Assert.Equal(1, b.Player.DashCharges);
-        Assert.True(b.Art.CdFull < Abilities.All[AbilityKind.ShieldBash].Cooldown);
+        Assert.True(b.Art.CdFull < Abilities.All[AbilityKind.Sprint].Cooldown);
     }
 
     [Fact]

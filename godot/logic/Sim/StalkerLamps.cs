@@ -236,7 +236,7 @@ public sealed partial class Battle
         if (!e.Prey || !Lamp("run_it_down")) return;
         herdUntil = Time + 6; // design pick: for 6 s
         foreach (var pr in Projectiles.Items)
-            if (pr.Alive && pr.Owner == Side.Player && pr.Weapon == "spirit_herd") { pr.Seek = Seek.Strongest; pr.Target = -2; pr.Homing = Math.Max(pr.Homing, 4); }
+            if (pr.Alive && pr.Owner == Side.Player && pr.Weapon == "spirit_herd") { pr.Seek = Seek.Strongest; pr.Home(null); pr.Homing = Math.Max(pr.Homing, 4); }
     }
 
     /// <summary>verge_hunter.spring_back: Vault springs back from the aim, even as the dash's form.</summary>

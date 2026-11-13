@@ -56,17 +56,58 @@ public class LootM9ZoneTests
         Assert.Equal(0, j.Abandon(b));
     }
 
+    /// <summary>(Codex audit SU-019, the main session's ruling: protected loot is never lost at a run's end) A full
+    /// storeroom holds the piece by the door, adds no shelf, and shelves it once a place is free.</summary>
     [Fact]
-    public void A_full_storeroom_leaves_the_piece_lying()
+    public void A_full_storeroom_holds_the_piece_by_the_door()
     {
         var j = Begin();
         for (int i = 0; i < j.World.Stash.Count; i++) j.World.Stash[i] = At("iron_helm", 1, 1, (uint)(100 + i));
         int size = j.World.Stash.Count;
         var b = j.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3);
-        var rare = Lay(b, At("iron_helm", 2, 5, 1), Verdict.Shown, 30);
+        var piece = At("iron_helm", 2, 5, 1);
+        var rare = Lay(b, piece, Verdict.Shown, 30);
         Assert.Equal(0, j.Abandon(b));
-        Assert.True(rare.Alive);
+        Assert.False(rare.Alive);
         Assert.Equal(size, j.World.Stash.Count);
+        Assert.Same(piece, Assert.Single(j.World.Held));
+        j.World.Stash[3] = null;
+        Assert.Equal(1, j.ShelveHeld());
+        Assert.Same(piece, j.World.Stash[3]);
+        Assert.Empty(j.World.Held);
+    }
+
+    /// <summary>(SU-019) With pack and storeroom full, a run's end (Gather) and a zone left (Abandon) keep every shown
+    /// Rare-and-up piece and jackpot, and they survive a save and a reload.</summary>
+    [Fact]
+    public void Protected_loot_with_pack_and_storeroom_full_survives_the_end_a_save_and_a_reload()
+    {
+        var j = Begin();
+        for (int i = 0; i < j.Ch.Pack.Count; i++) j.Ch.Pack[i] ??= At("leather_cap", 0, 1, (uint)(300 + i));
+        for (int i = 0; i < j.World.Stash.Count; i++) j.World.Stash[i] = At("iron_helm", 1, 1, (uint)(100 + i));
+        var b = j.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3);
+        var pieces = new[] { At("iron_helm", 2, 5, 1), At("drowned_coat", 4, 5, 5), At("iron_helm", 3, 5, 9) };
+        var uids = pieces.Select(it => it.Uid).ToList();
+        var rare = Lay(b, pieces[0], Verdict.Shown, 30);
+        var legend = Lay(b, pieces[1], Verdict.Shown, 32);
+        var g = j.Gather(b);
+        Assert.Equal(2, g.Held);
+        Assert.Equal(0, g.Broken);
+        Assert.False(rare.Alive || legend.Alive);
+        var late = Lay(b, pieces[2], Verdict.Shown, 34);
+        j.Abandon(b);
+        Assert.False(late.Alive);
+        Assert.Equal(uids, j.World.Held.Select(it => it.Uid).ToList());
+
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "su-saves-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var saves = new Saves(dir);
+            Assert.True(saves.Write(0, j.ToSave(new SaveLocation { Zone = "waystation" })));
+            var back = saves.Read(0)!;
+            Assert.Equal(uids, back.World.Held.Select(it => it.Uid).ToList());
+        }
+        finally { System.IO.Directory.Delete(dir, true); }
     }
 
     [Fact]

@@ -22,7 +22,7 @@ public sealed class ArtRun
     public double CdFull = 1;
     /// <summary>Fresh: kills in this window grow the art.</summary>
     public double HotT;
-    public int HotKills, Drains;
+    public int Drains;
     public double CinderLastX, CinderLastZ, ImageStrikeT;
     public bool BulwarkUp;
     public readonly HashSet<int> Struck = new();
@@ -61,8 +61,6 @@ public sealed partial class Battle
     /// <summary>The facets chosen for the art in hand.</summary>
     public readonly HashSet<string> Facets = new();
     public int ArtRank = 1;
-    /// <summary>What the art has grown by in this fight, not yet written to the survivor.</summary>
-    public double ArtXp;
     /// <summary>Reflections and echoes: what the horde turns on instead of you.</summary>
     public readonly List<Enemy> Decoys = new();
 
@@ -141,59 +139,6 @@ public sealed partial class Battle
         Facets.UnionWith(facets);
         artFacets.Clear();
         artFacets.UnionWith(Facets);
-    }
-
-    /// <summary>The art in hand grows by use (ArtXp): every art but a way of moving, which grows by steps.</summary>
-    bool ArtGrows => Ability is { } k && !Abilities.All[k].Movement;
-
-    /// <summary>Q: the art in hand.</summary>
-    public bool UseAbility(double dirX, double dirZ)
-    {
-        var p = Player;
-        if (!Combat || !p.Alive || Ability is not { } kind || p.Leap != null || Art.Rush != null) return false;
-        // The second press of an echo steps back into it.
-        if (kind == AbilityKind.EchoStep && Art.EchoT > 0) { Recall(); return true; }
-        if (p.AbilityCd > 0) return false;
-        var def = Abilities.All[kind];
-        double ax = dirX, az = dirZ;
-        if (Aim is { } aim) { ax = aim.X - p.X; az = aim.Z - p.Z; }
-        if (Len(ax, az) < 0.1) { ax = Math.Sin(p.Facing); az = Math.Cos(p.Facing); }
-        double m = Len(ax, az);
-        ax /= m; az /= m;
-        double angle = Math.Atan2(az, ax);
-        double power = ArtPower;
-        p.AbilityCd = def.Cooldown * Stats.Get(Stat.AbilityCooldown) * Abilities.RankHaste(ArtRank);
-        Art.Struck.Clear();
-        var was = credit;
-        credit = "art";
-        bool used = kind switch
-        {
-            AbilityKind.ShieldBash => ShieldBash(def, angle, power),
-            AbilityKind.Bulwark => Bulwark(def, angle),
-            AbilityKind.Leap => Leap(def, ax, az, angle),
-            AbilityKind.Warcry => Warcry(def, angle, power),
-            AbilityKind.Blink => Blink(def, ax, az, angle, power),
-            AbilityKind.TimeSlip => TimeSlip(def, angle, power),
-            AbilityKind.MarkPrey => MarkPrey(def, angle),
-            AbilityKind.SmokeBomb => SmokeBomb(def, angle, power),
-            AbilityKind.Sprint => Sprint(def, angle),
-            AbilityKind.MirrorStep => MirrorStep(def, ax, az, angle),
-            AbilityKind.BullRush => BullRush(def, ax, az, angle),
-            AbilityKind.WraithWalk => WraithWalk(def, angle),
-            AbilityKind.CinderTrail => CinderTrail(def, angle),
-            AbilityKind.Grapple => Grapple(def, ax, az, angle),
-            AbilityKind.EchoStep => EchoStep(def, angle),
-            AbilityKind.Vault => Vault(def, dirX, dirZ, ax, az, angle, power),
-            _ => false,
-        };
-        credit = was;
-        if (!used) return false;
-        Art.CdFull = Math.Max(0.1, p.AbilityCd);
-        if (ArtGrows) ArtXp += 1;
-        Art.HotT = 3;
-        Art.HotKills = 0;
-        Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });
-        return true;
     }
 
     /* ------------------------------------------------------ the callings -- */
@@ -328,7 +273,7 @@ public sealed partial class Battle
             ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2 * ReflexSize, 8), 0); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
             e.Prey = true;
             e.PreySize = ReflexSize;
-            if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower);
+            if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower, resolved: false);
             Events.Emit(new Ev.Ability { Id = def.Id, X = e.X, Z = e.Z, Angle = angle, Radius = 1 });
         }
         return true;
@@ -750,7 +695,7 @@ public sealed partial class Battle
                 double power = ArtPower;
                 foreach (var d in Decoys.ToArray())
                 {
-                    if (!d.Alive || d.State == EnemyState.Dying) continue;
+                    if (!d.Alive || !d.Decoy || d.State == EnemyState.Dying) continue;
                     var t = NearestHostile(d.X, d.Z, 2);
                     if (t == null) continue;
                     d.Facing = Math.Atan2(t.Z - d.Z, t.X - d.X);
@@ -844,7 +789,6 @@ public sealed partial class Battle
         var p = Player;
         if (e.Decoy) { BreakDecoy(e); return; }
         if (!credited || e.Disposition == Disposition.Ally) return;
-        if (Art.HotT > 0 && Art.HotKills < 15 && ArtGrows) { Art.HotKills++; ArtXp += 0.2; }
         if (e.Prey)
         {
             e.Prey = false;

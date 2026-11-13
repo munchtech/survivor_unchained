@@ -1,5 +1,250 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## Feel F1, lead 31 (feel-f1, 11 Nov): HANDOFF READY. Judge (su-lead-max, ~63k) = **CLOSE**: the one fix works on her strap and body and fades (not pops); r1's mass total holds; but it cleared a mass total at N+9 on a 3 px brush of her body rect's empty corner. Not merged with integration, suite not run (FeelRules+Hits 53/53).
+
+- **Built (cc71eab6a):** `FeelRules.OnHer` (her body or strap rect overlapped >= `OnHerDepth` 1 px, no margin; birth keeps numbers 4/6 px clear) starts a clearing gone in `OnHerClearFrames` = 5 (`KillClear(since, frames)`); only numbers of her blows (`Hits.blowNum`: the tally and Flare totals), never her readouts; never moves or revives. Traces `[num-onher]` (per frame: alpha, age, overlap with body and strap) and `[num-onher-clear]` under --kill-trace.
+- **Proof:** `combat_m3/f1_feel_hs35` (dense), `f1_feel_hs36` (arena), table by `scratch_feel_f1/lead31/onher.py`: 0 frames with a number at >0.5 on her past the contact frame; 17 cleared, ages 9-43 (none under 6). lead30 `masstab.py`: hs35 12/12 totals ok; hs36 24/25 (6668 "95": felled off-screen below, total held 265 px away on screen; placement unchanged by this fix).
+- **Left (judge's fix 1):** for mass totals only, test body contact against her body rect inset 8 px a side (or 6 px overlap); keep 1 px on the strap and for blow numbers. Recheck hs35 88 ("748" should stand) plus a real dash-through. Verdict `scratch_feel_f1/lead31/judge/verdict_n.md`, pack `lead31/judge_pack.py`.
+- **Spend:** lead ~100k + judge ~63k = ~0.16M against the 0.12M cap.
+
+## Feel F1, lead 30 (feel-f1, 11 Nov): HANDOFF READY. Judge (su-lead-max, 110k) = item 2 **PASS on every frame N..N+12** of m4, m5b, m4b, m5c, with one tail check it left to the lead; that check FAILS (below), so by the judge's own condition this is **CLOSE**. Last attempt: not merged with integration, suite not run; the owner chooses.
+
+- **Built (b6b0a1644, bad2cb7a3):** a mass kill's one total stays by its kill: `FeelRules.MassTotalSpot` puts it NumberOver over the felled group's box (away from her) and, where that meets a flight, a felled body or her, takes the spot within `MassReach` = 80 px of the box that meets the fewest (never on her, inside the safe room). The group is `FeelRules.KillCluster` (largest set of felled boxes chained within `KillLink` 60 px; m4 752's cause: the "weightiest blow on a felled" pick was one of 18 felled spread over 500x575 px, the bottom-left one, so the total sat 200 px off the lit five). `NumberSpotLaunched` is now a single victim's only, and a later blow never re-spots a mass total. A kill window clears only numbers born before it (`ClearsAtOpen`, per-label `bornFrame`) and also those over the felled box (m4's older "654"). Traces `[mass-spot]` (pick, felled box, total box, crossed), `[mass-fold]`, `[num-clear] labels=`. FeelRules+Hits 52/52 (5 new tests).
+- **Proof by numbers:** `scratch_feel_f1/lead30/masstab.py` on `combat_m3/f1_feel_hs33` (dense) and `f1_feel_hs34` (arena): 39 totals, birth gap 0-80 px, 0 crossing a flight or felled body, 0 cleared in N..N+12 (`lead30/table_final.txt`). The runs are NOT frame-identical to hs29/hs30 (752, 7790, 6880 are gone), so moments were re-picked by the trace: m4 = hs33 856, m4b = hs33 23, m5b = hs34 6143, m5c = hs34 4049. Verdict `lead30/judge/verdict_n.md`, brief `brief_n.md`, pack `lead30/judge_pack_n.py`.
+- **Left (the one fix):** m5b tail, hs34 6168-6176: "1026" is still bright when she dashes into it; at 6168 the "26" overlaps the left end of her health strap (~35x10 px), at 6176 it ghosts against it (lead's 1:1 crop `lead30/look/m5b_tail.png`). Not the placement (clear at birth by 60 px): she moves onto a standing number. Fix: in `Hits._Process`, a number whose box comes within `HitsPlace.BodyGap`/`StrapGap` of her body or strap rect starts clearing (`clearFrom`, gone in KillClearFrames), any number, not only totals; unit-test the rule in FeelRules; recapture hs34's args and judge only m5b 6143-6190. Then merge integration (346ba67cc or newer), suite, MR.
+- **Spend:** lead ~100k + judge 110k = ~0.21M against the 0.18M line (the judge ran 10k over its cap; no inbox flag was posted before the line, my miss).
+
+## Feel F1, lead 29 (feel-f1, 11 Nov): HANDOFF READY at the 0.2M line. Judge (su-lead-max, 100k) = item 2 **CLOSE**: m4b, m5c, m2b PASS at 1:1; the regression glance on m5b and m4 mass totals did not hold. Not merged with integration, suite not run.
+
+- **Built (a25ddf458, on 44a482c65):** a launched number is placed off her body and the strap too (`FeelRules.NumberSpotLaunched(..., keep)`, her rects grown by BodyGap/StrapGap, rise = max(N..N+12, HitsPlace.Young)), so `BesideHer` has nothing left to move (it had pushed "432" ~90 px back over a rising wolf); the other side across the throw when hers is all her. `Hits.Felled` starts the flight at `CrowdView.Placed` (equal to the sim point in every traced kill, harmless). FeelRules+Hits 47/47 (2 new tests). Trace `[num-from]`.
+- **Captures (this build):** `combat_m3/f1_feel_hs29` (hs28 args) and `f1_feel_hs30` (hs27 args; `[mass-open]` frames identical to hs27, so 6584/6880/7790 hold). Sheets `scratch_feel_f1/lead29/judge/`, verdict `lead29/judge/verdict_n.md`, brief `brief_n.md`, pack `lead29/judge_pack_n.py`, crop tool `lead29/crops.py` (2x2 500x350 1:1).
+- **Left (the judge's fix 1):** (1) **m5b 7790:** the mass total "501" is the target-47 launched path since lead 28: with 7 other flights fanning up-left, the search puts it at (957,122) (hs27, lead 28's build: (963,134), so not lead 29's change) against round 5's ~(815,197) over the fan; judge: "no bright total over them". Fix at the cause: a mass total (the `massLabel` path) keeps within ~80 px of the felled bodies' box: cap `NumberSpotLaunched`'s steps by that distance and take the least crossed inside it; m4b's "432" is ALSO a mass total (`[mass-num] f=23 sum=432`) and sits ~85 px off its victim, so keep m4b inside the cap. (2) **m4 752 (hs29):** total "1763" (non-launch path, unchanged since lead 27) ~200 px below-left of the five felled, over the living pack. hs29 is not the round-5 scene at 752 (hs26 and hs28/29 diverge after the 720 release; the r5 "503" was a different moment), so this is a placement check, not a regression: add the spot to `[mass-num]` and see which felled body the "weightiest blow on a felled" pick chose. Then recapture hs31/hs32, re-judge ONLY m4 and m5b N..N+12 (m4b/m5c/m2b passed), then merge integration 346ba67cc, suite, MR.
+
+## Feel F1, lead 28 (feel-f1, 11 Nov): HANDOFF READY (context line hit; images are costly). The number pass is BUILT and unit-green; NOT judged, NOT merged, suite NOT run.
+
+- **Built (5edc201ed):** `FeelRules.cs` pure + 7 tests in `FeelRulesTests.cs` (FeelRules+Hits 45/45): `Flight`/`CrossesFlight` (number box vs a launched body's whole swept flight, exact SAT), `Across` + `NumberSpotLaunched` (50 px over, 40 px across the throw, the upper side; slid on across in 10 px steps until clear of the victim's and the frame's other launched flights, its own rise included), `HudSafeY` (middle <= NumberFloor 880 at 1080, 8 px over the HUD top and over the orb), `KillClears`/`KillClear` (numbers within 300 px of a new kill's middle fade 56/25/6% at N..N+2, gone N+3). Wiring: `BattleFx.KillThrow` + `Hits.Felled(...)` at Ev.Kill (replaces `FelledNow.Add`); `Hits.Spot` takes the target; a counting label whose target is launched now is re-placed; mass Flush clears old labels first (`clearFrom[]`, skipped by Unstack/young/counting), `HideUnder` hides any clearing label touching the new total; `AboveHud` uses `HudSafeY` with `LifeLamp.OrbOnScreen` (new accessor) and runs every frame in `_Process` (no drift onto the HUD). Traces under `--kill-trace`: `[num-launch]`, `[num-clear]`.
+- **Captured:** `combat_m3/f1_feel_hs28` (= hs26 args: `--quick --zone arena --veteran 30:2 --stems --kill-trace --horde 140:wolf,3:wolf! --horde-arc 0:360:3:10:12,0:360:12:4:0`, 0.7 min). Frames HOLD (mass at 23, 79, 129 as hs26). `f1_feel_hs27` (= hs25 args + `--wav lead28/f1_tape_f1_feel_hs27.wav`, 2.6 min) was still recording at handoff (`lead28/cap27.txt`); check 6584/6880/7790 hold via `[kill-trace]`.
+- **Own look (m4b, hs28 23-35, 1:1 crop `scratch_feel_f1/lead28/look/m4b_n_1to1.png`): NOT clean yet.** "432" no longer lies across its own victim, but BesideHer then nudges it ~90 px left (her body), and from N+3 to N+7 an upright pale (launched) wolf rises up-screen under it, its head touching the digits' bottom. Suspects: (a) BesideHer's horizontal nudge runs after NumberSpotLaunched and ignores the flights (re-check flights after Show's chain, or feed her box into NumberSpotLaunched); (b) KillThrow's screen throw ((-244,255) for target 88, down-left) does not match the bodies seen rising, so CrowdView's real throw (Drawn pos, LastDx) differs: compare with a trace of g.ThrowVx/Vz. lead 27's `[mass-trace]` is not in this build.
+- **Next:** fix m4b, sheets with `python scratch_feel_f1/lead28/judge_pack_n.py f1_feel_hs27 f1_feel_hs22 f1_feel_hs28 [m2b,m4,m4b,m5b,m5c]` (env `N_m5c=...` re-picks a frame), look at 1:1, then ONE su-lead-max judge on `lead28/judge/brief_n.md` (fill SHA and MOMENTS). Then the MR steps per the coordinator's brief. Optional m1 recoil (fix 4) untouched.
+
+## Feel F1, lead 27 (feel-f1, 11 Nov): HANDOFF READY. Round 5 (the LAST, owner's "Fifth round") = CLOSE, one cheap number fix from PASS: PASS 1 (heavy felt), 3 (she reads, held), 4 (mass kills land as a beat; was CLOSE), 5 (lane rank, held); CLOSE 2 (dense crit: three number placements). None FAIL. Verdict `survivorsunchained_inputs/scratch_feel_f1/lead27/judge/verdict_r5.md`; brief `brief_r5.md` beside it; sheets `lead27/judge_r5/`.
+
+- **Built (all on feel-f1, unmerged; integration 3296bd188 merged in at 9578f45bc):**
+  1. `FeelRules.cs` (pure, `tests/FeelRulesTests.cs` 11 tests): the kill window (KillDim 0.3 N..N+16, back by N+22), LaunchRim, recoil 0.8 m, React (7 frames), Tinted (frames 6-9), Fold (2 per step, 1 on a mass step), MassTail (the next 3 frames add into the total), NumberSpot (50 px over, 40 px aside), TellFill/TellEdge (ruling 10:06: fill dims, edge >= 60%, never in the last 0.3 s, never a lane).
+  2. Kill window dims (window only): Watch Bell, Rebuke lash/flash, other bodies' rims (`CrowdView.cs`), tells by TellFill/TellEdge (`BattleFx.cs` RedMarks/decals), her dash ribbon and afterimages (`p7_dim`, `fx_p7.gdshaderinc`, `BattleFx.P7.cs`). The Warden line's crack is the kill and is not dimmed.
+  3. Ember look (`vat.gdshaderinc`: fx_aa*fx_crit, edge-led orange light) on launched bodies N..N+12 and the struck tint (45%); victim flash light capped 2.0 at night.
+  4. Numbers (`Hits.Numbers.cs`, 35e293441): every blow goes through `waiting`; a mass step shows one total over a felled body, outside the caps; trace `[mass-num]`/`[mass-open]` under `--kill-trace` (23/23 windows show a total in hs25).
+- **Captures:** `combat_m3/f1_feel_hs25` (a, 2.6 min), `f1_feel_hs22` (b, elite lane 3667-3967), `f1_feel_hs26` (c, dense). Runs are not frame-identical across builds; moments re-picked by the same rules.
+- **Ranked fixes (the judge's, all in the number code; re-check m4b 23-35, m5c 6880-6886, m2b 6584 only):**
+  1. The crit number's 40 px side offset goes perpendicular to the launch direction, not away from her (m4b 25-32: "432" lies across a launched victim). Done when no number overlaps a launched body N..N+12.
+  2. When a kill window opens at N, fade older numbers within ~300 px of the kill to 0 by N+3, or add them into the total (m5c 6880-6884: "3783" and "928" over the new kill).
+  3. Clamp numbers above y ~880 at 1080 and off the orb and statue (m2b: "315" on the health orb).
+  4. Optional: the 0.8 m push shows little at m1 (the wolf behind blocks it); let it ignore wolf spacing or push the one behind.
+- **Out of lane, spoiling judged frames:** EMBER 2 banner over m2; EMBER 7 banner, the pillar's blue circle and bodies falling onto the HUD at m2b; the boulder over her at m5 from 6297; launched bodies fly stiff in their running pose (a limp tumble later).
+- **Suite:** not run this round (no PASS). FeelRules and Hits tests pass (38/38 on 35e293441).
+
+## Feel F1, lead 26 (feel-f1, 11 Nov): HANDOFF READY. Round 4 (the LAST, owner's "Fourth round") = CLOSE, same as round 3: PASS 3 (she reads) and 5 (lane rank); CLOSE 1 (heavy felt), 2 (dense crit), 4 (mass kills near her); none FAIL. Verdict `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_feel_f1/lead26/verdict_r4.md` (su-lead-max judge: the API route died on "Credit balance is too low" before ruling, $1.01, logged in the inbox). Integration 34586016e merged in (9be1a262d). Full suite NOT run (only on PASS).
+
+- **Built (kept, all measured in hs9):**
+  1. fd7693039 mass-kill launches 3.2-4.0 m, hop 0.7 m over 0.36 s (`death_show.json` massLaunch*); `Blades.Cut` fades live crescents within 3 frames of a mass kill (31/31). Launch travel at +12 vs the step's toppling bodies: min 121-136 px on the big blows (hs8 4049: min 24, med 50). Judge: the wave kills are now RIGHT (m3 5969, m6 7918); near her the thrown bodies are buried by other things (below).
+  2. b48d94205 struck survivor recoils 0.5 m (~25 px at 1:1) after the hold, 2-frame tint (sits under her flash). Judge: the recoil shows only beside round 3.
+  3. 640b21e74 Groundbreaker crack gap >= 7 px (measured 15-26), hot edge, kick under every felled body, warm flash. Judge: right.
+  4. c72cbf9a9 crowd lane stops 1.5 m short of her; hue kept (not amber). Judge: "keeping it off amber was the right call", PASS 5 held.
+  5. ca9e9adf0 `Tells.MassKillGrace` 0.25 s: no new kit mark on her after her 4+ kill (MassGraceTests).
+- **Captures:** `combat_m3/f1_feel_hs9` (the reshoot; fight diverged from hs8 before 4049 though seed 1, so moments were re-picked), `f1_feel_hs10` (`--horde 60:wolf,3:wolf! --dist 7 --spread 14`: elite lane 3606-3666), `f1_feel_hs12` (`--horde 140:wolf,3:wolf! --horde-arc 0:360:3:10:12,0:360:12:4:0`: held horde, crits at 83 on screen f726 and 59 f359). Pack: `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_feel_f1/lead26/judge_pack_r4.py` + `judge_pack_r4b.py`, brief `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_feel_f1/lead26/judge/brief_r4.md`; own numbers `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_feel_f1/lead26/measure.py`, `travel_rel.py` (camera-relative launch travel).
+- **Round 4's ranked fixes (for the restart; no round 5 was granted):**
+  1. Mass kill near her (m5 6808-6820, m5b 9132-9145): warm emissive rim (#ff9a40 ~0.6) on launched bodies N..N+8 fading by N+12; merge the step's numbers into one; drop the gold tether, bell and wireframe figure to <= 30% N..N+12 (if EMBER pillar, route to its owner); identify the ~950 px crimson disc (if an enemy ring, fade to 30% in the kill grace).
+  2. Struck survivor: a 4-6 frame hit-react pose (head and shoulders snap away), recoil 0.8 m, health bar follows the offset, tint moved to 413-416 after the disc fades.
+  3. Crit victim: the crit number 40-60 px above and away from the victim, the crit disc core capped below white (m4b 358-359), the warm rim 4 frames after the disc.
+  4. At most 2 damage numbers per step on screen; fold the rest into the biggest.
+  Out of lane: EMBER banner over m3 5969-5981, "A stampede!" / "A champion of the Pack" banners (U1), the boulder, lavender felled, wolves as lumps.
+
+## Feel F1, lead 24 (feel-f1, 11 Nov): judge ROUND 3 (the last) = CLOSE, none FAIL. STOPPED as ruled (no round 4); the choice goes to the owner. Tip 36c4b0109 + this doc; suite 2292/0/11 green on 36c4b0109; integration NOT merged (it moved by docs only: 184adc84f). Spend ~0.60M (over the 0.40M line: the solver hit its cap without building) + API judge $2.08.
+
+- **Built this round (all committed on feel-f1, unmerged):**
+  - 04c0dc816 `BattleFx.WardenGround.cs`: Warden ground slabs capped at 0.6 m (`WgSlabMax`) and lit (`WgSlabLit` albedo floor 0.30/0.26/0.22; was ~0.04). The boss path uses stones, unchanged. Judge: chips now ~30 px, fixed.
+  - 30b89e9eb `HitKit.cs`: OathPool on a struck body range 2.5 -> 1.3 m, energy night 4.6 -> 2.0, day 7.0 -> 3.04. Judge: victim readable at 409-412, fixed.
+  - d6909754f `CrowdView.cs`, `WorldScene.cs`, `death_show.json`, `DeathShow.cs`: Groundbreaker-felled bodies keep running into the crack (no running in place), MassKill hit-stop asked at `WgLate + massStopLag` 0.033 s (a knocked pose freezes), mass shake 0.09 m, `massTopple` 0.12 -> 0.08, MassKill launch along away-from-her + LastDx/Dz, `--mass-trace`.
+  - f980752bc `BattleFx.cs` + new `BattleFx.LaneTrace.cs`: `--lane-trace`; found and fixed non-boss elite charge lanes drawn at the crowd rank (telegraph mark id vs enemy id). tele_rank.json untouched (crowd charge 0.22 = TeleRank.cs fallback).
+  - 36c4b0109 `Synth.cs`, `sounds.json`: sfx duck under her lead deepens with live sfx voices (0.32 at <= 4 to 0.12 at >= 12; keys `ducks.lead.sfxDeep`, `sfxVoicesLo`, `sfxVoicesHi`).
+- **Evidence:** capture `combat_m3/f1_feel_hs8` (args as hs7 + `--mass-trace --lane-trace`; it diverges from hs4off/hs7 after the opening, so OFF matches only at 409). Brief, sheets, extra frames and `verdict_r3.md` in `scratch_feel_f1/lead24/judge/` (`judge_pack.py` one dir up, moments re-picked from hs8's traces). Numbers: mass-trace 0 felled upright at blow+12 in all 31 mass blows, bursts 0; crack 1-6 kHz median +21.8 / p10 +8.5 dB; suite logs `lead24/suite_1.log`, `suite_2.log`.
+- **Verdict r3:** PASS 3 (she is never whited out), PASS 5 (crowd lane clearly quieter than the elite's). CLOSE 1 (struck wolf does not react to a heavy: same place and pose ON/OFF at 412-415), CLOSE 2 (dense crit 4018: a crowd lane band ~500 px runs through her, numbers stack on her; EMBER pillar routed), CLOSE 4 (r2 FAIL; standing formation gone, m3 6010 right, m6 felled sprawled by 6749; but near her no launch visibly leaves the pile at 4049/6920, a white-pink double arc ~450 px over the felled at 6920, the crack's arrival at 6743 barely shows).
+- **What holds (the judge's ranked fixes, if the owner wants a round 4):** (1) launches near her clear the pack by N+12 (>= 120 px, visible lift, along the swing), the double arc under the bodies or ended by N+3; (2) a surviving struck wolf slides 0.4-0.6 m over ~100 ms + a 2-frame body tint; (3) the crack's arrival at the felled: decal >= 6 px with a glowing edge, chip/dust kick >= 40 px per felled, capped warm ground flash; (4) crowd lane edges amber not crimson, faded within ~1.5 m of her; (5) no new lane or hit on her for ~0.25 s after a 4+ kill (AI/encounter, maybe out of lane).
+- **Out of lane, seen by the judge:** EMBER 2 pillar + banner over 3995-4061; large dark rounded boulders 200-330 px (6009-6016, 3995-4024, 6755-6765, 8235); m6 kill under the bottom HUD statue (U1); wolves as lumps; felled turning pale lavender.
+
+## Feel F1, lead 21 (feel-f1, 11 Nov): HANDOFF READY at ~185k (context ran out early). Integration 278714912 merged in (436faac2f, clean); fix 1 BUILT and committed (860fa2ed8); proof capture hs8p taken; fixes 2-5, hs8, judge r3 NOT done. Lane line for lead 21: 0.45M (lane 1.95M in all).
+
+- **Fix 1 as built (860fa2ed8; DeathShowTests + HitStop tests 24/24, game build 0 errors; full suite NOT run on it):**
+  - Sim: `Battle.cs` (after `DeathShows.Decide`): once a step has felled `massFrom` (4), every body it felled (hers, not the Flare's, no boss, no ally) is rewritten, earlier kills' `Ev.Kill` too (unread until the step ends): the first `massMaxPerWindow` (8) `Launch`, the rest `Fall`, never `Burst`; `Enemy.MassKill` / `Ev.Kill.Mass` set. `DeathShow.Mass`, `DeathShow.MassKind`, tuning `massTopple` 0.12 (`death_show.json`). Test `MassKillIsOneMomentLaunchedThenToppled`.
+  - View: `Vat.cs` derives `VatAsset.Down` (per die clip: when the mean vertex height is half way down; from the baked Pos at load, no cache bump). `CrowdView.Topple`: a MassKill body's clip runs to `Down` over 0.12 s once its hold ends (eased out), then at its usual rate; its first turn finishes inside that and runs on the held clock.
+  - Wave kills (9026 is the Warden ground's lag, 233 ms): `BattleFx.WgLate(id)` delays the body's hit-stop ask in `WorldScene.Weigh` to the view's blow; `WgHidesDrop` hides ember/gold drops at a held body until the blow lands (the "yellow kill glows" at 9026 were the ember stones, seen at 1:1 in r2's m6 f_02).
+  - `--kill-trace` lines now print `mass=`.
+- **Proof:** `combat_m3/f1_feel_hs8p` (same args as hs7: `python tools/combat/play_clip.py NAME --minutes 2.5 --fps 60 --godot-args "--quick --zone arena --veteran 30:2 --stems --kill-trace --wav <scratch>1_tape_NAME.wav"`; args inferred from hs7's log: frames to 9124, tape = frame/60). Measure with `python scratch_feel_f1/lead21/proof.py f1_feel_hs8p` (half-size ON sheets at 6833 and 9026 + per-frame motion ON vs OFF in the felled region, `lead21/proof/`). RESULT (lead 21 read it, NOT a pass yet):
+  - Kill-trace PASSES: 6833 kills=8 launch=8 burst=0 mass=8; 6848 kills=5 launch=5 mass=5; 9026 kills=25 launch=8 burst=0 mass=25. The log's only errors are the usual 11 exit-leak lines.
+  - Frames, my 1:1 look (`lead21/proof/look_6833_onoff.jpg`, `look_6843_6849.jpg`, `look_6846_52.jpg`, plus the two `*_sheet_half.jpg`):
+    - 6833: no ember glows in ON (OFF has them at 6839), which is good. But the 8 felled wolves still read in running silhouettes through 6843 (N+10), not clearly off their feet or thrown out. From 6846 the region is covered by Longcut `chunks.glb` slabs (out of lane), so the launch cannot be read there.
+    - 9026: the pack stands until the landing (~9040-9042), and glows and numbers arrive with it, which is the spec. The sheet ends at 9045, so the topple after the landing is not shown yet.
+  - Motion numbers (`lead21/proof/hs8p_motion.txt`): ON is about the same as OFF at both moments (6833 ON 8.98 vs OFF 9.51; 9026 9.7 vs 10.5, through 9039). The struck hold barely shows on the diff.
+  - Next: re-cut proof.py to N+30 at 6833 and to 9040+20, and crop to the felled. If 6833 still stands at N+12, check that `Enemy.MassKill` reaches CrowdView before its hold ends (Launch vs the view's `g.Death` path), with ONE su-lead-max solver given this block and the frames.
+- **Left, in order:** (1) read the proof (the felled off their feet by N+12 at 6833 and at the 9026 landing (~9040), launches thrown out from her, no ember glows before the landing); if it fails, one su-lead-max solver with this block + the numbers. (2) Fixes 2-4 (lead 20's plan): 2 = a `--lane-trace` print in `BattleFx.cs` ~1686 (`fodderCharge` lanes: telegraph id, its maker's def/elite/boss, rank, `ChargeEnergy`, frame), only the crowd "charge" key in tele_rank.json may move; 3 = `HitKit.OathPool` on a struck body (`struck` branch / `OathPoolOnto`): cap range ~1.3 m and energy (night 4.6) so its core never clips (409-412); 4 = dense crack: `Synth.Mix` crowd sidechain (`ducks.lead.sfx` 0.32 / 0.12 s in sounds.json) deeper when many sfx voices sound (t=114.47 is right after the 6833 mass kill, 19 dying). (3) hs8 (same args), `judge_pack.py` with ON=hs8 + the proof sheets, ONE fresh max judge (the API route, `verdict_r2.md` attached, the opening question). Not a PASS = STOP, post what holds. (4) PASS: full suite (baseline 2263/0/11 + 1 new test), push, `MR READY` with "touched tele_rank.json crowd charge key + TeleRank.cs fallback".
+- **Out of lane, tell the judge:** EMBER 10 pillar + her pool whiting her out; Longcut `chunks.glb` black slabs; Deep Shaw boulder and wolves; banners; ferns salmon; canopies.
+
+## Feel F1, lead 20 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Judge r1's five fixes BUILT, captured (hs7), suite GREEN; judge ROUND 2 = CLOSE (check 4 FAIL). Round 3 is the LAST. Lane spend: ~1.08M before lead 20 + lead 20's ~0.4M; line 1.5M.
+
+- **Built (all on feel-f1, merged integration 613e3d8b2 at 6fd33cffd; full suite 2275/0/11, build 0 errors, `scratch_feel_f1/lead20/suite_1.log`):**
+  1. Mass-kill hold: `HitStopClassifier` holds every body felled by a step's blows when 8+ fall (`hit_stop.json` mass_kill_n); her only on her own contact. Test `MassKillHoldsEveryBodyItFelled`.
+  2. `hit_stop.json` heavy_ms 60, crit_ms 65 (a crit never shorter than a heavy), crowd_scale 1.0.
+  3. Flash: hit lights (BattleFx `HitLight*`, HitKit OathPool) sit on the struck body, skip her layers, stop 0.9 m short of her. Near-white share round her 17-20% -> 0-2%. `--light-trace` flag added.
+  4. Sound: `tools/audio/crack.py` cracks hit_hide_0/1/3 (2-5 kHz, limited). Tape p10 +5.9 dB (was -3.1). Raw takes in `tools/audio/raw_takes/`.
+  5. `tele_rank.json` crowd **charge** 0.3375 -> 0.22 (+ TeleRank.cs fallback). Only that key touched (B1 also edits this file).
+  Plus deaths as rewards: `DeathShow` massFrom 4 / massMaxPerWindow 8 (`death_show.json`), test `MassKillShowsMoreOfIt`.
+- **Evidence:** capture `combat_m3/f1_feel_hs7` (ON) vs `f1_feel_hs4off` (OFF reference); sheets and brief in `scratch_feel_f1/lead20/judge/` (`brief_r2.md`, `judge_pack.py` one dir up); charge frames `combat_m3/f1_charge_pair` (no frame with both lanes; m7 pair given to the judge).
+- **Round 2 verdict:** `scratch_feel_f1/lead20/judge/verdict_r2.md` (API judge, $1.88). PASS: flash on her (3). CLOSE: heavy hit felt (1), dense read (2), charge rank (5, not verified). FAIL: mass kills (4): at 6833 the 8 felled stand upright in a line with kill glows until 6846; at 9026 the 25 stand until 9040 (+233 ms, the Warden ground wave's WgDeathLag) and ON = OFF pack motion through 9039, so the 90 ms hold is invisible; the 8 "bursts" read as dark speck clusters; launch=0 at 6833/6848/9026 (68% of mass-kill bodies get no show).
+- **Round 3 (the LAST), build in this order, one recapture (hs8, same args as hs7, `judge_pack.py` with ON=hs8):**
+  1. Mass kill: every felled body of a 4+ step leaves its feet when its hold ends (N+6), none upright at N+12; glow, numbers and the show start together (for a delayed wave kill, hold the glow to the landing frame too, so nothing stands glowing). The up-to-8 shows become LAUNCHES outward from her along the swing; the rest a fast topple (<=150 ms). Look in `logic/Sim/DeathShow.cs` (why launch=0 on mass steps) and CrowdView's death start (why bodies stay upright ~13 frames). A solver (su-lead-max) with this brief if one attempt fails.
+  2. Lane rank by id: log each lane's source id, rank and energy when drawn (`BattleFx.cs` ~1660-1690, `fodderCharge`); find a verified rank-2 crowd charge lane (sources: `encounters.json` tell "charge" packs, `telegraphs.json` kit) beside the Pack-Mother's; name the 1823 lane (likely the Pack-Mother herself) and the 6834 maroon rectangle. If the crowd lane still reads as loud at 1:1, lower its chevron contrast, not only energy. Only the crowd "charge" key in tele_rank.json may change.
+  3. Victim flash at a lone heavy (409-412): cap the OathPool light on the struck body so its core never clips white and its footprint is ~one wolf (~80 px).
+  4. Dense crack floor: all ten densest steps >= +6 dB in 1-6 kHz (now +1.6 at t=114.47, +3.2 at t=129.70); duck the rest on dense steps (crowd_tape.py measures).
+  5. Show the struck hold on an ON/OFF diff after fix 1.
+  Then the judge's round 3 (brief_r2.md updated, verdict_r2.md attached). If round 3 fails: stop, post what holds.
+- **Then (PASS):** re-merge integration (it moved: B1 merged at 084c918c9) + full suite, push feel-f1, post `MR READY feel-f1@<sha>` (verdict path, suite, "touched tele_rank.json crowd charge key + TeleRank.cs fallback").
+- **Out of lane, for routing (told to the judge):** NEW from r2: the EMBER 10 "ember rises" pillar + her pool white her out at 8877-8884 (L1/VFX); Longcut chunk slabs (`chunks.glb`) draw as flat black slabs bigger than a wolf at 6846-6875 and 9040-9110 (rendering). Known: Deep Shaw boulder as a black dome, wolves as purple lumps, EMBER banner + Ironback warning line (UI), red ferns salmon + her wide ember pool (art), canopies as yellow shards.
+
+## Feel F1, lead 19 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Hit-stop BUILT, tuned and captured; the ONE judge, the full-suite rerun and the MR are NOT done. Lane spend: about 0.88M before lead 19 plus lead 19's ~0.2M; the line is 1.5M.
+
+**Start here.** Scratch is `survivorsunchained_inputs\scratch_feel_f1\lead19\`. Integration (`claude/vigilant-galileo-l6jqyx`) is merged in.
+
+**The mechanism that ships: the local, view-side stop only.** The old global WorldScene hold (`fightDt*0.08`) and `HitKit.FirstHitStop` are DELETED. Kept untouched: the dodge slowmo, the Victory fall, the Flare's own stops. `--no-hitstop` turns it off.
+- The pieces: `godot/data/content/hit_stop.json` (numbers plus an "about" for each key), `godot/logic/Look/HitStop.cs` (`HitStops` slots per body, pure), `godot/src/Fx/HitStopClassifier.cs` (events to asks) and `godot/tests/HitStopTests.cs` (16 green).
+- How it works: only she and the struck bodies freeze (clock rate 0.06). The sim, camera, UI, audio and FX run on. `CrowdView` holds the pose, t and flash, then walks the plant offset out over catchup_s.
+- The tuned values: heavy 50 ms, crit 55, art 55, hurt 60, elite kill 90, boss kill 100, cap 150. Crowd rule: over 30 on screen, scale 0.8; it was 0.5, which gave 25 ms, under two frames. A hit on a frozen body extends to the longer hold and never sums.
+- When she holds:
+  - her own Oathblade swing, at any reach (5c853ec21);
+  - any other weapon only within her_reach_m 3;
+  - an elite or boss kill only if her own near blow landed on it that step (98616e38d). Before that she froze 90 ms at the top of a new wind-up when a far wave killed an elite.
+- The sim is unchanged, so ON and OFF clips are a frame-exact A/B:
+  - zone sim lowford before and after are identical (`zone_before.md`, `zone_after.md`): human 2/2, 5.7 min, 148/5/5/1, 0 falls; deft 2/2, 5.2 min, 143/5/5/1, 0 falls;
+  - the hs5 and hs4off in-engine kill-traces are identical (115 lines).
+- `--kill-trace` now also prints `[stop-trace] her ... frame=N`.
+
+**Captures** (arena, `--quick --zone arena --veteran 30:2 --stems --kill-trace --wav`, at defaults via `--clip`):
+- `combat_m3\f1_feel_hs4off` (`--no-hitstop`) is the OFF reference. Keep it.
+- `f1_feel_hs5` is ON before the Oathblade reach rule: 29 her stops, up to 58 living, dense 1-6 kHz median +8.5 dB, worst +2.7 dB (`crowd_tape_hs5.txt`).
+- `f1_feel_hs6` is ON at the tip, captured last. Its tape is `f1_tape_hs6*.wav` and its numbers are `crowd_tape_hs6.txt`.
+- hs3 and hs4 are superseded: send them to the Recycle Bin.
+- `judge_pack.py` builds the ON/OFF sheets into `judge/`. Point ON at the newest capture and re-pick the moments from the kill-trace frames.
+
+**Routed, not mine:** the Deep Shaw boulder draws as a black dome over a third of the frame, and the wolves read as purple lumps (inbox 03:03).
+
+**hs6 at 5c853ec21:**
+- She holds 51 times: 37 at 0.050, 11 at 0.055, 2 at 0.060, and 1 elite kill at 0.090 (frame 5542, her blow).
+- The kill-trace is identical to hs4off. 0 InkSnap errors.
+- Dense 1-6 kHz median +8.4 dB, worst +2.2 dB.
+- Full suite at 3ff4b2be9: **2262 / 0 / 11** (`lead19/suite_2.log`). Pushed.
+
+**JUDGE ROUND 1: CLOSE** (`lead19\judge\verdict_r1.md`, agent adb3e73de6d097db1; send round 2 to it, or to a fresh judge with that file).
+- Rulings: (1) felt CLOSE, (2) readable CLOSE, (3) guard (b) PASS, (4) picked out CLOSE. Crimson holds (not pink). The crowd charge at 1.33x the boss is FAR as a ranking.
+- Its fixes, ranked:
+  1. When one blow kills 8 or more, hold the struck bodies for elite_kill_ms. Her rule stays: she holds only on her own contact.
+  2. In `hit_stop.json`, crowd_scale 0.8 to 1.0 and heavy_ms 50 to 60.
+  3. Center the heavy, crit and elite hit flash on the struck body, not on her, and draw her above it. The white disc about 300 px wide hides her at frames 409, 5215 and 5542. Find it in `HitKit` / `BattleFx`.
+  4. Some hit takes (`hit_flesh`, `hit_hide`, `hit_bone`) are 17-21 dB dull in 1-6 kHz (worst 10% at -4.2 dB). Add a 2-5 kHz crack to any take whose first 60 ms is more than 6 dB under the set's median. Target: worst 10% at +3 dB or better.
+  5. In `tele_rank.json`, the crowd's charge 0.3375 to 0.22 (the boss one stop brighter). Verify with the Pack-Mother and a charge lane in one frame.
+- To route: the mid-screen EMBER banner and the Ironback warning line over the fight (UI lead), and red ferns going salmon under her glow (art lead).
+- Round 2 must also look at deaths as rewards: at 9026-9030 the 25 dying wolves stand in formation and nothing launches yet.
+
+**Left, in order:**
+1. Build fixes 1-5 (1 and 2 are data and one classifier rule; 3-5 are one su-worker each, then check them). Recapture as hs7 with the same args and rebuild the sheets with `python judge_pack.py f1_feel_hs7`. Re-pick the moments from the stop-trace and kill-trace frames. Judge round 2 (at most 3 in all).
+2. Rerun the FULL `dotnet test` after the fixes.
+3. Push feel-f1.
+4. Post `MR READY feel-f1@<sha>` in the inbox. Motion "off" ("Screen shake") removes only the camera shake, push and kicks; the hit-stop, dodge slow, the Flare's held time, flash, sound, gore and the death show stay.
+
+## Feel F1, lead 18 (feel-f1, 11 Nov): HANDOFF READY at ~170k. Captured, looked at, heard and measured at fresh-profile defaults; the mix fixed and the motion-"off" ruling built; the ONE judge, hit-stop and the MR are NOT done. Lane spend: about 0.48M before lead 18, plus lead 18's ~0.4M; the lane's line is 1.2M in all.
+
+**Branch:** feel-f1 @ the commit that adds this block (pushed). Integration is NOT merged in yet. Profile: md5 545be3545b291268afef5193275e8410, backup `scratch_feel_f1\settings_backup.json`. Integration's c8e5f7a46 says B1's settings isolation is merged, so after you merge, `user://settings_runs.json` protects the owner's profile. Check the md5 once anyway.
+
+**Built (commits e53dde5e1, 45f3794f1, 317e61db3, b67532d0c):**
+- **Synth.cs:** `--stems` writes a 6th stem, `_lead.wav` (the lead voices only). Stems are written lead and sfx first, buffered, so the quit guard can't cut them. `TapeSeconds` added.
+- **BattleFx.cs:** `--kill-trace` prints, per frame: tape time, kills, heavy, living, launch, burst, elite and the frame drawn.
+- **`tools/audio/crowd_tape.py TAPE.wav LOG.txt`:** measures her heavy hit (aligned on the lead's onset, 60 ms) over the rest of the effects, with the dying count.
+- **The mix:**
+  - sounds.json `ducks.lead` is now sfx 0.32 for 0.12 s (was 0.5 for 0.09 s). SoundBankTests are updated.
+  - Sfx.cs: the crowd's kill sounds are gated at 3 per 90 ms (elites on their own gate, bosses never gated). Plain hits are gated at 5 per 70 ms (was 7).
+- **Motion "off" ruling:** Settings.Hitstop is always true. Game.cs sets `Flare.Shake` (off 0, reduced 0.5) instead of Flare.Motion.
+  - "Off" drops only camera shake, push and kicks.
+  - The heavy hit's pause, the dodge's slow, the Flare's held time, flash, sound, gore and the death show stay at every setting.
+
+**Numbers:**
+- **Densest real play:** 32 dying per second, 56 living (arena b3). 50+ dying per second was never reached; autopilot play rarely has the Flare charged.
+- **Her heavy hit over the rest, 1-6 kHz, densest moments:**
+
+  | Capture | Median | Worst |
+  |---|---|---|
+  | Before the mix fix | +0.4 dB | -5.5 dB |
+  | After, b2 | +10.0 dB | -4.9 dB |
+  | After, b3 | +9.3 dB | -5.8 dB |
+  | After, map a2 | +7.7 dB | -2.3 dB |
+
+- **Top drops over the densest crowd (in-band, 0-300 ms), ducked:**
+
+  | Drop | Margin | Worst |
+  |---|---|---|
+  | Rare | +26 dB | |
+  | Epic | +13 dB | +10.8 dB |
+  | Set | +26 dB | |
+  | Legendary and storied | +19 dB | |
+
+  The ladder's distinctness is in `scratch_feel_f1\drop_ladder.txt` (lead 17's MFCC table, plus centroid, length and rhythm per family). No human has heard the regenerated takes.
+- **"Quiet"** is master bus 0 gain applied after the Synth's compressor and limiter (Game.cs ~483), so every ratio holds exactly.
+
+**Guards:**
+- (a) Holds: no fx dimming is built (lead 17 chose draw order), so the Flare and heavy landings are untouched.
+- (b) Holds by code read, not yet watched in-engine: a capped kill still gets its sound and flash. The crit flash is ranked first in HitBudget (crit bursts, 3 per 0.15 s), and its lead sound has its own gate (hit.lead, 3 per 60 ms); neither is under DeathShow's cap.
+- (c) Holds: attack-first hits cut through at "quiet" (see "Quiet" above).
+- Motion "off": built, per the ruling above.
+
+**My own 1:1 look** (arena b and b2 frames, `scratch_feel_f1\look\`):
+- Busy.
+- Damage numbers are big.
+- Her figure is hard to pick out inside the pack.
+- The red crowd ring reads.
+
+Without hit-stop I would NOT yet bet PASS on full feel.
+
+**Clips** (in `survivorsunchained_inputs\combat_m3\`): `f1_feel_a2\` (map) and `f1_feel_b3\` (arena). Each holds `clip.mp4`, `log.txt` with `[kill-trace]` lines (frame= finds the launch, burst and elite moments), and a tape with stems. Tape t equals clip time.
+
+**Next, in order:**
+1. **Hit-stop:** there is no codex/hitstop on origin as of 11 Nov 00:10. When it lands: merge it, tune it (trash 0, heavy/crit 40-60 ms, elite kill or finisher 80-100 ms, cap 150), turn it on. Do not build a second mechanism; the global one in WorldScene.Weigh exists today.
+2. **Own look on her readability in the pack.** Damage-number size and her silhouette are not my lane's to restyle: route them to U1/L1 in one inbox line if they stay a problem. Then run ONE `su-lead-max` judge (effort max, foreground, `Item: combat feel`):
+   - It opens with "would this ship in a AAA game as it stands, watched and heard at 1:1?".
+   - It covers ARPG_FUN's four checks (line 124) and the owner's words.
+   - Inputs: the a2 and b3 clips and logs, the numbers above, and `drop_ladder.txt`.
+   - Lead 17's watch items go with it: crimson under AgX may read pink; the crowd charge's energy is 0.3375 against the boss's 0.45, only 1.33x.
+   - Close is not a pass.
+3. **MR:**
+   - Junction rule first.
+   - Merge `origin/claude/vigilant-galileo-l6jqyx`.
+   - Full `dotnet test` in godot/tests via an su-runner.
+   - Push, then `MR READY feel-f1@<sha>` in `scratch_coord5\inbox.md`.
+
+## Feel F1, lead 17 (feel-f1, 10 Nov): HANDOFF READY. Items 2-5 built and unit-green; the game builds (0 errors); NOT yet captured, looked at, heard or judged; item 1 (hit-stop) waits for codex/hitstop in integration
+**Start cold here.** Worktree `.claude/worktrees/feel-f1`, branch feel-f1 (pushed). Brief = coordinator #8's F1 spawn (ARPG_FUN P0 1, 2, 4, P1 5, item 15; the owner: "nothing really felt satisfying"). Scratch: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_feel_f1\` (`drop_ladder.txt` = loudness and distinctness table; `attack.py` = onset shape, run with plain `python`). Inbox rulings: "RULING F1" lines in `scratch_coord5\inbox.md` (list approved; guards (a) and (b) below; every capture and the judge at FRESH-PROFILE DEFAULTS: Motion "full", Sound "on" (1.0), VoiceVolume 1; `--clip` forces these).
+**Built (commits on feel-f1):**
+- f3dba7b88 lead voices: her heavy hits (`src/Audio/LeadRule.cs`: weapon, not Flare, not DoT, crit or >= 35% max hp), elite/boss kills, tier >= 2 drops, toll, telegraphs, her hurt. Non-lead Sfx duck to 0.5 for 0.09 s after a lead starts (`sounds.json` ducks.lead). Lead hits gate "hit.lead" 3/60 ms, crowd "hit" 7/70 ms.
+- 266edce99 + 818c4ab58 attack-first takes (gen.py `max_rise_ms` 12 for hit_*, 25 for kills/bursts; 11 families regenerated) and the drop ladder (drop_rare chime, drop_epic bowl, drop_set bell, drop_legendary toll, drop_storied_fire). About 1,660 ElevenLabs credits; provenance in docs/legal/audio_generated.md. d34020e67: Set = a struck pair (second a fifth up, +0.16 s), told from Rare (the nearest pair by MFCC) by rhythm.
+- 6be9de9d5 deaths as rewards: `logic/Sim/DeathShow.cs` + `data/content/death_show.json`: non-boss credited kills that were a crit, blow >= 2 or elite; hash draw, 0.33 share; cap 3 per 0.5 s; Burst (not Fire) or a heavy Launch (`CrowdView.LaunchOf`, 0.32 s ease-out, 0.22 m hop). Tests: DeathShowTests.
+- a3a24f768 + 252586475 one telegraph family: `data/content/tele_rank.json` + `src/Fx/TeleRank*.cs`: rank 1 boss scarlet #ff0612, rank 2 crowd dim crimson #ff1a4a (orange collided with her Fire), rank 3 ground violet, safe/wall unranked. Decals: hostile telegraphs sort over gore, scars and her ground. TeleRankTests 3/3.
+**Next, in order:**
+1. Capture at defaults, 30+ enemies at the play camera, with a sound tape: `python tools/combat/play_clip.py f1_feel_vet --minutes 2 --godot-args "--veteran 30:2 --wav <scratch_feel_f1>\f1_tape.wav --stems"` (a su-runner; it takes the godot turn). The veteran map's other args were never recorded (lead 9): check the clip shows 30+ on screen, else find a denser pack arg (grep DevVeteran.cs). This is the first in-engine run of CrowdView's launch and the BattleFx rank colors: watch the log.
+2. Measure the tape: her heavy hit's band level over the crowd stem with 50+ dying; the top drop's audibility. Repeat at Sound "quiet" (ruling (c): hits must still cut through at 0.4; quiet only scales the master, so the ratio should hold: verify).
+3. Own 1:1 look and listen (half-size copies), then ONE su-lead-max judge (max, foreground, `Item: combat feel`), opening with "would this frame ship in a AAA game as it stands, watched at 1:1?", plus ARPG_FUN's four checks and the owner's words. Watch: crimson under AgX may read pink or salmon; crowd charge energy 0.3375 vs boss 0.45 is only 1.33x.
+4. Guard (b): a capped crit kill must still get the sound and the flash. The sound plays regardless; KillFx's flash is gated by killBudget: verify a crit kill past the cap still flashes.
+5. Guard (a): dimming her fx above N enemies was NOT built (decided against: draw order solves coverage). If ever built, it never touches Flare or a heavy hit's landing.
+6. Item 1, when "RULING F1 ... codex/hitstop in integration" appears: merge integration (junction rule), tune (0 on trash, 40-60 ms heavy/crit, 80-100 elite kill or finisher, cap 150), turn the flag on. Motion "off": my call = drops camera and victim shake and the hit-stop, keeps the flash and the sound (not motion).
+7. MR: junction rule, merge origin/claude/vigilant-galileo-l6jqyx, full `dotnet test` in godot/tests (runner), push, `MR READY feel-f1@<sha>` in the inbox.
+**Flag for the owner's ear:** no person has heard the regenerated hit and kill takes.
+**Cost:** lead 17 about 175k; helpers about 300k; about 1,660 ElevenLabs credits.
+
 ## M3 combat systems, lead 16 (combat-m3, 10 Nov): MR READY. The landed rule, the clock, the feet, bands round 8 (grip x0.80) built and measured; merged with integration at f11a7262a; suite GREEN 1887 / 0 / 10 (`lead16/suite_3.log`); the two look clips shot
 **Facts:** `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_combat_m3\lead16\` (b1-b6 results, r8*.out). Design: `docs/balance/chain_weight.md` (top section), `docs/balance/m3_bands.md` (round 8).
 **Done this shift (all pushed):** 7f3afe5aa + 63cabde97 (the landed rule, its invariant and tests), b52164678 (17 reds re-pinned), 473daac72 (the clock), aa2e88aa6 (the feet), 2dc6fe208 (the split by source, harness only), c00c385d2 / 8a333c28e / bc137f193 (the wording), d5d195064 (grip damage x0.80 + re-pins).

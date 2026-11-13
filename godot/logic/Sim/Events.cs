@@ -44,6 +44,8 @@ public static class Ev
 
     public sealed class Hit : CombatEvent
     {
+        // Keep identity and time when a pooled slot is reused before the harness drains events.
+        public double TargetSeed, Time;
         public double X, Z, Amount; public bool Crit; public School School; public int Target;
         public bool Dot, Blocked; public Family? Family; public string? Def; public double MaxHp, Dx, Dz;
         public string? Art; public int Rank;
@@ -54,6 +56,10 @@ public static class Ev
         public bool ByFlare;
     }
 
+    /// <summary>(SU-060) A blow on a protected creature (TakenMul 0: a boss between phases, laid down): nothing landed, it
+    /// shows it is immune.</summary>
+    public sealed class Immune : CombatEvent { public double X, Z; public int Target; public School School; }
+
     /// <summary>A calling's Hand at work (HandKind); Target is the creature it touched, -1 for none.</summary>
     public sealed class Hand : CombatEvent { public HandKind Kind; public double X, Z; public int Target = -1; }
 
@@ -62,7 +68,7 @@ public static class Ev
     public sealed class Kill : CombatEvent
     {
         public double X, Z; public int Enemy; public string Def = ""; public Family Family; public School School;
-        public bool Elite, Boss, ByPlayer, Burst, ByFlare; public double Dx, Dz, Scale = 1;
+        public bool Elite, Boss, ByPlayer, Burst, Launch, ByFlare, Mass; public double Dx, Dz, Scale = 1;
     }
 
     public sealed class PlayerHit : CombatEvent
@@ -94,6 +100,9 @@ public static class Ev
         /// is true to what she plays and a chain's cuts each name theirs; any other cut alternates from the weapon's own count
         /// (WeaponInst.Cuts; its first is -1). The view's old crescents mirror from this; the grip's trail follows the blade.</summary>
         public int Side = -1;
+        /// <summary>(opt-in; 0 = the old crescent) A fan from this radius (metres, his hands) out to Reach, drawn as one sweep with no
+        /// rings and no rim mark, crossed in Sweep seconds (0 = 0.12): a boss's blow as the swing itself (BattleFx.Fan).</summary>
+        public double Inner, Sweep;
         /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
         /// other was struck): where the view draws the contact; set as the cut lands.</summary>
         public int Struck; public double HitX, HitZ;
@@ -233,6 +242,9 @@ public static class Ev
         /// <summary>A boss's signature line naming its own next mark (ArenaBoss.Signature): it keeps its slot over the speaker
         /// while that mark is live (not sent to the fight's band above the HUD), lifted a little clear of the mark's rim.</summary>
         public bool Signature; }
+    /// <summary>A word over something in the world, Up metres over the ground at X, Z (the Ford-Warden's "Dazed"): drawn
+    /// like a struck number, not a caption.</summary>
+    public sealed class Floater : CombatEvent { public double X, Z, Up; public string Text = ""; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's

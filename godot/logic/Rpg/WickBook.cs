@@ -175,10 +175,14 @@ public static class WickBook
             foreach (var t in fx.Dark.Select(Wicks.Turn)) parts.Add(("Turn (dark):", t.Name));
         }
         var view = new WickSumView("Damage", w.Damage, parts);
-        if (!night && def.Press?.Chain?.Period is > 0 and var period)
-            view = view with { Cut = w.Damage * period / (def.Press.Wait ?? def.Base.Cooldown ?? 1), Every = period };
+        if (!night && CutOf(def, w.Damage) is { } cut)
+            view = view with { Cut = cut, Every = def.Press!.Chain!.Period * (w.Wick?.Cooldown ?? 1) };
         return view;
     }
+
+    /// <summary>A chained skill's damage per cut (its blow's damage over its period and its wait), or null for any other skill.</summary>
+    public static double? CutOf(WeaponDef def, double blow) =>
+        def.Press?.Chain?.Period is > 0 and var period ? blow * period / (def.Press.Wait ?? def.Base.Cooldown ?? 1) : null;
 
     /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none. By day a skill
     /// holding points gets only its burning lamps (DayPath: Battle.Relight lights min(rank, path), so exactly Burning);
@@ -214,6 +218,29 @@ public static class WickBook
         var path = Path(ch, skill);
         return Held(ch, skill) > 0 ? path.Take(Burning(ch, skill)).ToArray() : path;
     }
+
+    /// <summary>SU-046: what the wick panel shows, as the fight takes the skill. By day: lit = the lamps the day fight
+    /// lights (DayPath to DayRank, as Battle.Relight does), held = the lamps her held points would light next, apart;
+    /// rank = DayRank. By night (an arena): the night build (Path to the night's starting rank, RankIn), read-only.</summary>
+    public static WickPanel Panel(CharacterData ch, string skill, bool night)
+    {
+        if (NoWickYet(skill)) return new WickPanel([], [], [], RankIn(ch, skill, night), true, true);
+        var path = Path(ch, skill);
+        if (night)
+        {
+            int nr = RankIn(ch, skill, true);
+            return new WickPanel(path, path.Take(System.Math.Max(0, nr)).ToArray(), [], nr, true);
+        }
+        int rank = DayRank(ch, skill);
+        var lit = DayPath(ch, skill).Take(System.Math.Max(0, rank)).ToArray();
+        var held = path.Skip(lit.Length).Take(Held(ch, skill)).ToArray();
+        return new WickPanel(path, lit, held, rank, false);
+    }
+
+    /// <summary>(SU-051) A skill with no strands to light (no wick in the data yet): the wick tabs and panel show
+    /// NoWickText for it, never an empty tree.</summary>
+    public static bool NoWickYet(string skill) => !Wicks.StrandsOf(skill).Any();
+    public const string NoWickText = "No wick yet: this skill has no lamps to light.";
 
     /// <summary>The lamp the next held point would light (Path[Burning]), or null: nothing held, or the path ends.</summary>
     public static string? NextLamp(CharacterData ch, string skill)
@@ -291,10 +318,63 @@ public static class WickBook
     public static (string Measure, double Before, double After) LampMeasure(CharacterData ch, string skill, string lampId)
     {
         int b = Burning(ch, skill);
+        if (Weapons.All.TryGetValue(skill, out var cd) && CutOf(cd, 1) != null && Blow(ch, skill, b) is { } c0 && Blow(ch, skill, b + 1) is { } c1)
+        {
+            double k0 = CutOf(cd, c0)!.Value, k1 = CutOf(cd, c1)!.Value;
+            if (System.Math.Round(k1) != System.Math.Round(k0)) return ("a cut", System.Math.Round(k0), System.Math.Round(k1));
+        }
         if (Blow(ch, skill, b) is { } before && Blow(ch, skill, b + 1) is { } after && System.Math.Abs(after - before) > 1e-6)
             return ("a blow", System.Math.Round(before, 1), System.Math.Round(after, 1));
         if (Wicks.Card(lampId) is { } c) return (c.Measure, c.Before, c.After);
         return ("", 0, 0);
+    }
+
+    /// <summary>(U1) What lighting a lamp changes in the skill, out of a fight: the weapon as it burns now against the same
+    /// weapon with the lamp lit as well (her lit lamps now, as the sum line reads them), at the same rank. The first stat that
+    /// differs, in order: damage ("Damage", whole numbers), reach or size ("Reach" for a skill with a reach, else "Size": the
+    /// base number times the wick's Area, in m), cooldown ("Cooldown", s). Null when none does (a Turn's own text says it).
+    /// The character is not touched.</summary>
+    public static (string What, string Before, string After, string Cond)? LampDelta(CharacterData ch, string skill, string lampId)
+    {
+        if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || Wicks.Lamp(skill, lampId) == null) return null;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        int rank = RankIn(ch, skill, false);
+        // Before is what she has now (the same weapon Sum reads); After adds this one lamp only.
+        var now = Weapon(ch, skill, rank, false);
+        var ids = (now.Wick?.Lit ?? System.Array.Empty<string>()).ToList();
+        if (!ids.Contains(lampId)) ids.Add(lampId);
+        var more = new WeaponInst(skill, rank, 0);
+        more.Wick = Turns.Build(more, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
+        if (CutOf(def, 1) != null)
+        {
+            double k0 = CutOf(def, now.Damage)!.Value, k1 = CutOf(def, more.Damage)!.Value;
+            if (System.Math.Round(k0) != System.Math.Round(k1))
+                return ("Cut", System.Math.Round(k0).ToString("0", inv), System.Math.Round(k1).ToString("0", inv), "");
+        }
+        if (System.Math.Round(more.Damage) != System.Math.Round(now.Damage))
+            return ("Damage", System.Math.Round(now.Damage).ToString("0", inv), System.Math.Round(more.Damage).ToString("0", inv), "");
+        // A conditional damage lamp (more to what is statused, to champions): the blow against that, with every lit lamp of
+        // the same condition (same strand for a status) added to this one's.
+        if (Wicks.Lamp(skill, lampId) is { N: < Wicks.PerStrand } cl && cl.Strand.LeadIns[cl.N - 1] is { } li && (li.VsStatus != 0 || li.VsChampion != 0))
+        {
+            bool status = li.VsStatus != 0;
+            double Bonus(string id) => Wicks.Lamp(skill, id) is { N: < Wicks.PerStrand } o && (!status || o.Strand == cl.Strand)
+                ? (status ? o.Strand.LeadIns[o.N - 1].VsStatus : o.Strand.LeadIns[o.N - 1].VsChampion) : 0;
+            double lit = ids.Where(id => id != lampId).Sum(Bonus), add = Bonus(lampId);
+            double b0 = now.Damage * (1 + lit), b1 = now.Damage * (1 + lit + add);
+            // (U1 r2: a chained skill speaks in cuts here too, as its unconditional lamps and the level card do)
+            bool chained = CutOf(def, 1) != null;
+            if (chained) { b0 = CutOf(def, b0)!.Value; b1 = CutOf(def, b1)!.Value; }
+            string fmt = System.Math.Round(b0) != System.Math.Round(b1) ? "0" : "0.0";
+            return (chained ? "Cut" : "Damage", b0.ToString(fmt, inv), b1.ToString(fmt, inv), status ? "on " + cl.Strand.TurnDef.Statused + " foes" : "on champions");
+        }
+        double? size = def.Base.Reach ?? def.Base.Radius;
+        double a0 = now.Wick?.Area ?? 1, a1 = more.Wick?.Area ?? 1;
+        if (size is { } sz && System.Math.Abs(a1 - a0) > 1e-9)
+            return (def.Base.Reach != null ? "Reach" : "Size", (sz * a0).ToString("0.##", inv) + " m", (sz * a1).ToString("0.##", inv) + " m", "");
+        double c0 = Firing.CampaignCooldownOf(now, true), c1 = Firing.CampaignCooldownOf(more, true);
+        if (System.Math.Round(c1, 1) != System.Math.Round(c0, 1)) return ("Cooldown", System.Math.Round(c0, 1).ToString("0.#", inv) + " s", System.Math.Round(c1, 1).ToString("0.#", inv) + " s", "");
+        return null;
     }
 
     /// <summary>The skill's blow by day with lit lamps of its path burning (rank max(1, lit), as DayRank maps it).</summary>
@@ -309,3 +389,9 @@ public static class WickBook
         return w.Damage;
     }
 }
+
+/// <summary>The wick panel's reading of one skill (WickBook.Panel): its path, the lamps lit, the lamps held points would
+/// light (apart from the lit), the rank shown, and whether it is read-only (the arena's night build).</summary>
+/// <summary>NoWick: the skill has no strands (no wick yet, WickBook.NoWickYet): the panel says so (WickBook.NoWickText)
+/// instead of an empty braid.</summary>
+public sealed record WickPanel(string[] Path, string[] Lit, string[] Held, int Rank, bool ReadOnly, bool NoWick = false);

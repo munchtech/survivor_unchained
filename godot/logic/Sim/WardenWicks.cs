@@ -74,6 +74,17 @@ public sealed partial class Battle
     bool PaysResolve(WeaponInst w) => Resolve.On && (w.Press?.Resolve is > 0 || w.Press?.Drain is > 0);
 
     /// <summary>The Cleaver's pace lamps: big_game (15% slower), light_grip (25% faster).</summary>
+    /// <summary>(SU-063) The same pace with no fight, from the weapon's own lit wick (the skill card's twin).</summary>
+    internal static double CleaverPaceOf(WeaponInst w)
+    {
+        if (!Cleaves(w) || w.Wick?.Rules is not { Count: > 0 } rules) return 1;
+        double m = 1;
+        foreach (var r in rules)
+            if (r.Rule == "cleaver.big_game") m *= r.Arg("cooldown", 1.15);
+            else if (r.Rule == "cleaver.light_grip") m *= r.Arg("cooldown", 0.8);
+        return m;
+    }
+
     double CleaverPace(WeaponInst w) =>
         (Wk(w, "cleaver.big_game") ? Wn("cleaver.big_game", "cooldown", 1.15) : 1) * (Wk(w, "cleaver.light_grip") ? Wn("cleaver.light_grip", "cooldown", 0.8) : 1);
 
@@ -213,7 +224,7 @@ public sealed partial class Battle
     double warPaceUntil = double.NegativeInfinity, warPace = 1, unshackledUntil = double.NegativeInfinity, unshackled = 1;
     double boundUntil = double.NegativeInfinity, boundSaved, cometHung;
     int boundChain;
-    (double X, double Z, double R, double Until, HashSet<int> Inside)? henge;
+    (double X, double Z, double R, double Until, HashSet<Lifetime> Inside)? henge;  // (SU-053) the ring's captives by lifetime
 
     /// <summary>The leap's reach (far_spring 13 m; a bound of unending_bound 9 m at most).</summary>
     internal double RuleLeapRange(WeaponInst w, double range)
@@ -296,8 +307,8 @@ public sealed partial class Battle
         if (Wk(w, "heroic_leap.henge"))
         {
             double r = Wn("heroic_leap.henge", "radius", 6);
-            var inside = new HashSet<int>();
-            foreach (var e in HostilesInRadius(x, z, r)) if (!e.Elite && !e.Boss) inside.Add(e.Id);
+            var inside = new HashSet<Lifetime>();
+            foreach (var e in HostilesInRadius(x, z, r)) if (!e.Elite && !e.Boss) inside.Add(Lifetime.Of(e));
             henge = (x, z, r, Time + Wn("heroic_leap.henge", "seconds", 4), inside);
             Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = School.Physical, Duration = Wn("heroic_leap.henge", "seconds", 4), Rings = 1 });
         }
@@ -326,7 +337,8 @@ public sealed partial class Battle
 
     /* ------------------------------------------------------------- the charge -- */
 
-    readonly List<Enemy> riders = new();
+    /// <summary>(SU-053) What rides her shield, by lifetime.</summary>
+    readonly List<Lifetime> riders = new();
     double shieldUpUntil = double.NegativeInfinity, sprungAt = double.NegativeInfinity;
     double stampedeUntil = double.NegativeInfinity, stampedeSaved;
     int stampedeRun;
@@ -350,8 +362,8 @@ public sealed partial class Battle
     internal void RuleRide(WeaponInst? w, Enemy e)
     {
         if (w == null || !Wk(w, "shield_charge.swept_along") || riders.Count >= (int)Wn("shield_charge.swept_along", "most", 8)) return;
-        if (e.Elite || e.Boss || !e.Alive || e.State == EnemyState.Dying || riders.Contains(e)) return;
-        riders.Add(e);
+        if (e.Elite || e.Boss || !e.Alive || e.State == EnemyState.Dying || riders.Contains(Lifetime.Of(e))) return;
+        riders.Add(Lifetime.Of(e));
     }
 
     /// <summary>Each step of the run: what rides her shield is carried before her.</summary>
@@ -361,9 +373,9 @@ public sealed partial class Battle
         var p = Player;
         var a = Art;
         int i = 0;
-        foreach (var e in riders)
+        foreach (var h in riders)
         {
-            if (!e.Alive || e.State == EnemyState.Dying) continue;
+            if (Live(h) is not { } e || e.State == EnemyState.Dying) continue;
             double side = (i % 2 == 0 ? 1 : -1) * Math.Ceiling(i / 2.0) * 0.7, ahead = p.Radius + e.Radius + 0.3;
             e.X = p.X + a.RushDX * ahead + a.RushDZ * side;
             e.Z = p.Z + a.RushDZ * ahead - a.RushDX * side;
@@ -390,16 +402,16 @@ public sealed partial class Battle
             foreach (var e in struck)
                 HitEnemy(e, run.Damage * Wn("shield_charge.landslide", "damage", 1), School.Physical, run.Tags, new HitOpts { Weapon = w, Knockback = 1, DirX = a.RushDX, DirZ = a.RushDZ });
             int i = 0;
-            foreach (var e in riders)
+            foreach (var h in riders)
             {
-                if (!e.Alive || e.State == EnemyState.Dying) continue;
+                if (Live(h) is not { } e || e.State == EnemyState.Dying) continue;
                 double along = len * (0.5 + 0.5 * (i % 3) / 2.0);
                 e.X = p.X + a.RushDX * along; e.Z = p.Z + a.RushDZ * along;
                 Collision.Resolve(ref e.X, ref e.Z, e.Radius);
                 i++;
             }
         }
-        foreach (var e in riders) if (e.Alive && e.State != EnemyState.Dying) Stun(e, stun);
+        foreach (var h in riders) if (Live(h) is { } e && e.State != EnemyState.Dying) Stun(e, stun);
         riders.Clear();
         if (Wk(w, "shield_charge.shield_up")) shieldUpUntil = Time + Wn("shield_charge.shield_up", "seconds", 2);
         if (Wk(w, "shield_charge.stampede") && stampedeRun + 1 < (int)Wn("shield_charge.stampede", "runs", 3) && w.Timer > 0)
@@ -444,8 +456,8 @@ public sealed partial class Battle
 
     /* -------------------------------------------------------------- the vow -- */
 
-    readonly Dictionary<int, double> goaded = new();
-    readonly HashSet<int> marched = new();
+    readonly Dictionary<Lifetime, double> goaded = new();
+    readonly HashSet<Lifetime> marched = new();
 
     /// <summary>The vow's numbers: kept_count (stores 35%), anvil (cut by 70%), steadfast (3.5 s), old_grudge (5 times).</summary>
     internal double RuleVowStore(WeaponInst w, double store) => WkOver(w, "iron_vow.kept_count", "store", store);
@@ -464,14 +476,14 @@ public sealed partial class Battle
         foreach (var e in HostilesInRadius(p.X, p.Z, Wn("iron_vow.come_then", "radius", 12)))
         {
             if (e.Boss) continue;
-            goaded[e.Id] = Time + seconds;
+            goaded[Lifetime.Of(e)] = Time + seconds;
             e.Target = -1;
             Interrupt(e);
         }
     }
 
     /// <summary>The AI's want (Ai): a goaded thing rushes her, an archer or a caster too.</summary>
-    internal bool RuleGoaded(Enemy e) => goaded.Count > 0 && goaded.TryGetValue(e.Id, out var t) && Time < t;
+    internal bool RuleGoaded(Enemy e) => goaded.Count > 0 && goaded.TryGetValue(Lifetime.Of(e), out var t) && Time < t;
 
     /// <summary>A blow on her in the brace (VowTake): like_for_like strikes its striker back for half of it.</summary>
     internal void RuleVowBlow(WeaponInst w, double dmg, Enemy? from)
@@ -569,7 +581,7 @@ public sealed partial class Battle
                     if (!e.Alive || e.State == EnemyState.Dying || e.Boss) continue;
                     double dx = e.X - h.X, dz = e.Z - h.Z, d = Len(dx, dz);
                     if (d < 0.01) continue;
-                    if (h.Inside.Contains(e.Id)) { double most = h.R - e.Radius; if (d > most) { e.X = h.X + dx / d * most; e.Z = h.Z + dz / d * most; } }
+                    if (h.Inside.Contains(Lifetime.Of(e))) { double most = h.R - e.Radius; if (d > most) { e.X = h.X + dx / d * most; e.Z = h.Z + dz / d * most; } }
                     else { double least = h.R + e.Radius; if (d < least) { e.X = h.X + dx / d * least; e.Z = h.Z + dz / d * least; } }
                 }
         }
@@ -580,7 +592,7 @@ public sealed partial class Battle
             if (Len(p.Vx, p.Vz) > 0.5)
                 foreach (var e in HostilesInRadius(p.X, p.Z, p.Radius + 0.9))
                 {
-                    if (e.Elite || e.Boss || !marched.Add(e.Id)) continue;
+                    if (e.Elite || e.Boss || !marched.Add(Lifetime.Of(e))) continue;
                     double vl = Len(p.Vx, p.Vz), sx = -p.Vz / vl, sz = p.Vx / vl;
                     if ((e.X - p.X) * sx + (e.Z - p.Z) * sz < 0) { sx = -sx; sz = -sz; }
                     e.X += sx * Wn("iron_vow.iron_march", "shove", 2);

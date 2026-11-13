@@ -118,6 +118,9 @@ public sealed partial class Battle
         w.CastMul = m;
     }
 
+    /// <summary>(SU-050) The strength a strike scheduled now carries: its weapon's CastMul inside that weapon's cast, else 1.</summary>
+    internal double CastOf(WeaponInst? w) => w != null && castingW == w ? w.CastMul : 1;
+
     /// <summary>After a spell is cast: the Ledger turns, and the Echo is set.</summary>
     public void ArcanistAfterCast(WeaponInst w, bool fired)
     {
@@ -192,7 +195,7 @@ public sealed partial class Battle
         var near = HostilesInRadius(Player.X, Player.Z, 14);
         if (near.Count == 0 || pr.Seek is Seek.Elite or Seek.Strongest or Seek.Marked) return;
         near.Sort((a, c) => Dist(a.X, a.Z, Player.X, Player.Z).CompareTo(Dist(c.X, c.Z, Player.X, Player.Z)));
-        pr.Target = near[(v.N - 1) % near.Count].Id;
+        pr.Home(near[(v.N - 1) % near.Count]);
     }
 
     /// <summary>moonweaver.crowded_sky: no two of a volley strike the same thing.</summary>
@@ -244,7 +247,9 @@ public sealed partial class Battle
         // moonweaver.seeking_motes.heavy_motes
         if (id == "seeking_motes") m += l.SizeOn("skill.harder", "more", id, tags);
         // The cast's own strength (Ledger, Crowded Sky, Echo) on what a spell strikes at once; projectiles carry it from the hand.
-        if (castingW != null && o.Weapon == castingW && !o.Projectile && !o.Dot) m *= castingW.CastMul;
+        // (SU-050) a hit landing after its cast (a scheduled strike) carries the strength stamped at scheduling, once.
+        if (o.Cast is { } cast) m *= cast;
+        else if (castingW != null && o.Weapon == castingW && !o.Projectile && !o.Dot) m *= castingW.CastMul;
         // kindler.ash_walker: outside her ground, spells are weaker (a price, kept in full).
         if (l.Has("ash_walker") && !inYourGround && !o.Dot && tags.Has(Tag.Spell)) m *= 1 - l.Full("ash_walker", "weaker", 0.15);
         return m;

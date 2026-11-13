@@ -524,9 +524,10 @@ sealed class Playthrough
         if (key == "fall")
         {
             J.Ch.Stats.Deaths++;
-            if (Zone!.OnDeath("the wood")) { Settle(); return Followed(); }
-            J.Fell(Zone.Id, Zone.Name, "the wood", b.Player, new Random(7));
-            return Move("waystation", "death", null);
+            // (SU-058) every fighting zone answers a death itself: there is no fallback fall
+            if (!Zone!.OnDeath("the wood")) throw new InvalidOperationException($"{Zone.Id} did not answer a death");
+            Settle();
+            return Followed();
         }
         return null;
     }

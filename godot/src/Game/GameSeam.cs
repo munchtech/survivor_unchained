@@ -88,7 +88,7 @@ public partial class Game
     {
         if (seam is not { } s) return;
         // Another cinematic or a held view took the camera: the ease gives way at once (its HUD and control too).
-        if (cine != null || showing) { seam = null; if (cine == null) { controls.Captured = s.After; hud.ShowPlay(true, 0.3f); } return; }
+        if (cine != null || showing) { seam = null; if (cine == null) { controls.Captured = InputOwner.CapturedOnSeamEnd(s.After, screens.Current != null); hud.ShowPlay(true, 0.3f); } return; }
         s.T += dt;
         double k = Math.Clamp(s.T / s.Dur, 0, 1);
         float e = (float)SurvivorUnchained.Cinema.CineCamera.Ease("slow", k);
@@ -124,7 +124,8 @@ public partial class Game
         if (!s.Hud && k >= Math.Max(0, 1 - 0.25 / s.Dur)) { s.Hud = true; hud.ShowPlay(true, 0.5f); }
         if (k < 1) return;
         seam = null;
-        controls.Captured = s.After;
+        // (whoever owns input as it lands: a menu opened during the ease keeps its capture, SU-033)
+        controls.Captured = InputOwner.CapturedOnSeamEnd(s.After, screens.Current != null);
         controls.ClearLatches();
         SoundHooks.Play("cine.to_play");
         cutLogLeft = Args.Has("cutlog") ? 3.0 : 0;

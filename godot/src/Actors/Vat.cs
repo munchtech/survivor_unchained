@@ -41,6 +41,9 @@ public sealed class VatAsset
     /// <summary>How far each death's body moves on the ground from its first frame to its last (model space, metres):
     /// a body that lies along a line shows its fall by it (Vat.Laid).</summary>
     public Dictionary<string, Vector2> Laid = new();
+    /// <summary>When each death's body is half way down (s into the clip): its vertices' mean height has fallen half way
+    /// from its first frame to its lowest (Vat.Downs). A mass kill's topple runs its clip to here fast (CrowdView).</summary>
+    public Dictionary<string, double> Down = new();
     /// <summary>Where its glowing glass is (a carried lamp's: Corvane's), model space, at each frame row; null: it has none
     /// (Vat.Glass). The view sets a carried light and its glow on it, in every pose (P6 judge r2 fix 2).</summary>
     public Vector3[]? Glass;
@@ -113,7 +116,12 @@ public static class Vat
         var key = beast?.Key ?? spec.Key;
         if (cache.TryGetValue(key, out var shared)) { cache[spec.Key] = shared; return shared; }
         var kept = Load(key);
-        var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : BakePerson(spec, host);
+        VatAsset? fromDisk = null;
+        if (kept != null)
+            // A cache that reads but won't build is thrown away and the kind baked fresh (SU-009).
+            try { fromDisk = Build(kept); }
+            catch (Exception e) { GD.PushWarning($"vat: cached {key} would not build ({e.Message}); baking it again"); DirAccess.RemoveAbsolute(CachePath(key)); kept = null; }
+        var asset = fromDisk ?? (beast != null ? BakeBeast(beast, host) : BakePerson(spec, host));
         if (beast == null) asset.Pace = Pace(spec);
         if (beast == null) asset.FallOff = Falls(spec, asset);
         if (Args.Has("crowd-census") && asset.FallOff != null)
@@ -863,7 +871,7 @@ public static class Vat
         }
         // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
-        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Glass = Glass(b) };
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Down = Downs(b), Glass = Glass(b) };
     }
 
     /// <summary>Each death's lying body against its first frame: the move of the body's middle (all its vertices' mean,
@@ -920,6 +928,33 @@ public static class Vat
             if (role.StartsWith("die", StringComparison.Ordinal) && c.Frames > 1 && (c.Start + c.Frames) * b.Rows * b.Width * 8 <= b.Pos.Length)
                 laid[role] = Mid(c.Start + c.Frames - 1) - Mid(c.Start);
         return laid;
+    }
+
+    static Dictionary<string, double> Downs(Baked b)
+    {
+        int total = 0;
+        foreach (var sf in b.Surfs) total = Math.Max(total, sf.Offset + sf.Count);
+        var down = new Dictionary<string, double>();
+        if (total == 0) return down;
+        double Y(int frame)
+        {
+            double y = 0;
+            int at = frame * b.Rows * b.Width;
+            for (int i = 0; i < total; i++) y += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, (at + i) * 8 + 2));
+            return y / total;
+        }
+        foreach (var (role, c) in b.Clips)
+        {
+            if (!role.StartsWith("die", StringComparison.Ordinal) || c.Frames < 2 || (c.Start + c.Frames) * b.Rows * b.Width * 8 > b.Pos.Length) continue;
+            var ys = new double[c.Frames];
+            for (int f = 0; f < c.Frames; f++) ys[f] = Y(c.Start + f);
+            double low = ys[0];
+            foreach (var y in ys) low = Math.Min(low, y);
+            double half = ys[0] - (ys[0] - low) * 0.5;
+            int k = Array.FindIndex(ys, y => y <= half);
+            down[role] = (k < 0 ? c.Frames - 1 : k) / (double)(c.Frames - 1) * c.Duration;
+        }
+        return down;
     }
 
     /// <summary>
@@ -1061,8 +1096,18 @@ public static class Vat
         if (DisplayServer.GetName() == "headless") return;
         DirAccess.MakeDirRecursiveAbsolute("user://vat");
         Sweep();
-        using var f = FileAccess.Open(CachePath(b.Key), FileAccess.ModeFlags.Write);
-        if (f == null) return;
+        // Written beside, then moved over (SU-009): a crash mid-write never leaves a short cache in place.
+        var tmp = CachePath(b.Key) + ".tmp";
+        if (Write(b, tmp))
+            try { System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(CachePath(b.Key)), true); }
+            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { DirAccess.RemoveAbsolute(tmp); }
+        else DirAccess.RemoveAbsolute(tmp);
+    }
+
+    static bool Write(Baked b, string path)
+    {
+        using var f = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+        if (f == null) return false;
         void Blob(byte[] data) { f.Store32((uint)data.Length); f.StoreBuffer(data); }
         f.Store32(Version);
         f.Store32((uint)b.Width); f.Store32((uint)b.Rows); f.Store32((uint)b.FrameCount); f.StoreFloat(b.Height);
@@ -1086,7 +1131,7 @@ public static class Vat
             else
             {
                 var img = s.Tex.GetImage();
-                if (img == null || img.IsEmpty()) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
+                if (img == null || img.IsEmpty()) { f.Close(); return false; }
                 f.Store8(2);
                 f.Store32((uint)img.GetWidth()); f.Store32((uint)img.GetHeight()); f.Store32((uint)img.GetFormat()); f.Store8((byte)(img.HasMipmaps() ? 1 : 0));
                 Blob(img.GetData());
@@ -1098,6 +1143,9 @@ public static class Vat
             f.StoreFloat(s.DyeLum);
             f.StoreFloat(s.Cut);
         }
+        bool ok = f.GetError() == Error.Ok;
+        f.Close();
+        return ok;
     }
 
     static bool swept;
@@ -1166,8 +1214,24 @@ public static class Vat
             s.Cut = f.GetFloat();
             surfs.Add(s);
         }
-        if (f.GetError() != Error.Ok && f.GetError() != Error.FileEof) return null;
+        // A short or inconsistent cache (a cut-off write, a bad disk) is refused and the kind baked again (SU-009):
+        // reading past the end, frame data that doesn't fill its dimensions, a clip past the frames, no idle,
+        // or a surface whose arrays disagree.
+        if (f.GetError() != Error.Ok || f.GetPosition() != f.GetLength()) return Refused(key, "short");
+        long cells = (long)width * rows * frames;
+        if (width <= 0 || rows <= 0 || frames <= 0 || pos.LongLength != cells * 8 || nor.LongLength != cells * 4) return Refused(key, "dimensions");
+        if (!clips.ContainsKey("idle")) return Refused(key, "clips");
+        foreach (var c in clips.Values) if (c.Start < 0 || c.Frames <= 0 || c.Start + c.Frames > frames) return Refused(key, "clips");
+        foreach (var s in surfs)
+            if (s.N.Length != s.V.Length || s.Uv.Length != s.V.Length || s.Color != null && s.Color.Length != s.V.Length || Array.Exists(s.Index, i => (uint)i >= (uint)s.V.Length))
+                return Refused(key, "surface");
         return new Baked { Key = key, Width = width, Rows = rows, FrameCount = frames, Height = height, Clips = clips, Pos = pos, Nor = nor, Surfs = surfs };
+    }
+
+    static Baked? Refused(string key, string why)
+    {
+        GD.PushWarning($"vat: cached {key} refused ({why}); baking it again");
+        return null;
     }
 
     static void Half(byte[] b, int at, float v)

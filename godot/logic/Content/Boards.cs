@@ -134,7 +134,7 @@ public static class Boards
     }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>(System.Environment.GetEnvironmentVariable("SU_BOARDS") is { Length: > 0 } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("boards.json"));
+    static File F => file ??= Json.Parse<File>(DevOverrides.Env("SU_BOARDS") is { } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("boards.json"));
 
     /// <summary>A place's board at a table-night tier, or null (made as it was).</summary>
     public static Def? For(string place, int tier) =>

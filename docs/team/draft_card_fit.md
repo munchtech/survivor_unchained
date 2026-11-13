@@ -1,7 +1,21 @@
 # DraftCardFitTests: native script lifetime
 
-Branch: `codex/draft-card-fit`, based on integration `ede4bf910`.
-Status: ready; deterministic regression and ten consecutive full suites passed.
+Branch: `codex/draft-card-fit`; original base `ede4bf910`.
+Current integration merge: `e544020349742c9dbdccaf744c320178b6031715`.
+Status: Round 3 validation in progress on the merged result.
+
+## Round 3
+
+Integration still uses Godot.NET.Sdk 4.5.1 and has no changes to `OrnateBox` or
+`CardFit` since the original base. On the merged code, removing the pin made the
+collection regression fail; restoring it passed the regression and 1,914 card
+checks. Three consecutive full green suites are now required before the updated MR line.
+The separate coverage defect is recorded under "Noted by Codex job 6" in
+`docs/team/hook/CODEX_audit.md`; its logic is unchanged in this branch.
+
+The first merged checkpoint, `e54402034`, passed three full suites with 2,386
+passed, 0 failed, and 11 skipped each. A newer ruling names `d310d57db`; the next
+fetch returned `9e61bcbcb`. Merge and validate that current tip before reporting.
 
 ## Cause and fix
 
@@ -35,7 +49,7 @@ Evidence is preserved in
 `lifetime-red.log`, `lifetime-green.log`, and `validation.json`.
 The ten fixed runs' logs, TRX results, card reports, and order reports are there too.
 
-## Validation and existing findings
+## Original validation and existing findings
 
 - Focused regression: red before the fix, green after it; 1,914 cards, zero fit failures.
 - Ten consecutive full suites (`fixed-01` through `fixed-10`) passed on the

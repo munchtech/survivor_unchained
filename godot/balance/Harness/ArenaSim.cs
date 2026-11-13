@@ -474,7 +474,6 @@ public static class ArenaSim
                 }
             }
             host.Pass(Dt);
-            j.BankArt(b);
             if (fx?.Replay is { } replay)
             {
                 b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0;

@@ -62,7 +62,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /// <summary>The place's spaces open now: where she, a leap and the crowd may be.</summary>
     readonly HashSet<string> open = new();
     readonly Dictionary<int, (double Seed, Func<Enemy, double, bool> Tick)> scripted = new();
-    readonly HashSet<int> smallChests = new(), chests = new();
+    /// <summary>The named foes carrying a small chest: pool id and generation (Seed), so the next creature handed
+    /// the slot carries nothing (SU-036).</summary>
+    readonly Dictionary<int, double> smallChests = new();
     readonly Dictionary<int, double> leaving = new();
     int chestsOpened;
     /// <summary>What is left of the stage's crowd, and when it next tops up.</summary>
@@ -544,6 +546,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     void Clear(bool all)
     {
         var b = B!;
+        attempt++;
         if (all || atBoss)
         {
             script?.Clear();
@@ -556,6 +559,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         foreach (var pr in b.Projectiles.Living().ToList()) if (pr.Owner == Side.Enemy) b.Projectiles.Release(pr);
         b.CancelBlows();
         scripted.Clear();
+        smallChests.Clear();
         leaving.Clear();
         Interactables.RemoveAll(i => i.Id.StartsWith("story:"));
         Choice = null;
@@ -695,6 +699,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         Now = Stage.Won;
         StageEnded("boss");
         if (boss != null) foreach (var l in Hoard()) B.Spill(l, x, z);
+        attempt++;
         script?.Clear();
         boss = null;
         // The outcome told first: the end's cinematic reads it (redcowl = spared picks its words).
@@ -715,6 +720,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     {
         if (B == null || over) return;
         over = true;
+        attempt++;
         Now = Stage.Over;
         G.SetBoss(null);
         var result = Arenas.Finish(G.Journey, B, Spec, won, killer);
@@ -735,9 +741,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var o = new List<Loot>();
-        bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
-        if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
-        if (carrier) o.AddRange(Gear(e.Level, small ? DropSource.Miniboss : DropSource.Champion));
+        if (!smallChests.Remove(e.Id, out var seed) || seed != e.Seed) return o;
+        o.Add(new Loot(PickupKind.Chest, "small", 1, true));
+        o.AddRange(Gear(e.Level, DropSource.Miniboss));
         return o;
     }
 
@@ -855,7 +861,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         fists.AttackEvery = (fists.AttackEvery ?? 1.0) * NamedFists;
         e.Def = fists;
         if (quiet) return e;
-        smallChests.Add(e.Id);
+        smallChests[e.Id] = e.Seed;
         B!.Charges.Calm(B, 4);
         G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker ?? (Fight.Kicker != "" ? Fight.Kicker : null)));
         return e;
@@ -874,7 +880,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public double HeightAt(double x, double z) => G.Look.HeightAt(x, z);
     public bool Test(Cond cond) => Rules.Test(cond, C);
     bool IStoryArena.Knows(string key) => Knows(key);
-    public void After(double seconds, Action act) => G.After(seconds, act);
+    /// <summary>Delayed work belongs to the attempt that asked for it: a rise, a clear and the night's end move
+    /// the attempt on, and work an older attempt asked for is dropped (a cage asked for before a rise never
+    /// lands on the boss that rose in its place).</summary>
+    public void After(double seconds, Action act)
+    {
+        int asked = attempt;
+        G.After(seconds, () => { if (asked == attempt) act(); });
+    }
+
+    /// <summary>The attempt delayed work belongs to (see After).</summary>
+    int attempt;
 
     public List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null)
     {

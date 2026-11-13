@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 
 namespace SurvivorUnchained.Sim;
 
@@ -56,18 +58,47 @@ public sealed class LampLoadout
         rule is "rite" or "link" or "hand" or "tags.more" or "tags.sooner" or "tags.duration" or "tags.status" or "tags.kill_mend"
         || rule.StartsWith("hand.", StringComparison.Ordinal) || rule.StartsWith("blue.", StringComparison.Ordinal);
 
-    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit (read once).</summary>
-    static readonly HashSet<string> Off = new((Environment.GetEnvironmentVariable("LAMPS_OFF") ?? "")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit. Read through the dev gate
+    /// when used, never cached before the host sets it, so a release build lights every lamp (Codex audit SU-052).</summary>
+    static (string Raw, HashSet<string> Ids)? offCache;
+    static bool Off(string rule)
+    {
+        if (DevOverrides.Env("LAMPS_OFF") is not { } raw) return false;
+        var c = offCache;
+        if (c is not { } hit || hit.Raw != raw)
+            offCache = c = (raw, new HashSet<string>(raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)));
+        return c.Value.Ids.Contains(rule);
+    }
 
     public void Add(LampEffect e)
     {
-        if (e.Rule == null || Off.Contains(e.Rule)) return;
+        if (e.Rule == null || Off(e.Rule)) return;
         Version++;
         if (IsBoardRule(e.Rule)) { Board = true; if (e.Rule == "blue.unhoused") Unhoused = true; }
         Rules.TryAdd(e.Rule, e);
         if (!Each.TryGetValue(e.Rule, out var l)) Each[e.Rule] = l = new();
         l.Add(e);
+    }
+
+    readonly List<LampEffect> wick = new();
+    /// <summary>(SU-051) How many rule-tree lamp effects the fight has lit here (Battle.SyncWickRules).</summary>
+    public int WickCount => wick.Count;
+
+    /// <summary>(SU-051) The rule trees' lit effects: the last set taken out (each rule falls back to the lamps still
+    /// lighting it), these added. The same set again changes nothing.</summary>
+    public void SetWick(IReadOnlyList<LampEffect> fx)
+    {
+        if (fx.Count == wick.Count && fx.SequenceEqual(wick)) return;
+        foreach (var e in wick)
+        {
+            if (e.Rule == null || !Each.TryGetValue(e.Rule, out var l)) continue;
+            l.Remove(e);
+            if (l.Count == 0) { Each.Remove(e.Rule); Rules.Remove(e.Rule); }
+            else if (Rules.TryGetValue(e.Rule, out var r) && ReferenceEquals(r, e)) Rules[e.Rule] = l[0];
+        }
+        wick.Clear();
+        Version++;
+        foreach (var e in fx) { if (e.Rule == null || Off(e.Rule)) continue; Add(e); wick.Add(e); }
     }
 
     /// <summary>A rule's size, at a quarter by night: summed over every lamp lighting it.</summary>

@@ -113,7 +113,7 @@ public static class SoundBank
             double p = (l.Pitch is { Length: 2 } pr ? Synth.R(pr[0], pr[1]) : 1) * pitch;
             s.Play(new Clip
             {
-                Of = l.Take, G = gl, Pitch = p, Lp = l.Lp, Verb = l.Verb, Bus = Buses[bi],
+                Of = l.Take, G = gl, Pitch = p, Lp = l.Lp, Verb = l.Verb, Bus = Buses[bi], Lead = e.Lead,
                 T = at != null || l.Delay > 0 ? t0 + l.Delay : null,
                 Pan = l.Stereo ? 0 : w.Pan + (l.Pan ?? 0), Stereo = l.Stereo,
                 Len = len is double n ? Math.Max(0.05, n - l.Delay) : null, Tail = tail,

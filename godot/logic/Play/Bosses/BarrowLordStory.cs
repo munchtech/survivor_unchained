@@ -516,6 +516,8 @@ public sealed class BarrowLordStory : StoryBoss, IBound
         layT = 0;
         layHeld = 0;
         e.TakenMul = 0;
+        // (SU-060) Protected, he takes nothing; his laying still hears holy (OnHit), by name.
+        e.HearsWhileProtected = "barrow_lord.laying";
         e.Hp = 1;
         e.Vx = e.Vz = 0;
         Channel = "Lay him down";
@@ -553,6 +555,7 @@ public sealed class BarrowLordStory : StoryBoss, IBound
         if (layHeld >= 3)
         {
             laying = false;
+            e.HearsWhileProtected = null;
             Ending = true;
             Channel = null;
             e.Disposition = Disposition.Neutral;
@@ -564,6 +567,7 @@ public sealed class BarrowLordStory : StoryBoss, IBound
         if (layT >= 8)
         {
             laying = false;
+            e.HearsWhileProtected = null;
             Channel = null;
             risings++;
             e.TakenMul = 1;

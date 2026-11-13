@@ -344,6 +344,8 @@ public sealed class BarrowLord : ArenaBoss
         layT = 0;
         layHeld = 0;
         e.TakenMul = 0;
+        // (SU-060) Protected, he takes nothing; his laying still hears holy (OnHit), by name.
+        e.HearsWhileProtected = "barrow_lord.laying";
         e.Hp = 1;
         Channel = "He will not lie down: stand over him";
         ChannelProgress = 0;
@@ -366,6 +368,7 @@ public sealed class BarrowLord : ArenaBoss
         if (layHeld >= 3)
         {
             laying = false;
+            e.HearsWhileProtected = null;
             Channel = null;
             e.TakenMul = 1;
             e.HpFloor = 0;
@@ -376,6 +379,7 @@ public sealed class BarrowLord : ArenaBoss
         if (layT >= 8)
         {
             laying = false;
+            e.HearsWhileProtected = null;
             Channel = null;
             risings++;
             e.TakenMul = 1;

@@ -86,6 +86,24 @@ def trim_tail(x, tail_db=-55.0, fade_ms=15.0):
     return x
 
 
+def onset_shape(x):
+    """(pre-roll ms, rise ms): 5 ms RMS envelope; pre-roll = first point above -30 dB under the peak, rise = pre-roll
+    to the first point within 3 dB of the max (same as scratch attack.py)."""
+    y = np.abs(x) if x.ndim == 1 else np.abs(x).max(axis=1)
+    win = max(1, int(RATE * 0.005))
+    env = np.sqrt(np.convolve(y * y, np.ones(win) / win, mode="same"))
+    pk = env.max() + 1e-12
+    pre = int(np.argmax(env > pk * 10 ** (-30 / 20)))
+    top = int(np.argmax(env > pk * 10 ** (-3 / 20)))
+    return pre, pre / RATE * 1000, (top - pre) / RATE * 1000
+
+
+def trim_preroll(x, keep_ms=2.0):
+    pre, _, _ = onset_shape(x)
+    start = pre - int(RATE * keep_ms / 1000)
+    return x[start:] if start > 0 else x
+
+
 def fade_in(x, ms=2.0):
     x = x.copy()
     f = min(int(RATE * ms / 1000), len(x))
@@ -146,6 +164,8 @@ def process_take(raw, fam):
             f = int(fam.get("fade_out_ms", 150) * RATE / 1000)
             ramp = np.linspace(1.0, 0.0, f)
             s[-f:] *= ramp[:, None] if s.ndim == 2 else ramp
+    if fam.get("max_rise_ms"):
+        s = trim_preroll(s)
     s = fade_in(s)
     if kind == "bed":
         s = make_loop(s)
@@ -266,6 +286,8 @@ def process_family(name, fam):
         m = t["m"]
         if fam["kind"] == "oneshot" and m["onset_ms"] > fam.get("max_onset_ms", 25):
             t["drop"] = "onset %.0f ms > %d" % (m["onset_ms"], fam.get("max_onset_ms", 25))
+        elif fam.get("max_rise_ms") and onset_shape(t["x"])[2] > fam["max_rise_ms"]:
+            t["drop"] = "rise %.0f ms > %d" % (onset_shape(t["x"])[2], fam["max_rise_ms"])
         elif m["clipped"] > 0:
             t["drop"] = "clipped %d" % m["clipped"]
         elif fam["kind"] != "bed" and not (0.4 * sec <= m["duration_s"] <= 2.5 * sec):
@@ -316,6 +338,9 @@ def process_family(name, fam):
                 cur.append(t)
             groups.append(cur)
             ok = [t for g in groups for t in sorted(g, key=lambda t: rank[id(t)])]
+    if fam.get("pick"):  # a hand/measure-chosen set of cache indices (among those that pass), e.g. for distinct ladders
+        ok = [t for t in ok if t["i"] in fam["pick"]]
+        keep = len(ok)
     kept = ok[:keep]
     for t in ok[keep:]:
         t["drop"] = "not among the %d best-ranked takes" % keep

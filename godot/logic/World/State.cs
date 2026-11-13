@@ -170,7 +170,9 @@ public sealed class WorldState
     public List<ScheduledChange> Scheduled = new();
     /// <summary>Zone-persistent objects: opened chests, burned walls, picked herbs.</summary>
     public Dictionary<string, Dictionary<string, Fact>> Zones = new();
+    /// <summary>(SU-058) Retired with the corpse-and-nemesis death: an old save's are read and ignored.</summary>
     public CorpseState? Corpse;
+    /// <summary>(SU-058) Retired, as Corpse.</summary>
     public NemesisState? Nemesis;
     /// <summary>What a night with the ember lit outside an arena (the prologue's) has taught,
     /// banked until its dawn (Journey.Douse).</summary>
@@ -211,6 +213,10 @@ public sealed class WorldState
     /// (Crafting.ShelfPrice). A save from before shelves kept 48 places: two shelves.</summary>
     public const int Shelf = 24;
     public int Shelves => System.Math.Max(1, Stash.Count / Shelf);
+    /// <summary>What Rook holds by the door while her shelves are full: protected loot (Rare and up, a jackpot)
+    /// a fight's end or a zone left could not shelve. It goes onto the shelves as room is made (SU-019:
+    /// it used to stay on the ground and go with the zone).</summary>
+    public List<ItemInstance> Held = new();
     static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(Shelf); for (int i = 0; i < Shelf; i++) s.Add(null); return s; }
 
     public static WorldState Fresh(uint seed) => new() { Seed = seed };

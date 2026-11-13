@@ -79,6 +79,8 @@ public partial class Game : Node, IZoneHost
         // Data through Godot's file access from the first frame: skills.json and items.json are read
         // on first use, which can come before any zone loads, and only res:// reads inside an export.
         ZoneData.UseGodotFiles();
+        // A release build takes no tuning file from the environment (SU-007): only dev and perf builds do.
+        Core.DevOverrides.On = Args.Dev;
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
         // The Lamps v2 board is the default; --lampsv1 (or SU_LAMPS_V2=0) plays v1's for one release (LAMPS_V2_RULES.md "The flag").
@@ -406,6 +408,11 @@ public partial class Game : Node, IZoneHost
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
+        // --enter ZONE@S: entered S seconds in as a loaded save is, not travelled to (SU-021's check: with
+        // --prepare ZONE@S' just before, the place is still being built ahead).
+        foreach (var hop in Args.Get("enter")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => { GD.Print($"enter {onTo} (built ahead: {aheadId == onTo})"); EnterWhenBuilt(onTo, null, null, () => GD.Print($"entered {onTo}")); });
         // --cine ID: that cinematic played here at once (pictures of it, its previs),
         // and on into the one it runs on into (its end.next), as the zone plays them.
         // --cine-at T: it begins T seconds in, from play (perf: a start's cost seen apart from the load's).
@@ -447,9 +454,16 @@ public partial class Game : Node, IZoneHost
 
     int FreeSlot()
     {
-        var used = saves.Slots().Select(s => s.Slot).ToHashSet();
+        // The one the player chose to replace; else the first free one. The title never begins a fourth
+        // journey without asking which to replace; only the dev paths (--new, the autopilot) fall back
+        // to the oldest.
+        if (replaceSlot is int chosen) { replaceSlot = null; return chosen; }
+        var slots = saves.Slots();
+        var used = slots.Select(s => s.Slot).ToHashSet();
         for (int i = 0; i < Saves.SlotCount; i++) if (!used.Contains(i)) return i;
-        return saves.Slots().OrderBy(s => s.SavedAt).First().Slot;
+        var oldest = slots.Where(s => !s.Newer).OrderBy(s => s.SavedAt).FirstOrDefault() ?? slots.OrderBy(s => s.SavedAt).First();
+        GD.Print($"save: every slot in use, slot {oldest.Slot} replaced (a dev path)");
+        return oldest.Slot;
     }
 
     void Hook()
@@ -478,7 +492,7 @@ public partial class Game : Node, IZoneHost
         var s = Settings.Current;
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
-        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop && !Args.Has("no-hitstop") /* P7 debug: a shoot with no hitstop */; scene.Fx.Flare.Motion = s.Motion switch { "off" => 0, "reduced" => 0.5f, _ => 1 }; }
+        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop && !Args.Has("no-hitstop") /* P7 debug: a shoot with no hitstop */; scene.Fx.Flare.Shake = s.Motion switch { "off" => 0, "reduced" => 0.5f, _ => 1 }; }
         Graphics.Apply(s, air, GetViewport(), scene);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
         voice?.Apply();
@@ -646,9 +660,13 @@ public partial class Game : Node, IZoneHost
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
         // Nor a callout.
         TeachLeave();
+        // Nor a storybook still fading in (SU-032): its page and its `then` are dropped, its holds let go.
+        if (storyAsked != null) { storyAsked = null; hud.HoldToasts = false; hud.HoldTip = false; }
         ClearKept();
         zone?.Dispose();
         zone = null;
+        // (the close view's lights live in the scene: given back and let go with it, GameCloseUp.CloseUpLeave)
+        CloseUpLeave();
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }
         scene = null;
         figure = null;
@@ -933,6 +951,18 @@ public partial class Game : Node, IZoneHost
         else Wait(0, () => WhenBuilt(id, fn));
     }
 
+    /// <summary>EnterZone from outside travel (a save loaded, a fall carried to the Waystation), then `then`. A place
+    /// still being built ahead (the Prologue asks for the Waystation) is finished first over the next frames behind
+    /// the black, as travel waits; never at once in Stage (SU-021: its workers' loads need the main thread's frames,
+    /// and Finish waited for them forever).</summary>
+    void EnterWhenBuilt(string id, string? from, Arrival? at, Action? then = null)
+    {
+        // (behind the black: PumpAhead's faster pace)
+        bool hold = !inTransit && ahead != null && aheadId == id && !ahead.Done;
+        if (hold) inTransit = true;
+        WhenBuilt(id, () => { if (hold) inTransit = false; EnterZone(id, from, at); then?.Invoke(); });
+    }
+
     /// <summary>Later, in real time (a fade, the fall).</summary>
     void Wait(double seconds, Action fn) => GetTree().CreateTimer(seconds, true, false, true).Timeout += fn;
 
@@ -940,25 +970,9 @@ public partial class Game : Node, IZoneHost
     {
         LastFall = (killer, Battle?.Time ?? 0);
         Journey.Ch.Stats.Deaths++;
-        if (zone!.OnDeath(killer)) return;
-        var b = Battle;
-        Journey.Fell(zone.Id, zone.Name, killer, b?.Player, Rng);
-        inTransit = true;
-        Wait(1.5, () =>
-        {
-            hud.Fade(1, 1.8, "You fell", $"Taken by {killer}");
-            Wait(2.4, () =>
-            {
-                EnterZone("waystation", "death");
-                Save("death");
-                Wait(1.4, () =>
-                {
-                    hud.Fade(0, 2);
-                    inTransit = false;
-                    Wait(1.6, () => Talk("chid"));
-                });
-            });
-        });
+        // (SU-058) A death is its zone's: every fighting zone answers it (a post rise, or the run ends). The old
+        // corpse-and-nemesis fall (Journey.Fell, back to the Waystation) is retired.
+        if (!zone!.OnDeath(killer)) GD.PushError($"OnDeath: {zone.Id} did not answer a death");
     }
 
     /* --------------------------------------------------- what zones ask -- */
@@ -1112,16 +1126,26 @@ public partial class Game : Node, IZoneHost
         if (scene != null) scene.Showcase = showNow;
     }
 
-    public void Save(string reason)
+    public enum SaveOutcome { Skipped, Saved, Failed }
+
+    void IZoneHost.Save(string reason) => Save(reason);
+
+    /// <summary>The journey written to its slot. Skipped: nothing is kept here (an arena, a story's night,
+    /// a --load picture). A failed write always says so: no save is lost without the player knowing.</summary>
+    public SaveOutcome Save(string reason)
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
-        if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return;
+        if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return SaveOutcome.Skipped;
         // (a journey read with --load is a picture's, never written back)
-        if (Args.Has("load")) return;
+        if (Args.Has("load")) return SaveOutcome.Skipped;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
-        saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 }));
+        if (saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })))
+            return SaveOutcome.Saved;
+        GD.PushError($"save: slot {Journey.Slot} could not be written ({reason})");
+        Toast(new Toast(ToastKind.Warning, "The journey could not be saved."));
+        return SaveOutcome.Failed;
     }
 
     /* ------------------------------------------------------ interaction -- */
@@ -1211,7 +1235,6 @@ public partial class Game : Node, IZoneHost
 
     void OnEvents(List<CombatEvent> evs)
     {
-        Journey.BankArt(Battle);
         Journey.BankGold(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);
@@ -1532,7 +1555,7 @@ public partial class Game : Node, IZoneHost
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             Lookdev(dt); LookSwatches(); LookFx(dt);   // (L1 B2: --lookdev-swatches; B6: --lookdev-fx)
-            UpdateCloseUp(dt);
+            CloseUpFrame(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
             Perf.End(Perf.Part.Later);
@@ -1933,7 +1956,6 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? miniZone;
     WorldScene? miniScene;
     string? miniSeen, miniGoals;
-    CorpseState? miniCorpse;
     int miniAsked;
     const int MiniMarksEvery = 6;
     static readonly string MiniUnseen = new('0', Journey.FogN * Journey.FogN);
@@ -1956,18 +1978,16 @@ public partial class Game : Node, IZoneHost
         var v = miniView;
         float extent = MapScreen.Extent(scene.Data.Meta);
         var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : MiniUnseen;
-        var corpse = World.Corpse is { } fallen && fallen.Zone == zone.Id ? fallen : null;
         if (++miniAsked >= MiniMarksEvery || !ReferenceEquals(zone, miniZone) || !ReferenceEquals(scene, miniScene) || !ReferenceEquals(seen, miniSeen)
-            || !ReferenceEquals(goalSet, miniGoals) || !ReferenceEquals(corpse, miniCorpse))
+            || !ReferenceEquals(goalSet, miniGoals))
         {
-            miniAsked = 0; miniZone = zone; miniScene = scene; miniSeen = seen; miniGoals = goalSet; miniCorpse = corpse;
+            miniAsked = 0; miniZone = zone; miniScene = scene; miniSeen = seen; miniGoals = goalSet;
             var marks = v.Marks;
             marks.Clear();
             foreach (var m in zone.MapMarks())
                 if (m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || SeenAt(seen, extent, m.X, m.Z)))
                     marks.Add(new MiniMark(m.X, m.Z, m.Kind, m.Label, m.Objective));
             marks.AddRange(GoalMiniMarks());
-            if (corpse != null) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
         }
         v.Zone = zone.Id; v.Drawing = MapScreen.Drawing(scene.Data); v.Extent = extent; v.Seen = seen; v.N = Journey.FogN;
         v.X = b.Player.X; v.Z = b.Player.Z; v.Facing = b.Player.Facing; v.Night = zone.TimeOf(World) == TimeOfDay.Night;

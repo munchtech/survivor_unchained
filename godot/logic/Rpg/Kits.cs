@@ -96,6 +96,22 @@ public static class Kits
         return true;
     }
 
+    /// <summary>The kit a worn or set-aside piece belongs to, and its slot; null if it is in neither. By night, a
+    /// piece in a slot the night kit has nothing of its own in is the day's, borrowed (SU-037).</summary>
+    public static (KitKind Kit, EquipSlot Slot)? Of(CharacterData ch, string uid)
+    {
+        foreach (var s in Items.EquipSlots)
+        {
+            if (ch.Equipment[s]?.Uid == uid) return (ch.NightOn && Own(ch, s) ? KitKind.Night : KitKind.Day, s);
+            if (Own(ch, s) && ch.OtherKit?[s]?.Uid == uid) return (ch.NightOn ? KitKind.Day : KitKind.Night, s);
+        }
+        return null;
+    }
+
+    /// <summary>The kit a Pack act wears into: the kit looked at once two are shown; until then the one kit
+    /// there is, the day's (so a night's wear never makes a night kit nobody was shown).</summary>
+    public static KitKind Into(CharacterData ch, KitKind looked) => Shown(ch) ? looked : KitKind.Day;
+
     /// <summary>Whether the two kits are worth showing yet: once a coal or a Mark is owned, or the night
     /// kit holds anything (until then the night's kit is the day's).</summary>
     public static bool Shown(CharacterData ch) =>

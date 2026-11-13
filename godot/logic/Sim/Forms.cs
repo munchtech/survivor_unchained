@@ -46,7 +46,44 @@ public sealed partial class Battle
         foreach (var r in l.Reflexes)
             if (Abilities.Find(r.Art) is { } def)
                 Reflexes.Add(new ReflexRun { Def = r, Kind = def.Kind, Rank = Math.Clamp(ranks?.GetValueOrDefault(r.Art) ?? 1, 1, Abilities.MaxRank) });
+        // The rule trees' lit lamps (lit as the weapons came in) join the new loadout (SU-051).
+        SyncWickRules();
     }
+
+    /// <summary>A build committed mid-fight (Journey.RefreshKit: a layout switched, a lamp lit or put out): the lamps
+    /// replaced, not merged. The old loadout's numbers leave Stats and the new one's come in; the facets are the art's
+    /// own plus the new lamps'; the reflexes are the new lamps' (one still lit keeps its wait and count); the Flare is the
+    /// new loadout's (its meter kept, to what it can hold). Idempotent: the same loadout twice is the same fight.</summary>
+    public void ReplaceLamps(LampLoadout l, IReadOnlyDictionary<string, int>? ranks = null)
+    {
+        var old = Lamps;
+        Stats.RemoveEach(old.Mods);
+        Stats.AddAll(l.Mods);
+        Lamps = l;
+        Facets.Clear();
+        Facets.UnionWith(artFacets);
+        Facets.UnionWith(l.Facets);
+        var had = Reflexes.ToList();
+        Reflexes.Clear();
+        foreach (var r in l.Reflexes)
+            if (Abilities.Find(r.Art) is { } def)
+            {
+                var run = had.FirstOrDefault(x => x.Def.Art == r.Art) ?? new ReflexRun();
+                had.Remove(run);
+                run.Def = r; run.Kind = def.Kind;
+                run.Rank = Math.Clamp(ranks?.GetValueOrDefault(r.Art) ?? 1, 1, Abilities.MaxRank);
+                Reflexes.Add(run);
+            }
+        var flare = Content.Lamps.Flare(l.Flare);
+        if (flare?.Id != Flare?.Id) Flare = flare;
+        FlareMeter = Flare != null ? Math.Clamp(FlareMeter, 0, FlareFull * FlareCharges) : 0;
+        Player.DashCharges = Math.Min(Player.DashCharges, MaxDashCharges);
+        SyncWickRules();
+    }
+
+    /// <summary>The learned day skills the kit put in this fight (Journey.StartBattle, RefreshKit): one no longer carried
+    /// goes at the next reconcile. Null where they are not the kit's to give (a night: the ember drafts).</summary>
+    public HashSet<string>? KitLearned;
 
     /// <summary>The art runs this fight, in hand or as a reflex.</summary>
     public bool Runs(AbilityKind kind) => Ability == kind || Reflexes.Any(r => r.Kind == kind);
@@ -116,7 +153,6 @@ public sealed partial class Battle
         Art.CdFull = Math.Max(0.1, p.AbilityCd);
         // (No rank by use: the dash grows by its named steps, Content/DashSteps.cs.)
         Art.HotT = 3;
-        Art.HotKills = 0;
         Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });
         return moved;
     }

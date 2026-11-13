@@ -48,7 +48,7 @@ public partial class LampPage : Control
     /// <summary>A: the field's top and bottom.</summary>
     public const float FieldTop = 84, FieldBottom = 960;
 
-    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, bool safe = true, bool wide = false, Rect2 wickRect = default, List<Vector2>? seats = null)
+    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, Func<bool>? safe = null, bool wide = false, Rect2 wickRect = default, List<Vector2>? seats = null)
     {
         this.ch = ch; this.w = w; this.zone = zone;
         Wide = wide; WickRect = wickRect;
@@ -64,9 +64,10 @@ public partial class LampPage : Control
         if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
         Board.Visit = visit ?? new LampSession(ch);
         Board.ReadOnly = readOnly;
-        Board.Safe = safe;
-        Board.AtPost = !readOnly && LampBook.LayoutsOpen(w, zone);
-        AddChild(Wick = new LampWick(ch) { Visible = false, Safe = safe });
+        // (asked as each act runs: SU-043)
+        Board.SafeNow = safe ?? (() => true);
+        Board.AtPostNow = () => !readOnly && LampBook.LayoutsOpen(w, zone);
+        AddChild(Wick = new LampWick(ch) { Visible = false, Night = readOnly, SafeNow = safe ?? (() => true) });
         AddChild(Tabs = new WickTabs(ch));
         if (wide) { Wick.SetWide(wickRect.Size); Tabs.SetSeats(seats ?? new()); }
         AddChild(find = new LampFind(ch) { Visible = false });
@@ -98,6 +99,8 @@ public partial class LampPage : Control
     const float Wider = 6;
 
     LampWindow? backdrop;
+    /// <summary>The book frame's drawn left edge lies this far left of the content rect (1030): measured in the 1080 shot, the frame at x 1005.</summary>
+    const float BookEdge = 25;
 
     void Lay()
     {
@@ -484,6 +487,7 @@ public partial class LampPage : Control
         if (!IsVisibleInTree()) return;
         if (openAtStart && Board.Size.X > 8 && Tabs.Count > 0) { openAtStart = false; OpenWick(0); }
         Script(delta);
+        TabTip();
         if (find.Typing) return;
         var ls = PadAxis(JoyAxis.LeftX, JoyAxis.LeftY);
         if ((zone_ == Zone.Board || zone_ == Zone.Wick) && ls.Length() > 0.5f)
@@ -518,6 +522,50 @@ public partial class LampPage : Control
         if (Input.IsPhysicalKeyPressed(Godot.Key.W) || Input.IsPhysicalKeyPressed(Godot.Key.Up)) kd.Y -= 1;
         if (Input.IsPhysicalKeyPressed(Godot.Key.S) || Input.IsPhysicalKeyPressed(Godot.Key.Down)) kd.Y += 1;
         if (kd != Vector2.Zero) Board.PanBy(-kd.Normalized() * 760f * (float)delta);
+    }
+
+    // ---- U1 §5C: a skill tab's tip (the pointer on a tab; a pad's tab change shows it 3 s, until the stick moves;
+    // --lamps-tip tab:N pins tab N for pictures)
+    SkillTip? tabTip;
+    int tabShown = -1, padChosen = -1;
+    ulong padTipUntil;
+    string tabFor = "";
+    SkillTipView? tabView;
+    void TabTip()
+    {
+        var skills = Tabs.Skills;
+        int n = Math.Min(skills.Count, Tabs.Centers.Count);
+        int tab = -1;
+        if (SurvivorUnchained.Args.Get("lamps-tip") is { } pin && pin.StartsWith("tab:") && int.TryParse(pin[4..], out var pt)) tab = pt;
+        else
+        {
+            if (Tabs.Chosen != padChosen) { if (padChosen >= 0 && Pad) padTipUntil = Time.GetTicksMsec() + 3000; padChosen = Tabs.Chosen; }
+            if (Pad && PadAxis(JoyAxis.LeftX, JoyAxis.LeftY).Length() > 0.5f) padTipUntil = 0;
+            var gx = Tabs.GetGlobalTransform();
+            var mp = Tabs.GetGlobalMousePosition();
+            float r = (WickTabs.D / 2 + 2) * gx.Scale.X;
+            for (int i = 0; i < n && tab < 0; i++) if (mp.DistanceTo(gx * Tabs.Centers[i]) <= r) tab = i;
+            if (tab < 0 && Time.GetTicksMsec() < padTipUntil) tab = Tabs.Chosen;
+        }
+        if (tab < 0 || tab >= n || !Tabs.IsVisibleInTree() || find.Typing) { tabShown = -1; tabTip?.Set(false, default, null); return; }
+        if (tabTip == null) AddChild(tabTip = new SkillTip { Name = "TabTip" });
+        else if (tabTip.GetIndex() != GetChildCount() - 1) MoveChild(tabTip, -1);
+        string f = skills[tab] + "|" + tab;
+        if (f != tabFor)
+        {
+            tabFor = f;
+            Node? g = this;
+            while (g != null && g is not Game) g = g.GetParent();
+            tabView = SkillTip.For(ch, (g as Game)?.Battle, skills[tab], tab);
+        }
+        tabShown = tab;
+        // its foot at the tab's top centre (SkillTip hangs it below the tab when it would leave the top)
+        var tx = Tabs.GetGlobalTransform();
+        var top = GetGlobalTransform().AffineInverse() * (tx * (Tabs.Centers[tab] - new Vector2(0, WickTabs.D / 2)));
+        var inv = GetGlobalTransform().AffineInverse();
+        float panelLeft = Wide ? WickRect.Position.X : (backdrop != null ? (inv * (backdrop.GetGlobalPosition() - new Vector2(BookEdge, 0))).X : 1030 - BookEdge);
+        float rowBottom = (inv * (tx * (Tabs.Centers[tab] + new Vector2(0, WickTabs.D / 2)))).Y;
+        tabTip.Set(true, top, tabView, -1, panelLeft - 16, rowBottom);
     }
 
     /// <summary>The left stick's step: on the board §10's, in the wick its rows and pitch (the nearest of four ways).</summary>

@@ -39,7 +39,7 @@ public partial class ArtsScreen : Overlay
     bool skills => page == 1;
 
     /// <summary>The functional Lamps board and Wick screen: launch with --board, or set SU_BOARD=1.</summary>
-    public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
+    public static bool BoardOn => SurvivorUnchained.Args.Has("board") || SurvivorUnchained.Args.Dev && System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
     /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
     static int Pages => BoardOn ? 4 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills", "Lamps", "Wicks"];
@@ -175,10 +175,8 @@ public partial class ArtsScreen : Overlay
         v.AddChild(head);
         if (known)
         {
-            double xp = ch.Arts.TryGetValue(a.Id, out var st) ? st.Xp : 0;
-            string next = rank < Abilities.MaxRank ? $"{xp:0} of {Abilities.RankXp[rank]:0} to rank {Numerals[rank]}" : "mastered";
-            v.AddChild(Kit.Head("The road to mastery", $"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait  ·  {next}"));
-            v.AddChild(new RoadTrack(rank, rank < Abilities.MaxRank ? (float)ArtBook.Progress(ch, a.Id) : 1));
+            v.AddChild(Kit.Head("Its rank", $"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait"));
+            v.AddChild(new RoadTrack(rank, 0));
         }
         Facets(v, ch, a, known);
     }

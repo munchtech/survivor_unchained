@@ -332,6 +332,18 @@ public partial class BattleFx
             }
     }
 
+    /// <summary>A boss's swing as the swing itself (Ev.Slash.Inner > 0): one fan from his hands to the reach, its hot edge
+    /// leading across the arc in Sweep seconds, drained a little after; no ring, no echo, no rim mark. (The blade shader's
+    /// smear reaches in no further than 0.3 of the reach.)</summary>
+    void Fan(Ev.Slash e)
+    {
+        var pal = Palette.Of(e.School);
+        var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
+        float reach = (float)e.Reach, depth = Mathf.Clamp(1 - (float)(e.Inner / e.Reach), 0.05f, 0.62f);
+        float sweep = e.Sweep > 0 ? (float)e.Sweep : 0.12f;
+        Blades.Add(at, (float)(Math.PI / 2 - e.Angle), reach, (float)e.Arc, e.Side < 0, sweep, sweep * 1.3f, Hdr("#ff9a30", 1.05f), depth);
+    }
+
     /// <summary>Iron Palms: the force of an open hand, not a blade. An outline of a palm in chi
     /// (painted, palm_print) thrown out along the strike, fingers first, swelling as it goes; the
     /// air pushed out in front of it bending the picture; the dust it drives along the ground.

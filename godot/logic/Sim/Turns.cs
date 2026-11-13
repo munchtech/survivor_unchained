@@ -41,6 +41,10 @@ public sealed class WickFx
     /// <summary>A barrier for each creature its strike strikes (Shield of Morning); Stones each firing lays (Stone Bell).</summary>
     public double BarrierEach, BarrierMost;
     public int Stones, StonesChampion;
+    /// <summary>(SU-051) A rule tree's lit lamps' rules (the fight lights them: Battle.SyncWickRules), and the evolution
+    /// a lit "built" Turn makes the weapon (Battle.Relight).</summary>
+    public List<LampEffect> Rules = new();
+    public string? Evolve;
 
     public bool TurnLit => Turns.Count > 0;
 }
@@ -93,6 +97,18 @@ public static class Turns
         var school = new Dictionary<StrandDef, (double Chance, double Vs, double Dur)>();
         foreach (var (s, n) in lit)
         {
+            // A rule tree's lamp: its rules and its evolve, no numbers (Sim/WardenWicks.cs reads the rules, and darkens
+            // a shape Turn under an evolution that replaced the shape).
+            if (s.Rules is { } rules)
+            {
+                foreach (var r in rules[n - 1])
+                {
+                    if (r.Rule != null) fx.Rules.Add(r.Rule);
+                    if (r.Evolve != null) fx.Evolve ??= r.Evolve;
+                }
+                if (n == Wicks.PerStrand) fx.Turns.Add(s.Turn);
+                continue;
+            }
             if (n < Wicks.PerStrand)
             {
                 var l = s.LeadIns[n - 1];
@@ -171,6 +187,8 @@ public sealed partial class Battle
         var ids = path.Take(Math.Min(w.Rank, path.Length)).ToArray();
         var lit = ids.Select(id => Wicks.Lamp(w.Id, id)).Where(l => l != null).Select(l => l!.Value);
         w.Wick = Turns.Build(w, lit, ids);
+        WickEvolve(w);
+        SyncWickRules();
         if (!show || !EmberOn) return;
         for (int i = had; i < ids.Length; i++)
         {
@@ -200,6 +218,43 @@ public sealed partial class Battle
                 if (Wicks.Lamp(p.Id, id) is { } l) carried.Add(l);
         }
         if (carried.Count > 0) into.Wick = Turns.Build(into, carried, united: true);
+        SyncWickRules();
+    }
+
+    /// <summary>(SU-051) The rule trees' lit lamps' rules join the fight's lamps (Lamps.SetWick: the last set replaced, so
+    /// a relight, a union or a new loadout never doubles or strands one). A bare fight (LampLoadout.None) gets its own
+    /// loadout first; with no rule tree lit nothing changes.</summary>
+    internal void SyncWickRules()
+    {
+        var fx = new List<LampEffect>();
+        foreach (var w in Weapons) if (w.Wick?.Rules is { Count: > 0 } r) fx.AddRange(r);
+        if (fx.Count == 0 && Lamps.WickCount == 0) return;
+        if (ReferenceEquals(Lamps, LampLoadout.None)) Lamps = new LampLoadout();
+        Lamps.SetWick(fx);
+    }
+
+    /// <summary>A lit "built" Turn (shield_charge.ram.4: Pile Driver) makes the weapon its evolution, once, as the
+    /// ember's would (its triggers, its Ev.Evolve; the lamp's own Ev.Wick is its announcement). Not journalled: the
+    /// relight that lit it replays it.</summary>
+    void WickEvolve(WeaponInst w)
+    {
+        // (SU-062) Reconciled both ways: a Turn's evolution goes (its triggers with it) when the Turn is no longer lit,
+        // and one earned (Battle.Evolve, the ember's or a chest's) is never touched.
+        if (w.WickGranted && w.Evolution is { } had && w.Wick?.Evolve != had.Id)
+        {
+            RemoveTriggers($"evo:{had.Id}");
+            w.Evolution = null;
+            var lamps = w.Wick?.Lit ?? Array.Empty<string>();
+            w.Wick = Turns.Build(w, lamps.Select(x => Wicks.Lamp(w.Id, x)).Where(l => l != null).Select(l => l!.Value), lamps);
+        }
+        if (w.Wick?.Evolve is not { } id || w.Evolution != null) return;
+        var evo = Array.Find(w.Def.Evolutions, e => e.Id == id);
+        if (evo == null) return;
+        w.Evolution = evo;
+        w.WickGranted = true;
+        w.Wick = Turns.Build(w, w.Wick.Lit.Select(x => Wicks.Lamp(w.Id, x)).Where(l => l != null).Select(l => l!.Value), w.Wick.Lit);
+        foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
+        Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id, Chest = true });
     }
 
     static List<(StrandDef, int)>? Lit(WeaponInst? p)

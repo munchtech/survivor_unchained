@@ -101,9 +101,14 @@ public partial class StashScreen : CounterScreen
     {
         var ch = Ch;
         var w = G.Journey.World;
+        // What Rook was holding by the door goes up as places are free (SU-019).
+        G.Journey.ShelveHeld();
         shelf = Math.Clamp(shelf, 0, w.Shelves - 1);
         var v = Fitted(new Vector2(40, Top), TheirsW);
         v.AddChild(new Title("Rook's storeroom", 28));
+        if (w.Held.Count > 0)
+            v.AddChild(Style.Label($"Rook is holding {w.Held.Count} more by the door. Make room and she will shelve {(w.Held.Count == 1 ? "it" : "them")}.",
+                Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Left, false));
         // The shelves as tabs, and another to be had from her: the price in its words.
         var names = Enumerable.Range(0, w.Shelves).Select(i => $"Shelf {ArtsScreen.Numerals[Math.Min(i, ArtsScreen.Numerals.Length - 1)]}").ToArray();
         var row = Style.H(12, Kit.Tabs(names, shelf, k => { shelf = k; Refresh(); }, 15, 20));

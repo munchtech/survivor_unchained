@@ -1,4 +1,6 @@
 using System.Linq;
+using SurvivorUnchained.Content;
+using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Play.Story;
 using SurvivorUnchained.Sim;
 using Xunit;
@@ -132,5 +134,71 @@ public class CheckpointTests
         Assert.True(place.Inside(0, 12) && !place.Inside(10, 0));
         StoryPlace.Open(c, place.Gates[0]);
         Assert.False(c.Blocked(0, 6, 0.5));
+    }
+
+    /// <summary>(Codex audit SU-015) A companion the checkpoint's blessings call up again comes back at the
+    /// checkpoint's ember level, not the failed stage's.</summary>
+    [Fact]
+    public void A_companion_called_up_again_has_the_checkpoints_strength()
+    {
+        var b = BattleTests.Arena(4);
+        b.EmberLevel = 7;
+        b.AddBoon("spirit_companion");
+        var at = b.Snapshot();
+        var wolf = Assert.Single(b.Enemies.Living(), e => e.Def.Id == "spirit_wolf");
+        double damage = wolf.Damage, maxHp = wolf.MaxHp;
+        b.EmberLevel = 11;
+        b.Restore(at);
+        var back = Assert.Single(b.Enemies.Living(), e => e.Def.Id == "spirit_wolf");
+        Assert.Equal(7, b.EmberLevel);
+        Assert.Equal(damage, back.Damage, 6);
+        Assert.Equal(maxHp, back.MaxHp, 6);
+    }
+
+    /// <summary>SU-024: reflections cleared by a rise leave nothing pointing at their pooled slots, so the
+    /// horde that reuses those slots is never taken for reflections.</summary>
+    [Fact]
+    public void Reflections_cleared_by_a_rise_leave_no_decoy_behind_in_their_reused_slots()
+    {
+        var s = new StatBlock();
+        s.SetBase(new System.Collections.Generic.Dictionary<string, double>
+        {
+            [Stat.MaxHealth] = 200, [Stat.MoveSpeed] = 5, [Stat.PickupRadius] = 2.4, [Stat.CritChance] = 0, [Stat.CritDamage] = 1.5, [Stat.Luck] = 1,
+        });
+        var b = new Battle(new BattleSetup { Seed = 5, Collision = new CollisionWorld(120), Combat = true, Stats = s, Weapons = [], Ability = AbilityKind.MirrorStep, Facets = ["fighting_reflections"] });
+        b.Rules.DashForms = true;
+        var wolf = b.SpawnEnemy("wolf", -6, 0)!;
+        wolf.AttackT = wolf.RangedT = 99;
+        b.Tick(1 / 60.0, 0, 0);
+        var at = b.Snapshot();
+        Assert.True(b.Dash(1, 0));
+        Assert.Equal(2, b.Decoys.Count);
+        var slots = b.Decoys.Select(d => d.Id).ToHashSet();
+        Assert.Contains(wolf.Target, slots);
+        b.Restore(at);
+        Assert.Empty(b.Decoys);
+        Assert.False(slots.Contains(wolf.Target), "the wolf still hunts a cleared reflection's slot");
+        // The slots come back as ordinary foes: nothing takes them for reflections.
+        var foes = Enumerable.Range(0, 2).Select(i => b.SpawnEnemy("wolf", 3 + i, 3)!).ToList();
+        Assert.All(foes, f => Assert.Contains(f.Id, slots));
+        Assert.All(foes, f => Assert.DoesNotContain(f, b.Decoys));
+        for (int i = 0; i < 30; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
+        Assert.DoesNotContain(wolf.Target, foes.Select(f => f.Id));
+    }
+
+    /// <summary>SU-025: a barrier comes back with the time it had left, and runs out.</summary>
+    [Fact]
+    public void A_barrier_comes_back_with_its_time_and_runs_out()
+    {
+        var b = BattleTests.Arena(4);
+        b.Player.Shield = 40; b.Player.ShieldT = 2;
+        var at = b.Snapshot();
+        for (int i = 0; i < 180; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
+        Assert.Equal(0, b.Player.Shield);
+        b.Restore(at);
+        Assert.Equal(40, b.Player.Shield);
+        Assert.Equal(2, b.Player.ShieldT, 6);
+        for (int i = 0; i < 150; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
+        Assert.Equal(0, b.Player.Shield);
     }
 }

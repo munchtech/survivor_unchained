@@ -61,7 +61,7 @@ public sealed class SoundBridge
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
-                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
+                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { bool lead = Sfx.LeadHit(h); Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family, lead); Sfx.HitOf(h.Art, At(h.X, h.Z), lead); }
                     break;
                 case Ev.Kill k when k.Def != "mirror":
                     Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z), k.Burst);
@@ -70,6 +70,7 @@ public sealed class SoundBridge
                 case Ev.PlayerHit ph:
                     if (ph.Dodged) Sfx.Dodge(); else if (ph.Blocked) Sfx.Blocked(); else Sfx.Hurt(ph.Dot ? ph.Amount * 0.4 : ph.Amount);
                     break;
+                case Ev.Immune im: Sfx.Blocked(At(im.X, im.Z)); break;
                 case Ev.ShieldHit sh: Sfx.Blocked(); if (sh.Broke) Sfx.Shatter(); break;
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
                 case Ev.PlayerDeath: Sfx.Death(); break;
@@ -122,13 +123,6 @@ public sealed class SoundBridge
                 // Any other named sound is the bank's (ford.channel, ford.lamp_out...): placed if it has a place.
                 case Ev.Sound snd: Sfx.Cue(snd.Id, snd.X is double sx && snd.Z is double sz ? At(sx, sz) : default); break;
             }
-        }
-        // A Legendary lying untaken tolls faintly every eight seconds, until it is taken (§8.2).
-        if (b != null && (tollT -= 1.0 / 60) <= 0)
-        {
-            tollT = 8;
-            foreach (var p in b.Pickups.Items)
-                if (p.Alive && p.Loot is 5 or 6 && p.Look != Verdict.Hidden && p.Age > 4) { Sfx.Toll(p.Loot == 6, true); break; }
         }
         // The stones taken this frame are one voice, a step or a few up the ladder (S-02).
         if (stones > 0)
@@ -190,6 +184,14 @@ public sealed class SoundBridge
 
     public void Update(double dt, SoundState s)
     {
+        // A Legendary lying untaken tolls faintly every eight seconds, until it is taken (§8.2): on the clock,
+        // not on the frames that carry combat events (SU-027: after a fight it never tolled).
+        if (s.Battle is { } tb && s.Mode == "play" && s.Overlay == null && (tollT -= dt) <= 0)
+        {
+            tollT = 8;
+            foreach (var p in tb.Pickups.Items)
+                if (p.Alive && p.Loot is 5 or 6 && p.Look != Verdict.Hidden && p.Age > 4) { Sfx.Toll(p.Loot == 6, true); break; }
+        }
         // Footsteps: one a stride, while walking in the world.
         double moved = Math.Sqrt((s.Px - stepX) * (s.Px - stepX) + (s.Pz - stepZ) * (s.Pz - stepZ));
         stepX = s.Px; stepZ = s.Pz;

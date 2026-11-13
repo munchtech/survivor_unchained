@@ -34,6 +34,18 @@ public static class Marks
         into.Damage *= m.Damage; into.Area *= m.Area; into.Cooldown *= m.Cooldown; into.Speed *= m.Speed; into.Duration *= m.Duration;
         into.Homing += m.Homing; into.Projectiles += m.Projectiles; into.Pierce += m.Pierce;
     }
+
+    /// <summary>Fold undone: a skill's numbers taken back off (a gear change in a map, Battle.Wear). A factor of
+    /// zero cannot be divided back out and is left (no gear gives one).</summary>
+    public static void Unfold(WeaponMods from, WeaponMods m)
+    {
+        if (m.Damage != 0) from.Damage /= m.Damage;
+        if (m.Area != 0) from.Area /= m.Area;
+        if (m.Cooldown != 0) from.Cooldown /= m.Cooldown;
+        if (m.Speed != 0) from.Speed /= m.Speed;
+        if (m.Duration != 0) from.Duration /= m.Duration;
+        from.Homing -= m.Homing; from.Projectiles -= m.Projectiles; from.Pierce -= m.Pierce;
+    }
 }
 
 public sealed partial class Battle
@@ -46,11 +58,22 @@ public sealed partial class Battle
     /// <summary>The Mark's strength if it is worn.</summary>
     public bool Marked(string id, out double t) => MarksWorn.TryGetValue(id, out t);
 
-    /// <summary>Put on what gear inscribes (a map does, as it begins): the Marks, and the skills'
-    /// numbers folded into those already in hand.</summary>
+    /// <summary>Whether this fight wears what gear inscribes (a map: set by <see cref="Wear"/>), so a gear change
+    /// mid-fight wears it again (Journey.RefreshKit); nowhere else do Marks work.</summary>
+    public bool WearsMarks { get; private set; }
+
+    /// <summary>Put on what gear inscribes (a map does, as it begins, and again at every gear change in it): the
+    /// Marks, and the skills' numbers folded into those already in hand. It REPLACES what was worn: Marks taken
+    /// off stop, a grade change takes its new strength, and the old skill numbers are unfolded from the skills
+    /// in hand before the new are folded in (never twice; SU-041).</summary>
     public void Wear(IReadOnlyDictionary<string, double> marks, IReadOnlyDictionary<string, WeaponMods> skillMods)
     {
+        WearsMarks = true;
+        MarksWorn.Clear();
         foreach (var (id, t) in marks) MarksWorn[id] = Math.Clamp(t, 0, 1);
+        foreach (var (id, m) in SkillMods)
+            foreach (var w in Weapons) if (w.Id == id) Marks.Unfold(w.Mods, m);
+        SkillMods.Clear();
         foreach (var (id, m) in skillMods)
         {
             SkillMods[id] = m;

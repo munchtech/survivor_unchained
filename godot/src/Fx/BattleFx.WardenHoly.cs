@@ -91,7 +91,7 @@ public partial class BattleFx
             });
         }));
         Ribbons.Line(new[] { rbFrom, rbFrom + dir * 0.5f + Vector3.Up * 0.02f, rbFrom + dir * 1.0f }, 0.1f, 8 / 60f, HolyCore * k, 3f, Ribbons.Style.Glow, new[] { 0.5f, 1f, 0.2f });
-        Flash(rbFrom + dir * 0.3f, HolyGold, 2.2f * k, 0.14f, 3.5f);
+        Flash(rbFrom + dir * 0.3f, HolyGold, 2.2f * k * KillDimNow, 0.14f, 3.5f);
         // The lash is laid once the strike's bodies are in (they come in this same step).
         pending.Add((time, RebukeLash));
         if (WhBeats)
@@ -205,8 +205,8 @@ public partial class BattleFx
             var pts = new Vector3[m]; var ws = new float[m];
             for (int j = 0; j < m; j++) { pts[j] = l.Pts[Math.Min(j, n - 1)]; ws[j] = l.Ws[Math.Min(j, n - 1)]; }
             if (whole < n - 1) pts[m - 1] = l.Pts[whole].Lerp(l.Pts[whole + 1], f - whole);
-            Ribbons.Now(pts, 0.17f, LashHalo * (l.K * 0.5f * fade), 1.5f, Ribbons.Style.Glow, ws);
-            Ribbons.Now(pts, 0.05f, LashCore * (l.K * fade), 2.5f, Ribbons.Style.Glow, ws);
+            Ribbons.Now(pts, 0.17f, LashHalo * (l.K * 0.5f * fade * KillDimNow), 1.5f, Ribbons.Style.Glow, ws);
+            Ribbons.Now(pts, 0.05f, LashCore * (l.K * fade * KillDimNow), 2.5f, Ribbons.Style.Glow, ws);
         }
     }
 
@@ -277,10 +277,10 @@ public partial class BattleFx
         liveWaves.Add(new Wave { At = ground, Reach = r, Age = 0, Delay = 0, K = k, Dust = true });
         liveWaves.Add(new Wave { At = ground, Reach = r * 0.94f, Age = 0, Delay = 7 / 60f, K = k * 0.5f, Dust = false });
         // The strike: a warm light under the bell's lip, short.
-        Flash(pivot + Vector3.Down * (BellH + 0.2f), HolyGold, 3.5f * k * (Flare.Night ? 0.75f : 1f), 0.3f, 7);
+        Flash(pivot + Vector3.Down * (BellH + 0.2f), HolyGold, 3.5f * k * KillDimNow * (Flare.Night ? 0.75f : 1f), 0.3f, 7);
         // The air thrown out with it: the scene bent at the front (the pressure, not a lit hoop), its lip a dim bronze.
         // (judge, h1: the bend capped at ~5 px within a ~25 px band at the front: it was a 30 px push through a 50 px band, the doubled crowd)
-        if (!WhNoDist) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.05f, WaveRun * 1.1f, HolyBronze * 0.1f, 0.15f * k, 0.375f / (r * 1.05f));
+        if (!WhNoDist) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.05f, WaveRun * 1.1f, HolyBronze * 0.1f, 0.15f * k * KillDimNow, 0.375f / (r * 1.05f));
         Cam?.AddTrauma(0.1f);
         if (WhBeats && !wbShot && time >= WhFrom) { wbShot = true; Shots.WantFrames("wb_f1", 1); Shots.WantFrames("wb_f6", 6); Shots.WantFrames("wb_f12", 12); Shots.WantFrames("wb_f24", 24); GD.Print($"[wh-beats] toll #{wbCount} t={time:F2} r={r:F1}"); }
     }
@@ -327,7 +327,7 @@ public partial class BattleFx
                 float strike = bell.Strike * Mathf.Exp(-s * 7);
                 float grow = Mathf.Lerp(0.88f, 1f, inA);
                 var basis = new Godot.Basis(bell.Axis, ang).Scaled(Vector3.One * BellH * grow);
-                bells.Add(new Transform3D(basis, bell.Pivot), new Color(night ? 0.62f : 1.35f, strike, 0, alpha));
+                bells.Add(new Transform3D(basis, bell.Pivot), new Color(night ? 0.62f : 1.35f, strike, 0, alpha * KillDimNow));
             }
         }
         bells.End();
@@ -345,7 +345,7 @@ public partial class BattleFx
             float p = Mathf.Min(1, t / WaveRun), front = 1 - Mathf.Pow(1 - p, 2.2f);
             float rr = Mathf.Lerp(0.7f, w.Reach, front);
             float fade = t > WaveRun ? 1 - (t - WaveRun) / WaveFade : 1;
-            float k = w.K * Mathf.Lerp(1f, 0.4f, front) * fade * Mathf.Min(1, t / 0.03f) * (night ? 0.9f : 1.5f);
+            float k = w.K * Mathf.Lerp(1f, 0.4f, front) * fade * Mathf.Min(1, t / 0.03f) * (night ? 0.9f : 1.5f) * KillDimNow;
             float band = Mathf.Min(0.65f, 0.5f / rr);
             waves.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(rr, 1, rr)), w.At + Vector3.Up * 0.02f), new Color(k, band, 0.14f, p));
             // Dust lifted where the front passes: low, solid, lit, sparse.
@@ -364,7 +364,7 @@ public partial class BattleFx
                     {
                         At = V(x, Y(x, z) + 0.16 + R() * 0.06, z), V = u * (1.0f + R() * 0.8f) + Vector3.Up * (0.2f + R() * 0.25f), Drag = 2.5f,
                         Life = 0.3f + R() * 0.15f, Size = sz, SizeEnd = sz * 1.3f, Color = dust, ColorEnd = dust * 0.92f,
-                        Alpha = 0.7f + R() * 0.1f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
+                        Alpha = (0.7f + R() * 0.1f) * KillDimNow, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
                     });
                 }
             }
@@ -388,7 +388,7 @@ public partial class BattleFx
                 {
                     At = now + Vector3.Up * 0.14f - step.Normalized() * 0.15f, V = -step.Normalized() * 0.4f + Vector3.Up * 0.12f, Drag = 3,
                     Life = 0.35f + R() * 0.15f, Size = sz, SizeEnd = sz * 1.7f, Color = dust, ColorEnd = dust * 0.9f,
-                    Alpha = 0.2f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
+                    Alpha = 0.2f * KillDimNow, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
                 });
                 d.Last = now;
             }

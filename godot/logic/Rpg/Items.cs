@@ -142,6 +142,18 @@ public static class Items
     public static IReadOnlyList<string> RarityNames { get { if (rarityNames == null) Load(); return rarityNames!; } }
     public static readonly EquipSlot[] EquipSlots = EnumKey<EquipSlot>.All;
 
+    /// <summary>Every slot's name and line glyph (a key in data/content/glyphs.json), read by every screen that shows
+    /// worn gear (the Pack's doll, the forge's worn row), so a slot added to <see cref="EquipSlot"/> shows everywhere
+    /// or EquipPlacesTests fails. Where the glyph set has no exact shape, the nearest one stands in.</summary>
+    public static readonly IReadOnlyDictionary<EquipSlot, (string Name, string Glyph)> Places = new Dictionary<EquipSlot, (string Name, string Glyph)>
+    {
+        [EquipSlot.Weapon] = ("Weapon", "sword"), [EquipSlot.Offhand] = ("Off-hand", "shield"), [EquipSlot.Head] = ("Head", "helm"),
+        [EquipSlot.Body] = ("Body", "armor"), [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"),
+        [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
+        [EquipSlot.Shoulders] = ("Shoulders", "armor"), [EquipSlot.Bracers] = ("Bracers", "fist"), [EquipSlot.Hands] = ("Hands", "hand"),
+        [EquipSlot.Belt] = ("Belt", "chain"), [EquipSlot.Legs] = ("Legs", "armor"), [EquipSlot.Feet] = ("Feet", "boot"),
+    };
+
     /// <summary>Adds a def (tests, and pieces not yet in items.json). Copy-on-write, so readers on other threads never see a dictionary change under them.</summary>
     public static void Register(ItemDef def)
     {

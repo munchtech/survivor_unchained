@@ -249,6 +249,104 @@ public class MapTests
         Assert.Contains(chest.Items, i => i.Kind == ChestItemKind.Gear);
     }
 
+    static int Rulers(Run r) => r.B.Enemies.Living().Count(e => e.Boss && e.State != EnemyState.Dying);
+
+    /// <summary>(SU-028) A restless ruler's return is its own state: the clearing's spawn does not read
+    /// the four seconds as "no ruler yet", and only the half-strength one comes.</summary>
+    [Fact]
+    public void Restless_waits_four_seconds_then_spawns_exactly_one_half_health_ruler()
+    {
+        var r = Open(Chart("kerchiefs", 1, "restless"));
+        var bc = r.Map.Boss;
+        var p = r.B.Player;
+        p.X = bc.X; p.Z = bc.Z;
+        Step(r, 0.2);
+        var first = r.Zone.Boss!;
+        Assert.NotNull(first);
+        double full = first.MaxHp;
+        r.B.KillEnemy(first, true, null);
+        // She stands in the clearing through the wait: no ruler, and the map is not cleared.
+        Step(r, 3, () => { p.Hp = r.B.MaxHp; p.X = bc.X; p.Z = bc.Z; });
+        Assert.Equal(0, Rulers(r));
+        Assert.False(r.Zone.Cleared);
+        Step(r, 3, () => { p.Hp = r.B.MaxHp; p.Iframes = 1; p.X = bc.X; p.Z = bc.Z; });
+        Assert.Equal(1, Rulers(r));
+        var again = r.Zone.Boss!;
+        Assert.Equal(full * 0.5, again.MaxHp, 3);
+        Assert.False(r.Zone.Cleared);
+        // Past it, still one; felled, the map is cleared.
+        Step(r, 6, () => { p.Hp = r.B.MaxHp; p.Iframes = 1; });
+        Assert.Equal(1, Rulers(r));
+        r.B.KillEnemy(again, true, null);
+        Step(r, 0.1);
+        Assert.True(r.Zone.Cleared);
+        Assert.Equal(0, Rulers(r));
+        // The --clear probe ends a restless map cleared too, with nothing pending.
+        var c = Open(Chart("kerchiefs", 1, "restless"));
+        c.Zone.ClearNow();
+        Assert.True(c.Zone.Cleared);
+        Step(c, 6);
+        Assert.Equal(0, Rulers(c));
+    }
+
+    /// <summary>(SU-029) A second altar lit while the first's question is asked waits its turn: two
+    /// lightings, two questions, two strongboxes, each at its own altar.</summary>
+    [Fact]
+    public void Twice_lit_preserves_both_altar_rewards_when_lightings_overlap()
+    {
+        var r = Open(Chart("pack", 3));
+        r.J.World.Facts[$"atlas.bias.{Atlas.TwiceLit}"] = 3;
+        var alts = r.Map.Altars.Take(2).ToList();
+        Assert.Equal(2, alts.Count);
+        var p = r.B.Player;
+        var away = (r.Map.Start.X, r.Map.Start.Z);
+        void Frame(double t)
+        {
+            p.Hp = r.B.MaxHp; p.Iframes = 1;
+            if (t < 2) (p.X, p.Z) = (alts[0].X, alts[0].Z);
+            else if (t < 8) (p.X, p.Z) = (alts[1].X, alts[1].Z);
+            else (p.X, p.Z) = away;
+            foreach (var e in r.B.Enemies.Living().ToList())
+                if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 30 * 30)
+                    r.B.HitEnemy(e, e.MaxHp * 2, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            r.Zone.Step(1 / 60.0);
+            r.B.Tick(1 / 60.0, 0, 0);
+            r.B.Events.Drain();
+            r.Host.Pass(1 / 60.0);
+        }
+        List<Pickup> Boxes() => r.B.Pickups.Living().Where(k => k.Kind == PickupKind.Chest && k.Ref == "strongbox").ToList();
+        for (double t = 0; t < 150 && Boxes().Count < 2; t += 1 / 60.0) Frame(t);
+        var boxes = Boxes();
+        Assert.Equal(2, boxes.Count);
+        foreach (var a in alts)
+            Assert.Contains(boxes, k => (k.X - a.X) * (k.X - a.X) + (k.Z - a.Z) * (k.Z - a.Z) < 3 * 3);
+    }
+
+    /// <summary>(SU-030) A map won under the Red Hand's cage lets it down: his script's Fell runs on the
+    /// map's victory as on the arena's kill.</summary>
+    [Fact]
+    public void Map_victory_cleans_up_the_red_hands_active_cage()
+    {
+        var r = Open(Chart("kerchiefs"));
+        var bc = r.Map.Boss;
+        var p = r.B.Player;
+        p.X = bc.X; p.Z = bc.Z;
+        Step(r, 0.2);
+        var boss = r.Zone.Boss!;
+        Assert.IsType<RedHand>(r.Zone.BossScript);
+        // Into the Cages, and on until a cage stands.
+        boss.Hp = boss.MaxHp * 0.5;
+        for (double t = 0; t < 90 && r.B.Collision.ByTag("cage").Count == 0; t += 1 / 60.0)
+            Step(r, 1 / 60.0, () => { p.Hp = r.B.MaxHp; p.Iframes = 1; });
+        Assert.NotEmpty(r.B.Collision.ByTag("cage"));
+        foreach (var w in r.B.Weapons) w.DisabledT = 5;
+        r.B.KillEnemy(boss, true, null);
+        Step(r, 0.1);
+        Assert.True(r.Zone.Cleared);
+        Assert.Empty(r.B.Collision.ByTag("cage"));
+        Assert.All(r.B.Weapons, w => Assert.Equal(0, w.DisabledT));
+    }
+
     [Fact]
     public void A_charts_suffixes_weaken_the_survivor()
     {
@@ -262,5 +360,52 @@ public class MapTests
         Assert.Equal(before, p.Hp, 3);
         r.B.HealPlayer(100, "draught");
         Assert.Equal(before + 50 * r.B.Stats.Get(Stat.Healing), p.Hp, 1);
+    }
+
+    /// <summary>SU-041: in a map, a gear change wears the Marks again, replaced and not merged: one taken off stops (the
+    /// Open Gate's holy fire on the dash), one put on starts, a regrade takes its new strength; skill numbers are never
+    /// folded twice. Outside the maps nothing is marked. Before: the map wore its Marks once, at Begin.</summary>
+    [Fact]
+    public void A_gear_change_in_a_map_replaces_the_marks_worn()
+    {
+        var r = Open(Chart());
+        var j = r.J;
+        int Holy() => r.B.Zones.Living().Count(z => z.School == School.Holy && z.Owner == Side.Player);
+        Assert.False(r.B.Marked(Marks.OpenGate, out _));
+        var ring = Inventory.Make(j.Ch, "silver_ring", rarity: 2, affixes: new() { new AffixRoll { Id = Marks.OpenGate, Tier = 5 } });
+        Assert.True(Inventory.AddToPack(j.Ch, ring));
+        // Put on: the gate opens on the next dash.
+        j.PutOn(ring.Uid, KitKind.Day, EquipSlot.Ring1, r.B);
+        Assert.True(r.B.Marked(Marks.OpenGate, out double t) && t == 1);
+        Assert.True(r.B.Dash(1, 0));
+        Assert.Equal(1, Holy());
+        // Regraded (the forge's work on the worn piece): its strength follows.
+        ring.Affixes[0] = new AffixRoll { Id = Marks.OpenGate, Tier = 0 };
+        j.RefreshKit(r.B);
+        Assert.True(r.B.Marked(Marks.OpenGate, out t) && t == 0);
+        // Taken off: it stops.
+        j.TakeOff(ring.Uid, r.B);
+        Assert.False(r.B.Marked(Marks.OpenGate, out _));
+        Step(r, 4);
+        Assert.Equal(0, Holy());
+        Assert.True(r.B.Dash(1, 0));
+        Assert.Equal(0, Holy());
+        // Skill numbers re-worn are replaced, never folded twice.
+        var w = r.B.Weapons[0];
+        double dmg = w.Mods.Damage;
+        int proj = w.Mods.Projectiles;
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods> { [w.Id] = new() { Damage = 1.5, Projectiles = 1 } });
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods> { [w.Id] = new() { Damage = 1.5, Projectiles = 1 } });
+        Assert.Equal(dmg * 1.5, w.Mods.Damage, 9);
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods>());
+        Assert.Equal(dmg, w.Mods.Damage, 9);
+        Assert.Equal(proj, w.Mods.Projectiles);
+        // Outside the maps a Marked piece marks nothing.
+        var day = Route.New();
+        var ring2 = Inventory.Make(day.J.Ch, "silver_ring", rarity: 2, affixes: new() { new AffixRoll { Id = Marks.OpenGate, Tier = 5 } });
+        Assert.True(Inventory.AddToPack(day.J.Ch, ring2));
+        var b = day.J.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3);
+        day.J.PutOn(ring2.Uid, KitKind.Day, EquipSlot.Ring1, b);
+        Assert.Empty(b.MarksWorn);
     }
 }
