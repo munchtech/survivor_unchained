@@ -1957,6 +1957,10 @@ public static class People
             m.SetShaderParameter("shine", HisSkin.Shine);
             m.SetShaderParameter("edge_rough", HisSkin.Edge);
         }
+        // (the cel model's hard highlight on the head only: on the body's broad forms it drew pale, hard-edged patches
+        // over her sternum and breast tops; Look.SkinHighlight)
+        if (SurvivorUnchained.Look.SkinHighlight.Strength(src.ResourceName) is float hs)
+            m.SetShaderParameter("cel_spec", new Vector4(6f, 1f, hs, 0.85f));
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
@@ -2033,7 +2037,9 @@ public static class People
                             var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
                                 System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                             if (xs.Any(float.IsNaN)) continue;
-                            if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            // (a/b/c/d: a vec4, e.g. the cel highlight cel_spec=6/1/0/0.85 to take it out)
+                            if (xs.Length == 4) m.SetShaderParameter(k.Trim(), new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                            else if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
                             else if (xs.Length == 2) m.SetShaderParameter(k.Trim(), new Vector2(xs[0], xs[1]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
