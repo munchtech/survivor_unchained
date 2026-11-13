@@ -6,7 +6,7 @@ using Godot;
 namespace SurvivorUnchained.Play;
 
 /// <summary>--press SPEC[;SPEC...] (pictures only): scripted skill and dash presses for a shooting clip, under --auto idle.
-/// SPEC = slot:t:dx,dz[:hold=S]; slot is 1-6 (Act.Skill1..6) or dash; t is Journey.Playtime seconds (as --cast); dx,dz are metres
+/// SPEC = slot:t:dx,dz[:hold=S]; slot is 1-4 (Act.Skill1..4), dash or swap (swap:2.0:0,0 swaps weapon sets); t is Journey.Playtime seconds (as --cast); dx,dz are metres
 /// from her position at the press moment (the aim); hold=S keeps the key held S seconds (a channel); move walks her along dx,dz
 /// while it is held (a spin steered through a pack), and turn=DEG swings that walk DEG degrees over the hold (a curve). Game.cs wraps scene.Move,
 /// Pressed, Held and Pointer through this. Each spec fires once, in time order.</summary>
@@ -33,6 +33,7 @@ public sealed class ScriptedPress
             var p = raw.Split(':');
             var s = new Spec();
             if (p[0] == "dash") { s.Act = Act.Dash; s.Slot = 0; }
+            else if (p[0] == "swap") { s.Act = Act.Swap; s.Slot = 0; }
             else { s.Slot = int.Parse(p[0], inv); s.Act = Controls.Skills[s.Slot - 1]; }
             s.T = double.Parse(p[1], inv);
             var d = p[2].Split(',');
@@ -69,7 +70,7 @@ public sealed class ScriptedPress
             {
                 s.Said = true;
                 GD.Print(string.Format(CultureInfo.InvariantCulture, "skill press frame {0} slot {1} t {2:0.00} at {3:0.00},{4:0.00} her {5:0.00},{6:0.00}",
-                    Engine.GetFramesDrawn(), s.Slot == 0 ? "dash" : s.Slot.ToString(CultureInfo.InvariantCulture), clock(), s.Ax, s.Az, h.X, h.Z));
+                    Engine.GetFramesDrawn(), s.Slot == 0 ? (s.Act == Act.Swap ? "swap" : "dash") : s.Slot.ToString(CultureInfo.InvariantCulture), clock(), s.Ax, s.Az, h.X, h.Z));
             }
             return true;
         }

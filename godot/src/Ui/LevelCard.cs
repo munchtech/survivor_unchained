@@ -87,7 +87,7 @@ public partial class LevelCard : Control
             glyph = Glyphs.Texture(Glyphs.ForSkill(s.Skill, wd.Art), 80, GlyphGold, line: true);
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }
-        else if (body) name = s.Skill;
+        else if (body) { name = s.Skill; line = s.Line ?? ""; }
         if (s.Kind == LevelCardKind.LampLit) { measure = " " + s.Measure; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
             // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
             if (s.Measure is "a blow" or "a cut") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }
@@ -99,6 +99,13 @@ public partial class LevelCard : Control
         {
             cap?.QueueFree();
             cap = new KeyTag(KeyMap.Skills[s.Slot]) { Chip = true };
+            capHost.AddChild(cap);
+            cap.Refresh();
+        }
+        else if (s.Kind == LevelCardKind.NewStance)
+        {
+            cap?.QueueFree();
+            cap = new KeyTag(Act.Swap) { Chip = true };
             capHost.AddChild(cap);
             cap.Refresh();
         }

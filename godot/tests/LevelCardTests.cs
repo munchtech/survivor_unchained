@@ -23,6 +23,34 @@ public sealed class LevelCardTests
     }
 
     [Fact]
+    public void The_keys_open_at_4_5_and_9_and_the_autos_at_7_and_10_say_so()
+    {
+        static int SlotOf(string id) => id switch { "heroic_leap" => 1, "shield_charge" => 2, "dawnpulse" => 3, "iron_vow" => 5, "watch_bell" => 6, _ => -1 };
+        foreach (var l in new[] { 4, 5, 9 }) Assert.Equal(LevelCardKind.NewKey, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
+        var auto = LevelCards.ForCampaignLevel(7, Warden, SlotOf, 0);
+        Assert.Equal((LevelCardKind.NewAuto, "iron_vow", 5), (auto.Kind, auto.Skill, auto.Slot));
+        Assert.Equal("LEVEL 7 · AN AUTO SKILL", LevelCards.Header(auto));
+        Assert.Equal(LevelCardKind.NewAuto, LevelCards.ForCampaignLevel(10, Warden, SlotOf, 0).Kind);
+    }
+
+    [Fact]
+    public void Level_8_is_the_second_weapon_with_the_swap_key()
+    {
+        var s = LevelCards.ForCampaignLevel(8, Warden, _ => -1, 0);
+        Assert.Equal(LevelCardKind.NewStance, s.Kind);
+        Assert.Equal("LEVEL 8 · A SECOND WEAPON", LevelCards.Header(s));
+        Assert.Equal("Bulwark", s.Skill);
+        Assert.False(string.IsNullOrEmpty(s.Line));
+        Assert.Equal(Act.Character, s.PromptKey);
+        // the dev specs: slot:ID:LEVEL:SLOT with SLOT 4+ is an auto card, "stance" is the second weapon's
+        Assert.Equal(LevelCardKind.NewAuto, LevelCards.Parse("slot:iron_vow:7:5@1.5")!.Value.Spec.Kind);
+        Assert.Equal(LevelCardKind.NewKey, LevelCards.Parse("slot:heroic_leap:4:1")!.Value.Spec.Kind);
+        var st = LevelCards.Parse("stance@1.5")!.Value;
+        Assert.Equal((LevelCardKind.NewStance, 1.5), (st.Spec.Kind, st.At));
+        Assert.Null(LevelCards.Parse("stance:nope"));
+    }
+
+    [Fact]
     public void A_level_without_a_new_key_or_with_it_not_carried_is_plain()
     {
         var none = LevelCards.ForCampaignLevel(3, Warden, _ => 1, 1);
