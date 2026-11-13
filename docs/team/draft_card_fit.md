@@ -2,22 +2,27 @@
 
 Branch: `codex/draft-card-fit`; original base `ede4bf910`.
 Current integration merge: `9e61bcbcb8264dcd36078257e9bb6916bd92017b`.
-Status: Round 3 validation in progress on the merged result.
+Status: Round 3 ready; three consecutive full suites passed on the current merge.
 
 ## Round 3
 
 Integration still uses Godot.NET.Sdk 4.5.1 and has no changes to `OrnateBox` or
 `CardFit` since the original base. On the merged code, removing the pin made the
 collection regression fail; restoring it passed the regression and 1,914 card
-checks. Three consecutive full green suites are now required before the updated MR line.
+checks. Three consecutive full suites on `9e61bcbcb` passed with 2,457 passed,
+0 failed, and 11 skipped each. The tested code is merge commit `8482c8606`;
+source hashes and real engine output were checked in all three TRX results.
 The separate coverage defect is recorded under "Noted by Codex job 6" in
 `docs/team/hook/CODEX_audit.md`; its logic is unchanged in this branch.
 
 The first merged checkpoint, `e54402034`, passed three full suites with 2,386
 passed, 0 failed, and 11 skipped each. A newer ruling names `d310d57db`; the next
-fetch returned `9e61bcbcb`, now merged. Three full suites on that current tip
-are required before the updated MR line. The first passed with 2,457 passed,
-0 failed, and 11 skipped; the remaining two are in progress.
+fetch returned `9e61bcbcb`, now merged and validated above. The three fresh runs
+(`r3-current-01` through `r3-current-03`) ran November 12, 22:42-23:38 Pacific.
+Their evidence is preserved in
+`C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_codex_draft_card_fit/round3/`,
+including `r3-current-validation.json`, logs, TRX results, card reports, order
+reports, and the merged-code GC red/green controls.
 
 ## Cause and fix
 
