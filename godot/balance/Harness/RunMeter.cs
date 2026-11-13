@@ -164,7 +164,7 @@ public sealed class RunMeter
             if (ev is Ev.Spin sp)
                 switch (sp.Phase)
                 {
-                    case SpinPhase.Start: stStarts++; stR0 += b.Resolve.Value; break;
+                    case SpinPhase.Start: stStarts++; stR0 += b.Resolve.Value; StormTrace(b, "start"); break;
                     case SpinPhase.Break: stBreaks++; StormTrace(b, "break"); break;
                     case SpinPhase.End: if (b.Resolve.On && b.Resolve.Value <= 0.5) stDry++; else stRel++; StormTrace(b, "end"); break;
                 }
@@ -203,7 +203,7 @@ public sealed class RunMeter
         if (!stormTrace) return;
         var w = b.Weapons.Find(x => x.Id == "bladestorm");
         var p = b.Player;
-        Console.WriteLine($"    STORM {what} t {b.Time:0.00} spun {w?.StormT:0.00} ticks {w?.SpinTicks} lines {w?.Lines.Count} near3.5 {b.HostilesInRadius(p.X, p.Z, 3.5).Count} resolve {b.Resolve.Value:0} held {w?.Held} leap {p.Leap != null} dash {p.DashT > 0} chmax {w?.ChannelMax:0.0}");
+        Console.WriteLine($"    STORM {what} t {b.Time:0.00} ch {w?.ChannelT:0.00} spun {w?.StormT:0.00} ticks {w?.SpinTicks} lines {w?.Lines.Count} near3.5 {b.HostilesInRadius(p.X, p.Z, 3.5).Count} resolve {b.Resolve.Value:0} held {w?.Held} leap {p.Leap != null} dash {p.DashT > 0} chmax {w?.ChannelMax:0.0}");
     }
 
     void StormStep(Battle b, double dt, bool fight)

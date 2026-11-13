@@ -93,8 +93,9 @@ public sealed class WeaponStats
     /// (ChannelTime), linearly, on its damage and its radius.</summary>
     public double? BreakFrom, BreakGrow;
     /// <summary>Spin, in the campaign with Resolve: the break grows with the Resolve the storm spent instead, x1 at none to
-    /// BreakGrow at BreakSpent (100), linearly.</summary>
-    public double? BreakSpent;
+    /// BreakGrow at BreakSpent (100), linearly. BreakFloor (bd-storm; default x1): what a break of a storm that spent none
+    /// makes of its damage, so a tapped spin breaks small and a held one great (its radius never shrinks below x1).</summary>
+    public double? BreakSpent, BreakFloor;
     /// <summary>Brace (Iron Vow): she plants Plant seconds (no walking), then braces Brace seconds; blows on her while it
     /// holds land at Halve, and Store of each (before the halving) is stored; it ends in a burst of Radius for Damage plus
     /// the store times StoreMul, Knockback outward, a lesser foe stunned Stun seconds.</summary>

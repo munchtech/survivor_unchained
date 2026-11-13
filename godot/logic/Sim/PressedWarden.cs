@@ -342,12 +342,12 @@ public static partial class Firing
         return 1 + (most - 1) * Math.Clamp((spent - from) / (cap - from), 0, 1);
     }
 
-    /// <summary>What a storm that spent this much Resolve makes of its break: x1 at none to BreakGrow (x1.6) at BreakSpent
-    /// (100), linearly, capped.</summary>
+    /// <summary>What a storm that spent this much Resolve makes of its break: BreakFloor (x1) at none to BreakGrow (x1.6) at
+    /// BreakSpent (100), linearly, capped.</summary>
     public static double BreakGrowthSpent(WeaponInst w, double resolve)
     {
-        double most = w.Num(s => s.BreakGrow) ?? 1.6, at = Math.Max(1e-9, w.Num(s => s.BreakSpent) ?? 100);
-        return 1 + (most - 1) * Math.Clamp(resolve / at, 0, 1);
+        double most = w.Num(s => s.BreakGrow) ?? 1.6, at = Math.Max(1e-9, w.Num(s => s.BreakSpent) ?? 100), floor = w.Num(s => s.BreakFloor) ?? 1;
+        return floor + (most - floor) * Math.Clamp(resolve / at, 0, 1);
     }
 
     /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
@@ -432,7 +432,7 @@ public static partial class Firing
         w.BreakUntil = -1;
         // In the campaign with Resolve, the break grows with the Resolve the storm spent; elsewhere with its seconds.
         double grow = b.Resolve.On && w.Press?.Drain is > 0 ? BreakGrowthSpent(w, b.Resolve.SpentInStorm) : BreakGrowth(w, spent);
-        double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * grow, dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;
+        double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * Math.Max(1, grow), dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;
         double stun = w.Num(s => s.BreakStun) ?? 0.5, kb = w.Num(s => s.BreakKnockback) ?? 1.5;
         b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Break, X = p.X, Z = p.Z, Radius = r, Heavy = true, Grow = grow });
         b.ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>

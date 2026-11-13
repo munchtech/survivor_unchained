@@ -15,7 +15,7 @@ public sealed class PlanRule
     public int Priority = 9;
     public KindleDef? When;
     public string Aim = "hover";
-    public double? Reach, PackRadius, Line, LineHalf, BreakLate;
+    public double? Reach, PackRadius, Line, LineHalf, BreakLate, HoldRadius, StartResolve;
     public int? PackMin, LineMin, BreakLines, ThinBelow;
 }
 
@@ -196,12 +196,19 @@ public static class PressPlan
     static bool Storm(Battle b, PressHands h, WeaponInst w, PlanRule r, bool full, bool ignore)
     {
         var p = b.Player;
-        int n = b.HostilesInRadius(p.X, p.Z, 3.5).Count, start = r.When?.Count ?? 4, thin = r.ThinBelow ?? 4;
-        if (w.Channeling)
+        int n = b.HostilesInRadius(p.X, p.Z, r.When?.Radius ?? 3.5).Count, start = r.When?.Count ?? 4, thin = r.ThinBelow ?? 4;
+        // (bd-storm) Held on while ThinBelow or more stand within HoldRadius (she spins on into the next of them; default 3.5 m).
+        int held = r.HoldRadius is double hr ? b.HostilesInRadius(p.X, p.Z, hr).Count : n;
+        int bs = b.BreakSlot(w);
+        // (bd-storm) Spun out (released or dry) with lines still pending and its BreakWindow open: break it, as a player would.
+        bool after = !w.Channeling && Firing.InStorm(b, w) && w.Lines.Count > 0;
+        if (w.Channeling || after)
         {
-            bool late = w.ChannelMax - w.ChannelT <= (r.BreakLate ?? 0.5);
-            int bs = b.BreakSlot(w);
-            if (bs >= 0 && (w.Lines.Count >= (r.BreakLines ?? 2) || late || (n < thin && w.Lines.Count > 0)))
+            // Late: in the campaign with Resolve (no cap) when Resolve would run dry within BreakLate s (a dry storm ends unbroken);
+            // elsewhere BreakLate s before its longest hold.
+            double drain = b.Resolve.On ? (w.Press?.Drain ?? 0) * b.RulePayMul(w) : 0;
+            bool late = after || (drain > 0 ? b.Resolve.Value <= drain * (r.BreakLate ?? 0.5) : w.ChannelMax - w.ChannelT <= (r.BreakLate ?? 0.5));
+            if (bs >= 0 && (w.Lines.Count >= (r.BreakLines ?? 2) || late || (held < thin && w.Lines.Count > 0)))
             {
                 // The break is a FRESH press of the break key (Sunder's, or a union's second; a grip held from before the storm
                 // never breaks it): the held key comes up and goes down again. A union's stays down after only if the hand is holding
@@ -214,10 +221,15 @@ public static class PressPlan
                 if (w.Slot2 >= 0 && !HalfGrip(b, h, w, out _)) b.HoldSkill(bs, false);
                 return true;
             }
-            b.HoldSkill(w.Slot, n >= thin || full && n > 0);
+            if (after) return false;
+            b.HoldSkill(w.Slot, held >= thin || full && held > 0);
             return false;
         }
-        if (w.Timer <= 0 && (n >= start || (full || ignore) && n > 0))
+        // Started on its crowd only (bd-storm): full Resolve is no reason to spin on a lone foe (the kindled spenders take it
+        // there, far better spent); a hand ignoring the condition spins on as few as it holds for (ThinBelow).
+        // (bd-storm) Never on a near-empty Resolve (StartResolve): a spin that breaks the next step is a tap, not a storm.
+        bool pays = !b.Resolve.On || b.Resolve.Value >= (r.StartResolve ?? 0);
+        if (w.Timer <= 0 && pays && (n >= start || ignore && n >= Math.Max(1, thin)))
         {
             if (!h.Due(w, b.Time)) return false;
             b.HoldSkill(w.Slot, true);
