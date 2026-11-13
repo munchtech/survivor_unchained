@@ -163,9 +163,13 @@ void fragment() {
         }
         float bottom = cam.UnprojectPosition(new Vector3(headP.X, collar, headP.Z)).Y / rows;
         float cur = (headNow ?? HeadFrame).Distance;
-        float off = top < bottom && x1 > x0 ? Mathf.Max((bottom - top) / ((bare ? 0.45f : 0.62f) * 1080f), (x1 - x0) / 835f) : 1f;
-        // (bare-headed, head to collarbone at 62% was a face filling the frame: 45%, her shoulders in)
+        float off = top < bottom && x1 > x0 ? Mathf.Max((bottom - top) / ((bare ? 0.30f : 0.62f) * 1080f), (x1 - x0) / 835f) : 1f;
+        // (bare-headed, the span (hair top to "collar", which lands near her chin) at 30%: a head-and-shoulders portrait, the head ~400 px;
+        // 45% made a face filling the frame)
         float d = Mathf.Clamp(cur * off, 0.8f, 4.5f);
+        // (bare-headed, the distance from the span's metres alone: the screen-measured feedback read the first frame, the camera
+        // still out at the play distance, and locked at the near clamp: a face filling the frame)
+        if (bare) d = Mathf.Clamp((tip - collar) / (0.30f * 2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)), 0.8f, 4.5f);
         float centre = (tip + collar) / 2 - pv.GlobalPosition.Y;
         // (the height corrected from where the middle of the tip-to-collarbone span lands on the screen now: aim y540, the middle of the frame; the
         // error in metres at that depth is taken off the camera's height each frame, so it settles with the ease and holds in both states)
@@ -173,10 +177,11 @@ void fragment() {
             var spanMid = new Vector3(headP.X, (tip + collar) / 2, headP.Z);
             float depthM = -(cam.GlobalTransform.AffineInverse() * spanMid).Z;
             float perPxM = 2 * depthM * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2) / GetViewport().GetVisibleRect().Size.Y;
-            float errPx = cam.UnprojectPosition(spanMid).Y / rows - 540f;
+            // (bare-headed, the span's middle at y430: her eyes near the upper third, her shoulders in, not a third of foliage over her)
+            float errPx = cam.UnprojectPosition(spanMid).Y / rows - (bare ? 430f : 540f);
             float curH = (headNow ?? HeadFrame).Height;
             if (depthM > 0.1f && !float.IsNaN(errPx)) centre = curH - errPx * rows * perPxM;
-            if (Args.Get("ward-log") != null && Engine.GetProcessFrames() % 3 == 0) GD.Print($"WARD head midY {errPx + 540:F0} top {top:F0} bottom {bottom:F0} depth {depthM:F2} H {curH:F3} -> {centre:F3} D {cur:F2} -> {d:F2}");
+            if (Args.Get("ward-log") != null && Engine.GetProcessFrames() % 3 == 0) GD.Print($"WARD head midY {errPx + (bare ? 430 : 540):F0} top {top:F0} bottom {bottom:F0} depth {depthM:F2} H {curH:F3} -> {centre:F3} D {cur:F2} -> {d:F2}");
 
         }
         // (the shift that puts the head's middle at x 483.5, the middle of the free ground: where it is on screen now, less the camera's own
