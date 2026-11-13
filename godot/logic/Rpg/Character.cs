@@ -170,6 +170,8 @@ public sealed class CharacterData
     public Dictionary<string, ArtState> Arts = new();
     /// <summary>The dash's steps taken (Content/DashSteps.cs), in the order taken; a repeatable one once a time.</summary>
     public List<string> DashSteps = new();
+    /// <summary>The Unions she has learned (Rpg/UnionJoin.cs: paid for once); which are joined is the lamp layout's.</summary>
+    public List<string> UnionsKnown = new();
 
     /// <summary>Take a step of the dash's growth (the design lead's route calls this, a Wick or a level-up; or
     /// Journey.GrantDashStep, which also tells the fight). False if unknown or already taken as often as it may be.</summary>

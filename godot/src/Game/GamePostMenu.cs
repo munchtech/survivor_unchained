@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Ui;
@@ -76,6 +77,17 @@ public partial class Game
         if (!PostMenu.SetTier(World, Battle, Journey.WorldTierOn, n)) return;
         Toast(new Toast(ToastKind.World, $"World tier {WorldTiers.Get(n).Name}", PostMenu.Numbers(WorldTiers.Get(n)), Life: 4));
         Save("tier");
+    }
+
+    /// <summary>(bd-sockets) A Union joined or unjoined at the post (PostMenu.ToggleUnion: the first join pays), and saved.
+    /// The fight takes it up when its kit is next worn (UnionJoin.Apply, hooked after bd-keys).</summary>
+    public void PostUnion(LampPosts.Post at, string id)
+    {
+        if (PostMenu.ToggleUnion(World, Battle, at, Journey.Ch, id) is { } no) { Toast(new Toast(ToastKind.Warning, no)); return; }
+        bool joined = UnionJoin.Joined(Journey.Ch).Contains(id);
+        Toast(new Toast(ToastKind.World, joined ? "Union joined" : "Union unjoined", Content.Unions.Find(id)?.Name ?? id, Life: 4));
+        Save("union");
+        screens.Current?.Refresh();
     }
 
     /// <summary>The Lamps at the post, layouts open there while she stays by it, out of a fight (LampBook.Bench).</summary>

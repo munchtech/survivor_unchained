@@ -12,7 +12,7 @@ public partial class PostScreen : Overlay
     public override string Kind => "post";
     readonly LampPosts.Post post;
     readonly MenuList menu;
-    /// <summary>"" (the menu), "travel" or "tier".</summary>
+    /// <summary>"" (the menu), "travel", "tier" or "unions".</summary>
     string page = "";
 
     public PostScreen(Game g, LampPosts.Post post) : base(g)
@@ -58,9 +58,21 @@ public partial class PostScreen : Overlay
             }
             menu.Add("Back", Back);
         }
+        else if (page == "unions")
+        {
+            // (bd-sockets) A plain list: each Union joined or not, its price the first time; the look is bd-ui's.
+            foreach (var l in PostMenu.Unions(G.Journey.Ch))
+            {
+                string id = l.Union.Id;
+                string label = l.Joined ? $"{l.Union.Name}  (joined)" : l.Union.Name;
+                string note = l.Refused ?? (l.Joined ? "Unjoin: free" : l.Price > 0 ? $"Join: {l.Price} rare items, once" : "Join: free");
+                menu.Add(label, () => G.PostUnion(post, id), note, l.Joined);
+            }
+            menu.Add("Back", Back);
+        }
         else
         {
-            foreach (var (opt, refused) in PostMenu.Options(w, G.Battle, post))
+            foreach (var (opt, refused) in PostMenu.Options(w, G.Battle, post, G.Journey.Ch))
                 switch (opt)
                 {
                     case PostMenu.Option.Rest:
@@ -74,6 +86,9 @@ public partial class PostScreen : Overlay
                         break;
                     case PostMenu.Option.Lamps:
                         menu.Add("Lamps", () => { if (refused != null) G.Toast(new Toast(ToastKind.Warning, refused)); else G.PostLamps(post); }, refused ?? "Put lamps out, change layouts");
+                        break;
+                    case PostMenu.Option.Unions:
+                        menu.Add("Unions", () => Go("unions", refused), refused ?? "Join two skills as one");
                         break;
                     default:
                         menu.Add("Leave", G.CloseOverlay);

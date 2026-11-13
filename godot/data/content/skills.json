@@ -1568,6 +1568,7 @@
       "a": "cinderfall",
       "b": "rimeshard",
       "into": "frostfire_comet",
+      "price": 2,
       "description": "Fire and frost in one falling star: it bursts, freezes what it does not burn, and the frozen it finds explode."
     },
     {
@@ -1576,6 +1577,7 @@
       "a": "arcweb",
       "b": "thunderhead",
       "into": "the_tempest",
+      "price": 2,
       "description": "The storm and its lightning are one: bolts fall on the crowd and leap from every shocked thing they strike."
     },
     {
@@ -1584,6 +1586,7 @@
       "a": "blightfield",
       "b": "thornbloom",
       "into": "rotwood",
+      "price": 2,
       "description": "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it."
     },
     {
@@ -1592,6 +1595,7 @@
       "a": "axe_gyre",
       "b": "cleaver",
       "into": "butchers_wheel",
+      "price": 2,
       "description": "The axes become cleavers and never stop turning: every cut a wound, and wounds that deepen."
     },
     {
@@ -1600,6 +1604,7 @@
       "a": "volley",
       "b": "knifestorm",
       "into": "hail_of_steel",
+      "price": 2,
       "description": "Arrows and knives together, in every direction at once, opening wounds."
     },
     {
@@ -1608,6 +1613,7 @@
       "a": "dawnpulse",
       "b": "judgement_disc",
       "into": "dawns_judgement",
+      "price": 2,
       "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike."
     },
     {
@@ -1616,6 +1622,7 @@
       "a": "gravecall",
       "b": "spirit_herd",
       "into": "barrow_host",
+      "price": 2,
       "description": "The barrows send their knights, and the herd runs with them: a host that does not lie down."
     },
     {
@@ -1624,6 +1631,7 @@
       "a": "umbral_bolt",
       "b": "grave_tether",
       "into": "soul_lantern",
+      "price": 2,
       "description": "Shadow that passes through everything, marks it for the grave, and brings a little of it back to you."
     },
     {
@@ -1632,6 +1640,7 @@
       "a": "seeking_motes",
       "b": "moonbrand",
       "into": "starfall",
+      "price": 2,
       "description": "Moons fall among them and break into motes that hunt the strongest."
     },
     {
@@ -1640,6 +1649,7 @@
       "a": "cleaver",
       "b": "sunder",
       "into": "bladestorm",
+      "price": 2,
       "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again."
     }
   ]

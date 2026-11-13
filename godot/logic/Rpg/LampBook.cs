@@ -27,6 +27,8 @@ public sealed class LampLayout
     /// <summary>The day slots' skills, in order. The active layout's live copy is the character's Slotted
     /// (what everything reads); it is kept here on a switch and on a save (LampBook.Keep).</summary>
     public List<string> Carried = new();
+    /// <summary>The Unions joined on this layout (Rpg/UnionJoin.cs), from those she knows: free to join and unjoin at a post.</summary>
+    public List<string> Unions = new();
 }
 
 public sealed class LampState

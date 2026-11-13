@@ -38,7 +38,7 @@ public static class SkillsJson
      * keeps its place after these. */
     static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "cast", "kindle", "press", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "_doc", "base", "triggers", "evolutions"];
     static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "cast", "kindle", "school", "addTags", "art", "mods", "set", "triggers"];
-    static readonly string[] UnionKeys = ["id", "name", "a", "b", "into", "description"];
+    static readonly string[] UnionKeys = ["id", "name", "a", "b", "into", "price", "description"];
 
     public static string Write(SkillsFile f)
     {
