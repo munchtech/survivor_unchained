@@ -2599,7 +2599,9 @@ public partial class BattleFx : Node3D
                         // the screen (the steep camera would see only the table), turning on its own axis and bobbing a little.
                         var gb = Rpg.Supports.Family(gd) switch { "sapphire" => gemSapphire, "clear" => gemClear, "bicolor" => gemBicolor, _ => gemGarnet };
                         float tip = GetViewport()?.GetCamera3D() is { } gcam ? Mathf.Asin(Mathf.Clamp(-(-gcam.GlobalTransform.Basis.Z).Y, 0f, 1f)) : Mathf.DegToRad(56);
-                        var gbasis = new Godot.Basis(Vector3.Right, -tip) * new Godot.Basis(Vector3.Up, (float)(now * 0.9 + p.Id));
+                        // (A bicolor stone only sways +/-25 degrees about its axis, so its split stays facing the camera and both halves read in every frame.)
+                        float spinA = gb == gemBicolor ? Mathf.DegToRad(25) * Mathf.Sin((float)(now * 0.9 + p.Id)) : (float)(now * 0.9 + p.Id);
+                        var gbasis = new Godot.Basis(Vector3.Right, -tip) * new Godot.Basis(Vector3.Up, spinA);
                         gb.Add(new Transform3D(gbasis, V(p.X, gy + 0.3 + Mathf.Sin((float)(now * 2 + p.Id)) * 0.03, p.Z)), Colors.White);
                     }
                     else sacks.Add(new Transform3D(lie.Scaled(Vector3.One * (hidden ? 0.7f : 1f)), V(p.X, gy + sackUp, p.Z)), hidden ? new Color(0.35f, 0.33f, 0.3f) : Colors.White);

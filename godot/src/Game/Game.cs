@@ -1918,7 +1918,10 @@ public partial class Game : Node, IZoneHost
             if (!p.Alive || p.Look == Verdict.Hidden || p.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Chest or PickupKind.Heal or PickupKind.Magnet) continue;
             // What a zone laid down by hand (a quest thing, a story's drop) is labelled by what it is.
             LootTier tier;
-            if (p.Loot >= 0) tier = (LootTier)p.Loot;
+            // A support gem is a gem from its first frame (never a Rare-coloured name that turns teal and jumps a beat later).
+            SupportDef? gemDef = p.Payload is ItemInstance gemIt ? Rpg.Supports.OfItem(gemIt.Def) : null;
+            if (gemDef != null) tier = LootTier.Gem;
+            else if (p.Loot >= 0) tier = (LootTier)p.Loot;
             else if (p.Ref != null && Items.Find(p.Ref) is { } d0) tier = Drops.TierOf(d0, p.Tier);
             else continue;
             double d2 = (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz);
@@ -1930,7 +1933,7 @@ public partial class Game : Node, IZoneHost
             string text = p.Payload is ItemInstance it ? Inventory.Name(it) + (tier == LootTier.Gem ? " gem" : "") : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
-            var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : tier == LootTier.Gem && ItemViews.GemGround(p.Payload as ItemInstance) is { } gcol ? gcol.Lerp(Colors.White, 0.25f) : ItemViews.TierColour(tier);
+            var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
@@ -1943,7 +1946,7 @@ public partial class Game : Node, IZoneHost
                 else quietLabels[key] = (sp, d2, n, name, col);
                 continue;
             }
-            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem));
+            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem, gemDef != null ? GemLook.Of(gemDef) : null));
             labelNear.Add(d2);
         }
         // The loud first (a gem's name loud 2, before every Rare), nearest first; the quiet after them, nearest first: at most LabelsMost, QuietMost of them quiet.
@@ -2039,6 +2042,12 @@ public partial class Game : Node, IZoneHost
     double lootT = 1.5;
     // --loot gem: one gem of each colour family (garnet, sapphire, clear), a beat apart.
     static readonly string[] GemRing = ["gem.brutality", "gem.bulwark", "gem.haste", "gem.concussion"];
+    // --loot gem,rare: the same ring with two real Rares among the gems (a gem beside a gear drop).
+    static readonly (string Def, int? Rarity, Verdict Look)[] GemRareRing =
+    [
+        ("gem.brutality", null, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown), ("gem.bulwark", null, Verdict.Shown), ("gem.haste", null, Verdict.Shown),
+        ("iron_helm", 2, Verdict.Shown), ("gem.concussion", null, Verdict.Shown),
+    ];
     static readonly (string Def, int? Rarity, Verdict Look)[] LootRing =
     [
         ("leather_cap", 0, Verdict.Hidden), ("iron_helm", 0, Verdict.Shown), ("copper_ring", 1, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown),
@@ -2095,12 +2104,15 @@ public partial class Game : Node, IZoneHost
         // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
         // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
         // "legendary": only the Legendary, for its moment (--loot-at T: the first T seconds in, for pictures of its fall).
-        if (Args.Has("loot") && Battle is { } lootB && lootI < (Args.Get("loot") == "gem" ? GemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
+        string lootMode = Args.Get("loot") ?? "";
+        bool gemLoot = lootMode is "gem" or "gem,rare";
+        var gemRing = lootMode == "gem,rare" ? GemRareRing : GemRing.Select(g => (g, (int?)null, Verdict.Shown)).ToArray();
+        if (Args.Has("loot") && Battle is { } lootB && lootI < (gemLoot ? gemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = Args.Get("loot") == "gem" ? (GemRing[lootI], null, Verdict.Shown) : LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
-            lootI = Args.Get("loot") == "legendary" ? LootRing.Length : lootI + 1;
-            int ringLen = Args.Get("loot") == "gem" ? GemRing.Length : LootRing.Length;
+            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode == "legendary" ? LootRing.Length - 1 : lootI];
+            lootI = lootMode == "legendary" ? LootRing.Length : lootI + 1;
+            int ringLen = gemLoot ? gemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)
             double a = lootI * Math.Tau / ringLen, d = Args.Has("far") ? 28 : 4.5;

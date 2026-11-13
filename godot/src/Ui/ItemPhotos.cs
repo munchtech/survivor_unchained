@@ -20,13 +20,17 @@ namespace SurvivorUnchained.Ui;
 public partial class ItemPhotos : Node
 {
     /// <summary>Bump when what the photographs show changes.</summary>
-    public const int Version = 2;
+    public const int Version = 3;
 
     const int Px = 256;
 
     static ItemPhotos? studio;
     static readonly Dictionary<string, ImageTexture> photos = new();
     static readonly Dictionary<string, List<TextureRect>> waiting = new();
+    // The photographs as taken (256 px, no mipmaps), for the small crisp takes of StoneIcon.
+    static readonly Dictionary<string, Image> sources = new();
+    static readonly Dictionary<(string, int, int), ImageTexture> stones = new();
+    static readonly Dictionary<string, List<(TextureRect Rect, int W, int H)>> stonesWaiting = new();
 
     readonly Queue<string> queue = new();
     /// Photographs shaded and saved on a worker, waiting to be put up.
@@ -54,6 +58,7 @@ public partial class ItemPhotos : Node
             if (photos.ContainsKey(key)) continue;
             if (!quitAfter && !Args.Has("icons-fresh") && FileAccess.FileExists(PathOf(key)) && Image.LoadFromFile(PathOf(key)) is { } img && !img.IsEmpty())
             {
+                sources[key] = (Image)img.Duplicate();
                 photos[key] = Texture(img);
                 continue;
             }
@@ -106,6 +111,57 @@ public partial class ItemPhotos : Node
             l.Add(r);
         }
         return box;
+    }
+
+    /// <summary>A small stone, crisp (bd-ui W19): the photograph cropped to the stone's own edge and set down at exactly
+    /// w x h pixels with a Lanczos filter (a 4x-and-more supersample of the 256 px take: the glint and the facets stay
+    /// what they are at 256, none of it smeared by a mipmap), centred in a `box` px square. Until the photograph exists,
+    /// the glyph stands in. Row stones are 30 x 24 in a 32 box, a well's 40 x 30.</summary>
+    public static Control StoneIcon(string key, int w, int h, int box, Color glyph)
+    {
+        var holder = new Control { CustomMinimumSize = new Vector2(box, box), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var r = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, TextureFilter = CanvasItem.TextureFilterEnum.Linear,
+            MouseFilter = Control.MouseFilterEnum.Ignore, AnchorLeft = 0.5f, AnchorRight = 0.5f, AnchorTop = 0.5f, AnchorBottom = 0.5f,
+            OffsetLeft = -w / 2f, OffsetRight = w - w / 2f, OffsetTop = -h / 2f, OffsetBottom = h - h / 2f,
+        };
+        holder.AddChild(r);
+        if (UiArt.Icon("item", key) is { } painted) { r.Texture = painted; return holder; }
+        if (sources.ContainsKey(key)) { r.Texture = StoneTexture(key, w, h); return holder; }
+        r.Texture = Glyphs.Texture(key, box * 2, glyph);
+        if (studio != null && ItemModels.Has(key))
+        {
+            if (!stonesWaiting.TryGetValue(key, out var l)) stonesWaiting[key] = l = new();
+            l.Add((r, w, h));
+        }
+        return holder;
+    }
+
+    static ImageTexture StoneTexture(string key, int w, int h)
+    {
+        if (stones.TryGetValue((key, w, h), out var have)) return have;
+        var src = (Image)sources[key].Duplicate();
+        src.Convert(Image.Format.Rgba8);
+        // Its edge: where the stone is (the shadow under it is a faint alpha, left out).
+        int x0 = src.GetWidth(), y0 = src.GetHeight(), x1 = -1, y1 = -1;
+        for (int y = 0; y < src.GetHeight(); y++)
+            for (int x = 0; x < src.GetWidth(); x++)
+                if (src.GetPixel(x, y).A > 0.75f) { x0 = Mathf.Min(x0, x); y0 = Mathf.Min(y0, y); x1 = Mathf.Max(x1, x); y1 = Mathf.Max(y1, y); }
+        if (x1 < 0) { x0 = 0; y0 = 0; x1 = src.GetWidth() - 1; y1 = src.GetHeight() - 1; }
+        var crop = src.GetRegion(new Rect2I(x0, y0, x1 - x0 + 1, y1 - y0 + 1));
+        // Straight-alpha edges resized through premultiplied colour, so no dark fringe.
+        crop.PremultiplyAlpha();
+        crop.Resize(w, h, Image.Interpolation.Lanczos);
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                var c = crop.GetPixel(x, y);
+                if (c.A > 0.001f) crop.SetPixel(x, y, new Color(Mathf.Min(1, c.R / c.A), Mathf.Min(1, c.G / c.A), Mathf.Min(1, c.B / c.A), c.A));
+            }
+        var tex = ImageTexture.CreateFromImage(crop);
+        stones[(key, w, h)] = tex;
+        return tex;
     }
 
     /* ------------------------------------------------------------- studio -- */
@@ -223,8 +279,12 @@ public partial class ItemPhotos : Node
 
     void Show(string key, Image img)
     {
+        sources[key] = (Image)img.Duplicate();
         var tex = Texture(img);
         photos[key] = tex;
+        stones.Clear();
+        if (stonesWaiting.Remove(key, out var sl))
+            foreach (var (rect, w, h) in sl) if (IsInstanceValid(rect)) rect.Texture = StoneTexture(key, w, h);
         if (!waiting.Remove(key, out var list)) return;
         foreach (var r in list)
         {

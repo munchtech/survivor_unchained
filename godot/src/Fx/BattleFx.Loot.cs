@@ -138,11 +138,11 @@ public partial class BattleFx
                 break;
             case LootTier.Gem:
             {
-                // A cut stone in its own colour: a star-shaped pool of its light (0.7 m, turning slowly) and a 2.4 m column of
-                // star motes rising from it (no flat glow: nothing else on the ground has either). It flashes once as it lands,
-                // then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s, twice as bright as before.
+                // A cut stone in its own colour: a soft additive pool of its light 1.0 m across (35% in the centre, fading to nothing)
+                // with four feathered rays 0.25 m wide at 20%, turning slowly, and nine star motes (7 px, 70%) rising 1.2 s each.
+                // It flashes once as it lands, then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s.
                 var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
-                Light(p.X, gy, p.Z, Lit.Stars, 0, 0.7f, 2.4f * grow, Rpg.Supports.Family(Rpg.Supports.OfItem(((ItemInstance)p.Payload!).Def)!) == "clear" ? new Color("#DDE8FF") : gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
+                Light(p.X, gy, p.Z, Lit.Stars, 0, 1.0f, 1.8f * grow, gc, 1.0f * flare);
                 var star = gc.Lerp(Colors.White, 0.4f) * 2.2f;
                 if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
                     Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);

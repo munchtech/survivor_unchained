@@ -17,17 +17,28 @@ public static class GemCut
         ["clear"] = ("#AEBBCD", "#F4F8FF", "#3A4656"),
     };
 
+    // The ground stone's own values (the judge's, round 2): garnet #9E1626 with lights #FF5A6A, sapphire #1D4FD0 with lights #8AB8FF,
+    // and an inner glow so it reads lit from inside on the grass.
+    static readonly Dictionary<string, (string Body, string Bright, string Dark)> GroundColours = new()
+    {
+        ["garnet"] = ("#9E1626", "#FF5A6A", "#3C0812"),
+        ["sapphire"] = ("#1D4FD0", "#8AB8FF", "#0A1C66"),
+        ["clear"] = ("#AEBBCD", "#F4F8FF", "#5C6878"),
+    };
+
     static ArrayMesh? mesh;
     static Shader? shader, glint;
 
     /// <summary>The stone for a family ("garnet", "sapphire", "clear", "bicolor"); `withGlint` adds the one four-point glint
     /// the photograph carries (the ground's is its own light).</summary>
-    public static Node3D Make(string family, bool withGlint)
+    public static Node3D Make(string family, bool withGlint, bool ground = false)
     {
         mesh ??= BuildMesh();
         shader ??= GD.Load<Shader>("res://shaders/gem_cut.gdshader");
         var mat = new ShaderMaterial { Shader = shader };
-        var a = Colours[family == "bicolor" ? "garnet" : family];
+        var set = ground ? GroundColours : Colours;
+        var a = set[family == "bicolor" ? "garnet" : family];
+        if (ground) mat.SetShaderParameter("glow", 0.6f);
         mat.SetShaderParameter("body", new Color(a.Body));
         mat.SetShaderParameter("bright", new Color(a.Bright));
         mat.SetShaderParameter("dark", new Color(a.Dark));
@@ -35,7 +46,7 @@ public static class GemCut
         if (family == "bicolor")
         {
             if (withGlint) mat.SetShaderParameter("split_turn", 0.4f);
-            var b = Colours["sapphire"];
+            var b = set["sapphire"];
             mat.SetShaderParameter("split", true);
             mat.SetShaderParameter("body_b", new Color(b.Body));
             mat.SetShaderParameter("bright_b", new Color(b.Bright));
@@ -48,8 +59,8 @@ public static class GemCut
             glint ??= GD.Load<Shader>("res://shaders/gem_glint.gdshader");
             root.AddChild(new MeshInstance3D
             {
-                Mesh = new QuadMesh { Size = new Vector2(0.4f, 0.4f) }, MaterialOverride = new ShaderMaterial { Shader = glint },
-                Position = new Vector3(-0.15f, 0.3f, 0.5f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                Mesh = new QuadMesh { Size = new Vector2(0.35f, 0.35f) }, MaterialOverride = new ShaderMaterial { Shader = glint },
+                Position = new Vector3(0.006f, 0.290f, 0.466f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             });
         }
         return root;

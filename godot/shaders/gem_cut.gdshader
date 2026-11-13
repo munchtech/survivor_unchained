@@ -14,11 +14,13 @@ uniform vec3 dark_b : source_color = vec3(0.0, 0.01, 0.04);
 uniform bool split = false;
 uniform float ripple = 0.3;
 uniform float alt = 0.0;        // 1: every facet alternates dark / body / bright by its own hash (the clear stone)
+uniform float glow = 0.0;       // the ground stone's own light: 0.6 of its bright at the table, no facet darker than its body (a lit jewel, not a dark rock)
 uniform float split_turn = 0.0; // the split plane's turn about the axis, so a photograph's turned stone splits down the screen
 
 varying vec3 lpos;
+varying vec3 lnorm;
 
-void vertex() { lpos = VERTEX; }
+void vertex() { lpos = VERTEX; lnorm = NORMAL; }
 
 void fragment() {
 	vec3 n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
@@ -42,9 +44,18 @@ void fragment() {
 	float h = fract(dot(n, vec3(3.1, 7.3, 5.7)));
 	// The pavilion, seen through the crown, alternates facet by facet.
 	float low = step(n.y, 0.0);
-	col = mix(col, h < 0.38 ? c_dark : (h < 0.76 ? c_body : c_bright), max(low * 0.9, alt));
+	// (By the pavilion's eight mains, a wedge each, and not facet by facet: the thin lower-girdle facets between them made venetian blinds.)
+	float sector = floor(atan(lpos.z, lpos.x) / 0.7853982);
+	float hp = fract(sector * 0.381966 + 0.17);
+	float hh = low > 0.5 ? hp : h;
+	col = mix(col, hh < 0.38 ? c_dark : (hh < 0.76 ? c_body : c_bright), max(low * 0.9, alt));
 	col *= 0.9 + 0.2 * h;
+	// Lit from inside (the ground stone): the table glows, nothing is darker than the body.
+	float tab = smoothstep(0.75, 0.95, normalize(lnorm).y);
+	col = max(col, c_body * glow);
+	col = mix(col, c_bright, glow * (0.3 + 0.7 * tab));
 	vec3 white = mix(c_bright, vec3(1.0), 0.72);
-	col = mix(col, white, max(strip1, strip2));
+	// One strip on the pavilion (two made venetian-blind stripes there), both on the crown.
+	col = mix(col, white, max(strip1, strip2 * (1.0 - low)));
 	ALBEDO = col;
 }

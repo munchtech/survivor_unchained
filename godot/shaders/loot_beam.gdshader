@@ -19,7 +19,7 @@
 //   7 Shaft: a moment's column of light (BattleFx.Pillar: a strike, a level, an evolution, a chest,
 //     the night won), its height given; the fraction, how thick the motes riding up it.
 //   8 Band: a band of light lying on the ground at its reach (the way out), breathing.
-//   9 Stars: a support gem's: a star-shaped pool turning slowly, a column of star motes rising out of it.
+//   9 Stars: a support gem's: a soft pool of its light with four feathered rays turning slowly, nine star motes rising out of it.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
 #include "res://shaders/world_clock.gdshaderinc"
@@ -35,6 +35,7 @@ varying float tall;
 varying float kind;
 varying float param;
 varying float seed;
+varying float ppm;
 
 void vertex() {
 	half_w = length(MODEL_MATRIX[0].xyz);
@@ -53,6 +54,7 @@ void vertex() {
 	float down = half_w * 0.85;
 	if (kind > 7.5 && kind < 8.5) tall = down;
 	at = vec2(VERTEX.x * 2.0 * half_w, mix(-down, tall, VERTEX.y + 0.5));
+	ppm = abs(PROJECTION_MATRIX[1][1]) * VIEWPORT_SIZE.y * 0.5 / max(-foot.z, 0.1);
 	VERTEX = foot + vec3(at, 0.0);
 }
 
@@ -162,22 +164,33 @@ void fragment() {
 		// A little of the ground under its pool covered, so by night it lies warm and not pink.
 		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade + pool(w * 0.55) * 0.12;
 	} else if (kind > 8.5) {
-		// A gem's light, light and not a decal: four long thin tapered rays and four shorter diagonal ones lying on the
-		// ground, turning slowly, each a bright hairline fading out along its length (added, nothing to cover the grass);
-		// star motes (two little crossed bars each) rising from it up a column of its height. Its heart left clear.
+		// A gem's light (bd-ui W19): a soft additive pool on the ground, 1.0 m across, the gem's colour at 35% in the centre
+		// fading to nothing; four feathered rays 0.25 m wide at 20% reaching the same 1.0 m, turning slowly; and nine star
+		// motes (7 px across, 70%) alive at once, each rising for 1.2 s. All added: nothing covers the grass.
 		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
 		float rr = length(e);
-		float ang = atan(e.y, e.x) + WORLD_TIME * 0.35 + seed * 6.28;
-		float qa = abs(mod(ang + 0.7853982, 1.5707963) - 0.7853982);   // from the nearest long ray
-		float da = abs(mod(ang, 1.5707963) - 0.7853982);               // from the nearest diagonal
-		float wl = 0.045 * (1.0 - rr) + 0.008, ws = 0.04 * (1.0 - rr / 0.55) + 0.008;
-		float longr = exp(-pow(rr * sin(qa) / wl, 2.0)) * pow(clamp(1.0 - rr, 0.0, 1.0), 1.3);
-		float diag = exp(-pow(rr * sin(da) / ws, 2.0)) * pow(clamp(1.0 - rr / 0.55, 0.0, 1.0), 1.3) * 0.7;
-		float heart = smoothstep(0.14, 0.34, rr);
-		float fade = smoothstep(-0.2, 0.05, y) * pow(1.0 - u, 0.6) * step(0.0, y);
-		float mt = star_motes(0.34, 0.5, 0.55, 0.055) + star_motes(0.2, 0.8, 0.85, 0.045);
-		light = tint * (longr + diag) * heart * 0.5 + tint * mt * fade * 1.4;
-		veil = mt * fade * 0.05;
+		float ang = atan(e.y, e.x) + WORLD_TIME * 0.3 + seed * 6.28;
+		float qa = abs(mod(ang + 0.7853982, 1.5707963) - 0.7853982);   // from the nearest of the four rays
+		float perp = rr * half_w * sin(qa);                            // metres off that ray's line
+		// The stone hangs 0.3 m up (about 0.17 m up the screen): the pool leaves a hole under it, or its 35% would wash the stone out.
+		float hole = mix(0.12, 1.0, smoothstep(0.75, 1.25, length(vec2(x / 0.27, (y - 0.17) / 0.21))));
+		float ray = smoothstep(0.125, 0.0, perp) * smoothstep(1.0, 0.1, rr) * hole;
+		float pl = smoothstep(1.0, 0.0, rr) * hole;
+		float mt = 0.0;
+		float above = step(0.0, y);
+		for (int i = 0; i < 9; i++) {
+			float ph = WORLD_TIME / 1.2 + float(i) / 9.0;
+			float cyc = floor(ph), f = fract(ph);
+			float mx = (hash(float(i) * 3.7 + cyc * 1.31) - 0.5) * 0.7;
+			float my = 0.1 + f * max(tall - 0.1, 0.0);
+			vec2 d = vec2(x - mx, y - my) * ppm;
+			float arms = max(exp(-pow(d.y / 0.9, 2.0)) * (1.0 - clamp(abs(d.x) / 3.5, 0.0, 1.0)), exp(-pow(d.x / 0.9, 2.0)) * (1.0 - clamp(abs(d.y) / 3.5, 0.0, 1.0)));
+			float star = clamp(arms + exp(-dot(d, d) / 2.6), 0.0, 1.0);
+			mt += star * smoothstep(0.0, 0.1, f) * smoothstep(1.0, 0.7, f);
+		}
+		vec3 mote_c = mix(tint, vec3(top), 0.45);
+		light = tint * (0.35 * pl + 0.2 * ray) + mote_c * clamp(mt, 0.0, 1.0) * 0.7 * above;
+		veil = 0.0;
 	} else if (kind > 7.5) {
 		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint
 		// light within it. (A decal's band with a hard edge read as a cream hoop.)

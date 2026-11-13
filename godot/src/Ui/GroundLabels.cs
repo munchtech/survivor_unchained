@@ -5,7 +5,7 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>A drop's name on the ground: where (on the screen), what it says, its tier's colour, and
 /// how loud it is (0 quiet, 1 shown, 2 emphasised, 3 a Legendary's).</summary>
-public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, int Loud, bool Set, bool Gem = false);
+public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, int Loud, bool Set, bool Gem = false, Color? Mark = null);
 
 /// <summary>
 /// Names over loot on the ground (docs/design/LOOT_DESIGN.md §8.1), as the ARPGs label their drops:
@@ -19,6 +19,8 @@ public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, 
 public partial class GroundLabels : Control
 {
     readonly List<GroundLabel> labels = new();
+    /// <summary>A gem name's loud halo: a darker teal than its letters (bd-ui W19).</summary>
+    static readonly Color GemHalo = new(0.07f, 0.55f, 0.48f, 0.34f);
     static GradientTexture2D? soft;
 
     public GroundLabels()
@@ -71,7 +73,7 @@ public partial class GroundLabels : Control
             if (under) { DrawString(font, new Vector2(box.Position.X + markW, box.Position.Y + font.GetAscent(size)), text, HorizontalAlignment.Left, -1, size, l.Color with { A = 0.14f }); continue; }
             // A soft shade under the words (no shape), and for what matters a light of its colour.
             DrawTextureRect(soft!, box.Grow(l.Loud >= 2 ? 16 : 10), false, new Color(0, 0, 0, l.Loud >= 1 ? 0.5f : 0.3f));
-            if (l.Loud >= 2) DrawTextureRect(soft!, box.Grow(grand ? 30 : 18), false, l.Color with { A = grand ? 0.3f : 0.16f });
+            if (l.Loud >= 2) DrawTextureRect(soft!, box.Grow(grand ? 30 : l.Gem ? 22 : 18), false, l.Gem ? GemHalo : l.Color with { A = grand ? 0.3f : 0.16f });
             var at = new Vector2(box.Position.X + markW, box.Position.Y + font.GetAscent(size));
             if (l.Set)
             {
@@ -79,7 +81,7 @@ public partial class GroundLabels : Control
                 if (link != null) DrawTextureRect(link, r, false, l.Color);
                 else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, 2, true);
             }
-            if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), l.Color);
+            if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), l.Mark ?? l.Color);
             int outline = grand ? 6 : 5;
             DrawStringOutline(font, at + new Vector2(0, 2), text, HorizontalAlignment.Left, -1, size, outline + 2, new Color(0, 0, 0, 0.45f));
             DrawStringOutline(font, at, text, HorizontalAlignment.Left, -1, size, outline, new Color(0.03f, 0.02f, 0.02f, 0.85f));
