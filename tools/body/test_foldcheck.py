@@ -56,6 +56,12 @@ def test_crossings_skip_shared_points():
     assert not he.any()                            # a flat sheet's own edges touch only their own fans
 
 
+def test_min_height_finds_a_sliver():
+    P = np.array([[0, 0, 0], [0.01, 0, 0], [0.00843, 0.00000003, 0], [0, 0.01, 0]], float)
+    h = fc.min_height(P, np.array([[0, 1, 2], [0, 1, 3]]))
+    assert h[0] < fc.DEGEN_MM and h[1] > 5          # three points on a line (mm heights), and a fair triangle
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

@@ -156,6 +156,16 @@ def crossings(V, T, E, emask=None, tmask=None, chunk=20000):
     return he, ht
 
 
+DEGEN_MM = 0.1
+
+
+def min_height(X, T):
+    """Each triangle's smallest height (mm): twice its area over its longest edge."""
+    P = X[T] * 1e3
+    a = np.linalg.norm(np.cross(P[:, 1] - P[:, 0], P[:, 2] - P[:, 0]), axis=1)
+    return a / np.maximum(np.linalg.norm(P - np.roll(P, 1, 1), axis=2).max(1), 1e-12)
+
+
 class Skin:
     """The body's own triangles, raw (UV-split, the R&D's) and welded, with the fault regions on rest centroids."""
 
@@ -204,6 +214,11 @@ class Skin:
         self.belly_e = {s: band(em) & (em[:, 0] * sg >= 0) for s, sg in SIDES}
         self.belly_ea = band(em)
         self.rest_x = crossings(self.Xw0, self.Tw, self.Ew)[0]     # the toes cross themselves at rest (380 a side)
+        # degenerate triangles (rest height under DEGEN_MM: three points on a line, no area, no facing of their own):
+        # their normal turns over on any move, which is no fold; counted apart per region as "degen" (13 welded on
+        # round_39b under 0.05 mm, one at each inner breast, y 1328, that flips on every strike key)
+        self.degen = min_height(Xw, self.Tw) < DEGEN_MM
+        self.degen_raw = min_height(X0, T) < DEGEN_MM
 
     def measure(self, Vfull, whole_x=False):
         V = Vfull[:self.nb]
@@ -214,8 +229,9 @@ class Skin:
         r["whole"] = {"inv": int(nbw.sum()), "sharp": int(shw.sum()), "inv_rd": int(nb.sum()), "sharp_rd": int(sh.sum())}
         for k, m in self.reg_tw.items():
             mr = self.reg_t[k]
-            r[k] = {"inv": int((nbw & m).sum()), "sharp": int((shw & m).sum()),
-                    "inv_rd": int((nb & mr).sum()), "sharp_rd": int((sh & mr).sum())}
+            r[k] = {"inv": int((nbw & m & ~self.degen).sum()), "sharp": int((shw & m & ~self.degen).sum()),
+                    "inv_rd": int((nb & mr & ~self.degen_raw).sum()), "sharp_rd": int((sh & mr & ~self.degen_raw).sum()),
+                    "degen": int(((nbw | shw) & m & self.degen).sum())}
         he, ht = crossings(Vw, self.Tw, self.Ew, self.belly_ea, self.belly_t)
         for s, _ in SIDES:
             r[f"belly_{s}"] = {"x": int((he & self.belly_e[s]).sum()), "x_tris": int(ht.sum()),
@@ -450,7 +466,8 @@ def summary(path, base=None):
                 q = "x" if k.startswith("belly") else "inv"
                 n = sum(r.get(k, {}).get(q, 0) for _, r in rows)
                 sh = sum(r.get(k, {}).get("sharp", 0) for _, r in rows) if q == "inv" else None
-                cells.append(f"{k} {n}" + (f"/{sh}" if sh is not None else ""))
+                dg = sum(r.get(k, {}).get("degen", 0) for _, r in rows) if q == "inv" else 0
+                cells.append(f"{k} {n}" + (f"/{sh}" if sh is not None else "") + (f"(+{dg}dg)" if dg else ""))
             w = {q: sum(r["whole"].get(q, 0) for _, r in rows) for q in ("inv", "sharp", "x")}
             line = f"{g:5s} {mode:5s} ({len(rows)}) " + " ".join(cells) + f" | whole inv {w['inv']} sharp {w['sharp']} x {w['x']}"
             if b is not None:
