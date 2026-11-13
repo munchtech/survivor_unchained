@@ -34,22 +34,19 @@ checks with zero C# exceptions; its logs are `closeup-integrated-rendered.log`
 and `closeup-integrated-rendered-stderr.log`.
 
 The engine harness uses its own `Survivor Unchained Codex closeup-blackscreen`
-user directory and checks that isolation before creating the game. Run from the
-worktree after importing its assets and building `godot/SurvivorUnchained.csproj`:
+user directory and checks that isolation before creating the game. Its launcher
+configures that directory before renderer startup, acquires a Godot turn, and
+restores the previous local configuration and releases the turn on exit. Run from
+the worktree after importing its assets and building `godot/SurvivorUnchained.csproj`:
 
 ```powershell
-python tools/turn.py take godot "codex: closeup-blackscreen" --stale-ok
-if ($LASTEXITCODE -ne 0) { throw "Godot turn was not granted" }
-try {
-    & $env:GODOT_CONSOLE --headless --fixed-fps 60 --path godot `
-        --log-file "$PWD/closeup-lifetime-engine.log" `
-        -s res://tools_scenes/closeup_lifetime.gd --quit-after 6000 `
-        -- --quick warden --zone waystation *> closeup-lifetime.log
-} finally {
-    python tools/turn.py give godot "codex: closeup-blackscreen"
-}
+python tools/experience/closeup_lifetime.py --timeout 600 `
+    --log godot/.shots/closeup-lifetime.log
 ```
 
-Set `GODOT_CONSOLE` to the Godot 4.5.1 Mono console executable. `--stale-ok` is for
-this lifecycle check, which makes no visual judgment. A passing run prints all
-three `closeup lifetime: PASS` lines and has zero `ObjectDisposedException` entries.
+Set `GODOT_CONSOLE` to the Godot 4.5.1 Mono console executable. Add `--headless` for
+the dummy renderer. The launcher uses `--stale-ok` because this lifecycle check
+makes no visual judgment. A passing rendered run prints all three
+`closeup lifetime: PASS` lines, has zero `ObjectDisposedException` entries, and
+reports zero shader-cache write errors. The former cache errors and their fix
+are explained in [renderer_noise.md](renderer_noise.md).
