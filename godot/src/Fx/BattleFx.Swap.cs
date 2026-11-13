@@ -219,7 +219,8 @@ public partial class BattleFx
             if (t >= 0.45f) { star.M.QueueFree(); swapGlints.RemoveAt(i); continue; }
             swapGlints[i] = (at, t, edge, star);
             float s = t < 0.15f ? Mathf.SmoothStep(0, 1, t / 0.15f) : t < 0.25f ? 1 : 1 - Mathf.SmoothStep(0, 1, (t - 0.25f) / 0.2f);
-            StarSet(star, at, 28f * Mathf.Max(s, 0.15f), 2.4f, 4f * Mathf.Max(s, 0.5f), 0);
+            // (bd-ui2) energy 16 at the hold (3 only reached 246: the tonemapper rolls off): the star is additive and unshaded but still goes through the tonemapper, which held it to (227,227,211) at energy 1
+            StarSet(star, at, 28f * Mathf.Max(s, 0.15f), 2.4f, 6f * Mathf.Max(s, 0.5f), 0, 1f + 15f * s);
         }
     }
 

@@ -22,4 +22,17 @@ public sealed class MaceGlyphTests
         Assert.Contains("\"mace\":", json);
         Assert.Contains("\"twin_blades\":", json);
     }
+
+    [Fact]
+    public void Road_glyphs_are_distinct_and_groundbreaker_keeps_its_painting()
+    {
+        // (bd-ui2) Bell of the Morning and Watch Bell, Groundbreaker and Sunder, never share an outline; no mace_c temp keys remain.
+        foreach (var k in new[] { "dawn_bell", "watch_bell", "groundbreaker", "sunder", "boot", "mace" }) Assert.True(GlyphPaths.Own(k), k);
+        Assert.NotEqual(GlyphPaths.PathFor("dawn_bell"), GlyphPaths.PathFor("watch_bell"));
+        Assert.NotEqual(GlyphPaths.PathFor("groundbreaker"), GlyphPaths.PathFor("sunder"));
+        Assert.False(GlyphPaths.Own("mace_c1") || GlyphPaths.Own("mace_c2"));
+        Assert.Equal("groundbreaker", GlyphPaths.ForSkill("groundbreaker", "slash_quake"));
+        Assert.Equal("slash_quake", GlyphPaths.IconKey("groundbreaker"));
+        Assert.Equal("groundbreaker", GlyphPaths.LineKey("groundbreaker"));
+    }
 }

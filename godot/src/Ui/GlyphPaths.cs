@@ -56,6 +56,7 @@ public static class GlyphPaths
     static readonly Dictionary<string, string> Borrowed = new()
     {
         ["butchers_cleaver"] = "slash_heavy",
+        ["groundbreaker"] = "slash_quake", // (bd-ui2) its painting stays slash_quake's; its line glyph is its own hammer-and-crack
     };
 
     /// <summary>The key whose painted icon an art key shows (itself, or the one it borrows).</summary>
@@ -72,7 +73,7 @@ public static class GlyphPaths
     /// and Butcher's Cleaver are both slash_heavy) and still read apart on the bar.</summary>
     static readonly Dictionary<string, string> SkillLine = new()
     {
-        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder", ["bladestorm"] = "bladestorm",
+        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder", ["groundbreaker"] = "groundbreaker", ["bladestorm"] = "bladestorm",
     };
 
     /// <summary>The glyph key a skill shows on a HUD seat and on the level card: its own line glyph where it has one

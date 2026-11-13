@@ -331,6 +331,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Get("unequip") is string une)
             foreach (var n in une.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 if (Enum.TryParse<EquipSlot>(n, true, out var us)) Journey.Ch.Equipment[us] = null;
+        if (Args.Get("unequip") != null) Journey.RefreshKit(Battle); // (bd-ui2) as the real unequip: the world her matches the doll
         // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)
