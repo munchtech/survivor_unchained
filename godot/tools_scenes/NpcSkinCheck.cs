@@ -38,13 +38,20 @@ public partial class NpcSkinCheck : Node
                 }
             foreach (var c in n.GetChildren()) stack.Push(c);
         }
-        var tex = ImageTexture.CreateFromImage(MakeImage());
+        var tex = ImageTexture.CreateFromImage(MakeImage("#d9a07a"));
+        // (a darker paint: the x18 V3 smith's head mean, 0.65 of her paint's luminance; and one under the deep onset)
+        var mid = ImageTexture.CreateFromImage(MakeImage("#80695e"));
+        var deep = ImageTexture.CreateFromImage(MakeImage("#453024"));
+        var warm1 = Json.ParseString("""{"cel_warm": 1}""").AsGodotDictionary();
         var over = Json.ParseString(Override).AsGodotDictionary();
         var lines = new List<string>
         {
             Line("head_default", "skin_head", headMesh, tex, null),
             Line("head_override", "skin_head", headMesh, tex, over),
             Line("body_default", "skin", bodyMesh ?? headMesh, tex, null),
+            Line("head_mid", "skin_head", headMesh, mid, null),
+            Line("body_deep", "skin", bodyMesh ?? headMesh, deep, null),
+            Line("head_mid_warm1", "skin_head", headMesh, mid, warm1),
         };
         root.Free();
         foreach (var l in lines) GD.Print(l);
@@ -52,10 +59,10 @@ public partial class NpcSkinCheck : Node
         GetTree().Quit(headMesh == null ? 1 : 0);
     }
 
-    static Image MakeImage()
+    static Image MakeImage(string colour)
     {
         var img = Image.CreateEmpty(4, 4, false, Image.Format.Rgba8);
-        img.Fill(new Color("#d9a07a"));
+        img.Fill(new Color(colour));
         return img;
     }
 
@@ -64,7 +71,7 @@ public partial class NpcSkinCheck : Node
         var src = new StandardMaterial3D { ResourceName = part, AlbedoTexture = tex };
         var m = (ShaderMaterial)People.NpcSkin(src, mesh!, true, new Color("#7a3a1e"), skin);
         var d = new Dictionary<string, object?>();
-        foreach (var k in new[] { "cel_tone", "back_spec", "back_neutral", "back_neutral_sky", "throat_terminator", "deep_spec", "shade_thin", "zone_colour", "zone_lids" })
+        foreach (var k in new[] { "cel_tone", "cel_fill_tone", "back_spec", "back_neutral", "back_neutral_sky", "throat_terminator", "deep_spec", "shade_thin", "zone_colour", "zone_lids" })
             d[k] = Val(m.GetShaderParameter(k));
         d["skin_zones"] = m.GetShaderParameter("skin_zones").VariantType == Variant.Type.Object;
         d["features"] = m.GetShaderParameter("features").VariantType == Variant.Type.Object;

@@ -83,5 +83,21 @@ public sealed class NpcSkinTests(ITestOutputHelper log)
         var bc = Vec(b.GetProperty("cel_tone"));
         for (int i = 0; i < 3; i++) Assert.InRange(bc[i], cel[i] - 0.01, cel[i] + 0.01);
         Assert.False(b.GetProperty("skin_zones").GetBoolean());
+        foreach (var r in new[] { h, b }) Assert.Equal(new[] { 1.0, 1.0, 1.0 }, Vec(r.GetProperty("cel_fill_tone")));
+
+        // A darker paint (0.65 of her paint's luminance) takes less of the cel warmth on its albedo and the rest on the
+        // key's fill, the product still her cel tone; under the deep onset its albedo's factor is grey.
+        var lk = 0.2126 * cel[0] + 0.7152 * cel[1] + 0.0722 * cel[2];
+        var mid = rows["head_mid"];
+        var ma = Vec(mid.GetProperty("cel_tone"));
+        var mf = Vec(mid.GetProperty("cel_fill_tone"));
+        Assert.InRange(ma[0] / ma[2], 1.2, 1.8);   // (warm 0.24: R/B 1.45, her fair 3.14)
+        for (int i = 0; i < 3; i++) Assert.InRange(ma[i] * mf[i], cel[i] - 0.01, cel[i] + 0.01);
+        var dp = Vec(rows["body_deep"].GetProperty("cel_tone"));
+        for (int i = 0; i < 3; i++) Assert.InRange(dp[i], lk - 0.01, lk + 0.01);
+        var w1 = rows["head_mid_warm1"];
+        var wc = Vec(w1.GetProperty("cel_tone"));
+        for (int i = 0; i < 3; i++) Assert.InRange(wc[i], cel[i] - 0.01, cel[i] + 0.01);
+        Assert.Equal(new[] { 1.0, 1.0, 1.0 }, Vec(w1.GetProperty("cel_fill_tone")));
     }
 }

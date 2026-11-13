@@ -2064,13 +2064,19 @@ public static class People
         // against the paint's 41-50; with it 37-43, warm tan; Marionette lead 12 solver I2, 21 Oct 2026).
         m.SetShaderParameter("ambient_tint", HerAmbientTint);
         // Her skin's treatment, derived for the package: in play her albedo is paint * tone * cel_tone / body_tone, which
-        // for her fair skin is paint * NpcCelTone; the package's tone is white, so the factor goes in whole.
-        m.SetShaderParameter("cel_tone", NpcCelTone);
+        // for her fair skin is paint * NpcCelTone; the package's tone is white, so the factor goes in whole on a paint as
+        // light as hers. A darker paint takes less of its warmth on its albedo and the rest on the key's fill (NpcCelSplit).
+        bool isHead = src.ResourceName == "skin_head";
+        float ratio = NpcLumRatio(src.AlbedoTexture, isHead);
+        float? warm = skin != null && skin.TryGetValue("cel_warm", out var cw) && (cw.VariantType == Variant.Type.Float || cw.VariantType == Variant.Type.Int)
+            ? (float)cw.AsDouble() : null;
+        var (celAlbedo, celFill) = NpcCelSplit(warm ?? NpcCelWarm(ratio));
+        m.SetShaderParameter("cel_tone", celAlbedo);
+        m.SetShaderParameter("cel_fill_tone", celFill);
         m.SetShaderParameter("back_spec", HerBackSpec);
         m.SetShaderParameter("back_neutral", HerBackNeutral);
         m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
         SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
-        bool isHead = src.ResourceName == "skin_head";
         float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
             ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);
         bool baseHead = isHead && (skin != null && skin.TryGetValue("base_head", out var bh) && bh.VariantType == Variant.Type.Bool
@@ -2113,6 +2119,31 @@ public static class People
         }
     }
 
+    /// <summary>How much of NpcCelTone's warmth an NPC's albedo takes (0 to 1) by its paint's lightness against hers
+    /// (NpcLumRatio): all of it from NpcCelWarmAt.Y of her paint's luminance up (her own paint, the fair NPCs), none at
+    /// NpcCelWarmAt.X and under (where NpcDeep's deep treatment begins), linear between. NpcCelTone was fitted to her fair
+    /// paint; on the x18 V3 smith (her paint's chroma, 0.65 of its luminance) it read saturated orange on every lit part
+    /// (neck Oklab C 0.164 h 44.5 at the chest close-up, her fair NPC 0.118; the player's warm and olive swatches, as dark,
+    /// read the same: 0.142, 0.163), as a darker skin's lit side is not compressed by the grade as a pale one's is.
+    /// Unknown lightness (no paint): all of it.</summary>
+    public static float NpcCelWarm(float ratio) => ratio < 0f ? 1f : Mathf.Clamp((ratio - NpcCelWarmAt.X) / (NpcCelWarmAt.Y - NpcCelWarmAt.X), 0f, 1f);
+
+    static readonly Vector2 NpcCelWarmAt = new(0.55f, 0.95f);
+
+    /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
+    /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
+    /// cel_fill_tone), so the shade keeps all of NpcCelTone's warmth (without it, less warmth read lilac in the shade
+    /// under her jaw: the lilac NpcCelTone first fixed). warm 1: NpcCelTone and a white fill, exactly as before.</summary>
+    public static (Vector3 Albedo, Vector3 Fill) NpcCelSplit(float warm)
+    {
+        var k = NpcCelTone;
+        if (warm >= 1f) return (k, Vector3.One);
+        warm = Mathf.Max(warm, 0f);
+        float lk = 0.2126f * k.X + 0.7152f * k.Y + 0.0722f * k.Z;
+        var a = new Vector3(lk * Mathf.Pow(k.X / lk, warm), lk * Mathf.Pow(k.Y / lk, warm), lk * Mathf.Pow(k.Z / lk, warm));
+        return (a, new Vector3(k.X / a.X, k.Y / a.Y, k.Z / a.Z));
+    }
+
     static readonly Dictionary<ulong, float> npcMean = new();
     static float? refHeadMean, refBodyMean;
     static int baseHeadVerts = -1;
@@ -2138,18 +2169,25 @@ public static class People
     /// base head's or body's own paint.</summary>
     static float NpcDeep(Texture2D? tex, bool head)
     {
+        float ratio = NpcLumRatio(tex, head);
+        return ratio < 0f ? 0f : Mathf.Clamp((0.55f - ratio) / 0.49f, 0f, 1f);
+    }
+
+    /// <summary>An NPC's skin paint's mean linear luminance over her own paint's (the base head's or body's); -1 unknown.</summary>
+    static float NpcLumRatio(Texture2D? tex, bool head)
+    {
         try
         {
-            if (tex == null) return 0f;
+            if (tex == null) return -1f;
             ulong id = tex.GetInstanceId();
             if (!npcMean.TryGetValue(id, out var mean)) npcMean[id] = mean = PaintMean(tex);
             float r;
             if (head) r = refHeadMean ??= RefMean("res://art/people/head_tex/heroine_head.jpg");
             else r = refBodyMean ??= RefMean("res://art/people/body_p1/albedo.png");
-            if (r <= 0f) return 0f;
-            return Mathf.Clamp((0.55f - mean / r) / 0.49f, 0f, 1f);
+            if (r <= 0f || mean <= 0f) return -1f;
+            return mean / r;
         }
-        catch { return 0f; }
+        catch { return -1f; }
     }
 
     static float RefMean(string path) => ResourceLoader.Exists(path) ? PaintMean(GD.Load<Texture2D>(path)) : 0f;
