@@ -49,6 +49,22 @@ public partial class Instrument : Control
         }
     }
 
+    /// <summary>Its pieces on the screen, for what must give way to it (the ground labels): the girl (her head to the foot, to
+    /// the bar's left end), the bar with the buff shelf over it (40 px), and the keeper. Bounds as one rectangle took in all
+    /// the open ground between the two statues, and a gem's name there faded to 14% (gems judge round 4).</summary>
+    public static Rect2[] Pieces
+    {
+        get
+        {
+            float s = DgPanel.GroupScale;
+            var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s + DgPanel.GirlOffset;
+            var bar = DgPanel.Rect;
+            var girl = new Rect2(tl.X, tl.Y, Math.Max(0, bar.Position.X - tl.X), 1080 - tl.Y);
+            var shelf = new Rect2(bar.Position.X, bar.Position.Y - 40, bar.Size.X, 1080 - (bar.Position.Y - 40));
+            return [HudBottom.Map(girl), HudBottom.Map(shelf), HudBottom.Map(DgPanel.KeeperRect)];
+        }
+    }
+
     public readonly LifeLamp Life;
     /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
     public readonly DgKeeper Keeper;

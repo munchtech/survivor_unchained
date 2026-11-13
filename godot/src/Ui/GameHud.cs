@@ -1928,7 +1928,7 @@ public partial class GameHud : CanvasLayer
         // (the prompt bar too: "Leave" sat over the loot labels at the way out, H4 r2)
         if (promptBox.Visible) ground.KeepOut.Add(promptBox.GetGlobalRect().Grow(10));
         // (and the instrument along the foot, and the night's tally in its corner)
-        ground.KeepOut.Add(Instrument.Bounds);
+        ground.KeepOut.AddRange(Instrument.Pieces);
         if (tally.IsVisibleInTree()) ground.KeepOut.Add(tally.GetGlobalRect().Grow(8));
         if (toasts.GetChildCount() > 0) ground.KeepOut.Add(toasts.GetGlobalRect().Grow(8));
         if (announce.Modulate.A > 0.05f) ground.KeepOut.Add(announce.GetGlobalRect());
