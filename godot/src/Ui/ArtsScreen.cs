@@ -597,10 +597,10 @@ public partial class ArtsScreen : Overlay
             b.AddThemeStyleboxOverride("hover", free ? new StyleBoxFlat { BgColor = new Color(1, 1, 1, 0.06f) } : new StyleBoxEmpty());
             if (free) b.Pressed += () => Set(g.Id);
             Nav.Id(b, $"gem:{g.Id}");
-            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, RowPicture, GemLook.Of(g).Lightened(0.25f));
+            var pic = ItemPhotos.StoneIcon(Items.Get(Supports.ItemId(g.Id)).Icon, 30, 24, 32, GemLook.Of(g).Lightened(0.25f));
             // the stone 30 x 24 in a 32 px box (the picture is wider than the box, centred on it)
             var box = new Control { CustomMinimumSize = new Vector2(32, 32), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
-            pic.Position = new Vector2((32 - RowPicture) / 2f, (32 - RowPicture) / 2f);
+            pic.Position = Vector2.Zero;
             box.AddChild(pic);
             var count = Style.Label(r.Here ? $"set here · {r.Owned} owned · {r.Free} free" : free ? $"{r.Owned} owned · {r.Free} free" : "all set elsewhere", Style.Ui, 14, r.Here ? Style.Ember : Kit.Dim, false, HorizontalAlignment.Right);
             var nm = Style.Label(g.Name, Style.DisplayLight, 16, Kit.Ink);
@@ -639,8 +639,6 @@ public partial class ArtsScreen : Overlay
         foreach (var line in SocketModel.DontFitLines(ch.Gems, w.Id)) d.AddChild(Style.Label(line, Style.TextItalic, 14, Kit.Dim, true));
     }
 
-    /// <summary>The picture side that shows a stone 30 px across (see GemSocket.StonePicture: 71% of the picture).</summary>
-    const int RowPicture = 42;
 
     /// <summary>A Union has no sockets of its own: it takes both halves' gems, shown read-only under each half's name.</summary>
     void UnionSockets(VBoxContainer d, CharacterData ch, (string A, string B) halves, string sockUnion)

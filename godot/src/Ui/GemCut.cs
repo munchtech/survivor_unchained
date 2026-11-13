@@ -46,6 +46,7 @@ public static class GemCut
         if (family == "bicolor")
         {
             if (withGlint) mat.SetShaderParameter("split_turn", 0.4f);
+            else mat.SetShaderParameter("split_view", true);
             var b = set["sapphire"];
             mat.SetShaderParameter("split", true);
             mat.SetShaderParameter("body_b", new Color(b.Body));

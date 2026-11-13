@@ -16,11 +16,16 @@ uniform float ripple = 0.3;
 uniform float alt = 0.0;        // 1: every facet alternates dark / body / bright by its own hash (the clear stone)
 uniform float glow = 0.0;       // the ground stone's own light: 0.6 of its bright at the table, no facet darker than its body (a lit jewel, not a dark rock)
 uniform float split_turn = 0.0; // the split plane's turn about the axis, so a photograph's turned stone splits down the screen
+uniform bool split_view = false; // the ground stone: split down the screen through its own centre, whatever its turn (round 2: a local split went edge-on as it spun)
 
 varying vec3 lpos;
 varying vec3 lnorm;
+varying vec3 vpos;
 
-void vertex() { lpos = VERTEX; lnorm = NORMAL; }
+void vertex() {
+	lpos = VERTEX; lnorm = NORMAL;
+	vpos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - (MODELVIEW_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+}
 
 void fragment() {
 	vec3 n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
@@ -29,7 +34,7 @@ void fragment() {
 	n = normalize(n + ripple * (MODEL_MATRIX * vec4(lpos.x, lpos.y * 0.6, lpos.z, 0.0)).xyz);
 	vec3 r = reflect(-v, n);
 
-	bool b = split && lpos.x * cos(split_turn) + lpos.z * sin(split_turn) > 0.0;
+	bool b = split && (split_view ? vpos.x > 0.0 : lpos.x * cos(split_turn) + lpos.z * sin(split_turn) > 0.0);
 	vec3 c_body = b ? body_b : body, c_bright = b ? bright_b : bright, c_dark = b ? dark_b : dark;
 
 	// The studio, as what a direction sees.

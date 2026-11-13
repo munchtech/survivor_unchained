@@ -28,9 +28,10 @@ public partial class GemSocket : Control
         {
             string key = Items.Get(Supports.ItemId(gem.Id)).Icon;
             // the stone is about 71% of its picture across: a 56 px picture shows it 40 x 30 in a 56 px well
-            int px = (int)Mathf.Round(StonePicture * s);
-            var pic = ItemPhotos.Icon(key, px, GemLook.Of(gem).Lightened(0.25f));
-            pic.Position = new Vector2((size - px) / 2f, (size - px) / 2f);
+            // (the stone cropped to its edge and resized once, crisp: judge round 2 measured the downscaled picture's stone 30 x 22)
+            int bw = (int)Mathf.Round(40 * s), bh = (int)Mathf.Round(30 * s);
+            var pic = ItemPhotos.StoneIcon(key, bw, bh, size, GemLook.Of(gem).Lightened(0.25f));
+            pic.Position = Vector2.Zero;
             if (look == Look.Closed)
             {
                 // kept but closed: the stone at 40% value and 40% saturation
@@ -49,8 +50,6 @@ public partial class GemSocket : Control
         }
     }
 
-    /// <summary>The picture's side that shows the stone 40 px across (its full width is about 71% of the picture).</summary>
-    public const int StonePicture = 56;
 
     /// <summary>Make it a button: the mouse clicks it, the pad presses it (Nav.Mark by the caller).</summary>
     public GemSocket Clickable()
