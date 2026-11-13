@@ -126,6 +126,7 @@ public static class LevelUp
         if (b.Boons.ContainsKey("chilling")) o.Add(StatusKind.Chill);
         if (b.Boons.ContainsKey("searing")) o.Add(StatusKind.Sear);
         foreach (var g in b.GearStatuses) o.Add(g);
+        b.LitStatuses(o);   // (SU-080) her lamps', Hand's and board's, by the rules that lay them
         return o;
     }
 

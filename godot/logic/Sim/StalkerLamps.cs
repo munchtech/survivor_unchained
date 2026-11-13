@@ -195,6 +195,22 @@ public sealed partial class Battle
         return m;
     }
 
+    /// <summary>roadknife.s2 / venom_edge: the poisons a true strike lays.</summary>
+    int TruePoisons() => (Lamps.Has("true.poison") ? (int)Lamps.Full("true.poison", "stacks", 1) : 0) + (Lamps.Has("venom_edge") ? CountCap(RawCount("venom_edge", "stacks")) : 0);
+
+    /// <summary>poisoned_steel / barbed: the status this skill's arrows and knives carry by a lamp; null: none.</summary>
+    StatusKind? SkillStatus(WeaponInst w) =>
+        StalkerSkill(w) && Lamps.HasOn("skill.status", w.Def.Id, w.Tags)
+        && Lamps.Each["skill.status"].Find(x => x.Status != null && x.Skill == w.Def.Id) is { Status: { } k } ? k : null;
+
+    /// <summary>(SU-080) What the stalker's lamps can lay with the skills she carries (StalkerOnHit's rules).</summary>
+    void StalkerCanLay(HashSet<StatusKind> o)
+    {
+        if (Lamps.Rules.Count == 0 || Weapons.Count == 0) return;
+        if (TruePoisons() > 0) o.Add(StatusKind.Poison);
+        foreach (var w in Weapons) if (SkillStatus(w) is { } k) o.Add(k);
+    }
+
     /// <summary>What a blow dealt now brings: the true strike's poison, the skill's own status, the patient poison kept.</summary>
     void StalkerOnHit(Enemy e, HitOpts o, double dmg)
     {
@@ -203,12 +219,11 @@ public sealed partial class Battle
         // roadknife.s2 / venom_edge: a true strike poisons (one stack; the Edge adds two, one by night).
         if (e.LastCrit)
         {
-            int n = (l.Has("true.poison") ? (int)l.Full("true.poison", "stacks", 1) : 0) + (l.Has("venom_edge") ? CountCap(RawCount("venom_edge", "stacks")) : 0);
+            int n = TruePoisons();
             for (int i = 0; i < n; i++) ApplyStatus(e, Venom, dmg, o.Depth + 1);
         }
         // roadknife.knifestorm.poisoned_steel / verge_hunter.volley.barbed: the skill's arrows and knives carry the lamp's status.
-        if (o.Projectile && o.Weapon is { } w && StalkerSkill(w) && l.HasOn("skill.status", w.Def.Id, w.Tags)
-            && l.Each["skill.status"].Find(x => x.Status != null && x.Skill == w.Def.Id) is { Status: { } k })
+        if (o.Projectile && o.Weapon is { } w && SkillStatus(w) is { } k)
             ApplyStatus(e, k == StatusKind.Poison ? Venom : new StatusPayload(k, 1, 1, 3), dmg, o.Depth + 1);
         // roadknife.adders_patience: the poison never fades while you keep striking.
         if (l.Has("adders_patience") && e.Status[StatusKind.Poison] is { } ps) ps.T = Math.Max(ps.T, 3);

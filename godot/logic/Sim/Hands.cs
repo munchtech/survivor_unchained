@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SurvivorUnchained.Content;
 using static SurvivorUnchained.Core.MathX;
 
@@ -165,6 +166,28 @@ public sealed partial class Battle
         HandEv(HandKind.Mark, next.X, next.Z, next.Id);
     }
 
+    /// <summary>What the Hand's ground of a school lays on what stands in it (fire's burns by damage, no status).</summary>
+    static StatusKind? HandGroundLays(School school) => school == School.Fire ? null : school == School.Frost ? StatusKind.Chill : StatusKind.Mark;
+
+    /// <summary>(SU-080) What the arcanist Hand can lay with the skills she carries: a Spell's kill leaves its element's
+    /// ground (HandArcanistKill).</summary>
+    void HandCanLay(HashSet<StatusKind> o)
+    {
+        if (!ArcanistHand) return;
+        foreach (var w in Weapons)
+            if (w.Tags.Has(Tag.Spell) && Content.Hands.GroundName(w.School) != null && HandGroundLays(w.School) is { } k) o.Add(k);
+    }
+
+    /// <summary>(SU-080) The statuses the build can lay now by its lamps, its Hand and its board's rules, asked of the
+    /// same rules that lay them (LevelUp.BuildStatuses adds them to the skills' and blessings' own).</summary>
+    public void LitStatuses(HashSet<StatusKind> o)
+    {
+        HandCanLay(o);
+        ArcanistCanLay(o);
+        StalkerCanLay(o);
+        if (Lamps.Board) BoardCanLay(o);
+    }
+
     /// <summary>The arcanist Hand's ground where a thing fell, of a school (fire, frost or arcane): the Hand's, or a ground rite's.</summary>
     internal void LayHandGround(Enemy e, WeaponInst w, School school)
     {
@@ -177,9 +200,13 @@ public sealed partial class Battle
             {
                 zn.Credit = "hand";
                 zn.Art = "hand_ground_" + (school == School.Fire ? "fire" : school == School.Frost ? "frost" : "moon");
-                if (school == School.Fire) zn.Tags = GroundFire;
-                else if (school == School.Frost) { zn.Tags = GroundFrost; zn.Status = handChill ??= new StatusPayload(StatusKind.Chill, 1, h.Chill, h.Seconds); }
-                else { zn.Tags = GroundArcane; zn.Status = handMark ??= new StatusPayload(StatusKind.Mark, 1, h.Mark, h.MarkSeconds); }
+                zn.Tags = school == School.Fire ? GroundFire : school == School.Frost ? GroundFrost : GroundArcane;
+                zn.Status = HandGroundLays(school) switch
+                {
+                    StatusKind.Chill => handChill ??= new StatusPayload(StatusKind.Chill, 1, h.Chill, h.Seconds),
+                    StatusKind.Mark => handMark ??= new StatusPayload(StatusKind.Mark, 1, h.Mark, h.MarkSeconds),
+                    _ => null,
+                };
                 handGrounds.Add((zn, Lifetime.Of(zn)));
                 HandGrounds++;
                 HandEv(HandKind.Ground, e.X, e.Z, e.Id);
