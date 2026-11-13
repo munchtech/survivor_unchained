@@ -523,7 +523,7 @@ public partial class ArtsScreen : Overlay
             var look = !isOpen ? GemSocket.Look.Closed : gem != null ? GemSocket.Look.Filled : GemSocket.Look.Empty;
             var well = new GemSocket(look, gem);
             var col = Style.V(4, well);
-            col.CustomMinimumSize = new Vector2(190, 0);
+            col.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
             if (isOpen)
             {
                 well.Clickable();
@@ -537,7 +537,12 @@ public partial class ArtsScreen : Overlay
             {
                 string at = SocketModel.RomanOf(Supports.File.Sockets.Ranks[i]);
                 col.AddChild(Style.Label($"rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
-                if (gem != null) col.AddChild(Style.Label($"kept; adds nothing below rank {at}", Style.TextItalic, 13, Kit.Dim, true, HorizontalAlignment.Center));
+                if (gem != null)
+                {
+                    var kept = Style.Label($"kept; adds nothing below rank {at}", Style.TextItalic, 13, Kit.Dim, true, HorizontalAlignment.Center);
+                    kept.CustomMinimumSize = new Vector2(150, 0);
+                    col.AddChild(kept);
+                }
             }
             wells.AddChild(col);
         }
@@ -555,30 +560,46 @@ public partial class ArtsScreen : Overlay
             G.Gear((j, _) => Supports.Socket(j.Ch.Gems, w.Id, SkillBook.RankOf(j.Ch, w.Id), idx, gem));
             if (gem != null) Sound.Sfx.Equip(); else Sound.Sfx.Click();
         }
-        if (Held(ch, w.Id, idx) != null) d.AddChild(Nav.Id(Kit.Word("Take it out", () => Set(null), Kit.Ink2, 16), "gem:out"));
+        if (Held(ch, w.Id, idx) != null)
+        {
+            var o = new Button { FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 44), MouseDefaultCursorShape = CursorShape.PointingHand };
+            foreach (var st in new[] { "normal", "pressed", "focus" }) o.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
+            o.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = Style.Ember with { A = 0.08f } });
+            o.Pressed += () => Set(null);
+            Nav.Id(o, "gem:out");
+            var mark = new GemSocket(GemSocket.Look.Empty, null, 32);
+            mark.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            var oh = Style.H(12, mark, Style.Label("Take it out", Style.DisplayLight, 16, Kit.Ink2));
+            oh.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            oh.OffsetLeft = 8; oh.OffsetRight = -8;
+            oh.Alignment = BoxContainer.AlignmentMode.Begin;
+            oh.MouseFilter = MouseFilterEnum.Ignore;
+            o.AddChild(oh);
+            d.AddChild(o);
+        }
         foreach (var r in rows)
         {
             var g = r.Gem;
-            bool free = r.Free > 0;
+            bool free = r.Free > 0 && !r.Here;
             var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, CustomMinimumSize = new Vector2(0, 62), MouseDefaultCursorShape = free ? CursorShape.PointingHand : CursorShape.Arrow };
             foreach (var st in new[] { "normal", "pressed", "focus" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
             b.AddThemeStyleboxOverride("hover", free ? new StyleBoxFlat { BgColor = Style.Ember with { A = 0.08f } } : new StyleBoxEmpty());
             if (free) b.Pressed += () => Set(g.Id);
             Nav.Id(b, $"gem:{g.Id}");
-            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, 32, GemLook.Of(g).Lightened(0.25f));
+            var pic = ItemPhotos.Icon(Items.Get(Supports.ItemId(g.Id)).Icon, 36, GemLook.Of(g).Lightened(0.25f));
             pic.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             var words = Style.V(0, Style.Label(g.Name, Style.DisplayLight, 16, Kit.Ink), Style.Label(g.Text, Style.Text, 14, Kit.Ink2, true));
             words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            var count = Style.Label(free ? $"{r.Owned} owned · {r.Free} free" : "all set elsewhere", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Right);
-            count.CustomMinimumSize = new Vector2(140, 0);
+            var count = Style.Label(r.Here ? $"set here · {r.Owned} owned · {r.Free} free" : free ? $"{r.Owned} owned · {r.Free} free" : "all set elsewhere", Style.Ui, 13, r.Here ? Style.Ember : Kit.Dim, false, HorizontalAlignment.Right);
+            count.CustomMinimumSize = new Vector2(200, 0);
             count.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             var h = Style.H(12, pic, words, count);
             h.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             h.OffsetLeft = 8; h.OffsetRight = -8;
             h.MouseFilter = MouseFilterEnum.Ignore;
             b.AddChild(h);
-            if (!free) b.Modulate = new Color(1, 1, 1, 0.45f);
+            if (!free && !r.Here) b.Modulate = new Color(1, 1, 1, 0.45f);
             d.AddChild(b);
         }
         if (dont > 0) d.AddChild(Style.Label(SocketModel.DontFitLine(dont, w.Name), Style.TextItalic, 14, Kit.Dim, true));

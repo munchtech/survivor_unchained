@@ -32,7 +32,7 @@ public static class SocketModel
         return plus > 0 ? $"rank {RomanOf(total)} ({RomanOf(baseRank)}, and +{plus} from your gear)" : $"rank {RomanOf(total)}";
     }
 
-    public sealed record Row(SupportDef Gem, int Owned, int Free);
+    public sealed record Row(SupportDef Gem, int Owned, int Free, bool Here = false);
 
     /// <summary>The chooser for one socket: each owned gem that fits the skill, with copies owned and free (the copy in this
     /// socket counts as free: it can be set again), and how many owned copies do not fit.</summary>
@@ -47,7 +47,7 @@ public static class SocketModel
             if (owned <= 0) continue;
             if (!Supports.Fits(g, skill)) { dont += owned; continue; }
             int used = s.Sockets.Values.Sum(l => l.Count(x => x == g.Id));
-            rows.Add(new Row(g, owned, Math.Max(0, owned - used + (here == g.Id ? 1 : 0))));
+            rows.Add(new Row(g, owned, Math.Max(0, owned - used), here == g.Id));
         }
         return (rows, dont);
     }

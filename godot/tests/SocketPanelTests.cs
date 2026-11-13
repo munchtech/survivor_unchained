@@ -43,8 +43,9 @@ public sealed class SocketPanelTests
         var br = rows.Single(r => r.Gem.Id == "brutality");
         Assert.Equal((2, 1), (br.Owned, br.Free));
         Assert.Equal(1, rows.Single(r => r.Gem.Id == "haste").Free);
-        // the socket that holds it sees its own copy as free
-        Assert.Equal(2, SocketModel.Chooser(s, melee, 0).Rows.Single(r => r.Gem.Id == "brutality").Free);
+        // the socket that holds it marks it "set here"; its copy is not free
+        var here = SocketModel.Chooser(s, melee, 0).Rows.Single(r => r.Gem.Id == "brutality");
+        Assert.True(here.Here); Assert.Equal(1, here.Free);
         Assert.Equal("3 of your gems don't fit Sunder.", SocketModel.DontFitLine(3, "Sunder"));
         Assert.Equal("1 of your gems doesn't fit Sunder.", SocketModel.DontFitLine(1, "Sunder"));
     }
