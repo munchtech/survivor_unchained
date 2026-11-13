@@ -212,9 +212,9 @@ public sealed partial class Battle
             double a = Math.Atan2(pr.Vz, pr.Vx) + (i - 0.5) * 0.9, sp = pr.Speed * 0.85;
             var c = SpawnProjectile(pr.Owner, pr.X, pr.Z, pr.Damage * 0.5, pr.School);
             if (c == null) continue;
-            c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Tags = pr.Tags; c.Radius = pr.Radius * 0.7;
-            c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3); c.Weapon = pr.Weapon; c.Art = pr.Art; c.Status = pr.Status;
-            c.Depth = pr.Depth + 1; c.Rank = pr.Rank; c.W = pr.W;
+            pr.Derive(c);   // (SU-066)
+            c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
+            c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
             c.AimAlongVelocity();
             c.Hits.Add(e.Id); c.HitTimes.Add(Time);
         }
