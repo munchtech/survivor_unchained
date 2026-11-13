@@ -158,6 +158,6 @@ public static class StanceText
         return (gifts, prices);
     }
 
-    /// <summary>The weapon glyph of a stance (glyphs.json has no mace or crossed blades: the nearest).</summary>
-    public static string Glyph(string? stanceId) => stanceId switch { "shield" => "shield", "twin_blades" => "dagger", "mace" => "fist", _ => "sword" };
+    /// <summary>The weapon glyph of a stance (glyphs.json has no crossed blades: the nearest; the mace has its own).</summary>
+    public static string Glyph(string? stanceId) => stanceId switch { "shield" => "shield", "twin_blades" => "dagger", "mace" => "mace", _ => "sword" };
 }

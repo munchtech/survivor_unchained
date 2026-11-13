@@ -104,14 +104,15 @@ public partial class InventoryScreen : Overlay
     string? sel;
     bool filterOpen;
 
-    /// <summary>Where each thing is worn on the doll: the body's pieces down the left, head to boots; the jewels
-    /// and what is held down the right, staggered. Every EquipSlot has a place (EquipPlacesTests);
-    /// the names and glyphs are Items.Places. (Layout functional, 8 places since 13 November; the look is the UI lead's.)</summary>
-    static readonly (EquipSlot Slot, bool Right, float Y)[] Doll =
+    /// <summary>Where each thing is worn: one body-shaped block, 3 columns x 4 rows (Col, Row), head over body over
+    /// boots, the held things and jewels either side. Every EquipSlot has a place (EquipPlacesTests);
+    /// the names and glyphs are Items.Places.</summary>
+    static readonly (EquipSlot Slot, int Col, int Row)[] Doll =
     {
-        (EquipSlot.Head, false, 30), (EquipSlot.Body, false, 135), (EquipSlot.Feet, false, 240),
-        (EquipSlot.Amulet, true, 35), (EquipSlot.Weapon, true, 90), (EquipSlot.Offhand, true, 145),
-        (EquipSlot.Ring1, true, 200), (EquipSlot.Ring2, true, 255),
+        (EquipSlot.Head, 1, 0), (EquipSlot.Amulet, 2, 0),
+        (EquipSlot.Weapon, 0, 1), (EquipSlot.Body, 1, 1), (EquipSlot.Offhand, 2, 1),
+        (EquipSlot.Ring1, 0, 2), (EquipSlot.Ring2, 2, 2),
+        (EquipSlot.Feet, 1, 3),
     };
 
     // What has been looked at this session: anything else carried is marked new.
@@ -158,8 +159,8 @@ public partial class InventoryScreen : Overlay
 
     /* --------------------------------------------------------- the doll -- */
 
-    // (as tall as the column of what she carries beside it, so neither leaves an empty strip above the prompts)
-    const int DollW = 352, DollH = 468, SlotS = 52;
+    // (the real her stands left of the panel in the world; no second figure here)
+    const int DollW = 352, SlotS = 60, SlotGap = 8, BlockH = 4 * SlotS + 3 * SlotGap, DollH = BlockH + 36;
 
     /// <summary>The kit looked at (by day or by night, crafting's design 20.2); null: the one worn now.</summary>
     static KitKind? kitShown;
@@ -168,44 +169,32 @@ public partial class InventoryScreen : Overlay
     Control DollView(CharacterData ch)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(DollW, DollH), MouseFilter = MouseFilterEnum.Ignore };
-        if (!Kits.Shown(ch)) { kitShown = null; return Doll_(ch, holder); }
+        // (headed like the carried grid beside it, so the two grids start level)
+        var head = Kit.Head("Worn");
+        if (!Kits.Shown(ch)) { kitShown = null; return Style.V(4, head, Doll_(ch, holder)); }
         // Two kits once a coal or a Mark is owned: the switch over the doll, the one worn now marked
         // with an ember; the night kit's empty places wear the day's piece, faint, "as by day".
         var on = Kits.On(ch);
         var tabs = Kit.Tabs(new[] { "By day", "By night" }, (int)KitLooked, k => { kitShown = (KitKind)k; Refresh(); }, 15, 26);
         tabs.Alignment = BoxContainer.AlignmentMode.Center;
         var worn = Style.Label(on == KitKind.Night ? "the night kit is on" : "the day kit is on", Style.TextItalic, 13, Style.Ember, false, HorizontalAlignment.Center, false);
-        var col = Style.V(4, tabs, worn, Doll_(ch, holder));
+        var col = Style.V(4, head, tabs, worn, Doll_(ch, holder));
         return col;
     }
 
     Control Doll_(CharacterData ch, Control holder)
     {
-        // No box under her: a pool of shade where she stands, fading into the panel on every side.
-        var pool = new TextureRect
-        {
-            Texture = new GradientTexture2D
-            {
-                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f), Width = 128, Height = 128,
-                Gradient = new Gradient { Colors = new[] { new Color(0, 0, 0, 0.32f), new Color(0, 0, 0, 0.18f), new Color(0, 0, 0, 0) }, Offsets = new[] { 0f, 0.55f, 1f } },
-            },
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
-            Position = new Vector2(-20, -10), Size = new Vector2(DollW + 40, DollH + 20),
-        };
-        holder.AddChild(pool);
-        var fig = Figure(ch, DollW - 2 * SlotS - 8, DollH - 16);
-        fig.Position = new Vector2(SlotS + 4, 8);
-        holder.AddChild(fig);
         // (bd-ui W18) Her looks and dyes: the wardrobe, hers only.
         if (ch.Sex == Sex.Female)
         {
             var wardrobe = Nav.Skip(Kit.Word("Wardrobe", () => { Sound.Sfx.Page(); G.Open("wardrobe"); }));
-            wardrobe.Position = new Vector2(DollW / 2 - 40, DollH - 28);
+            wardrobe.Position = new Vector2(DollW / 2 - 40, BlockH + 8);
             holder.AddChild(wardrobe);
         }
         var kit = KitLooked;
         bool two = Kits.Shown(ch);
-        foreach (var (s, right, y) in Doll)
+        float x0 = (DollW - (3 * SlotS + 2 * SlotGap)) / 2f;
+        foreach (var (s, col, row) in Doll)
         {
             var it = two ? Kits.Piece(ch, kit, s) : ch.Equipment[s];
             bool asDay = two && kit == KitKind.Night && it != null && !Kits.HasOwn(ch, KitKind.Night, s);
@@ -215,7 +204,7 @@ public partial class InventoryScreen : Overlay
             Action? off = piece != null && slot != EquipSlot.Weapon && !asDay ? () => TakeOff(piece.Uid) : null;
             var view = ItemViews.Slot(it, SlotS, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
                 over => Hover(it, over), glyph, name, $"eq:{slot}", null, false, false, false, ch, engraved: true);
-            view.Position = new Vector2(right ? DollW - SlotS - 6 : 6, y);
+            view.Position = new Vector2(x0 + col * (SlotS + SlotGap), row * (SlotS + SlotGap));
             if (asDay) { view.Modulate = new Color(1, 1, 1, 0.4f); view.TooltipText = "As by day: the night kit wears the day's piece here"; }
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
             view.Drag = it != null && slot != EquipSlot.Weapon && !asDay ? $"eq:{slot}:{it.Uid}" : null;
@@ -235,43 +224,6 @@ public partial class InventoryScreen : Overlay
 
     /// <summary>Taken off the kit the piece belongs to (Kits.Of, in Journey.TakeOff), whichever kit is on.</summary>
     void TakeOff(string uid) => G.Gear((j, b) => j.TakeOff(uid, b));
-
-    /// <summary>The survivor drawn live, on a pool of ember light.</summary>
-    public static Control Figure(CharacterData ch, int w = 420, int h = 620)
-    {
-        var holder = new Control { CustomMinimumSize = new Vector2(w, h), Size = new Vector2(w, h), MouseFilter = MouseFilterEnum.Ignore };
-        var glow = new TextureRect
-        {
-            Texture = new GradientTexture2D
-            {
-                Gradient = new Gradient { Colors = new[] { new Color(1, 0.5f, 0.2f, 0.13f), new Color(1, 0.5f, 0.2f, 0) }, Offsets = new[] { 0f, 1f } },
-                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.62f), FillTo = new Vector2(1f, 0.62f), Width = 128, Height = 128,
-            },
-            Size = new Vector2(w, h), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
-        };
-        holder.AddChild(glow);
-        holder.AddChild(DollPortrait(Loadouts.Of(ch), w, h));
-        return holder;
-    }
-
-    static Portrait? doll;
-    static string dollKey = "";
-
-    /// <summary>The figure, kept across a screen's rebuilds while it looks the same: taken out of
-    /// the page being thrown away and set in the new one, its idle never restarted (built anew each
-    /// time, it stood in its bind pose for a frame on every refresh).</summary>
-    static Portrait DollPortrait(Play.Loadout lo, int w, int h)
-    {
-        var key = $"{w}x{h} {Loadouts.Look(lo)}";
-        if (doll != null && IsInstanceValid(doll) && !doll.IsQueuedForDeletion() && key == dollKey && doll.GetParent() is { } was)
-        {
-            // (its old page is queued to be freed with all it holds; out of it, the doll is not)
-            was.RemoveChild(doll);
-            return doll;
-        }
-        dollKey = key;
-        return doll = new Portrait(new Vector2I(w, h)) { CheckTag = "doll" }.Of(lo);
-    }
 
     /* -------------------------------------------------------- the numbers -- */
 
