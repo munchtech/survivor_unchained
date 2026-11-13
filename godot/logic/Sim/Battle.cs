@@ -203,6 +203,12 @@ public sealed class BattleSetup
     /// <summary>The campaign (ARPG.md 3.1): skills set off by their press records, the warden on Resolve. False (the
     /// arena, the probes, tests' own fights): every skill as it always was.</summary>
     public bool Campaign;
+    /// <summary>(bd-keys) Campaign: the skills offered both ways that run kindled, in an auto slot (Character.Bar's autos).</summary>
+    public HashSet<string>? Kindled;
+    /// <summary>(bd-keys) Campaign: her second weapon set's stance (data/content/stances.json; SkillBook.StanceOf), null
+    /// before it opens; and her calling (set A's swap strike).</summary>
+    public string? Stance;
+    public string? Calling;
 }
 
 public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold, Hone, Union }
@@ -486,7 +492,10 @@ public sealed partial class Battle
         foreach (var id in s.DashSteps) GrantDashStep(id, announce: false);
         Player.DashCharges = MaxDashCharges;
         if (s.Wicks != null) WickPaths = s.Wicks;
+        if (s.Kindled != null) Kindles.UnionWith(s.Kindled);
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
+        if (s.Calling != null) Calling = s.Calling;
+        if (s.Campaign) SetStance(s.Stance);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
         Level = Math.Max(1, s.Level);
         if (s.Lamps != null) SetLamps(s.Lamps, s.ReflexRanks);
@@ -1185,6 +1194,8 @@ public sealed partial class Battle
         if (Lamps.Board) { double w1 = statusW; statusW = cw; BoardOnHit(e, school, tags, o, blowDmg, heavy, crit, cw); statusW = w1; }
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
         { double w1 = statusW; statusW = cw; FlareOnHit(e, o, blowDmg); statusW = w1; }
+        // (bd-keys) In set B the stance flavors a key skill's blow (Sim/Stance.cs).
+        if (StanceFlavors(o) && e.Hp > 0) StanceBlow(e, o.Weapon!, blowDmg);
         // (saved and put back: a hit the script lands from inside its own hook must not unweight ours; 1 outside)
         if (e.Boss) { double hw = HitW; HitW = cw; Hooks.OnBossHit?.Invoke(e, school, dmg); HitW = hw; }
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
@@ -2964,13 +2975,16 @@ public sealed partial class Battle
     public WeaponInst? AddWeapon(string id, int rank = 1)
     {
         Journal('W', id, null, rank);
-        // Slots, not weapons: a union takes two (Content/Weapons.cs SlotCost), the lowest free ones.
+        // Slots, not weapons: a union takes two (Content/Weapons.cs SlotCost), the lowest free ones. (bd-keys) In the
+        // campaign a key's (0-3) when it is pressed, an auto slot's (from MaxKeys on, no cap) when it runs itself.
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || !HasRoomFor(id)) return null;
-        var slots = FreeSlots(Content.Weapons.SlotCost(id));
+        bool auto = RunsItself(id);
+        var slots = FreeSlots(Content.Weapons.SlotCost(id), auto);
         var w = new WeaponInst(id, rank, slots[0]);
         if (slots.Count > 1) w.Slot2 = slots[1];
-        // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says.
-        if (Campaign) w.Press = w.Def.Press;
+        // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says. One offered both
+        // ways that this fight runs kindled (Kindles) comes in kindled.
+        if (Campaign) { w.Press = w.Def.Press; if (auto && Kindles.Contains(id)) w.SetForm("kindle"); }
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
         // (SU-063) Lit once it is carried, so its lit lamps' rules join the fight's (SyncWickRules walks Weapons).

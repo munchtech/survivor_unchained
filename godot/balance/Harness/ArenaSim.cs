@@ -322,7 +322,7 @@ public static class ArenaSim
             };
             string grip = b.Weapons.Count > 0 ? b.Weapons[0].Id : "";
             var kit = order.Select(id => id == "grip" ? grip : id).Where(id => id != "").Distinct()
-                .Where(id => SurvivorUnchained.Content.Weapons.CanCarry(spec.Calling, id)).Take(SkillBook.SlotsAt(spec.Level)).ToList();
+                .Where(id => SurvivorUnchained.Content.Weapons.CanCarry(spec.Calling, id)).Take(Math.Min(SkillBook.SlotsAt(spec.Level), SurvivorUnchained.Content.Weapons.MaxWeapons)).ToList();
             int kr = Math.Min(8, 1 + (spec.Level - 1) / 3);
             foreach (var id in kit)
             {

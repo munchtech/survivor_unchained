@@ -32,6 +32,9 @@ public static class DevVeteran
         // (M3) A calling with a taught build carries it first (taught_builds.json, as a campaign survivor of that level does);
         // the path's skills fill what slots are left.
         TaughtBuilds.Grant(ch, ch.Level);
+        // (bd-keys) and every point lit, as a player of that level has lit them: the levels gained above held each carried
+        // skill's points (WickBook.Grew), which left her basic attack at rank 1 at level 30.
+        WickBook.LightAll(ch);
         var path = Content.Paths.All.Where(p => p.Callings.Contains(calling)).OrderBy(p => p.Id).ToList();
         var pick = path[seed % path.Count];
         foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
@@ -39,7 +42,7 @@ public static class DevVeteran
             if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
             if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
             ch.Skills.Add(id);
-            ch.Slotted.Add(id);
+            SkillBook.TakeUp(ch, id);
         }
         var rng = new Rng((uint)seed * 31 + 5);
         (EquipSlot Slot, string Def)[] dress =

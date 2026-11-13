@@ -180,8 +180,10 @@ public sealed partial class Journey
             // the ARPG tutorial replaces it).
             Campaign = campaign,
             StartX = x, StartZ = z, StartFacing = facing,
-            // (M3) In the campaign the taught build takes the first keys (the grip on the first), a worn skill it does not name after.
-            Weapons = campaign ? Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(kit.Learned)) : kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            // (bd-keys) In the campaign her bar (Character.Bar): her keys in key order (the basic attack on the first), her
+            // auto slots, her gear's auto skills; those that run themselves come in kindled; set B's stance once it opens.
+            Weapons = campaign ? kit.Bar : kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            Kindled = campaign ? kit.Autos : null, Stance = campaign ? SkillBook.StanceOf(Ch) : null, Calling = Ch.Archetype,
             ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
@@ -208,8 +210,8 @@ public sealed partial class Journey
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.Calling = Ch.Archetype;
-        // The campaign runs each carried skill in its taught form (taught_builds.json: the grip held, the rest kindled or pressed).
-        if (b.Campaign) Content.TaughtBuilds.Apply(b, b.Calling);
+        // (bd-keys) The campaign runs each carried skill in the form its place gives it (Character.Bar: a key pressed, an
+        // auto slot kindled), set as it came in (BattleSetup.Kindled), no longer the taught build's over her choice.
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.
@@ -409,13 +411,18 @@ public sealed partial class Journey
             int slot = -1;
             if (b != null && b.Campaign && !b.Weapons.Exists(w => w.Id == s.Skill))
             {
+                // (bd-keys) a kindled one comes into an auto slot (never full); a pressed one into a key, a worn key the
+                // build does not name giving it up when the keys are full
+                if (s.Cast == "kindle") b.Kindles.Add(s.Skill); else b.Kindles.Remove(s.Skill);
                 if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
-                    && b.Weapons.LastOrDefault(w => t.Slots.All(x => x.Skill != w.Id)) is { } spare)
+                    && b.Weapons.LastOrDefault(w => w.Slot < b.KeyCount && t.Slots.All(x => x.Skill != w.Id)) is { } spare)
                     b.RemoveWeapon(spare.Id);
                 if (b.AddWeapon(s.Skill, WickBook.DayRank(Ch, s.Skill)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
             }
             b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
         }
+        // (bd-keys) The stance opens on its level (BUILD_UNLOCKS.md: the eighth), in the fight running too.
+        if (b != null && b.Campaign) b.SetStance(SkillBook.StanceOf(Ch));
         return got;
     }
 
@@ -671,16 +678,16 @@ public sealed partial class Journey
         var learned = learns ? kit.Learned : new List<(string Id, int Rank)>();
         var learnedIds = learned.Select(w => w.Id).ToHashSet();
         var ours = GearWeapons.Concat(b.KitLearned ?? []).ToHashSet();
-        // What a fresh battle keys (StartBattle): the taught order over worn and learned, while the keys have room (the
-        // keys a skill the kit did not give holds stay its).
+        // What a fresh battle keys (StartBattle): (bd-keys) her bar (Character.Bar) in the campaign, while the keys have
+        // room (the keys a skill the kit did not give holds stay its; auto slots never run out); the gear's elsewhere.
         var want = new List<(string Id, int Rank)>();
         if (learns)
         {
-            int room = Content.Weapons.MaxWeapons - b.Weapons.Where(w => !ours.Contains(w.Id)).Sum(w => Content.Weapons.SlotCost(w.Id));
-            foreach (var s in Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(learned)))
+            int room = b.KeyCount - b.Weapons.Where(w => !ours.Contains(w.Id) && w.Slot < b.KeyCount).Sum(w => Content.Weapons.SlotCost(w.Id));
+            foreach (var s in kit.Bar)
             {
                 if (!Content.Weapons.All.ContainsKey(s.Id) || want.Any(x => x.Id == s.Id)) continue;
-                int cost = Content.Weapons.SlotCost(s.Id);
+                int cost = kit.Autos.Contains(s.Id) ? 0 : Content.Weapons.SlotCost(s.Id);
                 if (cost > room) continue;
                 room -= cost; want.Add(s);
             }
@@ -689,13 +696,23 @@ public sealed partial class Journey
         var wantIds = want.Select(s => s.Id).ToHashSet();
         foreach (var id in ours) if (!wantIds.Contains(id)) b.RemoveWeapon(id);
         GearWeapons = kitIds;
-        var taught = Content.TaughtBuilds.Of(Ch.Archetype);
+        if (b.Campaign && learns)
+        {
+            // Where each runs now (she moved one between a key and an auto slot): the autos first, so a key they free
+            // is free for one moving the other way.
+            foreach (var w in b.Weapons.Where(w => wantIds.Contains(w.Id)).OrderBy(w => kit.Autos.Contains(w.Id) ? 0 : 1).ToList())
+                b.SetForm(w.Id, kit.Autos.Contains(w.Id) ? "kindle" : (w.Def.Press?.Kind ?? Content.PressKind.Press).ToString().ToLowerInvariant());
+            b.Kindles.Clear();
+            b.Kindles.UnionWith(kit.Autos);
+        }
+        // Keys in her bar's order: a skill new to the fight takes the lowest key free.
         foreach (var (id, rank) in want)
         {
             if (b.Weapons.Any(x => x.Id == id)) { if (learnedIds.Contains(id)) b.SetRank(id, rank); continue; }
-            if (b.AddWeapon(id, rank) is null) continue;
-            if (b.Campaign && taught?.Slots.FirstOrDefault(x => x.Skill == id) is { } slot) b.SetForm(id, slot.Cast);
+            b.AddWeapon(id, rank);
         }
+        // (bd-keys) Her stance as the build has it now (a stance weapon taken up at a lamp-post).
+        if (b.Campaign) b.SetStance(SkillBook.StanceOf(Ch));
         if (learns) b.KitLearned = learnedIds.Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet();
         // (M9) A campaign fight's carried skills at their rank with the gear worn now ("+1 to a skill" on or off).
         if (b.Campaign)

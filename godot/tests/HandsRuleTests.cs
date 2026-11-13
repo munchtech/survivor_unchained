@@ -1,13 +1,15 @@
 using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>The hands rule (ARPG.md, the owner's amendment of 9 November): six slots stand, but a taught build has at most
-/// two pressed skills beside the held swing (the dash is not a slot), and each calling's kit offers at least half its
-/// skills kindled. data/content/taught_builds.json and skills.json's press records.</summary>
+/// <summary>The hands rule (BUILD_DIRECTION.md round 8, the owner's 13 November interview; it replaces the six slots of
+/// 9 November): four keys, the basic attack held in the first and at most three pressed beside it (the dash, the Flare and
+/// the swap are not keys), three auto slots that run kindled, and each calling's kit offers at least half its skills
+/// kindled. data/content/taught_builds.json and skills.json's press records.</summary>
 public sealed class HandsRuleTests
 {
     /// <summary>The warden's kit in the ARPG (ARPG.md 3.2), its unions apart.</summary>
@@ -46,16 +48,24 @@ public sealed class HandsRuleTests
     {
         var t = TaughtBuilds.Of("warden")!;
         Assert.Equal("sunder", t.Grip);
-        Assert.True(t.Slots.Count <= Weapons.MaxWeapons);
-        Assert.True(TaughtBuilds.PressedSlots(t) <= 2, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
-        Assert.Equal("hold", t.Slots.Single(s => s.Skill == t.Grip).Cast);
+        Assert.Equal(Weapons.MaxKeys, t.Keys.Count);
+        Assert.Equal(Weapons.AutoSlots, t.Autos.Count);
+        Assert.Equal(t.Grip, t.Keys[0].Skill);
+        Assert.Equal("hold", t.Keys[0].Cast);
+        Assert.True(TaughtBuilds.PressedSlots(t) <= 3, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
+        Assert.All(t.Keys.Skip(1), s => Assert.NotEqual("kindle", s.Cast));
+        Assert.All(t.Autos, s => Assert.Equal("kindle", s.Cast));
         foreach (var s in t.Slots)
         {
             Assert.True(Weapons.CanCarry("warden", s.Skill), s.Skill);
             Assert.True(WeaponInst.Allows(Weapons.Get(s.Skill), s.Cast), $"{s.Skill} as {s.Cast}");
         }
         Assert.Equal(t.Slots.Count, t.Slots.Select(s => s.Skill).Distinct().Count());
-        Assert.Contains("dawnpulse", t.Later);
+        // Every slot at the ladder's level (BUILD_UNLOCKS.md): the n-th key when the n-th key opens, the same for autos.
+        for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(i + 1, SkillBook.KeysAt(t.Keys[i].Level));
+        for (int i = 0; i < t.Keys.Count; i++) Assert.True(t.Keys[i].Level == 1 || SkillBook.KeysAt(t.Keys[i].Level - 1) == i, t.Keys[i].Skill);
+        for (int i = 0; i < t.Autos.Count; i++) Assert.Equal(i + 1, SkillBook.AutosAt(t.Autos[i].Level));
+        for (int i = 0; i < t.Autos.Count; i++) Assert.True(t.Autos[i].Level == 1 || SkillBook.AutosAt(t.Autos[i].Level - 1) == i, t.Autos[i].Skill);
         Assert.Equal("bladestorm", t.Union!.Id);
     }
 
@@ -67,16 +77,21 @@ public sealed class HandsRuleTests
         {
             Seed = 2, Collision = new CollisionWorld(120), Combat = true, Campaign = true,
             Stats = BattleTests.BaseStats(), Weapons = t.Slots.Select(s => (s.Skill, 1)).ToList(), Ability = AbilityKind.ShieldBash,
+            Kindled = t.Autos.Select(s => s.Skill).ToHashSet(), Calling = "warden",
         });
-        b.Calling = "warden";
         Assert.Equal(t.Slots.Count, TaughtBuilds.Apply(b, "warden").Count);
         Assert.True(b.Weapons.First(x => x.Id == "sunder").Hold);
-        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "groundbreaker").Cast);
-        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "iron_vow").Cast);
-        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "watch_bell").Cast);
+        Assert.Equal(0, b.Weapons.First(x => x.Id == "sunder").Slot);
+        foreach (var s in t.Autos)
+        {
+            var w = b.Weapons.First(x => x.Id == s.Skill);
+            Assert.Equal(CastMode.Auto, w.Cast);
+            Assert.True(w.Slot >= Weapons.MaxKeys, s.Skill);
+        }
         Assert.Equal(CastMode.Press, b.Weapons.First(x => x.Id == "heroic_leap").Cast);
-        // The keys she actually presses beside the grip: two.
-        Assert.Equal(2, b.Weapons.Count(w => w.Pressed && !w.Hold));
+        // The keys she actually presses beside the grip: three.
+        Assert.Equal(3, b.Weapons.Count(w => w.Pressed && !w.Hold));
+        Assert.Equal(Weapons.MaxKeys, b.SlotsUsed);
         // Every key does something.
         Assert.All(b.Weapons, w => Assert.True(w.Keyed, w.Id));
     }

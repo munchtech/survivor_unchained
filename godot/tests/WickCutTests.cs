@@ -7,6 +7,9 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>WickSumView.Cut / Every: a chained skill's cut by day; Total and Parts stay the fight's own number.</summary>
+// (bd-keys) One test here turns WickBook.Lights off for every fight in the process for a moment: the class runs alone,
+// or the wick board's tests beside it read a skill with no wick (seen as NullReference in WickBoardTests under load).
+[Collection("WickLights")]
 public sealed class WickCutTests
 {
     static bool HasData => System.IO.File.Exists(System.IO.Path.Combine(Core.DataFiles.Dir, "content", "lamps_v2.json"));
@@ -85,3 +88,6 @@ public sealed class WickCutTests
         Assert.Null(s2.Every);
     }
 }
+
+[CollectionDefinition("WickLights", DisableParallelization = true)]
+public sealed class WickLightsCollection;

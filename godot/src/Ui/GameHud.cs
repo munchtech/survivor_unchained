@@ -1697,14 +1697,15 @@ public partial class GameHud : CanvasLayer
     void CampaignSeats(Battle b, int level)
     {
         var socks = irons.Sockets;
-        int open = SurvivorUnchained.Rpg.SkillBook.SlotsAt(Math.Max(1, level));
+        // (bd-keys) The keys open at her level (slots 0-3), then her auto slots (from MaxKeys on): a seat past them is locked.
+        int keysOpen = SurvivorUnchained.Rpg.SkillBook.KeysAt(Math.Max(1, level)), autosOpen = SurvivorUnchained.Rpg.SkillBook.AutosAt(Math.Max(1, level));
         var resolve = b.Resolve;
         for (int k = 0; k < socks.Length; k++)
         {
             int slot = KeyMap.SeatSlot[k];
             var s = socks[k];
             var w = b.OnSlot(slot);
-            if (w == null) { s.Empty(locked: slot >= open); s.Feed(new Socket.SeatState { Cost = -1 }); continue; }
+            if (w == null) { s.Empty(locked: slot < Weapons.MaxKeys ? slot >= keysOpen : slot - Weapons.MaxKeys >= autosOpen); s.Feed(new Socket.SeatState { Cost = -1 }); continue; }
             bool second = w.Slot2 == slot;
             var shown = second && w.Half != null ? w.Half : w;
             // (a channel running keeps its well lit)
