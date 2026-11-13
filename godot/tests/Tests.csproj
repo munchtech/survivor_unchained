@@ -36,6 +36,8 @@
     <Compile Include="../src/Ui/SeatCostModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/SeatLook.cs" LinkBase="src" />
     <Compile Include="../src/Ui/RoadKeep.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/QuenchBarModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/RoadPageModel.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

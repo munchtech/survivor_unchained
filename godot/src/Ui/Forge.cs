@@ -109,7 +109,7 @@ public partial class ForgeScreen : Overlay
         // the first piece this hand can do something with before one it would only refuse.
         if (Chosen == null && !making)
         {
-            sel = (Workable().FirstOrDefault(it => it.Def == Args.Get("anvil")) ?? Workable().Where(Takes).OrderBy(it => Apt(it) ? 0 : 1).FirstOrDefault())?.Uid;
+            sel = (Workable().FirstOrDefault(it => it.Def == Args.Get("anvil")?.Split(':')[0] && (Args.Get("anvil")!.Split(':').Length < 2 || it.Rarity == Items.RarityNames.ToList().FindIndex(n => n.Equals(Args.Get("anvil")!.Split(':')[1], StringComparison.OrdinalIgnoreCase)))) ?? Workable().Where(Takes).OrderBy(it => Apt(it) ? 0 : 1).FirstOrDefault())?.Uid;
             seam = -1;
         }
         // Banked by night; or, for a bench that only works things in, not yet open (Wenna's, till the cure).
@@ -673,6 +673,7 @@ public partial class ForgeScreen : Overlay
             if (q.Blocked != null && (q.Takes.Count == 0 || it.Remade == G.Journey.World.Day)) o.Note(q.Blocked);
             else o.Add(Card(q.Title, q, () => Work(q, () => { Sound.Sfx.Anvil(4); Sound.Sfx.Loot(true); }), "Remake", "remake"));
         }
+        if (Crafting.Does(crafter, Verb.Quench)) o.Add(QuenchCard(it));
         if (Crafting.Does(crafter, Verb.Rekindle))
         {
             var q = Crafting.Rekindle(X, it, crafter);
@@ -693,6 +694,73 @@ public partial class ForgeScreen : Overlay
                 o.Add(Card("Break down", q, () => Work(q, Sound.Sfx.Shatter, off: true), "Break down", "break", null, "The piece is gone", hold: true));
             }
         }
+    }
+
+    /// <summary>(bd-ui2) Quench in open flame: the forge's one gamble, held for what cannot be undone, with its odds as one
+    /// strip (QuenchBarModel: five segments as wide as Crafting.QuenchOdds says), then "Once a piece. It is set after."
+    /// and the cost line as every card has it. Blocked: dimmed, its reason as the note, no press.</summary>
+    Control QuenchCard(ItemInstance it)
+    {
+        var q = Crafting.Quench(X, it, crafter);
+        q.After = null;
+        var card = (VBoxContainer)Card("QUENCH IN OPEN FLAME", q, () => Work(q, () => { Sound.Sfx.Anvil(4); Sound.Sfx.Loot(true); }), "Quench", "quench",
+            null, "Once a piece. It is set after.", hold: true);
+        var strip = QuenchStrip();
+        if (!q.Ok) { strip.Modulate = new Color(1, 1, 1, 0.45f); }
+        card.AddChild(strip);
+        card.MoveChild(strip, 1);
+        return card;
+    }
+
+    static readonly Color[] QuenchInk =
+    {
+        new("#ffd45a"), new("#d98a2b"), new("#7a6a58"), new("#4f7fae"), new("#6b1a1e"),
+    };
+
+    /// <summary>The odds strip: a bar in an engraved frame, a segment per outcome as wide as its real chance, thin dark
+    /// separators, each % centred under its segment and each outcome's words on hover.</summary>
+    Control QuenchStrip()
+    {
+        var segs = QuenchBarModel.Build(Crafting.QuenchOdds());
+        const float W = 420, H = 16;
+        var col = Style.V(2);
+        col.CustomMinimumSize = new Vector2(W + 10, 0);
+        col.MouseFilter = MouseFilterEnum.Ignore;
+        var frame = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(W + 6, H + 6) };
+        var fb = new StyleBoxFlat { BgColor = new Color("#0c0907"), BorderColor = Style.GoldDim, CornerRadiusBottomLeft = 2, CornerRadiusBottomRight = 2, CornerRadiusTopLeft = 2, CornerRadiusTopRight = 2 };
+        fb.SetBorderWidthAll(1);
+        fb.BorderWidthTop = 2;
+        fb.SetContentMarginAll(2);
+        frame.AddThemeStyleboxOverride("panel", fb);
+        var bar = new Control { CustomMinimumSize = new Vector2(W, H), MouseFilter = MouseFilterEnum.Ignore };
+        frame.AddChild(bar);
+        var labels = new Control { CustomMinimumSize = new Vector2(W + 6, 34), MouseFilter = MouseFilterEnum.Ignore };
+        float x = 0;
+        for (int i = 0; i < segs.Count; i++)
+        {
+            var sg = segs[i];
+            float w = (float)(sg.Fraction * W);
+            string said = $"{sg.Label}: {Crafting.QuenchWords(sg.Id)}";
+            var r = new ColorRect { Color = QuenchInk[i], Position = new Vector2(x, 0), Size = new Vector2(w, H), TooltipText = said, MouseFilter = MouseFilterEnum.Stop };
+            bar.AddChild(r);
+            // A sheen on the upper half, as the house's bars have.
+            bar.AddChild(new ColorRect { Color = new Color(1, 1, 1, 0.12f), Position = new Vector2(x, 0), Size = new Vector2(w, H * 0.4f), MouseFilter = MouseFilterEnum.Ignore });
+            if (i > 0) bar.AddChild(new ColorRect { Color = new Color(0.04f, 0.03f, 0.03f, 0.95f), Position = new Vector2(x - 1, 0), Size = new Vector2(2, H), MouseFilter = MouseFilterEnum.Ignore });
+            // % under the segment's middle; the narrow one may overhang its bar. The word above it is small and dim.
+            var pct = Style.Label(QuenchBarModel.Percent(sg.Fraction), Style.UiBold, 12, sg.Cold ? new Color("#8fb4d8") : sg.Warm ? Style.GoldHi : Kit.Dim, false, HorizontalAlignment.Center, false);
+            var word = Style.Label(sg.Label, Style.Ui, 11, Kit.Faint, false, HorizontalAlignment.Center, false);
+            float lw = 64, cx = 3 + x + w / 2;
+            foreach (var (lab, y) in new[] { (word, 0f), (pct, 14f) })
+            {
+                lab.Position = new Vector2(cx - lw / 2, y); lab.Size = new Vector2(lw, 14);
+                lab.MouseFilter = MouseFilterEnum.Ignore; lab.TooltipText = said;
+                labels.AddChild(lab);
+            }
+            x += w;
+        }
+        col.AddChild(frame);
+        col.AddChild(labels);
+        return col;
     }
 
     /* ---------------------------------------------------- the binder's -- */

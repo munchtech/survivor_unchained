@@ -20,11 +20,14 @@ public partial class PostScreen : Overlay
     {
         this.post = post;
         menu = new MenuList(Refresh, 20);
+        // (bd-ui2) --post-page road: the post opens straight on that page (pictures of the road page).
+        if (Args.Get("post-page") is "road" or "travel" or "tier" or "unions") page = Args.Get("post-page")!;
     }
 
     protected override void Build()
     {
         HideHud();
+        if (page == "road") { RoadPage(); return; }
         var col = Fitted(new Vector2(Inset, Inset), 720);
         col.AddChild(new Title(post.Name, 30, false));
         var w = G.Journey.World;
@@ -42,21 +45,6 @@ public partial class PostScreen : Overlay
                     var to = p;
                     menu.Add(p.Name, () => G.PostTravel(post, to), grp.Name);
                 }
-            menu.Add("Back", Back);
-        }
-        else if (page == "road")
-        {
-            // (bd-ranks) Her calling's roads, the one walked marked: the road's choice at level 6 until the story's scene, then a change.
-            var walked = LampBook.Walked(G.Journey.Ch)?.Id;
-            foreach (var rd in Lamps.RoadsOf(G.Journey.Ch.Archetype))
-            {
-                var id = rd.Id;
-                menu.Add(rd.Id == walked ? $"{rd.Name}  (now)" : rd.Name, () =>
-                {
-                    if (id != walked) G.PostRoad(post, id);
-                    page = ""; menu.Focus = 0; Refresh();
-                }, rd.Line, rd.Id == walked);
-            }
             menu.Add("Back", Back);
         }
         else if (page == "tier")
@@ -120,6 +108,94 @@ public partial class PostScreen : Overlay
         list.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         col.AddChild(list);
     }
+
+    /* ------------------------------------------------------------- road -- */
+
+    /// <summary>(bd-ui2) The road page: her calling's roads side by side (RoadPageModel has the data), the one walked tagged
+    /// and bright-bordered, the other with "Walk this road" held (a change at a lamp-post: LampBook's own, Game.PostRoad).</summary>
+    void RoadPage()
+    {
+        var ch = G.Journey.Ch;
+        var pg = RoadPageModel.Of(ch);
+        const float PW = 600;
+        var root = Style.V(14);
+        root.Position = new Vector2((1920 - (pg.Roads.Count * PW + (pg.Roads.Count - 1) * 36)) / 2, 110);
+        AddChild(root);
+        var head = Style.V(2);
+        head.AddChild(new Title(LampBook.Roadless(ch) ? "Choose your road" : "Your road", 30, false));
+        head.AddChild(Style.Label(post.Name, Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+        root.AddChild(head);
+        var row = Style.H(36);
+        root.AddChild(row);
+        foreach (var r in pg.Roads) row.AddChild(RoadPanelOf(r, pg, PW));
+        var foot = Style.Label(RoadPageModel.Foot, Style.TextItalic, 17, Kit.Dim, false, HorizontalAlignment.Center, false);
+        root.AddChild(foot);
+        var back = Kit.Word("Back", Back, Kit.Ink2, 18);
+        back.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+        root.AddChild(back);
+    }
+
+    Control RoadPanelOf(RoadPageModel.RoadPanel r, RoadPageModel.Page pg, float width)
+    {
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.CustomMinimumSize = new Vector2(width, 0);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        if (r.Walked && panel.GetThemeStylebox("panel") is StyleBoxFlat sb)
+        {
+            var lit = (StyleBoxFlat)sb.Duplicate();
+            lit.BorderColor = Style.GoldHi;
+            lit.SetBorderWidthAll(2);
+            panel.AddThemeStyleboxOverride("panel", lit);
+        }
+        var v = Style.V(Style.Gap3);
+        panel.AddChild(v);
+        var top = Style.H(10, new Title(r.Name, 24, false));
+        v.AddChild(top);
+        if (r.Walked) v.AddChild(Style.Label("WALKED", Style.UiHeavy, 14, Style.EmberHi));
+        v.AddChild(Style.Label(r.Line, Style.TextItalic, 17, Kit.HeadInk, true));
+        v.AddChild(Kit.RuleH());
+        if (r.RoadSkill is { } rs) v.AddChild(Entry("Teaches", rs, SkillName(rs), SkillText(rs), GlyphOfSkill(rs)));
+        if (r.Strike is { } st) v.AddChild(Entry("Flare Strike", st.Id, st.Name, st.Text, Glyphs.IconKey(st.Icon)));
+        if (r.Stand is { } sd) v.AddChild(Entry("Stand", sd.Id, sd.Name, sd.Text, Glyphs.IconKey(sd.Icon)));
+        v.AddChild(Style.SubLabel("Leans toward"));
+        var lean = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
+        lean.AddThemeConstantOverride("h_separation", 18);
+        lean.AddThemeConstantOverride("v_separation", 4);
+        foreach (var id in r.Leaning)
+        {
+            var c = Style.H(6, Glyphs.Icon(GlyphOfSkill(id), 24, Style.GoldHi), Style.Label(SkillName(id), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false));
+            c.MouseFilter = MouseFilterEnum.Stop;
+            c.TooltipText = $"{SkillName(id)}: {SkillText(id)}";
+            lean.AddChild(c);
+        }
+        v.AddChild(lean);
+        v.AddChild(Kit.RuleH());
+        if (!pg.Open) v.AddChild(Style.Label(pg.Gate, Style.TextItalic, 17, Kit.Faint));
+        else if (!r.Walked)
+        {
+            string id = r.Id;
+            var held = new HeldWord("Walk this road", "", () => { G.PostRoad(post, id); Refresh(); }, 20, Style.EmberHi);
+            held.CustomMinimumSize = new Vector2(0, 34);
+            Nav.Mark(held, $"road:{id}", held.Nudge);
+            v.AddChild(held);
+        }
+        return panel;
+    }
+
+    /// <summary>A labelled line: the small caption, then its glyph and name, then the words from data under it.</summary>
+    static Control Entry(string caption, string id, string name, string text, string glyph)
+    {
+        var v = Style.V(2);
+        v.AddChild(Style.SubLabel(caption));
+        v.AddChild(Style.H(8, Glyphs.Icon(glyph, 26, Style.GoldHi), Style.Label(name, Style.UiBold, 18, Kit.Ink, false, HorizontalAlignment.Left, false)));
+        if (text != "") v.AddChild(Style.Label(text, Style.Ui, 15, Kit.Ink2, true));
+        return v;
+    }
+
+    static string SkillName(string id) => Weapons.All.TryGetValue(id, out var w) ? w.Name : id;
+    static string SkillText(string id) => Weapons.All.TryGetValue(id, out var w) ? w.Description : "";
+    static string GlyphOfSkill(string id) => Weapons.All.TryGetValue(id, out var w) ? Glyphs.ForSkill(w.Id, w.Art) : Glyphs.IconKey(id);
 
     const float Inset = 16;
 

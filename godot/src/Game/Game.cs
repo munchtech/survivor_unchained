@@ -2474,7 +2474,13 @@ public partial class Game : Node, IZoneHost
         CloseOverlay();
         var next = list[tourI++];
         if (next.StartsWith("talk:")) TalkTo(next[5..]);
-        else if (next.StartsWith("post:")) OpenPost(next[5..]);
+        else if (next.StartsWith("post:"))
+        {
+            // (bd-ui2) post:ID[@T]: a real post's id (lowford.watch, waystation.square: the act1.postN ones are drafts at 0,0), the @T of a shoot ignored.
+            string pid = next[5..].Split('@')[0];
+            if (Content.LampPosts.Get(pid) == null) GD.Print($"open post: no post '{pid}' (try {string.Join(", ", Content.LampPosts.All.Where(x => !x.Draft).Select(x => x.Id))})");
+            OpenPost(pid);
+        }
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
