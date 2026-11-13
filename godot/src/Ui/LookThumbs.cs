@@ -16,7 +16,7 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class LookThumbs : Node
 {
-    const int Version = 5;
+    const int Version = 6;
     static LookThumbs? studio;
     static readonly Dictionary<string, ImageTexture> done = new();
     static readonly Dictionary<string, List<TextureRect>> waiting = new();
@@ -104,8 +104,28 @@ public partial class LookThumbs : Node
         Skeleton3D? sk = null;
         foreach (var c in stage.GetChildren()) if (c is PersonView pv) sk = Find(pv);
         if (sk == null) return;
-        Vector3 At(string bone) => sk.GlobalTransform * sk.GetBoneGlobalPose(Mathf.Max(0, sk.FindBone(bone))).Origin;
-        Vector3 head = At("Head"), pelvis = At("pelvis"), foot = At("foot_l");
+        // (bone names differ between her bodies: "Head" / "head" / "DEF-head"; a missing name read bone 0 and framed her chest
+        // as the Head look. Each part is the first bone whose name holds one of its words, case-insensitive; the head is
+        // else the highest bone, the pelvis else bone 0, the foot else the lowest.)
+        Vector3 Pose(int i) => sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin;
+        int Named(params string[] words)
+        {
+            for (int w = 0; w < words.Length; w++)
+                for (int i = 0; i < sk.GetBoneCount(); i++)
+                {
+                    var n = sk.GetBoneName(i).ToLowerInvariant();
+                    if (n.Contains(words[w]) && !n.Contains("end") && !n.Contains("top")) return i;
+                }
+            return -1;
+        }
+        int Extreme(bool high)
+        {
+            int best = 0;
+            for (int i = 1; i < sk.GetBoneCount(); i++) if (high ? Pose(i).Y > Pose(best).Y : Pose(i).Y < Pose(best).Y) best = i;
+            return best;
+        }
+        int hi = Named("head"), pi = Named("pelvis", "hips", "hip"), fi = Named("foot_l", "foot.l", "leftfoot", "foot");
+        Vector3 head = Pose(hi >= 0 ? hi : Extreme(true)), pelvis = Pose(pi >= 0 ? pi : 0), foot = Pose(fi >= 0 ? fi : Extreme(false));
         float knee = foot.Y + (pelvis.Y - foot.Y) * 0.5f;
         var (top, bottom) = framing switch
         {

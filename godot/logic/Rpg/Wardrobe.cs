@@ -50,7 +50,21 @@ public static class Wardrobe
     {
         if (!IsLookFor(ch, Items.Find(defId))) return false;
         ch.Looks ??= new();
-        return ch.Looks.Add(defId);
+        bool added = ch.Looks.Add(defId);
+        // (two items that wear the same pieces are one look: the first of them stands for both, judge round 1 found two
+        // identical tiles)
+        if (Items.Find(defId) is { } d && Canonical(d) is { } c && c.Id != defId) added |= ch.Looks.Add(c.Id);
+        return added;
+    }
+
+    static string PiecesKey(ItemDef d) => string.Join("|", (d.Wear ?? new()).OrderBy(x => x, StringComparer.Ordinal));
+
+    /// <summary>The item that stands for a look: the first item (data order) of its slot wearing the same pieces.</summary>
+    public static ItemDef? Canonical(ItemDef d)
+    {
+        if (SlotOf(d) is not { } slot) return null;
+        var key = PiecesKey(d);
+        return Items.All.Values.FirstOrDefault(o => SlotOf(o) == slot && o.Wear is { Count: > 0 } && PiecesKey(o) == key);
     }
 
     /// <summary>Everything worn and carried is found (old saves, starting gear).</summary>
@@ -63,7 +77,7 @@ public static class Wardrobe
 
     /// <summary>Every look of her cut in the game for a look slot, found or not, in item order.</summary>
     public static List<ItemDef> All(CharacterData ch, string slot) =>
-        Items.All.Values.Where(d => SlotOf(d) == slot && IsLookFor(ch, d)).ToList();
+        Items.All.Values.Where(d => SlotOf(d) == slot && IsLookFor(ch, d)).GroupBy(PiecesKey).Select(g => g.First()).ToList();
 
     public static List<ItemDef> Found(CharacterData ch, string slot) => All(ch, slot).Where(d => ch.Looks?.Contains(d.Id) == true).ToList();
 

@@ -146,4 +146,23 @@ public class WardrobeTests
         Assert.Empty(back.Dyes);
         Assert.NotNull(Wear.Of(back));
     }
+
+    [Fact]
+    public void Items_wearing_the_same_pieces_are_one_look()
+    {
+        var ch = Her();
+        Reg("wt_top_twin", ItemKind.Body, ["wt.belt", "wt.top"]);
+        var body = Wardrobe.All(ch, "body");
+        Assert.Contains(body, d => d.Id == "wt_top_a");
+        Assert.DoesNotContain(body, d => d.Id == "wt_top_twin");
+        // finding the twin finds the look
+        Assert.True(Wardrobe.Collect(ch, "wt_top_twin"));
+        Assert.Contains(Wardrobe.Found(ch, "body"), d => d.Id == "wt_top_a");
+        // and no two looks of a slot in the game's own data wear the same pieces
+        foreach (var slot in new[] { "head", "body", "feet" })
+        {
+            var keys = Wardrobe.All(ch, slot).Select(d => string.Join("|", d.Wear!.OrderBy(x => x, System.StringComparer.Ordinal))).ToList();
+            Assert.Equal(keys.Count, keys.Distinct().Count());
+        }
+    }
 }

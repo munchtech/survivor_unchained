@@ -21,6 +21,7 @@ public partial class WardrobeScreen : Overlay
     public override float CameraShift => WardFrame.Shift;
     public override float CameraNear => 0.56f;
     public override (float Pitch, float Distance, float Height)? CameraFrame => (WardFrame.Pitch, WardFrame.Distance, WardFrame.Height);
+    protected override string CloseWord => "Back";
 
     static (float Pitch, float Distance, float Height, float Shift) WardFrame => Args.Get("ward-frame") is string f && f.Split(',') is [var p, var d, var h, var sh]
         ? (Pf(p), Pf(d), Pf(h), Pf(sh)) : (12, 3.9f, 0.95f, -460);
