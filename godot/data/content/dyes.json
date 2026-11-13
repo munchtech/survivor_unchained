@@ -30,10 +30,9 @@
   {
    "id": "gilt",
    "name": "Gilt",
-   "hex": "#d4a640:metal",
+   "hex": "#e0b050:metal",
    "zones": [
-    "metal",
-    "trim"
+    "metal"
    ],
    "known": true
   },

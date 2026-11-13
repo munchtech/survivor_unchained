@@ -103,7 +103,7 @@ public class WardrobeTests
         Inventory.AddToPack(ch, a); Inventory.Equip(ch, a, EquipSlot.Body);
         Wardrobe.SetDye(ch, "body", "metal", "gilt");
         var d = Wear.DyeOf(ch)["wt.top"];
-        Assert.Equal("#d4a640:metal", d["metal"]);
+        Assert.Equal("#e0b050:metal", d["metal"]);
         Assert.Equal("#111111", d["cloth"]);
         // a dye the zone does not take is not applied
         Wardrobe.SetDye(ch, "body", "cloth", "gilt");

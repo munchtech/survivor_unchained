@@ -112,6 +112,9 @@ public static class Loadouts
     /// built again for nothing blinks.</summary>
     public static string Look(Loadout lo) => Core.Json.Write(lo);
 
+    /// <summary>True while a screen shows her bare-handed (the wardrobe): Of leaves her hands empty.</summary>
+    public static bool ArmsAway;
+
     public static Loadout Of(CharacterData ch)
     {
         var a = Callings.Archetype(ch.Archetype);
@@ -154,6 +157,8 @@ public static class Loadouts
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)
                 ? new Dye { Cloth = cloth, Under = pal.Paint.TryGetValue("under", out var under) ? under : Darker(cloth) } : null,
         };
+        // The wardrobe puts her sword and shield away (ArmsAway), the stance kept.
+        if (ArmsAway) held = held with { Right = "", Left = null, Forearm = null };
         return new Loadout(person, held, string.IsNullOrEmpty(cloak) ? null : cloak);
     }
 }

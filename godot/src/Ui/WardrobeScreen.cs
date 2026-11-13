@@ -10,18 +10,23 @@ namespace SurvivorUnchained.Ui;
 /// <summary>
 /// The wardrobe (bd-ui W18), opened from the Pack: looks collected from gear she has found, shown over any piece of the
 /// same place, and dyes on the zones of what is shown. It changes how she looks, never what she wears (Rpg/Wardrobe.cs).
-/// Her, whole, on the left (a hover over a look or a dye previews it); on the right the places, the looks as the Pack's
-/// tiles, and a row of swatches for each zone the shown piece has. Esc goes back to the Pack.
+/// Her, the world's, beside the page (a hover over a look or a dye previews it on her after 120 ms); on the page the places, the looks as
+/// 96 px thumbnails, and a row of swatches for each zone the shown piece has. Esc goes back to the Pack.
 /// </summary>
 public partial class WardrobeScreen : Overlay
 {
     public override string Kind => "wardrobe";
     public override bool Dismissable => false;
-    public override float CameraShift => -330;
+    // One her: the world's, framed low and tall beside the panel (W22). --ward-frame P,D,H,SHIFT tries another.
+    public override float CameraShift => WardFrame.Shift;
     public override float CameraNear => 0.56f;
-    public override (float Pitch, float Distance, float Height)? CameraFrame => BookFrame;
+    public override (float Pitch, float Distance, float Height)? CameraFrame => (WardFrame.Pitch, WardFrame.Distance, WardFrame.Height);
 
-    const int DollW = 420, DollH = 720, Tile = 70, Cols = 5, Swatch = 26;
+    static (float Pitch, float Distance, float Height, float Shift) WardFrame => Args.Get("ward-frame") is string f && f.Split(',') is [var p, var d, var h, var sh]
+        ? (Pf(p), Pf(d), Pf(h), Pf(sh)) : (12, 3.9f, 0.95f, -460);
+    static float Pf(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+
+    const int Tile = 96, Cols = 6, Swatch = 34;
     static readonly string[] SlotNames = ["Head", "Body", "Feet"];
     static readonly Dictionary<string, string> ZoneNames = new() { ["metal"] = "Metal", ["trim"] = "Trim", ["leather"] = "Leather", ["cloth"] = "Cloth" };
     // What a zone looks like as made, when the piece names no dye of its own for it.
@@ -31,13 +36,33 @@ public partial class WardrobeScreen : Overlay
     };
 
     static int slot = -1;
-    Control? dollHolder;
     Label? status;
+    // A hover shows on the world her after a rest of 120 ms (a re-dress per pass would stutter).
+    Action<CharacterData>? want;
+    bool wantDirty;
+    double rest;
 
     public WardrobeScreen(Game g) : base(g)
     {
         if (Args.Get("wardrobe-slot") is string s && Array.IndexOf(Wardrobe.LookSlots, s) is var i and >= 0) slot = i;
         if (slot < 0) slot = 1;
+        // Her sword and shield away while the wardrobe is open (put back in _ExitTree).
+        Loadouts.ArmsAway = true;
+    }
+
+    public override void _ExitTree()
+    {
+        Loadouts.ArmsAway = false;
+        if (G.Scene is { } sc && IsInstanceValid(sc)) sc.SetLoadout(Loadouts.Of(Ch));
+    }
+
+    public override void _Process(double delta)
+    {
+        if (!wantDirty) return;
+        rest += delta;
+        if (rest < 0.12) return;
+        wantDirty = false;
+        ApplyWorld(want);
     }
 
     CharacterData Ch => G.Journey.Ch;
@@ -55,70 +80,57 @@ public partial class WardrobeScreen : Overlay
         Wardrobe.BackFill(ch);
         var v = BookPanel(null, () => G.Open("inventory"));
         var (found, total) = Wardrobe.Count(ch);
-        var body = Style.H(24);
-        dollHolder = new Control { CustomMinimumSize = new Vector2(DollW, DollH), MouseFilter = MouseFilterEnum.Ignore };
-        dollHolder.AddChild(Doll(Loadouts.Of(ch)));
-        body.AddChild(dollHolder);
-        var right = Style.V(Style.Gap3);
-        right.CustomMinimumSize = new Vector2(400, 0);
-        right.AddChild(Kit.Head("Wardrobe", null, Style.Label($"{found} of {total} looks found", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false)));
-        right.AddChild(Kit.Tabs(SlotNames, slot, k => { slot = k; Refresh(); }, 16, 22));
+        var names = Wardrobe.LookSlots.Select((s, i) => $"{SlotNames[i]} {Wardrobe.Found(ch, s).Count}/{Wardrobe.All(ch, s).Count}").ToArray();
+        v.AddChild(Kit.Head("Wardrobe", null, Style.Label($"{found} of {total} looks in all", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false)));
+        v.AddChild(Kit.Tabs(names, slot, k => { slot = k; want = null; wantDirty = false; ApplyWorld(null); Refresh(); }, 16, 22));
+        // The shown look's name is the page's title; under it, what it is worn over.
+        var shownDef = Wardrobe.ShownDef(ch, Slot);
+        var own = ch.Equipment[Wardrobe.EquipOf(Slot)];
+        var ownName = own != null ? Items.Get(own.Def).Name : null;
+        v.AddChild(Style.Label((shownDef?.Name ?? ownName ?? "Nothing worn").ToUpperInvariant(), Style.Display, 28, shownDef != null ? Style.EmberHi : Kit.Ink, false, HorizontalAlignment.Left, false));
+        v.AddChild(Style.Label(shownDef == null ? "your own piece, as it is" : ownName != null ? $"over: {ownName}" : "over nothing", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
         status = Style.Label("", Style.TextItalic, 15, Kit.Ink2, false, HorizontalAlignment.Left, false);
         status.CustomMinimumSize = new Vector2(0, 22);
-        right.AddChild(status);
-        right.AddChild(Looks(ch));
+        v.AddChild(status);
+        v.AddChild(Looks(ch));
         if (Slot == "head")
         {
-            bool shown = ch.Headgear != false;
-            right.AddChild(Nav.Skip(Kit.Word(shown ? "Hide the helm" : "Show the helm", () => { ch.Headgear = !shown; Sound.Sfx.Page(); Refresh(); })));
+            bool on = ch.Headgear != false;
+            v.AddChild(Nav.Skip(TickRow("Show headgear", on, () => { ch.Headgear = !on; Sound.Sfx.Page(); G.Gear((j, b) => { }); })));
         }
-        right.AddChild(Style.Gap(6));
-        right.AddChild(Kit.Head("Dyes"));
-        right.AddChild(DyeRows(ch));
-        right.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
-        body.AddChild(right);
-        v.AddChild(body);
-        v.AddChild(Style.Label("Looks come from gear you have found. They change how you look, never what you wear.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center));
+        v.AddChild(Style.Gap(8));
+        v.AddChild(Kit.Head("Dyes"));
+        v.AddChild(DyeRows(ch));
+        v.AddChild(Style.Gap(6));
+        v.AddChild(Style.Label("Every piece you find adds its look here. Looks change how you look, never what your gear does.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center));
         bool pad = Controls.Instance.UsingPad;
         var p = pad ? Kit.Prompts(Kit.Prompt(Act.Confirm, "Choose"), Kit.Prompt(Act.Cancel, "Back"))
             : Kit.Prompts(Kit.Prompt("Click", "Choose"), Kit.Prompt("Hover", "Preview"), Kit.Prompt("Esc", "Back"));
         p.CustomMinimumSize = new Vector2(0, 30);
         v.AddChild(p);
         Describe(null);
+        ApplyWorld(null);
     }
 
-    /* ------------------------------------------------------------- doll -- */
+    /* ---------------------------------------------------------- her, world -- */
 
-    static Portrait? doll;
-    static string dollKey = "";
-
-    /// <summary>Her, whole: kept across a rebuild while she looks the same (her idle never restarted).</summary>
-    static Control Doll(Loadout lo)
+    /// <summary>Her, in the world, as she would be with `tweak` applied to the wardrobe (a hover); null puts back what is set.</summary>
+    void ApplyWorld(Action<CharacterData>? tweak)
     {
-        var key = Loadouts.Look(lo);
-        if (doll != null && IsInstanceValid(doll) && !doll.IsQueuedForDeletion() && key == dollKey && doll.GetParent() is { } was) { was.RemoveChild(doll); return doll; }
-        dollKey = key;
-        return doll = new Portrait(new Vector2I(DollW, DollH)) { CheckTag = "doll" }.Of(lo);
+        if (G.Scene is not { } sc || !IsInstanceValid(sc)) return;
+        var ch = Ch;
+        if (tweak == null) { sc.SetLoadout(Loadouts.Of(ch)); return; }
+        var shown = new Dictionary<string, string>(ch.Shown);
+        var dyes = ch.Dyes.ToDictionary(kv => kv.Key, kv => new Dictionary<string, string>(kv.Value));
+        tweak(ch);
+        var lo = Loadouts.Of(ch);
+        ch.Shown = shown; ch.Dyes = dyes;
+        sc.SetLoadout(lo);
     }
 
-    /// <summary>Her as she would be with `tweak` applied to the wardrobe (a hover); null puts back what is set.</summary>
     void Preview(Action<CharacterData>? tweak)
     {
-        if (dollHolder == null || !IsInstanceValid(dollHolder)) return;
-        var ch = Ch;
-        Loadout lo;
-        if (tweak == null) lo = Loadouts.Of(ch);
-        else
-        {
-            var shown = new Dictionary<string, string>(ch.Shown);
-            var dyes = ch.Dyes.ToDictionary(kv => kv.Key, kv => new Dictionary<string, string>(kv.Value));
-            tweak(ch);
-            lo = Loadouts.Of(ch);
-            ch.Shown = shown; ch.Dyes = dyes;
-        }
-        var next = Doll(lo);
-        foreach (var c in dollHolder.GetChildren()) if (c != next) { dollHolder.RemoveChild(c); c.QueueFree(); }
-        if (next.GetParent() == null) dollHolder.AddChild(next);
+        want = tweak; wantDirty = true; rest = 0;
     }
 
     void Describe(string? text)
@@ -127,9 +139,7 @@ public partial class WardrobeScreen : Overlay
         if (text == null)
         {
             var ch = Ch;
-            var shown = Wardrobe.ShownDef(ch, Slot);
-            var own = ch.Equipment[Wardrobe.EquipOf(Slot)];
-            text = shown != null ? shown.Name : own != null ? $"Your own: {Items.Get(own.Def).Name}" : "Nothing worn";
+            text = Slot == "head" && ch.Headgear == false ? "Hidden" : "";
         }
         status.Text = text;
     }
@@ -139,30 +149,32 @@ public partial class WardrobeScreen : Overlay
     Control Looks(CharacterData ch)
     {
         var grid = new GridContainer { Columns = Cols, MouseFilter = MouseFilterEnum.Ignore };
-        grid.AddThemeConstantOverride("h_separation", 6);
-        grid.AddThemeConstantOverride("v_separation", 6);
+        grid.AddThemeConstantOverride("h_separation", 8);
+        grid.AddThemeConstantOverride("v_separation", 8);
         var shownDef = Wardrobe.ShownDef(ch, Slot);
+        bool hidden = Slot == "head" && ch.Headgear == false;
         // Your own first: what is equipped, or an empty place. A look has no level and no rarity.
         var worn = ch.Equipment[Wardrobe.EquipOf(Slot)];
-        grid.AddChild(LookTile(worn != null ? Items.Get(worn.Def) : null, worn != null ? ItemViews.ColourOf(worn) : Kit.Dim, worn != null ? "Your own" : "Nothing worn", shownDef == null, true,
-            () => Set(null), over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {Items.Get(worn.Def).Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } },
+        var ownDef = worn != null ? Items.Get(worn.Def) : null;
+        grid.AddChild(LookTile(ownDef, Slot, worn != null ? "Your own" : "Nothing worn", shownDef == null, true, hidden && shownDef == null,
+            () => Set(null), over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {ownDef!.Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } },
             "look:own", worn != null ? "Your own" : "Nothing worn"));
         // Then the found looks, then the ones not yet found.
         foreach (var def in Wardrobe.All(ch, Slot).OrderBy(d => ch.Looks.Contains(d.Id) ? 0 : 1))
         {
             bool have = ch.Looks.Contains(def.Id);
             var id = def.Id;
-            var col = ItemViews.ColourOf(Inventory.Make(null, id));
-            grid.AddChild(LookTile(def, col, null, have && shownDef?.Id == id, have, have ? () => Set(id) : null,
+            bool sel = have && shownDef?.Id == id;
+            grid.AddChild(LookTile(def, Slot, null, sel, have, hidden && sel, have ? () => Set(id) : null,
                 have ? over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, id)); Describe(def.Name); } else { Preview(null); Describe(null); } } : null,
                 have ? $"look:{id}" : null, have ? def.Name : null));
         }
         return grid;
     }
 
-    /// <summary>A look's tile: a dark neutral fill, a 1 px quiet line, the item's picture; no level, rarity, badge or count.
-    /// Selected is an ember frame, hover a 6% white fill; not found is a dim silhouette with a small lock.</summary>
-    static Control LookTile(ItemDef? def, Color col, string? caption, bool selected, bool found, Action? press, Action<bool>? hover, string? navId, string? tip)
+    /// <summary>A look's tile, 96 px: a dark neutral fill, a 1 px quiet line, the look worn (LookThumbs); no level, rarity, badge or
+    /// count. Selected is an ember frame, hover a 6% white fill; not found is the same picture dim and desaturated with a lock.</summary>
+    static Control LookTile(ItemDef? def, string slot, string? caption, bool selected, bool found, bool crossed, Action? press, Action<bool>? hover, string? navId, string? tip)
     {
         var box = new Panel { CustomMinimumSize = new Vector2(Tile, Tile), MouseFilter = Control.MouseFilterEnum.Stop };
         var sb = new StyleBoxFlat { BgColor = Kit.Tile };
@@ -172,18 +184,20 @@ public partial class WardrobeScreen : Overlay
         box.AddThemeStyleboxOverride("panel", sb);
         if (def != null)
         {
-            float k = caption != null ? 0.58f : 0.8f;
-            float sz = Tile * k;
-            var icon = ItemPhotos.Icon(def.Icon, (int)sz, col.Lightened(0.25f));
-            icon.Position = new Vector2((Tile - sz) / 2, caption != null ? 6 : (Tile - sz) / 2);
-            icon.Size = new Vector2(sz, sz);
-            icon.MouseFilter = Control.MouseFilterEnum.Ignore;
-            if (!found) icon.Modulate = new Color(0, 0, 0, 0.45f);
-            box.AddChild(icon);
+            Control pic = Wardrobe.SlotOf(def) != null ? LookThumbs.For(def.Id, slot, Tile - 4, !found) : ItemPhotos.Icon(def.Icon, Tile - 4, Kit.Dim);
+            pic.Position = new Vector2(2, 2);
+            pic.Size = new Vector2(Tile - 4, Tile - 4);
+            pic.MouseFilter = Control.MouseFilterEnum.Ignore;
+            box.AddChild(pic);
         }
         if (caption != null)
         {
-            var l = Style.Label(caption, Style.TextItalic, 12, Kit.Dim, false, HorizontalAlignment.Center, false);
+            if (def != null)
+            {
+                var strip = new ColorRect { Color = new Color(0, 0, 0, 0.55f), Position = new Vector2(2, Tile - 20), Size = new Vector2(Tile - 4, 18), MouseFilter = Control.MouseFilterEnum.Ignore };
+                box.AddChild(strip);
+            }
+            var l = Style.Label(caption, Style.TextItalic, 12, def != null ? Kit.Ink2 : Kit.Dim, false, HorizontalAlignment.Center, false);
             l.Size = new Vector2(Tile, 16);
             l.Position = new Vector2(0, def != null ? Tile - 19 : (Tile - 16) / 2f);
             l.MouseFilter = Control.MouseFilterEnum.Ignore;
@@ -191,12 +205,17 @@ public partial class WardrobeScreen : Overlay
         }
         if (!found)
         {
-            var lk = Glyphs.Icon("lock", 14, Kit.Ink2);
-            lk.Modulate = new Color(1, 1, 1, 0.5f);
-            lk.Position = new Vector2((Tile - 14) / 2f, (Tile - 14) / 2f);
-            lk.Size = new Vector2(14, 14);
+            var lk = Glyphs.Icon("lock", 18, Kit.Ink2);
+            lk.Modulate = new Color(1, 1, 1, 0.8f);
+            lk.Position = new Vector2(Tile - 18 - 5, Tile - 18 - 5);
+            lk.Size = new Vector2(18, 18);
             lk.MouseFilter = Control.MouseFilterEnum.Ignore;
             box.AddChild(lk);
+        }
+        if (crossed)
+        {
+            var eye = new EyeBadge { Position = new Vector2(Tile - 16 - 5, 5), Size = new Vector2(16, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
+            box.AddChild(eye);
         }
         if (found)
         {
@@ -213,10 +232,26 @@ public partial class WardrobeScreen : Overlay
         return box;
     }
 
+    /// <summary>A left-aligned tick row: an 18 px box (ticked = shown) and its words.</summary>
+    static Control TickRow(string text, bool on, Action press)
+    {
+        var row = Style.H(10);
+        row.MouseFilter = MouseFilterEnum.Stop;
+        row.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
+        var box = new TickBox { On = on, CustomMinimumSize = new Vector2(18, 18), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
+        var l = Style.Label(text, Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
+        l.MouseFilter = MouseFilterEnum.Ignore;
+        row.AddChild(box);
+        row.AddChild(l);
+        row.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) press(); };
+        return row;
+    }
+
     void Set(string? id)
     {
         var at = Slot;
         Sound.Sfx.Equip();
+        want = null; wantDirty = false;
         G.Gear((j, b) => Wardrobe.SetShown(j.Ch, at, id));
     }
 
@@ -224,7 +259,7 @@ public partial class WardrobeScreen : Overlay
 
     Control DyeRows(CharacterData ch)
     {
-        var v = Style.V(8);
+        var v = Style.V(10);
         var zones = Wardrobe.ZonesOfSlot(ch, Slot);
         if (zones.Count == 0) { v.AddChild(Style.Label("Nothing here takes a dye.", Style.TextItalic, 15, Kit.Dim)); return v; }
         var offered = Wardrobe.Offered(ch);
@@ -233,21 +268,27 @@ public partial class WardrobeScreen : Overlay
             var z = zone;
             ch.Dyes.TryGetValue(Slot, out var set);
             string? now = set != null && set.TryGetValue(z, out var cur) ? cur : null;
-            var row = Style.H(8);
+            var row = Style.H(12);
             var name = Style.Label(ZoneNames.GetValueOrDefault(z, z), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
             name.CustomMinimumSize = new Vector2(70, 0);
             name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(name);
             var sw = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
-            sw.AddThemeConstantOverride("h_separation", 6);
-            sw.AddThemeConstantOverride("v_separation", 6);
-            sw.AddChild(MakeSwatch(MadeColour(ch, z), null, "As made", now == null, true, () => { Wardrobe.SetDye(ch, Slot, z, null); Changed(); }, over => Hover(over, "As made", c => Wardrobe.SetDye(c, Slot, z, null))));
+            sw.AddThemeConstantOverride("h_separation", 8);
+            sw.AddThemeConstantOverride("v_separation", 8);
+            sw.AddChild(MakeSwatch(MadeColour(ch, z), false, "As made", now == null, true, () => { Wardrobe.SetDye(ch, Slot, z, null); Changed(); }, over => Hover(over, "As made", c => Wardrobe.SetDye(c, Slot, z, null))));
             foreach (var d in offered.Where(d => d.Zones.Contains(z)))
             {
                 var dd = d;
-                sw.AddChild(MakeSwatch(new Color(Wear.DyeFinish(d.Hex).Hex), null, d.Name, now == d.Id, false, () => { Wardrobe.SetDye(ch, Slot, z, dd.Id); Changed(); }, over => Hover(over, dd.Name, c => Wardrobe.SetDye(c, Slot, z, dd.Id))));
+                var fin = Wear.DyeFinish(d.Hex);
+                sw.AddChild(MakeSwatch(new Color(fin.Hex), fin.Metal, d.Name, now == d.Id, false, () => { Wardrobe.SetDye(ch, Slot, z, dd.Id); Changed(); }, over => Hover(over, dd.Name, c => Wardrobe.SetDye(c, Slot, z, dd.Id))));
             }
             row.AddChild(sw);
+            var chosen = now == null ? "As made" : Wardrobe.Dye(now)?.Name ?? now;
+            var cn = Style.Label(chosen, Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Right, false);
+            cn.CustomMinimumSize = new Vector2(120, 0);
+            cn.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            row.AddChild(cn);
             v.AddChild(row);
         }
         return v;
@@ -258,7 +299,7 @@ public partial class WardrobeScreen : Overlay
         if (over) { Preview(tweak); Describe(name); } else { Preview(null); Describe(null); }
     }
 
-    void Changed() { Sound.Sfx.Page(); G.Gear((j, b) => { }); }
+    void Changed() { Sound.Sfx.Page(); want = null; wantDirty = false; G.Gear((j, b) => { }); }
 
     /// <summary>The colour a zone has as made: the equipped item's own dye for it, else the zone's usual.</summary>
     Color MadeColour(CharacterData ch, string zone)
@@ -268,9 +309,9 @@ public partial class WardrobeScreen : Overlay
         return ZoneMade.GetValueOrDefault(zone, new Color("#777777"));
     }
 
-    static Control MakeSwatch(Color colour, string? _, string name, bool set, bool asMade, Action press, Action<bool> hover)
+    static Control MakeSwatch(Color colour, bool metal, string name, bool set, bool asMade, Action press, Action<bool> hover)
     {
-        var s = new DyeSwatch { Colour = colour, Set = set, AsMade = asMade, TooltipText = name, CustomMinimumSize = new Vector2(Swatch, Swatch), MouseDefaultCursorShape = Control.CursorShape.PointingHand };
+        var s = new DyeSwatch { Colour = colour, Metal = metal, Set = set, AsMade = asMade, TooltipText = name, CustomMinimumSize = new Vector2(Swatch, Swatch), MouseDefaultCursorShape = Control.CursorShape.PointingHand };
         s.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) press(); };
         s.MouseEntered += () => hover(true);
         s.MouseExited += () => hover(false);
@@ -278,19 +319,63 @@ public partial class WardrobeScreen : Overlay
     }
 }
 
-/// <summary>A round dye swatch, 26 px; the one set has a 2 px ember ring, "As made" a thin diagonal.</summary>
+/// <summary>A round dye swatch in a 34 px control (a 28 px disc, 1 px light outline); the one set has a 2.5 px ember ring four px out
+/// with a 2 px dark gap; metals a soft top-left highlight; "As made" a thin diagonal.</summary>
 public partial class DyeSwatch : Control
 {
     public Color Colour;
-    public bool Set, AsMade;
+    public bool Set, AsMade, Metal;
 
     public override void _Draw()
     {
         var c = Size / 2;
-        float r = Math.Min(Size.X, Size.Y) / 2 - 3;
+        const float r = 14;
         DrawCircle(c, r, Colour);
-        DrawArc(c, r, 0, Mathf.Tau, 32, new Color(0, 0, 0, 0.55f), 1, true);
+        if (Metal)
+            for (int i = 0; i < 6; i++)
+            {
+                float k = i / 6f;
+                DrawCircle(c + new Vector2(-4, -4) * k - new Vector2(1, 1), r * 0.7f * (1 - k) + 1, new Color(1, 1, 1, 0.35f / 6f * 1.5f));
+            }
+        DrawArc(c, r, 0, Mathf.Tau, 40, new Color(1, 0.94f, 0.86f, 0.22f), 1, true);
         if (AsMade) DrawLine(c + new Vector2(-r * 0.7f, r * 0.7f), c + new Vector2(r * 0.7f, -r * 0.7f), new Color(0.95f, 0.92f, 0.85f, 0.9f), 1.2f, true);
-        if (Set) DrawArc(c, r + 2, 0, Mathf.Tau, 40, Style.Ember, 2, true);
+        if (Set)
+        {
+            DrawArc(c, r + 2, 0, Mathf.Tau, 48, new Color("#120d0a"), 2, true);
+            DrawArc(c, r + 4, 0, Mathf.Tau, 48, Style.Ember, 2.5f, true);
+        }
+    }
+}
+
+/// <summary>An 18 px tick box: a quiet frame, an ember tick when on.</summary>
+public partial class TickBox : Control
+{
+    public bool On;
+
+    public override void _Draw()
+    {
+        DrawRect(new Rect2(0.5f, 0.5f, Size.X - 1, Size.Y - 1), new Color("#111012"), true);
+        DrawRect(new Rect2(0.5f, 0.5f, Size.X - 1, Size.Y - 1), On ? Style.Ember : Kit.Dim, false, 1.5f);
+        if (On)
+        {
+            DrawLine(new Vector2(4, 9.5f), new Vector2(7.7f, 13), Style.Ember, 2.2f, true);
+            DrawLine(new Vector2(7.7f, 13), new Vector2(14, 5), Style.Ember, 2.2f, true);
+        }
+    }
+}
+
+/// <summary>A 16 px crossed eye: the look is chosen but hidden.</summary>
+public partial class EyeBadge : Control
+{
+    public override void _Draw()
+    {
+        DrawRect(new Rect2(Vector2.Zero, Size), new Color(0, 0, 0, 0.55f), true);
+        var c = Size / 2;
+        var pts = new List<Vector2>();
+        for (int i = 0; i <= 8; i++) { float t = i / 8f * 2 - 1; pts.Add(c + new Vector2(t * 6.5f, -3.2f * (1 - t * t))); }
+        for (int i = 1; i <= 8; i++) { float t = 1 - i / 8f * 2; pts.Add(c + new Vector2(t * 6.5f, 3.2f * (1 - t * t))); }
+        DrawPolyline(pts.ToArray(), Kit.Ink, 1.2f, true);
+        DrawCircle(c, 1.6f, Kit.Ink);
+        DrawLine(new Vector2(2.5f, 13.5f), new Vector2(13.5f, 2.5f), Style.Ember, 1.6f, true);
     }
 }
