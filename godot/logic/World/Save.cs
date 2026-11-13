@@ -138,6 +138,13 @@ public sealed class Saves
         if (d.Version < 6) LampBook.MigrateSix(ch, d.World);
         // Lamps v2 (behind its flag): lit ids the v2 board lacks are dropped (save v6 does the real migration).
         if (Content.Lamps.V2) LampBook.DropUnknown(ch);
+        // (bd-wire) The kindled form (bd-keys, CharacterData.AutoForm): a save from before it has none, so the taught
+        // build's kindled skills go kindled (auto slots) and her old autos don't jump into keys (needs no version: a save
+        // carried under the new bar has its own record, and SetAuto keeps one where her auto slots have no room).
+        bool noForm = ch.AutoForm == null || (ch.Bar < Content.TaughtBuilds.BarShape && ch.AutoForm.Count == 0);
+        ch.AutoForm ??= new();
+        if (noForm && Content.TaughtBuilds.Of(ch.Archetype) is { } taught)
+            foreach (var s in taught.Slots) if (s.Cast == "kindle") SkillBook.SetAuto(ch, s.Skill, true);
         // The armor slots (Shoulders...Feet): anything worn in a slot its kind does not belong to is re-slotted.
         // The 13 November cut (8 places: cloak, relic, shoulders, bracers, hands, belt, legs gone): what an old save wore there, and
         // every piece whose id the cut removed, is mended (needs no version: it is safe to run on every load).

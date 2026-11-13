@@ -162,12 +162,25 @@ public static class SkillBook
     public static int RankOf(CharacterData ch, string skill) => Math.Min(Weapons.MaxRank, Rank(ch) + Character.SkillPlus(ch, skill));
 
     /// <summary>(bd-keys) Her second weapon set's stance, once the ladder opens it (taught_builds.json "stance": the
-    /// Warden's at the eighth level): the one she chose among her calling's offers, else its default. Null before.</summary>
+    /// Warden's at the eighth level): (bd-wire) the one the weapon she wears as her second set picks (WornStance), else the
+    /// one she chose among her calling's offers, else its default. Null before.</summary>
     public static string? StanceOf(CharacterData ch)
     {
         if (TaughtBuilds.Of(ch.Archetype)?.Stance is not { } s || ch.Level < s.Level) return null;
-        string id = ch.Stance != "" && s.Offers.Contains(ch.Stance) ? ch.Stance : s.Default;
+        string id = WornStance(ch) is { } w && s.Offers.Contains(w) ? w
+            : ch.Stance != "" && s.Offers.Contains(ch.Stance) ? ch.Stance : s.Default;
         return Stances.Find(id) != null ? id : null;
+    }
+
+    /// <summary>(bd-wire) The stance the piece she wears as her second set (the off-hand slot) picks by its weapon kind
+    /// (its icon, else its base's: Content/Stances.ForKind; a shield the shield, a second blade twin blades, a mace or
+    /// hammer the mace), or null when she wears none or its kind picks no stance. The ladder and her calling's offers
+    /// still decide whether it opens (StanceOf).</summary>
+    public static string? WornStance(CharacterData ch)
+    {
+        if (ch.Equipment[EquipSlot.Offhand] is not { } it || !Items.All.TryGetValue(it.Def, out var def)) return null;
+        return Stances.ForKind(def.Icon)
+            ?? (def.Of != null && Items.All.TryGetValue(def.Of, out var b) ? Stances.ForKind(b.Icon) : null);
     }
 
     /// <summary>(bd-keys) Take up another stance weapon for set B (one of her calling's offers; free at any lamp-post, like
