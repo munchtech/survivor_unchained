@@ -1893,7 +1893,7 @@ public sealed partial class Battle
             p.LastKiller = from;
             // The map's oath rides their blows.
             if (!silent && (Rules.HitChill || by.Def.Bite == StatusKind.Chill)) SlowPlayer(0.65, 1.4);
-            if (!silent && (Rules.HitPoison || by.Def.Bite == StatusKind.Poison)) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, by.Damage * 0.12); }
+            if (!silent && (Rules.HitPoison || by.Def.Bite == StatusKind.Poison)) { p.PoisonDps = Math.Max(p.PoisonT > 0 ? p.PoisonDps : 0, by.Damage * 0.12); p.PoisonT = Math.Max(p.PoisonT, 3); }   // (SU-079) a lapsed or cured poison keeps no rate
         }
         if (p.Hp <= 0)
         {
