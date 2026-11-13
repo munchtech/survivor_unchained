@@ -1198,9 +1198,12 @@ public sealed partial class Battle
 
     public void KillEnemy(Enemy e, bool byPlayer, WeaponInst? weapon, int depth = 0)
     {
+        // A death is entered once: a second blow on a body already falling (an execute behind the killing hit, a death
+        // hook's burst) is no second kill, ember or event; it falls before its hooks run so none of them re-enters (SU-064).
+        if (!e.Alive || e.State == EnemyState.Dying) return;
+        e.State = EnemyState.Dying;
         RuleOnDeath(e);
         e.Hp = 0;
-        e.State = EnemyState.Dying;
         e.StateT = 0;
         e.DieT = 0;
         e.Anim = EnemyAnim.Die;
@@ -3428,7 +3431,7 @@ public sealed partial class Battle
                 });
                 break;
             case Effect.Execute fx:
-                if (ctx.Target is { Alive: true } t && t.Hp / t.MaxHp < fx.Threshold && !t.Boss)
+                if (ctx.Target is { Alive: true } t && t.State != EnemyState.Dying && t.Hp / t.MaxHp < fx.Threshold && !t.Boss)   // (SU-064)
                 {
                     ExecutedBark(t);
                     KillEnemy(t, true, ctx.Weapon, depth);
