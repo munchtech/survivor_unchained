@@ -332,6 +332,14 @@ public partial class Game : Node, IZoneHost
             foreach (var n in une.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 if (Enum.TryParse<EquipSlot>(n, true, out var us)) Journey.Ch.Equipment[us] = null;
         if (Args.Get("unequip") != null) Journey.RefreshKit(Battle); // (bd-ui2) as the real unequip: the world her matches the doll
+        // (bd-ui2) --set-b ID: her second set (set B) taken up for pictures of the stance disc. ID is a stance (mace, twin_blades,
+        // shield) or an item def worn in the off-hand (no mace item exists, so --set-b mace sets the stance); dev path only.
+        if (Args.Get("set-b") is string setb)
+        {
+            if (Items.All.ContainsKey(setb)) Journey.Ch.Equipment[EquipSlot.Offhand] = Inventory.Make(Journey.Ch, setb, 1, 1, 1u);
+            else { Journey.Ch.Equipment[EquipSlot.Offhand] = null; SkillBook.SetStance(Journey.Ch, setb); }
+            Journey.RefreshKit(Battle);
+        }
         // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)

@@ -165,7 +165,7 @@ public partial class PostScreen : Overlay
         {
             var c = Style.H(6, Glyphs.Icon(GlyphOfSkill(id), 22, Style.GoldHi, true), Style.Label(SkillName(id), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false));
             c.MouseFilter = MouseFilterEnum.Stop;
-            AttachLeanTip(c, panel, $"{SkillName(id)}: {SkillText(id)}", id);
+            AttachLeanTip(c, panel, SkillName(id), SkillText(id), id);
             lean.AddChild(c);
         }
         v.AddChild(lean);
@@ -184,7 +184,7 @@ public partial class PostScreen : Overlay
 
     /// <summary>A hover note for a "leans toward" glyph: opaque (the window's own ground), set above the glyph row and
     /// clamped inside its own card, so it never lies over the hold pad below or shows its words through.</summary>
-    static void AttachLeanTip(Control target, Control card, string text, string id)
+    static void AttachLeanTip(Control target, Control card, string name, string text, string id)
     {
         const float TipW = 360;
         var tip = new PanelContainer { TopLevel = true, Visible = false, MouseFilter = MouseFilterEnum.Ignore, ZIndex = 20, CustomMinimumSize = new Vector2(TipW, 0) };
@@ -193,7 +193,14 @@ public partial class PostScreen : Overlay
         sb.SetCornerRadiusAll(3);
         sb.SetContentMarginAll(10);
         tip.AddThemeStyleboxOverride("panel", sb);
-        tip.AddChild(Style.Label(text, Style.Ui, 15, Kit.Ink, true));
+        var col = new VBoxContainer();
+        col.AddThemeConstantOverride("separation", 4);
+        var head = Style.Label(name, Style.UiHeavy, 17, Kit.Ink, true); // the skill's name on its own line
+        var body = Style.Label(text, Style.Ui, 15, Kit.Ink, true);
+        head.CustomMinimumSize = body.CustomMinimumSize = new Vector2(TipW - 20, 0);
+        col.AddChild(head);
+        col.AddChild(body);
+        tip.AddChild(col);
         card.AddChild(tip);
         // dev flag (pictures): --hover-skill groundbreaker holds that glyph's note open
         bool held = Args.Get("hover-skill") == id;
