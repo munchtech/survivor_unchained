@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using SurvivorUnchained.Content;
@@ -13,7 +14,11 @@ namespace SurvivorUnchained.Rpg;
 /// Own: the skill has its own record in skill_tips.json (else the description fallback). Unresolved lists any
 /// placeholder the numbers could not fill (shown as "?"; tests demand none).</summary>
 public sealed record SkillTipView(string Name, string How, string Line, IReadOnlyList<(string Label, string Value)> Rows,
-    (string Label, string Value)? Cost, string? Key, bool Own, IReadOnlyList<string> Unresolved, string Skill = "");
+    (string Label, string Value)? Cost, string? Key, bool Own, IReadOnlyList<string> Unresolved, string Skill = "")
+{
+    /// <summary>The lit lamps behind the card's numbers and calling text.</summary>
+    public IReadOnlyList<string> LitLamps { get; init; } = Array.Empty<string>();
+}
 
 public static class SkillTipModel
 {
@@ -97,7 +102,10 @@ public static class SkillTipModel
             : resolveOn && drain > 0 ? "drain"
             : cooldown >= 0.1 ? "cooldown" : null;
         if (ck != null && SkillTips.CostTemplate(ck) is { } ct) cost = (ct.Label, Fill(ct.Value));
-        return new SkillTipView(def.Name, how, line, rows, cost, key, rec != null, unresolved, skill);
+        return new SkillTipView(def.Name, how, line, rows, cost, key, rec != null, unresolved, skill)
+        {
+            LitLamps = w.Wick?.Lit.ToArray() ?? Array.Empty<string>(),
+        };
     }
 
     /// <summary>Her Cooldown stat as a fight starts with it (kit stats: calling, gear, lamps).</summary>
