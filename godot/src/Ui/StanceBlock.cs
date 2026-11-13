@@ -22,8 +22,8 @@ public partial class StanceBlock : Control
     public const int NameSize = 16;
     public const float R = AutoRowModel.StanceR, BackScale = AutoRowModel.StanceBackR / AutoRowModel.StanceR, BackDim = 0.65f, EaseLen = 0.18f, NameLen = 1.3f, GlyphPx = AutoRowModel.StanceGlyph, RingW = 3f;
     static readonly Color Cream = new("#F2E6C8"), FieldIn = new("#6a5236"), FieldRim = new("#3b2c1d");
-    /// <summary>(bd-ui W13) The Swap chip sits 8 px right and 6 px down of where it was: the back disc's strike ring was hidden under it.</summary>
-    public const float SwapDX = 8, SwapDY = 6;
+    /// <summary>(bd-ui W14: 7 px further right, 15, so the back disc moved 7 px right clears it) (bd-ui W13) The Swap chip sits 8 px right and 6 px down of where it was: the back disc's strike ring was hidden under it.</summary>
+    public const float SwapDX = 15, SwapDY = 6;
     static readonly Vector2 Back = new(AutoRowModel.StanceBack.X, AutoRowModel.StanceBack.Y);
     /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
     public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
@@ -62,7 +62,7 @@ public partial class StanceBlock : Control
 
     public void Keys() => swapKey.Refresh();
 
-    /// <summary>The Swap chip's right edge in the bar's space (the item autos start 10 px after it).</summary>
+    /// <summary>The Swap chip's right edge in the bar's space (the item autos start SwapGap px after it).</summary>
     public float SwapRight { get { var b = swapKey.ChipBox(); return swapKey.Position.X + b.Position.X + b.Size.X; } }
 
     /// <summary>The front disc's global rect (the level card folds into it).</summary>
@@ -225,10 +225,13 @@ public partial class StanceBlock : Control
         if (isBack)
         {
             float rr = r + 1 + RingW / 2;
-            var rc = set == 1 ? ColorOf(stance!.Id) : Cream;
-            DrawArc(c, rr, 0, Mathf.Tau, 48, rc with { A = 0.3f * a }, RingW, true);
+            // (bd-ui W14: each set's ring is its OWN colour always (set I's amber, as its front ring); ready: the whole ring at full
+            // brightness; else a 40% track and the bright arc)
+            var rc = col;
             float sh = share[set];
-            if (sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), rc with { A = a }, RingW, true);
+            bool rdy = sh >= 0.996f;
+            DrawArc(c, rr, 0, Mathf.Tau, 48, rc with { A = (rdy ? 1f : 0.4f) * a }, RingW, true);
+            if (!rdy && sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), rc with { A = a }, RingW, true);
             double since = now - readyAt[set];
             if (readyAt[set] >= 0 && since < ReadyFlash) DrawArc(c, rr, 0, Mathf.Tau, 48, Colors.White with { A = (float)(1 - since / ReadyFlash) }, RingW, true);
             else if (readyAt[set] >= 0) readyAt[set] = -1;

@@ -20,6 +20,34 @@ public sealed class SeatIconTests
     }
 
     [Fact]
+    public void Every_new_key_cards_picture_key_is_its_seats_key()
+    {
+        foreach (var d in Weapons.All.Values) Assert.Equal(SeatIcon.For(d.Id, d.Art), LevelCards.PictureKey(d.Id));
+    }
+
+    [Fact]
+    public void Bladestorm_has_its_own_whirl_glyph_not_the_leaps_arc()
+    {
+        var bs = Weapons.All["bladestorm"];
+        string key = SeatIcon.For(bs.Id, bs.Art);
+        Assert.Equal("bladestorm", key);
+        Assert.True(GlyphPaths.Own(key));
+        var leap = Weapons.All["heroic_leap"];
+        Assert.NotEqual(GlyphPaths.PathFor(SeatIcon.For(leap.Id, leap.Art)), GlyphPaths.PathFor(key));
+        // three blades and a hub: four subpaths
+        Assert.Equal(4, GlyphPaths.PathFor(key).Count(c => c == 'M'));
+    }
+
+    [Fact]
+    public void The_card_line_is_a_function_line_where_card_lines_json_has_one_else_the_description()
+    {
+        Assert.Equal("You charge 8 m behind your shield and gain a barrier of 15% of your health.", LevelCards.Line("shield_charge", Weapons.All["shield_charge"].Description));
+        string vow = LevelCards.Line("iron_vow", Weapons.All["iron_vow"].Description);
+        Assert.True(vow.Length < 70, vow);
+        Assert.Equal(LevelCards.Line(Weapons.All["cleaver"].Description), LevelCards.Line("cleaver", Weapons.All["cleaver"].Description));
+    }
+
+    [Fact]
     public void A_storms_break_key_holds_the_bond_while_the_storm_runs()
     {
         var sim = MapSim.Survivor("warden", 12, 2, 2);

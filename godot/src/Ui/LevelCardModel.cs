@@ -120,6 +120,19 @@ public static class LevelCards
     /// <summary>What a skill does in one short line from its description: the first sentence, cut at a colon, then, while
     /// longer than `max` characters, back to its last comma
     /// (never shorter than half of `max`: a longer line widens the card).</summary>
+    /// <summary>(bd-ui W14) The card's function line for a skill or stance id: data/content/card_lines.json's where it has one, else
+    /// the description's first clause (Line).</summary>
+    public static string Line(string id, string description)
+    {
+        var lines = cardLines ??= Core.Json.Parse<Dictionary<string, string>>(Core.Json.ReadContent("card_lines.json"));
+        return lines.TryGetValue(id, out var l) && l != "" ? l : Line(description);
+    }
+    static Dictionary<string, string>? cardLines;
+
+    /// <summary>(bd-ui W14) The key the NewKey card draws for a skill: the seat's own (SeatIcon), drawn as the seat draws it (SeatPicture).</summary>
+    public static string PictureKey(string skill) =>
+        Content.Weapons.All.TryGetValue(skill, out var d) ? SeatIcon.For(skill, d.Art) : "";
+
     public static string Line(string description, int max = 48)
     {
         var s = (description ?? "").Trim();
@@ -180,7 +193,7 @@ public static class LevelCards
         if (Content.Stances.Find(id) is not { } d) return null;
         string line = Line(d.Flavor);
         if (line == "") line = d.Strike.Name != "" ? "Swap strike: " + d.Strike.Name : "";
-        else line += ", and each swap strikes";
+        else line += ", and every swap lands a strike.";
         return new LevelCardSpec { Kind = LevelCardKind.NewStance, Level = level, Skill = d.Name, StanceId = d.Id, Line = line, PromptKey = Act.Character };
     }
 

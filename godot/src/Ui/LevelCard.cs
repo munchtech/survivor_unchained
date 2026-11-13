@@ -122,9 +122,10 @@ public partial class LevelCard : Control
             string gk = SeatIcon.For(s.Skill, wd.Art);
             // (bd-ui W9: a NewAuto card shows its tile's drawing, the line glyph in the tile's colour, not the painting)
             glyph = s.Kind == LevelCardKind.NewAuto ? AutoRow.LineGlyph(gk, 78, ItemViews.SchoolColors[wd.School])
-                : s.Kind == LevelCardKind.NewKey ? SeatPicture.Of(gk, ItemViews.SchoolColors[wd.School])
+                : s.Kind == LevelCardKind.NewKey ? SeatPicture.Gold(LevelCards.PictureKey(s.Skill))
                 : Glyphs.Texture(gk, 80, GlyphGold, line: true);
-            if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
+            if (s.Kind == LevelCardKind.NewKey && Args.Get("level-card") != null) GD.Print($"level-card picture: key {gk} = DgGold gold line glyph {SeatPicture.CardPx} px (card)");
+            if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(s.Skill, wd.Description);
         }
         else if (body) { name = s.Skill; line = s.Line ?? ""; }
         if (s.Kind == LevelCardKind.LampLit) { measure = " " + s.Measure; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
@@ -199,7 +200,8 @@ public partial class LevelCard : Control
         var pl = LevelCardPlace.Compute(w, h, foot, RowTop(), top is { } tv ? (tv.X, tv.Y) : null);
         rest = new Vector2(pl.X, pl.Y);
         tailX = pl.TailX;
-        if (top != null) stem = pl.Stem;
+        // (bd-ui W14: a key seat's target gets no long tail: a 10 px stem under the diamond, the seat itself pulses; tiles and discs keep theirs)
+        if (top != null) stem = s.Kind == LevelCardKind.NewKey ? Math.Min(10, pl.Stem) : pl.Stem;
         else
         {
             // the stem: from the card's foot to the coin's rim; a card held high over beads gets a short one that fades out
@@ -213,6 +215,9 @@ public partial class LevelCard : Control
     /// <summary>U1 §5B: the card being read (the pointer on it, or the pad's LB held while it shows): its hold clock stops
     /// (it does not fold while read) and resumes from where it was.</summary>
     public bool Read;
+    /// <summary>(bd-ui W14) The new-key card showing now (risen or holding): its seat pulses while it holds.</summary>
+    public LevelCardSpec? HoldingKey => Visible && Queue.Current is { Kind: LevelCardKind.NewKey } c && Queue.Now is LevelCardQueue.Phase.In or LevelCardQueue.Phase.Hold ? c : null;
+
     /// <summary>The card a skill tip can be read from (a new key, a new skill or a lamp lit, risen or holding), or null.</summary>
     public LevelCardSpec? Readable => Visible && Queue.Current is { Skill: not "" } c
         && c.Kind is LevelCardKind.NewKey or LevelCardKind.NewSkill or LevelCardKind.LampLit
@@ -312,7 +317,13 @@ public partial class LevelCard : Control
                 DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, 2, true);
                 DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, 1, true);
             }
-            if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : s.Kind == LevelCardKind.NewKey ? -7 : -8), false);
+            if (glyph != null && s.Kind == LevelCardKind.NewKey)
+            {
+                // (bd-ui W14: the seat's own gold inlay, 26 px, centred on the dark well, as the seat draws it)
+                float gs = SeatPicture.CardPx + 2 * DgGold.Pad;
+                DrawTextureRect(glyph, new Rect2(wc - new Vector2(gs, gs) / 2, new Vector2(gs, gs)), false);
+            }
+            else if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : -8), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
             if (s.Kind != LevelCardKind.LampLit)
             {

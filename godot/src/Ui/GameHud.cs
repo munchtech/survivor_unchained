@@ -1817,6 +1817,8 @@ public partial class GameHud : CanvasLayer
         // (bd-keys) The keys open at her level (slots 0-3), then her auto slots (from MaxKeys on): a seat past them is locked.
         int keysOpen = SurvivorUnchained.Rpg.SkillBook.KeysAt(Math.Max(1, level)), autosOpen = SurvivorUnchained.Rpg.SkillBook.AutosAt(Math.Max(1, level));
         var resolve = b.Resolve;
+        int pointed = levelCard?.HoldingKey is { } hk ? SeatFor(hk) : -1;   // (bd-ui W14: the seat the holding card points at pulses)
+        for (int q = 0; q < socks.Length; q++) socks[q].Target = q == pointed;
         var tint = irons.Stance.SeatTint(b);   // (bd-ui W3: the stance she wears rings every key seat)
         for (int k = 0; k < socks.Length && k < KeyMap.SeatSlot.Length; k++)
         {

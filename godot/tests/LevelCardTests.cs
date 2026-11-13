@@ -238,7 +238,7 @@ public sealed class LevelCardPlaceTests
         Assert.Equal("Choose a new trait", LevelCards.PromptFor(2));
         var c = LevelCards.StanceCard(8, "shield")!;
         Assert.StartsWith("Your blows", c.Line);
-        Assert.EndsWith(", and each swap strikes", c.Line);
+        Assert.EndsWith(", and every swap lands a strike.", c.Line);
     }
 
     [Fact]

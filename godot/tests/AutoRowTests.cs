@@ -41,11 +41,11 @@ public class AutoRowTests
     [Fact]
     public void The_item_tiles_start_10_px_after_the_swap_chip_or_at_1012_without_the_stance_block()
     {
-        Assert.Equal(1100, AutoRowModel.ItemStart(true, 1090));
-        Assert.Equal(1012, AutoRowModel.ItemStart(false, 1090));
-        Assert.Equal(1100, AutoRowModel.Places(1, AutoRowModel.ItemStart(true, 1090))[3].X);
+        Assert.Equal(1100, AutoRowModel.ItemStart(true, 1097));
+        Assert.Equal(1012, AutoRowModel.ItemStart(false, 1097));
+        Assert.Equal(1100, AutoRowModel.Places(1, AutoRowModel.ItemStart(true, 1097))[3].X);
         Assert.Equal(6, AutoRowModel.ItemCapacity(1012));
-        Assert.Equal(4, AutoRowModel.ItemCapacity(1100));
+        Assert.Equal(4, AutoRowModel.ItemCapacity(1100));   // (W14: four gear tiles still fit with the chip 7 px right)
     }
 
     [Theory]

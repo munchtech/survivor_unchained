@@ -394,16 +394,24 @@ public partial class Socket
         DrawString(f, p, s, HorizontalAlignment.Left, -1, 19, Colors.White);
     }
 
+    /// <summary>(bd-ui W14) The padlock the locked keys wear, at any size (16 = the keys', 12 = the auto tiles'): its middle at mid.</summary>
+    public static void DrawPadlock(CanvasItem ci, Vector2 mid, float size, Color col)
+    {
+        float k = size / 16f;
+        var m = mid + new Vector2(0, -4 * k);
+        ci.DrawRect(new Rect2(m.X - 6 * k, m.Y, 12 * k, 9 * k), col, true);
+        ci.DrawArc(new Vector2(m.X, m.Y - k), 4f * k, Mathf.Pi, Mathf.Tau, 16, col, Math.Max(1.5f, 2 * k), true);
+        ci.DrawLine(new Vector2(m.X - 4 * k, m.Y - k), new Vector2(m.X - 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
+        ci.DrawLine(new Vector2(m.X + 4 * k, m.Y - k), new Vector2(m.X + 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
+    }
+
     /// <summary>A key not yet open (bd-ui W7): the bare well, a padlock (16 px) at 35% and the level it opens at.</summary>
     void DrawLocked(Vector2 c)
     {
         var cream = new Color("#F2E6C8");
         var lk = cream with { A = 0.35f };
         var m = c + new Vector2(0, -2);
-        DrawRect(new Rect2(m.X - 6, m.Y, 12, 9), lk, true);
-        DrawArc(new Vector2(m.X, m.Y - 1), 4f, Mathf.Pi, Mathf.Tau, 16, lk, 2, true);
-        DrawLine(new Vector2(m.X - 4, m.Y - 1), new Vector2(m.X - 4, m.Y), lk, 2);
-        DrawLine(new Vector2(m.X + 4, m.Y - 1), new Vector2(m.X + 4, m.Y), lk, 2);
+        DrawPadlock(this, m + new Vector2(0, 4), 16, lk);
         if (opensAt > 0)
         {
             var f = Vessel.Figures;

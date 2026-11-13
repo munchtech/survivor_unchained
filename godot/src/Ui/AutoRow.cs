@@ -50,7 +50,7 @@ public partial class AutoRow : Control
     /// <summary>bd-ui W4: the row's top, its bottom 3 px above the key caps' top edge (the tallest chip, the mouse's).</summary>
     public static float RowTop => AutoRowModel.RowTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
 
-    /// <summary>bd-ui W5: the stance block's Swap chip's right edge when the block is shown (else null): the item tiles start 10 px after.</summary>
+    /// <summary>bd-ui W5: the stance block's Swap chip's right edge when the block is shown (else null): the item tiles start SwapGap (3) px after.</summary>
     public float? StanceRight;
     float ItemStart => AutoRowModel.ItemStart(StanceRight != null, StanceRight ?? 0);
 
@@ -87,6 +87,9 @@ public partial class AutoRow : Control
             else if (hers.Count < AutoRowModel.HerSlots) hers.Add(w);
             else items.Add(w);
         }
+        // (bd-ui W14, DEV ONLY, pictures: --dev-item-autos N repeats the worn item autos in the row until there are N, to shoot the overflow "+N")
+        if (Args.Get("dev-item-autos") is { } dn && int.TryParse(dn, out int want) && items.Count > 0)
+            for (int r = 0, n0 = items.Count; items.Count < want; r++) items.Add(items[r % n0]);
         int cap = AutoRowModel.ItemCapacity(ItemStart);
         var places = AutoRowModel.Places(items.Count, ItemStart);
         if (Position.Y != RowTop) Position = new Vector2(Position.X, RowTop);
@@ -124,7 +127,7 @@ public partial class AutoRow : Control
             }
             dirty = true;
         }
-        var all = hers.Concat(items).ToDictionary(w => w.Id, w => w, StringComparer.Ordinal);
+        var all = hers.Concat(items).GroupBy(w => w.Id).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         foreach (var t in tiles)
         {
             if (t.Id == "" || !all.TryGetValue(t.Id, out var w)) continue;
@@ -212,11 +215,13 @@ public partial class AutoRow : Control
             }
             else if (t.Locked && t.At.Kind == AutoRowModel.Kind.Her)
             {
-                // (bd-ui W13: the level it opens at, as a locked key shows "Lv 9": 11 px, 35%, centred)
+                // (bd-ui W14: the keys' padlock at 12 px, a little high, the level number alone under it: 9 px bold, 60% cream)
                 var f = Vessel.Figures;
-                string lv = "Lv " + DgMeters.Figures(AutoRowModel.OpensAt(t.At.Index));
-                var ts = f.GetStringSize(lv, HorizontalAlignment.Left, -1, 11);
-                DrawString(f, new Vector2(Mathf.Round(r.GetCenter().X - ts.X / 2), Mathf.Round(r.GetCenter().Y + 4)), lv, HorizontalAlignment.Left, -1, 11, Cream with { A = 0.35f });
+                string lv = DgMeters.Figures(AutoRowModel.OpensAt(t.At.Index));
+                var ts = f.GetStringSize(lv, HorizontalAlignment.Left, -1, 9);
+                var mc = r.GetCenter();
+                Socket.DrawPadlock(this, new Vector2(mc.X, mc.Y - 5), 12, Cream with { A = 0.6f });
+                DrawString(f, new Vector2(Mathf.Round(mc.X - ts.X / 2), Mathf.Round(mc.Y + 11)), lv, HorizontalAlignment.Left, -1, 9, Cream with { A = 0.6f });
             }
             else if (more)
                 DrawString(Style.UiBold, new Vector2(r.Position.X, r.Position.Y + 21), $"+{t.At.Index}", HorizontalAlignment.Center, r.Size.X, 15, Style.RarityOf(4));
@@ -259,10 +264,17 @@ public static class DiscIcon
     }
 }
 
-/// <summary>(bd-ui W13) The picture a skill's seat draws: its painting where there is one, else its line glyph in the school's
-/// colour. The seat (Instrument.Socket.Show) and the new-key card both call this, so they can never differ.</summary>
+/// <summary>(bd-ui W14) What a key seat really draws for a skill (Instrument.Socket.DrawRing): whenever it has a glyph key, the gold
+/// inlay of its LINE glyph (DgGold) in the well, never a glyph_color painting (that was W13's wrong claim). The seat and the
+/// new-key card both draw it through Gold, at the same size, so they can never differ.</summary>
 public static class SeatPicture
 {
+    public const int CardPx = 26;
+
+    /// <summary>The gold inlay texture (padded by DgGold.Pad each side) a seat draws for the glyph key at px.</summary>
+    public static Texture2D Gold(string glyphKey, int px = CardPx) => DgGold.Of(glyphKey, px).Gold;
+
+    /// <summary>The seat's fallback where it has no glyph key at all (never in play): the skill's painting, else its line glyph.</summary>
     public static Texture2D? Of(string glyphKey, Color school, int px = 78) =>
         UiArt.Icon("glyph_color", Glyphs.IconKey(glyphKey)) ?? Glyphs.Texture(glyphKey, px, school, line: true);
 }

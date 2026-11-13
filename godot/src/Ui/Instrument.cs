@@ -119,8 +119,8 @@ public partial class Instrument : Control
         AddChild(ArtNote);
         // (UI 23: R, SPACE and Q on small dark chips at the geo's places under the flask, the dash and the keeper's
         // bowl; Q lit "Q  READY" when the Flare is full)
-        draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y);
-        dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y);
+        draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y - 3);   // (bd-ui W14: lifted 3 px, they sat 1-2 px off the screen bottom)
+        dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y - 3);
         artKey.Place(DgPanel.KeyQ.X, DgPanel.KeyQ.Y);
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         AddChild(Panel.Numbers);
@@ -529,7 +529,11 @@ public partial class Socket : Control
         var newArt = art;
         if (art == null || glyph != glyphKey || school != this.school)
             newArt = SeatPicture.Of(glyph, school);
-        if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
+        if (glyph != glyphKey)
+        {
+            glyphKey = glyph; dirty = true;
+            if (Args.Get("level-card") != null) GD.Print($"level-card picture: seat {Id} key {glyph} = DgGold gold line glyph");
+        }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
@@ -548,6 +552,13 @@ public partial class Socket : Control
     }
 
     bool dirty = true;
+    /// <summary>(bd-ui W14) The level card above points at this seat and holds: a 2 px gold ring pulses on it (alpha 0.4 to 1.0 to 0.4, 1.2 s) and its cap fills gold.</summary>
+    public bool Target
+    {
+        get => target;
+        set { if (value == target) return; target = value; if (Cap != null) Cap.Target = value; dirty = true; }
+    }
+    bool target;
     double waitSecs = -1;
     int secsShown = -1;
 
@@ -581,7 +592,7 @@ public partial class Socket : Control
             if (opened >= 0.6) { opened = -1; Modulate = openedBase; }
         }
         // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
-        if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
+        if (dirty || target || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
     }
 
     /// <summary>A fast cycle (the last wait and this one so far under FastWait): it neither dims nor shows its well.</summary>
@@ -649,21 +660,23 @@ public partial class Socket : Control
                 var (gold, glowTex) = DgGold.Of(glyphKey, gi);
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
-                if (glow > 0.003 && !Numbered && !wiped) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
+                // (bd-ui W14: a wiped seat draws its icon whole at READY brightness, glow and all; only the not-ready wedge darkens it, SeatLook.WipeAlpha)
+                float gl0 = wiped ? 0.42f : (float)glow;
+                if (gl0 > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = gl0 });
                 // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
                 // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
                 bool num = Numbered && !wiped;
                 // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
                 bool short_ = shortNow;
                 var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                if (wiped) DrawTextureRect(Desat(gold), gr, false, new Color(SeatLook.WipeIcon, SeatLook.WipeIcon, SeatLook.WipeIcon));
+                if (wiped) DrawTextureRect(gold, gr, false, Colors.White.Lerp(school, 0.10f));
                 else DrawTextureRect(gold, gr, false, (tone *Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
                 if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
-                if (wiped) DrawTextureRect(Desat(art), new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(SeatLook.WipeIcon, SeatLook.WipeIcon, SeatLook.WipeIcon));
+                if (wiped) DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(1.25f, 1.25f, 1.25f));
                 else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
@@ -683,6 +696,12 @@ public partial class Socket : Control
         // after the marks, since the cost arc's groove used to cover it on the one seat that was short)
         if (keyed && st.Tint.A > 0.01f && (filled || !locked)) DrawArc(c, hr - 1.25f, 0, Mathf.Tau, 64, st.Tint with { A = 1f }, 2.5f, true);
         if (!filled && locked && keyed) DrawLocked(c);
+        if (target)
+        {
+            // (bd-ui W14: the level card points here and holds: a 2 px gold ring, alpha 0.4 -> 1.0 -> 0.4 over 1.2 s)
+            float pa = 0.7f - 0.3f * Mathf.Cos((float)(t % 1.2 / 1.2) * Mathf.Tau);
+            DrawArc(c, hr + 1f, 0, Mathf.Tau, 64, Style.Gold with { A = pa }, 2, true);
+        }
         if (filled && (evolved || ripe))
         {
             if (ripe && !evolved)
@@ -691,13 +710,7 @@ public partial class Socket : Control
                 DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
                 DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
             }
-            else if (evolved)
-            {
-                // (bd-ui W13: evolved = an 8 px gold crown pip at 1:30 on the bezel, not a full ring: the stance ring shows whole)
-                var pc = c + new Vector2(Mathf.Sin(Mathf.Pi / 4), -Mathf.Cos(Mathf.Pi / 4)) * (hr + 1);
-                DrawColoredPolygon([pc + new Vector2(0, -4), pc + new Vector2(4, 0), pc + new Vector2(0, 4), pc + new Vector2(-4, 0)], new Color(0.04f, 0.03f, 0.02f, 0.9f));
-                DrawColoredPolygon([pc + new Vector2(0, -3), pc + new Vector2(3, 0), pc + new Vector2(0, 3), pc + new Vector2(-3, 0)], Style.Gold);
-            }
+            // (bd-ui W14: no crown pip for an evolved skill: it reads unexplained; the evolution shows in the tooltip and the Arts page)
         }
         if (filled)
         {
@@ -858,8 +871,11 @@ public partial class KeyTag : Control
     public bool Quiet { get => quiet; set { if (value == quiet) return; quiet = value; QueueRedraw(); } }
     /// <summary>Fix A (6): the key is down: the chip's rim gold, its ground warm.</summary>
     public bool Down { get => down; set { if (value == down) return; down = value; QueueRedraw(); } }
-    Color Rim => down ? new Color(1f, 206 / 255f, 120 / 255f) : quiet ? new Color(74 / 255f, 60 / 255f, 42 / 255f) : new Color(138 / 255f, 108 / 255f, 70 / 255f);
-    Color Ground => down ? new Color(64 / 255f, 36 / 255f, 12 / 255f, 245 / 255f) : new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f);
+    /// <summary>(bd-ui W14) The level card points at this key: the cap fills gold.</summary>
+    bool target;
+    public bool Target { get => target; set { if (value == target) return; target = value; QueueRedraw(); } }
+    Color Rim => target ? new Color(1f, 0.86f, 0.5f) : down ? new Color(1f, 206 / 255f, 120 / 255f) : quiet ? new Color(74 / 255f, 60 / 255f, 42 / 255f) : new Color(138 / 255f, 108 / 255f, 70 / 255f);
+    Color Ground => target ? new Color(0.66f, 0.46f, 0.13f, 1f) : down ? new Color(64 / 255f, 36 / 255f, 12 / 255f, 245 / 255f) : new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f);
     Color Bone => new Color(240 / 255f, 230 / 255f, 208 / 255f, quiet && !down ? 0.85f : 1f);
     /// <summary>Its key whatever the device (the keys page's miniature, which shows the pad's buttons under it).</summary>
     public bool KeysOnly;

@@ -14,7 +14,7 @@ public static class AutoRowModel
     public const float Tile = 34, Gap = 6, HerRight = 910;
     /// <summary>Where the item tiles start with no stance block, the stance block's front disc's left edge, the gap from the
     /// Swap chip to the first item tile, and the right edge nothing is drawn past.</summary>
-    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 10, RightEdge = 1263;   // (bd-ui W13: the keeper statue's left silhouette at the row's height, screen x 1226 in .shots/bdui_r5_items4.png, minus 8 screen px: design 1263 at HUD 0.85)
+    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 3, RightEdge = 1263;   // (bd-ui W13: the keeper statue's left silhouette at the row's height, screen x 1226 in .shots/bdui_r5_items4.png, minus 8 screen px: design 1263 at HUD 0.85)
     /// <summary>The row control's left edge.</summary>
     public const float Floor = 716;
     public const int HerSlots = 3;
@@ -57,7 +57,7 @@ public static class AutoRowModel
 
     /// <summary>bd-ui W8, the stance block: the front disc (r 20) stands on the row's middle line; the back one (r 14) up and right.</summary>
     public const float StanceR = 20, StanceBackR = 14, StanceGlyph = 26, StanceBackGlyph = 18;
-    public static readonly (float X, float Y) StanceBack = (27, -7);
+    public static readonly (float X, float Y) StanceBack = (34, -8);
 
     /// <summary>A set's disc middle once settled, from the front disc's middle: the active set in front, the other behind.</summary>
     public static (float X, float Y) DiscCentre((float X, float Y) front, int set, int active) =>

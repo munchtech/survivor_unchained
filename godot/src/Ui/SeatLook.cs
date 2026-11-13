@@ -14,8 +14,9 @@ public static class SeatLook
     /// cream edge at its start sweeps clockwise as the seat readies (it ran backward, and its hand hit the seconds).</summary>
     public static float WipeStart(float share) => -(float)Math.PI / 2 + (float)(2 * Math.PI) * (1 - share);
 
-    /// <summary>The wipe's wedge alpha, the icon's tint under it, and where its cream edge starts (share of the radius).</summary>
-    public const float WipeAlpha = 0.5f, WipeIcon = 0.7f, EdgeFrom = 0.6f;
+    /// <summary>(bd-ui W14) The swept (ready) share draws at ready brightness; only the wedge darkens (WipeAlpha): swept is 1 / (1 - alpha) = 3.6x the wedge. WipeIcon is no longer applied.
+    /// The wipe's wedge alpha, the icon's tint under it, and where its cream edge starts (share of the radius).</summary>
+    public const float WipeAlpha = 0.72f, WipeIcon = 0.7f, EdgeFrom = 0.6f;
 
     /// <summary>A colour pulled toward its own luma: keep = 1 whole, 0.6 sixty percent of its colour (Rec. 709 weights).</summary>
     public static (float R, float G, float B) Desaturate(float r, float g, float b, float keep)

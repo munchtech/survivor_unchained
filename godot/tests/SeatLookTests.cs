@@ -30,7 +30,8 @@ public class SeatLookTests
     {
         Assert.Equal((double)start, (double)SeatLook.WipeStart(share), 4);
         Assert.True(SeatLook.WipeStart(0.4f) > SeatLook.WipeStart(0.6f));
-        Assert.Equal(0.5f, SeatLook.WipeAlpha);
+        Assert.Equal(0.72f, SeatLook.WipeAlpha);
+        Assert.True(1 / (1 - SeatLook.WipeAlpha) >= 2.5f);   // (W14: the swept part reads at least 2.5x the wedge)
         Assert.Equal(0.7f, SeatLook.WipeIcon);
     }
 

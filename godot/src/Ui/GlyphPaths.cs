@@ -72,7 +72,7 @@ public static class GlyphPaths
     /// and Butcher's Cleaver are both slash_heavy) and still read apart on the bar.</summary>
     static readonly Dictionary<string, string> SkillLine = new()
     {
-        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder",
+        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder", ["bladestorm"] = "bladestorm",
     };
 
     /// <summary>The glyph key a skill shows on a HUD seat and on the level card: its own line glyph where it has one
