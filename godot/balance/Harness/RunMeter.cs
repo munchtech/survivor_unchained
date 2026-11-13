@@ -39,13 +39,21 @@ public sealed class RunMeasures
     public string Grip = "";
     /// <summary>(M3 lead 16 b6, harness-only) The grips' landed weight by source (GripMeter.SrcLine).</summary>
     public string Src = "";
+    /// <summary>(bd-sockets, harness-only) Bladestorm's run: storms started, broken (Sunder's key), ended dry (Resolve 0) or
+    /// released, seconds spun, Resolve at its starts (mean), and the seconds a crowd stood round her (4 within 3.5 m, the
+    /// plan's "when") with the storm ready but Resolve under its start breath (drain x gap): the storm starved.</summary>
+    public int StormStarts, StormBreaks, StormDry, StormReleased;
+    public double StormSec, StormResolveAtStart = double.NaN, StormCrowdSec, StormStarvedSec;
+    public bool StormCarried;
+    public string StormLine() => !StormCarried ? "storm -" :
+        $"storm starts {StormStarts} breaks {StormBreaks} dry {StormDry} released {StormReleased} spun {StormSec:0}s r@start {(double.IsNaN(StormResolveAtStart) ? "-" : StormResolveAtStart.ToString("0"))} crowd-ready {StormCrowdSec:0}s starved {StormStarvedSec:0}s";
 
     /// <summary>The run line's columns.</summary>
     public string Line() =>
         $"gap {(double.IsNaN(MarkGapMax) ? "-" : MarkGapMax.ToString("0"))}s marks {MarksOnHer} rspent {ResolveSpentPerMin:0}/min rfull {ResolveFullPct:0}% " +
         $"ppm {string.Join(",", PressesPerMin.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))} " +
         $"flare {FlareCasts}@{FlareFirst:0} {FlareShare:0}%/{(double.IsNaN(FlareBossShare) ? "-" : FlareBossShare.ToString("0"))}%boss life {(double.IsNaN(FlareBossLife) ? "-" : FlareBossLife.ToString("0"))}% onboss {FlareOnBoss} fills {FlareFills} " +
-        $"dmg {string.Join(",", DamageShare.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0")))}" +
+        $"dmg {string.Join(",", DamageShare.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + kv.Value.ToString("0")))} {StormLine()}" +
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
         $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
         $" healed {string.Join(",", Taken.Where(kv => kv.Key[0] == '+').OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key[1..] + ":" + kv.Value.ToString("0.0")))}" +
@@ -116,6 +124,8 @@ public sealed class RunMeter
     double fullSec, playSec, fightSec;
     readonly GripMeter grip = new();
     readonly FodderCuts cuts = new();
+    // (bd-sockets) Bladestorm's counters (RunMeasures.StormLine)
+    int stStarts, stBreaks, stDry, stRel; double stSec, stCrowd, stStarved, stR0; bool stCarried;
     // (round 2: the last seconds before a fall)
     readonly Queue<(double T, string What)> recent = new();
     readonly Queue<(double T, double Life)> life = new();
@@ -145,11 +155,19 @@ public sealed class RunMeter
         if (fight) fightSec += dt;
         if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) fullSec += dt;
         if (b.Campaign && fight) grip.Step(b, dt, evs as IReadOnlyList<CombatEvent> ?? evs.ToList());
+        StormStep(b, dt, fight);
         foreach (var ev in evs)
         {
             if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius)) { marksOn.Add(fightSec); recent.Enqueue((t, "mark")); }
             else if (Deaths && ev is Ev.PlayerDeath d) Fell(t, $"{d.Killer} @ ({p.X:0},{p.Z:0})");
             if (b.Campaign) cuts.Read(ev);
+            if (ev is Ev.Spin sp)
+                switch (sp.Phase)
+                {
+                    case SpinPhase.Start: stStarts++; stR0 += b.Resolve.Value; break;
+                    case SpinPhase.Break: stBreaks++; StormTrace(b, "break"); break;
+                    case SpinPhase.End: if (b.Resolve.On && b.Resolve.Value <= 0.5) stDry++; else stRel++; StormTrace(b, "end"); break;
+                }
             switch (ev)
             {
                 case Ev.PlayerHit { Dodged: true }: recent.Enqueue((t, "dodged")); break;
@@ -179,6 +197,32 @@ public sealed class RunMeter
         }
     }
 
+    static readonly bool stormTrace = Environment.GetEnvironmentVariable("STORM_TRACE") == "1";
+    static void StormTrace(Battle b, string what)
+    {
+        if (!stormTrace) return;
+        var w = b.Weapons.Find(x => x.Id == "bladestorm");
+        var p = b.Player;
+        Console.WriteLine($"    STORM {what} t {b.Time:0.00} spun {w?.StormT:0.00} ticks {w?.SpinTicks} lines {w?.Lines.Count} near3.5 {b.HostilesInRadius(p.X, p.Z, 3.5).Count} resolve {b.Resolve.Value:0} held {w?.Held} leap {p.Leap != null} dash {p.DashT > 0} chmax {w?.ChannelMax:0.0}");
+    }
+
+    void StormStep(Battle b, double dt, bool fight)
+    {
+        WeaponInst? w = null;
+        foreach (var x in b.Weapons) if (x.Id == "bladestorm") { w = x; break; }
+        if (w == null) return;
+        stCarried = true;
+        if (w.Channeling) { stSec += dt; return; }
+        if (!fight || w.Timer > 0 || w.DisabledT > 0) return;
+        var p = b.Player;
+        int n = 0;
+        foreach (var e in b.Enemies.Living())
+            if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 3.5 * 3.5) n++;
+        if (n < 4) return;
+        stCrowd += dt;
+        if (b.Resolve.On && w.Press?.Drain is double dr && dr > 0 && b.Resolve.Value < dr * w.ChannelEvery) stStarved += dt;
+    }
+
     readonly List<string> falls = new();
     /// <summary>A fall the caller knows of another way (a zone's own death hook).</summary>
     public void Fell(double t, string what) => falls.Add($"{t / 60:0.0}m {what}");
@@ -199,6 +243,8 @@ public sealed class RunMeter
         m.Minutes = playSec / 60;
         if (b.Campaign) { m.Grip = grip.Line(fightSec, b.Time) + " " + cuts.Line(); m.Src = grip.SrcLine(fightSec); }
         m.ResolveSpentPerMin = b.Resolve.Spent / min;
+        (m.StormCarried, m.StormStarts, m.StormBreaks, m.StormDry, m.StormReleased, m.StormSec, m.StormCrowdSec, m.StormStarvedSec) = (stCarried, stStarts, stBreaks, stDry, stRel, stSec, stCrowd, stStarved);
+        if (stStarts > 0) m.StormResolveAtStart = stR0 / stStarts;
         m.ResolveFullPct = 100 * fullSec / Math.Max(1e-6, playSec);
         if (hands != null) foreach (var (k, v) in hands.Presses) m.PressesPerMin[k] = v / min;
         double all = b.DamageBy.Values.Sum();

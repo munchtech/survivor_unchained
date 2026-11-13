@@ -75,6 +75,8 @@ public static class MapSim
     {
         var j = Survivor(spec.Calling, spec.Level, spec.GearRarity, spec.Seed);
         if (!Bare) DevVeteran.Belt(j.Ch);
+        // (bd-sockets) --drop a,b: those skills off her bar (to measure what one adds)
+        foreach (var d in VergeZoneSim.Drop) SkillBook.Unslot(j.Ch, d);
         var chart = new Chart { Tier = spec.Tier, People = spec.People, Seed = spec.Seed * 7919 + spec.Tier, Mods = spec.Mods.ToList(), Rarity = spec.Mods.Length == 0 ? 0 : spec.Mods.Length <= 2 ? 1 : 2, Name = "The Harness Map" };
         var map = MapGen.Generate(chart.Map);
         var host = new HeadlessHost(j, spec.Seed);

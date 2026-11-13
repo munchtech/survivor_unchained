@@ -13,11 +13,15 @@ using SurvivorUnchained.World;
 namespace SurvivorUnchained.Balance;
 
 public sealed record VergeZoneSpec(int Seed, string Calling = "warden", string Bot = "human", int Tier = 2, int Level = 5, int Day = 1);
-public sealed record VergeZoneResult(VergeZoneSpec Spec, bool Reached, int Falls, int Skipped, DensityMeasures Density, string StopReason = "");
+public sealed record VergeZoneResult(VergeZoneSpec Spec, bool Reached, int Falls, int Skipped, DensityMeasures Density, string StopReason = "", RunMeasures? Measures = null, string Build = "");
 
 /// <summary>The existing StoryPlay day walk, using the spawner's packs and the campaign's pressing hands.</summary>
 public static class VergeZoneSim
 {
+    /// <summary>(bd-sockets, the `storm` command) Grant the taught build before the fight and light every point (as
+    /// DevVeteran.Dress does), and take these skills off her bar after (to measure what one adds).</summary>
+    public static bool Lit;
+    public static string[] Drop = Array.Empty<string>();
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
     public static VergeZoneResult Play(VergeZoneSpec spec, TimeSpan? maxWallTime = null, double maxSeconds = 1800)
     {
@@ -25,7 +29,7 @@ public static class VergeZoneSim
         var wallLimit = maxWallTime ?? TimeSpan.FromSeconds(60);
         if (wallLimit <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(maxWallTime));
         if (!double.IsFinite(maxSeconds) || maxSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(maxSeconds));
-        if (spec.Bot is not ("human" or "careless" or "deft" or "plain")) throw new ArgumentException("Unsupported Verge bot: " + spec.Bot);
+        if (spec.Bot is not ("human" or "careless" or "deft" or "plain" or "idler")) throw new ArgumentException("Unsupported Verge bot: " + spec.Bot);
         var a = Callings.Archetype(spec.Calling);
         var j = Journey.Begin(new CreationChoice
         {
@@ -40,6 +44,8 @@ public static class VergeZoneSim
         SurvivorUnchained.Play.DevVeteran.Road(j.Ch);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
+        if (Lit || Drop.Length > 0) { TaughtBuilds.Grant(j.Ch, j.Ch.Level); if (Lit) WickBook.LightAll(j.Ch); }
+        foreach (var d in Drop) SkillBook.Unslot(j.Ch, d);
         var meta = ZoneMeta.Load("verge");
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new Verge(host, meta);
@@ -53,15 +59,18 @@ public static class VergeZoneSim
         b.Hooks = h;
         zone.Begin(b);
         probe.Sample();
-        var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
         var hands = spec.Bot switch
         {
             "human" => PressHands.Human((uint)spec.Seed, human!.React),
             "careless" => PressHands.Careless((uint)spec.Seed, human!.React),
             "deft" => PressHands.Deft((uint)spec.Seed),
+            "idler" => PressHands.Grip((uint)spec.Seed),
             _ => null,
         };
         if (human != null) human.Hands = hands;
+        var meter = new RunMeter();
+        string build = DevVeteran.Line(b, j);
         // As StoryPlay: nearest field pack, then the next nearest, and back to the entry. Quest camps are incidental.
         var pending = zone.Packs.Where(kv => kv.Key.StartsWith("field:") && kv.Value.Count > 0).Select(kv => kv.Key).ToList();
         var route = new List<string>();
@@ -93,7 +102,9 @@ public static class VergeZoneSim
                 (e.Wake <= 0 || e.Roused) && Dist(e.X, e.Z, p.X, p.Z) < 22).MinBy(e => Dist(e.X, e.Z, p.X, p.Z));
             bool fight = foe != null;
             if (k == route.Count && !fight && Dist(goal.Item1, goal.Item2, p.X, p.Z) < 7) { reached = skipped == 0; stopReason = reached ? "complete" : "skipped packs"; break; }
-            var (mx, mz) = human != null ? human.Steer(b, null, onward: goal) : Pilot.Steer(b, spec.Bot == "deft", onward: goal);
+            bool inReach = foe != null && Dist(foe.X, foe.Z, p.X, p.Z) < Math.Max(1.5, Pilot.Reach(b));
+            var (mx, mz) = spec.Bot == "idler" ? human!.Steer(b, null, goal: inReach ? null : goal)
+                : human != null ? human.Steer(b, null, onward: goal) : Pilot.Steer(b, spec.Bot == "deft", onward: goal);
             bool walking = foe == null || !GroundPath.Clear(b.Collision, (p.X, p.Z), (foe.X, foe.Z), p.Radius);
             if (walking)
             {
@@ -118,13 +129,17 @@ public static class VergeZoneSim
             else Pilot.Act(b, j, mx, mz, hands: hands);
             zone.Step(ArenaSim.Dt);
             b.Tick(ArenaSim.Dt, mx, mz);
-            probe.Observe(b.Events.Drain());
+            var evs = b.Events.Drain();
+            probe.Observe(evs);
+            meter.Step(b, b.Time, ArenaSim.Dt, evs, fight);
             zone.Frame(ArenaSim.Dt);
             host.Pass(ArenaSim.Dt);
         }
         if (!b.Player.Alive) stopReason = "fell";
         string diagnostic = $"{stopReason}; sim {b.Time:0.00}s, wall {clock.Elapsed.TotalSeconds:0.00}s, at ({b.Player.X:0.00},{b.Player.Z:0.00}), route {k}/{route.Count}, skipped {skipped}, alive {b.Player.Alive}";
         if (!reached) Console.Error.WriteLine($"verge/{spec.Bot}/s{spec.Seed}: {diagnostic}");
-        return new(spec, reached, b.Player.Alive ? 0 : 1, skipped, probe.Finish(b.Time), diagnostic);
+        var m = new RunMeasures();
+        meter.Finish(b, b.Time, m, hands);
+        return new(spec, reached, b.Player.Alive ? 0 : 1, skipped, probe.Finish(b.Time), diagnostic, m, build);
     }
 }
