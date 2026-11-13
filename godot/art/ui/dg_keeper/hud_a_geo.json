@@ -404,7 +404,68 @@
     }
    }
   ],
-  "variants_note": "UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect when hud.json bottomScale is scale (its 1 px lines stay whole there)"
+  "variants_note": "UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect when hud.json bottomScale is scale (its 1 px lines stay whole there)",
+  "texture4": "dg_panel/panel4.png",
+  "seats4": [
+   [
+    761,
+    1042.0
+   ],
+   [
+    860,
+    1042.0
+   ],
+   [
+    1060,
+    1042.0
+   ],
+   [
+    1159,
+    1042.0
+   ]
+  ],
+  "rank_chips4": [
+   [
+    785.5,
+    1017.5,
+    9
+   ],
+   [
+    884.5,
+    1017.5,
+    9
+   ],
+   [
+    1084.5,
+    1017.5,
+    9
+   ],
+   [
+    1183.5,
+    1017.5,
+    9
+   ]
+  ],
+  "variants4": [
+   {
+    "scale": 0.85,
+    "texture": "dg_panel/panel4_085.png",
+    "screen_rect": [
+     654,
+     1001,
+     612,
+     79
+    ],
+    "design": {
+     "PL_X0": 685.0,
+     "PL_TOP": 1015.0,
+     "VOL_R": 10.0,
+     "INL": 5.5,
+     "FOOT_X": 677.35
+    }
+   }
+  ],
+  "seats4_note": "bd-ui: the campaign's 4-key plate [1][2] coin [LMB][RMB]; the arena keeps seats"
  },
  "glass": {
   "center": [
