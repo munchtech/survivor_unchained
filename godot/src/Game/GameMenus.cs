@@ -83,6 +83,7 @@ public partial class Game
             "maps" => new MapTableScreen(this),
             "atlas" => new MapTableScreen(this, "atlas"),
             "arts" => new ArtsScreen(this),
+            "wardrobe" => new WardrobeScreen(this),
             "lamps" => new LampsScreen(this),
             "chapter" => new ChapterScreen(this),
             "credits" => new CreditsScreen(this, () => { Open("pause"); (screens.Current as PauseScreen)?.FocusOn("Credits and licences"); }),
@@ -108,6 +109,9 @@ public partial class Game
         controls.Captured = true;
         hud.Prompt(promptShown = null);
     }
+
+    /// <summary>The world camera's attributes (a screen's depth of field, put back on its close).</summary>
+    public Godot.CameraAttributes? WorldLens { get => cam.Camera.Attributes; set => cam.Camera.Attributes = value; }
 
     /// <summary>The view as a screen asks it (its shift, nearness and frame), and her pose with it: on open, and when a
     /// screen changes its view while open (the Lamps' Open wide: the book's frame goes, the play camera holds).</summary>

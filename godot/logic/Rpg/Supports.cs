@@ -53,7 +53,17 @@ public static class Supports
     public const string ItemPrefix = "gem.";
     public static string ItemId(string gem) => ItemPrefix + gem;
     public static SupportDef? OfItem(string itemId) => itemId.StartsWith(ItemPrefix, StringComparison.Ordinal) ? Find(itemId[ItemPrefix.Length..]) : null;
-    public static IEnumerable<ItemDef> ItemDefs() => All.Select(g => new ItemDef { Id = ItemId(g.Id), Name = g.Name, Kind = ItemKind.Gem, Rarity = 2, Icon = "ember", Value = 30, Description = g.Text });
+    /// <summary>The gem's colour family: any skill -> "clear"; fits both Melee and Shield -> "bicolor" (a stone split down
+    /// its axis, garnet and sapphire); Shield only -> "sapphire"; else "garnet".</summary>
+    public static string Family(SupportDef g)
+    {
+        if (g.Fits.Count == 0) return "clear";
+        bool melee = g.Fits.Any(f => string.Equals(f, "Melee", StringComparison.OrdinalIgnoreCase));
+        bool shield = g.Fits.Any(f => string.Equals(f, "Shield", StringComparison.OrdinalIgnoreCase));
+        return melee && shield ? "bicolor" : shield ? "sapphire" : "garnet";
+    }
+
+    public static IEnumerable<ItemDef> ItemDefs() => All.Select(g => new ItemDef { Id = ItemId(g.Id), Name = g.Name, Kind = ItemKind.Gem, Rarity = 2, Icon = "gem_" + Family(g), Value = 30, Description = g.Text });
 
     /// <summary>Open sockets at a skill's rank: one per threshold reached.</summary>
     public static int SocketsAt(int rank) => File.Sockets.Ranks.Count(r => rank >= r);

@@ -42,7 +42,7 @@ public partial class BattleFx
     static readonly Color Verdigris = new(0.16f, 0.8f, 0.66f), LegendAmber = new(1.0f, 0.52f, 0.12f), StoriedRed = new(1.0f, 0.28f, 0.1f);
     static readonly Color ChartPale = new(0.92f, 0.82f, 0.6f), QuestGold = new(1.0f, 0.76f, 0.3f);
 
-    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7, Band = 8 }
+    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7, Band = 8, Stars = 9 }
 
     // A moment's columns of light (Pillar): where, how tall and wide, in what colour, since when, how
     // long, and how thick the motes riding up it.
@@ -103,6 +103,8 @@ public partial class BattleFx
     /// <summary>--clean: stills with no loot lights, beams or names over the picture.</summary>
     static readonly bool CleanShots = Args.Has("clean");
 
+    readonly HashSet<int> gemLanded = new();
+
     void LootLight(Pickup p, float gy, double now, Color fallback)
     {
         float t = (float)now;
@@ -134,6 +136,25 @@ public partial class BattleFx
             case LootTier.Legendary or LootTier.Storied:
                 Pillar(p, gy, t, tier == LootTier.Legendary ? LegendAmber : StoriedRed, tier == LootTier.Storied);
                 break;
+            case LootTier.Gem:
+            {
+                // A cut stone in its own colour: a soft additive pool of its light 1.0 m across (35% in the centre, fading to nothing)
+                // with four feathered rays 0.25 m wide at 20%, turning slowly, and nine star motes (7 px, 70%) rising 1.2 s each.
+                // It flashes once as it lands, then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s.
+                var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
+                // W24: the pool sits on the ground under the landing spot (the item's own ground height, never the stone's bob), at its
+                // full extent (a quad grown from nothing cut the pool with a hard line at the foot), hidden until the stone is down
+                // (Arrive) and then fading in over 0.25 s.
+                float poolIn = age < 0 ? 1 : Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
+                if (poolIn > 0.001f) Light(p.X, Y(p.X, p.Z), p.Z, Lit.Stars, 0, 1.0f, 1.8f, gc, 1.0f * poolIn);
+                var star = gc.Lerp(Colors.White, 0.4f) * 2.2f;
+                if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
+                    Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                else if (age >= 0.5f) gemLanded.Add(p.Id);
+                if (age >= 0 && frameDt > 0 && (t + p.Id * 0.37f) % 1.7f < frameDt)
+                    Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                break;
+            }
             case LootTier.Chart:
                 Light(p.X, gy, p.Z, Lit.Glow, 0, 0.5f, 1.3f * grow, ChartPale, 0.6f);
                 break;

@@ -133,4 +133,30 @@ public sealed class SupportsTests
         Assert.Equal(0, Gems(11));
         Assert.True(Drops.Jackpot(LootTier.Gem));
     }
+
+    [Fact]
+    public void Gem_colour_family_and_icon_follow_what_it_fits()
+    {
+        var fam = Supports.All.ToDictionary(g => g.Id, Supports.Family);
+        Assert.Equal(["bicolor", "clear", "garnet", "sapphire"], fam.Values.Distinct().OrderBy(x => x).ToArray());
+        foreach (var g in Supports.All)
+        {
+            var want = g.Fits.Count == 0 ? "clear" : g.Fits.Contains("Melee") && g.Fits.Contains("Shield") ? "bicolor" : g.Fits.Contains("Shield") ? "sapphire" : "garnet";
+            Assert.Equal(want, Supports.Family(g));
+        }
+        Assert.Equal("sapphire", fam["bulwark"]);
+        Assert.Equal("garnet", fam["brutality"]);
+        Assert.Equal("clear", fam["haste"]);
+        Assert.Equal("bicolor", fam["concussion"]);
+        foreach (var d in Supports.ItemDefs()) Assert.Equal("gem_" + fam[d.Id[Supports.ItemPrefix.Length..]], d.Icon);
+    }
+
+    [Fact]
+    public void A_gem_drop_is_shown_at_every_filter_strictness()
+    {
+        var ch = new CharacterData();
+        foreach (var preset in Enum.GetValues<FilterPreset>())
+        foreach (var g in Supports.All)
+            Assert.Equal(Verdict.Shown, new LootFilter { Preset = preset }.Judge(Inventory.Make(ch, Supports.ItemId(g.Id), dropped: true), ch));
+    }
 }

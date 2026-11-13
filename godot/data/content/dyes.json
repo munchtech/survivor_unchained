@@ -1,0 +1,178 @@
+{
+ "dyes": [
+  {
+   "id": "steel",
+   "name": "Steel",
+   "hex": "#aab0b8:metal",
+   "zones": [
+    "metal"
+   ],
+   "known": true
+  },
+  {
+   "id": "blackened_iron",
+   "name": "Blackened iron",
+   "hex": "#34363a:metal",
+   "zones": [
+    "metal"
+   ],
+   "known": true
+  },
+  {
+   "id": "silvered",
+   "name": "Silvered",
+   "hex": "#d8dce2:metal",
+   "zones": [
+    "metal"
+   ],
+   "known": true,
+   "hold": true
+  },
+  {
+   "id": "gilt",
+   "name": "Gilt",
+   "hex": "#e0b050:metal",
+   "zones": [
+    "metal"
+   ],
+   "known": true,
+   "hold": true
+  },
+  {
+   "id": "bronze",
+   "name": "Bronze",
+   "hex": "#9c6434:metal",
+   "zones": [
+    "metal",
+    "trim"
+   ],
+   "known": false
+  },
+  {
+   "id": "verdigris",
+   "name": "Verdigris",
+   "hex": "#4f8a78:metal",
+   "zones": [
+    "metal"
+   ],
+   "known": false
+  },
+  {
+   "id": "oxblood",
+   "name": "Oxblood",
+   "hex": "#4e1418",
+   "zones": [
+    "leather"
+   ],
+   "known": true
+  },
+  {
+   "id": "tan",
+   "name": "Tan",
+   "hex": "#a8794a",
+   "zones": [
+    "leather"
+   ],
+   "known": true
+  },
+  {
+   "id": "walnut",
+   "name": "Walnut",
+   "hex": "#4a3020",
+   "zones": [
+    "leather"
+   ],
+   "known": true
+  },
+  {
+   "id": "black_leather",
+   "name": "Black",
+   "hex": "#1a1816",
+   "zones": [
+    "leather"
+   ],
+   "known": false
+  },
+  {
+   "id": "watch_blue",
+   "name": "Watch blue",
+   "hex": "#34508c",
+   "zones": [
+    "cloth"
+   ],
+   "known": true
+  },
+  {
+   "id": "crimson",
+   "name": "Crimson",
+   "hex": "#9c1e24",
+   "zones": [
+    "cloth"
+   ],
+   "known": true
+  },
+  {
+   "id": "forest",
+   "name": "Forest",
+   "hex": "#2e5c34",
+   "zones": [
+    "cloth"
+   ],
+   "known": true
+  },
+  {
+   "id": "bone",
+   "name": "Bone",
+   "hex": "#dcd4c0",
+   "zones": [
+    "cloth"
+   ],
+   "known": true
+  },
+  {
+   "id": "charcoal",
+   "name": "Charcoal",
+   "hex": "#35363a",
+   "zones": [
+    "cloth"
+   ],
+   "known": false
+  },
+  {
+   "id": "ember_orange",
+   "name": "Ember orange",
+   "hex": "#c8641e",
+   "zones": [
+    "cloth"
+   ],
+   "known": false
+  },
+  {
+   "id": "plum",
+   "name": "Plum",
+   "hex": "#5a2f58",
+   "zones": [
+    "cloth"
+   ],
+   "known": false
+  },
+  {
+   "id": "gold_thread",
+   "name": "Gold thread",
+   "hex": "#d8b45a",
+   "zones": [
+    "trim"
+   ],
+   "known": true
+  },
+  {
+   "id": "bone_thread",
+   "name": "Bone thread",
+   "hex": "#e0d8c4",
+   "zones": [
+    "trim"
+   ],
+   "known": true
+  }
+ ]
+}

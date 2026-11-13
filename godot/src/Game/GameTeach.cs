@@ -346,7 +346,7 @@ public partial class Game
     }
 
     /// <summary>A "seat:Skill2" aim's slot (Skill1 is slot 0), if it names a skill key.</summary>
-    static int? SeatSlot(string hud) => Enum.TryParse<Act>(hud[5..], true, out var a) && a is >= Act.Skill1 and <= Act.Skill6 ? a - Act.Skill1 : null;
+    static int? SeatSlot(string hud) => Enum.TryParse<Act>(hud[5..], true, out var a) && a is >= Act.Skill1 and <= Act.Skill4 ? a - Act.Skill1 : null;
 
     Presence Where(Callout c)
     {

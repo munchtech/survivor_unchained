@@ -73,7 +73,7 @@ public partial class BattleFx : Node3D
 
     // What is in the air, and what lies on the ground.
     Batch? celBolts;
-    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, emberHalos = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, emberHalos = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, gemGarnet = null!, gemSapphire = null!, gemClear = null!, gemBicolor = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -254,6 +254,7 @@ public partial class BattleFx : Node3D
         chests = Add(new Batch(chest, 60, null, true));
         // A sapper's firepot: a keg of powder, thrown.
         kegs = Add(new Batch(Pickup("bomb", 0.34f), 60, null));
+        gemGarnet = Add(new Batch(Pickup("gem_garnet.ground", GemGroundSize), 60, null)); gemSapphire = Add(new Batch(Pickup("gem_sapphire.ground", GemGroundSize), 60, null)); gemClear = Add(new Batch(Pickup("gem_clear.ground", GemGroundSize), 60, null)); gemBicolor = Add(new Batch(Pickup("gem_bicolor.ground", GemGroundSize), 60, null));
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
@@ -263,6 +264,9 @@ public partial class BattleFx : Node3D
     /// mesh to draw many of: its parts merged, each keeping its material (or
     /// only the parts whose material `keep` wants), centred, `size` across at
     /// its largest.</summary>
+    /// <summary>A support gem lies this big (m, its longest side), the stone and its glint at the fight camera about 26 px (bd-ui W16).</summary>
+    const float GemGroundSize = 0.45f;
+
     static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null) =>
         Kept($"pickup:{key}:{size}:{keep != null}", () => Merge(ItemModels.Make(key)?.Model, size, keep));
 
@@ -2533,7 +2537,7 @@ public partial class BattleFx : Node3D
         // moon's blue-dark ground (E1 round 3: one was lost at the camp's edge).
         float emit = Mathf.Lerp(1f, 1.6f, Mathf.Clamp((Atmosphere.EmberGain - 1) / 0.7f, 0, 1));
         if (emberGlow != null && !Mathf.IsEqualApprox(emit, emberEmit)) { emberEmit = emit; emberGlow.SetShaderParameter("emit", emit); }
-        embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); BeginLoot();
+        embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); gemGarnet.Begin(); gemSapphire.Begin(); gemClear.Begin(); gemBicolor.Begin(); BeginLoot();
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
@@ -2589,6 +2593,17 @@ public partial class BattleFx : Node3D
                     // What the item filter hides lies unlit and dark: the world stays honest, the eye is spared.
                     bool hidden = p.Look == Verdict.Hidden;
                     if (p.Kind == PickupKind.Chest) chests.Add(new Transform3D(lie, V(p.X, gy + chestUp, p.Z)), Colors.White);
+                    else if (p.Loot == (int)LootTier.Gem && p.Payload is Rpg.ItemInstance gi && Rpg.Supports.OfItem(gi.Def) is { } gd)
+                    {
+                        // A support gem lies as its own cut stone, 0.45 m, tipped by the camera's pitch so its crown and point face
+                        // the screen (the steep camera would see only the table), turning on its own axis and bobbing a little.
+                        var gb = Rpg.Supports.Family(gd) switch { "sapphire" => gemSapphire, "clear" => gemClear, "bicolor" => gemBicolor, _ => gemGarnet };
+                        float tip = GetViewport()?.GetCamera3D() is { } gcam ? Mathf.Asin(Mathf.Clamp(-(-gcam.GlobalTransform.Basis.Z).Y, 0f, 1f)) : Mathf.DegToRad(56);
+                        // (A bicolor stone only sways +/-25 degrees about its axis, so its split stays facing the camera and both halves read in every frame.)
+                        float spinA = gb == gemBicolor ? Mathf.DegToRad(25) * Mathf.Sin((float)(now * 0.9 + p.Id)) : (float)(now * 0.9 + p.Id);
+                        var gbasis = new Godot.Basis(Vector3.Right, -tip) * new Godot.Basis(Vector3.Up, spinA);
+                        gb.Add(new Transform3D(gbasis, V(p.X, gy + 0.3 + Mathf.Sin((float)(now * 2 + p.Id)) * 0.03, p.Z)), Colors.White);
+                    }
                     else sacks.Add(new Transform3D(lie.Scaled(Vector3.One * (hidden ? 0.7f : 1f)), V(p.X, gy + sackUp, p.Z)), hidden ? new Color(0.35f, 0.33f, 0.3f) : Colors.White);
                     if (hidden) break;
                     // Loot rolled whole carries its tier (docs/design/LOOT_DESIGN.md §8.1): the light's
@@ -2599,6 +2614,6 @@ public partial class BattleFx : Node3D
                 }
             }
         }
-        embers.End(); emberHalos.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); EndLoot();
+        embers.End(); emberHalos.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); gemGarnet.End(); gemSapphire.End(); gemClear.End(); gemBicolor.End(); EndLoot();
     }
 }

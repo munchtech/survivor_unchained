@@ -188,7 +188,20 @@ public static class Wear
         return r;
     }
 
-    public static Dictionary<string, string> Of(CharacterData ch, System.Func<string, ItemDef?>? find = null) => Of(ch.Equipment, find);
+    public static Dictionary<string, string> Of(CharacterData ch, System.Func<string, ItemDef?>? find = null)
+    {
+        var r = Of(ch.Equipment, find);
+        Wardrobe.Overlay(ch, r, find);
+        return r;
+    }
+
+    /// <summary>Dyes with the wardrobe's over the equipment's own, zone by zone (Wardrobe.OverlayDyes).</summary>
+    public static Dictionary<string, Dictionary<string, string>> DyeOf(CharacterData ch, System.Func<string, ItemDef?>? find = null)
+    {
+        var r = DyeOf(ch.Equipment, find);
+        Wardrobe.OverlayDyes(ch, r, find);
+        return r;
+    }
 
     /// <summary>The piece ids of a def that its own item slot's group does not allow (or that name no visual slot).</summary>
     public static List<string> Validate(ItemDef def)

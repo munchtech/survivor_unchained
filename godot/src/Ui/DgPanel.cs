@@ -51,21 +51,29 @@ public partial class DgPanel : Control
     public static readonly Rect2 Rect = A(Part("panel"), "rect") is { Length: 4 } r ? new Rect2(r[0], r[1], r[2], r[3]) : new Rect2(576, 988, 768, 92);
     /// <summary>The plate's top line (its x ends and y) under the end caps, where the coin's arch rises from it.</summary>
     public static readonly float TopY = A(Part("panel"), "top_line") is { Length: 3 } t ? t[2] : 1003;
-    static readonly Vector2[] seats = Seats();
-    static Vector2[] Seats()
+    static readonly Vector2[] seats = Seats("seats", Content.Weapons.MaxWeapons, false), seats4 = Seats("seats4", Content.Weapons.MaxKeys, true);
+    static Vector2[] Seats(string key, int n, bool four)
     {
-        var l = new Vector2[Content.Weapons.MaxWeapons];
-        var a = Part("panel").TryGetValue("seats", out var v) ? v.AsGodotArray() : new Godot.Collections.Array();
+        var l = new Vector2[n];
+        var a = Part("panel").TryGetValue(key, out var v) && v.VariantType == Variant.Type.Array ? v.AsGodotArray() : new Godot.Collections.Array();
         for (int i = 0; i < l.Length; i++)
-            l[i] = i < a.Count && a[i].AsGodotArray() is { Count: 2 } p ? new Vector2((float)p[0].AsDouble(), (float)p[1].AsDouble()) : new Vector2(733 + 75 * i + (i >= 3 ? 79 : 0), 1042);
+            l[i] = i < a.Count && a[i].AsGodotArray() is { Count: 2 } p ? new Vector2((float)p[0].AsDouble(), (float)p[1].AsDouble())
+                : four ? new Vector2(761 + 99 * i + (i >= 2 ? 101 : 0), 1042) : new Vector2(733 + 75 * i + (i >= 3 ? 79 : 0), 1042);
         return l;
     }
+    /// <summary>bd-ui W3: the campaign's bar has four seats (the keys: [1][2] (coin) [LMB][RMB], panel4.png and the geo's
+    /// seats4); the arena's keeps six. Set by Instrument.SetFour; every seat reader below follows it.</summary>
+    public static bool Four;
+    /// <summary>How many seats the bar has in this mode.</summary>
+    public static int SeatCount => Four ? seats4.Length : seats.Length;
     /// <summary>The i-th seat's middle; the well's radius (the icon's glass, drawn live) and the bezel's outer radius.</summary>
-    public static Vector2 Seat(int i) => seats[Math.Clamp(i, 0, seats.Length - 1)];
+    public static Vector2 Seat(int i) { var l = Four ? seats4 : seats; return l[Math.Clamp(i, 0, l.Length - 1)]; }
     public static readonly float WellR = F(Part("panel"), "well_r", 31.5f), SeatR = F(Part("panel"), "seat_r", 35);
     /// <summary>The rank chip's middle offset from its seat's and its radius.</summary>
-    public static readonly Vector2 ChipOff = Part("panel").TryGetValue("rank_chips", out var rc) && rc.AsGodotArray() is { Count: > 0 } ra
-        && ra[0].AsGodotArray() is { Count: 3 } c0 ? new Vector2((float)c0[0].AsDouble(), (float)c0[1].AsDouble()) - seats[0] : new Vector2(24.5f, -24.5f);
+    public static Vector2 ChipOff => Four ? chipOff4 : chipOff6;
+    static readonly Vector2 chipOff6 = ChipFrom("rank_chips", seats[0]), chipOff4 = ChipFrom("rank_chips4", seats4[0]);
+    static Vector2 ChipFrom(string key, Vector2 seat) => Part("panel").TryGetValue(key, out var rc) && rc.VariantType == Variant.Type.Array && rc.AsGodotArray() is { Count: > 0 } ra
+        && ra[0].AsGodotArray() is { Count: 3 } c0 ? new Vector2((float)c0[0].AsDouble(), (float)c0[1].AsDouble()) - seat : new Vector2(24.5f, -24.5f);
     public const float ChipR = 9;
     /// <summary>The coin: its middle, its radius and the arch's round it.</summary>
     public static readonly Vector2 Coin = V(A(Part("panel", "coin"), "center"), new Vector2(960, 1042));
@@ -132,7 +140,7 @@ public partial class DgPanel : Control
     /// (geo panel.variants: drawn at its screen rect, so its 1 px lines land whole), else panel.png on Rect.</summary>
     public static (string Tex, Rect2 At) Plate()
     {
-        if (HudBottom.Scaled && Part("panel").TryGetValue("variants", out var vs) && vs.VariantType == Variant.Type.Array)
+        if (HudBottom.Scaled && Part("panel").TryGetValue(Four ? "variants4" : "variants", out var vs) && vs.VariantType == Variant.Type.Array)
             foreach (var v in vs.AsGodotArray())
                 if (v.VariantType == Variant.Type.Dictionary && v.AsGodotDictionary() is { } d && Math.Abs(F(d, "scale", 0) - HudBottom.Scale) < 0.005f
                     && A(d, "screen_rect") is { Length: 4 } r && d.TryGetValue("texture", out var t))
@@ -141,7 +149,7 @@ public partial class DgPanel : Control
                     var p1 = HudBottom.Unmap(new Vector2(r[0] + r[2], r[1] + r[3]));
                     return (t.AsString(), new Rect2(p0 - Rect.Position, p1 - p0));
                 }
-        return ("dg_panel/panel.png", new Rect2(Vector2.Zero, Rect.Size));
+        return (Four && Part("panel").TryGetValue("texture4", out var t4) ? t4.AsString() : "dg_panel/panel.png", new Rect2(Vector2.Zero, Rect.Size));
     }
 
     /// <summary>The survivor, an elite or a marked attack behind the plate (Game sets it each frame): the plate's art

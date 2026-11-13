@@ -6,7 +6,7 @@
   "stances": [
     {
       "id": "shield", "name": "Bulwark", "weapon": "sword and shield", "kinds": ["shield"],
-      "flavor": "Her blows block and stun: each landed blow brings her Warding light back sooner, and every third stuns.",
+      "flavor": "Your blows block and stun: each landed blow brings your Warding light back sooner, and every third stuns.",
       "mods": [
         { "stat": "block", "kind": "flat", "value": 1 },
         { "stat": "armor", "kind": "inc", "value": 0.25 },
@@ -18,7 +18,7 @@
     },
     {
       "id": "twin_blades", "name": "Twin Fangs", "weapon": "two blades", "kinds": ["sword", "dagger", "cleaver", "axe"],
-      "flavor": "Her blows come faster and bleed.",
+      "flavor": "Your blows come faster and bleed.",
       "mods": [
         { "stat": "cooldown", "kind": "more", "value": -0.18 },
         { "stat": "moveSpeed", "kind": "more", "value": 0.05 },
@@ -30,7 +30,7 @@
     },
     {
       "id": "mace", "name": "Breaker", "weapon": "mace", "kinds": ["mace", "hammer"],
-      "flavor": "Her blows stagger: they hit harder and throw them, and every second one rocks them on their feet.",
+      "flavor": "Your blows stagger: they hit harder and throw them, and every second one rocks them on their feet.",
       "mods": [
         { "stat": "damage", "kind": "more", "value": 0.08 },
         { "stat": "knockback", "kind": "inc", "value": 0.5 },

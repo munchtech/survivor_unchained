@@ -31,7 +31,7 @@ public sealed class TailWeightTests
         {
             B = new Battle(new BattleSetup
             {
-                Seed = (uint)seed, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
+                Seed = (uint)seed, Collision = new CollisionWorld(TestContent.StationaryArenaSize), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
                 Weapons = also == null ? [(id, 1)] : [(id, 1), (also, 1)], Ability = AbilityKind.ShieldBash,
             });
             B.Calling = "warden";

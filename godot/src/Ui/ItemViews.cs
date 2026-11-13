@@ -141,13 +141,20 @@ void fragment() {
     /// a tile's edge to a card's name to a label on the ground. Set is verdigris, old bronze's patina.</summary>
     public static Color TierColour(LootTier t) => t switch
     {
-        LootTier.Common => new("#c8c0b0"), LootTier.Uncommon => new("#6fd46a"), LootTier.Rare or LootTier.Gem => new("#5aa8ff"),
+        LootTier.Common => new("#c8c0b0"), LootTier.Uncommon => new("#6fd46a"), LootTier.Rare => new("#5aa8ff"), LootTier.Gem => GemTeal,
         LootTier.Epic => new("#c070ff"), LootTier.Set => SetColour, LootTier.Legendary => new("#ffb040"),
         LootTier.Storied => new("#ff6a3a"), LootTier.Book or LootTier.Chart => new("#dccba4"), LootTier.Quest => new("#f3d9a0"),
         _ => new("#c8c0b0"),
     };
 
+    /// <summary>Every support gem's name, wherever tiers are coloured: a teal outside every gear tier's hue (bd-ui W19).</summary>
+    public static readonly Color GemTeal = new("#40E0C8");
+
     public static readonly Color SetColour = new("#3fd6c0");
+
+    /// <summary>A support gem's light on the ground (its pool and motes; the name is teal, GemTeal): its stone's colour midway between body and lights (garnet #CE3A48, sapphire #5384EA), a clear one pale blue so it reads on grass, a bicolor one the blend of the two lights; null for anything else.</summary>
+    public static Color? GemGround(ItemInstance? it) =>
+        it != null && Supports.OfItem(it.Def) is { } g ? (Supports.Family(g) switch { "clear" => new Color("#CFE6FF"), "bicolor" => new Color("#CE3A48").Lerp(new Color("#5384EA"), 0.5f), "sapphire" => new Color("#5384EA"), _ => new Color("#CE3A48") }) : null;
 
     /// <summary>A thing's colour: its tier's, except what is counted (a material, a draught) keeps its
     /// own rarity's, so an ember shard still glints among pelts.</summary>

@@ -34,11 +34,12 @@ public partial class WorldScene : Node3D, IZoneLook
     {
         // The pointer each step (with none, her facing ahead): a held skill (the grips, campaign) repeats at it.
         var pt = Pointer();
+        if (Pressed(Act.Swap)) b.Swap();
         {
             var p0 = b.Player;
             b.AimSkills(pt?.X ?? p0.X + Math.Sin(p0.Facing) * 6, pt?.Z ?? p0.Z + Math.Cos(p0.Facing) * 6);
         }
-        for (int i = 0; i < skillHeld.Length; i++)
+        for (int i = 0; i < Controls.Skills.Length; i++)
         {
             b.HoldSkill(i, Held(Controls.Skills[i]));
             if (Pressed(Controls.Skills[i])) skillHeld[i] = Buffer;
@@ -197,12 +198,13 @@ public partial class WorldScene : Node3D, IZoneLook
     }
 
     /// <summary>What the survivor visibly carries, changed.</summary>
-    public void SetLoadout(Loadout lo)
+    /// <summary>`now`: dressed at once, not over frames (a screen that needs the figure as asked this frame: the wardrobe on open).</summary>
+    public void SetLoadout(Loadout lo, bool now = false)
     {
         if (Battle == null) return;
         // A ring or an amulet changes nothing that shows: the figure stays, and does not blink.
         var key = Loadouts.Look(lo);
-        if (Player != null && key == look) return;
+        if (Player != null && key == look && !(now && incoming != null)) return;
         look = key;
         // A swap still being dressed gives way to this one (the latest wins: nothing of the older is shown).
         DropIncoming();
@@ -211,7 +213,7 @@ public partial class WorldScene : Node3D, IZoneLook
         Perf.Lap("swap: (before)");
         // (a live swap: her new figure's garment tuck is laid over the next frames, on a worker; she wears what she wore
         // till it is done: Update)
-        HerWear.Live = old != null;
+        HerWear.Live = old != null && !now;
         PlayerView next;
         try { next = new PlayerView(lo); }
         finally { HerWear.Live = false; }
@@ -287,7 +289,7 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             dashHeld = artHeld = 0;
             // (the skill keys pressed in a pause are taken and dropped: a digit that picked a card casts nothing after)
-            for (int i = 0; i < skillHeld.Length; i++) { skillHeld[i] = 0; Pressed(Controls.Skills[i]); }
+            for (int i = 0; i < Controls.Skills.Length; i++) { skillHeld[i] = 0; Pressed(Controls.Skills[i]); }
         }
         if (b != null && !SimPaused)
         {

@@ -37,6 +37,11 @@ public partial class Socket
         public bool Union, ClaspLeft, Rings, Bond;
         /// <summary>Fix A (6): its key is down (the sim's own Held of the skill on this seat): the pressed state.</summary>
         public bool Held;
+        /// <summary>bd-ui W3: the stance she is in wears on every key seat: a 2 px ring just inside the bezel at 75% alpha
+        /// (Colors.Transparent: none, set I).</summary>
+        public Color Tint;
+        /// <summary>bd-ui W7: the cost in Resolve, whole (the number shown by the arc); 0 none.</summary>
+        public int CostNum;
     }
 
     /// <summary>Its key cap (Instrument makes it); null: no keys (the arena).</summary>
@@ -73,7 +78,7 @@ public partial class Socket
         float cq = SeatCost.Shown(s.Cost);
         // (the cost met: the arc goes and the ready glow plays once)
         if (costShown >= 0 && cq < 0 && filled && !waiting) cue = 0;
-        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held || s.Floor != st.Floor) dirty = true;
+        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held || s.Floor != st.Floor || s.Tint != st.Tint || s.CostNum != st.CostNum) dirty = true;
         costShown = cq;
         st = s;
         st.Cost = cq;
@@ -90,11 +95,12 @@ public partial class Socket
     }
 
     /// <summary>An empty seat: locked (not yet open at her level: no cap) or open (the cap at 30%).</summary>
-    public void Empty(bool locked)
+    public void Empty(bool locked, int opensAt = 0)
     {
         Empty();
-        if (this.locked != locked) { this.locked = locked; dirty = true; }
+        if (this.locked != locked || this.opensAt != opensAt) { this.locked = locked; this.opensAt = opensAt; dirty = true; }
     }
+    int opensAt;
 
     /// <summary>Short of its press floor (a press does nothing), the glyph cools as when waiting.</summary>
     bool CostShort => keyed && filled && SeatCost.ShortShown(st.Cost, st.Floor);
@@ -269,10 +275,10 @@ public partial class Socket
         if (bond != null)
         {
             if (bond.Visible != bd) bond.Visible = bd;
-            if (bd) bond.Modulate = new Color(1, 1, 1, 0.45f + 0.5f * breath);
+            if (bd) { bond.Modulate = new Color(1, 1, 1, 0.75f + 0.25f * breath); bond.Pulse = (float)(t % 0.8 / 0.8); bond.QueueRedraw(); }
         }
         if (Cap == null) return;
-        bool vis = keyed && (filled || !locked);
+        bool vis = keyed;   // (bd-ui W7: a locked seat keeps its cap chip)
         if (vis != capVisible) { capVisible = vis; Cap.Visible = vis; }
         if (!vis) return;
         Color c = !filled ? new Color(1, 1, 1, CapAlphaOpen)
@@ -297,14 +303,26 @@ public partial class Socket
         }
         if (st.Cost >= 0)
         {
-            // a 2 px deep amber arc at the well's edge, filling clockwise from 12 o'clock as Value / cost
+            // a 2 px deep amber arc just inside the stance's ring (bd-ui W7: that ring now takes the bezel edge), filling
+            // clockwise from 12 o'clock as Value / cost
             // (M4 lead 11: it sits in a dark groove, with a ghost of the part still to fill)
-            DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0.02f, 0.015f, 0.01f, 0.9f), 4, true);
-            DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, Color.Color8(200, 138, 48) with { A = 0.26f }, 2, true);
-            if (st.Cost > 0.005f) DrawArc(c, hr - 1.5f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(200, 138, 48), 2, true);
+            float ar = hr - 4.5f;
+            DrawArc(c, ar, 0, Mathf.Tau, 64, new Color(0.02f, 0.015f, 0.01f, 0.9f), 4, true);
+            DrawArc(c, ar, 0, Mathf.Tau, 64, Color.Color8(200, 138, 48) with { A = 0.26f }, 2, true);
+            if (st.Cost > 0.005f) DrawArc(c, ar, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(200, 138, 48), 2, true);
+            // (bd-ui W7: the cost, 13 px in the resource's colour at 6 o'clock inside the bezel)
+            if (st.CostNum > 0)
+            {
+                var f = Vessel.Figures;
+                string txt = DgMeters.Figures(st.CostNum);
+                var ts = f.GetStringSize(txt, HorizontalAlignment.Left, -1, 13);
+                var tp = new Vector2(Mathf.Round(c.X - ts.X / 2), Mathf.Round(c.Y + ar - 3f));
+                DrawStringOutline(f, tp, txt, HorizontalAlignment.Left, -1, 13, 1, new Color(0.03f, 0.02f, 0.01f, 0.95f));
+                DrawString(f, tp, txt, HorizontalAlignment.Left, -1, 13, Color.Color8(226, 160, 60));
+            }
             // (fix A, 12: near full it read as a selection ring: a dark tick at 12 o'clock breaks it where it starts,
             // and a bright bead rides its head)
-            DrawLine(c + new Vector2(0, -(hr - 5.5f)), c + new Vector2(0, -(hr + 2f)), new Color(0.03f, 0.02f, 0.01f, 0.95f), 3);
+            DrawLine(c + new Vector2(0, -(ar - 4f)), c + new Vector2(0, -(ar + 2.2f)), new Color(0.03f, 0.02f, 0.01f, 0.95f), 3);
             // (M4 lead 14, r3c M3: a kindled "now" key's press floor, a 2 px ink tick across the groove; past it the key
             // fires at the arc's strength)
             if (SeatCost.Tick(st.Floor) is var tk and > 0)
@@ -313,15 +331,93 @@ public partial class Socket
                 var td = new Vector2(Mathf.Cos(ta), Mathf.Sin(ta));
                 // (r3d S2: ink on the arc, bone (the cap's, at 70%) on the empty groove, where ink was lost)
                 var tc = st.Cost >= tk ? new Color(0.03f, 0.02f, 0.01f, 0.95f) : (Color.Color8(226, 214, 186) * 0.7f) with { A = 0.95f };
-                DrawLine(c + td * (hr - 4f), c + td * (hr + 1f), tc, 2);
+                DrawLine(c + td * (ar - 2.5f), c + td * (ar + 2.5f), tc, 2);
             }
             if (st.Cost > 0.005f)
             {
                 float ha = -Mathf.Pi / 2 + Mathf.Tau * st.Cost;
-                var hp = c + new Vector2(Mathf.Cos(ha), Mathf.Sin(ha)) * (hr - 1.5f);
+                var hp = c + new Vector2(Mathf.Cos(ha), Mathf.Sin(ha)) * ar;
                 DrawCircle(hp, 3.6f, new Color(0.03f, 0.02f, 0.01f, 0.8f), true, -1, true);
                 DrawCircle(hp, 2.6f, new Color("#fbf1d8"), true, -1, true);
             }
+        }
+    }
+
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Texture2D, Texture2D> desat = new();
+
+    /// <summary>The icon at 60% of its colour (SeatLook.Desaturate), kept per texture (bd-ui W7).</summary>
+    static Texture2D Desat(Texture2D t)
+    {
+        if (desat.TryGetValue(t, out var hit)) return hit;
+        var img = t.GetImage();
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        for (int y = 0; y < img.GetHeight(); y++)
+            for (int x = 0; x < img.GetWidth(); x++)
+            {
+                var p = img.GetPixel(x, y);
+                var (r, g, b) = SeatLook.Desaturate(p.R, p.G, p.B, 0.6f);
+                img.SetPixel(x, y, new Color(r, g, b, p.A));
+            }
+        var o = ImageTexture.CreateFromImage(img);
+        desat.Add(t, o);
+        return o;
+    }
+
+    /// <summary>The cooling wipe (bd-ui W7, W13): 50% black over the share not yet ready, ending at 12 o'clock, a 2 px cream
+    /// edge from 0.6 r to the rim at its start (it sweeps clockwise as the seat readies).</summary>
+    void DrawWipe(Vector2 c, float hr)
+    {
+        float share = SeatLook.WipeShare(ready);
+        if (share <= 0.002f) return;
+        float a0 = SeatLook.WipeStart(share), a1 = -Mathf.Pi / 2 + Mathf.Tau;
+        int n = Math.Max(3, (int)(64 * share) + 2);
+        var pts = new Vector2[n + 1];
+        pts[0] = c;
+        for (int i = 0; i < n; i++)
+        {
+            float a = a0 + (a1 - a0) * i / (n - 1);
+            pts[i + 1] = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr - 0.5f);
+        }
+        DrawColoredPolygon(pts, new Color(0, 0, 0, SeatLook.WipeAlpha));
+        var dir = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
+        DrawLine(c + dir * hr * SeatLook.EdgeFrom, c + dir * (hr - 0.5f), new Color("#F2E6C8") with { A = 0.9f }, 2, true);
+    }
+
+    /// <summary>The wait's seconds over a wiped icon: bold, 19 px, white, a 2 px dark outline (bd-ui W7).</summary>
+    void DrawSeconds(Vector2 c, string s)
+    {
+        var f = Vessel.Figures;
+        var ts = f.GetStringSize(s, HorizontalAlignment.Left, -1, 19);
+        var p = new Vector2(Mathf.Round(c.X - ts.X / 2), Mathf.Round(c.Y + 0.33f * 19));
+        DrawStringOutline(f, p, s, HorizontalAlignment.Left, -1, 19, 2, new Color(0.03f, 0.02f, 0.01f, 0.95f));
+        DrawString(f, p, s, HorizontalAlignment.Left, -1, 19, Colors.White);
+    }
+
+    /// <summary>(bd-ui W14) The padlock the locked keys wear, at any size (16 = the keys', 12 = the auto tiles'): its middle at mid.</summary>
+    public static void DrawPadlock(CanvasItem ci, Vector2 mid, float size, Color col)
+    {
+        float k = size / 16f;
+        var m = mid + new Vector2(0, -4 * k);
+        ci.DrawRect(new Rect2(m.X - 6 * k, m.Y, 12 * k, 9 * k), col, true);
+        ci.DrawArc(new Vector2(m.X, m.Y - k), 4f * k, Mathf.Pi, Mathf.Tau, 16, col, Math.Max(1.5f, 2 * k), true);
+        ci.DrawLine(new Vector2(m.X - 4 * k, m.Y - k), new Vector2(m.X - 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
+        ci.DrawLine(new Vector2(m.X + 4 * k, m.Y - k), new Vector2(m.X + 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
+    }
+
+    /// <summary>A key not yet open (bd-ui W7): the bare well, a padlock (16 px) at 35% and the level it opens at.</summary>
+    void DrawLocked(Vector2 c)
+    {
+        var cream = new Color("#F2E6C8");
+        var lk = cream with { A = 0.35f };
+        var m = c + new Vector2(0, -2);
+        DrawPadlock(this, m + new Vector2(0, 4), 16, lk);
+        if (opensAt > 0)
+        {
+            var f = Vessel.Figures;
+            string s = "Lv " + DgMeters.Figures(opensAt);
+            var ts = f.GetStringSize(s, HorizontalAlignment.Left, -1, 13);
+            DrawString(f, new Vector2(Mathf.Round(c.X - ts.X / 2), Mathf.Round(c.Y + 20)), s, HorizontalAlignment.Left, -1, 13, cream with { A = 0.6f });
         }
     }
 
@@ -364,6 +460,8 @@ public partial class SeatFx : Control
     readonly Mode mode;
     /// <summary>The held ring stood out past an ink gap, plain (held under the cost: judge r3c S6).</summary>
     public bool Wide;
+    /// <summary>Bond: the pulse ring's share of its 0.8 s (0 at the rim, 1 grown 6 px and gone).</summary>
+    public float Pulse;
     readonly float hr;
     public float Hr => hr;
     /// <summary>Ink: the glyph's white shape and the px it is shown across (the seat's gold inlay's).</summary>
@@ -465,6 +563,8 @@ public partial class SeatFx : Control
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, Style.Gold with { A = 0.55f });
                 DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Head with { A = 0.9f }, 2.5f, true);
                 DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.4f }, 4, true);
+                // (bd-ui W13: the break key's pulse: a ring growing 0 -> 6 px outward and fading, every 0.8 s)
+                DrawArc(c, hr + 5f + 6 * Pulse, 0, Mathf.Tau, 64, Head with { A = 0.7f * (1 - Pulse) }, 2, true);
                 break;
         }
     }

@@ -172,7 +172,7 @@ public partial class LampsScreen : Overlay
         if (visit != null && visit.Layout != LampBook.State(ch).Active) visit = null;
         G.Hud.LampsWide(true, SkillBook.Carried(ch).Where(c => Weapons.All.ContainsKey(c.Id)).Take(6));
         var seats = new System.Collections.Generic.List<Vector2>();
-        int n = System.Math.Min(6, SkillBook.Carried(ch).Count(c => Weapons.All.ContainsKey(c.Item1)));
+        int n = System.Math.Min(DgPanel.SeatCount, SkillBook.Carried(ch).Count(c => Weapons.All.ContainsKey(c.Item1)));
         for (int i = 0; i < n; i++) seats.Add(HudBottom.Map(DgPanel.Seat(i)));
         seats.Add(HudBottom.Map(DgPanel.GlassAt));
         bool night = G.Journey.World?.Time == TimeOfDay.Night;

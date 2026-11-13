@@ -1,0 +1,32 @@
+{
+  "integration": "0af0bc73f01617d70e9f5de2a05404ffbe81cc20",
+  "measuredDate": "2026-11-13",
+  "beforeSeconds": 860.0825072,
+  "afterSeconds": [
+    564.1016943,
+    799.6007294,
+    565.2415393
+  ],
+  "afterMedianSeconds": 565.2415393,
+  "wallTimeReductionPercent": 34.28054464912387,
+  "passed": 2603,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 3338,
+  "stationaryCases": 35,
+  "stationarySha256": "2bf9d184098d1ff0c8143d4f1f574c1122c220e965ad8fae6023ecb5adccd667",
+  "unchangedAssertionLines": 10839,
+  "buildProperties": {
+    "Configuration": "Debug",
+    "Optimize": "true",
+    "DebugType": "portable",
+    "DefineConstants": "TRACE;DEBUG;NET;NET8_0;NETCOREAPP"
+  },
+  "assemblyDebuggableAttribute": {
+    "IsJITTrackingEnabled": false,
+    "IsJITOptimizerDisabled": false,
+    "DebuggingFlags": 2
+  },
+  "addedTestCases": 0,
+  "changedParallelism": false
+}

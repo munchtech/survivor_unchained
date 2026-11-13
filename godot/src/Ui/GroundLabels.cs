@@ -5,7 +5,7 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>A drop's name on the ground: where (on the screen), what it says, its tier's colour, and
 /// how loud it is (0 quiet, 1 shown, 2 emphasised, 3 a Legendary's).</summary>
-public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, int Loud, bool Set);
+public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, int Loud, bool Set, bool Gem = false, Color? Mark = null);
 
 /// <summary>
 /// Names over loot on the ground (docs/design/LOOT_DESIGN.md §8.1), as the ARPGs label their drops:
@@ -19,6 +19,8 @@ public readonly record struct GroundLabel(Vector2 At, string Text, Color Color, 
 public partial class GroundLabels : Control
 {
     readonly List<GroundLabel> labels = new();
+    /// <summary>A gem name's loud halo: a darker teal than its letters (bd-ui W19).</summary>
+    static readonly Color GemHalo = new(0.07f, 0.55f, 0.48f, 0.34f);
     static GradientTexture2D? soft;
 
     public GroundLabels()
@@ -59,7 +61,7 @@ public partial class GroundLabels : Control
             int size = l.Loud switch { >= 3 => 21, 2 => 17, 1 => 15, _ => 14 };
             var text = grand ? l.Text.ToUpperInvariant() : l.Text;
             var ts = font.GetStringSize(text, HorizontalAlignment.Left, -1, size);
-            float markW = l.Set ? 18 : 0;
+            float markW = l.Set || l.Gem ? 18 : 0;
             var box = new Rect2(l.At.X - (ts.X + markW) / 2, l.At.Y - ts.Y - 20, ts.X + markW, ts.Y + 2);
             for (int k = 0; k < 8 && placed.Exists(r => r.Grow(2).Intersects(box)); k++) box.Position -= new Vector2(0, box.Size.Y + 3);
             // Still on another after stepping up (a heap): left unsaid rather than written over it.
@@ -68,10 +70,10 @@ public partial class GroundLabels : Control
             Drawn.Add(box);
             // Under the HUD's own words it gives way: faint, and its light not drawn.
             bool under = KeepOut.Exists(r => r.Intersects(box.Grow(4)));
-            if (under) { DrawString(font, new Vector2(box.Position.X + (l.Set ? 18 : 0), box.Position.Y + font.GetAscent(size)), text, HorizontalAlignment.Left, -1, size, l.Color with { A = 0.14f }); continue; }
+            if (under) { DrawString(font, new Vector2(box.Position.X + markW, box.Position.Y + font.GetAscent(size)), text, HorizontalAlignment.Left, -1, size, l.Color with { A = 0.14f }); continue; }
             // A soft shade under the words (no shape), and for what matters a light of its colour.
             DrawTextureRect(soft!, box.Grow(l.Loud >= 2 ? 16 : 10), false, new Color(0, 0, 0, l.Loud >= 1 ? 0.5f : 0.3f));
-            if (l.Loud >= 2) DrawTextureRect(soft!, box.Grow(grand ? 30 : 18), false, l.Color with { A = grand ? 0.3f : 0.16f });
+            if (l.Loud >= 2) DrawTextureRect(soft!, box.Grow(grand ? 30 : l.Gem ? 22 : 18), false, l.Gem ? GemHalo : l.Color with { A = grand ? 0.3f : 0.16f });
             var at = new Vector2(box.Position.X + markW, box.Position.Y + font.GetAscent(size));
             if (l.Set)
             {
@@ -79,10 +81,42 @@ public partial class GroundLabels : Control
                 if (link != null) DrawTextureRect(link, r, false, l.Color);
                 else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, 2, true);
             }
+            // (W24: the bicolor stone's mark, its label's lilac #B37AB6, is split down the middle: garnet left, sapphire right.)
+            bool split = l.Gem && l.Mark is { } lm && lm.IsEqualApprox(BicolorLilac);
+            if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), split ? new Color("#C8283C") : l.Mark ?? l.Color, split ? new Color("#2F6BFF") : null);
             int outline = grand ? 6 : 5;
             DrawStringOutline(font, at + new Vector2(0, 2), text, HorizontalAlignment.Left, -1, size, outline + 2, new Color(0, 0, 0, 0.45f));
             DrawStringOutline(font, at, text, HorizontalAlignment.Left, -1, size, outline, new Color(0.03f, 0.02f, 0.02f, 0.85f));
             DrawString(font, at, text, HorizontalAlignment.Left, -1, size, l.Loud == 0 ? l.Color with { A = 0.82f } : l.Color);
         }
+    }
+
+    /// <summary>The 14 px faceted-gem mark before a gem's name (no gear tier has one): the brilliant's side, a crown over a
+    /// pavilion, its facet lines dark, on a dark underlay so it reads over grass.</summary>
+    static readonly Color BicolorLilac = new("#B37AB6");
+
+    void DrawGemMark(Rect2 r, Color c, Color? right = null)
+    {
+        Vector2 P(float x, float y) => r.Position + new Vector2(x * r.Size.X, y * r.Size.Y);
+        Vector2[] outline = [P(0.22f, 0.12f), P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 1f), P(0f, 0.42f)];
+        var under = new Vector2[outline.Length + 1];
+        for (int i = 0; i < outline.Length; i++) under[i] = outline[i];
+        under[^1] = outline[0];
+        DrawPolyline(under, new Color(0.03f, 0.02f, 0.02f, 0.9f), 3.2f, true);
+        var cr = right ?? c;
+        if (right == null) DrawColoredPolygon(outline, c);
+        else
+        {
+            DrawColoredPolygon([P(0.22f, 0.12f), P(0.5f, 0.12f), P(0.5f, 1f), P(0f, 0.42f)], c);
+            DrawColoredPolygon([P(0.5f, 0.12f), P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 1f)], cr);
+        }
+        var lite = c.Lerp(Colors.White, 0.7f);
+        DrawColoredPolygon([P(0.22f, 0.12f), P(0.5f, 0.42f), P(0f, 0.42f)], lite);
+        DrawColoredPolygon([P(0.78f, 0.12f), P(1f, 0.42f), P(0.5f, 0.42f)], cr.Lerp(Colors.Black, 0.25f));
+        var ink = new Color(0.04f, 0.02f, 0.03f, 0.85f);
+        DrawLine(P(0f, 0.42f), P(1f, 0.42f), ink, 1);
+        DrawLine(P(0.22f, 0.12f), P(0.5f, 0.42f), ink, 1);
+        DrawLine(P(0.78f, 0.12f), P(0.5f, 0.42f), ink, 1);
+        DrawLine(P(0.5f, 0.42f), P(0.5f, 1f), ink, 1);
     }
 }

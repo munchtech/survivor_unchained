@@ -19,6 +19,10 @@ public partial class StatusRow : Control
     public static readonly Color BuffC = new("#9ad4ff"), DebuffC = new("#ff8a6a"), BarrierC = new("#c6d6e6");
     public static readonly bool AtOrb = (Args.Get("status-at") ?? "shelf").Trim().ToLowerInvariant() == "orb";
 
+    /// <summary>bd-ui W4: how far the shelf rises over the campaign bar's auto tiles (AutoRowModel.ShelfRaise; 0 in the arena).</summary>
+    public static float Raise;
+    const float Y = 950;
+
     readonly StatusShelf shelf = new();
     readonly List<Mark> buffs = new(), debuffs = new();
 
@@ -33,7 +37,7 @@ public partial class StatusRow : Control
     public static Vector2 Centre(bool good, int i)
     {
         if (AtOrb) return new Vector2(375 - D / 2 - Pitch * i, good ? 958 : 994);
-        return good ? new Vector2(948 - D / 2 - Pitch * i, 950) : new Vector2(972 + D / 2 + Pitch * i, 950);
+        return good ? new Vector2(948 - D / 2 - Pitch * i, Y - Raise) : new Vector2(972 + D / 2 + Pitch * i, Y - Raise);
     }
 
     public void Show(IReadOnlyList<StatusShelf.Entry> now)
@@ -55,7 +59,7 @@ public partial class StatusRow : Control
         if (AtOrb || (boons > 0 && banes > 0)) return Centre(good, i);
         int n = good ? boons : banes;
         float x = 960 + (good ? 1 : -1) * ((n - 1) / 2f - i) * Pitch;
-        return new Vector2(x, 950);
+        return new Vector2(x, Y - Raise);
     }
 
     void Fill(List<Mark> marks, List<StatusShelf.Slot> slots, bool good)

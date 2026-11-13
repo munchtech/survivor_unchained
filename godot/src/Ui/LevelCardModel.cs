@@ -8,7 +8,62 @@ namespace SurvivorUnchained.Ui;
  * campaign level-up makes (LevelCards.ForCampaignLevel; WithCalling when the calling taught a skill at it), its words built once (LevelCards.Header/Line), and its clock
  * (LevelCardQueue: in 0.18 s, hold 2.2 s or 3 s with a prompt row, out 0.3 s; waiting while held). LevelCard.cs draws it. */
 
-public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill }
+public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance }
+
+/// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
+/// included) stays at least Clear above the status shelf's top in the campaign; the tail is vertical, ending on the top of
+/// what opened (a key seat's cap, an auto tile, the front stance disc), so the card shifts sideways until that x lies at
+/// least Spare inside its span, then stays inside 696..1244 (28 px clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
+public static class LevelCardPlace
+{
+    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 470;
+
+    /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
+    /// from this too, so card and seat cannot drift).</summary>
+    public static Act CapAct(int slot) => KeyMap.Skills[KeyMap.SeatSlot[KeyMap.SeatOf(slot)]];
+
+    /// <summary>The card's left x, top y, the tail's x (card space; the card's own centre when no target) and its length
+    /// below the card (0 when the target is not below it).</summary>
+    /// <summary>(bd-ui W13) The spans of a tail (a vertical line at x from y0 to y1, drawn halfW each side) that stay clear of
+    /// the rects (left, top, right, bottom) by clear px on every side: where it would cross a tile or a disc it breaks. A rect
+    /// the tail only reaches (its top at or below y1: the target) is not avoided.</summary>
+    public static List<(float Y0, float Y1)> StemSpans(float x, float y0, float y1, IEnumerable<(float L, float T, float R, float B)> avoid, float clear = 3, float halfW = 2)
+    {
+        var cuts = new List<(float, float)>();
+        foreach (var (l, t, r, b) in avoid)
+        {
+            if (t >= y1 - 0.5f || b <= y0) continue;
+            if (x + halfW <= l - clear || x - halfW >= r + clear) continue;
+            cuts.Add((t - clear, b + clear));
+        }
+        cuts.Sort();
+        var l2 = new List<(float, float)>();
+        float at = y0;
+        foreach (var (c0, c1) in cuts)
+        {
+            if (c0 > at) l2.Add((at, Math.Min(c0, y1)));
+            at = Math.Max(at, c1);
+        }
+        if (at < y1) l2.Add((at, y1));
+        return l2;
+    }
+
+    public static (float X, float Y, float TailX, float Stem) Compute(float w, float h, float foot, float? rowTop, (float X, float Y)? target)
+    {
+        float bottom = rowTop is { } r ? Math.Min(foot, r - Clear) : foot;
+        float y = (float)Math.Round(bottom - h);
+        float x = 960 - w / 2;
+        if (target is { } t)
+        {
+            float lo = t.X - w + Spare, hi = t.X - Spare;
+            if (lo <= hi) x = Math.Clamp(x, lo, hi);
+        }
+        x = (float)Math.Round(Math.Clamp(x, MinX, Math.Max(MinX, MaxX - w)));
+        if (target is not { } tg) return (x, y, w / 2, 0);
+        float tx = Math.Clamp(tg.X - x, Spare, Math.Max(Spare, w - Spare));
+        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - (y + h)));
+    }
+}
 
 /// <summary>One level-up card (GameHud.LevelCard; M6 and M7 call it).</summary>
 public sealed class LevelCardSpec
@@ -17,15 +72,20 @@ public sealed class LevelCardSpec
     public int Level = 1;
     /// <summary>NewKey / LampLit / NewSkill: the skill's id (its glyph, name and, but for a lamp, its one line).</summary>
     public string Skill = "";
-    /// <summary>NewKey: the slot that opened (0-5, KeyMap.Skills[Slot] is its key; the card folds toward its seat);
+    /// <summary>NewKey: the slot that opened (0-3, KeyMap.Skills[Slot] is its key; the card folds toward its seat);
     /// -1 none (the card folds toward the coin).</summary>
     public int Slot = -1;
-    /// <summary>NewKey / NewSkill: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
+    /// <summary>NewStance (bd-ui W4): the stance's id (its glyph when no off-hand item is worn) and the off-hand item's icon key
+    /// ("" none: the ring shows the stance's glyph).</summary>
+    public string StanceId = "", Icon = "";
+    /// <summary>NewAuto: a skill taught on an auto slot (slot >= Weapons.MaxKeys): no key cap. NewStance: Skill is the stance's
+    /// name and the card's cap is Act.Swap.</summary>
+    /// <summary>NewKey / NewSkill / NewAuto / NewStance: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
     public string? Line;
     /// <summary>LampLit: the measure and its before/after ("a blow 42 -> 47").</summary>
     public string Measure = "a blow";
     public double Before, After;
-    /// <summary>The prompt row (optional): its key and words ("C", "A new trait can be chosen"); the card holds 3 s.</summary>
+    /// <summary>The prompt row (optional): its key and words ("C", "Choose a new trait"); the card holds 3 s.</summary>
     public Act? PromptKey;
     public string? PromptText;
     /// <summary>M7a: a lamp offer (a held point waits for her: Act.Lamps lights it); false once lit. Kind LampLit.</summary>
@@ -45,6 +105,8 @@ public static class LevelCards
     public static string Header(LevelCardSpec s) => s.Kind switch
     {
         LevelCardKind.NewKey => $"LEVEL {s.Level} · A NEW KEY",
+        LevelCardKind.NewAuto => $"LEVEL {s.Level} · AN AUTO SKILL",
+        LevelCardKind.NewStance => $"LEVEL {s.Level} · A SECOND WEAPON",
         LevelCardKind.LampLit => s.Offer ? $"LEVEL {s.Level} · A LAMP TO LIGHT" : $"LEVEL {s.Level} · A LAMP LIT",
         LevelCardKind.NewSkill => s.Level > 0 ? $"LEVEL {s.Level} · A NEW SKILL" : "A NEW SKILL",
         _ => $"LEVEL {s.Level}",
@@ -58,6 +120,19 @@ public static class LevelCards
     /// <summary>What a skill does in one short line from its description: the first sentence, cut at a colon, then, while
     /// longer than `max` characters, back to its last comma
     /// (never shorter than half of `max`: a longer line widens the card).</summary>
+    /// <summary>(bd-ui W14) The card's function line for a skill or stance id: data/content/card_lines.json's where it has one, else
+    /// the description's first clause (Line).</summary>
+    public static string Line(string id, string description)
+    {
+        var lines = cardLines ??= Core.Json.Parse<Dictionary<string, string>>(Core.Json.ReadContent("card_lines.json"));
+        return lines.TryGetValue(id, out var l) && l != "" ? l : Line(description);
+    }
+    static Dictionary<string, string>? cardLines;
+
+    /// <summary>(bd-ui W14) The key the NewKey card draws for a skill: the seat's own (SeatIcon), drawn as the seat draws it (SeatPicture).</summary>
+    public static string PictureKey(string skill) =>
+        Content.Weapons.All.TryGetValue(skill, out var d) ? SeatIcon.For(skill, d.Art) : "";
+
     public static string Line(string description, int max = 48)
     {
         var s = (description ?? "").Trim();
@@ -77,7 +152,7 @@ public static class LevelCards
     }
 
     /// <summary>The campaign's level-up prompt row (the trait or attribute line Journey's banner used to carry).</summary>
-    public static string PromptFor(int traitPicks) => traitPicks > 0 ? "A new trait can be chosen" : "Attribute points to spend";
+    public static string PromptFor(int traitPicks) => traitPicks > 0 ? "Choose a new trait" : "Attribute points to spend";
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
     /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
@@ -89,11 +164,37 @@ public static class LevelCards
             if (s.Level != level) continue;
             int slot = slotOf(s.Skill);
             if (slot < 0) continue;
-            spec.Kind = LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
+            spec.Kind = slot >= Content.Weapons.MaxKeys ? LevelCardKind.NewAuto : LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
             break;
+        }
+        // (the stance's level: a key or auto taught there keeps the card; else the second weapon's card, before any lamp offer)
+        if (spec.Kind == LevelCardKind.Plain && build?.Stance is { } st && st.Level == level && StanceCard(level, build, ch) is { } sc)
+        {
+            sc.PromptKey = spec.PromptKey; sc.PromptText = spec.PromptText;
+            return sc;
         }
         if (spec.Kind == LevelCardKind.Plain && ch != null && LampOffer(ch, level) is { } offer) return offer;
         return spec;
+    }
+
+    /// <summary>The second-weapon card: the stance she takes up (hers if she chose one the calling offers, else the default),
+    /// its name, its short line (the flavor's first clause, else "Swap strike: NAME"), the Swap key's cap. Null: no such stance.</summary>
+    public static LevelCardSpec? StanceCard(int level, Content.TaughtBuild? build, Rpg.CharacterData? ch)
+    {
+        if (build?.Stance is not { } st) return null;
+        string id = ch != null && ch.Stance != "" && System.Array.IndexOf(st.Offers, ch.Stance) >= 0 ? ch.Stance : st.Default;
+        var card = StanceCard(level, id);
+        if (card != null && ch?.Equipment[Rpg.EquipSlot.Offhand] is { } oh && Rpg.Items.Get(oh.Def) is { } od) card.Icon = od.Icon;
+        return card;
+    }
+
+    public static LevelCardSpec? StanceCard(int level, string id)
+    {
+        if (Content.Stances.Find(id) is not { } d) return null;
+        string line = Line(d.Flavor);
+        if (line == "") line = d.Strike.Name != "" ? "Swap strike: " + d.Strike.Name : "";
+        else line += ", and every swap lands a strike.";
+        return new LevelCardSpec { Kind = LevelCardKind.NewStance, Level = level, Skill = d.Name, StanceId = d.Id, Line = line, PromptKey = Act.Character };
     }
 
     /// <summary>M7a: the lamp card for a level whose carried skill (first in slot order) holds a point: Kind LampLit, Offer,
@@ -148,7 +249,7 @@ public static class LevelCards
         return null;
     }
 
-    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL[:BEFORE:AFTER] | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
+    /// <summary>--level-card's spec: slot:SKILL:LEVEL[:SLOT] (SLOT 4+ an auto card) | stance[:ID] (the second weapon's card, level 8) | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL[:BEFORE:AFTER] | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>
     public static (LevelCardSpec Spec, double At)? Parse(string arg)
     {
@@ -165,8 +266,12 @@ public static class LevelCards
         static double? D(string v) => double.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
         switch (p[0])
         {
-            case "slot" when p.Length == 3 && I(p[2]) is { } l:
-                return (new LevelCardSpec { Kind = LevelCardKind.NewKey, Skill = p[1], Level = l }, at);
+            case "slot" when (p.Length == 3 || p.Length == 4) && I(p[2]) is { } l:
+                // (slot:SKILL:LEVEL[:SLOT]: a slot from MaxKeys on is an auto skill's card)
+                int sl = p.Length == 4 && I(p[3]) is { } n ? n : -1;
+                return (new LevelCardSpec { Kind = sl >= Content.Weapons.MaxKeys ? LevelCardKind.NewAuto : LevelCardKind.NewKey, Skill = p[1], Level = l, Slot = sl }, at);
+            case "stance" when p.Length <= 2:
+                return StanceCard(8, p.Length == 2 ? p[1] : Content.Stances.All[0].Id) is { } stanceCard ? (stanceCard, at) : null;
             case "lamp" when p.Length == 5 && I(p[2]) is { } l && D(p[3]) is { } b && D(p[4]) is { } f:
                 return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Skill = p[1], Level = l, Before = b, After = f }, at);
             case "offer" when p.Length == 3 && I(p[2]) is { } l:

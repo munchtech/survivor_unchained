@@ -143,7 +143,7 @@ public abstract partial class Overlay : Control
         names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(names);
         // B and Escape close; the button is for the mouse, so focus never starts or sticks on it.
-        var btn = Nav.Skip(CloseButton(closeKey, close ?? G.CloseOverlay));
+        var btn = Nav.Skip(CloseButton(closeKey, close ?? G.CloseOverlay, CloseWord));
         btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         head.AddChild(btn);
         v.AddChild(head);
@@ -196,7 +196,7 @@ public abstract partial class Overlay : Control
             s.Size = new Vector2(1200, 24);
             AddChild(s);
         }
-        var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay));
+        var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay, CloseWord));
         btn.Position = new Vector2(1880 - btn.CustomMinimumSize.X, 30);
         AddChild(btn);
         // The foot band (frames/footer.png), the header's match: the page is bound top and bottom.
@@ -271,7 +271,7 @@ public abstract partial class Overlay : Control
         plate.MouseFilter = MouseFilterEnum.Stop;
         AddChild(plate);
         if (InBook) BookTabs(new Vector2(x + 28, 36));
-        var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay));
+        var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay, CloseWord));
         btn.Position = new Vector2(x + width - 28 - btn.CustomMinimumSize.X, 36);
         AddChild(btn);
         var plaque = new Plaque(title, 30, 110);
@@ -357,7 +357,7 @@ public abstract partial class Overlay : Control
             head.AddChild(wideWord);
             head.AddChild(new Control { CustomMinimumSize = new Vector2(Style.Gap5, 0), MouseFilter = MouseFilterEnum.Ignore });
         }
-        var btn = Nav.Skip(CloseButton(Toggle is Act t ? G.Key(t) : "Esc", close ?? G.CloseOverlay));
+        var btn = Nav.Skip(CloseButton(Toggle is Act t ? G.Key(t) : "Esc", close ?? G.CloseOverlay, CloseWord));
         btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         head.AddChild(btn);
         v.AddChild(head);
@@ -468,19 +468,22 @@ public abstract partial class Overlay : Control
     }
 
     /// <summary>Close, with its key: a pad shows B, the keyboard the screen's own key.</summary>
-    protected static Button CloseButton(string closeKey, Action close)
+    /// <summary>The word by the close key (top right): "Close"; a screen that steps back to another says "Back" (the wardrobe).</summary>
+    protected virtual string CloseWord => "Close";
+
+    protected static Button CloseButton(string closeKey, Action close, string word = "Close")
     {
         // Close as words with its key, not a button box (words as type, the owner's rule).
         var btn = new Button { FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, Flat = true };
         foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) btn.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
         btn.Pressed += close;
-        var word = Style.Label("Close", Style.UiBold, Style.Small, Kit.Ink2);
-        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), word);
+        var wordLabel = Style.Label(word, Style.UiBold, Style.Small, Kit.Ink2);
+        var row = Style.H(Style.Gap2, Controls.Instance?.UsingPad == true ? Style.PadButton("B") : Style.Key(closeKey), wordLabel);
         row.MouseFilter = MouseFilterEnum.Ignore;
         row.Position = new Vector2(0, 5);
         btn.AddChild(row);
-        btn.MouseEntered += () => word.AddThemeColorOverride("font_color", Kit.Ink);
-        btn.MouseExited += () => word.AddThemeColorOverride("font_color", Kit.Ink2);
+        btn.MouseEntered += () => wordLabel.AddThemeColorOverride("font_color", Kit.Ink);
+        btn.MouseExited += () => wordLabel.AddThemeColorOverride("font_color", Kit.Ink2);
         btn.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X, 36);
         Nav.Id(btn, "close");
         return btn;

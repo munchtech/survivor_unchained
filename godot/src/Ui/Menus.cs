@@ -113,8 +113,8 @@ public partial class ControlsPanel : VBoxContainer
     static readonly (string Label, Act[] Acts, string? Pad)[] Rows =
     {
         ("Skill 1, the grip", [Act.Skill1], null), ("Skill 2", [Act.Skill2], null), ("Skill 3", [Act.Skill3], null),
-        ("Skill 4", [Act.Skill4], null), ("Skill 5", [Act.Skill5], null), ("Skill 6", [Act.Skill6], null),
-        ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Flare", [Act.Flare], null),
+        ("Skill 4", [Act.Skill4], null),
+        ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Flare", [Act.Flare], null), ("Swap weapons", [Act.Swap], "RB"),
         ("Draught", [Act.Draught], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
         ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Lamps", [Act.Lamps], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"),
         ("Level and experience (hold)", [Act.Experience], "D-pad down, in play"),
@@ -166,7 +166,7 @@ public partial class ControlsPanel : VBoxContainer
         bar.AddChild(new Control { CustomMinimumSize = new Vector2(150 + Style.Gap4 - 4, 0) });
         for (int k = 0; k < KeyMap.SeatSlot.Length; k++)
         {
-            if (k == 3)
+            if (k == 2)
             {
                 // the coin between the hands' keys
                 var coin = new Panel { CustomMinimumSize = new Vector2(18, 18), SizeFlagsVertical = SizeFlags.ShrinkBegin, MouseFilter = MouseFilterEnum.Ignore };

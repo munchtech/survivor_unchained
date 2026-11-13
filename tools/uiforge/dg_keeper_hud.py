@@ -38,6 +38,8 @@ SEAT_R = WELL_R + BEZ
 SEAT_Y, MED_R, GAP = 1042.0, 37.0, 5.0
 PITCH = 2 * SEAT_R + GAP
 SEAT_XS = [960 - MED_R - GAP - SEAT_R - k * PITCH for k in (2, 1, 0)] + [960 + MED_R + GAP + SEAT_R + k * PITCH for k in (0, 1, 2)]
+SEAT_XS4 = [761, 860, 1060, 1159]   # bd-ui W2: the campaign's 4-key plate (--four); the flask and dash stay at the 6-seat plate's ends
+SEATS = SEAT_XS                    # the seats the plate and bezels draw (--four sets SEAT_XS4)
 FLASK_X = SEAT_XS[0] - SEAT_R - 4 - 21
 DASH_X = 1920 - FLASK_X
 # UI 27 (the owner, 2 Nov: "slide them inward", "the dead space ... doesn't need to be so wide", "the same height";
@@ -727,7 +729,7 @@ def plate(Z):
     line_d = np.where(in_v, np.minimum(np.abs(sd - INL), spir), np.abs(sd - INL))
     groove = -0.9 * np.exp(-((line_d + 1.0) / 0.9) ** 2) + 0.9 * np.exp(-(line_d / 0.7) ** 2)
     sock = np.zeros_like(X)
-    for sx in SEAT_XS:
+    for sx in SEATS:
         dd = np.hypot(X - sx, Y - SEAT_Y)
         sock -= 1.2 * np.exp(-np.clip(dd - SEAT_R, 0, None) / 0.8) * (dd > SEAT_R - 1)
     dd = np.hypot(X - 960, Y - SEAT_Y)
@@ -782,7 +784,7 @@ def bezels(Z):
     x0, y0, w, h = PANEL_RECT
     out = np.zeros((h * Z, w * Z, 4), np.float32)
     ss = 4 * Z
-    for sx in SEAT_XS:
+    for sx in SEATS:
         bx0, by0 = int(sx - SEAT_R - 3), int(SEAT_Y - SEAT_R - 3)
         bx1, by1 = int(sx + SEAT_R + 4), int(SEAT_Y + SEAT_R + 4)
         X, Y = ss_grid(bx0, by0, bx1, by1, ss)
@@ -874,7 +876,7 @@ def variant_consts(k):
     vr = float(round(VOL_R * k))
     rx0, ry0 = int(np.floor(mx(PANEL_RECT[0]))), int(np.floor(my(PANEL_RECT[1])))
     return dict(PL_X0=x0, PL_X1=1920 - x0, PL_TOP=float(round(my(PL_TOP))), VOL_R=vr, INL=round(INL * k - 0.5) + 0.5,
-                FOOT_X=x0 - (PL_X0 - FOOT_X) * k, SEAT_Y=my(SEAT_Y), SEAT_XS=[mx(x) for x in SEAT_XS], WELL_R=WELL_R * k,
+                FOOT_X=x0 - (PL_X0 - FOOT_X) * k, SEAT_Y=my(SEAT_Y), SEATS=[mx(x) for x in SEATS], WELL_R=WELL_R * k,
                 BEZ=BEZ * k, SEAT_R=SEAT_R * k, MED_R=MED_R * k, ARCH_R=ARCH_R * k,
                 PANEL_RECT=(rx0, ry0, 1920 - 2 * rx0, 1080 - ry0))
 
@@ -894,7 +896,10 @@ def bake_variant(k, Z):
 
 
 # ================================================================== the bake
-def main():
+def main(four=False):
+    global SEATS
+    if four:
+        SEATS = SEAT_XS4
     gr = json.load(open(os.path.join(SRC, 'keeper_grade.json')))
     Z = 2
     rep = {}
@@ -905,8 +910,9 @@ def main():
     rep['girl islands removed'] = n_isl
     gm = lamp_mask(art)
     dd = os.path.join(UI, 'lamp_life', 'drowned')
-    save_rgba(os.path.join(dd, 'lamp_cold.png'), art)
-    Image.fromarray((np.clip(gm, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGB').save(os.path.join(dd, 'lamp_mask.png'))
+    if not four:
+        save_rgba(os.path.join(dd, 'lamp_cold.png'), art)
+        Image.fromarray((np.clip(gm, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGB').save(os.path.join(dd, 'lamp_mask.png'))
     rep['G1 px filled (art)'] = n_g1
     # ---- the keeper at 2x
     k_rgb, k_a = keeper_source()
@@ -956,8 +962,9 @@ def main():
     bl, br = kx0 + gr['BOWL_L'] * K_S, kx0 + gr['BOWL_R'] * K_S
     front = sm(rim_y - 1.0, rim_y + 1.5, Yi) * (Xi > bl - 2) * (Xi < br + 2)
     kd = os.path.join(UI, 'dg_keeper')
-    save_rgba(os.path.join(kd, 'keeper.png'), np.dstack([straight(K), K[..., 3]]))
-    save_rgba(os.path.join(kd, 'keeper_lip.png'), np.dstack([straight(K), K[..., 3] * front]))
+    if not four:
+        save_rgba(os.path.join(kd, 'keeper.png'), np.dstack([straight(K), K[..., 3]]))
+        save_rgba(os.path.join(kd, 'keeper_lip.png'), np.dstack([straight(K), K[..., 3] * front]))
     # ---- the panel at 2x
     # the figures' edges at 2x: her art (scaled) and the keeper sprite, full width rows from the panel's top
     py0 = PANEL_RECT[1]
@@ -972,11 +979,11 @@ def main():
     P = plate(Z)
     P = over(P, bezels(Z))
     P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
-    save_rgba(os.path.join(UI, 'dg_panel', 'panel.png'), np.dstack([straight(P), P[..., 3]]))
+    save_rgba(os.path.join(UI, 'dg_panel', 'panel4.png' if four else 'panel.png'), np.dstack([straight(P), P[..., 3]]))
     variants = []
     for vk in VARIANTS:
         Pv, vrect, vc = bake_variant(vk, Z)
-        name = f'dg_panel/panel_{int(round(vk * 100)):03d}.png'
+        name = f'dg_panel/panel{"4" if four else ""}_{int(round(vk * 100)):03d}.png'
         save_rgba(os.path.join(UI, *name.split('/')), np.dstack([straight(Pv), Pv[..., 3]]))
         variants.append({'scale': vk, 'texture': name, 'screen_rect': vrect, 'design': {n: round(float(v), 3) for n, v in vc.items()}})
     rep['bar variants'] = variants
@@ -1077,9 +1084,22 @@ def main():
     near = min(min(cle['flask'], cle['R']), min(cle['dash'], cle['SPACE']))
     assert all(v >= CLEAR[0] for v in cle.values()) and near <= CLEAR[1], rep
     # ---- the fire
-    shutil.copy(os.path.join(SRC, 'fw_9931_0.png'), os.path.join(kd, 'fire.png'))
-    shutil.copy(os.path.join(SRC, 'fo_9932_0.png'), os.path.join(kd, 'fire_ready.png'))
+    if not four:
+        shutil.copy(os.path.join(SRC, 'fw_9931_0.png'), os.path.join(kd, 'fire.png'))
+        shutil.copy(os.path.join(SRC, 'fo_9932_0.png'), os.path.join(kd, 'fire_ready.png'))
     # ---- the geometry
+    if four:
+        gp = os.path.join(kd, 'hud_a_geo.json')
+        geo = json.load(open(gp))
+        pn = geo['panel']
+        pn['texture4'] = 'dg_panel/panel4.png'
+        pn['seats4'] = [[round(x, 2), SEAT_Y] for x in SEAT_XS4]
+        pn['rank_chips4'] = [[round(x + 24.5, 2), SEAT_Y - 24.5, 9] for x in SEAT_XS4]
+        pn['variants4'] = variants
+        pn['seats4_note'] = "bd-ui: the campaign's 4-key plate [1][2] coin [LMB][RMB]; the arena keeps seats"
+        json.dump(geo, open(gp, 'w'), indent=1)
+        print(json.dumps(rep))
+        return
     geo = geometry(kx0 + K_D[0], ky0 + K_D[1], (sx0, sy0, rx1 - rx0, ry1 - ry0), gr, rows, cl, (g_top, k_top_))
     geo['panel']['variants'] = variants
     geo['panel']['variants_note'] = ('UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect '
@@ -1160,4 +1180,4 @@ def geometry(kx0, ky0, krect, gr, rows, cl, tops):
 
 
 if __name__ == '__main__':
-    main()
+    main('--four' in sys.argv[1:])

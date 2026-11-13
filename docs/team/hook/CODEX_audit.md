@@ -233,3 +233,16 @@ Rulings:
 - **L4 (SU-090)** `logic/Play/Zones/Verge.cs` the scars shared one draw for their spots and a won one skipped its draw, so the others moved mid-night (the doc says "the same all night"). Fixed 7e1bd420b (each scar its own draw by its fixed ordinal).
 - Known gaps: the volley exclusion (`VolleyTaken`) has no test of its own (same type change as Hits, compiler-enforced); a missile ground's radius is still `g.Radius * Stat.Area`, not `AreaOf` (rank, mods, lamps), unlike a swung skill's ground; single named zone refs (Greymuzzle, Redcowl, Snib, the Prologue's knight) stay Enemy refs, nulled by their own death hooks; the HitEnemy refactor reorders multiplications (float-level only).
 - Suite: 2505 passed, 0 failed, 11 skipped (BalanceTests included, green).
+
+## Noted by Codex job 6
+
+- **Draft-card harness coverage, open:** `godot/tools_scenes/CardFit.cs:301-302`
+  indexes `Evolutions[0]` for both union ingredients without checking whether an
+  evolution exists. The resulting exception aborts `_Ready` gathering, but
+  `_Process` measures the partial jobs and can exit successfully. In the saved
+  reports, only 1,914 Warden cards were checked; Arcanist, Reaver, Stalker, and
+  later Warden union/respite states were not covered. Found while investigating
+  the flake: baseline run 13 logged the array-index exception, and parsing the
+  reports' `Calling` values confirmed the missing callings. It also occurs in
+  green runs, independently of the fatal native-script race. Not fixed in this branch.
+- Coordinator, 13 Nov (merge b996c38d3): on current content the gather no longer throws: the merged suite checked 3,338 cards over all four callings (1,428 rows). The unchecked `Evolutions[0]` stays; it is latent, not losing coverage today.

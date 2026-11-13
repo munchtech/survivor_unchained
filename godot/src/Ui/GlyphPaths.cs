@@ -23,7 +23,7 @@ public static class GlyphPaths
         ["chest"] = "relic", ["picks"] = "key", ["lamp"] = "campfire", ["lantern"] = "campfire", ["helm_light"] = "helm", ["circlet"] = "ring",
         ["armor_light"] = "armor", ["armor_heavy"] = "armor", ["root"] = "thorn", ["vial"] = "drop", ["vial_orange"] = "drop", ["potion"] = "heart",
         ["antidote"] = "drop", ["bandage"] = "heart", ["pelt"] = "cloak", ["hide"] = "cloak", ["kerchief"] = "mask", ["wand_dark"] = "wand",
-        ["ember"] = "flame", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
+        ["ember"] = "flame", ["gem_garnet"] = "sigil", ["gem_sapphire"] = "sigil", ["gem_clear"] = "sigil", ["gem_bicolor"] = "sigil", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
         ["flower"] = "perennial", ["lens"] = "eye",
     };
 
@@ -72,7 +72,7 @@ public static class GlyphPaths
     /// and Butcher's Cleaver are both slash_heavy) and still read apart on the bar.</summary>
     static readonly Dictionary<string, string> SkillLine = new()
     {
-        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder",
+        ["cleaver"] = "butchers_cleaver", ["sunder"] = "sunder", ["bladestorm"] = "bladestorm",
     };
 
     /// <summary>The glyph key a skill shows on a HUD seat and on the level card: its own line glyph where it has one
@@ -89,4 +89,13 @@ public static class GlyphPaths
         Sim.OfferKind.Union when Content.Unions.Find(o.Id) is { } u => ForSkill(u.Into, o.Icon),
         _ => o.Icon,
     };
+}
+
+/// <summary>(bd-ui W9) The one place a skill's icon key is chosen: the seat, the level card and the auto tile all call it, so
+/// they can never differ. By skill, from its BASE art: an evolved skill's art (Pile Driver's shield_charge_slam) has no glyph
+/// and drew the neutral four-point star on the seat while its card showed the shield.</summary>
+public static class SeatIcon
+{
+    public static string For(string id, string art) =>
+        GlyphPaths.ForSkill(id, Content.Weapons.All.TryGetValue(id, out var d) && d.Art.Length > 0 ? d.Art : art);
 }

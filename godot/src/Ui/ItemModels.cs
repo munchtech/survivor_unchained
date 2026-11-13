@@ -79,6 +79,16 @@ public static class ItemModels
         ["bandage"] = new(Bandage, new(Pitch: 0.55f, Turn: 0.3f, Tilt: 0.15f)),
         // Gathered.
         ["ember"] = new(Ember, new(Pitch: 0.2f, Turn: 0.5f)),
+        // A loose cut stone (a support gem), tipped to the key light.
+        ["gem_garnet"] = new(() => GemCut.Make("garnet", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_sapphire"] = new(() => GemCut.Make("sapphire", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_clear"] = new(() => GemCut.Make("clear", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_bicolor"] = new(() => GemCut.Make("bicolor", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        // The same stones without the photograph's glint, for the ground (BattleFx).
+        ["gem_garnet.ground"] = new(() => GemCut.Make("garnet", false, true), new()),
+        ["gem_sapphire.ground"] = new(() => GemCut.Make("sapphire", false, true), new()),
+        ["gem_clear.ground"] = new(() => GemCut.Make("clear", false, true), new()),
+        ["gem_bicolor.ground"] = new(() => GemCut.Make("bicolor", false, true), new()),
         ["sigil"] = new(Sigil, new(Pitch: 0.3f, Turn: 0.6f)),
         ["root"] = new(Root, new(Pitch: 0.2f, Turn: 0.4f, Tilt: 0.3f)),
         ["flower"] = new(Flower, new(Pitch: 0.55f, Turn: 0.3f)),

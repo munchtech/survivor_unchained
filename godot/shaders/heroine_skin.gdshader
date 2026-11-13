@@ -539,6 +539,12 @@ uniform vec3 zone_flush = vec3(1.0, 0.82, 0.80);
 uniform vec3 zone_yellow = vec3(1.0, 0.98, 0.88);
 uniform vec3 zone_cool = vec3(0.94, 0.97, 1.03);
 uniform vec3 zone_lids = vec3(0.96, 0.84, 0.86);
+// The cel half-tone on her face (features' blue): cel_mid's level (rgb, its a kept) eased in by face_mid_w. The skin's
+// warm half-tone (CEL_MID) times her warm paint read as a saturated orange band at a close framing in the sun, across
+// her eye from temple to cheek with her head turned or bowed, her lower lids sore red (NPC skin judge r1). 0: as before.
+uniform vec3 face_mid = vec3(0.85, 0.45, 0.38);
+uniform float face_mid_w = 0.0;
+uniform float face_mid_mask = 1.0;   // (1: on her face only (features' blue); 0: on the whole part)
 // sheen_zones: R the T-zone (oilier, glossier), G her cheeks (softer), B her lips (wet), A the face's reach (outside it,
 // her neck and behind her ears, zone_rough_body, as every other part of her). Roughness taken toward the zones' at
 // zone_rough (0: as before).
@@ -972,7 +978,9 @@ void light() {
 		cb_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
 		// (B1c: the omni and spot lights (fire, lamps, her ember) model her with the soft half-tone, the key alone bands;
 		// the light through her only at the terminator's thin edge, capped, so her shade band keeps the fill's cool tint)
-		cb_lv = LIGHT_IS_DIRECTIONAL ? cel_level(cb_t) : cel_level_soft(cb_t);
+		vec4 c_fmid = mix(cel_mid, vec4(face_mid, cel_mid.a), face_mid_w * mix(1.0, 1.0 - soft_w, face_mid_mask));
+		cb_lv = LIGHT_IS_DIRECTIONAL ? cel_level_mid(cb_t, c_fmid)
+			: mix(vec3(1.0), c_fmid.rgb, c_fmid.a * (1.0 - smoothstep(0.0, CEL_SOFT_TURN, cb_t))) * clamp(cb_t, 0.0, 1.0);
 		cb_d = mix(cb_d, cb_lv * (cb_sh / PI), cel_on);
 		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);
 	}

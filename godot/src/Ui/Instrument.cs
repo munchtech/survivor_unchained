@@ -49,17 +49,36 @@ public partial class Instrument : Control
         }
     }
 
+    /// <summary>Its pieces on the screen, for what must give way to it (the ground labels): the girl (her head to the foot, to
+    /// the bar's left end), the bar with the buff shelf over it (40 px), and the keeper. Bounds as one rectangle took in all
+    /// the open ground between the two statues, and a gem's name there faded to 14% (gems judge round 4).</summary>
+    public static Rect2[] Pieces
+    {
+        get
+        {
+            float s = DgPanel.GroupScale;
+            var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s + DgPanel.GirlOffset;
+            var (b, k) = (DgPanel.Rect, DgPanel.KeeperRect);
+            return Array.ConvertAll(HudKeepOut.Pieces((tl.X, tl.Y), (b.Position.X, b.Position.Y, b.Size.X, b.Size.Y),
+                (k.Position.X, k.Position.Y, k.Size.X, k.Size.Y)), r => HudBottom.Map(new Rect2(r.X, r.Y, r.W, r.H)));
+        }
+    }
+
     public readonly LifeLamp Life;
     /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
     public readonly DgKeeper Keeper;
     public readonly Vessel Art;
-    public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
+    /// <summary>bd-ui W3: the campaign's four seats (the keys) or the arena's six (SetFour).</summary>
+    public Socket[] Sockets = [];
     public readonly Round Draught, Dash;
     /// <summary>The plate in the middle (the bar).</summary>
     public readonly DgPanel Panel;
     /// <summary>The passives' beads over the plate's top line, over the seats' middle; what is on her (burning,
     /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives;
+    /// <summary>bd-ui W3 (campaign only): her auto tiles left of the coin, the stance block right of it.</summary>
+    public readonly AutoRow Autos = new();
+    public readonly StanceBlock Stance = new();
     /// <summary>UI 28: what is on her, buffs and debuffs (StatusRow: the shelf over the bar, or beside the orb).</summary>
     public readonly StatusRow Statuses;
     public readonly Label ArtWord, ArtNote;
@@ -88,14 +107,7 @@ public partial class Instrument : Control
         Art = new Vessel { Position = ArtAt - Vessel.Half };
         AddChild(Art);
         Keeper.Globe = Art.Globe;
-        for (int i = 0; i < Sockets.Length; i++)
-        {
-            Sockets[i] = new Socket { Index = i };
-            Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
-            AddChild(Sockets[i]);
-            // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock)
-            Sockets[i].SetCap(new KeyTag(Controls.Skills[KeyMap.SeatSlot[i]]) { Chip = true });
-        }
+        BuildSeats(false);
         AddChild(Draught);
         Dash = new Round(Round.Kind.Dash);
         Dash.Place(DgPanel.DashAt, DgPanel.DashScale);
@@ -103,11 +115,12 @@ public partial class Instrument : Control
         // (UI 23: the beads in a row over the plate's top line, over the seats' middle)
         Passives = Style.H(2);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
-        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(5).X) / 2, w = DgPanel.Seat(5).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
-        Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
-        Passives.Size = new Vector2(w, 28);
+        PlacePassives();
         Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
+        AddChild(Autos);
+        AddChild(Stance);
+        Autos.Visible = false;
         Statuses = new StatusRow { ZIndex = 2 };
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
@@ -121,8 +134,8 @@ public partial class Instrument : Control
         AddChild(ArtNote);
         // (UI 23: R, SPACE and Q on small dark chips at the geo's places under the flask, the dash and the keeper's
         // bowl; Q lit "Q  READY" when the Flare is full)
-        draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y);
-        dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y);
+        draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y - 3);   // (bd-ui W14: lifted 3 px, they sat 1-2 px off the screen bottom)
+        dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y - 3);
         artKey.Place(DgPanel.KeyQ.X, DgPanel.KeyQ.Y);
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         AddChild(Panel.Numbers);
@@ -159,6 +172,50 @@ public partial class Instrument : Control
         foreach (var ch in n.GetChildren()) Redraw(ch);
     }
 
+    /// <summary>bd-ui W3: the campaign bar has four seats, the arena six. A no-op while it is already so; else the sockets
+    /// are rebuilt at DgPanel.Seat(i) and the plate redraws with the right art (DgPanel.Four).</summary>
+    public void SetFour(bool four)
+    {
+        if (four == DgPanel.Four) return;
+        BuildSeats(four);
+        PlacePassives();
+        Autos.Visible = four;
+        Keys();
+    }
+
+    void BuildSeats(bool four)
+    {
+        int at = -1;
+        foreach (var s in Sockets)
+        {
+            if (!GodotObject.IsInstanceValid(s)) continue;
+            if (at < 0) at = s.GetIndex();
+            s.GetParent()?.RemoveChild(s);
+            s.QueueFree();
+        }
+        DgPanel.Four = four;
+        Sockets = new Socket[DgPanel.SeatCount];
+        for (int i = 0; i < Sockets.Length; i++)
+        {
+            Sockets[i] = new Socket { Index = i };
+            Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
+            AddChild(Sockets[i]);
+            if (at >= 0) MoveChild(Sockets[i], at + i);
+            // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock. The arena's seats are keyless: no cap)
+            if (four) Sockets[i].SetCap(new KeyTag(LevelCardPlace.CapAct(KeyMap.SeatSlot[i])) { Chip = true });
+        }
+        if (Panel != null) Panel.QueueRedraw();
+    }
+
+    void PlacePassives()
+    {
+        if (Passives == null) return;
+        int last = DgPanel.SeatCount - 1;
+        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(last).X) / 2, w = DgPanel.Seat(last).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
+        Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
+        Passives.Size = new Vector2(w, 28);
+    }
+
     /// <summary>The keys, as the device in hand has them: plates under the draught, the dash and the Flare. A tag
     /// redraws only when its key or button changed.</summary>
     public void Keys()
@@ -169,6 +226,7 @@ public partial class Instrument : Control
         artKey.Refresh();
         // (M4 §1: the seats' caps. A seat that wears a cap draws no rank chip, so nothing is measured against it)
         foreach (var s in Sockets) s.Cap?.Refresh();
+        Stance.Keys();
     }
 
     /// <summary>The Lamps' Open wide (§4): the flask and the dash (no wicks) drop to 45%; off, back to full.</summary>
@@ -197,6 +255,7 @@ public partial class Instrument : Control
         Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
         Passives.Modulate = For(false) with { A = slots };
+        Autos.Modulate = Stance.Modulate = For(false) with { A = slots };
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
     }
 
@@ -220,7 +279,7 @@ public partial class Instrument : Control
             int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
             // (c3: filled at rank 3 and coming back, a quarter, half or three quarters ready by its place)
             double ready = c.StartsWith("c") ? 0.25 + 0.25 * (i % 3) : 1;
-            Sockets[i].Show(d.Id, Glyphs.ForSkill(d.Id, d.Art), ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
+            Sockets[i].Show(d.Id, SeatIcon.For(d.Id, d.Art), ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
         }
     }
 }
@@ -484,8 +543,12 @@ public partial class Socket : Control
         // (M4 lead 3: looked up when the glyph or school changes, not each frame: the path string and the key cost 6 seats x 80 B a frame)
         var newArt = art;
         if (art == null || glyph != glyphKey || school != this.school)
-            newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
-        if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
+            newArt = SeatPicture.Of(glyph, school);
+        if (glyph != glyphKey)
+        {
+            glyphKey = glyph; dirty = true;
+            if (Args.Get("level-card") != null) GD.Print($"level-card picture: seat {Id} key {glyph} = DgGold gold line glyph");
+        }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
@@ -504,6 +567,13 @@ public partial class Socket : Control
     }
 
     bool dirty = true;
+    /// <summary>(bd-ui W14) The level card above points at this seat and holds: a 2 px gold ring pulses on it (alpha 0.4 to 1.0 to 0.4, 1.2 s) and its cap fills gold.</summary>
+    public bool Target
+    {
+        get => target;
+        set { if (value == target) return; target = value; if (Cap != null) Cap.Target = value; dirty = true; }
+    }
+    bool target;
     double waitSecs = -1;
     int secsShown = -1;
 
@@ -537,7 +607,7 @@ public partial class Socket : Control
             if (opened >= 0.6) { opened = -1; Modulate = openedBase; }
         }
         // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
-        if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
+        if (dirty || target || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
     }
 
     /// <summary>A fast cycle (the last wait and this one so far under FastWait): it neither dims nor shows its well.</summary>
@@ -587,6 +657,8 @@ public partial class Socket : Control
         }
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
         bool cooling = filled && ready < 0.98 && !Fast;
+        // (bd-ui W7: a pressed or channeled key coming back keeps its icon under a wipe, not a black disc: it must not read as locked)
+        bool wiped = cooling && keyed && st.Kind != SeatKind.Kindled;
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
@@ -603,24 +675,29 @@ public partial class Socket : Control
                 var (gold, glowTex) = DgGold.Of(glyphKey, gi);
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
-                if (glow > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
+                // (bd-ui W14: a wiped seat draws its icon whole at READY brightness, glow and all; only the not-ready wedge darkens it, SeatLook.WipeAlpha)
+                float gl0 = wiped ? 0.42f : (float)glow;
+                if (gl0 > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = gl0 });
                 // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
                 // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
-                bool num = Numbered;
+                bool num = Numbered && !wiped;
                 // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
                 bool short_ = shortNow;
                 var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
+                if (wiped) DrawTextureRect(gold, gr, false, Colors.White.Lerp(school, 0.10f));
+                else DrawTextureRect(gold, gr, false, (tone *Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
                 if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
-                DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
+                if (wiped) DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, new Color(1.25f, 1.25f, 1.25f));
+                else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
             // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
-            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
+            if (wiped) DrawWipe(c, hr);
+            else if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }
         // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
         if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)
@@ -630,11 +707,25 @@ public partial class Socket : Control
         }
         // (M4 §1: the union's gold edge and clasp, the cost arc: SeatKeys.cs)
         DrawSeatMarks(c, hr);
+        // (bd-ui W7: the stance she wears REPLACES the inner ring: 2.5 px, full opacity, every open seat in every state; drawn
+        // after the marks, since the cost arc's groove used to cover it on the one seat that was short)
+        if (keyed && st.Tint.A > 0.01f && (filled || !locked)) DrawArc(c, hr - 1.25f, 0, Mathf.Tau, 64, st.Tint with { A = 1f }, 2.5f, true);
+        if (!filled && locked && keyed) DrawLocked(c);
+        if (target)
+        {
+            // (bd-ui W14: the level card points here and holds: a 2 px gold ring, alpha 0.4 -> 1.0 -> 0.4 over 1.2 s)
+            float pa = 0.7f - 0.3f * Mathf.Cos((float)(t % 1.2 / 1.2) * Mathf.Tau);
+            DrawArc(c, hr + 1f, 0, Mathf.Tau, 64, Style.Gold with { A = pa }, 2, true);
+        }
         if (filled && (evolved || ripe))
         {
-            float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
-            DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
-            DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+            if (ripe && !evolved)
+            {
+                float a = 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
+                DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+            }
+            // (bd-ui W14: no crown pip for an evolved skill: it reads unexplained; the evolution shows in the tooltip and the Arts page)
         }
         if (filled)
         {
@@ -644,7 +735,8 @@ public partial class Socket : Control
             if (Numbered)
             {
                 int n = (int)Math.Ceiling(waitSecs);
-                DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, new Color(240 / 255f, 230 / 255f, 208 / 255f), 5);
+                if (wiped) DrawSeconds(c, DgMeters.Figures(n));
+                else DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, new Color(240 / 255f, 230 / 255f, 208 / 255f), 5);
                 TraceWait(n);
             }
             else TraceWait(-1);
@@ -782,7 +874,9 @@ public partial class KeyTag : Control
         get => underline;
         set { if (value == underline) return; underline = value; QueueRedraw(); }
     }
-    const float MouseW = 13, MouseH = 17, MouseChip = 21;
+    const float MouseW = 13, MouseH = 17;
+    /// <summary>The mouse glyph's chip, the tallest cap (bd-ui W4: the tile row clears it).</summary>
+    public const float MouseChip = 21;
     /// <summary>Fix A (judge r1, 1): every cap in lining figures. Alegreya Sans' default numerals are old-style, 7 px
     /// tall at 16 beside the letters' 11: the skill keys were the smallest text on the bar.</summary>
     static Font CapFont => Vessel.Figures;
@@ -792,8 +886,11 @@ public partial class KeyTag : Control
     public bool Quiet { get => quiet; set { if (value == quiet) return; quiet = value; QueueRedraw(); } }
     /// <summary>Fix A (6): the key is down: the chip's rim gold, its ground warm.</summary>
     public bool Down { get => down; set { if (value == down) return; down = value; QueueRedraw(); } }
-    Color Rim => down ? new Color(1f, 206 / 255f, 120 / 255f) : quiet ? new Color(74 / 255f, 60 / 255f, 42 / 255f) : new Color(138 / 255f, 108 / 255f, 70 / 255f);
-    Color Ground => down ? new Color(64 / 255f, 36 / 255f, 12 / 255f, 245 / 255f) : new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f);
+    /// <summary>(bd-ui W14) The level card points at this key: the cap fills gold.</summary>
+    bool target;
+    public bool Target { get => target; set { if (value == target) return; target = value; QueueRedraw(); } }
+    Color Rim => target ? new Color(1f, 0.86f, 0.5f) : down ? new Color(1f, 206 / 255f, 120 / 255f) : quiet ? new Color(74 / 255f, 60 / 255f, 42 / 255f) : new Color(138 / 255f, 108 / 255f, 70 / 255f);
+    Color Ground => target ? new Color(0.66f, 0.46f, 0.13f, 1f) : down ? new Color(64 / 255f, 36 / 255f, 12 / 255f, 245 / 255f) : new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f);
     Color Bone => new Color(240 / 255f, 230 / 255f, 208 / 255f, quiet && !down ? 0.85f : 1f);
     /// <summary>Its key whatever the device (the keys page's miniature, which shows the pad's buttons under it).</summary>
     public bool KeysOnly;
@@ -895,6 +992,7 @@ public partial class KeyTag : Control
         // the mouse: 13 x 17, a full bone outline on ink, the button meant solid bone, the other ink
         var r = new Rect2(chip.Position + new Vector2((MouseChip - MouseW) / 2, (MouseChip - MouseH) / 2), new Vector2(MouseW, MouseH));
         var bone = Bone;
+        var cream = new Color("#F2E6C8");   // (bd-ui W7: the pressed button solid cream, the other outlined only)
         var body = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
         body.SetBorderWidthAll(1);
         body.CornerRadiusTopLeft = body.CornerRadiusTopRight = 6;
@@ -909,7 +1007,8 @@ public partial class KeyTag : Control
             var btn = new StyleBoxFlat { BgColor = bone, AntiAliasing = true };
             btn.CornerRadiusTopLeft = left ? 6 : 0;
             btn.CornerRadiusTopRight = left ? 0 : 6;
-            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 8));
+            btn.BgColor = cream;
+            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX, r.Position.Y, 7, 8));
             DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 7), bone, true);
         }
         DrawRect(new Rect2(r.Position.X + 1, split, MouseW - 2, 1), bone, true);
@@ -1006,11 +1105,18 @@ public partial class KeyTag : Control
 
     public override void _Draw()
     {
+        DrawCap();
         if (Chip && underline)
         {
+            // (bd-ui W13: held down = a 1 px gold bar INSIDE the cap, under the numeral, drawn over the chip)
             var bx = ChipBox();
-            DrawRect(new Rect2(bx.Position.X - 1, bx.End.Y + 1, bx.Size.X + 2, 2), Style.Gold, true);
+            float w = Math.Min(bx.Size.X - 6, Math.Max(6, ChipTextW(Shown)));
+            DrawRect(new Rect2(Mathf.Round(bx.GetCenter().X - w / 2), bx.End.Y - 4, w, 1), Style.Gold, true);
         }
+    }
+
+    void DrawCap()
+    {
         if (Chip && padName != null) { DrawPadCap(); return; }
         if (Chip && mouse >= 0 && padName == null) { DrawMouse(); return; }
         if (Chip && padName == null && text != "")
