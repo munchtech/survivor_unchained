@@ -1,11 +1,11 @@
 {
- "source": "tools/body/out/round_38",
+ "source": "tools/body/out/round_39d",
  "files": {
-  "body.glb": "50a22ffe93c11cedbcb52e76ad53ea73ca362ea3",
-  "play.glb": "6b268cdce2bf5b5d362cc5b11c5ffbd5cc6d77e7",
+  "body.glb": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+  "play.glb": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
   "rig.json": "250e38fcd00f07fcee184d40e97bc9dcd3fe248c",
   "play_rig.json": "250e38fcd00f07fcee184d40e97bc9dcd3fe248c",
-  "pieces.glb": "d4d42a70af4c2ed578c6c90ec3421c1e02bfc7ed",
+  "pieces.glb": "4d9271f721682cbbf2bc8b7147a4397cb9a8f809",
   "pieces.json": "9ba22b6aa3e522e2d7d30e073c6c93e0c3f3d4a4",
   "cavity.png": "256290d36e42ac16a5fa36f99d9e917e82757c17"
  },
