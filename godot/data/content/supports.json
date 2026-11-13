@@ -1,0 +1,15 @@
+{
+  "_doc": "Support gems (BUILD_DIRECTION 'Supports', BUILD_UNLOCKS level 12): items that slot into a skill to make fun combinations. A skill's socket 1 opens at its rank sockets.ranks[0], socket 2 at sockets.ranks[1]. Gems drop with bad-luck protection: each copy she owns multiplies that gem's drop weight by badLuck.perOwned, so the others come. fits: the skill tags a gem takes (empty = any skill). effects: summed per skill and read by the battle (wired after bd-keys lands). Read by Rpg/Supports.cs.",
+  "sockets": { "ranks": [3, 6] },
+  "badLuck": { "perOwned": 0.5 },
+  "gems": [
+    { "id": "brutality", "name": "Brutality", "fits": ["Melee"], "weight": 1, "text": "Her blows hit 25% harder and lose their reach.", "effects": { "damage": 0.25, "area": -0.15 } },
+    { "id": "wide_arc", "name": "Wide Arc", "fits": ["Melee"], "weight": 1, "text": "The swing sweeps a third wider, a little lighter.", "effects": { "area": 0.33, "damage": -0.1 } },
+    { "id": "concussion", "name": "Concussion", "fits": ["Melee", "Shield"], "weight": 1, "text": "What it strikes is stunned half a second longer.", "effects": { "stun": 0.5 } },
+    { "id": "bloodletting", "name": "Bloodletting", "fits": ["Melee"], "weight": 1, "text": "Its hits open a bleed for 30% of the blow.", "effects": { "bleed": 0.3 } },
+    { "id": "bulwark", "name": "Bulwark", "fits": ["Shield"], "weight": 0.8, "text": "While it plays she blocks one blow in five.", "effects": { "block": 0.2 } },
+    { "id": "haste", "name": "Haste", "fits": [], "weight": 1, "text": "It comes 15% faster.", "effects": { "speed": 0.15 } },
+    { "id": "echo", "name": "Echo", "fits": [], "weight": 0.6, "text": "It repeats once, and waits a third longer to come back.", "effects": { "echo": 1, "cooldown": 0.33 } },
+    { "id": "quickening", "name": "Quickening", "fits": [], "weight": 0.8, "text": "It comes back a fifth sooner and hits a tenth lighter.", "effects": { "cooldown": -0.2, "damage": -0.1 } }
+  ]
+}
