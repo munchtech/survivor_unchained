@@ -178,33 +178,8 @@ public partial class BattleFx
             ? Ui.ItemViews.SchoolColors[wd.School] : null;
 
     static readonly Color GiftCore = Hdr("#fff4d6", 2.4f), GiftSheath = new("#FFF4D6");
-    sealed class GiftRig { public required Decal Ring; public long Frame; public float Acc; }
+    sealed class GiftRig { public required SwapRingRig Ring; public required StarQuad Star; public required OmniLight3D Lamp; public long Frame; public float Acc; }
     readonly Dictionary<int, GiftRig> giftRigs = new();
-    static Texture2D? giftRingTex;
-
-    /// <summary>A soft gradient ring for a decal: a bright thin edge at 0.93 of its half-width fading to nothing about a quarter inward.</summary>
-    static Texture2D GiftRingTexture()
-    {
-        if (giftRingTex != null) return giftRingTex;
-        const int N = 256;
-        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
-        for (int y = 0; y < N; y++)
-            for (int x = 0; x < N; x++)
-            {
-                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
-                float r = Mathf.Sqrt(u * u + v * v);
-                float a = r <= 0.93f ? Mathf.Pow(Mathf.Max(0, 1 - (0.93f - r) / 0.26f), 2f) : Mathf.Exp(-Mathf.Pow((r - 0.93f) / 0.025f, 2f));
-                img.SetPixel(x, y, new Color(a, a, a, a));
-            }
-        return giftRingTex = ImageTexture.CreateFromImage(img);
-    }
-
-    Decal GiftRing()
-    {
-        var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = GiftRingTexture(), AlbedoMix = 0, NormalFade = MarkNormalFade, SortingOffset = DecalLayer.HerGround };
-        AddChild(d);
-        return d;
-    }
 
     /// <summary>Per frame: hides the gift rigs not drawn last frame (a gift taken or gone), and runs the swap rings.</summary>
     void GiftSweep()
@@ -213,54 +188,54 @@ public partial class BattleFx
         long now = (long)Engine.GetProcessFrames();
         List<int>? gone = null;
         foreach (var (id, r) in giftRigs) if (now - r.Frame > 2) (gone ??= new()).Add(id);
-        if (gone != null) foreach (var id in gone) { giftRigs[id].Ring.QueueFree(); giftRigs.Remove(id); }
+        if (gone != null) foreach (var id in gone) { var r = giftRigs[id]; r.Ring.M.QueueFree(); r.Star.M.QueueFree(); r.Lamp.QueueFree(); giftRigs.Remove(id); }
     }
 
     /// <summary>(bd-ui2) A gift's light, on top of the Legendary's pillar: white-gold, never the school's color, so it reads on any ground.
-    /// ONE soft gradient ring at 0.9 m pulsing 1.0 to 1.15 scale and 0.8 to 0.3 alpha every 1.2 s; a white-gold sheath 2.2x the amber core's
-    /// width at 35% alpha, shimmering up on a 0.6 s period (and shorter than the pillar, which runs off the screen); a crisp 48 px
-    /// four-point star at the foot that stays, turning 15 degrees a second and twinkling every 0.8 s; and 14 motes (3.5 px) rising 1.5 m
-    /// over 1.2 s, staggered. The school's color is only on the label's seal now.</summary>
+    /// ONE gradient ring (a 3 px rim with an 8 px glow, an interior at most 10%) pulsing 0.7 to 0.9 m and 0.8 to 0.2 alpha every 1.6 s; a warm
+    /// light (2.5 m, no shadows) so the grass reads lit; a white-gold sheath 2.2x the amber core's width at 35% alpha, shimmering up on a 0.6 s
+    /// period (shorter than the pillar, which runs off the screen); a crisp 48 px four-point star at the foot that stays (2.5 px arms, a 6 px white
+    /// core), turning 15 degrees a second and twinkling every 0.8 s; and 14 round motes (3.5 px) rising 1.5 m over 1.2 s, staggered.</summary>
     void GiftLook(Pickup p, float gy, float t, float age, Color school)
     {
         if (age >= StrikeLife)
         {
-            // The sheath: the shaft light with a 0.11 m core (the pillar's is 0.045), pulsing up the column every 0.6 s.
             float sh = 0.75f + 0.25f * Mathf.Sin(t * Mathf.Tau / 0.6f);
             Light(p.X, gy, p.Z, Lit.Shaft, 0, 1.1f, 4.5f, GiftSheath, 0.35f * sh);
         }
         if (age < 0 || frameDt <= 0) return;
         float poolIn = Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
-        if (!giftRigs.TryGetValue(p.Id, out var rig)) giftRigs[p.Id] = rig = new GiftRig { Ring = GiftRing() };
-        rig.Frame = (long)Engine.GetProcessFrames();
         var g = V(p.X, Y(p.X, p.Z), p.Z);
-        float k = ((t + p.Id * 0.37f) % 1.2f) / 1.2f;
-        var d = rig.Ring;
-        d.Visible = poolIn > 0.001f;
-        d.Position = g;
-        float rr = 0.9f * (1 + 0.15f * k) / 0.93f;
-        d.Size = new Vector3(rr * 2, 0.8f, rr * 2);
-        d.Modulate = new Color(1f, 0.957f, 0.84f, (0.8f - 0.5f * k) * poolIn);
-        d.EmissionEnergy = 3.2f;
+        if (!giftRigs.TryGetValue(p.Id, out var rig))
+        {
+            var lamp = new OmniLight3D { LightColor = new Color("#FFE6B0"), LightEnergy = 0, OmniRange = 2.5f, ShadowEnabled = false, Visible = false };
+            AddChild(lamp);
+            var ring = RingNew(g, 3, 8, (new Color("#E8C987"), new Color("#FFF4D6")));
+            ring.InPx = 0; ring.Inner = 0.08f;
+            giftRigs[p.Id] = rig = new GiftRig { Ring = ring, Star = StarNew(new Color("#FFF4D6"), 5), Lamp = lamp };
+        }
+        rig.Frame = (long)Engine.GetProcessFrames();
+        float k = ((t + p.Id * 0.37f) % 1.6f) / 1.6f;
+        rig.Ring.At = g;
+        RingDraw(rig.Ring, Mathf.Lerp(0.7f, 0.9f, k), (0.8f - 0.6f * k) * poolIn);
+        rig.Lamp.Position = g + Vector3.Up * 0.5f;
+        rig.Lamp.LightEnergy = 1.5f * poolIn;
+        rig.Lamp.Visible = poolIn > 0.01f;
+        rig.Star.M.Visible = poolIn >= 0.5f;
         if (poolIn < 0.5f) return;
         var at = V(p.X, gy + 0.3, p.Z);
         float ppm = PxPerM(g);
         // The star: always there, crisp at 48 px, turning 15 degrees a second; every 0.8 s it twinkles brighter for 0.2 s.
         float ph = (t + p.Id * 0.37f) % 0.8f;
         float tw = ph < 0.2f ? Mathf.Sin(ph / 0.2f * Mathf.Pi) : 0;
-        var sc = GiftCore * (1f + 0.9f * tw);
-        float sz = 48f / ppm;
-        Sparks.Spawn(new Sparks.P { At = at, Life = frameDt * 1.5f, Size = sz, SizeEnd = sz, Color = sc, ColorEnd = sc, Sprite = Sprites.Of("star"), Spin = Mathf.DegToRad(15) * t, SpinV = 0 });
-        // Motes: 14 alive at once (3.5 px, 1.5 m up over 1.2 s), staggered.
+        StarSet(rig.Star, at, 48, 2.5f, 6, Mathf.DegToRad(15) * t, 1f + 0.5f * tw);
+        // Motes: 14 alive at once, round 3.5 px dots (no stretch), 1.5 m up over 1.2 s, staggered.
         rig.Acc += frameDt * 14f / 1.2f;
         for (; rig.Acc >= 1; rig.Acc -= 1)
         {
             float a = R() * Mathf.Tau;
             Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.35f, 0, Mathf.Sin(a) * 0.35f), new Vector3(0, 1.25f, 0), 1.2f, 3.5f / ppm, GiftCore, null, 3.5f / ppm, sprite: -1);
         }
-        // The sheath's shimmer: a pale streak climbing the column every 0.6 s.
-        if ((t + p.Id * 0.37f) % 0.6f < frameDt)
-            Sparks.Spawn(new Sparks.P { At = at, V = new Vector3(0, 4f, 0), Life = 0.7f, Size = 0.14f, SizeEnd = 0.14f, Color = GiftSheath.SrgbToLinear() * 1.5f, Alpha = 0.35f, Stretch = 0.14f, Sprite = -1 });
     }
 
     /// <summary>The hoard stone's light (Battle.Hoard): a short red one to find it by.</summary>

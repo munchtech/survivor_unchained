@@ -42,37 +42,71 @@ public partial class BattleFx
         return Mathf.Max(20, v * 1080f / Mathf.Max(1, GetViewport().GetVisibleRect().Size.Y));
     }
 
-    /// <summary>One gradient ring on the ground, rebuilt each frame (its widths are in screen pixels, so its texture follows the radius).</summary>
+    /// <summary>One gradient ring on the ground, rebuilt each frame (its widths are in screen pixels, so its texture follows the radius).
+    /// Drawn as a flat quad in front of the grass (not a decal: grass tips poked through a decal as olive specks), hidden only where
+    /// something well nearer the camera (a body, a canopy) stands over it.</summary>
     sealed class SwapRingRig
     {
-        public Decal D = null!; public Image Img = null!; public ImageTexture Tex = null!; public byte[] Buf = null!;
-        public float T, Life, R0, R1, CorePx, OutPx; public Color Core, Edge; public Vector3 At;
+        public MeshInstance3D M = null!; public ShaderMaterial Mat = null!; public Image Img = null!; public ImageTexture Tex = null!; public byte[] Buf = null!;
+        public float T, Life, R0, R1, CorePx, OutPx, InPx = 14, Inner, Body = 0.8f; public bool HardEdge; public Color Core, Edge; public Vector3 At;
     }
     const int SwapN = 256;
     readonly List<SwapRingRig> swapRings = new();
-    readonly List<(Vector3 At, float T, Color Edge)> swapGlints = new();
+    readonly List<(Vector3 At, float T, Color Edge, StarQuad Star)> swapGlints = new();
+    static Shader? ringShader, starShader;
 
-    void SwapRingAdd(Vector3 at, float r0, float r1, float life, float corePx, float outPx, (Color Core, Color Edge) cols)
+    SwapRingRig RingNew(Vector3 at, float corePx, float outPx, (Color Core, Color Edge) cols)
     {
-        var rig = new SwapRingRig { T = 0, Life = life, R0 = r0, R1 = r1, CorePx = corePx, OutPx = outPx, Core = cols.Core, Edge = cols.Edge, At = at };
+        ringShader ??= new Shader { Code = """
+            shader_type spatial;
+            render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_add, shadows_disabled, fog_disabled;
+            uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+            uniform sampler2D ring : source_color, filter_linear;
+            uniform float energy = 1.7;
+            uniform float fade = 1.0;
+            void fragment() {
+                float d = texture(depth_tex, SCREEN_UV).r;
+                vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
+                float scene = -v.z / v.w;
+                float occ = 1.0 - smoothstep(0.25, 0.5, -VERTEX.z - scene);
+                vec4 t = texture(ring, UV);
+                ALBEDO = t.rgb * energy;
+                ALPHA = fade * occ;
+            }
+            """ };
+        var rig = new SwapRingRig { CorePx = corePx, OutPx = outPx, Core = cols.Core, Edge = cols.Edge, At = at };
         rig.Buf = new byte[SwapN * SwapN * 4];
         rig.Img = Image.CreateFromData(SwapN, SwapN, false, Image.Format.Rgba8, rig.Buf);
         rig.Tex = ImageTexture.CreateFromImage(rig.Img);
-        rig.D = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = rig.Tex, AlbedoMix = 0, NormalFade = MarkNormalFade, SortingOffset = DecalLayer.HerGround, Visible = false };
-        AddChild(rig.D);
-        swapRings.Add(rig);
-        SwapRingDraw(rig);
+        rig.Mat = new ShaderMaterial { Shader = ringShader, RenderPriority = 1 };
+        rig.Mat.SetShaderParameter("ring", rig.Tex);
+        rig.M = new MeshInstance3D { Mesh = new PlaneMesh { Size = Vector2.One }, MaterialOverride = rig.Mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false };
+        AddChild(rig.M);
+        return rig;
     }
 
-    /// <summary>Gradient ring: a bright core band at the leading edge (CorePx wide), an outer glow (OutPx), and a fade to nothing 14 px inward.
-    /// Radius eases out (70% of the way in the first 40% of the time).</summary>
-    void SwapRingDraw(SwapRingRig g)
+    void SwapRingAdd(Vector3 at, float r0, float r1, float life, float corePx, float outPx, (Color Core, Color Edge) cols, bool bronze = false)
+    {
+        var rig = RingNew(at, corePx, outPx, cols);
+        rig.T = 0; rig.Life = life; rig.R0 = r0; rig.R1 = r1;
+        // Set A: a cream 3 px leading edge over a dark bronze body at 60% (so it does not merge with her persistent orange rings).
+        if (bronze) { rig.HardEdge = true; rig.Body = 0.6f; }
+        swapRings.Add(rig);
+        SwapRingStep(rig);
+    }
+
+    void SwapRingStep(SwapRingRig g)
     {
         float k = Mathf.Clamp(g.T / g.Life, 0, 1);
-        float r = Mathf.Lerp(g.R0, g.R1, 1 - Mathf.Pow(1 - k, 2.357f));
+        RingDraw(g, Mathf.Lerp(g.R0, g.R1, 1 - Mathf.Pow(1 - k, 2.357f)), k < 0.7f ? 1 : 1 - (k - 0.7f) / 0.3f);
+    }
+
+    /// <summary>Gradient ring at radius r: a bright core band at the leading edge (CorePx wide), an outer glow (OutPx), and the body fading to
+    /// Inner over InPx inward. Radius eases out (70% of the way in the first 40% of the time).</summary>
+    void RingDraw(SwapRingRig g, float r, float fade)
+    {
         float ppm = PxPerM(g.At);
         float half = r + (g.OutPx + 3) / ppm;
-        float fade = k < 0.7f ? 1 : 1 - (k - 0.7f) / 0.3f;
         const int L = 256;
         var lut = new float[L];
         var lc = new Color[L];
@@ -80,11 +114,17 @@ public partial class BattleFx
         {
             float d = (r - (i + 0.5f) / L * half) * ppm;      // px inside the leading edge (negative: outside it)
             float ch = g.CorePx * 0.5f, a;
-            if (d < -ch) a = Mathf.Pow(Mathf.Max(0, 1 + (d + ch) / Mathf.Max(g.OutPx, 0.01f)), 2f) * 0.6f;
-            else if (d <= ch) a = 1;
-            else a = Mathf.Pow(Mathf.Max(0, 1 - (d - ch) / 14f), 1.6f) * 0.8f;
+            Color c;
+            if (d < -ch) { a = Mathf.Pow(Mathf.Max(0, 1 + (d + ch) / Mathf.Max(g.OutPx, 0.01f)), 2f) * 0.6f; c = g.Edge; }
+            else if (d <= ch) { a = 1; c = g.Edge; }
+            else
+            {
+                float f = g.InPx > 0 ? Mathf.Max(0, 1 - (d - ch) / g.InPx) : 0;
+                a = Mathf.Max(g.Inner, Mathf.Pow(f, 1.6f) * g.Body);
+                c = g.HardEdge ? g.Core : g.Edge.Lerp(g.Core, g.InPx > 0 ? Mathf.Clamp((d - ch) / g.InPx, 0, 1) : 1);
+            }
             lut[i] = a;
-            lc[i] = g.Edge.Lerp(g.Core, Mathf.Clamp((d - ch) / 14f, 0, 1));
+            lc[i] = c;
         }
         var b = g.Buf;
         for (int y = 0; y < SwapN; y++)
@@ -101,11 +141,64 @@ public partial class BattleFx
             }
         g.Img.SetData(SwapN, SwapN, false, Image.Format.Rgba8, b);
         g.Tex.Update(g.Img);
-        g.D.Visible = true;
-        g.D.Position = g.At;
-        g.D.Size = new Vector3(half * 2, 0.8f, half * 2);
-        g.D.Modulate = new Color(1, 1, 1, fade);
-        g.D.EmissionEnergy = 1.7f;
+        g.M.Visible = true;
+        g.M.Position = g.At + Vector3.Up * 0.06f;
+        g.M.Scale = new Vector3(half * 2, 1, half * 2);
+        g.Mat.SetShaderParameter("fade", fade);
+    }
+
+    /// <summary>A crisp four-point star drawn as a camera-facing quad in screen pixels (arms a few px wide, a white core), over everything.</summary>
+    sealed class StarQuad { public MeshInstance3D M = null!; public QuadMesh Q = null!; public ShaderMaterial Mat = null!; }
+
+    StarQuad StarNew(Color arms, int priority)
+    {
+        starShader ??= new Shader { Code = """
+            shader_type spatial;
+            render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_add, shadows_disabled, fog_disabled;
+            uniform vec4 arms_col : source_color = vec4(1.0);
+            uniform float total_px = 40.0;
+            uniform float arm_px = 28.0;
+            uniform float w_px = 2.0;
+            uniform float core_px = 4.0;
+            uniform float spin = 0.0;
+            uniform float energy = 1.0;
+            void vertex() {
+                MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+            }
+            void fragment() {
+                vec2 p = (UV - 0.5) * total_px;
+                float c = cos(spin), s = sin(spin);
+                p = vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+                float h = arm_px * 0.5;
+                vec2 q = abs(p);
+                float hwx = max(0.6, w_px * 0.5 * (1.0 - 0.3 * q.x / h));
+                float hwy = max(0.6, w_px * 0.5 * (1.0 - 0.3 * q.y / h));
+                float ax = clamp(hwx + 0.5 - q.y, 0.0, 1.0) * clamp(h + 0.5 - q.x, 0.0, 1.0);
+                float ay = clamp(hwy + 0.5 - q.x, 0.0, 1.0) * clamp(h + 0.5 - q.y, 0.0, 1.0);
+                float arm = max(ax, ay);
+                float core = clamp(core_px * 0.5 + 0.5 - length(p), 0.0, 1.0);
+                ALBEDO = mix(arms_col.rgb * arm, vec3(1.0), core) * energy;
+                ALPHA = max(arm, core);
+            }
+            """ };
+        var st = new StarQuad { Q = new QuadMesh { Size = Vector2.One }, Mat = new ShaderMaterial { Shader = starShader, RenderPriority = priority } };
+        st.Mat.SetShaderParameter("arms_col", arms);
+        st.M = new MeshInstance3D { Mesh = st.Q, MaterialOverride = st.Mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, ExtraCullMargin = 4 };
+        AddChild(st.M);
+        return st;
+    }
+
+    void StarSet(StarQuad s, Vector3 at, float armPx, float wPx, float corePx, float spin, float energy = 1)
+    {
+        float total = armPx + 8;
+        s.M.GlobalPosition = at;
+        s.Q.Size = Vector2.One * total / PxPerM(at);
+        s.Mat.SetShaderParameter("total_px", total);
+        s.Mat.SetShaderParameter("arm_px", armPx);
+        s.Mat.SetShaderParameter("w_px", wPx);
+        s.Mat.SetShaderParameter("core_px", corePx);
+        s.Mat.SetShaderParameter("spin", spin);
+        s.Mat.SetShaderParameter("energy", energy);
     }
 
     /// <summary>Each frame: grows the swap rings and shows the glints.</summary>
@@ -115,20 +208,18 @@ public partial class BattleFx
         {
             var g = swapRings[i];
             g.T += frameDt;
-            if (g.T >= g.Life) { g.D.QueueFree(); swapRings.RemoveAt(i); continue; }
-            SwapRingDraw(g);
+            if (g.T >= g.Life) { g.M.QueueFree(); swapRings.RemoveAt(i); continue; }
+            SwapRingStep(g);
         }
-        // The glint: a 28 px four-point star, 0.15 s in and 0.2 s out.
+        // The glint: a 28 px four-point star (2 px arms, a 4 px white core): 0.15 s in, 0.10 s held, 0.20 s out.
         for (int i = swapGlints.Count - 1; i >= 0; i--)
         {
-            var (at, t, edge) = swapGlints[i];
+            var (at, t, edge, star) = swapGlints[i];
             t += frameDt;
-            if (t >= 0.35f) { swapGlints.RemoveAt(i); continue; }
-            swapGlints[i] = (at, t, edge);
-            float s = t < 0.15f ? Mathf.SmoothStep(0, 1, t / 0.15f) : 1 - Mathf.SmoothStep(0, 1, (t - 0.15f) / 0.2f);
-            float size = 28f / PxPerM(at) * Mathf.Max(s, 0.05f);
-            var c = edge.SrgbToLinear() * 2.4f;
-            Sparks.Spawn(new Sparks.P { At = at, Life = frameDt * 1.5f, Size = size, SizeEnd = size, Color = c, ColorEnd = c, Sprite = Sprites.Of("star"), Spin = 0.2f });
+            if (t >= 0.45f) { star.M.QueueFree(); swapGlints.RemoveAt(i); continue; }
+            swapGlints[i] = (at, t, edge, star);
+            float s = t < 0.15f ? Mathf.SmoothStep(0, 1, t / 0.15f) : t < 0.25f ? 1 : 1 - Mathf.SmoothStep(0, 1, (t - 0.25f) / 0.2f);
+            StarSet(star, at, 28f * Mathf.Max(s, 0.15f), 2.4f, 4f * Mathf.Max(s, 0.5f), 0);
         }
     }
 
@@ -142,24 +233,30 @@ public partial class BattleFx
         var ground = V(e.X, Y(e.X, e.Z), e.Z);
         var cols = SwapCols(e.Stance);
         // The small ring (every swap): 4 px core, 10 px glow, out from 0.6 m to 1.6 m, past her persistent rings.
-        SwapRingAdd(ground, 0.6f, 1.6f, 0.25f, 4, 10, cols);
+        bool bronze = e.Stance == "";
+        var rc = bronze ? (new Color("#8A5424"), new Color("#FFE2A8")) : cols;
+        SwapRingAdd(ground, 0.6f, 1.6f, 0.25f, bronze ? 3 : 4, 10, rc, bronze);
         var side = GetViewport()?.GetCamera3D() is { } cam ? cam.GlobalBasis.X : Vector3.Right;
-        swapGlints.Add((ground + Vector3.Up * 1.0f + side * 0.3f, 0, cols.Edge));
+        swapGlints.Add((ground + Vector3.Up * 1.0f + side * 0.3f, 0, cols.Edge, StarNew(cols.Edge, 4)));
         Sfx.Blocked();
         if (e.Strike == "") return;
 
         float r = SwapRadius(e.Stance);
         var hue = SwapHue(e.Stance, 1.8f);
         Waves.Add(ground + Vector3.Up * 0.3f, r, 0.18f, cols.Core, 1f);
-        SwapRingAdd(ground, 0.9f, r, 0.5f, 3, 2, cols);
+        SwapRingAdd(ground, 0.9f, r, 0.5f, 3, 2, rc, bronze);
         // A white-hot flash at the impact centre and a ring of dust and chips thrown outward.
         Ground(e.X, e.Z, 1.0f, glowTex!, Colors.White, 0.08f, 4f);
+        // Dust (>= 20 px puffs, #6B5A44, 0.5 s) and chips (6 px, #3A2E22) thrown outward; solid, mixed over the grass, not light.
+        float ppm = PxPerM(ground);
+        var dust = new Color("#6B5A44").SrgbToLinear();
+        var chip = new Color("#3A2E22").SrgbToLinear();
         for (int i = 0; i < 10; i++)
         {
             float a = Mathf.Tau * (i + R() * 0.6f) / 10f;
             var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-            if (i % 5 == 4) Sparks.Spawn(ground + dir * 0.9f + Vector3.Up * 0.15f, dir * (3f + R() * 2f) + Vector3.Up * 2f, 0.5f, 0.05f, WgDust(1.1f), WgDust(0.7f), 0.03f, 9, 0.5f);
-            else WgPuff(ground + dir * 0.9f + Vector3.Up * 0.15f, dir * (3f + R() * 1.5f) + Vector3.Up * 0.3f, 0.3f, 1.5f, 0.5f, WgDust(0.8f), 0.5f, 2.2f);
+            if (i % 5 == 4) Smoke.Spawn(new Sparks.P { At = ground + dir * 0.9f + Vector3.Up * 0.15f, V = dir * (3f + R() * 2f) + Vector3.Up * 2f, Gravity = 9, Drag = 0.5f, Life = 0.5f, Size = 6f / ppm, SizeEnd = 6f / ppm, Color = chip, ColorEnd = chip, Alpha = 1f, Sprite = SolidPuff(), Core = true });
+            else WgPuff(ground + dir * 0.9f + Vector3.Up * 0.15f, dir * (3f + R() * 1.5f) + Vector3.Up * 0.3f, 24f / ppm, 1.4f, 0.5f, dust, 0.8f, 2.2f);
         }
         Cam?.AddTrauma(0.12f);
         Sfx.Bash();
@@ -168,7 +265,7 @@ public partial class BattleFx
         {
             case "shield":
                 // (the struck foes are not in this event, so no stars over them)
-                SwapRingAdd(ground, 0.6f, r * 0.55f, 0.4f, 3, 2, cols);
+                SwapRingAdd(ground, 0.6f, r * 0.55f, 0.4f, 3, 2, rc, bronze);
                 break;
             case "twin_blades":
                 Blades.Add(at, 0.8f, r * 0.8f, 1.5f, false, 0.06f, 0.14f, hue, 0.3f);
