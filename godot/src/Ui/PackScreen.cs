@@ -196,6 +196,13 @@ public partial class InventoryScreen : Overlay
         var fig = Figure(ch, DollW - 2 * SlotS - 8, DollH - 16);
         fig.Position = new Vector2(SlotS + 4, 8);
         holder.AddChild(fig);
+        // (bd-ui W18) Her looks and dyes: the wardrobe, hers only.
+        if (ch.Sex == Sex.Female)
+        {
+            var wardrobe = Nav.Skip(Kit.Word("Wardrobe", () => { Sound.Sfx.Page(); G.Open("wardrobe"); }));
+            wardrobe.Position = new Vector2(DollW / 2 - 40, DollH - 28);
+            holder.AddChild(wardrobe);
+        }
         var kit = KitLooked;
         bool two = Kits.Shown(ch);
         foreach (var (s, right, y) in Doll)

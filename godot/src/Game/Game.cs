@@ -315,6 +315,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
         // (bd-ui W11: --gems id:n,... and --socket skill:index:gem,... after --veteran; the Arts screen reads --arts-skill)
         DevSockets.Apply(Journey.Ch);
+        // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)
+        DevWardrobe.Apply(Journey.Ch);
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);

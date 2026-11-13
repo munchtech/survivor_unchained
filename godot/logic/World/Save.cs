@@ -108,6 +108,7 @@ public sealed class Saves
         ch.Satchel ??= new();
         ch.Gems ??= new(); ch.Gems.Owned ??= new(); ch.Gems.Sockets ??= new();
         ch.Keys ??= new();
+        Wardrobe.BackFill(ch);
         ch.Belt ??= new();
         ch.Filter ??= new();
         ch.Seen ??= new();

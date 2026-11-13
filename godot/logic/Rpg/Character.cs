@@ -179,6 +179,12 @@ public sealed class CharacterData
     public List<string> UnionsKnown = new();
     /// <summary>(bd-sockets) Her support gems: copies owned and what sits in each skill's sockets (Rpg/Supports.cs).</summary>
     public SupportState Gems = new();
+    /// <summary>(bd-ui) The wardrobe (Rpg/Wardrobe.cs): the looks she has found (item def ids), the look shown over each
+    /// look slot ("head", "body", "feet"), the dye on each zone of each slot, and the unknown dyes she has learned.</summary>
+    public HashSet<string> Looks = new();
+    public Dictionary<string, string> Shown = new();
+    public Dictionary<string, Dictionary<string, string>> Dyes = new();
+    public HashSet<string> DyesKnown = new();
 
     /// <summary>Take a step of the dash's growth (the design lead's route calls this, a Wick or a level-up; or
     /// Journey.GrantDashStep, which also tells the fight). False if unknown or already taken as often as it may be.</summary>
@@ -328,6 +334,7 @@ public static class Inventory
     public static bool AddToPack(CharacterData ch, ItemInstance it)
     {
         var def = Items.Get(it.Def);
+        Wardrobe.Collect(ch, it.Def);
         switch (Drops.StoreOf(def, it))
         {
             case Store.Pouch:
@@ -550,6 +557,7 @@ public static class Inventory
     {
         var def = Items.Get(it.Def);
         if (!Items.Fits(def, slot)) return false;
+        Wardrobe.Collect(ch, it.Def);
         var loc = Find(ch, it.Uid);
         // (a piece in the other kit is moved by the kits, never pulled out from under them)
         if (loc is { Aside: true }) return false;

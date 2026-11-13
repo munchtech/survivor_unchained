@@ -83,6 +83,7 @@ public partial class Game
             "maps" => new MapTableScreen(this),
             "atlas" => new MapTableScreen(this, "atlas"),
             "arts" => new ArtsScreen(this),
+            "wardrobe" => new WardrobeScreen(this),
             "lamps" => new LampsScreen(this),
             "chapter" => new ChapterScreen(this),
             "credits" => new CreditsScreen(this, () => { Open("pause"); (screens.Current as PauseScreen)?.FocusOn("Credits and licences"); }),
