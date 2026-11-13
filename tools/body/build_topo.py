@@ -374,6 +374,82 @@ def stage_forms(spec, tier, z, V, ring, rep):
     return V + R
 
 
+def folded(V, T, nb):
+    """Triangles wound against their own sheet: the face normal against the mean of its edge-neighbours' (dot < 0),
+    the Marionette carrier's base_winding rule. nb: per triangle its edge-neighbours (fold_neighbours)."""
+    n = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+    n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    out = []
+    for t, k in enumerate(nb):
+        if k:
+            m = n[k].mean(0)
+            if np.dot(n[t], m) < 0:
+                out.append(t)
+    return np.array(out, int)
+
+
+def fold_neighbours(T):
+    em = {}
+    for t, tri in enumerate(T):
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            em.setdefault((min(tri[a], tri[b]), max(tri[a], tri[b])), []).append(t)
+    nb = [[] for _ in range(len(T))]
+    for v in em.values():
+        if len(v) == 2:
+            nb[v[0]].append(v[1])
+            nb[v[1]].append(v[0])
+    return nb
+
+
+def stage_unfold(spec, z, V, ring, rep):
+    """13 Nov (the Marionette carrier found 23 folded triangles on the shipped base: toes, cleavage, inner arms, under
+    the jaw, all made in stage 1 by the slider/her_a fields; every roster body's gear carrier copies the base's
+    points, so the folds spread to all of them). Spec "unfold": {"step", "smooth", "grow", "rounds"}: while any
+    triangle is wound against its sheet (folded()), the points of the folded triangles, grown by `grow` rings of
+    quad neighbours per failed round, are pulled `smooth` times toward their quad neighbours' mean by `step`. The
+    head ring is held (the seam stays the head's). Positions only: the vertex count and order, the UVs and the
+    weights (read on the body before this stage, run_tier) are untouched. Key absent: V as it is (byte-identical)."""
+    cfg = spec.get("unfold")
+    if not cfg:
+        return V
+    Q = z["Q"]
+    T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
+    nb = fold_neighbours(T)
+    adj = [set() for _ in range(len(V))]
+    for q in Q:
+        for i in range(4):
+            adj[q[i]].update((q[(i + 1) % 4], q[(i + 3) % 4]))
+    adj = [np.array(sorted(a), int) for a in adj]
+    held = np.zeros(len(V), bool)
+    held[ring] = True
+    V0 = V.copy()
+    V = V.copy()
+    bad = folded(V, T, nb)
+    first = bad.copy()
+    step, smooth = float(cfg.get("step", 0.5)), int(cfg.get("smooth", 4))
+    grow, rounds = int(cfg.get("grow", 1)), int(cfg.get("rounds", 8))
+    moved = np.zeros(len(V), bool)
+    r = 0
+    for r in range(rounds):
+        if not len(bad):
+            break
+        free = set(np.unique(T[bad]).tolist())
+        for _ in range(grow * r):
+            free |= {int(j) for i in list(free) for j in adj[i]}
+        free = np.array(sorted(i for i in free if not held[i]), int)
+        for _ in range(smooth):
+            mean = np.array([V[adj[i]].mean(0) for i in free])
+            V[free] += step * (mean - V[free])
+        moved[free] = True
+        bad = folded(V, T, nb)
+    d = np.linalg.norm(V - V0, axis=1)
+    rep["unfold"] = {"folded_before": int(len(first)), "folded_after": int(len(bad)), "rounds": r + (0 if len(bad) else 0),
+                     "points_moved": int((d > 0).sum()), "move_max_mm": round(float(d.max()) * 1e3, 3),
+                     "ids_before": [int(t) for t in first], "cfg": cfg}
+    assert not len(bad), ("unfold left folded triangles", bad.tolist())
+    return V
+
+
 # --------------------------------------------------------------------------------------------- 3 skeleton --
 def bone_body(spec, tier, z, V, A, baked, rep):
     """P1 R1b: soft tissue does not move bones. The body the skeleton's landmarks are read on: this spec's body with
@@ -827,6 +903,12 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     t = time.time()
     V = stage_forms(spec, tier, z, V, ring, rep)
     tim["forms"] = round(time.time() - t, 2)
+    # (13 Nov: the skeleton and the weights are read on the body before the unfold, so they stay as they were)
+    V_pre = V
+    t = time.time()
+    V = stage_unfold(spec, z, V, ring, rep)
+    if spec.get("unfold"):
+        tim["unfold"] = round(time.time() - t, 2)
     t = time.time()
     if tier == "play":
         # P1 R2: one skeleton for both tiers. The play tier takes the close tier's placed skeleton (names, parents,
@@ -840,7 +922,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
         tj, tj_info = target_joints_ref(spec, tier, z, A, baked, target_joints(spec))
-        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
+        sk = stage_skeleton(bone_body(spec, tier, z, V_pre, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
                             tj)
         if tj_info:
             P_ref = tj_info.pop("_weights_ref", None)
@@ -890,7 +972,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         P_r, sk_r = role_ref(spec, rs, ref_path, tier, A, baked)
         wrules = {**(wrules or {}), **{r: {**rs["weights"][r], "_P_ref": P_r, "_sk_ref": sk_r} for r in roles}}
         rep["weight_roles"] = {"ref": ref_path, "roles": roles}
-    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
+    wts = stage_weights(z, weights_body(spec, tier, z, V_pre, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
