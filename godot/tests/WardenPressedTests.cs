@@ -517,7 +517,7 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
     /// <summary>The first DPS check (the P7 brief): per target in the radius, Bladestorm while it spins (a 3 s spin and
     /// its break) against Cleaver and Sunder together on one target (the yardstick it replaced as a Union), the same rank, no Hand.</summary>
     [Fact]
-    public void Bladestorm_out_damages_cleaver_and_sunder_by_a_third_to_a_half_per_target_while_it_spins()
+    public void Bladestorm_out_damages_cleaver_and_sunder_about_twice_per_target_while_it_spins()
     {
         double offLine = 0;
         double PartsDps()
@@ -558,9 +558,10 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         double parts = PartsDps();
         var (storm, cycle) = StormDps();
         output.WriteLine($"cleaver+sunder {parts:0.0}/s on one target; bladestorm {storm:0.0}/s while it spins on its lines (x{storm / parts:0.00}), {offLine:0.0}/s off them (x{offLine / parts:0.00}), {cycle:0.0}/s over spin+cooldown (x{cycle / parts:0.00})");
-        // Per target in the radius (the ticks and the break; the brief's measure): a third to a half more. A target on
-        // the lines takes their splits on top (about twice the parts', as Sunder's own line is counted in theirs).
-        Assert.InRange(offLine / parts, 1.3, 1.5);
-        Assert.True(storm > offLine * 1.3);
+        // Per target in the radius (the ticks and the break): about twice the parts' (bd-storm, 13 Nov: was a third to a
+        // half more, when it was a Union; as her own spender it pays Resolve the parts build, and was 3-10% of her damage
+        // at that). A target on the lines takes their splits on top.
+        Assert.InRange(offLine / parts, 1.9, 2.6);
+        Assert.True(storm > offLine * 1.1);
     }
 }

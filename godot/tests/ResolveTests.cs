@@ -197,10 +197,11 @@ public sealed class ResolveTests
         b.Resolve.Set(100);
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));
+        double drain = w.Press!.Drain!.Value;
         Run(b, 3.3, () => b.HoldSkill(w.Slot, true));
         Assert.True(w.Channeling, "past the arena's 3 s cap it spins on");
-        Assert.InRange(b.Resolve.Value, 100 - 28 * 3.3 - 1, 100 - 28 * 3.3 + 1);
-        Run(b, 1, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+        Assert.InRange(b.Resolve.Value, 100 - drain * 3.3 - 1, 100 - drain * 3.3 + 1);
+        Run(b, 100 / drain, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
         Assert.False(w.Channeling);
         Assert.Equal(0, b.Resolve.Value, 9);
         Assert.InRange(b.Resolve.SpentInStorm, 99.9, 100.0001);
@@ -224,9 +225,10 @@ public sealed class ResolveTests
         b.Resolve.Set(100);
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));
-        Run(b, 2.0, () => b.HoldSkill(w.Slot, true));
+        double drain = w.Press!.Drain!.Value;
+        Run(b, 0.5 * 100 / drain, () => b.HoldSkill(w.Slot, true));
         Assert.True(w.Channeling, "it spins on with no break key");
-        Run(b, 2.0, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+        Run(b, 0.6 * 100 / drain, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
         Assert.False(w.Channeling);
         Assert.Equal(0, b.Resolve.Value, 9);
         Assert.InRange(b.Resolve.SpentInStorm, 99.9, 100.0001);
