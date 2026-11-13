@@ -238,14 +238,26 @@ class Ctx:
         return np.asarray(self.ends[b][1], float)
 
 
-def trunk(c):
+def steps_h(u, knots, hs):
+    """steps() with a half-width per knot: each step clipped under the one below it, so every piece (the difference
+    of its two steps) stays >= 0 where a wide step overlaps a narrow one; with one h it is steps() exactly."""
+    c = [np.ones(len(u))] + [s01((u - (k - h)) / (2 * h)) for k, h in zip(knots, hs)] + [np.zeros(len(u))]
+    for i in range(2, len(c) - 1):
+        c[i] = np.minimum(c[i], c[i - 1])
+    return np.stack([c[i] - c[i + 1] for i in range(len(knots) + 1)], 1)
+
+
+def trunk(c, rules=None):
     P, n = c.P, c.n
     W = np.zeros((n, len(c.names)))
     y = P[:, 1]
     ys = [c.head(b)[1] for b in SPINE]
     knots = ys[1:]                       # (spine_01's head is the pelvis's: the pelvis owns all below it)
     assert all(b > a for a, b in zip(knots, knots[1:])), ("the spine chain's joints do not rise", knots)
-    Hs = steps(y, knots, HMAX)
+    # a spec's "weights" "trunk_h" {bone: h}: that joint's step half-width (m) instead of HMAX (P1 posed folds: the
+    # pelvis -> spine_01 step at +-40 mm folded the belly through itself at spine_flex 45 deg, foldcheck.py)
+    th = {k: v for k, v in ((rules or {}).get("trunk_h") or {}).items() if k != "why"}
+    Hs = steps_h(y, knots, [float(th.get(b, HMAX)) for b in SPINE[1:]]) if th else steps(y, knots, HMAX)
     for i, b in enumerate(SPINE):
         W[:, c.idx[b]] = Hs[:, i]
     # the girdle's skin (P1 R2, CLAV above): the clavicle owns the trapezius from the neck's side out to the acromion
@@ -1025,7 +1037,7 @@ def chain_relax(W, P, topo, sk, cfg, ring=None):
 def body(P, topo, sk, rules=None):
     c = Ctx(P, topo, sk)
     names, par = sk["names"], sk["parents"]
-    W = trunk(c)
+    W = trunk(c, rules)
     W, rep = limbs(c, W, rules)
     W = smooth_part(W, c.Q, np.isin(c.part, c.pid("hand")), HAND_SMOOTH)
     frames = {n: sk["worlds"][i] for i, n in enumerate(names)}
