@@ -198,12 +198,13 @@ public partial class WorldScene : Node3D, IZoneLook
     }
 
     /// <summary>What the survivor visibly carries, changed.</summary>
-    public void SetLoadout(Loadout lo)
+    /// <summary>`now`: dressed at once, not over frames (a screen that needs the figure as asked this frame: the wardrobe on open).</summary>
+    public void SetLoadout(Loadout lo, bool now = false)
     {
         if (Battle == null) return;
         // A ring or an amulet changes nothing that shows: the figure stays, and does not blink.
         var key = Loadouts.Look(lo);
-        if (Player != null && key == look) return;
+        if (Player != null && key == look && !(now && incoming != null)) return;
         look = key;
         // A swap still being dressed gives way to this one (the latest wins: nothing of the older is shown).
         DropIncoming();
@@ -212,7 +213,7 @@ public partial class WorldScene : Node3D, IZoneLook
         Perf.Lap("swap: (before)");
         // (a live swap: her new figure's garment tuck is laid over the next frames, on a worker; she wears what she wore
         // till it is done: Update)
-        HerWear.Live = old != null;
+        HerWear.Live = old != null && !now;
         PlayerView next;
         try { next = new PlayerView(lo); }
         finally { HerWear.Live = false; }

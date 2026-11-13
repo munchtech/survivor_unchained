@@ -55,6 +55,7 @@ public partial class WardrobeScreen : Overlay
         Loadouts.ArmsAway = true;
     }
 
+    bool opened;
     CameraAttributes? lensWas;
     bool dofSet;
     ColorRect? blur;
@@ -133,7 +134,7 @@ void fragment() {
         var (found, total) = Wardrobe.Count(ch);
         var names = Wardrobe.LookSlots.Select((s, i) => $"{SlotNames[i]} {Wardrobe.Found(ch, s).Count}/{Wardrobe.All(ch, s).Count}").ToArray();
         v.AddChild(Kit.Head("Wardrobe", null, Style.Label($"{found} of {total} looks in all", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false)));
-        v.AddChild(Kit.Tabs(names, slot, k => { slot = k; want = null; wantDirty = false; ApplyWorld(null); G.Reframe(this); Refresh(); }, 16, 22));
+        v.AddChild(Kit.Tabs(names, slot, k => { slot = k; want = null; wantDirty = false; ApplyWorld(null, true); G.Reframe(this); Refresh(); }, 16, 22));
         // The shown look's name is the page's title; under it, what it is worn over.
         var shownDef = Wardrobe.ShownDef(ch, Slot);
         var own = ch.Equipment[Wardrobe.EquipOf(Slot)];
@@ -160,23 +161,25 @@ void fragment() {
         p.CustomMinimumSize = new Vector2(0, 30);
         v.AddChild(p);
         Describe(null);
-        ApplyWorld(null);
+        // On open her sword and shield go away at once (a swap dressed over frames would leave them in view for a while).
+        ApplyWorld(null, !opened);
+        opened = true;
     }
 
     /* ---------------------------------------------------------- her, world -- */
 
     /// <summary>Her, in the world, as she would be with `tweak` applied to the wardrobe (a hover); null puts back what is set.</summary>
-    void ApplyWorld(Action<CharacterData>? tweak)
+    void ApplyWorld(Action<CharacterData>? tweak, bool now = false)
     {
         if (G.Scene is not { } sc || !IsInstanceValid(sc)) return;
         var ch = Ch;
-        if (tweak == null) { sc.SetLoadout(Loadouts.Of(ch)); return; }
+        if (tweak == null) { sc.SetLoadout(Loadouts.Of(ch), now); return; }
         var shown = new Dictionary<string, string>(ch.Shown);
         var dyes = ch.Dyes.ToDictionary(kv => kv.Key, kv => new Dictionary<string, string>(kv.Value));
         tweak(ch);
         var lo = Loadouts.Of(ch);
         ch.Shown = shown; ch.Dyes = dyes;
-        sc.SetLoadout(lo);
+        sc.SetLoadout(lo, now);
     }
 
     void Preview(Action<CharacterData>? tweak)

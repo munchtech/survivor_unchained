@@ -9,6 +9,24 @@ namespace SurvivorUnchained.Tests;
 public class LoadoutTests
 {
     [Fact]
+    public void The_wardrobe_puts_her_arms_away_and_they_come_back()
+    {
+        var ch = Character.Create(new CreationChoice { Name = "T", Archetype = "warden", Background = "hunter", Palette = Callings.Archetype("warden").Palettes[0].Id, WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = Callings.Archetype("warden").Abilities[0], Sex = Sex.Female }, 1, 7);
+        var held = Loadouts.Of(ch).Arms;
+        Assert.False(string.IsNullOrEmpty(held.Right));
+        Loadouts.ArmsAway = true;
+        try
+        {
+            var away = Loadouts.Of(ch).Arms;
+            Assert.Equal("", away.Right); Assert.Null(away.Left); Assert.Null(away.Forearm);
+            Assert.Equal(held.Idle, away.Idle);
+            Assert.NotEqual(Loadouts.Look(Loadouts.Of(ch)), Loadouts.Look(new Loadout(Loadouts.Of(ch).Person, held, null)));
+        }
+        finally { Loadouts.ArmsAway = false; }
+        Assert.Equal(held.Right, Loadouts.Of(ch).Arms.Right);
+    }
+
+    [Fact]
     public void Only_what_shows_changes_the_look()
     {
         // The figure is built again only when its look changes (a blink otherwise, the crafting lead's bug).
