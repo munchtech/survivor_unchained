@@ -23,7 +23,7 @@ public static class GlyphPaths
         ["chest"] = "relic", ["picks"] = "key", ["lamp"] = "campfire", ["lantern"] = "campfire", ["helm_light"] = "helm", ["circlet"] = "ring",
         ["armor_light"] = "armor", ["armor_heavy"] = "armor", ["root"] = "thorn", ["vial"] = "drop", ["vial_orange"] = "drop", ["potion"] = "heart",
         ["antidote"] = "drop", ["bandage"] = "heart", ["pelt"] = "cloak", ["hide"] = "cloak", ["kerchief"] = "mask", ["wand_dark"] = "wand",
-        ["ember"] = "flame", ["gem_garnet"] = "sigil", ["gem_sapphire"] = "sigil", ["gem_clear"] = "sigil", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
+        ["ember"] = "flame", ["gem_garnet"] = "sigil", ["gem_sapphire"] = "sigil", ["gem_clear"] = "sigil", ["gem_bicolor"] = "sigil", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
         ["flower"] = "perennial", ["lens"] = "eye",
     };
 

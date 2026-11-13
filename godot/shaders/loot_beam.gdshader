@@ -19,6 +19,7 @@
 //   7 Shaft: a moment's column of light (BattleFx.Pillar: a strike, a level, an evolution, a chest,
 //     the night won), its height given; the fraction, how thick the motes riding up it.
 //   8 Band: a band of light lying on the ground at its reach (the way out), breathing.
+//   9 Stars: a support gem's: a star-shaped pool turning slowly, a column of star motes rising out of it.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
 #include "res://shaders/world_clock.gdshaderinc"
@@ -50,7 +51,7 @@ void vertex() {
 	// Below the foot by the pool's reach (a circle on the ground seen from 56 degrees up); what lies
 	// on the ground all round it, as far above.
 	float down = half_w * 0.85;
-	if (kind > 7.5) tall = down;
+	if (kind > 7.5 && kind < 8.5) tall = down;
 	at = vec2(VERTEX.x * 2.0 * half_w, mix(-down, tall, VERTEX.y + 0.5));
 	VERTEX = foot + vec3(at, 0.0);
 }
@@ -72,6 +73,17 @@ float motes_of(float spread, float speed, float gap, float size) {
 	float mx = (hash(cell) - 0.5) * spread;
 	float my = 0.25 + 0.5 * hash(cell + 5.0);
 	return g(at.x - mx, size) * g((fy - my) * gap, size * 1.5) * step(0.45, hash(cell + 9.0));
+}
+// A mote that is a four-point star, rising: a cross of two thin ellipses and a hot centre.
+float star_motes(float spread, float speed, float gap, float size) {
+	float y = at.y - WORLD_TIME * speed;
+	float cell = floor(y / gap);
+	float fy = fract(y / gap);
+	float dx = at.x - (hash(cell + 3.0) - 0.5) * spread;
+	float dy = (fy - (0.25 + 0.5 * hash(cell + 7.0))) * gap;
+	float on = step(0.3, hash(cell + 11.0));
+	float cross = g(dx, size * 0.18) * g(dy, size) + g(dx, size) * g(dy, size * 0.18);
+	return (cross + g(dx, size * 0.4) * g(dy, size * 0.4)) * on;
 }
 float motes(float spread, float speed, float gap) { return motes_of(spread, speed, gap, 0.03); }
 
@@ -149,6 +161,21 @@ void fragment() {
 			+ deep * pool(w * 0.55) * 0.4;
 		// A little of the ground under its pool covered, so by night it lies warm and not pink.
 		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade + pool(w * 0.55) * 0.12;
+	} else if (kind > 8.5) {
+		// A gem's light: a four-point star of light turning slowly on the ground (no round glow), and star motes
+		// (two little crossed bars each) rising out of it up a column of its height.
+		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
+		float rr = length(e);
+		float ang = atan(e.y, e.x) + WORLD_TIME * 0.35 + seed * 6.28;
+		float reach = 0.3 + 0.7 * pow(abs(cos(2.0 * ang)), 4.0);
+		float starpool = smoothstep(reach, reach * 0.45, rr) * smoothstep(1.05, 0.9, rr);
+		float rim = exp(-pow((rr - reach * 0.8) / 0.08, 2.0)) * 0.5;
+		float fade = smoothstep(-0.2, 0.05, y) * pow(1.0 - u, 0.6) * step(0.0, y);
+		float mt = star_motes(0.34, 0.5, 0.55, 0.055) + star_motes(0.2, 0.8, 0.85, 0.045);
+		// (its heart left clear, so the stone itself is seen)
+		float heart = smoothstep(0.12, 0.42, rr);
+		light = mix(tint, deep, 0.3) * (starpool * 0.42 + rim) * heart + tint * mt * fade * 1.4;
+		veil = starpool * 0.05 * heart + mt * fade * 0.05;
 	} else if (kind > 7.5) {
 		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint
 		// light within it. (A decal's band with a hard edge read as a cream hoop.)

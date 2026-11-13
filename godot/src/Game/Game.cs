@@ -1920,7 +1920,7 @@ public partial class Game : Node, IZoneHost
             else if (p.Ref != null && Items.Find(p.Ref) is { } d0) tier = Drops.TierOf(d0, p.Tier);
             else continue;
             double d2 = (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz);
-            if (tier < LootTier.Rare && d2 > 10 * 10 || tier >= LootTier.Material && d2 > 8 * 8) continue;
+            if (tier < LootTier.Rare && d2 > 10 * 10 || tier >= LootTier.Material && tier != LootTier.Gem && d2 > 8 * 8) continue;
             var w = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.4f, (float)p.Z);
             if (camera.IsPositionBehind(w)) continue;
             var sp = camera.UnprojectPosition(w);
@@ -1929,7 +1929,7 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : tier == LootTier.Gem && ItemViews.GemGround(p.Payload as ItemInstance) is { } gcol ? gcol.Lerp(Colors.White, 0.25f) : ItemViews.TierColour(tier);
-            int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
+            int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
             if (loud == 0)
@@ -1941,10 +1941,10 @@ public partial class Game : Node, IZoneHost
                 else quietLabels[key] = (sp, d2, n, name, col);
                 continue;
             }
-            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set));
+            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem));
             labelNear.Add(d2);
         }
-        // The loud first, nearest first; the quiet after them, nearest first: at most LabelsMost, QuietMost of them quiet.
+        // The loud first (a gem's name loud 2, before every Rare), nearest first; the quiet after them, nearest first: at most LabelsMost, QuietMost of them quiet.
         var ranked = o.Select((l, i) => (L: l, D2: labelNear[i])).OrderByDescending(x => x.L.Loud).ThenBy(x => x.D2).Select(x => x.L).Take(LabelsMost).ToList();
         foreach (var q in quietLabels.Values.OrderBy(q => q.D2).Take(Math.Min(QuietMost, LabelsMost - ranked.Count)))
             ranked.Add(new Ui.GroundLabel(q.At, q.Count > 1 ? $"{q.Name} ×{q.Count}" : q.Name, q.Col, 0, false));
@@ -2036,7 +2036,7 @@ public partial class Game : Node, IZoneHost
     double hoardT = 1.5;
     double lootT = 1.5;
     // --loot gem: one gem of each colour family (garnet, sapphire, clear), a beat apart.
-    static readonly string[] GemRing = ["gem.brutality", "gem.bulwark", "gem.haste"];
+    static readonly string[] GemRing = ["gem.brutality", "gem.bulwark", "gem.haste", "gem.concussion"];
     static readonly (string Def, int? Rarity, Verdict Look)[] LootRing =
     [
         ("leather_cap", 0, Verdict.Hidden), ("iron_helm", 0, Verdict.Shown), ("copper_ring", 1, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown),

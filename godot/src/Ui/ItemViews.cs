@@ -149,9 +149,9 @@ void fragment() {
 
     public static readonly Color SetColour = new("#3fd6c0");
 
-    /// <summary>A support gem's colour on the ground (its light, its label): its stone's, a clear one pale blue so it reads on grass; null for anything else.</summary>
+    /// <summary>A support gem's colour on the ground (its light, its label): its stone's, a clear one pale blue so it reads on grass, a bicolor one the garnet-sapphire blend (the caller lifts it toward white); null for anything else.</summary>
     public static Color? GemGround(ItemInstance? it) =>
-        it != null && Supports.OfItem(it.Def) is { } g ? (Supports.Family(g) == "clear" ? new Color("#CFE6FF") : GemLook.Of(g)) : null;
+        it != null && Supports.OfItem(it.Def) is { } g ? (Supports.Family(g) switch { "clear" => new Color("#CFE6FF"), "bicolor" => new Color("#9A4E9E"), _ => GemLook.Of(g) }) : null;
 
     /// <summary>A thing's colour: its tier's, except what is counted (a material, a draught) keeps its
     /// own rarity's, so an ember shard still glints among pelts.</summary>

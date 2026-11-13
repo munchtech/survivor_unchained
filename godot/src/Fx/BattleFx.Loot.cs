@@ -42,7 +42,7 @@ public partial class BattleFx
     static readonly Color Verdigris = new(0.16f, 0.8f, 0.66f), LegendAmber = new(1.0f, 0.52f, 0.12f), StoriedRed = new(1.0f, 0.28f, 0.1f);
     static readonly Color ChartPale = new(0.92f, 0.82f, 0.6f), QuestGold = new(1.0f, 0.76f, 0.3f);
 
-    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7, Band = 8 }
+    enum Lit { Rare = 1, Epic = 2, Set = 3, Pillar = 4, Strike = 5, Glow = 6, Shaft = 7, Band = 8, Stars = 9 }
 
     // A moment's columns of light (Pillar): where, how tall and wide, in what colour, since when, how
     // long, and how thick the motes riding up it.
@@ -138,15 +138,17 @@ public partial class BattleFx
                 break;
             case LootTier.Gem:
             {
-                // A cut stone in its own colour; it flashes once as it lands, then every 1.7 s catches the light (a star at 0.4 m).
+                // A cut stone in its own colour: a star-shaped pool of its light (0.7 m, turning slowly) and a 2.4 m column of
+                // star motes rising from it (no flat glow: nothing else on the ground has either). It flashes once as it lands,
+                // then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s, twice as bright as before.
                 var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
-                Light(p.X, gy, p.Z, Lit.Glow, 0, 0.7f, 1.6f * grow, gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
-                var star = gc.Lerp(Colors.White, 0.4f) * 1.1f;
+                Light(p.X, gy, p.Z, Lit.Stars, 0, 0.7f, 2.4f * grow, gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
+                var star = gc.Lerp(Colors.White, 0.4f) * 2.2f;
                 if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
-                    Sparks.Spawn(V(p.X, gy + 0.5, p.Z), Vector3.Zero, 0.28f, 0.5f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                    Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
                 else if (age >= 0.5f) gemLanded.Add(p.Id);
                 if (age >= 0 && frameDt > 0 && (t + p.Id * 0.37f) % 1.7f < frameDt)
-                    Sparks.Spawn(V(p.X, gy + 0.4, p.Z), Vector3.Zero, 0.35f, 0.34f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                    Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
                 break;
             }
             case LootTier.Chart:

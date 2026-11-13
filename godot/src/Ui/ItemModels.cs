@@ -80,9 +80,15 @@ public static class ItemModels
         // Gathered.
         ["ember"] = new(Ember, new(Pitch: 0.2f, Turn: 0.5f)),
         // A loose cut stone (a support gem), tipped to the key light.
-        ["gem_garnet"] = new(() => SupportGem("#8a0f20", 0.12f), new(Pitch: 0.35f, Turn: 0.4f)),
-        ["gem_sapphire"] = new(() => SupportGem("#1c4aa6", 0.15f), new(Pitch: 0.35f, Turn: 0.4f)),
-        ["gem_clear"] = new(() => SupportGem("#8fa8d0", 0f), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_garnet"] = new(() => GemCut.Make("garnet", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_sapphire"] = new(() => GemCut.Make("sapphire", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_clear"] = new(() => GemCut.Make("clear", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        ["gem_bicolor"] = new(() => GemCut.Make("bicolor", true), new(Pitch: 0.35f, Turn: 0.4f)),
+        // The same stones without the photograph's glint, for the ground (BattleFx).
+        ["gem_garnet.ground"] = new(() => GemCut.Make("garnet", false), new()),
+        ["gem_sapphire.ground"] = new(() => GemCut.Make("sapphire", false), new()),
+        ["gem_clear.ground"] = new(() => GemCut.Make("clear", false), new()),
+        ["gem_bicolor.ground"] = new(() => GemCut.Make("bicolor", false), new()),
         ["sigil"] = new(Sigil, new(Pitch: 0.3f, Turn: 0.6f)),
         ["root"] = new(Root, new(Pitch: 0.2f, Turn: 0.4f, Tilt: 0.3f)),
         ["flower"] = new(Flower, new(Pitch: 0.55f, Turn: 0.3f)),
@@ -933,17 +939,6 @@ public static class ItemModels
     }
 
     /* ----------------------------------------------------------- gathered -- */
-
-    /// <summary>A loose brilliant-cut stone, no setting: table on top, two courses of crown facets, the pavilion
-    /// running to a point. Eight sides, faceted, so each plane catches the light on its own.</summary>
-    static Node3D SupportGem(string colour, float glow)
-    {
-        var root = new Node3D();
-        var stone = new Build();
-        Lathe(stone, Pts(0, -0.5f, 0.38f, -0.12f, 0.5f, 0, 0.5f, 0.03f, 0.42f, 0.16f, 0.27f, 0.25f, 0, 0.25f), 8);
-        Add(root, stone.Faceted(), Gem(colour, glow));
-        return root;
-    }
 
     /// <summary>A cluster of ember crystals on a lump of dark rock, lit from within.</summary>
     static Node3D Ember()

@@ -20,7 +20,7 @@ namespace SurvivorUnchained.Ui;
 public partial class ItemPhotos : Node
 {
     /// <summary>Bump when what the photographs show changes.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     const int Px = 256;
 
