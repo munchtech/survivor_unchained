@@ -60,6 +60,7 @@ public static class VergeDaySim
         }, (uint)spec.Seed);
         var ch = j.Ch;
         while (ch.Level < spec.Level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
+        SurvivorUnchained.Play.DevVeteran.Road(ch);
         switch (spec.Calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
         ch.Points = 0;
         // What she has learned by day: the calling's own first, the way SkillBook.Calling picks (its paths, then its kind).

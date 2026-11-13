@@ -195,7 +195,9 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    /// <summary>The type: one of the calling's roads (data/content/lamps.json); empty or foreign walks the default.</summary>
+    /// <summary>The road, named at creation: only the harness, tests and dev runs name one (a survivor walks it from the
+    /// start). Empty, as the creation screen leaves it: she walks no road until she chooses one at level 6
+    /// (LampBook.RoadLevel, BUILD_UNLOCKS). A foreign road is as empty.</summary>
     public string Type = "";
     public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle, HairHighlight;
     public bool? Headgear, Beard;
@@ -639,7 +641,9 @@ public static class Character
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
         ArtBook.HoldKin(ch);
-        LampBook.Begin(ch, c.Type);
+        // (her road: none until level 6, BUILD_UNLOCKS; a road named here is the harness's or a test's, walked from the start)
+        if (Content.Lamps.Roads.GetValueOrDefault(c.Type)?.Calling == c.Archetype) LampBook.Begin(ch, c.Type);
+        else LampBook.BeginRoadless(ch);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         LearnFirstCalling(ch, a, c.WeaponItem);
         foreach (var id in bg.Items)
@@ -661,7 +665,8 @@ public static class Character
     public static string? FirstCallingSkill(string archetype, string type, string? gripItem)
     {
         string? grip = SkillOfItem(gripItem);
-        var road = Content.Lamps.Roads.GetValueOrDefault(type);
+        // (no road yet, bd-ranks: creation still teaches the calling's first road's first skill, the one every Warden starts with)
+        var road = Content.Lamps.Roads.GetValueOrDefault(type) is { } r && r.Calling == archetype ? r : Content.Lamps.RoadsOf(archetype).FirstOrDefault();
         return (road?.Skills ?? []).FirstOrDefault(id => id != grip && Content.Weapons.All.ContainsKey(id) && Weapons.CanCarry(archetype, id));
     }
 
@@ -691,13 +696,27 @@ public static class Character
         return sb.ToString();
     }
 
-    public static double XpForLevel(int level) => MathX.Round(120 * Math.Pow(level, 1.55));
+    /// <summary>The experience a level asks before the next (BUILD_DIRECTION "Progression": PoE-style to the cap, each level
+    /// slower than the last). Levels 1 to 12 cost what they always did (120 L^1.55), so Act 1 still ends near level 12
+    /// (BUILD_UNLOCKS: Act 1 is levels 1-12); from level 12 on each level also asks 4% more than the curve (Stretch), so
+    /// the XP that used to make level 20 makes 19 and the old cap's (30) makes 26, and 75 is the endgame's long climb.</summary>
+    public static double XpForLevel(int level) =>
+        MathX.Round(120 * Math.Pow(level, 1.55) * (level > StretchFrom ? Math.Exp(Stretch * (level - StretchFrom)) : 1));
+
+    /// <summary>The last level whose cost is the old curve's (reaching level 12 costs exactly what it did).</summary>
+    public const int StretchFrom = 11;
+    /// <summary>Past StretchFrom, each level's cost grows by e^Stretch (about 4%) on top of the curve.</summary>
+    public const double Stretch = 0.04;
+
+    /// <summary>The survivor's last level (BUILD_DIRECTION "Progression", 13 Nov 2026; it was 30): PoE-style, the board gives
+    /// a lamp a level all the way (LampBook.Earned), and the levels past the campaign are the endgame's.</summary>
+    public const int MaxLevel = 75;
+
+    /// <summary>Traits come every second level up to here (fifteen picks, as at the old cap of 30): there are sixteen
+    /// traits, so past it a level's power is its lamp and its attribute points.</summary>
+    public const int LastTraitLevel = 30;
 
     /// <summary>Character experience from the fight; the levels gained.</summary>
-    /// <summary>The survivor's last level (docs/SKILLS_DESIGN.md, "Decisions"): reached near
-    /// the end of Act 3; past it the open axes are gear and the arena's depth, and the
-    /// night's power stays the ember's.</summary>
-    public const int MaxLevel = 30;
 
     public static int GainXp(CharacterData ch, double xp)
     {
@@ -710,7 +729,7 @@ public static class Character
             ch.Xp -= XpForLevel(ch.Level);
             ch.Level++;
             ch.Points += 2;
-            if (ch.Level % 2 == 0) ch.TraitPicks++;
+            if (ch.Level % 2 == 0 && ch.Level <= LastTraitLevel) ch.TraitPicks++;
             gained++;
         }
         if (ch.Level >= MaxLevel) ch.Xp = 0;

@@ -123,7 +123,7 @@ public static class PostMenu
         b is not { Combat: true }
         || w != null && LampBook.Bench?.Invoke(w) is { } id && LampPosts.Get(id) is { } at && at.Zone == zone && AtBench(w, b, at);
 
-    public enum Option { Rest, Travel, Tier, Lamps, Leave }
+    public enum Option { Rest, Travel, Tier, Lamps, Leave, Road }
 
     /// <summary>(M5 r3) The post's full menu (travel, the world tier, the Lamps bench) opens once the Low Ford is done
     /// (TravelFact): before it, its first post offered WORLD TIER II and LAMPS to a player who had just learned to walk.</summary>
@@ -131,9 +131,14 @@ public static class PostMenu
 
     /// <summary>The menu's lines at the post, in order, each with why it is refused now (or null): Rest first (her rise point
     /// here, mended out of a fight); then, once the Ford is done (FullMenu), travel, the tier and the Lamps; and leave.</summary>
-    public static List<(Option Option, string? Refused)> Options(WorldState w, Battle? b, LampPosts.Post at)
+    /// <summary>(bd-ranks) With her (ch): her road, once her level has reached it (LampBook.RoadOpen): first while the choice waits
+    /// (the beat's placeholder until the story lead's scene), after the Lamps once she walks one (a change, free, as a respec).</summary>
+    public static List<(Option Option, string? Refused)> Options(WorldState w, Battle? b, LampPosts.Post at, CharacterData? ch = null)
     {
         var o = new List<(Option, string?)>();
+        bool road = ch != null && LampBook.RoadOpen(ch), due = road && LampBook.Roadless(ch!);
+        string? roadNo = LampsOpen(w, b, at) ? null : "Not with them on you";
+        if (due) o.Add((Option.Road, roadNo));
         o.Add((Option.Rest, Calm(b, at) ? null : "Not with them on you"));
         if (FullMenu(w))
         {
@@ -141,6 +146,7 @@ public static class PostMenu
             o.Add((Option.Tier, null));
             o.Add((Option.Lamps, LampsOpen(w, b, at) ? null : "Not with them on you"));
         }
+        if (road && !due) o.Add((Option.Road, roadNo));
         o.Add((Option.Leave, null));
         return o;
     }
