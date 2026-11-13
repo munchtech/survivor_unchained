@@ -97,6 +97,12 @@ public static class TaughtBuilds
             ch.Bar = BarShape;
         }
         if (level <= ch.TaughtUpTo) return got;
+        // The first grant (a new survivor, or a save re-cut): what creation put in her hands takes its taught form, so a
+        // kindled skill creation keyed moves to its auto slot and the grip finds the first key.
+        bool first = ch.TaughtUpTo == 0;
+        if (first)
+            foreach (var s in t.Slots)
+                if (s.Level <= level && ch.Slotted.Contains(s.Skill)) SkillBook.SetAuto(ch, s.Skill, s.Cast == "kindle");
         foreach (var s in t.Slots)
         {
             if (s.Level <= ch.TaughtUpTo || s.Level > level || !Weapons.All.ContainsKey(s.Skill) || !SkillBook.Carries(ch, s.Skill)) continue;
@@ -109,6 +115,16 @@ public static class TaughtBuilds
             got.Add(s);
         }
         ch.TaughtUpTo = level;
+        if (first) Order(ch, t);
         return got;
+    }
+
+    /// <summary>On the first grant only, the build's carried skills lead, in its order (the grip on the first key); the
+    /// rest after, as they were. Later grants append, so a key she has swapped keeps its number.</summary>
+    static void Order(CharacterData ch, TaughtBuild t)
+    {
+        var slots = t.Slots;
+        int Rank(string id) { int i = slots.FindIndex(s => s.Skill == id); return i < 0 ? int.MaxValue : i; }
+        ch.Slotted = ch.Slotted.Select((id, i) => (id, i)).OrderBy(x => Rank(x.id)).ThenBy(x => x.i).Select(x => x.id).ToList();
     }
 }

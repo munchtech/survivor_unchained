@@ -68,16 +68,17 @@ public sealed class LevelCardTests
     [Fact]
     public void The_callings_skill_follows_a_key_levels_card_on_its_own_card_without_the_level()
     {
-        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "watch_bell" ? 5 : -1, 0);
+        // (bd-keys) the ninth level opens the fourth key, Dawnpulse's (taught_builds.json)
+        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "dawnpulse" ? 3 : -1, 0);
         Assert.Equal(LevelCardKind.NewKey, card.Kind);
-        var second = LevelCards.WithCalling(card, "dawnpulse");
+        var second = LevelCards.WithCalling(card, "judgement_disc");
         // the key card shows as it did
-        Assert.Equal((LevelCardKind.NewKey, "watch_bell", 5), (card.Kind, card.Skill, card.Slot));
+        Assert.Equal((LevelCardKind.NewKey, "dawnpulse", 3), (card.Kind, card.Skill, card.Slot));
         Assert.Equal("LEVEL 9 · A NEW KEY", LevelCards.Header(card));
         Assert.Equal(Act.Character, card.PromptKey);
         // and the new skill's own card follows it
         Assert.NotNull(second);
-        Assert.Equal((LevelCardKind.NewSkill, "dawnpulse", -1), (second!.Kind, second.Skill, second.Slot));
+        Assert.Equal((LevelCardKind.NewSkill, "judgement_disc", -1), (second!.Kind, second.Skill, second.Slot));
         Assert.Equal("A NEW SKILL", LevelCards.Header(second));
         Assert.DoesNotContain("LEVEL", LevelCards.Header(second));
         Assert.Equal(Act.Arts, second.PromptKey);

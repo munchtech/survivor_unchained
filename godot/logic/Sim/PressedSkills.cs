@@ -37,7 +37,8 @@ public sealed partial class Battle
     public bool RunsItself(string id)
     {
         if (!Campaign || !Content.Weapons.All.TryGetValue(id, out var d)) return false;
-        if (d.Press is not { } r) return d.Cast == CastMode.Auto;
+        // No press record yet: an auto slot's when this fight runs it there (Kindles), else a key's while one is free.
+        if (d.Press is not { } r) return Kindles.Contains(id) || SlotsUsed + Content.Weapons.SlotCost(id) > KeyCount;
         return r.Kind == Content.PressKind.Kindle || (r.Kindled != null && Kindles.Contains(id));
     }
 
@@ -73,7 +74,8 @@ public sealed partial class Battle
     internal bool Reslot(WeaponInst w)
     {
         if (!Campaign) return true;
-        bool auto = !w.Pressed, onAuto = w.Slot >= KeyCount;
+        // (one with no press record runs itself anywhere: it moves only when this fight's Kindles say)
+        bool auto = w.Press == null ? Kindles.Contains(w.Id) : !w.Pressed, onAuto = w.Slot >= KeyCount;
         if (auto == onAuto) return true;
         int cost = Content.Weapons.SlotCost(w.Id);
         int[] old = [w.Slot, w.Slot2];

@@ -304,8 +304,13 @@ public static class Weapons
     /// still take up both skill slots"), one otherwise. MaxWeapons counts slots, not weapons.</summary>
     public static int SlotCost(string id) => IsUnion(id) ? 2 : 1;
 
-    /// <summary>(bd-keys) Only ever runs itself in the campaign (no press record, or a kindle-kind one): an auto slot's.</summary>
-    public static bool AutoOnly(string id) => All.TryGetValue(id, out var d) && (d.Press == null || d.Press.Kind == PressKind.Kindle);
+    /// <summary>(bd-keys) Only ever runs itself in the campaign (a kindle-kind press record): an auto slot's. A skill with no
+    /// press record yet (the callings whose press records are not written) goes either way, a key first, and runs itself
+    /// wherever it is, as it did on the six slots: so those callings keep all seven places.</summary>
+    public static bool AutoOnly(string id) => All.TryGetValue(id, out var d) && d.Press is { Kind: PressKind.Kindle };
+
+    /// <summary>(bd-keys) No press record yet: it runs itself, on a key or in an auto slot.</summary>
+    public static bool Unpressed(string id) => All.TryGetValue(id, out var d) && d.Press == null;
 
     /// <summary>(bd-keys) Only ever pressed in the campaign (a hold, press or channel record with no kindled option): a key's.</summary>
     public static bool KeyOnly(string id) => All.TryGetValue(id, out var d) && d.Press is { } r && r.Kind != PressKind.Kindle && r.Kindled == null;

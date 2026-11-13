@@ -54,7 +54,7 @@ public class SkillTipTests(ITestOutputHelper output)
         if (w == null)
         {
             for (int i = 0; i < 3 && (w = b.AddWeapon(skill, WickBook.RankIn(ch, skill, false))!) == null; i++)
-                b.RemoveWeapon(b.Weapons.Last(x => x.Id != "sunder" && x.Id != skill).Id);
+                b.RemoveWeapon(b.Weapons.Last(x => x.Slot < b.KeyCount && x.Id != "sunder" && x.Id != skill).Id); // (bd-keys) a key freed: an auto slot never runs out
             Assert.NotNull(w);
         }
         w.SetForm(cast);

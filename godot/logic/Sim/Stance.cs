@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Sim;
  * B's, as she takes the set up, each on its own internal cooldown, so swapping fast swaps but does not strike.
  *
  * API for the views (bd-ui): Battle.StanceB (null: no second set yet), OnB, StanceNow, Swap(), StrikeOf(set),
- * StrikeReadyIn(set), Swaps, SwapStrikes; Ev.Swap on every swap. */
+ * StrikeReadyIn(set), Swaps, SwapStrikes, StanceFlavored; Ev.Swap on every swap. */
 public sealed partial class Battle
 {
     /// <summary>Her second weapon set's stance; null until it opens (SkillBook.StanceOf) or outside the campaign.</summary>
@@ -22,6 +22,8 @@ public sealed partial class Battle
     /// <summary>Swaps made, and swap strikes fired, this fight.</summary>
     public int Swaps { get; private set; }
     public int SwapStrikes { get; private set; }
+    /// <summary>Key blows a stance flavored this fight (the harness, the tests, a view's tally).</summary>
+    public int StanceFlavored { get; private set; }
 
     readonly double[] strikeReady = [double.NegativeInfinity, double.NegativeInfinity];
     int stanceBlows;
@@ -94,6 +96,7 @@ public sealed partial class Battle
     {
         if (StanceNow is not { } st || !e.Alive) return;
         var b = st.Blow;
+        StanceFlavored++;
         if (b.Ward > 0 && Player.BlockT > 0) Player.BlockT = Math.Max(0, Player.BlockT - b.Ward);
         if (++stanceBlows < Math.Max(1, b.Every)) return;
         stanceBlows = 0;

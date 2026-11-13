@@ -8,7 +8,8 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>(M3) The taught build is what a campaign warden carries (taught_builds.json; Content/TaughtBuilds.Grant):
-/// the level-1 slots from the first campaign fight, each later slot at its level, in its taught form, the grip on key 0.</summary>
+/// the level-1 slots from the first campaign fight, each later slot at its level, in its taught form, the grip on key 0;
+/// (bd-keys) the keys on keys 1-4, the autos kindled in the auto slots beyond them.</summary>
 public sealed class TaughtGrantTests
 {
     static Journey New(uint seed = 7)
@@ -22,18 +23,21 @@ public sealed class TaughtGrantTests
     static string? Key(Battle b, int slot) => b.OnSlot(slot)?.Id;
 
     [Theory]
-    [InlineData(1, new[] { "sunder", "groundbreaker" })]
-    [InlineData(4, new[] { "sunder", "groundbreaker", "heroic_leap" })]
-    [InlineData(5, new[] { "sunder", "groundbreaker", "heroic_leap", "shield_charge" })]
-    [InlineData(9, new[] { "sunder", "groundbreaker", "heroic_leap", "shield_charge", "iron_vow", "watch_bell" })]
-    public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys)
+    [InlineData(1, new[] { "sunder" }, new[] { "groundbreaker" })]
+    [InlineData(4, new[] { "sunder", "heroic_leap" }, new[] { "groundbreaker" })]
+    [InlineData(5, new[] { "sunder", "heroic_leap", "shield_charge" }, new[] { "groundbreaker" })]
+    [InlineData(9, new[] { "sunder", "heroic_leap", "shield_charge", "dawnpulse" }, new[] { "groundbreaker", "iron_vow" })]
+    [InlineData(10, new[] { "sunder", "heroic_leap", "shield_charge", "dawnpulse" }, new[] { "groundbreaker", "iron_vow", "watch_bell" })]
+    public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys, string[] autos)
     {
         var j = New();
         j.Ch.Level = level;
         var b = Fight(j);
         Assert.True(b.Campaign);
-        Assert.Equal(keys, j.Ch.Slotted.Take(keys.Length).ToArray());
+        // (bd-keys) Her keys in key order, the grip on the first; her auto slots beyond them, in the order they opened.
+        Assert.Equal(keys.Concat(autos).OrderBy(x => x), j.Ch.Slotted.OrderBy(x => x));
         for (int i = 0; i < keys.Length; i++) Assert.Equal(keys[i], Key(b, i));
+        Assert.Equal(autos, b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).OrderBy(w => w.Slot).Select(w => w.Id).ToArray());
         var t = TaughtBuilds.Of("warden")!;
         foreach (var s in t.Slots.Where(s => s.Level <= level))
         {

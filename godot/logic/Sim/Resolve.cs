@@ -331,6 +331,15 @@ public sealed partial class Battle
     public bool SetForm(string id, string cast)
     {
         if (WeaponById(id) is not { } w) return false;
+        if (w.Press == null && Campaign)
+        {
+            // (bd-keys) No press record: no form to take, only its place (a key, or an auto slot when "kindle").
+            bool had = Kindles.Contains(id);
+            if (cast == "kindle") Kindles.Add(id); else Kindles.Remove(id);
+            if (Reslot(w)) return true;
+            if (had) Kindles.Add(id); else Kindles.Remove(id);
+            return false;
+        }
         bool was = w.KindledForm;
         if (!w.SetForm(cast)) return false;
         if (cast == "kindle") Kindles.Add(id); else Kindles.Remove(id);

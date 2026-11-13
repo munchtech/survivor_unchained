@@ -43,8 +43,11 @@ public static class SkillBook
         "Might" => ch.Attributes.Might, "Finesse" => ch.Attributes.Finesse, "Wits" => ch.Attributes.Wits, _ => ch.Attributes.Resolve,
     };
 
-    /// <summary>Does the survivor measure up to it (now: gear and points move this).</summary>
-    public static bool Meets(CharacterData ch, string id) => Have(ch, Attribute(id)) >= Need;
+    /// <summary>Does the survivor measure up to it (now: gear and points move this). (bd-keys) A skill her calling's taught
+    /// build teaches always does: the calling put it in her hands, so a taught key never lies idle (Dawnpulse leans on wits,
+    /// which a warden has three of).</summary>
+    public static bool Meets(CharacterData ch, string id) => Have(ch, Attribute(id)) >= Need
+        || TaughtBuilds.Of(ch.Archetype) is { } t && (t.Keys.Exists(s => s.Skill == id) || t.Autos.Exists(s => s.Skill == id));
 
     public static bool Knows(CharacterData ch, string id) => ch.Skills.Contains(id);
 
