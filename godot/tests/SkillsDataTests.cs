@@ -20,9 +20,9 @@ public class SkillsDataTests
     {
         Assert.Equal(30, Weapons.Pool.Length);
         Assert.Equal(51, Weapons.Pool.Sum(id => Weapons.All[id].Evolutions.Length));
-        Assert.Equal(10, Unions.All.Length);
-        // (+3: the Warden's pressed Heroic Leap, Shield Charge and Iron Vow, P7: granted, not found, until the design lead offers them.)
-        Assert.Equal(Weapons.Pool.Length + Unions.All.Length + 3, Weapons.All.Count);
+        Assert.Equal(10, Unions.All.Length); // (Bladestorm's union retired, 13 Nov 2026; Falling Wall, the Warden's first, joined)
+        // (+4: the Warden's pressed Heroic Leap, Shield Charge and Iron Vow, P7, and Bladestorm, her own skill since 13 Nov 2026: granted, not found.)
+        Assert.Equal(Weapons.Pool.Length + Unions.All.Length + 4, Weapons.All.Count);
     }
 
     [Fact]
@@ -37,11 +37,17 @@ public class SkillsDataTests
             }
         foreach (var u in Unions.All)
         {
+            // A drafted union's halves are findable evolving skills; a campaign one's (both granted, never found: Falling Wall,
+            // the Warden's Heroic Leap + Shield Charge) evolve on their wicks instead, each with a Turn to burn (UnionJoin).
+            bool campaign = new[] { u.A, u.B }.All(x => Weapons.All.TryGetValue(x, out var g) && !g.Findable);
             foreach (var part in new[] { u.A, u.B })
-                // (Bladestorm is a placeholder union, P7: Sunder has no evolution yet, so it is only ever granted.)
-                Assert.True(Weapons.All.TryGetValue(part, out var p) && p.Findable && (p.Evolutions.Length > 0 || u.Id == "bladestorm"), $"{u.Id}: '{part}' is not an evolving skill");
+                Assert.True(Weapons.All.TryGetValue(part, out var p) && (campaign ? Wicks.Of(part) != null : p.Findable && p.Evolutions.Length > 0), $"{u.Id}: '{part}' is not an evolving skill");
             Assert.True(Weapons.All.TryGetValue(u.Into, out var into) && !into.Findable, $"{u.Id}: '{u.Into}' is not a union weapon");
         }
+        // (13 Nov 2026) Bladestorm is the Warden's own skill, one key, no union.
+        Assert.DoesNotContain(Unions.All, u => u.Id == "bladestorm" || u.Into == "bladestorm");
+        Assert.Equal(["warden"], Weapons.AccessOf("bladestorm")!.ToArray());
+        Assert.Equal(1, Weapons.SlotCost("bladestorm"));
         // Every calling a skill names is a real one; a union names none (its parts' decide).
         foreach (var w in Weapons.All.Values)
             foreach (var c in w.Access ?? [])

@@ -363,29 +363,29 @@ public sealed class RestedOpeningTests
         }
     }
 
-    /// <summary>(6) The union's half: its first cut is whole; after a rest it carries what it earned since its last
+    /// <summary>(6) Sunder with Bladestorm carried beside it (the Warden's own skill since 13 Nov 2026; once a union's half):
+    /// its first cut is whole; after a rest it carries what it earned since its last
     /// landed cut; after more than a written wait it opens whole again.</summary>
     [Fact]
-    public void The_unions_half_opens_whole_after_a_rest()
+    public void Sunder_beside_Bladestorm_opens_whole_after_a_rest()
     {
         var r = new Rig("sunder");
-        DevGrants.Apply(r.B, null, "bladestorm", null);
-        var storm = r.B.Weapons.Single(x => x.Id == Unions.Find("bladestorm")!.Into);
-        var half = Firing.HalfOf(storm)!;
+        var storm = r.B.AddWeapon("bladestorm", Weapons.MaxRank)!;
+        var half = r.W;
         Assert.True(half.Chained && !storm.Chained);
         r.G = half;
         double share = half.BlowWeight, written = r.Written;
         Assert.Equal(0.70 / 1.6, share, 12);
-        Assert.True(r.Tap(storm.Slot2));
+        Assert.True(r.Tap(half.Slot));
         Assert.Equal((0, 1.0), (r.Cuts[0].N, r.Cuts[0].Weight));
         r.Until(r.Cuts[0].End + 0.3);
         double paid = half.PaidTo;
-        Assert.True(r.Tap(storm.Slot2));
+        Assert.True(r.Tap(half.Slot));
         Assert.Equal(Blows.Rested(share * r.Cuts[1].Scale, (r.Cuts[1].Start - paid) / written), r.Cuts[1].Weight, 12);
         r.Until(r.Cuts[1].End + 3);
         double landed = r.Landed;
         Assert.Equal(1 + r.Cuts[1].Weight, landed, 9);
-        Assert.True(r.Tap(storm.Slot2));
+        Assert.True(r.Tap(half.Slot));
         Assert.Equal((0, 1.0), (r.Cuts[2].N, r.Cuts[2].Weight));
         r.Until(r.Cuts[2].End);
         Assert.Equal(landed + 1, r.Landed, 9);

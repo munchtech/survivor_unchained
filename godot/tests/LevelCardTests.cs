@@ -68,12 +68,12 @@ public sealed class LevelCardTests
     [Fact]
     public void The_callings_skill_follows_a_key_levels_card_on_its_own_card_without_the_level()
     {
-        // (bd-keys) the ninth level opens the fourth key, Dawnpulse's (taught_builds.json)
-        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "dawnpulse" ? 3 : -1, 0);
+        // (bd-keys; bd-sockets) the ninth level opens the fourth key, Shield Charge's (taught_builds.json)
+        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "shield_charge" ? 3 : -1, 0);
         Assert.Equal(LevelCardKind.NewKey, card.Kind);
         var second = LevelCards.WithCalling(card, "judgement_disc");
         // the key card shows as it did
-        Assert.Equal((LevelCardKind.NewKey, "dawnpulse", 3), (card.Kind, card.Skill, card.Slot));
+        Assert.Equal((LevelCardKind.NewKey, "shield_charge", 3), (card.Kind, card.Skill, card.Slot));
         Assert.Equal("LEVEL 9 · A NEW KEY", LevelCards.Header(card));
         Assert.Equal(Act.Character, card.PromptKey);
         // and the new skill's own card follows it

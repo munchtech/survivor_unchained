@@ -123,7 +123,7 @@ public static class PostMenu
         b is not { Combat: true }
         || w != null && LampBook.Bench?.Invoke(w) is { } id && LampPosts.Get(id) is { } at && at.Zone == zone && AtBench(w, b, at);
 
-    public enum Option { Rest, Travel, Tier, Lamps, Leave, Road }
+    public enum Option { Rest, Travel, Tier, Lamps, Unions, Leave, Road }
 
     /// <summary>(M5 r3) The post's full menu (travel, the world tier, the Lamps bench) opens once the Low Ford is done
     /// (TravelFact): before it, its first post offered WORLD TIER II and LAMPS to a player who had just learned to walk.</summary>
@@ -145,10 +145,42 @@ public static class PostMenu
             if (TravelShown(w)) o.Add((Option.Travel, TravelRefused(b, at) ?? (Travel(w, at).Count == 0 ? "No other lamp burns yet" : null)));
             o.Add((Option.Tier, null));
             o.Add((Option.Lamps, LampsOpen(w, b, at) ? null : "Not with them on you"));
+            if (ch != null && UnionJoin.Open(ch)) o.Add((Option.Unions, UnionsRefused(w, b, at, ch)));
         }
         if (road && !due) o.Add((Option.Road, roadNo));
         o.Add((Option.Leave, null));
         return o;
+    }
+
+    /* ------------------------------------------------------------ unions -- */
+
+    /// <summary>One Union's line at the post: joined on this layout, learned (paid for) already, and why it can't be
+    /// joined (or unjoined, when joined) now, or null.</summary>
+    public sealed record UnionLine(UnionDef Union, bool Joined, bool Known, int Price, string? Refused);
+
+    /// <summary>Why the Unions are refused here now (Level 15 and the post are asked; a line's own reasons are its), or null.</summary>
+    public static string? UnionsRefused(WorldState w, Battle? b, LampPosts.Post at, CharacterData ch) =>
+        !UnionJoin.Open(ch) ? UnionJoin.Why(UnionNo.Level)
+        : !LampsOpen(w, b, at) ? "Not with them on you"
+        : UnionJoin.Offered(ch).Count == 0 ? "No Union yet: carry two skills that join" : null;
+
+    /// <summary>Her calling's Unions she can reach (UnionJoin.Offered), joined ones first.</summary>
+    public static List<UnionLine> Unions(CharacterData ch) =>
+        UnionJoin.Offered(ch).Select(u =>
+        {
+            bool joined = UnionJoin.Joined(ch).Contains(u.Id);
+            var no = joined ? UnionJoin.CanUnjoin(ch, u.Id) : UnionJoin.CanJoin(ch, u.Id);
+            return new UnionLine(u, joined, UnionJoin.Known(ch, u.Id), UnionJoin.PriceFor(ch, u), UnionJoin.Why(no, u));
+        }).OrderBy(l => l.Joined ? 0 : 1).ToList();
+
+    /// <summary>Join or unjoin a Union at the post (only there: a lit post, out of a fight). Null: done; else why not.
+    /// The first join pays its price (UnionJoin.Join: the cheapest rare items unless named).</summary>
+    public static string? ToggleUnion(WorldState w, Battle? b, LampPosts.Post at, CharacterData ch, string id, IReadOnlyCollection<string>? pay = null)
+    {
+        if (UnionsRefused(w, b, at, ch) is { } no) return no;
+        var u = Content.Unions.Find(id);
+        var r = UnionJoin.Joined(ch).Contains(id) ? UnionJoin.Unjoin(ch, id) : UnionJoin.Join(ch, id, pay);
+        return UnionJoin.Why(r, u);
     }
 
     /// <summary>Rest at the post (out of a fight): it is her rise point in its zone, and she is mended whole. False: refused.</summary>

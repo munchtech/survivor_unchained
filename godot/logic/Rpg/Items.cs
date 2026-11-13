@@ -21,7 +21,7 @@ namespace SurvivorUnchained.Rpg;
 /// <summary>Eight places are worn (BUILD_DIRECTION, round 8): weapon, off-hand, head, body (a whole matching set from the
 /// neck down, the boots apart), boots (`Feet`), amulet and two rings. Belt, legs, cloak, bracers, shoulders, hands and relic
 /// were cut on 13 November 2026; <see cref="Items.Retired"/> and <see cref="Inventory.Mend"/> carry old saves over.</summary>
-public enum ItemKind { Weapon, Offhand, Head, Body, Feet, Amulet, Ring, Material, Consumable, Quest, Tool, Trophy }
+public enum ItemKind { Weapon, Offhand, Head, Body, Feet, Amulet, Ring, Material, Consumable, Quest, Tool, Trophy, Gem }
 public enum EquipSlot { Weapon, Offhand, Head, Body, Feet, Amulet, Ring1, Ring2 }
 
 public sealed class ItemWeapon { public string Id = ""; public int Rank = 1; }
@@ -143,6 +143,7 @@ public static class Items
                 Consumable = new Consumable { Skill = id },
             };
         }
+        foreach (var d in Supports.ItemDefs()) items.TryAdd(d.Id, d);
         // Published only when whole: the tests read it from several threads at once.
         rarityNames = f.Raritynames;
         all = items;

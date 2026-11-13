@@ -98,7 +98,7 @@ public sealed partial class Battle
         // A kindled skill's key (campaign): its live press (now, riposte, flare, command).
         if (!w.Pressed) { if (!w.KindledNow) return false; SkillAim = (aimX, aimZ); return KindledPress(w); }
         SkillAim = (aimX, aimZ);
-        // Bladestorm (a spin union): its first key (its part A's, the Cleaver's) spins; its second (the Sunder's), pressed
+        // A spin union (none in data since 13 Nov 2026; Bladestorm is now the Warden's own skill, below): its first key spins; its second,
         // fresh in the storm or within its BreakWindow after, breaks it (a grip held, or a press buffered, from before the
         // storm began never does), and out of a storm swings Sunder.
         if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0 && slot == w.Slot2)
@@ -108,7 +108,36 @@ public sealed partial class Battle
             HalfPressAt = Time;
             return Firing.SwingHalf(this, w);
         }
+        // Bladestorm as the Warden's own skill (no union, Slot2 < 0): a fresh press of the key holding Sunder breaks the storm; a
+        // stale (held-from-before) key does nothing, and Sunder never swings while a storm runs. Out of a storm Sunder swings as itself.
+        foreach (var s in Weapons)
+        {
+            if (s.Behavior != WeaponBehavior.Spin || s.Slot2 >= 0 || BreakSlot(s) != slot || !Firing.InStorm(this, s)) continue;
+            bool fresh = slot >= downAt.Length || double.IsNaN(downAt[slot]) || downAt[slot] >= s.StormAt;
+            return fresh && Firing.SpinBreak(this, s);
+        }
         return Firing.Press(this, w);
+    }
+
+    /// <summary>The skill whose key breaks a spin that is no union: Sunder (the Warden's grip).</summary>
+    public const string StormBreaker = "sunder";
+
+    /// <summary>The key that breaks a spin's storm: its union's second key (the old form, kept for the generic spin-union
+    /// code; no spin union in data since 13 Nov 2026), else the key carrying Sunder, else -1 (no break: the storm spins
+    /// until Resolve runs dry).</summary>
+    public int BreakSlot(WeaponInst spin)
+    {
+        if (spin.Slot2 >= 0) return spin.Slot2;
+        var s = Weapons.Find(x => x.Id == StormBreaker && x.Keyed && x.Slot >= 0 && x.Slot < KeyCount);
+        return s?.Slot ?? -1;
+    }
+
+    /// <summary>Whether a skill is the break key's skill of a spin weapon that is in its storm: it does not swing then (held or not).</summary>
+    public bool BreaksAStorm(WeaponInst w)
+    {
+        foreach (var s in Weapons)
+            if (s.Behavior == WeaponBehavior.Spin && s.Slot2 < 0 && !ReferenceEquals(s, w) && w.Keyed && BreakSlot(s) == w.Slot && Firing.InStorm(this, s)) return true;
+        return false;
     }
 
     /// <summary>Whether a slot's key is held, every sim step (a channel runs while it is; a union reads both its
@@ -154,7 +183,7 @@ public sealed partial class Battle
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
         if (w == null) return null;
-        // Slot is part A's key, Slot2 part B's (Bladestorm: A the Cleaver's, held to spin; B the Sunder's, the break); a
+        // Slot is part A's key, Slot2 part B's (a spin union: A held to spin, B the break); a
         // part not carried takes a free key, the lowest.
         int[] free = [w.Slot, w.Slot2];
         if (sa >= 0 && sb >= 0) (w.Slot, w.Slot2) = (sa, sb);

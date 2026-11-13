@@ -22,6 +22,8 @@ public sealed class UnionDef
     public string A = "", B = "";
     /// <summary>The weapon it becomes (Weapons.All).</summary>
     public string Into = "";
+    /// <summary>The campaign's price (Rpg/UnionJoin.cs): rare items from her pack, paid once, the first time she learns it.</summary>
+    public int Price = 2;
 }
 
 public static class Unions

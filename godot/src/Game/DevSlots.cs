@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Play;
 /// M4 (docs/design/M4_HUD.md §1, the judge's build): --slots "sunder:hold,cleaver:channel,heroic_leap:press,..." puts
 /// those skills on the slots in that order (slot 1 = LMB, 2 = RMB, 3-6 = the keys 1-4) in the form each names, through
 /// the sim's public API (RemoveWeapon, AddWeapon, SetForm), once in each campaign fight. With --grant-union U it then
-/// makes the union from its carried parts (Battle.GrantUnion: Bladestorm takes the Cleaver's key and the Sunder's), so
+/// makes the union from its carried parts (Battle.GrantUnion; an id that is a skill, as Bladestorm is since 13 Nov 2026, is granted as that skill), so
 /// the union sits on the keys --slots gave its parts whichever of the two runs first. GameHud.Frame ticks it.
 /// </summary>
 public static class DevSlots
@@ -133,6 +133,13 @@ public static class DevSlots
         }
         if (!string.IsNullOrWhiteSpace(union))
         {
+            if (Content.Unions.Find(union.Trim()) == null && Content.Weapons.All.ContainsKey(union.Trim()))
+            {
+                // (13 Nov 2026) no union by that id, but a skill (Bladestorm): granted as the skill at full rank.
+                var sk = b.Weapons.Find(x => x.Id == union.Trim()) ?? b.AddWeapon(union.Trim(), Content.Weapons.MaxRank);
+                said.Add(sk != null ? $"slots: {union} is no union now, granted as the skill at full rank on slot {sk.Slot + 1}" : $"slots: {union} not added (no slot free)");
+                return said;
+            }
             var u = b.GrantUnion(union.Trim());
             said.Add(u != null ? $"slots: union {union} granted on slots {u.Slot + 1} and {u.Slot2 + 1}" : $"slots: union {union} not made");
         }

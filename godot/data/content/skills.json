@@ -1380,17 +1380,17 @@
       "tags": ["projectile", "thrown", "bounce", "nova", "holy"],
       "bossDamage": 2.2,
       "art": "disc_reckon",
-      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike.",
+      "description": "A shield of morning that ricochets through the crowd, searing, and breaks into light wherever it strikes.",
       "base": {
         "cooldown": 1.8,
-        "damage": 15,
+        "damage": 13.5,
         "speed": 10.5,
         "range": 16,
         "radius": 0.32,
         "life": 3.5,
         "bounces": 9,
         "knockback": 0.3,
-        "projectiles": 2,
+        "projectiles": 1,
         "status": { "kind": "sear", "chance": 1, "power": 1, "duration": 3 }
       },
       "triggers": [
@@ -1512,6 +1512,26 @@
       ]
     },
     {
+      "id": "falling_wall",
+      "name": "Falling Wall",
+      "school": "physical",
+      "behavior": "leap",
+      "cast": "press",
+      "press": { "kind": "press", "aim": "point" },
+      "tags": ["melee", "physical", "area", "heavy", "shield"],
+      "bossDamage": 1.5,
+      "art": "heroic_leap",
+      "description": "Shield first, you leap where you aim and come down like a falling wall: everything in a wide ring is struck, thrown back and knocked down, and each one struck shields you.",
+      "base": { "cooldown": 7, "damage": 175, "range": 10, "minRange": 3, "radius": 4.5, "air": 0.62, "knockback": 3, "stun": 1, "stagger": 0.4 },
+      "triggers": [
+        {
+          "on": "hit",
+          "when": { "weapon": "falling_wall" },
+          "effects": [{ "do": "barrier", "fraction": 0.03, "cap": 0.2, "duration": 4 }]
+        }
+      ]
+    },
+    {
       "id": "iron_vow",
       "name": "Iron Vow",
       "school": "physical",
@@ -1529,6 +1549,7 @@
     {
       "id": "bladestorm",
       "name": "Bladestorm",
+      "access": ["warden"],
       "school": "physical",
       "behavior": "spin",
       "cast": "channel",
@@ -1536,7 +1557,7 @@
       "tags": ["melee", "steel", "physical", "area", "heavy"],
       "bossDamage": 1.6,
       "art": "slash_spin",
-      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, the greater the longer you spun, and every line splits at once. Out of the storm, Sunder's key swings Sunder.",
+      "description": "Hold its key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. A fresh press of Sunder's key breaks the storm with one great blow, the greater the longer you spun, and every line splits at once.",
       "_doc": "In the campaign with the Warden's Resolve (Sim/Resolve.cs) the spin drains press.drain Resolve a second while held, with no cap and no cooldown (press.wait 0), and ends at 0; its break grows with the Resolve the storm spent (x1 at none to breakGrow at breakSpent, 100). cooldown, channelTime and breakFrom are the arena's (self-firing) and a campaign without Resolve's.",
       "base": {
         "cooldown": 6,
@@ -1568,6 +1589,7 @@
       "a": "cinderfall",
       "b": "rimeshard",
       "into": "frostfire_comet",
+      "price": 2,
       "description": "Fire and frost in one falling star: it bursts, freezes what it does not burn, and the frozen it finds explode."
     },
     {
@@ -1576,6 +1598,7 @@
       "a": "arcweb",
       "b": "thunderhead",
       "into": "the_tempest",
+      "price": 2,
       "description": "The storm and its lightning are one: bolts fall on the crowd and leap from every shocked thing they strike."
     },
     {
@@ -1584,6 +1607,7 @@
       "a": "blightfield",
       "b": "thornbloom",
       "into": "rotwood",
+      "price": 2,
       "description": "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it."
     },
     {
@@ -1592,6 +1616,7 @@
       "a": "axe_gyre",
       "b": "cleaver",
       "into": "butchers_wheel",
+      "price": 2,
       "description": "The axes become cleavers and never stop turning: every cut a wound, and wounds that deepen."
     },
     {
@@ -1600,6 +1625,7 @@
       "a": "volley",
       "b": "knifestorm",
       "into": "hail_of_steel",
+      "price": 2,
       "description": "Arrows and knives together, in every direction at once, opening wounds."
     },
     {
@@ -1608,7 +1634,17 @@
       "a": "dawnpulse",
       "b": "judgement_disc",
       "into": "dawns_judgement",
-      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike."
+      "price": 2,
+      "description": "A shield of morning that ricochets through the crowd, searing, and breaks into light wherever it strikes."
+    },
+    {
+      "id": "falling_wall",
+      "name": "Falling Wall",
+      "a": "heroic_leap",
+      "b": "shield_charge",
+      "into": "falling_wall",
+      "price": 2,
+      "description": "The leap and the charge are one: you come down shield first on the crowd, a wider ring knocked flat, and every one struck wards you."
     },
     {
       "id": "barrow_host",
@@ -1616,6 +1652,7 @@
       "a": "gravecall",
       "b": "spirit_herd",
       "into": "barrow_host",
+      "price": 2,
       "description": "The barrows send their knights, and the herd runs with them: a host that does not lie down."
     },
     {
@@ -1624,6 +1661,7 @@
       "a": "umbral_bolt",
       "b": "grave_tether",
       "into": "soul_lantern",
+      "price": 2,
       "description": "Shadow that passes through everything, marks it for the grave, and brings a little of it back to you."
     },
     {
@@ -1632,15 +1670,8 @@
       "a": "seeking_motes",
       "b": "moonbrand",
       "into": "starfall",
+      "price": 2,
       "description": "Moons fall among them and break into motes that hunt the strongest."
-    },
-    {
-      "id": "bladestorm",
-      "name": "Bladestorm",
-      "a": "cleaver",
-      "b": "sunder",
-      "into": "bladestorm",
-      "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again."
     }
   ]
 }
