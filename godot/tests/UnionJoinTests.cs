@@ -269,10 +269,10 @@ public class UnionJoinTests(ITestOutputHelper output)
         return b;
     }
 
-    /// <summary>ARPG.md 3.3: a Union beats its two skills apart at equal gear, in the band x1.15-1.3. Each Warden Union,
-    /// joined by UnionJoin.Apply at its halves' rank, against its two halves at that rank, all self-firing, for a minute:
-    /// a pack of six around her at 4 m, one at 3 m, one at 8 m. Never weaker than the two apart in any case; the band
-    /// holds over the three together (their mean).</summary>
+    /// <summary>ARPG.md 3.3 (the owner, 13 Nov: "= to both of them or more"): a Union does at least the damage of its two skills
+    /// apart at equal gear, in every case, and may do more (no upper band; the lower its gain, the greater its extra effect, a
+    /// design rule the harness only logs). Each Warden Union, joined by UnionJoin.Apply at its halves' rank, against its two
+    /// halves at that rank, all self-firing, for a minute: a pack of six around her at 4 m, one at 3 m, one at 8 m.</summary>
     [Theory]
     [InlineData(Dawn)]
     [InlineData(Wall)]
@@ -312,12 +312,10 @@ public class UnionJoinTests(ITestOutputHelper output)
             Assert.Equal(Rank, w.Rank);
             double u = Dealt(b, offs, Seconds, (es, at) => Pilot(b, es, at));
             output.WriteLine($"{name}: {un.A}+{un.B} {a:0.0}/s, {un.Name} joined {u:0.0}/s (x{u / a:0.00}), rank {Rank}");
-            Assert.True(u / a > 1.0, $"{name}: x{u / a:0.00}");
+            Assert.True(u / a >= 1.0, $"{name}: x{u / a:0.00}");
             ratios.Add(u / a);
         }
-        double mean = ratios.Average();
-        output.WriteLine($"{un.Name}: mean x{mean:0.00}");
-        Assert.InRange(mean, 1.15, 1.3);
+        output.WriteLine($"{un.Name}: mean x{ratios.Average():0.00}");
     }
 
     /// <summary>Bladestorm measured, not held (the Warden's own skill since 13 Nov 2026, on its own key beside Sunder; its economy is

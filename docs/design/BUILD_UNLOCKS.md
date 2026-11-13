@@ -18,7 +18,7 @@ Coordinator #9, 13 November 2026. The one page every build-direction lane implem
 | 9 | **Key 4** (`shield_charge`, pressed; `dawnpulse` offered in its place). | 1 | bd-keys |
 | 10 | **Auto slot 3** (`watch_bell`, kindled). Item auto skills stack on top of the three, uncapped, from whenever such an item drops. | 1 | bd-keys |
 | 12 | **Supports.** Gems start dropping (with bad-luck protection). A skill's socket 1 opens at **skill rank 3**, socket 2 at **skill rank 6**, so a favored skill sockets before a fresh one. | 2 | bd-sockets |
-| 15 | **Unions.** Joined at a lamp-post, priced in rare items, both halves evolved (no limiter on the pair: the owner, 13 Nov). Takes both keys and is never weaker than the two apart. The Warden's first is **Falling Wall** (`falling_wall`: Heroic Leap + Shield Charge, keys 2 and 4, both hers by 9; the leap lands shield first, a wider ring knocked flat, each one struck shields her); no longer Bladestorm (below). | 2 | bd-sockets |
+| 15 | **Unions.** Joined at a lamp-post, priced in rare items, both halves evolved (no limiter on the pair: the owner, 13 Nov). Takes both keys. It does at least the two apart's damage in every case and may do more; the lower its damage gain, the greater its extra effect (the owner, 13 Nov; ARPG.md 3.3). The Warden's first is **Falling Wall** (`falling_wall`: Heroic Leap + Shield Charge, keys 2 and 4, both hers by 9; the leap lands shield first, a wider ring knocked flat, each one struck shields her); no longer Bladestorm (below). | 2 | bd-sockets |
 
 Past 15 there is no new layer: a lamp a level to the cap of **75** (each level slower than the last), gear twists, and the deeper reaches of the wicks. The layers above are the whole ladder.
 
