@@ -37,6 +37,9 @@ public partial class Socket
         public bool Union, ClaspLeft, Rings, Bond;
         /// <summary>Fix A (6): its key is down (the sim's own Held of the skill on this seat): the pressed state.</summary>
         public bool Held;
+        /// <summary>bd-ui W3: the stance she is in wears on every key seat: a 2 px ring just inside the bezel at 75% alpha
+        /// (Colors.Transparent: none, set I).</summary>
+        public Color Tint;
     }
 
     /// <summary>Its key cap (Instrument makes it); null: no keys (the arena).</summary>
@@ -73,7 +76,7 @@ public partial class Socket
         float cq = SeatCost.Shown(s.Cost);
         // (the cost met: the arc goes and the ready glow plays once)
         if (costShown >= 0 && cq < 0 && filled && !waiting) cue = 0;
-        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held || s.Floor != st.Floor) dirty = true;
+        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held || s.Floor != st.Floor || s.Tint != st.Tint) dirty = true;
         costShown = cq;
         st = s;
         st.Cost = cq;

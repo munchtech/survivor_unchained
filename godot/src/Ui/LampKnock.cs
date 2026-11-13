@@ -111,7 +111,7 @@ public static class LampKnock
         // the live parts over the art (each a disc, a pixel over its rim)
         var discs = new List<(Vector2, float)>();
         void Disc(Vector2 c, float r) => discs.Add((HudBottom.Map(c), (r + 1) * s));
-        for (int i = 0; i < Content.Weapons.MaxWeapons; i++) Disc(DgPanel.Seat(i), DgPanel.SeatR);
+        for (int i = 0; i < DgPanel.SeatCount; i++) Disc(DgPanel.Seat(i), DgPanel.SeatR);
         Disc(DgPanel.Coin, DgPanel.ArchR);
         Disc(DgPanel.GlassAt, DgPanel.GlassOuterR);
         // (the flask and the dash by their geo scales: the dash's ring is 26 px at 0.84; UI 29 seats the flask in a ring as

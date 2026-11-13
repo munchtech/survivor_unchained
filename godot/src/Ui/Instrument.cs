@@ -53,13 +53,17 @@ public partial class Instrument : Control
     /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
     public readonly DgKeeper Keeper;
     public readonly Vessel Art;
-    public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
+    /// <summary>bd-ui W3: the campaign's four seats (the keys) or the arena's six (SetFour).</summary>
+    public Socket[] Sockets = [];
     public readonly Round Draught, Dash;
     /// <summary>The plate in the middle (the bar).</summary>
     public readonly DgPanel Panel;
     /// <summary>The passives' beads over the plate's top line, over the seats' middle; what is on her (burning,
     /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives;
+    /// <summary>bd-ui W3 (campaign only): her auto tiles left of the coin, the stance block right of it.</summary>
+    public readonly AutoRow Autos = new();
+    public readonly StanceBlock Stance = new();
     /// <summary>UI 28: what is on her, buffs and debuffs (StatusRow: the shelf over the bar, or beside the orb).</summary>
     public readonly StatusRow Statuses;
     public readonly Label ArtWord, ArtNote;
@@ -88,14 +92,7 @@ public partial class Instrument : Control
         Art = new Vessel { Position = ArtAt - Vessel.Half };
         AddChild(Art);
         Keeper.Globe = Art.Globe;
-        for (int i = 0; i < Sockets.Length; i++)
-        {
-            Sockets[i] = new Socket { Index = i };
-            Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
-            AddChild(Sockets[i]);
-            // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock)
-            Sockets[i].SetCap(new KeyTag(Controls.Skills[KeyMap.SeatSlot[i]]) { Chip = true });
-        }
+        BuildSeats(false);
         AddChild(Draught);
         Dash = new Round(Round.Kind.Dash);
         Dash.Place(DgPanel.DashAt, DgPanel.DashScale);
@@ -103,11 +100,12 @@ public partial class Instrument : Control
         // (UI 23: the beads in a row over the plate's top line, over the seats' middle)
         Passives = Style.H(2);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
-        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(5).X) / 2, w = DgPanel.Seat(5).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
-        Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
-        Passives.Size = new Vector2(w, 28);
+        PlacePassives();
         Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
+        AddChild(Autos);
+        AddChild(Stance);
+        Autos.Visible = false;
         Statuses = new StatusRow { ZIndex = 2 };
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
@@ -159,6 +157,50 @@ public partial class Instrument : Control
         foreach (var ch in n.GetChildren()) Redraw(ch);
     }
 
+    /// <summary>bd-ui W3: the campaign bar has four seats, the arena six. A no-op while it is already so; else the sockets
+    /// are rebuilt at DgPanel.Seat(i) and the plate redraws with the right art (DgPanel.Four).</summary>
+    public void SetFour(bool four)
+    {
+        if (four == DgPanel.Four) return;
+        BuildSeats(four);
+        PlacePassives();
+        Autos.Visible = four;
+        Keys();
+    }
+
+    void BuildSeats(bool four)
+    {
+        int at = -1;
+        foreach (var s in Sockets)
+        {
+            if (!GodotObject.IsInstanceValid(s)) continue;
+            if (at < 0) at = s.GetIndex();
+            s.GetParent()?.RemoveChild(s);
+            s.QueueFree();
+        }
+        DgPanel.Four = four;
+        Sockets = new Socket[DgPanel.SeatCount];
+        for (int i = 0; i < Sockets.Length; i++)
+        {
+            Sockets[i] = new Socket { Index = i };
+            Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
+            AddChild(Sockets[i]);
+            if (at >= 0) MoveChild(Sockets[i], at + i);
+            // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock. The arena's seats are keyless: no cap)
+            if (four) Sockets[i].SetCap(new KeyTag(Controls.Skills[KeyMap.SeatSlot[i]]) { Chip = true });
+        }
+        if (Panel != null) Panel.QueueRedraw();
+    }
+
+    void PlacePassives()
+    {
+        if (Passives == null) return;
+        int last = DgPanel.SeatCount - 1;
+        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(last).X) / 2, w = DgPanel.Seat(last).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
+        Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
+        Passives.Size = new Vector2(w, 28);
+    }
+
     /// <summary>The keys, as the device in hand has them: plates under the draught, the dash and the Flare. A tag
     /// redraws only when its key or button changed.</summary>
     public void Keys()
@@ -169,6 +211,7 @@ public partial class Instrument : Control
         artKey.Refresh();
         // (M4 §1: the seats' caps. A seat that wears a cap draws no rank chip, so nothing is measured against it)
         foreach (var s in Sockets) s.Cap?.Refresh();
+        Stance.Keys();
     }
 
     /// <summary>The Lamps' Open wide (§4): the flask and the dash (no wicks) drop to 45%; off, back to full.</summary>
@@ -197,6 +240,7 @@ public partial class Instrument : Control
         Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
         Passives.Modulate = For(false) with { A = slots };
+        Autos.Modulate = Stance.Modulate = For(false) with { A = slots };
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
     }
 
@@ -628,6 +672,8 @@ public partial class Socket : Control
             var rs = ring.GetSize();
             DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false);
         }
+        // (bd-ui W3: the stance she wears, a 2 px ring just inside the bezel)
+        if (keyed && st.Tint.A > 0.01f) DrawArc(c, hr - 1f, 0, Mathf.Tau, 64, st.Tint with { A = 0.75f }, 2, true);
         // (M4 §1: the union's gold edge and clasp, the cost arc: SeatKeys.cs)
         DrawSeatMarks(c, hr);
         if (filled && (evolved || ripe))
