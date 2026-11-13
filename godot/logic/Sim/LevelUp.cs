@@ -499,8 +499,9 @@ public static class LevelUp
         // What a guarantee put there stays there (the last guarantee does not swap it out).
         var kept = new HashSet<Offer>(offers);
         // Guarantee priority, highest first: evolve/union (never swapped) > advancement (two or more
-        // carried) > catalyst pity > attuned first drafts > new weapon while young > rare-passive pity >
-        // at least one combat skill. When guarantees fill every slot, advancement replaces the lowest.
+        // carried) > rare-passive floor (RareFloor, a hard floor) > catalyst pity > attuned first drafts >
+        // new weapon while young > at least one combat skill. When guarantees fill every slot, advancement
+        // replaces the lowest.
         var prio = new Dictionary<Offer, int>();
         void Add(Cand? c, int pr = 0)
         {
@@ -514,7 +515,7 @@ public static class LevelUp
         bool IsCombat(Offer o) => o.Kind is OfferKind.Rank or OfferKind.Weapon or OfferKind.Evolve or OfferKind.Hone;
         // A rare passive does not go missing for more than RareFloor drafts.
         if (Open() > 0 && mem.RarePity >= RareFloor && !offers.Any(o => o.Kind == OfferKind.Boon && o.Rarity >= Rarity.Rare))
-            Add(TakeFrom(b, passive, c => c.O.Rarity >= Rarity.Rare), 2);
+            Add(TakeFrom(b, passive, c => c.O.Rarity >= Rarity.Rare), 6);
         // A weapon ready to evolve does not wait more than CatalystPity drafts for its passive.
         foreach (var w in waiting)
             if (Open() > 0 && mem.CatalystWait.GetValueOrDefault(w.Id) >= CatalystPity && !offers.Any(o => IsCatalyst(o, w)))
