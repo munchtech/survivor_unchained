@@ -79,6 +79,17 @@ public sealed partial class Battle
         FlareMeter = Flare != null ? Math.Clamp(FlareMeter, 0, FlareFull * FlareCharges) : 0;
         Player.DashCharges = Math.Min(Player.DashCharges, MaxDashCharges);
         SyncWickRules();
+        ReconcileBuild();
+    }
+
+    /// <summary>(SU-076, SU-077) What the lamps and the Hand hold live follows the new build, both ways: a dynamic stat a
+    /// rule no longer lit held goes (its tick puts back what a lit one gives), and the Hand's grounds keep to its cap now
+    /// (the newest stay).</summary>
+    void ReconcileBuild()
+    {
+        if (!Lamps.Has("bound.armor") && boundArmorHeld != -1) { Stats.RemoveSource("lamp:bound.armor"); boundArmorHeld = -1; }
+        if (!Lamps.Has("stand_in_fire") && standHeld != 0) { Stats.RemoveSource("lamp:stand_in_fire"); standHeld = 0; }
+        ReconcileHandGrounds(Math.Max(1, HA.Cap));
     }
 
     /// <summary>The learned day skills the kit put in this fight (Journey.StartBattle, RefreshKit): one no longer carried

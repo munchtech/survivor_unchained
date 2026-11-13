@@ -20,9 +20,9 @@ public sealed partial class Battle
     internal WeaponInst? HeavyBy;
     /// <summary>The reaver Hand's Frenzy gate; the stalker Hand's window after a dash.</summary>
     double handFrenzyGate, handDashUntil = -1;
-    /// <summary>The arcanist Hand's grounds, a ring so the oldest goes out first.</summary>
-    GroundZone?[]? handGround;
-    int handGroundAt;
+    /// <summary>The arcanist Hand's grounds, oldest first, held by lifetime (SU-075: a pooled zone released and reused
+    /// is not ours), to the cap the Hand has now (SU-077, ReconcileHandGrounds).</summary>
+    readonly System.Collections.Generic.List<(GroundZone Zone, Lifetime Life)> handGrounds = new();
     /// <summary>Counters for measurement and tests.</summary>
     public int HandHeavies, HandStones, HandFrenzies, HandGrounds, HandPierces, HandTrues, HandMarks;
 
@@ -166,13 +166,12 @@ public sealed partial class Battle
     }
 
     /// <summary>The arcanist Hand's ground where a thing fell, of a school (fire, frost or arcane): the Hand's, or a ground rite's.</summary>
-    void LayHandGround(Enemy e, WeaponInst w, School school)
+    internal void LayHandGround(Enemy e, WeaponInst w, School school)
     {
         var h = HA;
         {
-            handGround ??= new GroundZone?[Math.Max(1, h.Cap)];
-            var old = handGround[handGroundAt];
-            if (old != null && old.Alive && old.Credit == "hand") Zones.Release(old);
+            // room for this one: the oldest live past the cap go out
+            ReconcileHandGrounds(Math.Max(1, h.Cap) - 1);
             var zn = SpawnZone(Side.Player, e.X, e.Z, h.Radius, h.Seconds, school == School.Fire ? w.Damage * h.Burn : 0, school);
             if (zn != null)
             {
@@ -181,12 +180,21 @@ public sealed partial class Battle
                 if (school == School.Fire) zn.Tags = GroundFire;
                 else if (school == School.Frost) { zn.Tags = GroundFrost; zn.Status = handChill ??= new StatusPayload(StatusKind.Chill, 1, h.Chill, h.Seconds); }
                 else { zn.Tags = GroundArcane; zn.Status = handMark ??= new StatusPayload(StatusKind.Mark, 1, h.Mark, h.MarkSeconds); }
-                handGround[handGroundAt] = zn;
-                handGroundAt = (handGroundAt + 1) % handGround.Length;
+                handGrounds.Add((zn, Lifetime.Of(zn)));
                 HandGrounds++;
                 HandEv(HandKind.Ground, e.X, e.Z, e.Id);
             }
         }
+    }
+
+    /// <summary>(SU-075, SU-077) The Hand's grounds kept to `cap`: the gone are forgotten (never released: their slot may be
+    /// another's now), and past the cap the oldest live go out, the newest stay. Laying one and every build change call it.</summary>
+    void ReconcileHandGrounds(int cap)
+    {
+        handGrounds.RemoveAll(g => !g.Life.Is(g.Zone));
+        int over = handGrounds.Count - Math.Max(0, cap);
+        for (int i = 0; i < over; i++) Zones.Release(handGrounds[i].Zone);
+        if (over > 0) handGrounds.RemoveRange(0, over);
     }
 
     Enemy? NearestUnmarked(Enemy from, double r)
