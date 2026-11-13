@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Play;
 
@@ -96,6 +97,17 @@ public enum Busy
     None = 0, Cinematic = 1, Transit = 2, Fall = 4, Overlay = 8, Draft = 16, Banner = 32, Say = 64, Prompt = 128, Hint = 256,
     /// <summary>A level-up draft is owed (about to open): only a panel callout, which belongs on it, may come.</summary>
     Owed = 512,
+    /// <summary>A boss windup or telegraphed attack is live: freezes wait for it to resolve.</summary>
+    BossAttack = 1024,
+}
+
+/// <summary>The fight's busy state for freeze callouts.</summary>
+public static class TeachCombat
+{
+    public static bool BossBusy(Battle? battle) => battle != null && (
+        battle.Enemies.Items.Any(e => e.Alive && e.Boss && e.State is EnemyState.Windup or EnemyState.Casting)
+        || battle.Blows.Any(b => b.From?.Boss == true && b.Kind != TelegraphKind.Safe)
+        || battle.ActiveTells.Any(t => t.Blow.From?.Boss == true && t.Blow.Kind != TelegraphKind.Safe));
 }
 
 /// <summary>The profile's memory of callouts: whether they are wanted at all, and which were seen.</summary>
@@ -137,6 +149,7 @@ public sealed class Teacher
     {
         public required Callout C;
         public double At;
+        public bool BossHeld;
         public readonly SortedSet<string> Waited = new(StringComparer.Ordinal);
     }
 
@@ -174,7 +187,9 @@ public sealed class Teacher
         if (!memory.Tips || memory.Seen(c.Id)) return false;
         if (Current?.Id == c.Id || Queued(c.Id)) return false;
         if (dropped.TryGetValue(c.Id, out var d) && now - d < Requeue && now >= d) return false;
-        queue.Add(new Entry { C = c, At = now });
+        var e = new Entry { C = c, At = now, BossHeld = c.Kind == CalloutKind.Freeze && (busy & Busy.BossAttack) != 0 };
+        if (e.BossHeld) e.Waited.Add("boss");
+        queue.Add(e);
         LogWaited = string.Join(",", Why(c, now, busy, Presence.Here));
         Log?.Invoke("queued", c, "");
         return true;
@@ -190,6 +205,7 @@ public sealed class Teacher
     /// freeze goes over a hint).</summary>
     static Busy Blocking(Callout c, Busy busy)
     {
+        if (c.Kind != CalloutKind.Freeze) busy &= ~Busy.BossAttack;
         // (one that teaches the interact prompt points at it: the prompt is its target, never in its way)
         // (nor one on the corner map: the prompt stands by the one in reach, far from it)
         if (c.Target.Hud is "prompt" or "minimap") busy &= ~Busy.Prompt;
@@ -205,6 +221,7 @@ public sealed class Teacher
     [
         (Busy.Cinematic, "cine"), (Busy.Transit, "transit"), (Busy.Fall, "fall"), (Busy.Overlay, "overlay"), (Busy.Draft, "draft"),
         (Busy.Owed, "owed"), (Busy.Banner, "banner"), (Busy.Say, "say"), (Busy.Prompt, "prompt"), (Busy.Hint, "tip"),
+        (Busy.BossAttack, "boss"),
     ];
 
     /// <summary>Everything that keeps a callout from showing now (none: it can show): the screen's
@@ -239,6 +256,14 @@ public sealed class Teacher
         if ((busy & Busy.Draft) != 0) pauseEnd = now;
         // (a lesson's quiet runs from the end of whatever else was up, a callout included)
         if ((busy & Loud) != 0 || Current != null) loudAt = now;
+        foreach (var e in queue)
+        {
+            bool held = e.C.Kind == CalloutKind.Freeze && (busy & Busy.BossAttack) != 0;
+            // A boss attack must not spend a waiting freeze's patience, including its release frame.
+            if (held || e.BossHeld) e.At = now;
+            e.BossHeld = held;
+            if (held) e.Waited.Add("boss");
+        }
         if (Current is { } cur)
         {
             switch (cur.Kind)
@@ -248,7 +273,7 @@ public sealed class Teacher
                     if (real - ShownAt >= ArrowLife) Close("time", real);
                     // (M6) An urgent freeze whose moment is here takes the screen from an arrow already read: the
                     // swing (A2) waited out the move arrow while the drowned one closed and fell (run m6r1, 31.7-36.9 s).
-                    else if (real - ShownAt >= ArrowRead && queue.Any(e => e.C.Urgent && e.C.Kind == CalloutKind.Freeze && !memory.Seen(e.C.Id) && where(e.C) == Presence.Here))
+                    else if (real - ShownAt >= ArrowRead && (busy & Busy.BossAttack) == 0 && queue.Any(e => e.C.Urgent && e.C.Kind == CalloutKind.Freeze && !memory.Seen(e.C.Id) && where(e.C) == Presence.Here))
                         Close("urgent", real);
                     else if (Blocked(cur, busy & ~Busy.Owed) || where(cur) == Presence.Gone)
                     {
@@ -268,6 +293,7 @@ public sealed class Teacher
             var e = queue[i];
             var c = e.C;
             if (memory.Seen(c.Id)) { queue.RemoveAt(i--); continue; }
+            if (e.BossHeld) continue;
             var p = c.Still?.Invoke() == false ? Presence.Gone : where(c);
             if (p == Presence.Gone || now - e.At > c.Patience)
             {

@@ -81,6 +81,7 @@ public partial class Game
         if (hud.PromptUp) b |= Busy.Prompt;
         if (hud.TipUp) b |= Busy.Hint;
         if (Battle?.DraftOwed == true && hudMode != "draft") b |= Busy.Owed;
+        if (TeachCombat.BossBusy(Battle)) b |= Busy.BossAttack;
         return b;
     }
 

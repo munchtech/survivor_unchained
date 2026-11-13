@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Sim;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
@@ -52,6 +53,139 @@ public class TeachTests
         foreach (var b in new[] { Busy.Cinematic, Busy.Transit, Busy.Fall, Busy.Overlay, Busy.Draft, Busy.Banner, Busy.Say, Busy.Prompt, Busy.Hint })
             Assert.Null(t.Update(1, 1, b, Here));
         Assert.Equal("a", t.Update(2.6, 2.6, Busy.None, Here)?.Id);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FreezeWaitsForBossWindupAndShowsOnTheFirstClearTick(bool transient)
+    {
+        var t = new Teacher(new TeachMemory());
+        var c = transient ? OnGround("lamps") : Freeze("lamps");
+        Assert.True(t.Offer(c, 0, Busy.BossAttack));
+        Assert.Contains("boss", t.Why(c, 0, Busy.BossAttack, Presence.Here));
+        Assert.Null(t.Update(0, 0, Busy.BossAttack | Busy.Hint, Here));
+        Assert.Null(t.Current);
+        Assert.True(t.Queued(c.Id));
+        Assert.False(t.Memory.Seen(c.Id));
+
+        Assert.Same(c, t.Update(1 / 60.0, 1 / 60.0, Busy.None, Here));
+        Assert.Equal(1 / 60.0, t.ShownAt);
+        Assert.False(t.CanContinue(t.ShownAt + Teacher.MinHold / 2));
+        Assert.True(t.CanContinue(t.ShownAt + Teacher.MinHold));
+    }
+
+    [Fact]
+    public void BossWindupNeverExpiresOrRequeuesWaitingFreezes()
+    {
+        var t = new Teacher(new TeachMemory());
+        var events = new List<string>();
+        t.Log = (what, c, _) => events.Add($"{what}:{c.Id}");
+        var first = OnGround("lamps");
+        var second = Freeze("draught");
+        Assert.True(t.Offer(first, 0, Busy.BossAttack));
+        Assert.True(t.Offer(second, 1, Busy.BossAttack));
+        double late = first.Patience + second.Patience + 1;
+        Assert.Null(t.Update(late, late, Busy.BossAttack, _ => Presence.NotYet));
+        Assert.Equal(2, t.Waiting);
+        Assert.False(t.Offer(first, late, Busy.BossAttack));
+
+        double clear = late + first.Patience + 1;
+        Assert.Same(first, t.Update(clear, clear, Busy.None, Here));
+        t.Close("key", clear + Teacher.MinHold);
+        Assert.Null(t.Update(clear + Teacher.Gap / 2, clear + 1, Busy.None, Here));
+        Assert.Same(second, t.Update(clear + Teacher.Gap, clear + 2, Busy.None, Here));
+        Assert.Equal(new[] { "queued:lamps", "queued:draught", "shown:lamps", "answered:lamps", "shown:draught" }, events);
+    }
+
+    [Fact]
+    public void AFreezeOfferedInAWindupSurvivesUntilTheFirstUpdateAfterIt()
+    {
+        var t = new Teacher(new TeachMemory());
+        var c = Freeze("lamps");
+        t.Offer(c, 0, Busy.BossAttack);
+        Assert.Same(c, t.Update(c.Patience + 1, c.Patience + 1, Busy.None, Here));
+    }
+
+    [Fact]
+    public void BossWindupLeavesArrowsAndPanelsAlone()
+    {
+        var t = new Teacher(new TeachMemory());
+        var arrow = Arrow("move");
+        t.Offer(arrow, 0, Busy.BossAttack);
+        Assert.Same(arrow, t.Update(0, 0, Busy.BossAttack, Here));
+        t.Offer(Freeze("lamps") with { Urgent = true }, 1, Busy.BossAttack);
+        Assert.Null(t.Update(Teacher.ArrowRead, Teacher.ArrowRead, Busy.BossAttack, Here));
+        Assert.Same(arrow, t.Current);
+        Assert.False(t.Memory.Seen(arrow.Id));
+
+        var panel = Panel("great");
+        var u = new Teacher(new TeachMemory());
+        u.Offer(panel, 0, Busy.BossAttack | Busy.Draft);
+        Assert.Same(panel, u.Update(0, 0, Busy.BossAttack | Busy.Draft, Here));
+    }
+
+    [Theory]
+    [InlineData(EnemyState.Windup)]
+    [InlineData(EnemyState.Casting)]
+    public void LivingBossWindupsCountAsBusy(EnemyState state)
+    {
+        var b = BattleTests.Arena();
+        var e = b.SpawnEnemy("wolf", 20, 20, new Battle.SpawnOpts())!;
+        e.State = state;
+        Assert.False(TeachCombat.BossBusy(b));
+        e.Boss = true;
+        Assert.True(TeachCombat.BossBusy(b));
+        e.Alive = false;
+        Assert.False(TeachCombat.BossBusy(b));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BossTelegraphsHoldAFreezeUntilTheyLandOrAreCanceled(bool cancel)
+    {
+        var b = BattleTests.Arena();
+        var e = b.SpawnEnemy("wolf", 20, 20, new Battle.SpawnOpts { Boss = true })!;
+        e.State = EnemyState.Active;
+        Assert.False(TeachCombat.BossBusy(b));
+        b.Blow(new Battle.EnemyBlow { From = e, Delay = 0.1, OwnMark = true });
+        Busy Combat() => TeachCombat.BossBusy(b) ? Busy.BossAttack : Busy.None;
+        var t = new Teacher(new TeachMemory());
+        var c = OnGround("lamps");
+        t.Offer(c, 0, Combat());
+        Assert.Null(t.Update(0, 0, Combat(), Here));
+        if (cancel) b.CancelBlows(); else b.Tick(0.1, 0, 0);
+        Assert.Same(c, t.Update(0.1, 0.1, Combat(), Here));
+    }
+
+    [Fact]
+    public void SafeBossMarksAndOrdinaryEnemyBlowsDoNotCountAsBusy()
+    {
+        Assert.False(TeachCombat.BossBusy(null));
+        var b = BattleTests.Arena();
+        var e = b.SpawnEnemy("wolf", 20, 20, new Battle.SpawnOpts { Boss = true })!;
+        b.Blow(new Battle.EnemyBlow { From = e, Kind = TelegraphKind.Safe, Delay = 3 });
+        Assert.False(TeachCombat.BossBusy(b));
+        var ordinary = b.SpawnEnemy("wolf", -20, 20, new Battle.SpawnOpts())!;
+        b.Blow(new Battle.EnemyBlow { From = ordinary, Delay = 3 });
+        Assert.False(TeachCombat.BossBusy(b));
+    }
+
+    [Fact]
+    public void ABossKitChargeStaysBusyThroughItsRun()
+    {
+        var b = BattleTests.Arena();
+        var e = b.SpawnEnemy("wolf", 20, 20, new Battle.SpawnOpts { Boss = true })!;
+        e.State = EnemyState.Active;
+        var blow = b.Tell("charge", e, b.Player.X, b.Player.Z)!;
+        b.Tick(blow.Delay, 0, 0);
+        Assert.Empty(b.Blows);
+        Assert.NotEmpty(b.ActiveTells);
+        Assert.True(TeachCombat.BossBusy(b));
+        b.Tick(Battle.ChargeRun, 0, 0);
+        Assert.Empty(b.ActiveTells);
+        Assert.False(TeachCombat.BossBusy(b));
     }
 
     [Fact]
