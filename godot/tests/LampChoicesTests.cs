@@ -24,6 +24,8 @@ public class LampChoicesTests : System.IDisposable
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            // (bd-ranks: a survivor walking her calling's first road, as creation gave every survivor before the road moved to level 6)
+            Type = LampBook.DefaultType(calling),
         }, 42);
         j.Ch.Level = level;
         return j;

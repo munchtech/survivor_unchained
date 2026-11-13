@@ -60,9 +60,9 @@ public class DevGrantTests
         {
             Name = "Wren", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, 99);
-        // The clip's old veteran: --xp 100000000.
+        // The clip's old veteran: --xp to level 30 (bd-ranks: 100000000 was the old cap's; the cap is 75 now).
         var bare = Quick();
-        Character.GainXp(bare.Ch, 100000000);
+        Character.GainXp(bare.Ch, Enumerable.Range(1, 29).Sum(Character.XpForLevel));
         var bb = Fight(bare);
         Assert.Equal(30, bare.Ch.Level);
         Assert.True(bare.Ch.Points > 50, $"{bare.Ch.Points} points unspent");
@@ -75,7 +75,7 @@ public class DevGrantTests
         foreach (bool xp in new[] { false, true })
         {
             var game = Quick();
-            if (xp) Character.GainXp(game.Ch, 100000000);
+            if (xp) Character.GainXp(game.Ch, Enumerable.Range(1, 29).Sum(Character.XpForLevel));
             Assert.StartsWith("veteran: level 30, gear rarity 2", DevVeteran.Apply(game.Ch, "30:2", 5));
             Assert.Equal(simLine, DevVeteran.Line(Fight(game), game));
         }
