@@ -322,6 +322,23 @@ def game_a_key(mesh, V, G, jc, kp, s):
     else:
         Y = X + f[:, None] * (Yt - X)
     free = f > 1e-3
+    ns = int(ga.get("smooth", 0))
+    if ns:
+        # P1 posed folds: the key's posed move (Y - X) relaxed `smooth` times over the welded mesh (each point half to its
+        # ring's mean, the head held at 0) before it becomes a shape: B and A deform alike to within a smooth field, so
+        # what is not smooth in A's surface minus B's is A's own folds and the point-by-point valid_mm mask (each twin's
+        # rest distance), which carried into a sawtooth on the deltoid-trapezius seam wherever the shape is worn
+        Dp = Y - X
+        deg = np.asarray(mesh.Lg.diagonal()).ravel()
+        Am = sp.diags(deg) - mesh.Lg
+        inv = 1.0 / np.maximum(deg, 1.0)
+        steps = (0.5, -0.53) if ga.get("smooth_kind", "taubin") == "taubin" else (0.5,)
+        for _ in range(ns):                     # Taubin's pair (shrink, then inflate): the sawtooth goes, the bump stays
+            for lam in steps:
+                Dp = Dp + lam * (inv[:, None] * (Am @ Dp) - Dp)
+                Dp[mesh.held] = 0.0
+        Y = X + Dp
+        free = free | (np.linalg.norm(Dp, axis=1) > 1e-6)
     mv = np.linalg.norm(Y - X, axis=1)
     full = f > 0.999
     return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
