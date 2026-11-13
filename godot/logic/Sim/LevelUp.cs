@@ -671,7 +671,7 @@ public static class LevelUp
                 // Unused slots are not lost: one draught, and 25 gold for every slot left.
                 int gold = 25 * (count - i);
                 b.GoldGained += gold;
-                got.Add(new ChestItem(ChestItemKind.Gold, "gold", $"{gold} gold and a draught", "coin", 0, 0, Rarity.Common, null, null));
+                got.Add(new ChestItem(ChestItemKind.Gold, "gold", $"{gold} gold and a draught", "coin", 0, gold, Rarity.Common, null, null));   // (To: the gold paid, for a replay)
                 break;
             }
             var pick = ranks[b.Rng.Int(0, ranks.Count - 1)];

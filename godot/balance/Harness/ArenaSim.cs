@@ -349,7 +349,7 @@ public static class ArenaSim
                             fx.Took.Add((b.Time, bb => bb.Evolve(id, branch, chest: true))); break;
                         case ChestItemKind.Rank: fx.Took.Add((b.Time, bb => bb.RankWeapon(id))); break;
                         case ChestItemKind.Passive: fx.Took.Add((b.Time, bb => bb.AddBoon(id))); break;
-                        case ChestItemKind.Gold: fx.Took.Add((b.Time, bb => { bb.HealPlayer(bb.MaxHp * 0.3, "chest"); bb.GoldGained += 25; })); break;
+                        case ChestItemKind.Gold: fx.Took.Add((b.Time, bb => { bb.HealPlayer(bb.MaxHp * 0.3, "chest"); bb.GoldGained += it.To; })); break;
                     }
                 }
             };
