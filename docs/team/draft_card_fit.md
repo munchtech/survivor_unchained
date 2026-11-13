@@ -1,143 +1,78 @@
 # Draft-card fit flake
 
+Branch: `codex/draft-card-fit`.
+Merged integration: `0b1d2d638853e4c679ac7d68250d379083d6af8b`.
+Validated merge commit: `3aaf621da3a8dd08785aa7852693a8cc7e95b51f`.
 
+## Current validation
 
-Branch: `codex/draft-card-fit`; original reproduction base `ede4bf910`.
+Three consecutive full `dotnet test` runs passed on the merged code, with
+2,516 passed, 0 failed, and 11 skipped each. Times below are Pacific,
+November 13, 2026. Every TRX contains real engine output; the missing-engine
+guard was not taken. The three runs retained identical source hashes for
+`Ornate.cs`, `CardFit.cs`, and `DraftCardFitTests.cs`.
 
-Current integration merge: `0b1d2d638853e4c679ac7d68250d379083d6af8b`.
+| Full run | Start | End | Passed | Failed | Skipped | Cards checked |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| r3-proof-01 | 04:57:59 | 05:17:50 | 2,516 | 0 | 11 | 1,914 |
+| r3-proof-02 | 05:17:57 | 05:52:04 | 2,516 | 0 | 11 | 1,914 |
+| r3-proof-03 | 05:52:15 | 06:08:13 | 2,516 | 0 | 11 | 1,914 |
 
-Status: the first full suite passed with 2,516 passed, 0 failed, and 11 skipped; two required suites remain.
-
-
-
-## Round 3 validation
-
-
-
-Integration still uses Godot.NET.Sdk 4.5.1. Its `OrnateBox`, card harness, and
-
-`DraftCardFitTests` are unchanged from the reproduction base. The merged-code
-
-negative control failed with the script-collection assertion after removing only
-
-the script pin. Restoring the pin passed the same regression and checked 1,914
-
-cards with zero fit failures. Controls: `r3-proof-lifetime-red` and
-
-`r3-proof-lifetime-green`.
-
-
-
-The separate union-gather coverage defect is recorded under "Noted by Codex job 6"
-
-in `docs/team/hook/CODEX_audit.md`, with the exact lines, missing coverage, and
-
-how it was found. Its logic is unchanged in this branch.
-
-
-
-The interrupted `r3-final-01` run produced no final TRX and is not counted.
-
-On the earlier `5a3a1b2e5` merge, `r3-latest-01` finished with 2,468 passed, 1 failed, and 11 skipped.
-
-Its draft-card check passed with 1,914 cards; the failure was the unchanged
-
-`SmoothNormalsTests.cs:127` wall-clock benchmark at 284 ms against 250 ms.
-
-The failed run remains in the evidence and does not count toward the required
-
-three consecutive green suites.
-
-
+Integration still uses Godot.NET.Sdk 4.5.1. Upstream has not changed `OrnateBox`,
+the card harness, or `DraftCardFitTests` since the reproduction base. On this
+merged code, removing only the script pin made the GC regression fail with
+"OrnateBox's C# script was collected between frame instances." Restoring the
+pin passed the regression and checked 1,914 cards with zero fit failures.
+Those controls are `r3-proof-lifetime-red` and `r3-proof-lifetime-green`.
 
 ## Cause and fix
 
+Godot 4.5.1 can retire the last temporary `OrnateBox` instance's native C# type
+script on the finalizer thread while another instance is being constructed.
+Its type cache then supplies a dying or null script and aborts. This matches
+[Godot issue 109711](https://github.com/godotengine/godot/issues/109711).
 
+`OrnateBox` retains its type script in its static constructor. The temporary
+frame used to obtain it is disposed. The harness releases a frame in a helper
+that cannot be inlined, forces collection and finalization, and checks that
+the script survives. Drawing, sizes, colors, fonts, text, and layout are
+unchanged. No retries, relaxed fit assertions, or scheduling changes were added.
 
-`OrnateBox.Make` creates temporary custom style resources. Godot 4.5.1 can retire
+## Original reproduction
 
-their type's native C# script on the finalizer thread while another instance is
+The unchanged full suite failed on baseline run 13 at `ede4bf910`, after
+runs 3-12 had passed: 2,210 passed, 1 failed, 11 skipped.
+`DraftCardFitTests.cs:50` rejected exit `-1073741795` (`0xC000001D`). Godot
+reported `script.is_null()` in `tie_user_managed_to_unmanaged`, reached through
+`OrnateBox.Make` during `DraftPanel.Mark`.
 
-being constructed. Its script cache then returns a null script and aborts.
-
-This matches [Godot issue 109711](https://github.com/godotengine/godot/issues/109711).
-
-
-
-`OrnateBox` now retains its type script in its static constructor. Drawing, sizes,
-
-colors, fonts, text, and layout are unchanged. The card harness disposes a frame,
-
-forces collection and finalization outside its helper's stack, and checks that
-
-the script survives. That regression failed before the fix and passes afterward.
-
-No retries, relaxed fit assertions, or test scheduling changes were added.
-
-
-
-## Reproduction
-
-
-
-The unchanged suite failed on run 13, after runs 3-12 had all passed. Result:
-
-2,210 passed, 1 failed, 11 skipped. `DraftCardFitTests.cs:50` rejected exit
-
-`-1073741795` (`0xC000001D`). Godot reported `script.is_null()` in
-
-`tie_user_managed_to_unmanaged`, called from `OrnateBox.Make` during `DraftPanel.Mark`.
-
-
-
-The suite ran in parallel. Immediately before the failure, its completion log
-
-contains the two `FlareStagedTests` for Butcher's Hour and Banked Flame, then
-
+Immediately before that failure, the parallel suite's completion log shows
+the two `FlareStagedTests` for Butcher's Hour and Banked Flame, then
 `RecipeTests.Every_branch_is_earned_by_its_passive_and_offered_and_fights` for
+`gravecall` / `bone_knights` / `vitality`. `baseline-13-order.json` retains the
+approximate order derived from completion timestamps minus test durations;
+the log and TRX retain the full trace.
 
-`gravecall` / `bone_knights` / `vitality`. The saved TRX and order report retain
+The original fix also passed ten consecutive full suites on November 11 at
+`531307d9b`, each with 2,211 passed, 0 failed, and 11 skipped. Those historical
+counts are separate from the current integration results above.
 
-the full trace; start estimates use completion timestamps minus test durations.
+## Existing findings and evidence
 
+The union-gather coverage defect is recorded under
+[Noted by Codex job 6](hook/CODEX_audit.md#noted-by-codex-job-6), including
+`CardFit.cs:301-302`, the missing coverage, and how it was found. Only the
+1,914 Warden cards gathered before the exception are checked. That defect
+remains open and is not fixed in this branch.
 
+An earlier full run, `r3-latest-01` on `5a3a1b2e5`, finished with 2,468 passed,
+1 failed, and 11 skipped. Its draft-card check passed; the unchanged
+`SmoothNormalsTests.cs:127` wall-clock benchmark failed at 284 ms against
+250 ms. Shared CPU usage was 82-94% immediately after completion. That timing
+test remains unchanged. The interrupted `r3-final-01` run on `ca64d558b`
+produced no final TRX. Neither run counts toward the three green runs above.
 
-Evidence is preserved in
-
-`C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_codex_draft_card_fit/`, especially
-
-`baseline-13.log`, `baseline-13.trx`, `baseline-13-order.json`,
-
-`lifetime-red.log`, `lifetime-green.log`, and `validation.json`.
-
-The ten fixed runs' logs, TRX results, card reports, and order reports are there too.
-
-
-
-## Original validation and existing findings
-
-
-
-- Focused regression: red before the fix, green after it; 1,914 cards, zero fit failures.
-
-- Ten consecutive full suites (`fixed-01` through `fixed-10`) passed on the
-
-  code in `531307d9b`, November 11, 2026, 11:27-13:13 Pacific. Every run had
-
-  2,211 passed, 0 failed, 11 skipped. Each TRX contains real harness output:
-
-  1,914 cards, zero fit failures; the engine's skip guard was not taken.
-
-- Before the fix, full run 2 independently failed `SmoothNormalsTests.SixtyThousandVertsBakeFast`
-
-  at 382 ms. That test and its bound were not changed.
-
-- Existing harness limitation: `Gather` indexes an absent union ingredient evolution,
-
-  logs an exception, and checks only the Warden cards gathered before it. This separate
-
-  coverage defect remains open; the script-lifetime regression still runs and fails
-
-  the process when its check fails. The same gather exception occurs in green baseline
-
-  runs; the reproduced crash additionally aborts while binding `OrnateBox`.
+Current logs, TRX results, card reports, order reports, GC controls, and
+`r3-proof-validation.json` are preserved in
+`C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_codex_draft_card_fit/round3/`.
+Original reproduction and ten-run evidence are in its parent directory.
