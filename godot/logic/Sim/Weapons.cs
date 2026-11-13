@@ -846,6 +846,8 @@ public static partial class Firing
             // The Falling Star (a Mark): the cinder's blast leaves the ground burning.
             if (pr.GroundOnHit == null && w.Id == "cinderfall" && b.Marked(Marks.FallingStar, out double star))
                 pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(2, 5, star), 0.25);
+            // (Codex audit SU-092) the ground it leaves lasts by the one duration calculation, taken at launch and carried to impact.
+            if (pr.GroundOnHit is { } gr) pr.GroundOnHit = gr with { Duration = DurationOf(b, w, gr.Duration) };
             pr.Rank = w.Rank;
             pr.BossDamage = w.BossDamage; pr.W = w.CutW;
             // (b1) a banked cut's projectile carries its bill: the cut's weight is reserved while it flies
@@ -975,7 +977,7 @@ public static partial class Firing
     }
 
     public static void ChainFrom(Battle b, double x0, double z0, Enemy first, int jumps, double reach, double dmg,
-        School school, Tag[] tags, WeaponInst? w, bool fork = false, bool sky = false, int depth = 0)
+        School school, Tag[] tags, WeaponInst? w, bool fork = false, bool sky = false, int depth = 0, bool fromHit = false)
     {
         var hit = new HashSet<int>();
         var points = new List<double> { x0, z0 };
@@ -987,7 +989,7 @@ public static partial class Firing
             points.Add(cur.X); points.Add(cur.Z);
             b.HitEnemy(cur, dmg * Math.Pow(0.92, j), school, tags, new HitOpts
             {
-                Weapon = w, Status = w?.StatusOf, Depth = depth, BossDamage = w?.Def.BossDamage,
+                Weapon = w, Status = w?.StatusOf, Depth = depth, BossDamage = w?.Def.BossDamage, FromHit = fromHit,
             });
             if (sky) b.Events.Emit(new Ev.Strike { X = cur.X, Z = cur.Z, Radius = 0.9, School = school, Delay = 0, Art = "arc_sky", Rank = w?.Rank ?? 1 });
             var next = b.NearestHostile(cur.X, cur.Z, reach, e => !hit.Contains(e.Id));
@@ -1005,7 +1007,7 @@ public static partial class Firing
             var f = queue[i];
             if (hit.Contains(f.Id)) continue;
             var pts = new[] { points[^2], points[^1], f.X, f.Z };
-            b.HitEnemy(f, dmg * 0.7, school, tags, new HitOpts { Weapon = w, Depth = depth });
+            b.HitEnemy(f, dmg * 0.7, school, tags, new HitOpts { Weapon = w, Depth = depth, FromHit = fromHit });
             b.Events.Emit(new Ev.Chain { Points = pts, School = school, Art = w?.Art, Rank = w?.Rank ?? 1 });
         }
     }
@@ -1234,7 +1236,7 @@ public static partial class Firing
         {
             var pr = Launch(b, w, a, speedMul: 1, life: 0.9);
             // (The crescent pierces everything: a Linger ground at each would carpet the field. The swing's is enough.)
-            if (pr != null) { pr.Pierce = 99; pr.Radius = 1.1; pr.Art = "crescent_holy"; pr.School = School.Holy; if (w.Wick?.Ground is { } wg && ReferenceEquals(pr.GroundOnHit, wg)) pr.GroundOnHit = null; }
+            if (pr != null) { pr.Pierce = 99; pr.Radius = 1.1; pr.Art = "crescent_holy"; pr.School = School.Holy; if (w.Wick?.Ground is { } wg && ReferenceEquals(w.GroundOf, wg)) pr.GroundOnHit = null; }
         }
         if (w.Evolution?.Id == "bonesplitter")
             b.ScheduleStrike(p.X + Math.Cos(a) * reach * 1.4, p.Z + Math.Sin(a) * reach * 1.4, 1.8, w.Damage * 0.8, School.Physical, w.Tags, 0.12, w);

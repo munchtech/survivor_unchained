@@ -43,6 +43,7 @@ public static class LowfordDaySim
         }, (uint)spec.Seed);
         var ch = j.Ch;
         while (ch.Level < spec.Level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
+        SurvivorUnchained.Play.DevVeteran.Road(ch);
         switch (spec.Calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
         ch.Points = 0;
         // The Watch Chest's two draughts (the night's), as the Prologue gives them.

@@ -581,18 +581,9 @@ public partial class CreateScreen : Overlay
 
     Control Arms(Archetype a)
     {
-        var v = Style.V(Style.Gap2, Kit.Head("Type"));
-        var roads = Content.Lamps.RoadsOf(a.Id).ToList();
-        // (a fresh draft, or a save's calling with no type yet: its first road, as Character.Create reads it)
-        if (!roads.Any(r => r.Id == d.Type)) d.Type = roads.FirstOrDefault()?.Id ?? "";
-        v.AddChild(Flow(roads.Select(rd => (TypeName(rd), d.Type == rd.Id, (Action)(() => { var id = rd.Id; Set(() => { d.Section = 1; d.Type = id; }); }), $"type:{rd.Id}"))));
-        if (Content.Lamps.Roads.GetValueOrDefault(d.Type) is { } road)
-        {
-            var learns = Character.FirstCallingSkill(a.Id, d.Type, d.WeaponItem);
-            v.AddChild(Note(road.Line + (learns != null && Weapons.All.TryGetValue(learns, out var sk) ? $" · learns {sk.Name}" : "")));
-        }
-        v.AddChild(Style.Gap(Style.Gap1));
-        v.AddChild(Kit.Head("Weapon"));
+        // (bd-ranks: no type row: her road is chosen at level 6 as a story beat, BUILD_UNLOCKS; Character.Create walks none)
+        d.Type = "";
+        var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
         weaponRowH = 0;
         foreach (var id in a.Weapons)
         {

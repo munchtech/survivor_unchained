@@ -27,7 +27,7 @@ public sealed partial class Battle
 
     /// <summary>One creature's blow on another, whatever carried it (a bite, a charge, a missile). Her allies strike for
     /// her, so theirs runs through her pipeline; a rival's is real damage, no credit, and it draws attention.</summary>
-    internal void CreatureStrike(Enemy o, double dmg, School school, in Allegiance by, Enemy? from, double dirX, double dirZ, bool missile = false)
+    public void CreatureStrike(Enemy o, double dmg, School school, in Allegiance by, Enemy? from, double dirX, double dirZ, bool missile = false)
     {
         if (by.Ally)
         {
@@ -35,7 +35,13 @@ public sealed partial class Battle
                 BossDamage = by.BossDamage, Projectile = missile, FromX = dirX, FromZ = dirZ });
             return;
         }
+        // (SU-089) a rival's blow passes the defender's rules as hers does: protection (none taken while a ruler turns),
+        // ward, resists, guard, and its phase floor; no credit to her, and nothing banked toward her Break.
+        if (!o.Alive || o.State == EnemyState.Dying) return;
+        if (o.TakenMul <= 0) { Events.Emit(new Ev.Immune { X = o.X, Z = o.Z, Target = o.Id, School = school }); return; }
+        dmg *= DefenderMul(o, school, missile, dirX, dirZ, out _);
         o.Hp -= dmg;
+        HoldAtFloor(o);
         o.Flash = 1;
         Events.Emit(new Ev.Hit { X = o.X, Z = o.Z, Amount = dmg, Crit = false, School = school, Target = o.Id });
         if (from != null && o.Target != from.Id && Rng.Next() < 0.6) o.Target = from.Id;

@@ -37,6 +37,7 @@ public static class VergeZoneSim
         j.World.Day = spec.Day;
         j.World.Time = TimeOfDay.Day;
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        SurvivorUnchained.Play.DevVeteran.Road(j.Ch);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
         var meta = ZoneMeta.Load("verge");

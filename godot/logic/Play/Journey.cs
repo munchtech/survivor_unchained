@@ -25,6 +25,10 @@ public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, stri
 /// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
 public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
 
+/// <summary>A piece fell that grants a skill her calling can get no other way (Drops.GiftOf): the biggest drop in the game. Its own
+/// event, beside the Legendary's sound and beam it borrows until bd-ui gives it a voice and a look.</summary>
+public sealed record GiftDrop(ItemInstance Item, string Skill);
+
 /// <summary>What the road has taken out of the survivor, carried between
 /// zones until they rest (the ember is an arena's, and stays in it).</summary>
 public sealed class Expedition
@@ -48,6 +52,8 @@ public sealed partial class Journey
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
     public Action<Announcement> OnAnnounce = _ => { };
+    /// <summary>A skill-granting great piece has fallen (see <see cref="GiftDrop"/>); raised once per piece, as it is rolled.</summary>
+    public Action<GiftDrop> OnGift = _ => { };
     /// <summary>The first Legendary (or Storied) piece this world has ever seen taken, and where it lay:
     /// the experience director stages its moment on it (docs/design/LOOT_DESIGN.md §8.2).</summary>
     public Action<ItemInstance, double, double> FirstLegendaryTaken = (_, _, _) => { };
@@ -136,6 +142,7 @@ public sealed partial class Journey
     public void Apply(IEnumerable<Change> e)
     {
         Rules.Apply(e, Ctx);
+        TakeRoadPick();
         OnTouch();
     }
 
@@ -275,6 +282,7 @@ public sealed partial class Journey
         if (World.NightLessons <= 0) return 0;
         int levels = Character.GainXp(Ch, World.NightLessons);
         World.NightLessons = 0;
+        if (levels > 0) RaiseRoad();
         return levels;
     }
 
@@ -313,16 +321,75 @@ public sealed partial class Journey
     /// <summary>The fight whose kills spill experience stones (a story fight with the ember out), else null.</summary>
     Battle? stoneFight;
 
-    /// <summary>Experience reaching her (a kill's, or its stone's as it lands): a level teaches and is named.</summary>
-    void Learn(double xp)
+    /// <summary>Experience reaching her (a kill's, or its stone's as it lands): a level teaches and is named, and the
+    /// road's choice is raised when she reaches it (RaiseRoad).</summary>
+    public void Learn(double xp)
     {
         int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {
             Teach(campaignFight);
             Grew();
+            RaiseRoad();
             OnTouch();
         }
+    }
+
+    /* ---------------------------------------------- the road (subclass) -- */
+
+    /* Her road is chosen at LampBook.RoadLevel (BUILD_UNLOCKS: level 6), a story beat with weight. The game raises it
+     * (RaiseRoad: the fact road.open, an announcement, OnRoadOpen); a story scene makes the choice by setting the fact
+     * road.pick to a road's id (TakeRoadPick, after any Apply), and until that scene exists the lamp-post's menu offers it
+     * (PostMenu.Option.Road). Afterwards she changes it at any lamp-post, free (WalkRoad). The fact road.walked holds the
+     * road she walks, for the story's conditions. */
+
+    /// <summary>World facts of the road's beat: raised, the scene's pick, and the road walked.</summary>
+    public const string RoadOpenFact = "road.open", RoadPickFact = "road.pick", RoadWalkedFact = "road.walked";
+
+    /// <summary>The road's choice was raised (the view may stage it; the story lead's scene will).</summary>
+    public Action OnRoadOpen = () => { };
+
+    /// <summary>The road's choice waits on her: her level has reached it and she walks none.</summary>
+    public bool RoadDue => LampBook.RoadOpen(Ch) && LampBook.Roadless(Ch);
+
+    /// <summary>Raise the road's choice once, when it is due: the fact road.open, the announcement, OnRoadOpen. True when raised now.</summary>
+    public bool RaiseRoad()
+    {
+        if (!RoadDue || World.Fact(RoadOpenFact).Truthy) return false;
+        World.Facts[RoadOpenFact] = true;
+        OnAnnounce(new Announcement("Choose your road", "Two roads lie open to you. Take one at a lamp-post", "boon", 4.5, "Your road"));
+        OnRoadOpen();
+        return true;
+    }
+
+    /// <summary>A story scene's choice (the fact road.pick set to a road's id): walked as WalkRoad's first choice, and the fact cleared.</summary>
+    void TakeRoadPick()
+    {
+        if (World.Fact(RoadPickFact).Str is not { Length: > 0 } pick) return;
+        World.Facts.Remove(RoadPickFact);
+        WalkRoad(pick, null);
+    }
+
+    /// <summary>Walk a road of her calling: her first choice (anywhere the beat is offered), or a change at a lamp-post or in a
+    /// town by day (LampBook.LayoutsOpen, as the layouts; free). The layout in use is refunded to the road's free lamps
+    /// (LampBook.ChooseRoad), and its own skill is learned if she does not know it. Null when walked; else why not.</summary>
+    public string? WalkRoad(string road, string? zone, string? atPost = null)
+    {
+        if (!LampBook.RoadOpen(Ch)) return $"Your road opens at level {LampBook.RoadLevel}";
+        if (Content.Lamps.Roads.GetValueOrDefault(road) is not { } r || r.Calling != Ch.Archetype) return "Not a road of your calling";
+        if (LampBook.Walked(Ch)?.Id == road) return "You already walk this road";
+        if (!LampBook.Roadless(Ch) && !LampBook.LayoutsOpen(World, zone, atPost)) return "Change your road at a lamp-post";
+        if (!LampBook.ChooseRoad(Ch, road)) return "Not now";
+        World.Facts[RoadWalkedFact] = road;
+        string? taught = null;
+        if (LampBook.RoadSkill(Ch, road) is { } id && !SkillBook.Knows(Ch, id))
+        {
+            if (!Ch.Discovered.Contains(id)) Ch.Discovered.Add(id);
+            if (SkillBook.Learn(Ch, id)) { WickBook.Arrived(Ch, id); taught = id; }
+        }
+        OnToast(new Toast(ToastKind.Level, $"You walk {r.Name}", taught != null && Content.Weapons.All.TryGetValue(taught, out var wd) ? $"{r.Line} {wd.Name} is yours." : r.Line));
+        OnTouch();
+        return null;
     }
 
     /// <summary>The campaign fight running (its levels teach the taught build into it), else null.</summary>
@@ -440,13 +507,13 @@ public sealed partial class Journey
     public void ReturnItem(ItemInstance it)
     {
         var def = Items.Get(it.Def);
-        if (Inventory.AddToPack(Ch, it)) OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Yours again", def.Icon, it.Rarity));
-        else
+        var landed = Inventory.Deliver(Ch, World, it);
+        OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), landed switch
         {
-            int j = World.Stash.IndexOf(null);
-            if (j >= 0) { World.Stash[j] = it; OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Your pack is full: Rook will keep it for you", def.Icon, it.Rarity)); }
-            else Warn($"{Inventory.Name(it)} is lost: no room anywhere");
-        }
+            Inventory.Landed.Pack => "Yours again",
+            Inventory.Landed.Shelf => "Your pack is full: Rook will keep it for you",
+            _ => "Your pack and Rook's shelves are full: she is holding it by the door",
+        }, def.Icon, it.Rarity));
         OnTouch();
     }
 

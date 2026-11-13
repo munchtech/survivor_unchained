@@ -263,6 +263,10 @@ public struct HitOpts
     /// <summary>(L1) A tick of a status sized on her side already (StatusSlot.Her, TollVenom): only the target's state
     /// (mark, frozen, resists, ward and the like) applies, never her multipliers again.</summary>
     public bool Resolved;
+    /// <summary>(SU-078) A proc's blow sized on her hit (Basis.Hit, Battle.BlowOf): it is part of that hit. Her side
+    /// (the global, summon, champion and calling multipliers, and its crit) is in it already and is not taken again, and
+    /// it rolls no crit of its own; this target's own state and defenses apply, once. Not a tick (Resolved).</summary>
+    public bool FromHit;
     /// <summary>(M3 MR 3) The weight of a hit that lands after its cast (a projectile's, stamped at the launch); null: the
     /// weapon's live CutW.</summary>
     public double? W;
@@ -286,6 +290,9 @@ public struct ProcCtx
     /// <summary>(M3 MR 3) The share of a written blow the event stands for: a chained cut's weight, or what a status a
     /// cut landed builds. Null (every other event) reads 1. Under 1, Damage is the share and Damage / W the blow.</summary>
     public double? W;
+    /// <summary>(SU-078) Her side of the hit that set this off (Damage without the struck target's share of it): set
+    /// only on her hit's events (Hit, Crit), null elsewhere. A proc sized on it is part of the hit (HitOpts.FromHit).</summary>
+    public double? Her;
 }
 
 public sealed partial class Battle
@@ -923,6 +930,41 @@ public sealed partial class Battle
     public Enemy? Live(Lifetime h) =>
         h.Id >= 0 && h.Id < Enemies.Items.Length && Enemies.Items[h.Id] is { } e && h.Is(e) ? e : null;
 
+    /// <summary>(Codex audit SU-089) The defender's own share of any blow on a creature, whoever struck it (her, her allies,
+    /// a rival): a stagger and ice laid open, its protection (TakenMul; zero is handled by the caller as immune), its ward,
+    /// its resistances, and a raised guard against a missile from the front (blocked). The attacker's side is the caller's.</summary>
+    public double DefenderMul(Enemy e, School school, bool projectile, double fromX, double fromZ, out bool blocked)
+    {
+        double m = 1;
+        var s = e.Status;
+        if (e.StaggeredT > 0) m *= 1.25;
+        if (s.Has(StatusKind.Frozen)) m *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
+        m *= e.TakenMul;
+        // Warded by its own kind's lamp or drum.
+        if (e.WardT > 0) m *= 1 - e.Ward;
+        // Resistances.
+        m *= 1 - (e.Def.Resists?.Of(school) ?? 0);
+        // Frontal guard: projectiles into a raised shield mostly glance off.
+        blocked = false;
+        if (projectile && e.Def.Guard is { } guard && e.State != EnemyState.Stunned && !s.Has(StatusKind.Frozen) && !s.Has(StatusKind.Stun))
+        {
+            double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
+            if (fx * -fromX + fz * -fromZ > Math.Cos(guard.Arc / 2)) { m *= 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); blocked = true; }
+        }
+        if (e.TakenMul < 0.7) blocked = true;
+        return m;
+    }
+
+    /// <summary>(SU-089) A gated creature (a boss's phase mark, HpFloor) stops at its floor whoever struck it. Returns
+    /// what went past the floor (her blows bank it as the Break; a rival's is simply lost).</summary>
+    internal static double HoldAtFloor(Enemy e)
+    {
+        if (e.HpFloor <= 0 || e.Hp >= e.HpFloor) return 0;
+        double broke = e.HpFloor - e.Hp;
+        e.Hp = e.HpFloor;
+        return broke;
+    }
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -953,16 +995,16 @@ public sealed partial class Battle
         var st = Stats;
         // (L1) a resolved tick (o.Resolved) carries her side already, taken once at the blow: only the target's state
         // applies here. `taken` is the target's share of this blow (ApplyRolled sizes a resolved status without it).
-        double dmg = baseDamage * (o.Resolved ? 1 : st.DamageMult(school, tags, e.Def.Family));
+        // (SU-078) a proc sized on her hit (o.FromHit) carries her side too
+        bool herIn = o.Resolved || o.FromHit;
+        double dmg = baseDamage * (herIn ? 1 : st.DamageMult(school, tags, e.Def.Family));
         double taken = 1;
         // Allies go for the throat: champions and worse take more from them.
-        if (o.Summon && !o.Resolved) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
-        if ((e.Boss || e.Elite) && !o.Resolved) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
-        if (e.StaggeredT > 0) { dmg *= 1.25; taken *= 1.25; }
+        if (o.Summon && !herIn) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
+        if ((e.Boss || e.Elite) && !herIn) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
         // Vulnerabilities.
         var s = e.Status;
         if (s[StatusKind.Mark] is { } mark) { double f = 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1); dmg *= f; taken *= f; }
-        if (s.Has(StatusKind.Frozen)) { double f = Boons.ContainsKey("deep_chill") ? 1.35 : 1.15; dmg *= f; taken *= f; }
         if (s.Has(StatusKind.Sear) && school == School.Holy) { dmg *= 1.3; taken *= 1.3; }
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) { dmg *= 1 + BoundArea; taken *= 1 + BoundArea; }
         double preShock = dmg;
@@ -983,9 +1025,11 @@ public sealed partial class Battle
         if (preShock > 0) taken *= dmg / preShock;
         if (e.SunderUntil > Time) { dmg *= 1 + e.Sunder; taken *= 1 + e.Sunder; }
         if (e.AirUntil > Time) { dmg *= 1 + e.AirMore; taken *= 1 + e.AirMore; }
-        dmg *= e.TakenMul;
-        taken *= e.TakenMul;
-        if (!o.Resolved)
+        // (SU-089) the defender's own rules, the same for every blow on a creature (hers, her allies', a rival's)
+        double def = DefenderMul(e, school, o.Projectile, o.FromX, o.FromZ, out bool blocked);
+        dmg *= def;
+        taken *= def;
+        if (!herIn)
         {
             dmg *= LampDamageMul(e, school, tags, o);
             if (Lamps.Board) dmg *= BoardDamageMul(e, school, tags, o);
@@ -994,29 +1038,16 @@ public sealed partial class Battle
             dmg *= ArcanistDamageMul(e, school, tags, o);
             dmg *= StalkerDamageMul(e, school, tags, o);
         }
-        // Warded by its own kind's lamp or drum.
-        if (e.WardT > 0) { dmg *= 1 - e.Ward; taken *= 1 - e.Ward; }
-        // Resistances.
-        { double f = 1 - (e.Def.Resists?.Of(school) ?? 0); dmg *= f; taken *= f; }
-        // Frontal guard: projectiles into a raised shield mostly glance off.
-        bool blocked = false;
-        if (o.Projectile && e.Def.Guard is { } guard && e.State != EnemyState.Stunned && !s.Has(StatusKind.Frozen) && !s.Has(StatusKind.Stun))
-        {
-            double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
-            double ix = -o.FromX, iz = -o.FromZ;
-            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { double f = 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); dmg *= f; taken *= f; blocked = true; }
-        }
-        if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
         // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
         bool noTrue = StalkerNoTrue;
-        bool crit = o.Crit && !noTrue;
+        bool crit = o.Crit && !noTrue && !o.FromHit;
         // The stalker's Hand: just after a dash, a blow on a champion strikes true.
         bool handTrue = !noTrue && StalkerHand && HandTrue(e, o);
         // (M3 MR 3) The opener (the Hunters' Blind's share of the roll) is a moment: it lands whole on the cut that rolls it.
         bool opener = false;
         double blindAdd = 0;
-        if (!crit && !o.NoCrit && !o.Dot)
+        if (!crit && !o.NoCrit && !o.Dot && !o.FromHit)
         {
             double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o)) + (handTrue ? 1 : 0);
             // The Hunters' Blind: the first blow on anything unhurt.
@@ -1042,15 +1073,17 @@ public sealed partial class Battle
         }
         else if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { double f = 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); dmg *= f; taken *= f; blocked = true; }
+        // (SU-078) her side of it, for the procs it sets off: the target's share out (taken), her crit kept
+        double her = taken > 1e-9 ? dmg / taken : 0;
         dmg = Math.Max(0.5 * cw, dmg);
-        if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
+        if (o.Cap is { } cap && Math.Max(0.5, cap) < dmg) { double capped = Math.Max(0.5, cap); her *= capped / dmg; dmg = capped; }
         LightningLeaps(e, baseDamage, school, tags, o);
 
         double before = e.Hp;
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
-        double broke = 0;
-        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { broke = e.HpFloor - e.Hp; e.Overflow += broke; e.Hp = e.HpFloor; }
+        double broke = HoldAtFloor(e);
+        e.Overflow += broke;
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
         e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
@@ -1136,7 +1169,7 @@ public sealed partial class Battle
         int depth = o.Depth;
         if (!o.NoProcs && depth < 3)
         {
-            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1, W = cw };
+            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1, W = cw, Her = her };
             Fire(TriggerEvent.Hit, ctx);
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
@@ -1882,7 +1915,7 @@ public sealed partial class Battle
             p.LastKiller = from;
             // The map's oath rides their blows.
             if (!silent && (Rules.HitChill || by.Def.Bite == StatusKind.Chill)) SlowPlayer(0.65, 1.4);
-            if (!silent && (Rules.HitPoison || by.Def.Bite == StatusKind.Poison)) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, by.Damage * 0.12); }
+            if (!silent && (Rules.HitPoison || by.Def.Bite == StatusKind.Poison)) { p.PoisonDps = Math.Max(p.PoisonT > 0 ? p.PoisonDps : 0, by.Damage * 0.12); p.PoisonT = Math.Max(p.PoisonT, 3); }   // (SU-079) a lapsed or cured poison keeps no rate
         }
         if (p.Hp <= 0)
         {
@@ -2271,10 +2304,10 @@ public sealed partial class Battle
         return s;
     }
 
-    public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
+    public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0, bool fromHit = false)
     {
         // (M3 MR 3) made inside a chained cut it lands after the cast, when CutW reads 1 again: it carries the cut's weight
-        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1, Cast = CastOf(weapon) }));
+        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1, Cast = CastOf(weapon), FromHit = fromHit }));
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2462,7 +2495,7 @@ public sealed partial class Battle
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
                     // (SU-056, L3: the target is kept by lifetime, never whatever took its slot)
                     if (t != null && !pr.TargetLife.Is(t)) t = null;
-                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
+                    if (t == null || !Targetable(t) || pr.Hits.Contains(Lifetime.Of(t)) || VolleyTaken(pr, t))
                     {
                         t = PickSeekTarget(pr);
                         pr.Home(t);
@@ -2541,10 +2574,10 @@ public sealed partial class Battle
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
-                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e.Id))) continue;
+                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e))) continue;
                 double rr = pr.Radius + e.Radius;
                 if ((e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z) > rr * rr) continue;
-                int k = pr.Hits.IndexOf(e.Id);
+                int k = pr.Hits.IndexOf(Lifetime.Of(e));
                 if (k >= 0)
                 {
                     if (pr.Rehit == 0 || Time - pr.HitTimes[k] < pr.Rehit) continue;
@@ -2552,7 +2585,7 @@ public sealed partial class Battle
                 }
                 else
                 {
-                    pr.Hits.Add(e.Id);
+                    pr.Hits.Add(Lifetime.Of(e));
                     pr.HitTimes.Add(Time);
                 }
                 ProjectileHit(pr, e);
@@ -2569,7 +2602,7 @@ public sealed partial class Battle
             Enemy? best = null;
             foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
             {
-                if (pr.Hits.Contains(e.Id)) continue;
+                if (pr.Hits.Contains(Lifetime.Of(e))) continue;
                 if (best == null || (e.Elite || e.Boss ? 1e6 : 0) + e.MaxHp > (best.Elite || best.Boss ? 1e6 : 0) + best.MaxHp) best = e;
             }
             return best;
@@ -2580,19 +2613,19 @@ public sealed partial class Battle
             Enemy? m = null; double md = 8.0 * 8.0;
             foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
             {
-                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(e.Id) || VolleyTaken(pr, e.Id)) continue;
+                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(Lifetime.Of(e)) || VolleyTaken(pr, e)) continue;
                 double d = (e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z);
                 if (d < md) { md = d; m = e; }
             }
             if (m != null) return m;
         }
-        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
+        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(Lifetime.Of(e)) && !VolleyTaken(pr, e));
         // Nothing left that the volley has not struck: the spread yields, and the mote strikes what there is
         // (else a lone champion took one mote of eight).
         if (near == null && pr.Volley != 0)
         {
             pr.Volley = 0;
-            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(Lifetime.Of(e)));
         }
         return near;
     }
@@ -2622,7 +2655,7 @@ public sealed partial class Battle
         {
             Weapon = weapon, W = pr.W, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
             BossDamage = pr.BossDamage, Projectile = pr.Tags.Has(Tag.Projectile), FromX = pr.DirX, FromZ = pr.DirZ,
-            Summon = pr.Owner == Side.Ally, Credit = pr.Credit,
+            Summon = pr.Owner == Side.Ally, Credit = pr.Credit, FromHit = pr.FromHit,
         });
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
@@ -2645,12 +2678,12 @@ public sealed partial class Battle
                 c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
                 c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
                 c.AimAlongVelocity();
-                c.Hits.Add(e.Id); c.HitTimes.Add(Time);
+                c.Hits.Add(Lifetime.Of(e)); c.HitTimes.Add(Time);
             }
         }
         if (pr.Bounces > 0)
         {
-            var next = NearestHostile(pr.X, pr.Z, 8, o => !pr.Hits.Contains(o.Id));
+            var next = NearestHostile(pr.X, pr.Z, 8, o => !pr.Hits.Contains(Lifetime.Of(o)));
             if (next != null)
             {
                 pr.Bounces--;
@@ -2702,7 +2735,7 @@ public sealed partial class Battle
     /// <summary>An area blast from the survivor's side. Raises Explode for procs. w: the weight of a blast that goes
     /// off after its cast (a projectile's splash carries its stamp, HitOpts.W); null: the weapon's live CutW.</summary>
     public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null, double? cast = null,
-        double? bossDamage = null, string? credit = null, bool summon = false)
+        double? bossDamage = null, string? credit = null, bool summon = false, bool fromHit = false)
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
@@ -2713,7 +2746,7 @@ public sealed partial class Battle
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
             HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Cast = cast, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status,
-                BossDamage = bossDamage, Credit = credit, Summon = summon });
+                BossDamage = bossDamage, Credit = credit, Summon = summon, FromHit = fromHit });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
@@ -2722,7 +2755,7 @@ public sealed partial class Battle
     /// <summary>A missile's own blast (its splash on a hit or a wall): the missile's context whole, its champion
     /// multiplier, credit and summoner's side with it (SU-066).</summary>
     void Explode(Projectile pr, double r, double dmg, WeaponInst? weapon, int skip) =>
-        Explode(pr.X, pr.Z, r, dmg, pr.School, pr.Tags, weapon, pr.Depth, skip, pr.W, null, pr.BossDamage, pr.Credit, pr.Owner == Side.Ally);
+        Explode(pr.X, pr.Z, r, dmg, pr.School, pr.Tags, weapon, pr.Depth, skip, pr.W, null, pr.BossDamage, pr.Credit, pr.Owner == Side.Ally, pr.FromHit);
 
     /* ============================================================= zones == */
 
@@ -2817,7 +2850,7 @@ public sealed partial class Battle
                 try
                 {
                     if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
-                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W, s.Cast);
+                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W, s.Cast, fromHit: s.FromHit);
                 }
                 finally
                 {
@@ -3353,15 +3386,24 @@ public sealed partial class Battle
     /// when the event that set it off carried none (a kill by a status).</summary>
     string? ctxWeapon;
 
+    /// <summary>(SU-078) A proc's blow: sized on her hit (Basis.Hit on her hit's event) it is part of that hit, her side
+    /// of it with no target's share (ProcCtx.Her), dealt FromHit; anything else is BaseOf, and her side applies at the blow.</summary>
+    (double Dmg, bool FromHit) BlowOf(double damage, Basis basis, ProcCtx ctx) =>
+        basis == Basis.Hit && ctx.Her is { } her ? (damage * her, true) : (BaseOf(damage, basis, ctx), false);
+
     void RunEffect(Effect effect, ProcCtx ctx, int depth)
     {
-        double x = ctx.X ?? Player.X, z = ctx.Z ?? Player.Z;
+        // (SU-083) where it bursts is the effect's to say: round her, or where its event was
+        double x = effect.At == Effect.Origin.Her ? Player.X : ctx.X ?? Player.X, z = effect.At == Effect.Origin.Her ? Player.Z : ctx.Z ?? Player.Z;
         switch (effect)
         {
             case Effect.Explode fx:
-                Explode(x, z, fx.Radius * Stats.Get(Stat.Area), BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Explosion, fx.School.AsTag()], null, depth, -1);
+            {
+                var (bd, fh) = BlowOf(fx.Damage, fx.Basis, ctx);
+                Explode(x, z, fx.Radius * Stats.Get(Stat.Area), bd, fx.School, [Tag.Explosion, fx.School.AsTag()], null, depth, -1, fromHit: fh);
                 if (fx.Status != null) ForEachHostileInRadius(x, z, fx.Radius, (e, _) => ApplyStatus(e, fx.Status, BaseOf(fx.Damage, fx.Basis, ctx), depth, resolved: fx.Basis == Basis.Hit));
                 break;
+            }
             case Effect.Apply fx:
                 // (M3 MR 3: a status is sized on the blow; on a cut the hit is its share, and statusW weighs what it builds)
                 if (fx.OnHit && ctx.Target != null) ApplyStatus(ctx.Target, fx.Payload, (ctx.W is { } aw && aw > 0 && aw < 1 ? ctx.Damage / aw : ctx.Damage) ?? 10, depth);
@@ -3395,8 +3437,10 @@ public sealed partial class Battle
                 for (int i = 0; i < fx.Count; i++)
                 {
                     double a = Rng.Next() * Tau;
-                    var pr = SpawnProjectile(Side.Player, x, z, BaseOf(fx.Damage, fx.Basis, ctx), fx.School);
+                    var (bd, fh) = BlowOf(fx.Damage, fx.Basis, ctx);
+                    var pr = SpawnProjectile(Side.Player, x, z, bd, fx.School);
                     if (pr == null) continue;
+                    pr.FromHit = fh;
                     pr.Y = 1.2; pr.Vx = Math.Cos(a) * fx.Speed; pr.Vz = Math.Sin(a) * fx.Speed; pr.Speed = fx.Speed;
                     pr.Tags = [Tag.Projectile, fx.School.AsTag()]; pr.Radius = 0.2; pr.Pierce = 0; pr.Life = 2.5; pr.Homing = 6;
                     pr.Seek = fx.Seek; pr.Home(null); pr.Art = fx.Art; pr.Status = fx.Status; pr.Depth = depth;
@@ -3406,7 +3450,8 @@ public sealed partial class Battle
             case Effect.Chain fx:
             {
                 var first = NearestHostile(x, z, fx.Range, e => e != ctx.Target);
-                if (first != null) Firing.ChainFrom(this, x, z, first, fx.Count - 1, fx.Range, BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Chain, fx.School.AsTag()], null, false, false, depth);
+                var (bd, fh) = BlowOf(fx.Damage, fx.Basis, ctx);
+                if (first != null) Firing.ChainFrom(this, x, z, first, fx.Count - 1, fx.Range, bd, fx.School, [Tag.Chain, fx.School.AsTag()], null, false, false, depth, fh);
                 break;
             }
             case Effect.Heal fx:
@@ -3460,21 +3505,25 @@ public sealed partial class Battle
                 }
                 break;
             case Effect.Nova fx:
+            {
+                var (bd, fh) = BlowOf(fx.Damage, fx.Basis, ctx);
                 Events.Emit(new Ev.Nova { X = x, Z = z, Radius = fx.Radius, School = fx.School, Duration = 0.3 });
                 ForEachHostileInRadius(x, z, fx.Radius, (e, d) =>
                 {
                     double dd = d == 0 ? 1 : d;
-                    HitEnemy(e, BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Nova, Tag.Area, fx.School.AsTag()],
-                        new HitOpts { Depth = depth, Knockback = fx.Knockback, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd });
+                    HitEnemy(e, bd, fx.School, [Tag.Nova, Tag.Area, fx.School.AsTag()],
+                        new HitOpts { Depth = depth, Knockback = fx.Knockback, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, FromHit = fh });
                 });
                 break;
+            }
             case Effect.Strike fx:
             {
                 var list = HostilesInRadius(x, z, fx.Area);
+                var (bd, fh) = BlowOf(fx.Damage, fx.Basis, ctx);
                 for (int i = 0; i < fx.Count && list.Count > 0; i++)
                 {
                     var hit = list[Rng.Int(0, list.Count - 1)];
-                    ScheduleStrike(hit.X, hit.Z, fx.Radius, BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Storm, fx.School.AsTag()], 0.3 + i * 0.08, null, Side.Player, depth);
+                    ScheduleStrike(hit.X, hit.Z, fx.Radius, bd, fx.School, [Tag.Storm, fx.School.AsTag()], 0.3 + i * 0.08, null, Side.Player, depth, fh);
                 }
                 break;
             }
@@ -3574,6 +3623,8 @@ sealed class StrikeSpec
     public bool Echo;
     /// <summary>The ground heaves (Battle.Heave: heavy, stunning), not a blast.</summary>
     public bool Heave;
+    /// <summary>(SU-078) Sized on her hit: it lands as part of it (HitOpts.FromHit).</summary>
+    public bool FromHit;
 
     public StrikeSpec(double x, double z, double r, double dmg, School school, Tag[] tags, double t, WeaponInst? weapon, Side owner, int depth)
     {

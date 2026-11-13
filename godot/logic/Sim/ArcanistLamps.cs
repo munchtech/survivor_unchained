@@ -18,7 +18,7 @@ public sealed partial class Battle
     int lastSide, pendingSide, volleyId;
     WeaponInst? castingW, statusWeapon;
     readonly List<(double Due, WeaponInst W)> echoes = new();
-    readonly Dictionary<int, (double T, HashSet<int> Hit)> volleyHit = new();
+    readonly Dictionary<int, (double T, HashSet<Lifetime> Hit)> volleyHit = new();   // (SU-091) struck things by lifetime
     readonly Dictionary<string, (int Id, double T, int N)> volleyOf = new();
     static readonly Tag[] ShatterTags = [Tag.Explosion, Tag.Frost];
 
@@ -190,7 +190,7 @@ public sealed partial class Battle
         volleyOf[w.Id] = v;
         pr.Volley = v.Id;
         pr.VolleyHard = CrowdShare(w) >= 1;
-        volleyHit.TryAdd(v.Id, (Time, new HashSet<int>()));
+        volleyHit.TryAdd(v.Id, (Time, new HashSet<Lifetime>()));
         // Each looses at a different thing: the k-th nearest.
         var near = HostilesInRadius(Player.X, Player.Z, 14);
         if (near.Count == 0 || pr.Seek is Seek.Elite or Seek.Strongest or Seek.Marked) return;
@@ -199,12 +199,12 @@ public sealed partial class Battle
     }
 
     /// <summary>moonweaver.crowded_sky: no two of a volley strike the same thing.</summary>
-    bool VolleyTaken(Projectile pr, int enemy) => pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(enemy);
+    bool VolleyTaken(Projectile pr, Enemy enemy) => pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v) && v.Hit.Contains(Lifetime.Of(enemy));
 
     /// <summary>A player projectile struck: the volley remembers it, and Split Motes split on a kill.</summary>
     void ArcanistOnProjectileHit(Projectile pr, Enemy e, WeaponInst? weapon)
     {
-        if (pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v)) v.Hit.Add(e.Id);
+        if (pr.Volley != 0 && volleyHit.TryGetValue(pr.Volley, out var v)) v.Hit.Add(Lifetime.Of(e));
         // moonweaver.seeking_motes.split_motes: a mote that kills splits in two (design pick: each at half).
         if (weapon?.Def.Id != "seeking_motes" || !Lamp("motes.split") || e.State != EnemyState.Dying || pr.Depth >= 1) return;
         for (int i = 0; i < 2; i++)
@@ -216,7 +216,7 @@ public sealed partial class Battle
             c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
             c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
             c.AimAlongVelocity();
-            c.Hits.Add(e.Id); c.HitTimes.Add(Time);
+            c.Hits.Add(Lifetime.Of(e)); c.HitTimes.Add(Time);
         }
     }
 
@@ -255,12 +255,31 @@ public sealed partial class Battle
         return m;
     }
 
+    /// <summary>The Motes' lamps ride this skill's blows (moonmarked's mark, cold_moon's chill).</summary>
+    static bool MotesLay(WeaponInst? w) => w?.Def.Id == "seeking_motes";
+
+    /// <summary>kindler.frostfire: what a blow of this school lays (fire chills, frost burns); null: nothing.</summary>
+    StatusKind? FrostfireLays(School school) =>
+        !Lamps.Has("frostfire") ? null : school == School.Fire ? StatusKind.Chill : school == School.Frost ? StatusKind.Burn : null;
+
+    /// <summary>(SU-080) What the arcanist's lamps can lay with the skills she carries (ArcanistOnHit's rules).</summary>
+    void ArcanistCanLay(HashSet<StatusKind> o)
+    {
+        if (Lamps.Rules.Count == 0) return;
+        foreach (var w in Weapons)
+        {
+            if (MotesLay(w) && Lamps.Has("moonmarked")) o.Add(StatusKind.Mark);
+            if (MotesLay(w) && Lamps.Has("cold_moon")) o.Add(StatusKind.Chill);
+            if (FrostfireLays(w.School) is { } k) o.Add(k);
+        }
+    }
+
     /// <summary>What a blow dealt now brings: the Motes' marks and chill, Frostfire, and the shatter of fire on ice.</summary>
     void ArcanistOnHit(Enemy e, School school, Tag[] tags, HitOpts o, double dmg)
     {
         var l = Lamps;
         if (o.Dot || o.Summon || l.Rules.Count == 0 || !e.Alive) return;
-        if (o.Weapon?.Def.Id == "seeking_motes")
+        if (MotesLay(o.Weapon))
         {
             // moonweaver.moonmarked (design pick: a mark of 4 s, as Moonbrand's). The mark's +30% is a size, so by
             // night it is a quarter (§2.10); at full it lifted every blow on the marked crowd by a third.
@@ -270,11 +289,10 @@ public sealed partial class Battle
         }
         // kindler.frostfire: fire chills and frost burns, each weaker (the price, in full). Burn and chill never cancelled here.
         // A status a rule lays carries its size (CLASSES §2.10): by night the chill and the burn are a quarter.
-        if (l.Has("frostfire") && (o.Weapon != null || o.Projectile))
+        if ((o.Weapon != null || o.Projectile) && FrostfireLays(school) is { } ff)
         {
             double k = (1 - l.Full("frostfire", "weaker", 0.3)) * (l.Night ? Content.Lamps.NightSize : 1);
-            if (school == School.Fire) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 1 * k, 2.5), dmg, o.Depth + 1);
-            else if (school == School.Frost) ApplyStatus(e, new StatusPayload(StatusKind.Burn, 1, 0.25 * k, 3), dmg, o.Depth + 1);
+            ApplyStatus(e, ff == StatusKind.Chill ? new StatusPayload(StatusKind.Chill, 1, 1 * k, 2.5) : new StatusPayload(StatusKind.Burn, 1, 0.25 * k, 3), dmg, o.Depth + 1);
         }
         // kindler.fire_on_ice / thermal_shock: fire on a frozen thing shatters it.
         if (!shattering && school == School.Fire && e.Status.Has(StatusKind.Frozen) && (l.Has("fire_on_ice") || l.Has("thermal_shock")))
@@ -284,7 +302,8 @@ public sealed partial class Battle
             e.Status.Remove(StatusKind.Frozen);
             e.ThawT = e.Elite ? 5 : 3;
             shattering = true;
-            Explode(e.X, e.Z, r, dmg * share, School.Frost, ShatterTags, null, o.Depth + 1);
+            // (SU-078 L1) a share of her blow is part of it: her side of it (the struck thing's share out), dealt FromHit
+            Explode(e.X, e.Z, r, (blowTaken > 1e-9 ? dmg / blowTaken : 0) * share, School.Frost, ShatterTags, null, o.Depth + 1, fromHit: true);
             shattering = false;
         }
     }

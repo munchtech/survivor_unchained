@@ -23,7 +23,7 @@ namespace SurvivorUnchained.Tests;
 /// </summary>
 public class CraftingEconomy(ITestOutputHelper log)
 {
-    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_cloak", "watch_buckler"];
+    static readonly string[] PlainGear = ["iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "silver_ring", "copper_ring", "bone_amulet", "travelers_boots", "watch_buckler"];
     static readonly string[] Peoples = ["pack", "dead", "lamplings", "kerchiefs"];
     // Per tier 1..3: ember at the end (median), champions, the Kerchiefs' gold and the others'.
     static readonly int[] Ember = [57, 62, 67], Champs = [864, 1052, 1079], KerchiefGold = [375, 351, 365], OtherGold = [15, 12, 16];

@@ -229,6 +229,39 @@ public sealed partial class Battle
     /// <summary>blue.feral's price: she can't strike true.</summary>
     bool BoardNoTrue => Lamp("blue.feral");
 
+    /// <summary>tags.status: the status an entry inflicts (its own, or its "status" word); null: none.</summary>
+    static StatusKind? TagsStatusKind(LampEffect fx) =>
+        fx.Status ?? (fx.Word("status") is { } ws && Enum.TryParse<StatusKind>(ws, true, out var sk) ? sk : null);
+
+    /// <summary>blue.unsetting_sun: this skill's blows sear.</summary>
+    bool SunSears(WeaponInst w) => Lamps.Has("blue.unsetting_sun") && (w.Tags.Has(Tag.Holy) || w.School == School.Holy);
+
+    /// <summary>A ground rite's ground: of the skill's element, fire for any other.</summary>
+    static School RiteGroundSchool(WeaponInst w) => Content.Hands.GroundName(w.School) != null ? w.School : School.Fire;
+
+    /// <summary>The status a blow rite lays (bleed, bind, mark); null: none (stone).</summary>
+    static StatusKind? RiteLays(string mech) => mech switch
+    {
+        "bleed" => StatusKind.Bleed, "bind" => StatusKind.Bound, "mark" => StatusKind.Mark, _ => null,
+    };
+
+    /// <summary>(SU-080) What the board's rules can lay with the skills she carries (BoardOnHit's and BoardOnKill's).</summary>
+    void BoardCanLay(HashSet<StatusKind> o)
+    {
+        BoardSync();
+        foreach (var w in Weapons)
+        {
+            if (riteOnHit)
+                foreach (var (mech, r) in rites)
+                    if (RiteLays(mech) is { } k && Covers(r, w.Def.Id, w.Tags)) o.Add(k);
+            if (Lamps.Each.TryGetValue("tags.status", out var sts))
+                foreach (var fx in sts)
+                    if (Covers(fx, w.Def.Id, w.Tags) && TagsStatusKind(fx) is { } k) o.Add(k);
+            if (SunSears(w)) o.Add(StatusKind.Sear);
+            if (riteGround && RiteOn("ground", w, out _) && HandGroundLays(RiteGroundSchool(w)) is { } g) o.Add(g);
+        }
+    }
+
     /// <summary>After a blow lands: the rites that ride it, tags.status, and the blues that read a struck thing.</summary>
     /// <param name="dmg">(M3 MR 3) The BLOW's damage (a cut's hit is a share of it): what its statuses are sized on.</param>
     /// <param name="cw">The hit's weight (a chained cut's share of its blow; 1 otherwise). The caller holds statusW at
@@ -273,8 +306,7 @@ public sealed partial class Battle
             foreach (var fx in sts)
             {
                 if (!Covers(fx, w!.Def.Id, w.Tags)) continue;
-                StatusKind? k = fx.Status ?? (fx.Word("status") is { } ws && Enum.TryParse<StatusKind>(ws, true, out var sk) ? sk : null);
-                if (k is not { } kind) continue;
+                if (TagsStatusKind(fx) is not { } kind) continue;
                 // (M3 MR 3) on a cut the chance is weighed the way ApplyStatus weighs its own: hard control by the cut's
                 // share (as many a minute), every other kind so the cuts of one blow's worth compound to the blow's
                 // chance; what lands then builds cw x chance / roll of a blow (hard control: whole). At weight 1: as it was.
@@ -287,7 +319,7 @@ public sealed partial class Battle
                 statusW = cw;
             }
         // blue.unsetting_sun: holy skills sear what they strike.
-        if (blow && l.Has("blue.unsetting_sun") && (w!.Tags.Has(Tag.Holy) || w.School == School.Holy))
+        if (blow && SunSears(w!))
             ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, GiftSize, l.Full("blue.unsetting_sun", "seconds", 3)), dmg, o.Depth + 1);
         var bleed = e.Status[StatusKind.Bleed];
         // blue.butchers_block: a heavy blow on a bleeding thing bursts the bleed, all its damage at once.
@@ -333,7 +365,7 @@ public sealed partial class Battle
         packKills++;
         // A ground rite: the arcanist Hand's ground where it fell, of the skill's element (fire for any other).
         if (riteGround && w != null && RiteOn("ground", w, out _))
-            LayHandGround(e, w, Content.Hands.GroundName(w.School) != null ? w.School : School.Fire);
+            LayHandGround(e, w, RiteGroundSchool(w));
         if (w != null && l.Each.TryGetValue("tags.kill_mend", out var km))
         {
             double share = 0;

@@ -29,8 +29,14 @@ public sealed partial class Journey
         var rolled = Rpg.Drops.Roll(x);
         // A Legendary falling is said under the HUD, once (docs/design/LOOT_DESIGN.md §8.2); the debt's
         // paying is said in its own words.
-        if (!x.Hush && rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
+        if (!x.Hush && rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied && r.Gift == null))
             OnAnnounce(new Announcement(owed ? Rpg.Drops.DebtPaid : Rpg.Drops.NamedFalls, "", "reward", 3.2));
+        // A piece that grants a skill she can get no other way is an event of its own (the Legendary's sound and beam stand in for its voice).
+        foreach (var r in rolled.Where(r => r.Gift != null && r.Item != null))
+        {
+            OnGift(new GiftDrop(r.Item!, r.Gift!));
+            if (!x.Hush) OnAnnounce(new Announcement(SurvivorUnchained.Content.Weapons.Get(r.Gift!).Name, Items.Get(r.Item!.Def).Name, "reward", 4.5, Rpg.Drops.GiftFalls, Through: true));
+        }
         // In the night's arenas the materials are the night's end tally, not the ground's (crafting decision 7).
         if (x.Tally)
         {

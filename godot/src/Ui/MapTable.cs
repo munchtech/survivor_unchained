@@ -27,6 +27,7 @@ public partial class MapTableScreen : Overlay
     /// (the charts and the places the road forgets), once the atlas is open.</summary>
     string page = "nights";
     string? chartUid;
+    int chartPage;   // (SU-084) the page of other charts shown
 
     bool AtlasOpen => Atlas.IsOpen(G.Journey.World, G.Journey.Ch);
 
@@ -259,12 +260,20 @@ public partial class MapTableScreen : Overlay
             var row = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore };
             row.AddThemeConstantOverride("h_separation", 18);
             row.AddThemeConstantOverride("v_separation", 4);
-            foreach (var other in carried.Where(o => o != chosen).Take(6))
+            var (shown, page, pages) = Charts.OthersPage(carried, chosen.Uid, chartPage);
+            chartPage = page;
+            foreach (var other in shown)
             {
                 var uid = other.Uid;
                 var b = Nav.Id(InkWord($"{other.Chart!.Name}, tier {other.Chart.Tier}", () => { chartUid = uid; Sound.Sfx.Page(); Refresh(); }, 15), $"chart:{uid}");
                 b.TooltipText = Charts.Title(other.Chart);
                 row.AddChild(b);
+            }
+            // (SU-084) more than a page: turn it, so every chart carried can be chosen
+            if (pages > 1)
+            {
+                if (page > 0) row.AddChild(Nav.Id(InkWord("‹ back", () => { chartPage--; Sound.Sfx.Page(); Refresh(); }, 15), "chart:prev"));
+                if (page < pages - 1) row.AddChild(Nav.Id(InkWord($"more ({page + 1}/{pages}) ›", () => { chartPage++; Sound.Sfx.Page(); Refresh(); }, 15), "chart:next"));
             }
             v.AddChild(row);
         }

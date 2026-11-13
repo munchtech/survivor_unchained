@@ -77,6 +77,14 @@ public readonly record struct Lifetime(int Id, int Gen)
     public bool Is(Pooled? p) => p != null && p.Alive && Gen != 0 && p.Id == Id && p.Gen == Gen;
 }
 
+/// <summary>(Codex audit SU-088) A creature a zone or script keeps past a tick (a camp's crew, a guard): the creature
+/// with its lifetime. Up only while that very one lives; a newcomer in its slot is not it.</summary>
+public readonly record struct Kept(Enemy E, Lifetime L)
+{
+    public static Kept Of(Enemy e) => new(e, Lifetime.Of(e));
+    public bool Up => L.Is(E) && E.State != EnemyState.Dying;
+}
+
 public sealed class Named
 {
     public string Title = "";
@@ -262,7 +270,7 @@ public sealed class Projectile : Pooled
     public void Derive(Projectile c)
     {
         c.Weapon = Weapon; c.BossDamage = BossDamage; c.Credit = Credit; c.W = W; c.Status = Status; c.Art = Art; c.Rank = Rank;
-        c.Tags = Tags; c.Depth = Depth + 1;
+        c.Tags = Tags; c.Depth = Depth + 1; c.FromHit = FromHit;
     }
     /// <summary>(SU-056) Fired by e: its slot, its lifetime and its snapshot.</summary>
     public void FiredBy(Enemy e) { OwnerId = e.Id; OwnerLife = Lifetime.Of(e); OwnerShot = new Shot(e.Def, e.Damage); Allegiance = Sim.Allegiance.Of(e); }
@@ -290,7 +298,8 @@ public sealed class Projectile : Pooled
     public bool Lob;
     public double LandX, LandZ;
     public GroundSpec? GroundOnHit;
-    public readonly List<int> Hits = new();
+    /// <summary>What it has struck, by lifetime (SU-091): a newcomer in a struck thing's slot is a fresh target.</summary>
+    public readonly List<Lifetime> Hits = new();
     /// <summary>When each of Hits was struck, for weapons that can hit the same
     /// creature again after Rehit seconds (orbits, herds).</summary>
     public readonly List<double> HitTimes = new();
@@ -320,6 +329,8 @@ public sealed class Projectile : Pooled
     public string? HeavyId;
     /// <summary>Loosed by an On-kill echo: its kills never echo again.</summary>
     public bool Echo;
+    /// <summary>(SU-078) Sized on her hit (a blessing's missiles at a share of it): each strike is part of that hit (HitOpts.FromHit).</summary>
+    public bool FromHit;
 
     public Projectile(int id) { Id = id; }
 
@@ -330,7 +341,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; TargetLife = Lifetime.None; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = null; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = null; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null; FromHit = false;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>

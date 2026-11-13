@@ -249,7 +249,7 @@
   "old_hunters_cloak": {
    "id": "old_hunters_cloak",
    "name": "Old Hunter's Cloak",
-   "kind": "cloak",
+   "kind": "body",
    "rarity": 1,
    "icon": "cloak",
    "value": 40,
@@ -418,7 +418,7 @@
   "pilgrims_lantern": {
    "id": "pilgrims_lantern",
    "name": "Pilgrim's Ember-Lantern",
-   "kind": "relic",
+   "kind": "amulet",
    "rarity": 1,
    "icon": "lantern",
    "value": 50,
@@ -445,7 +445,7 @@
   "cracked_lens": {
    "id": "cracked_lens",
    "name": "Cracked Lens",
-   "kind": "relic",
+   "kind": "ring",
    "rarity": 1,
    "icon": "lens",
    "value": 45,
@@ -519,7 +519,7 @@
   "grimtunnels_lamp": {
    "id": "grimtunnels_lamp",
    "name": "Grimtunnel's Spare Lamp",
-   "kind": "relic",
+   "kind": "amulet",
    "rarity": 3,
    "icon": "lamp",
    "value": 220,
@@ -547,7 +547,7 @@
   "wardens_lampiron": {
    "id": "wardens_lampiron",
    "name": "The Warden's Lamp-Iron",
-   "kind": "relic",
+   "kind": "amulet",
    "rarity": 3,
    "icon": "lantern",
    "value": 240,
@@ -626,7 +626,7 @@
   "wolfhide_cloak": {
    "id": "wolfhide_cloak",
    "name": "Wolfhide Cloak",
-   "kind": "cloak",
+   "kind": "body",
    "rarity": 2,
    "workable": true,
    "icon": "pelt",
@@ -768,36 +768,6 @@
      "stat": "moveSpeed",
      "kind": "inc",
      "value": -0.04,
-     "source": "item"
-    }
-   ]
-  },
-  "travelers_cloak": {
-   "id": "travelers_cloak",
-   "name": "Traveler's Cloak",
-   "kind": "cloak",
-   "rarity": 0,
-   "icon": "cloak",
-   "value": 10,
-   "base": true,
-   "description": "Gray wool.",
-   "mods": [
-    {
-     "stat": "moveSpeed",
-     "kind": "inc",
-     "value": 0.03,
-     "source": "item"
-    },
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 3,
-     "source": "item"
-    },
-    {
-     "stat": "maxHealth",
-     "kind": "flat",
-     "value": 12,
      "source": "item"
     }
    ]
@@ -1384,7 +1354,9 @@
    "icon": "hunt_bone",
    "value": 40,
    "description": "A deer's shinbone from a Pack ruler's den, scored end to end with toothmarks in close, even rows, the way a shepherd notches a stick to count. Vonnra can read the hunt in it, and mark a piece you wear with it.",
-   "tags": ["mark"]
+   "tags": [
+    "mark"
+   ]
   },
   "mark_lamp_glass": {
    "id": "mark_lamp_glass",
@@ -1394,7 +1366,9 @@
    "icon": "lamp_glass",
    "value": 40,
    "description": "A lamp's chimney-glass from a lampling ruler, cracked from top to bottom. What was lit in it fell a long way once and went on burning where it landed. It is still warm. Vonnra can mark a piece you wear with it.",
-   "tags": ["mark"]
+   "tags": [
+    "mark"
+   ]
   },
   "mark_gate_nail": {
    "id": "mark_gate_nail",
@@ -1404,7 +1378,9 @@
    "icon": "gate_nail",
    "value": 40,
    "description": "A square iron nail as long as your hand, from a barrow door, bent double. Somebody nailed that door shut a long time ago. It was opened from inside. Vonnra can mark a piece you wear with it.",
-   "tags": ["mark"]
+   "tags": [
+    "mark"
+   ]
   },
   "mark_red_cord": {
    "id": "mark_red_cord",
@@ -1414,7 +1390,9 @@
    "icon": "red_cord",
    "value": 40,
    "description": "A length of red cord, knotted once for every name at a muster. Nobody untied the knots for the ones who did not come home. Vonnra can read the crowd in it, and mark a piece you wear with it.",
-   "tags": ["mark"]
+   "tags": [
+    "mark"
+   ]
   },
   "drowned_coat": {
    "id": "drowned_coat",
@@ -1510,7 +1488,8 @@
        "radius": 2.6,
        "damage": 0.5,
        "basis": "hit",
-       "school": "physical"
+       "school": "physical",
+       "at": "her"
       }
      ],
      "text": "Standing still, a blow that lands rings steel round you"
@@ -1560,13 +1539,17 @@
        "radius": 4.5,
        "damage": 0.6,
        "basis": "hit",
-       "school": "holy"
+       "school": "holy",
+       "at": "her"
       }
      ],
      "text": "Heroic Leap's landing rings again, in light"
     }
    ],
-   "lore": "The chain he wore the lamp on. He sang the evening call over it every dusk for a hundred years: Lamps are lit. Stay where they reach."
+   "lore": "The chain he wore the lamp on. He sang the evening call over it every dusk for a hundred years: Lamps are lit. Stay where they reach.",
+   "rewrites": [
+    "heroic_leap"
+   ]
   },
   "ditchwater": {
    "id": "ditchwater",
@@ -1742,7 +1725,7 @@
   "kells_lamp": {
    "id": "kells_lamp",
    "name": "Kell's Lamp",
-   "kind": "relic",
+   "kind": "amulet",
    "rarity": 4,
    "icon": "lamp",
    "value": 340,
@@ -1780,11 +1763,11 @@
   "pelt_of_the_pack": {
    "id": "pelt_of_the_pack",
    "name": "Pelt of the Pack",
-   "kind": "cloak",
+   "kind": "body",
    "rarity": 4,
    "icon": "pelt",
    "value": 300,
-   "of": "travelers_cloak",
+   "of": "padded_jerkin",
    "dropsFrom": 4,
    "homes": [
     "pack"
@@ -1921,12 +1904,12 @@
   "levy_colours": {
    "id": "levy_colours",
    "name": "Levy Colors",
-   "kind": "cloak",
+   "kind": "body",
    "rarity": 3,
    "set": "levy_red",
-   "icon": "cloak",
+   "icon": "armor_light",
    "value": 160,
-   "of": "travelers_cloak",
+   "of": "padded_jerkin",
    "dropsFrom": 5,
    "homes": [
     "kerchiefs"
@@ -2042,84 +2025,24 @@
    "rarity": 1,
    "icon": "armor_light",
    "value": 40,
-   "description": "+1 armor.",
+   "description": "+4 armor.",
    "mods": [
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 1,
+     "value": 4,
      "source": "item"
     }
    ],
    "wear": [
     "reaver.top",
-    "reaver.collar"
-   ],
-   "lore": "Straps and a collar of scarred hide. It shows what it was made to show and stops nothing it was not asked to."
-  },
-  "reaver_loinbelt": {
-   "id": "reaver_loinbelt",
-   "name": "Reaver's Loinbelt",
-   "kind": "belt",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 40,
-   "description": "+1 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 1,
-     "source": "item"
-    }
-   ],
-   "wear": [
+    "reaver.collar",
     "reaver.belt",
-    "reaver.skirt"
-   ],
-   "lore": "A belt of knotted cord and a skirt of cut hide. Reavers wear it so the other side knows how little they fear them."
-  },
-  "reaver_gstring": {
-   "id": "reaver_gstring",
-   "name": "Reaver's Breechcloth",
-   "kind": "legs",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 40,
-   "description": "+1 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 1,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "reaver.bottom"
-   ],
-   "lore": "A strip of hide between the legs and a prayer that nobody gets close enough to matter."
-  },
-  "reaver_wristfurs": {
-   "id": "reaver_wristfurs",
-   "name": "Reaver's Wristfurs",
-   "kind": "bracers",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 40,
-   "description": "+1 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 1,
-     "source": "item"
-    }
-   ],
-   "wear": [
+    "reaver.skirt",
+    "reaver.bottom",
     "reaver.bracers"
    ],
-   "lore": "Fur bound at the wrist with sinew. It keeps the blood off the grip, which is most of what it does."
+   "lore": "Straps and a collar of scarred hide. It shows what it was made to show and stops nothing it was not asked to."
   },
   "reaver_furboots": {
    "id": "reaver_furboots",
@@ -2149,124 +2072,24 @@
    "rarity": 1,
    "icon": "armor_light",
    "value": 60,
-   "description": "+2 armor.",
+   "description": "+12 armor.",
    "mods": [
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 2,
+     "value": 12,
      "source": "item"
     }
    ],
    "wear": [
-    "ranger.top"
-   ],
-   "lore": "Laced leather, boiled stiff and cut close. The lacing is the only part of it that was ever gentle."
-  },
-  "ranger_belt": {
-   "id": "ranger_belt",
-   "name": "Ranger's Belt",
-   "kind": "belt",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 60,
-   "description": "+2 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 2,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "ranger.belt"
-   ],
-   "lore": "A wide strap that carries the knife, the flint and the last of the water."
-  },
-  "ranger_breeches": {
-   "id": "ranger_breeches",
-   "name": "Ranger's Breeches",
-   "kind": "legs",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 60,
-   "description": "+2 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 2,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "ranger.bottom"
-   ],
-   "lore": "Hide breeches, patched at the knee where the road has taken its share."
-  },
-  "ranger_spaulders": {
-   "id": "ranger_spaulders",
-   "name": "Ranger's Spaulders",
-   "kind": "shoulders",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 60,
-   "description": "+2 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 2,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "ranger.pauldrons"
-   ],
-   "lore": "Leather caps over the shoulders, scored by claws that did not quite find the bone."
-  },
-  "ranger_bracers": {
-   "id": "ranger_bracers",
-   "name": "Ranger's Bracers",
-   "kind": "bracers",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 60,
-   "description": "+2 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 2,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "ranger.bracers"
-   ],
-   "lore": "Bracers of layered hide. A bowstring has worn a groove in the left one."
-  },
-  "ranger_gloves": {
-   "id": "ranger_gloves",
-   "name": "Ranger's Gloves",
-   "kind": "hands",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 60,
-   "description": "+2 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 2,
-     "source": "item"
-    }
-   ],
-   "wear": [
+    "ranger.top",
+    "ranger.belt",
+    "ranger.bottom",
+    "ranger.pauldrons",
+    "ranger.bracers",
     "ranger.gloves"
    ],
-   "lore": "Thin gloves, stained dark to the wrist. They remember every neck they have closed on."
+   "lore": "Laced leather, boiled stiff and cut close. The lacing is the only part of it that was ever gentle."
   },
   "ranger_boots": {
    "id": "ranger_boots",
@@ -2352,92 +2175,6 @@
    ],
    "lore": "A breastplate with nothing on it. It does not need anything on it."
   },
-  "warden_tassets": {
-   "id": "warden_tassets",
-   "name": "Warden's Tassets",
-   "kind": "belt",
-   "rarity": 1,
-   "icon": "armor_heavy",
-   "value": 60,
-   "description": "+4 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 4,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "warden.belt",
-    "warden.skirt"
-   ],
-   "lore": "Plates hung from the belt to guard the hips. They ring when she walks, so nobody has to wonder where she is."
-  },
-  "warden_legplate": {
-   "id": "warden_legplate",
-   "name": "Warden's Legplate",
-   "kind": "legs",
-   "rarity": 1,
-   "icon": "armor_heavy",
-   "value": 70,
-   "description": "+4 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 4,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "warden.bottom",
-    "warden.greaves"
-   ],
-   "lore": "Steel from hip to shin, dented at the knee from praying on stone."
-  },
-  "warden_pauldrons": {
-   "id": "warden_pauldrons",
-   "name": "Warden's Pauldrons",
-   "kind": "shoulders",
-   "rarity": 1,
-   "icon": "armor_heavy",
-   "value": 60,
-   "description": "+4 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 4,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "plate_pauldrons_warden"
-   ],
-   "lore": "Heavy shoulder plates. They have turned more blades than their owners could count."
-  },
-  "warden_vambraces": {
-   "id": "warden_vambraces",
-   "name": "Warden's Vambraces",
-   "kind": "bracers",
-   "rarity": 1,
-   "icon": "armor_heavy",
-   "value": 60,
-   "description": "+4 armor.",
-   "mods": [
-    {
-     "stat": "armor",
-     "kind": "flat",
-     "value": 4,
-     "source": "item"
-    }
-   ],
-   "wear": [
-    "warden.bracers"
-   ],
-   "lore": "Steel forearm guards, buckled tight enough to hurt. The hurt is how she knows they are on."
-  },
   "warden_sabatons": {
    "id": "warden_sabatons",
    "name": "Warden's Sabatons",
@@ -2480,30 +2217,6 @@
    ],
    "lore": "A pointed hat gone grey at the brim. It has heard things no hat should."
   },
-  "riveted_bracers_cut_for_her": {
-   "id": "riveted_bracers_cut_for_her",
-   "name": "Riveted bracers, cut for her",
-   "kind": "bracers",
-   "rarity": 2,
-   "icon": "armor_light",
-   "value": 80,
-   "description": "Riveted bracers, cut for her: a riveted bracers piece, worn over her own.",
-   "wear": [
-    "mar_her_bracers"
-   ]
-  },
-  "riveted_pauldrons_cut_for_her": {
-   "id": "riveted_pauldrons_cut_for_her",
-   "name": "Riveted pauldrons, cut for her",
-   "kind": "shoulders",
-   "rarity": 2,
-   "icon": "armor_light",
-   "value": 80,
-   "description": "Riveted pauldrons, cut for her: a riveted pauldrons piece, worn over her own.",
-   "wear": [
-    "mar_her_pauldrons"
-   ]
-  },
   "riveted_breastplate_cut_for_her": {
    "id": "riveted_breastplate_cut_for_her",
    "name": "Riveted breastplate, cut for her",
@@ -2511,21 +2224,11 @@
    "rarity": 2,
    "icon": "armor_heavy",
    "value": 80,
-   "description": "Riveted breastplate, cut for her: a riveted top piece, worn over her own.",
+   "description": "Riveted plate, cut for her: breastplate, bracers and pauldrons, worn over her own.",
    "wear": [
-    "mar_her_cuirass"
-   ]
-  },
-  "lamed_pauldrons": {
-   "id": "lamed_pauldrons",
-   "name": "Lamed Pauldrons",
-   "kind": "shoulders",
-   "rarity": 1,
-   "icon": "armor_light",
-   "value": 40,
-   "description": "Lamed Pauldrons: a plain forged pauldrons piece, worn over her own.",
-   "wear": [
-    "plate_pauldrons_plain"
+    "mar_her_cuirass",
+    "mar_her_bracers",
+    "mar_her_pauldrons"
    ]
   },
   "forged_cuirass": {
@@ -2535,38 +2238,537 @@
    "rarity": 1,
    "icon": "armor_heavy",
    "value": 50,
-   "description": "+4 armor.",
+   "description": "+5 armor.",
    "mods": [
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 4,
+     "value": 5,
      "source": "item"
     }
    ],
    "wear": [
-    "plate_cuirass_plain"
+    "plate_cuirass_plain",
+    "plate_gstring_plain",
+    "plate_pauldrons_plain"
    ]
   },
-  "forged_gstring": {
-   "id": "forged_gstring",
-   "name": "Forged G-string",
-   "kind": "legs",
+  "warden_plate": {
+   "id": "warden_plate",
+   "name": "Warden's Plate",
+   "kind": "body",
    "rarity": 1,
-   "icon": "armor_light",
-   "value": 30,
-   "description": "+1 armor.",
+   "icon": "armor_heavy",
+   "value": 300,
+   "description": "+20 armor.",
    "mods": [
     {
      "stat": "armor",
      "kind": "flat",
-     "value": 1,
+     "value": 20,
      "source": "item"
     }
    ],
    "wear": [
-    "plate_gstring_plain"
+    "warden.top",
+    "warden.belt",
+    "warden.skirt",
+    "warden.bottom",
+    "warden.greaves",
+    "plate_pauldrons_warden",
+    "warden.bracers"
+   ],
+   "lore": "The whole of the Ford-Wardens' plate, fitted to one body: tassets that ring when she walks, pauldrons that have turned more blades than their owners could count, vambraces buckled tight enough to hurt."
+  },
+  "travelers_boots": {
+   "id": "travelers_boots",
+   "name": "Traveler's Boots",
+   "kind": "feet",
+   "rarity": 0,
+   "icon": "boot",
+   "value": 10,
+   "base": true,
+   "description": "Gray wool leggings and boots that have walked further than you.",
+   "mods": [
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": 0.03,
+     "source": "item"
+    },
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 3,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 12,
+     "source": "item"
+    }
    ]
+  },
+  "hobnail_boots": {
+   "id": "hobnail_boots",
+   "name": "Hobnail Boots",
+   "kind": "feet",
+   "rarity": 0,
+   "icon": "boot",
+   "value": 18,
+   "base": true,
+   "description": "Heavy soles. They are loud and they do not slip.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 5,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 6,
+     "source": "item"
+    },
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": -0.01,
+     "source": "item"
+    }
+   ]
+  },
+  "quakers_boots": {
+   "id": "quakers_boots",
+   "name": "Quaker's Boots",
+   "kind": "feet",
+   "rarity": 4,
+   "icon": "boot",
+   "value": 320,
+   "of": "hobnail_boots",
+   "dropsFrom": 5,
+   "homes": [
+    "pack"
+   ],
+   "description": "Groundbreaker's crack runs twice: a second wave breaks round your feet for half the blow.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 1.2,
+     "when": {
+      "weapon": "groundbreaker"
+     },
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 3.8,
+       "damage": 0.5,
+       "basis": "hit",
+       "school": "physical",
+       "knockback": 1.5,
+       "at": "her"
+      }
+     ],
+     "text": "Groundbreaker's crack runs twice"
+    }
+   ],
+   "rewrites": [
+    "groundbreaker"
+   ],
+   "lore": "Nailed with the heads of old pit-props. Wherever the man who wore them stood, the floor remembered it."
+  },
+  "ramhorn_helm": {
+   "id": "ramhorn_helm",
+   "name": "Ramhorn Helm",
+   "kind": "head",
+   "rarity": 4,
+   "icon": "helm",
+   "value": 320,
+   "of": "iron_helm",
+   "dropsFrom": 4,
+   "homes": [
+    "pack"
+   ],
+   "description": "Every foe Shield Charge strikes adds a barrier of 4% of your health, to 40%.",
+   "mods": [
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 14,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 0.25,
+     "when": {
+      "weapon": "shield_charge"
+     },
+     "effects": [
+      {
+       "do": "barrier",
+       "fraction": 0.04,
+       "cap": 0.4,
+       "duration": 8
+      }
+     ],
+     "text": "Shield Charge builds a barrier from every foe it strikes"
+    }
+   ],
+   "rewrites": [
+    "shield_charge"
+   ],
+   "lore": "A ram's horns, riveted to a pot of a helm. The ram is not mentioned in the Watch's accounts, and neither is who ate it."
+  },
+  "heartsplitter_mail": {
+   "id": "heartsplitter_mail",
+   "name": "Heartsplitter Mail",
+   "kind": "body",
+   "rarity": 4,
+   "icon": "armor",
+   "value": 320,
+   "of": "chain_shirt",
+   "dropsFrom": 6,
+   "homes": [
+    "dead"
+   ],
+   "description": "Sunder's cuts finish what they leave: a foe it brings under 15% health dies to it.",
+   "mods": [
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": -0.04,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 0.2,
+     "when": {
+      "weapon": "sunder"
+     },
+     "effects": [
+      {
+       "do": "execute",
+       "threshold": 0.15
+      }
+     ],
+     "text": "Sunder finishes foes under 15% health"
+    }
+   ],
+   "downside": "4% slower.",
+   "rewrites": [
+    "sunder"
+   ],
+   "lore": "Every link was cut once and closed again by a smith who would not say what he was angry at."
+  },
+  "bellfounders_ring": {
+   "id": "bellfounders_ring",
+   "name": "Bellfounder's Ring",
+   "kind": "ring",
+   "rarity": 4,
+   "icon": "ring",
+   "value": 320,
+   "of": "silver_ring",
+   "dropsFrom": 7,
+   "homes": [
+    "lamplings"
+   ],
+   "description": "The Watch Bell tolls twice: a second ring of light, four fifths of the blow, goes out from you.",
+   "mods": [
+    {
+     "stat": "vs.undead",
+     "kind": "flat",
+     "value": 0.08,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 1.5,
+     "when": {
+      "weapon": "watch_bell"
+     },
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 5,
+       "damage": 0.8,
+       "basis": "hit",
+       "school": "holy",
+       "at": "her"
+      }
+     ],
+     "text": "The Watch Bell tolls twice"
+    }
+   ],
+   "rewrites": [
+    "watch_bell"
+   ],
+   "lore": "Cast from the lip of a bell that cracked at its first strike. The founder kept the piece he could not sell."
+  },
+  "unmoved_door": {
+   "id": "unmoved_door",
+   "name": "The Unmoved Door",
+   "kind": "offhand",
+   "rarity": 4,
+   "icon": "shield",
+   "value": 320,
+   "of": "watch_buckler",
+   "dropsFrom": 5,
+   "homes": [
+    "dead"
+   ],
+   "description": "A bulwark build: you block more, and every block throws a ring of light round you for 20 damage.",
+   "mods": [
+    {
+     "stat": "block",
+     "kind": "flat",
+     "value": 2,
+     "source": "item"
+    },
+    {
+     "stat": "armor",
+     "kind": "inc",
+     "value": 0.15,
+     "source": "item"
+    },
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": -0.06,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "block",
+     "icd": 0.5,
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 3.5,
+       "damage": 20,
+       "basis": "flat",
+       "school": "holy",
+       "knockback": 2,
+       "at": "her"
+      }
+     ],
+     "text": "Every block throws light round you"
+    }
+   ],
+   "downside": "6% slower. A door is not made to run.",
+   "build": "bulwark",
+   "lore": "It hung in the Chapel porch for two hundred years. The wood is older than the building, and it has never once opened."
+  },
+  "briar_cuirass": {
+   "id": "briar_cuirass",
+   "name": "The Briar Cuirass",
+   "kind": "body",
+   "rarity": 4,
+   "icon": "armor",
+   "value": 320,
+   "of": "padded_jerkin",
+   "dropsFrom": 8,
+   "homes": [
+    "pack"
+   ],
+   "description": "A thorns build: every blow you take comes back at whatever is close, half again as hard.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 6,
+     "source": "item"
+    },
+    {
+     "stat": "healing",
+     "kind": "inc",
+     "value": -0.1,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hurt",
+     "icd": 0.4,
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 2.6,
+       "damage": 1.5,
+       "basis": "hit",
+       "school": "nature",
+       "at": "her"
+      }
+     ],
+     "text": "Blows taken come back at what is close"
+    }
+   ],
+   "downside": "You mend 10% less.",
+   "build": "thorns",
+   "lore": "Grown, not made. The briars were let into the wool and they never left."
+  },
+  "tally_iron": {
+   "id": "tally_iron",
+   "name": "Tally-Iron",
+   "kind": "amulet",
+   "rarity": 4,
+   "icon": "bone",
+   "value": 320,
+   "of": "bone_amulet",
+   "dropsFrom": 9,
+   "homes": [
+    "kerchiefs"
+   ],
+   "description": "A momentum build: every kill adds 2% damage for 6 s, to 40%.",
+   "triggers": [
+    {
+     "on": "kill",
+     "effects": [
+      {
+       "do": "buff",
+       "id": "tally_iron",
+       "stat": "damage",
+       "value": 0.02,
+       "kind": "inc",
+       "duration": 6,
+       "maxStacks": 20
+      }
+     ],
+     "text": "Kills stack damage"
+    }
+   ],
+   "build": "momentum",
+   "lore": "A strip of iron cut with a notch for every one. It has no room left on it and it is still being notched."
+  },
+  "ramfoot_boots": {
+   "id": "ramfoot_boots",
+   "name": "Ramfoot Boots",
+   "kind": "feet",
+   "rarity": 4,
+   "icon": "boot",
+   "value": 320,
+   "of": "travelers_boots",
+   "dropsFrom": 10,
+   "homes": [
+    "kerchiefs"
+   ],
+   "description": "A dash build: your dash breaks what it passes (14 damage in a ring round you) and quickens you for 2 s.",
+   "triggers": [
+    {
+     "on": "dash",
+     "icd": 0.3,
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 2.8,
+       "damage": 14,
+       "basis": "flat",
+       "school": "physical",
+       "knockback": 1,
+       "at": "her"
+      },
+      {
+       "do": "buff",
+       "id": "ramfoot",
+       "stat": "moveSpeed",
+       "value": 0.15,
+       "kind": "inc",
+       "duration": 2
+      }
+     ],
+     "text": "Your dash breaks what it passes"
+    }
+   ],
+   "build": "dash",
+   "lore": "Thick soles, one hammered into the shape of a hoof. Whoever wore these did not go round things."
+  },
+  "herd_callers_horn": {
+   "id": "herd_callers_horn",
+   "name": "The Herd-Caller's Horn",
+   "kind": "amulet",
+   "rarity": 4,
+   "icon": "bone",
+   "value": 360,
+   "of": "bone_amulet",
+   "dropsFrom": 6,
+   "homes": [
+    "pack"
+   ],
+   "description": "Grants Spirit Herd, always on: spirit beasts run from behind you at the nearest foe. No Warden is taught this.",
+   "auto": {
+    "spirit_herd": 2
+   },
+   "lore": "It is not a horn you blow. It is a horn that is blown, now and then, from somewhere far down the valley, and the beasts come."
+  },
+  "stormwrights_ring": {
+   "id": "stormwrights_ring",
+   "name": "The Stormwright's Ring",
+   "kind": "ring",
+   "rarity": 4,
+   "icon": "ring",
+   "value": 360,
+   "of": "silver_ring",
+   "dropsFrom": 8,
+   "homes": [
+    "lamplings"
+   ],
+   "description": "Grants Arcweb, always on: lightning leaps from foe to foe. No Warden is taught this.",
+   "auto": {
+    "arcweb": 2
+   },
+   "lore": "Wound with copper wire the width of a hair. It hums before the weather turns, and sometimes after."
+  },
+  "firebrands_bandolier": {
+   "id": "firebrands_bandolier",
+   "name": "The Firebrand's Bandolier",
+   "kind": "body",
+   "rarity": 4,
+   "icon": "armor",
+   "value": 360,
+   "of": "padded_jerkin",
+   "dropsFrom": 7,
+   "homes": [
+    "kerchiefs"
+   ],
+   "description": "Grants Firepot, always on: a pot of blasting ember thrown at the biggest thing in reach. No Warden is taught this.",
+   "auto": {
+    "firepot": 2
+   },
+   "lore": "Twelve pockets, eleven pots, and a twelfth pocket with a hand's burn in the leather around it."
+  },
+  "thornwreath": {
+   "id": "thornwreath",
+   "name": "The Thornwreath",
+   "kind": "head",
+   "rarity": 4,
+   "icon": "helm",
+   "value": 360,
+   "of": "leather_cap",
+   "dropsFrom": 9,
+   "homes": [
+    "pack"
+   ],
+   "description": "Grants Thornbloom, always on: brambles burst up under the nearest crowd and hold it. No Warden is taught this.",
+   "auto": {
+    "thornbloom": 2
+   },
+   "lore": "It was a crown of green thorn on a grave in the Verge. It was not green when it came off the grave, and it is now."
   }
  },
  "raritynames": [
@@ -2582,10 +2784,9 @@
   "offhand",
   "head",
   "body",
-  "cloak",
+  "feet",
   "amulet",
   "ring1",
-  "ring2",
-  "relic"
+  "ring2"
  ]
 }

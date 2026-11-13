@@ -87,7 +87,7 @@
    "trophy",
    "ring",
    "amulet",
-   "cloak"
+   "feet"
   ],
   "lines": [
    {
@@ -103,7 +103,7 @@
     "qty": 2
    },
    {
-    "id": "travelers_cloak",
+    "id": "travelers_boots",
     "rarity": 1
    },
    {
@@ -131,7 +131,7 @@
     }
    },
    {
-    "id": "travelers_cloak",
+    "id": "travelers_boots",
     "rarity": 3,
     "when": {
      "fact": "caravan.cargo",
@@ -203,9 +203,8 @@
   "pays": 0.3,
   "restockDays": 5,
   "buys": [
-   "relic",
-   "quest",
    "amulet",
+   "quest",
    "ring"
   ],
   "lines": [
@@ -242,7 +241,7 @@
   "buys": [
    "weapon",
    "offhand",
-   "relic",
+   "amulet",
    "trophy"
   ],
   "lines": [

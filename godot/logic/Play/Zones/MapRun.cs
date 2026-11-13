@@ -67,7 +67,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     }
     readonly List<Altar> altars = new();
     /// <summary>Who carries gear, and how much: a magic pack's leader one, a rare's two, a keeper two.</summary>
-    readonly Dictionary<int, int> carriers = new();
+    /// (Codex audit SU-086) Known by lifetime, never by slot: a carrier's entry goes with its death, credited or not, so a
+    /// newcomer in its slot carries nothing.
+    readonly Dictionary<Lifetime, int> carriers = new();
 
     ArenaBoss? script;
     Enemy? boss;
@@ -156,6 +158,17 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public int PacksPlaced => packs.Count(p => p.Placed);
     public int PacksCleared => packs.Count(p => p.Cleared);
     public int PackCount => packs.Count;
+    /// <summary>The placed packs' grades (0 plain, 1 magic, 2 rare), for probes of what a chart's oaths field.</summary>
+    public IEnumerable<int> PackGrades => packs.Where(p => p.Placed).Select(p => p.Grade);
+    /// <summary>Whether this very creature carries gear here (a pack's leader, a keeper; SU-086: by lifetime).</summary>
+    public bool Carries(Enemy e) => carriers.ContainsKey(Lifetime.Of(e));
+    /// <summary>Every pack and altar set down now, wherever she is (ClearNow; probes).</summary>
+    public void PlaceAll()
+    {
+        if (B == null) return;
+        foreach (var k in packs) if (!k.Placed) Place(k);
+        foreach (var a in altars) if (!a.Placed) Place(a);
+    }
     /// <summary>For the bots: where the packs still standing are, and the altars and the ruler.</summary>
     public IEnumerable<(double X, double Z)> Standing => packs.Where(p => !p.Cleared).Select(p => (p.Spot.X, p.Spot.Z));
     public MapBuild Ground => map;
@@ -164,7 +177,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>The ruler's tier, for the counts its script uses (wolves in a drive, shields in a
     /// line): a night's tier per four of the atlas's.</summary>
     int BossTier => Math.Min(4, 1 + (Chart.Tier - 1) / 4);
-    int Level => Chart.Level;
+    int Level => Chart.Level + Chart.FoeLevels;   // (SU-085) the Deep Dark's two levels
 
     public override void Begin(Battle b)
     {
@@ -245,7 +258,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         string main = PickKind(k.People), mix = PickKind(k.People);
         int n = Math.Clamp((int)Math.Round((4 + R() * 4) * s.Size * Chart.PackSize), 3, 14);
         double roll = R();
-        k.Grade = roll < 0.1 ? 2 : roll < 0.35 ? 1 : 0;
+        // (SU-085) the Oath of Champions: twice the packs led by a champion (rare and magic alike)
+        double el = Chart.Elites;
+        k.Grade = roll < 0.1 * el ? 2 : roll < 0.35 * el ? 1 : 0;
         if (k.Grade == 2) n += 3;
         for (int i = 0; i < n; i++)
             if (Put(i % 3 == 2 ? mix : main, s.X, s.Z, (s.X, s.Z)) is { } e) k.Members.Add((e, e.Seed));
@@ -259,7 +274,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             {
                 int signs = k.Grade switch { 2 => 2 + (R() < 0.5 ? 1 : 0), 1 => 1, _ => 0 } + (Chart.Has("signed") && k.Grade > 0 ? 1 : 0);
                 Sign(c, k.People, Math.Max(signs, hardened ? 1 : 0), hardened ? k.People.Signs.FirstOrDefault() : null);
-                if (k.Grade > 0) carriers[c.Id] = k.Grade;
+                if (k.Grade > 0) carriers[Lifetime.Of(c)] = k.Grade;
                 k.Members.Add((c, c.Seed));
             }
         }
@@ -281,7 +296,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             e.MaxHp = e.Hp = e.MaxHp * 2.2;
             Sign(e, people, Math.Min(2, Chart.Tier / 4) + (Chart.Has("signed") ? 1 : 0));
             e.Named = new Named { Title = e.Def.Name };
-            carriers[e.Id] = 3;
+            carriers[Lifetime.Of(e)] = 3;
             a.Keepers.Add((e, e.Seed));
         }
     }
@@ -475,7 +490,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             {
                 c.MaxHp = c.Hp = c.MaxHp * 1.5;
                 Sign(c, people, 1 + Chart.Tier / 6);
-                carriers[c.Id] = 2;
+                carriers[Lifetime.Of(c)] = 2;
                 B.Rouse(c);
                 ev.Foes.Add((c, c.Seed));
             }
@@ -603,7 +618,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         // kill paid 75-100 a map, where a night pays at most eight of a kind and a pin takes two.
         if (Material(e) is { } m)
         {
-            int n = (int)Math.Floor((e == boss ? 3 : carriers.TryGetValue(e.Id, out int g) ? g >= 3 ? 2 : 1 : 0) * q + (e == boss || carriers.ContainsKey(e.Id) ? R() : 0));
+            int n = (int)Math.Floor((e == boss ? 3 : carriers.TryGetValue(Lifetime.Of(e), out int g) ? g >= 3 ? 2 : 1 : 0) * q + (e == boss || carriers.ContainsKey(Lifetime.Of(e)) ? R() : 0));
             if (n > 0) o.Add(new Loot(PickupKind.Material, m, n));
         }
         if (e == boss)
@@ -626,7 +641,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             if (Crafting.RulerMark(Chart.People, Chart.Tier, rng) is { } mark) o.Add(new Loot(PickupKind.Item, mark.Item, 1, true, mark.Grade));
             return o;
         }
-        if (carriers.Remove(e.Id, out int grade))
+        if (carriers.Remove(Lifetime.Of(e), out int grade))
         {
             var w = G.Journey.World;
             int extra = (grade == 3 ? Atlas.Rank(w, Atlas.KeepersDue) : 0)
@@ -679,8 +694,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public void ClearNow()
     {
         if (B == null || over || cleared) return;
-        foreach (var k in packs) if (!k.Placed) Place(k);
-        foreach (var a in altars) if (!a.Placed) Place(a);
+        PlaceAll();
         foreach (var e in B.Enemies.Living().ToList())
             if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying) B.KillEnemy(e, true, null);
         foreach (var a in altars) a.Lit = true;
@@ -697,6 +711,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     void OnKill(Enemy e, bool byPlayer)
     {
         if (byPlayer) kills++;
+        carriers.Remove(Lifetime.Of(e));   // (SU-086) any death; a credited one was paid in OnLoot, just before
         if (e == boss && !over && bossUp) RulerDown(e.X, e.Z);
     }
 

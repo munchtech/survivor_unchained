@@ -19,18 +19,14 @@ public static class Wear
 
     static string SourceOf(ArmorIndex ix, string id) => ix.Find(id)?.Outfit ?? id[..Math.Max(id.LastIndexOf('.'), 0)];
 
-    /// <summary>The visual slots an item slot covers (none for weapons, amulets, rings, relic).</summary>
+    /// <summary>The visual slots an item slot covers (none for weapons, amulets and rings). The body piece is the whole matching
+    /// set from the neck down (BUILD_DIRECTION round 8): top, collar, belt, skirt, legs, greaves, gloves, bracers, pauldrons and
+    /// cloak all hang from it; the head and the boots are their own pieces.</summary>
     public static IReadOnlyList<string> Group(EquipSlot s) => s switch
     {
         EquipSlot.Head => ["head"],
-        EquipSlot.Shoulders => ["pauldrons"],
-        EquipSlot.Body => ["top", "collar"],
-        EquipSlot.Bracers => ["bracers"],
-        EquipSlot.Hands => ["gloves"],
-        EquipSlot.Belt => ["belt", "skirt"],
-        EquipSlot.Legs => ["bottom", "legwear", "greaves"],
+        EquipSlot.Body => ["top", "collar", "bottom", "legwear", "greaves", "gloves", "bracers", "belt", "skirt", "pauldrons", "cloak"],
         EquipSlot.Feet => ["boots"],
-        EquipSlot.Cloak => ["cloak"],
         _ => None,
     };
 

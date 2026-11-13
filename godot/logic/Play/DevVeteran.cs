@@ -26,6 +26,7 @@ public static class DevVeteran
     {
         string calling = ch.Archetype;
         while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
+        Road(ch);
         switch (calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
         ch.Points = 0;
         // (M3) A calling with a taught build carries it first (taught_builds.json, as a campaign survivor of that level does);
@@ -44,10 +45,17 @@ public static class DevVeteran
         (EquipSlot Slot, string Def)[] dress =
         [
             (EquipSlot.Head, rng.Chance(0.5) ? "iron_helm" : "leather_cap"), (EquipSlot.Body, rng.Chance(0.5) ? "chain_shirt" : "padded_jerkin"),
-            (EquipSlot.Cloak, "travelers_cloak"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
+            (EquipSlot.Feet, "travelers_boots"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
         ];
         foreach (var (slot, def) in dress)
             ch.Equipment[slot] = Inventory.Make(ch, def, 1, gearRarity, (uint)rng.Int(1, 1 << 30));
+    }
+
+    /// <summary>(bd-ranks) A survivor made at a level past the road's choice (the harness's, --veteran) walks a road as a player of
+    /// that level has: her calling's first (LampBook.DefaultType), unless she walks one already.</summary>
+    public static void Road(CharacterData ch)
+    {
+        if (LampBook.Roadless(ch) && LampBook.RoadOpen(ch)) LampBook.ChooseRoad(ch, LampBook.DefaultType(ch.Archetype));
     }
 
     /// <summary>The map survivor's belt: the harness's draughts on top of the journey's own.</summary>

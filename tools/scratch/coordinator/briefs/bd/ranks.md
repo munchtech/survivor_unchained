@@ -1,0 +1,13 @@
+# bd-ranks: cap 75, the board to match, and the road as an early subclass
+
+Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\bd-ranks`, branch `bd-ranks`. Read `briefs/bd/common.md` first. Work at medium effort unless a step resists.
+
+**Build (BUILD_DIRECTION "Progression", BUILD_UNLOCKS):**
+1. **Level cap 30 -> 75**, PoE-style: each level slower than the last (`Character.MaxLevel`, `XpForLevel`, `GainXp`, `DevVeteran`, `SelfScreen`'s level rows and "the last level"). **Act 1 must still end near level 12** (the ladder): measure where it ends today with the existing harnesses, keep the first 12 levels' pacing close to today's, and stretch the curve above. Report the levels at Act 1's end and Act 2's end, before and after.
+2. **The board to match:** a lamp a level to 75 (`LampBook.Earned`, the "one a level from 2 to 30" rule, `AtlasLamps`, any cost table). Check the Warden's share of the 574 lamps can absorb ~74 level points plus story/atlas/post lamps without running out; if it can't, say how many lamps the Warden's board needs and route it (do not author lamps).
+3. **The road is the subclass:** the 8 roads already exist (`Content/Lamps.cs` ~124, `LampBook.cs` 46-57; today not chosen, defaulting to the first). Make the road **chosen at level 6** (the ladder) as a story beat with weight: a choice point the game raises (a hook the story lead's scene will fill; ship a working placeholder choice), its own passives and the road's signature skill as before. **Changeable afterwards at any lamp-post** (free respec, like the rest). Before level 6 she has no road. Saves: an old save keeps its road.
+4. Keep the unlock ladder's other levels exactly as written; you own nothing else on it.
+
+**Your files:** `godot/logic/Rpg/Character.cs` (ONLY `MaxLevel`/XP ~690-720 and `CreationChoice`/road ~170-200), `godot/logic/Rpg/LampBook.cs`, `godot/logic/Content/Lamps.cs`, `godot/logic/Sim/LevelUp.cs`, `godot/logic/Play/DevVeteran.cs`, `godot/logic/Play/Journey.cs` (the road's choice hook), `godot/src/Ui/SelfScreen.cs` (level rows only), lamp data, and their tests.
+**Not yours:** `SkillBook.cs` (bd-keys; leave `PointsAt` alone: skill rank tops out at 15 and power past it comes from lamps and gear), `Items.cs`/`Loot.cs` (bd-gear raises item level to 75).
+**Acceptance:** tests for: cap 75 reachable, every level slower than the last, Act 1 ends at 11-13 in the harness; lamps earned at 75 = 74 + story/atlas/post; no road before 6, the choice at 6, a change at a lamp-post refunds and re-picks cleanly; old saves load. Story scene for the choice routed to the story lead in your report. Suite green.

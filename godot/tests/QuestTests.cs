@@ -457,7 +457,7 @@ public class QuestTests
         Assert.False(Standings.HollowCalm(s.C));
         Day(s, 0.5);
         Assert.True(Standings.HollowCalm(s.C));
-        s.Ch.Equipment.Cloak = Inventory.Make(s.Ch, "wolfhide_cloak");
+        s.Ch.Equipment.Body = Inventory.Make(s.Ch, "wolfhide_cloak");
         Assert.False(Standings.HollowCalm(s.C));
         s.World.Facts["pack.allied"] = true;
         Assert.True(Standings.HollowCalm(s.C));

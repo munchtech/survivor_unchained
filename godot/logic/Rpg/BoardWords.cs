@@ -15,6 +15,7 @@ public static class BoardWords
         LampNo.Gate => "Light more lamps on this road first.",
         LampNo.Free => "This lamp is free and stays lit.",
         LampNo.Holds => "Other lit lamps hang from this one. Put those out first.",
+        LampNo.NoRoad => $"You walk no road yet. Your road opens at level {LampBook.RoadLevel}.",
         _ => "",
     };
 
