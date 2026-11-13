@@ -65,13 +65,13 @@ public class PressedSkillTests
     [Fact]
     public void A_union_takes_two_slots_and_never_makes_a_seventh()
     {
-        var b = BattleTests.Arena(4, ("cleaver", 8), ("sunder", 8), ("oathblade", 1), ("dawnpulse", 1), ("volley", 1), ("arcweb", 1));
+        var b = BattleTests.Arena(4, ("axe_gyre", 8), ("cleaver", 8), ("oathblade", 1), ("dawnpulse", 1), ("volley", 1), ("arcweb", 1));
         Assert.Equal(6, b.SlotsUsed);
-        var u = b.GrantUnion("bladestorm")!;
+        var u = b.GrantUnion("butchers_wheel")!;
         Assert.NotNull(u);
         Assert.Equal(5, b.Weapons.Count);
         Assert.Equal(6, b.SlotsUsed);
-        // It sits on its parts' keys: cleaver's slot 0 and sunder's slot 1.
+        // It sits on its parts' keys: the axe gyre's slot 0 and the cleaver's slot 1.
         Assert.Equal((0, 1), (u.Slot, u.Slot2));
         Assert.Same(u, b.OnSlot(0));
         Assert.Same(u, b.OnSlot(1));
@@ -101,25 +101,26 @@ public class PressedSkillTests
     [Fact]
     public void A_full_build_with_a_union_is_offered_no_new_skill()
     {
-        var b = BattleTests.Arena(7, ("cleaver", 8), ("sunder", 8), ("oathblade", 2), ("dawnpulse", 2), ("volley", 2), ("arcweb", 2));
-        b.GrantUnion("bladestorm");
+        var b = BattleTests.Arena(7, ("axe_gyre", 8), ("cleaver", 8), ("oathblade", 2), ("dawnpulse", 2), ("volley", 2), ("arcweb", 2));
+        b.GrantUnion("butchers_wheel");
         for (int i = 0; i < 20; i++)
             Assert.DoesNotContain(LevelUp.Draft(b), o => o.Kind == OfferKind.Weapon);
     }
 
     [Fact]
-    public void A_union_whose_skill_shares_its_id_keeps_its_access_and_unites()
+    public void Bladestorm_is_the_wardens_own_skill_one_key_and_no_union()
     {
         Assert.Equal(["warden"], Weapons.AccessOf("bladestorm")!.ToArray());
         Assert.True(Weapons.CanCarry("warden", "bladestorm"));
         Assert.False(Weapons.CanCarry("reaver", "bladestorm"));
-        Assert.Equal(2, Weapons.SlotCost("bladestorm"));
+        Assert.Equal(1, Weapons.SlotCost("bladestorm"));
         Assert.Equal(1, Weapons.SlotCost("cleaver"));
-        // Sunder has no evolution yet (a placeholder union): Unite asks both evolved, so only a grant makes it.
+        Assert.Equal(2, Weapons.SlotCost("butchers_wheel"));
+        Assert.Null(Unions.Find("bladestorm"));
         var b = BattleTests.Arena(2, ("cleaver", 8), ("sunder", 8));
         b.Evolve("cleaver", "bonesplitter", chest: true);
         Assert.Null(b.Unite("bladestorm"));
-        Assert.NotNull(b.GrantUnion("bladestorm"));
+        Assert.Null(b.GrantUnion("bladestorm"));
     }
 
     [Fact]
@@ -127,13 +128,13 @@ public class PressedSkillTests
     {
         var b = BattleTests.Arena(5, ("oathblade", 1));
         b.RemoveWeapon("oathblade");
-        var w = b.GrantUnion("bladestorm")!;
+        var w = b.AddWeapon("bladestorm", Weapons.MaxRank)!;
         var foe = Dummy(b, 1.2, 0);
         // Never on its own: ready, a foe in reach, no key.
         Tick(b, 2);
         Assert.Equal(0, w.Casts);
         Assert.Equal(0, w.Timer);
-        // Held on its first key (Bladestorm's spin key; its second is the break).
+        // Held on its key (Bladestorm's own; a fresh press of Sunder's key is the break).
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, foe.X, foe.Z));
         Assert.True(w.Channeling);
@@ -159,9 +160,9 @@ public class PressedSkillTests
     {
         var b = BattleTests.Arena(6, ("oathblade", 1));
         b.RemoveWeapon("oathblade");
-        var w = b.GrantUnion("bladestorm")!;
+        var w = b.AddWeapon("bladestorm", Weapons.MaxRank)!;
         Dummy(b, 1.2, 0);
-        Tick(b, 2); // (a union comes in with its clock running: let it settle ready)
+        Tick(b, 2); // (let it settle ready)
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, b.Player.X + 2, b.Player.Z));
         Tick(b, w.ChannelMax - 0.1, () => b.HoldSkill(w.Slot, true));
@@ -174,11 +175,11 @@ public class PressedSkillTests
     [Fact]
     public void A_granted_union_comes_back_with_a_checkpoint()
     {
-        var b = BattleTests.Arena(8, ("cleaver", 8), ("sunder", 8));
-        b.GrantUnion("bladestorm");
+        var b = BattleTests.Arena(8, ("axe_gyre", 8), ("cleaver", 8));
+        b.GrantUnion("butchers_wheel");
         var snap = b.Snapshot();
         b.Restore(snap);
-        Assert.Equal(["bladestorm"], b.Weapons.Select(w => w.Id).ToArray());
+        Assert.Equal(["butchers_wheel"], b.Weapons.Select(w => w.Id).ToArray());
         Assert.Equal(2, b.SlotsUsed);
     }
 
@@ -187,8 +188,14 @@ public class PressedSkillTests
     {
         var b = BattleTests.Arena(9, ("oathblade", 1));
         var said = DevGrants.Apply(b, "cleaver:4,sunder", "bladestorm", "long_stride,second_wind_pip,nope");
-        Assert.Equal(["oathblade", "bladestorm"], b.Weapons.Select(w => w.Id).ToArray());
-        Assert.Equal(3, b.SlotsUsed);
+        // (--grant-union bladestorm: no union since 13 Nov 2026, so it is granted as the skill, at full rank)
+        Assert.Equal(["oathblade", "cleaver", "sunder", "bladestorm"], b.Weapons.Select(w => w.Id).ToArray());
+        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(Weapons.MaxRank, b.Weapons.Single(w => w.Id == "bladestorm").Rank);
+        Assert.Contains(said, l => l.StartsWith("grant-union: bladestorm is no union now"));
+        var c = BattleTests.Arena(10, ("axe_gyre", 8), ("cleaver", 8));
+        DevGrants.Apply(c, null, "butchers_wheel", null);
+        Assert.Equal(["butchers_wheel"], c.Weapons.Select(w => w.Id).ToArray());
         Assert.Equal(["long_stride", "second_wind_pip"], b.DashSteps.ToArray());
         Assert.Contains(said, l => l.Contains("nope") && l.Contains("not taken"));
     }
@@ -196,7 +203,8 @@ public class PressedSkillTests
     [Fact]
     public void Day_skills_count_a_union_as_two()
     {
-        Assert.Equal(6, Weapons.SlotsOf(["bladestorm", "oathblade", "volley", "arcweb", "dawnpulse"]));
+        Assert.Equal(6, Weapons.SlotsOf(["butchers_wheel", "oathblade", "volley", "arcweb", "dawnpulse"]));
+        Assert.Equal(5, Weapons.SlotsOf(["bladestorm", "oathblade", "volley", "arcweb", "dawnpulse"]));
     }
 }
 

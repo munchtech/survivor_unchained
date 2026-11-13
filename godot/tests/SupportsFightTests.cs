@@ -134,6 +134,9 @@ public class SupportsFightTests
         j.Ch.Level = ch.Level; j.Ch.Skills.Clear(); j.Ch.Skills.AddRange(ch.Skills);
         j.Ch.Slotted.Clear(); j.Ch.Slotted.AddRange(ch.Slotted);
         j.Ch.Lamps = ch.Lamps; j.Ch.Pack = ch.Pack;
+        // (13 Nov 2026: Dawnpulse is offered after her build, no longer taught in a key, so it runs itself by default; this
+        // pair is carried on keys as the union's parts, the way she would put them)
+        SkillBook.SetAuto(j.Ch, "dawnpulse", false);
         var u = Unions.Find("dawns_judgement")!;
         var b = Fight(j);
         Assert.Equal(1, b.Weapons.Count(w => w.Id == u.Into));

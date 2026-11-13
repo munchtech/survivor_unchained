@@ -1529,6 +1529,7 @@
     {
       "id": "bladestorm",
       "name": "Bladestorm",
+      "access": ["warden"],
       "school": "physical",
       "behavior": "spin",
       "cast": "channel",
@@ -1536,7 +1537,7 @@
       "tags": ["melee", "steel", "physical", "area", "heavy"],
       "bossDamage": 1.6,
       "art": "slash_spin",
-      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, the greater the longer you spun, and every line splits at once. Out of the storm, Sunder's key swings Sunder.",
+      "description": "Hold its key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. A fresh press of Sunder's key breaks the storm with one great blow, the greater the longer you spun, and every line splits at once.",
       "_doc": "In the campaign with the Warden's Resolve (Sim/Resolve.cs) the spin drains press.drain Resolve a second while held, with no cap and no cooldown (press.wait 0), and ends at 0; its break grows with the Resolve the storm spent (x1 at none to breakGrow at breakSpent, 100). cooldown, channelTime and breakFrom are the arena's (self-firing) and a campaign without Resolve's.",
       "base": {
         "cooldown": 6,
@@ -1642,15 +1643,6 @@
       "into": "starfall",
       "price": 2,
       "description": "Moons fall among them and break into motes that hunt the strongest."
-    },
-    {
-      "id": "bladestorm",
-      "name": "Bladestorm",
-      "a": "cleaver",
-      "b": "sunder",
-      "into": "bladestorm",
-      "price": 2,
-      "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again."
     }
   ]
 }

@@ -23,14 +23,14 @@ public class DevGrantTests
         var grip = b.Weapons.Single(w => w.Id == taught.Grip);
         Assert.Equal(0, grip.Slot);
         // (the bare grant is refused: no two keys free)
-        Assert.Null(b.GrantUnion("bladestorm"));
+        Assert.Null(b.GrantUnion("butchers_wheel"));
 
-        var said = DevGrants.Apply(b, null, "bladestorm", null);
+        var said = DevGrants.Apply(b, null, "butchers_wheel", null);
 
-        var u = Unions.Find("bladestorm")!;
+        var u = Unions.Find("butchers_wheel")!;
         var storm = b.Weapons.Single(w => w.Id == u.Into);
         Assert.True(storm.Slot >= 0 && storm.Slot2 >= 0 && storm.Slot != storm.Slot2);
-        Assert.Contains(said, l => l.StartsWith("grant-union: bladestorm on slots"));
+        Assert.Contains(said, l => l.StartsWith("grant-union: butchers_wheel on slots"));
         Assert.True(b.SlotsUsed <= b.KeyCount);
         // The grip is still carried on the first key, or is the union's own part (then the union answers its key).
         var gripNow = b.Weapons.Find(w => w.Id == taught.Grip);
@@ -38,9 +38,32 @@ public class DevGrantTests
         else { Assert.NotNull(gripNow); Assert.Equal(0, gripNow!.Slot); }
         // A second ask changes nothing more.
         int carried = b.Weapons.Count;
-        Assert.Contains(DevGrants.Apply(b, null, "bladestorm", null), l => l.StartsWith("grant-union: bladestorm already carried on slots"));
+        Assert.Contains(DevGrants.Apply(b, null, "butchers_wheel", null), l => l.StartsWith("grant-union: butchers_wheel already carried on slots"));
         Assert.Equal(carried, b.Weapons.Count);
         Assert.Contains(DevGrants.Apply(b, "no_such_skill", "no_such_union", null), l => l == "grant: no_such_skill not added (no such skill)");
+    }
+
+    /// <summary>(13 Nov 2026) Bladestorm is no union: the old `--grant-union bladestorm` line grants the skill at full rank
+    /// into a free key and says so, and the grip stays on key 1.</summary>
+    [Fact]
+    public void Grant_union_bladestorm_falls_back_to_granting_the_skill()
+    {
+        var j = MapSim.Survivor("warden", 30, 2, 5);
+        var b = Fight(j);
+        var storm = b.Weapons.Single(w => w.Id == "bladestorm"); // (the taught build carries it in key 3)
+        Assert.Equal(-1, storm.Slot2);
+        storm.Rank = 1;
+        var said = DevGrants.Apply(b, null, "bladestorm", null);
+        Assert.Contains(said, l => l.StartsWith("grant-union: bladestorm is no union now"));
+        Assert.Equal(Weapons.MaxRank, storm.Rank);
+        Assert.Equal(0, b.Weapons.Single(w => w.Id == TaughtBuilds.Of("warden")!.Grip).Slot);
+        // Not carried: it takes a free key, at full rank.
+        var c = BattleTests.Arena(9, ("sunder", 4));
+        var said2 = DevGrants.Apply(c, null, "bladestorm", null);
+        var w = c.Weapons.Single(x => x.Id == "bladestorm");
+        Assert.Equal(Weapons.MaxRank, w.Rank);
+        Assert.Contains(said2, l => l.StartsWith("grant-union: bladestorm is no union now"));
+        Assert.Contains(said2, l => l.StartsWith("grant: bladestorm rank"));
     }
 
     static Battle Fight(Journey j) => j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
@@ -81,17 +104,17 @@ public class DevGrantTests
         }
     }
 
-    /// <summary>(M3 lead 8) The grip under the union (ARPG.md 3.3): Bladestorm sits on Sunder's key, and out of a storm the
-    /// plan's hands hold that key as the grip (PressHands.HalfGrip: what a clip's presses print as Sunder held): Sunder
-    /// swings, lands and builds Resolve with no storm begun.</summary>
+    /// <summary>(M3 lead 8, bd-sockets) The grip beside Bladestorm (the Warden's own skill since 13 Nov 2026): the plan's hands
+    /// hold Sunder's own key as the grip (the grip loop in PressPlan.Run): Sunder swings, lands and builds Resolve with no
+    /// storm begun (the grip-only hands never press Bladestorm's key).</summary>
     [Fact]
-    public void Under_the_union_the_plan_holds_Sunders_key_as_the_grip()
+    public void Beside_Bladestorm_the_plan_holds_Sunders_key_as_the_grip()
     {
         var j = MapSim.Survivor("warden", 30, 2, 5);
         var b = Fight(j);
-        DevGrants.Apply(b, null, "bladestorm", null);
-        var storm = b.Weapons.Single(w => w.Id == Unions.Find("bladestorm")!.Into);
-        Assert.Equal(0, storm.Slot2);
+        var storm = b.Weapons.Single(w => w.Id == "bladestorm");
+        var sunder = b.Weapons.Single(w => w.Id == "sunder");
+        Assert.Equal(0, b.BreakSlot(storm));
         var hands = PressHands.Grip(3);
         var p = b.Player;
         var foe = b.SpawnEnemy("footpad", p.X + 1.6, p.Z);
@@ -105,7 +128,7 @@ public class DevGrantTests
             seenAt = b.Time;
             PressPlan.Run(b, hands);
             steps++;
-            if (hands.HalfGrip == "sunder") held++;
+            if (sunder.Held) held++;
             b.Tick(1 / 60.0, 0, 0);
             b.Events.Drain();
             Assert.False(storm.Channeling);
@@ -116,7 +139,7 @@ public class DevGrantTests
         // With nothing in reach the key is let go: by the hands' gap rule (GripGaps, Sim/PressPlan.cs). (sw2) Sunder ships
         // chained, so its key stays down through the chain's grace, counted from the last step a foe stood in its reach
         // (these hands have no lapse), and is up on the first step past it.
-        double grace = GripGaps.Grace(Firing.HalfOf(storm));
+        double grace = GripGaps.Grace(sunder);
         Assert.Equal(0.40, grace);
         int inGrace = 0;
         for (int k = 1; ; k++)
@@ -128,14 +151,14 @@ public class DevGrantTests
             if (gap <= grace)
             {
                 // inside the grace: the half's key is still held (the first such step is the step after the foe left)
-                Assert.Equal("sunder", hands.HalfGrip);
+                Assert.True(sunder.Held);
                 inGrace++;
             }
             else
             {
                 // one step past the grace: let go
                 Assert.InRange(gap, grace, grace + 1 / 60.0 + 1e-9);
-                Assert.Null(hands.HalfGrip);
+                Assert.False(sunder.Held);
                 break;
             }
             b.Tick(1 / 60.0, 0, 0);
@@ -147,6 +170,6 @@ public class DevGrantTests
         // and it stays up: a key that came up goes down again only at a foe
         b.Tick(1 / 60.0, 0, 0);
         PressPlan.Run(b, hands);
-        Assert.Null(hands.HalfGrip);
+        Assert.False(sunder.Held);
     }
 }

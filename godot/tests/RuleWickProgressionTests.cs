@@ -50,7 +50,7 @@ public class RuleWickProgressionTests
         var b = Campaign(j);
         Assert.DoesNotContain(b.Weapons, w => w.Id == "heroic_leap");
 
-        j.Ch.Level = 7;
+        j.Ch.Level = 9;
         var taught = j.Teach(b).Select(s => s.Skill).ToHashSet();
         foreach (var s in new[] { "heroic_leap", "shield_charge", "iron_vow" })
         {

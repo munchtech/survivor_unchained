@@ -653,7 +653,7 @@ public static partial class Firing
             if (w.Timer < 0) w.Timer = 0;
             if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w);
             // Hold to repeat (campaign, the grips): ready while held, it fires again at the current aim.
-            if (w.Hold && w.Held && w.Timer <= 0 && w.DisabledT <= 0) b.PressHeld(w);
+            if (w.Hold && w.Held && w.Timer <= 0 && w.DisabledT <= 0 && !b.BreaksAStorm(w)) b.PressHeld(w);
             return;
         }
         w.Timer = 0;

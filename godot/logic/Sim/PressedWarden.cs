@@ -7,8 +7,8 @@ using static SurvivorUnchained.Core.MathX;
 namespace SurvivorUnchained.Sim;
 
 /* The Warden's pressed skills (P7, the ARPG turn): Heroic Leap (behavior leap, cast press), Shield Charge (charge,
- * press; the old Bull Rush's run, one path with the art: Battle.ChargeStep) and Bladestorm (spin, channel: the first
- * two-key Union, its first key held spins, its second pressed breaks the storm). Their numbers are skills.json's; the
+ * press; the old Bull Rush's run, one path with the art: Battle.ChargeStep) and Bladestorm (spin, channel: the Warden's
+ * own skill since 13 Nov 2026: its key held spins, a fresh press of Sunder's key breaks the storm; a spin union's code stays generic, none in data). Their numbers are skills.json's; the
  * view draws them from Ev.Leap, Ev.Charge, Ev.Spin and Ev.SpinLine. */
 public sealed partial class Battle
 {
@@ -353,7 +353,7 @@ public static partial class Firing
     /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
     public static bool InStorm(Battle b, WeaponInst w) => w.Channeling || (w.BreakUntil >= 0 && b.Time <= w.BreakUntil);
 
-    /// <summary>A spin union's other part (its B: Bladestorm's Sunder) at the union's rank and mods, on the union's second
+    /// <summary>A spin union's other part (its B; no spin union in data since 13 Nov 2026) at the union's rank and mods, on the union's second
     /// key: what that key swings out of a storm. Never in Weapons (it holds no slot of its own); its damage is its own id's.</summary>
     internal static WeaponInst? HalfOf(WeaponInst w)
     {
@@ -413,7 +413,7 @@ public static partial class Firing
         w.Lines.Clear();
     }
 
-    /// <summary>The break (Bladestorm's second key, Battle.PressSkill), while it spins or within BreakWindow after: a
+    /// <summary>The break (a fresh press of Sunder's key, or a spin union's second; Battle.PressSkill), while it spins or within BreakWindow after: a
     /// heavy blow all round her (BreakRadius, BreakDamage, BreakStun, BreakKnockback), and every pending line splits at
     /// once, striking what is on it for LineDamage (heavy). The storm is over: its cooldown starts. Nothing to break:
     /// false, nothing happens.</summary>

@@ -291,9 +291,10 @@ public class UnionJoinTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>Bladestorm measured, not held (its economy is the campaign's Resolve, which bd-keys is re-cutting; this is the
-    /// self-firing setup, with the arena's 6 s cooldown): whole cycles, the spin each time it is ready, held to its end
-    /// and broken; out of a storm Sunder's key held, so it swings as itself. The report's numbers come from here.</summary>
+    /// <summary>Bladestorm measured, not held (the Warden's own skill since 13 Nov 2026, on its own key beside Sunder; its economy is
+    /// the campaign's Resolve; this is the self-firing setup, with the arena's 6 s cooldown): whole cycles, the spin each time
+    /// it is ready, held to its end and broken by a fresh press of Sunder's key; out of a storm Sunder's key held, so it swings
+    /// as itself. Compared with Cleaver + Sunder apart.</summary>
     [Fact]
     public void Bladestorm_over_whole_cycles_is_measured()
     {
@@ -301,23 +302,25 @@ public class UnionJoinTests(ITestOutputHelper output)
         const double Seconds = 60;
         double Union(IList<(double X, double Z)> offs)
         {
-            var b = Fight("sunder", "cleaver", Rank);
-            var w = Assert.Single(UnionJoin.Apply(b, [Unions.Find("bladestorm")!]));
+            var b = Fight("sunder", "bladestorm", Rank);
+            var gr = b.Weapons.Single(x => x.Id == "sunder"); gr.Press = gr.Def.Press; gr.CastSet = CastMode.Press; // (the Warden's held grip)
+            var w = b.Weapons.Single(x => x.Id == "bladestorm");
+            int bs = b.BreakSlot(w);
             w.Timer = 0;
             var p = b.Player;
             return Dealt(b, offs, Seconds, (es, at) =>
             {
                 for (double t = 0; t < Seconds - 1e-9; t += Dt)
                 {
-                    if (w.Timer <= 0 && !Firing.InStorm(b, w)) { b.HoldSkill(w.Slot2, false); b.HoldSkill(w.Slot, true); b.PressSkill(w.Slot, p.X + 2, p.Z); }
+                    if (w.Timer <= 0 && !Firing.InStorm(b, w)) { b.HoldSkill(bs, false); b.HoldSkill(w.Slot, true); b.PressSkill(w.Slot, p.X + 2, p.Z); }
                     bool spinning = w.Channeling;
                     b.HoldSkill(w.Slot, spinning);
-                    if (!Firing.InStorm(b, w)) b.HoldSkill(w.Slot2, true);
+                    if (!Firing.InStorm(b, w)) b.HoldSkill(bs, true);
                     Pin(b, es, at);
                     b.Tick(Dt, 0, 0);
                     b.Events.Drain();
                     // The break, a fresh press, as the spin ends.
-                    if (spinning && !w.Channeling) { b.HoldSkill(w.Slot2, false); b.HoldSkill(w.Slot2, true); b.PressSkill(w.Slot2, p.X, p.Z); b.HoldSkill(w.Slot2, false); }
+                    if (spinning && !w.Channeling) { b.HoldSkill(bs, false); b.HoldSkill(bs, true); b.PressSkill(bs, p.X, p.Z); b.HoldSkill(bs, false); }
                 }
             });
         }
@@ -325,7 +328,7 @@ public class UnionJoinTests(ITestOutputHelper output)
         foreach (var (name, offs) in new (string, List<(double, double)>)[] { ("a pack of six around her", pack), ("one on her lines", [(1.5, 0)]), ("one off her lines", [(0, 1.8)]) })
         {
             double a = Dealt(Fight("sunder", "cleaver", Rank), offs, Seconds), u = Union(offs);
-            output.WriteLine($"{name}: cleaver+sunder {a:0.0}/s, bladestorm joined {u:0.0}/s (x{u / a:0.00}), rank {Rank}");
+            output.WriteLine($"{name}: cleaver+sunder {a:0.0}/s, bladestorm beside sunder {u:0.0}/s (x{u / a:0.00}), rank {Rank}");
             Assert.True(u > 0);
         }
     }

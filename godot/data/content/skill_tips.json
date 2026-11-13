@@ -69,7 +69,7 @@
       "kindled": "Fires itself with {kindle.count} or more enemies within {kindle.radius} m"
     },
     "bladestorm": {
-      "line": "Hold to spin, cutting all around you. Press Sunder's key to end it in one great blow that grows as you spin.",
+      "line": "Hold to spin, cutting all around you. A fresh press of Sunder's key ends it in one great blow.",
       "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "up to x{base.breakGrow}" ] ]
     },
     "rebuke": {
