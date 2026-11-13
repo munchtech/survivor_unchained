@@ -149,6 +149,10 @@ void fragment() {
 
     public static readonly Color SetColour = new("#3fd6c0");
 
+    /// <summary>A support gem's colour on the ground (its light, its label): its stone's, a clear one pale blue so it reads on grass; null for anything else.</summary>
+    public static Color? GemGround(ItemInstance? it) =>
+        it != null && Supports.OfItem(it.Def) is { } g ? (Supports.Family(g) == "clear" ? new Color("#CFE6FF") : GemLook.Of(g)) : null;
+
     /// <summary>A thing's colour: its tier's, except what is counted (a material, a draught) keeps its
     /// own rarity's, so an ember shard still glints among pelts.</summary>
     public static Color ColourOf(ItemInstance it)

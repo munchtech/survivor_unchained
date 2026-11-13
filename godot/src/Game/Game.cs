@@ -1925,10 +1925,10 @@ public partial class Game : Node, IZoneHost
             if (camera.IsPositionBehind(w)) continue;
             var sp = camera.UnprojectPosition(w);
             if (!view.HasPoint(sp)) continue;
-            string text = p.Payload is ItemInstance it ? Inventory.Name(it) : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
+            string text = p.Payload is ItemInstance it ? Inventory.Name(it) + (tier == LootTier.Gem ? " gem" : "") : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
-            var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
+            var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : tier == LootTier.Gem && ItemViews.GemGround(p.Payload as ItemInstance) is { } gcol ? gcol.Lerp(Colors.White, 0.25f) : ItemViews.TierColour(tier);
             int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
@@ -2035,6 +2035,8 @@ public partial class Game : Node, IZoneHost
     int lootI, hoardI;
     double hoardT = 1.5;
     double lootT = 1.5;
+    // --loot gem: one gem of each colour family (garnet, sapphire, clear), a beat apart.
+    static readonly string[] GemRing = ["gem.brutality", "gem.bulwark", "gem.haste"];
     static readonly (string Def, int? Rarity, Verdict Look)[] LootRing =
     [
         ("leather_cap", 0, Verdict.Hidden), ("iron_helm", 0, Verdict.Shown), ("copper_ring", 1, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown),
@@ -2091,14 +2093,15 @@ public partial class Game : Node, IZoneHost
         // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
         // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
         // "legendary": only the Legendary, for its moment (--loot-at T: the first T seconds in, for pictures of its fall).
-        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
+        if (Args.Has("loot") && Battle is { } lootB && lootI < (Args.Get("loot") == "gem" ? GemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
+            var (def, rarity, look) = Args.Get("loot") == "gem" ? (GemRing[lootI], null, Verdict.Shown) : LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
             lootI = Args.Get("loot") == "legendary" ? LootRing.Length : lootI + 1;
+            int ringLen = Args.Get("loot") == "gem" ? GemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)
-            double a = lootI * Math.Tau / LootRing.Length, d = Args.Has("far") ? 28 : 4.5;
+            double a = lootI * Math.Tau / ringLen, d = Args.Has("far") ? 28 : 4.5;
             lootB.Spill(new Loot(PickupKind.Item, def, 1, true, it.Rarity, null, it, (int)Rpg.Drops.TierOf(it), look), lootB.Player.X + Math.Cos(a) * d, lootB.Player.Z + Math.Sin(a) * d);
         }
         // --hoard [N]: N story bosses' hoards rolled by the real drop roll at her feet, two seconds apart

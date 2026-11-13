@@ -53,7 +53,10 @@ public static class Supports
     public const string ItemPrefix = "gem.";
     public static string ItemId(string gem) => ItemPrefix + gem;
     public static SupportDef? OfItem(string itemId) => itemId.StartsWith(ItemPrefix, StringComparison.Ordinal) ? Find(itemId[ItemPrefix.Length..]) : null;
-    public static IEnumerable<ItemDef> ItemDefs() => All.Select(g => new ItemDef { Id = ItemId(g.Id), Name = g.Name, Kind = ItemKind.Gem, Rarity = 2, Icon = "ember", Value = 30, Description = g.Text });
+    /// <summary>The gem's colour family: any skill -> "clear", takes a Shield skill first -> "sapphire", else "garnet".</summary>
+    public static string Family(SupportDef g) => g.Fits.Count == 0 ? "clear" : string.Equals(g.Fits[0], "Shield", StringComparison.OrdinalIgnoreCase) ? "sapphire" : "garnet";
+
+    public static IEnumerable<ItemDef> ItemDefs() => All.Select(g => new ItemDef { Id = ItemId(g.Id), Name = g.Name, Kind = ItemKind.Gem, Rarity = 2, Icon = "gem_" + Family(g), Value = 30, Description = g.Text });
 
     /// <summary>Open sockets at a skill's rank: one per threshold reached.</summary>
     public static int SocketsAt(int rank) => File.Sockets.Ranks.Count(r => rank >= r);

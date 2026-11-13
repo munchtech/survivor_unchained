@@ -103,6 +103,8 @@ public partial class BattleFx
     /// <summary>--clean: stills with no loot lights, beams or names over the picture.</summary>
     static readonly bool CleanShots = Args.Has("clean");
 
+    readonly HashSet<int> gemLanded = new();
+
     void LootLight(Pickup p, float gy, double now, Color fallback)
     {
         float t = (float)now;
@@ -134,6 +136,19 @@ public partial class BattleFx
             case LootTier.Legendary or LootTier.Storied:
                 Pillar(p, gy, t, tier == LootTier.Legendary ? LegendAmber : StoriedRed, tier == LootTier.Storied);
                 break;
+            case LootTier.Gem:
+            {
+                // A cut stone in its own colour; it flashes once as it lands, then every 1.7 s catches the light (a star at 0.4 m).
+                var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
+                Light(p.X, gy, p.Z, Lit.Glow, 0, 0.45f, 1.1f * grow, gc, 0.85f * flare);
+                var star = gc.Lerp(Colors.White, 0.4f) * 1.1f;
+                if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
+                    Sparks.Spawn(V(p.X, gy + 0.5, p.Z), Vector3.Zero, 0.28f, 0.5f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                else if (age >= 0.5f) gemLanded.Add(p.Id);
+                if (age >= 0 && frameDt > 0 && (t + p.Id * 0.37f) % 1.7f < frameDt)
+                    Sparks.Spawn(V(p.X, gy + 0.4, p.Z), Vector3.Zero, 0.35f, 0.22f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);
+                break;
+            }
             case LootTier.Chart:
                 Light(p.X, gy, p.Z, Lit.Glow, 0, 0.5f, 1.3f * grow, ChartPale, 0.6f);
                 break;

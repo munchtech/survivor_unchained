@@ -475,6 +475,10 @@ public static partial class Sfx
                 a.Play(new Hiss { D = 0.18, G = 0.05 * g, Bp = 3000, Q = 0.8, Pan = pan });
                 a.Play(new Fm { T = Now + 0.06, F = 2093, Ratio = 2.0, Index = 0.5, D = 0.5, G = 0.02 * g, Pan = pan, Verb = 0.4 });
                 break;
+            case 12: // Gem: two glass pings a fifth apart, high and short: a stone struck, not a bell.
+                a.Play(new Fm { F = 1760, Ratio = 3.0, Index = 0.7, A = 0.001, D = 0.55, G = 0.03 * g, Pan = pan, Verb = 0.5 });
+                a.Play(new Fm { T = Now + 0.07, F = 2637, Ratio = 3.0, Index = 0.5, A = 0.001, D = 0.5, G = 0.022 * g, Pan = pan, Verb = 0.5 });
+                break;
             default: // Quest: a short warm chime.
                 a.Play(new Fm { F = 523, Ratio = 2.0, Index = 0.5, D = 0.8, G = 0.035 * g, Pan = pan, Verb = 0.45 });
                 a.Play(new Fm { T = Now + 0.08, F = 784, Ratio = 2.0, Index = 0.5, D = 0.8, G = 0.03 * g, Pan = pan, Verb = 0.45 });
