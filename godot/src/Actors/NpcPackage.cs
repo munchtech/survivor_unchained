@@ -28,7 +28,7 @@ public static class NpcPackage
     public const string Prefix = "npc:";
 
     public sealed record Piece(string Id, string Slot, string File, Variant Hide, Variant Springs = default, Variant Correctives = default);
-    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null);
+    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null, Godot.Collections.Dictionary? Skin = null);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
@@ -77,7 +77,8 @@ public static class NpcPackage
                 d.TryGetValue("height", out var ht) ? (double)ht : 0, d.TryGetValue("joints", out var j) ? (int)j : 0, pieces, hairFile, hairColour, d.TryGetValue("baked", out var bk) && bk.VariantType == Variant.Type.Bool && (bool)bk,
                 d.TryGetValue("lod", out var lv) && lv.VariantType == Variant.Type.Dictionary && lv.AsGodotDictionary().TryGetValue("file", out var lf) && lf.VariantType == Variant.Type.String ? (string)lf : null,
                 // (its walk: "lurch", the crowd's undead lurch (NpcWalks); none, the townsfolk's walk)
-                d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null, HairUniforms: hairUniforms);
+                d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null, HairUniforms: hairUniforms,
+                Skin: d.TryGetValue("skin", out var skv) && skv.VariantType == Variant.Type.Dictionary ? skv.AsGodotDictionary() : null);
             // (its arm set over the shared clips: "arms": {"in": DEG, "wrist": SHARE}, World.NpcArmSet; a shot's --npc-arms IN,WRIST overrides)
             if (d.TryGetValue("arms", out var av) && av.VariantType == Variant.Type.Dictionary)
             {
@@ -152,7 +153,7 @@ public static class NpcPackage
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 // (its skin as skin: the game's skin shader on the package's own maps, the same on body and head, People.NpcSkin)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D sk && sk.ResourceName is "skin" or "skin_head")
-                    mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(sk, mi.Mesh, m.Sex == "female"));
+                    mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(sk, mi.Mesh, m.Sex == "female", m.HairColour ?? People.HisHairColour, m.Skin));
                 else if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D bm && bm.VertexColorUseAsAlbedo)
                 {
                     var c = (BaseMaterial3D)bm.Duplicate();
@@ -318,7 +319,7 @@ public static class NpcPackage
         for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
         {
             if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src) continue;
-            if (src.ResourceName is "skin" or "skin_head") mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(src, mi.Mesh, m.Sex == "female"));
+            if (src.ResourceName is "skin" or "skin_head") mi.SetSurfaceOverrideMaterial(s, People.NpcSkin(src, mi.Mesh, m.Sex == "female", m.HairColour ?? People.HisHairColour, m.Skin));
             else if (src.ResourceName.StartsWith("hair"))
             {
                 mi.SetSurfaceOverrideMaterial(s, People.Hair(src, m.HairColour ?? People.HisHairColour));

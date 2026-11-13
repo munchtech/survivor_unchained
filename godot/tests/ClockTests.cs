@@ -29,7 +29,7 @@ public sealed class ClockTests
     {
         var b = new Battle(new BattleSetup
         {
-            Seed = 5, Collision = new CollisionWorld(120), Combat = true, Campaign = clock != Clock.Bare, Stats = BattleTests.BaseStats(),
+            Seed = 5, Collision = new CollisionWorld(TestContent.StationaryArenaSize), Combat = true, Campaign = clock != Clock.Bare, Stats = BattleTests.BaseStats(),
             Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash,
         });
         b.Calling = "warden";
