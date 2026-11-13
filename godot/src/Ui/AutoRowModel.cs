@@ -9,11 +9,13 @@ namespace SurvivorUnchained.Ui;
  * Round for what she acts by (the keys' seats), square for what fires by itself (the auto tiles). */
 public static class AutoRowModel
 {
-    /// <summary>A tile's side, the gap between her three, and the right edge of her first tile (design px at 1.0, the
-    /// bar's space: the coin stands at 960, her tiles grow leftward from its left).</summary>
+    /// <summary>A tile's side, the gap between tiles, and the right edge of her first tile (design px at 1.0, the bar's
+    /// space: the coin stands at 960; her three grow leftward from its left; what she wears grows rightward from its right).</summary>
     public const float Tile = 34, Gap = 6, HerRight = 910;
-    /// <summary>The item autos' places (the 4th and 5th tiles) and the left edge nothing is drawn past.</summary>
-    public static readonly float[] ItemX = [756, 716];
+    /// <summary>Where the item tiles start with no stance block, the stance block's front disc's left edge, the gap from the
+    /// Swap chip to the first item tile, and the right edge nothing is drawn past.</summary>
+    public const float RightStart = 1012, StanceLeft = 1012, SwapGap = 10, RightEdge = 1216;
+    /// <summary>The row control's left edge.</summary>
     public const float Floor = 716;
     public const int HerSlots = 3;
 
@@ -39,16 +41,24 @@ public static class AutoRowModel
     /// More: how many item autos are not shown) and its left edge.</summary>
     public readonly record struct Place(Kind Kind, int Index, float X);
 
-    /// <summary>Her three places (always), then the item autos: up to two places; with more than two, the 4th holds the
-    /// first and the 5th "+N" for the rest (N = items - 1).</summary>
-    public static List<Place> Places(int items)
+    /// <summary>Where the item tiles start: the Swap chip's right edge + 10 with the stance block shown, else 1012.</summary>
+    public static float ItemStart(bool stanceShown, float swapRight) => stanceShown ? swapRight + SwapGap : RightStart;
+
+    /// <summary>How many item places fit from start with the last tile's right edge at or before 1216.</summary>
+    public static int ItemCapacity(float start) => Math.Max(0, (int)Math.Floor((RightEdge - start + Gap) / (Tile + Gap)));
+
+    /// <summary>Her three places (always, left of the coin), then the item autos right of the stance block from itemStart:
+    /// with more items than places, the last place holds "+N" (N = the items it stands for).</summary>
+    public static List<Place> Places(int items, float itemStart = RightStart)
     {
         var l = new List<Place>();
         for (int i = 0; i < HerSlots; i++) l.Add(new Place(Kind.Her, i, HerRight - Tile - i * (Tile + Gap)));
-        if (items <= 0) return l;
-        if (items <= ItemX.Length) { for (int j = 0; j < items; j++) l.Add(new Place(Kind.Item, j, ItemX[j])); return l; }
-        l.Add(new Place(Kind.Item, 0, ItemX[0]));
-        l.Add(new Place(Kind.More, items - 1, ItemX[1]));
+        int cap = ItemCapacity(itemStart);
+        if (items <= 0 || cap <= 0) return l;
+        float X(int j) => itemStart + j * (Tile + Gap);
+        if (items <= cap) { for (int j = 0; j < items; j++) l.Add(new Place(Kind.Item, j, X(j))); return l; }
+        for (int j = 0; j < cap - 1; j++) l.Add(new Place(Kind.Item, j, X(j)));
+        l.Add(new Place(Kind.More, items - (cap - 1), X(cap - 1)));
         return l;
     }
 

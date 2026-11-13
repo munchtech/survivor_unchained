@@ -756,9 +756,10 @@ public partial class GameHud : CanvasLayer
         {
             ItemAutosTick(b);
             irons.Autos.Visible = !lampsWide;
-            irons.Autos.Feed(b, level.Level, itemAutoRarity);
             irons.Stance.Feed(b, (GetParent() as Game)?.Journey.Ch);
             if (lampsWide) irons.Stance.Visible = false;
+            irons.Autos.StanceRight = irons.Stance.Visible ? irons.Stance.SwapRight : null;
+            irons.Autos.Feed(b, level.Level, itemAutoRarity);
         }
         SkillTipTick(b, b.Campaign && !(lampsWide && lampsSeats != null));
         AutoTipTick(b, b.Campaign && !lampsWide);
@@ -1066,7 +1067,7 @@ public partial class GameHud : CanvasLayer
         if (on && !cardRead && ch != null && skillTip is not { Visible: true })
         {
             if (pin != null && pin.StartsWith("tile:") && int.TryParse(pin[5..], out var tk)) tile = irons.Autos.TileNo(tk);
-            else if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * (StanceBlock.FrontAt - new Vector2(0, 17)); }
+            else if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * (StanceBlock.FrontAt - new Vector2(0, StanceBlock.R)); }
             else if (!HudPin.Active && !captured && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition()))
             {
                 var mp = play.GetGlobalMousePosition();

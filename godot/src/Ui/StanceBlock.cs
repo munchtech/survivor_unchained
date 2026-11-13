@@ -16,10 +16,10 @@ namespace SurvivorUnchained.Ui;
 public partial class StanceBlock : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
-    const float R = 17, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.2f, GlyphPx = 18;
-    static readonly Vector2 Back = new(22, -6);
+    public const float R = 19, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.2f, GlyphPx = 20;
+    static readonly Vector2 Back = new(22 * 19 / 17f, -6 * 19 / 17f);
     /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
-    public static Vector2 FrontAt => new(1034, AutoRow.RowTop + AutoRowModel.Tile / 2);
+    public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
     static Vector2 Front => FrontAt;
 
     /// <summary>A stance's color: set II's bezel and tint (set I: the plate's bronze).</summary>
@@ -55,6 +55,9 @@ public partial class StanceBlock : Control
     }
 
     public void Keys() => swapKey.Refresh();
+
+    /// <summary>The Swap chip's right edge in the bar's space (the item autos start 10 px after it).</summary>
+    public float SwapRight { get { var b = swapKey.ChipBox(); return swapKey.Position.X + b.Position.X + b.Size.X; } }
 
     /// <summary>The front disc's global rect (the level card folds into it).</summary>
     public Rect2 DiscRect()
@@ -192,7 +195,7 @@ public partial class StanceBlock : Control
         var col = set == 1 ? ColorOf(stance!.Id) : Bronze;
         float a = dim;
         DrawCircle(c, r, Glass with { A = a }, true, -1, true);
-        if ((icons[set] ?? iconFallback[set]) is { } ic) DiscIcon.Draw(this, c, r - 1.5f, ic, new Color(1, 1, 1, a), icons[set] != null ? 0.06f : -0.25f);
+        if ((icons[set] ?? iconFallback[set]) is { } ic) DiscIcon.Draw(this, c, r - 1.5f, ic, new Color(1, 1, 1, a), icons[set] != null ? 1 - 0.94f / 1.35f : -0.25f);
         else if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
         float sh = share[set];
         if (sh < 0.996f) DrawColoredPolygon(CirclePie(c, r - 1, 1 - sh), Veil with { A = Veil.A * a });

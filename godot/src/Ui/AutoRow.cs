@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Ui;
 public partial class AutoRow : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
-    const float GlyphPx = 22;
+    const float GlyphPx = 28;
 
     sealed class Tile
     {
@@ -31,6 +31,10 @@ public partial class AutoRow : Control
     /// <summary>bd-ui W4: the row's top, its bottom 3 px above the key caps' top edge (the tallest chip, the mouse's).</summary>
     public static float RowTop => AutoRowModel.RowTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
 
+    /// <summary>bd-ui W5: the stance block's Swap chip's right edge when the block is shown (else null): the item tiles start 10 px after.</summary>
+    public float? StanceRight;
+    float ItemStart => AutoRowModel.ItemStart(StanceRight != null, StanceRight ?? 0);
+
     readonly List<Tile> tiles = new();
     string lastLog = "";
     double now;
@@ -45,7 +49,7 @@ public partial class AutoRow : Control
         MouseFilter = MouseFilterEnum.Ignore;
         TextureFilter = TextureFilterEnum.Linear;
         Position = new Vector2(AutoRowModel.Floor, RowTop);
-        Size = new Vector2(AutoRowModel.HerRight - AutoRowModel.Floor, AutoRowModel.Tile);
+        Size = new Vector2(AutoRowModel.RightEdge - AutoRowModel.Floor, AutoRowModel.Tile);
         ZIndex = 2;
     }
 
@@ -64,7 +68,8 @@ public partial class AutoRow : Control
             else if (hers.Count < AutoRowModel.HerSlots) hers.Add(w);
             else items.Add(w);
         }
-        var places = AutoRowModel.Places(items.Count);
+        int cap = AutoRowModel.ItemCapacity(ItemStart);
+        var places = AutoRowModel.Places(items.Count, ItemStart);
         if (Position.Y != RowTop) Position = new Vector2(Position.X, RowTop);
         if (Args.Has("dev-log") || Args.Has("hud-pin") || Args.Has("equip") || Args.Has("hud-scale"))
         {
@@ -72,13 +77,13 @@ public partial class AutoRow : Control
             if (log != lastLog) { lastLog = log; GD.Print(log); }
         }
         // (rebuilt only when the places or what is in them changed; the timers below are values)
-        string shape = string.Join(",", places.Select(p => $"{p.Kind}{p.Index}")) + "|" + string.Join(",", hers.Concat(items).Select(w => w.Id)) + "|" + open;
+        string shape = string.Join(",", places.Select(p => $"{p.Kind}{p.Index}@{p.X}")) + "|" + string.Join(",", hers.Concat(items).Select(w => w.Id)) + "|" + open;
         if (shape != lastShape)
         {
             lastShape = shape;
             var old = tiles.Where(t => t.Id != "").GroupBy(t => t.Id).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
             tiles.Clear();
-            hidden = items.Count > AutoRowModel.ItemX.Length ? items.Skip(1).Select(w => w.Def.Name).ToList() : new();
+            hidden = items.Count > cap ? items.Skip(Math.Max(0, cap - 1)).Select(w => w.Def.Name).ToList() : new();
             foreach (var p in places)
             {
                 var t = new Tile { At = p };
@@ -158,43 +163,29 @@ public partial class AutoRow : Control
             // (a locked place: the empty square at 35%; an open one with nothing in it: the bezel only, faint)
             float fillA = filled ? 1 : t.Locked ? 0.35f : 0;
             if (fillA > 0) DrawRect(r, Glass with { A = fillA }, true);
+            Color bez = t.Rarity >= 0 ? Style.RarityOf(t.Rarity) : more ? Style.RarityOf(4) : Bronze;
             if (t.Id != "")
             {
-                float fl = AutoRowModel.Flash(now - t.Fired);
-                DrawRect(r.Grow(-1), t.School with { A = 0.16f + 0.5f * fl }, true);
+                // (always live: the icon at full brightness; the timer is the 2 px bar; a fire brightens the whole tile 1.35 -> 1.0)
+                float lit = 1 + 0.35f * AutoRowModel.Flash(now - t.Fired);
+                DrawRect(r.Grow(-1), (t.School with { A = 0.16f }) * new Color(lit, lit, lit, 1), true);
                 if (t.Glyph != null)
                 {
                     var g = new Rect2(r.GetCenter() - Vector2.One * GlyphPx / 2, Vector2.One * GlyphPx);
-                    DrawTextureRect(t.Glyph, g, false, new Color(1 + 0.6f * fl, 1 + 0.6f * fl, 1 + 0.6f * fl));
+                    DrawTextureRect(t.Glyph, g, false, new Color(lit, lit, lit));
                 }
-                float share = AutoRowModel.NotReady(t.Ready);
-                if (share > 0.004f) DrawColoredPolygon(Pie(r.Grow(-1), share), Veil);
+                float ready = 1 - AutoRowModel.NotReady(t.Ready);
+                if (ready > 0.004f) DrawRect(new Rect2(r.Position.X + 3, r.End.Y - 4, (r.Size.X - 6) * ready, 2), bez with { A = 0.85f }, true);
             }
             else if (more)
                 DrawString(Style.UiBold, new Vector2(r.Position.X, r.Position.Y + 21), $"+{t.At.Index}", HorizontalAlignment.Center, r.Size.X, 15, Style.RarityOf(4));
             if (t.Opened >= 0 && now - t.Opened < 0.6)
                 DrawRect(r.Grow(-1), new Color(1f, 0.80f, 0.45f, 0.55f * (float)(1 - (now - t.Opened) / 0.6)), true);
-            Color bez = t.Rarity >= 0 ? Style.RarityOf(t.Rarity) : more ? Style.RarityOf(4) : Bronze;
+            // (the bezel as the seats': a 1 px dark outer line, a 1.5 px bronze / rarity inner line)
             float bezA = filled ? 1 : t.Locked ? 0.35f : 0.4f;
-            DrawRect(r, bez with { A = bezA }, false, 1);
+            DrawRect(r.Grow(-0.5f), new Color("#1a120a") with { A = 0.8f * bezA }, false, 1);
+            DrawRect(r.Grow(-1.75f), bez with { A = bezA }, false, 1.5f);
         }
-    }
-
-    /// <summary>The wedge of a square from 12 o'clock clockwise, share (0..1) of the turn.</summary>
-    static Vector2[] Pie(Rect2 r, float share)
-    {
-        var c = r.GetCenter();
-        var pts = new List<Vector2> { c };
-        float h = r.Size.X / 2;
-        int n = Math.Max(2, (int)Math.Ceiling(share * 90));
-        for (int i = 0; i <= n; i++)
-        {
-            float ang = share * Mathf.Tau * i / n;                 // clockwise from 12
-            var d = new Vector2(Mathf.Sin(ang), -Mathf.Cos(ang));
-            float k = h / Math.Max(Math.Abs(d.X), Math.Abs(d.Y));  // the ray to the square's edge
-            pts.Add(c + d * k);
-        }
-        return pts.ToArray();
     }
 }
 
