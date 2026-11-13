@@ -1,5 +1,35 @@
 # Where we are: read this after README.md, before your handoff
 
+## 13 November 2026: the BUILD DIRECTION job (coordinator #9). START HERE
+
+**The job:** build `docs/design/BUILD_DIRECTION.md` (the owner's 13 Nov interview, committed `ede598894`). It **overrides `ARPG.md` section 3 (six keys)** wherever they differ. Rounds 7 and 8 override the earlier rounds inside that page: 4 keys with the basic attack in one, the second weapon set as a **stance** (same 4 skills, not a second bar), 8 gear slots, supports as socketed gems, hand-made Unions, cap 75, an early changeable subclass.
+
+**The unlock ladder is the spine (`docs/design/BUILD_UNLOCKS.md`, coordinator's, written before the lanes start).** The pushback on record says this system only works if each layer opens at a different time. Every lane implements against that one page; nobody invents its own level numbers.
+
+### The lanes, in build order
+
+| Lane | Worktree / agent | What it ships | Cost |
+|---|---|---|---|
+| **bd-keys** | `bd-keys`, su-lead-high | 4 keys per set with the basic attack in a slot (buildable, swappable); 3 always-on auto slots + uncapped item auto skills; the second set as a stance that flavors the same 4 skills (shield = block/stun, twin blades = faster/bleed, mace = stagger) and never disables one, each stance with a cost; one swap strike per set on an internal cooldown; dash, Flare and swap outside the 4. `SkillBook.SlotsAt`, `PressedSkills.cs`, `Battle.cs`, `TaughtBuilds.cs` + `taught_builds.json` re-cut to 4+3, `HandsRuleTests`, `Resolve.cs` (the Warden's, no longer pacing every skill), `MapRun.DayMul`, `ArenaSim`/`VergeDaySim`, `GameHud:1700` | 0.65M |
+| **bd-gear** | `bd-gear`, su-lead-sonnet | 15 slots -> **8** (weapon, offhand, head, body, boots, amulet, 2 rings); belt, legs, cloak, bracers, shoulders, hands and relic cut (98 C# references, 15 item kinds in `items.json`, save migration - saves are expendable); the relic's skill-granting affixes move to amulet and rings; body armor covers the whole body; uniques that rewrite a skill / enable a build / grant an auto skill, with the drop moment (sound + visuals) for a skill she cannot get otherwise; 2-3 piece sets with minor perks; crafting = today's heat plus a rare gamble. Single-player, co-op kept possible. `Items.cs`, `items.json`, `Wear.cs`, crafting, `Loot.cs` | 0.45M |
+| **bd-ranks** | `bd-ranks`, su-lead-high (medium) | Writes `BUILD_UNLOCKS.md` into code: level cap 30 -> **75** with each level slower than the last (`Character.MaxLevel`, `XpForLevel`, `SelfScreen` rows), the board rescaled to a point a level to 75 (`LampBook.Earned`, `AtlasLamps`), the **subclass road** chosen early as a story beat and changeable (its own passives, maybe a skill), unlocks gradual across Acts 1-2 | 0.30M |
+| **bd-sockets** | `bd-sockets`, su-lead-high (after keys + gear) | Supports as **gems that drop**, 1-2 sockets a skill opening with rank, with bad-luck protection (owning a gem lowers its own drop weight); Unions stay hand-made (the 10 in `skills.json`), priced in rare items, joined at a lamp-post (M7), taking both keys and never weaker than the two apart, with a limiter so the list cannot explode (the two parts must differ in type). `WickBook.cs`, `Unions.cs`, `skills.json`, its own socket panel | 0.45M |
+| **bd-ui** | `bd-ui`, su-lead-high + one max judge (after keys) | The 4-key bar, the 3 auto slots, the stance swap and its cost read at a glance, the socket panel's look pass, and a **collect-to-unlock wardrobe with dyes** (the cloak may return there as customization, never as a drop) | 0.50M |
+
+**Waves:** wave 1 = bd-keys + bd-gear + bd-ranks (no shared files; 3 at once, the team's cap). Wave 2 = bd-sockets + bd-ui. Coordination, merges and suites ~0.25M. **All in about 2.6M tokens.**
+
+**Scope:** Act 1 and the demo need the **Warden only**, fully built as the melee bruiser. Other callings come later. Mana is the Sorcerer's (the Arcanist's line) and is not built here. **Parked, not in these lanes:** the death rules (free in the campaign with the story's toll; the endgame's limited lives, lost map and experience loss; optional Hardcore) - BUILD_DIRECTION decides them, no lane owns them yet.
+
+**Standing rulings (mine, until the owner overrides):**
+- A stance **never turns a skill off** (BUILD_DIRECTION round 8, the coordinator's default): the stance weapon flavors the same 4 skills. Skills times stances is the fun; no dead keys.
+- The basic attack is a real skill in a key: its own wick and sockets, buildable in depth, swappable for another skill.
+- Union limiter: the two halves must differ in type (physical + ice, fire + lightning), so "every reasonable pair" stays finite.
+
+**Disk:** 42.6 GB free on C: at the start, under CLAUDE.md's 50 GB guard. The sweep found only `body-p1b` (8.8 GB, 41 commits unmerged) and `films-p9` (8.7 GB, clean, 9 days) - neither removable by rule 1. So these five code lanes take worktrees **without** the 3.3 GB `.godot/imported` seed (`wt_new.ps1 -NoImport`; no lane here shoots pictures except bd-ui, which gets the seed), about 5 GB each instead of 9.
+
+**Done =** each lane merged to integration with `dotnet test` green in `godot/tests` (baseline 2349+ passed / 0 failed / 11 skipped), its worktree removed in the same turn as the merge, and this block updated.
+
+
 ## 11 November 2026 (afternoon, 15:45): coordinator #8 WOUND DOWN at the demo-arpg2 cut. NEXT COORDINATOR (#9): START HERE, then #7's block below
 
 - **demo-arpg2 is CUT:** annotated tag `demo-arpg2` on integration `0ed1bf202` (pushed). In: B1 the boss (`dcb1d32ed`), U1 skill tooltips (`a133d4fad`), the Waystation black screen (B1's `5aeafa8c8` and Codex's close-up light fix `5d2e83296`), F1 combat feel rounds 3-5 with the number pass and the on-her clear (`0ed1bf202`, judge CLOSE), Codex density (`f34a059be`) and the wick audit, the AUDIT fixes through SU-041, the settings isolation and the owner's profile reset. **Held out: movement** (the owner: "Hold it out"). Baseline **2349 passed / 0 failed / 11 skipped** (about 8.6 min). `dotnet build`: 0 errors, 122 warnings on a clean build (CS8602 x54, CS8604 x28, CS0649 x16, CS0108 x12, CS0414 x10, CS8625 x2; demo-rc3 had 0). Godot `--import`: clean (the first pass printed 2 `get_multiple_md5` "f.is_null()" messages while reimporting arena textures; the second pass printed 0 errors and reimported nothing).
