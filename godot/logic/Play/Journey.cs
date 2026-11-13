@@ -672,7 +672,8 @@ public sealed partial class Journey
                     b.WickPaths[id] = path;
                     foreach (var w in b.Weapons.Where(x => x.Id == id).ToList()) b.Relight(w, false);
                 }
-        var kitIds = kit.Weapons.Select(w => w.Id).ToHashSet();
+        // (bd-wire) The gear's skills; in the campaign its great pieces' auto skills among them (taken off, they leave the fight).
+        var kitIds = kit.Weapons.Concat(b.Campaign ? kit.AutoSkills : []).Select(w => w.Id).ToHashSet();
         // By day, the learned skills she carries now (SU-045: a tome read, a point crossing a need, a layout's skills).
         bool learns = b.KitLearned != null;
         var learned = learns ? kit.Learned : new List<(string Id, int Rank)>();

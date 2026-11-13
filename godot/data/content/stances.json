@@ -1,11 +1,11 @@
 {
-  "_doc": "The second weapon set as a stance (docs/design/BUILD_DIRECTION.md round 8; it opens at BUILD_UNLOCKS.md's level, taught_builds.json 'stance'). She keeps the same four keys and three auto slots: the stance weapon FLAVORS every key's blows and never turns a skill off (the coordinator's standing ruling), and each stance has a price. mods: what the stance gives and costs while she is in it (stat ids as Sim/Stats.cs Stat; kind flat, inc or more). blow: what her key skills' landed blows carry in it (every: each Nth landed blow; stun seconds on a creature, stagger on a ruler; bleed as a status payload; ward: seconds off her Warding light's recharge, Stat.Block). strike: the swap strike, fired when she swaps INTO this set, on its own internal cooldown so swapping cannot be spammed (radius m around her, damage before her multipliers, grown by her basic attack's rank like a skill's Growth). sets: set A's own swap strike, by calling (set A is her calling weapon: no flavor, no price). Read by Content/Stances.cs; run by Sim/Stance.cs. StanceTests hold that every stance costs something set A does not pay, gives something set A lacks, and that none is better than another on every axis.",
+  "_doc": "The second weapon set as a stance (docs/design/BUILD_DIRECTION.md round 8; it opens at BUILD_UNLOCKS.md's level, taught_builds.json 'stance'). She keeps the same four keys and three auto slots: the stance weapon FLAVORS every key's blows and never turns a skill off (the coordinator's standing ruling), and each stance has a price. mods: what the stance gives and costs while she is in it (stat ids as Sim/Stats.cs Stat; kind flat, inc or more). blow: what her key skills' landed blows carry in it (every: each Nth landed blow; stun seconds on a creature, stagger on a ruler; bleed as a status payload; ward: seconds off her Warding light's recharge, Stat.Block). strike: the swap strike, fired when she swaps INTO this set, on its own internal cooldown so swapping cannot be spammed (radius m around her, damage before her multipliers, grown by her basic attack's rank like a skill's Growth). kinds: (bd-wire) the weapon kinds (an item's icon, else its base's) that pick this stance when worn as her second set, in the off-hand slot (SkillBook.WornStance). sets: set A's own swap strike, by calling (set A is her calling weapon: no flavor, no price). Read by Content/Stances.cs; run by Sim/Stance.cs. StanceTests hold that every stance costs something set A does not pay, gives something set A lacks, and that none is better than another on every axis.",
   "sets": {
     "warden": { "strike": { "name": "Greatsword Draw", "radius": 3.4, "damage": 46, "cooldown": 6, "knockback": 1.6, "stun": 0.4 } }
   },
   "stances": [
     {
-      "id": "shield", "name": "Bulwark", "weapon": "sword and shield",
+      "id": "shield", "name": "Bulwark", "weapon": "sword and shield", "kinds": ["shield"],
       "flavor": "Her blows block and stun: each landed blow brings her Warding light back sooner, and every third stuns.",
       "mods": [
         { "stat": "block", "kind": "flat", "value": 1 },
@@ -17,7 +17,7 @@
       "strike": { "name": "Shield Slam", "radius": 3.0, "damage": 38, "cooldown": 8, "knockback": 2.2, "stun": 1.0 }
     },
     {
-      "id": "twin_blades", "name": "Twin Fangs", "weapon": "two blades",
+      "id": "twin_blades", "name": "Twin Fangs", "weapon": "two blades", "kinds": ["sword", "dagger", "cleaver", "axe"],
       "flavor": "Her blows come faster and bleed.",
       "mods": [
         { "stat": "cooldown", "kind": "more", "value": -0.18 },
@@ -29,7 +29,7 @@
       "strike": { "name": "Crossing Fangs", "radius": 3.6, "damage": 30, "cooldown": 6, "knockback": 0.6, "bleed": { "kind": "bleed", "chance": 1, "power": 0.6, "duration": 4, "stack": true } }
     },
     {
-      "id": "mace", "name": "Breaker", "weapon": "mace",
+      "id": "mace", "name": "Breaker", "weapon": "mace", "kinds": ["mace", "hammer"],
       "flavor": "Her blows stagger: they hit harder and throw them, and every second one rocks them on their feet.",
       "mods": [
         { "stat": "damage", "kind": "more", "value": 0.08 },

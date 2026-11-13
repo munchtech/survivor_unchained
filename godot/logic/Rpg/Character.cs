@@ -890,9 +890,7 @@ public static class Character
                 Kindle(kit, kin.Kindled!);
             }
             GearSkills(ch, it, def, s, kit.Weapons);
-            // Auto skills a great piece grants: every one worn, stacked, none refused for her calling.
-            foreach (var (skill, rank) in def.Auto ?? new())
-                if (Content.Weapons.All.ContainsKey(skill) && kit.AutoSkills.All(w => w.Id != skill)) kit.AutoSkills.Add((skill, rank));
+            GearAutos(def, kit.AutoSkills);
             // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
             // twice is the finer of the two (design 20.3).
             if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
@@ -908,7 +906,7 @@ public static class Character
         }
         foreach (var (id, rank) in SkillBook.Carried(ch))
             if (kit.Weapons.All(w => w.Id != id)) kit.Learned.Add((id, rank));
-        kit.Bar = Bar(ch, kit.Weapons, kit.Autos);
+        kit.Bar = Bar(ch, kit.Weapons, kit.Autos, kit.AutoSkills);
         foreach (var t in ch.Traits)
         {
             var td = Callings.Trait(t);
@@ -956,15 +954,34 @@ public static class Character
         }
     }
 
+    /// <summary>(bd-wire) The auto skills one worn great piece grants (ItemDef.Auto), into the list: every one worn, stacked,
+    /// none refused for her calling (Kit and DaySkills share it).</summary>
+    static void GearAutos(ItemDef def, List<(string Id, int Rank)> into)
+    {
+        foreach (var (skill, rank) in def.Auto ?? new())
+            if (Content.Weapons.All.ContainsKey(skill) && into.All(w => w.Id != skill)) into.Add((skill, rank));
+    }
+
+    /// <summary>(bd-wire) Can run itself as an item's auto skill: anything but a pressed-only record (a key's, with no
+    /// kindled option) or a Union (two keys' worth). Such a grant lies idle.</summary>
+    public static bool RunsAsItemAuto(string id) =>
+        Content.Weapons.All.ContainsKey(id) && !Content.Weapons.KeyOnly(id) && !Content.Weapons.IsUnion(id);
+
     /// <summary>The skills she fights with by day, in the order the fight takes them up (Character.Bar: her keys, her auto
     /// slots, her gear's auto skills), each at its rank: the Battle's Weapons before any draft.</summary>
     /// <param name="gearOnly">Only the gear's, every one (by night these come in at their ranks; the rest the ember drafts).</param>
     public static List<(string Id, int Rank)> DaySkills(CharacterData ch, bool gearOnly = false)
     {
         var gear = new List<(string Id, int Rank)>();
+        var itemAutos = new List<(string Id, int Rank)>();
         foreach (var s in Items.EquipSlots)
-            if (ch.Equipment[s] is { } it) GearSkills(ch, it, Items.Get(it.Def), s, gear);
-        if (!gearOnly) return Bar(ch, gear, new HashSet<string>());
+            if (ch.Equipment[s] is { } it)
+            {
+                var def = Items.Get(it.Def);
+                GearSkills(ch, it, def, s, gear);
+                GearAutos(def, itemAutos);
+            }
+        if (!gearOnly) return Bar(ch, gear, new HashSet<string>(), itemAutos);
         var o = new List<(string Id, int Rank)>();
         foreach (var (id, rank) in gear)
             if (o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id)) o.Add((id, rank));
@@ -978,7 +995,11 @@ public static class Character
     /// the keys open at her level in key order (ch.Slotted's: learned skills, and worn ones she put in a key), a pressed
     /// skill her gear grants in a key still free, her auto slots open at her level, then every auto skill her gear grants
     /// (item auto skills stack with no cap). A skill learned and worn takes its learned rank. `autos` gets what runs itself.</summary>
-    public static List<(string Id, int Rank)> Bar(CharacterData ch, List<(string Id, int Rank)> gear, HashSet<string> autos)
+    /// <param name="itemAutos">(bd-wire) The auto skills her great pieces grant (CombatKit.AutoSkills): each runs itself after
+    /// her auto slots, never takes a key, whatever her calling may carry; one already on her bar stays where it is, and one she
+    /// has learned runs at its learned rank. A pressed-only skill or a Union cannot run itself and lies idle (RunsAsItemAuto).</param>
+    public static List<(string Id, int Rank)> Bar(CharacterData ch, List<(string Id, int Rank)> gear, HashSet<string> autos,
+        List<(string Id, int Rank)>? itemAutos = null)
     {
         var learned = new Dictionary<string, int>();
         foreach (var (id, rank) in SkillBook.Carried(ch)) learned[id] = rank;
@@ -1008,6 +1029,11 @@ public static class Character
                 if (Content.Weapons.SlotCost(id) <= keys) { keys -= Content.Weapons.SlotCost(id); keyed.Add((id, rank)); }
             }
             else items.Add((id, rank));
+        }
+        foreach (var (id, rank) in itemAutos ?? [])
+        {
+            if (On(id) || items.Exists(w => w.Id == id) || !RunsAsItemAuto(id)) continue;
+            items.Add((id, learned.TryGetValue(id, out var lr) ? lr : rank));
         }
         autos.Clear();
         foreach (var (id, _) in auto.Concat(items)) autos.Add(id);
