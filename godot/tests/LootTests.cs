@@ -522,8 +522,8 @@ public class LootTests
         Assert.True(Drops.EarlyLegendaries().Count() >= 4, "some reachable at the first levels");
         foreach (var d in legends)
         {
-            // A rule, or a number that only holds while you play a certain way.
-            Assert.True((d.Triggers?.Count ?? 0) > 0 || d.Mods?.Any(m => m.When != null) == true, $"{d.Id} only adds numbers");
+            // A rule, a skill it grants (an auto skill of its own), or a number that only holds while you play a certain way.
+            Assert.True((d.Triggers?.Count ?? 0) > 0 || d.Auto is { Count: > 0 } || d.Mods?.Any(m => m.When != null) == true, $"{d.Id} only adds numbers");
             Assert.False(string.IsNullOrWhiteSpace(d.Lore), $"{d.Id} has no lore");
             Assert.False(Crafting.Workable(d), $"{d.Id} is somebody's work");
             if (d.Of != null) Assert.Equal(Items.Get(d.Of).Kind, d.Kind);
