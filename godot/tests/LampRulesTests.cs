@@ -8,7 +8,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>The warden quarter's and the crossings' phase-1 rules, read by the fight (docs/design/CLASSES.md 2).</summary>
 public sealed class LampRulesTests
 {
-    static LampEffect Rule(string id, params (string, double)[] args)
+    internal static LampEffect Rule(string id, params (string, double)[] args)
     {
         var d = new Dictionary<string, double>();
         foreach (var (k, v) in args) d[k] = v;

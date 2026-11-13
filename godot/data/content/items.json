@@ -1510,7 +1510,8 @@
        "radius": 2.6,
        "damage": 0.5,
        "basis": "hit",
-       "school": "physical"
+       "school": "physical",
+       "at": "her"
       }
      ],
      "text": "Standing still, a blow that lands rings steel round you"
@@ -1560,7 +1561,8 @@
        "radius": 4.5,
        "damage": 0.6,
        "basis": "hit",
-       "school": "holy"
+       "school": "holy",
+       "at": "her"
       }
      ],
      "text": "Heroic Leap's landing rings again, in light"

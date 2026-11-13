@@ -975,7 +975,7 @@ public static partial class Firing
     }
 
     public static void ChainFrom(Battle b, double x0, double z0, Enemy first, int jumps, double reach, double dmg,
-        School school, Tag[] tags, WeaponInst? w, bool fork = false, bool sky = false, int depth = 0)
+        School school, Tag[] tags, WeaponInst? w, bool fork = false, bool sky = false, int depth = 0, bool fromHit = false)
     {
         var hit = new HashSet<int>();
         var points = new List<double> { x0, z0 };
@@ -987,7 +987,7 @@ public static partial class Firing
             points.Add(cur.X); points.Add(cur.Z);
             b.HitEnemy(cur, dmg * Math.Pow(0.92, j), school, tags, new HitOpts
             {
-                Weapon = w, Status = w?.StatusOf, Depth = depth, BossDamage = w?.Def.BossDamage,
+                Weapon = w, Status = w?.StatusOf, Depth = depth, BossDamage = w?.Def.BossDamage, FromHit = fromHit,
             });
             if (sky) b.Events.Emit(new Ev.Strike { X = cur.X, Z = cur.Z, Radius = 0.9, School = school, Delay = 0, Art = "arc_sky", Rank = w?.Rank ?? 1 });
             var next = b.NearestHostile(cur.X, cur.Z, reach, e => !hit.Contains(e.Id));
@@ -1005,7 +1005,7 @@ public static partial class Firing
             var f = queue[i];
             if (hit.Contains(f.Id)) continue;
             var pts = new[] { points[^2], points[^1], f.X, f.Z };
-            b.HitEnemy(f, dmg * 0.7, school, tags, new HitOpts { Weapon = w, Depth = depth });
+            b.HitEnemy(f, dmg * 0.7, school, tags, new HitOpts { Weapon = w, Depth = depth, FromHit = fromHit });
             b.Events.Emit(new Ev.Chain { Points = pts, School = school, Art = w?.Art, Rank = w?.Rank ?? 1 });
         }
     }

@@ -284,7 +284,8 @@ public sealed partial class Battle
             e.Status.Remove(StatusKind.Frozen);
             e.ThawT = e.Elite ? 5 : 3;
             shattering = true;
-            Explode(e.X, e.Z, r, dmg * share, School.Frost, ShatterTags, null, o.Depth + 1);
+            // (SU-078 L1) a share of her blow is part of it: her side of it (the struck thing's share out), dealt FromHit
+            Explode(e.X, e.Z, r, (blowTaken > 1e-9 ? dmg / blowTaken : 0) * share, School.Frost, ShatterTags, null, o.Depth + 1, fromHit: true);
             shattering = false;
         }
     }

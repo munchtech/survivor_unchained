@@ -44,6 +44,10 @@ public sealed class TriggerCond
 [System.Text.Json.Serialization.JsonConverter(typeof(EffectConverter))]
 public abstract record Effect
 {
+    /// <summary>(SU-083) Where an effect bursts: where its event was (the struck or fallen thing, the blast; her when the
+    /// event has no place), or round her. Written as "at": "her".</summary>
+    public enum Origin { Event, Her }
+    public Origin At { get; init; }
     public sealed record Explode(double Radius, double Damage, Basis Basis, School School, StatusPayload? Status = null) : Effect;
     /// <summary>Target Hit: the struck; otherwise the toughest Count nearby.</summary>
     public sealed record Apply(StatusPayload Payload, bool OnHit, double Radius = 8, int Count = 1) : Effect;

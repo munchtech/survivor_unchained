@@ -24,7 +24,7 @@ public sealed class EffectConverter : JsonConverter<Effect>
         School Sc() => EnumKey<School>.Parse(S("school", "physical"));
         Basis B() => S("basis", "flat") switch { "hit" => Basis.Hit, "maxhp" => Basis.MaxHp, "weapon" => Basis.Weapon, _ => Basis.Flat };
         StatusPayload? P(string k = "status") => e.TryGetProperty(k, out var v) ? v.Deserialize<StatusPayload>(o) : null;
-        return kind switch
+        Effect fx = kind switch
         {
             "explode" => new Effect.Explode(N("radius"), N("damage"), B(), Sc(), P()),
             "status" => new Effect.Apply(P()!, S("target") == "hit", N("radius", 8), I("count", 1)),
@@ -45,6 +45,8 @@ public sealed class EffectConverter : JsonConverter<Effect>
             "ember" => new Effect.Ember(N("amount")),
             _ => throw new JsonException($"no trigger effect '{kind}'"),
         };
+        // (SU-083) where it bursts: "her", or (left out) where the event was
+        return S("at") switch { "her" => fx with { At = Effect.Origin.Her }, "" or "event" => fx, var at => throw new JsonException($"no effect origin '{at}'") };
     }
 
     /* The inverse of Read: each kind's fields under Read's names, a field left
@@ -85,6 +87,7 @@ public sealed class EffectConverter : JsonConverter<Effect>
             case Effect.Ember e: Do("ember"); N("amount", e.Amount); break;
             default: throw new JsonException($"no trigger effect for {v.GetType().Name}");
         }
+        if (v.At == Effect.Origin.Her) w.WriteString("at", "her");
         w.WriteEndObject();
     }
 }
