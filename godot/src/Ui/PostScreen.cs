@@ -128,9 +128,9 @@ public partial class PostScreen : Overlay
         var row = Style.H(36);
         root.AddChild(row);
         foreach (var r in pg.Roads) row.AddChild(RoadPanelOf(r, pg, PW));
-        var foot = Style.Label(RoadPageModel.Foot, Style.TextItalic, 17, Kit.Dim, false, HorizontalAlignment.Center, false);
+        var foot = Style.Label(RoadPageModel.Foot, Style.TextItalic, 18, Kit.Ink, false, HorizontalAlignment.Center, true);
         root.AddChild(foot);
-        var back = Kit.Word("Back", Back, Kit.Ink2, 18);
+        var back = Kit.Word("Back", Back, Kit.Ink, 20);
         back.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         root.AddChild(back);
     }

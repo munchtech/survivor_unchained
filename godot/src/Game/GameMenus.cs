@@ -72,6 +72,8 @@ public partial class Game
     public void Open(string kind)
     {
         if (scene == null || Mode != "play") return;
+        // (bd-ui2) post:ID: a lamp-post's menu (Shots' --open ID@T comes here, not through the tour's own open).
+        if (kind.StartsWith("post:")) { OpenPost(kind[5..].Split('@')[0]); return; }
         Overlay o = kind switch
         {
             "inventory" => new InventoryScreen(this),

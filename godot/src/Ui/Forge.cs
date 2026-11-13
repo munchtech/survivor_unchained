@@ -396,6 +396,8 @@ public partial class ForgeScreen : Overlay
     void Lay(VBoxContainer v, Offer offer, string title, string? note)
     {
         var groups = offer.Groups;
+        // (bd-ui2) --anvil DEF:rarity opens on the Quench tab, for pictures of its card.
+        if (craftTab == null && Args.Get("anvil") is { } av && av.Contains(':') && groups.Contains("Quench")) craftTab = "Quench";
         if (craftTab == null || !groups.Contains(craftTab))
             craftTab = groups.FirstOrDefault(g => offer.Cards.Any(c => c.Group == g && c.Ok)) ?? groups.FirstOrDefault();
         int on = Math.Max(0, groups.IndexOf(craftTab ?? ""));
@@ -673,7 +675,7 @@ public partial class ForgeScreen : Overlay
             if (q.Blocked != null && (q.Takes.Count == 0 || it.Remade == G.Journey.World.Day)) o.Note(q.Blocked);
             else o.Add(Card(q.Title, q, () => Work(q, () => { Sound.Sfx.Anvil(4); Sound.Sfx.Loot(true); }), "Remake", "remake"));
         }
-        if (Crafting.Does(crafter, Verb.Quench)) o.Add(QuenchCard(it));
+        if (Crafting.Does(crafter, Verb.Quench)) { o.Group = "Quench"; o.Add(QuenchCard(it)); o.Group = "The piece"; }
         if (Crafting.Does(crafter, Verb.Rekindle))
         {
             var q = Crafting.Rekindle(X, it, crafter);
