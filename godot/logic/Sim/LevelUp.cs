@@ -497,29 +497,34 @@ public static class LevelUp
         int Open() => System.Math.Max(0, count - offers.Count);
         // What a guarantee put there stays there (the last guarantee does not swap it out).
         var kept = new HashSet<Offer>(offers);
-        void Add(Cand? c)
+        // Guarantee priority, highest first: evolve/union (never swapped) > advancement (two or more
+        // carried) > catalyst pity > attuned first drafts > new weapon while young > rare-passive pity >
+        // at least one combat skill. When guarantees fill every slot, advancement replaces the lowest.
+        var prio = new Dictionary<Offer, int>();
+        void Add(Cand? c, int pr = 0)
         {
             if (c == null) return;
             offers.Add(c.O);
             kept.Add(c.O);
+            prio[c.O] = pr;
             combat.Remove(c);
             passive.Remove(c);
         }
         bool IsCombat(Offer o) => o.Kind is OfferKind.Rank or OfferKind.Weapon or OfferKind.Evolve or OfferKind.Hone;
         // A rare passive does not go missing for more than RareFloor drafts.
         if (Open() > 0 && mem.RarePity >= RareFloor && !offers.Any(o => o.Kind == OfferKind.Boon && o.Rarity >= Rarity.Rare))
-            Add(TakeFrom(b, passive, c => c.O.Rarity >= Rarity.Rare));
+            Add(TakeFrom(b, passive, c => c.O.Rarity >= Rarity.Rare), 2);
         // A weapon ready to evolve does not wait more than CatalystPity drafts for its passive.
         foreach (var w in waiting)
             if (Open() > 0 && mem.CatalystWait.GetValueOrDefault(w.Id) >= CatalystPity && !offers.Any(o => IsCatalyst(o, w)))
-                Add(TakeFrom(b, passive, c => c.Catalyst.Contains(w.Id)));
+                Add(TakeFrom(b, passive, c => c.Catalyst.Contains(w.Id)), 5);
         // The first drafts bring what was carried by day.
         if (Open() > 0 && mem.SkillDrafts < AttunedDrafts && !offers.Any(o => o.Attuned))
-            Add(TakeFrom(b, combat, c => c.Attuned));
+            Add(TakeFrom(b, combat, c => c.Attuned), 4);
         // At least one combat skill; until three are carried, a new one among them.
         bool young = b.Weapons.Count < 3;
-        if (Open() > 0 && young && !offers.Any(o => o.Kind == OfferKind.Weapon)) Add(TakeFrom(b, combat, c => c.NewWeapon));
-        if (Open() > 0 && !offers.Any(IsCombat)) Add(TakeFrom(b, combat));
+        if (Open() > 0 && young && !offers.Any(o => o.Kind == OfferKind.Weapon)) Add(TakeFrom(b, combat, c => c.NewWeapon), 3);
+        if (Open() > 0 && !offers.Any(IsCombat)) Add(TakeFrom(b, combat), 1);
         var both = combat.Concat(passive).ToList();
         while (Open() > 0 && TakeFrom(b, both) is { } c) { offers.Add(c.O); combat.Remove(c); passive.Remove(c); }
         // Once two are carried, always something that ranks what you carry.
@@ -529,7 +534,12 @@ public static class LevelUp
             var adv = TakeFrom(b, combat.Concat(passive).Where(c => c.Advancing).ToList());
             int swap = offers.FindLastIndex(o => !kept.Contains(o));
             if (adv != null && swap >= 0) offers[swap] = adv.O;
-            else if (adv != null) offers.Add(adv.O);
+            else if (adv != null && prio.Count > 0)
+            {
+                // Every slot is a guarantee: advancement outranks all but the earned evolutions.
+                var low = offers.Where(prio.ContainsKey).OrderBy(o => prio[o]).First();
+                offers[offers.IndexOf(low)] = adv.O;
+            }
         }
 
         if (offers.Count == 0) offers = Respite(blessing: false, great: false);
@@ -658,8 +668,10 @@ public static class LevelUp
             if (ranks.Count == 0)
             {
                 b.HealPlayer(b.MaxHp * 0.3, "chest");
-                b.GoldGained += 25;
-                got.Add(new ChestItem(ChestItemKind.Gold, "gold", "Gold and a draught", "coin", 0, 0, Rarity.Common, null, null));
+                // Unused slots are not lost: one draught, and 25 gold for every slot left.
+                int gold = 25 * (count - i);
+                b.GoldGained += gold;
+                got.Add(new ChestItem(ChestItemKind.Gold, "gold", $"{gold} gold and a draught", "coin", 0, 0, Rarity.Common, null, null));
                 break;
             }
             var pick = ranks[b.Rng.Int(0, ranks.Count - 1)];
