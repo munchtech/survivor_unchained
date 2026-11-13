@@ -2141,16 +2141,30 @@ public static class People
     /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
     /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
     /// cel_fill_tone), so the shade keeps all of NpcCelTone's warmth (without it, less warmth read lilac in the shade
-    /// under her jaw: the lilac NpcCelTone first fixed). warm 1: NpcCelTone and a white fill, exactly as before.</summary>
+    /// under her jaw: the lilac NpcCelTone first fixed). The fill also takes NpcFillShift by 1 - warm: a darker paint
+    /// keeps less of the sky's blue in its shade, as deeper skin takes less of a blue light back (NpcFillShift).
+    /// warm 1: NpcCelTone and a white fill, exactly as before.</summary>
     public static (Vector3 Albedo, Vector3 Fill) NpcCelSplit(float warm)
     {
         var k = NpcCelTone;
         if (warm >= 1f) return (k, Vector3.One);
         warm = Mathf.Max(warm, 0f);
-        float lk = 0.2126f * k.X + 0.7152f * k.Y + 0.0722f * k.Z;
+        float lk = Lum(k);
         var a = new Vector3(lk * Mathf.Pow(k.X / lk, warm), lk * Mathf.Pow(k.Y / lk, warm), lk * Mathf.Pow(k.Z / lk, warm));
-        return (a, new Vector3(k.X / a.X, k.Y / a.Y, k.Z / a.Z));
+        var f = new Vector3(k.X / a.X, k.Y / a.Y, k.Z / a.Z);
+        float t = 1f - warm;
+        var g = f * new Vector3(1f + NpcFillShift.X * t, 1f, 1f - NpcFillShift.Y * t);
+        return (a, g * (Lum(f) / Lum(g)));
+        static float Lum(Vector3 c) => 0.2126f * c.X + 0.7152f * c.Y + 0.0722f * c.Z;
     }
+
+    /// <summary>The fill's shift at none of the warmth (NpcCelSplit; linear, at the fill's own luminance): red up by X,
+    /// blue down by Y. The key's fill (the sky's hue) is nearly all of an NPC's shade by day (the sky's own light under
+    /// 0.02 L of it, x18 V3 r2 bisect), and on the V3 smith (0.65 of her paint) it read dusty rose beside its lit side:
+    /// under the jaw Oklab .58/.091/h29.8 and under the breast .56/.095/h32.6 against the lit chest's h48 (judge r2). With
+    /// it .577/.100/h41.2 and .559/.102/h40.8, the lit side unchanged (.707/.118/h48.0). (Blue alone: 0.30 h39.9 C .095,
+    /// 0.45 h45.0 and 0.60 h50.0, apricot; red without blue's fall greys it.)</summary>
+    static readonly Vector2 NpcFillShift = new(0.04f, 0.36f);
 
     static readonly Dictionary<ulong, float> npcMean = new();
     static float? refHeadMean, refBodyMean;
