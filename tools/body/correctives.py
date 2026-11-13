@@ -696,7 +696,8 @@ def load_conf(conf_path=None):
         base = load_conf(conf["extends"])
         over = {j["name"]: j for j in conf.get("joints", [])}
         joints = [over.pop(j["name"], j) for j in base["joints"]] + list(over.values())
-        conf = dict(base, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
+        extra = {k: v for k, v in conf.items() if k not in ("extends", "joints", "solve")}   # (fold_relax_joints)
+        conf = dict(base, **extra, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
     return conf
 
 

@@ -110,6 +110,7 @@ def relax(out, tier, jname, cfg, turn_normals=True, ns=0, write=True):
             p.targets[n.replace("{s}", "l")], p.targets[n.replace("{s}", "r")] = Dl, Dr
 
     hist, touched, wmin = [], {n: np.zeros(nw, bool) for n in names}, float(cfg.get("w_min", 0.02))
+    stall, best = 0, None
     for _ in range(int(cfg.get("rounds", 10))):
         marks, cnt = {}, 0
         for lab, G, kd in src:
@@ -133,13 +134,20 @@ def relax(out, tier, jname, cfg, turn_normals=True, ns=0, write=True):
         hist.append(cnt)
         if cnt == 0 or not marks:
             break
+        # a round that does not cut the count by a tenth widens the next one (2 rows more, the iterations again): the
+        # fold a shape's own slope makes across the fixed ring of a narrow window is not smoothed away inside it
+        # (round_39c close plateaued at 36 with rows 3, iters 10)
+        if best is not None and cnt > 0.9 * best:
+            stall = min(stall + 1, int(cfg.get("max_stall", 4)))
+        best = cnt if best is None else min(best, cnt)
+        rows_, iters_ = int(cfg.get("rows", 3)) + 2 * stall, int(cfg.get("iters", 10)) * (1 + stall)
         for n, mk in marks.items():
-            for _ in range(int(cfg.get("rows", 3))):
+            for _ in range(rows_):
                 mk = mk | ((Ab @ mk.astype(float)) > 0)
             mk &= left
             touched[n] |= mk
             D = Dw[n]
-            for _ in range(int(cfg.get("iters", 10))):
+            for _ in range(iters_):
                 Dn = 0.5 * D + 0.5 * (L @ D)
                 D[mk] = Dn[mk]
             D[~left] = 0.0
@@ -167,10 +175,12 @@ def run(out, tier="close", conf_path=None, turn_normals=True):
     conf = correctives.load_conf(conf_path)
     ns = int(conf["solve"].get("normal_smooth", 0))
     rep = {}
+    also = conf.get("fold_relax_joints", {})     # a body's own relax for a shared joint (her_b: the elbow)
     for jc in conf["joints"]:
-        fr = jc.get("fold_relax")
+        fr = jc.get("fold_relax") or also.get(jc["name"])
         if jc.get("held") or not fr or tier not in fr.get("tiers", ["close", "play"]):
             continue
+        fr = {**fr, **fr.get("per_tier", {}).get(tier, {})}
         rep[jc["name"]] = relax(out, tier, jc["name"], dict(fr, _jc=jc), turn_normals, ns)
         print("SHAPE_RELAX", tier, jc["name"], rep[jc["name"]], flush=True)
     return rep
