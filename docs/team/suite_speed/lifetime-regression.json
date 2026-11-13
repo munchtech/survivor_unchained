@@ -1,0 +1,16 @@
+{
+  "portedFix": "531307d9b",
+  "validationNotes": "649444ca0",
+  "red": {
+    "outcome": "Failed",
+    "seconds": 34.6650818,
+    "lifetimeFailureReported": true
+  },
+  "green": {
+    "outcome": "Passed",
+    "seconds": 30.8505345,
+    "lifetimeFailureReported": false
+  },
+  "drawingBodyUnchanged": true,
+  "drawingBodySha256": "65bfb523482aec46aa87f42f615f42cafd2b970843d87ce487c7633351d92c22"
+}

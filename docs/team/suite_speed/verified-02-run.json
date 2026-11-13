@@ -1,0 +1,14 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 209.6633448,
+  "finishedUtc": "2026-11-12T18:37:10.0709660Z",
+  "otherTestHostsAtStart": [],
+  "source": "8d30ec648 + speed cuts + lifetime dependency 531307d9b",
+  "passed": 2364,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsMatched": 35,
+  "configuration": "Debug",
+  "optimize": true
+}

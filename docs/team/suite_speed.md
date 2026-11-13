@@ -88,6 +88,29 @@ an immutable, lazily loaded number.
 
 ## Validation
 
+### Required DraftCardFit dependency
+
+The unfixed gate reproduced the known native crash on merged run 02:
+2,363 passed, 1 failed, 11 skipped in 336.199 s. Godot aborted at
+`OrnateBox.Make` / `tie_user_managed_to_unmanaged`, exit `0xC000001D`.
+That run resets the consecutive-green count and is retained in the raw logs.
+
+The already validated dependency from `codex/draft-card-fit@531307d9b` is now
+ported exactly: a static root retains the frame type's native Script, and the
+card harness checks its lifetime across forced collection. The focused
+regression failed before that root and passed after it on this integration,
+with 1,914 cards still checked. The drawing body, fonts, colors, sizes, layout,
+and player text are unchanged. The lifetime check synchronizes with finalizer
+completion rather than waiting a fixed amount of time.
+
+[lifetime-regression.json](suite_speed/lifetime-regression.json) records the
+red/green results and the unchanged drawing-body hash. The original dependency
+report and ten earlier full green runs are in [draft_card_fit.md](draft_card_fit.md).
+Its existing union-gather coverage limitation remains open; this job preserves
+the baseline's card coverage. The three full runs with this dependency passed.
+
+### Earlier measurements
+
 The first optimized run on `94efc00bd` passed 2,358/0/11 in 773.476 s
 (12m 53s), with all 35 stationary outputs identical and all 1,914 cards checked.
 That is 17.6% below the 939.234 s baseline, despite another test host at its
@@ -95,9 +118,15 @@ start. The wrapper was interrupted before its second run executed tests; this
 is one completed validation run, not three. Integration subsequently advanced
 to `8d30ec648`; three fresh full runs are required after merging it.
 `94efc00bd` itself adds only audit documentation over the measured `c29abb87a` code.
-The comparison tool requires identical test names and outcomes, the same real
-card-fit count, and identical diagnostic output from all 35 cases in the five
-stationary harnesses. A source comparison also checks every `Assert.` line.
+The comparison tool requires every original test name and outcome, the same
+real card-fit count, and identical diagnostic output from all 35 cases in the
+five stationary harnesses. A source comparison checks every original `Assert.`
+line. Discovery on `8d30ec648` retained all 2,369 original cases and added
+exactly six cases in `DelayedStrikeCastTests` and `RuleWickProgressionTests`.
+Their exact names are in [upstream-cases.json](suite_speed/upstream-cases.json);
+the tool requires all six to pass and rejects any other case-count difference.
+The latest merged gate therefore expects 2,364 passed, 0 failed, 11 skipped.
+This job adds, deletes, and skips no tests.
 
 Raw TRX files, console logs, wall times, and comparison logs are retained under
 `godot/tests/results/suite-speed/` (ignored). Committed CSV files preserve every
@@ -107,5 +136,17 @@ comparison:
 ```powershell
 # From godot/tests; include build/restore in the wall timer.
 dotnet test --logger "trx;LogFileName=run.trx" --results-directory results/suite-speed
-python ../../tools/suite_speed.py results/suite-speed/run.trx --out results/suite-speed/run.csv --compare results/suite-speed/before-isolated.trx
+python ../../tools/suite_speed.py results/suite-speed/run.trx --out results/suite-speed/run.csv --compare results/suite-speed/before-isolated.trx --upstream-cases ../../docs/team/suite_speed/upstream-cases.json
 ```
+
+## Completed checkpoint on 8d30ec648
+
+All three consecutive full suites passed 2,364/0/11, with 1,914 real card checks
+and 35 identical stationary outputs each. Wall times were 224.383, 209.663, and
+235.012 seconds (median 224.383 s, versus 939.234 s before the cuts). Their full
+per-case CSVs and run metadata are under `suite_speed/verified-01` through `03`.
+
+Integration later advanced to `e54402034`, with additional fixes and 192 balance
+seeds plus eight crowd rolls. This checkpoint is preserved; a current-baseline
+measurement and new merged-tree validation are pending. No expanded upstream
+coverage will be reduced.

@@ -47,16 +47,28 @@ def main():
     parser.add_argument("trx", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--compare", type=Path)
+    parser.add_argument("--upstream-cases", type=Path,
+                        help="Exact added cases discovered after an integration merge; all must pass.")
     args = parser.parse_args()
+    if args.upstream_cases and not args.compare:
+        parser.error("--upstream-cases requires --compare")
     root, rows = read(args.trx)
     if not rows:
         raise SystemExit("No test results; an aborted runner is not a timing baseline.")
     card_count = cards(root)
     checked_outputs = 0
+    upstream_count = 0
     if args.compare:
         before_root, before = read(args.compare)
         identity = lambda cases: Counter((r["test"], r["outcome"]) for r in cases)
-        lost, added = identity(before) - identity(rows), identity(rows) - identity(before)
+        expected = identity(before)
+        if args.upstream_cases:
+            names = json.loads(args.upstream_cases.read_text(encoding="utf-8"))["addedCases"]
+            if len(set(names)) != len(names) or set(names) & {r["test"] for r in before}:
+                raise SystemExit("Upstream cases must be unique additions to the baseline.")
+            expected.update((name, "Passed") for name in names)
+            upstream_count = len(names)
+        lost, added = expected - identity(rows), identity(rows) - expected
         if lost or added:
             raise SystemExit(f"Case/outcome mismatch: missing={dict(lost)}, added={dict(added)}")
         if cards(before_root) != card_count:
@@ -74,6 +86,7 @@ def main():
         writer.writerows(rows)
     print(json.dumps({"cases": len(rows), "outcomes": dict(Counter(r["outcome"] for r in rows)),
                       "cards": card_count, "stationaryOutputsMatched": checked_outputs,
+                      "upstreamAddedPasses": upstream_count,
                       "summedCaseSeconds": sum(r["seconds"] for r in rows),
                       "counters": root.find("t:ResultSummary/t:Counters", NS).attrib}))
     for i, r in enumerate(rows[:25], 1):

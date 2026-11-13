@@ -1,0 +1,12 @@
+{
+  "baseline": "c29abb87a",
+  "integration": "8d30ec648",
+  "addedCases": [
+    "SurvivorUnchained.Tests.DelayedStrikeCastTests.A_strike_scheduled_outside_a_cast_lands_at_x1",
+    "SurvivorUnchained.Tests.DelayedStrikeCastTests.Thunderheads_echo_bolts_land_at_the_echos_share(night: False)",
+    "SurvivorUnchained.Tests.DelayedStrikeCastTests.Thunderheads_echo_bolts_land_at_the_echos_share(night: True)",
+    "SurvivorUnchained.Tests.RuleWickProgressionTests.A_lit_built_turn_evolves_the_skill",
+    "SurvivorUnchained.Tests.RuleWickProgressionTests.A_skill_with_no_strands_shows_no_wick_yet",
+    "SurvivorUnchained.Tests.RuleWickProgressionTests.Taught_leap_charge_and_vow_light_their_planned_lamps_into_the_fight"
+  ]
+}

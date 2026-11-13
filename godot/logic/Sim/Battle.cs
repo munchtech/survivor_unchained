@@ -256,6 +256,9 @@ public struct HitOpts
     /// <summary>(M3 MR 3) The weight of a hit that lands after its cast (a projectile's, stamped at the launch); null: the
     /// weapon's live CutW.</summary>
     public double? W;
+    /// <summary>(SU-050) The strength (WeaponInst.CastMul) of the cast that made a hit landing after it (a scheduled
+    /// strike's, stamped when scheduled: 1 outside its weapon's cast); null: the live cast's (Battle.castingW).</summary>
+    public double? Cast;
 }
 
 /// <summary>What a trigger sees when it fires.</summary>
@@ -2151,7 +2154,7 @@ public sealed partial class Battle
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
         // (M3 MR 3) made inside a chained cut it lands after the cast, when CutW reads 1 again: it carries the cut's weight
-        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1 }));
+        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1, Cast = CastOf(weapon) }));
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2565,7 +2568,7 @@ public sealed partial class Battle
 
     /// <summary>An area blast from the survivor's side. Raises Explode for procs. w: the weight of a blast that goes
     /// off after its cast (a projectile's splash carries its stamp, HitOpts.W); null: the weapon's live CutW.</summary>
-    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null)
+    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null, double? cast = null)
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
@@ -2575,7 +2578,7 @@ public sealed partial class Battle
         {
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
-            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
+            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Cast = cast, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
@@ -2674,7 +2677,7 @@ public sealed partial class Battle
                 try
                 {
                     if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
-                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W);
+                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W, s.Cast);
                 }
                 finally
                 {
@@ -3417,6 +3420,9 @@ sealed class StrikeSpec
     public WeaponInst? Weapon;
     /// <summary>(M3 MR 3) The weight of the cut that made it (WeaponInst.CutW then); 1 for a whole blow or no weapon.</summary>
     public double W = 1;
+    /// <summary>(SU-050) The strength of the cast that scheduled it (its weapon's CastMul inside that cast, else 1),
+    /// applied once when it lands (HitOpts.Cast), never the weapon's CastMul then.</summary>
+    public double Cast = 1;
     /// <summary>(M3 MR 3 b2) The banked chained cut it is part of (Battle.BillStrike): its hit pays the cut, the last
     /// of the cut's strikes and projectiles gone with nothing struck refunds it.</summary>
     internal Firing.CutBill? Bill;

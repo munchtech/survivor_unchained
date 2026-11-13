@@ -1,0 +1,15 @@
+{
+  "source": "8d30ec648",
+  "runs": [
+    224.3831335,
+    209.6633448,
+    235.0121144
+  ],
+  "medianSeconds": 224.3831335,
+  "consecutiveGreen": 3,
+  "passed": 2364,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsMatched": 35
+}
