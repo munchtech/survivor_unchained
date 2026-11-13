@@ -177,20 +177,79 @@ public partial class BattleFx
         lootCalling is { } c && p.Payload is Rpg.ItemInstance it && Rpg.Drops.GiftSkill(it, c) is { } sk && Content.Weapons.All.TryGetValue(sk, out var wd)
             ? Ui.ItemViews.SchoolColors[wd.School] : null;
 
-    /// <summary>(bd-ui2) A gift's light, on top of the Legendary's pillar (drawn after this): the gem family's language. A pool of the granted
-    /// skill's school color under the amber, a white-gold four-point star glint every 1.2 s (bigger than the gem's 0.9), and star motes rising in the school color.</summary>
+    static readonly Color GiftCore = Hdr("#fff1c8", 2.6f), GiftRim = Hdr("#ffd77a", 2.2f);
+    sealed class GiftRig { public required Decal Ring1, Ring2; public long Frame; }
+    readonly Dictionary<int, GiftRig> giftRigs = new();
+    static Texture2D? giftRingTex;
+
+    /// <summary>A thin ring (about 5% of its half-width) for a decal.</summary>
+    static Texture2D GiftRingTexture()
+    {
+        if (giftRingTex != null) return giftRingTex;
+        const int N = 256;
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                float r = Mathf.Sqrt(u * u + v * v), d = (r - 0.95f) / 0.035f;
+                float a = Mathf.Exp(-d * d);
+                img.SetPixel(x, y, new Color(a, a, a, a));
+            }
+        return giftRingTex = ImageTexture.CreateFromImage(img);
+    }
+
+    Decal GiftRing()
+    {
+        var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = GiftRingTexture(), AlbedoMix = 0, NormalFade = MarkNormalFade, SortingOffset = DecalLayer.HerGround };
+        AddChild(d);
+        return d;
+    }
+
+    /// <summary>Hides the gift rigs not drawn last frame (a gift taken or gone).</summary>
+    void GiftSweep()
+    {
+        long now = (long)Engine.GetProcessFrames();
+        List<int>? gone = null;
+        foreach (var (id, r) in giftRigs) if (now - r.Frame > 2) (gone ??= new()).Add(id);
+        if (gone != null) foreach (var id in gone) { giftRigs[id].Ring1.QueueFree(); giftRigs[id].Ring2.QueueFree(); giftRigs.Remove(id); }
+    }
+
+    /// <summary>(bd-ui2) A gift's light, on top of the Legendary's pillar: white-gold, never the school's color, so it reads on any ground.
+    /// Two thin white-gold rings round the amber pool (0.9 m and 1.3 m, the near one pulsing), a persistent slowly turning four-point star at the
+    /// foot (0.55 m, flaring to 2x for 0.25 s every 1.2 s), a dozen star motes always rising 2.6 m (school-tinted tails), and a white-gold
+    /// sheath round the pillar. The school's color is only on the label's glyph and the mote tails.</summary>
     void GiftLook(Pickup p, float gy, float t, float age, Color school)
     {
-        float poolIn = age < 0 ? 1 : Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
-        if (poolIn > 0.001f) Light(p.X, Y(p.X, p.Z), p.Z, Lit.Glow, 0, 1.3f, 0.5f, school, 0.85f * poolIn);
+        if (age >= StrikeLife) Light(p.X, gy, p.Z, Lit.Pillar, 0, 2.2f, 1f, new Color("#fff1c8"), 0.3f);
         if (age < 0 || frameDt <= 0) return;
-        var at = V(p.X, gy + 0.3, p.Z);
-        if ((t + p.Id * 0.37f) % 1.2f < frameDt)
-            Sparks.Spawn(at, Vector3.Zero, 0.5f, 1.5f, new Color(1f, 0.92f, 0.62f) * 2.6f, null, 0.15f, sprite: Sprites.Of("star"), spinV: 3);
-        if (R() < 9 * frameDt)
+        float poolIn = Mathf.Clamp((age - Arrive) / 0.25f, 0, 1);
+        if (!giftRigs.TryGetValue(p.Id, out var rig)) giftRigs[p.Id] = rig = new GiftRig { Ring1 = GiftRing(), Ring2 = GiftRing() };
+        rig.Frame = (long)Engine.GetProcessFrames();
+        var g = V(p.X, Y(p.X, p.Z), p.Z);
+        float pulse = 0.85f + 0.15f * (0.5f + 0.5f * Mathf.Sin(t * Mathf.Tau / 1.2f));
+        void Place(Decal d, float r, float a)
         {
-            float a = R() * Mathf.Tau, d = 0.2f + R() * 0.6f;
-            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * d, 0, Mathf.Sin(a) * d), new Vector3(0, 0.8f + R() * 0.5f, 0), 1.2f, 0.14f, school.Lerp(Colors.White, 0.3f) * 2.2f, null, 0.04f, sprite: Sprites.Of("star"), spinV: 2);
+            d.Visible = poolIn > 0.001f;
+            d.Position = g;
+            d.Size = new Vector3(r * 2, 4, r * 2);
+            d.Modulate = new Color(1f, 0.9f, 0.62f, a * poolIn);
+            d.EmissionEnergy = 3.2f;
+        }
+        Place(rig.Ring1, 0.9f, pulse);
+        Place(rig.Ring2, 1.3f, 0.4f);
+        if (poolIn < 0.5f) return;
+        var at = V(p.X, gy + 0.3, p.Z);
+        // The star: always there, turning 20 degrees a second; every 1.2 s it flares to 2x for 0.25 s.
+        float ph = (t + p.Id * 0.37f) % 1.2f;
+        bool flare = ph < 0.25f;
+        Sparks.Spawn(new Sparks.P { At = at, Life = frameDt * 1.5f, Size = flare ? 1.8f : 0.9f, SizeEnd = flare ? 1.8f : 0.9f, Color = flare ? GiftCore * 1.4f : GiftCore, ColorEnd = flare ? GiftCore * 1.4f : GiftCore,
+            Sprite = Sprites.Of("star"), Spin = 0.01f + t * Mathf.DegToRad(20), SpinV = 0 });
+        // Motes: about a dozen alive at once (2.6 m at 1.0 m/s, 4.6 a second).
+        if (R() < 4.6f * frameDt || age < 0.6f && R() < 0.5f)
+        {
+            float a = R() * Mathf.Tau;
+            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.35f, 0, Mathf.Sin(a) * 0.35f), new Vector3(0, 1.0f, 0), 2.6f, 0.15f, GiftCore, school * 1.4f, 0.08f, sprite: Sprites.Of("star"), spinV: 1.5f);
         }
     }
 

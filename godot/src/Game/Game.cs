@@ -1962,7 +1962,7 @@ public partial class Game : Node, IZoneHost
             }
             Texture2D? giftGlyph = null;
             if (tier == LootTier.Legendary && p.Payload is ItemInstance giftIt && b.Calling is { } gcall && Drops.GiftSkill(giftIt, gcall) is { } gsk && Content.Weapons.All.TryGetValue(gsk, out var gdef))
-                giftGlyph = Ui.AutoRow.LineGlyph(Ui.SeatIcon.For(gsk, gdef.Art), 32, Ui.ItemViews.SchoolColors[gdef.School]);
+                giftGlyph = Ui.AutoRow.LineGlyph(Ui.SeatIcon.For(gsk, gdef.Art), 64, Ui.ItemViews.SchoolColors[gdef.School].Lerp(Colors.White, 0.3f));
             o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem, gemDef != null ? GemLook.Of(gemDef) : null, giftGlyph));
             labelNear.Add(d2);
         }

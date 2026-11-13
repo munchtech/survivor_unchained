@@ -61,7 +61,8 @@ public partial class GroundLabels : Control
             int size = l.Loud switch { >= 3 => 21, 2 => 17, 1 => 15, _ => 14 };
             var text = grand ? l.Text.ToUpperInvariant() : l.Text;
             var ts = font.GetStringSize(text, HorizontalAlignment.Left, -1, size);
-            float markW = l.Set || l.Gem || l.Glyph != null ? 18 : 0;
+            float seal = l.Glyph != null ? font.GetAscent(size) * 0.72f + 6 : 0;
+            float markW = l.Glyph != null ? seal + 6 : l.Set || l.Gem ? 18 : 0;
             var box = new Rect2(l.At.X - (ts.X + markW) / 2, l.At.Y - ts.Y - 20, ts.X + markW, ts.Y + 2);
             for (int k = 0; k < 8 && placed.Exists(r => r.Grow(2).Intersects(box)); k++) box.Position -= new Vector2(0, box.Size.Y + 3);
             // Still on another after stepping up (a heap): left unsaid rather than written over it.
@@ -81,8 +82,15 @@ public partial class GroundLabels : Control
                 if (link != null) DrawTextureRect(link, r, false, l.Color);
                 else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, 2, true);
             }
-            // (bd-ui2) A gift's name: the granted skill's line glyph (the bar's own drawing, in its school's color) left of it.
-            if (l.Glyph != null) DrawTextureRect(l.Glyph, new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 16) / 2, 16, 16), false);
+            // (bd-ui2) A gift's name: its skill's line glyph in a round dark seal with a bronze-gold rim, left of the name.
+            if (l.Glyph != null)
+            {
+                var c = new Vector2(box.Position.X + seal / 2, box.Position.Y + box.Size.Y / 2);
+                DrawCircle(c, seal / 2, new Color(0.04f, 0.03f, 0.03f, 0.92f));
+                DrawArc(c, seal / 2 - 1, 0, Mathf.Tau, 28, new Color("#d3a464"), 2, true);
+                float g = seal * 0.7f;
+                DrawTextureRect(l.Glyph, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false);
+            }
             // (W24: the bicolor stone's mark, its label's lilac #B37AB6, is split down the middle: garnet left, sapphire right.)
             bool split = l.Gem && l.Mark is { } lm && lm.IsEqualApprox(BicolorLilac);
             if (l.Gem) DrawGemMark(new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14), split ? new Color("#C8283C") : l.Mark ?? l.Color, split ? new Color("#2F6BFF") : null);
