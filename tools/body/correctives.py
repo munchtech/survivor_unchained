@@ -704,6 +704,26 @@ TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correc
          "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
 
 
+def write_targets(out, tier, rig, shapes, poser, Pb, Tb, turn_normals, ns):
+    """The tier's shapes onto its shapeless base (stage/<f_base>) in the rig's corrective order, each with its normal
+    delta (normal_delta: the base's own normals turned when `turn_normals`), written as <out>/<f_glb>; the shapes saved
+    as stage/<f_shapes>. (run writes them; shape_relax.run rewrites them after relaxing.) poser: an LbsPoser of the base."""
+    f_glb, _, f_base, f_shapes, _ = TIERS[tier]
+    order = []
+    for c in rig["correctives"]:
+        for s in ("l", "r"):
+            order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
+    Nb = None
+    if turn_normals:
+        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
+        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
+        Nb = mb.N.astype(np.float64)
+    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    glbwrite.set_targets(os.path.join(out, "stage", f_base), rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
+    np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
+    return order
+
+
 def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path=None):
     """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base. `turn_normals` (P1 R1
     bake round 2: the export's normals are not its geometric ones, build_topo.her_a_normals): each shape's NORMAL
@@ -876,20 +896,9 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
                                        "keys": {"l": np.round(K, 6).tolist(), "r": np.round(K * mx, 6).tolist()},
                                        "M": {"l": np.round(Mm, 6).tolist(), "r": np.round(Mm, 6).tolist()}})
     # write: the shapes on the body (glTF order: the poser's body points are the mesh's), normals' deltas with them
-    order = []
-    for c in rig["correctives"]:
-        for s in ("l", "r"):
-            order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
-    Nb = None
-    if turn_normals:
-        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
-        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
-        Nb = mb.N.astype(np.float64)
     ns = int(cf.get("normal_smooth", 0))
-    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    order = write_targets(out, tier, rig, shapes, poser, Pb, Tb, turn_normals, ns)
     rep["normal_smooth"] = ns
-    glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
-    np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:
         json.dump(rig, fh, indent=1)
     rep["shapes"] = len(order)
