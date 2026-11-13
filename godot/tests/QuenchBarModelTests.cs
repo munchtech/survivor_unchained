@@ -34,3 +34,30 @@ public class QuenchBarModelTests
         Assert.Equal("6%", QuenchBarModel.Percent(s[0].Fraction));
     }
 }
+
+public class QuenchEffectsTests
+{
+    static string G(int t) => new[] { "I", "II", "III", "IV", "V" }[t];
+
+    [Fact]
+    public void One_shared_grade_reads_from_to()
+    {
+        var e = QuenchBarModel.Effects(new[] { 2, 2 }, 3, 4, 2, 2, 2, G);
+        Assert.Equal("III -> V", e["perfect"]);
+        Assert.Equal("III -> IV", e["up"]);
+        Assert.Equal("stays III", e["nothing"]);
+        Assert.Equal("III -> II", e["down"]);
+        Assert.Equal("III -> I", e["ruin"]);
+    }
+
+    [Fact]
+    public void Capped_floored_mixed_and_empty_pieces_are_stated_honestly()
+    {
+        Assert.Equal("no room above", QuenchBarModel.Effects(new[] { 3 }, 3, 4, 2, 2, 2, G)["up"]);
+        var low = QuenchBarModel.Effects(new[] { 0 }, 3, 4, 2, 2, 2, G);
+        Assert.Equal("stays", low["down"]); Assert.Equal("stays", low["ruin"]);
+        var mix = QuenchBarModel.Effects(new[] { 1, 2, 3 }, 3, 4, 2, 2, 2, G);
+        Assert.Equal("all to V", mix["perfect"]); Assert.Equal("2 powers +1", mix["up"]); Assert.Equal("all -2 grades", mix["ruin"]);
+        Assert.All(QuenchBarModel.Effects(new int[0], 3, 4, 2, 2, 2, G).Values, v => Assert.Equal("no powers to move", v));
+    }
+}

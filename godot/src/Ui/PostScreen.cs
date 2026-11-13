@@ -163,7 +163,7 @@ public partial class PostScreen : Overlay
         lean.AddThemeConstantOverride("v_separation", 4);
         foreach (var id in r.Leaning)
         {
-            var c = Style.H(6, Glyphs.Icon(GlyphOfSkill(id), 24, Style.GoldHi), Style.Label(SkillName(id), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false));
+            var c = Style.H(6, Glyphs.Icon(GlyphOfSkill(id), 22, Style.GoldHi, true), Style.Label(SkillName(id), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false));
             c.MouseFilter = MouseFilterEnum.Stop;
             c.TooltipText = $"{SkillName(id)}: {SkillText(id)}";
             lean.AddChild(c);
@@ -174,8 +174,8 @@ public partial class PostScreen : Overlay
         else if (!r.Walked)
         {
             string id = r.Id;
-            var held = new HeldWord("Walk this road", "", () => { G.PostRoad(post, id); Refresh(); }, 20, Style.EmberHi);
-            held.CustomMinimumSize = new Vector2(0, 34);
+            var held = new HoldPad("Hold to walk this road", () => { G.PostRoad(post, id); Refresh(); }, true, 240);
+            held.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
             Nav.Mark(held, $"road:{id}", held.Nudge);
             v.AddChild(held);
         }
@@ -187,7 +187,7 @@ public partial class PostScreen : Overlay
     {
         var v = Style.V(2);
         v.AddChild(Style.SubLabel(caption));
-        v.AddChild(Style.H(8, Glyphs.Icon(glyph, 26, Style.GoldHi), Style.Label(name, Style.UiBold, 18, Kit.Ink, false, HorizontalAlignment.Left, false)));
+        v.AddChild(Style.H(8, Glyphs.Icon(glyph, 22, Style.GoldHi, true), Style.Label(name, Style.UiBold, 18, Kit.Ink, false, HorizontalAlignment.Left, false)));
         if (text != "") v.AddChild(Style.Label(text, Style.Ui, 15, Kit.Ink2, true));
         return v;
     }

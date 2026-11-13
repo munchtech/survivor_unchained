@@ -705,13 +705,29 @@ public partial class ForgeScreen : Overlay
     {
         var q = Crafting.Quench(X, it, crafter);
         q.After = null;
-        var card = (VBoxContainer)Card("QUENCH IN OPEN FLAME", q, () => Work(q, () => { Sound.Sfx.Anvil(4); Sound.Sfx.Loot(true); }), "Quench", "quench",
-            null, "Once a piece. It is set after.", hold: true);
-        var strip = QuenchStrip();
-        if (!q.Ok) { strip.Modulate = new Color(1, 1, 1, 0.45f); }
-        card.AddChild(strip);
-        card.MoveChild(strip, 1);
-        return card;
+        var v = Style.V(3);
+        v.CustomMinimumSize = new Vector2(CardW, 0);
+        v.SetMeta("ok", q.Ok);
+        v.AddChild(Style.Label("QUENCH IN OPEN FLAME", Style.DisplayLight, 19, q.Ok ? Kit.Ink : Kit.Faint, false, HorizontalAlignment.Left, false));
+        var plain = it.Affixes.Where(a => Crafting.Bindable(Items.Affix(a.Id))).Select(a => a.Tier).ToList();
+        var r = Crafting.Rules.Quench;
+        var fx = QuenchBarModel.Effects(plain, Crafting.Cap(it), Crafting.Bright, r.Up, r.Down, r.Ruin, Crafting.Grade);
+        var strip = QuenchStrip(fx);
+        if (!q.Ok) strip.Modulate = new Color(1, 1, 1, 0.45f);
+        v.AddChild(strip);
+        v.AddChild(Style.Label("Once a piece. It is set after.", Style.TextItalic, 15, Kit.Dim, true));
+        var row = Style.H(10);
+        var cost = Style.Label(Cost(q), Style.Ui, 14, q.Ok ? Kit.Ink2 : Kit.Faint, true);
+        cost.SizeFlagsHorizontal = SizeFlags.ExpandFill; cost.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        row.AddChild(cost);
+        var hold = new HoldPad("Hold to quench", () => Work(q, () => { Sound.Sfx.Anvil(4); Sound.Sfx.Loot(true); }), q.Ok);
+        Nav.Mark(hold, "quench", hold.Nudge, focus: () => gauge?.Preview(q.HeatLo, q.HeatHi, false), blur: () => gauge?.Clear());
+        hold.MouseEntered += () => gauge?.Preview(q.HeatLo, q.HeatHi, false);
+        hold.MouseExited += () => gauge?.Clear();
+        row.AddChild(hold);
+        v.AddChild(row);
+        if (!q.Ok && q.Blocked != closed) v.AddChild(Style.Label(q.Blocked!, Style.TextItalic, 14, Style.Bad, true));
+        return v;
     }
 
     static readonly Color[] QuenchInk =
@@ -726,7 +742,7 @@ public partial class ForgeScreen : Overlay
 
     /// <summary>The odds strip: a bar in an engraved frame filled exactly by five segments, each as wide as its real
     /// chance, thin dark separators; under each segment's centre its word and % as one two-line label, its words on hover.</summary>
-    Control QuenchStrip()
+    Control QuenchStrip(Dictionary<string, string> fx)
     {
         var segs = QuenchBarModel.Build(Crafting.QuenchOdds());
         const float W = 760, H = 14, Edge = 3;
@@ -740,7 +756,7 @@ public partial class ForgeScreen : Overlay
         frame.AddThemeStyleboxOverride("panel", fb);
         var bar = new Control { CustomMinimumSize = new Vector2(W, H), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(bar);
-        var labels = new Control { CustomMinimumSize = new Vector2(W + 2 * Edge, 42), MouseFilter = MouseFilterEnum.Ignore };
+        var labels = new Control { CustomMinimumSize = new Vector2(W + 2 * Edge, 58), MouseFilter = MouseFilterEnum.Ignore };
         float x = 0;
         for (int i = 0; i < segs.Count; i++)
         {
@@ -753,11 +769,12 @@ public partial class ForgeScreen : Overlay
             if (i > 0) bar.AddChild(new ColorRect { Color = new Color(0.04f, 0.03f, 0.03f, 0.95f), Position = new Vector2(x - 1, 0), Size = new Vector2(2, H), MouseFilter = MouseFilterEnum.Ignore });
             // Word (as the cost line's type) over % (the segment's colour, bold), centred under the segment; a label wider than
             // its narrow segment overhangs, but never past the bar's start.
-            const float lw = 90;
+            const float lw = 96;
             var two = Style.V(0,
                 Style.Label(sg.Label, Style.Ui, 14, Kit.Ink2, false, HorizontalAlignment.Center, false),
-                Style.Label(QuenchBarModel.Percent(sg.Fraction), Style.UiBold, 14, QuenchType[i], false, HorizontalAlignment.Center, false));
-            two.CustomMinimumSize = new Vector2(lw, 0); two.Size = new Vector2(lw, 36);
+                Style.Label(QuenchBarModel.Percent(sg.Fraction), Style.UiBold, 14, QuenchType[i], false, HorizontalAlignment.Center, false),
+                Style.Label(fx.GetValueOrDefault(sg.Id, ""), Style.Ui, 12, Kit.Dim, false, HorizontalAlignment.Center, false));
+            two.CustomMinimumSize = new Vector2(lw, 0); two.Size = new Vector2(lw, 52);
             two.Position = new Vector2(Edge + x + w / 2 - lw / 2, 3);
             two.MouseFilter = MouseFilterEnum.Ignore;
             labels.AddChild(two);
@@ -1596,5 +1613,63 @@ public partial class HeatGauge : HBoxContainer
                 DrawRect(r, spent ? new Color("#1a1210") : Style.Ember with { A = spent ? 1 : 0.6f + 0.4f * pulse });
             }
         }
+    }
+}
+
+/// <summary>(bd-ui2 r2) The house hold button for a card's irreversible act: a bronze-framed 200x36 pad with its words,
+/// an ember fill sweeping left to right over <see cref="Hold"/> seconds while held (mouse, or confirm on the focus);
+/// let go early and it drains; full, it flashes and fires once. Blocked: dimmed, never fills.</summary>
+public partial class HoldPad : Control
+{
+    public const double Hold = 1.0, Drain = 0.25;
+    readonly string words;
+    readonly Action done;
+    readonly bool ok;
+    double p, flash;
+    bool mouse, over, fired;
+
+    public HoldPad(string words, Action done, bool ok = true, float width = 200)
+    {
+        this.words = words; this.done = done; this.ok = ok;
+        CustomMinimumSize = new Vector2(width, 36);
+        SizeFlagsHorizontal = SizeFlags.ShrinkEnd; SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        MouseFilter = MouseFilterEnum.Stop;
+        MouseDefaultCursorShape = ok ? CursorShape.PointingHand : CursorShape.Arrow;
+        MouseEntered += () => { over = true; if (ok) Sound.Sfx.Hover(); };
+        MouseExited += () => { over = false; mouse = false; };
+        GuiInput += e => { if (e is InputEventMouseButton { ButtonIndex: MouseButton.Left } mb) { mouse = mb.Pressed && ok; if (mb.Pressed && !ok) Sound.Sfx.Deny(); } };
+    }
+
+    public void Nudge() { if (ok && !fired && p < 0.15) p = 0.15; }
+
+    bool Held()
+    {
+        if (!ok) return false;
+        if (mouse) return true;
+        for (Node? n = GetParent(); n != null; n = n.GetParent())
+            if (n is Overlay o) return o.Focused(this) && Play.Controls.Instance.Held(Play.Act.Confirm);
+        return false;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (flash > 0) { flash -= delta; if (flash <= 0) { fired = true; p = 0; done(); } }
+        else if (Held() && !fired) { p = Math.Min(1, p + delta / Hold); if (p >= 1) { flash = 0.15; Sound.Sfx.Pick(); } }
+        else if (!Held()) { fired = false; p = Math.Max(0, p - delta / Drain); }
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        var r = new Rect2(Vector2.Zero, Size);
+        float dim = ok ? 1f : 0.4f;
+        DrawRect(r, new Color("#17110b") with { A = 0.9f * dim });
+        float fill = (float)(flash > 0 ? 1 : p);
+        if (fill > 0) DrawRect(new Rect2(2, 2, (Size.X - 4) * fill, Size.Y - 4), (flash > 0 ? Style.EmberHi : Style.Ember) with { A = 0.7f });
+        DrawRect(r, (over && ok ? Style.GoldHi : Style.GoldDim) with { A = dim }, false, 2);
+        DrawRect(r.Grow(-3), Style.GoldDim with { A = 0.35f * dim }, false, 1);
+        var f = Style.UiBold;
+        var sz = f.GetStringSize(words, HorizontalAlignment.Left, -1, 16);
+        DrawString(f, new Vector2((Size.X - sz.X) / 2, (Size.Y + sz.Y) / 2 - 4), words, HorizontalAlignment.Left, -1, 16, ok ? Kit.Ink : Kit.Faint);
     }
 }
