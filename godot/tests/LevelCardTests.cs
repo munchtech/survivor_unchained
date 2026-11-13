@@ -1,3 +1,4 @@
+using System;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Ui;
@@ -188,5 +189,46 @@ public sealed class LevelCardTests
         Assert.Equal(t, q.T);
         Run(q, 2.0);
         Assert.Equal(5, q.Current!.Level);
+    }
+}
+
+/// <summary>bd-ui W6: the card's placement over the tile row, its tail on what opened, and its chip matching the bar's seat.</summary>
+public sealed class LevelCardPlaceTests
+{
+    [Fact]
+    public void The_card_stays_six_above_the_tile_row_in_the_campaign_and_is_unchanged_in_the_arena()
+    {
+        var camp = LevelCardPlace.Compute(247, 86, 978, 959, null);
+        Assert.True(camp.Y + 86 <= 959 - 6);
+        var arena = LevelCardPlace.Compute(247, 86, 978, null, null);
+        Assert.Equal(978.0 - 86, arena.Y);
+        Assert.InRange(arena.X, 836f, 837f);
+    }
+
+    [Theory]
+    [InlineData(700f)] [InlineData(820f)] [InlineData(960f)] [InlineData(1100f)] [InlineData(1200f)]
+    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_640_to_1280(float tx)
+    {
+        var p = LevelCardPlace.Compute(247, 86, 978, 959, (tx, 1010f));
+        Assert.InRange(p.X, 640, 1280 - 247);
+        Assert.InRange(tx - p.X, p.TailX - 0.6f, p.TailX + 0.6f);
+        Assert.InRange(p.TailX, 24, 247 - 24);
+        Assert.Equal(1010.0 - (p.Y + 86), p.Stem, 1);
+    }
+
+    [Fact]
+    public void A_target_inside_the_span_keeps_the_card_centred()
+    {
+        var p = LevelCardPlace.Compute(247, 86, 978, 959, (960f, 1000f));
+        Assert.Equal(Math.Round(960 - 247 / 2f), p.X);
+    }
+
+    [Fact]
+    public void The_cards_chip_is_the_seats_chip_for_every_slot()
+    {
+        for (int slot = 0; slot < 4; slot++)
+            Assert.Equal(KeyMap.Skills[KeyMap.SeatSlot[KeyMap.SeatOf(slot)]], LevelCardPlace.CapAct(slot));
+        Assert.Equal(Act.Skill4, LevelCardPlace.CapAct(3));
+        Assert.Equal(Act.Skill3, LevelCardPlace.CapAct(2));
     }
 }

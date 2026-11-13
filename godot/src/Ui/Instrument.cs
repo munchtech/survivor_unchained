@@ -187,7 +187,7 @@ public partial class Instrument : Control
             AddChild(Sockets[i]);
             if (at >= 0) MoveChild(Sockets[i], at + i);
             // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock. The arena's seats are keyless: no cap)
-            if (four) Sockets[i].SetCap(new KeyTag(Controls.Skills[KeyMap.SeatSlot[i]]) { Chip = true });
+            if (four) Sockets[i].SetCap(new KeyTag(LevelCardPlace.CapAct(KeyMap.SeatSlot[i])) { Chip = true });
         }
         if (Panel != null) Panel.QueueRedraw();
     }

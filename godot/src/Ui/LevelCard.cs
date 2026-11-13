@@ -36,13 +36,17 @@ public partial class LevelCard : Control
     public Action<LevelCardSpec> OnFold = _ => { };
     /// <summary>The y the card's foot must stay above (the beads' and statuses' top), asked when a card begins.</summary>
     public Func<float, float> FootFor = _ => 960;
+    /// <summary>bd-ui W6: the top of the auto-tile row in the campaign (the card's bottom stays 6 px above it), else null.</summary>
+    public Func<float?> RowTop = () => null;
+    /// <summary>bd-ui W6: the global top-middle of what opened (a key seat's cap, an auto tile, the stance disc), null: the coin.</summary>
+    public Func<LevelCardSpec, Vector2?> TopOf = _ => null;
     /// <summary>Where it rises from (the coin's middle).</summary>
     public Vector2 From = new(960, 1042);
 
     string header = "", name = "", line = "", before = "", after = "", measure = "", arrow = " → ", prompt = "";
     Texture2D? glyph, discIcon;
     bool discReal;
-    float h = 110, w = MinW, stem;
+    float h = 110, w = MinW, stem, tailX;
     Vector2 rest, fold;
     readonly Control capHost = new() { MouseFilter = MouseFilterEnum.Ignore };
     readonly Control promptHost = new() { MouseFilter = MouseFilterEnum.Ignore };
@@ -96,10 +100,10 @@ public partial class LevelCard : Control
 
         // the skill's key chip (a new key only), after its name
         float need = MinW;
-        if (s.Kind == LevelCardKind.NewKey && s.Slot >= 0 && s.Slot < KeyMap.Skills.Length)
+        if (s.Kind == LevelCardKind.NewKey && s.Slot >= 0 && s.Slot < KeyMap.Skills.Length && KeyMap.SeatOf(s.Slot) >= 0)
         {
             cap?.QueueFree();
-            cap = new KeyTag(KeyMap.Skills[s.Slot]) { Chip = true };
+            cap = new KeyTag(LevelCardPlace.CapAct(s.Slot)) { Chip = true };
             capHost.AddChild(cap);
             cap.Refresh();
         }
@@ -156,10 +160,17 @@ public partial class LevelCard : Control
             promptCap.Place((Pad + pw / 2) / k, (promptTop + 9 - Instrument.TagH * k / 2) / k);
         }
         float foot = FootFor(w);
-        rest = new Vector2(Mathf.Round(960 - w / 2), Mathf.Round(foot - h));
-        // the stem: from the card's foot to the coin's rim; a card held high over beads gets a short one that fades out
-        float gap = From.Y - CoinR - (rest.Y + h);
-        stem = gap <= 0 ? 0 : Math.Min(gap, StemMax);
+        var top = TopOf(s);
+        var pl = LevelCardPlace.Compute(w, h, foot, RowTop(), top is { } tv ? (tv.X, tv.Y) : null);
+        rest = new Vector2(pl.X, pl.Y);
+        tailX = pl.TailX;
+        if (top != null) stem = pl.Stem;
+        else
+        {
+            // the stem: from the card's foot to the coin's rim; a card held high over beads gets a short one that fades out
+            float gap = From.Y - CoinR - (rest.Y + h);
+            stem = gap <= 0 ? 0 : Math.Min(gap, StemMax);
+        }
         GD.Print($"level card: {header} rect ({rest.X:0},{rest.Y:0} {w:0}x{h:0}) foot {foot:0}{(prompt != "" ? $", prompt \"{prompt}\"" : "")}");
         QueueRedraw();
     }
@@ -226,7 +237,7 @@ public partial class LevelCard : Control
         // diamond where it leaves the rule
         if (stem > 0)
         {
-            float m = Mathf.Round(w / 2);
+            float m = Mathf.Round(tailX);
             var far = Rule with { A = 0.5f };
             DrawRect(new Rect2(m - 2, h, 4, stem), new Color(0, 0, 0, 0.45f));
             DrawPolygon([new(m - 1, h), new(m + 1, h), new(m + 1, h + stem), new(m - 1, h + stem)], [RuleGold, RuleGold, far, far]);

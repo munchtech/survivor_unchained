@@ -10,6 +10,37 @@ namespace SurvivorUnchained.Ui;
 
 public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance }
 
+/// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
+/// included) stays at least Clear above the auto-tile row's top in the campaign; the tail is vertical, ending on the top of
+/// what opened (a key seat's cap, an auto tile, the front stance disc), so the card shifts sideways until that x lies at
+/// least Spare inside its span, then stays inside 640..1280.</summary>
+public static class LevelCardPlace
+{
+    public const float Clear = 6, Spare = 24, MinX = 640, MaxX = 1280;
+
+    /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
+    /// from this too, so card and seat cannot drift).</summary>
+    public static Act CapAct(int slot) => KeyMap.Skills[KeyMap.SeatSlot[KeyMap.SeatOf(slot)]];
+
+    /// <summary>The card's left x, top y, the tail's x (card space; the card's own centre when no target) and its length
+    /// below the card (0 when the target is not below it).</summary>
+    public static (float X, float Y, float TailX, float Stem) Compute(float w, float h, float foot, float? rowTop, (float X, float Y)? target)
+    {
+        float bottom = rowTop is { } r ? Math.Min(foot, r - Clear) : foot;
+        float y = (float)Math.Round(bottom - h);
+        float x = 960 - w / 2;
+        if (target is { } t)
+        {
+            float lo = t.X - w + Spare, hi = t.X - Spare;
+            if (lo <= hi) x = Math.Clamp(x, lo, hi);
+        }
+        x = (float)Math.Round(Math.Clamp(x, MinX, Math.Max(MinX, MaxX - w)));
+        if (target is not { } tg) return (x, y, w / 2, 0);
+        float tx = Math.Clamp(tg.X - x, Spare, Math.Max(Spare, w - Spare));
+        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - (y + h)));
+    }
+}
+
 /// <summary>One level-up card (GameHud.LevelCard; M6 and M7 call it).</summary>
 public sealed class LevelCardSpec
 {

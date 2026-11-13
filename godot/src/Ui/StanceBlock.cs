@@ -16,7 +16,10 @@ namespace SurvivorUnchained.Ui;
 public partial class StanceBlock : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
-    public const float R = 19, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.2f, GlyphPx = 20;
+    static readonly FontVariation NameFont = new() { BaseFont = Style.UiBold, SpacingGlyph = 1 };
+    public const double NameHold = 0.9, NameFade = 0.5;
+    public const int NameSize = 15;
+    public const float R = 19, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.4f, GlyphPx = 20;
     static readonly Vector2 Back = new(22 * 19 / 17f, -6 * 19 / 17f);
     /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
     public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
@@ -181,10 +184,12 @@ public partial class StanceBlock : Control
         foreach (int s in new[] { first, 1 - first }) DrawOne(s, s == back && swapT >= EaseLen);
         if (nameT < NameLen && nameText != "")
         {
-            float k = (float)(nameT / NameLen), rise = 10 * (1 - (1 - k) * (1 - k));
-            var at = new Vector2(Front.X - 80, Front.Y - R - 12 - rise);
-            DrawStringOutline(Style.UiBold, at, nameText, HorizontalAlignment.Center, 190, 13, 3, new Color(0.02f, 0.015f, 0.01f, 0.9f * (1 - k)));
-            DrawString(Style.UiBold, at, nameText, HorizontalAlignment.Center, 190, 13, nameColor with { A = 1 - k });
+            // (bd-ui W6: 15 px bold, tracked, rising 10 px over its first 0.4 s, holding 0.9 s, fading over 0.5 s)
+            float rise = 10 * (1 - (1 - Math.Min(1f, (float)nameT / 0.4f)) * (1 - Math.Min(1f, (float)nameT / 0.4f)));
+            float fade = nameT <= NameHold ? 1 : (float)Math.Max(0, 1 - (nameT - NameHold) / NameFade);
+            var at = new Vector2(Front.X - 95, Front.Y - R - 6 - rise);
+            DrawStringOutline(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, 4, new Color(0.02f, 0.015f, 0.01f, 0.9f * fade));
+            DrawString(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, nameColor with { A = fade });
         }
     }
 

@@ -1675,6 +1675,8 @@ public partial class GameHud : CanvasLayer
                 FoldTo = CardFoldTo,
                 OnFold = CardFolded,
                 FootFor = CardFoot,
+                RowTop = CardRowTop,
+                TopOf = CardTopOf,
                 From = DgPanel.Coin,
             };
             play.AddChild(levelCard);
@@ -1768,6 +1770,21 @@ public partial class GameHud : CanvasLayer
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return irons.GetGlobalTransform() * DgPanel.Coin;
         return irons.Sockets[k].GetGlobalRect().GetCenter();
+    }
+
+    /// <summary>bd-ui W6: the auto-tile row's top (global) in the campaign, else null (the arena's card is as it was).</summary>
+    float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRow.RowTop)).Y : null;
+
+    /// <summary>bd-ui W6: the card's tail ends on the top of what opened: its key seat's cap, its auto tile, the front stance disc.</summary>
+    Vector2? CardTopOf(LevelCardSpec s)
+    {
+        if (!campaignNow) return null;
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(); return new Vector2(d.GetCenter().X, d.Position.Y); }
+        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y);
+        int k = SeatFor(s);
+        if (k < 0 || k >= irons.Sockets.Length) return null;
+        float capTop = AutoRowModel.CapTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
+        return irons.GetGlobalTransform() * new Vector2(DgPanel.Seat(k).X, capTop);
     }
 
     void CardFolded(LevelCardSpec s)
