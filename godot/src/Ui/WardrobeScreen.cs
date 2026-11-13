@@ -160,6 +160,16 @@ void fragment() {
         // (bare-headed, head to collarbone at 62% was a face filling the frame: 45%, her shoulders in)
         float d = Mathf.Clamp(cur * off, 0.8f, 4.5f);
         float centre = (tip + collar) / 2 - pv.GlobalPosition.Y;
+        // (the height corrected from where the middle of the tip-to-collarbone span lands on the screen now: aim y540, the middle of the frame; the
+        // error in metres at that depth is taken off the camera's height each frame, so it settles with the ease and holds in both states)
+        {
+            var spanMid = new Vector3(headP.X, (tip + collar) / 2, headP.Z);
+            float depthM = -(cam.GlobalTransform.AffineInverse() * spanMid).Z;
+            float perPxM = 2 * depthM * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2) / GetViewport().GetVisibleRect().Size.Y;
+            float errPx = cam.UnprojectPosition(spanMid).Y / rows - 540f;
+            float curH = (headNow ?? HeadFrame).Height;
+            if (depthM > 0.1f && !float.IsNaN(errPx)) centre = curH - errPx * rows * perPxM;
+        }
         // (the shift that puts the head's middle at x 483.5, the middle of the free ground: where it is on screen now, less the camera's own
         // sideways offset, tells where it would be with none; no feedback on the camera's easing)
         float shift = WardFrame.Shift;
@@ -208,10 +218,12 @@ void fragment() {
         var shownDef = Wardrobe.ShownDef(ch, Slot);
         var own = ch.Equipment[Wardrobe.EquipOf(Slot)];
         var ownName = own != null ? Items.Get(own.Def).Name : null;
-        v.AddChild(Style.Label((shownDef?.Name ?? ownName ?? "Nothing worn").ToUpperInvariant(), Style.Display, 28, shownDef != null ? Style.EmberHi : Kit.Ink, false, HorizontalAlignment.Left, false));
         bool ownLook = Wardrobe.OwnHasLook(ch, Slot);
+        // (a piece with no look of its own draws her calling's kit: the title is what is drawn, the found look that draws the same)
+        var drawnName = shownDef == null && own != null && !ownLook ? Wardrobe.OwnLook(ch, Slot)?.Name : null;
+        v.AddChild(Style.Label((shownDef?.Name ?? drawnName ?? ownName ?? "Nothing worn").ToUpperInvariant(), Style.Display, 28, shownDef != null ? Style.EmberHi : Kit.Ink, false, HorizontalAlignment.Left, false));
         v.AddChild(Style.Label(shownDef == null
-            ? (ownName == null || ownLook ? "your own piece, as it is" : "your own piece (no look of its own)")
+            ? (ownName == null || ownLook ? "your own piece, as it is" : drawnName != null ? $"your own: {ownName} (no look of its own)" : "your own piece (no look of its own)")
             : ownName == null ? "over nothing" : ownLook ? $"over: {ownName}" : $"over: {ownName} (no look of its own)", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
         status = Style.Label("", Style.TextItalic, 15, Kit.Ink2, false, HorizontalAlignment.Left, false);
         status.CustomMinimumSize = new Vector2(0, 22);
@@ -248,7 +260,7 @@ void fragment() {
         opened = true;
     }
 
-    /// <summary>The one panel, the same rect on every tab and look (x967-1872, y136-943), and behind it a black gradient from nothing at x900 to half
+    /// <summary>The one panel, the same rect on every tab and look (x967-1872, y120-960), and behind it a black gradient from nothing at x900 to half
     /// at the right edge, so the panel sits on calm ground. Returns its column.</summary>
     VBoxContainer Page()
     {
@@ -277,7 +289,7 @@ void fragment() {
         return v;
     }
 
-    const float PanelX = 967, PanelY = 136, PanelW = 905, PanelH = 807;
+    const float PanelX = 967, PanelY = 120, PanelW = 905, PanelH = 840;
     // The footer's foot is this far above the panel's bottom (the margin inside it, and the rest).
     const float PanelFoot = 45;
 

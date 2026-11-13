@@ -149,7 +149,7 @@ public static class Wardrobe
     public static void OverlayDyes(CharacterData ch, Dictionary<string, Dictionary<string, string>> dyes, Func<string, ItemDef?>? find = null)
     {
         if (ch.Dyes == null || ch.Dyes.Count == 0) return;
-        var worn = Wear.Of(ch, find);
+        var worn = Drawn(ch, find);
         var offered = Offered(ch);
         foreach (var slot in LookSlots)
         {
@@ -176,11 +176,20 @@ public static class Wardrobe
         return ch.DyesKnown.Add(id);
     }
 
+    /// <summary>Everything she draws: the worn and shown pieces with her calling's kit filling the gaps (as HerWear lays them).</summary>
+    public static Dictionary<string, string> Drawn(CharacterData ch, Func<string, ItemDef?>? find = null)
+    {
+        var worn = Wear.Of(ch, find);
+        var r = Wear.Look(worn, Calling(ch), ArmorIndex.Shared);
+        foreach (var (vs, piece) in worn) if (ArmorIndex.Shared.Find(piece) == null) r[vs] = piece; // (a piece the index doesn't know is kept as worn)
+        return r;
+    }
+
     /// <summary>The pieces of a look slot as drawn now: the shown look's, else the equipped item's.</summary>
     public static List<string> PiecesOf(CharacterData ch, string slot, Func<string, ItemDef?>? find = null)
     {
         var group = Wear.Group(EquipOf(slot));
-        return Wear.Of(ch, find).Where(kv => group.Contains(kv.Key)).Select(kv => kv.Value).ToList();
+        return Drawn(ch, find).Where(kv => group.Contains(kv.Key)).Select(kv => kv.Value).ToList();
     }
 
     static Dictionary<string, string>? zoneOfKey;

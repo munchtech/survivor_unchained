@@ -183,4 +183,35 @@ public class WardrobeTests
         Assert.NotNull(same);
         Assert.Equal(Wardrobe.OwnDrawn(ch, "body"), Wardrobe.LookDrawn(ch, same!, "body"));
     }
+
+    [Theory]
+    [InlineData("body", "padded_jerkin")]
+    [InlineData("head", "leather_cap")]
+    public void A_piece_with_no_look_offers_the_dyes_of_the_kit_it_draws(string slot, string item)
+    {
+        var ch = Her();
+        var eq = slot == "body" ? EquipSlot.Body : EquipSlot.Head;
+        ch.Equipment[eq] = Own(ch, item);
+        Assert.False(Wardrobe.OwnHasLook(ch, slot));
+        Assert.Null(ch.Shown?.GetValueOrDefault(slot));
+        var zones = Wardrobe.ZonesOfSlot(ch, slot);
+        if (slot == "head")
+        {
+            // (the warden's kit draws no head piece: a cap with no look of its own draws nothing, so there is nothing to dye; what is offered is what is drawn)
+            Assert.Equal(Wardrobe.PiecesOf(ch, slot).SelectMany(p => Wardrobe.ZonesOf(p)).Distinct().Count(), zones.Count);
+            if (zones.Count == 0) return;
+        }
+        Assert.NotEmpty(zones);
+        if (slot == "body") { Assert.Contains("metal", zones); Assert.Contains("trim", zones); Assert.Contains("leather", zones); }
+        var zone = zones.Contains("metal") ? "metal" : zones[0];
+        var dye = Wardrobe.Offered(ch).First(d => d.Zones.Contains(zone));
+        Wardrobe.SetDye(ch, slot, zone, dye.Id);
+        var group = Wear.Group(eq);
+        var drawn = Wardrobe.PiecesOf(ch, slot);
+        var dyes = Wear.DyeOf(ch);
+        Assert.Contains(drawn, p => dyes.TryGetValue(p, out var d) && d.ContainsKey(zone) && d[zone] == dye.Hex);
+        // survives switching state (a look shown, then her own again)
+        Wardrobe.SetShown(ch, slot, null);
+        Assert.Contains(Wardrobe.PiecesOf(ch, slot), p => Wear.DyeOf(ch).TryGetValue(p, out var d) && d.ContainsKey(zone));
+    }
 }
