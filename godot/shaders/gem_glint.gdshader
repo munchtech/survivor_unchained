@@ -11,9 +11,9 @@ void vertex() {
 
 void fragment() {
 	vec2 p = UV * 2.0 - 1.0;
-	float h = exp(-abs(p.y) * 26.0) * (1.0 - abs(p.x));
-	float v = exp(-abs(p.x) * 26.0) * (1.0 - abs(p.y));
-	float core = exp(-dot(p, p) * 40.0);
+	float h = exp(-abs(p.y) * 34.0) * (1.0 - abs(p.x));
+	float v = exp(-abs(p.x) * 34.0) * (1.0 - abs(p.y));
+	float core = exp(-dot(p, p) * 90.0);
 	float s = clamp(max(h, v) + core, 0.0, 1.0);
 	ALBEDO = vec3(1.0, 0.97, 0.92);
 	ALPHA = clamp(s * strength, 0.0, 1.0);

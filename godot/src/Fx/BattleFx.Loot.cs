@@ -142,7 +142,7 @@ public partial class BattleFx
                 // star motes rising from it (no flat glow: nothing else on the ground has either). It flashes once as it lands,
                 // then every 1.7 s catches the light: a four-point star 0.9 m across for 0.45 s, twice as bright as before.
                 var gc = Ui.ItemViews.GemGround(p.Payload as ItemInstance) ?? fallback;
-                Light(p.X, gy, p.Z, Lit.Stars, 0, 0.7f, 2.4f * grow, gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
+                Light(p.X, gy, p.Z, Lit.Stars, 0, 0.7f, 2.4f * grow, Rpg.Supports.Family(Rpg.Supports.OfItem(((ItemInstance)p.Payload!).Def)!) == "clear" ? new Color("#DDE8FF") : gc.Lerp(Colors.White, 0.2f), 1.0f * flare);
                 var star = gc.Lerp(Colors.White, 0.4f) * 2.2f;
                 if (age >= 0 && age < 0.5f && gemLanded.Add(p.Id))
                     Sparks.Spawn(V(p.X, gy + 0.3, p.Z), Vector3.Zero, 0.45f, 0.9f, star, null, 0.12f, sprite: Sprites.Of("star"), spinV: 3);

@@ -162,20 +162,22 @@ void fragment() {
 		// A little of the ground under its pool covered, so by night it lies warm and not pink.
 		veil = (g(x, w * 0.14) * 0.25 + g(x, w * 0.4) * 0.08) * fade + pool(w * 0.55) * 0.12;
 	} else if (kind > 8.5) {
-		// A gem's light: a four-point star of light turning slowly on the ground (no round glow), and star motes
-		// (two little crossed bars each) rising out of it up a column of its height.
+		// A gem's light, light and not a decal: four long thin tapered rays and four shorter diagonal ones lying on the
+		// ground, turning slowly, each a bright hairline fading out along its length (added, nothing to cover the grass);
+		// star motes (two little crossed bars each) rising from it up a column of its height. Its heart left clear.
 		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
 		float rr = length(e);
 		float ang = atan(e.y, e.x) + WORLD_TIME * 0.35 + seed * 6.28;
-		float reach = 0.3 + 0.7 * pow(abs(cos(2.0 * ang)), 4.0);
-		float starpool = smoothstep(reach, reach * 0.45, rr) * smoothstep(1.05, 0.9, rr);
-		float rim = exp(-pow((rr - reach * 0.8) / 0.08, 2.0)) * 0.5;
+		float qa = abs(mod(ang + 0.7853982, 1.5707963) - 0.7853982);   // from the nearest long ray
+		float da = abs(mod(ang, 1.5707963) - 0.7853982);               // from the nearest diagonal
+		float wl = 0.045 * (1.0 - rr) + 0.008, ws = 0.04 * (1.0 - rr / 0.55) + 0.008;
+		float longr = exp(-pow(rr * sin(qa) / wl, 2.0)) * pow(clamp(1.0 - rr, 0.0, 1.0), 1.3);
+		float diag = exp(-pow(rr * sin(da) / ws, 2.0)) * pow(clamp(1.0 - rr / 0.55, 0.0, 1.0), 1.3) * 0.7;
+		float heart = smoothstep(0.14, 0.34, rr);
 		float fade = smoothstep(-0.2, 0.05, y) * pow(1.0 - u, 0.6) * step(0.0, y);
 		float mt = star_motes(0.34, 0.5, 0.55, 0.055) + star_motes(0.2, 0.8, 0.85, 0.045);
-		// (its heart left clear, so the stone itself is seen)
-		float heart = smoothstep(0.12, 0.42, rr);
-		light = mix(tint, deep, 0.3) * (starpool * 0.42 + rim) * heart + tint * mt * fade * 1.4;
-		veil = starpool * 0.05 * heart + mt * fade * 0.05;
+		light = tint * (longr + diag) * heart * 0.5 + tint * mt * fade * 1.4;
+		veil = mt * fade * 0.05;
 	} else if (kind > 7.5) {
 		// A band of light lying on the ground at its reach, soft on both sides, breathing; a faint
 		// light within it. (A decal's band with a hard edge read as a cream hoop.)

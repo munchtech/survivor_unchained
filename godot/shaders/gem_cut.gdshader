@@ -13,6 +13,8 @@ uniform vec3 bright_b : source_color = vec3(0.35, 0.58, 1.0);
 uniform vec3 dark_b : source_color = vec3(0.0, 0.01, 0.04);
 uniform bool split = false;
 uniform float ripple = 0.3;
+uniform float alt = 0.0;        // 1: every facet alternates dark / body / bright by its own hash (the clear stone)
+uniform float split_turn = 0.0; // the split plane's turn about the axis, so a photograph's turned stone splits down the screen
 
 varying vec3 lpos;
 
@@ -25,7 +27,7 @@ void fragment() {
 	n = normalize(n + ripple * (MODEL_MATRIX * vec4(lpos.x, lpos.y * 0.6, lpos.z, 0.0)).xyz);
 	vec3 r = reflect(-v, n);
 
-	bool b = split && lpos.x > 0.0;
+	bool b = split && lpos.x * cos(split_turn) + lpos.z * sin(split_turn) > 0.0;
 	vec3 c_body = b ? body_b : body, c_bright = b ? bright_b : bright, c_dark = b ? dark_b : dark;
 
 	// The studio, as what a direction sees.
@@ -40,9 +42,9 @@ void fragment() {
 	float h = fract(dot(n, vec3(3.1, 7.3, 5.7)));
 	// The pavilion, seen through the crown, alternates facet by facet.
 	float low = step(n.y, 0.0);
-	col = mix(col, h < 0.3 ? c_dark : (h < 0.75 ? c_body : c_bright), low * 0.9);
+	col = mix(col, h < 0.38 ? c_dark : (h < 0.76 ? c_body : c_bright), max(low * 0.9, alt));
 	col *= 0.9 + 0.2 * h;
-	vec3 white = mix(c_bright, vec3(1.0), 0.88);
+	vec3 white = mix(c_bright, vec3(1.0), 0.72);
 	col = mix(col, white, max(strip1, strip2));
 	ALBEDO = col;
 }

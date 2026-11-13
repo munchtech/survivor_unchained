@@ -14,7 +14,7 @@ public static class GemCut
     {
         ["garnet"] = ("#5E0B16", "#E33244", "#12020A"),
         ["sapphire"] = ("#0E2A80", "#5A93FF", "#030A22"),
-        ["clear"] = ("#E8EEF6", "#FFFFFF", "#3A4656"),
+        ["clear"] = ("#AEBBCD", "#F4F8FF", "#3A4656"),
     };
 
     static ArrayMesh? mesh;
@@ -31,8 +31,10 @@ public static class GemCut
         mat.SetShaderParameter("body", new Color(a.Body));
         mat.SetShaderParameter("bright", new Color(a.Bright));
         mat.SetShaderParameter("dark", new Color(a.Dark));
+        if (family == "clear") mat.SetShaderParameter("alt", 1.0f);
         if (family == "bicolor")
         {
+            if (withGlint) mat.SetShaderParameter("split_turn", 0.4f);
             var b = Colours["sapphire"];
             mat.SetShaderParameter("split", true);
             mat.SetShaderParameter("body_b", new Color(b.Body));
@@ -46,8 +48,8 @@ public static class GemCut
             glint ??= GD.Load<Shader>("res://shaders/gem_glint.gdshader");
             root.AddChild(new MeshInstance3D
             {
-                Mesh = new QuadMesh { Size = new Vector2(0.7f, 0.7f) }, MaterialOverride = new ShaderMaterial { Shader = glint },
-                Position = new Vector3(-0.2f, 0.2f, 0.45f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                Mesh = new QuadMesh { Size = new Vector2(0.4f, 0.4f) }, MaterialOverride = new ShaderMaterial { Shader = glint },
+                Position = new Vector3(-0.15f, 0.3f, 0.5f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             });
         }
         return root;
