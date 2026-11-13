@@ -665,6 +665,14 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
             J, W = wt_.cap(D, wt_.RULES["cap"])
             D = np.zeros((len(V), nb))
             np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("chain_relax"):
+        # (P1 R1 lead 23: a bone chain's weight checkerboard relaxed at the source, weights_topo.chain_relax; after the
+        # a_* rules, before the head, so the head's ring copies take the body's ring as it ships)
+        import weights as wt_
+        D, info["chain_relax"] = wtp.chain_relax(D, V, z, sk, rules["chain_relax"], ring=ring)
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
     # the head: welded points, the ring's from the body's ring, one to one
     head = A.mesh("HeroineHead")
     PH = baked["HeroineHead"]["P"]
@@ -1017,6 +1025,12 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
     wrules = spec.get("weights")
+    if wrules and isinstance(wrules.get("chain_relax"), dict) and tier in wrules["chain_relax"].get("per_tier", {}):
+        # (a tier's own chain_relax settings: play's edges are about twice close's, so the same weight ramp steps about
+        # twice as far per edge; with close's jump 0.2 the play seeds covered the whole trunk front and the harmonic fill
+        # mixed thigh/spine_04 into the belly, which crossed itself at spine_flex: foldcheck rom belly 8 a side)
+        cr = wrules["chain_relax"]
+        wrules = dict(wrules, chain_relax={**cr, **cr["per_tier"][tier]})
     pref = os.path.join(out, "stage", f"weights_ref_{tier}.npy")
     if tier == "play" and spec.get("target_joints_ref") and os.path.exists(os.path.join(out, "stage", "weights_ref_close.npy")):
         # (play: its own ref body, the ref spec's play tier)
@@ -1051,6 +1065,17 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
     stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv)
+    fr = (wrules or {}).get("fold_relax")
+    if fr and tier in fr.get("tiers", ["close"]):
+        # (P1 posed folds: the weights relaxed where the exported tier folds in foldcheck's laws mode, then exported
+        # again; weights_topo.fold_relax)
+        import weights as wt_
+        g_, r_ = GLB[tier]
+        Dn, rep.setdefault("weights", {})["fold_relax"] = wtp.fold_relax(out, g_, r_, len(V), ring, fr)
+        J_, W_ = wt_.cap(Dn, wt_.RULES["cap"])
+        wts = dict(wts, J=J_, W=W_)
+        stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv)
+        print("FOLD_RELAX", tier, rep["weights"]["fold_relax"], flush=True)
     tim["export"] = round(time.time() - t, 2)
     if correct:
         t = time.time()
@@ -1058,6 +1083,12 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         rep["correctives"] = correctives.run(out, tier=tier, fresh=True, turn_normals=bool(rep.get("normals")),
                                              conf_path=spec.get("correctives_conf"))
         tim["correctives"] = round(time.time() - t, 2)
+        t = time.time()
+        import shape_relax
+        # (P1 posed folds: the corrective shapes relaxed where they fold the posed skin in foldcheck's full mode, from
+        # each joint's "fold_relax" in the correctives data; shape_relax.py)
+        rep["shape_relax"] = shape_relax.run(out, tier, spec.get("correctives_conf"), turn_normals=bool(rep.get("normals")))
+        tim["shape_relax"] = round(time.time() - t, 2)
     if spec.get("shapes"):
         t = time.time()
         stage_shapes(spec, tier, z, V, A, baked, out, rep, V_pre)

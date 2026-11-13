@@ -238,14 +238,26 @@ class Ctx:
         return np.asarray(self.ends[b][1], float)
 
 
-def trunk(c):
+def steps_h(u, knots, hs):
+    """steps() with a half-width per knot: each step clipped under the one below it, so every piece (the difference
+    of its two steps) stays >= 0 where a wide step overlaps a narrow one; with one h it is steps() exactly."""
+    c = [np.ones(len(u))] + [s01((u - (k - h)) / (2 * h)) for k, h in zip(knots, hs)] + [np.zeros(len(u))]
+    for i in range(2, len(c) - 1):
+        c[i] = np.minimum(c[i], c[i - 1])
+    return np.stack([c[i] - c[i + 1] for i in range(len(knots) + 1)], 1)
+
+
+def trunk(c, rules=None):
     P, n = c.P, c.n
     W = np.zeros((n, len(c.names)))
     y = P[:, 1]
     ys = [c.head(b)[1] for b in SPINE]
     knots = ys[1:]                       # (spine_01's head is the pelvis's: the pelvis owns all below it)
     assert all(b > a for a, b in zip(knots, knots[1:])), ("the spine chain's joints do not rise", knots)
-    Hs = steps(y, knots, HMAX)
+    # a spec's "weights" "trunk_h" {bone: h}: that joint's step half-width (m) instead of HMAX (P1 posed folds: the
+    # pelvis -> spine_01 step at +-40 mm folded the belly through itself at spine_flex 45 deg, foldcheck.py)
+    th = {k: v for k, v in ((rules or {}).get("trunk_h") or {}).items() if k != "why"}
+    Hs = steps_h(y, knots, [float(th.get(b, HMAX)) for b in SPINE[1:]]) if th else steps(y, knots, HMAX)
     for i, b in enumerate(SPINE):
         W[:, c.idx[b]] = Hs[:, i]
     # the girdle's skin (P1 R2, CLAV above): the clavicle owns the trapezius from the neck's side out to the acromion
@@ -943,10 +955,89 @@ def mirror(W, topo, names):
     return W
 
 
+def _jumps(W, e, P, cols, thr):
+    """Edges e whose summed weight over `cols` steps by more than thr; (mask, summary)."""
+    s = W[:, cols].sum(1)
+    m = np.abs(s[e[:, 0]] - s[e[:, 1]]) > thr
+    M = 0.5 * (P[e[m, 0]] + P[e[m, 1]]) * 1e3
+    box = ({"x_mm": [round(float(M[:, 0].min())), round(float(M[:, 0].max()))],
+            "y_mm": [round(float(M[:, 1].min())), round(float(M[:, 1].max()))],
+            "z_mm": [round(float(M[:, 2].min())), round(float(M[:, 2].max()))]} if m.any() else {})
+    return m, {"edges": int(m.sum()), **box}
+
+
+def chain_relax(W, P, topo, sk, cfg, ring=None):
+    """A spec's "weights" "chain_relax" (P1 R1 lead 23): where one bone chain's summed weight (cfg "chains", lists of
+    bone names) steps by over cfg "jump" between neighbouring points, those points seed a region grown cfg "rows" rings
+    (quad edges); the WHOLE weight vector is Laplacian-smoothed over the region (a harmonic fill, edges weighted
+    1 / length^2, every point outside and the head's ring `ring` held fixed), weights under cfg "min_w" dropped, each row
+    renormalised to 1; mirrored (her left's taken) and written to the region's rows only, so every other point is bit
+    for bit (the caller caps as after the a_* rules). UV-split copies are our topology's points (build_topo splits after),
+    so they carry one weight row. Why (body_facts/notch.md 1): B's upper chest under each clavicle alternated neck chain
+    (neck_01 + neck_02 + Head) 0.82-0.95 against spine_04 0.76-0.82 point to point (28 front edges a side jumped > 0.5,
+    y 1510-1544 mm), so when the spine and neck turn (heroic_leap@6 / @9) neighbours went to different frames and the
+    skin notched there; no carried-target rule cures what the source skin folds. Also reports, per bone, edges whose
+    weight steps by over "jump" elsewhere (info "bone_jumps", before and after), so other zones are seen."""
+    names = sk["names"]
+    Q = topo["Q"]
+    n, nb = W.shape
+    P = np.asarray(P, float)
+    eq = np.unique(np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1), axis=0)
+    ed = np.unique(np.sort(np.concatenate([eq, Q[:, [0, 2]], Q[:, [1, 3]]]), 1), axis=0)    # with the diagonals
+    thr = float(cfg.get("jump", 0.5))
+    rows = int(cfg.get("rows", 2))
+    held = np.zeros(n, bool)
+    if ring is not None:
+        held[np.asarray(ring)] = True
+    seed = np.zeros(n, bool)
+    info = {"chains": {}}
+    for ch in cfg["chains"]:
+        cols = [names.index(b) for b in ch]
+        m, s = _jumps(W, ed, P, cols, thr)
+        info["chains"]["+".join(ch)] = {"before": s, "before_over_0.3": int(_jumps(W, ed, P, cols, 0.3)[0].sum())}
+        seed[ed[m].ravel()] = True
+    A = sp.coo_matrix((np.ones(2 * len(eq)), (np.r_[eq[:, 0], eq[:, 1]], np.r_[eq[:, 1], eq[:, 0]])), shape=(n, n)).tocsr()
+    reg = seed.copy()
+    for _ in range(rows):
+        reg |= (A @ reg.astype(float)) > 0
+    mo = topo["mirror_of"]
+    r = np.where(mo >= 0)[0]
+    reg[mo[r]] |= reg[r]
+    reg[r] |= reg[mo[r]]
+    reg &= ~held
+    out = W.copy()
+    ids = np.where(reg)[0]
+    if len(ids):
+        w = 1.0 / np.maximum(((P[eq[:, 0]] - P[eq[:, 1]]) ** 2).sum(1), 1e-10)
+        K = sp.coo_matrix((np.r_[w, w], (np.r_[eq[:, 0], eq[:, 1]], np.r_[eq[:, 1], eq[:, 0]])), shape=(n, n)).tocsr()
+        L = (sp.diags(np.asarray(K.sum(1)).ravel()) - K).tocsr()
+        fix = np.where(~reg)[0]
+        from scipy.sparse.linalg import splu
+        lu = splu(L[ids][:, ids].tocsc())
+        X = lu.solve(np.ascontiguousarray(-(L[ids][:, fix] @ W[fix])))
+        X = np.where(X < float(cfg.get("min_w", 0.01)), 0.0, X)
+        X /= np.maximum(X.sum(1, keepdims=True), 1e-12)
+        out[ids] = X
+        out[ids] = mirror(out, topo, names)[ids]
+    for ch in cfg["chains"]:
+        cols = [names.index(b) for b in ch]
+        k = info["chains"]["+".join(ch)]
+        k["after"] = _jumps(out, ed, P, cols, thr)[1]
+        k["after_over_0.3"] = int(_jumps(out, ed, P, cols, 0.3)[0].sum())
+    bj = {}
+    for j, b in enumerate(names):
+        a0, a1 = _jumps(W, ed, P, [j], thr)[1], _jumps(out, ed, P, [j], thr)[1]
+        if a0["edges"] or a1["edges"]:
+            bj[b] = {"before": a0, "after": a1["edges"]}
+    info.update({"seed_points": int(seed.sum()), "region_points": int(len(ids)), "rows": rows, "jump": thr,
+                 "bone_jumps": bj})
+    return out, info
+
+
 def body(P, topo, sk, rules=None):
     c = Ctx(P, topo, sk)
     names, par = sk["names"], sk["parents"]
-    W = trunk(c)
+    W = trunk(c, rules)
     W, rep = limbs(c, W, rules)
     W = smooth_part(W, c.Q, np.isin(c.part, c.pid("hand")), HAND_SMOOTH)
     frames = {n: sk["worlds"][i] for i, n in enumerate(names)}
@@ -1018,3 +1109,75 @@ def head(PH, TH, ring_ids, ring_W, names, reach=0.035):
     x /= np.maximum(x.sum(1, keepdims=True), 1e-12)
     return x, {"ring_points": int(len(ring_ids)), "head_zone_points": int(zone.sum()), "blend_points": int(len(free)),
                "reach_m": reach}
+
+
+def fold_relax(out, glb, rig_name, n, ring, cfg):
+    """P1 posed folds (13 Nov): weights relaxed only where the posed skin folds. The exported tier (out/glb, out/rig_name)
+    posed by foldcheck.py's own poses (cfg "sets": rom and the R&D clips "rnd") in its "laws" mode (helpers driven, no
+    shapes): each round, the welded points of every triangle inverted in cfg "regions" (foldcheck's fault boxes) on any
+    pose, grown `rows` rings and mirrored, have their whole weight vector relaxed `iters` times (each point half to its
+    ring's mean, the ring weighted by 1/edge length so points 1-2 mm apart, as her right posterior axilla's slivers are,
+    end up with near-equal weights: the uniform mean left a 0.07 spine_04 step over 1.4 mm there and plateaued at 77
+    inverted), until none folds or `rounds`. Everything else, and the head's ring, held. Returns the dense weights of the
+    first n points (our topology's, in order) and a report. Why the weights and not shapes: the laws mode has none, and
+    the folds are steep weight steps between bones turning far apart (the raised arm's share/clavicle/trap/spine_04 seam
+    at the acromion; the hanging arm's twist/spine_04 at the back armpit), which a smooth field turns without folding."""
+    import json
+    import os
+    import foldcheck as fc
+    from posers import make_poser
+    from scipy.spatial import cKDTree
+    rig = json.load(open(os.path.join(out, rig_name)))
+    p = make_poser("lbs", os.path.join(out, glb), rig)
+    sk, md = fc.Skin(p), fc.Modes(p, rig)
+    sets = cfg.get("sets", ["rom", "rnd"])
+    src = (list(fc.rom_poses(p)) if "rom" in sets else []) + (list(fc.rnd_poses(p, cfg.get("rnd", ["walk", "fight"]))) if "rnd" in sets else [])
+    regs = cfg.get("regions", ["shoulder_l", "shoulder_r"])
+    reg = np.zeros(len(sk.Tw), bool)
+    for r in regs:
+        reg |= sk.reg_tw[r]
+    # cfg "sharp": regions whose sharp creases (dihedral past 120 deg, degenerate slivers excepted) count as folds too:
+    # her raised arm's acromion ridge (round_39d fight:19-21, right shoulder at x -192, y 1454, z 21 mm) turns no
+    # triangle over but stands as a peak at the close camera
+    shr = np.zeros(len(sk.Tw), bool)
+    for r in cfg.get("sharp", []):
+        shr |= sk.reg_tw[r]
+    shr &= ~sk.degen
+    E, nw, X = sk.Ew, sk.nw, sk.Xw0
+    w = 1.0 / np.maximum(np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1), 1e-4)
+    A = sp.coo_matrix((np.r_[w, w], (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), (nw, nw)).tocsr()
+    L = sp.diags(1.0 / np.asarray(A.sum(1)).ravel()) @ A
+    Ab = (A > 0).astype(float)
+    _, mir = cKDTree(X).query(X * [-1, 1, 1])
+    held = np.zeros(nw, bool)
+    held[sk.rep[np.asarray(ring)]] = True
+    D0 = p.D.copy()
+    Dw = D0[:sk.nb][sk.first].copy()
+    hist, touched = [], np.zeros(nw, bool)
+    for _ in range(int(cfg.get("rounds", 8))):
+        bad, cnt = np.zeros(nw, bool), 0
+        p.D = D0.copy()
+        p.D[:sk.nb] = Dw[sk.rep]
+        k = int((p.D > 1e-9).sum(1).max())
+        p.J = np.argsort(-p.D, 1)[:, :k]
+        p.W = np.take_along_axis(p.D, p.J, 1)
+        for lab, G, kd in src:
+            V = md.pose(G, kd, "laws")[:sk.nb][sk.first]
+            nb_, sh_ = fc.inverted(sk.Xw0, V, sk.Tw, sk.Aw, sk.EPw)
+            m = (nb_ & reg) | (sh_ & shr)
+            cnt += int(m.sum())
+            bad[sk.Tw[m].ravel()] = True
+        hist.append(cnt)
+        if cnt == 0:
+            break
+        for _ in range(int(cfg.get("rows", 3))):
+            bad = bad | ((Ab @ bad.astype(float)) > 0)
+        bad = (bad | bad[mir]) & ~held
+        touched |= bad
+        for _ in range(int(cfg.get("iters", 10))):
+            Dn = 0.5 * Dw + 0.5 * (L @ Dw)
+            Dw[bad] = Dn[bad]
+        Dw[bad[:, None] & (Dw < float(cfg.get("min_w", 0.01)))] = 0.0      # (dropped each round: the next round checks what ships)
+        Dw /= Dw.sum(1, keepdims=True)
+    D = Dw[sk.rep][:n]
+    return D, {"inverted_per_round": hist, "points": int(touched.sum())}

@@ -322,6 +322,23 @@ def game_a_key(mesh, V, G, jc, kp, s):
     else:
         Y = X + f[:, None] * (Yt - X)
     free = f > 1e-3
+    ns = int(ga.get("smooth", 0))
+    if ns:
+        # P1 posed folds: the key's posed move (Y - X) relaxed `smooth` times over the welded mesh (each point half to its
+        # ring's mean, the head held at 0) before it becomes a shape: B and A deform alike to within a smooth field, so
+        # what is not smooth in A's surface minus B's is A's own folds and the point-by-point valid_mm mask (each twin's
+        # rest distance), which carried into a sawtooth on the deltoid-trapezius seam wherever the shape is worn
+        Dp = Y - X
+        deg = np.asarray(mesh.Lg.diagonal()).ravel()
+        Am = sp.diags(deg) - mesh.Lg
+        inv = 1.0 / np.maximum(deg, 1.0)
+        steps = (0.5, -0.53) if ga.get("smooth_kind", "taubin") == "taubin" else (0.5,)
+        for _ in range(ns):                     # Taubin's pair (shrink, then inflate): the sawtooth goes, the bump stays
+            for lam in steps:
+                Dp = Dp + lam * (inv[:, None] * (Am @ Dp) - Dp)
+                Dp[mesh.held] = 0.0
+        Y = X + Dp
+        free = free | (np.linalg.norm(Dp, axis=1) > 1e-6)
     mv = np.linalg.norm(Y - X, axis=1)
     full = f > 0.999
     return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
@@ -679,12 +696,33 @@ def load_conf(conf_path=None):
         base = load_conf(conf["extends"])
         over = {j["name"]: j for j in conf.get("joints", [])}
         joints = [over.pop(j["name"], j) for j in base["joints"]] + list(over.values())
-        conf = dict(base, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
+        extra = {k: v for k, v in conf.items() if k not in ("extends", "joints", "solve")}   # (fold_relax_joints)
+        conf = dict(base, **extra, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
     return conf
 
 
 TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correctives.json"),
          "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
+
+
+def write_targets(out, tier, rig, shapes, poser, Pb, Tb, turn_normals, ns):
+    """The tier's shapes onto its shapeless base (stage/<f_base>) in the rig's corrective order, each with its normal
+    delta (normal_delta: the base's own normals turned when `turn_normals`), written as <out>/<f_glb>; the shapes saved
+    as stage/<f_shapes>. (run writes them; shape_relax.run rewrites them after relaxing.) poser: an LbsPoser of the base."""
+    f_glb, _, f_base, f_shapes, _ = TIERS[tier]
+    order = []
+    for c in rig["correctives"]:
+        for s in ("l", "r"):
+            order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
+    Nb = None
+    if turn_normals:
+        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
+        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
+        Nb = mb.N.astype(np.float64)
+    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    glbwrite.set_targets(os.path.join(out, "stage", f_base), rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
+    np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
+    return order
 
 
 def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path=None):
@@ -859,20 +897,9 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
                                        "keys": {"l": np.round(K, 6).tolist(), "r": np.round(K * mx, 6).tolist()},
                                        "M": {"l": np.round(Mm, 6).tolist(), "r": np.round(Mm, 6).tolist()}})
     # write: the shapes on the body (glTF order: the poser's body points are the mesh's), normals' deltas with them
-    order = []
-    for c in rig["correctives"]:
-        for s in ("l", "r"):
-            order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
-    Nb = None
-    if turn_normals:
-        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
-        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
-        Nb = mb.N.astype(np.float64)
     ns = int(cf.get("normal_smooth", 0))
-    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    order = write_targets(out, tier, rig, shapes, poser, Pb, Tb, turn_normals, ns)
     rep["normal_smooth"] = ns
-    glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
-    np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:
         json.dump(rig, fh, indent=1)
     rep["shapes"] = len(order)

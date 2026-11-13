@@ -5,9 +5,11 @@
   "normal_smooth": 8
  },
  "solve_why": "P1 R1 bake round 3: each shape's normal turn read from B's geometric normals averaged 8 times over the mesh (correctives.normal_delta smooth): the game keys lay B's posed points on A's facets, and their turn carried point by point drew a lit line and blotches down the front of her right deltoid at close and Look (with her relief off as well). On round_19's shapes: arm_hang_look_r turn p99 39 -> 19 deg, its edge angle p90/p99 18.7/69.3 -> 14.2/57.8 deg (rest 13.1/53.3); arm_hang_close_larm_l 18.8/81.3 -> 15.1/50.3.",
+ "fold_relax_joints": {"elbow": {"sets": ["rom", "rnd"], "rnd": ["walk", "fight"], "regions": ["shoulder_l", "shoulder_r"], "rounds": 12, "rows": 3, "iters": 10, "w_min": 0.02, "tiers": ["close", "play"], "per_tier": {"play": {"iters": 4}}, "why": "P1 posed folds (13 Nov): the shared elbow joint's flex shapes, relaxed like arm_hang's where they fold her: at the ROM elbow 90/130 the elbow_flex shape turned 4 triangles a side over at the back of the upper arm under the shoulder box's floor (x 217-242, y 1382-1392, z -83 mm; upperarm_twist_02/03), since r38; laws mode 0 there. Her own block so other bodies' builds are unchanged."}},
  "joints": [
   {
    "name": "arm_hang",
+   "fold_relax": {"sets": ["rom", "rnd"], "rnd": ["walk", "fight"], "regions": ["shoulder_l", "shoulder_r", "strap_l", "strap_r"], "rounds": 16, "rows": 3, "iters": 10, "w_min": 0.02, "tiers": ["close", "play"], "per_tier": {"play": {"iters": 4}}, "why": "P1 posed folds (13 Nov, solver): the seven game keys, laid on A's posed surface, carry its creases; worn off their keys they folded the shoulder in foldcheck full mode (round_39b close: rom 26/23, walk 119/43, fight 23/80 inverted, laws 0). shape_relax.py relaxes the shapes only around the triangles they invert (mirrored by the topology). In memory on round_39b close: shoulder+strap inverted summed over rom+walk+fight 314 -> 36 in 12 rounds; each key's own move kept (p95 look 8.38 -> 8.28, stalker302 26.2 -> 23.9, fclose370 32.1 -> 31.3 mm). Built round_39c: close full shoulder rom 26/23 -> 9/8, walk 119/43 -> 0/0, fight 23/80 -> 0/19 (plateau 36 summed); play full rom 33/34, walk 132/86, fight 499/405 -> 0 everywhere in one round (play look p95 13.3 -> 10.9, stalker302 26.9 -> 20.3 mm)."},
    "law": "rbf",
    "bone": "upperarm_{s}",
    "end": "lowerarm_{s}",
