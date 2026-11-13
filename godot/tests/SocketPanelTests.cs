@@ -83,4 +83,21 @@ public sealed class SocketPanelTests
         Assert.Equal(("heroic_leap", "shield_charge"), SocketModel.Halves("falling_wall"));
         Assert.Null(SocketModel.Halves("heroic_leap"));
     }
+
+    [Fact]
+    public void A_joined_union_reads_as_a_union_in_the_list()
+    {
+        Assert.Equal("a Union · Heroic Leap + Shield Charge", SocketModel.UnionLine("falling_wall"));
+        Assert.True(Weapons.IsUnion("falling_wall"));
+    }
+
+    [Fact]
+    public void A_half_says_which_joined_union_its_gems_feed()
+    {
+        var joined = new[] { "falling_wall" };
+        Assert.Equal("Joined in Falling Wall: these gems feed it too.", SocketModel.HalfLine("heroic_leap", joined));
+        Assert.Equal("Joined in Falling Wall: these gems feed it too.", SocketModel.HalfLine("shield_charge", joined));
+        Assert.Null(SocketModel.HalfLine("sunder", joined));
+        Assert.Null(SocketModel.HalfLine("heroic_leap", System.Array.Empty<string>()));
+    }
 }

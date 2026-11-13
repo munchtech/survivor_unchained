@@ -442,6 +442,8 @@ public partial class ArtsScreen : Overlay
         list.AddChild(Kit.Head("Learned", $"carrying {SkillBook.Carried(ch).Count()} of {SkillBook.Slots(ch)}"));
         if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. Your calling teaches the first as you grow.", Style.TextItalic, 15, Kit.Dim, true));
         foreach (var id in ch.Skills) list.AddChild(SkillEntry(ch, id, true));
+        // (bd-ui W11c: her joined Unions follow her skills)
+        foreach (var id in UnionJoin.Joined(ch).Where(u => Weapons.All.ContainsKey(u))) list.AddChild(SkillEntry(ch, id, true));
         if (seen.Count > 0)
         {
             list.AddChild(Kit.Head("Seen in the arenas", "not yet learned"));
@@ -483,7 +485,8 @@ public partial class ArtsScreen : Overlay
     Control SkillEntry(CharacterData ch, string id, bool known)
     {
         var w = Weapons.All[id];
-        bool carried = ch.Slotted.Contains(id), meets = SkillBook.Meets(ch, id), on = selSkill == id;
+        bool union = Weapons.IsUnion(id);
+        bool carried = !union && ch.Slotted.Contains(id), meets = union || SkillBook.Meets(ch, id), on = selSkill == id;
         var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand, CustomMinimumSize = new Vector2(0, 50) };
         foreach (var s in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(s, new StyleBoxEmpty());
         if (on) b.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthLeft = 2 });
@@ -493,7 +496,7 @@ public partial class ArtsScreen : Overlay
         var r = Style.H(12, Glyphs.Icon(Glyphs.ForSkill(w.Id, w.Art), 26, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.DisplayLight, 16, known ? (carried ? Kit.Ink : Kit.Ink2) : Kit.Dim),
-            Style.Label($"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}", Style.Ui, 13, meets ? Style.Good : Style.Bad));
+            Style.Label(union ? SocketModel.UnionLine(id) : $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}", Style.Ui, 13, union ? Kit.Dim : meets ? Style.Good : Style.Bad));
         r.AddChild(words);
         r.Position = new Vector2(10, 4);
         r.MouseFilter = MouseFilterEnum.Ignore;
@@ -547,6 +550,7 @@ public partial class ArtsScreen : Overlay
             wells.AddChild(col);
         }
         d.AddChild(wells);
+        if (SocketModel.HalfLine(w.Id, UnionJoin.Joined(ch)) is { } joinedIn) d.AddChild(Style.Label(joinedIn, Style.TextItalic, 13, Kit.Dim, true));
         if (sockSkill == w.Id && sockIdx >= 0 && sockIdx < open) Chooser(d, ch, w);
     }
 
@@ -640,6 +644,7 @@ public partial class ArtsScreen : Overlay
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Kit.Ink2, true));
+        if (Weapons.IsUnion(w.Id)) { SocketBlock(d, ch, w); return d; }
         // What her calling's Hand does to it, in her hands in every fight (plain text; the look is the UI lead's).
         if (Content.Hands.Line(ch.Archetype, w) is { } hand) d.AddChild(Style.Label(hand, Style.Text, 16, Kit.Ink2, true));
         string attr = SkillBook.Attribute(w.Id);

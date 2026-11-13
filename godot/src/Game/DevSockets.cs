@@ -15,6 +15,12 @@ public static class DevSockets
         if (Args.Get("gems") is string gems)
             foreach (var kv in gems.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split(':')))
                 ch.Gems.Owned[kv[0]] = ch.Gems.Owned.GetValueOrDefault(kv[0]) + (kv.Length > 1 ? int.Parse(kv[1]) : 1);
+        // --join-union ID (pictures): learned and joined on the active layout, the price skipped
+        if (Args.Get("join-union") is string ju)
+        {
+            if (!ch.UnionsKnown.Contains(ju)) ch.UnionsKnown.Add(ju);
+            GD.Print($"join-union {ju}: {UnionJoin.Join(ch, ju)}");
+        }
         if (Args.Get("socket") is string socks)
             foreach (var p in socks.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split(':')))
             {

@@ -85,4 +85,18 @@ public static class SocketModel
     /// <summary>The two halves of a Union (by its weapon's id), else null.</summary>
     public static (string A, string B)? Halves(string weaponId) =>
         Unions.All.FirstOrDefault(u => u.Into == weaponId) is { } u ? (u.A, u.B) : null;
+
+    static string NameOf(string skill) => Weapons.All.TryGetValue(skill, out var w) ? w.Name : skill;
+
+    /// <summary>The Skills list's second line for a joined Union: "a Union · Heroic Leap + Shield Charge".</summary>
+    public static string UnionLine(string weaponId) =>
+        Halves(weaponId) is { } h ? $"a Union · {NameOf(h.A)} + {NameOf(h.B)}" : "a Union";
+
+    /// <summary>On a half's page: the line saying a joined Union takes its gems too, else null.</summary>
+    public static string? HalfLine(string skill, IEnumerable<string> joined)
+    {
+        foreach (var id in joined)
+            if (Halves(id) is { } h && (h.A == skill || h.B == skill)) return $"Joined in {NameOf(id)}: these gems feed it too.";
+        return null;
+    }
 }
