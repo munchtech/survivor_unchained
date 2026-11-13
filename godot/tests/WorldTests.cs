@@ -20,7 +20,7 @@ public class CharacterTests
     {
         var ch = Survivor("hunter");
         Assert.Equal("worn_oathblade", ch.Equipment.Weapon?.Def);
-        Assert.Equal("old_hunters_cloak", ch.Equipment.Cloak?.Def);
+        Assert.Equal("old_hunters_cloak", ch.Equipment.Body?.Def);
         Assert.Contains("beastlore", ch.Knowledge);
         var kit = Character.Kit(ch);
         Assert.Equal(new[] { ("oathblade", 1) }, kit.Weapons);

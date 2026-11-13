@@ -476,7 +476,7 @@ public class AuditTests
         Assert.DoesNotContain(p.W.History, h => h.Id == "broke_promise");
         // A wolf minding its own business, struck down on purpose: that breaks it.
         p.Leave();
-        p.J.Unequip(EquipSlot.Cloak, null);
+        p.J.Unequip(EquipSlot.Body, null);
         p.Enter("verge");
         p.Walk("hollow", 10, 0);
         var calm = p.B!.Enemies.Living().First(e => e.Tag == "hollow" && e.Disposition == Sim.Disposition.Neutral);

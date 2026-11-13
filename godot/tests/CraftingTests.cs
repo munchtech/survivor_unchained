@@ -198,7 +198,7 @@ public class CraftingTests
         var j = Make();
         Give(j, "wolf_pelt", 6);
         // A cloak with an open seam (uncommon, no affix yet).
-        var cloak = Piece(j, "travelers_cloak", 1);
+        var cloak = Piece(j, "travelers_boots", 1);  // (boots, since the cloak place was cut)
         Assert.Equal(1, Crafting.OpenSeams(cloak));
         Assert.Contains(("wolf_pelt", "of_the_wolf"), Crafting.WorkInChoices(cloak));
         Assert.DoesNotContain(("wolf_pelt", "wolfbane"), Crafting.WorkInChoices(cloak));
@@ -210,10 +210,10 @@ public class CraftingTests
         Assert.Equal(3, Inventory.Count(j.Ch, "wolf_pelt"));
         // Worn, the wolves smell it.
         Assert.DoesNotContain("wolf_pelts", Inventory.WorldTags(j.Ch));
-        j.Equip(cloak.Uid, EquipSlot.Cloak, null);
+        j.Equip(cloak.Uid, EquipSlot.Feet, null);
         Assert.Contains("wolf_pelts", Inventory.WorldTags(j.Ch));
         // No open seam: it goes over a chosen place, which is lost.
-        var full = Piece(j, "travelers_cloak", 1, ("fleet", 1));
+        var full = Piece(j, "travelers_boots", 1, ("fleet", 1));
         Give(j, "boar_hide", 3);
         Assert.False(Crafting.WorkIn(j.Craft, full, "boar_hide", "sturdy").Ok);
         q = Crafting.WorkIn(j.Craft, full, "boar_hide", "sturdy", replace: 0);
