@@ -35,6 +35,10 @@ uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
 // old soft rigs, came out a pale beige under the cel day rigs (08 lit skin C .09 h 63 against MB1's lit chip #ee9962,
 // C .127 h 45, and T08's C .143 h 48); People.HerCelTone. 1: as before (cel off, or --cel-tone 1,1,1).
 uniform vec3 cel_tone = vec3(1.0);
+// (the cel key's fill on her (cel_fill_add, where the key doesn't reach) times this, linear; People.NpcSkin: an NPC whose
+// paint is darker than hers takes less of cel_tone on its albedo (its lit side read saturated orange, x18 V3) and the rest
+// here, so its shade keeps the warmth cel_tone gave it (less of it read lilac). 1: as before, hers.)
+uniform vec3 cel_fill_tone = vec3(1.0);
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
 // 1.5 cm they read as large and even on her hands).
@@ -1031,7 +1035,7 @@ void light() {
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * cb_b * BACKLIGHT * un * mix(1.0, behind, backlight_behind);
 	// (cel: the key's fill where its light doesn't reach)
-	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un;
+	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * cel_fill_tone;
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);

@@ -1,5 +1,7 @@
 # Handoff: her body (rig, mesh, weights)
 
+**13 Nov, posed folds (28ca0ae3f) KNOWN, closed:** R&D coordinator 6 found 6 (walk:10) to 27 (fight:18-21) whole-body inverted slivers in round_39d, outside the four routed regions: crotch/groin and inner-thigh creases, finger creases, elbow creases, 3 degenerate (Marionette `generated/rnd/_scratch/rig22/locate22.json`, crops `x14/r22/body_inv_crops.png`). All sit deep in closed creases; the max judge found no mark at the game cameras at 1:1, so they close as known (finish line). Open on the body side: the walk:10 hip/buttock sag and the raised right shoulder peak (strike 19-20).
+
 ## R1 LEAD 12: MR READY (9 Nov): the owner PICKED B ("B, go"); published body committed, bands retuned, A's roles a default, caches cleared, integration merged, suite green
 **MR READY body-p1@<this commit>.** Commits since the pick: 49b1a1fcf (the published gate body: godot/art/people/body_p1/* incl. pieces, blend_base, cavity; godot/data/body/p1_spring_samples.json; heroine.glb with A's seam feather: this ONE publish's glbs only), 0c6d5806e (form bands), a6f591542 + b0638001d (A's weight roles default), a131f442e (merge of origin/claude/vigilant-galileo-l6jqyx, junction rule). dotnet test 1588/0/10.
 - **`--body p1` stays OPT-IN** (People.cs l.370): flipping the default hides A's outfit pieces on B (P1Body: "left off B till P1's refit"), so she would play nude. The default flips with P2's outfit refit.
