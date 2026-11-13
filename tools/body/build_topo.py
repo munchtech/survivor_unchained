@@ -374,79 +374,123 @@ def stage_forms(spec, tier, z, V, ring, rep):
     return V + R
 
 
-def folded(V, T, nb):
-    """Triangles wound against their own sheet: the face normal against the mean of its edge-neighbours' (dot < 0),
-    the Marionette carrier's base_winding rule. nb: per triangle its edge-neighbours (fold_neighbours)."""
-    n = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
-    n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
-    out = []
-    for t, k in enumerate(nb):
-        if k:
-            m = n[k].mean(0)
-            if np.dot(n[t], m) < 0:
-                out.append(t)
-    return np.array(out, int)
-
-
 def fold_neighbours(T):
-    em = {}
-    for t, tri in enumerate(T):
-        for a, b in ((0, 1), (1, 2), (2, 0)):
-            em.setdefault((min(tri[a], tri[b]), max(tri[a], tri[b])), []).append(t)
-    nb = [[] for _ in range(len(T))]
-    for v in em.values():
-        if len(v) == 2:
-            nb[v[0]].append(v[1])
-            nb[v[1]].append(v[0])
+    """Per triangle its edge-neighbours, (n, 3) padded with -1: the triangles sharing an edge used by exactly two
+    (an open edge, the neck ring's, has none)."""
+    E = np.sort(np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1).astype(np.int64)
+    tid = np.tile(np.arange(len(T)), 3)
+    key = E[:, 0] * (int(T.max()) + 1) + E[:, 1]
+    o = np.argsort(key, kind="stable")
+    k = key[o]
+    starts = np.r_[0, np.nonzero(np.diff(k))[0] + 1]
+    two = np.diff(np.r_[starts, len(k)]) == 2
+    a, b = tid[o[starts[two]]], tid[o[starts[two] + 1]]
+    nb = -np.ones((len(T), 3), np.int64)
+    cnt = np.zeros(len(T), np.int64)
+    for x, y in ((a, b), (b, a)):
+        for t, u in zip(x.tolist(), y.tolist()):
+            nb[t, cnt[t]] = u
+            cnt[t] += 1
     return nb
 
 
-def stage_unfold(spec, z, V, ring, rep):
-    """13 Nov (the Marionette carrier found 23 folded triangles on the shipped base: toes, cleavage, inner arms, under
-    the jaw, all made in stage 1 by the slider/her_a fields; every roster body's gear carrier copies the base's
-    points, so the folds spread to all of them). Spec "unfold": {"step", "smooth", "grow", "rounds"}: while any
-    triangle is wound against its sheet (folded()), the points of the folded triangles, grown by `grow` rings of
-    quad neighbours per failed round, are pulled `smooth` times toward their quad neighbours' mean by `step`. The
-    head ring is held (the seam stays the head's). Positions only: the vertex count and order, the UVs and the
-    weights (read on the body before this stage, run_tier) are untouched. Key absent: V as it is (byte-identical)."""
+def sheet_dots(V, T, nb):
+    """Per triangle its unit normal . its edge-neighbours' mean unit normal (no neighbour: 1)."""
+    n = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+    n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    m = np.vstack([n, np.zeros((1, 3))])[nb].sum(1)
+    m /= np.maximum(np.linalg.norm(m, axis=1, keepdims=True), 1e-12)
+    return np.where((nb >= 0).any(1), np.einsum("ij,ij->i", n, m), 1.0)
+
+
+def folded(V, T, nb):
+    """Triangles wound against their own sheet: the face normal against the mean of its edge-neighbours' (dot < 0),
+    the Marionette carrier's base_winding rule (tools carrier26/base_winding.py). nb: fold_neighbours(T)."""
+    return np.nonzero(sheet_dots(V, T, nb) < 0)[0]
+
+
+def stage_unfold(spec, tier, z, V, ring, rep):
+    """13 Nov (the Marionette carrier found 23 folded triangles on the shipped base: 12 at the toes, 4 at the
+    cleavage, 4 inner arms, 3 on the neck's first row under the head ring, all made in stage 1 by the slider/her_a
+    fields; every roster body's gear carrier copies the base's points, so the folds spread to all of them).
+    Spec "unfold": {"c", "cap_mm", "iters"}. The triangles judged are the EXPORT's (the UV layout's, topo_uv: the glb
+    splits each quad on its own diagonal, so the quads' fixed split folds elsewhere). Each folded triangle, and then
+    every triangle touching a point this stage moved, is held to n.r >= its target (n its unit normal, r its
+    edge-neighbours' mean unit normal; target c for a folded one, else the lower of c and its own dot before: never
+    worse than it was, never forced past c) by the smallest move of its free points (linearised, each step capped at
+    cap_mm), until none is folded and none is under its target. The head ring is held (weight 0: the seam stays the
+    head's bit for bit; where the ring steps back on itself the row under it takes the move). Why this and not
+    smoothing: the umbrella mean pulls the ring row toward a jagged held ring and folds it again, and moves hundreds
+    of points; this moves only the folds' own points and their first ring. Positions only: the vertex count and
+    order, the UVs and the weights (read on the body before this stage, run_tier) are untouched. Key absent: V as it
+    is (byte-identical)."""
     cfg = spec.get("unfold")
     if not cfg:
         return V
-    Q = z["Q"]
-    T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
+    if spec.get("uv", True):
+        import topo_uv
+        uv, _ = topo_uv.load(tier, z)
+        T = uv["src"][uv["T"]]
+    else:
+        Q = z["Q"]
+        T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
     nb = fold_neighbours(T)
-    adj = [set() for _ in range(len(V))]
-    for q in Q:
-        for i in range(4):
-            adj[q[i]].update((q[(i + 1) % 4], q[(i + 3) % 4]))
-    adj = [np.array(sorted(a), int) for a in adj]
+    vt = [[] for _ in range(len(V))]
+    for t, tri in enumerate(T.tolist()):
+        for v in tri:
+            vt[v].append(t)
+    c, cap, iters = float(cfg.get("c", 0.5)), float(cfg.get("cap_mm", 0.5)) * 1e-3, int(cfg.get("iters", 400))
     held = np.zeros(len(V), bool)
     held[ring] = True
-    V0 = V.copy()
-    V = V.copy()
-    bad = folded(V, T, nb)
-    first = bad.copy()
-    step, smooth = float(cfg.get("step", 0.5)), int(cfg.get("smooth", 4))
-    grow, rounds = int(cfg.get("grow", 1)), int(cfg.get("rounds", 8))
-    moved = np.zeros(len(V), bool)
-    r = 0
-    for r in range(rounds):
-        if not len(bad):
+    V0 = np.asarray(V, np.float64)
+    V = V0.copy()
+    d0 = sheet_dots(V, T, nb)
+    first = np.nonzero(d0 < 0)[0]
+    target = np.minimum(c, d0)
+    target[first] = c
+    work = set(first.tolist())
+    it, viol = 0, []
+    for it in range(iters):
+        w = np.array(sorted(work), np.int64)
+        dots = sheet_dots(V, T, nb)
+        viol = w[dots[w] < target[w] - 1e-9] if len(w) else w
+        if not len(viol) and not (dots < 0).any():
             break
-        free = set(np.unique(T[bad]).tolist())
-        for _ in range(grow * r):
-            free |= {int(j) for i in list(free) for j in adj[i]}
-        free = np.array(sorted(i for i in free if not held[i]), int)
-        for _ in range(smooth):
-            mean = np.array([V[adj[i]].mean(0) for i in free])
-            V[free] += step * (mean - V[free])
-        moved[free] = True
-        bad = folded(V, T, nb)
+        n = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+        n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+        nP = np.vstack([n, np.zeros((1, 3))])
+        for t in viol.tolist():
+            r = nP[nb[t]].sum(0)
+            r /= max(np.linalg.norm(r), 1e-12)
+            x0, x1, x2 = V[T[t]]
+            nr = np.cross(x1 - x0, x2 - x0)
+            a = r - target[t] * nr / max(np.linalg.norm(nr), 1e-12)
+            g = float(np.dot(nr, a))                          # n.r - target, times twice the area
+            if g >= 0:
+                continue
+            G = np.array([np.cross(x2 - x0, a), np.cross(a, x1 - x0)])
+            G = np.vstack([-(G[0] + G[1]), G])
+            wt = (~held[T[t]]).astype(float)
+            den = float((wt * (G ** 2).sum(1)).sum())
+            if den < 1e-24:
+                continue
+            D = (-g / den) * wt[:, None] * G
+            m = float(np.linalg.norm(D, axis=1).max())
+            if m > cap:
+                D *= cap / m
+            V[T[t]] += D
+            for v in T[t][wt > 0].tolist():
+                work.update(vt[v])
+        work |= set(np.nonzero(sheet_dots(V, T, nb) < 0)[0].tolist())
+    bad = folded(V, T, nb)
     d = np.linalg.norm(V - V0, axis=1)
-    rep["unfold"] = {"folded_before": int(len(first)), "folded_after": int(len(bad)), "rounds": r + (0 if len(bad) else 0),
-                     "points_moved": int((d > 0).sum()), "move_max_mm": round(float(d.max()) * 1e3, 3),
-                     "ids_before": [int(t) for t in first], "cfg": cfg}
+    rep["unfold"] = {"folded_before": int(len(first)), "folded_after": int(len(bad)), "iterations": it,
+                     "under_target_after": int(len(viol)), "points_moved": int((d > 0).sum()),
+                     "move_max_mm": round(float(d.max()) * 1e3, 3), "ring_move_max_mm": float(d[ring].max()) * 1e3,
+                     "ids_before": [int(t) for t in first], "triangles": "export (UV layout)" if spec.get("uv", True) else "quad split",
+                     "cfg": cfg}
     assert not len(bad), ("unfold left folded triangles", bad.tolist())
+    assert float(d[ring].max()) == 0.0, "unfold moved the head ring"
     return V
 
 
@@ -849,7 +893,7 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
              **({"src": uv["src"], "T": uv["T"]} if uv is not None else {}))
 
 
-def stage_shapes(spec, tier, z, V, A, baked, out, rep):
+def stage_shapes(spec, tier, z, V, A, baked, out, rep, V_pre=None):
     """8 (P1 R1) form shapes: designed sliders the GAME sets at run time, written as blend shapes on the body (after
     the correctives' shapes, kept): spec "shapes" {slider: value} -> a shape "form_<slider>" = the body built with
     that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam); spec "shapes_with"
@@ -874,7 +918,7 @@ def stage_shapes(spec, tier, z, V, A, baked, out, rep):
         _, V2 = stage_base(s2, tier, r2)
         V2, ring, _ = stage_place(s2, z, V2, A, baked, r2)
         V2 = stage_forms(s2, tier, z, V2, ring, r2)
-        D = (V2 - V)[src]
+        D = (V2 - (V if V_pre is None else V_pre))[src]     # (13 Nov: against the body before the unfold: the same deltas, the fix rides them)
         tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D, Nx).astype(np.float32))
         info["form_" + name] = {"value": val, "max_mm": round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 2)}
     glbwrite.add_targets(glb, "Heroine", tg)
@@ -906,7 +950,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     # (13 Nov: the skeleton and the weights are read on the body before the unfold, so they stay as they were)
     V_pre = V
     t = time.time()
-    V = stage_unfold(spec, z, V, ring, rep)
+    V = stage_unfold(spec, tier, z, V, ring, rep)
     if spec.get("unfold"):
         tim["unfold"] = round(time.time() - t, 2)
     t = time.time()
@@ -986,7 +1030,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         tim["correctives"] = round(time.time() - t, 2)
     if spec.get("shapes"):
         t = time.time()
-        stage_shapes(spec, tier, z, V, A, baked, out, rep)
+        stage_shapes(spec, tier, z, V, A, baked, out, rep, V_pre)
         tim["shapes"] = round(time.time() - t, 2)
     if uv is not None and spec.get("bake"):
         t = time.time()

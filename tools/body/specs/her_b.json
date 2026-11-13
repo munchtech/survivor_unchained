@@ -252,6 +252,8 @@
   },
   "why": "P1 R1 shape round 30 (gate judge 2 fault 1, the ankle's sharp crease): B's calf -> foot ramp was 50 mm (all foot 20 mm under the ankle joint, all calf 30 over); A's own, measured on heroine.glb's bind (foot + ball share by height over A's ankle along the calf, her left, 10 mm bands): 0.93 at -55 mm, 0.72 at -5, 0.50 at +15, 0.26 at +45, 0.13 at +75, a 195 mm ramp from -80 (least squares, smoothstep: residual 0.015 over 15 bands). The ball's: A 0.17 at t 0.55, 0.53 at 0.95, 0.92 at 1.35 along the foot bone -> [0.23, 1.4] (residual 0.003). B's foot and its joints are A's (her_a a_foot), so A's ramps are A's skinning there."
  },
+ "unfold": {"c": 0.5, "cap_mm": 0.5, "iters": 400},
+ "unfold_why": "13 Nov (Marionette carrier lead 26, base_winding.py): 23 triangles of the shipped base were wound against their own sheet (12 at the toes, 4 cleavage, 4 inner arms, 3 on the neck row under the head ring), made in stage 1 by the slider/her_a fields; every roster body's gear carrier copies the base's points, so each fold spread to all of them. build_topo.stage_unfold moves only the folded triangles' points and their first ring, the head ring held, until every triangle is within ~60 degrees of its neighbours (c .5) or no worse than it was; positions only (the weights and skeleton read before it, the UVs and order untouched).",
  "bake": {
   "maps": "godot/art/people/body_p1",
   "cavity": {"line_m": [[0.177, 1.393, -0.033], [0.159, 1.461, 0.039]], "radius_mm": [40.0, 80.0],
