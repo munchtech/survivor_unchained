@@ -1969,6 +1969,16 @@ public static class People
     {
         // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
         m.SetShaderParameter("mouth_in", 1f);
+        // (the cel half-tone on the whole head cooler than the skin's warm CEL_MID: on the warm toned paint it read as a
+        // saturated orange band from temple to cheek at a close framing in the sun, across the eye with the head bowed
+        // (NPC skin judge r1; on her as much: face Oklab C p98 .195 against the NPC's .197). heroine_skin.gdshader's
+        // face_mid; --face-mid off: as before, for before/after pictures)
+        if (!FaceMidOff)
+        {
+            m.SetShaderParameter("face_mid", HeadMid);
+            m.SetShaderParameter("face_mid_w", 1f);
+            m.SetShaderParameter("face_mid_mask", 0f);
+        }
         // (her eyes, brows and lips deepened when her face is small on
         // screen, so a face still reads from the game's camera)
         if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
@@ -2721,6 +2731,9 @@ public static class People
 
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
     static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
+    static readonly bool FaceMidOff = SurvivorUnchained.Args.Get("face-mid") == "off";
+    /// <summary>The head's cel half-tone level (heroine_skin.gdshader face_mid; the skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
+    static readonly Vector3 HeadMid = new(0.45f, 0.55f, 0.65f);
 
     // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
     static float lookRig;
