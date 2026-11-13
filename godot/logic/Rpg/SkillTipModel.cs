@@ -67,9 +67,13 @@ public static class SkillTipModel
             every = period * (w.Wick?.Cooldown ?? 1);
         }
 
+        // (SU-071) A card's {base.X} is what her build gets: asked of the live fight, else of a probe fight built as a day fight would start.
+        Battle? ask = live ? b : null;
+        Battle Ask() => ask ??= Probe(ch, w);
+
         string Fill(string t) => Hole.Replace(t, m =>
         {
-            string? s = Lookup(m.Groups[1].Value, w, dmg, cut, every, cooldown, resolve, drain);
+            string? s = Lookup(m.Groups[1].Value, w, dmg, cut, every, cooldown, resolve, drain, Ask);
             if (s == null) { unresolved.Add(m.Value); return "?"; }
             // a value read as seconds (the hole followed by " s") prints 0.#
             bool secs = string.CompareOrdinal(t, m.Index + m.Length, " s", 0, 2) == 0
@@ -108,6 +112,20 @@ public static class SkillTipModel
         };
     }
 
+    /// <summary>(SU-071) A day fight as it would start for her, holding only this card's skill (its wick lit): what a card with no live
+    /// battle asks. Built from copies (the kit and the lamps are made fresh); it never touches her or the shared content.</summary>
+    static Battle Probe(CharacterData ch, WeaponInst w)
+    {
+        var kit = Character.Kit(ch, false);
+        var p = new Battle(new BattleSetup
+        {
+            Seed = 1, Combat = false, Collision = new CollisionWorld(80), HeightAt = (_, _) => 0, Stats = kit.Stats, Campaign = true,
+            Lamps = kit.Lamps, Level = ch.Level, Wicks = WickBook.Paths(ch, night: false),
+        });
+        p.CarryProbe(w);
+        return p;
+    }
+
     /// <summary>Her Cooldown stat as a fight starts with it (kit stats: calling, gear, lamps).</summary>
     public static double StatMul(CharacterData ch) => Character.Kit(ch, false).Stats.Get(Stat.Cooldown);
 
@@ -119,7 +137,7 @@ public static class SkillTipModel
     }
 
     /// <summary>One placeholder's text, or null when the data has nothing for it.</summary>
-    static string? Lookup(string name, WeaponInst w, double dmg, double? cut, double? every, double cooldown, double resolve, double drain)
+    static string? Lookup(string name, WeaponInst w, double dmg, double? cut, double? every, double cooldown, double resolve, double drain, Func<Battle> ask)
     {
         switch (name)
         {
@@ -134,6 +152,8 @@ public static class SkillTipModel
         {
             bool pct = name.EndsWith(":%", StringComparison.Ordinal);
             string f = pct ? name[5..^2] : name[5..];
+            // (SU-071) The number the runtime uses for this build first; the written base only where there is none
+            if (ask().SkillNumber(w, f) is { } run) return pct ? Percent(run) : Plain(run);
             var fi = typeof(WeaponStats).GetField(f, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
             if (fi?.GetValue(w.Def.Base) is not { } v) return null;
             double d = Convert.ToDouble(v, Inv);

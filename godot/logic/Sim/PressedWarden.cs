@@ -41,12 +41,12 @@ public sealed partial class Battle
     {
         if (!FreeToMove) return false;
         var p = Player;
-        double range = RuleLeapRange(w, w.Num(s => s.Range) ?? 9), min = Math.Min(range, w.Num(s => s.MinRange) ?? 3);
+        double range = LeapRangeOf(w), min = LeapMinOf(w);
         var (dx, dz, d) = SkillDir(range);
         (dx, dz, d) = RuleLeapAim(w, dx, dz, d);
         d = Math.Clamp(d, min, range);
         var (x1, z1) = LeapTo(dx, dz, d);
-        double r = Firing.AreaOf(this, w, WkOver(w, "heroic_leap.crater", "radius", w.Num(s => s.Radius) ?? 3.5)), air = Math.Max(0.1, w.Num(s => s.Air) ?? 0.62);
+        double r = LeapRadiusOf(w), air = Math.Max(0.1, w.Num(s => s.Air) ?? 0.62);
         RuleLeapTakeoff(w);
         p.Leap = new Leap { T = 0, Dur = air, X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1, Weapon = w, Radius = r, Heavy = HeavyBy == w };
         p.Iframes = Math.Max(p.Iframes, air);
@@ -81,7 +81,7 @@ public sealed partial class Battle
         var (hb, was) = (HeavyBy, credit);
         HeavyBy = leap.Heavy ? w : null;
         credit = w.Id;
-        double kb = w.Num(s => s.Knockback) ?? 2.5, stun = RuleLeapStun(w, w.Num(s => s.Stun) ?? 0.8), stagger = w.Num(s => s.Stagger) ?? 0.3;
+        double kb = w.Num(s => s.Knockback) ?? 2.5, stun = LeapStunOf(w), stagger = w.Num(s => s.Stagger) ?? 0.3;
         double dmg = w.Damage * RuleDamageMul(w);
         var ring = HostilesInRadius(leap.X1, leap.Z1, leap.Radius);
         LeapStruck.Clear();
@@ -112,10 +112,10 @@ public sealed partial class Battle
     {
         if (!FreeToMove) return false;
         var p = Player;
-        double dist = WkOver(w, "shield_charge.headlong", "range", w.Num(s => s.Range) ?? 8), time = Math.Max(0.05, w.Num(s => s.RushTime) ?? 0.3);
+        double dist = ChargeRangeOf(w), time = Math.Max(0.05, w.Num(s => s.RushTime) ?? 0.3);
         double strength = RuleChargeBegin(w);
         var (dx, dz, _) = SkillDir(dist);
-        double share = SkillRule(w, "iron_hide") ? SkillFull(w, "iron_hide", "barrier", 0.25) : w.Num(s => s.Barrier) ?? 0.15;
+        double share = ChargeBarrierOf(w);
         Art.Barrier = MaxHp * share;
         Barrier(Art.Barrier, w.Num(s => s.Duration) ?? 4);
         Art.Struck.Clear();
@@ -215,7 +215,7 @@ public sealed partial class Battle
     {
         if (Braced != null || FireFrom != null || Refiring) return false;
         var p = Player;
-        Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = Math.Max(0.05, WkOver(w, "iron_vow.steadfast", "brace", w.Num(s => s.Brace) ?? 2)), Heavy = HeavyBy == w };
+        Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = BraceSecondsOf(w), Heavy = HeavyBy == w };
         RuleBraceBegin(w, Braced.Plant + Braced.T);
         p.Vx = p.Vz = 0;
         Events.Emit(new Ev.Brace { Phase = BracePhase.Start, X = p.X, Z = p.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5) });
@@ -301,7 +301,7 @@ public static partial class Firing
         if (!w.Channeling || b.FireFrom != null || b.Refiring) return false;
         var p = b.Player;
         bool heavy = b.HeavyBy == w;
-        double r = AreaOf(b, w, b.RuleReach(w, w.Num(s => s.Radius) ?? 3.2)), kb = w.Num(s => s.Knockback) ?? 0.3, cut = w.Damage * b.RuleDamageMul(w);
+        double r = b.SpinRadiusOf(w), kb = w.Num(s => s.Knockback) ?? 0.3, cut = w.Damage * b.RuleDamageMul(w);
         b.RuleChopBegin(w);
         if (w.SpinTicks == 0) b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Start, X = p.X, Z = p.Z, Radius = r });
         w.SpinTicks++;
