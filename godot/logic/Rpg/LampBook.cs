@@ -43,14 +43,20 @@ public sealed class LampState
 public sealed record LampSleep(string[] Skills, string[] Tags);
 
 /// <summary>Why a lamp can't be lit or put out (None: it can).</summary>
-public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Free, Holds }
+public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Free, Holds, NoRoad }
 
 /* The lamps a survivor has lit (docs/design/CLASSES.md §2.4-2.5).
  *
- * Lamps come from levels (one a level from 2 to 30), the story's bosses
- * (one each, the first win), the atlas (a tier's first clear; eight on v1,
- * thirty on v2) and, on v2, the dark lamp-posts relit. Three are free: the
+ * Lamps come from levels (one a level from 2 to the cap, 75), the story's
+ * bosses (one each, the first win), the atlas (a tier's first clear; eight on
+ * v1, thirty on v2) and, on v2, the dark lamp-posts relit. Three are free: the
  * hearth's first lamp, and the chosen type's entry and Strike.
+ *
+ * The type is her road, the calling's subclass (BUILD_UNLOCKS, level 6): a new
+ * survivor walks none (roadless: the hearth's first lamp and her calling's
+ * first Strike are free, and no road's lamp can be lit) until she chooses one
+ * at RoadLevel (ChooseRoad, a story beat Journey raises); afterwards she
+ * changes it at any lamp-post, free, as the rest (Journey.WalkRoad).
  *
  * A lamp is lit next to a lit one, past its road's depth gate. Lamps go out
  * free, by day, at a town's lamp-post (the caller asks Journey.LampsOpen):
@@ -88,8 +94,53 @@ public static class LampBook
 
     public static LampLayout Now(CharacterData ch) => State(ch).Now;
 
-    /// <summary>A calling's first road: the type a survivor who never chose one walks.</summary>
+    /// <summary>A calling's first road: the type a survivor named none for walks (old saves, the harness), and whose Strike a
+    /// survivor with no road yet carries.</summary>
     public static string DefaultType(string calling) => Lamps.RoadsOf(calling).First().Id;
+
+    /* ------------------------------------------------ the road (subclass) -- */
+
+    /// <summary>The level her road is chosen at (docs/design/BUILD_UNLOCKS.md: the subclass, level 6; that page owns the number).</summary>
+    public const int RoadLevel = 6;
+
+    /// <summary>The board as a new survivor has it: no road on any layout (BUILD_UNLOCKS: no road before level 6).</summary>
+    public static void BeginRoadless(CharacterData ch)
+    {
+        ch.Lamps = new LampState();
+        foreach (var l in ch.Lamps.Layouts) { Reset(ch, l, ""); l.Carried = ch.Slotted.ToList(); }
+    }
+
+    /// <summary>She walks no road on the layout in use (a new survivor before her choice).</summary>
+    public static bool Roadless(CharacterData ch) => !Lamps.Roads.ContainsKey(Now(ch).Type);
+
+    /// <summary>Her level has reached the road's choice.</summary>
+    public static bool RoadOpen(CharacterData ch) => ch.Level >= RoadLevel;
+
+    /// <summary>The road she walks on the layout in use, or null.</summary>
+    public static RoadDef? Walked(CharacterData ch) => Lamps.Roads.GetValueOrDefault(Now(ch).Type);
+
+    /// <summary>The road whose Flares are hers now: the one she walks, else her calling's first (its Strike is free before the choice).</summary>
+    public static RoadDef FlareRoad(CharacterData ch) => Walked(ch) ?? Lamps.Road(DefaultType(ch.Archetype));
+
+    static string StrikeOf(CharacterData ch, LampLayout l) =>
+        Lamps.Roads.TryGetValue(l.Type, out var r) ? r.Strike : Lamps.Road(DefaultType(ch.Archetype)).Strike;
+
+    /// <summary>The road's own skill (its first calling skill she can carry that is not her grip's: Character.FirstCallingSkill,
+    /// what creation used to teach for the type): learned when she takes the road up, if she does not know it yet.</summary>
+    public static string? RoadSkill(CharacterData ch, string road) =>
+        Character.FirstCallingSkill(ch.Archetype, road, ch.Equipment[EquipSlot.Weapon]?.Def);
+
+    /// <summary>Take up a road of her calling (from RoadLevel): the layout in use walks it, refunded to its free lamps (the
+    /// entry and the Strike lit, every other lamp out, the Flare its Strike); her first choice sets every roadless layout,
+    /// so switching layouts never drops it. The wicks are untouched. False: not her calling's, too early, or already walked.</summary>
+    public static bool ChooseRoad(CharacterData ch, string road)
+    {
+        if (!RoadOpen(ch) || !Lamps.Roads.TryGetValue(road, out var r) || r.Calling != ch.Archetype || Now(ch).Type == road) return false;
+        var s = State(ch);
+        foreach (var l in s.Layouts)
+            if (l == s.Now || !Lamps.Roads.ContainsKey(l.Type)) Reset(ch, l, road);
+        return true;
+    }
 
     /// <summary>Lamps earned: levels, the story's bosses beaten, the atlas's milestones, and (v2) the lamp-posts relit.</summary>
     public static int Earned(CharacterData ch, WorldState? w) => Math.Max(0, ch.Level - 1) + StoryLamps(w) + AtlasLit(w) + PostLamps(w);
@@ -157,6 +208,8 @@ public static class LampBook
             o.Add(Lamps.Entry(road.Id));
             if (Lamps.FlareLamp(road.Strike) is { } s) o.Add(s);
         }
+        // (no road yet: her calling's first Strike stays hers, so the Flare is never lost to the road's choice)
+        else if (Lamps.FlareLamp(StrikeOf(ch, l)) is { } s) o.Add(s);
         return o;
     }
 
@@ -189,6 +242,8 @@ public static class LampBook
         if (Lamps.Find(id) is not { } def) return LampNo.Unknown;
         if (isLit(id)) return LampNo.Lit;
         if (def.Home && def.Calling != ch.Archetype) return LampNo.NotHome;
+        // (no road before her choice: every road's lamps stay dark, hers and the other callings')
+        if (def.Road != null && Lamps.Roads.ContainsKey(def.Road) && Roadless(ch)) return LampNo.NoRoad;
         if (!Lamps.Next(id).Any(isLit)) return LampNo.Dark;
         if (def.Road != null && depth(def.Road) < def.Gate && !Ungated(ch, unhoused, def)) return LampNo.Gate;
         return LampNo.None;
@@ -291,7 +346,7 @@ public static class LampBook
         if (CanUnlight(ch, id) != LampNo.None) return false;
         var l = Now(ch);
         l.Lit.Remove(id);
-        if (!Learned(ch).Contains(l.Flare)) l.Flare = Lamps.Road(l.Type).Strike;
+        if (!Learned(ch).Contains(l.Flare)) l.Flare = StrikeOf(ch, l);
         return true;
     }
 
@@ -330,7 +385,9 @@ public static class LampBook
         if (index < 0 || index >= s.Layouts.Count || !LayoutsOpen(w, zone)) return false;
         Keep(ch);
         s.Active = index;
-        if (s.Now.Type == "") Reset(ch, s.Now, DefaultType(ch.Archetype));
+        // (a layout never set up: the road walked on another, else none)
+        if (!Lamps.Roads.ContainsKey(s.Now.Type) && s.Now.Lit.Count == 0)
+            Reset(ch, s.Now, s.Layouts.Select(x => x.Type).FirstOrDefault(Lamps.Roads.ContainsKey) ?? "");
         s.Now.Carried ??= new();
         ch.Slotted = s.Now.Carried.Where(id => SkillBook.Knows(ch, id) && SkillBook.Carries(ch, id)).Distinct().Take(SkillBook.Slots(ch)).ToList();
         return true;
@@ -365,11 +422,12 @@ public static class LampBook
         }
     }
 
+    /// <summary>A layout refunded to its free lamps on a road ("": none yet).</summary>
     static void Reset(CharacterData ch, LampLayout l, string type)
     {
         l.Type = type;
         l.Lit = Free(ch, l).ToList();
-        l.Flare = Lamps.Road(type).Strike;
+        l.Flare = StrikeOf(ch, l);
     }
 
     /// <summary>Does this set of lamps hang together (every lamp reached from the hearth through lit
@@ -403,13 +461,14 @@ public static class LampBook
         if (ch.Lamps == null) return;
         foreach (var l in ch.Lamps.Layouts)
         {
-            if (l.Type == "") continue;
+            // (no road yet: only the free lamps can be lit, so they are all that stays)
+            if (l.Type == "") { Reset(ch, l, ""); continue; }
             if (!Lamps.Roads.TryGetValue(l.Type, out var r) || r.Calling != ch.Archetype) { Reset(ch, l, DefaultType(ch.Archetype)); continue; }
             l.Lit.RemoveAll(id => Lamps.Find(id) == null);
             foreach (var f in Free(ch, l)) if (!l.Lit.Contains(f)) l.Lit.Add(f);
             l.Links ??= new();
             foreach (var k in l.Links.Keys.ToList()) if (Lamps.Find(k) == null) l.Links.Remove(k);
-            if (Lamps.Flare(l.Flare) == null) l.Flare = Lamps.Road(l.Type).Strike;
+            if (Lamps.Flare(l.Flare) == null) l.Flare = StrikeOf(ch, l);
         }
     }
 

@@ -65,10 +65,12 @@ public class DaySlotsTests
     [InlineData("")]
     [InlineData("nonsense")]
     [InlineData("butcher")] // a reaver's road, not hers
-    public void A_type_she_cannot_walk_falls_back_to_the_default(string road)
+    public void A_type_she_cannot_walk_leaves_her_roadless(string road)
     {
+        // (bd-ranks: no road before level 6; it was the default road)
         var ch = Make("warden", road);
-        Assert.All(LampBook.State(ch).Layouts, l => Assert.Equal(LampBook.DefaultType("warden"), l.Type));
+        Assert.All(LampBook.State(ch).Layouts, l => Assert.Equal("", l.Type));
+        Assert.True(LampBook.Roadless(ch));
     }
 
     [Fact]

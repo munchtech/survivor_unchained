@@ -32,6 +32,8 @@ public sealed class LampNavTests
         var ch = Character.Create(new CreationChoice
         {
             Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            // (bd-ranks: a survivor walking her calling's first road, as creation gave every survivor before the road moved to level 6)
+            Type = LampBook.DefaultType(calling),
         }, seed: 7);
         LampBook.DropUnknown(ch);
         return ch;

@@ -96,7 +96,7 @@ public static class StorySim
         // --flare stand: carry the road's Stand (its lamp lit past the empty board; a measuring aid).
         if (Flare == "stand")
         {
-            var road = SurvivorUnchained.Content.Lamps.Road(LampBook.Now(j.Ch).Type);
+            var road = LampBook.FlareRoad(j.Ch);
             if (SurvivorUnchained.Content.Lamps.FlareLamp(road.Stand) is { } fl && !LampBook.Now(j.Ch).Lit.Contains(fl)) LampBook.Now(j.Ch).Lit.Add(fl);
             if (!LampBook.Carry(j.Ch, road.Stand)) throw new InvalidOperationException($"can't carry {road.Stand}");
         }
@@ -104,6 +104,7 @@ public static class StorySim
         foreach (var id in ArenaSim.Light.Select(x => x.Replace("{calling}", spec.Calling)))
             if (!LampBook.Now(j.Ch).Lit.Contains(id)) LampBook.Now(j.Ch).Lit.Add(id);
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        SurvivorUnchained.Play.DevVeteran.Road(j.Ch);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
         if (spec.Act2) j.World.Facts["chapter.done"] = true;

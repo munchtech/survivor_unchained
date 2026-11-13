@@ -770,7 +770,7 @@ public partial class TraitTrack : Control
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         int next = ch.TraitPicks > 0 ? 2 * (chosen.Count + 1) : ch.Level % 2 == 0 ? ch.Level + 2 : ch.Level + 1;
         int i = 0;
-        for (int lv = 2; lv <= Character.MaxLevel; lv += 2, i++)
+        for (int lv = 2; lv <= Character.LastTraitLevel; lv += 2, i++)
         {
             string? t = i < chosen.Count ? chosen[i] : null;
             int state = t != null ? 0 : lv == next ? 1 : 2;

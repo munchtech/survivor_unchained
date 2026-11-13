@@ -26,6 +26,8 @@ public class LampsTests : IDisposable
         var ch = Character.Create(new CreationChoice
         {
             Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            // (bd-ranks: a survivor walking her calling's first road, as creation gave every survivor before the road moved to level 6)
+            Type = LampBook.DefaultType(calling),
         }, seed: 7);
         ch.Level = level;
         return ch;
@@ -302,6 +304,8 @@ public class LampsTests : IDisposable
         var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = "reaver", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            // (bd-ranks: a survivor walking her calling's first road, as creation gave every survivor before the road moved to level 6)
+            Type = LampBook.DefaultType("reaver"),
         }, 42);
         j.Ch.Level = 30;
         foreach (var id in new[] { "butcher.red_hands", "butcher.s1", "butcher.s2", "butcher.s3" })
