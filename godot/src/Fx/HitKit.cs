@@ -463,7 +463,7 @@ public partial class BattleFx
     {
         if (b0 == null) return 0;
         foreach (var p in b0.Projectiles.Living())
-            if (IsDisc(p.Art) && p.Hits.Count > 0 && p.Hits[^1] == target) return p.Hits.Count;
+            if (IsDisc(p.Art) && p.Hits.Count > 0 && p.Hits[^1].Id == target) return p.Hits.Count;
         return 0;
     }
 

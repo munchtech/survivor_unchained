@@ -248,13 +248,10 @@ public static class Rules
             var it = Inventory.Make(ch, e.Give, qty: qty, rarity: e.Rarity);
             if (e.Made?.Split(':') is [var by, var moment]) (it.History ??= new()).Add(Crafting.History(w, by, moment));
             var name = Items.Get(e.Give).Name;
-            if (Inventory.AddToPack(ch, it)) ctx.Notify(new Notice(qty > 1 ? $"{name} ×{qty}" : name, NoticeTone.Item));
-            else
-            {
-                int slot = w.Stash.IndexOf(null);
-                if (slot >= 0) w.Stash[slot] = it;
-                ctx.Notify(new Notice($"{name} was sent to the inn - your pack is full.", NoticeTone.Warn));
-            }
+            // (SU-087) A reward always lands: pack, Rook's shelves, else held by her door; the notice says which.
+            var landed = Inventory.Deliver(ch, w, it);
+            ctx.Notify(landed == Inventory.Landed.Pack ? new Notice(qty > 1 ? $"{name} ×{qty}" : name, NoticeTone.Item)
+                : new Notice(Inventory.WhereSaid(landed, name), NoticeTone.Warn));
             return;
         }
         if (e.Chart != null)
@@ -268,13 +265,9 @@ public static class Rules
             var it = Inventory.Make(ch, Maps.Charts.Item, 1, c.Rarity);
             it.Chart = c;
             it.Name = Maps.Charts.Title(c);
-            if (Inventory.AddToPack(ch, it)) ctx.Notify(new Notice(it.Name, NoticeTone.Item));
-            else
-            {
-                int slot = w.Stash.IndexOf(null);
-                if (slot >= 0) w.Stash[slot] = it;
-                ctx.Notify(new Notice($"{it.Name} was sent to the inn - your pack is full.", NoticeTone.Warn));
-            }
+            var landed = Inventory.Deliver(ch, w, it);
+            ctx.Notify(landed == Inventory.Landed.Pack ? new Notice(it.Name, NoticeTone.Item)
+                : new Notice(Inventory.WhereSaid(landed, it.Name), NoticeTone.Warn));
             return;
         }
         if (e.Take != null) { Inventory.Take(ch, e.Take, e.Qty ?? 1); return; }

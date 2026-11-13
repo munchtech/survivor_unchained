@@ -91,7 +91,7 @@ public sealed partial class Prologue : ZoneRuntime
     bool wagonSaid;
     /// <summary>When the wagon's line was over (stage time): the ditch waits 0.8 s of silence.</summary>
     double wagonDoneAt = -1;
-    readonly List<Enemy> bowmen = new();
+    readonly List<Kept> bowmen = new();   // (SU-088 L) by lifetime: a newcomer in a bowman's slot is not him
     readonly List<(double X, double Z, int Light, string Flame)> pylons = new();
     readonly double[] lampY;
     readonly bool[] litPylons;
@@ -573,7 +573,7 @@ public sealed partial class Prologue : ZoneRuntime
             if (e.Def.Id != "risen_archer") continue;
             e.RangedT = 1.0;
             e.Damage *= AmbushBolt;
-            bowmen.Add(e);
+            bowmen.Add(Kept.Of(e));
         }
     }
 
@@ -805,7 +805,7 @@ public sealed partial class Prologue : ZoneRuntime
     double knightBusyAt = -99;
 
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
-    readonly HashSet<int> boltsSpent = new();
+    readonly HashSet<Lifetime> boltsSpent = new();
 
     int Hostiles() => B?.Enemies.Living().Count(e => e.State != EnemyState.Dying && e.Disposition == Disposition.Hostile) ?? 0;
 
@@ -1346,13 +1346,13 @@ public sealed partial class Prologue : ZoneRuntime
                 if (fought < 50 && B.Time - ambDiagAt >= 1)
                 {
                     ambDiagAt = B.Time;
-                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)} taken={B.DamageTaken - takenAtSpring:0}");
+                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(k => k.Up)} taken={B.DamageTaken - takenAtSpring:0}");
                 }
                 // (MR5 item 11 round 2: the bolts are doubled for the opening volley only. A bowman who has loosed it
                 // (his reload is up again) shoots the road's bolts after: amb5, five bowmen never killed, kept loosing
                 // doubled bolts and an idle player lost 78% in 28 s, amb4 42%.)
-                foreach (var bw in bowmen)
-                    if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
+                foreach (var (bw, life) in bowmen)
+                    if (life.Is(bw) && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(life)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your blows. Strike from the side, or up close.");
                 // (M5: over when the ditch's dead are down, n_cart; or, AmbushStragglers s into the fight, when no more

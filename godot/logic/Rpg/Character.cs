@@ -343,6 +343,28 @@ public static class Inventory
         return true;
     }
 
+    /// <summary>Where a delivered thing went: her pack, Rook's shelves, or held by Rook's door.</summary>
+    public enum Landed { Pack, Shelf, Door }
+
+    /// <summary>(Codex audit SU-087: a reward is never lost) A thing given to her that must reach her: the pack, else a
+    /// free place on Rook's shelves, else Rook holds it by the door (World.Held, shelved as room is made). Always lands.</summary>
+    public static Landed Deliver(CharacterData ch, World.WorldState w, ItemInstance it)
+    {
+        if (AddToPack(ch, it)) return Landed.Pack;
+        int j = w.Stash.IndexOf(null);
+        if (j >= 0) { w.Stash[j] = it; return Landed.Shelf; }
+        w.Held.Add(it);
+        return Landed.Door;
+    }
+
+    /// <summary>The line that says truthfully where a delivered thing went when it missed the pack.</summary>
+    public static string WhereSaid(Landed l, string name) => l switch
+    {
+        Landed.Shelf => $"{name} was sent to Rook's storeroom - your pack is full.",
+        Landed.Door => $"{name}: your pack and Rook's shelves are full. Rook is holding it by the door until you make room.",
+        _ => name,
+    };
+
     /// <summary>Into a list store: onto a stack of its kind while there is room in it (a chart or a
     /// marked thing is always its own entry), else its own entry.</summary>
     static void Shelve(List<ItemInstance> store, ItemInstance it, ItemDef def)
@@ -578,9 +600,8 @@ public static class Inventory
         foreach (var it in salvage.Select(Fix).OfType<ItemInstance>())
         {
             if (Items.Find(it.Def) == null) continue;
-            if (AddToPack(ch, it)) continue;
-            int cell = w?.Stash.IndexOf(null) ?? -1;
-            if (w != null && cell >= 0) w.Stash[cell] = it;
+            if (w != null) Deliver(ch, w, it);
+            else AddToPack(ch, it);
         }
     }
 

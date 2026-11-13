@@ -48,6 +48,13 @@ public sealed class Chart
     [JsonIgnore] public double Quantity => 1 + Rolled.Sum(m => m.Quantity) + Quality * 0.01;
     [JsonIgnore] public double RarityBonus => 1 + Rolled.Sum(m => m.Rarity);
     [JsonIgnore] public double PackSize => 1 + Rolled.Sum(m => m.PackSize);
+    /// <summary>(Codex audit SU-085) The oaths it carries, as the table writes them: their pack size rides PackSize (the
+    /// Swarm's half again), their champions Elites, their levels FoeLevels, all read by the map's runtime (MapRun).</summary>
+    [JsonIgnore] public IEnumerable<OathDef> OathsOn => Rolled.Where(m => m.Oath != null).Select(m => MapOffers.Oath(m.Oath!));
+    /// <summary>How many more of its packs a champion leads (the Oath of Champions: twice).</summary>
+    [JsonIgnore] public double Elites => OathsOn.Aggregate(1.0, (a, o) => a * o.Elites);
+    /// <summary>Levels its creatures stand above the chart's (the Oath of the Deep Dark: two). Drops keep the chart's ItemLevel.</summary>
+    [JsonIgnore] public int FoeLevels => OathsOn.Sum(o => o.Levels);
     public bool Has(string mod) => Mods.Contains(mod);
 
     /// <summary>The ground: MapGen's winding way, with its oaths for the look.</summary>
@@ -84,7 +91,8 @@ public static class Charts
     {
         var o = new List<ChartMod>();
         foreach (var oath in MapOffers.Oaths.Where(x => x.Id is not ("vigil" or "moonless")))
-            o.Add(new ChartMod(oath.Id, oath.Name, oath.Asks, true, 0.10, 0.06, oath.PackSize > 1 ? 0.0 : 0.05, oath.Rule, oath.Id));
+            // (SU-085) the Swarm's packs half again as large ride the chart's pack size; the other oaths add their usual 5%
+            o.Add(new ChartMod(oath.Id, oath.Name, oath.Asks, true, 0.10, 0.06, oath.PackSize > 1 ? oath.PackSize - 1 : 0.05, oath.Rule, oath.Id));
         o.AddRange(
         [
             new("smothered", "Smothered", "Your Flare fills 30% slower", true, 0.08, 0.05, 0.0, r => r.FlareFill *= 0.7),
@@ -174,6 +182,17 @@ public static class Charts
     /// <summary>The charts carried, the highest tier first, then the finest.</summary>
     public static System.Collections.Generic.List<Rpg.ItemInstance> Carried(Rpg.CharacterData ch) =>
         ch.Satchel.Where(p => p.Chart != null).OrderByDescending(p => p.Chart!.Tier).ThenByDescending(p => p.Chart!.Rarity).ToList();
+
+    /// <summary>(Codex audit SU-084) The atlas's other charts, a page at a time: every carried chart but the chosen one (by
+    /// UID) is on some page, so none is out of reach. Page is clamped; Pages is at least 1.</summary>
+    public static (System.Collections.Generic.List<Rpg.ItemInstance> Shown, int Page, int Pages) OthersPage(
+        System.Collections.Generic.IReadOnlyList<Rpg.ItemInstance> carried, string? chosenUid, int page, int per = 6)
+    {
+        var others = carried.Where(o => o.Uid != chosenUid).ToList();
+        int pages = Math.Max(1, (others.Count + per - 1) / per);
+        page = Math.Clamp(page, 0, pages - 1);
+        return (others.Skip(page * per).Take(per).ToList(), page, pages);
+    }
 
     /// <summary>What a chart is called in the pack: its tier, who holds it, and its name.</summary>
     public static string Title(Chart c) => $"{c.Name} (tier {c.Tier}, {MapOffers.People(c.People).Name})";

@@ -446,13 +446,13 @@ public sealed partial class Journey
     public void ReturnItem(ItemInstance it)
     {
         var def = Items.Get(it.Def);
-        if (Inventory.AddToPack(Ch, it)) OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Yours again", def.Icon, it.Rarity));
-        else
+        var landed = Inventory.Deliver(Ch, World, it);
+        OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), landed switch
         {
-            int j = World.Stash.IndexOf(null);
-            if (j >= 0) { World.Stash[j] = it; OnToast(new Toast(ToastKind.Loot, Inventory.Name(it), "Your pack is full: Rook will keep it for you", def.Icon, it.Rarity)); }
-            else Warn($"{Inventory.Name(it)} is lost: no room anywhere");
-        }
+            Inventory.Landed.Pack => "Yours again",
+            Inventory.Landed.Shelf => "Your pack is full: Rook will keep it for you",
+            _ => "Your pack and Rook's shelves are full: she is holding it by the door",
+        }, def.Icon, it.Rarity));
         OnTouch();
     }
 

@@ -930,6 +930,41 @@ public sealed partial class Battle
     public Enemy? Live(Lifetime h) =>
         h.Id >= 0 && h.Id < Enemies.Items.Length && Enemies.Items[h.Id] is { } e && h.Is(e) ? e : null;
 
+    /// <summary>(Codex audit SU-089) The defender's own share of any blow on a creature, whoever struck it (her, her allies,
+    /// a rival): a stagger and ice laid open, its protection (TakenMul; zero is handled by the caller as immune), its ward,
+    /// its resistances, and a raised guard against a missile from the front (blocked). The attacker's side is the caller's.</summary>
+    public double DefenderMul(Enemy e, School school, bool projectile, double fromX, double fromZ, out bool blocked)
+    {
+        double m = 1;
+        var s = e.Status;
+        if (e.StaggeredT > 0) m *= 1.25;
+        if (s.Has(StatusKind.Frozen)) m *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
+        m *= e.TakenMul;
+        // Warded by its own kind's lamp or drum.
+        if (e.WardT > 0) m *= 1 - e.Ward;
+        // Resistances.
+        m *= 1 - (e.Def.Resists?.Of(school) ?? 0);
+        // Frontal guard: projectiles into a raised shield mostly glance off.
+        blocked = false;
+        if (projectile && e.Def.Guard is { } guard && e.State != EnemyState.Stunned && !s.Has(StatusKind.Frozen) && !s.Has(StatusKind.Stun))
+        {
+            double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
+            if (fx * -fromX + fz * -fromZ > Math.Cos(guard.Arc / 2)) { m *= 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); blocked = true; }
+        }
+        if (e.TakenMul < 0.7) blocked = true;
+        return m;
+    }
+
+    /// <summary>(SU-089) A gated creature (a boss's phase mark, HpFloor) stops at its floor whoever struck it. Returns
+    /// what went past the floor (her blows bank it as the Break; a rival's is simply lost).</summary>
+    internal static double HoldAtFloor(Enemy e)
+    {
+        if (e.HpFloor <= 0 || e.Hp >= e.HpFloor) return 0;
+        double broke = e.HpFloor - e.Hp;
+        e.Hp = e.HpFloor;
+        return broke;
+    }
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -967,11 +1002,9 @@ public sealed partial class Battle
         // Allies go for the throat: champions and worse take more from them.
         if (o.Summon && !herIn) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
         if ((e.Boss || e.Elite) && !herIn) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
-        if (e.StaggeredT > 0) { dmg *= 1.25; taken *= 1.25; }
         // Vulnerabilities.
         var s = e.Status;
         if (s[StatusKind.Mark] is { } mark) { double f = 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1); dmg *= f; taken *= f; }
-        if (s.Has(StatusKind.Frozen)) { double f = Boons.ContainsKey("deep_chill") ? 1.35 : 1.15; dmg *= f; taken *= f; }
         if (s.Has(StatusKind.Sear) && school == School.Holy) { dmg *= 1.3; taken *= 1.3; }
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) { dmg *= 1 + BoundArea; taken *= 1 + BoundArea; }
         double preShock = dmg;
@@ -992,8 +1025,10 @@ public sealed partial class Battle
         if (preShock > 0) taken *= dmg / preShock;
         if (e.SunderUntil > Time) { dmg *= 1 + e.Sunder; taken *= 1 + e.Sunder; }
         if (e.AirUntil > Time) { dmg *= 1 + e.AirMore; taken *= 1 + e.AirMore; }
-        dmg *= e.TakenMul;
-        taken *= e.TakenMul;
+        // (SU-089) the defender's own rules, the same for every blow on a creature (hers, her allies', a rival's)
+        double def = DefenderMul(e, school, o.Projectile, o.FromX, o.FromZ, out bool blocked);
+        dmg *= def;
+        taken *= def;
         if (!herIn)
         {
             dmg *= LampDamageMul(e, school, tags, o);
@@ -1003,19 +1038,6 @@ public sealed partial class Battle
             dmg *= ArcanistDamageMul(e, school, tags, o);
             dmg *= StalkerDamageMul(e, school, tags, o);
         }
-        // Warded by its own kind's lamp or drum.
-        if (e.WardT > 0) { dmg *= 1 - e.Ward; taken *= 1 - e.Ward; }
-        // Resistances.
-        { double f = 1 - (e.Def.Resists?.Of(school) ?? 0); dmg *= f; taken *= f; }
-        // Frontal guard: projectiles into a raised shield mostly glance off.
-        bool blocked = false;
-        if (o.Projectile && e.Def.Guard is { } guard && e.State != EnemyState.Stunned && !s.Has(StatusKind.Frozen) && !s.Has(StatusKind.Stun))
-        {
-            double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
-            double ix = -o.FromX, iz = -o.FromZ;
-            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { double f = 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); dmg *= f; taken *= f; blocked = true; }
-        }
-        if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
         // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
         bool noTrue = StalkerNoTrue;
@@ -1060,8 +1082,8 @@ public sealed partial class Battle
         double before = e.Hp;
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
-        double broke = 0;
-        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { broke = e.HpFloor - e.Hp; e.Overflow += broke; e.Hp = e.HpFloor; }
+        double broke = HoldAtFloor(e);
+        e.Overflow += broke;
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
         e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
@@ -2473,7 +2495,7 @@ public sealed partial class Battle
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
                     // (SU-056, L3: the target is kept by lifetime, never whatever took its slot)
                     if (t != null && !pr.TargetLife.Is(t)) t = null;
-                    if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
+                    if (t == null || !Targetable(t) || pr.Hits.Contains(Lifetime.Of(t)) || VolleyTaken(pr, t))
                     {
                         t = PickSeekTarget(pr);
                         pr.Home(t);
@@ -2552,10 +2574,10 @@ public sealed partial class Battle
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
-                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e.Id))) continue;
+                if (!Targetable(e) || (pr.VolleyHard && VolleyTaken(pr, e))) continue;
                 double rr = pr.Radius + e.Radius;
                 if ((e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z) > rr * rr) continue;
-                int k = pr.Hits.IndexOf(e.Id);
+                int k = pr.Hits.IndexOf(Lifetime.Of(e));
                 if (k >= 0)
                 {
                     if (pr.Rehit == 0 || Time - pr.HitTimes[k] < pr.Rehit) continue;
@@ -2563,7 +2585,7 @@ public sealed partial class Battle
                 }
                 else
                 {
-                    pr.Hits.Add(e.Id);
+                    pr.Hits.Add(Lifetime.Of(e));
                     pr.HitTimes.Add(Time);
                 }
                 ProjectileHit(pr, e);
@@ -2580,7 +2602,7 @@ public sealed partial class Battle
             Enemy? best = null;
             foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
             {
-                if (pr.Hits.Contains(e.Id)) continue;
+                if (pr.Hits.Contains(Lifetime.Of(e))) continue;
                 if (best == null || (e.Elite || e.Boss ? 1e6 : 0) + e.MaxHp > (best.Elite || best.Boss ? 1e6 : 0) + best.MaxHp) best = e;
             }
             return best;
@@ -2591,19 +2613,19 @@ public sealed partial class Battle
             Enemy? m = null; double md = 8.0 * 8.0;
             foreach (var e in HostilesInRadius(pr.X, pr.Z, range))
             {
-                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(e.Id) || VolleyTaken(pr, e.Id)) continue;
+                if (!e.Status.Has(StatusKind.Mark) || pr.Hits.Contains(Lifetime.Of(e)) || VolleyTaken(pr, e)) continue;
                 double d = (e.X - pr.X) * (e.X - pr.X) + (e.Z - pr.Z) * (e.Z - pr.Z);
                 if (d < md) { md = d; m = e; }
             }
             if (m != null) return m;
         }
-        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id) && !VolleyTaken(pr, e.Id));
+        var near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(Lifetime.Of(e)) && !VolleyTaken(pr, e));
         // Nothing left that the volley has not struck: the spread yields, and the mote strikes what there is
         // (else a lone champion took one mote of eight).
         if (near == null && pr.Volley != 0)
         {
             pr.Volley = 0;
-            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(e.Id));
+            near = NearestHostile(pr.X, pr.Z, range, e => !pr.Hits.Contains(Lifetime.Of(e)));
         }
         return near;
     }
@@ -2656,12 +2678,12 @@ public sealed partial class Battle
                 c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Radius = pr.Radius * 0.7;
                 c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3);
                 c.AimAlongVelocity();
-                c.Hits.Add(e.Id); c.HitTimes.Add(Time);
+                c.Hits.Add(Lifetime.Of(e)); c.HitTimes.Add(Time);
             }
         }
         if (pr.Bounces > 0)
         {
-            var next = NearestHostile(pr.X, pr.Z, 8, o => !pr.Hits.Contains(o.Id));
+            var next = NearestHostile(pr.X, pr.Z, 8, o => !pr.Hits.Contains(Lifetime.Of(o)));
             if (next != null)
             {
                 pr.Bounces--;
