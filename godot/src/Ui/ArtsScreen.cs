@@ -542,8 +542,9 @@ public partial class ArtsScreen : Overlay
             else
             {
                 string at = SocketModel.RomanOf(Supports.File.Sockets.Ranks[i]);
-                col.AddChild(Style.Label($"at rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
-                if (gem != null)
+                // (a kept gem's note says the rank: "at rank VI" above its name would say it twice)
+                if (gem == null) col.AddChild(Style.Label($"at rank {at}", Style.Ui, 13, Kit.Dim, false, HorizontalAlignment.Center));
+                else
                 {
                     col.AddChild(Style.Label(gem.Name, Style.UiBold, 14, Kit.Ink2, false, HorizontalAlignment.Center));
                     col.AddChild(Style.Label($"kept, adds nothing\nbelow rank {at}", Style.TextItalic, 13, Kit.Dim, false, HorizontalAlignment.Center));

@@ -32,8 +32,8 @@ public partial class GemSocket : Control
             pic.Position = new Vector2((size - px) / 2f, (size - px) / 2f);
             if (look == Look.Closed)
             {
-                // kept but closed: the stone at 45%, drawn toward grey
-                var sh = new Shader { Code = "shader_type canvas_item; void fragment(){ vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.3, 0.59, 0.11)); COLOR = vec4(mix(c.rgb, vec3(g), 0.75), c.a * 0.45); }" };
+                // kept but closed: the stone drawn toward grey and dimmed by half (a clear stone at 45% alpha still read bright)
+                var sh = new Shader { Code = "shader_type canvas_item; void fragment(){ vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.3, 0.59, 0.11)); COLOR = vec4(mix(c.rgb, vec3(g), 0.85) * 0.5, c.a * 0.7); }" };
                 pic.Material = new ShaderMaterial { Shader = sh };
             }
             AddChild(pic);
