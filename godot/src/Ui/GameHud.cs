@@ -1835,7 +1835,8 @@ public partial class GameHud : CanvasLayer
                 Union = w.Slot2 >= 0,
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,
-                Bond = second && (w.Channeling || b.Time < w.BreakUntil),
+                // (bd-ui) a union's second key in its storm, or (bd-sockets) the key that breaks her own storm (Sunder breaks Bladestorm)
+                Bond = second ? w.Channeling || b.Time < w.BreakUntil : b.BreaksAStorm(w),
                 Tint = tint,
                 CostNum = (int)Math.Ceiling(cost),
             });
