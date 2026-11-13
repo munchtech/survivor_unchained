@@ -1170,8 +1170,7 @@ def fold_relax(out, glb, rig_name, n, ring, cfg):
         for _ in range(int(cfg.get("iters", 10))):
             Dn = 0.5 * Dw + 0.5 * (L @ Dw)
             Dw[bad] = Dn[bad]
+        Dw[bad & (Dw < float(cfg.get("min_w", 0.01)))] = 0.0      # (dropped each round: the next round checks what ships)
         Dw /= Dw.sum(1, keepdims=True)
-    Dw[Dw < float(cfg.get("min_w", 0.01))] = 0.0
-    Dw /= Dw.sum(1, keepdims=True)
     D = Dw[sk.rep][:n]
     return D, {"inverted_per_round": hist, "points": int(touched.sum())}
