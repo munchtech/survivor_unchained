@@ -67,24 +67,26 @@ public class LootTests
     public void A_pieces_level_sets_its_make_and_the_make_multiplies_its_base()
     {
         Assert.Equal(Make.Worn, Drops.MakeOf(1));
-        Assert.Equal(Make.Worn, Drops.MakeOf(7));
-        Assert.Equal(Make.Sound, Drops.MakeOf(8));
-        Assert.Equal(Make.Wrought, Drops.MakeOf(16));
-        Assert.Equal(Make.Legion, Drops.MakeOf(24));
-        Assert.Equal(Make.Heartwrought, Drops.MakeOf(32));
-        Assert.Equal(Make.Heartwrought, Drops.MakeOf(40));
+        // (the item levels run to the cap of 75, the makes stretched with them: 15, 30, 45, 60)
+        Assert.Equal(75, Drops.Rules.MaxLevel);
+        Assert.Equal(Make.Worn, Drops.MakeOf(14));
+        Assert.Equal(Make.Sound, Drops.MakeOf(15));
+        Assert.Equal(Make.Wrought, Drops.MakeOf(30));
+        Assert.Equal(Make.Legion, Drops.MakeOf(45));
+        Assert.Equal(Make.Heartwrought, Drops.MakeOf(60));
+        Assert.Equal(Make.Heartwrought, Drops.MakeOf(75));
 
         double Armour(ItemInstance it) => Inventory.Mods(it).Where(m => m.Stat == Stat.Armor).Sum(m => m.Value);
         double Speed(ItemInstance it) => Inventory.Mods(it).Where(m => m.Stat == Stat.MoveSpeed).Sum(m => m.Value);
         var worn = At("iron_helm", 0, 1);
-        var wrought = At("iron_helm", 0, 18);
+        var wrought = At("iron_helm", 0, 34);
         Assert.Equal(3, Armour(worn), 6);
         Assert.Equal(3 * 2.8, Armour(wrought), 6);
         // A downside is never multiplied: the helm is as heavy at any make.
         Assert.Equal(Speed(worn), Speed(wrought), 6);
         // A weapon's make is increased damage.
         Assert.DoesNotContain(Inventory.Mods(At("worn_oathblade", 0, 1)), m => m.Stat == Stat.Damage);
-        Assert.Contains(Inventory.Mods(At("worn_oathblade", 0, 33)), m => m.Stat == Stat.Damage && m.Kind == ModKind.Inc && Math.Abs(m.Value - 0.7) < 1e-9);
+        Assert.Contains(Inventory.Mods(At("worn_oathblade", 0, 62)), m => m.Stat == Stat.Damage && m.Kind == ModKind.Inc && Math.Abs(m.Value - 0.7) < 1e-9);
         // What has no level (a save from before) reads as Worn, as it always did.
         var old = At("iron_helm", 0, 1);
         old.Level = null;
@@ -95,28 +97,28 @@ public class LootTests
     public void A_late_common_beats_an_early_rare_and_the_latest_beats_an_early_epic()
     {
         // The owner: "common items in higher zones can be better than greens or even blues (or way later
-        // commons even better than early purples)". Measured on every helm, body and cloak base, against
+        // commons even better than early purples)". Measured on every helm, body and boots base, against
         // the average early roll (many seeds), with the power score.
         double Mean(string def, int rarity, int level) => Enumerable.Range(1, 200).Average(s => Drops.Power(At(def, rarity, level, (uint)(s * 7919))));
-        foreach (var def in new[] { "iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "travelers_cloak" })
+        foreach (var def in new[] { "iron_helm", "leather_cap", "chain_shirt", "padded_jerkin", "travelers_boots" })
         {
-            Assert.True(Mean(def, 0, 10) > Mean(def, 1, 3), $"{def}: a Sound Common beats a Worn Uncommon: {Mean(def, 0, 10):0.0} {Mean(def, 1, 3):0.0}");
-            Assert.True(Mean(def, 0, 18) > Mean(def, 2, 3), $"{def}: a Wrought Common beats a Worn Rare: {Mean(def, 0, 18):0.0} {Mean(def, 2, 3):0.0}");
-            Assert.True(Mean(def, 0, 34) > Mean(def, 3, 3), $"{def}: a Heartwrought Common beats a Worn Epic: {Mean(def, 0, 34):0.0} {Mean(def, 3, 3):0.0}");
+            Assert.True(Mean(def, 0, 19) > Mean(def, 1, 6), $"{def}: a Sound Common beats a Worn Uncommon: {Mean(def, 0, 19):0.0} {Mean(def, 1, 6):0.0}");
+            Assert.True(Mean(def, 0, 34) > Mean(def, 2, 6), $"{def}: a Wrought Common beats a Worn Rare: {Mean(def, 0, 34):0.0} {Mean(def, 2, 6):0.0}");
+            Assert.True(Mean(def, 0, 64) > Mean(def, 3, 6), $"{def}: a Heartwrought Common beats a Worn Epic: {Mean(def, 0, 64):0.0} {Mean(def, 3, 6):0.0}");
         }
     }
 
     [Fact]
-    public void Grades_are_as_they_were_below_level_25_and_rise_past_it()
+    public void Grades_are_as_they_were_below_level_47_and_rise_past_it()
     {
         double MeanGrade(int rarity, int level) => Enumerable.Range(1, 300)
             .SelectMany(s => At("copper_ring", rarity, level, (uint)(s * 104729)).Affixes).Where(a => Items.Affix(a.Id)?.Kindled == null && Items.Affix(a.Id)?.Grants == null)
             .Average(a => a.Tier);
-        // Below 25 the rarity's two grades (Rare II-III: tiers 1 and 2).
+        // Below 47 (25 on the old 40-level scale) the rarity's two grades (Rare II-III: tiers 1 and 2).
         foreach (var s in Enumerable.Range(1, 100))
-            Assert.All(At("copper_ring", 2, 12, (uint)s).Affixes, a => Assert.InRange(a.Tier, 1, 2));
-        Assert.InRange(MeanGrade(2, 30) - MeanGrade(2, 20), 0.8, 1.4);
-        Assert.All(Enumerable.Range(1, 100).SelectMany(s => At("copper_ring", 3, 40, (uint)s).Affixes), a => Assert.InRange(a.Tier, 4, 5));
+            Assert.All(At("copper_ring", 2, 23, (uint)s).Affixes, a => Assert.InRange(a.Tier, 1, 2));
+        Assert.InRange(MeanGrade(2, 57) - MeanGrade(2, 38), 0.8, 1.4);
+        Assert.All(Enumerable.Range(1, 100).SelectMany(s => At("copper_ring", 3, 75, (uint)s).Affixes), a => Assert.InRange(a.Tier, 4, 5));
     }
 
     /* ----------------------------------------------------------- drops -- */
@@ -125,11 +127,11 @@ public class LootTests
     public void Commons_thin_out_with_level_and_legendaries_stay_extremely_rare()
     {
         double Share(int level, int tier) { var w = Drops.Weights(level); return w[tier] / w.Sum(); }
-        Assert.True(Share(1, 0) > Share(16, 0) && Share(16, 0) > Share(40, 0));
+        Assert.True(Share(1, 0) > Share(30, 0) && Share(30, 0) > Share(75, 0));
         Assert.InRange(Share(1, 0), 0.35, 0.45);
-        Assert.InRange(Share(40, 0), 0.01, 0.05);
+        Assert.InRange(Share(75, 0), 0.01, 0.05);
         Assert.InRange(Share(1, 5), 0.002, 0.008);
-        Assert.True(Share(40, 3) > Share(1, 3), "Epic comes oftener the deeper");
+        Assert.True(Share(75, 3) > Share(1, 3), "Epic comes oftener the deeper");
     }
 
     [Fact]
@@ -186,10 +188,10 @@ public class LootTests
     public void Gear_falls_whole_at_the_carriers_level()
     {
         var j = Begin();
-        var d = Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.Boss, Level = 19, People = "kerchiefs", R = Seq(3) });
+        var d = Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.Boss, Level = 34, People = "kerchiefs", R = Seq(3) });
         foreach (var g in d.Where(x => x.Item != null))
         {
-            Assert.Equal(19, g.Item!.Level);
+            Assert.Equal(34, g.Item!.Level);
             Assert.Equal(Make.Wrought, Drops.MakeOf(g.Item));
             if (Items.Get(g.Item.Def).Base) Assert.Equal(Crafting.Seams(g.Item), g.Item.Affixes.Count);
         }
@@ -343,7 +345,9 @@ public class LootTests
         var d = Saves.Migrate(Json.Parse<SaveData>(File.ReadAllText(Fixture("before_stores_v3.json"))));
         var ch = d.Character;
         Assert.Equal(Saves.Version, d.Version);
-        Assert.Equal(new[] { "copper_ring" }, ch.Pack.Where(p => p != null).Select(p => p!.Def).ToArray());
+        // (and the cloak it wore, a place cut on 13 November, comes to the pack as a body piece: nothing is lost, nothing crashes)
+        Assert.Equal(new[] { "copper_ring", "old_hunters_cloak" }, ch.Pack.Where(p => p != null).Select(p => p!.Def).OrderBy(x => x, StringComparer.Ordinal).ToArray());
+        Assert.Null(ch.Equipment.Retired);
         Assert.Equal(3, ch.Belt["health_draught"]);
         Assert.Equal(1, ch.Materials["greymuzzle_fang"]);
         Assert.Equal(3, ch.Materials["ember_shard"]);
@@ -376,7 +380,7 @@ public class LootTests
         Assert.Equal(Verdict.Emphasised, f.Judge(Inventory.Make(null, "drowned_coat", level: 2), ch));
         Assert.Equal(Verdict.Emphasised, f.Judge(Inventory.Make(null, "watch_coif", level: 2), ch));
         // A late common of a better make shows, and if it is better than what is worn, it says so.
-        var late = At("iron_helm", 0, 34);
+        var late = At("iron_helm", 0, 64);
         Assert.True(Drops.IsUpgrade(ch, late));
         Assert.Equal(Verdict.Emphasised, f.Judge(late, ch));
         // Only the best hides even rares; a rule read first can show what the preset hides.
@@ -464,7 +468,7 @@ public class LootTests
         Assert.Contains("watch_kit", Inventory.WorldTags(ch));
         // The red: its third piece's rule is in the kit.
         var red = Begin("stalker").Ch;
-        foreach (var (id, slot) in new[] { ("roost_hood", EquipSlot.Head), ("levy_colours", EquipSlot.Cloak), ("kerchief_knives", EquipSlot.Weapon) })
+        foreach (var (id, slot) in new[] { ("roost_hood", EquipSlot.Head), ("levy_colours", EquipSlot.Body), ("kerchief_knives", EquipSlot.Weapon) })
             Assert.True(Inventory.Equip(red, Inventory.Make(red, id, level: 6), slot));
         var kit = Character.Kit(red);
         Assert.Contains(kit.Triggers, t => t.Source.StartsWith("set:levy_red"));
@@ -493,7 +497,7 @@ public class LootTests
         Assert.DoesNotContain(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:3"));
         double crit = b.Stats.Get(Stat.CritChance);
         // The third piece, worn mid-fight: its bonus arrives, the crit bleed once.
-        j.PutOn(cloak.Uid, KitKind.Day, EquipSlot.Cloak, b);
+        j.PutOn(cloak.Uid, KitKind.Day, EquipSlot.Body, b);
         Assert.Equal(1, Bleeds());
         Assert.Contains(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:2"));
         Assert.Contains(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:3"));
@@ -541,9 +545,9 @@ public class LootTests
         // Kell's Lamp by day was a flat 14 at any depth (combat): its make scales it as its base's numbers.
         double Flare(int level) => Drops.Triggers(Items.Get("kells_lamp"), level).SelectMany(t => t.Effects).OfType<Effect.Nova>().Single().Damage;
         Assert.Equal(14, Flare(1), 6);
-        Assert.Equal(14 * 5.5, Flare(34), 6);
+        Assert.Equal(14 * 5.5, Flare(64), 6);
         // A rule that reads the blow already grows with it.
-        Assert.Equal(0.5, Drops.Triggers(Items.Get("corrans_sword"), 34).SelectMany(t => t.Effects).OfType<Effect.Nova>().Single().Damage, 6);
+        Assert.Equal(0.5, Drops.Triggers(Items.Get("corrans_sword"), 64).SelectMany(t => t.Effects).OfType<Effect.Nova>().Single().Damage, 6);
         // Armour saturates, so its curve tops out lower than health's.
         Assert.True(Drops.Mult(Make.Heartwrought, Stat.Armor) < Drops.Mult(Make.Heartwrought, Stat.MaxHealth));
         // Nan's Cleaver's price is paid above four fifths of her health, not only at full (combat).
@@ -559,6 +563,6 @@ public class LootTests
         Assert.Contains(kit.Triggers, t => t.Def.On == TriggerEvent.Dash && t.Def.Effects.Any(e => e is Effect.Zone z && z.Slow >= 0.4));
         // Built on a padded jerkin: its make is the jerkin's, so a later copy is a better one.
         double Health(ItemInstance it) => Inventory.Mods(it).Where(m => m.Stat == Stat.MaxHealth).Sum(m => m.Value);
-        Assert.True(Health(Inventory.Make(null, "drowned_coat", level: 30)) > Health(Inventory.Make(null, "drowned_coat", level: 2)));
+        Assert.True(Health(Inventory.Make(null, "drowned_coat", level: 56)) > Health(Inventory.Make(null, "drowned_coat", level: 2)));
     }
 }

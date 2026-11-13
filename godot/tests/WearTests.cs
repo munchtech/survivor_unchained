@@ -28,20 +28,23 @@ public class WearTests
     {
         var defs = new Dictionary<string, ItemDef>
         {
-            ["a"] = Def("a", ItemKind.Shoulders, "warden.pauldrons"),
-            ["b"] = Def("b", ItemKind.Hands, "warden.gloves", "warden.boots"),
-            ["c"] = Def("c", ItemKind.Body, "ash.top", "ash.collar"),
+            // (the body is the whole set from the neck down: its pauldrons and gloves are in its group, a pair of boots is not)
+            ["a"] = Def("a", ItemKind.Body, "warden.pauldrons", "warden.gloves", "warden.boots"),
+            ["b"] = Def("b", ItemKind.Feet, "ash.boots", "ash.gloves"),
+            ["c"] = Def("c", ItemKind.Head, "ash.head"),
         };
         var eq = new Equipment();
-        eq.Shoulders = new ItemInstance { Uid = "1", Def = "a" };
-        eq.Hands = new ItemInstance { Uid = "2", Def = "b" };
-        eq.Body = new ItemInstance { Uid = "3", Def = "c" };
+        eq.Body = new ItemInstance { Uid = "1", Def = "a" };
+        eq.Feet = new ItemInstance { Uid = "2", Def = "b" };
+        eq.Head = new ItemInstance { Uid = "3", Def = "c" };
         var w = Wear.Of(eq, id => defs.GetValueOrDefault(id));
         Assert.Equal("warden.pauldrons", w["pauldrons"]);
         Assert.Equal("warden.gloves", w["gloves"]);
-        Assert.False(w.ContainsKey("boots"));
+        Assert.Equal("ash.boots", w["boots"]);
+        Assert.Equal("ash.head", w["head"]);
         Assert.Equal(4, w.Count);
-        Assert.Equal(new[] { "warden.boots" }, Wear.Validate(defs["b"]));
+        Assert.Equal(new[] { "warden.boots" }, Wear.Validate(defs["a"]));
+        Assert.Equal(new[] { "ash.gloves" }, Wear.Validate(defs["b"]));
         Assert.Empty(Wear.Of(new Equipment()));
     }
 
@@ -73,33 +76,37 @@ public class WearTests
     }
 
     [Fact]
-    public void Hands_equip_and_unequip_through_the_game_path()
+    public void Boots_equip_and_unequip_through_the_game_path()
     {
-        Reg(Def("zz_test_gloves", ItemKind.Hands, "test.gloves"));
+        Reg(Def("zz_test_boots2", ItemKind.Feet, "test.boots"));
         var s = Make();
-        var it = Inventory.Make(s.Ch, "zz_test_gloves");
+        var it = Inventory.Make(s.Ch, "zz_test_boots2");
         Assert.True(Inventory.AddToPack(s.Ch, it));
-        Assert.Equal(EquipSlot.Hands, Items.SlotFor(Items.Get("zz_test_gloves")));
+        Assert.Equal(EquipSlot.Feet, Items.SlotFor(Items.Get("zz_test_boots2")));
         Assert.False(Inventory.Equip(s.Ch, it, EquipSlot.Body));
-        Assert.True(Inventory.Equip(s.Ch, it, EquipSlot.Hands));
-        Assert.Same(it, s.Ch.Equipment.Hands);
-        Assert.Equal("test.gloves", Wear.Of(s.Ch)["gloves"]);
-        Assert.True(Inventory.Unequip(s.Ch, EquipSlot.Hands));
-        Assert.Null(s.Ch.Equipment.Hands);
-        Assert.False(Wear.Of(s.Ch).ContainsKey("gloves"));
+        Assert.True(Inventory.Equip(s.Ch, it, EquipSlot.Feet));
+        Assert.Same(it, s.Ch.Equipment.Feet);
+        Assert.Equal("test.boots", Wear.Of(s.Ch)["boots"]);
+        Assert.True(Inventory.Unequip(s.Ch, EquipSlot.Feet));
+        Assert.Null(s.Ch.Equipment.Feet);
+        Assert.False(Wear.Of(s.Ch).ContainsKey("boots"));
     }
 
     [Fact]
     public void Kind_strings_parse_and_an_old_character_shape_loads()
     {
-        var d = Json.Parse<ItemDef>("{\"id\":\"q\",\"kind\":\"shoulders\"}");
-        Assert.Equal(ItemKind.Shoulders, d.Kind);
-        foreach (var k in new[] { "bracers", "hands", "belt", "legs", "feet", "body" }) Assert.NotNull(Json.Parse<ItemDef>("{\"kind\":\"" + k + "\"}"));
+        var d = Json.Parse<ItemDef>("{\"id\":\"q\",\"kind\":\"feet\"}");
+        Assert.Equal(ItemKind.Feet, d.Kind);
+        foreach (var k in new[] { "feet", "body", "head", "amulet", "ring", "offhand" }) Assert.NotNull(Json.Parse<ItemDef>("{\"kind\":\"" + k + "\"}"));
         var ch = Json.Parse<CharacterData>("{\"name\":\"Old\",\"equipment\":{\"head\":{\"uid\":\"a\",\"def\":\"iron_helm\"},\"body\":{\"uid\":\"b\",\"def\":\"chain_shirt\"},\"cloak\":{\"uid\":\"c\",\"def\":\"travelers_cloak\"}}}");
         Assert.Equal("chain_shirt", ch.Equipment.Body!.Def);
         Assert.Equal("iron_helm", ch.Equipment.Head!.Def);
-        Assert.Equal("travelers_cloak", ch.Equipment.Cloak!.Def);
         Assert.Null(ch.Equipment.Feet);
+        // (the cloak place is gone: it is kept as read until the migration, which puts it in the pack, as the boots that replace it)
+        Assert.True(ch.Equipment.Retired!.ContainsKey("cloak"));
+        Inventory.Mend(ch);
+        Assert.Null(ch.Equipment.Retired);
+        Assert.Contains(ch.Pack, p => p?.Def == "travelers_boots" && p.Uid == "c");
     }
 
     [Fact]
@@ -110,11 +117,11 @@ public class WearTests
         var a = Inventory.Make(s.Ch, "zz_test_boots");
         var b = Inventory.Make(s.Ch, "zz_test_boots");
         s.Ch.Equipment.Body = a;
-        s.Ch.Equipment.Cloak = b;
+        s.Ch.Equipment.Ring1 = b;
         Inventory.Reslot(s.Ch);
         Assert.Same(a, s.Ch.Equipment.Feet);
         Assert.Null(s.Ch.Equipment.Body);
-        Assert.Null(s.Ch.Equipment.Cloak);
+        Assert.Null(s.Ch.Equipment.Ring1);
         Assert.Contains(s.Ch.Pack, p => p == b);
         Inventory.Reslot(s.Ch);
         Assert.Same(a, s.Ch.Equipment.Feet);

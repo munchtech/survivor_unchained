@@ -200,7 +200,7 @@ public static partial class Crafting
     /// <summary>Plain bases and weapons can be worked; a named piece only if it is one of
     /// the Waystation's own (the wolfhide cloak). Somebody else's work is left be.</summary>
     public static bool Workable(ItemDef def) =>
-        def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Cloak or ItemKind.Amulet or ItemKind.Ring or ItemKind.Relic
+        def.Kind is ItemKind.Weapon or ItemKind.Offhand or ItemKind.Head or ItemKind.Body or ItemKind.Feet or ItemKind.Amulet or ItemKind.Ring
         && (def.Base || def.Weapon != null || def.Workable)
         // A Legendary or a set piece is somebody's work, never the forge's (docs/design/LOOT_DESIGN.md §9).
         && def.Rarity < 4 && def.Set == null;

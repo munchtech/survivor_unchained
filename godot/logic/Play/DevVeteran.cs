@@ -44,7 +44,7 @@ public static class DevVeteran
         (EquipSlot Slot, string Def)[] dress =
         [
             (EquipSlot.Head, rng.Chance(0.5) ? "iron_helm" : "leather_cap"), (EquipSlot.Body, rng.Chance(0.5) ? "chain_shirt" : "padded_jerkin"),
-            (EquipSlot.Cloak, "travelers_cloak"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
+            (EquipSlot.Feet, "travelers_boots"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
         ];
         foreach (var (slot, def) in dress)
             ch.Equipment[slot] = Inventory.Make(ch, def, 1, gearRarity, (uint)rng.Int(1, 1 << 30));

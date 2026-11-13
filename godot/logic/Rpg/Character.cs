@@ -56,20 +56,22 @@ public sealed class Attributes { public int Might, Finesse, Wits, Resolve; }
 
 public enum Sex { Male, Female }
 
-/// <summary>What is worn and held, slot by slot.</summary>
+/// <summary>What is worn and held, slot by slot: the eight places (Items.EquipSlots).</summary>
 public sealed class Equipment
 {
-    public ItemInstance? Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic;
-    public ItemInstance? Shoulders, Bracers, Hands, Belt, Legs, Feet;
+    public ItemInstance? Weapon, Offhand, Head, Body, Feet, Amulet, Ring1, Ring2;
+
+    /// <summary>What an old save wrote in a place the 13 November cut removed (cloak, relic, shoulders, bracers, hands, belt, legs),
+    /// kept as read until the migration (Inventory.Mend) puts it in the pack or the stash; null after.</summary>
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? Retired { get; set; }
 
     public ItemInstance? this[EquipSlot s]
     {
         get => s switch
         {
             EquipSlot.Weapon => Weapon, EquipSlot.Offhand => Offhand, EquipSlot.Head => Head, EquipSlot.Body => Body,
-            EquipSlot.Cloak => Cloak, EquipSlot.Amulet => Amulet, EquipSlot.Ring1 => Ring1, EquipSlot.Ring2 => Ring2,
-            EquipSlot.Shoulders => Shoulders, EquipSlot.Bracers => Bracers, EquipSlot.Hands => Hands, EquipSlot.Belt => Belt,
-            EquipSlot.Legs => Legs, EquipSlot.Feet => Feet, _ => Relic,
+            EquipSlot.Feet => Feet, EquipSlot.Amulet => Amulet, EquipSlot.Ring1 => Ring1, _ => Ring2,
         };
         set
         {
@@ -79,17 +81,10 @@ public sealed class Equipment
                 case EquipSlot.Offhand: Offhand = value; break;
                 case EquipSlot.Head: Head = value; break;
                 case EquipSlot.Body: Body = value; break;
-                case EquipSlot.Cloak: Cloak = value; break;
+                case EquipSlot.Feet: Feet = value; break;
                 case EquipSlot.Amulet: Amulet = value; break;
                 case EquipSlot.Ring1: Ring1 = value; break;
-                case EquipSlot.Ring2: Ring2 = value; break;
-                case EquipSlot.Shoulders: Shoulders = value; break;
-                case EquipSlot.Bracers: Bracers = value; break;
-                case EquipSlot.Hands: Hands = value; break;
-                case EquipSlot.Belt: Belt = value; break;
-                case EquipSlot.Legs: Legs = value; break;
-                case EquipSlot.Feet: Feet = value; break;
-                default: Relic = value; break;
+                default: Ring2 = value; break;
             }
         }
     }
@@ -139,6 +134,7 @@ public sealed class CharacterData
     public Equipment Equipment = new();
     /// <summary>The two kits (Rpg/Kits.cs): the night kit's own slots, the kit not on now's pieces in
     /// them, and whether the night's is on. Equipment is always what is on now.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(EquipSlotListConverter))]
     public List<EquipSlot>? NightOwn;
     public Equipment? OtherKit;
     public bool NightOn;
@@ -534,6 +530,57 @@ public static class Inventory
             if (ch.Equipment[s] is not { } it || Items.Find(it.Def) is not { } def || Items.Fits(def, s)) continue;
             if (Items.SlotFor(def) is EquipSlot k && Items.Fits(def, k) && ch.Equipment[k] == null) { ch.Equipment[s] = null; ch.Equipment[k] = it; }
             else if (AddToPack(ch, it)) ch.Equipment[s] = null;
+        }
+    }
+
+    /// <summary>Migration for the 13 November 2026 cut (15 equipment places to 8): what an old save wore in a place that is gone
+    /// (Equipment.Retired, read as it was written) goes to the pack, else the stash, else is let go; a piece whose id the cut removed
+    /// becomes what Items.Retired says or is let go, wherever it sits (worn, either kit, pack, satchel, key ring, stash, a shop's
+    /// shelf, the ground, a corpse, a nemesis). Safe to run any number of times; never throws on what it cannot read.</summary>
+    public static void Mend(CharacterData ch, World.WorldState? w = null)
+    {
+        var salvage = new List<ItemInstance>();
+        foreach (var eq in new[] { ch.Equipment, ch.OtherKit })
+        {
+            if (eq?.Retired is not { } old) continue;
+            foreach (var (slot, el) in old)
+            {
+                if (!Items.RetiredSlots.Contains(slot, StringComparer.OrdinalIgnoreCase)) continue;
+                try { if (el.ValueKind == System.Text.Json.JsonValueKind.Object && System.Text.Json.JsonSerializer.Deserialize<ItemInstance>(el.GetRawText(), Json.Options) is { } it) salvage.Add(it); }
+                catch (System.Text.Json.JsonException) { }
+            }
+            eq.Retired = null;
+        }
+        // (a retired id: its replacement, or null to let it go)
+        ItemInstance? Fix(ItemInstance? it)
+        {
+            if (it == null || !Items.Retired.TryGetValue(it.Def, out var to)) return it;
+            if (to == null) return null;
+            it.Def = to;
+            return it;
+        }
+        foreach (var s in Items.EquipSlots)
+        {
+            ch.Equipment[s] = Fix(ch.Equipment[s]);
+            if (ch.OtherKit != null) ch.OtherKit[s] = Fix(ch.OtherKit[s]);
+        }
+        for (int i = 0; i < ch.Pack.Count; i++) ch.Pack[i] = Fix(ch.Pack[i]);
+        ch.Satchel.RemoveAll(it => Fix(it) == null);
+        ch.Keys.RemoveAll(it => Fix(it) == null);
+        if (w != null)
+        {
+            for (int i = 0; i < w.Stash.Count; i++) w.Stash[i] = Fix(w.Stash[i]);
+            foreach (var shop in w.Shops.Values) shop.Stock.RemoveAll(it => Fix(it) == null);
+            w.GroundItems.RemoveAll(g => Fix(g.Item) == null);
+            w.Corpse?.Items.RemoveAll(it => Fix(it) == null);
+            w.Nemesis?.Carries.RemoveAll(it => Fix(it) == null);
+        }
+        foreach (var it in salvage.Select(Fix).OfType<ItemInstance>())
+        {
+            if (Items.Find(it.Def) == null) continue;
+            if (AddToPack(ch, it)) continue;
+            int cell = w?.Stash.IndexOf(null) ?? -1;
+            if (w != null && cell >= 0) w.Stash[cell] = it;
         }
     }
 
