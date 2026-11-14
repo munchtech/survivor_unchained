@@ -48,6 +48,10 @@ public sealed class ClothChains
     bool started;
     public Tuning Tune;
 
+    /// <summary>A link's collision radius as data may give it: 0 or more and finite. (A negative one at or past a capsule's
+    /// radius would silently turn that capsule's collision off: the bind limit is clamped at 0. R&amp;D rig lead 25.)</summary>
+    public static bool RadiusOk(float r) => r >= 0 && float.IsFinite(r);
+
     /// <summary>Particles in order (a parent before its children); parent[i] &lt; 0 for a pinned chain root; radius[i]
     /// the link ending at i (world); stiffness[i] (1/s) overrides the root-to-tip ramp where &gt; 0.</summary>
     public ClothChains(int[] parent, float[] radius, Tuning tune, float[]? stiffness = null)
@@ -55,6 +59,8 @@ public sealed class ClothChains
         int n = parent.Length;
         for (int i = 0; i < n; i++)
             if (parent[i] >= i) throw new ArgumentException($"particle {i}: its parent {parent[i]} must come before it");
+        for (int i = 0; i < radius.Length; i++)
+            if (!RadiusOk(radius[i])) throw new ArgumentException($"particle {i}: radius {radius[i]} (a link's radius is 0 or more)");
         this.parent = parent;
         this.radius = radius;
         Tune = tune;

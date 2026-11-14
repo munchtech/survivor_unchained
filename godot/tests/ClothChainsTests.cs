@@ -123,6 +123,47 @@ public class ClothChainsTests
     }
 
     [Fact]
+    public void LappetL14KeepsItsHangAsTheThighComesUnderItsHead()
+    {
+        // (R&D rig lead 25's repro, her_springs_rnd_data.md "BODY B (p1)": lappet L14, 185 mm, r 0.02, on the pelvis, over
+        // the left thigh's capsule R 84 mm (bind limit 104 mm); in walk_warden the head comes to 98 mm of the thigh, and
+        // the old pinned push flung the link 144.5 deg round (38.4 with the hold). Here the thigh swings 20 deg forward and
+        // 10 back, twice, a walk's: its line comes to 97 mm of the head; the link is pushed off it but keeps near its hang)
+        var head = new Vector3(0.094f, 1.062f, 0.102f);
+        var tail = head + new Vector3(0, -0.185f, 0.01f);
+        var hip = head - new Vector3(0, -0.02f, 0.11f);   // (the thigh's line passes 110 mm under the head at rest, 97 mm at 20 deg)
+        var c = new ClothChains(new[] { -1, 0 }, new[] { 0.02f, 0.02f }, ClothChains.Tuning.Wool, new[] { 0f, 10f });
+        ClothChains.Capsule Thigh(float deg)
+        {
+            float a = deg * MathF.PI / 180;
+            return new(hip, hip + new Vector3(0, -MathF.Cos(a), MathF.Sin(a)) * 0.42f, 0.084f);
+        }
+        var t = new[] { head, tail };
+        var bind = Vector3.Normalize(tail - head);
+        c.SetRest(t, new[] { Thigh(0) });
+        c.Reset(t, new[] { Thigh(0) }, null, Down);
+        float worst = 0;
+        for (int f = 1; f <= 120; f++)
+        {
+            float deg = 15 * MathF.Sin(f / 60f * 2 * MathF.PI) + 5;   // (-10 .. 20 deg, twice in two seconds)
+            c.Step(Dt, t, new[] { Thigh(deg) }, null, Down);
+            var d = Vector3.Normalize(c.Positions[^1] - head);
+            worst = Math.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(d, bind), -1, 1)) * 180 / MathF.PI);
+        }
+        Assert.True(worst < 30, $"swung {worst:0.0} deg off its hang");   // (16.9 held; 112.9 with the old pinned push)
+    }
+
+    [Fact]
+    public void ANegativeRadiusIsRefused()
+    {
+        // (a radius at or past -R clamps the bind limit to 0 and silently turns that capsule's collision off)
+        Assert.False(ClothChains.RadiusOk(-0.01f));
+        Assert.False(ClothChains.RadiusOk(float.NaN));
+        Assert.True(ClothChains.RadiusOk(0));
+        Assert.Throws<ArgumentException>(() => new ClothChains(new[] { -1, 0 }, new[] { 0.02f, -0.1f }, ClothChains.Tuning.Wool));
+    }
+
+    [Fact]
     public void AResetSettlesTheHangSoACutNeverFlingsIt()
     {
         var none = Array.Empty<ClothChains.Capsule>();

@@ -81,6 +81,16 @@ public partial class PieceSprings : SkeletonModifier3D
         this.followRow = followRow; this.bodyMi = bodyMi; this.bodyIn = bodyIn;
     }
 
+    /// <summary>A piece's springs with any link's radius under 0 (or not finite): refused whole, so the piece stays as
+    /// weighted (ClothChains.RadiusOk), with a warning naming the link.</summary>
+    static List<Link> Refused(List<Link> links)
+    {
+        var bad = links.FirstOrDefault(l => !ClothChains.RadiusOk(l.Radius));
+        if (bad == null) return links;
+        GD.PushWarning($"springs: link {bad.Bone}'s radius {bad.Radius} is under 0: the piece's springs are refused");
+        return new();
+    }
+
     /// <summary>The node's name for a piece (a package's "name/piece", her row's "warden.skirt": no '/' or '.').</summary>
     public static string NodeName(string what) => "PieceSprings_" + what.Replace('/', '_').Replace('.', '_');
 
@@ -88,7 +98,7 @@ public partial class PieceSprings : SkeletonModifier3D
     public static List<Link> FromRows(IEnumerable<SurvivorUnchained.Rpg.SpringRow>? rows) =>
         rows?.Where(r => r.Bone != "" && r.Parent != "" && r.Head?.Length == 3 && r.Tail?.Length == 3)
             .Select(r => new Link(r.Bone, r.Parent, new Vector3((float)r.Head[0], (float)r.Head[1], (float)r.Head[2]),
-                new Vector3((float)r.Tail[0], (float)r.Tail[1], (float)r.Tail[2]), (float)r.Radius, (float)r.Stiffness)).ToList() ?? new();
+                new Vector3((float)r.Tail[0], (float)r.Tail[1], (float)r.Tail[2]), (float)r.Radius, (float)r.Stiffness)).ToList() is { } l ? Refused(l) : new();
 
     /// <summary>An armor row's correctives.</summary>
     public static List<Corrective> FromRows(IEnumerable<SurvivorUnchained.Rpg.CorrectiveRow>? rows) =>
@@ -142,7 +152,7 @@ public partial class PieceSprings : SkeletonModifier3D
             o.Add(new Link((string)d["bone"], (string)d["parent"], P(d["head"]), P(d["tail"]),
                 d.TryGetValue("radius", out var r) ? (float)r : 0.04f, d.TryGetValue("stiffness", out var s) ? (float)s : 0));
         }
-        return o;
+        return Refused(o);
     }
 
     /// <summary>A piece entry's "correctives", read.</summary>
