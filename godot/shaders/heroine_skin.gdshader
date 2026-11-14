@@ -157,6 +157,8 @@ uniform float spark_mask : hint_range(0.0, 1.0) = 0.0;
 // (People.NpcSkin: NPCs on body_p1's topology, Look.SkinHighlight.FoldMap).
 uniform sampler2D rim_fold_map : hint_default_black, filter_linear;
 uniform float rim_fold : hint_range(0.0, 1.0) = 0.0;
+// Skin's share of the cel stepped rim: 1 by day, 0 at night (AtmospherePreset.CelSkinRim), where the moon's rim stepped into lilac specks.
+global uniform float cel_skin_rim;
 // Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
 // can't reach (n.l under cavity_ndl), cavity_bounce of its light, by cavity_map's shade (her body's own baked AO, red:
 // 1 open, under cavity_ao.y; all of it at cavity_ao.x). As her arm lifts, the hollow under it faces away from every
@@ -1121,7 +1123,7 @@ void light() {
 	}
 	// (cel: the stepped rim on the key's side)
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un)
-		* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0);
+		* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0) * cel_skin_rim;
 	}
 	CEL_HERO_LIGHT;
 }

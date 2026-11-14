@@ -13,9 +13,9 @@ public class SkinHighlightTests
         Assert.Null(SkinHighlight.Strength("skin_head"));
         // (and the head takes no stepped rim: inside the face it drew stripes down the nose and temple, 13 Nov r1)
         Assert.Equal(0f, SkinHighlight.RimShare("skin_head"));
-        // (nor the body: lilac-white specks on her shoulders at night, skin light 13 Nov r1)
+        // (the body keeps the shader's own by day, the owner 13 Nov; at night CelSkinRim takes it off skin)
         foreach (var part in new[] { "skin", "skin_graft", "skin_body", "Material_0.001", "" })
-            Assert.Equal(0f, SkinHighlight.RimShare(part));
+            Assert.Null(SkinHighlight.RimShare(part));
     }
 
     [Fact]
@@ -103,6 +103,6 @@ public class SkinHighlightTests
             "NpcSkin matches body_p1 by triangles (a run-time glTF load welds its vertices)");
         Assert.True(people.IndexOf("m.SetShaderParameter(\"rim_fold\", 1f);", npc, System.StringComparison.Ordinal) > npc, "NpcSkin sets rim_fold");
         var shader = System.IO.File.ReadAllText(System.IO.Path.Combine(d.FullName, "shaders", "heroine_skin.gdshader"));
-        Assert.Contains("* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0);", shader);
+        Assert.Contains("* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0) * cel_skin_rim;", shader);
     }
 }

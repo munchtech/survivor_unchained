@@ -1995,6 +1995,13 @@ public static class People
         }
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
+        // (the cream line cut under her breast as on NPCs on body_p1, owner 13 Nov; matched by triangles)
+        if (src.ResourceName != "skin_head" && mesh != null && SkinIndexCount(mesh, src.ResourceName) is int bi && bi > 0 && bi == BaseBodyIndices()
+            && ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.FoldMap))
+        {
+            m.SetShaderParameter("rim_fold_map", GD.Load<Texture2D>(SurvivorUnchained.Look.SkinHighlight.FoldMap));
+            m.SetShaderParameter("rim_fold", 1f);
+        }
         SkinSet(m, src.ResourceName);
         return m;
     }

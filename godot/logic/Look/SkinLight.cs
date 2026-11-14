@@ -62,7 +62,7 @@ public static class SkinLight
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The
-    /// body keeps the cel model's own stepped rim (cel_rim_k) for its outline; the head keeps its soft rim.</summary>
+    /// body keeps the cel model's own stepped rim (cel_rim_k) for its outline by day; the head keeps its soft rim.</summary>
     public static float? SoftRim(string part) => part == "skin_head" ? null : 0f;
 
     /// <summary>The cel band's half-tone reach on the head (heroine_skin.gdshader cel_band.z, the n.l over the terminator

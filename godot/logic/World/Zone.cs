@@ -253,6 +253,8 @@ public sealed record AtmospherePreset(
     public double CelFill { get; init; } = 0.06;
     public double CelRim { get; init; } = 0.35;
     public double CelRimWidth { get; init; } = 0.25;
+    /// <summary>Skin's share of the stepped rim (heroine_skin, global cel_skin_rim): 1 by day, 0 at night (Atmospheres.Night), where the moon's rim stepped into lilac specks on her skin.</summary>
+    public double CelSkinRim { get; init; } = 1;
     public string CelFillColor { get; init; } = "";
     public string CelRimColor { get; init; } = "";
     /// <summary>(L1 B4) The lighting rig this air is lit by under the cel model (godot/data/look/rigs.json; logic/Look/Rigs.cs;

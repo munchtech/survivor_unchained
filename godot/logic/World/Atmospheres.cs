@@ -22,7 +22,7 @@ public static class Atmospheres
     public static readonly AtmospherePreset Night = new(
         new SkySettings("#040814", "#1c2a4c", "#07090f", "#4a6ea8", 20, 1, 1),
         "#a9c4ff", 3.4, 50, 128, 0.7,
-        "#4a6699", "#2a241c", 1.25, 0.8, "#16243a", 0.008, 1.6, "#9fc0ff", 0.6, NightGrade) { Rig = "night_wild" };
+        "#4a6699", "#2a241c", 1.25, 0.8, "#16243a", 0.008, 1.6, "#9fc0ff", 0.6, NightGrade) { Rig = "night_wild", CelSkinRim = 0 };
 
     /// <summary>Night inside walls: the moon is a cold wash, and what light
     /// there is comes from lamps, doorways and braziers.</summary>
@@ -312,7 +312,7 @@ public static class Atmospheres
             BushNightSat = Lerp(a.BushNightSat, b.BushNightSat, t), GroundEmberOchre = Lerp(a.GroundEmberOchre, b.GroundEmberOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
             CelOn = Lerp(a.CelOn, b.CelOn, t), CelShadow = Lerp(a.CelShadow, b.CelShadow, t), CelFill = Lerp(a.CelFill, b.CelFill, t),
-            CelRim = Lerp(a.CelRim, b.CelRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
+            CelRim = Lerp(a.CelRim, b.CelRim, t), CelSkinRim = Lerp(a.CelSkinRim, b.CelSkinRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
             CelFillColor = a.CelFillColor != "" && b.CelFillColor != "" ? Mix(a.CelFillColor, b.CelFillColor, t) : t < 0.5 ? a.CelFillColor : b.CelFillColor,
             CelRimColor = a.CelRimColor != "" && b.CelRimColor != "" ? Mix(a.CelRimColor, b.CelRimColor, t) : t < 0.5 ? a.CelRimColor : b.CelRimColor,
             CelInk = a.CelInk is { } ia && b.CelInk is { } ib ? Lerp3(ia, ib, t) : t < 0.5 ? a.CelInk : b.CelInk,

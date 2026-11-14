@@ -161,7 +161,7 @@ public static class ArenaPlaces
         return 0.2126 * C(0) + 0.7152 * C(1) + 0.0722 * C(2);
     }
 
-    static (AtmospherePreset, ArenaAir) Light(string place) => place switch
+    internal static (AtmospherePreset, ArenaAir) Light(string place) => place switch
     {
         // The barrow field: an open sky, a high cold moon, the chalk turf grey
         // under it, mist lying in the graves.

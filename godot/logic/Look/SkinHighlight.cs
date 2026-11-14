@@ -25,10 +25,11 @@ public static class SkinHighlight
     /// takes none: its rim, an n.v band on the key's side, lit flat planes inside the face (a stripe down the side of the
     /// nose, a band down the temple and cheek in front of the ear, a notch at the eye's corner, specks along the
     /// hairline) that read as paint or a scar at the Look and dialogue framings (head highlight judge r1, 13 Nov).
-    /// Without it the face's outline still reads against hair and background. The body takes none either (skin light,
-    /// 13 Nov judge r1): on her shoulders, neck base and cleavage it stepped into lilac-white specks and lines at night
-    /// (the close-up and play) and a pink band on her shoulder at the Look at night; isolated with cel_rim_k 0, gone.</summary>
-    public static float? RimShare(string part) => 0f;
+    /// Without it the face's outline still reads against hair and background. The body keeps it by day (the owner,
+    /// 13 Nov: the cream line "looks good", the Marvel Rivals look). At night skin takes none, via the preset's CelSkinRim
+    /// (Atmospheres.Night; the cel_skin_rim global): on her shoulders, neck base and cleavage the moon's rim stepped into
+    /// lilac-white specks and lines (the close-up and play) and a pink band on her shoulder at the Look; gone with it 0.</summary>
+    public static float? RimShare(string part) => part == "skin_head" ? 0f : null;
 
     /// <summary>body_p1's fold map (tools/assets/body_fold.py): 1 on the breast's underside, where the stepped rim, an n.v
     /// band on the key's side, drew a cream line inside her form against her ribs (13 Nov, the owner); 0 everywhere else,
