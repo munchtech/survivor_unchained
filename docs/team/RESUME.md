@@ -3,7 +3,7 @@
 ## WIND-DOWN 13 Nov 2026 (night): COLD START HERE FOR THE RESET
 
 The owner (13 Nov): "wind all active sessions down and make sure everything is saved and ready to go for our reset tomorrow". No session or agent is running; every branch is pushed. Integration `claude/vigilant-galileo-l6jqyx@fcf764a4e` (pushed, suite 2768 green per npc-skin). Each open lane and its state file (read the top block first):
-- **Skin lighting** `skin-light@286f9e7e2` (pushed, WIP round 4, UNJUDGED), worktree `.claude/worktrees/determined-leakey-726ff5`. Open faults in the skin-light bullet below.
+- **Skin lighting** `skin-light@286f9e7e2` (pushed, WIP round 4, UNJUDGED), worktree `.claude/worktrees/determined-leakey-726ff5`; rounds 1-3 in integration at `8147674b5`; state `Claude-Data\...\side-session-notes\local_a86b1f76-...\skin_light_state.md` (top block). Open faults in the skin-light bullet below.
 - **NPC held props** `claude/priceless-borg-d08e89@2e18dd4f3` (pushed, NOT merged: base-body shots, judge, suite left), worktree `priceless-borg-d08e89`; state `Claude-Data\...\side-session-notes\local_8d1eecca-...\npc_held_props.md` ("RESTART HERE").
 - **Base body sternum / head highlight / hair**: merged into integration; state `...\side-session-notes\local_8d1eecca-...\sternum_patches.md`.
 - **Paired bake-off**: 8 Opus arms built and pushed (`bo-*-a`); state `survivorsunchained_inputs\scratch_usage_cmp\bakeoff\STATE.md`; Fable arms resume after the 15 Nov 05:00 UTC reset.
