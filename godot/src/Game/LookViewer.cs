@@ -399,8 +399,8 @@ public partial class LookViewer : Node
         off = terms.ToHashSet(); pats = lp; only = j.S.LightOnly.Select(x => x.ToLowerInvariant()).ToList(); globals = j.S.Global;
         shift = Vector3.Zero; spotDone = false; soloDone = false; moved.Clear(); hookFrames = 0; hookT = 0; sceneT = 0;
         pendingTaken = null;
-        Shots.ViewerFile = $"{j.Out}/{j.S.Id}/{cam}.png";
-        Directory.CreateDirectory($"{j.Out}/{j.S.Id}");
+        Shots.ViewerFile = $"{FramesDir(j)}/{cam}.png";
+        Directory.CreateDirectory(FramesDir(j));
         if (File.Exists(Shots.ViewerFile)) File.Delete(Shots.ViewerFile);
         GD.Print($"look viewer: replay {j.Kind} {j.Request ?? ""} {j.Name} {cam}: {string.Join(' ', args)}");
         RenderingServer.RenderLoopEnabled = true;
@@ -451,6 +451,9 @@ public partial class LookViewer : Node
         pendingTaken = file; pendingShotT = shotT; pendingDrawn = drawn;
     }
 
+    /// <summary>A request's frames go to OUT/ID/; the live package's straight into live_out/ (one set, replaced).</summary>
+    static string FramesDir(Job j) => j.Kind == "live" ? j.Out : $"{j.Out}/{j.S.Id}";
+
     void Captured()
     {
         var j = job!;
@@ -458,7 +461,7 @@ public partial class LookViewer : Node
         double now = Now;
         var file = pendingTaken!;
         pendingTaken = null;
-        var dir = $"{j.Out}/{j.S.Id}";
+        var dir = FramesDir(j);
         WriteDump($"{dir}/{cam}_dump.json");
         var rec = new Godot.Collections.Dictionary
         {
