@@ -8,9 +8,23 @@ namespace SurvivorUnchained.Look;
 /// --skin-set "*:cel_spec=6/1/0/0.85": strength 0 and they are gone, the soft sheen kept). So body parts take none.
 /// (Tried and judged worse, 13 Nov: a soft, small disc instead (4/3/0.2 on the geometric normal): any disc in degrees round
 /// N.H still spreads into a flat patch on near-flat forms, thins to streaks on fingers and pops as glints at night. If the
-/// night skin wants more life, the route is a low, wide sheen from the key light only, masked off the hands.)</summary>
+/// night skin wants more life, the route is a low, wide sheen from the key light only, masked off the hands.)
+/// The head's forehead, cheeks, temples and jaw are broad forms too: the same disc drew pale, hard-edged patches there
+/// (her Look and close-up, an NPC's jaw; 13 Nov). So on our base head (hers and every NPC's on it) the disc is kept by
+/// SparkMap, where the head is tightly curved (nose tip, lips, lids' rims, ears: tools/assets/heroine_spark.py), and
+/// gone elsewhere; People.BaseHead sets it as heroine_skin.gdshader's spark_map (spark_mask 1).</summary>
 public static class SkinHighlight
 {
+    /// <summary>Our base head's spark map: 1 where the head keeps the hard highlight, 0 on its broad forms.</summary>
+    public const string SparkMap = "res://art/people/head_tex/heroine_spark.png";
+
     /// <summary>The cel highlight's strength (cel_spec.z) a skin part is given, or null to keep the shader's own (CEL_SPEC).</summary>
     public static float? Strength(string part) => part == "skin_head" ? null : 0f;
+
+    /// <summary>The cel model's stepped rim (cel_rim_k) a skin part is given, or null to keep the shader's own. The head
+    /// takes none: its rim, an n.v band on the key's side, lit flat planes inside the face (a stripe down the side of the
+    /// nose, a band down the temple and cheek in front of the ear, a notch at the eye's corner, specks along the
+    /// hairline) that read as paint or a scar at the Look and dialogue framings (head highlight judge r1, 13 Nov).
+    /// Without it the face's outline still reads against hair and background.</summary>
+    public static float? RimShare(string part) => part == "skin_head" ? 0f : null;
 }

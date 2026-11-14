@@ -125,6 +125,12 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Where her head keeps the cel model's hard highlight (tools/assets/heroine_spark.py: her head's tightly curved forms,
+// her nose's tip, lips, lids' rims and ears): on her forehead, cheeks, temples and jaw the 6-degree disc drew pale,
+// hard-edged patches whose outline followed the normal (13 Nov). spark_mask 1: the disc times the map (People.BaseHead);
+// 0: everywhere, as before.
+uniform sampler2D spark_map : hint_default_white, filter_linear;
+uniform float spark_mask : hint_range(0.0, 1.0) = 0.0;
 // Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
 // can't reach (n.l under cavity_ndl), cavity_bounce of its light, by cavity_map's shade (her body's own baked AO, red:
 // 1 open, under cavity_ao.y; all of it at cavity_ao.x). As her arm lifts, the hollow under it faces away from every
@@ -1072,7 +1078,8 @@ void light() {
 	// (cel: a small hard highlight in the key's color on her full normal, in place of the two GGX lobes; then held
 	// as they are)
 	if (cel_on > 0.0 && spec_on) spec = mix(spec, mouth_lit * cel_spec_add(NORMAL, LIGHT, VIEW, lcol, cel_lit(cb_t) * cb_sh, rgh,
-			METALLIC, ALBEDO * un, sheen, SPECULAR_AMOUNT) * mix(1.0, back_spec, behind), cel_on);
+			METALLIC, ALBEDO * un, sheen, SPECULAR_AMOUNT) * mix(1.0, back_spec, behind)
+			* (spark_mask > 0.0 ? mix(1.0, textureLod(spark_map, UV, 0.0).r, spark_mask) : 1.0), cel_on);
 	if (spec_on) {
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
 		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));

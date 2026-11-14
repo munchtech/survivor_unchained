@@ -78,7 +78,7 @@ public class FxTests
 
     /// <summary>Just enough of PNG to read the effects' pictures: 8-bit RGB or
     /// RGBA, not interlaced.</summary>
-    sealed class Png
+    internal sealed class Png
     {
         public int Width, Height, Channels;
         public byte[] Pixels = Array.Empty<byte>();
