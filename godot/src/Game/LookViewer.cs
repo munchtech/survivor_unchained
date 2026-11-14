@@ -46,6 +46,10 @@ public partial class LookViewer : Node
     readonly Stopwatch clock = Stopwatch.StartNew();
     readonly ChangeWatch watch;
     readonly int changeAt;
+    /// <summary>After a live replay or preview the turn is kept this long (no GPU used while held) so the next edit's
+    /// preview starts at once; captures give it back at once (--look-turn-grace S, default 60).</summary>
+    readonly double turnGrace;
+    double graceFor, idleSince;
     readonly bool turns;
     readonly string turnPy, turnWho;
     double nextPoll, nextStatus, nextSlow, nextStop;
@@ -66,11 +70,18 @@ public partial class LookViewer : Node
         public string Fingerprint = "";
         public List<PackageFingerprint.Entry> Files = new();
         public List<string> Done = new();
+        /// <summary>A live job's content: its fingerprint and live.json's text (a touch that changes neither replays nothing).</summary>
+        public string Key = "";
+        public Job Preview() => new()
+        {
+            Kind = "preview", S = S, PkgDir = PkgDir, Name = Name, Overlay = Overlay, Out = Out, QueuedAt = QueuedAt,
+            ChangedAt = ChangedAt, Fingerprint = Fingerprint, Files = Files, Key = Key,
+        };
     }
 
     readonly Queue<Job> jobs = new();
     Job? job;
-    enum St { Booting, Idle, Turn, Align, Change, Run, Failed }
+    enum St { Booting, Idle, Turn, Align, Change, Run, Preview, Failed }
     St st = St.Booting;
     string lastError = "", lastFrame = "";
     double lastFrameAt;
@@ -95,6 +106,24 @@ public partial class LookViewer : Node
     string? pendingTaken;
     double pendingShotT;
     long pendingDrawn;
+    // the replay's time split (CAM.json timings): the scene change call, the shot's Shots ready, each draw's time
+    double changeCallAt, changeCallS, readyAt = double.NaN;
+    int readyDraw = -1;
+    readonly List<double> drawAt = new();
+    // the fast preview: the held scene kept, only the shot NPC rebuilt (Game.RebuildShotNpc), a few draws, shown
+    const int PreviewDraws = 6;
+    int previewDrawn;
+    double previewStart, previewRebuildS;
+    int previewKept;
+    string heldCam = "";
+    bool heldShot;
+    /// <summary>The last finished live replay's Key; F5 replays even when nothing changed (forceLive).</summary>
+    string liveShownKey = "";
+    bool forceLive;
+    /// <summary>Per package name, the files (relative path to sha256) its loaded scenes were last built from: a preview
+    /// keeps a glb whose bytes are the same (NpcPackage.Forget's kept), so a manifest or piece edit skips the body load.</summary>
+    readonly Dictionary<string, Dictionary<string, string>> builtFrom = new();
+    CanvasLayer? tag;
 
     LookViewer(string drop)
     {
@@ -109,6 +138,7 @@ public partial class LookViewer : Node
         launch = OS.GetCmdlineUserArgs();
         watch = new ChangeWatch(new DiskStats(), new[] { liveDir, liveJson });
         changeAt = (int)Args.Num("look-change-at", 1);
+        turnGrace = Args.Num("look-turn-grace", 60);
         turns = Args.Get("look-turn") != "off";
         turnPy = Args.Get("look-turn-py") is string tp && tp != "1" ? tp : "C:/Users/munch/Desktop/survivorsunchained/tools/turn.py";
         turnWho = $"look-viewer: replays (pid {OS.GetProcessId()})";
@@ -144,6 +174,15 @@ public partial class LookViewer : Node
         RenderingServer.FramePreDraw += PreDraw;
         RenderingServer.FramePostDraw += PostDraw;
         Shots.ViewerTaken += Taken;
+        Shots.ViewerReady += ShotReady;
+        tag = new CanvasLayer { Layer = 128, Visible = false };
+        var lab = new Label { Text = "PREVIEW  (the exact replay follows)", Position = new Vector2(12, 10) };
+        lab.AddThemeFontSizeOverride("font_size", 18);
+        lab.AddThemeColorOverride("font_color", new Color(1, 0.85f, 0.2f));
+        lab.AddThemeColorOverride("font_outline_color", Colors.Black);
+        lab.AddThemeConstantOverride("outline_size", 5);
+        tag.AddChild(lab);
+        AddChild(tag);
         GD.Print($"look viewer: watching {drop} (game {gameCommit[..Math.Min(10, gameCommit.Length)]}, shaders {shadersAtStart}, turns {(turns ? "on" : "off")})");
         Hold();
         st = St.Idle;
@@ -156,6 +195,7 @@ public partial class LookViewer : Node
         RenderingServer.FramePreDraw -= PreDraw;
         RenderingServer.FramePostDraw -= PostDraw;
         Shots.ViewerTaken -= Taken;
+        Shots.ViewerReady -= ShotReady;
         beat?.Dispose(); beat = null;
         GiveTurn(wait: true);
         st = St.Failed; lastError = "viewer closed";
@@ -174,9 +214,9 @@ public partial class LookViewer : Node
         if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
             if (k.Keycode == Key.F9) { WriteF9(); GetViewport().SetInputAsHandled(); return; }
-            if (k.Keycode == Key.F5) { watch.Again(); GetViewport().SetInputAsHandled(); return; }
+            if (k.Keycode == Key.F5) { forceLive = true; watch.Again(); GetViewport().SetInputAsHandled(); return; }
         }
-        if (st is St.Align or St.Change or St.Run) GetViewport().SetInputAsHandled();
+        if (st is St.Align or St.Change or St.Run or St.Preview) GetViewport().SetInputAsHandled();
     }
 
     void WriteF9()
@@ -200,13 +240,15 @@ public partial class LookViewer : Node
             nextSlow = now + 10;
             slow = System.Threading.Tasks.Task.Run(() => { headNow = Git("rev-parse", "HEAD"); shadersNow = ShaderPrint(); });
         }
+        // (a live change during a job waits for it, but its time is seen now: change to pixels counts from the edit)
+        if (st is not (St.Idle or St.Failed) && now >= nextPoll) { nextPoll = now + 0.1; watch.Poll(now); }
         switch (st)
         {
             case St.Idle:
             case St.Failed:
                 if (now >= nextPoll) { nextPoll = now + 0.1; Poll(now); }
                 if (jobs.Count > 0) NextJob();
-                else if (turnHeld) GiveTurn(wait: false);
+                else if (turnHeld && now - idleSince >= graceFor) GiveTurn(wait: false);
                 break;
             case St.Turn:
                 TurnStep();
@@ -223,6 +265,11 @@ public partial class LookViewer : Node
             case St.Change:
                 frameInRun++;
                 if (frameInRun >= changeAt) ChangeScene();
+                break;
+            case St.Preview:
+                sceneT += delta;
+                Late(delta);
+                PreviewStep(now);
                 break;
             case St.Run:
                 frameInRun++;
@@ -268,9 +315,25 @@ public partial class LookViewer : Node
         {
             watch.Taken();
             if (!File.Exists($"{liveDir}/manifest.json")) { lastError = $"no live package ({liveDir}/manifest.json)"; return; }
-            try { var j = LiveJob(now); j.ChangedAt = watch.ChangedAt; jobs.Enqueue(j); }
+            try { QueueLive(now); }
             catch (Exception e) when (e is LookError or IOException) { lastError = "live: " + e.Message; st = St.Failed; GD.PushWarning("look viewer: live: " + e.Message); }
         }
+    }
+
+    /// <summary>A settled live change: its fast preview first when the held scene has a shot NPC to swap, then the exact
+    /// replay (which replaces it).</summary>
+    void QueueLive(double now, Job? j = null)
+    {
+        j ??= LiveJob(now);
+        j.ChangedAt = watch.ChangedAt;
+        if (!forceLive && j.Key == liveShownKey)
+        {
+            GD.Print("look viewer: the live files were touched but their content and settings are the shown frame's: no replay");
+            return;
+        }
+        forceLive = false;
+        if (heldShot && GetTree().CurrentScene is Game) jobs.Enqueue(j.Preview());
+        jobs.Enqueue(j);
     }
 
     LookSettings LiveSettings() => File.Exists(liveJson) ? LookSettings.Parse(File.ReadAllText(liveJson), "live") : LookSettings.Parse("{\"id\": \"live\"}");
@@ -278,7 +341,9 @@ public partial class LookViewer : Node
     Job LiveJob(double now)
     {
         var s = LiveSettings();
-        return Prepare(new Job { Kind = "live", S = s, PkgDir = liveDir, Out = outLive, QueuedAt = now });
+        var j = Prepare(new Job { Kind = "live", S = s, PkgDir = liveDir, Out = outLive, QueuedAt = now });
+        j.Key = j.Fingerprint + "|" + (File.Exists(liveJson) ? File.ReadAllText(liveJson) : "");
+        return j;
     }
 
     Job RequestJob(string id, double now)
@@ -337,18 +402,27 @@ public partial class LookViewer : Node
     {
         job = jobs.Dequeue();
         job.Cam = 0;
-        if (!turns || turnHeld) { job.TurnAt = Now; BeginCam(); return; }
+        if (!turns || turnHeld) { job.TurnAt = Now; Begin(); return; }
         st = St.Turn;
-        StartTurn();
+        StartTurn(job.Kind == "preview" ? "0.05" : "1");
     }
 
     // ---- the godot turn (tools/turn.py), taken for a burst and given back while idle
 
-    void StartTurn()
+    /// <summary>The job ended: the turn is kept `grace` seconds more (a live edit's next preview), then given back.</summary>
+    void Idle(double grace) { idleSince = Now; graceFor = grace; }
+
+    void Begin()
+    {
+        if (job!.Kind == "preview") StartPreview(); else BeginCam();
+    }
+
+    /// <summary>turn.py take, waiting up to `minutes` (the preview asks for 3 s, a replay for a minute at a time).</summary>
+    void StartTurn(string minutes)
     {
         turnOut = "";
         var psi = new ProcessStartInfo("python") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true, WorkingDirectory = root };
-        foreach (var a in new[] { turnPy, "take", "godot", turnWho, "--wait", "1", "--root", root }) psi.ArgumentList.Add(a);
+        foreach (var a in new[] { turnPy, "take", "godot", turnWho, "--wait", minutes, "--root", root }) psi.ArgumentList.Add(a);
         turnProc = Process.Start(psi);
     }
 
@@ -358,8 +432,15 @@ public partial class LookViewer : Node
         turnOut = (turnProc.StandardOutput.ReadToEnd() + turnProc.StandardError.ReadToEnd()).Trim();
         int code = turnProc.ExitCode;
         turnProc.Dispose(); turnProc = null;
-        if (code == 0) { turnHeld = true; job!.TurnAt = Now; BeginCam(); return; }
-        if (code == 1) { StartTurn(); return; }   // (busy: asking again keeps the place in the queue)
+        if (code == 0) { turnHeld = true; job!.TurnAt = Now; Begin(); return; }
+        if (code == 1 && job!.Kind == "preview")
+        {
+            // (every godot slot taken for 3 s: no preview; the exact replay behind it waits its turn as ever)
+            GD.Print("look viewer: no godot turn within 3 s: no preview, the replay waits");
+            job = null; st = St.Idle;
+            return;
+        }
+        if (code == 1) { StartTurn("1"); return; }   // (busy: asking again keeps the place in the queue)
         Fail($"no godot turn (turn.py exit {code}): {turnOut}");
     }
 
@@ -394,6 +475,7 @@ public partial class LookViewer : Node
         args.AddRange(j.S.GameArgs(cam, j.Name, j.Overlay, j.S.Tag(cam)));
         Args.Override(args);
         NpcPackage.Forget(j.Name);
+        builtFrom[j.Name] = j.Files.ToDictionary(f => f.File, f => f.Sha256);
         NpcDye.Restart();
         var (terms, lp, _) = j.S.OffTerms();
         off = terms.ToHashSet(); pats = lp; only = j.S.LightOnly.Select(x => x.ToLowerInvariant()).ToList(); globals = j.S.Global;
@@ -401,7 +483,9 @@ public partial class LookViewer : Node
         pendingTaken = null;
         Shots.ViewerFile = $"{FramesDir(j)}/{cam}.png";
         Directory.CreateDirectory(FramesDir(j));
-        if (File.Exists(Shots.ViewerFile)) File.Delete(Shots.ViewerFile);
+        if (j.Kind != "live" && File.Exists(Shots.ViewerFile)) File.Delete(Shots.ViewerFile);
+        if (tag != null) tag.Visible = false;
+        drawAt.Clear(); readyAt = double.NaN; readyDraw = -1;
         GD.Print($"look viewer: replay {j.Kind} {j.Request ?? ""} {j.Name} {cam}: {string.Join(' ', args)}");
         RenderingServer.RenderLoopEnabled = true;
         Engine.MaxFps = 0;
@@ -413,7 +497,9 @@ public partial class LookViewer : Node
     {
         GetTree().Paused = false;
         var main = (string)ProjectSettings.GetSetting("application/run/main_scene");
+        changeCallAt = Now;
         var e = GetTree().ChangeSceneToFile(main);
+        changeCallS = Now - changeCallAt;
         if (e != Error.Ok) { Fail($"the main scene did not load ({e})"); return; }
         st = St.Run;
         frameInRun = 0;
@@ -432,14 +518,22 @@ public partial class LookViewer : Node
             drawIdx = 0;
             return;
         }
-        if (drawIdx >= 0) drawIdx++;
+        if (drawIdx >= 0) { drawIdx++; if (st == St.Run) drawAt.Add(Now); }
+        if (st == St.Preview) { Terms(); return; }
         if (st != St.Run) return;
         hookFrames++;
         Terms();
     }
 
+    void ShotReady()
+    {
+        if (st != St.Run) return;
+        readyAt = Now; readyDraw = drawIdx;
+    }
+
     void PostDraw()
     {
+        if (st == St.Preview) previewDrawn++;
         if (rollRestore) { rollRestore = false; ProjectSettings.SetSetting(RollKey, rollWas); }
         foreach (var (n, at) in moved) if (IsInstanceValid(n)) n.GlobalPosition = at;
         moved.Clear();
@@ -479,6 +573,7 @@ public partial class LookViewer : Node
                 ["turn_wait_s"] = Math.Round(j.TurnAt - j.QueuedAt, 3), ["replay_s"] = Math.Round(now - runStart, 3),
                 ["since_queued_s"] = Math.Round(now - j.QueuedAt, 3),
                 ["change_to_frame_s"] = double.IsNaN(j.ChangedAt) ? -1 : Math.Round(now - j.ChangedAt, 3),
+                ["split"] = Split(now),
             },
             ["alignment"] = new Godot.Collections.Dictionary
             {
@@ -495,9 +590,48 @@ public partial class LookViewer : Node
         if (j.Cam < j.S.CamList.Count) { BeginCam(); return; }
         if (j.Request != null) Answer(j.Request, true, "", j);
         job = null;
+        if (j.Kind == "live") liveShownKey = j.Key;
+        heldCam = cam; heldShot = true;
+        Idle(j.Kind == "live" ? turnGrace : 0);
         Hold();
         st = St.Idle;
         WriteStatus();
+    }
+
+    /// <summary>Where a replay's time went: before the scene change (the jitter alignment), the change call itself, the
+    /// load to the shot's Shots ready (its scene's _Ready work, draws during it), and the stepped draws to the picture
+    /// (their rate, and the slowest).</summary>
+    Godot.Collections.Dictionary Split(double now)
+    {
+        var d = new Godot.Collections.Dictionary
+        {
+            ["before_change_s"] = Math.Round(changeCallAt - runStart, 3), ["change_call_s"] = Math.Round(changeCallS, 3),
+        };
+        if (!double.IsNaN(readyAt))
+        {
+            d["load_to_ready_s"] = Math.Round(readyAt - changeCallAt, 3);
+            d["draws_before_ready"] = readyDraw;
+            int n = drawAt.Count(t => t >= readyAt);
+            double secs = now - readyAt;
+            d["stepped_draws"] = n; d["stepped_s"] = Math.Round(secs, 3); d["stepped_fps"] = secs > 0 ? Math.Round(n / secs, 1) : 0;
+            var gaps = new List<(int I, double Ms)>();
+            for (int i = 1; i < drawAt.Count; i++) if (drawAt[i] >= readyAt) gaps.Add((i, (drawAt[i] - drawAt[i - 1]) * 1000));
+            d["slowest_draws_ms"] = new Godot.Collections.Array(gaps.OrderByDescending(g => g.Ms).Take(6).Select(g => (Variant)$"{g.I}:{g.Ms:0}"));
+            var sorted = gaps.Select(g => g.Ms).OrderBy(x => x).ToList();
+            if (sorted.Count > 0)
+            {
+                d["median_draw_ms"] = Math.Round(sorted[sorted.Count / 2], 1);
+                d["p90_draw_ms"] = Math.Round(sorted[sorted.Count * 9 / 10], 1);
+                d["draws_sum_s"] = Math.Round(sorted.Sum() / 1000, 3);
+            }
+            var after = drawAt.Where(t => t >= readyAt).ToList();
+            if (after.Count > 0)
+            {
+                d["ready_to_first_draw_s"] = Math.Round(after[0] - readyAt, 3);
+                d["last_draw_to_capture_s"] = Math.Round(now - after[^1], 3);
+            }
+        }
+        return d;
     }
 
     static IEnumerable<string> Argv(Job j, string cam) => j.S.GameArgs(cam, j.Name, j.Overlay, j.S.Tag(cam));
@@ -508,6 +642,8 @@ public partial class LookViewer : Node
         lastError = why;
         if (job?.Request is string id) Answer(id, false, why, job);
         job = null;
+        heldShot = false;
+        Idle(0);
         Shots.ViewerFile = null;
         Hold();
         st = St.Failed;
@@ -532,6 +668,77 @@ public partial class LookViewer : Node
         GetTree().Paused = true;
         RenderingServer.RenderLoopEnabled = false;
         Engine.MaxFps = 20;
+    }
+
+    // ---- the fast preview (live changes only; captures are exact replays)
+
+    void StartPreview()
+    {
+        var j = job!;
+        previewStart = Now;
+        if (GetTree().CurrentScene is not Game g) { job = null; st = St.Idle; return; }
+        var cam = j.S.CamList.Contains(heldCam) ? heldCam : j.S.CamList[0];
+        // (the live package's switches for the held camera: the rebuilt figure reads its name and overlay from them)
+        var args = new List<string> { "--look-viewer", drop };
+        args.AddRange(j.S.GameArgs(cam, j.Name, j.Overlay, j.S.Tag(cam)));
+        Args.Override(args);
+        var was = builtFrom.GetValueOrDefault(j.Name);
+        var now = j.Files.ToDictionary(f => f.File, f => f.Sha256);
+        var keptFiles = was == null ? new List<string>() : now.Where(f => f.Key != "manifest.json" && was.TryGetValue(f.Key, out var sha) && sha == f.Value).Select(f => f.Key).ToList();
+        NpcPackage.Forget(j.Name, rel => keptFiles.Contains(rel));
+        previewKept = keptFiles.Count;
+        bool ok;
+        try { ok = g.RebuildShotNpc(); builtFrom[j.Name] = now; }
+        catch (Exception e) { GD.PushWarning("look viewer: preview: " + e.Message); ok = false; }
+        previewRebuildS = Now - previewStart;
+        if (!ok) { GD.Print("look viewer: no shot NPC in the held scene: no preview"); job = null; heldShot = false; st = St.Idle; return; }
+        // (the held scene's own Shots may still be due a picture: it goes nowhere)
+        Shots.ViewerFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "look_viewer_preview_discard.png");
+        if (tag != null) tag.Visible = false;
+        previewDrawn = 0;
+        GetTree().Paused = false;
+        RenderingServer.RenderLoopEnabled = true;
+        Engine.MaxFps = 0;
+        st = St.Preview;
+        GD.Print($"look viewer: preview {j.Name} {cam}: the figure rebuilt in {previewRebuildS:0.00} s ({previewKept} unchanged file(s) kept loaded)");
+    }
+
+    void PreviewStep(double now)
+    {
+        var j = job!;
+        if (previewDrawn < PreviewDraws) return;
+        var cam = j.S.CamList.Contains(heldCam) ? heldCam : j.S.CamList[0];
+        if (tag is { Visible: false })
+        {
+            // (the settled draw saved without the tag, then one more draw shows it on screen)
+            var file = $"{j.Out}/{cam}.png";
+            Directory.CreateDirectory(j.Out);
+            GetViewport().GetTexture().GetImage().SavePng(file);
+            var rec = new Godot.Collections.Dictionary
+            {
+                ["frame"] = file, ["cam"] = cam, ["kind"] = "preview", ["note"] = "a preview, not a capture: the held scene with the figure rebuilt; the exact replay replaces it",
+                ["package"] = new Godot.Collections.Dictionary { ["dir"] = j.PkgDir, ["name"] = j.Name, ["fingerprint"] = j.Fingerprint },
+                ["game_commit"] = gameCommit, ["shader_fingerprint"] = shadersAtStart,
+                ["timings"] = new Godot.Collections.Dictionary
+                {
+                    ["turn_wait_s"] = Math.Round(j.TurnAt - j.QueuedAt, 3), ["rebuild_s"] = Math.Round(previewRebuildS, 3), ["files_kept"] = previewKept,
+                    ["settle_s"] = Math.Round(now - previewStart - previewRebuildS, 3), ["draws"] = previewDrawn,
+                    ["change_to_frame_s"] = double.IsNaN(j.ChangedAt) ? -1 : Math.Round(now - j.ChangedAt, 3),
+                },
+            };
+            File.WriteAllText($"{j.Out}/{cam}.json", Json.Stringify(rec, " "));
+            lastFrame = file; lastFrameAt = Time.GetUnixTimeFromSystem();
+            GD.Print($"look viewer: preview {file}; change to pixels {(double.IsNaN(j.ChangedAt) ? -1 : now - j.ChangedAt):0.00} s");
+            tag.Visible = true;
+            previewDrawn = PreviewDraws - 1;
+            return;
+        }
+        job = null;
+        heldCam = cam;
+        Idle(turnGrace);
+        Hold();
+        st = St.Idle;
+        WriteStatus();
     }
 
     // ---- game_frame.gd's per-frame work: Late (after the game's own nodes, process priority 1 << 30) and _pre_draw
@@ -720,7 +927,7 @@ public partial class LookViewer : Node
         var showing = job ?? null;
         var d = new Godot.Collections.Dictionary
         {
-            ["state"] = state ?? st switch { St.Idle => "idle", St.Turn => "waiting-turn", St.Align or St.Change or St.Run => "replaying", St.Failed => "failed", _ => "booting" },
+            ["state"] = state ?? st switch { St.Idle => "idle", St.Turn => "waiting-turn", St.Align or St.Change or St.Run => "replaying", St.Preview => "preview", St.Failed => "failed", _ => "booting" },
             ["pid"] = OS.GetProcessId(), ["main_at"] = Math.Round(Time.GetUnixTimeFromSystem(), 3), ["drop"] = drop, ["game_root"] = root,
             ["game_commit"] = gameCommit, ["game_head_now"] = headNow, ["game_dirty_at_start"] = dirtyAtStart,
             ["shader_fingerprint"] = shadersAtStart, ["shader_fingerprint_now"] = shadersNow, ["stale"] = why.Count > 0, ["stale_why"] = why,

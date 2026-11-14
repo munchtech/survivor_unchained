@@ -66,6 +66,8 @@ public partial class Shots : Node
     /// quit after it, and ViewerTaken is told (the file, the pictures' clock, the frames drawn).</summary>
     public static string? ViewerFile;
     public static event System.Action<string, double, long>? ViewerTaken;
+    /// <summary>The look viewer's timing: a shot's Shots node is ready (the scene loaded, its first frame next).</summary>
+    public static event System.Action? ViewerReady;
     long readyDrawn;
     /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
     public static double Clock => live?.time ?? 0;
@@ -137,6 +139,7 @@ public partial class Shots : Node
         if (name == "") { SetProcess(false); return; }
         live = this;
         readyDrawn = Engine.GetFramesDrawn();
+        if (ViewerFile != null) ViewerReady?.Invoke();
         RenderingServer.FramePostDraw += Drawn;
         seconds = Args.Num("seconds", 3);
         every = Args.Num("every", 0);
