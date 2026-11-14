@@ -82,9 +82,14 @@ public class SkinHighlightTests
             return m;
         }
         Assert.True(Max(0.5801, 0.1362) > 200, "the breast's underside takes the rim off");
+        // (lead 4: where the underside turns into the cleavage and to the outer side, a little past the widest, turned down:
+        // the map read 0.35-0.95 there when it was eased over the surface and stopped at 1.39, and the line stayed at a fifth)
+        Assert.True(Max(0.5822, 0.1919) > 200, "the underside's cleavage end takes the rim off");
+        Assert.True(Max(0.5578, 0.1452) > 200, "the underside's lower outer side takes the rim off");
         foreach (var (name, u, v) in new[] { ("outer arm", 0.1674, 0.3301), ("shoulder", 0.3515, 0.0794), ("armpit", 0.1079, 0.4656),
                      ("buttock crease", 0.9895, 0.4821), ("inner thigh", 0.2467, 0.5739), ("elbow", 0.3148, 0.2929),
-                     ("ribs' side under the breast", 0.6665, 0.0872), ("belly under the breast", 0.6919, 0.1672) })
+                     ("ribs' side under the breast", 0.6665, 0.0872), ("belly under the breast", 0.6919, 0.1672),
+                     ("breast's top, turned up", 0.5391, 0.1540) })
             Assert.True(Max(u, v) < 16, $"the cream rim stays on her {name}");
         int lit = 0;
         for (int y = 0; y < png.Height; y++) for (int x = 0; x < png.Width; x++) if (png.Light(x, y) > 127) lit++;

@@ -4,8 +4,8 @@ The skin's stepped rim (cel.gdshaderinc cel_rim_add) lights where the surface tu
 key's side. Against the background that is her outline (kept). Where the turned surface faces more of her own body a
 few centimetres away (the breast's underside over the ribs, the buttock's crease, between the thighs), the rim drew a
 cream line inside her form (13 Nov, owner: "the cream line under the breast"; elsewhere it "looks good": kept). Per point of
-the body: 1 on the breast's underside (in front of her ribs, between her breasts' lowest and widest heights, across their
-width, turned down), eased over her surface, as a gray map in the body's UV.
+the body: 1 on the breast's underside (in front of her ribs, from her breasts' lowest height to a little past the widest, across their
+width, turned down), as a gray map in the body's UV.
 
     python tools/assets/body_fold.py godot/art/people/body_p1/body.glb godot/art/people/body_p1/fold.png
 
@@ -26,8 +26,10 @@ from heroine_thin import ease  # noqa: E402
 NEAR, FAR = 0.05, 0.10     # (metres to the facing surface: the breast's underside over her ribs 1-9 cm)
 CONE = 0.5                 # (cos of the cone round the normal: within 60 degrees)
 MIN_D = 0.006              # (closer is her own surface's next ring or a seam's twin)
-Y0, Y1, X1 = 1.29, 1.39, 0.17   # (body_p1, metres: her breasts' crease 1.30-1.31, widest 1.36, outer side 0.15, armpit 0.17 at 1.40; under 1.30 her ribs slope down 0.15-0.3)
-EASE = 3
+Y0, Y1, X1 = 1.29, 1.43, 0.17   # (body_p1, metres: her breasts' crease 1.30-1.31, widest 1.36, outer side 0.15, armpit 0.17 at 1.40; under 1.30 her ribs slope down 0.15-0.3;
+                                # the top past the widest: turned down there is still the underside, turned up (ny > 0) the factor drops it)
+EASE = 0                   # (no easing over the surface: 3 rings left the map at 0.35-0.95 on the line at the cleavage end and the lower
+                           # outer side (V3, lead 4), their points 1-3 cm inside the zone (y 1.34-1.38, turned 0.2-0.45 down); the 3 cm ramps ease it)
 SIZE = 1024
 BODY = ("Material_0.001", "skin")                        # (the body's own skin surface: body_p1's, heroine.glb's)
 SKIN = BODY + ("skin_graft", "skin_head")                # (what can face it: all her skin)
@@ -70,8 +72,8 @@ def ramp(v, a, b):
 
 def underbust(P, N):
     """The breast's underside only (the owner, 13 Nov: the cream line elsewhere, on her outline and in her other folds
-    (armpit, buttock crease, inner thighs, elbows), looks good and stays): in front of her ribs, between her breasts'
-    lowest and widest heights, across their width, the surface turned down."""
+    (armpit, buttock crease, inner thighs, elbows), looks good and stays): in front of her ribs, from her breasts'
+    lowest height to a little past the widest, across their width, the surface turned down."""
     x, y, z = np.abs(P[:, 0]), P[:, 1], P[:, 2]
     return (ramp(y, Y0, Y0 + 0.03) * (1 - ramp(y, Y1 - 0.03, Y1)) * (1 - ramp(x, X1 - 0.03, X1)) * ramp(z, 0.0, 0.03)
             * ramp(-N[:, 1], -0.05, 0.10))   # (not turned up: where the underside turns sideways into the cleavage and the outer side, judge r1)
@@ -85,7 +87,9 @@ def main(glb, png):
     # of the zone has none within 30 cm, the breast's front-lower curve: a distance test left the line under the breast
     # at 0.9 of its strength on V3). fold_dist stays for a later fold beyond the breast.
     x = underbust(P, N)
-    x = ease(x * x * (3 - 2 * x), T, EASE)
+    x = x * x * (3 - 2 * x)
+    if EASE:
+        x = ease(x, T, EASE)
     w = raster(UV, T, x, SIZE)
     g = (np.clip(w, 0, 1) * 255 + 0.5).astype(np.uint8)
     Image.fromarray(np.stack([g, g, g], -1), "RGB").save(png)   # (gray in RGB: the shader reads red)
