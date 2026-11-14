@@ -3,9 +3,10 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "1b03dc778280a8692ef32871c7fc2c70",
+   "data": "5ae49c7909ccf14375e11f0b9b8f876f",
    "braid_ear": "clear 1.0-3.5 mm, tip 0.8-3.5 mm, 32 views",
-   "cut_ends": "cut cards tapered over 8 mm, stubs dropped"
+   "cut_ends": "cut cards tapered over 8 mm, stubs dropped",
+   "front_rise": "front hairline cards matte to 30 mm, none from 55"
   }
  },
  "scene": 0,

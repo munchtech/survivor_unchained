@@ -1270,6 +1270,12 @@ public static class People
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
         // (env HAIRSET "through=0,shine2=0.2": her hair's uniforms tried in a shot without a build, every pass; face 30 cine)
+        HairSet(p);
+    }
+
+    /// <summary>Shot-only (env HAIRSET "k=v,..."): hair uniforms tried without a build, every pass; hers and an NPC package's.</summary>
+    internal static void HairSet(Person p)
+    {
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("HAIRSET") is { Length: > 0 } hs)
             foreach (var mi in p.Hair)
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
