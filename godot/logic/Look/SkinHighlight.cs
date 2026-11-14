@@ -28,10 +28,9 @@ public static class SkinHighlight
     /// Without it the face's outline still reads against hair and background.</summary>
     public static float? RimShare(string part) => part == "skin_head" ? 0f : null;
 
-    /// <summary>body_p1's fold map (tools/assets/body_fold.py): 1 where the body's surface faces more of the body a few
-    /// centimetres away (the breast's underside over the ribs, the cleavage, the buttock's crease, between the thighs),
-    /// 0 on the open surface. There the stepped rim, an n.v band on the key's side, drew a cream line inside her form,
-    /// under the breast most (13 Nov, the owner); along her outline against the background it stays. People.NpcSkin sets
-    /// it as heroine_skin.gdshader's rim_fold_map (rim_fold 1) on a body skin with body_p1's vertices (its UVs).</summary>
+    /// <summary>body_p1's fold map (tools/assets/body_fold.py): 1 on the breast's underside, where the stepped rim, an n.v
+    /// band on the key's side, drew a cream line inside her form against her ribs (13 Nov, the owner); 0 everywhere else,
+    /// so the line stays on her outline, armpit, creases, thighs and elbows. People.NpcSkin sets it as heroine_skin.gdshader's
+    /// rim_fold_map (rim_fold 1) on a body skin with body_p1's triangle count (its topology, so its UVs).</summary>
     public const string FoldMap = "res://art/people/body_p1/fold.png";
 }

@@ -131,11 +131,10 @@ uniform float ao_light = 0.0;
 // 0: everywhere, as before.
 uniform sampler2D spark_map : hint_default_white, filter_linear;
 uniform float spark_mask : hint_range(0.0, 1.0) = 0.0;
-// Where the body's stepped rim falls on an inside fold (tools/assets/body_fold.py: the surface faces more of the body a
-// few centimetres away: the breast's underside over the ribs, the cleavage, the buttock's crease, between the thighs):
-// there the rim drew a cream line inside her form (13 Nov, the owner: the line under the breast). rim_fold 1: the rim
-// times (1 - the map), so it stays on her outline against the background; 0: everywhere, as before (People.NpcSkin:
-// NPCs on body_p1, Look.SkinHighlight.FoldMap).
+// Where the body's stepped rim drew a cream line inside her form, under the breast where its underside meets her ribs
+// (13 Nov, the owner; tools/assets/body_fold.py: the breast's underside only; on her outline, armpit, creases, thighs and
+// elbows the line "looks good" and stays). rim_fold 1: the rim times (1 - the map); 0: everywhere, as before
+// (People.NpcSkin: NPCs on body_p1's topology, Look.SkinHighlight.FoldMap).
 uniform sampler2D rim_fold_map : hint_default_black, filter_linear;
 uniform float rim_fold : hint_range(0.0, 1.0) = 0.0;
 // Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp

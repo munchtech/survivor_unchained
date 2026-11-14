@@ -66,4 +66,36 @@ public class SkinHighlightTests
         var shader = System.IO.File.ReadAllText(System.IO.Path.Combine(d.FullName, "shaders", "heroine_skin.gdshader"));
         Assert.Contains("* (spark_mask > 0.0 ? mix(1.0, textureLod(spark_map, UV, 0.0).r, spark_mask) : 1.0), cel_on);", shader);
     }
+    [Fact]
+    public void FoldMapTakesTheRimOnlyUnderTheBreast_AndNpcSkinSetsItOnBodyP1()
+    {
+        var d = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
+        while (d != null && !System.IO.File.Exists(System.IO.Path.Combine(d.FullName, "project.godot"))) d = d.Parent;
+        var png = SurvivorUnchained.Tests.FxTests.Png.Read(System.IO.Path.Combine(d!.FullName, SkinHighlight.FoldMap.Replace("res://", "")));
+        Assert.Equal(1024, png.Width);
+        // (points on body_p1, their UVs from body.glb's body skin: a 13-texel window round each)
+        int Max(double u, double v)
+        {
+            int m = 0, cx = (int)(u * png.Width), cy = (int)(v * png.Height);
+            for (int y = System.Math.Max(cy - 6, 0); y <= System.Math.Min(cy + 6, png.Height - 1); y++)
+                for (int x = System.Math.Max(cx - 6, 0); x <= System.Math.Min(cx + 6, png.Width - 1); x++) m = System.Math.Max(m, png.Light(x, y));
+            return m;
+        }
+        Assert.True(Max(0.5801, 0.1362) > 200, "the breast's underside takes the rim off");
+        foreach (var (name, u, v) in new[] { ("outer arm", 0.1674, 0.3301), ("shoulder", 0.3515, 0.0794), ("armpit", 0.1079, 0.4656),
+                     ("buttock crease", 0.9895, 0.4821), ("inner thigh", 0.2467, 0.5739), ("elbow", 0.3148, 0.2929),
+                     ("ribs' side under the breast", 0.6665, 0.0872), ("belly under the breast", 0.6919, 0.1672) })
+            Assert.True(Max(u, v) < 16, $"the cream rim stays on her {name}");
+        int lit = 0;
+        for (int y = 0; y < png.Height; y++) for (int x = 0; x < png.Width; x++) if (png.Light(x, y) > 127) lit++;
+        Assert.InRange(lit / (double)(png.Width * png.Height), 0.001, 0.02);
+        var people = System.IO.File.ReadAllText(System.IO.Path.Combine(d.FullName, "src", "Actors", "People.cs"));
+        int npc = people.IndexOf("public static Material NpcSkin(", System.StringComparison.Ordinal);
+        Assert.True(npc > 0);
+        Assert.True(people.IndexOf("SkinIndexCount(mesh, src.ResourceName) is int bi && bi > 0 && bi == BaseBodyIndices()", npc, System.StringComparison.Ordinal) > npc,
+            "NpcSkin matches body_p1 by triangles (a run-time glTF load welds its vertices)");
+        Assert.True(people.IndexOf("m.SetShaderParameter(\"rim_fold\", 1f);", npc, System.StringComparison.Ordinal) > npc, "NpcSkin sets rim_fold");
+        var shader = System.IO.File.ReadAllText(System.IO.Path.Combine(d.FullName, "shaders", "heroine_skin.gdshader"));
+        Assert.Contains("* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0);", shader);
+    }
 }
