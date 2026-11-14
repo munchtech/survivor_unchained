@@ -7,7 +7,8 @@
 //   7 seam    a Sunder line's seam in its crack: a strip mesh no wider than the crack's gap (UV.x 0 her end .. 1 the far
 //             end); hot at her end, tapering out; it flares in heat (life p7_fade), never in width; p7_alpha the pulse.
 //   8 dome    Iron Vow's shell: a hemisphere mesh, its interior clear; a rim p7_width px in from its outline (the
-//             silhouette and where it meets the ground at p7_y0), hot at the outline and feathering inward; life p7_lvl.
+//             silhouette, and where it meets the ground at p7_y0 on its near half only), hot at the outline and feathering
+//             inward; life p7_lvl.
 //   9 glow    the vow's store on the shield's face (camera-facing): a round stroke seen end-on, core at its heart; life
 //             p7_lvl (the view grows the quad).
 //  10 nick    a blade's nick on a struck foe (or a blow on her shield): one short three-band stroke along p7_dir2 (screen),
@@ -46,7 +47,17 @@ vec4 p7_shell(vec2 uv, vec3 n, vec3 v) {
 	// y 0) sat there as a flat disc whose height above the line, 0, made it the stroke's centerline: the opaque disc under her
 	if (p7_wy <= p7_y0) return vec4(0.0);
 	float hb = p7_wy - p7_y0;
-	px = min(px, hb / max(fwidth(p7_wy), 1e-5));
+	// (fight-ring, 13 Nov) the ground line only where it IS the dome's outline: its near half. From the play camera (near
+	// top-down) the far half of the line showed through the clear interior a dome's height below the silhouette, and the
+	// two read as an untraced orange double ring on her in every fight; the silhouette (far) and the ground line (near)
+	// now close into one outline, eased over the sides where they meet.
+	// So is the far wall's foot: from that height its steep inner wall is nearly edge-on, so the facing term alone drew
+	// the same far line (thinner); on the far half nothing is drawn in the lowest 0.3 m (the true far silhouette sits
+	// well above it, about a third of the way up).
+	float nearK = smoothstep(-0.15, 0.2, p7_near);
+	px = mix(1e4, px, max(nearK, smoothstep(0.12, 0.3, hb)));
+	float gl = hb / max(fwidth(p7_wy), 1e-5);
+	px = min(px, mix(1e4, gl, nearK));
 	float ang = atan(n.y, n.x);
 	// (M4 lead 14, r3d: every angle-driven term sampled on a circle, so it closes on itself; atan's jump at -x cut the band)
 	vec2 cs = vec2(cos(ang), sin(ang));

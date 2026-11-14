@@ -457,6 +457,8 @@ public partial class BattleFx
                     s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 0.6f : 0.95f);
                 }));
                 // the store: a round glow on the shield's face growing over the brace (the data's px), the ground light with it
+                // (fight-ring, 13 Nov: px 20-60 -> 10-26, the boss heating, not a disc: at 60 px it covered the 77 px shield and
+                // read at the play camera as a flat orange UI disc on her chest; the wood rim now stays seen round it)
                 var spx = P7D.All("vow.store.px");
                 float grow = P7D["vow.store.grow"];
                 p7Glow = P7Quad(9, P7ShieldAt(), 0.1f, 9999, bill: true, top: true, step: s =>
