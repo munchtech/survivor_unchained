@@ -52,6 +52,14 @@ anti_aliasing/screen_space_roughness_limiter/enabled=false
 
 [shader_globals]
 
+dof_far={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+dof_near={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 world_time={
 "type": "float",
 "value": 0.0

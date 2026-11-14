@@ -129,6 +129,8 @@ public static class KitLook
         if (s.ResourceName.StartsWith("Roof_Own")) return cache[key] = Lib(Roof(), "roof");
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
+        // (foliage-dof: the camera's depth of field handed to OWN_FOLIAGE each frame, FoliageDof.cs)
+        if (mine) FoliageDof.Ensure();
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
         // (our alder, a broadleaf: its own light, the key's shadow taken in part, OWN_BROADLEAF)
         ownLeaf ??= new Shader { Code = own.Code.Replace("#define OWN_FOLIAGE", "#define OWN_FOLIAGE\n#define OWN_BROADLEAF") };

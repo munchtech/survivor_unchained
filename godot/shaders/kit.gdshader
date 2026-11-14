@@ -98,6 +98,27 @@ uniform bool foot = false;
 // casts all of its shadow.
 global uniform vec4 survivor;
 global uniform vec4 view_from;
+#ifdef OWN_FOLIAGE
+// (foliage-dof, 13 Nov) The game camera's depth of field (src/World/FoliageDof.cs, each frame): far = (start m,
+// transition m, lump m, strength), near = (distance m, transition m, lump m, strength); strength 0 = off. Our trees'
+// sprays are solid cards: under the blur, their straight edges read as hard triangles. A needle fragment the blur
+// takes is broken into world-anchored clumps (lumps eaten away, a little mottle, no ink line) which the blur melts.
+global uniform vec4 dof_far;
+global uniform vec4 dof_near;
+float fol_hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float fol_noise(vec3 p) {
+	vec3 i = floor(p); vec3 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(fol_hash(i), fol_hash(i + vec3(1, 0, 0)), f.x), mix(fol_hash(i + vec3(0, 1, 0)), fol_hash(i + vec3(1, 1, 0)), f.x), f.y),
+		mix(mix(fol_hash(i + vec3(0, 0, 1)), fol_hash(i + vec3(1, 0, 1)), f.x), mix(fol_hash(i + vec3(0, 1, 1)), fol_hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+// How far out of focus at view depth z (0 sharp .. strength), as Godot's blur ramps it; lump: the clump size there.
+float fol_blur(float z, out float lump) {
+	float f = dof_far.w > 0.0 ? smoothstep(dof_far.x, dof_far.x + dof_far.y, z) * dof_far.w : 0.0;
+	float n = dof_near.w > 0.0 ? (1.0 - smoothstep(dof_near.x - dof_near.y, dof_near.x, z)) * dof_near.w : 0.0;
+	lump = f >= n ? dof_far.z : dof_near.z;
+	return max(f, n);
+}
+#endif
 
 #if defined(OWN_FOLIAGE) || defined(OWN_ROCK)
 // The key light's kind for our own trees and stones (Atmosphere sets it): x how much it is the moon (0 by day,
@@ -784,6 +805,26 @@ void fragment() {
 		ALPHA_SCISSOR_THRESHOLD = alpha_scissor;
 	}
 #endif
+#ifdef OWN_FOLIAGE
+	// (foliage-dof) Out of focus, the sprays (u < .75; the bark stays whole) broken into clumps: in the game camera's
+	// view only (view_from, as the window: a light's view keeps every shadow), and only where the blur reaches, so a
+	// sharp tree is drawn exactly as before. Lumps of the noise eaten away (to about a third of the card at full blur),
+	// their rims ragged by a fixed fine dither, so the blur takes the edge as a soft clump edge, not a straight one.
+	float fol_b = 0.0;
+	float fol_n = 0.5;
+#ifndef REVEAL
+	if (UV.x < 0.75 && (dof_far.w > 0.0 || dof_near.w > 0.0) && view_from.w > 0.0 && distance(CAMERA_POSITION_WORLD, view_from.xyz) <= 1.0) {
+		float fol_l;
+		fol_b = fol_blur(-VERTEX.z, fol_l);
+		if (fol_b > 0.0) {
+			vec3 fol_p = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz / max(fol_l, 0.01);
+			fol_n = 0.7 * fol_noise(fol_p) + 0.3 * fol_noise(fol_p * 2.31 + vec3(7.1, 3.3, 5.9));
+			float fol_d = fract(52.9829189 * fract(dot(FRAGCOORD.xy, vec2(0.06711056, 0.00583715))));
+			if (fol_n + (fol_d - 0.5) * 0.12 * fol_b < 0.46 * min(fol_b, 1.0)) discard;
+		}
+	}
+#endif
+#endif
 	float l = dot(c.rgb, LW);
 	vec3 col = mix(vec3(l), c.rgb, weather_sat) * weather_tint;
 	vec3 rc = mix(recolor_a.rgb, recolor_b, v_jit);
@@ -1319,8 +1360,17 @@ void fragment() {
 		flare_prop((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+#ifdef OWN_FOLIAGE
+	// (foliage-dof) the kept clumps a little mottled by the same noise, so a flat-lit card melts to blotches, not a plane
+	if (fol_b > 0.0) ALBEDO *= 1.0 + (fol_n - 0.5) * 0.6 * min(fol_b, 1.0);
+	float fol_r = ROUGHNESS;
+#endif
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
+#ifdef OWN_FOLIAGE
+	// (foliage-dof) no ink line on a blurred spray (class 2): a line drawn before the blur is smeared along the card's edge
+	if (fol_b > 0.25 && cel_dbg < 0.5) ROUGHNESS = cel_tag(fol_r, 2);
+#endif
 }
 
 #ifdef OWN_BROADLEAF
