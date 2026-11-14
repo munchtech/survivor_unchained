@@ -30,7 +30,8 @@ public partial class QuitPath : Node
 
     public static void Install(Play.Game host)
     {
-        if (node != null && IsInstanceValid(node)) return;
+        // (the scene loaded afresh, the look viewer's replay: the one node, told of the new game)
+        if (node != null && IsInstanceValid(node)) { node.game = host; return; }
         node = Make();
         node.game = host;
         if (Args.Has("quit-at-play")) node.quitAtPlay = Math.Max(1, (int)Args.Num("quit-at-play", 30));

@@ -37,6 +37,17 @@ public static class NpcPackage
 
     public static string Dir(string name) => $"res://art/npc/{name}";
 
+    /// <summary>(the look viewer) Everything this session keeps of a package dropped (its manifest, its scenes, its
+    /// trimmed body meshes, NpcDye's dye), so its next Build reads its files afresh. How many entries went.</summary>
+    public static int Forget(string name)
+    {
+        int n = manifests.Remove(name) ? 1 : 0;
+        n += Viewer.PackageCache.Forget(scenes, f => Viewer.PackageCache.OwnsFile(name, f));
+        n += Viewer.PackageCache.Forget(trimmed, k => k.Item1 == name);
+        told.RemoveWhere(w => w.Contains(name));
+        return n + NpcDye.Forget(name);
+    }
+
     /// <summary>The package's name from a body ("npc:NAME"), or null.</summary>
     public static string? NameOf(string? body) => body != null && body.StartsWith(Prefix) ? body[Prefix.Length..] : null;
 
