@@ -13,8 +13,9 @@ public class SkinHighlightTests
         Assert.Null(SkinHighlight.Strength("skin_head"));
         // (and the head takes no stepped rim: inside the face it drew stripes down the nose and temple, 13 Nov r1)
         Assert.Equal(0f, SkinHighlight.RimShare("skin_head"));
-        foreach (var part in new[] { "skin", "skin_graft", "skin_body" })
-            Assert.Null(SkinHighlight.RimShare(part));
+        // (nor the body: lilac-white specks on her shoulders at night, skin light 13 Nov r1)
+        foreach (var part in new[] { "skin", "skin_graft", "skin_body", "Material_0.001", "" })
+            Assert.Equal(0f, SkinHighlight.RimShare(part));
     }
 
     [Fact]

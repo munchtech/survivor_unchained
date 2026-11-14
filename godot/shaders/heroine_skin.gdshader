@@ -882,9 +882,7 @@ void fragment() {
 	soft_w = 1.0 - fm.b;
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
-	// (and on the head only below edge_head_y, the seam ease's dark green or not: the map's green dips at her temple and
-	// hairline as well, and there edge_tone drew a grey smudge on her left temple at the Look by day; skin light, 13 Nov)
-	edge_w = (seam_ease ? max(1.0 - aot.g, edge_head) * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y)) : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
+	edge_w = (seam_ease ? max(1.0 - aot.g, edge_head * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y))) : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
 	// (under the Look's rig only, where it was fitted: in play every lamp is a key, and it lit her chest 4-5 L* over
 	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;

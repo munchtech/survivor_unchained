@@ -45,4 +45,11 @@ public static class SkinLight
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The
     /// body keeps the cel model's own stepped rim (cel_rim_k) for its outline; the head keeps its soft rim.</summary>
     public static float? SoftRim(string part) => part == "skin_head" ? null : 0f;
+
+    /// <summary>The cel band's half-tone reach on the head (heroine_skin.gdshader cel_band.z, the n.l over the terminator
+    /// where the half-tone gives way to the lit level; CEL_BAND's own 0.2 on the body). Her temple's slight hollow sits at
+    /// n.l 0.1-0.25 under the Look's key by day, so at 0.2 the half-tone pooled there as a grey smudge on her left temple
+    /// (isolated 13 Nov: cel_mid's weight 0 and it is gone; edge_tone, edge_head and the key's shadow bias moved nothing;
+    /// a softer step, cel_band.w 0.16, only blurred it). At 0.1 the half-tone stays a band along the terminator.</summary>
+    public static readonly (float X, float Y, float Z, float W) HeadCelBand = (0f, 0.06f, 0.1f, 0.08f);
 }

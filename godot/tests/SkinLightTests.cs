@@ -73,12 +73,19 @@ public class SkinLightTests
         Assert.DoesNotContain("ShadowBias = 0.03f", close);
     }
 
-    /// <summary>Fault 3 (the temple smudge): edge_tone on the head only below edge_head_y, whatever the seam map's green.</summary>
+    /// <summary>Fault 3 (the temple smudge): the head's half-tone reach narrower than the body's (CEL_BAND z 0.2), set by
+    /// People.Skin on the head before the --skin-set switch.</summary>
     [Fact]
-    public void EdgeToneOnTheHeadIsHeldBelowItsHeight()
+    public void HeadHalfToneReachIsNarrowerThanTheBodys()
     {
-        var shader = Read("shaders", "heroine_skin.gdshader");
-        Assert.Contains("edge_w = (seam_ease ? max(1.0 - aot.g, edge_head) * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y)) : mix(1.0, fk.b, edge_neck))", shader);
+        Assert.InRange(SkinLight.HeadCelBand.Z, 0.05f, 0.15f);
+        Assert.Equal(0.06f, SkinLight.HeadCelBand.Y);
+        var people = Read("src", "Actors", "People.cs");
+        int at = people.IndexOf("var hb = SurvivorUnchained.Look.SkinLight.HeadCelBand;", StringComparison.Ordinal);
+        Assert.True(at > 0);
+        Assert.Contains("m.SetShaderParameter(\"cel_band\", new Vector4(hb.X, hb.Y, hb.Z, hb.W));", people.Substring(at, 200));
+        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at);
+        Assert.Contains("#define CEL_BAND vec4(0.0, 0.06, 0.2, 0.08)", Read("shaders", "heroine_skin.gdshader"));
     }
 
     /// <summary>Fault 1 (washed out): the day close-up's key is the rule's, in rigs.json.</summary>

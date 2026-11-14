@@ -1977,6 +1977,12 @@ public static class People
         }
         if (SurvivorUnchained.Look.SkinLight.SoftRim(src.ResourceName) is float sr)
             m.SetShaderParameter("rim", sr);
+        // (the head's half-tone kept to a band along the terminator: at the body's reach it pooled in her temple's hollow)
+        if (src.ResourceName == "skin_head")
+        {
+            var hb = SurvivorUnchained.Look.SkinLight.HeadCelBand;
+            m.SetShaderParameter("cel_band", new Vector4(hb.X, hb.Y, hb.Z, hb.W));
+        }
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
