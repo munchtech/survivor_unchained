@@ -16,6 +16,12 @@
 # coordinator lifts the stop (the owner: the cap is the coordinator's to relax when a swap would cost quality).
 # This one script serves PostToolUse (messages, the countdown) and PreToolUse (the deny once the countdown is 0);
 # tools/hooks/spawn_guard.py reads the same stop file to refuse new spawns.
+# COMPACTION (usage cuts, 13 Nov): auto-compaction makes the cut for leads and the main session (it cost $0.34-0.93
+# against $1.75-3.54 for a handoff, with no quality loss measured; median context at compaction 166k). So:
+#   - at 80% of COMPACT_AT, once per compaction cycle: "update your handoff top block now" (the summary keeps it);
+#   - the first tool call after more than LAPSE_MIN idle minutes with context over LAPSE_CTX: the cache has lapsed,
+#     start fresh from the state file (a resume or a compact of a cold session rewrites all of it at full price).
+# Both are warnings, never a block.
 # Never fails a tool call: any error exits 0 silently.
 import json
 import os
@@ -24,8 +30,9 @@ import sys
 
 DEFAULTS = {  # README "Working lean"
     None: 200_000,              # the main session (coordinator); owner 12 Nov: safe stop nearing 200k, 250k max (autoCompactWindow 250000)
-    "su-lead-high": 200_000,    # 9 Nov: leads hand off at 200k (premium above it); briefs may still say 300k until rewritten
+    "su-lead-high": 200_000,    # leads: auto-compaction (about 166k) makes the cut; this budget is the backstop
     "su-lead-sonnet": 200_000,
+    "su-lead-author": 200_000,
     "su-lead-max": 180_000,     # judges and solvers (150k to 180k, 12 October); story leads set their own in the brief
     "su-worker": 150_000,
     "su-worker-medium": 150_000,
@@ -49,6 +56,69 @@ def tail_usage(path):
             continue
         return u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
     return 0
+
+
+COMPACT_AT = 166_000  # measured median context at auto-compaction, 10-13 Nov
+LAPSE_MIN, LAPSE_CTX = 60, 150_000
+
+
+def last_requests(path, n=2):
+    """[(timestamp, context)] of the last n distinct requests since the last compaction, newest first."""
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(0, f.tell() - 600_000))
+        lines = f.read().decode("utf-8", "replace").splitlines()
+    out, ids = [], set()
+    for line in reversed(lines):
+        if '"compact_boundary"' in line:
+            break
+        if '"usage"' not in line:
+            continue
+        try:
+            r = json.loads(line)
+            m = r["message"]
+            u = m["usage"]
+        except Exception:
+            continue
+        if m.get("id") in ids:
+            continue
+        ids.add(m.get("id"))
+        out.append((r.get("timestamp") or "", u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
+                    + u.get("cache_creation_input_tokens", 0)))
+        if len(out) >= n:
+            break
+    return out
+
+
+def minutes(a, b):
+    import datetime as dt
+    f = lambda t: dt.datetime.fromisoformat(t.replace("Z", "+00:00"))
+    return (f(a) - f(b)).total_seconds() / 60
+
+
+def notices(d, aid, path, used, budget):
+    """Compaction-era warnings: top block at 80% of the compact point, and a lapsed cache. One line each, once."""
+    msgs = []
+    key = aid or d.get("session_id", "main")
+    os.makedirs(STATE_DIR, exist_ok=True)
+    top = os.path.join(STATE_DIR, f"{key}.top")
+    if budget >= COMPACT_AT and used >= 0.8 * COMPACT_AT:
+        last = int(open(top).read().strip() or 0) if os.path.exists(top) else 0
+        if not last or used < last:  # first time, or a new cycle since the last compaction
+            open(top, "w").write(str(used))
+            msgs.append(f"Context {used // 1000}k: auto-compaction comes at about {COMPACT_AT // 1000}k. Update your "
+                        f"handoff top block (or facts file) now: state, branch@sha, done, next in order. The summary keeps it.")
+    reqs = last_requests(path)
+    if len(reqs) == 2 and reqs[1][1] > LAPSE_CTX and reqs[0][0] and reqs[1][0]:
+        gap = minutes(reqs[0][0], reqs[1][0])
+        lapse = os.path.join(STATE_DIR, f"{key}.lapse")
+        seen = open(lapse).read().strip() if os.path.exists(lapse) else ""
+        if gap > LAPSE_MIN and seen != reqs[0][0]:
+            open(lapse, "w").write(reqs[0][0])
+            msgs.append(f"Cache has lapsed: {gap:.0f} min idle at {reqs[1][1] // 1000}k. Start fresh from your state file "
+                        f"(handoff top block) rather than resume or compact this session: every turn here now rewrites "
+                        f"{reqs[1][1] // 1000}k at full price.")
+    return msgs
 
 
 def brief_budget(path):
@@ -163,7 +233,10 @@ def main():
         budget = raised_budget(path) or budget
     if aid and used < 1.25 * budget and os.path.exists(stop_file(aid)):
         os.remove(stop_file(aid))  # the budget was raised: the stop is lifted
+    early = notices(d, aid, path, used, budget)
     if used < 0.8 * budget:
+        if early:
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": " ".join(early)}}))
         return
     state_dir = STATE_DIR
     os.makedirs(state_dir, exist_ok=True)
@@ -177,13 +250,16 @@ def main():
     over = used >= budget
     hard = used >= 1.25 * budget
     if not over and used - last < 20_000:
+        if early:
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": " ".join(early)}}))
         return
     open(state, "w").write(str(used))
     k, b = used // 1000, budget // 1000
     if over and not hard:
         msg = (f"Context budget: you are at {k}k of {b}k (grace to {b * 5 // 4}k). Start nothing new. If a step "
                f"is close to done (a build, its measurement, a commit), finish it so you hand back a result, "
-               f"not just a plan; then report (or hand off, if you're a lead).")
+               f"not just a plan; then report "
+               f"(a lead or the main session: keep your handoff top block current and let auto-compaction make the cut).")
     elif over and aid and is_helper(path):
         n = left(aid)
         if n is None:
@@ -200,12 +276,13 @@ def main():
                "narrow helper from your facts file).")
     elif over:
         msg = (f"Context budget: you are at {k}k of {b}k, past the grace. Wrap up now: no new experiments. Write your findings "
-               f"to a file, then return your report (or hand off, if you're a lead). Never cut quality to fit: "
+               f"to a file, then return your report "
+               f"(a lead or the main session: keep your handoff top block current and let auto-compaction make the cut). Never cut quality to fit: "
                f"if the work needs more to reach the bar, say so and what's left.")
     else:
         msg = (f"Context budget: {k}k of {b}k. Plan to finish and report before {b}k; if nothing is built or "
                f"measured yet, do that next, before more reading.")
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": msg}}))
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": " ".join(early + [msg])}}))
 
 
 try:

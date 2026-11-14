@@ -487,7 +487,8 @@ public partial class P1Laws : SkeletonModifier3D
         }
     }
 
-    /// <summary>P1Laws after every other modifier, then the springs (P1Jiggle; a HerJiggle if one was added), then HerFaceLife.</summary>
+    /// <summary>P1Laws after every other modifier, then the springs (P1Jiggle; a HerJiggle if one was added; her armor's
+    /// PieceSprings), then HerFaceLife.</summary>
     void Reorder()
     {
         reorderQueued = false;
@@ -496,6 +497,7 @@ public partial class P1Laws : SkeletonModifier3D
         foreach (var m in sk.GetChildren().OfType<P1BlendBase>().ToList()) sk.MoveChild(m, 0);   // (and B's blend base before all)
         foreach (var m in sk.GetChildren().OfType<HerJiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<P1Jiggle>().ToList()) sk.MoveChild(m, -1);
+        foreach (var m in sk.GetChildren().OfType<PieceSprings>().ToList()) sk.MoveChild(m, -1);   // (her armor's swing: over the finished pose)
         foreach (var m in sk.GetChildren().OfType<HerFaceLife>().ToList()) sk.MoveChild(m, -1);
     }
 
