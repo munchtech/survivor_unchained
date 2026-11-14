@@ -16,7 +16,7 @@ namespace SurvivorUnchained.View;
 /// NpcPackage adds the spring bones to the body's skeleton (AddBones) before it binds the piece's skin, so the piece's
 /// meshes (full, lod1 and shadow, and HerLod's merged draw, which keeps bind names) ride them; this modifier, last on
 /// the skeleton, swings them each frame (Play/ClothChains: heavy soaked wool, world units, so a 2.08x giant's cape
-/// swings as slowly as its length makes it) kept off capsules on the body's legs, pelvis and spine (radii measured from
+/// swings as slowly as its length makes it) kept off capsules on the body's legs, pelvis, spine and upper arms (Play/BodyCapsules; radii measured from
 /// the body mesh, never closer than at the bind) and the ground, and drives each corrective's blend shape on every
 /// mesh of the piece that has it (0 at from degrees, 1 at to, smoothstep). A cut resets the chains to a settled hang:
 /// the camera changing or jumping, the body jumping (a teleport, a cinematic's re-pose), a long frame, or Cut().
@@ -28,13 +28,6 @@ public partial class PieceSprings : SkeletonModifier3D
     public sealed record Link(string Bone, string Parent, Vector3 Head, Vector3 Tail, float Radius, float Stiffness);
     public sealed record Corrective(string Shape, string Bone, string Axis, float From, float To, string Ref);
 
-    /// <summary>The body's capsules (bone to bone): the legs a hanging back piece swings against, the pelvis and spine it
-    /// drapes over.</summary>
-    static readonly (string A, string B)[] Body =
-    {
-        ("thigh_l", "calf_l"), ("calf_l", "foot_l"), ("thigh_r", "calf_r"), ("calf_r", "foot_r"),
-        ("pelvis", "spine_01"), ("spine_01", "spine_02"), ("spine_02", "spine_03"), ("spine_03", "neck_01"),
-    };
     static readonly Dictionary<string, (int A, int B, float R)[]> capsuleCache = new();
     public static readonly bool Debug = System.Environment.GetEnvironmentVariable("PIECE_SPRINGS_DBG") == "1";
     public static readonly bool Off = Args.Get("springs") == "off" || System.Environment.GetEnvironmentVariable("PIECE_SPRINGS") == "0";
@@ -69,9 +62,23 @@ public partial class PieceSprings : SkeletonModifier3D
 
     PieceSprings(string what, List<Link> links, List<Corrective> correctives, List<MeshInstance3D> meshes, (int, int, float)[] capsules)
     {
-        Name = "PieceSprings_" + what.Replace('/', '_');
+        Name = NodeName(what);
         this.what = what; this.links = links; this.correctives = correctives; this.meshes = meshes; this.capsules = capsules;
     }
+
+    /// <summary>The node's name for a piece (a package's "name/piece", her row's "warden.skirt": no '/' or '.').</summary>
+    public static string NodeName(string what) => "PieceSprings_" + what.Replace('/', '_').Replace('.', '_');
+
+    /// <summary>An armor row's springs (Rpg.ArmorIndex: her pieces), as a package entry's are read.</summary>
+    public static List<Link> FromRows(IEnumerable<SurvivorUnchained.Rpg.SpringRow>? rows) =>
+        rows?.Where(r => r.Bone != "" && r.Parent != "" && r.Head?.Length == 3 && r.Tail?.Length == 3)
+            .Select(r => new Link(r.Bone, r.Parent, new Vector3((float)r.Head[0], (float)r.Head[1], (float)r.Head[2]),
+                new Vector3((float)r.Tail[0], (float)r.Tail[1], (float)r.Tail[2]), (float)r.Radius, (float)r.Stiffness)).ToList() ?? new();
+
+    /// <summary>An armor row's correctives.</summary>
+    public static List<Corrective> FromRows(IEnumerable<SurvivorUnchained.Rpg.CorrectiveRow>? rows) =>
+        rows?.Where(r => r.Shape != "" && r.Bone != "")
+            .Select(r => new Corrective(r.Shape, r.Bone, r.Axis, (float)r.From, (float)r.To, Args.Get("corrective-ref") ?? r.Ref ?? DefaultRef)).ToList() ?? new();
 
     /// <summary>Starts the chains afresh on the next frame, at a settled hang (a cinematic's cut).</summary>
     public void Cut() { cut = true; why = "Cut()"; }
@@ -194,16 +201,17 @@ public partial class PieceSprings : SkeletonModifier3D
         return m;
     }
 
-    /// <summary>The body's capsules (Body) with radii from its mesh: of the vertices each bone carries most (at the
-    /// bind), the 80th percentile of their distance off its segment (robe and all), once a package.</summary>
+    /// <summary>The body's capsules (Play/BodyCapsules) with radii from its mesh: of the vertices its carrier bones carry
+    /// most (at the bind), the 80th percentile of their distance off its segment (robe and all), once a package (her: a body).</summary>
     static (int A, int B, float R)[] Capsules(People.Person p, string package)
     {
         if (capsuleCache.TryGetValue(package, out var have)) return have;
         var sk = p.Skeleton;
-        var segs = Body.Select(x => (A: sk.FindBone(x.A), B: sk.FindBone(x.B))).Where(x => x.A >= 0 && x.B >= 0).ToArray();
+        var segs = BodyCapsules.Table.Select(x => (A: sk.FindBone(x.A), B: sk.FindBone(x.B), Carry: x.Carry.Select(n => sk.FindBone(n)).Where(b => b >= 0).ToArray()))
+            .Where(x => x.A >= 0 && x.B >= 0).ToArray();
         var dist = segs.Select(_ => new List<float>()).ToArray();
         var byBone = new Dictionary<int, int>();
-        for (int i = 0; i < segs.Length; i++) byBone.TryAdd(segs[i].A, i);
+        for (int i = 0; i < segs.Length; i++) foreach (int b in segs[i].Carry) byBone.TryAdd(b, i);
         foreach (var mi in p.Meshes.Where(mi => mi.GetParent() == sk && mi.Skin != null && mi.Mesh != null && !mi.HasMeta("her_wear") && !p.Hair.Contains(mi)))
         {
             var skin = mi.Skin;
@@ -235,11 +243,7 @@ public partial class PieceSprings : SkeletonModifier3D
         var o = new List<(int, int, float)>();
         for (int c = 0; c < segs.Length; c++)
         {
-            var l = dist[c];
-            if (l.Count < 20) continue;
-            l.Sort();
-            float r = Math.Clamp(l[(int)(l.Count * 0.8f)], 0.03f, 0.3f);
-            o.Add((segs[c].A, segs[c].B, r));
+            if (BodyCapsules.Radius(dist[c]) is float r) o.Add((segs[c].A, segs[c].B, r));
         }
         GD.Print($"springs: {package}'s body capsules " + string.Join(", ", o.Select(x => $"{sk.GetBoneName(x.Item1)}-{sk.GetBoneName(x.Item2)} r{x.Item3 * 100:0.0} cm")));
         return capsuleCache[package] = o.ToArray();
@@ -317,6 +321,35 @@ public partial class PieceSprings : SkeletonModifier3D
         }
         for (int c = 0; c < capsules.Length; c++)
             cols[c] = new ClothChains.Capsule(Nv(W * G(capsules[c].A).Origin), Nv(W * G(capsules[c].B).Origin), capsules[c].R * scale);
+    }
+
+    /// <summary>Kept last of its skeleton's modifiers (over the finished pose: joints, jiggle, arm sets), as a modifier
+    /// added after it (her live swap, a dev probe) would read its swing before its own; GazeCarry stays after it (a head
+    /// look). On B (P1Laws) the laws keep the order (P1Laws.Reorder: the springs after them).</summary>
+    public override void _Ready()
+    {
+        if (GetParent() is Skeleton3D sk) { sk.ChildEnteredTree += OnSibling; keptOn = sk; }
+    }
+    public override void _ExitTree() { if (keptOn != null) keptOn.ChildEnteredTree -= OnSibling; keptOn = null; }
+    Skeleton3D? keptOn;
+    bool keepQueued;
+    void OnSibling(Node n)
+    {
+        if (n is not SkeletonModifier3D || n is PieceSprings || n is GazeCarry || keepQueued) return;
+        keepQueued = true;
+        Callable.From(KeepLast).CallDeferred();
+    }
+    /// <summary>Every piece's springs after the other modifiers (P1Laws' bodies excepted), GazeCarry after them.</summary>
+    public static void KeepLast(Skeleton3D sk)
+    {
+        if (sk.GetNodeOrNull("P1Laws") != null) return;
+        foreach (var m in sk.GetChildren().OfType<PieceSprings>().ToList()) sk.MoveChild(m, -1);
+        foreach (var m in sk.GetChildren().OfType<GazeCarry>().ToList()) sk.MoveChild(m, -1);
+    }
+    void KeepLast()
+    {
+        keepQueued = false;
+        if (IsInstanceValid(this) && GetParent() is Skeleton3D sk) KeepLast(sk);
     }
 
     public override void _ProcessModificationWithDelta(double delta)

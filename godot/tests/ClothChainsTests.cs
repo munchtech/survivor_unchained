@@ -90,6 +90,39 @@ public class ClothChainsTests
     }
 
     [Fact]
+    public void ALappetOverAThighFlexedUnderItsHeadRidesOnItNotFlungRound()
+    {
+        // (her skirt's front lappet: one link pinned at the belt, 30 cm, over a thigh capsule from the hip joint just
+        // under its head; the thigh flexes 90 deg forward in half a second and holds: at the end the hip is nearer the
+        // lappet's head than the bind's limit, which no turn about the head can meet)
+        var head = new Vector3(0, 0, 0.1f);
+        var t = new[] { head, new Vector3(0, -0.3f, 0.12f) };
+        var c = new ClothChains(new[] { -1, 0 }, new[] { 0.02f, 0.02f }, ClothChains.Tuning.Wool, new[] { 0f, 12f });
+        var hip = new Vector3(0, -0.08f, 0);
+        ClothChains.Capsule Thigh(float deg)
+        {
+            float a = deg * MathF.PI / 180;
+            return new(hip, hip + new Vector3(0, -MathF.Cos(a), MathF.Sin(a)) * 0.42f, 0.08f);
+        }
+        c.SetRest(t, new[] { Thigh(0) });
+        c.Reset(t, new[] { Thigh(0) }, null, Down);
+        var tips = new System.Collections.Generic.List<Vector3>();
+        for (int f = 1; f <= 90; f++)
+        {
+            float u = Math.Min(1, f / 30f);
+            c.Step(Dt, t, new[] { Thigh(90 * u * u * (3 - 2 * u)) }, null, Down);
+            tips.Add(c.Positions[^1]);
+        }
+        var tip = c.Positions[^1];
+        float inside = c.Penetration(new[] { Thigh(90) })[0];
+        float still = tips.Skip(60).Max(p => (p - tip).Length());
+        Assert.True(tip.Z > 0.25f, $"lifted forward over the thigh (tip z {tip.Z:0.000})");
+        Assert.True(tip.Y < head.Y + 0.06f, $"not flung up past the thigh (tip {tip.Y - head.Y:0.000} m over its head)");
+        Assert.True(inside < 0.015f, $"{inside * 100:0.0} cm inside the thigh");
+        Assert.True(still < 0.01f, $"held still on the held thigh ({still * 100:0.0} cm in the last half second)");
+    }
+
+    [Fact]
     public void AResetSettlesTheHangSoACutNeverFlingsIt()
     {
         var none = Array.Empty<ClothChains.Capsule>();

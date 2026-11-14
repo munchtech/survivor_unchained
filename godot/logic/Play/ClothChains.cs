@@ -174,6 +174,15 @@ public sealed class ClothChains
             {
                 float lim = limit[i, c];
                 if (lim <= 0) continue;
+                // (a pinned link turns about its head, so it can stand no farther off a capsule than its head does: a
+                // limit past the head's own distance has no turn that meets it, and the push near the head (up to 3x at
+                // the tip, every iteration) flung the link round, her skirt's lappets on a thigh that swings about the
+                // hip right under their heads. Held to the head's distance, the push at the tip is the tangent turn.)
+                if (pinned)
+                {
+                    var (_, _, dh) = Closest(x[p], x[p], cols[c].A, cols[c].B);
+                    if (dh < lim) lim = dh;
+                }
                 var (s, q, d) = Closest(x[p], x[i], cols[c].A, cols[c].B);
                 if (d >= lim) continue;
                 var r = PointOnSegment(cols[c].A, cols[c].B, q);

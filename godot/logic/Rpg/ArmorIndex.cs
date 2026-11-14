@@ -27,6 +27,51 @@ public sealed class ArmorHold
     [JsonIgnore] public double FillValue => Fill ?? SupportValue;
 }
 
+/// <summary>One spring link of a piece (PieceSprings.Link): a bone from head to tail under its parent (a body bone or
+/// another link), its collision radius and, over 0, its own stiffness (1/s); reach: how far off the link its vertices
+/// are carried (null: the piece's carry reach).</summary>
+public sealed class SpringRow
+{
+    [JsonPropertyName("bone")] public string Bone { get; set; } = "";
+    [JsonPropertyName("parent")] public string Parent { get; set; } = "";
+    [JsonPropertyName("head")] public double[] Head { get; set; } = new double[3];
+    [JsonPropertyName("tail")] public double[] Tail { get; set; } = new double[3];
+    [JsonPropertyName("radius")] public double Radius { get; set; } = 0.04;
+    [JsonPropertyName("stiffness")] public double Stiffness { get; set; }
+    [JsonPropertyName("reach")] public double? Reach { get; set; }
+}
+
+/// <summary>One corrective shape of a piece (PieceSprings.Corrective): 0 at From degrees of the bone's pitch, 1 at To.</summary>
+public sealed class CorrectiveRow
+{
+    [JsonPropertyName("shape")] public string Shape { get; set; } = "";
+    [JsonPropertyName("bone")] public string Bone { get; set; } = "";
+    [JsonPropertyName("axis")] public string Axis { get; set; } = "pitch";
+    [JsonPropertyName("from")] public double From { get; set; }
+    [JsonPropertyName("to")] public double To { get; set; } = 90;
+    [JsonPropertyName("ref")] public string? Ref { get; set; }
+}
+
+/// <summary>One piece's springs in the springs file (ArmorIndex.SpringsFile), with where its numbers came from.</summary>
+public sealed class SpringsEntry
+{
+    [JsonPropertyName("id")] public string Id { get; set; } = "";
+    [JsonPropertyName("source")] public string? Source { get; set; }
+    [JsonPropertyName("springs")] public List<SpringRow>? Springs { get; set; }
+    [JsonPropertyName("correctives")] public List<CorrectiveRow>? Correctives { get; set; }
+    [JsonPropertyName("carry")] public CarryRow? Carry { get; set; }
+}
+
+/// <summary>A piece's carry onto its springs (Play/SpringCarry): rule "island" (a welded island goes whole to the link
+/// whose region holds at least `share` of it: metal plates) or "blend" (each vertex by its place down the link: cloth);
+/// reach in metres.</summary>
+public sealed class CarryRow
+{
+    [JsonPropertyName("rule")] public string Rule { get; set; } = "island";
+    [JsonPropertyName("reach")] public double Reach { get; set; } = 0.06;
+    [JsonPropertyName("share")] public double Share { get; set; } = 0.6;
+}
+
 /// <summary>One wearable piece (docs/handoff/armor.md items 1 and 6): a row of art/people/armor_index.json (her callings'
 /// outfits, heroine_outfits.py) or art/armor/armor_index.json (new pieces, tools/armor/build.py).</summary>
 public sealed class ArmorPiece
@@ -63,6 +108,18 @@ public sealed class ArmorPiece
     /// <summary>The id of a calling's outfit row this piece stands in for: a calling's fill (ArmorIndex.Calling) wears this piece
     /// where it would wear that row. The piece keeps its own row.</summary>
     [JsonPropertyName("replaces")] public string? Replaces { get; set; }
+    /// <summary>Its spring bones (View/PieceSprings, as a Marionette package piece's manifest has them): each link a bone
+    /// added to her skeleton under its parent, swung over her finished pose and kept off her body's capsules. Head and
+    /// tail in its file's armature frame, metres. Null: it has none.</summary>
+    [JsonPropertyName("springs")] public List<SpringRow>? Springs { get; set; }
+    /// <summary>Its corrective shapes driven by a bone's pitch (PieceSprings), as a package piece's.</summary>
+    [JsonPropertyName("correctives")] public List<CorrectiveRow>? Correctives { get; set; }
+    /// <summary>How its vertices are given to its spring bones at dress time (Play/SpringCarry), when its file's skin does
+    /// not already weight them (a piece built for its springs, a package's, is used as it is). Null: the island rule.</summary>
+    [JsonPropertyName("carry")] public CarryRow? Carry { get; set; }
+    /// <summary>Where its springs came from (the springs file's "source"; null: its own row's).</summary>
+    [JsonIgnore] public string? SpringsSource { get; set; }
+    [JsonIgnore] public bool HasSprings => Springs is { Count: > 0 } || Correctives is { Count: > 0 };
     /// <summary>The index's folder under art/ ("people" or "armor"), which its tuck path is relative to.</summary>
     [JsonIgnore] public string Dir { get; set; } = "people";
     /// <summary>A built body's gear row (tools/armor/gear_fit.py build, art/gear/out/BODY/gear_index.json): its calling's
@@ -140,6 +197,26 @@ public sealed class ArmorIndex
 
     public static ArmorIndex Parse(string json, string dir = "people") => new ArmorIndex().Add(json, dir);
 
+    /// <summary>Her callings' pieces' springs, kept apart from the index heroine_outfits.py writes (a source, not an
+    /// output): [{id, source, springs, correctives, carry}].</summary>
+    public const string SpringsFile = "people/springs.json";
+
+    /// <summary>A springs file's entries onto the rows of one index (`dir`) that have none of their own (a row that comes
+    /// with springs, R&D's or a built body's, keeps them); returns how many rows took springs.</summary>
+    public int AddSprings(string json, string dir)
+    {
+        var rows = JsonSerializer.Deserialize<List<SpringsEntry>>(json, new JsonSerializerOptions { AllowTrailingCommas = true, ReadCommentHandling = JsonCommentHandling.Skip })
+                   ?? new List<SpringsEntry>();
+        int n = 0;
+        foreach (var e in rows)
+        {
+            if (!Pieces.TryGetValue(e.Id, out var r) || r.Dir != dir || r.Springs != null || r.Correctives != null) continue;
+            r.Springs = e.Springs; r.Correctives = e.Correctives; r.Carry ??= e.Carry; r.SpringsSource = e.Source;
+            n++;
+        }
+        return n;
+    }
+
     /// <summary>Both indexes through `text` (the second only if it is there); with `gearDir`, that built body's gear index
     /// instead (A's when it is not there: GearMissing).</summary>
     public static ArmorIndex Load(Func<string, string?> text, string? gearDir = null)
@@ -152,6 +229,7 @@ public sealed class ArmorIndex
         }
         foreach (var f in Files)
             if (text(f) is string s) ix.Add(s, f[..f.IndexOf('/')]);
+        if (text(SpringsFile) is string sp) ix.AddSprings(sp, "people");
         return ix;
     }
 

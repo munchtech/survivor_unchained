@@ -1,0 +1,466 @@
+[
+  {
+    "id": "warden.skirt",
+    "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
+    "springs": [
+      {
+        "bone": "spring_skirt_00",
+        "parent": "pelvis",
+        "head": [
+          -0.045,
+          1.1077,
+          -0.1132
+        ],
+        "tail": [
+          -0.0464,
+          0.9841,
+          -0.1676
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.055
+      },
+      {
+        "bone": "spring_skirt_01",
+        "parent": "pelvis",
+        "head": [
+          -0.0921,
+          1.1253,
+          -0.1036
+        ],
+        "tail": [
+          -0.1021,
+          0.9594,
+          -0.1699
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.067
+      },
+      {
+        "bone": "spring_skirt_02",
+        "parent": "pelvis",
+        "head": [
+          -0.1144,
+          1.1391,
+          -0.0763
+        ],
+        "tail": [
+          -0.1477,
+          0.972,
+          -0.1374
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.061
+      },
+      {
+        "bone": "spring_skirt_03",
+        "parent": "pelvis",
+        "head": [
+          -0.1293,
+          1.1461,
+          -0.0518
+        ],
+        "tail": [
+          -0.1844,
+          0.942,
+          -0.0953
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.067
+      },
+      {
+        "bone": "spring_skirt_04",
+        "parent": "pelvis",
+        "head": [
+          -0.1335,
+          1.1457,
+          -0.0393
+        ],
+        "tail": [
+          -0.1989,
+          0.9501,
+          -0.0423
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.058
+      },
+      {
+        "bone": "spring_skirt_05",
+        "parent": "pelvis",
+        "head": [
+          -0.148,
+          1.1357,
+          -0.0211
+        ],
+        "tail": [
+          -0.2134,
+          0.9181,
+          0.0104
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.075
+      },
+      {
+        "bone": "spring_skirt_06",
+        "parent": "pelvis",
+        "head": [
+          -0.1562,
+          1.0898,
+          0.0397
+        ],
+        "tail": [
+          -0.2013,
+          0.9256,
+          0.0511
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.054
+      },
+      {
+        "bone": "spring_skirt_07",
+        "parent": "pelvis",
+        "head": [
+          -0.1455,
+          1.0859,
+          0.0664
+        ],
+        "tail": [
+          -0.1797,
+          0.8944,
+          0.0982
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.063
+      },
+      {
+        "bone": "spring_skirt_08",
+        "parent": "pelvis",
+        "head": [
+          -0.1213,
+          1.0786,
+          0.0877
+        ],
+        "tail": [
+          -0.1319,
+          0.9046,
+          0.1255
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.063
+      },
+      {
+        "bone": "spring_skirt_09",
+        "parent": "pelvis",
+        "head": [
+          -0.0906,
+          1.0647,
+          0.0998
+        ],
+        "tail": [
+          -0.0827,
+          0.8767,
+          0.1288
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.064
+      },
+      {
+        "bone": "spring_skirt_10",
+        "parent": "pelvis",
+        "head": [
+          -0.0438,
+          1.046,
+          0.1046
+        ],
+        "tail": [
+          -0.0379,
+          0.8925,
+          0.1247
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.046
+      },
+      {
+        "bone": "spring_skirt_11",
+        "parent": "pelvis",
+        "head": [
+          -0.0038,
+          1.0392,
+          0.1094
+        ],
+        "tail": [
+          -0.0,
+          0.8711,
+          0.1324
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.047
+      },
+      {
+        "bone": "spring_skirt_12",
+        "parent": "pelvis",
+        "head": [
+          0.0429,
+          1.0467,
+          0.1052
+        ],
+        "tail": [
+          0.0379,
+          0.8925,
+          0.1249
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.045
+      },
+      {
+        "bone": "spring_skirt_13",
+        "parent": "pelvis",
+        "head": [
+          0.0915,
+          1.0645,
+          0.101
+        ],
+        "tail": [
+          0.0823,
+          0.8767,
+          0.1282
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.067
+      },
+      {
+        "bone": "spring_skirt_14",
+        "parent": "pelvis",
+        "head": [
+          0.1222,
+          1.0784,
+          0.0892
+        ],
+        "tail": [
+          0.1318,
+          0.9047,
+          0.1264
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.063
+      },
+      {
+        "bone": "spring_skirt_15",
+        "parent": "pelvis",
+        "head": [
+          0.1477,
+          1.0859,
+          0.0687
+        ],
+        "tail": [
+          0.1807,
+          0.8944,
+          0.1014
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.064
+      },
+      {
+        "bone": "spring_skirt_16",
+        "parent": "pelvis",
+        "head": [
+          0.1591,
+          1.0897,
+          0.0419
+        ],
+        "tail": [
+          0.2047,
+          0.9256,
+          0.0519
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.055
+      },
+      {
+        "bone": "spring_skirt_17",
+        "parent": "pelvis",
+        "head": [
+          0.1514,
+          1.1353,
+          -0.0211
+        ],
+        "tail": [
+          0.2168,
+          0.9181,
+          0.0123
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.075
+      },
+      {
+        "bone": "spring_skirt_18",
+        "parent": "pelvis",
+        "head": [
+          0.1368,
+          1.1459,
+          -0.0395
+        ],
+        "tail": [
+          0.2023,
+          0.9502,
+          -0.0425
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.058
+      },
+      {
+        "bone": "spring_skirt_19",
+        "parent": "pelvis",
+        "head": [
+          0.1323,
+          1.1459,
+          -0.053
+        ],
+        "tail": [
+          0.1872,
+          0.9417,
+          -0.0964
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.068
+      },
+      {
+        "bone": "spring_skirt_20",
+        "parent": "pelvis",
+        "head": [
+          0.1182,
+          1.1392,
+          -0.0775
+        ],
+        "tail": [
+          0.1502,
+          0.972,
+          -0.1386
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.063
+      },
+      {
+        "bone": "spring_skirt_21",
+        "parent": "pelvis",
+        "head": [
+          0.0942,
+          1.1252,
+          -0.1077
+        ],
+        "tail": [
+          0.1049,
+          0.9594,
+          -0.1705
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.069
+      },
+      {
+        "bone": "spring_skirt_22",
+        "parent": "pelvis",
+        "head": [
+          0.0455,
+          1.1077,
+          -0.1129
+        ],
+        "tail": [
+          0.047,
+          0.9839,
+          -0.1673
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.055
+      },
+      {
+        "bone": "spring_skirt_23",
+        "parent": "pelvis",
+        "head": [
+          0.0001,
+          1.1001,
+          -0.1176
+        ],
+        "tail": [
+          0.0005,
+          0.966,
+          -0.1581
+        ],
+        "radius": 0.025,
+        "stiffness": 10,
+        "reach": 0.061
+      }
+    ],
+    "carry": {
+      "rule": "island",
+      "reach": 0.07,
+      "share": 0.6
+    }
+  },
+  {
+    "id": "warden.pauldrons",
+    "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
+    "springs": [
+      {
+        "bone": "spring_pauldron_l",
+        "parent": "trap_l",
+        "head": [
+          0.1419,
+          1.5719,
+          -0.0387
+        ],
+        "tail": [
+          0.2666,
+          1.454,
+          -0.0258
+        ],
+        "radius": 0.025,
+        "stiffness": 14,
+        "reach": 0.124
+      },
+      {
+        "bone": "spring_pauldron_r",
+        "parent": "trap_r",
+        "head": [
+          -0.1419,
+          1.5719,
+          -0.0387
+        ],
+        "tail": [
+          -0.2666,
+          1.454,
+          -0.0258
+        ],
+        "radius": 0.025,
+        "stiffness": 14,
+        "reach": 0.124
+      }
+    ],
+    "carry": {
+      "rule": "island",
+      "reach": 0.11,
+      "share": 0.6
+    }
+  }
+]
