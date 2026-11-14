@@ -2098,6 +2098,14 @@ public static class People
         bool baseHead = isHead && (skin != null && skin.TryGetValue("base_head", out var bh) && bh.VariantType == Variant.Type.Bool
             ? bh.AsBool() : mesh != null && HeadVertexCount(mesh) is int hv && hv > 0 && hv == BaseHeadVerts());
         if (!isHead) SkinZones(m, deep, false);
+        // (the stepped rim kept off the body's inside folds, the cream line under the breast: body_p1's fold map, on a body
+        // with its vertices, so its UVs; Look.SkinHighlight.FoldMap)
+        if (!isHead && mesh != null && SkinVertexCount(mesh, src.ResourceName) is int bv && bv > 0 && bv == BaseBodyVerts()
+            && ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.FoldMap))
+        {
+            m.SetShaderParameter("rim_fold_map", GD.Load<Texture2D>(SurvivorUnchained.Look.SkinHighlight.FoldMap));
+            m.SetShaderParameter("rim_fold", 1f);
+        }
         else if (baseHead) { SkinZones(m, deep, true); BaseHead(m); }
         ShaderMaterial? brows = null;
         if (baseHead && !(skin != null && skin.TryGetValue("brows", out var bw) && bw.VariantType == Variant.Type.Bool && !bw.AsBool())
@@ -2178,7 +2186,7 @@ public static class People
 
     static readonly Dictionary<ulong, float> npcMean = new();
     static float? refHeadMean, refBodyMean;
-    static int baseHeadVerts = -1;
+    static int baseHeadVerts = -1, baseBodyVerts = 0;
 
     static float PaintMean(Texture2D? tex)
     {
@@ -2224,11 +2232,22 @@ public static class People
 
     static float RefMean(string path) => ResourceLoader.Exists(path) ? PaintMean(GD.Load<Texture2D>(path)) : 0f;
 
-    static int? HeadVertexCount(Mesh mesh)
+    static int? HeadVertexCount(Mesh mesh) => SkinVertexCount(mesh, "skin_head");
+
+    /// <summary>The vertex count of a mesh's surface whose material is named so, or null.</summary>
+    static int? SkinVertexCount(Mesh mesh, string material)
     {
         for (int s = 0; s < mesh.GetSurfaceCount(); s++)
-            if (mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head") return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == material) return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
         return null;
+    }
+
+    /// <summary>body_p1's body skin (every surface of its body mesh but the head's), by vertex count: an NPC's body on it
+    /// shares its UVs (the fold map's).</summary>
+    static int BaseBodyVerts()
+    {
+        BaseHeadVerts();
+        return baseBodyVerts;
     }
 
     static int BaseHeadVerts()
@@ -2242,10 +2261,14 @@ public static class People
             {
                 var stack = new Stack<Node>();
                 stack.Push(inst);
-                while (stack.Count > 0 && baseHeadVerts == 0)
+                while (stack.Count > 0 && (baseHeadVerts == 0 || baseBodyVerts == 0))
                 {
                     var n = stack.Pop();
                     if (n is MeshInstance3D { Mesh: { } mm } && HeadVertexCount(mm) is int c) baseHeadVerts = c;
+                    if (n is MeshInstance3D { Mesh: { } mb } && HeadVertexCount(mb) == null)
+                        for (int s = 0; s < mb.GetSurfaceCount(); s++)
+                            if (mb.SurfaceGetMaterial(s)?.ResourceName is "skin" or "Material_0.001")
+                                baseBodyVerts = mb is ArrayMesh ab ? ab.SurfaceGetArrayLen(s) : mb.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
                     foreach (var ch in n.GetChildren()) stack.Push(ch);
                 }
                 inst.Free();

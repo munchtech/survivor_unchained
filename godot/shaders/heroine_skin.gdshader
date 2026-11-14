@@ -131,6 +131,13 @@ uniform float ao_light = 0.0;
 // 0: everywhere, as before.
 uniform sampler2D spark_map : hint_default_white, filter_linear;
 uniform float spark_mask : hint_range(0.0, 1.0) = 0.0;
+// Where the body's stepped rim falls on an inside fold (tools/assets/body_fold.py: the surface faces more of the body a
+// few centimetres away: the breast's underside over the ribs, the cleavage, the buttock's crease, between the thighs):
+// there the rim drew a cream line inside her form (13 Nov, the owner: the line under the breast). rim_fold 1: the rim
+// times (1 - the map), so it stays on her outline against the background; 0: everywhere, as before (People.NpcSkin:
+// NPCs on body_p1, Look.SkinHighlight.FoldMap).
+uniform sampler2D rim_fold_map : hint_default_black, filter_linear;
+uniform float rim_fold : hint_range(0.0, 1.0) = 0.0;
 // Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
 // can't reach (n.l under cavity_ndl), cavity_bounce of its light, by cavity_map's shade (her body's own baked AO, red:
 // 1 open, under cavity_ao.y; all of it at cavity_ao.x). As her arm lifts, the hollow under it faces away from every
@@ -1091,7 +1098,8 @@ void light() {
 		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
 	// (cel: the stepped rim on the key's side)
-	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un);
+	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un)
+		* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0);
 	}
 	CEL_HERO_LIGHT;
 }
