@@ -116,10 +116,10 @@ public class WardrobeTests
         var ch = Her();
         Assert.DoesNotContain(Wardrobe.Offered(ch), d => d.Id == "bronze");
         Assert.Contains(Wardrobe.Offered(ch), d => d.Id == "steel");
-        // (metal-dye, 13 Nov: gilt and silvered read as metal now, released from their hold; a held dye is never offered)
-        Assert.DoesNotContain(Wardrobe.Dyes, d => d.Hold);
-        Assert.Contains(Wardrobe.Offered(ch), d => d.Id == "gilt");
-        Assert.Contains(Wardrobe.Offered(ch), d => d.Id == "silvered");
+        // a held dye (gilt reads mustard on the art) is known but not offered, and not applied (metal-dye, 13 Nov: still held:
+        // the Warden greaves stay a flat panel under them)
+        Assert.True(Wardrobe.Dye("gilt")!.Hold && Wardrobe.Dye("silvered")!.Hold);
+        Assert.DoesNotContain(Wardrobe.Offered(ch), d => d.Id is "gilt" or "silvered");
         Wardrobe.SetDye(ch, "body", "metal", "bronze");
         var a = Own(ch, "wt_top_a"); Inventory.AddToPack(ch, a); Inventory.Equip(ch, a, EquipSlot.Body);
         Assert.False(Wear.DyeOf(ch).ContainsKey("wt.top"));
