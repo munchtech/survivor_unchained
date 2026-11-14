@@ -155,14 +155,15 @@ Each half is still its part: the part's wick, rank and Turn apply to its half, s
 - It opens when both parts burn a Turn, and it costs one point from each.
 - Joining and unjoining are free at a lamp-post.
 - With section 3.5's rate, the first Union arrives about level 11, at Act 2's door, when all six of her slots are open (call 13).
-- The harness holds it honest. A Union build beats the same two skills apart by ×1.15-1.3 at equal gear: power and a combo for the two slots, never mandatory.
+- The harness holds it honest. **A Union does at least the damage of its two skills apart, at equal gear, in every case, and may do more** (the owner, 13 Nov: "= to both of them or more"; this replaces the old ×1.15-1.3 band). **The lower its damage gain, the greater its extra effect** (the owner: "the lower the damage the greater the extra effect"). A Union at about ×1.0 must pay in its bond: control, defense or reach the two apart can't give. A Union well above its halves carries a light extra. It is power and a combo for the two slots, never mandatory.
 
 **The first Union list** (working names are drafts for the story lead; "built" means it is in `skills.json` today):
 
 | Calling | Union | Parts | First key | Second key (the bond) |
 |---|---|---|---|---|
-| Warden | **Bladestorm** (skills lead, building) | Cleaver + Sunder | hold: the spin | the storm breaks; the thrown lines split |
-| Warden | **Dawn's Judgment** (built) | Judgment Disc + Dawnpulse | the disc ricochets and breaks into light | recall: it flies back through everything, and the dawn bursts on the catch |
+| Warden | ~~Bladestorm~~ (retired as a Union, 13 Nov: now her own skill in key 3 at level 5, BUILD_UNLOCKS) | Cleaver + Sunder | hold: the spin | the storm breaks; the thrown lines split |
+| Warden | **Falling Wall** (built; her first Union, at 15) | Heroic Leap + Shield Charge | the leap lands shield first; a wider ring knocked flat | each one struck shields her |
+| Warden | **Dawn's Judgment** (built; not reachable in the campaign: the Disc has no source) | Judgment Disc + Dawnpulse | the disc ricochets and breaks into light | recall: it flies back through everything, and the dawn bursts on the catch |
 | Warden | **Earthfall** | Heroic Leap + Groundbreaker | the leap; the landing cracks to the three densest packs | heave: every crack at once, stunning |
 | Warden | **The Last Bell** | Watch Bell + Rebuke | the toll drags all within 8 m onto her shield | for 2 s every blow on her answers on its striker and three near it |
 | Reaver | **Gallows Wheel** | Red Whirl + Chain Lash | hold: she whirls with the chain out and hooks what it touches | yank: the hooked are knotted at her feet and hoisted |
