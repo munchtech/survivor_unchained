@@ -2532,7 +2532,7 @@ public static class People
     /// root is her albedo's chroma (as emission C .05; her tone trims off, or her highlights off, moved it under .005), so the fix is
     /// her skin's color FROM MB1 DAY's lit chip (#ee9962, C .127 h 45) and T08's lit skin (C .143 h 48): every swatch
     /// takes the same factor, so they keep their places against each other. (--cel-tone R,G,B: another, for judging it.)</summary>
-    static readonly Vector3 HerCelTone = ArgVec("cel-tone", new(1.39f, 0.80f, 0.54f));
+    static readonly Vector3 HerCelTone = ArgVec("cel-tone", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B));
 
     static readonly Dictionary<string, Vector3> HerFaceSwatch = new()
     {
@@ -2666,7 +2666,8 @@ public static class People
     /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
     /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
     /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
-    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look);
+    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look)
+        * SurvivorUnchained.Look.SkinLight.HeadPaintLevel;   // (her head's paint at her body's level: Look.SkinLight.HeadPaintLevel)
 
     /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
     /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
@@ -2832,6 +2833,8 @@ public static class People
     {
         var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
         f *= FaceSwatch(look);
+        // (her own face trimmed to her lit chest at the Look again: Look.SkinLight.LookFaceTrim)
+        if (FaceId(look) == "own") f *= new Vector3(SurvivorUnchained.Look.SkinLight.LookFaceTrim.R, SurvivorUnchained.Look.SkinLight.LookFaceTrim.G, SurvivorUnchained.Look.SkinLight.LookFaceTrim.B);
         return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
     }
 

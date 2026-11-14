@@ -94,6 +94,30 @@ public class SkinLightTests
     {
         var rigs = RigSet.Parse(Read("data", "look", "rigs.json"));
         Assert.Equal(SkinLight.CloseDayKey, rigs["close_day"]!.Key.Intensity!.Value, 9);
+        Assert.Equal(SkinLight.CloseDayKeyColor, rigs["close_day"]!.Key.Color);
         Assert.InRange(SkinLight.CloseDayKey, 0.6, 1.0);
+    }
+
+    /// <summary>Fault 1 (her face near white over an orange body): her head's paint at her body's level outside the Look's
+    /// rig, her own face trimmed to her chest at the Look, both in People's face tones.</summary>
+    [Fact]
+    public void HeadPaintAtTheBodysLevel_FaceTrimmedAtTheLook()
+    {
+        Assert.InRange(SkinLight.HeadPaintLevel, 0.5f, 0.65f);
+        Assert.True(SkinLight.LookFaceTrim.R < SkinLight.LookFaceTrim.G && SkinLight.LookFaceTrim.G < SkinLight.LookFaceTrim.B && SkinLight.LookFaceTrim.B <= 1f);
+        var people = Read("src", "Actors", "People.cs");
+        Assert.Contains("* SurvivorUnchained.Look.SkinLight.HeadPaintLevel;", people);
+        Assert.Contains("if (FaceId(look) == \"own\") f *= new Vector3(SurvivorUnchained.Look.SkinLight.LookFaceTrim.R", people);
+    }
+
+    /// <summary>Fault 1 (spray-tan orange): her cel warmth is the rule's, warm but less red than (1.39, 0.80, 0.54).</summary>
+    [Fact]
+    public void HerCelToneIsTheRules()
+    {
+        var t = SkinLight.CelTone;
+        Assert.True(t.R > t.G && t.G > t.B, "warm");
+        Assert.InRange(t.R / t.B, 1.3f, 1.9f);
+        Assert.InRange(0.2126f * t.R + 0.7152f * t.G + 0.0722f * t.B, 0.85f, 0.97f);
+        Assert.Contains("ArgVec(\"cel-tone\", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B))", Read("src", "Actors", "People.cs"));
     }
 }
