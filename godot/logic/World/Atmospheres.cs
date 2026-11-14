@@ -269,6 +269,14 @@ public static class Atmospheres
     };
 
     static double Lerp(double a, double b, double t) => a + (b - a) * t;
+    /// <summary>(rim round 2, 14 Nov) Skin's share of the rim across a blend: it lets go over the first half and comes back
+    /// over the second, through the lower of the two at the middle. The clock's night starts mid-blend (Dusk to Night runs to
+    /// NightAt + 30 s), where a straight lerp left a third of the lilac rim on her skin; so from the first second of night it is 0.</summary>
+    internal static double SkinRimDip(double a, double b, double t)
+    {
+        double m = Math.Min(a, b);
+        return t < 0.5 ? Lerp(a, m, 2 * t) : Lerp(m, b, 2 * t - 1);
+    }
     static double[] Lerp3(double[] a, double[] b, double t) => [Lerp(a[0], b[0], t), Lerp(a[1], b[1], t), Lerp(a[2], b[2], t)];
 
     /// <summary>a blended toward b by t (colours mixed in linear light, as
@@ -312,7 +320,7 @@ public static class Atmospheres
             BushNightSat = Lerp(a.BushNightSat, b.BushNightSat, t), GroundEmberOchre = Lerp(a.GroundEmberOchre, b.GroundEmberOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
             CelOn = Lerp(a.CelOn, b.CelOn, t), CelShadow = Lerp(a.CelShadow, b.CelShadow, t), CelFill = Lerp(a.CelFill, b.CelFill, t),
-            CelRim = Lerp(a.CelRim, b.CelRim, t), CelSkinRim = Lerp(a.CelSkinRim, b.CelSkinRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
+            CelRim = Lerp(a.CelRim, b.CelRim, t), CelSkinRim = SkinRimDip(a.CelSkinRim, b.CelSkinRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
             CelFillColor = a.CelFillColor != "" && b.CelFillColor != "" ? Mix(a.CelFillColor, b.CelFillColor, t) : t < 0.5 ? a.CelFillColor : b.CelFillColor,
             CelRimColor = a.CelRimColor != "" && b.CelRimColor != "" ? Mix(a.CelRimColor, b.CelRimColor, t) : t < 0.5 ? a.CelRimColor : b.CelRimColor,
             CelInk = a.CelInk is { } ia && b.CelInk is { } ib ? Lerp3(ia, ib, t) : t < 0.5 ? a.CelInk : b.CelInk,

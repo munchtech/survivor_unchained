@@ -23,7 +23,13 @@ public class CelSkinRimTests
             Assert.Equal(0, n.CelSkinRim);
         foreach (var d in new[] { Atmospheres.Day, Atmospheres.Dawn, Atmospheres.Dusk })
             Assert.Equal(1, d.CelSkinRim);
-        Assert.Equal(0.5, Atmospheres.Blend(Atmospheres.Day, Atmospheres.Night, 0.5).CelSkinRim, 6);
+        // (round 2: the share dips through the lower end at the middle, so the clock's night (a Dusk to Night blend past .5) is 0)
+        Assert.Equal(0.5, Atmospheres.Blend(Atmospheres.Day, Atmospheres.Night, 0.25).CelSkinRim, 6);
+        Assert.Equal(0, Atmospheres.Blend(Atmospheres.Dusk, Atmospheres.Night, 0.5).CelSkinRim, 6);
+        Assert.Equal(0, Atmospheres.Blend(Atmospheres.Dusk, Atmospheres.NightTown, 0.7).CelSkinRim, 6);
+        Assert.Equal(0, Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, 0.4).CelSkinRim, 6);
+        Assert.Equal(0.5, Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, 0.75).CelSkinRim, 6);
+        Assert.Equal(1, Atmospheres.Blend(Atmospheres.Day, Atmospheres.Dusk, 0.5).CelSkinRim, 6);
         Assert.Equal(0, ArenaPlaces.Light("barrow").Item1.CelSkinRim);
     }
 

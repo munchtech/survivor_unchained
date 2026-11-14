@@ -157,6 +157,12 @@ uniform float spark_mask : hint_range(0.0, 1.0) = 0.0;
 // (People.NpcSkin: NPCs on body_p1's topology, Look.SkinHighlight.FoldMap).
 uniform sampler2D rim_fold_map : hint_default_black, filter_linear;
 uniform float rim_fold : hint_range(0.0, 1.0) = 0.0;
+// (rim round 2, 14 Nov: bake-off) The rim kept to the outline. rim_edge_px > 0: only within that many screen px of where
+// her mesh normal turns edge-on (n.v over its screen derivative, from the normal before the normal map), fading out by
+// twice it; rim_geo 1: the rim's n.v on that mesh normal alone (no macro, no map).
+uniform float rim_edge_px : hint_range(0.0, 32.0) = 0.0;
+uniform float rim_geo : hint_range(0.0, 1.0) = 0.0;
+varying float rim_edge;
 // Skin's share of the cel stepped rim: 1 by day, 0 at night (AtmospherePreset.CelSkinRim), where the moon's rim stepped into lilac specks.
 global uniform float cel_skin_rim;
 // Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
@@ -944,6 +950,8 @@ void fragment() {
 	// freckles' map's blue; face 47's neck_pull_y)
 	if (dbg_gate > 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(clamp((model_y - 1.4) / 0.4, 0.0, 1.0), fm.b, fk.b); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, her roughness before the ink tag, the tag, debug).
+	{ float re = max(dot(normalize(NORMAL), VIEW), 0.0); float rp = re / max(fwidth(re), 1e-4);
+	  rim_edge = rim_edge_px > 0.0 ? 1.0 - smoothstep(rim_edge_px, 2.0 * rim_edge_px, rp) : 1.0; }
 	CEL_FRAGMENT;
 	CEL_HERO_FRAGMENT;
 }
@@ -1122,7 +1130,7 @@ void light() {
 		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
 	// (cel: the stepped rim on the key's side)
-	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un)
+	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(rim_geo > 0.0 ? normalize(cel_gn) : cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un) * rim_edge
 		* (rim_fold > 0.0 ? 1.0 - rim_fold * textureLod(rim_fold_map, UV, 0.0).r : 1.0) * cel_skin_rim;
 	}
 	CEL_HERO_LIGHT;
