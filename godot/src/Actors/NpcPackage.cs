@@ -37,6 +37,19 @@ public static class NpcPackage
 
     public static string Dir(string name) => $"res://art/npc/{name}";
 
+    /// <summary>(the look viewer) Everything this session keeps of a package dropped (its manifest, its scenes, its
+    /// trimmed body meshes, NpcDye's dye), so its next Build reads its files afresh. How many entries went.</summary>
+    public static int Forget(string name, Func<string, bool>? kept = null)
+    {
+        int n = manifests.Remove(name) ? 1 : 0;
+        // (kept: the package's files, relative, whose loaded scene may stay: the look viewer's preview keeps a glb whose
+        // bytes did not change; its exact replays forget them all)
+        n += Viewer.PackageCache.Forget(scenes, f => Viewer.PackageCache.OwnsFile(name, f) && !(kept?.Invoke(f[$"res://art/npc/{name}/".Length..]) ?? false));
+        n += Viewer.PackageCache.Forget(trimmed, k => k.Item1 == name);
+        told.RemoveWhere(w => w.Contains(name));
+        return n + NpcDye.Forget(name);
+    }
+
     /// <summary>The package's name from a body ("npc:NAME"), or null.</summary>
     public static string? NameOf(string? body) => body != null && body.StartsWith(Prefix) ? body[Prefix.Length..] : null;
 
@@ -122,12 +135,31 @@ public static class NpcPackage
         {
             var doc = new GltfDocument();
             var state = new GltfState();
-            if (doc.AppendFromFile($"{ov}/{nf[1]}", state) == Error.Ok && doc.GenerateScene(state) is Node gen)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            // (its images decoded on all cores first, GltfDocument's one-at-a-time decode the most of a big package's
+            // load: GlbPredecode; --no-glb-predecode for Godot's own)
+            string path = $"{ov}/{nf[1]}";
+            int pre = 0;
+            GlbPredecode? ext = null;
+            if (!Args.Has("no-glb-predecode") && path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase))
             {
+                try { pre = GlbPredecode.Decode(System.IO.File.ReadAllBytes(path)); }
+                catch (Exception e) when (e is System.IO.IOException or System.Text.Json.JsonException or InvalidOperationException) { GD.PushWarning($"npc: predecode {path}: {e.Message}"); }
+                if (pre > 0) { ext = new GlbPredecode(); GltfDocument.RegisterGltfDocumentExtension(ext, true); }
+            }
+            double tPre = sw.Elapsed.TotalSeconds;
+            Error ok;
+            try { ok = doc.AppendFromFile(path, state); }
+            finally { if (ext != null) GltfDocument.UnregisterGltfDocumentExtension(ext); GlbPredecode.Clear(); }
+            double tAppend = sw.Elapsed.TotalSeconds;
+            if (ok == Error.Ok && doc.GenerateScene(state) is Node gen)
+            {
+                double tGen = sw.Elapsed.TotalSeconds;
                 var packed = new PackedScene();
                 packed.Pack(gen);
                 gen.Free();
-                GD.Print($"npc: {file} from the overlay {ov}");
+                GD.Print($"npc: {file} from the overlay {ov} ({sw.Elapsed.TotalSeconds:0.00} s: {pre} images predecoded {tPre:0.00}, "
+                    + $"read {tAppend - tPre:0.00}, scene {tGen - tAppend:0.00}, pack {sw.Elapsed.TotalSeconds - tGen:0.00})");
                 return scenes[file] = packed;
             }
             GD.PushWarning($"npc: overlay {ov}/{nf[1]} did not load");
@@ -290,6 +322,8 @@ public static class NpcPackage
         }
 
         if (m.Baked && m.LodFile != null) BakedLod(person, name, m);
+        // Fur casts its shadow from its hide, not its strands (FurShadows).
+        FurShadows(person);
 
         // The skin under the pieces, dropped.
         if (!m.Baked) Hide(person, name, m);
@@ -306,6 +340,9 @@ public static class NpcPackage
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
         if (FolkClips.Library() is AnimationLibrary folk) person.Anim.AddAnimationLibrary("folk", folk);
+        // (shot-only, hair-chip 13 Nov: env H1DBG's hair switches on a package's hair too, as on hers: People.H1Debug)
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) People.H1Debug(person, dbg);
+        People.HairSet(person);
         GD.Print($"npc: {name} ({m.Sex}, {skel.GetBoneCount()} bones), {m.Pieces.Count} pieces, {laid.Count} meshes laid");
         return person;
     }
@@ -338,6 +375,45 @@ public static class NpcPackage
                 mi.SetSurfaceOverrideMaterial(s, c);
             }
     }
+
+    /// <summary>A mesh with fur (People.Fur: the surface drawn again in PeltShells shells, each discarding all but its
+    /// strands) casts its shadow through a shadow-only twin (NAME_furshadow, a child, on the same mesh and skin): the fur
+    /// surfaces as their plain hide (FurCaster, both sides), every other surface with its own material, and the mesh
+    /// itself stops casting. Before, each of the 31 passes cast, and the strands' cut-outs drew a ragged, tufted shadow
+    /// edge on the skin under them (the x18 V3 smith's fur cloak on her upper arm at the chest camera, 13 Nov). The twin
+    /// keeps the mesh's visibility and range (BakedLod's 18 m), and is one shadow draw for the fur's 31.</summary>
+    internal static void FurShadows(People.Person person)
+    {
+        foreach (var mi in person.Meshes.ToList())
+        {
+            if (mi.Mesh == null || mi.CastShadow != GeometryInstance3D.ShadowCastingSetting.On) continue;
+            int n = mi.Mesh.GetSurfaceCount();
+            var mats = new Material?[n];
+            bool fur = false;
+            for (int s = 0; s < n; s++)
+            {
+                var use = mi.GetSurfaceOverrideMaterial(s) ?? mi.Mesh.SurfaceGetMaterial(s);
+                if (IsFurShell(use)) { mats[s] = furCaster ??= new StandardMaterial3D { CullMode = BaseMaterial3D.CullModeEnum.Disabled, ResourceName = "fur_shadow" }; fur = true; }
+                else mats[s] = use;
+            }
+            if (!fur) continue;
+            var tw = new MeshInstance3D
+            {
+                Name = $"{mi.Name}_furshadow", Mesh = mi.Mesh, Skin = mi.Skin, Layers = mi.Layers,
+                Skeleton = mi.Skeleton.IsEmpty ? new NodePath("") : new NodePath($"../{mi.Skeleton}"),
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly,
+                VisibilityRangeEnd = mi.VisibilityRangeEnd, VisibilityRangeEndMargin = mi.VisibilityRangeEndMargin,
+            };
+            for (int s = 0; s < n; s++) tw.SetSurfaceOverrideMaterial(s, mats[s]);
+            mi.AddChild(tw);
+            mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+        }
+    }
+
+    static StandardMaterial3D? furCaster;
+
+    /// <summary>A surface drawn as People.Fur's shells (its first pass the fur shell shader).</summary>
+    internal static bool IsFurShell(Material? m) => m is ShaderMaterial sm && sm.Shader?.ResourcePath == "res://shaders/fur_shell.gdshader" && sm.NextPass != null;
 
     /// <summary>A baked package's gameplay model (lod.glb: mesh "lod", and "lod_shadow" of one "shadow" surface) on the
     /// body's skeleton, each surface drawn as the body's surface of the same material name; switched with the full meshes

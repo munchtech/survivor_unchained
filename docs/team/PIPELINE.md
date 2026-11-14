@@ -46,7 +46,7 @@ The character pipelines are built as Marionette tools (`C:\Users\munch\Desktop\M
 | P2 gear | planned | the slot-shell fit on the base, tuck and tier data, dye, export |
 | P3 NPCs | **yes** (generation + the fixer live there) | the base rig and the bend check from P1 |
 | P4 animation | planned (A1 designs it) | the clip build on Marionette's base rig, foot lock, pack |
-| hair cards | planned | the hair re-attach after P1 as a Marionette tool (tools on merit, rule 6) |
+| hair cards | planned | the hair re-attach after P1 as a Marionette tool (tools on merit, rule 6); post steps after each hair build, in order: heroine_ear_shape --follow-only, heroine_shape_falloff, heroine_pixie_ear --style, then `python tools/assets/heroine_hair_cut_ends.py godot/art/people` |
 | the bakes | planned | normal and skin maps for P1-P3 through one bake stage |
 | P5-P12 | no | world, combat, sound, cinematics, storybook, UI, the look stay in the game repo |
 
