@@ -692,8 +692,12 @@ public sealed class RedHand : ArenaBoss
     readonly System.Collections.Generic.List<int> posts = new();
     double postsT;
 
+    /// <summary>What each weapon had dealt when the fight began: the Toll takes by damage in this fight.</summary>
+    readonly System.Collections.Generic.Dictionary<WeaponInst, double> dealtAtStart = new();
+
     protected override void Enter(int phase)
     {
+        if (phase == 0) { dealtAtStart.Clear(); foreach (var w in B.Weapons) dealtAtStart[w] = w.DamageDealt; }
         if (phase == 1) cageT = 2;
         if (phase == 2) { maulT = 1.5; sweepT = 3; }
     }
@@ -735,26 +739,33 @@ public sealed class RedHand : ArenaBoss
     }
 
     /// <summary>The Toll: a red ring closes on the survivor; still in it, a footpad
-    /// touches them and runs with their best weapon. It comes back in 8 s, or at
+    /// touches them and runs with the skill that has dealt the most damage this fight. It comes back in 8 s, or at
     /// once (and firing) when he is caught.</summary>
     void Toll() => Signature("He holds out his palm: \"Toll's due.\"", SignatureLead, TollRing, "The Red Hand");
 
     /// <summary>The Toll's size over the kit's ring.</summary>
     public const double TollScale = 1.5;
+    /// <summary>The Toll's blow over the kit ring's (0.70 of her health): the toll is paid in the skill taken, the
+    /// blow itself in line with the other bosses' kit signatures (the charge's 0.40, the pull's 0.35). At the kit's
+    /// full blow the Toll never took anything (its own hit's 0.45 s of grace read as a dodge), and a Bladestorm
+    /// build, caught in it twice as often, fell to him 8 times in 16 to the no-storm build's 3 (bd-storm, L12).</summary>
+    public const double TollBlood = 0.5;
 
     /// <summary>The Toll's ring (the kit's: slow in its fill, root at its heart), on the survivor; caught in it as
-    /// it lands, the footpad takes her best weapon.</summary>
+    /// it lands, the footpad takes the skill that has dealt the most damage this fight (TollPick).</summary>
     void TollRing()
     {
         var p = B.Player;
-        if (B.Tell("ring", E, p.X, p.Z, TollScale) is not { } ring) return;
+        if (B.Tell("ring", E, p.X, p.Z, TollScale, damageMul: TollBlood) is not { } ring) return;
         var kit = ring.After;
         ring.After = bb =>
         {
             kit?.Invoke(bb);
             var pp = bb.Player;
-            if (!pp.Alive || !ring.Hit(pp.X, pp.Z, pp.Radius) || pp.Iframes > 0) { bb.Events.Emit(new Ev.Bark { X = pp.X, Z = pp.Z + 2, Text = "The toll missed." }); return; }
-            taken = bb.Weapons.Where(w => w.DisabledT <= 0).OrderByDescending(w => w.Rank + (w.Evolution != null ? 8 : 0)).FirstOrDefault();
+            // Caught: in the ring as it lands and not slipping it (a dash's or a leap's grace); the grace its own blow
+            // has just given her is not a slip (the blow landed: Dealt).
+            if (!Caught(pp, ring)) { bb.Events.Emit(new Ev.Bark { X = pp.X, Z = pp.Z + 2, Text = "The toll missed." }); return; }
+            taken = TollPick(bb.Weapons);
             if (taken == null) return;
             taken.DisabledT = 8;
             double a = A.R() * Math.PI * 2;
@@ -764,6 +775,24 @@ public sealed class RedHand : ArenaBoss
         };
         Hold(1.0);
     }
+
+    /// <summary>What the Toll takes: the skill that has dealt the most damage in this fight (what her build is
+    /// leaning on now, not the highest rank: taking her top-rank Sunder left a Bladestorm build worse off than
+    /// none, bd-storm 13 Nov). Ties (the fight's first seconds) go to the higher rank, an evolved skill counting
+    /// eight more, then the lower key.</summary>
+    public WeaponInst? TollPick(System.Collections.Generic.IEnumerable<WeaponInst> weapons) =>
+        weapons.Where(w => w.DisabledT <= 0)
+            .OrderByDescending(DealtThisFight)
+            .ThenByDescending(w => w.Rank + (w.Evolution != null ? 8 : 0))
+            .ThenBy(w => w.Slot)
+            .FirstOrDefault();
+
+    /// <summary>A weapon's damage since the fight began (one carried in mid-fight counts all of its own).</summary>
+    public double DealtThisFight(WeaponInst w) => w.DamageDealt - (dealtAtStart.TryGetValue(w, out var d0) ? d0 : 0);
+
+    /// <summary>The Toll's ring caught her: alive, in it as it lands, and its blow landed or nothing kept it off.</summary>
+    static bool Caught(PlayerState pp, Battle.EnemyBlow ring) =>
+        pp.Alive && ring.Hit(pp.X, pp.Z, pp.Radius) && (ring.Dealt > 0 || pp.Iframes <= 0);
 
     void Recover(bool caught)
     {
