@@ -20,4 +20,11 @@ public static class SkinHighlight
 
     /// <summary>The cel highlight's strength (cel_spec.z) a skin part is given, or null to keep the shader's own (CEL_SPEC).</summary>
     public static float? Strength(string part) => part == "skin_head" ? null : 0f;
+
+    /// <summary>The cel model's stepped rim (cel_rim_k) a skin part is given, or null to keep the shader's own. The head
+    /// takes none: its rim, an n.v band on the key's side, lit flat planes inside the face (a stripe down the side of the
+    /// nose, a band down the temple and cheek in front of the ear, a notch at the eye's corner, specks along the
+    /// hairline) that read as paint or a scar at the Look and dialogue framings (head highlight judge r1, 13 Nov).
+    /// Without it the face's outline still reads against hair and background.</summary>
+    public static float? RimShare(string part) => part == "skin_head" ? 0f : null;
 }

@@ -1961,6 +1961,9 @@ public static class People
         // over her sternum and breast tops; Look.SkinHighlight)
         if (SurvivorUnchained.Look.SkinHighlight.Strength(src.ResourceName) is float hs)
             m.SetShaderParameter("cel_spec", new Vector4(6f, 1f, hs, 0.85f));
+        // (and no stepped rim on the head: inside the face it lit the nose's side and the temple as hard stripes)
+        if (SurvivorUnchained.Look.SkinHighlight.RimShare(src.ResourceName) is float rk)
+            m.SetShaderParameter("cel_rim_k", rk);
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
