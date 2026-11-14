@@ -17,7 +17,9 @@ namespace SurvivorUnchained.Tools;
 /// bone) and every vertex of what it holds (by holding bone), plus its arm and foot joints, to JSON for
 /// tools/anim/folkhold.py (clearance, tip and foot heights, elbow bend). tools_scenes/folk_hold.gd runs it.
 ///   Godot --headless --path godot -s res://tools_scenes/folk_hold.gd -- OUT.json WHO CLIP N
-///   WHO: watch (a gate Watchman), def.ID (npcs.json, e.g. def.keegan); CLIP: a game name played through People.Clip
+///   WHO: watch (a gate Watchman), def.ID (npcs.json, e.g. def.keegan), pkg.NAME (a Marionette package, art/npc/NAME, with
+///   its manifest's "held"; --npc-overlay NAME=DIR after the four reads a test package), pkg.NAME+ID (and the table's row ID
+///   in its right fist, PersonView.Hold); CLIP: a game name played through People.Clip
 ///   (Idle_Armed, Idle_2H_Rest) or a library name (folk/m_idle_armed).
 /// </summary>
 public partial class FolkHold : Node
@@ -43,9 +45,15 @@ public partial class FolkHold : Node
         PersonSpec spec; Held? arms = null; double scale = 1;
         if (who == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword" }; }
         else if (who.StartsWith("def.") && Lore.Person(who[4..]) is { } def) { spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male }; arms = def.Arms; scale = def.Scale ?? 1; }
+        else if (who.StartsWith("pkg."))
+        {
+            var pk = who[4..].Split('+', 2)[0];
+            spec = new PersonSpec { Sex = NpcPackage.Read(pk)?.Sex == "female" ? Rpg.Sex.Female : Rpg.Sex.Male, Body = NpcPackage.Prefix + pk };
+        }
         else throw new ArgumentException($"who? {who}");
         view = new PersonView(spec, arms, 0.8 * scale);
         AddChild(view);
+        if (who.StartsWith("pkg.") && who.Split('+', 2) is [_, var piece]) view.Hold("handslot.r", null, piece);
         var p = view.Person;
         var name = clip.StartsWith(FolkClips.Prefix) ? clip : People.Clip(p, clip);
         GD.Print($"folk_hold: {who} {clip} -> {name}");

@@ -161,6 +161,8 @@ public static class NpcPackage
         var root = bodyScene.Instantiate<Node3D>();
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new People.Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Package = name, Woman = m.Sex == "female" };
+        // (its finger roots where its fingers are: the wrap's fit put the right hand's off the hand, KnuckleFix; its skins bound to them, at the end)
+        var knuckles = KnuckleFix.Repair(skel);
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -310,6 +312,7 @@ public static class NpcPackage
 
         // The skin under the pieces, dropped.
         if (!m.Baked) Hide(person, name, m);
+        KnuckleFix.Rebind(skel, knuckles, name);
 
         // Its arm set over the shared clips (manifest "arms"), before HerJoints so the twist bones follow.
         if (m.ArmsIn > 0f || m.ArmsWrist > 0f) skel.AddChild(new NpcArms(m.ArmsIn, m.ArmsWrist));

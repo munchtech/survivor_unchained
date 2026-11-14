@@ -491,7 +491,7 @@ public static class Vat
             }
             // A body carrying a lamp up (PersonView.LampFist added NpcTorchArm): the carry laid over every role but its
             // falls, as the live figure's modifier lays it (no modifier runs in a bake).
-            if (lifts && !r.Name.StartsWith("die")) NpcTorchArm.Lift(skel, liftsRight);
+            if (lifts && !r.Name.StartsWith("die")) NpcTorchArm.Lift(skel, liftsRight, lifter!.Reach);
             var root = Transform3D.Identity;
             if (r.Over?.Invoke(Math.Clamp(t / Math.Max(1e-6, r.Length), 0, 1)) is { } mv)
             {

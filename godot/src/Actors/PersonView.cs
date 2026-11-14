@@ -518,7 +518,7 @@ public partial class PersonView : Node3D, INpcView
         switch (World.NpcHeld.RouteOf(person.Package != null, slot, prop, Arms.All.ContainsKey(piece), Arms.IsLamp(piece)))
         {
             case World.NpcHeld.Route.Lamp:
-                if (LampFist(prop != null ? NpcPackage.HeldProp(person.Package!, prop.File) : Arms.Make(piece), right) is { } lampAt) { held[slot] = lampAt; pieces[slot] = piece; }
+                if (LampFist(prop != null ? NpcPackage.HeldProp(person.Package!, prop.File) : Arms.Make(piece), right, prop != null ? 1 : 0) is { } lampAt) { held[slot] = lampAt; pieces[slot] = piece; }
                 return;
             case World.NpcHeld.Route.Hand:
                 if (HandFist(NpcPackage.HeldProp(person.Package!, prop!.File), right) is { } handAt) { held[slot] = handAt; pieces[slot] = piece; }
@@ -593,16 +593,17 @@ public partial class PersonView : Node3D, INpcView
     /// <summary>A held lamp in the carrying fist (NpcTorchArm), turned in the fist so it hangs upright when the chest is
     /// (the arm's lay is fixed in the chest's frame: NpcTorchArm.FistIn), its grip in the fist's pocket. Fixed in the hand,
     /// not kept upright each frame (UprightNode), so a crowd bake (Vat: rigid with the hand bone) holds it the same.</summary>
-    Node3D? LampFist(Node3D? lamp, bool right = false)
+    Node3D? LampFist(Node3D? lamp, bool right = false, float reach = 0)
     {
         var sk = person.Skeleton;
         if (lamp == null) return null;
         string side = right ? "r" : "l";
         int ul = sk.FindBone("upperarm_l"), ur = sk.FindBone("upperarm_r"), sp = P1Body.Bone(sk, "spine_01"), nk = P1Body.Bone(sk, "neck_01");
         if (ul < 0 || ur < 0 || sp < 0 || nk < 0 || sk.FindBone($"hand_{side}") < 0) { lamp.Free(); return null; }
-        if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
+        if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") is { } had) had.Reach = reach;
+        else
         {
-            var arm = new NpcTorchArm { Right = right };
+            var arm = new NpcTorchArm { Right = right, Reach = reach };
             sk.AddChild(arm);
             if (sk.GetNodeOrNull("HerJoints") is Node hj) sk.MoveChild(arm, hj.GetIndex());
         }
@@ -617,9 +618,7 @@ public partial class PersonView : Node3D, INpcView
         var upright = new Basis(u.Cross(f).Normalized(), u, f);
         var at = new BoneAttachment3D { BoneName = $"hand_{side}" };
         sk.AddChild(at);
-        int mid = sk.FindBone($"middle_01_{side}");
-        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
-        var grip = new Node3D { Name = "LampGrip", Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f) };
+        var grip = new Node3D { Name = "LampGrip", Position = FistPocket(sk, side) };
         grip.Basis = fist.Inverse() * upright;
         at.AddChild(grip);
         grip.AddChild(lamp);
@@ -638,14 +637,21 @@ public partial class PersonView : Node3D, INpcView
         if (sk.GetNodeOrNull<NpcHands>("NpcHands") is { } hands) { if (right) hands.FistR = true; else hands.FistL = true; }
         var at = new BoneAttachment3D { BoneName = P1Body.BoneName(sk, $"hand_{side}") };
         sk.AddChild(at);
-        int mid = sk.FindBone($"middle_01_{side}");
-        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
         var x = new Vector3(0, 1, 0);
         var y = new Vector3(0, 0, 1);
-        var grip = new Node3D { Name = "PropGrip", Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f), Basis = new Basis(x, y, x.Cross(y)) };
+        var grip = new Node3D { Name = "PropGrip", Position = FistPocket(sk, side), Basis = new Basis(x, y, x.Cross(y)) };
         at.AddChild(grip);
         grip.AddChild(prop);
         return at;
+    }
+
+    /// <summary>Where a held grip sits in the hand bone's frame: the closed fist's pocket (NpcHands.Pocket); on a hand
+    /// without a middle finger chain, three quarters of the way to the middle knuckle.</summary>
+    static Vector3 FistPocket(Skeleton3D sk, string side)
+    {
+        if (NpcHands.Pocket(sk, side) is Vector3 p) return p;
+        int h = sk.FindBone($"hand_{side}"), mid = sk.FindBone($"middle_01_{side}");
+        return h >= 0 && mid >= 0 ? (sk.GetBoneGlobalRest(h).AffineInverse() * sk.GetBoneGlobalRest(mid).Origin) * 0.72f : new Vector3(0, 0.072f, 0);
     }
 
     Node3D TorchFist(Node3D torch)

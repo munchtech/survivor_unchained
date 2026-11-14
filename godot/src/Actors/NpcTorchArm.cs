@@ -16,6 +16,10 @@ public partial class NpcTorchArm : SkeletonModifier3D
 {
     /// <summary>The right arm carries (Corvane's lamp, in the hand his cast clip raises: P6 judge r1 fix 4); else the left.</summary>
     public bool Right;
+    /// <summary>How far the carry holds its fist out ahead (0: the torch's and Corvane's lay, the forearm well down; 1: a hand
+    /// lamp held out to light the way, the upper arm a little forward and the forearm near level, so a short lamp hangs
+    /// clear of the thighs and a skirt's front: a package's own lamp, World.NpcHeld). The fist's own frame does not change.</summary>
+    public float Reach;
     int up = -1, lo = -1, hand = -1, spine = -1, neck = -1, other = -1;
     Skeleton3D? found;
 
@@ -33,8 +37,10 @@ public partial class NpcTorchArm : SkeletonModifier3D
     /// <summary>The directions the arm is laid along, in the chest's frame (up, `r` toward the body's middle from the carrying
     /// shoulder: the chest's right for the left arm, its left for the right; forward): the upper arm, the forearm, and the
     /// fist's fingers.</summary>
-    public static (Vector3 Upper, Vector3 Fore, Vector3 Fist) Lay(Vector3 u, Vector3 r, Vector3 f) =>
-        ((-u * 1.0f - r * 0.21f).Normalized(), (f * 0.57f - u * 0.82f - r * 0.12f).Normalized(), (f * 0.9f - u * 0.2f - r * 0.3f).Normalized());
+    public static (Vector3 Upper, Vector3 Fore, Vector3 Fist) Lay(Vector3 u, Vector3 r, Vector3 f, float reach = 0) =>
+        ((-u * 1.0f - r * 0.21f).Lerp(-u * 0.9f + f * 0.55f - r * 0.3f, reach).Normalized(),
+         (f * 0.57f - u * 0.82f - r * 0.12f).Lerp(f * 1.0f - u * 0.22f - r * 0.48f, reach).Normalized(),
+         (f * 0.9f - u * 0.2f - r * 0.3f).Normalized());
 
     /// <summary>The arm raised overhead (the clip's own raise of that hand: Corvane's cast lifting the lamp): the upper arm
     /// up, a little forward and out, the forearm on up; the fist's frame is Lay's, so what it holds hangs as it does in the carry.</summary>
@@ -47,16 +53,16 @@ public partial class NpcTorchArm : SkeletonModifier3D
         if (sk == null) return;
         if (sk != found) Find(sk);
         if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || other < 0) return;
-        Lift(sk, up, lo, hand, spine, neck, other, Right);
+        Lift(sk, up, lo, hand, spine, neck, other, Right, Reach);
     }
 
     /// <summary>The same arm laid on a skeleton as posed now, outside the modifier pass (Vat's bake of a crowd body that
     /// carries a lamp: the bake seeks the clip and reads the bones, so no modifier runs there).</summary>
-    public static bool Lift(Skeleton3D sk, bool right = false)
+    public static bool Lift(Skeleton3D sk, bool right = false, float reach = 0)
     {
         var (up, lo, hand, other, spine, neck) = Bones(sk, right);
         if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || other < 0) return false;
-        Lift(sk, up, lo, hand, spine, neck, other, right);
+        Lift(sk, up, lo, hand, spine, neck, other, right, reach);
         return true;
     }
 
@@ -79,7 +85,7 @@ public partial class NpcTorchArm : SkeletonModifier3D
         return w * w * (3 - 2 * w);
     }
 
-    static void Lift(Skeleton3D sk, int up, int lo, int hand, int spine, int neck, int other, bool right)
+    static void Lift(Skeleton3D sk, int up, int lo, int hand, int spine, int neck, int other, bool right, float reach)
     {
         var gU = sk.GetBoneGlobalPose(up);
         var u = (sk.GetBoneGlobalPose(neck).Origin - sk.GetBoneGlobalPose(spine).Origin).Normalized();
@@ -88,7 +94,7 @@ public partial class NpcTorchArm : SkeletonModifier3D
         var r = (across - u * u.Dot(across)).Normalized();
         // (the chest's forward: its right crossed with up; from the right arm `r` is the chest's left, so flip it)
         var f = (right ? r.Cross(u) : u.Cross(r)).Normalized();
-        var (dU, dF, dH) = Lay(u, r, f);
+        var (dU, dF, dH) = Lay(u, r, f, reach);
         float w = Raise(sk, up, lo, hand, u);
         if (w > 0)
         {

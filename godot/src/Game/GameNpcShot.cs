@@ -14,7 +14,9 @@ namespace SurvivorUnchained.Play;
 /// close-up (its own camera 4 m off its flank at hip height, fov 30: knees, hem and feet in frame, for a stride check).
 /// still: plays Idle in place of its own idle (a working idle that turns it off the chest camera). talk: its talk stand
 /// (NpcDef.Stand, as a talk plays it). q34: turned 0.7 rad off the camera (a three-quarter view of its own idle); turnDEG: turned DEG degrees (a working idle
-/// that turns it away: turn200 brings the smith's swing round to the camera).
+/// that turns it away: turn200 brings the smith's swing round to the camera). hold.ID: the weapon table's row ID in its right
+/// fist (holdl.ID: its left; PersonView.Hold: a lamp row by the lamp carry), over what its manifest's "held" gave that hand (a before/after of a
+/// package's own prop against the table's: World.NpcHeld).
 /// </summary>
 public partial class Game
 {
@@ -148,6 +150,8 @@ public partial class Game
             v.Hold("handslot.l", "dungeon", "torch_lit");
             v.TorchLight();
         }
+        if (parts.FirstOrDefault(p => p.StartsWith("hold.")) is string hold) v.Hold("handslot.r", null, hold[5..]);
+        if (parts.FirstOrDefault(p => p.StartsWith("holdl.")) is string holdl) v.Hold("handslot.l", null, holdl[6..]);
         GD.Print($"npc shot: {name} plays {idle}");
         AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Turn = parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
     }
