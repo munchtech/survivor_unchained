@@ -41,6 +41,62 @@ public static class PieceCarry
         public Vector3[][] V = Array.Empty<Vector3[]>();
         public Vector3[]?[] Nr = Array.Empty<Vector3[]?>();
         public float[]?[] Tg = Array.Empty<float[]?>();
+        // (PlateFollow's view of the mesh: the original binds' weights, each surface's carry, its shapes' offsets as read)
+        public int[] BindBone = Array.Empty<int>();
+        public int[][] Bones0 = Array.Empty<int[]>();
+        public float[][] W0 = Array.Empty<float[]>();
+        public N.Vector3[][] NormSk = Array.Empty<N.Vector3[]>();
+        public int[][] LinkOut = Array.Empty<int[]>();
+        public Vector3[]?[][] ShD = Array.Empty<Vector3[]?[]>(), ShDn = Array.Empty<Vector3[]?[]>();
+        public int ShapeCount;
+        public PlateFollow.MeshIn? Follow;
+    }
+
+    /// <summary>The remade meshes' PlateFollow data (by the ArrayMesh a MeshInstance3D now draws), for a row that follows.</summary>
+    static readonly Dictionary<ArrayMesh, PlateFollow.MeshIn> followOf = new();
+    public static PlateFollow.MeshIn? FollowOf(MeshInstance3D mi) => mi.Mesh is ArrayMesh am && followOf.TryGetValue(am, out var f) ? f : null;
+
+    /// <summary>All the job's skinned surfaces as one PlateFollow mesh: rest places and normals in the skeleton's frame, the
+    /// influences' skeleton bones and original weights, the carried vertices' links, the shapes' offsets in skeleton axes.</summary>
+    static PlateFollow.MeshIn BuildFollow(Job j)
+    {
+        int ns = j.Pos.Length, total = 0, K = 1;
+        for (int s = 0; s < ns; s++) if (j.Pos[s] != null) { total += j.Pos[s].Length; K = Math.Max(K, j.Ks[s]); }
+        var place = new N.Vector3[total]; var nrm = new N.Vector3[total]; var bone = new int[total * K]; var wt = new float[total * K]; var link = new int[total];
+        var sd = new N.Vector3[]?[j.ShapeCount]; var sdn = new N.Vector3[]?[j.ShapeCount];
+        Array.Fill(bone, -1);
+        var rot = j.M.Basis;
+        int off = 0;
+        for (int s = 0; s < ns; s++)
+        {
+            if (j.Pos[s] == null) continue;
+            int n = j.Pos[s].Length, k = j.Ks[s];
+            for (int i = 0; i < n; i++)
+            {
+                place[off + i] = j.Pos[s][i];
+                nrm[off + i] = j.NormSk[s][i];
+                link[off + i] = j.LinkOut[s][i];
+                for (int q = 0; q < k; q++)
+                {
+                    int b = j.Bones0[s][i * k + q];
+                    bone[(off + i) * K + q] = b >= 0 && b < j.BindBone.Length ? j.BindBone[b] : -1;
+                    wt[(off + i) * K + q] = j.W0[s][i * k + q];
+                }
+            }
+            for (int h = 0; h < j.ShapeCount; h++)
+            {
+                if (j.ShD[s][h] is not { } d) continue;
+                sd[h] ??= new N.Vector3[total]; sdn[h] ??= new N.Vector3[total];
+                var dn = j.ShDn[s][h];
+                for (int i = 0; i < n; i++)
+                {
+                    sd[h]![off + i] = Nv(rot * d[i]);
+                    if (dn != null) sdn[h]![off + i] = Nv(rot * dn[i]);
+                }
+            }
+            off += n;
+        }
+        return new PlateFollow.MeshIn { K = K, Place = place, Normal = nrm, Bone = bone, Weight = wt, At = null, ChannelBase = 0, ShapeD = sd, ShapeDn = sdn, Link = link };
     }
 
     /// <summary>The pick, off the main thread: each vertex's rest place (its weights' blend of its binds' frames), the
@@ -65,6 +121,7 @@ public static class PieceCarry
         if (j.ToSkel.Length > 0) j.M = j.ToSkel[Array.IndexOf(votes, votes.Max())];
         var mInv = j.M.AffineInverse();
         j.Vs = new Vector3[]?[ns]; j.Ns = new Vector3[]?[ns]; j.Ts = new float[]?[ns];
+        j.Bones0 = new int[ns][]; j.W0 = new float[ns][]; j.NormSk = new N.Vector3[ns][]; j.LinkOut = new int[ns][];
         for (int s = 0; s < ns; s++)
         {
             if (j.Pos[s] == null) continue;
@@ -93,6 +150,14 @@ public static class PieceCarry
                 j.Pos[s][i] = Nv(at[i]);
             }
             var (link, sh) = SpringCarry.Assign(j.Pos[s], j.Tris[s], segs, rule, share);
+            // (copies of the weights as they came, before Apply moves them onto the springs)
+            j.Bones0[s] = (int[])bo.Clone(); j.W0[s] = (float[])w.Clone();
+            j.NormSk[s] = new N.Vector3[v.Length]; j.LinkOut[s] = new int[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                j.NormSk[s][i] = nr != null ? Nv((basis[i] * nr[i]).Normalized()) : N.Vector3.UnitY;
+                j.LinkOut[s][i] = link[i] >= 0 && sh[i] >= 0.999f ? link[i] : -1;
+            }
             j.Moved += SpringCarry.Apply(bo, w, k, link, sh, j.LinkBind);
             Vector3[]? nv = null, nn = null; float[]? nt = null;
             for (int i = 0; i < v.Length; i++)
@@ -116,9 +181,10 @@ public static class PieceCarry
             }
             j.Vs[s] = nv; j.Ns[s] = nn; j.Ts[s] = nt;
         }
+        j.Follow = BuildFollow(j);
     }
 
-    static readonly Dictionary<string, (ArrayMesh Mesh, Skin Skin, int Moved)> cache = new();
+    static readonly Dictionary<string, (ArrayMesh Mesh, Skin Skin, int Moved, PlateFollow.MeshIn? Follow)> cache = new();
 
     /// <summary>Carries each mesh onto the springs: steps for HerWear.ApplySteps (a task yielded is the pick on a
     /// worker; the mesh is made after it). Prints a line per mesh carried.</summary>
@@ -138,6 +204,7 @@ public static class PieceCarry
             if (cache.TryGetValue(key, out var got))
             {
                 mi.Mesh = got.Mesh; mi.Skin = got.Skin;
+                if (got.Follow != null) followOf[got.Mesh] = got.Follow;
                 continue;
             }
             // (each bind's frame into the skeleton's at the bind: its bone's rest times its pose; they need not agree, so a
@@ -166,6 +233,37 @@ public static class PieceCarry
                 j.Bones[s] = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
                 j.Weights[s] = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
                 j.Ks[s] = v.Length > 0 ? j.Bones[s].Length / v.Length : 4;
+            }
+            j.BindBone = bindBone;
+            j.ShapeCount = src.GetBlendShapeCount();
+            j.ShD = new Vector3[]?[ns][]; j.ShDn = new Vector3[]?[ns][];
+            for (int s = 0; s < ns; s++)
+            {
+                j.ShD[s] = new Vector3[j.ShapeCount][]; j.ShDn[s] = new Vector3[j.ShapeCount][];
+                if (j.Pos[s] == null || j.ShapeCount == 0 || DisplayServer.GetName() == "headless") continue;
+                var sa = src.SurfaceGetBlendShapeArrays(s);
+                bool relative = src.BlendShapeMode == Mesh.BlendShapeMode.Relative;
+                for (int h = 0; h < j.ShapeCount && h < sa.Count; h++)
+                {
+                    var sv = sa[h][(int)Mesh.ArrayType.Vertex];
+                    if (sv.VariantType == Variant.Type.Nil) continue;
+                    var a = sv.AsVector3Array();
+                    if (a.Length != j.V[s].Length) continue;
+                    var d = new Vector3[a.Length];
+                    for (int i = 0; i < a.Length; i++) d[i] = relative ? a[i] : a[i] - j.V[s][i];
+                    j.ShD[s][h] = d;
+                    var snv = sa[h][(int)Mesh.ArrayType.Normal];
+                    if (snv.VariantType != Variant.Type.Nil && j.Nr[s] != null)
+                    {
+                        var an = snv.AsVector3Array();
+                        if (an.Length == a.Length)
+                        {
+                            var dn = new Vector3[a.Length];
+                            for (int i = 0; i < a.Length; i++) dn[i] = relative ? an[i] : an[i] - j.Nr[s]![i];
+                            j.ShDn[s][h] = dn;
+                        }
+                    }
+                }
             }
             j.LinkBind = Enumerable.Range(0, links.Count).Select(i => binds.Length + i).ToArray();
             yield return System.Threading.Tasks.Task.Run(() => Pick(j, segs, rule, share));
@@ -203,7 +301,8 @@ public static class PieceCarry
                 ns2.AddNamedBind(l.Bone, (b >= 0 ? sk.GetBoneGlobalRest(b).AffineInverse() : Transform3D.Identity) * j.M);
             }
             mi.Mesh = mesh; mi.Skin = ns2;
-            cache[key] = (mesh, ns2, j.Moved);
+            cache[key] = (mesh, ns2, j.Moved, j.Follow);
+            if (j.Follow != null) followOf[mesh] = j.Follow;
             GD.Print($"springs: {what}: {mi.Name}: {j.Moved} vertices carried ({rule.ToString().ToLowerInvariant()})"
                 + (j.Reframed > 0 ? $", {j.Reframed} of them re-framed (their binds' frames off the springs' by up to {j.Off * 1000:0.0} mm)" : ""));
         }

@@ -51,12 +51,86 @@ public partial class WearInside : Node
         instance = this;
         if (!truncated) { truncated = true; System.IO.File.WriteAllText(path, ""); }
         sk.SkeletonUpdated += Sample;
+        if (dumpDir != null) sk.SkeletonUpdated += Dump;
     }
 
     public override void _ExitTree()
     {
         sk.SkeletonUpdated -= Sample;
+        if (dumpDir != null) sk.SkeletonUpdated -= Dump;
+        dumpOut?.Flush(); dumpOut?.Dispose(); dumpOut = null;
         Finish();
+    }
+
+    // --wear-dump DIR (measuring only, beside --wear-inside): what the probe reads, for replaying it offline
+    // (tools/scratch/her_springs harness): skeleton.txt (each bone's name, parent and global rest), mesh_*.bin (her body
+    // and the chosen slots' pieces as Read has them: positions, normals, influences, triangles, binds, blend shapes as
+    // sparse offsets) and frames.bin (every frame after every layer: the clip and its time, her skeleton's world
+    // transform, every bone's global pose, each dumped mesh's blend shape values).
+    readonly string? dumpDir = Args.Get("wear-dump");
+    /// <summary>--wear-dump-only: the dump without the probe's samples (fast).</summary>
+    readonly bool dumpOnly = Args.Get("wear-dump") != null && Args.Has("wear-dump-only");
+    System.IO.BinaryWriter? dumpOut;
+    readonly List<MeshData> dumped = new();
+    ulong lastDump = ulong.MaxValue;
+
+    static void W12(System.IO.BinaryWriter o, Transform3D t)
+    {
+        foreach (var v in new[] { t.Basis.Column0, t.Basis.Column1, t.Basis.Column2, t.Origin }) { o.Write(v.X); o.Write(v.Y); o.Write(v.Z); }
+    }
+
+    void Dump()
+    {
+        ulong f = Engine.GetProcessFrames();
+        if (f == lastDump || !Discover()) return;
+        lastDump = f;
+        if (dumpOut == null)
+        {
+            System.IO.Directory.CreateDirectory(dumpDir!);
+            var sb = new StringBuilder();
+            for (int b = 0; b < sk.GetBoneCount(); b++)
+            {
+                var r = sk.GetBoneGlobalRest(b);
+                sb.Append(string.Format(CultureInfo.InvariantCulture, "{0} {1} {2}", b, sk.GetBoneName(b), sk.GetBoneParent(b)));
+                foreach (var v in new[] { r.Basis.Column0, r.Basis.Column1, r.Basis.Column2, r.Origin })
+                    sb.Append(string.Format(CultureInfo.InvariantCulture, " {0:R} {1:R} {2:R}", v.X, v.Y, v.Z));
+                sb.Append('\n');
+            }
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dumpDir!, "skeleton.txt"), sb.ToString());
+            dumped.Add(body!);
+            dumped.AddRange(pieces.Values.Where(m => m != null).Select(m => m!));
+            for (int i = 0; i < dumped.Count; i++)
+            {
+                var m = dumped[i];
+                using var o = new System.IO.BinaryWriter(System.IO.File.Create(System.IO.Path.Combine(dumpDir!, $"mesh_{i}.bin")));
+                o.Write(m.Mi.Name.ToString()); o.Write(m == body ? "body" : slotOf[m]);
+                o.Write(m.Pos.Length); o.Write(m.K); o.Write(m.Tris.Length); o.Write(m.Bind.Length); o.Write(m.ShapePos.Length);
+                foreach (var v in m.Pos) { o.Write(v.X); o.Write(v.Y); o.Write(v.Z); }
+                foreach (var v in m.Nrm) { o.Write(v.X); o.Write(v.Y); o.Write(v.Z); }
+                foreach (var b in m.Bones) o.Write(b);
+                foreach (var wt in m.Weights) o.Write(wt);
+                foreach (var t in m.Tris) o.Write(t);
+                foreach (var b in m.BindBone) o.Write(b);
+                foreach (var t in m.Bind) W12(o, t);
+                for (int s = 0; s < m.ShapePos.Length; s++)
+                {
+                    var idx = Enumerable.Range(0, m.Pos.Length).Where(v => m.ShapePos[s][v] != m.Pos[v] || m.ShapeNrm[s][v] != m.Nrm[v]).ToArray();
+                    o.Write(m.Mi.Mesh is ArrayMesh am && s < am.GetBlendShapeCount() ? am.GetBlendShapeName(s).ToString() : "");
+                    o.Write(idx.Length);
+                    foreach (int v in idx) o.Write(v);
+                    foreach (int v in idx) { var d = m.ShapePos[s][v] - m.Pos[v]; o.Write(d.X); o.Write(d.Y); o.Write(d.Z); }
+                    foreach (int v in idx) { var d = m.ShapeNrm[s][v] - m.Nrm[v]; o.Write(d.X); o.Write(d.Y); o.Write(d.Z); }
+                }
+            }
+            dumpOut = new System.IO.BinaryWriter(System.IO.File.Create(System.IO.Path.Combine(dumpDir!, "frames.bin")));
+            GD.Print($"wear-dump: {dumped.Count} meshes, {sk.GetBoneCount()} bones to {dumpDir}");
+        }
+        var w = dumpOut;
+        w.Write((long)f); w.Write(PlayerView.TourClip ?? ""); w.Write(PlayerView.TourTime);
+        W12(w, sk.GlobalTransform);
+        for (int b = 0; b < sk.GetBoneCount(); b++) W12(w, sk.GetBoneGlobalPose(b));
+        foreach (var m in dumped)
+            for (int s = 0; s < m.ShapePos.Length; s++) w.Write(GodotObject.IsInstanceValid(m.Mi) ? m.Mi.GetBlendShapeValue(s) : 0f);
     }
 
     /// <summary>Writes the summary line, once (the tour end, or the exit).</summary>
@@ -199,15 +273,13 @@ public partial class WearInside : Node
 
     static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
 
-    void Sample()
+    /// <summary>Her body read (once) and the chosen slots' pieces worn now found (as HerWear adds and drops them).</summary>
+    bool Discover()
     {
-        ulong f = Engine.GetProcessFrames();
-        if (f == lastFrame || f % (ulong)every != 0) return;
-        var clock = Stopwatch.StartNew();
         if (body == null)
         {
             var bm = sk.GetChildren().OfType<MeshInstance3D>().FirstOrDefault(m => m.Name == "Heroine");
-            if (bm == null || Read(bm) is not { } bd) return;
+            if (bm == null || Read(bm) is not { } bd) return false;
             body = bd;
             // each body vertex dominant bone, by name: the region its hits are counted in
             int k = body.K;
@@ -221,8 +293,7 @@ public partial class WearInside : Node
                 region[i] = bind >= 0 && bind < names.Length ? names[bind] : "torso";
             }
         }
-        lastFrame = f;
-        // the chosen slots pieces, worn now, shown or not: found each sample as HerWear adds and drops them
+        // the chosen slots pieces, worn now, shown or not
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
             if (!mi.HasMeta("her_wear") || pieces.ContainsKey(mi.GetInstanceId())) continue;
@@ -235,7 +306,18 @@ public partial class WearInside : Node
             }
             pieces[mi.GetInstanceId()] = md;
         }
-        var bp = new Vector3[body.Pos.Length]; var bn = new Vector3[body.Pos.Length];
+        return true;
+    }
+
+    void Sample()
+    {
+        ulong f = Engine.GetProcessFrames();
+        if (f == lastFrame || f % (ulong)every != 0) return;
+        var clock = Stopwatch.StartNew();
+        if (!Discover()) return;
+        lastFrame = f;
+        if (dumpOnly) return;
+        var bp = new Vector3[body!.Pos.Length]; var bn = new Vector3[body.Pos.Length];
         Skin(body, Matrices(body), bp, bn);
         var test = new InsideTest(bp.Select(N).ToArray(), bn.Select(N).ToArray(), body.Tris);
         var stats = new Dictionary<string, Stat>();

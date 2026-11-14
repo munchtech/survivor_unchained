@@ -70,6 +70,8 @@ public sealed class CarryRow
     [JsonPropertyName("rule")] public string Rule { get; set; } = "island";
     [JsonPropertyName("reach")] public double Reach { get; set; } = 0.06;
     [JsonPropertyName("share")] public double Share { get; set; } = 0.6;
+    /// <summary>On: the plates ride the piece's own weights and are held off the body's skin (Play/PlateFollow); off: the links ride their parent bones and keep off the body's capsules (capes).</summary>
+    [JsonPropertyName("follow")] public bool Follow { get; set; }
 }
 
 /// <summary>One wearable piece (docs/handoff/armor.md items 1 and 6): a row of art/people/armor_index.json (her callings'

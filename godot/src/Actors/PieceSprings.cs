@@ -40,6 +40,9 @@ public partial class PieceSprings : SkeletonModifier3D
     readonly List<Corrective> correctives;
     readonly List<MeshInstance3D> meshes;
     readonly (int A, int B, float R)[] capsules;   // (skeleton units)
+    readonly bool followRow;                       // (the row's carry says follow: Play/PlateFollow)
+    readonly MeshInstance3D? bodyMi;
+    readonly PlateFollow.MeshIn? bodyIn;
 
     // (set up on the first frame, on the skeleton)
     ClothChains? sim;
@@ -62,11 +65,20 @@ public partial class PieceSprings : SkeletonModifier3D
     int sinceReset = -1;
     N.Vector3[] resetX = Array.Empty<N.Vector3>(), resetT = Array.Empty<N.Vector3>();
     string why = "first frame";
+    long swingTicks; int swingFrames;   // (PIECE_SPRINGS_DBG: the swing's own time, targets to write)
+    // (PlateFollow rows)
+    PlateFollow? follow;
+    PlateFollow.Xf[] skinX = Array.Empty<PlateFollow.Xf>();
+    Transform3D[] restInv = Array.Empty<Transform3D>();
+    float[] chW = Array.Empty<float>();
+    readonly List<(MeshInstance3D Mi, int Base, int Count)> chans = new();
 
-    PieceSprings(string what, List<Link> links, List<Corrective> correctives, List<MeshInstance3D> meshes, (int, int, float)[] capsules)
+    PieceSprings(string what, List<Link> links, List<Corrective> correctives, List<MeshInstance3D> meshes, (int, int, float)[] capsules,
+        bool followRow = false, MeshInstance3D? bodyMi = null, PlateFollow.MeshIn? bodyIn = null)
     {
         Name = NodeName(what);
         this.what = what; this.links = links; this.correctives = correctives; this.meshes = meshes; this.capsules = capsules;
+        this.followRow = followRow; this.bodyMi = bodyMi; this.bodyIn = bodyIn;
     }
 
     /// <summary>The node's name for a piece (a package's "name/piece", her row's "warden.skirt": no '/' or '.').</summary>
@@ -190,7 +202,7 @@ public partial class PieceSprings : SkeletonModifier3D
     /// <summary>The springs and correctives of one piece, on its person's skeleton (last of its modifiers): null when
     /// it has neither.</summary>
     public static PieceSprings? Attach(People.Person p, string what, string package, List<Link> links, List<Corrective> correctives,
-        List<MeshInstance3D> pieceMeshes, Transform3D pkgToSkel)
+        List<MeshInstance3D> pieceMeshes, Transform3D pkgToSkel, bool follow = false)
     {
         if (Off || (links.Count == 0 && correctives.Count == 0)) return null;
         var sk = p.Skeleton;
@@ -198,8 +210,15 @@ public partial class PieceSprings : SkeletonModifier3D
         float fs = pkgToSkel.Basis.Scale.X;
         var ls = links.Where(l => sk.FindBone(l.Bone) >= 0)
             .Select(l => l with { Head = pkgToSkel * l.Head, Tail = pkgToSkel * l.Tail, Radius = l.Radius * fs }).ToList();
-        var caps = ls.Count > 0 ? Capsules(p, package) : Array.Empty<(int, int, float)>();
-        var m = new PieceSprings(what, ls, correctives, pieceMeshes, caps);
+        follow &= !Legacy && ls.Count > 0;
+        MeshInstance3D? bmi = null; PlateFollow.MeshIn? bin = null;
+        if (follow)
+        {
+            ClothChains.HoldPinnedToHead = true;
+            (bmi, bin) = BodyOf(p, package);
+        }
+        var caps = ls.Count > 0 && !follow ? Capsules(p, package) : Array.Empty<(int, int, float)>();
+        var m = new PieceSprings(what, ls, correctives, pieceMeshes, caps, follow, bmi, bin);
         sk.AddChild(m);
         return m;
     }
@@ -253,8 +272,105 @@ public partial class PieceSprings : SkeletonModifier3D
         return capsuleCache[package] = o.ToArray();
     }
 
+    static readonly Dictionary<string, PlateFollow.MeshIn?> bodyCache = new();
+
+    /// <summary>The person's body mesh (the one with the most vertices of the skinned meshes on the skeleton, not her wear
+    /// or hair) and its PlateFollow data (cached by package): rest places and normals where each vertex's binds put it
+    /// (they disagree by up to 42 mm, so each influence's own place too), skeleton bones, weights, shapes in the
+    /// dominant influence's axes.</summary>
+    static (MeshInstance3D?, PlateFollow.MeshIn?) BodyOf(People.Person p, string package)
+    {
+        var sk = p.Skeleton;
+        MeshInstance3D? best = null; int bestN = 0;
+        foreach (var mi in p.Meshes.Where(mi => GodotObject.IsInstanceValid(mi) && mi.GetParent() == sk && mi.Skin != null && mi.Mesh != null && !mi.HasMeta("her_wear") && !p.Hair.Contains(mi)))
+        {
+            int n = 0;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++) n += mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
+            if (n > bestN) { bestN = n; best = mi; }
+        }
+        if (best == null) return (null, null);
+        if (bodyCache.TryGetValue(package, out var have)) return (best, have);
+        var skin = best.Skin; var mesh = best.Mesh;
+        var bindBone = Enumerable.Range(0, skin.GetBindCount()).Select(b => skin.GetBindName(b) is var nm && nm != "" ? sk.FindBone(nm) : skin.GetBindBone(b)).ToArray();
+        var bindTo = Enumerable.Range(0, bindBone.Length).Select(b => bindBone[b] >= 0 ? sk.GetBoneGlobalRest(bindBone[b]) * skin.GetBindPose(b) : Transform3D.Identity).ToArray();
+        int ns = mesh.GetSurfaceCount(), total = 0, K = 1;
+        var arrs = new Godot.Collections.Array?[ns];
+        for (int s = 0; s < ns; s++)
+        {
+            var arr = mesh.SurfaceGetArrays(s);
+            if (arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil || arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil) continue;
+            int n = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
+            if (n == 0) continue;
+            arrs[s] = arr; total += n; K = Math.Max(K, arr[(int)Mesh.ArrayType.Bones].AsInt32Array().Length / n);
+        }
+        var place = new N.Vector3[total]; var nrm = new N.Vector3[total]; var bone = new int[total * K]; var wt = new float[total * K]; var at = new N.Vector3[total * K];
+        Array.Fill(bone, -1);
+        int shapes = best.GetBlendShapeCount();
+        bool relative = mesh is ArrayMesh am0 && am0.BlendShapeMode == Mesh.BlendShapeMode.Relative;
+        bool readShapes = shapes > 0 && DisplayServer.GetName() != "headless";
+        var sd = new N.Vector3[]?[shapes]; var sdn = new N.Vector3[]?[shapes];
+        int off = 0;
+        for (int s = 0; s < ns; s++)
+        {
+            if (arrs[s] is not { } arr) continue;
+            var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var nr = arr[(int)Mesh.ArrayType.Normal].VariantType == Variant.Type.Nil ? null : arr[(int)Mesh.ArrayType.Normal].AsVector3Array();
+            var bo = arr[(int)Mesh.ArrayType.Bones].AsInt32Array(); var w = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+            int k = bo.Length / v.Length;
+            var dom = new int[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                Vector3 pp = Vector3.Zero, nn = Vector3.Zero; float sum = 0; int bq = 0;
+                for (int q = 0; q < k; q++)
+                {
+                    float wq = w[i * k + q]; int b = bo[i * k + q];
+                    bone[(off + i) * K + q] = b >= 0 && b < bindBone.Length ? bindBone[b] : -1;
+                    wt[(off + i) * K + q] = wq;
+                    at[(off + i) * K + q] = b >= 0 && b < bindTo.Length ? Nv(bindTo[b] * v[i]) : N.Vector3.Zero;
+                    if (wq > w[i * k + bq]) bq = q;
+                    if (wq <= 0 || b < 0 || b >= bindTo.Length) continue;
+                    pp += bindTo[b] * v[i] * wq;
+                    if (nr != null) nn += bindTo[b].Basis * nr[i] * wq;
+                    sum += wq;
+                }
+                dom[i] = bo[i * k + bq];
+                place[off + i] = Nv(sum > 1e-6f ? pp / sum : v[i]);
+                nrm[off + i] = nr != null && nn.LengthSquared() > 1e-12f ? Nv(nn.Normalized()) : N.Vector3.UnitY;
+                for (int q = 0; q < k; q++)
+                    if (bo[i * k + q] is int b2 && (b2 < 0 || b2 >= bindTo.Length)) at[(off + i) * K + q] = place[off + i];
+                for (int q = k; q < K; q++) at[(off + i) * K + q] = place[off + i];
+            }
+            if (readShapes && mesh is ArrayMesh am)
+            {
+                var sa = am.SurfaceGetBlendShapeArrays(s);
+                for (int h = 0; h < shapes && h < sa.Count; h++)
+                {
+                    var sv = sa[h][(int)Mesh.ArrayType.Vertex];
+                    if (sv.VariantType == Variant.Type.Nil) continue;
+                    var a = sv.AsVector3Array();
+                    if (a.Length != v.Length) continue;
+                    var an = sa[h][(int)Mesh.ArrayType.Normal].VariantType == Variant.Type.Nil || nr == null ? null : sa[h][(int)Mesh.ArrayType.Normal].AsVector3Array();
+                    sd[h] ??= new N.Vector3[total]; sdn[h] ??= new N.Vector3[total];
+                    for (int i = 0; i < v.Length; i++)
+                    {
+                        var f = dom[i] >= 0 && dom[i] < bindTo.Length ? bindTo[dom[i]].Basis : Basis.Identity;
+                        sd[h]![off + i] = Nv(f * (relative ? a[i] : a[i] - v[i]));
+                        if (an != null && an.Length == v.Length) sdn[h]![off + i] = Nv(f * (relative ? an[i] : an[i] - nr![i]));
+                    }
+                }
+            }
+            off += v.Length;
+        }
+        var o = new PlateFollow.MeshIn { K = K, Place = place, Normal = nrm, Bone = bone, Weight = wt, At = at, ChannelBase = 0, ShapeD = sd, ShapeDn = sdn, Link = null };
+        bodyCache[package] = o;
+        GD.Print($"springs: {package}'s body for plate follow: {best.Name}, {total} vertices, {shapes} shapes");
+        return (best, o);
+    }
+
     static N.Vector3 Nv(Vector3 v) => new(v.X, v.Y, v.Z);
     static Vector3 Gv(N.Vector3 v) => new(v.X, v.Y, v.Z);
+    static Quaternion Gq(N.Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+    static PlateFollow.Xf Xf(Transform3D t) => new(Nv(t.Basis.Column0), Nv(t.Basis.Column1), Nv(t.Basis.Column2), Nv(t.Origin));
 
     void Setup(Skeleton3D sk)
     {
@@ -294,6 +410,7 @@ public partial class PieceSprings : SkeletonModifier3D
         var stiffness = new float[par.Length];
         for (int i = 0; i < n; i++) { radius[lp[i]] = links[i].Radius * scale; stiffness[lp[i]] = links[i].Stiffness; }
         sim = new ClothChains(par, radius, ClothChains.Tuning.Wool, stiffness);
+        if (followRow) SetupFollow(sk, par);
         rigid = new Transform3D[n]; posed = new Transform3D[n];
         targets = new N.Vector3[par.Length];
         cols = new ClothChains.Capsule[capsules.Length];
@@ -310,10 +427,59 @@ public partial class PieceSprings : SkeletonModifier3D
     int[] roots = Array.Empty<int>();
     bool setUp;
 
+    /// <summary>The plates' follow (Play/PlateFollow): links as PlateFollow's, the piece meshes' and the body's data on
+    /// one blend shape channel list (the body's shapes first), the chains' collider hooked into the sim. Falls back to
+    /// the capsules' way (none here) when no link has a vertex.</summary>
+    void SetupFollow(Skeleton3D sk, int[] par)
+    {
+        var pl = Enumerable.Range(0, links.Count).Select(i => new PlateFollow.Link(Nv(links[i].Head), Nv(links[i].Tail), parentLink[i])).ToList();
+        int ch = 0;
+        chans.Clear();
+        if (bodyMi != null && bodyIn != null) { chans.Add((bodyMi, 0, bodyIn.ShapeD.Length)); ch = bodyIn.ShapeD.Length; }
+        var pieces = new List<PlateFollow.MeshIn>();
+        foreach (var mi in meshes)
+        {
+            if (!IsInstanceValid(mi) || mi.Name.ToString().StartsWith("lod_") || PieceCarry.FollowOf(mi) is not { } f) continue;
+            // (a copy: the cached one is shared by every dress, its channel base is this node's)
+            pieces.Add(new PlateFollow.MeshIn
+            {
+                K = f.K, Place = f.Place, Normal = f.Normal, Bone = f.Bone, Weight = f.Weight, At = f.At, ChannelBase = ch,
+                ShapeD = f.ShapeD, ShapeDn = f.ShapeDn, Link = f.Link,
+            });
+            chans.Add((mi, ch, f.ShapeD.Length));
+            ch += f.ShapeD.Length;
+        }
+        follow = PlateFollow.Build(pl, linkParticle, par, pieces, bodyIn, PlateFollow.Tuning.Plate);
+        if (follow == null)
+        {
+            GD.PushWarning($"springs: {what}: follow: no plate vertices on its meshes, the links ride their bones");
+            return;
+        }
+        chW = new float[ch];
+        skinX = new PlateFollow.Xf[sk.GetBoneCount()];
+        restInv = Enumerable.Range(0, skinX.Length).Select(b => sk.GetBoneGlobalRest(b).AffineInverse()).ToArray();
+        sim!.Hook = follow.Collide;
+        GD.Print($"springs: {what}: follow, {follow.Links} plates, {follow.PlatePoints} plate points, {follow.BodyPoints} body points");
+    }
+
+    /// <summary>PlateFollow's targets this frame (world), and each link's rigid place for the cut test.</summary>
+    void FollowTargets(Skeleton3D sk)
+    {
+        var W = sk.GlobalTransform;
+        for (int b = 0; b < skinX.Length; b++) skinX[b] = Xf(sk.GetBoneGlobalPose(b) * restInv[b]);
+        foreach (var (mi, bs, n) in chans)
+            if (IsInstanceValid(mi)) for (int s = 0; s < n; s++) chW[bs + s] = mi.GetBlendShapeValue(s);
+        follow!.Update(skinX, Xf(W), chW, targets);
+        var inv = W.AffineInverse();
+        for (int i = 0; i < bone.Length; i++)
+            rigid[i] = new Transform3D(new Basis(Gq(follow.Fitted(i))) * sk.GetBoneGlobalRest(bone[i]).Basis, inv * Gv(targets[headParticle[i]]));
+    }
+
     /// <summary>Where each particle would be riding the body rigidly (world), and the capsules (world); at the bind's
     /// rest (bind) or the pose as it is.</summary>
     void Targets(Skeleton3D sk, bool bind)
     {
+        if (follow != null && !bind) { FollowTargets(sk); return; }
         var W = sk.GlobalTransform;
         Transform3D G(int b) => bind ? sk.GetBoneGlobalRest(b) : sk.GetBoneGlobalPose(b);
         foreach (int i in order)
@@ -369,6 +535,7 @@ public partial class PieceSprings : SkeletonModifier3D
     void Swing(Skeleton3D sk, float dt)
     {
         if (sim == null) return;
+        long t0 = Debug ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         Targets(sk, false);
         var W = sk.GlobalTransform;
         // (a cut: the camera changed or jumped; the body jumped; a long frame)
@@ -398,6 +565,7 @@ public partial class PieceSprings : SkeletonModifier3D
         if (cut || dt <= 0)
         {
             if (dt <= 0 && !cut) { Write(sk); return; }
+            if (follow != null) { follow.Cut(); Targets(sk, false); }
             sim.Reset(targets, cols, ground, down);
             if (Debug) GD.Print($"springs: {what}: reset ({why}) at {life:0.00} s");
             cut = false;
@@ -407,7 +575,7 @@ public partial class PieceSprings : SkeletonModifier3D
         else sim.Step(dt, targets, cols, ground, down);
         life += dt;
         Write(sk);
-        if (Debug) Measure(sk, dt);
+        if (Debug) { swingTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0; swingFrames++; Measure(sk, dt); }
     }
 
     /// <summary>Each spring bone turned from riding rigidly to point at its simulated tail.</summary>
@@ -418,13 +586,23 @@ public partial class PieceSprings : SkeletonModifier3D
         foreach (int i in order)
         {
             var parent = parentLink[i] >= 0 ? posed[parentLink[i]] : sk.GetBoneGlobalPose(bodyParent[i]);
-            var g = parent * rest[i];
-            var want = inv * Gv(x[linkParticle[i]]) - g.Origin;
-            var have = g.Basis * tailLocal[i];
-            if (want.LengthSquared() > 1e-12f && have.LengthSquared() > 1e-12f)
+            Transform3D g;
+            if (follow != null)
             {
-                var q = new Quaternion(have.Normalized(), want.Normalized());
-                g = new Transform3D(new Basis(q) * g.Basis, g.Origin);
+                // (the plates' own fit turned to point at the tail particle, hinged at its head particle)
+                var (turn, head) = follow.Pose(i, x);
+                g = new Transform3D(new Basis(Gq(turn)) * sk.GetBoneGlobalRest(bone[i]).Basis, Gv(head));
+            }
+            else
+            {
+                g = parent * rest[i];
+                var want = inv * Gv(x[linkParticle[i]]) - g.Origin;
+                var have = g.Basis * tailLocal[i];
+                if (want.LengthSquared() > 1e-12f && have.LengthSquared() > 1e-12f)
+                {
+                    var q = new Quaternion(have.Normalized(), want.Normalized());
+                    g = new Transform3D(new Basis(q) * g.Basis, g.Origin);
+                }
             }
             posed[i] = g;
             var local = parent.AffineInverse() * g;
@@ -472,6 +650,9 @@ public partial class PieceSprings : SkeletonModifier3D
             $"{d.C.Shape} root {Pitch(sk, d, -1, Transform3D.Identity):0} parent {Pitch(sk, d, sk.GetBoneParent(d.Bone), sk.GetBoneGlobalRest(sk.GetBoneParent(d.Bone))):0}"
             + (sk.FindBone("pelvis") is int pv && pv >= 0 ? $" pelvis {Pitch(sk, d, pv, sk.GetBoneGlobalRest(pv)):0}" : "")
             + $" w {ClothChains.Weight(Pitch(sk, d, d.Ref, d.RefRest), d.C.From, d.C.To):0.00}"));
-        GD.Print($"springs: {what} t {life:0.0} inside (cm, worst so far) {string.Join(", ", parts)}; {pitch}");
+        GD.Print($"springs: {what} t {life:0.0} inside (cm, worst so far) {string.Join(", ", parts)}; {pitch}"
+            + (follow != null ? $" follow pushes {follow.Pushes} deepest {follow.Deepest * 100:0.0} cm" : "")
+            + $"; {swingTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, swingFrames):0.00} ms a frame");
+        swingTicks = 0; swingFrames = 0;
     }
 }

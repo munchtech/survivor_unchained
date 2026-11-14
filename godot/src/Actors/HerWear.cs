@@ -393,7 +393,8 @@ public static class HerWear
         foreach (var sp in springing)
         {
             var meshes = (ofPiece.TryGetValue(sp.Row.Id, out var mis) ? mis : new List<MeshInstance3D>()).Concat(full ? lodMeshes : Enumerable.Empty<MeshInstance3D>()).ToList();
-            PieceSprings.Attach(p, sp.Row.Id, bodyKey, sp.Links, PieceSprings.FromRows(sp.Row.Correctives), meshes, sp.PkgToSkel);
+            PieceSprings.Attach(p, sp.Row.Id, bodyKey, sp.Links, PieceSprings.FromRows(sp.Row.Correctives), meshes, sp.PkgToSkel,
+                follow: sp.Row.Carry?.Follow == true);
         }
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)")
             + (laidN > 0 ? $", garment tuck: {laidN} meshes laid in {laidMs:F1} ms (worker {tuck.WorkerMs:F1} ms)" : ""));

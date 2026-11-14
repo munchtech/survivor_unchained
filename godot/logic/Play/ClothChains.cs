@@ -34,6 +34,12 @@ public sealed class ClothChains
     /// (View/PieceSprings --springs-legacy).</summary>
     public static bool HoldPinnedToHead = true;
 
+    /// <summary>A collider of its own run after the capsules in every solver iteration (PlateFollow: a plate's own points
+    /// held off the body's skin): the particles to move in place (pinned roots must not move), and how far through the
+    /// frame this substep ends (0..1; 1 settling after a cut).</summary>
+    public Action<Vector3[], float>? Hook;
+    float subA = 1;
+
     readonly int[] parent;
     readonly float[] radius, stiff;
     readonly Vector3[] x, xp, tPrev, tSub, tSubPrev, vel;
@@ -99,6 +105,7 @@ public sealed class ClothChains
         if (limit.GetLength(1) != cols.Length) SetRest(t, cols);
         Array.Copy(t, x, x.Length); Array.Copy(t, xp, x.Length); Array.Copy(t, tPrev, x.Length);
         int steps = (int)MathF.Ceiling(Tune.SettleSeconds * 60);
+        subA = 1;
         for (int k = 0; k < steps; k++) Sub(1f / 60, t, t, cols, ground, down);
         Array.Copy(x, xp, x.Length);
         colPrev = (Capsule[])cols.Clone();
@@ -120,6 +127,7 @@ public sealed class ClothChains
             for (int i = 0; i < x.Length; i++) tSub[i] = Vector3.Lerp(tPrev[i], t[i], a);
             for (int c = 0; c < cols.Length; c++)
                 cs[c] = new Capsule(Vector3.Lerp(colPrev[c].A, cols[c].A, a), Vector3.Lerp(colPrev[c].B, cols[c].B, a), cols[c].R);
+            subA = a;
             Sub(h, tSubPrev, tSub, cs, ground, down);
         }
         Array.Copy(t, tPrev, x.Length);
@@ -164,6 +172,7 @@ public sealed class ClothChains
                 x[i] = dl > 1e-6f ? x[p] + d * (len / dl) : x[p] + (t[i] - t[p]);
             }
             Collide(cols, ground);
+            Hook?.Invoke(x, subA);
         }
     }
 
