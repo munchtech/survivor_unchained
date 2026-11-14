@@ -201,16 +201,16 @@ public sealed class ArmorIndex
     /// output): [{id, source, springs, correctives, carry}].</summary>
     public const string SpringsFile = "people/springs.json";
 
-    /// <summary>A springs file's entries onto the rows of one index (`dir`) that have none of their own (a row that comes
-    /// with springs, R&D's or a built body's, keeps them); returns how many rows took springs.</summary>
-    public int AddSprings(string json, string dir)
+    /// <summary>A springs file's entries onto A's rows (the two indexes': never a built body's gear) that have none of
+    /// their own (a row that comes with springs, R&D's or a built body's, keeps them); returns how many rows took springs.</summary>
+    public int AddSprings(string json)
     {
         var rows = JsonSerializer.Deserialize<List<SpringsEntry>>(json, new JsonSerializerOptions { AllowTrailingCommas = true, ReadCommentHandling = JsonCommentHandling.Skip })
                    ?? new List<SpringsEntry>();
         int n = 0;
         foreach (var e in rows)
         {
-            if (!Pieces.TryGetValue(e.Id, out var r) || r.Dir != dir || r.Springs != null || r.Correctives != null) continue;
+            if (!Pieces.TryGetValue(e.Id, out var r) || !Files.Any(f => f.StartsWith(r.Dir + "/")) || r.Springs != null || r.Correctives != null) continue;
             r.Springs = e.Springs; r.Correctives = e.Correctives; r.Carry ??= e.Carry; r.SpringsSource = e.Source;
             n++;
         }
@@ -229,7 +229,7 @@ public sealed class ArmorIndex
         }
         foreach (var f in Files)
             if (text(f) is string s) ix.Add(s, f[..f.IndexOf('/')]);
-        if (text(SpringsFile) is string sp) ix.AddSprings(sp, "people");
+        if (text(SpringsFile) is string sp) ix.AddSprings(sp);
         return ix;
     }
 

@@ -107,20 +107,25 @@ public class SpringCarryTests
         Assert.StartsWith("ours", skirt.SpringsSource);
         Assert.Equal("island", skirt.Carry!.Rule);
         Assert.Equal(skirt.Springs.Count, skirt.Springs.Select(s => s.Bone).Distinct().Count());
+        // (the warden look's own pauldrons, armor/: a chain a side over the cap and its two lames, each link's head its parent's tail)
+        var plate = ix.Find("plate_pauldrons_warden")!.Springs!;
+        Assert.Equal(6, plate.Count);
+        foreach (var l in plate.Where(l => l.Parent.StartsWith("spring_")))
+            Assert.Equal(plate.Single(p => p.Bone == l.Parent).Tail, l.Head);
     }
 
     [Fact]
     public void ARowWithItsOwnSpringsKeepsThem()
     {
         var ix = ArmorIndex.Parse("""[{"id":"warden.skirt","springs":[{"bone":"rnd_0","parent":"pelvis","head":[0,1,0],"tail":[0,0.8,0]}]},{"id":"warden.top"}]""");
-        int took = ix.AddSprings("""[{"id":"warden.skirt","source":"ours","springs":[{"bone":"ours_0","parent":"pelvis","head":[0,1,0],"tail":[0,0.8,0]}]},{"id":"warden.top","source":"ours","springs":[{"bone":"t","parent":"spine_03","head":[0,1.4,0],"tail":[0,1.2,0]}],"carry":{"rule":"blend","reach":0.05}}]""", "people");
+        int took = ix.AddSprings("""[{"id":"warden.skirt","source":"ours","springs":[{"bone":"ours_0","parent":"pelvis","head":[0,1,0],"tail":[0,0.8,0]}]},{"id":"warden.top","source":"ours","springs":[{"bone":"t","parent":"spine_03","head":[0,1.4,0],"tail":[0,1.2,0]}],"carry":{"rule":"blend","reach":0.05}}]""");
         Assert.Equal(1, took);
         Assert.Equal("rnd_0", ix.Find("warden.skirt")!.Springs![0].Bone);
         Assert.Null(ix.Find("warden.skirt")!.SpringsSource);
         Assert.Equal("t", ix.Find("warden.top")!.Springs![0].Bone);
         Assert.Equal(SpringCarry.Rule.Blend, SpringCarry.Parse(ix.Find("warden.top")!.Carry!.Rule));
         Assert.Equal(0.05, ix.Find("warden.top")!.Carry!.Reach);
-        Assert.Equal(0, ArmorIndex.Parse("""[{"id":"warden.top"}]""", "gear").AddSprings("""[{"id":"warden.top","springs":[]}]""", "people"));   // (never a built body's gear)
+        Assert.Equal(0, ArmorIndex.Parse("""[{"id":"warden.top"}]""", "gear").AddSprings("""[{"id":"warden.top","springs":[]}]"""));   // (never a built body's gear)
     }
 
     [Fact]

@@ -462,5 +462,118 @@
       "reach": 0.11,
       "share": 0.6
     }
+  },
+  {
+    "id": "plate_pauldrons_warden",
+    "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
+    "springs": [
+      {
+        "bone": "spring_pauldron_l0",
+        "parent": "trap_l",
+        "head": [
+          0.2069,
+          1.5269,
+          -0.0346
+        ],
+        "tail": [
+          0.2295,
+          1.485,
+          -0.0325
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.102
+      },
+      {
+        "bone": "spring_pauldron_l1",
+        "parent": "spring_pauldron_l0",
+        "head": [
+          0.2295,
+          1.485,
+          -0.0325
+        ],
+        "tail": [
+          0.2435,
+          1.4594,
+          -0.033
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.077
+      },
+      {
+        "bone": "spring_pauldron_l2",
+        "parent": "spring_pauldron_l1",
+        "head": [
+          0.2435,
+          1.4594,
+          -0.033
+        ],
+        "tail": [
+          0.2591,
+          1.4369,
+          -0.0341
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.06
+      },
+      {
+        "bone": "spring_pauldron_r0",
+        "parent": "clavicle_r",
+        "head": [
+          -0.2059,
+          1.5266,
+          -0.0334
+        ],
+        "tail": [
+          -0.2307,
+          1.4861,
+          -0.0308
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.102
+      },
+      {
+        "bone": "spring_pauldron_r1",
+        "parent": "spring_pauldron_r0",
+        "head": [
+          -0.2307,
+          1.4861,
+          -0.0308
+        ],
+        "tail": [
+          -0.2437,
+          1.4583,
+          -0.032
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.077
+      },
+      {
+        "bone": "spring_pauldron_r2",
+        "parent": "spring_pauldron_r1",
+        "head": [
+          -0.2437,
+          1.4583,
+          -0.032
+        ],
+        "tail": [
+          -0.2585,
+          1.4367,
+          -0.033
+        ],
+        "radius": 0.02,
+        "stiffness": 14,
+        "reach": 0.059
+      }
+    ],
+    "carry": {
+      "rule": "island",
+      "reach": 0.08,
+      "share": 0.6
+    }
   }
 ]

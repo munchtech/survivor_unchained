@@ -32,7 +32,90 @@ public static class PieceCarry
         public float[][] Weights = Array.Empty<float[]>();
         public int[] Ks = Array.Empty<int>();
         public int[] LinkBind = Array.Empty<int>();
-        public int Moved;
+        public Transform3D[] ToSkel = Array.Empty<Transform3D>();
+        public Transform3D M = Transform3D.Identity;   // (the springs' binds' frame: the bind most vertices ride most)
+        public Vector3[]?[] Vs = Array.Empty<Vector3[]?>(), Ns = Array.Empty<Vector3[]?>();
+        public float[]?[] Ts = Array.Empty<float[]?>();
+        public int Moved, Reframed;
+        public float Off;
+        public Vector3[][] V = Array.Empty<Vector3[]>();
+        public Vector3[]?[] Nr = Array.Empty<Vector3[]?>();
+        public float[]?[] Tg = Array.Empty<float[]?>();
+    }
+
+    /// <summary>The pick, off the main thread: each vertex's rest place (its weights' blend of its binds' frames), the
+    /// carry (SpringCarry), and each vertex now wholly on a spring put in the springs' binds' frame (M) where its own
+    /// blend was another (its place, normal and tangent; its blend shapes' offsets stay as they were).</summary>
+    static void Pick(Job j, SpringCarry.Seg[] segs, SpringCarry.Rule rule, float share)
+    {
+        int ns = j.Pos.Length;
+        var votes = new int[Math.Max(1, j.ToSkel.Length)];
+        for (int s = 0; s < ns; s++)
+        {
+            if (j.Pos[s] == null) continue;
+            int k = j.Ks[s];
+            for (int i = 0; i < j.Pos[s].Length; i++)
+            {
+                int best = 0;
+                for (int q = 1; q < k; q++) if (j.Weights[s][i * k + q] > j.Weights[s][i * k + best]) best = q;
+                int b = j.Bones[s][i * k + best];
+                if (b >= 0 && b < j.ToSkel.Length) votes[b]++;
+            }
+        }
+        if (j.ToSkel.Length > 0) j.M = j.ToSkel[Array.IndexOf(votes, votes.Max())];
+        var mInv = j.M.AffineInverse();
+        j.Vs = new Vector3[]?[ns]; j.Ns = new Vector3[]?[ns]; j.Ts = new float[]?[ns];
+        for (int s = 0; s < ns; s++)
+        {
+            if (j.Pos[s] == null) continue;
+            var v = j.V[s]; var nr = j.Nr[s]; var tg = j.Tg[s];
+            int k = j.Ks[s];
+            var bo = j.Bones[s]; var w = j.Weights[s];
+            // (each vertex's blended frame at the bind: its place, and its axes for the normal and tangent)
+            var at = new Vector3[v.Length];
+            var basis = new Basis[v.Length];
+            for (int i = 0; i < v.Length; i++)
+            {
+                Vector3 p = Vector3.Zero, c0 = Vector3.Zero, c1 = Vector3.Zero, c2 = Vector3.Zero;
+                float sum = 0;
+                for (int q = 0; q < k; q++)
+                {
+                    float wq = w[i * k + q];
+                    int b = bo[i * k + q];
+                    if (wq <= 0 || b < 0 || b >= j.ToSkel.Length) continue;
+                    var t = j.ToSkel[b];
+                    p += (t * v[i]) * wq;
+                    c0 += t.Basis.Column0 * wq; c1 += t.Basis.Column1 * wq; c2 += t.Basis.Column2 * wq;
+                    sum += wq;
+                }
+                if (sum > 1e-6f) { at[i] = p / sum; basis[i] = new Basis(c0 / sum, c1 / sum, c2 / sum); }
+                else { at[i] = j.M * v[i]; basis[i] = j.M.Basis; }
+                j.Pos[s][i] = Nv(at[i]);
+            }
+            var (link, sh) = SpringCarry.Assign(j.Pos[s], j.Tris[s], segs, rule, share);
+            j.Moved += SpringCarry.Apply(bo, w, k, link, sh, j.LinkBind);
+            Vector3[]? nv = null, nn = null; float[]? nt = null;
+            for (int i = 0; i < v.Length; i++)
+            {
+                if (link[i] < 0 || sh[i] < 0.999f) continue;
+                var to = mInv * at[i];
+                float off = to.DistanceTo(v[i]);
+                if (off < 1e-5f) continue;
+                nv ??= (Vector3[])v.Clone();
+                nv[i] = to;
+                var rot = mInv.Basis * basis[i];
+                if (nr != null) { nn ??= (Vector3[])nr.Clone(); nn[i] = (rot * nr[i]).Normalized(); }
+                if (tg != null)
+                {
+                    nt ??= (float[])tg.Clone();
+                    var tv = (rot * new Vector3(tg[i * 4], tg[i * 4 + 1], tg[i * 4 + 2])).Normalized();
+                    nt[i * 4] = tv.X; nt[i * 4 + 1] = tv.Y; nt[i * 4 + 2] = tv.Z;
+                }
+                j.Reframed++;
+                j.Off = Math.Max(j.Off, off);
+            }
+            j.Vs[s] = nv; j.Ns[s] = nn; j.Ts[s] = nt;
+        }
     }
 
     static readonly Dictionary<string, (ArrayMesh Mesh, Skin Skin, int Moved)> cache = new();
@@ -57,19 +140,16 @@ public static class PieceCarry
                 mi.Mesh = got.Mesh; mi.Skin = got.Skin;
                 continue;
             }
-            // (the mesh's frame into the skeleton's at the bind: each bind's bone rest times its pose, one for all)
+            // (each bind's frame into the skeleton's at the bind: its bone's rest times its pose; they need not agree, so a
+            // vertex's rest place is its own weights' blend of them, and the springs' binds take the frame most vertices ride)
             var bindBone = binds.Select(n => n != "" ? sk.FindBone(n) : -1).ToArray();
             for (int b = 0; b < bindBone.Length; b++) if (bindBone[b] < 0 && binds[b] == "") bindBone[b] = skin.GetBindBone(b);
-            var toSkel = Enumerable.Range(0, bindBone.Length).Where(b => bindBone[b] >= 0)
-                .Select(b => sk.GetBoneGlobalRest(bindBone[b]) * skin.GetBindPose(b)).ToList();
-            if (toSkel.Count == 0) continue;
-            var m2s = toSkel[0];
-            float spread = toSkel.Max(t => t.Origin.DistanceTo(m2s.Origin) + (t.Basis.X - m2s.Basis.X).Length() + (t.Basis.Y - m2s.Basis.Y).Length());
-            if (spread > 1e-3f) GD.PushWarning($"springs: {what}: {mi.Name}'s binds disagree on its frame ({spread:0.0000}); carried by the first");
             var j = new Job { Mi = mi, Src = src, Key = key };
+            j.ToSkel = Enumerable.Range(0, bindBone.Length).Select(b => bindBone[b] >= 0 ? sk.GetBoneGlobalRest(bindBone[b]) * skin.GetBindPose(b) : Transform3D.Identity).ToArray();
             int ns = src.GetSurfaceCount();
             j.Arr = new Godot.Collections.Array[ns]; j.Pos = new N.Vector3[ns][]; j.Tris = new int[ns][];
             j.Bones = new int[ns][]; j.Weights = new float[ns][]; j.Ks = new int[ns];
+            j.V = new Vector3[ns][]; j.Nr = new Vector3[]?[ns]; j.Tg = new float[]?[ns];
             for (int s = 0; s < ns; s++)
             {
                 var arr = src.SurfaceGetArrays(s);
@@ -78,22 +158,17 @@ public static class PieceCarry
                     || arr[(int)Mesh.ArrayType.Bones].VariantType == Variant.Type.Nil || arr[(int)Mesh.ArrayType.Weights].VariantType == Variant.Type.Nil)
                     continue;
                 var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
-                j.Pos[s] = v.Select(p => Nv(m2s * p)).ToArray();
+                j.V[s] = v;
+                j.Nr[s] = arr[(int)Mesh.ArrayType.Normal].VariantType == Variant.Type.Nil ? null : arr[(int)Mesh.ArrayType.Normal].AsVector3Array();
+                j.Tg[s] = arr[(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null : arr[(int)Mesh.ArrayType.Tangent].AsFloat32Array();
+                j.Pos[s] = new N.Vector3[v.Length];
                 j.Tris[s] = arr[(int)Mesh.ArrayType.Index].VariantType == Variant.Type.Nil ? Enumerable.Range(0, v.Length).ToArray() : arr[(int)Mesh.ArrayType.Index].AsInt32Array();
                 j.Bones[s] = arr[(int)Mesh.ArrayType.Bones].AsInt32Array();
                 j.Weights[s] = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
                 j.Ks[s] = v.Length > 0 ? j.Bones[s].Length / v.Length : 4;
             }
             j.LinkBind = Enumerable.Range(0, links.Count).Select(i => binds.Length + i).ToArray();
-            yield return System.Threading.Tasks.Task.Run(() =>
-            {
-                for (int s = 0; s < ns; s++)
-                {
-                    if (j.Pos[s] == null) continue;
-                    var (link, sh) = SpringCarry.Assign(j.Pos[s], j.Tris[s], segs, rule, share);
-                    j.Moved += SpringCarry.Apply(j.Bones[s], j.Weights[s], j.Ks[s], link, sh, j.LinkBind);
-                }
-            });
+            yield return System.Threading.Tasks.Task.Run(() => Pick(j, segs, rule, share));
             if (j.Moved == 0)
             {
                 if (PieceSprings.Debug) GD.Print($"springs: {what}: {mi.Name}: no vertices in reach of its springs");
@@ -110,6 +185,9 @@ public static class PieceCarry
                 {
                     arr[(int)Mesh.ArrayType.Bones] = j.Bones[s];
                     arr[(int)Mesh.ArrayType.Weights] = j.Weights[s];
+                    if (j.Vs[s] != null) arr[(int)Mesh.ArrayType.Vertex] = j.Vs[s]!;
+                    if (j.Ns[s] != null) arr[(int)Mesh.ArrayType.Normal] = j.Ns[s]!;
+                    if (j.Ts[s] != null) arr[(int)Mesh.ArrayType.Tangent] = j.Ts[s]!;
                 }
                 long fmt = (long)src.SurfaceGetFormat(s);
                 var flags = (Mesh.ArrayFormat)(fmt & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift)));
@@ -122,11 +200,12 @@ public static class PieceCarry
             foreach (var l in links)
             {
                 int b = sk.FindBone(l.Bone);
-                ns2.AddNamedBind(l.Bone, (b >= 0 ? sk.GetBoneGlobalRest(b).AffineInverse() : Transform3D.Identity) * m2s);
+                ns2.AddNamedBind(l.Bone, (b >= 0 ? sk.GetBoneGlobalRest(b).AffineInverse() : Transform3D.Identity) * j.M);
             }
             mi.Mesh = mesh; mi.Skin = ns2;
             cache[key] = (mesh, ns2, j.Moved);
-            GD.Print($"springs: {what}: {mi.Name}: {j.Moved} vertices carried ({rule.ToString().ToLowerInvariant()})");
+            GD.Print($"springs: {what}: {mi.Name}: {j.Moved} vertices carried ({rule.ToString().ToLowerInvariant()})"
+                + (j.Reframed > 0 ? $", {j.Reframed} of them re-framed (their binds' frames off the springs' by up to {j.Off * 1000:0.0} mm)" : ""));
         }
     }
 
