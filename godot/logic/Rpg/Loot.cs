@@ -419,8 +419,7 @@ public static class Drops
             var pool = mine.Count > 0 && R() < Rules.CallingShare ? mine : all;
             return pool[(int)(R() * pool.Count) % pool.Count];
         }
-        var bases = Items.All.Values.Where(d => d.Base && Leveled(d)).Select(d => d.Id).OrderBy(id => id, StringComparer.Ordinal).ToList();
-        return bases[(int)(R() * bases.Count) % bases.Count];
+        return Items.DropBase(Math.Clamp(x.Level, 1, Rules.MaxLevel), R());
     }
 
     /// <summary>One piece of gear at a tier, rolled whole: its base or named piece, level, rarity, affixes.</summary>

@@ -72,8 +72,11 @@ public sealed class ItemDef
     /// <summary>The base a named piece is built on: its own numbers come from that base at its make,
     /// so a later copy is a better one (docs/design/LOOT_DESIGN.md §4.2).</summary>
     public string? Of;
-    /// <summary>A Legendary or set piece falls from this level up; without it, it never falls by chance.</summary>
+    /// <summary>A Legendary or set piece falls from this level up; without it, it never falls by chance. On a plain base it is
+    /// the low end of its item-level band: it rolls from this level on (to the cap), and before it never (Items.DropBase).</summary>
     public int? DropsFrom;
+    /// <summary>A plain base's share of the base roll beside the others (1 when not written; Items.DropBase).</summary>
+    public double? DropWeight;
     /// <summary>The peoples it is likelier among (pack, dead, lamplings, kerchiefs).</summary>
     public List<string>? Homes;
     /// <summary>It falls only while this holds (the Pelt of the Pack after the Pack is slaughtered).</summary>
@@ -144,6 +147,7 @@ public static class Items
             };
         }
         foreach (var d in Supports.ItemDefs()) items.TryAdd(d.Id, d);
+        foreach (var d in OffhandWeapons()) items.TryAdd(d.Id, d);
         // Published only when whole: the tests read it from several threads at once.
         rarityNames = f.Raritynames;
         all = items;
@@ -178,6 +182,49 @@ public static class Items
         ["riveted_bracers_cut_for_her"] = null, ["riveted_pauldrons_cut_for_her"] = null,
         ["lamed_pauldrons"] = null, ["forged_gstring"] = null,
     };
+
+    /// <summary>(bd-wire, level 8) The plain off-hand weapons: a second blade, a mace and a hammer for her second set, so a
+    /// dropped piece can pick each stance her calling offers (SkillBook.WornStance reads the icon: Content/Stances.ForKind, the
+    /// sword twin blades, the mace and the hammer the Breaker). The shield was the only off-hand base (watch_buckler, in
+    /// items.json); these join it in the base roll from the level the stance opens (taught_builds.json "stance": 8), each at
+    /// half its weight, so the off-hand place falls about as often as a place with two bases and the shield stays the likeliest
+    /// off-hand. Their numbers are the shield's worth at a make by the loot score (Drops.Power: about 4.5 against its 6 at the
+    /// first make, growing past it by the third), damage where the shield has armor and block. The hammer has no glyph of its
+    /// own, so it shows the mace's (glyphs.json), and the mace's kind picks the same stance. An items.json row of the same id
+    /// wins over these.</summary>
+    static IEnumerable<ItemDef> OffhandWeapons()
+    {
+        const int band = 8;
+        yield return new ItemDef
+        {
+            Id = "short_sword", Name = "Short Sword", Kind = ItemKind.Offhand, Icon = "sword", Value = 22, Base = true, DropsFrom = band, DropWeight = 0.5,
+            Description = "Short enough for the other hand. It goes in where the first blade opened the way.",
+            Mods = [M(Stat.DamageOf(School.Physical), ModKind.Inc, 0.15), M(Stat.CritChance, ModKind.Flat, 0.025)],
+        };
+        yield return new ItemDef
+        {
+            Id = "flanged_mace", Name = "Flanged Mace", Kind = ItemKind.Offhand, Icon = "mace", Value = 22, Base = true, DropsFrom = band, DropWeight = 0.5,
+            Description = "Iron flanges on an ash haft. The dead come apart under it.",
+            Mods = [M(Stat.DamageOf(School.Physical), ModKind.Inc, 0.15), M(Stat.VsOf(Family.Undead), ModKind.Flat, 0.2)],
+        };
+        yield return new ItemDef
+        {
+            Id = "smiths_hammer", Name = "Smith's Hammer", Kind = ItemKind.Offhand, Icon = "mace", Value = 24, Base = true, DropsFrom = band, DropWeight = 0.5,
+            Description = "Made for iron. It does not mind what else it meets.",
+            Mods = [M(Stat.DamageOf(School.Physical), ModKind.Inc, 0.2), M(Stat.Area, ModKind.Inc, 0.04), M(Stat.MoveSpeed, ModKind.Inc, -0.01)],
+        };
+    }
+
+    /// <summary>The plain base a gear roll takes at an item level (Drops.PickBase, once it is not a calling's weapon): every
+    /// worn base whose band holds the level (DropsFrom), by its weight (DropWeight, else 1), in id order; r in [0, 1).</summary>
+    public static string DropBase(int level, double r)
+    {
+        var bases = All.Values.Where(d => d.Base && SlotFor(d) != null && !(d.DropsFrom > level))
+            .OrderBy(d => d.Id, StringComparer.Ordinal).ToList();
+        double total = bases.Sum(d => d.DropWeight ?? 1), roll = r * total;
+        foreach (var d in bases) { roll -= d.DropWeight ?? 1; if (roll < 0) return d.Id; }
+        return bases[^1].Id;
+    }
 
     /// <summary>Adds a def (tests, and pieces not yet in items.json). Copy-on-write, so readers on other threads never see a dictionary change under them.</summary>
     public static void Register(ItemDef def)
