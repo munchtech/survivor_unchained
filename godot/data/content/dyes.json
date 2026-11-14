@@ -21,27 +21,25 @@
   {
    "id": "silvered",
    "name": "Silvered",
-   "hex": "#d8dce2:metal",
+   "hex": "#dfe3e8:metal",
    "zones": [
     "metal"
    ],
-   "known": true,
-   "hold": true
+   "known": true
   },
   {
    "id": "gilt",
    "name": "Gilt",
-   "hex": "#e0b050:metal",
+   "hex": "#f2c46a:metal",
    "zones": [
     "metal"
    ],
-   "known": true,
-   "hold": true
+   "known": true
   },
   {
    "id": "bronze",
    "name": "Bronze",
-   "hex": "#9c6434:metal",
+   "hex": "#a8683a:metal",
    "zones": [
     "metal",
     "trim"

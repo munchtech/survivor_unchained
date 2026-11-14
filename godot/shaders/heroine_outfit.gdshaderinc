@@ -147,6 +147,16 @@ uniform float dyed_env = 0.65;                     // (the sky's reflection kept
 uniform float dyed_grime_metal = 0.1;              // (its grime's dielectric share, of bare metal's 0.85)
 uniform float dyed_sheen = 0.75;                  // (its brushed plate's lights' highlights scaled by this: the sun's broad lobe over an edge-on pauldron at full read as a pale glassy cap)
 uniform float dyed_ao = 0.35;                      // (and in what the sky can't reach (lame undersides, the shoulder crease) this of it)
+// (metal-dye, 13 Nov: a METAL dye on any key but painted enamel (finish 2) is the metal itself: gilt read mustard,
+// silvered plaster, and the Warden's greaves, a smooth cylinder whose front sees only the even horizon or ground, went
+// one flat matte panel. Dyed metal now keeps a painted metal's read on every form and camera: its reflection shaped by
+// its view-space normal (bright where it faces up, a dark core where it turns away to the sides and under, the grazing
+// sheen kept as its rim), its grime staying metal, a dim floor of its own colour (gold's), and a near-white hot core in
+// its key highlight.)
+uniform float dyed_form = 0.75;                    // (how much of its reflection its form takes away where it turns from up and from the eye; 0 = none)
+uniform float dyed_form_floor = 0.2;               // (the least of its reflection kept in that dark core)
+uniform float dyed_floor = 1.0;                    // (its own colour's dim floor, as a share of gold's gold_floor)
+uniform float dyed_hot = 0.55;                     // (its hot core: an untinted disc inside the key's highlight, this strong; 0 = none)
 uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
@@ -170,6 +180,7 @@ uniform float rim_metal = 0.85;                    // (and its metalness: scratc
 uniform float metal_spec_cap = 1.2;                // (a highlight never brighter than this times a white matte card facing that light)
 uniform float metal_spec_knee = 0.4;               // (below this share of the cap, highlights as physical)
 varying float v_metal;
+varying float v_dyed;                              // (metal-dye: 1 on a metal-dyed metal, for light())
 varying float v_paint;                             // (finish 2's paint here, for light())
 varying float v_spec_mute;                         // (armor 16 N4: piece_spec_mute here, for light())
 global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
@@ -333,6 +344,8 @@ void fragment() {
 		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
 		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
 		gold_emit = dye_apply(mean_col, mean_col) * gold * gold_floor;
+		float dmet = dye_amount > 0.0 && finish != 2 ? 1.0 : 0.0;   // (metal-dye: a metal dye here (finish 2 paints the colour))
+		gold_emit += dye_apply(mean_col, mean_col) * dmet * (1.0 - gold) * gold_floor * dyed_floor;   // (its floor as gold's: never a black or chalky panel by night)
 		float rusty = 1.0 - step(0.95, metallic_value);   // (rust: the only metal not built fully metallic)
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
@@ -450,7 +463,7 @@ void fragment() {
 		col = mix(col, dirt, grime * 0.8);
 		metal = mix(1.0, 0.0, grime * 0.85);
 		metal *= mix(1.0, enamel_metal, paint);              // (paint: mostly dielectric, its colour held at every angle)
-		if (finish == 3) metal = mix(metal, 1.0 - grime * dyed_grime_metal, 1.0 - gold);   // (dyed metal: its dirt stays a dull film on the metal; at bare metal's 0.85 a pale dye's grime, lit as paint, read as a chalky glassy cap)
+		if (finish == 3 || dmet > 0.5) metal = mix(metal, 1.0 - grime * dyed_grime_metal, 1.0 - gold);   // (dyed metal: its dirt stays a dull film on the metal; at bare metal's 0.85 a pale dye's grime, lit as paint, read as a chalky glassy cap)
 		if (rusty > 0.5) metal = mix(0.35, 0.9, wear) * (1.0 - grime * 0.85);
 		// (the pauldron's plates and the bracers satin, the set matching: at the Look they
 		// blew out 5.7% of the lower frame at 0.32, face lead; judge 7)
@@ -484,6 +497,13 @@ void fragment() {
 		keep = max(keep, p_graze * graze * graze * mix(0.4, 1.0, sky) * (1.0 - grime));   // (the sheen at grazing angles: never in its grime or deep hollows)
 		keep *= mix(1.0, enamel_env, paint);
 		if (finish == 3) keep *= mix(1.0, dyed_env * mix(dyed_ao, 1.0, smoothstep(0.2, 0.8, sky)), (1.0 - gold) * (1.0 - bare));
+		if (dmet > 0.5) {
+			// (metal-dye: its form in its reflection, by its view-space normal: full where it faces up or the eye, a dark
+			// core where it turns to the sides and under; the grazing sheen below stays its rim)
+			vec3 nv = normalize(NORMAL);
+			float face = clamp(max(smoothstep(-0.25, 0.65, nv.y), smoothstep(0.55, 0.95, nv.z) * 0.85), 0.0, 1.0);
+			keep *= mix(1.0, mix(dyed_form_floor, 1.0, face), dyed_form * (1.0 - bare));
+		}
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
 		float down = smoothstep(0.0, metal_ground_edge, -rw.y);
@@ -510,6 +530,7 @@ void fragment() {
 		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
 		v_metal = metal;
 		v_paint = paint;
+		v_dyed = dmet * (1.0 - gold);
 		v_spec_mute = max(p_mute, look_metal_mute * look_rig * (1.0 - gold)) * (1.0 - bare);
 #else
 		col *= mix(0.75, 1.0, sky);
@@ -701,6 +722,9 @@ void light() {
 		float lit_sh = cel_lit(ob_t) * ob_sh;
 		dm = mix(dm, LIGHT_COLOR * cel_level(ob_t) * (ob_sh / PI) + cel_fill_add(LIGHT_COLOR, lit_sh, LIGHT_IS_DIRECTIONAL), cel_on);
 		s = mix(s, outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, lit_sh, r, v_metal, ALBEDO, 0.5, SPECULAR_AMOUNT), cel_on);
+		// (metal-dye: a dyed metal's key highlight takes a near-white hot core (untinted, inside the 7 degree disc): gilt's
+		// highlight read as more yellow paint, never as gold's bright edge)
+		if (v_dyed > 0.0 && dyed_hot > 0.0) s += cel_on * v_dyed * dyed_hot * cel_spec_disc(vec4(4.5, 1.0, 1.0, 1.0), LIGHT_COLOR, NORMAL, LIGHT, VIEW, lit_sh, OUTFIT_HL_ROUGH, 0.0, ALBEDO, 0.5, SPECULAR_AMOUNT);
 	}
 	DIFFUSE_LIGHT += dm;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
