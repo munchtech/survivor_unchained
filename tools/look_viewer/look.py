@@ -26,7 +26,8 @@ MAIN = Path("C:/Users/munch/Desktop/survivorsunchained")
 DROP = Path(os.environ.get("LOOK_DROP", "C:/Users/munch/Desktop/survivorsunchained_inputs/look_viewer"))
 GODOT = Path(os.environ.get("GODOT_EXE", "C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"))
 TURN = MAIN / "tools" / "turn.py"
-ALIVE_S = 10          # a heartbeat older than this: the viewer is not running
+ALIVE_S = 10          # a heartbeat older than this: the viewer is not running (a timer thread writes it)
+HUNG_S = 150          # the main thread silent this long (main_at): hung (a replay fails itself at 120 s)
 BASE = ["--quick", "warden", "--sex", "female", "--nohud", "--zone", "waystation", "--facing", "0", "--seed", "1", "--time", "day"]
 
 
@@ -36,7 +37,8 @@ def status():
     except (OSError, ValueError):
         return None
     s["age_s"] = round(time.time() - float(s.get("heartbeat", 0)), 1)
-    s["alive"] = s["age_s"] <= ALIVE_S and s.get("state") != "stopped"
+    s["main_age_s"] = round(time.time() - float(s.get("main_at", s.get("heartbeat", 0))), 1)
+    s["alive"] = s["age_s"] <= ALIVE_S and s["main_age_s"] <= HUNG_S and s.get("state") != "stopped"
     return s
 
 
@@ -68,14 +70,16 @@ def start(a):
             cmd += ["--look-turn", "off"]
         log = open(DROP / "viewer_log.txt", "w", encoding="utf-8")
         flags = 0x00000008 | 0x00000200   # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP: it outlives this command
+        t0 = time.time()
         p = subprocess.Popen(cmd, cwd=game / "godot", stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, creationflags=flags)
-        (DROP / "viewer.pid").write_text(str(p.pid))
         print(f"look: started pid {p.pid} on {game} ({a.size}); log {DROP / 'viewer_log.txt'}")
         end = time.time() + 240
         while time.time() < end:
             time.sleep(2)
             s = status()
-            if s and s["alive"] and s.get("pid") == p.pid and s["state"] in ("idle", "failed", "replaying", "waiting-turn"):
+            # (the console exe is a wrapper: the game's own pid is the one status.json names)
+            if s and s["alive"] and float(s.get("main_at", 0)) >= t0 and s["state"] in ("idle", "failed", "replaying", "waiting-turn"):
+                (DROP / "viewer.pid").write_text(str(s["pid"]))
                 print(f"look: up ({s['state']}; game {s['game_commit'][:10]}, shaders {s['shader_fingerprint']})")
                 return 0
             if p.poll() is not None:
@@ -167,14 +171,14 @@ def stop(a):
         print("look: not running")
         return 0
     (DROP / "stop").write_text("stop")
-    end = time.time() + 30
+    end = time.time() + HUNG_S
     while time.time() < end and pid_alive(pid):
         time.sleep(1)
     if pid_alive(pid):
         # (its own pid only, from status.json / viewer.pid; never by name)
         subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
         subprocess.run([sys.executable, str(TURN), "give", "godot", s.get("turn_name", "") if s else ""], capture_output=True)
-        print(f"look: pid {pid} did not quit in 30 s; ended it")
+        print(f"look: pid {pid} did not quit in {HUNG_S} s; ended it")
     else:
         print(f"look: stopped (pid {pid})")
     return 0

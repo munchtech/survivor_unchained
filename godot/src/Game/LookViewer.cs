@@ -48,7 +48,7 @@ public partial class LookViewer : Node
     readonly int changeAt;
     readonly bool turns;
     readonly string turnPy, turnWho;
-    double nextPoll, nextStatus, nextSlow;
+    double nextPoll, nextStatus, nextSlow, nextStop;
     string gameCommit = "", headNow = "", shadersAtStart = "", shadersNow = "";
     int dirtyAtStart;
     System.Threading.Tasks.Task? slow;
@@ -134,6 +134,7 @@ public partial class LookViewer : Node
     public override void _Ready()
     {
         foreach (var d in new[] { drop, liveDir, reqDir, outLive }) Directory.CreateDirectory(d);
+        if (File.Exists($"{drop}/stop")) File.Delete($"{drop}/stop");   // (a stop left by a viewer that was ended)
         AudioServer.SetBusMute(0, true);
         gameCommit = Git("rev-parse", "HEAD");
         dirtyAtStart = Git("status", "--porcelain", "--", "godot").Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
@@ -147,6 +148,7 @@ public partial class LookViewer : Node
         Hold();
         st = St.Idle;
         WriteStatus();
+        beat = new System.Threading.Timer(_ => Beat(), null, 1000, 1000);
     }
 
     public override void _ExitTree()
@@ -154,6 +156,7 @@ public partial class LookViewer : Node
         RenderingServer.FramePreDraw -= PreDraw;
         RenderingServer.FramePostDraw -= PostDraw;
         Shots.ViewerTaken -= Taken;
+        beat?.Dispose(); beat = null;
         GiveTurn(wait: true);
         st = St.Failed; lastError = "viewer closed";
         WriteStatus("stopped");
@@ -191,6 +194,7 @@ public partial class LookViewer : Node
     {
         double now = Now;
         if (now >= nextStatus) { nextStatus = now + 1; WriteStatus(); }
+        if (now >= nextStop) { nextStop = now + 0.25; if (StopAsked()) return; }
         if (now >= nextSlow && (slow == null || slow.IsCompleted))
         {
             nextSlow = now + 10;
@@ -230,10 +234,10 @@ public partial class LookViewer : Node
         }
     }
 
-    void Poll(double now)
+    /// <summary>look.py stop, in any state (a replay too): the turn given back and the game quit by its own path.</summary>
+    bool StopAsked()
     {
-        // look.py stop: the turn given back and the game quit by its own path
-        if (File.Exists($"{drop}/stop"))
+        if (st == St.Booting || !File.Exists($"{drop}/stop")) return false;
         {
             File.Delete($"{drop}/stop");
             GD.Print("look viewer: stop asked");
@@ -243,8 +247,12 @@ public partial class LookViewer : Node
             GetTree().Paused = false;
             QuitPath.Request(GetTree(), 0, "look viewer stop");
             st = St.Booting;
-            return;
+            return true;
         }
+    }
+
+    void Poll(double now)
+    {
         // requests first (someone waits on them), then the live package
         if (Directory.Exists(reqDir))
         {
@@ -303,8 +311,8 @@ public partial class LookViewer : Node
     Job Prepare(Job j)
     {
         var (w, h) = j.S.SizeWH;
-        var vs = GetViewport().GetVisibleRect().Size;
-        if ((int)vs.X != w || (int)vs.Y != h) throw new LookError($"size {j.S.Size}: this viewer draws {(int)vs.X}x{(int)vs.Y} (look.py start --size)");
+        var vs = DrawnSize();
+        if (vs.X != w || vs.Y != h) throw new LookError($"size {j.S.Size}: this viewer draws {vs.X}x{vs.Y} (look.py start --size)");
         string? manName = null;
         if (Directory.Exists(j.PkgDir) && File.Exists($"{j.PkgDir}/manifest.json"))
         {
@@ -710,11 +718,11 @@ public partial class LookViewer : Node
         var d = new Godot.Collections.Dictionary
         {
             ["state"] = state ?? st switch { St.Idle => "idle", St.Turn => "waiting-turn", St.Align or St.Change or St.Run => "replaying", St.Failed => "failed", _ => "booting" },
-            ["pid"] = OS.GetProcessId(), ["heartbeat"] = Time.GetUnixTimeFromSystem(), ["drop"] = drop, ["game_root"] = root,
+            ["pid"] = OS.GetProcessId(), ["main_at"] = Math.Round(Time.GetUnixTimeFromSystem(), 3), ["drop"] = drop, ["game_root"] = root,
             ["game_commit"] = gameCommit, ["game_head_now"] = headNow, ["game_dirty_at_start"] = dirtyAtStart,
             ["shader_fingerprint"] = shadersAtStart, ["shader_fingerprint_now"] = shadersNow, ["stale"] = why.Count > 0, ["stale_why"] = why,
             ["turn"] = turnHeld ? "held" : st == St.Turn ? "waiting" : "free", ["turn_name"] = turnWho,
-            ["size"] = $"{(int)GetViewport().GetVisibleRect().Size.X}x{(int)GetViewport().GetVisibleRect().Size.Y}",
+            ["size"] = $"{DrawnSize().X}x{DrawnSize().Y}",
             ["replaying"] = job == null ? new Godot.Collections.Dictionary() : new Godot.Collections.Dictionary
             {
                 ["kind"] = job.Kind, ["request"] = job.Request ?? "", ["package"] = job.PkgDir, ["name"] = job.Name, ["fingerprint"] = job.Fingerprint,
@@ -724,12 +732,34 @@ public partial class LookViewer : Node
             ["queue"] = new Godot.Collections.Array(jobs.Select(j => (Variant)(j.Request ?? j.Kind))),
             ["last_error"] = lastError,
         };
-        try
+        statusBody = Json.Stringify(d, " ");
+        Beat();
+    }
+
+    /// <summary>The frames Shots saves are the viewport's texture: its size, not the (content-scaled) visible rect.</summary>
+    Vector2I DrawnSize() => GetViewport().GetTexture()?.GetSize() is { } t ? new Vector2I((int)t.X, (int)t.Y) : DisplayServer.WindowGetSize();
+
+    // The heartbeat is written from a timer thread, so a replay's scene load (the main thread busy for many seconds)
+    // never reads as a dead viewer; main_at says when the main thread last wrote its state (look.py: hung when old).
+    string? statusBody;
+    readonly object statusLock = new();
+    System.Threading.Timer? beat;
+
+    void Beat()
+    {
+        var b = statusBody;
+        if (b == null || b.Length < 2) return;
+        lock (statusLock)
         {
-            File.WriteAllText(statusFile + ".tmp", Json.Stringify(d, " "));
-            File.Move(statusFile + ".tmp", statusFile, true);
+            try
+            {
+                var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+                File.WriteAllText(statusFile + ".tmp", "{\n \"heartbeat\": " + now.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture) + "," + b[1..]);
+                File.Move(statusFile + ".tmp", statusFile, true);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
-        catch (IOException) { }
     }
 
     string Git(params string[] a)
