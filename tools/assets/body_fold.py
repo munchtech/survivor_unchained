@@ -26,7 +26,7 @@ from heroine_thin import ease  # noqa: E402
 NEAR, FAR = 0.05, 0.10     # (metres to the facing surface: the breast's underside over her ribs 1-9 cm)
 CONE = 0.5                 # (cos of the cone round the normal: within 60 degrees)
 MIN_D = 0.006              # (closer is her own surface's next ring or a seam's twin)
-Y0, Y1, X1 = 1.29, 1.42, 0.21   # (body_p1, metres: her breasts' crease 1.30-1.31, widest 1.36, outer side 0.19; under 1.30 her ribs slope down 0.15-0.3)
+Y0, Y1, X1 = 1.29, 1.39, 0.17   # (body_p1, metres: her breasts' crease 1.30-1.31, widest 1.36, outer side 0.15, armpit 0.17 at 1.40; under 1.30 her ribs slope down 0.15-0.3)
 EASE = 3
 SIZE = 1024
 BODY = ("Material_0.001", "skin")                        # (the body's own skin surface: body_p1's, heroine.glb's)
@@ -74,7 +74,7 @@ def underbust(P, N):
     lowest and widest heights, across their width, the surface turned down."""
     x, y, z = np.abs(P[:, 0]), P[:, 1], P[:, 2]
     return (ramp(y, Y0, Y0 + 0.03) * (1 - ramp(y, Y1 - 0.03, Y1)) * (1 - ramp(x, X1 - 0.03, X1)) * ramp(z, 0.0, 0.03)
-            * ramp(-N[:, 1], 0.05, 0.25))
+            * ramp(-N[:, 1], -0.05, 0.10))   # (not turned up: where the underside turns sideways into the cleavage and the outer side, judge r1)
 
 
 def main(glb, png):
