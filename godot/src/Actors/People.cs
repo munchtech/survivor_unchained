@@ -1270,6 +1270,12 @@ public static class People
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
         // (env HAIRSET "through=0,shine2=0.2": her hair's uniforms tried in a shot without a build, every pass; face 30 cine)
+        HairSet(p);
+    }
+
+    /// <summary>Shot-only (env HAIRSET "k=v,..."): hair uniforms tried without a build, every pass; hers and an NPC package's.</summary>
+    internal static void HairSet(Person p)
+    {
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("HAIRSET") is { Length: > 0 } hs)
             foreach (var mi in p.Hair)
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
@@ -1281,9 +1287,9 @@ public static class People
     }
 
     /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
-    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
+    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye; finered: the fine hairs red, before cardsblue; fineshine0: the fine hairs without shine), uv (her head's UV emitted:
     /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), hairnospec and hairnovar (her hair's shine, its strand tone variation off), nosss, mask (her scalp's tint green).</summary>
-    static void H1Debug(Person p, string dbg)
+    internal static void H1Debug(Person p, string dbg)
     {
         var on = new HashSet<string>(dbg.Split(','));
         foreach (var mi in p.Hair)
@@ -1295,6 +1301,8 @@ public static class People
                 if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial hm) continue;
                 if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
                 else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
+                else if (name == "hair_fine" && on.Contains("finered")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(1, 0, 0));
+                else if (name == "hair_fine" && on.Contains("fineshine0")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
                 else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
                 if (on.Contains("hairnospec")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
                 if (on.Contains("hairnovar")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("variation", 0f);

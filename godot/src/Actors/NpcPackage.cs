@@ -37,6 +37,19 @@ public static class NpcPackage
 
     public static string Dir(string name) => $"res://art/npc/{name}";
 
+    /// <summary>(the look viewer) Everything this session keeps of a package dropped (its manifest, its scenes, its
+    /// trimmed body meshes, NpcDye's dye), so its next Build reads its files afresh. How many entries went.</summary>
+    public static int Forget(string name, Func<string, bool>? kept = null)
+    {
+        int n = manifests.Remove(name) ? 1 : 0;
+        // (kept: the package's files, relative, whose loaded scene may stay: the look viewer's preview keeps a glb whose
+        // bytes did not change; its exact replays forget them all)
+        n += Viewer.PackageCache.Forget(scenes, f => Viewer.PackageCache.OwnsFile(name, f) && !(kept?.Invoke(f[$"res://art/npc/{name}/".Length..]) ?? false));
+        n += Viewer.PackageCache.Forget(trimmed, k => k.Item1 == name);
+        told.RemoveWhere(w => w.Contains(name));
+        return n + NpcDye.Forget(name);
+    }
+
     /// <summary>The package's name from a body ("npc:NAME"), or null.</summary>
     public static string? NameOf(string? body) => body != null && body.StartsWith(Prefix) ? body[Prefix.Length..] : null;
 
@@ -122,12 +135,31 @@ public static class NpcPackage
         {
             var doc = new GltfDocument();
             var state = new GltfState();
-            if (doc.AppendFromFile($"{ov}/{nf[1]}", state) == Error.Ok && doc.GenerateScene(state) is Node gen)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            // (its images decoded on all cores first, GltfDocument's one-at-a-time decode the most of a big package's
+            // load: GlbPredecode; --no-glb-predecode for Godot's own)
+            string path = $"{ov}/{nf[1]}";
+            int pre = 0;
+            GlbPredecode? ext = null;
+            if (!Args.Has("no-glb-predecode") && path.EndsWith(".glb", StringComparison.OrdinalIgnoreCase))
             {
+                try { pre = GlbPredecode.Decode(System.IO.File.ReadAllBytes(path)); }
+                catch (Exception e) when (e is System.IO.IOException or System.Text.Json.JsonException or InvalidOperationException) { GD.PushWarning($"npc: predecode {path}: {e.Message}"); }
+                if (pre > 0) { ext = new GlbPredecode(); GltfDocument.RegisterGltfDocumentExtension(ext, true); }
+            }
+            double tPre = sw.Elapsed.TotalSeconds;
+            Error ok;
+            try { ok = doc.AppendFromFile(path, state); }
+            finally { if (ext != null) GltfDocument.UnregisterGltfDocumentExtension(ext); GlbPredecode.Clear(); }
+            double tAppend = sw.Elapsed.TotalSeconds;
+            if (ok == Error.Ok && doc.GenerateScene(state) is Node gen)
+            {
+                double tGen = sw.Elapsed.TotalSeconds;
                 var packed = new PackedScene();
                 packed.Pack(gen);
                 gen.Free();
-                GD.Print($"npc: {file} from the overlay {ov}");
+                GD.Print($"npc: {file} from the overlay {ov} ({sw.Elapsed.TotalSeconds:0.00} s: {pre} images predecoded {tPre:0.00}, "
+                    + $"read {tAppend - tPre:0.00}, scene {tGen - tAppend:0.00}, pack {sw.Elapsed.TotalSeconds - tGen:0.00})");
                 return scenes[file] = packed;
             }
             GD.PushWarning($"npc: overlay {ov}/{nf[1]} did not load");
@@ -308,6 +340,9 @@ public static class NpcPackage
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
         if (FolkClips.Library() is AnimationLibrary folk) person.Anim.AddAnimationLibrary("folk", folk);
+        // (shot-only, hair-chip 13 Nov: env H1DBG's hair switches on a package's hair too, as on hers: People.H1Debug)
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) People.H1Debug(person, dbg);
+        People.HairSet(person);
         GD.Print($"npc: {name} ({m.Sex}, {skel.GetBoneCount()} bones), {m.Pieces.Count} pieces, {laid.Count} meshes laid");
         return person;
     }
