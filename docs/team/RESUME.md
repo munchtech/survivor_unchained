@@ -1,6 +1,18 @@
 # Where we are: read this after README.md, before your handoff
 
-## 13 November 2026: the BUILD DIRECTION job (coordinator #9). START HERE
+## WIND-DOWN 13 Nov 2026 (night): COLD START HERE FOR THE RESET
+
+The owner (13 Nov): "wind all active sessions down and make sure everything is saved and ready to go for our reset tomorrow". No session or agent is running; every branch is pushed. Integration `claude/vigilant-galileo-l6jqyx@fcf764a4e` (pushed, suite 2768 green per npc-skin). Each open lane and its state file (read the top block first):
+- **Skin lighting** `skin-light@286f9e7e2` (pushed, WIP round 4, UNJUDGED), worktree `.claude/worktrees/determined-leakey-726ff5`. Open faults in the skin-light bullet below.
+- **NPC held props** `claude/priceless-borg-d08e89@2e18dd4f3` (pushed, NOT merged: base-body shots, judge, suite left), worktree `priceless-borg-d08e89`; state `Claude-Data\...\side-session-notes\local_8d1eecca-...\npc_held_props.md` ("RESTART HERE").
+- **Base body sternum / head highlight / hair**: merged into integration; state `...\side-session-notes\local_8d1eecca-...\sternum_patches.md`.
+- **Paired bake-off**: 8 Opus arms built and pushed (`bo-*-a`); state `survivorsunchained_inputs\scratch_usage_cmp\bakeoff\STATE.md`; Fable arms resume after the 15 Nov 05:00 UTC reset.
+- **Marionette R&D**: `Marionette rnd-1@4fdc63e` (pushed); state `Marionette\docs\rnd\HANDOFF_RND.md` (newest bullet "WIND-DOWN 13 Nov ... COLD START HERE").
+- Old local branches now pushed as backup: armor-7, cine-8, classes-8, classes-10, ui-25, hair6-39 (none merged into main).
+- Worktrees on disk (5 incl. main): body-p1b (old, unmerged, pushed), determined-leakey (skin-light), priceless-borg (npc-held), rim-back (at integration tip, no own commits; likely the npc-rim lead's start from integration: remove with `wt_remove.ps1` if no lead claims it). C: 57 GB free.
+- Main checkout has stray untracked files nobody claimed (attach.py, pb.txt, t2.py, heroine_face_progress.png, heroine_hairstyles.png, tests/TeleRankTests.cs, tools/comfy/in/) plus Godot .uid/.import noise: left as is.
+
+## 13 November 2026: the BUILD DIRECTION job (coordinator #9).
 
 **COORDINATOR #11 (13 Nov; scratch `survivorsunchained_inputs\scratch_coord11`): BUILD-DIRECTION LANES ALL DONE. Six lanes plus bd-ui2 merged and pushed (integration `f77446752`, suite 2714/0/11); no build-direction worktree left (on disk: main, body-p1b, not ours). The Union band question is answered (below). Open: the routed lists below.**
 - **bd-ui MERGED `e798d2d64` (suite 2689/0/11 on that tip), pushed, worktree removed:** 4-key bar (judged W15), socket panel (judge r3), gem drop (judge r4 + label keep-out fix, coordinator 1:1 check), wardrobe (judge r4 + dye-the-drawn-kit and bare-head framing fixes, coordinator 1:1 check). Raw `survivorsunchained_inputs\scratch_bd_ui\`.
