@@ -2099,9 +2099,12 @@ public static class People
             ? bh.AsBool() : mesh != null && HeadVertexCount(mesh) is int hv && hv > 0 && hv == BaseHeadVerts());
         if (!isHead) SkinZones(m, deep, false);
         // (the stepped rim kept off the body's inside folds, the cream line under the breast: body_p1's fold map, on a body
-        // with its vertices, so its UVs; Look.SkinHighlight.FoldMap)
-        if (!isHead && mesh != null && SkinVertexCount(mesh, src.ResourceName) is int bv && bv > 0 && bv == BaseBodyVerts()
-            && ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.FoldMap))
+        // with its topology, so its UVs; Look.SkinHighlight.FoldMap. Matched by TRIANGLES, not vertices: a package loaded at
+        // run time welds its seam duplicates (body_p1's 40328 vertices come in as 39051, 13 Nov) but keeps all 228264
+        // indices; the manifest's "base_body" overrides.)
+        bool baseBody = !isHead && (skin != null && skin.TryGetValue("base_body", out var bb) && bb.VariantType == Variant.Type.Bool
+            ? bb.AsBool() : mesh != null && SkinIndexCount(mesh, src.ResourceName) is int bi && bi > 0 && bi == BaseBodyIndices());
+        if (baseBody && ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.FoldMap))
         {
             m.SetShaderParameter("rim_fold_map", GD.Load<Texture2D>(SurvivorUnchained.Look.SkinHighlight.FoldMap));
             m.SetShaderParameter("rim_fold", 1f);
@@ -2186,7 +2189,7 @@ public static class People
 
     static readonly Dictionary<ulong, float> npcMean = new();
     static float? refHeadMean, refBodyMean;
-    static int baseHeadVerts = -1, baseBodyVerts = 0;
+    static int baseHeadVerts = -1, baseBodyIndices = 0;
 
     static float PaintMean(Texture2D? tex)
     {
@@ -2242,12 +2245,22 @@ public static class People
         return null;
     }
 
-    /// <summary>body_p1's body skin (every surface of its body mesh but the head's), by vertex count: an NPC's body on it
-    /// shares its UVs (the fold map's).</summary>
-    static int BaseBodyVerts()
+    /// <summary>The index count (3 per triangle) of a mesh's surface whose material is named so, or null. Unlike the
+    /// vertex count it survives the run-time glTF load's welding of seam duplicates.</summary>
+    static int? SkinIndexCount(Mesh mesh, string material)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == material)
+                return mesh is ArrayMesh am ? am.SurfaceGetArrayIndexLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Index].AsInt32Array().Length;
+        return null;
+    }
+
+    /// <summary>body_p1's body skin surface (its body mesh's "skin"/"Material_0.001"), by index count: an NPC's body with as
+    /// many triangles is on its topology, so shares its UVs (the fold map's).</summary>
+    static int BaseBodyIndices()
     {
         BaseHeadVerts();
-        return baseBodyVerts;
+        return baseBodyIndices;
     }
 
     static int BaseHeadVerts()
@@ -2261,14 +2274,14 @@ public static class People
             {
                 var stack = new Stack<Node>();
                 stack.Push(inst);
-                while (stack.Count > 0 && (baseHeadVerts == 0 || baseBodyVerts == 0))
+                while (stack.Count > 0 && (baseHeadVerts == 0 || baseBodyIndices == 0))
                 {
                     var n = stack.Pop();
                     if (n is MeshInstance3D { Mesh: { } mm } && HeadVertexCount(mm) is int c) baseHeadVerts = c;
                     if (n is MeshInstance3D { Mesh: { } mb } && HeadVertexCount(mb) == null)
                         for (int s = 0; s < mb.GetSurfaceCount(); s++)
                             if (mb.SurfaceGetMaterial(s)?.ResourceName is "skin" or "Material_0.001")
-                                baseBodyVerts = mb is ArrayMesh ab ? ab.SurfaceGetArrayLen(s) : mb.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
+                                baseBodyIndices = SkinIndexCount(mb, mb.SurfaceGetMaterial(s).ResourceName) ?? 0;
                     foreach (var ch in n.GetChildren()) stack.Push(ch);
                 }
                 inst.Free();
