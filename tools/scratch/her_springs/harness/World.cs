@@ -132,6 +132,7 @@ public sealed class World
         var bodyP = new Vector3[Body.Pos.Length]; var bodyN = new Vector3[Body.Pos.Length];
         var piecesP = Pieces.Select(p => new Vector3[p.Mesh.Pos.Length]).ToArray();
         long measured = 0; double msTest = 0;
+        var max = new Dictionary<string, float[]>();
         var log = Program.Has("log") ? new StreamWriter(Program.O("log", "h.jsonl")) : null;
         for (int fi = 0; fi < Frames.Count; fi++)
         {
@@ -154,6 +155,7 @@ public sealed class World
                 var s = Probe.Count(test, Region, piecesP[i]);
                 if (!st.TryGetValue(p.Mesh.Slot, out var a)) st[p.Mesh.Slot] = a = new Probe.Stat();
                 a.N += s.N; a.Inside += s.Inside; a.Thigh += s.Thigh; a.Arm += s.Arm; a.Torso += s.Torso; a.Deep = Math.Max(a.Deep, s.Deep);
+                a.DThigh = Math.Max(a.DThigh, s.DThigh); a.DArm = Math.Max(a.DArm, s.DArm); a.DTorso = Math.Max(a.DTorso, s.DTorso);
             }
             msTest += c0.Elapsed.TotalMilliseconds; measured++;
             if (!worst.ContainsKey(f.Clip)) { worst[f.Clip] = (new Probe.Stat(), 0, new Probe.Stat(), 0, 0); order.Add(f.Clip); }
@@ -161,6 +163,9 @@ public sealed class World
             if (st.TryGetValue("skirt", out var sks) && sks.Thigh > w.Sk.Thigh) { w.Sk = sks; w.SkT = f.T; }
             if (st.TryGetValue("pauldrons", out var pas) && pas.N > 0 && 100f * pas.Inside / pas.N > w.PaPct) { w.Pa = pas; w.PaT = f.T; w.PaPct = 100f * pas.Inside / pas.N; }
             worst[f.Clip] = w;
+            if (!max.TryGetValue(f.Clip, out var mx)) max[f.Clip] = mx = new float[8];
+            if (sks != null) { mx[0] = Math.Max(mx[0], sks.Thigh); mx[1] = Math.Max(mx[1], sks.DThigh); mx[2] = Math.Max(mx[2], sks.Torso + sks.Arm); mx[3] = Math.Max(mx[3], Math.Max(sks.DTorso, sks.DArm)); mx[4] = Math.Max(mx[4], sks.Deep); }
+            if (pas != null && pas.N > 0) { mx[5] = Math.Max(mx[5], 100f * pas.Inside / pas.N); mx[6] = Math.Max(mx[6], pas.Deep); }
             log?.WriteLine($"{{\"clip\":\"{f.Clip}\",\"t\":{f.T:0.###},\"f\":{f.F},\"skirt\":[{St(st, "skirt")}],\"paul\":[{St(st, "pauldrons")}]}}");
         }
         log?.Dispose();
@@ -175,9 +180,14 @@ public sealed class World
             Console.WriteLine($"{c,-22} {w.Sk.Thigh,6} ({w.SkT:0.00}s, {w.Sk.Deep,5:0.0}, {w.Sk.Torso,5})      {w.PaPct,5:0.0}% ({w.PaT:0.00}s, {w.Pa.Deep,4:0.0})");
         }
         Console.WriteLine($"{"SUM",-22} {sumSk,6}                         {sumPa / Math.Max(1, order.Count),5:0.0}% mean");
+        FollowDesign.Say();
+        // the clip's maxima over every measured frame (the lead's bar): thigh pts, thigh deep, torso pts, torso deep, skirt deep, pauldron %, pauldron deep
+        foreach (var c in order)
+            if (max.TryGetValue(c, out var m))
+                Console.WriteLine(FormattableString.Invariant($"MAX {c} {m[0]:0} {m[1]:0.0} {m[2]:0} {m[3]:0.0} {m[4]:0.0} {m[5]:0.00} {m[6]:0.0}"));
     }
 
-    static string St(Dictionary<string, Probe.Stat> st, string k) => st.TryGetValue(k, out var s) ? $"{s.N},{s.Inside},{s.Thigh},{s.Arm},{s.Torso},{s.Deep:0.0}" : "";
+    static string St(Dictionary<string, Probe.Stat> st, string k) => st.TryGetValue(k, out var s) ? $"{s.N},{s.Inside},{s.Thigh},{s.Arm},{s.Torso},{s.Deep:0.0},{s.DThigh:0.0},{s.DArm:0.0},{s.DTorso:0.0}" : "";
 }
 
 public sealed class BaseDesign : IDesign

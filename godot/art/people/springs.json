@@ -1,6 +1,7 @@
 [
   {
     "id": "warden.skirt",
+    "off": true,
     "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
     "springs": [
       {
@@ -421,6 +422,7 @@
   },
   {
     "id": "warden.pauldrons",
+    "off": true,
     "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
     "springs": [
       {
@@ -467,6 +469,7 @@
   },
   {
     "id": "plate_pauldrons_warden",
+    "off": true,
     "source": "ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land",
     "springs": [
       {

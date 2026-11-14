@@ -56,6 +56,9 @@ public sealed class CorrectiveRow
 public sealed class SpringsEntry
 {
     [JsonPropertyName("id")] public string Id { get; set; } = "";
+    /// <summary>On: kept in the file, authored and tested, but taken by no row (AddSprings): a set whose springs do not
+    /// yet beat its plain skinning (her warden set's, her-springs round 2).</summary>
+    [JsonPropertyName("off")] public bool Off { get; set; }
     [JsonPropertyName("source")] public string? Source { get; set; }
     [JsonPropertyName("springs")] public List<SpringRow>? Springs { get; set; }
     [JsonPropertyName("correctives")] public List<CorrectiveRow>? Correctives { get; set; }
@@ -204,7 +207,8 @@ public sealed class ArmorIndex
     public const string SpringsFile = "people/springs.json";
 
     /// <summary>A springs file's entries onto A's rows (the two indexes': never a built body's gear) that have none of
-    /// their own (a row that comes with springs, R&D's or a built body's, keeps them); returns how many rows took springs.</summary>
+    /// their own (a row that comes with springs, R&D's or a built body's, keeps them), but none that is off; returns how
+    /// many rows took springs.</summary>
     public int AddSprings(string json)
     {
         var rows = JsonSerializer.Deserialize<List<SpringsEntry>>(json, new JsonSerializerOptions { AllowTrailingCommas = true, ReadCommentHandling = JsonCommentHandling.Skip })
@@ -212,7 +216,7 @@ public sealed class ArmorIndex
         int n = 0;
         foreach (var e in rows)
         {
-            if (!Pieces.TryGetValue(e.Id, out var r) || !Files.Any(f => f.StartsWith(r.Dir + "/")) || r.Springs != null || r.Correctives != null) continue;
+            if (e.Off || !Pieces.TryGetValue(e.Id, out var r) || !Files.Any(f => f.StartsWith(r.Dir + "/")) || r.Springs != null || r.Correctives != null) continue;
             r.Springs = e.Springs; r.Correctives = e.Correctives; r.Carry ??= e.Carry; r.SpringsSource = e.Source;
             n++;
         }

@@ -57,7 +57,7 @@ public static class Probe
         });
     }
 
-    public sealed class Stat { public int N, Inside, Thigh, Arm, Torso; public float Deep; public int[]? PerVertexInside; }
+    public sealed class Stat { public int N, Inside, Thigh, Arm, Torso; public float Deep, DThigh, DArm, DTorso; public int[]? PerVertexInside; }
 
     /// <summary>Counts of points inside the body; region by the body vertex's dominant bone.</summary>
     public static Stat Count(InsideTest test, string[] region, Vector3[] pts, bool[]? mask = null, float[]? depthOut = null)
@@ -77,7 +77,8 @@ public static class Probe
             if (vert[i] < 0 || d[i] >= -InsideMm / 1000f) continue;
             st.Inside++;
             st.Deep = Math.Max(st.Deep, -d[i] * 1000f);
-            switch (region[vert[i]]) { case "thigh": st.Thigh++; break; case "arm": st.Arm++; break; default: st.Torso++; break; }
+            float mm = -d[i] * 1000f;
+            switch (region[vert[i]]) { case "thigh": st.Thigh++; st.DThigh = Math.Max(st.DThigh, mm); break; case "arm": st.Arm++; st.DArm = Math.Max(st.DArm, mm); break; default: st.Torso++; st.DTorso = Math.Max(st.DTorso, mm); break; }
         }
         return st;
     }

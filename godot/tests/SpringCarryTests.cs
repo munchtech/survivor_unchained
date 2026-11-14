@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
 using Xunit;
@@ -9,7 +10,7 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>Her armor's springs (her-springs): which vertices of a worn piece ride its spring bones (Play/SpringCarry),
-/// her warden set's springs read from the springs file onto its index rows (Rpg/ArmorIndex.SpringsFile), and the body
+/// her warden set's springs kept in the springs file but off (Rpg/ArmorIndex.SpringsFile), and the body
 /// capsules they are kept off (Play/BodyCapsules: the upper arm's pooled from its twist and share bones).</summary>
 public class SpringCarryTests
 {
@@ -93,25 +94,42 @@ public class SpringCarryTests
     }
 
     [Fact]
-    public void HerWardenSetTakesItsSpringsFromTheSpringsFile()
+    public void HerWardenSetsSpringsStayInTheSpringsFileOff()
     {
+        // (plate follow did not beat her plain skinning on every clip of her A tour, her-springs round 2: the rows stay
+        // authored and opt-in, carry follow, but off, so her warden set rides its own skinning)
+        var file = JsonSerializer.Deserialize<List<SpringsEntry>>(ArmorIndex.Text(ArmorIndex.SpringsFile)!)!;
+        var ids = new[] { "warden.skirt", "warden.pauldrons", "plate_pauldrons_warden" };
+        Assert.All(ids, id => Assert.True(file.Single(e => e.Id == id) is { Off: true, Carry.Follow: true }, $"{id} is off, a follow row"));
         ArmorIndex.Reset();
-        var ix = ArmorIndex.Shared;
-        var skirt = ix.Find("warden.skirt")!;
-        var pauldrons = ix.Find("warden.pauldrons")!;
-        Assert.True(skirt.HasSprings && pauldrons.HasSprings);
+        Assert.All(ids, id => Assert.False(ArmorIndex.Shared.Find(id)!.HasSprings, $"{id} took springs that are off"));
+        var skirt = file.Single(e => e.Id == "warden.skirt");
+        var pauldrons = file.Single(e => e.Id == "warden.pauldrons");
         Assert.Equal(24, skirt.Springs!.Count);   // (12 steel lappets over 12 dark ones)
         Assert.All(skirt.Springs, s => Assert.Equal("pelvis", s.Parent));
         Assert.Equal(new[] { "trap_l", "trap_r" }, pauldrons.Springs!.Select(s => s.Parent).OrderBy(x => x));
         Assert.All(skirt.Springs.Concat(pauldrons.Springs), s => Assert.True(s.Head[1] > s.Tail[1], $"{s.Bone} hangs down from its head"));
-        Assert.StartsWith("ours", skirt.SpringsSource);
+        Assert.StartsWith("ours", skirt.Source);
         Assert.Equal("island", skirt.Carry!.Rule);
         Assert.Equal(skirt.Springs.Count, skirt.Springs.Select(s => s.Bone).Distinct().Count());
         // (the warden look's own pauldrons, armor/: a chain a side over the cap and its two lames, each link's head its parent's tail)
-        var plate = ix.Find("plate_pauldrons_warden")!.Springs!;
+        var plate = file.Single(e => e.Id == "plate_pauldrons_warden").Springs!;
         Assert.Equal(6, plate.Count);
         foreach (var l in plate.Where(l => l.Parent.StartsWith("spring_")))
             Assert.Equal(plate.Single(p => p.Bone == l.Parent).Tail, l.Head);
+    }
+
+    [Fact]
+    public void AnEntryThatIsOffIsTakenByNoRow()
+    {
+        var ix = ArmorIndex.Parse("""[{"id":"warden.skirt"},{"id":"warden.top"}]""");
+        int took = ix.AddSprings("""[{"id":"warden.skirt","off":true,"source":"ours","springs":[{"bone":"s","parent":"pelvis","head":[0,1,0],"tail":[0,0.8,0]}],"carry":{"rule":"island","follow":true}},{"id":"warden.top","source":"ours","springs":[{"bone":"t","parent":"spine_03","head":[0,1.4,0],"tail":[0,1.2,0]}]}]""");
+        Assert.Equal(1, took);
+        var skirt = ix.Find("warden.skirt")!;
+        Assert.False(skirt.HasSprings);
+        Assert.Null(skirt.Carry);
+        Assert.Null(skirt.SpringsSource);
+        Assert.True(ix.Find("warden.top")!.HasSprings);
     }
 
     [Fact]

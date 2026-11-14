@@ -3,7 +3,7 @@
 // SpringCarry, InsideTest linked from godot/logic/Play), measured as the game's probe measures (skirt points inside her
 // thigh, pauldron % inside her skin). Build: dotnet build -c Release. Run: dotnet bin/Release/net8.0/harness.dll DIR MODE
 // [--every 2] [--clips a,b] [--springs FILE]; MODE: base (plain skinning: the game's BEFORE), rigid, springs (the capsule
-// chains), follow (PlateFollow; --margin --near --cell --inner --rim --fit --minlever --maxpush --noslide --nohook --nocol
+// chains), follow (PlateRide, round 2's plate follow, harness-only; --kin [ROW]: held stiff, own skinning plus the push only; --nocut --snap X --rigidplate --margin --near --cell --inner --rim --fit --minlever --maxpush --noslide --nohook --nocol
 // --rigidfit --iters --substeps --grav --drag --bend --stiff), shapes, binds.
 using System;
 using System.Collections.Generic;

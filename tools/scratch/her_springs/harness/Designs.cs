@@ -14,11 +14,11 @@ public static class Designs
         _ => throw new Exception("unknown mode " + mode),
     };
 
-    public static PlateFollow.Xf X(Aff a) => new(a.X, a.Y, a.Z, a.O);
+    public static PlateRide.Xf X(Aff a) => new(a.X, a.Y, a.Z, a.O);
 
-    /// <summary>A mesh's rest data for PlateFollow: rest places, normals, skeleton influences, per-influence places where
+    /// <summary>A mesh's rest data for PlateRide: rest places, normals, skeleton influences, per-influence places where
     /// binds disagree, shapes in skeleton rest axes (by the dominant bind, or the given frame).</summary>
-    public static PlateFollow.MeshIn MeshIn(World w, MeshD m, int channelBase, Aff? frame, int[]? link)
+    public static PlateRide.MeshIn MeshIn(World w, MeshD m, int channelBase, Aff? frame, int[]? link)
     {
         var bt = w.BindTo(m);
         int n = m.Pos.Length, k = m.K;
@@ -62,23 +62,24 @@ public static class Designs
             }
             sd[s] = d; sdn[s] = dn;
         }
-        return new PlateFollow.MeshIn { K = k, Place = place, Normal = nrm, Bone = bone, Weight = wt, At = at, ChannelBase = channelBase, ShapeD = sd, ShapeDn = sdn, Link = link };
+        return new PlateRide.MeshIn { K = k, Place = place, Normal = nrm, Bone = bone, Weight = wt, At = at, ChannelBase = channelBase, ShapeD = sd, ShapeDn = sdn, Link = link };
     }
 }
 
-/// <summary>PlateFollow on her rows: targets from the pieces' own weights, plate points against the body's skin.</summary>
+/// <summary>PlateRide on her rows: targets from the pieces' own weights, plate points against the body's skin.</summary>
 public sealed class FollowDesign : IDesign
 {
     sealed class Rig
     {
         public SpringsFile.Row Row = null!;
-        public PlateFollow F = null!;
+        public PlateRide F = null!;
         public ClothChains Sim = null!;
         public int[] Bone = Array.Empty<int>(), Lp = Array.Empty<int>(), Par = Array.Empty<int>(), Roots = Array.Empty<int>(), RootLink = Array.Empty<int>();
         public Vector3[] Targets = Array.Empty<Vector3>();
         public Vector3[] LastRoot = Array.Empty<Vector3>(); public Quaternion[] LastQ = Array.Empty<Quaternion>();
-        public bool Cut = true; public double Life; public int Resets;
+        public bool Cut = true; public double Life; public int Resets, Snaps, Since;
         public long Pushes; public float Deepest;
+        public (Quaternion Q, Vector3 From, Vector3 To)[] D = Array.Empty<(Quaternion, Vector3, Vector3)>();
     }
     readonly List<Rig> rigs = new();
     readonly List<int[]> carryBone = new();
@@ -98,7 +99,7 @@ public sealed class FollowDesign : IDesign
         {
             foreach (var l in row.Links) w.Bones.Add(l);
             var segs = row.Links.Select(l => new SpringCarry.Seg(l.Head, l.Tail, l.Reach)).ToArray();
-            var pieces = new List<PlateFollow.MeshIn>();
+            var pieces = new List<PlateRide.MeshIn>();
             for (int pi = 0; pi < w.Pieces.Count; pi++)
             {
                 var p = w.Pieces[pi];
@@ -111,19 +112,25 @@ public sealed class FollowDesign : IDesign
                     if (lk[i] >= 0) carryBone[pi][i] = w.Bones.Find(row.Links[lk[i]].Bone);
                 }
                 pieces.Add(Designs.MeshIn(w, p.Mesh, chBase[p.MeshIndex], p.CarryM, lk));
+                // (the stand-in bones a skinning-plus-delta carry needs: each link's distinct influence bones)
+                var pairs = new HashSet<(int, int)>();
+                for (int i = 0; i < lk.Length; i++)
+                    if (lk[i] >= 0)
+                        for (int q = 0; q < p.Mesh.K; q++) if (p.Mesh.Weights[i * p.Mesh.K + q] > 0) pairs.Add((lk[i], p.Mesh.Bones[i * p.Mesh.K + q]));
+                Console.WriteLine($"stand-ins {p.Mesh.Name}: {pairs.Count} (link, bind) pairs over {pairs.Select(x => x.Item1).Distinct().Count()} links");
             }
             var (lp, par, rootLink) = ClothChains.Order(row.Links.Select(l => (l.Bone, l.Parent)).ToList());
             var idx = new Dictionary<string, int>();
             for (int i = 0; i < row.Links.Count; i++) idx[row.Links[i].Bone] = i;
-            var pl = row.Links.Select(l => new PlateFollow.Link(l.Head, l.Tail, idx.TryGetValue(l.Parent, out int pj) ? pj : -1)).ToList();
-            var tune = PlateFollow.Tuning.Plate with
+            var pl = row.Links.Select(l => new PlateRide.Link(l.Head, l.Tail, idx.TryGetValue(l.Parent, out int pj) ? pj : -1)).ToList();
+            var tune = PlateRide.Tuning.Plate with
             {
-                Margin = Program.F("margin", PlateFollow.Tuning.Plate.Margin), Near = Program.F("near", PlateFollow.Tuning.Plate.Near),
-                Cell = Program.F("cell", PlateFollow.Tuning.Plate.Cell), Inner = (int)Program.F("inner", PlateFollow.Tuning.Plate.Inner),
-                Rim = (int)Program.F("rim", PlateFollow.Tuning.Plate.Rim), Fit = (int)Program.F("fit", PlateFollow.Tuning.Plate.Fit),
-                MinLever = Program.F("minlever", PlateFollow.Tuning.Plate.MinLever), MaxPush = Program.F("maxpush", PlateFollow.Tuning.Plate.MaxPush), Slide = !Program.Has("noslide"),
+                Margin = Program.F("margin", PlateRide.Tuning.Plate.Margin), Near = Program.F("near", PlateRide.Tuning.Plate.Near),
+                Cell = Program.F("cell", PlateRide.Tuning.Plate.Cell), Inner = (int)Program.F("inner", PlateRide.Tuning.Plate.Inner),
+                Rim = (int)Program.F("rim", PlateRide.Tuning.Plate.Rim), Fit = (int)Program.F("fit", PlateRide.Tuning.Plate.Fit),
+                MinLever = Program.F("minlever", PlateRide.Tuning.Plate.MinLever), MaxPush = Program.F("maxpush", PlateRide.Tuning.Plate.MaxPush), Slide = !Program.Has("noslide"),
             };
-            var f = PlateFollow.Build(pl, lp, par, pieces, Program.Has("nocol") ? null : body, tune) ?? throw new Exception("no plates for " + row.Id);
+            var f = PlateRide.Build(pl, lp, par, pieces, Program.Has("nocol") ? null : body, tune) ?? throw new Exception("no plates for " + row.Id);
             float scale = w.Frames[0].W.ScaleX;
             var radius = new float[par.Length]; var stiffness = new float[par.Length];
             for (int i = 0; i < row.Links.Count; i++) { radius[lp[i]] = row.Links[i].Radius * scale; stiffness[lp[i]] = Program.Has("stiff") ? Program.F("stiff", 10) : row.Links[i].Stiffness; }
@@ -158,7 +165,11 @@ public sealed class FollowDesign : IDesign
         {
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp(); int rs0 = r.Resets;
             r.F.Update(sx, W, ch, r.Targets);
-            if (cut) r.Cut = true;
+            if (cut && !(Program.Has("nocut") && r.Life > 0)) r.Cut = true;
+            // (a pose that snapped: its targets moved more than --snap skeleton units in a frame)
+            if (Program.Has("snap") && r.Life > 0 && r.F.Jump > Program.F("snap", 0.05f)) { r.Cut = true; r.Snaps++; }
+            var cs = Stat(f.Clip, r.Row.Id);
+            if (cut) cs[1] = Math.Max(cs[1], r.F.Jump); else cs[0] = Math.Max(cs[0], r.F.Jump);
             for (int i = 0; i < r.Roots.Length; i++)
             {
                 var at = r.Targets[r.Roots[i]];
@@ -167,12 +178,25 @@ public sealed class FollowDesign : IDesign
                 r.LastRoot[i] = at; r.LastQ[i] = q;
             }
             var down = -Vector3.UnitY; float ground = f.W.O.Y;
-            if (r.Cut) { r.F.Cut(); r.F.Update(sx, W, ch, r.Targets); r.Sim.Reset(r.Targets, Array.Empty<ClothChains.Capsule>(), ground, down); r.Cut = false; r.Resets++; }
+            if (Program.Has("kin") && (Program.O("kin", "1") == "1" || Program.O("kin", "1") == r.Row.Id))
+            {
+                // (held stiff: no swing, no lag; each frame the plates start at their own skinning and only the body's push moves them)
+                if (r.Cut) { r.F.Cut(); r.F.Update(sx, W, ch, r.Targets); r.Cut = false; r.Resets++; }
+                r.Sim.Reset(r.Targets, Array.Empty<ClothChains.Capsule>(), ground, down);
+                r.Sim.Step(dt, r.Targets, Array.Empty<ClothChains.Capsule>(), ground, down);
+            }
+            else if (r.Cut) { r.F.Cut(); r.F.Update(sx, W, ch, r.Targets); r.Sim.Reset(r.Targets, Array.Empty<ClothChains.Capsule>(), ground, down); r.Cut = false; r.Resets++; }
             else r.Sim.Step(dt, r.Targets, Array.Empty<ClothChains.Capsule>(), ground, down);
             r.Life += dt;
             { long t1 = System.Diagnostics.Stopwatch.GetTimestamp(); if (r.Resets != rs0) { Timing.ResetT += t1 - t0; Timing.ResetN++; } else { Timing.StepT += t1 - t0; Timing.StepN++; } }
             r.Pushes += r.F.Pushes; r.Deepest = Math.Max(r.Deepest, r.F.Deepest);
             var x = r.Sim.Positions;
+            if (r.D.Length != r.Bone.Length) r.D = new (Quaternion, Vector3, Vector3)[r.Bone.Length];
+            for (int k = 0; k < r.Bone.Length; k++) r.D[k] = r.F.Delta(k, x);
+            // (the plates' unrest against their own skinning, frames 3.. after a reset)
+            float jit = r.F.Jitter(x);
+            if (r.Resets != rs0) r.Since = 0; else r.Since++;
+            if (r.Since >= 3) { cs[2] = Math.Max(cs[2], jit); cs[3] += jit; cs[4]++; }
             for (int k = 0; k < r.Bone.Length; k++)
             {
                 var (turn, head) = Program.Has("rigidfit") ? (r.F.Fitted(k), Vector3.Zero) : r.F.Pose(k, x);
@@ -190,6 +214,15 @@ public sealed class FollowDesign : IDesign
         }
     }
 
+    /// <summary>Per clip and row: max target jump within the clip, at its first frame, max jitter, jitter sum, frames.</summary>
+    public static readonly Dictionary<(string, string), float[]> Clip = new();
+    static float[] Stat(string clip, string row) { if (!Clip.TryGetValue((clip, row), out var a)) Clip[(clip, row)] = a = new float[5]; return a; }
+    public static void Say()
+    {
+        foreach (var ((c, row), a) in Clip)
+            if (c != "") Console.WriteLine(FormattableString.Invariant($"MOTION {c} {row} jump {a[0] * 1000:0.0} mm, at start {a[1] * 1000:0.0} mm; jitter max {a[2] * 1000:0.00} mm mean {a[3] / Math.Max(1, a[4]) * 1000:0.00} mm"));
+    }
+
     static float Angle(Quaternion a, Quaternion b) => 2 * MathF.Acos(Math.Min(1, Math.Abs(Quaternion.Dot(a, b))));
 
     public void Skin(World w, int piece, Aff[] pose, Vector3[] outP)
@@ -199,6 +232,15 @@ public sealed class FollowDesign : IDesign
         var cb = carryBone[piece];
         var restInv = new Dictionary<int, Aff>();
         var off = p.Offsets(w.Cur.ShapeW[p.MeshIndex]);
+        if (!Program.Has("rigidplate"))
+        {
+            // (each carried vertex as its own skinning has it, then its link's swing and push)
+            foreach (var r in rigs)
+                for (int k = 0; k < r.Bone.Length && k < r.D.Length; k++)
+                    for (int i = 0; i < outP.Length; i++)
+                        if (cb[i] == r.Bone[k]) outP[i] = r.D[k].To + Vector3.Transform(outP[i] - r.D[k].From, r.D[k].Q);
+            return;
+        }
         for (int i = 0; i < outP.Length; i++)
         {
             int b = cb[i];
@@ -208,7 +250,7 @@ public sealed class FollowDesign : IDesign
         }
     }
 
-    public string Info(World w) => string.Join(", ", rigs.Select(r => $"{r.Row.Id}: resets {r.Resets} pushes {r.Pushes} deepest {r.Deepest * 1000:0.0} mm"));
+    public string Info(World w) => string.Join(", ", rigs.Select(r => $"{r.Row.Id}: resets {r.Resets} (snaps {r.Snaps}) pushes {r.Pushes} deepest {r.Deepest * 1000:0.0} mm"));
 }
 
 public static class Timing

@@ -36,8 +36,10 @@ for P in islands('warden.pauldrons.steel'):
     print(s, R(top), R(out), 'reach', round(float(dd.max()),3))
 pa.sort(key=lambda x:x['bone'])
 src="ours (her-springs lead, 13 Nov): stand-ins for body A's warden set, one link a plate from its top's middle to its hem's (pauldrons: to its outer edge), authored from heroine_outfit_warden.gltf's islands (tools/scratch/her_springs/author_springs.py); R&D's rows for B's gear replace these where they land"
-out=[{"id":"warden.skirt","source":src,"springs":springs,"carry":{"rule":"island","reach":0.07,"share":0.6,"follow":True}},
-     {"id":"warden.pauldrons","source":src,"springs":pa,"carry":{"rule":"island","reach":0.11,"share":0.6,"follow":True}}]
+# off: kept authored, taken by no row (ArmorIndex.AddSprings): plate follow did not beat her plain skinning on every clip
+# of her A tour (her-springs round 2, 13 Nov); a row turned back on rides PlateFollow (carry follow)
+out=[{"id":"warden.skirt","off":True,"source":src,"springs":springs,"carry":{"rule":"island","reach":0.07,"share":0.6,"follow":True}},
+     {"id":"warden.pauldrons","off":True,"source":src,"springs":pa,"carry":{"rule":"island","reach":0.11,"share":0.6,"follow":True}}]
 json.dump(out,open(r'C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/zen-bell-95ec3f/godot/art/people/springs.json','w',encoding='utf-8'),indent=2)
 
 # plate_pauldrons_warden (the warden look's pauldrons, armor/: three lames a side, a cap over two shingles): one chain a
@@ -87,5 +89,5 @@ for s in ('l', 'r'):
         chains.append({"bone": f"spring_pauldron_{s}{i_}", "parent": lames[0][1] if i_ == 0 else f"spring_pauldron_{s}{i_ - 1}",
                        "head": R(a), "tail": R(b), "radius": 0.02, "stiffness": 14, "reach": round(float(dd.max()) + 0.01, 3)})
         print(s, i_, lames[i_][1], R(a), R(b), 'reach', round(float(dd.max()), 3), len(P))
-out.append({"id": "plate_pauldrons_warden", "source": src, "springs": chains, "carry": {"rule": "island", "reach": 0.08, "share": 0.6, "follow": True}})
+out.append({"id": "plate_pauldrons_warden", "off": True, "source": src, "springs": chains, "carry": {"rule": "island", "reach": 0.08, "share": 0.6, "follow": True}})
 json.dump(out, open(r'C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/zen-bell-95ec3f/godot/art/people/springs.json', 'w', encoding='utf-8'), indent=2)
