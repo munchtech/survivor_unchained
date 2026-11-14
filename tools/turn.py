@@ -9,6 +9,7 @@ job and give it back the moment the job ends; while you wait, do light work
   python tools/turn.py take godot "legal: sprint clips" --wait 8
   python tools/turn.py give gpu                       # also frees ComfyUI's models
   python tools/turn.py show
+  python tools/turn.py run godot "face: shots" [--wait 8] [--tail 30] -- <godot command>  # take, run via quiet.py, give
 
 gpu:     one holder. ComfyUI, TRELLIS and MoGe: they share one server and most
          of the card's memory, and swapping their models thrashes 20 GB.
@@ -247,42 +248,66 @@ def show():
             print(f"  waiting: " + "; ".join(f"{w} ({(time.time() - t) / 60:.0f} min)" for t, w in sorted(ws)))
 
 
+def do_take(a):
+    """`take <kind> "<who>"` [--wait N] [--stale-ok] [--root R]: 0 = yours, 1 = busy, 2 = stale art."""
+    kind, who = a[1], (a[2] if len(a) > 2 and not a[2].startswith("--") else "someone")
+    if kind in ("godot", "blender") and "--stale-ok" not in a:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from freshness import check, toplevel  # 14 Oct: judges were shown the old body; free, local check
+        # The checkout being shot: --root, else the caller's (cwd), never this file's (scripts call the main checkout's turn.py)
+        root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
+        if not root:
+            print("freshness: not run (cwd is not in a checkout); pass --root <your worktree> to check it")
+        elif probs := check(root, imports=kind == "godot"):
+            print("\n".join("STALE: " + x for x in probs))
+            print("Not taking the turn: a shot from here would show old art. Fix the above, or add "
+                  "--stale-ok if this shot doesn't need current art (say so in any sheet you make).")
+            return 2
+    elif kind == "godot":
+        # --stale-ok skips the full check, but a stale UI texture import (10 Nov: a rebaked vein mask hid from every judged frame) still warns
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from freshness import stale_ui, toplevel
+            root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
+            if root and (bad := stale_ui(root)):
+                print(f"WARNING: {len(bad)} godot/art/ui texture(s) have a STALE Godot import, so a shot would show OLD art: "
+                      + ", ".join(bad[:8]) + ("..." if len(bad) > 8 else ""))
+                print("WARNING: Fix: Godot_console.exe --headless --path godot --import  (the turn is still granted)")
+        except Exception as e:
+            print(f"freshness: UI texture warning not run ({type(e).__name__}: {e})")
+    wait = float(a[a.index("--wait") + 1]) * 60 if "--wait" in a else 0
+    end = time.time() + wait
+    while (why := try_take(kind, who)) and time.time() < end:
+        time.sleep(20)
+    print(f"{kind}: yours" if not why else f"{kind}: busy, {why}. Do light work and try again.")
+    return 0 if not why else 1
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a or a[0] == "show":
         show()
     elif a[0] == "take":
-        kind, who = a[1], (a[2] if len(a) > 2 and not a[2].startswith("--") else "someone")
-        if kind in ("godot", "blender") and "--stale-ok" not in a:
-            sys.path.insert(0, str(Path(__file__).resolve().parent))
-            from freshness import check, toplevel  # 14 Oct: judges were shown the old body; free, local check
-            # The checkout being shot: --root, else the caller's (cwd), never this file's (scripts call the main checkout's turn.py)
-            root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
-            if not root:
-                print("freshness: not run (cwd is not in a checkout); pass --root <your worktree> to check it")
-            elif probs := check(root, imports=kind == "godot"):
-                print("\n".join("STALE: " + x for x in probs))
-                print("Not taking the turn: a shot from here would show old art. Fix the above, or add "
-                      "--stale-ok if this shot doesn't need current art (say so in any sheet you make).")
-                sys.exit(2)
-        elif kind == "godot":
-            # --stale-ok skips the full check, but a stale UI texture import (10 Nov: a rebaked vein mask hid from every judged frame) still warns
-            try:
-                sys.path.insert(0, str(Path(__file__).resolve().parent))
-                from freshness import stale_ui, toplevel
-                root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
-                if root and (bad := stale_ui(root)):
-                    print(f"WARNING: {len(bad)} godot/art/ui texture(s) have a STALE Godot import, so a shot would show OLD art: "
-                          + ", ".join(bad[:8]) + ("..." if len(bad) > 8 else ""))
-                    print("WARNING: Fix: Godot_console.exe --headless --path godot --import  (the turn is still granted)")
-            except Exception as e:
-                print(f"freshness: UI texture warning not run ({type(e).__name__}: {e})")
-        wait = float(a[a.index("--wait") + 1]) * 60 if "--wait" in a else 0
-        end = time.time() + wait
-        while (why := try_take(kind, who)) and time.time() < end:
-            time.sleep(20)
-        print(f"{kind}: yours" if not why else f"{kind}: busy, {why}. Do light work and try again.")
-        sys.exit(0 if not why else 1)
+        sys.exit(do_take(a))
+    elif a[0] == "run":
+        # 13 Nov: take the turn, run the command through tools/quiet.py (full log to a file, summary + errors to
+        # stdout), give the turn back even if the command fails. `run <kind> "<who>: <job>" [--wait N] [--tail N] -- cmd`
+        if "--" not in a:
+            print('usage: turn.py run <gpu|blender|godot> "<who>: <job>" [--wait N] [--stale-ok] [--tail N] -- <command>')
+            sys.exit(2)
+        pre, cmd = a[:a.index("--")], a[a.index("--") + 1:]
+        qflags = ["--tail", pre[pre.index("--tail") + 1]] if "--tail" in pre else []
+        if (code := do_take(["take"] + pre[1:])) != 0:
+            sys.exit(code)
+        kind, who = pre[1], (pre[2] if len(pre) > 2 and not pre[2].startswith("--") else "someone")
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import quiet
+        try:
+            code = quiet.main(qflags + ["--"] + cmd)
+        finally:
+            give(kind, who)
+            print(f"{kind}: given back")
+        sys.exit(code)
     elif a[0] == "give":
         give(a[1], a[2] if len(a) > 2 else None)
         print(f"{a[1]}: given back")
