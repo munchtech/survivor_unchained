@@ -28,6 +28,8 @@ CONE = 0.5                 # (cos of the cone round the normal: within 60 degree
 MIN_D = 0.006              # (closer is her own surface's next ring or a seam's twin)
 Y0, Y1, X1 = 1.29, 1.43, 0.17   # (body_p1, metres: her breasts' crease 1.30-1.31, widest 1.36, outer side 0.15, armpit 0.17 at 1.40; under 1.30 her ribs slope down 0.15-0.3;
                                 # the top past the widest: turned down there is still the underside, turned up (ny > 0) the factor drops it)
+X2, Z2 = 0.19, 0.08          # (the breast's own outer side, in front of the ribs' side: out to 0.19 where z is 0.04-0.08 or more; judge r2's stub on the
+                           # right breast's lower outer side sat at 0.15-0.17, the ribs' side and the outline under the armpit are at z under 0.04)
 EASE = 0                   # (no easing over the surface: 3 rings left the map at 0.35-0.95 on the line at the cleavage end and the lower
                            # outer side (V3, lead 4), their points 1-3 cm inside the zone (y 1.34-1.38, turned 0.2-0.45 down); the 3 cm ramps ease it)
 SIZE = 1024
@@ -75,7 +77,8 @@ def underbust(P, N):
     (armpit, buttock crease, inner thighs, elbows), looks good and stays): in front of her ribs, from her breasts'
     lowest height to a little past the widest, across their width, the surface turned down."""
     x, y, z = np.abs(P[:, 0]), P[:, 1], P[:, 2]
-    return (ramp(y, Y0, Y0 + 0.03) * (1 - ramp(y, Y1 - 0.03, Y1)) * (1 - ramp(x, X1 - 0.03, X1)) * ramp(z, 0.0, 0.03)
+    side = np.maximum(1 - ramp(x, X1 - 0.03, X1), (1 - ramp(x, X2 - 0.03, X2)) * ramp(z, Z2 - 0.04, Z2))
+    return (ramp(y, Y0, Y0 + 0.03) * (1 - ramp(y, Y1 - 0.03, Y1)) * side * ramp(z, 0.0, 0.03)
             * ramp(-N[:, 1], -0.05, 0.10))   # (not turned up: where the underside turns sideways into the cleavage and the outer side, judge r1)
 
 
