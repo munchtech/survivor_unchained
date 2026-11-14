@@ -19,15 +19,19 @@ public static class SkinLight
     /// Look, SkyKeep's half left her skin a near-neutral grey (Oklab C .012, h 284) under the grade, outside its skin spare
     /// (hue 15-90, chroma .012-.025 up), and its painted moon shadow took that to navy (C .055 h 257). At 1.5 the neck goes in
     /// at skin chroma and comes out a muted violet-grey (C .025 h 281) under a brown jaw shade; by day and in the close-ups
-    /// it moves nothing measurable (the sky is a small share of their light). 1.0 left C .050, 1.6 mottled.</summary>
-    public const float SkyKeepAmbient = 1.5f;
+    /// it moves nothing measurable (the sky is a small share of their light). 1.0 left C .050, 1.6 mottled. r3 (13 Nov): with the
+    /// paler CelTone 1.5 gave the Look-night neck back to the grade's navy (C .049 h 258); 2.2 with ShadeFill: violet-grey C .019
+    /// h 294, the close-up's night neck shadow warm (34,17,11) C .031 h 40 for (27,17,18).</summary>
+    public const float SkyKeepAmbient = 2.2f;
 
     /// <summary>The cel half-tone's level on every skin part (heroine_skin.gdshader face_mid, eased in whole, face_mid_mask 0),
     /// the head's since NPC skin r1. The skin's own CEL_MID (0.85, 0.45, 0.38) times her warm paint drew a saturated
     /// orange-red line along every shadow's edge on her body in the sun: round her arm's cast shadow on her side, under her
     /// breasts, at her neck (the day close-up; isolated 13 Nov: cel_mid's weight 0 and it is gone). With the head's cooler
-    /// level the edge steps from lit to shade through a muted brown, as her face's does.</summary>
-    public static readonly (float R, float G, float B) HalfTone = (0.45f, 0.55f, 0.65f);
+    /// level the edge steps from lit to shade through a muted brown, as her face's does. r3 (13 Nov): (0.45, 0.55, 0.65) read as a grey-mauve bruise on her temple and eye socket at the day
+    /// close-up (109,74,60) between an orange lit face and a red-brown shade; near neutral it steps lit to shade in their own
+    /// hue (115,76,59 h 45), no orange line.</summary>
+    public static readonly (float R, float G, float B) HalfTone = (0.56f, 0.53f, 0.50f);
 
     /// <summary>The camera key's shadow bias (GameCloseUp's CelRigKey, the Look's and the close-up's one key on her). At
     /// 0.03 her jaw's shadow fell short of the jaw: a small lit wedge on her neck under her jaw on the shade side at the
@@ -44,8 +48,16 @@ public static class SkinLight
 
     /// <summary>Her skin's warmth under cel (People.HerCelTone, the skin shader's cel_tone on her albedo, every part; an NPC's
     /// is derived from it). (1.39, 0.80, 0.54) read spray-tan orange on her body by day (h 45-47) once her face matched it;
-    /// this keeps her warm and moves her hue to about 50-55 (13 Nov skin-light r2).</summary>
-    public static readonly (float R, float G, float B) CelTone = (1.16f, 0.86f, 0.72f);
+    /// this keeps her warm and moves her hue to about 50-55 (13 Nov skin-light r2). r3: nearer neutral, her shade's warmth from
+    /// ShadeFill and SkyKeepAmbient instead (lit chest C .132 to .126, h 58: her lit R sits at AgX's clip, so cel_tone moves
+    /// little of the lit chroma; the key's colour carries the rest).</summary>
+    public static readonly (float R, float G, float B) CelTone = (1.06f, 0.93f, 0.84f);
+
+    /// <summary>Her shade's warmth (the skin shader's cel_fill_tone on her: the key's fill where its light doesn't reach): skin
+    /// returns the broad light in its shade warmer, carried through it. With the paler CelTone her shade went grey at the Look
+    /// by day and navy under the night grade's painted shadow (which spares skin only at C .012-.025 up, h 15-90); with this
+    /// and SkyKeepAmbient 2.2 the close-up's night neck shadow is (34,17,11) C .031 h 40 (13 Nov skin-light r3).</summary>
+    public static readonly (float R, float G, float B) ShadeFill = (1.25f, 0.95f, 0.78f);
 
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
@@ -66,8 +78,9 @@ public static class SkinLight
     /// .380, cheek .359, chest .198, belly .208) and paler, and outside the rig nothing took it down, so under the close-ups'
     /// warm key her lit face clipped near white (Oklab L .89 C .063, R 250+ on 77% of it) over an orange body (L .79 C .126),
     /// and its half-tone read as an orange stripe beside the clipped light. Neutral, so her face keeps its own blush against
-    /// the body's paint (13 Nov skin-light r2).</summary>
-    public const float HeadPaintLevel = 0.58f;
+    /// the body's paint (13 Nov skin-light r2). r3: 0.58 left her lit cheek under her chest at night (close-up .531 vs .567
+    /// Oklab L, face/chest RGB .89); 0.68 puts it level (day face R 250+ on 0%).</summary>
+    public const float HeadPaintLevel = 0.68f;
 
     /// <summary>Her own face's tone at the Look's portrait rig (People.HerFaceTone["own"], the skin shader's face_tone) trimmed
     /// by this: since its fit (chest L + .015, 20 Oct) her face came to sit L .07 over her lit chest and its cheeks C .05 richer

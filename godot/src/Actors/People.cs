@@ -1969,6 +1969,8 @@ public static class People
         // the body, whose stepped lobe broke into specks along her shoulders at night)
         m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.SkyKeep);
         m.SetShaderParameter("sky_skin_amb", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);
+        // (her shade warm: the fill where the key does not reach, Look.SkinLight.ShadeFill)
+        if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
         if (!FaceMidOff)
         {
             m.SetShaderParameter("face_mid", HeadMid);

@@ -30,7 +30,7 @@ public class SkinLightTests
         Assert.Contains("uniform float sky_skin : hint_range(0.0, 1.0) = 0.0;", shader);
         Assert.Contains("skin_hue_out(cel_fill, sky_skin)", shader);
         // (and the sky's own light past it, where the night sky alone lights her neck: navy under the grade at 0.5)
-        Assert.InRange(SkinLight.SkyKeepAmbient, 1.2f, 1.6f);
+        Assert.InRange(SkinLight.SkyKeepAmbient, 2.0f, 2.4f);
         Assert.Contains("m.SetShaderParameter(\"sky_skin_amb\", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);", people);
         Assert.Contains("ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);", shader);
         Assert.Contains("un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);", shader);
@@ -40,7 +40,7 @@ public class SkinLightTests
     [Fact]
     public void HalfToneIsTheHeadsCoolLevel_OnEveryPart()
     {
-        Assert.True(SkinLight.HalfTone.B > SkinLight.HalfTone.G && SkinLight.HalfTone.G > SkinLight.HalfTone.R);
+        Assert.InRange(SkinLight.HalfTone.R / SkinLight.HalfTone.B, 1.0f, 1.2f);   // (near neutral: no orange line, no grey-mauve bruise)
         Assert.True(SkinLight.HalfTone.R < 0.85f, "darker and cooler than the skin's CEL_MID (0.85, 0.45, 0.38)");
         var people = Read("src", "Actors", "People.cs");
         Assert.Contains("static readonly Vector3 HeadMid = new(SurvivorUnchained.Look.SkinLight.HalfTone.R, SurvivorUnchained.Look.SkinLight.HalfTone.G, SurvivorUnchained.Look.SkinLight.HalfTone.B);", people);
@@ -103,7 +103,7 @@ public class SkinLightTests
     [Fact]
     public void HeadPaintAtTheBodysLevel_FaceTrimmedAtTheLook()
     {
-        Assert.InRange(SkinLight.HeadPaintLevel, 0.5f, 0.65f);
+        Assert.InRange(SkinLight.HeadPaintLevel, 0.6f, 0.75f);
         Assert.True(SkinLight.LookFaceTrim.R < SkinLight.LookFaceTrim.G && SkinLight.LookFaceTrim.G < SkinLight.LookFaceTrim.B && SkinLight.LookFaceTrim.B <= 1f);
         var people = Read("src", "Actors", "People.cs");
         Assert.Contains("* SurvivorUnchained.Look.SkinLight.HeadPaintLevel;", people);
@@ -116,7 +116,7 @@ public class SkinLightTests
     {
         var t = SkinLight.CelTone;
         Assert.True(t.R > t.G && t.G > t.B, "warm");
-        Assert.InRange(t.R / t.B, 1.3f, 1.9f);
+        Assert.InRange(t.R / t.B, 1.15f, 1.9f);
         Assert.InRange(0.2126f * t.R + 0.7152f * t.G + 0.0722f * t.B, 0.85f, 0.97f);
         Assert.Contains("ArgVec(\"cel-tone\", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B))", Read("src", "Actors", "People.cs"));
     }
