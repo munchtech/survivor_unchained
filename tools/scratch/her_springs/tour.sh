@@ -13,8 +13,8 @@ if [ -z "$TURN_HELD" ]; then
 fi
 cd $W/godot
 rm -f $O/$N.jsonl
-PIECE_SPRINGS_DBG=1 timeout 600 "$G" --path . --fixed-fps 60 --resolution 1920x1080 -- --zone verge --time day --quick warden --sex female --preset own --skin fair --eyes moss --hair braid \
-  --no-spawn --nohud --facing 0 --clip-tour $CLIPS --wear-inside $(cygpath -w $O/$N.jsonl) --wear-inside-every 2 "$@" </dev/null > $O/$N.log 2>&1
+PIECE_SPRINGS_DBG=1 timeout 1500 "$G" --path . --fixed-fps 60 --resolution 1920x1080 -- --zone verge --time day --quick warden --sex female --preset own --skin fair --eyes moss --hair braid \
+  --no-spawn --nohud --facing 0 --clip-tour $CLIPS --wear-inside $(cygpath -w $O/$N.jsonl) --wear-inside-every ${EVERY:-2} "$@" </dev/null > $O/$N.log 2>&1
 echo "$N rc=$?"
 [ -z "$TURN_HELD" ] && python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py give godot "her-springs: tour $N"
 grep -ai "script error\|shader error\|ERROR:\|exception" $O/$N.log | head -8

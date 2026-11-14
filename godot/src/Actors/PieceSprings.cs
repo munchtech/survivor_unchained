@@ -31,6 +31,9 @@ public partial class PieceSprings : SkeletonModifier3D
     static readonly Dictionary<string, (int A, int B, float R)[]> capsuleCache = new();
     public static readonly bool Debug = System.Environment.GetEnvironmentVariable("PIECE_SPRINGS_DBG") == "1";
     public static readonly bool Off = Args.Get("springs") == "off" || System.Environment.GetEnvironmentVariable("PIECE_SPRINGS") == "0";
+    /// <summary>--springs-legacy (measuring only): the springs as they were before her-springs: no upper-arm capsules and
+    /// a pinned link not held to its head's distance (ClothChains.HoldPinnedToHead).</summary>
+    public static readonly bool Legacy = Args.Has("springs-legacy");
 
     readonly string what;
     readonly List<Link> links;
@@ -207,7 +210,8 @@ public partial class PieceSprings : SkeletonModifier3D
     {
         if (capsuleCache.TryGetValue(package, out var have)) return have;
         var sk = p.Skeleton;
-        var segs = BodyCapsules.Table.Select(x => (A: sk.FindBone(x.A), B: sk.FindBone(x.B), Carry: x.Carry.Select(n => sk.FindBone(n)).Where(b => b >= 0).ToArray()))
+        ClothChains.HoldPinnedToHead = !Legacy;
+        var segs = BodyCapsules.Table.Where(x => !Legacy || !x.A.StartsWith("upperarm")).Select(x => (A: sk.FindBone(x.A), B: sk.FindBone(x.B), Carry: x.Carry.Select(n => sk.FindBone(n)).Where(b => b >= 0).ToArray()))
             .Where(x => x.A >= 0 && x.B >= 0).ToArray();
         var dist = segs.Select(_ => new List<float>()).ToArray();
         var byBone = new Dictionary<int, int>();

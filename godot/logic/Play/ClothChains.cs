@@ -30,6 +30,10 @@ public sealed class ClothChains
 
     public readonly record struct Capsule(Vector3 A, Vector3 B, float R);
 
+    /// <summary>A pinned link held no farther off a capsule than its head (Collide); off only to measure the old way
+    /// (View/PieceSprings --springs-legacy).</summary>
+    public static bool HoldPinnedToHead = true;
+
     readonly int[] parent;
     readonly float[] radius, stiff;
     readonly Vector3[] x, xp, tPrev, tSub, tSubPrev, vel;
@@ -178,7 +182,7 @@ public sealed class ClothChains
                 // limit past the head's own distance has no turn that meets it, and the push near the head (up to 3x at
                 // the tip, every iteration) flung the link round, her skirt's lappets on a thigh that swings about the
                 // hip right under their heads. Held to the head's distance, the push at the tip is the tangent turn.)
-                if (pinned)
+                if (pinned && HoldPinnedToHead)
                 {
                     var (_, _, dh) = Closest(x[p], x[p], cols[c].A, cols[c].B);
                     if (dh < lim) lim = dh;
