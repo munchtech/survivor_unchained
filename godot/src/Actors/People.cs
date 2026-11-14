@@ -1964,6 +1964,18 @@ public static class People
         // (and no stepped rim on the head: inside the face it lit the nose's side and the temple as hard stripes)
         if (SurvivorUnchained.Look.SkinHighlight.RimShare(src.ResourceName) is float rk)
             m.SetShaderParameter("cel_rim_k", rk);
+        // (Look.SkinLight: the sky's and the fill's hue half given back as her own warmth, not the night's hard navy in her
+        // shade; the head's cooler half-tone on every part, not the body's orange line at the shadow's edge; no soft rim on
+        // the body, whose stepped lobe broke into specks along her shoulders at night)
+        m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.SkyKeep);
+        if (!FaceMidOff)
+        {
+            m.SetShaderParameter("face_mid", HeadMid);
+            m.SetShaderParameter("face_mid_w", 1f);
+            m.SetShaderParameter("face_mid_mask", 0f);
+        }
+        if (SurvivorUnchained.Look.SkinLight.SoftRim(src.ResourceName) is float sr)
+            m.SetShaderParameter("rim", sr);
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
@@ -2802,8 +2814,9 @@ public static class People
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
     static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
     static readonly bool FaceMidOff = SurvivorUnchained.Args.Get("face-mid") == "off";
-    /// <summary>The head's cel half-tone level (heroine_skin.gdshader face_mid; the skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
-    static readonly Vector3 HeadMid = new(0.45f, 0.55f, 0.65f);
+    /// <summary>The skin's cel half-tone level, head and body (heroine_skin.gdshader face_mid; Look.SkinLight.HalfTone; the
+    /// skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
+    static readonly Vector3 HeadMid = new(SurvivorUnchained.Look.SkinLight.HalfTone.R, SurvivorUnchained.Look.SkinLight.HalfTone.G, SurvivorUnchained.Look.SkinLight.HalfTone.B);
 
     // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
     static float lookRig;

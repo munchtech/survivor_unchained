@@ -87,6 +87,20 @@ uniform vec3 throat_terminator = vec3(-1.0);
 // made her neck under it grey-violet (Oklab hue 31° against her portraits' 51°) on every face (the owner,
 // 10 October 2026). 1 (his) as before.
 uniform vec3 ambient_tint = vec3(1.0);
+// (skin-light, 13 Nov 2026) Under the cel model, the share of the sky's hue (the ambient) and the key's fill's hue her skin
+// gives back as its own colour: skin under a coloured light returns much of it as its own warmth, the light carried
+// through it. 0: the sky's and the fill's hue whole (B1c), and at night her whole shade side was the sky's saturated navy
+// (the Look's shaded neck Oklab hue 262, C .051 against her lit cheek's 42); People.Skin sets Look.SkinLight.SkyKeep. Luminance
+// kept: only the hue of those two lights changes on her. (--skin-set "*:sky_skin=0": as before)
+uniform float sky_skin : hint_range(0.0, 1.0) = 0.0;
+// The factor that takes sky_skin of a light's hue h (luminance 1) out of it, its luminance kept: h^-k, scaled so h x it has
+// h's luminance (skin-light, 13 Nov 2026)
+vec3 skin_hue_out(vec3 h, float k) {
+	vec3 hh = max(h, vec3(1e-3));
+	vec3 f = pow(hh, vec3(-k));
+	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+	return f * (dot(hh, lw) / max(dot(hh * f, lw), 1e-4));
+}
 // Her share of the sky's light (the ambient), every lamp's light on her kept (light() divides it back out). The town's
 // close view by day (GameCloseUp, face 34): the waystation's grey-blue sky (hemi 0.9, env 0.8) was the largest light on
 // her face, level on every plane (it lifted the shade side of her jaw 31.7 to 45 Oklab L), so her face read flat, pale
@@ -862,7 +876,9 @@ void fragment() {
 	soft_w = 1.0 - fm.b;
 	// (her head as r11, by its seam ease alone: its freckles' map's blue dips under her jaw, and gated by it there
 	// the far side of her neck under her jaw went bluer, own's row .15 hue -21 to -31)
-	edge_w = (seam_ease ? max(1.0 - aot.g, edge_head * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y))) : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
+	// (and on the head only below edge_head_y, the seam ease's dark green or not: the map's green dips at her temple and
+	// hairline as well, and there edge_tone drew a grey smudge on her left temple at the Look by day; skin light, 13 Nov)
+	edge_w = (seam_ease ? max(1.0 - aot.g, edge_head) * (1.0 - smoothstep(edge_head_y.x, edge_head_y.y, model_y)) : mix(1.0, fk.b, edge_neck)) * (1.0 - smoothstep(edge_from, edge_to, dot(NORMAL, VIEW))) * rig_w;
 	// (under the Look's rig only, where it was fitted: in play every lamp is a key, and it lit her chest 4-5 L* over
 	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
@@ -873,6 +889,7 @@ void fragment() {
 	// cool colored shade, MB1's mauve (Oklab h 325, C 0.05); ambient_tint was fitted for today's soft light, where the
 	// sky's blue greyed her neck)
 	ALBEDO *= mix(mix(ambient_tint / body_back, vec3(1.0), pa), vec3(1.0), cel_on);
+	if (sky_skin > 0.0 && cel_on > 0.0) ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);   // (sky_skin)
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
@@ -995,6 +1012,7 @@ void light() {
 		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);
 	}
 	vec3 un = 1.0 / (mix(mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w), vec3(1.0), cel_on) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
+	if (sky_skin > 0.0 && cel_on > 0.0) un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);   // (sky_skin: the lamps as without it)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {
@@ -1041,7 +1059,8 @@ void light() {
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * cb_b * BACKLIGHT * un * mix(1.0, behind, backlight_behind);
 	// (cel: the key's fill where its light doesn't reach)
-	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * cel_fill_tone;
+	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * cel_fill_tone
+		* (sky_skin > 0.0 ? skin_hue_out(cel_fill, sky_skin) : vec3(1.0));   // (sky_skin: the fill's hue too)
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
