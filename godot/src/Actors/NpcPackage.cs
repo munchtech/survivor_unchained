@@ -306,6 +306,8 @@ public static class NpcPackage
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
         if (FolkClips.Library() is AnimationLibrary folk) person.Anim.AddAnimationLibrary("folk", folk);
+        // (shot-only, hair-chip 13 Nov: env H1DBG's hair switches on a package's hair too, as on hers: People.H1Debug)
+        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) People.H1Debug(person, dbg);
         GD.Print($"npc: {name} ({m.Sex}, {skel.GetBoneCount()} bones), {m.Pieces.Count} pieces, {laid.Count} meshes laid");
         return person;
     }
