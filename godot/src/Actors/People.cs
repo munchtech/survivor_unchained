@@ -2150,7 +2150,7 @@ public static class People
         {
             var l = SkinTone(new Look("female", System.Array.Empty<string>())).SrgbToLinear();
             var f = HerToneFit["fair"];
-            return new Vector3(l.R * f.X * HerCelTone.X, l.G * f.Y * HerCelTone.Y, l.B * f.Z * HerCelTone.Z);
+            return new Vector3(l.R * f.X * NpcCelFit.X, l.G * f.Y * NpcCelFit.Y, l.B * f.Z * NpcCelFit.Z);
         }
     }
 
@@ -2532,6 +2532,9 @@ public static class People
     /// root is her albedo's chroma (as emission C .05; her tone trims off, or her highlights off, moved it under .005), so the fix is
     /// her skin's color FROM MB1 DAY's lit chip (#ee9962, C .127 h 45) and T08's lit skin (C .143 h 48): every swatch
     /// takes the same factor, so they keep their places against each other. (--cel-tone R,G,B: another, for judging it.)</summary>
+    /// <summary>The cel tone an NPC's warmth was fitted from (her cel tone until skin light r2, 13 Nov): an NPC on her base
+    /// derived from her newer, less red CelTone read grey-khaki by day and ashen at night, so it keeps this.</summary>
+    static readonly Vector3 NpcCelFit = new(1.39f, 0.80f, 0.54f);
     static readonly Vector3 HerCelTone = ArgVec("cel-tone", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B));
 
     static readonly Dictionary<string, Vector3> HerFaceSwatch = new()
