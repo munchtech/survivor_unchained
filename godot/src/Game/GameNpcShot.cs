@@ -122,11 +122,56 @@ public partial class Game
     {
         if (Args.Get("npc") is not string arg || scene == null) return;
         var parts = arg.Split(':');
+        var v = ShotNpcView(arg, out var idle);
+        scene.AddChild(v);
+        v.Loop(idle);
+        var name = parts[0];
+        NightTorch(name, v);
+        GD.Print($"npc shot: {name} plays {idle}");
+        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Turn = parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
+    }
+
+    /// <summary>
+    /// The look viewer's fast preview (docs/tools/LOOK_VIEWER.md): the shot NPC built again from its package (the
+    /// caller has forgotten the package's caches) in the old one's place, the driver and the camera kept. False when
+    /// this scene has no shot NPC to swap (a capture replay then).
+    /// </summary>
+    public bool RebuildShotNpc()
+    {
+        if (Args.Get("npc") is not string arg || scene == null) return false;
+        var drv = GetChildren().OfType<NpcShotDriver>().FirstOrDefault();
+        if (drv == null || !IsInstanceValid(drv.V)) return false;
+        var old = drv.V;
+        var v = ShotNpcView(arg, out var idle);
+        old.Name = "ShotNpcGone";
+        scene.AddChild(v);
+        v.GlobalTransform = old.GlobalTransform;
+        v.Loop(idle);
+        NightTorch(arg.Split(':')[0], v);
+        drv.V = v;
+        if (CloseStandIn == old) CloseStandIn = v;
+        old.QueueFree();
+        return true;
+    }
+
+    /// <summary>The Watch at night is the patrol's: a lit torch in the left fist, its warm light on the face, as Folk makes him.</summary>
+    static void NightTorch(string name, PersonView v)
+    {
+        if (name != "watch" || Args.Get("time") != "night") return;
+        v.Hold("handslot.l", "dungeon", "torch_lit");
+        v.TorchLight();
+    }
+
+    /// <summary>--npc's figure (its name's spec, arms and idle), not yet in the tree.</summary>
+    PersonView ShotNpcView(string arg, out string idle)
+    {
+        var parts = arg.Split(':');
         var name = parts[0];
         // (kit folk as the town builds them: "watch", a gate Watchman with sword and shield; "folk", a townsperson;
         // "def.ID", a story NPC from npcs.json, with its own arms and idle)
         var rng = new Random((int)Args.Num("seed", 1));
-        PersonSpec spec; Held? arms = null; string idle = "Idle"; double scale = 1; NpcDef? nd = null;
+        PersonSpec spec; Held? arms = null; double scale = 1; NpcDef? nd = null;
+        idle = "Idle";
         if (name == "watch") { spec = Folk.Person(FolkRole.Watch, Lore.WatchLook, rng); arms = new Held { Right = "viking_sword" }; idle = "Idle_Armed"; }
         else if (name == "folk") { var l = Lore.FolkLooks[1 % Lore.FolkLooks.Count]; spec = Folk.Person(FolkRole.Adult, l, rng); scale = l.Scale ?? 1; }
         else if (name.StartsWith("def.") && Lore.Person(name[4..]) is { } def) { nd = def; spec = def.Person ?? new PersonSpec { Sex = Rpg.Sex.Male }; arms = def.Arms; idle = def.Idle.Length > 0 ? def.Idle : "Idle"; scale = def.Scale ?? 1; }
@@ -139,23 +184,15 @@ public partial class Game
         if (parts.Contains("still")) idle = "Idle";
         // talk: the stand it talks in, as NpcActor plays it in a talk (npcs.json talkIdle, NpcDef.Stand)
         if (parts.Contains("talk") && nd?.Stand is string stand) idle = stand;
-        var v = new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
-        scene.AddChild(v);
-        v.Loop(idle);
-        // (the Watch at night is the patrol's: a lit torch in the left fist, its warm light on the face, as Folk makes him)
-        if (name == "watch" && Args.Get("time") == "night")
-        {
-            v.Hold("handslot.l", "dungeon", "torch_lit");
-            v.TorchLight();
-        }
-        GD.Print($"npc shot: {name} plays {idle}");
-        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Turn = parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
+        return new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
     }
 
     sealed partial class NpcShotDriver : Node
     {
         readonly Game game;
-        readonly PersonView v;
+        PersonView v;
+        /// <summary>The figure it places (the look viewer's preview swaps it: Game.RebuildShotNpc).</summary>
+        public PersonView V { get => v; set => v = value; }
         readonly bool walk, swap, chest, side;
         public double Turn;
         double t;

@@ -244,6 +244,8 @@ public static class HerWear
         // What she wore before: every piece any index names (HerOutfit's too) and every one laid here.
         var names = new HashSet<string>(ix.Pieces.Values.SelectMany(r => r.Meshes).Select(m => m.Replace('.', '_')));
         p.Skeleton.GetNodeOrNull<HerLod>("HerLod")?.Remove();
+        // (and its pieces' springs: the spring bones stay on her skeleton, unweighted till a piece names them again)
+        foreach (var ps in p.Skeleton.GetChildren().OfType<PieceSprings>().ToList()) { p.Skeleton.RemoveChild(ps); ps.QueueFree(); }
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>().ToList())
         {
             if (!mi.HasMeta(Meta) && !names.Contains(mi.Name.ToString())) continue;
@@ -256,6 +258,8 @@ public static class HerWear
         var ofPiece = new Dictionary<string, List<MeshInstance3D>>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
         var laid = new List<MeshInstance3D>();
+        // (pieces with spring bones: their links in the file's frame, and the file's frame into her skeleton's: PieceSprings)
+        var springing = new List<(ArmorPiece Row, List<PieceSprings.Link> Links, Transform3D PkgToSkel)>();
 
         // Each piece's meshes from its file (its outfit's, or its own), a file opened once.
         foreach (var g in rows.GroupBy(r => r.File ?? $"res://art/people/heroine_outfit_{r.Outfit}.gltf"))
@@ -265,6 +269,18 @@ public static class HerWear
             var scene = ps.Instantiate<Node3D>();
             var found = scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>()
                 .GroupBy(m => m.Name.ToString()).ToDictionary(x => x.Key, x => x.First());
+            // (a piece's spring bones added to her skeleton before its meshes are laid on it, as NpcPackage does)
+            var from = scene.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault();
+            var pkgToSkel = Transform3D.Identity;
+            for (Node? n = from; n != null && n != scene; n = n.GetParent()) if (n is Node3D n3) pkgToSkel = n3.Transform * pkgToSkel;
+            pkgToSkel = pkgToSkel.AffineInverse();
+            foreach (var r in g)
+            {
+                if (!r.HasSprings || PieceSprings.Off) continue;
+                var links = PieceSprings.FromRows(r.Springs);
+                PieceSprings.AddBones(p.Skeleton, from, links, pkgToSkel, r.Id);
+                springing.Add((r, links, pkgToSkel));
+            }
             foreach (var r in g)
             {
                 MeshInstance3D? anyFull = null;
@@ -302,6 +318,10 @@ public static class HerWear
         }
 
         if (Prof) GD.Print($"wear prof: pieces {ap.Elapsed.TotalMilliseconds:F1} ms");
+        // Each sprung piece's vertices given to its spring bones (once a mesh: PieceCarry), before the garment tuck reads them.
+        foreach (var sp in springing)
+            if (ofPiece.TryGetValue(sp.Row.Id, out var mis))
+                foreach (var t in Carry(p, sp, mis)) yield return t;
         // Each piece laid under the other outfits' pieces outside it (one calling's full set: none).
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var tuck = new TuckOut();
@@ -359,12 +379,36 @@ public static class HerWear
                 foreach (var (s, like) in lodShadows) lod.AddShadow(s, like);
             }
         }
+        // (her calling's gameplay meshes, lod_MAT, stand for every slot's MAT: each sprung piece's islands in them carried too)
+        var lodMeshes = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(m => m.Name.ToString().StartsWith("lod_") && m.Name != "lod_body" && !m.HasMeta(Meta)).ToList();
+        if (full && lodMeshes.Count > 0)
+            foreach (var sp in springing)
+                foreach (var t in Carry(p, sp, lodMeshes)) yield return t;
         // What draws of it at the play camera, one mesh a material (HerLod.Merge).
         if (Prof) GD.Print($"wear prof: lod {ap.Elapsed.TotalMilliseconds:F1} ms");
         if (HerLod.For(p) is { } hl) foreach (var mt in hl.MergeSteps(laid)) yield return mt;
         if (Prof) GD.Print($"wear prof: merge {ap.Elapsed.TotalMilliseconds:F1} ms");
+        // Each sprung piece swung, last of her skeleton's modifiers, over her finished pose (PieceSprings).
+        string bodyKey = "her:" + (P1Body.IsB(p.Skeleton) ? "B" : "A");
+        foreach (var sp in springing)
+        {
+            var meshes = (ofPiece.TryGetValue(sp.Row.Id, out var mis) ? mis : new List<MeshInstance3D>()).Concat(full ? lodMeshes : Enumerable.Empty<MeshInstance3D>()).ToList();
+            PieceSprings.Attach(p, sp.Row.Id, bodyKey, sp.Links, PieceSprings.FromRows(sp.Row.Correctives), meshes, sp.PkgToSkel,
+                follow: sp.Row.Carry?.Follow == true);
+        }
         GD.Print($"her wear: {calling}, {string.Join(" ", look.OrderBy(kv => kv.Key).Select(kv => kv.Value))}" + (full ? " (her calling's set)" : " (no gameplay model: mixed)")
             + (laidN > 0 ? $", garment tuck: {laidN} meshes laid in {laidMs:F1} ms (worker {tuck.WorkerMs:F1} ms)" : ""));
+    }
+
+    /// <summary>A sprung piece's meshes carried onto its spring bones (its row's "carry", else island at 6 cm, 60%).</summary>
+    static IEnumerable<System.Threading.Tasks.Task?> Carry(People.Person p, (ArmorPiece Row, List<PieceSprings.Link> Links, Transform3D PkgToSkel) sp, List<MeshInstance3D> meshes)
+    {
+        var c = sp.Row.Carry ?? new CarryRow();
+        float fs = sp.PkgToSkel.Basis.Scale.X;
+        var links = sp.Links.Where(l => p.Skeleton.FindBone(l.Bone) >= 0)
+            .Select(l => new PieceCarry.Spring(l.Bone, sp.PkgToSkel * l.Head, sp.PkgToSkel * l.Tail,
+                (float)(sp.Row.Springs?.FirstOrDefault(r => r.Bone == l.Bone)?.Reach ?? c.Reach) * fs)).ToList();
+        return PieceCarry.Steps(p.Skeleton, meshes, links, SurvivorUnchained.Play.SpringCarry.Parse(c.Rule), (float)c.Share, sp.Row.Id);
     }
 
     /// <summary>A piece's full mesh onto a person's skeleton, drawn as what it is made of (her pieces, and a Marionette
