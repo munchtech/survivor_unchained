@@ -1973,6 +1973,13 @@ public static class People
     {
         // (the inside of her mouth dark and unlit by depth: heroine_skin.gdshader mouth_in, heroine_mouth.py's colour)
         m.SetShaderParameter("mouth_in", 1f);
+        // (the cel model's hard highlight kept to her head's tightly curved forms (nose tip, lips, lids, ears): on her
+        // forehead, cheeks and jaw it drew pale, hard-edged patches; Look.SkinHighlight, heroine_spark.py)
+        if (ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.SparkMap))
+        {
+            m.SetShaderParameter("spark_map", GD.Load<Texture2D>(SurvivorUnchained.Look.SkinHighlight.SparkMap));
+            m.SetShaderParameter("spark_mask", 1f);
+        }
         // (the cel half-tone on the whole head cooler than the skin's warm CEL_MID: on the warm toned paint it read as a
         // saturated orange band from temple to cheek at a close framing in the sun, across the eye with the head bowed
         // (NPC skin judge r1; on her as much: face Oklab C p98 .195 against the NPC's .197). heroine_skin.gdshader's
