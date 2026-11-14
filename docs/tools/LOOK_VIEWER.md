@@ -63,6 +63,22 @@ with the render loop off and the tree paused (no GPU, about no CPU), so a viewer
 blocks another lead's Godot run and never competes with one for the GPU. A request waits in the
 queue (state `waiting-turn`) until a slot frees.
 
+## Measured (13 Nov, gf_keeper_lamp, waystation day, 1920x1080)
+
+Full-frame diffs (max abs / mean abs / % px > 2):
+
+| | play | chest |
+|---|---|---|
+| game_frame vs game_frame (the floor) | 39 / 0.0022 / 0.034% | 35 / 0.031 / 0.61% |
+| game_frame vs viewer (two replays) | 36-39 / 0.002 / 0.027-0.033% | 33-35 / 0.03 / 0.63-0.65% |
+| viewer vs viewer | 8 / 0.001 / 0.009% | 37 / 0.035 / 0.65% |
+
+The residue sits where game_frame differs from itself (a one-pixel column at the right edge, a few
+sparkles); the capture lands on the same draw (361 play, 481 chest) at the same TIME and TAA phase.
+Change to frame (a manifest edit, play camera): 29.5-30.7 s, of which the godot turn 4-6 s and the
+replay (scene load plus 6 s of game at 60 fps) 21-25 s. With every godot slot taken a replay waits for
+one (one request waited 224 s).
+
 ## What it does not cover
 
 - `spot: shade` outside the waystation (game_frame's ray search) is refused; the table offset
