@@ -1968,6 +1968,7 @@ public static class People
         // shade; the head's cooler half-tone on every part, not the body's orange line at the shadow's edge; no soft rim on
         // the body, whose stepped lobe broke into specks along her shoulders at night)
         m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.SkyKeep);
+        m.SetShaderParameter("sky_skin_amb", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);
         if (!FaceMidOff)
         {
             m.SetShaderParameter("face_mid", HeadMid);

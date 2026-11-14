@@ -93,6 +93,12 @@ uniform vec3 ambient_tint = vec3(1.0);
 // (the Look's shaded neck Oklab hue 262, C .051 against her lit cheek's 42); People.Skin sets Look.SkinLight.SkyKeep. Luminance
 // kept: only the hue of those two lights changes on her. (--skin-set "*:sky_skin=0": as before)
 uniform float sky_skin : hint_range(0.0, 1.0) = 0.0;
+// (skin-light, 13 Nov 2026, night-look-neck) The sky's own light (the ambient) on its own share (-1: sky_skin's): where the
+// sky is her only light (the shaded neck under her jaw) sky_skin's half of the night sky's navy cancelled her warmth to a
+// near-neutral (Oklab C .012, h 284), outside every skin spare of the grade (MoonSkin, PaintShadowSkin: h 15-90, C .012-.025
+// up), so the moon step and the painted shadow took it to navy (C .055 h 257). Over 1 the sky's hue turns a little warm on her.
+uniform float sky_skin_amb : hint_range(-1.0, 2.0) = -1.0;
+float sky_amb_k() { return sky_skin_amb >= 0.0 ? sky_skin_amb : sky_skin; }
 // The factor that takes sky_skin of a light's hue h (luminance 1) out of it, its luminance kept: h^-k, scaled so h x it has
 // h's luminance (skin-light, 13 Nov 2026)
 vec3 skin_hue_out(vec3 h, float k) {
@@ -889,7 +895,7 @@ void fragment() {
 	// cool colored shade, MB1's mauve (Oklab h 325, C 0.05); ambient_tint was fitted for today's soft light, where the
 	// sky's blue greyed her neck)
 	ALBEDO *= mix(mix(ambient_tint / body_back, vec3(1.0), pa), vec3(1.0), cel_on);
-	if (sky_skin > 0.0 && cel_on > 0.0) ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);   // (sky_skin)
+	if (sky_amb_k() > 0.0 && cel_on > 0.0) ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);   // (sky_skin, the sky's own share)
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
@@ -1012,7 +1018,7 @@ void light() {
 		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);
 	}
 	vec3 un = 1.0 / (mix(mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w), vec3(1.0), cel_on) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
-	if (sky_skin > 0.0 && cel_on > 0.0) un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);   // (sky_skin: the lamps as without it)
+	if (sky_amb_k() > 0.0 && cel_on > 0.0) un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);   // (sky_skin: the lamps as without it)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {

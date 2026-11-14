@@ -28,9 +28,12 @@ public class SkinLightTests
         Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
         var shader = Read("shaders", "heroine_skin.gdshader");
         Assert.Contains("uniform float sky_skin : hint_range(0.0, 1.0) = 0.0;", shader);
-        Assert.Contains("ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);", shader);
-        Assert.Contains("un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_skin), cel_on);", shader);
         Assert.Contains("skin_hue_out(cel_fill, sky_skin)", shader);
+        // (and the sky's own light past it, where the night sky alone lights her neck: navy under the grade at 0.5)
+        Assert.InRange(SkinLight.SkyKeepAmbient, 1.2f, 1.6f);
+        Assert.Contains("m.SetShaderParameter(\"sky_skin_amb\", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);", people);
+        Assert.Contains("ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);", shader);
+        Assert.Contains("un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);", shader);
     }
 
     /// <summary>Fault 1 (the orange line): every part takes the head's cooler half-tone, unless --face-mid off.</summary>

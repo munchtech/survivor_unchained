@@ -14,6 +14,14 @@ public static class SkinLight
     /// night band as a muted cool (h 270, C .031); 0.75 turned it brown.</summary>
     public const float SkyKeep = 0.5f;
 
+    /// <summary>The same for the sky's own light (the ambient) alone (heroine_skin.gdshader sky_skin_amb; over 1 the sky's hue
+    /// turns a little warm on her). Where the night sky is her only light, the shaded side of her neck under her jaw at the
+    /// Look, SkyKeep's half left her skin a near-neutral grey (Oklab C .012, h 284) under the grade, outside its skin spare
+    /// (hue 15-90, chroma .012-.025 up), and its painted moon shadow took that to navy (C .055 h 257). At 1.5 the neck goes in
+    /// at skin chroma and comes out a muted violet-grey (C .025 h 281) under a brown jaw shade; by day and in the close-ups
+    /// it moves nothing measurable (the sky is a small share of their light). 1.0 left C .050, 1.6 mottled.</summary>
+    public const float SkyKeepAmbient = 1.5f;
+
     /// <summary>The cel half-tone's level on every skin part (heroine_skin.gdshader face_mid, eased in whole, face_mid_mask 0),
     /// the head's since NPC skin r1. The skin's own CEL_MID (0.85, 0.45, 0.38) times her warm paint drew a saturated
     /// orange-red line along every shadow's edge on her body in the sun: round her arm's cast shadow on her side, under her
@@ -27,9 +35,10 @@ public static class SkinLight
     public const float KeyShadowBias = 0.01f;
 
     /// <summary>The close-ups' day rig key (rigs.json close_day key.intensity, times the world's sun). At 1.25 her lit
-    /// forehead and cheeks clipped under AgX to near white (Oklab L .91, C .053) beside a warm body; at 0.8 her face is
-    /// L .84, C .10, warm tan as her sheet, and her hair still reads.</summary>
-    public const double CloseDayKey = 0.8;
+    /// forehead and cheeks clipped under AgX to near white (Oklab L .91, C .053) beside a warm body; at 1.0 her face is
+    /// L .88, C .072 and her chest L .79, C .126, and her hair still reads. (0.8 turned her body orange, C .16, and an NPC's
+    /// darker paint on her base a muddy brown.)</summary>
+    public const double CloseDayKey = 1.0;
 
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
