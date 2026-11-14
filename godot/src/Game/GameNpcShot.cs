@@ -16,7 +16,7 @@ namespace SurvivorUnchained.Play;
 /// (NpcDef.Stand, as a talk plays it). q34: turned 0.7 rad off the camera (a three-quarter view of its own idle); turnDEG: turned DEG degrees (a working idle
 /// that turns it away: turn200 brings the smith's swing round to the camera). hold.ID: the weapon table's row ID in its right
 /// fist (holdl.ID: its left; PersonView.Hold: a lamp row by the lamp carry), over what its manifest's "held" gave that hand (a before/after of a
-/// package's own prop against the table's: World.NpcHeld).
+/// package's own prop against the table's: World.NpcHeld). reachX: the lamp carry's reach forced to X (0 the old lay, 1 held out).
 /// </summary>
 public partial class Game
 {
@@ -152,6 +152,9 @@ public partial class Game
         }
         if (parts.FirstOrDefault(p => p.StartsWith("hold.")) is string hold) v.Hold("handslot.r", null, hold[5..]);
         if (parts.FirstOrDefault(p => p.StartsWith("holdl.")) is string holdl) v.Hold("handslot.l", null, holdl[6..]);
+        // (reachX: the lamp carry's reach forced to X, a before/after of NpcTorchArm.Reach)
+        if (parts.FirstOrDefault(p => p.StartsWith("reach")) is string rp && float.TryParse(rp[5..], System.Globalization.CultureInfo.InvariantCulture, out var reach)
+            && v.Person.Skeleton.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") is { } carry) carry.Reach = reach;
         GD.Print($"npc shot: {name} plays {idle}");
         AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Turn = parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
     }

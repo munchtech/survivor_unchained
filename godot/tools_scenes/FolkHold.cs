@@ -54,6 +54,9 @@ public partial class FolkHold : Node
         view = new PersonView(spec, arms, 0.8 * scale);
         AddChild(view);
         if (who.StartsWith("pkg.") && who.Split('+', 2) is [_, var piece]) view.Hold("handslot.r", null, piece);
+        // (FOLKHOLD_REACH: the lamp carry's reach forced, a before/after of NpcTorchArm.Reach)
+        if (System.Environment.GetEnvironmentVariable("FOLKHOLD_REACH") is string re && float.TryParse(re, NumberStyles.Float, CultureInfo.InvariantCulture, out var reach)
+            && view.Person.Skeleton.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") is { } carry) carry.Reach = reach;
         var p = view.Person;
         var name = clip.StartsWith(FolkClips.Prefix) ? clip : People.Clip(p, clip);
         GD.Print($"folk_hold: {who} {clip} -> {name}");
