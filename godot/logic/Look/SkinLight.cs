@@ -59,6 +59,16 @@ public static class SkinLight
     /// and SkyKeepAmbient 2.2 the close-up's night neck shadow is (34,17,11) C .031 h 40 (13 Nov skin-light r3).</summary>
     public static readonly (float R, float G, float B) ShadeFill = (1.25f, 0.95f, 0.78f);
 
+    /// <summary>The shade's floor (the skin shader's shade_floor, every skin part, hers and every NPC's): where the key
+    /// doesn't reach, its dark side and its cast shadow alike, skin takes at least this share of the key's luminance as fill,
+    /// the rig's own fill counted, the gap in the part's warm fill (cel_fill_tone) and no sky's hue. The fill reached her cast
+    /// shadows (13 Nov r4: a red cel_fill_tone reddened her neck under her jaw as much as her jaw), but the rigs' fill is small
+    /// at the Look (0.08 by day) and at night, so the ambient's own hue by the normal's direction ruled her shade: the neck
+    /// facing down grey-green at the Look by day ((39,40,38) C .004) and violet-slate at night ((40,39,51) h 289) under a
+    /// warm jaw facing aside, and near black at the night close-up ((34,18,13), the nostrils at luminance 2-14). Nothing
+    /// changes where a rig's fill is over it (the day close-up's 0.55).</summary>
+    public const float ShadeFloor = 0.2f;
+
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The

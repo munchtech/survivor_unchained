@@ -1979,6 +1979,8 @@ public static class People
         m.SetShaderParameter("sky_skin_amb", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);
         // (her shade warm: the fill where the key does not reach, Look.SkinLight.ShadeFill)
         if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
+        // (and the shade's floor, cast shadow and dark side alike, where a rig's fill is small: Look.SkinLight.ShadeFloor)
+        m.SetShaderParameter("shade_floor", SurvivorUnchained.Look.SkinLight.ShadeFloor);
         if (!FaceMidOff)
         {
             m.SetShaderParameter("face_mid", HeadMid);

@@ -39,6 +39,12 @@ uniform vec3 cel_tone = vec3(1.0);
 // paint is darker than hers takes less of cel_tone on its albedo (its lit side read saturated orange, x18 V3) and the rest
 // here, so its shade keeps the warmth cel_tone gave it (less of it read lilac). 1: as before, hers.)
 uniform vec3 cel_fill_tone = vec3(1.0);
+// (skin-light r4, 13 Nov 2026) The shade's floor: where the directional key doesn't reach, its band's dark side and its
+// cast shadow alike, the skin's shade takes at least this share of the key's luminance as fill, the rig's own fill
+// (cel_rig.y) counted and only the gap topped up, in cel_fill_tone's warmth and no sky's hue (Look.SkinLight.ShadeFloor).
+// The rig's fill alone is small at the Look and at night, so a shadow cast on her neck kept the ground's or the night
+// sky's hue (grey-green, violet-slate) beside a warm jaw and went near black at the night close-up. 0: as before.
+uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
 // 1.5 cm they read as large and even on her hands).
@@ -1065,6 +1071,9 @@ void light() {
 	// (cel: the key's fill where its light doesn't reach)
 	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * cel_fill_tone
 		* (sky_skin > 0.0 ? skin_hue_out(cel_fill, sky_skin) : vec3(1.0));   // (sky_skin: the fill's hue too)
+	// (the shade's floor: the gap to shade_floor of the key's light, where its fill is, warm; cast or turned away the same)
+	if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && shade_floor > cel_rig.y)
+		DIFFUSE_LIGHT += cel_on * mouth_lit * cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * cel_fill_tone;
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);

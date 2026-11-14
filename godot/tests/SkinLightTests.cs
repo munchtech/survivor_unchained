@@ -110,6 +110,25 @@ public class SkinLightTests
         Assert.Contains("if (FaceId(look) == \"own\") f *= new Vector3(SurvivorUnchained.Look.SkinLight.LookFaceTrim.R", people);
     }
 
+    /// <summary>Fault 2 (r4: the cast shadow on her neck grey-green by day, violet-slate and near black at night): every skin
+    /// part takes the shade's floor before the --skin-set switch; the shader tops the rig's fill up to it where the key's band
+    /// or its cast shadow keeps the key off, in the part's warm fill, never past the day close-up's fill.</summary>
+    [Fact]
+    public void ShadeFloorIsTheRules_EveryPartTakesIt_TheShaderTopsTheFillUp()
+    {
+        Assert.InRange(SkinLight.ShadeFloor, 0.1f, 0.5f);
+        Assert.True(SkinLight.ShadeFloor < 0.55f, "under the day close-up's fill (rigs.json close_day fill.strength 0.55): nothing changes there");
+        var people = Read("src", "Actors", "People.cs");
+        int at = people.IndexOf("m.SetShaderParameter(\"shade_floor\", SurvivorUnchained.Look.SkinLight.ShadeFloor);", StringComparison.Ordinal);
+        Assert.True(at > 0, "People.Skin sets shade_floor from Look.SkinLight.ShadeFloor");
+        Assert.DoesNotContain("if (who == \"heroine\") m.SetShaderParameter(\"shade_floor\"", people);
+        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && shade_floor > cel_rig.y)", shader);
+        Assert.Contains("* cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * cel_fill_tone;", shader);
+    }
+
     /// <summary>Fault 1 (spray-tan orange): her cel warmth is the rule's, warm but less red than (1.39, 0.80, 0.54).</summary>
     [Fact]
     public void HerCelToneIsTheRules()
