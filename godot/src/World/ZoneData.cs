@@ -256,7 +256,9 @@ public sealed class ZoneData
                     new Vector3(x, (float)m.Ground.HeightAt(x, z), z))], KitLook.Look.Plain));
                 GD.Print($"stand-proof {at[0]} at {x:0.00},{z:0.00} yaw {F(2, 0):0} scale {F(3, 1):0.00}");
             }
-        foreach (var p in m.Props)
+        // A dungeon's dressing is made pieces too (the Pack's bones, the Kerchiefs' fences: Pieces, no file to load):
+        // MapRun sets it all down through the scene (AddProp), as an arena's cover is.
+        foreach (var p in m.Dungeon == null ? m.Props : [])
         {
             PropHouse.Add(-1);
             Props.Add((p.Id, new Transform3D(new Basis(Vector3.Up, (float)p.Rot).Scaled(Vector3.One * (float)p.Scale), new Vector3((float)p.X, (float)p.Y, (float)p.Z))));

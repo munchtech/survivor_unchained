@@ -206,6 +206,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         press = new PackKit(b);
         G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, IsDungeon ? "A dungeon" : "A Wayfinder's map"));
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
+        // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
+        if (map.Dungeon != null) foreach (var p in map.Props) G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale);
         if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();
     }
