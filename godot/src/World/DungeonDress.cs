@@ -55,7 +55,7 @@ public static partial class DungeonDress
             int s = i + 1;
             if (den) Den(c, r, s); else Ravine(c, r, s);
         }
-        if (den) { DenDecals(c); DenBankDecals(c); }
+        if (den) { DenDecals(c); DenBankDecals(c); DenFloorDecals(c); }
         if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.45f, 1.0f, 0.88f) });
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });
         // Poles (palisade, tents, banners) in one mesh in bark; canvas (vertex-coloured per tent) and banner cloth in one each.
