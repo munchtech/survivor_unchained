@@ -723,7 +723,7 @@
    "name": "Padded Jerkin",
    "kind": "body",
    "rarity": 0,
-   "icon": "armor_light",
+   "icon": "corset",
    "value": 12,
    "base": true,
    "description": "Laced, padded leather.",
