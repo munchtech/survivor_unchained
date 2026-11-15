@@ -2851,6 +2851,17 @@ public static class People
                 }
     }
 
+    /// <summary>Her skin's shade as under a cold key whatever the key (heroine_skin.gdshader's shade_night, 0 to 1): the Look
+    /// at night (GameFront, the Look rig's weight), whose warm camp-fire key leaves Look.SkinLight.ShadeCold off while its
+    /// shade is the night's fill. 0 outside it.</summary>
+    public static void HerShadeNight(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("shade_night", k);
+    }
+
     public static void HerSkinHold(Person p, float k)
     {
         if (p.Body != "heroine" || skinShader2 == null) return;

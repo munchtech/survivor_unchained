@@ -53,6 +53,11 @@ uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;
 uniform float shade_cold : hint_range(0.0, 1.0) = 0.0;
 // (and the shade's floor under a cold key, eased in the same way; under it shade_floor. Look.SkinLight.ShadeFloorCold)
 uniform float shade_floor_cold : hint_range(0.0, 1.0) = 0.0;
+// (and the same as under a cold key wherever this says, whatever the key: the Look at night, whose key is the camp fire's
+// warm light and whose shade is the night's indigo fill (People.HerShadeNight, the Look rig's weight at night). There the
+// warm fill tone turned her neck's and cheek's shade red-brown under a pale firelit chest (judge 4: C/L .18-.23 against
+// lit .106). 0: by the key alone.)
+uniform float shade_night : hint_range(0.0, 1.0) = 0.0;
 // (skin-light r4b, 14 Nov 2026) Her body's tone (body_tone, a blue fitted against the Look rig's warm key) out of her
 // neck's shade, this share: under the rig her neck keeps that tone and only the key's light is warmed back (key_tone), so
 // in shade (the sky's light, the fill, the shade's floor) her neck kept the blue: grey at the Look by day (Oklab C .005),
@@ -1113,7 +1118,7 @@ void light() {
 	float sh_floor = shade_floor;
 	if (LIGHT_IS_DIRECTIONAL && (shade_cold > 0.0 || shade_floor_cold > shade_floor)) {
 		float fkl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
-		float cold = smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl);
+		float cold = max(smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl), shade_night);
 		fill_tone = mix(cel_fill_tone, vec3(1.0), shade_cold * cold);
 		sh_floor = mix(shade_floor, max(shade_floor, shade_floor_cold), cold);
 	}

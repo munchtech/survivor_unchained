@@ -220,4 +220,20 @@ public class SkinLightTests
         Assert.InRange(0.2126f * t.R + 0.7152f * t.G + 0.0722f * t.B, 0.85f, 0.97f);
         Assert.Contains("ArgVec(\"cel-tone\", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B))", Read("src", "Actors", "People.cs"));
     }
+
+    /// <summary>Fault 1 at the Look by night (r5: a warm camp-fire key, so ShadeCold's cold-key gate stays off, and the
+    /// night's fill in her shade): GameFront's portrait light sets shade_night to the rig's weight at night only, and clears
+    /// it with the rig; the shader counts it as a cold key for the fill's tone and the shade's floor.</summary>
+    [Fact]
+    public void ShadeNight_TheLookAtNightOnly_TheShaderTakesItAsACold()
+    {
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float shade_night : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("float cold = max(smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl), shade_night);", shader);
+        var front = Read("src", "Game", "GameFront.cs");
+        Assert.Contains("People.HerShadeNight(herRig, scene?.View.Night == false ? 0f : p);", front);
+        Assert.Contains("People.HerShadeNight(herRig, 0);", front);
+        var people = Read("src", "Actors", "People.cs");
+        Assert.Contains("m.SetShaderParameter(\"shade_night\", k);", people);
+    }
 }
