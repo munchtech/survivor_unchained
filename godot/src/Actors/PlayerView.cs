@@ -216,6 +216,7 @@ public partial class PlayerView : Node3D
     PersonView? view;
     // Weapons sheathed in town (Play/Sheath.cs): fed each frame from the close-up's situation (Calm).
     readonly Sheath sheath = new();
+    readonly StanceHands stanceHands = new();
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
@@ -1058,6 +1059,7 @@ public partial class PlayerView : Node3D
         Ghostly(p.Alive && b.Art.WraithT > 0);
         if (mine) XrayStep((float)dt);
         if (mine) FloorStep(b, (float)dt);
+        if (mine && view != null && stanceHands.Follow(view, loadout.Arms, b.StanceNow, sheath.Sheathed) && armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;   // (her off-hand follows the stance)
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
         // sheathed, as the game plays it.

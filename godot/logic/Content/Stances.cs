@@ -48,6 +48,13 @@ public sealed class StanceDef
     public List<StanceMod> Mods = new();
     public StanceBlow Blow = new();
     public SwapStrike Strike = new();
+    /// <summary>(view only) What her off-hand shows in this stance, by slot ("forearm.l", "handslot.l"): an Arms piece id, "" for
+    /// empty; a slot left out is as her loadout has it.</summary>
+    public Dictionary<string, string> Held = new();
+
+    /// <summary>The piece shown in `slot` in this stance (null: empty); `loadoutPiece` is what her loadout has there, kept when the stance names none.</summary>
+    public string? Piece(string slot, string? loadoutPiece) =>
+        Held.TryGetValue(slot, out var id) ? (id == "" ? null : id) : loadoutPiece;
 
     /// <summary>Its mods as the stat block takes them, credited to the stance.</summary>
     public IEnumerable<StatMod> StatMods => Mods.Select(m => new StatMod(m.Stat, m.Kind, m.Value, $"stance:{Id}"));
@@ -70,6 +77,9 @@ public static class Stances
     public static StancesFile File => file ??= JsonSerializer.Deserialize<StancesFile>(Json.ReadContent("stances.json"), Json.Options)!;
 
     public static IReadOnlyList<StanceDef> All => File.Stances;
+
+    /// <summary>The piece in `slot` of her off-hand with `stance` taken up (set A or no stance: the loadout's own).</summary>
+    public static string? Piece(StanceDef? stance, string slot, string? loadoutPiece) => stance == null ? loadoutPiece : stance.Piece(slot, loadoutPiece);
 
     public static StanceDef? Find(string? id) => id == null ? null : File.Stances.FirstOrDefault(s => s.Id == id);
 

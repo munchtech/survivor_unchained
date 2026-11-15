@@ -498,6 +498,19 @@ public partial class PersonView : Node3D, INpcView
     }
     bool emptyHanded;
 
+    /// <summary>(StanceHands) One hand slot's piece changed in place, view only: the old mount (and its attachment) freed, the new
+    /// one made, and sheathed if her kit is. False (nothing touched) while a Flare's grip holds her kit as stashed.</summary>
+    public bool HoldPiece(string slot, string? piece, bool sheathed)
+    {
+        if (flareGrip != null) return false;
+        if (held.Remove(slot, out var old)) (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
+        seats.Remove(slot);
+        lookSheathed.Remove(slot);
+        Hold(slot, null, string.IsNullOrEmpty(piece) ? null : piece);
+        if (sheathed && piece != null && pieces.TryGetValue(slot, out var id)) Swap(slot, id, true);
+        return true;
+    }
+
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();
