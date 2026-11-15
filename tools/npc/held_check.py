@@ -1,10 +1,17 @@
-"""A base-body NPC holding its own props (World.NpcHeld) in the real game: the package staged from a rigged glb (a Marionette
-workshop build on the current base body, e.g. generated/rnd/x18/w8/v1/npc.glb), its manifest's "held" naming a hand
-lamp (left, carry lamp) and the smith's hammer (right, carry hand), read through --npc-overlay (nothing copied into
-art/npc). Then the frames (the play camera and the close-up, before = the carry's Reach forced to 0, after = as built)
-and the lamp's clearance to the body in mm (tools_scenes/FolkHold.cs + tools/anim/folkhold.py, idle and walk).
+"""A base-body NPC holding its own props (World.NpcHeld) in the real game: the package staged from a Marionette workshop
+build on the current base body (generated/rnd/x18/w8/v1: props/idle/sock.glb and props/walk/sock.glb, the dressed body
+on its OWN rest with its own clip), its manifest's "held" naming a hand lamp (left, carry lamp) and the smith's hammer
+(right, carry hand), read through --npc-overlay (nothing copied into art/npc).
 
-    python tools/npc/held_check.py OUT --glb GLB [--name x18_keeper_held] [--hair-colour #2a1c14] [--only shoot|measure]
+The base body can't stand on the game's folk clips (its rest isn't the old packages' heroine rest: on folk/f_idle she
+lies on her back, as R&D's LOG rig 6 found), so the frames go through Marionette's game_frame.gd hook as R&D's own
+held check does: the glb's own clip (--gf-clip), the package layers off but the carry's (NpcTorchArm, NpcHands), the
+game's own PersonView.Hold(slot, "", "own") called on the shot NPC (--gf-held), the clip held at set times, each
+capture's pose and held meshes dumped; Marionette's tools/npc/held_clear.py measures the props against the body (mm).
+Before = the lamp carry's Reach forced to 0 (the shot's reach0), after = as built. Frames at the play camera and the
+chest camera (the closest an NPC is seen), and the walk at the play camera.
+
+    python tools/npc/held_check.py OUT --rnd DIR [--name x18_keeper_held] [--hair-colour #2a1c14] [--only shoot|measure]
 
 The prop files' frame (NpcHeld): origin = the grip (where the fist closes), +Y out of the fist along the shaft (the
 hammer's head; the lamp's hanging ring, the lamp below along -Y), +Z the face, drawn 1:1.
@@ -29,11 +36,17 @@ ROOT = Path(__file__).resolve().parents[2]
 G = ROOT / "godot"
 GODOT = os.environ.get("GODOT_EXE", "C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe")
 TURN = "C:/Users/munch/Desktop/survivorsunchained/tools/turn.py"
+MAR = Path(os.environ.get("MARIONETTE", "C:/Users/munch/Desktop/Marionette"))
+HOOK, HELD_CLEAR = MAR / "tools/npc/game_frame.gd", MAR / "tools/npc/held_clear.py"
 LAMP, HAMMER = G / "art/props/keeper_lamp/keeper_lamp.glb", G / "art/weapons/smith_hammer.glb"
 BASE = ["--quick", "warden", "--sex", "female", "--nohud", "--zone", "verge", "--facing", "0", "--seed", "1", "--time", "day", "--clock", "120"]
-# (shot, --npc flags, extra args)
-SHOTS = [("play", "", ["--seconds", "6"]), ("close", ":swap:chest", ["--close", "1", "--idle-after", "1", "--seconds", "8"]),
-         ("play_walk", ":walk", ["--seconds", "6"])]
+HELD = ["--gf-held", "handslot.l=own,handslot.r=own"]
+# (shot, clip, --npc flags, extra game args, held times in s): the glb's three-quarter turn (game_frame.py's 50 degrees)
+IDLE_AT = [round(16.6 * i / 12, 2) for i in range(12)]
+SHOTS = [("play", "idle", ":turn50", ["--idle-after", "1000000"], IDLE_AT),
+         ("chest", "idle", ":swap:chest:turn50", ["--close", "1", "--idle-after", "1"], [0.0, 5.5, 11.1]),
+         ("walk", "walk", ":walk:turn50", ["--idle-after", "1000000"], [round(1.33 * i / 6, 3) for i in range(6)])]
+HOLD = 30
 
 
 def glb_read(p):
@@ -82,12 +95,12 @@ def lamp_edit(j):
 
 
 def stage(out, glb, name, hair):
-    pk = out / "pkg"
+    pk = out / ("pkg_" + name)
     pk.mkdir(parents=True, exist_ok=True)
     body = pk / "body.glb"
     if not body.exists():
         try:
-            os.link(glb, body)   # (a hard link: the 220 MB glb not copied; removing it leaves the source)
+            os.link(glb, body)   # (a hard link: the 200 MB glb not copied; removing it leaves the source)
         except OSError:
             shutil.copyfile(glb, body)
     j, _ = glb_read(glb)
@@ -111,46 +124,43 @@ def run(cmd, log, env=None):
     return r.returncode
 
 
-def shoot(out, pk, name):
-    shots = G / ".shots"
-    ov = ["--npc-overlay", f"{name}={pk.as_posix()}"]
+def shoot(out, pkgs):
     for tag, flags in (("before", ":reach0"), ("after", "")):
-        for shot, f, extra in SHOTS:
-            if tag == "before" and shot == "play_walk":
+        for shot, clip, f, extra, at in SHOTS:
+            if tag == "before" and shot == "walk":
                 continue
-            t = f"held_{tag}_{shot}"
-            for x in shots.glob(f"{t}*.png"):
+            name, pk = pkgs[clip]
+            d = out / tag
+            d.mkdir(parents=True, exist_ok=True)
+            for x in d.glob(f"{shot}_*"):
                 x.unlink()
-            rc = run([GODOT, "--path", ".", "--fixed-fps", "60", "--resolution", "1920x1080", "--", *BASE, *ov, *extra,
-                      "--npc", name + f + flags, "--npc-debug", "--shot", t], out / f"log_{tag}_{shot}.txt")
-            got = sorted(x for x in shots.glob(f"{t}*.png") if re.fullmatch(rf"{t}(_\d+)?\.png", x.name))
-            if got:
-                shutil.move(str(got[0]), out / f"{tag}_{shot}.png")
-            print(f"{tag} {shot}: {'ok' if got else f'MISSING (exit {rc})'}")
+            labels = [f"t{i:02d}" for i in range(len(at))]
+            secs = 6 + len(at) * HOLD / 60 + 3
+            gf = ["--gf-clip", clip, "--gf-mods", "all", *HELD, "--gf-solo", "--gf-at", ",".join(f"{l}={t:g}" for l, t in zip(labels, at)),
+                  "--gf-start", "6", "--gf-hold", str(HOLD), "--gf-save", (d / shot).as_posix()]
+            rc = run([GODOT, "--path", ".", "--fixed-fps", "60", "--resolution", "1920x1080", "-s", HOOK.as_posix(), "--", *BASE,
+                      "--npc-overlay", f"{name}={pk.as_posix()}", *extra, "--seconds", f"{secs:g}", "--npc", name + f + flags,
+                      "--npc-debug", "--shot", f"held_{tag}_{shot}", *gf], out / f"log_{tag}_{shot}.txt")
+            got = sorted(d.glob(f"{shot}_t*.png"))
+            print(f"{tag} {shot}: {len(got)}/{len(at)} frames (exit {rc})")
 
 
-def measure(out, pk, name):
-    for tag, reach in (("before", "0"), ("after", None)):
-        env = dict(os.environ)
-        env.pop("FOLKHOLD_REACH", None)
-        if reach:
-            env["FOLKHOLD_REACH"] = reach
-        for clip in ("Idle", "Walk"):
-            dump = out / f"hold_{tag}_{clip}.json"
-            rc = run([GODOT, "--headless", "--path", ".", "-s", "res://tools_scenes/folk_hold.gd", "--", str(dump), f"pkg.{name}", clip, "12",
-                      "--npc-overlay", f"{name}={pk.as_posix()}"], out / f"log_hold_{tag}_{clip}.txt", env)
-            if dump.exists():
-                r = subprocess.run([sys.executable, str(ROOT / "tools/anim/folkhold.py"), str(dump)], capture_output=True, text=True)
-                (out / f"clear_{tag}_{clip}.txt").write_text(r.stdout + r.stderr, encoding="utf-8")
-                print(f"clearance {tag} {clip}: {out / f'clear_{tag}_{clip}.txt'}")
-            else:
-                print(f"clearance {tag} {clip}: NO DUMP (exit {rc})")
+def measure(out, pkgs):
+    for tag in ("before", "after"):
+        for shot, clip, *_ in SHOTS:
+            d = out / tag
+            if not (d / f"{shot}_held_mesh.json").exists():
+                continue
+            r = subprocess.run([sys.executable, str(HELD_CLEAR), str(pkgs[clip][1] / "body.glb"), str(d), "--cam", shot],
+                               capture_output=True, text=True, cwd=MAR)
+            (out / f"clear_{tag}_{shot}.txt").write_text(r.stdout + r.stderr, encoding="utf-8")
+            print(f"clearance {tag} {shot} (exit {r.returncode}): {out / f'clear_{tag}_{shot}.txt'}")
 
 
-def sheets(out):
+def sheets(out, label="t00"):
     from PIL import Image, ImageDraw
-    for shot in ("play", "close"):
-        a, b = out / f"before_{shot}.png", out / f"after_{shot}.png"
+    for shot in ("play", "chest"):
+        a, b = out / "before" / f"{shot}_{label}.png", out / "after" / f"{shot}_{label}.png"
         if not (a.exists() and b.exists()):
             continue
         A, B = Image.open(a).convert("RGB"), Image.open(b).convert("RGB")
@@ -158,32 +168,34 @@ def sheets(out):
         d = ImageDraw.Draw(s)
         s.paste(A, (0, 28))
         s.paste(B, (A.width + 8, 28))
-        d.text((8, 8), f"BEFORE (lamp carry Reach 0) - {shot} camera, 1:1", fill=(230, 230, 230))
-        d.text((A.width + 16, 8), f"AFTER (as built) - {shot} camera, 1:1", fill=(230, 230, 230))
-        s.save(out / f"sheet_{shot}.png")
-        print(f"sheet: {out / f'sheet_{shot}.png'}")
+        d.text((8, 8), f"BEFORE (lamp carry Reach 0) - {shot} camera, {label}, 1:1", fill=(230, 230, 230))
+        d.text((A.width + 16, 8), f"AFTER (as built) - {shot} camera, {label}, 1:1", fill=(230, 230, 230))
+        s.save(out / f"sheet_{shot}_{label}.png")
+        print(f"sheet: {out / f'sheet_{shot}_{label}.png'}")
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out")
-    ap.add_argument("--glb", required=True)
+    ap.add_argument("--rnd", required=True, help="a workshop build folder (props/idle/sock.glb, props/walk/sock.glb)")
     ap.add_argument("--name", default="x18_keeper_held")
     ap.add_argument("--hair-colour", default="#2a1c14")
     ap.add_argument("--only", choices=["shoot", "measure"])
     a = ap.parse_args()
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
-    pk = stage(out, Path(a.glb), a.name, a.hair_colour)
-    print(f"staged {pk}")
+    rnd = Path(a.rnd)
+    pkgs = {clip: (nm, stage(out, rnd / "props" / clip / "sock.glb", nm, a.hair_colour))
+            for clip, nm in (("idle", a.name), ("walk", a.name + "_walk"))}
+    print(f"staged {[str(p) for _, p in pkgs.values()]}")
     who = f"npc held: {a.name}"
     if subprocess.run([sys.executable, TURN, "take", "godot", who, "--wait", "30"]).returncode:
         sys.exit("no godot turn")
     try:
         if a.only != "measure":
-            shoot(out, pk, a.name)
+            shoot(out, pkgs)
         if a.only != "shoot":
-            measure(out, pk, a.name)
+            measure(out, pkgs)
     finally:
         subprocess.run([sys.executable, TURN, "give", "godot", who])
     sheets(out)

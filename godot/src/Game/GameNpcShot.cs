@@ -152,11 +152,10 @@ public partial class Game
         }
         if (parts.FirstOrDefault(p => p.StartsWith("hold.")) is string hold) v.Hold("handslot.r", null, hold[5..]);
         if (parts.FirstOrDefault(p => p.StartsWith("holdl.")) is string holdl) v.Hold("handslot.l", null, holdl[6..]);
-        // (reachX: the lamp carry's reach forced to X, a before/after of NpcTorchArm.Reach)
-        if (parts.FirstOrDefault(p => p.StartsWith("reach")) is string rp && float.TryParse(rp[5..], System.Globalization.CultureInfo.InvariantCulture, out var reach)
-            && v.Person.Skeleton.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") is { } carry) carry.Reach = reach;
+        // (reachX: the lamp carry's reach forced to X, a before/after of NpcTorchArm.Reach; the driver holds it each frame)
+        float? forced = parts.FirstOrDefault(p => p.StartsWith("reach")) is string rp && float.TryParse(rp[5..], System.Globalization.CultureInfo.InvariantCulture, out var reach) ? reach : null;
         GD.Print($"npc shot: {name} plays {idle}");
-        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Turn = parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
+        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")) { Reach = forced, Turn =parts.Contains("q34") ? 0.7 : parts.FirstOrDefault(p => p.StartsWith("turn")) is string tp && double.TryParse(tp[4..], System.Globalization.CultureInfo.InvariantCulture, out var deg) ? deg * Math.PI / 180 : 0 });
     }
 
     sealed partial class NpcShotDriver : Node
@@ -165,6 +164,8 @@ public partial class Game
         readonly PersonView v;
         readonly bool walk, swap, chest, side;
         public double Turn;
+        /// <summary>reachX: the lamp carry's reach held at X every frame (a later Hold, e.g. a shot hook's, lays it anew).</summary>
+        public float? Reach;
         double t;
         Camera3D? chestCam, playCam;
 
@@ -173,6 +174,7 @@ public partial class Game
         public override void _Process(double delta)
         {
             t += delta;
+            if (Reach is float forced && v.Person.Skeleton.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") is { } carry) carry.Reach = forced;
             if (game.scene == null || game.Battle?.Player is not { } pl || GetViewport().GetCamera3D() is not Camera3D cam) return;
             if (swap && game.scene.Player is { } her) her.Visible = false;
             if (swap) game.CloseStandIn = v;
