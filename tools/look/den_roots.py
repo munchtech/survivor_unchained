@@ -2,7 +2,10 @@
 photo, scan or outside source; numpy + PIL only, deterministic).
 
     python tools/look/den_roots.py build   -> godot/art/dungeon/den/bank_{albedo,normal,arh}.png + bank.json,
-                                              bank_decals.png + bank_decals.json, roots_preview.jpg
+                                              bank_decals.png + bank_decals.json, roots_preview.jpg, and the floor set
+    python tools/look/den_roots.py build floor -> floor_decals.png + floor_decals.json (128 px/m: long floor roots off
+                                              the bank, dark frame masses for the camera-side wall, whole pits in
+                                              plan), floor_preview.jpg; nothing else rewritten
     python tools/look/den_roots.py check   -> per variant root coverage, median values (lit roots, all roots, gaps),
                                               the seam error at the tile edges, decal count by kind (reads the outputs)
 
@@ -672,12 +675,12 @@ def decal_image(F, RT, seed):
     return np.concatenate([to8(rgb), to8(a)[..., None]], -1)
 
 
-def pack(sizes):
+def pack(sizes, aw=ATLAS_W):
     order = sorted(range(len(sizes)), key=lambda i: -sizes[i][1])
     x, y, shelf, rects = PAD, PAD, 0, {}
     for i in order:
         w, h = sizes[i]
-        if x + w + PAD > ATLAS_W:
+        if x + w + PAD > aw:
             x, y, shelf = PAD, y + shelf + PAD, 0
         rects[i] = (x, y, w, h)
         x += w + PAD
@@ -714,6 +717,461 @@ def build_decals(out):
            "anchor": "[fx, fy] in the rect (0..1, x right, y down)", "decals": dec}
     with open(os.path.join(out, "bank_decals.json"), "w", encoding="utf-8", newline="\n") as fh:
         json.dump(man, fh, indent=1)
+
+
+# ---- the floor decals (floor_decals.png): long floor roots, the camera-side frame masses, whole pits --------------------
+# FROM den_boss.png (the two pits on the right half: a lit earth lip, a dark slate far wall falling to black, roots
+# pouring over the rims; the long roots crossing the floor) and den_room.png (the dark root masses along the frame's
+# bottom). The pit is painted in plan for the play camera (looking image-up, 62 degrees down).
+FL_PPM = 128                # the floor atlas, px per metre (fields drawn at FL_PPM * S)
+FL_ATLAS_W = 4096
+FLOORS = [(1.6, 5.5), (2.2, 7.0), (1.2, 4.5), (2.5, 7.2), (1.8, 6.0), (2.0, 6.5)]   # (across, along) m
+FRAMES = [(4.0, 2.0), (4.8, 2.3), (3.4, 1.8), (4.4, 2.4)]                          # (along the wall, out) m
+PITS = 3
+PIT_M = 8.4                 # a pit's square rect, the mouth centred (room for the lip, its shadow and the root starts)
+MOUTH_R = 2.6
+COT = 1.0 / math.tan(math.radians(62.0))      # a point d m down the far wall shows COT d (0.53 d) lower in plan
+WALL_D = 2.4                # m of far wall seen before the black
+FPAL = {
+    "lip_lit":  "#7b583c",  # the pit lip facing the light (upper left)
+    "lip":      "#5a4030",
+    "lip_dk":   "#33261f",  # the lip turned from the light, and its inner roll
+    "slate_hi": "#4d4d55",  # the far wall's ledges
+    "slate":    "#34343c",
+    "slate_dk": "#202027",
+    "crack":    "#0e0d11",
+    "void":     "#030303",
+    "frame_gap": "#0a0909", # the frame masses' gaps against the bank
+}
+
+
+def arc(D): return np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(D[:, 0]), np.diff(D[:, 1])))])
+
+
+def wrapa(a): return (a + math.pi) % (2 * math.pi) - math.pi
+
+
+def inside_rect(D, W, Hh, top=False, bottom=True):
+    """A root's dense rows stay off the rect's sides (and its top unless it enters there, its bottom unless allowed)."""
+    m = D[:, 3] > 0.3
+    bad = (D[m, 0] - D[m, 3] < 4).any() or (D[m, 0] + D[m, 3] > W - 4).any()
+    if bottom:
+        bad = bad or (D[m, 1] + D[m, 3] > Hh - 4).any()
+    if not top:
+        bad = bad or (D[m, 1] - D[m, 3] < 4).any()
+    return not bad
+
+
+def calm(D, win_m, ppm):
+    """Low-pass a root's radius and height along it (half sunk, open_root's knots read as lumps)."""
+    n = max(3, int(win_m * ppm / max(np.median(np.hypot(np.diff(D[:, 0]), np.diff(D[:, 1]))), 1e-3)) | 1)
+    k = np.hanning(n + 2)[1:-1]; k /= k.sum()
+    for j in (2, 3):
+        D[:, j] = np.convolve(np.pad(D[:, j], n // 2, mode="edge"), k, mode="valid")
+    return D
+
+
+def tip_sink(D, frac=0.18, zd=0.8):
+    """The tip sinks into the earth over its last frac of the length only (to zd x r below 0)."""
+    s = arc(D)
+    w = smooth((s - (1 - frac) * s[-1]) / max(frac * s[-1], 1.0))
+    D[:, 2] = D[:, 2] * (1 - w) - w * zd * D[:, 3]
+    return D
+
+
+def decal_floor(i, wm, hm):
+    """Long floor roots: 1-3 enter the TOP edge at full thickness (out of the bank), run down the rect in a slow S,
+    half sunk in the earth, dive under it once, fork once or twice and thin to tips that sink."""
+    ppm = FL_PPM * S
+    W, Hh = int(round(wm * FL_PPM)) * S, int(round(hm * FL_PPM)) * S
+    for attempt in range(300):
+        rng = np.random.default_rng(seed_of("den_roots", "floor", i, attempt, VERSION))
+        F = Field(W, Hh, ppm, False)
+        RT = Roots(F, rng)
+        n = 1 if wm < 1.5 else (int(rng.integers(1, 3)) if wm < 2.1 else int(rng.integers(2, 4)))
+        xs = (np.arange(n) + 0.5) / n * wm + rng.normal(0, 0.06, n)
+        rr = np.concatenate([[rng.uniform(0.25, 0.4)], rng.uniform(0.18, 0.3, n - 1)])[rng.permutation(n)]
+        dense, mains, ok = [], [], True
+        for k in range(n):
+            r0 = float(rr[k])
+            room = min(xs[k] - r0 - 0.08, wm - xs[k] - r0 - 0.08)
+            if room < 0.03:
+                ok = False; break
+            amp = rng.uniform(0.45, 0.9) * min(room, 0.45)
+            phi = rng.uniform(0, 2 * math.pi)
+            ly = rng.uniform(0.74, 0.92) * hm                 # the tip's y
+            u = np.linspace(0, 1, max(7, int((ly + 0.3) / 0.4) + 1))
+            C = np.column_stack([xs[k] + amp * np.sin(2 * math.pi * 0.9 * u + phi), -0.3 + u * (ly + 0.3)])
+            C[1:-1] += rng.normal(0, 0.03, (len(C) - 2, 2))
+            D = tip_sink(calm(RT.open_root(C * ppm, r0, -0.25 * r0, 0.02, tip=(0.45, 0.6), emerge=False, zdive=None,
+                                           tip_r=0.12), 0.5, ppm))
+            s = arc(D)
+            D[:, 2] += (1 - smooth(s / (0.9 * ppm))) * 0.25 * D[:, 3]     # (round where it leaves the bank)
+            sd = rng.uniform(0.35, 0.6) * s[-1]
+            D[:, 2] -= 1.2 * D[:, 3] * np.exp(-((s - sd) / (0.35 * ppm)) ** 2)   # the dive under the earth
+            if not inside_rect(D, W, Hh, top=True):
+                ok = False; break
+            dense.append(D); mains.append((D, s, sd))
+        if not ok:
+            continue
+        for D, s, sd in mains:
+            nf, tries = int(rng.integers(1, 3)), 0
+            while nf and tries < 30:
+                tries += 1
+                lo, hi = max(1.1 * ppm, 0.22 * s[-1]), 0.62 * s[-1]          # (s from y = -0.3 m: 0.8 m into the rect)
+                if hi <= lo:
+                    break
+                si = rng.uniform(lo, hi)
+                if abs(si - sd) < 0.6 * ppm:
+                    continue
+                j = int(np.searchsorted(s, si))
+                tg = D[min(j + 4, len(D) - 1), :2] - D[max(j - 4, 0), :2]
+                thp = math.atan2(tg[1], tg[0])
+                h = thp + rng.choice([-1, 1]) * math.radians(rng.uniform(25, 42))
+                rc = D[j, 3] / ppm * rng.uniform(0.45, 0.62)
+                L, l, pts = rng.uniform(1.0, 2.2), 0.0, [D[j, :2] / ppm]
+                while l < L:                                   # (it splits off, then relaxes back along the run)
+                    st = rng.uniform(0.25, 0.4)
+                    h = thp + (h - thp) * 0.8 + rng.normal(0, math.radians(6))
+                    pts.append(pts[-1] + st * np.array([math.cos(h), math.sin(h)]))
+                    l += st
+                C = tip_sink(calm(RT.open_root(np.array(pts) * ppm, rc, -0.25 * rc, 0.02, tip=(0.45, 0.6),
+                                               emerge=False, zdive=None, tip_r=0.12), 0.4, ppm))
+                kk = smooth(arc(C) / (0.5 * ppm))
+                C[:, 2] = (1 - kk) * D[j, 2] + kk * C[:, 2]
+                if inside_rect(C, W, Hh):
+                    dense.append(C); nf -= 1
+        for D in dense:
+            RT.add(D)
+        return F, RT
+    raise SystemExit("den_roots: no floor decal fits %d" % i)
+
+
+def decal_frame(i, wm, hm):
+    """The camera-side frame: a dark tangle of open roots in the top metre, 2-3 entering at the top edge (the bank),
+    2-4 reaching down 1-1.5 m into the room; then darkened by depth and the top gaps filled near black."""
+    ppm = FL_PPM * S
+    W, Hh = int(round(wm * FL_PPM)) * S, int(round(hm * FL_PPM)) * S
+    rng = np.random.default_rng(seed_of("den_roots", "frame", i, VERSION))
+    F = Field(W, Hh, ppm, False)
+    RT = Roots(F, rng)
+    dense = []
+    n, tries = int(rng.integers(10, 17)), 0
+    while len(dense) < n and tries < 600:                     # the open roots along x: arches out of the bank's
+        tries += 1                                            # foot and back into it (both ends under the dark band)
+        r = rng.uniform(0.08, 0.22)
+        span = rng.uniform(1.2, 2.8)
+        x0 = rng.uniform(0.15, wm - 0.15 - span)
+        dep = rng.uniform(0.45, 1.0)
+        u = np.linspace(0, 1, 9)
+        y = 0.12 + (dep - 0.12) * np.sin(math.pi * u) ** rng.uniform(0.6, 1.0)
+        x = x0 + span * (u + rng.uniform(-0.1, 0.1) * np.sin(2 * math.pi * u))
+        if rng.random() < 0.5:
+            x = x[::-1]
+        ctrl = np.column_stack([x, y]) * ppm
+        ctrl[1:-1] += rng.normal(0, 0.04 * ppm, (7, 2))
+        D = tip_sink(RT.open_root(ctrl, r, rng.uniform(0.0, 0.25), 0.06, tip=(0.15, 0.25), emerge=True, zdive=None,
+                                  tip_r=0.6), 0.12, 1.2)
+        if inside_rect(D, W, Hh) and D[:, 1].max() < 1.25 * ppm:
+            dense.append(D)
+    m, tries = int(rng.integers(2, 4)), 0
+    while m and tries < 200:                                  # entering at the top edge (out of the bank)
+        tries += 1
+        ctrl = RT.walk((rng.uniform(0.4, wm - 0.4) * ppm, -0.3 * ppm), math.pi / 2 + rng.normal(0, 0.35),
+                       rng.uniform(1.3, 1.9), step=(0.3, 0.5), wig=9, pull=0.2)
+        D = RT.open_root(ctrl, rng.uniform(0.2, 0.3), 0.25, 0.05, tip=(0.4, 0.6), emerge=False, zdive=0.8, tip_r=0.2)
+        if inside_rect(D, W, Hh, top=True):
+            dense.append(D); m -= 1
+    m, tries = int(rng.integers(2, 5)), 0
+    while m and tries < 300:                                  # reaching down into the room
+        tries += 1
+        ctrl = RT.walk((rng.uniform(0.3, wm - 0.3) * ppm, rng.uniform(0.45, 0.9) * ppm),
+                       math.pi / 2 + rng.uniform(-0.5, 0.5), rng.uniform(1.0, 1.5), step=(0.25, 0.4), wig=10, pull=0.15)
+        D = tip_sink(RT.open_root(ctrl, rng.uniform(0.09, 0.16), 0.08, 0.04, tip=(0.35, 0.5), emerge=True, zdive=None,
+                                  tip_r=0.25), 0.15)
+        if inside_rect(D, W, Hh):
+            dense.append(D); m -= 1
+    for D in dense:
+        RT.add(D)
+    img = decal_image(F, RT, seed_of("den_roots", "frame_shade", i, VERSION)).astype(np.float32) / 255.0
+    rgb, a = img[..., :3], img[..., 3]
+    h, w = a.shape
+    y_m = (np.arange(h) + 0.5) / FL_PPM
+    x_m = (np.arange(w) + 0.5) / FL_PPM
+    rgb = rgb * (0.12 + 0.24 * smooth(y_m / 0.9))[:, None, None]
+    ph = rng.uniform(0, 2 * math.pi, 3)
+    yg = 0.275 + 0.075 * (0.55 * np.sin(x_m * 1.7 + ph[0]) + 0.3 * np.sin(x_m * 4.1 + ph[1]) + 0.15 * np.sin(x_m * 9.3 + ph[2]))
+    f = np.clip((yg[None, :] - y_m[:, None]) * FL_PPM + 0.5, 0, 1)
+    an = a + (1 - a) * f
+    rgb = (rgb * a[..., None] + rgbf(FPAL["frame_gap"]) * ((1 - a) * f)[..., None]) / np.maximum(an, 1e-6)[..., None]
+    return np.concatenate([to8(rgb), to8(an)[..., None]], -1)
+
+
+def fnz(T, x_m, y_m, per_m, off=0.0):
+    """Noise over metres, about per_m features per metre (T = pnoise(1024, 24, 40): 32 texels a feature)."""
+    return tex(T, x_m * per_m * 32.0 + off, y_m * per_m * 32.0 + 0.7 * off)
+
+
+def pit_mouth(i):
+    rng = np.random.default_rng(seed_of("den_roots", "pit_mouth", i, VERSION))
+    amp = {2: (0.04, 0.06), 3: (0.025, 0.04), 5: (0.012, 0.02), 9: (0.005, 0.008)}
+    harm = [[k, round(float(rng.uniform(*amp[k])), 4), round(float(rng.uniform(0, 2 * math.pi)), 4)] for k in (2, 3, 5, 9)]
+    lw = [round(float(rng.uniform(0, 2 * math.pi)), 4) for _ in range(2)]
+    return harm, lw
+
+
+def mouth_r(harm, th):
+    return MOUTH_R * (1 + sum(a * np.sin(k * th + p) for k, a, p in harm))
+
+
+def lip_w(lw, th):
+    return 0.4 + 0.1 * (0.6 * np.sin(3 * th + lw[0]) + 0.4 * np.sin(7 * th + lw[1]))
+
+
+def decal_pit(i):
+    """A whole pit in plan: the lit earth lip, the far wall (slate bands falling to black, seen 62 degrees down), the
+    void, a soft contact shadow, and 3-6 roots from the earth outside the lip pouring over it into the dark."""
+    ppm = FL_PPM * S
+    N = int(round(PIT_M * FL_PPM)) * S
+    half = N / 2 / ppm
+    harm, lw = pit_mouth(i)
+    rng = np.random.default_rng(seed_of("den_roots", "pit", i, VERSION))
+    T = [pnoise(1024, 24, 40, rng) for _ in range(6)]
+    c = (np.arange(N, dtype=np.float32) + 0.5) / ppm - half
+    X, Y = np.meshgrid(c, c)
+    R = np.hypot(X, Y) + 1e-6
+    TH = np.arctan2(Y, X)
+    nx, ny = X / R, Y / R
+    L0 = nx * L2[0] + ny * L2[1]                              # the outward direction toward the light
+    sd = R - mouth_r(harm, TH) + 0.035 * fnz(T[0], X, Y, 2.5)
+    lwv = lip_w(lw, TH) + 0.04 * fnz(T[1], X, Y, 2.0, 50.0)
+    M = sd < 0
+    # the lip: toned by its outward face to the light, flecked, a dark inner roll, ink at the mouth's edge
+    l = L0 + 0.14 * fnz(T[2], X, Y, 4.0)
+    lip = np.where((l > 0.25)[..., None], rgbf(FPAL["lip_lit"]), np.where((l < -0.3)[..., None], rgbf(FPAL["lip_dk"]),
+                                                                          rgbf(FPAL["lip"])))
+    fl = fnz(T[3], X, Y, 9.0)
+    lip = np.where(((fl > 1.7) & (l > -0.3))[..., None], np.where((l > 0.25)[..., None], rgbf(PAL["edge"]) * 0.82,
+                                                                  rgbf(FPAL["lip_lit"])), lip)
+    roll = sd < 0.09 + 0.03 * fnz(T[4], X, Y, 3.0)
+    lip = np.where(roll[..., None], rgbf(FPAL["lip_dk"]), lip)
+    lip = np.where((sd < 0.022)[..., None], rgbf(PAL["ink"]), lip)
+    a_lip = np.clip((lwv - sd) / 0.04 + 0.5, 0, 1)
+    # the far wall: each column's first mouth row is the far edge; d m down shows COT d lower
+    Ms = R < mouth_r(harm, TH)
+    has = Ms.any(0)
+    yn = np.where(has, np.argmax(Ms, 0), N)
+    d = (np.arange(N)[:, None] - yn[None, :]) / ppm / COT
+    v = 1 - d / WALL_D + 0.16 * fnz(T[5], X / 3.0, d, 2.0, 20.0) + 0.08 * fnz(T[4], X / 2.0, d, 5.0, 40.0)
+    wall = np.where((v > 0.72)[..., None], rgbf(FPAL["slate_hi"]), np.where((v > 0.42)[..., None], rgbf(FPAL["slate"]),
+                    np.where((v > 0.16)[..., None], rgbf(FPAL["slate_dk"]), rgbf(FPAL["void"]))))
+    crack = (np.abs(fnz(T[2], X / 1.6, d, 2.2, 90.0)) < 0.04) & (v > 0.16)
+    wall = np.where((crack | (d < 0.07))[..., None], np.where((d < 0.07)[..., None], rgbf(FPAL["slate_dk"]),
+                                                               rgbf(FPAL["crack"])), wall)
+    wall = np.where((sd > -0.012)[..., None], rgbf(PAL["ink"]), wall)
+    # the contact shadow outside the lip, stronger lower right, gone before the rect's edge
+    e = sd - lwv
+    sa = 0.5 * (1 - smooth(e / 0.75)) * (0.85 + 0.35 * np.clip(-L0, 0, 1))
+    em = half - np.maximum(np.abs(X), np.abs(Y))
+    sa = np.clip(sa, 0, 0.55) * smooth((em - 0.05) / 0.3)
+    shc = rgbf(PAL["shadow"])
+    A = np.where(M, 1.0, a_lip + sa * (1 - a_lip)).astype(np.float32)
+    P = np.where(M[..., None], wall, lip * a_lip[..., None] + shc * (sa * (1 - a_lip))[..., None]).astype(np.float32)
+    # the roots (their own field): out of the earth 0.4-1 m outside the lip, over the rim, drooping into the dark
+    F = Field(N, N, ppm, False)
+    RT = Roots(F, rng)
+    def rmo(th): return float(mouth_r(harm, th))
+    def path(p0, h, Lin):
+        pts, lin = [np.array(p0, float)], 0.0
+        for _ in range(200):
+            p = pts[-1]
+            st = rng.uniform(0.2, 0.3)
+            if math.hypot(*p) < rmo(math.atan2(p[1], p[0])):
+                dd = wrapa(math.pi / 2 - h)
+                if abs(dd) < 2.2:                            # (into the hole and down the far wall; the near side
+                    h += float(np.clip(dd, -0.3, 0.3))       # hides behind its lip)
+                lin += st
+                if lin > Lin:
+                    break
+            else:
+                h += 0.13 * wrapa(math.atan2(-p[1], -p[0]) - h)
+            h += rng.normal(0, math.radians(5))
+            pts.append(p + st * np.array([math.cos(h), math.sin(h)]))
+        return np.array(pts)
+    nr = int(rng.integers(4, 7))
+    ths = rng.uniform(0, 2 * math.pi) + np.arange(nr) * 2 * math.pi / nr + rng.normal(0, 0.25, nr)
+    dense = []
+    for th in ths:
+        for _ in range(20):
+            r = rng.uniform(0.12, 0.24)
+            rim = rmo(th) + float(lip_w(lw, th))
+            dmax = min(1.0, (half - 0.15 - r) / max(abs(math.cos(th)), abs(math.sin(th))) - rim)
+            if dmax < 0.4:
+                th += 0.3; continue
+            rho = rim + rng.uniform(0.4, dmax)
+            p0 = rho * np.array([math.cos(th), math.sin(th)]) + half
+            near = math.sin(th) > 0.5
+            ctrl = path(p0 - half, th + math.pi + rng.choice([-1, 1]) * rng.uniform(0.5, 0.9), rng.uniform(0.45, 0.6) if near else
+                        rng.uniform(0.9, 1.4)) + half
+            D = RT.open_root(ctrl * ppm, r, -0.1 * r, 0.03, tip=(0.35, 0.5), emerge=True, zdive=None, tip_r=0.35)
+            s = arc(D)
+            D[:, 2] -= (1 - smooth(s / (0.9 * ppm))) * 0.6 * D[:, 3]     # (a long rise out of the earth)
+            if not inside_rect(D, N, N):
+                continue
+            dense.append(D)
+            if rng.random() < 0.6:                            # a thinner strand split off before the rim
+                s = arc(D)
+                ins = np.nonzero(np.hypot(D[:, 0] / ppm - half, D[:, 1] / ppm - half) <
+                                 np.array([rmo(math.atan2(q[1] / ppm - half, q[0] / ppm - half)) for q in D]) + 0.1)[0]
+                if len(ins) and s[ins[0]] > 0.7 * ppm:
+                    j = int(np.searchsorted(s, rng.uniform(0.5 * ppm, s[ins[0]] - 0.15 * ppm)))
+                    tg = D[min(j + 4, len(D) - 1), :2] - D[max(j - 4, 0), :2]
+                    hf = math.atan2(tg[1], tg[0]) + rng.choice([-1, 1]) * math.radians(rng.uniform(30, 45))
+                    C = path(D[j, :2] / ppm - half, hf, rng.uniform(0.4, 0.5) if near else rng.uniform(0.7, 1.1)) + half
+                    C = RT.open_root(C * ppm, D[j, 3] / ppm * rng.uniform(0.5, 0.65), 0.03, 0.02, tip=(0.4, 0.5),
+                                     emerge=False, zdive=None, tip_r=0.3)
+                    kk = smooth(arc(C) / (0.4 * ppm))
+                    C[:, 2] = (1 - kk) * D[j, 2] + kk * C[:, 2]
+                    if inside_rect(C, N, N):
+                        dense.append(C)
+            break
+    for D in dense:
+        RT.add(D)
+    col, mask, sh, deep, _ = shade(F, RT, seed_of("den_roots", "pit_shade", i, VERSION), earth=False)
+    cast = blur((sh & ~mask).astype(np.float32), 0.012 * ppm, False)
+    rs = np.clip(np.maximum(0.47 * cast, 0.4 * smooth(deep / 0.6) * (~mask)), 0, 0.5) * smooth((em - 0.05) / 0.3)
+    P = P * (1 - rs[..., None]) + shc * rs[..., None]
+    A = A + rs * (1 - A)
+    sv = 0.55 - 0.25 * ny                                     # the fade into the dark: 0.8 m far side, 0.3 m near
+    fade = 1 - smooth(np.clip(-sd, 0, None) / sv)
+    P = np.where(mask[..., None], col * fade[..., None], P)
+    A = np.where(mask, 1.0, A)
+    pa, a = reduce(P), reduce(A)
+    rgb = pa / np.maximum(a[..., None], 1e-6)
+    rlo, rhi = float(mouth_r(harm, np.linspace(0, 2 * math.pi, 3600)).min()), float(mouth_r(harm, np.linspace(0, 2 * math.pi, 3600)).max())
+    return np.concatenate([to8(rgb), to8(a)[..., None]], -1), harm, (rlo, rhi), float(lip_w(lw, np.linspace(0, 6.3, 999)).max())
+
+
+def build_floor(out):
+    items = []
+    for i, (wm, hm) in enumerate(FLOORS):
+        F, RT = decal_floor(i, wm, hm)
+        items.append(dict(kind="floor", variant=i, metres=[wm, hm], anchor=[0.5, 0.0],
+                          img=decal_image(F, RT, seed_of("den_roots", "floor_shade", i, VERSION))))
+        print(f"  floor {i}: {len(RT.send)} roots")
+    for i, (wm, hm) in enumerate(FRAMES):
+        items.append(dict(kind="frame", variant=i, metres=[wm, hm], anchor=[0.5, 0.0], img=decal_frame(i, wm, hm)))
+        print(f"  frame {i}")
+    for i in range(PITS):
+        img, harm, (rlo, rhi), lwm = decal_pit(i)
+        items.append(dict(kind="pit", variant=i, metres=[PIT_M, PIT_M], anchor=[0.5, 0.5], img=img, mouth_r=MOUTH_R,
+                          mouth_harm=harm, mouth_r_range=[round(rlo, 3), round(rhi, 3)], lip_m=round(lwm, 3)))
+        print(f"  pit {i}: mouth r {rlo:.2f}-{rhi:.2f} m")
+    rects, ah = pack([(it["img"].shape[1], it["img"].shape[0]) for it in items], FL_ATLAS_W)
+    atlas = np.zeros((ah, FL_ATLAS_W, 4), np.uint8)
+    dec = []
+    for it, (x, y, w, h) in zip(items, rects):
+        atlas[y:y + h, x:x + w] = it.pop("img")
+        dec.append({"kind": it.pop("kind"), "variant": it.pop("variant"), "rect": [x, y, w, h], **it})
+    Image.fromarray(atlas, "RGBA").save(os.path.join(out, "floor_decals.png"), optimize=False, compress_level=9)
+    man = {"by": "tools/look/den_roots.py build floor (painted from nothing; no outside source)", "version": VERSION,
+           "size": [FL_ATLAS_W, ah], "px_per_m": FL_PPM, "light": [round(float(c), 4) for c in L2],
+           "light_note": "painted from the rect's upper left (toward the light, image x right / y down); laid flat on "
+                         "the floor, image up = north (the play camera looks north, 62 degrees down); keep a floor "
+                         "decal's turn within about +-60 degrees, never turn a pit",
+           "alpha": "straight; roots, lip, pit mouth and the frame's gap fill >= 0.6 (alpha scissor 0.6; the whole mouth "
+                    "and the frame's top band are 1), the soft contact shadow 0.2-0.55 (rgb = palette shadow), 0 "
+                    "elsewhere",
+           "kinds": {"floor": "long floor roots: 1-3 enter the rect's TOP edge (y = 0) at full thickness (they continue "
+                              "into the bank: put the top edge on the bank's foot) and run down the rect across the "
+                              "floor, half sunk, diving under once, forking, thinning to sunk tips; anchor = the top "
+                              "edge's middle",
+                     "frame": "a dark root mass for the camera-side wall line: the TOP edge (y = 0) sits against the "
+                              "bank (the band above an irregular line 0.2-0.35 m down is opaque near black), roots reach "
+                              "1-1.5 m toward the rect's bottom; darkened by depth (x 0.12 at the top to x 0.36 below "
+                              "0.9 m); anchor = the top edge's middle",
+                     "pit": "a whole pit painted in plan for the play camera: anchor = the mouth's centre (the rect's "
+                            "centre); the mouth r(theta) = mouth_r * (1 + sum a sin(k theta + p)) over mouth_harm "
+                            "[k, a, p] (theta = atan2(y, x), image x right / y down, metres from the centre), alpha 1 "
+                            "over all of it (it covers the game's own traced hole: trace it inside mouth_r_range[0]); "
+                            "the lip band lies up to lip_m outside the mouth, the contact shadow 0.75 m past that; "
+                            "the near half of the mouth is black"},
+           "anchor": "[fx, fy] in the rect (0..1, x right, y down)", "decals": dec}
+    with open(os.path.join(out, "floor_decals.json"), "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(man, fh, indent=1)
+
+
+def floor_preview(out):
+    """The floor kinds at the game's scale on a plain den floor (a scene, then every decal), then 1:1 crops."""
+    atl = Image.open(os.path.join(out, "floor_decals.png")).convert("RGBA")
+    man = json.load(open(os.path.join(out, "floor_decals.json"), encoding="utf-8"))
+    floor = (0x5a, 0x3e, 0x2e)
+    k = PREVIEW_PPM / FL_PPM
+    def get(d, scale=k):
+        x, y, w, h = d["rect"]
+        c = atl.crop((x, y, x + w, y + h))
+        return c if scale == 1 else c.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.LANCZOS)
+    by = {}
+    for d in man["decals"]:
+        by.setdefault(d["kind"], []).append(d)
+    G = 16
+    Wd = int(24 * PREVIEW_PPM)
+    # the scene: a bank strip on top, floor roots off it, two pits on the right, frame masses along the bottom
+    sh_ = int(14 * PREVIEW_PPM)
+    sc = Image.new("RGBA", (Wd, sh_), floor + (255,))
+    bank_p = os.path.join(out, "bank_albedo.png")
+    top = int(1.2 * PREVIEW_PPM)
+    if os.path.exists(bank_p):
+        b = Image.open(bank_p).convert("RGB")
+        t = b.crop((0, 0, BANK_PX, BANK_PX)).resize((int(BANK_M * PREVIEW_PPM),) * 2, Image.LANCZOS)
+        for x in range(0, Wd, t.width):
+            sc.paste(t.crop((0, t.height - top, t.width, t.height)), (x, 0))
+    for j, x in enumerate((1.0, 3.6, 6.4, 9.0)):
+        d = by["floor"][j % len(by["floor"])]
+        c = get(d)
+        sc.alpha_composite(c, (int(x * PREVIEW_PPM), top))
+    for d, (x, y) in zip(by["pit"], ((11.5, 1.6), (16.0, 5.2))):
+        sc.alpha_composite(get(d), (int(x * PREVIEW_PPM), int(y * PREVIEW_PPM)))
+    bot = int(0.8 * PREVIEW_PPM)
+    sc.paste((10, 9, 9, 255), (0, sh_ - bot, Wd, sh_))
+    x = 0
+    for j in range(8):
+        c = get(by["frame"][j % len(by["frame"])]).rotate(180)
+        sc.alpha_composite(c, (x, sh_ - bot - c.height))
+        x += c.width - int(0.4 * PREVIEW_PPM)
+        if x > Wd:
+            break
+    # every decal, shelf-laid
+    dims = [get(d) for d in man["decals"]]
+    rows, cx, cy, shl = [], G, 0, 0
+    for c in dims:
+        if cx + c.width + G > Wd:
+            cx, cy, shl = G, cy + shl + G, 0
+        rows.append((c, cx, cy))
+        cx += c.width + G
+        shl = max(shl, c.height)
+    dh = cy + shl + G
+    fl = Image.new("RGBA", (Wd, dh), floor + (255,))
+    for c, x, y in rows:
+        fl.alpha_composite(c, (x, y + G // 2))
+    # 1:1 (128 px/m): a floor root's top 3.5 m, a frame, a pit
+    crops = []
+    for kind, i in (("floor", 3), ("frame", 1), ("pit", 0)):
+        c = get(by[kind][i], 1)
+        bg = Image.new("RGBA", c.size, floor + (255,))
+        bg.alpha_composite(c)
+        crops.append(bg.convert("RGB").crop((0, 0, c.width, min(c.height, int(3.5 * FL_PPM)) if kind == "floor" else c.height)))
+    ch = max(c.height for c in crops)
+    sheet = Image.new("RGB", (Wd, sh_ + G + dh + ch + G), (24, 22, 22))
+    sheet.paste(sc.convert("RGB"), (0, 0))
+    sheet.paste(fl.convert("RGB"), (0, sh_ + G))
+    x = G
+    for c in crops:
+        if x + c.width > Wd:
+            break
+        sheet.paste(c, (x, sh_ + G + dh))
+        x += c.width + G
+    sheet.save(os.path.join(out, "floor_preview.jpg"), quality=90)
 
 
 # ---- the preview -------------------------------------------------------------------------------------------------------
@@ -823,7 +1281,68 @@ def check():
             X, Yy, Ww, Hh = rs[j]
             if x < X + Ww and X < x + w and y < Yy + Hh and Yy < y + h:
                 print("FAIL rects overlap", i, j); ok = False
+    ok = check_floor() and ok
     print("OK" if ok else "FAIL")
+    return ok
+
+
+def check_floor():
+    """floor_decals: the rects, the cut rules per kind (roots cross only the edge they are meant to), the pit's mouth
+    opaque and its near half black, the frames dark; the FPAL colours present."""
+    p = os.path.join(OUT, "floor_decals.json")
+    if not os.path.exists(p):
+        print("floor decals: none built"); return True
+    dm = json.load(open(p, encoding="utf-8"))
+    atl = np.asarray(Image.open(os.path.join(OUT, "floor_decals.png")).convert("RGBA"))
+    ok = atl.shape[1] == dm["size"][0] and atl.shape[0] == dm["size"][1] and max(dm["size"]) <= 4096
+    kinds = {}
+    for d in dm["decals"]:
+        kinds[d["kind"]] = kinds.get(d["kind"], 0) + 1
+    print("floor decals:", kinds, "atlas", dm["size"], "px/m", dm["px_per_m"])
+    rs = [d["rect"] for d in dm["decals"]]
+    for i, (x, y, w, h) in enumerate(rs):
+        if x < PAD or y < PAD or x + w > dm["size"][0] - PAD or y + h > dm["size"][1] - PAD:
+            print("FAIL floor rect outside the padded atlas", i); ok = False
+        for j in range(i):
+            X, Yy, Ww, Hh = rs[j]
+            if x < X + Ww and X < x + w and y < Yy + Hh and Yy < y + h:
+                print("FAIL floor rects overlap", i, j); ok = False
+    ppm = dm["px_per_m"]
+    for d in dm["decals"]:
+        x, y, w, h = d["rect"]
+        img = atl[y:y + h, x:x + w].astype(np.float32)
+        al = img[..., 3]
+        tag = f"{d['kind']} {d['variant']}"
+        if d["kind"] == "floor":
+            top = (al[0] >= 153).mean()
+            cut = max((al[-2:] >= 153).mean(), (al[:, :2] >= 153).mean(), (al[:, -2:] >= 153).mean())
+            print(f"  {tag}: roots across the top edge {100 * top:.0f}% of it, at the other edges {100 * cut:.2f}%, "
+                  f"roots {100 * (al >= 153).mean():.0f}% of the rect")
+            ok = ok and top > 0.1 and cut == 0
+        elif d["kind"] == "frame":
+            band = al[:int(0.18 * ppm)]
+            low = al[int(0.4 * ppm):]
+            cut = max((al[-2:] >= 153).mean(), (low[:, :2] >= 153).mean(), (low[:, -2:] >= 153).mean())
+            Y = img[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            print(f"  {tag}: top band opaque {100 * (band >= 250).mean():.1f}%, cut at the other edges "
+                  f"{100 * cut:.2f}%, median Y of the roots {np.median(Y[al >= 153]):.0f}")
+            ok = ok and (band >= 250).mean() > 0.999 and cut == 0 and np.median(Y[al >= 153]) < 45
+        else:
+            c = (np.arange(w, dtype=np.float32) + 0.5) / ppm - w / ppm / 2
+            X, Yc = np.meshgrid(c, c[:h])
+            th = np.arctan2(Yc, X)
+            mr = MOUTH_R * (1 + sum(a * np.sin(k * th + p) for k, a, p in d["mouth_harm"]))
+            R = np.hypot(X, Yc)
+            mouth = R < mr - 1.5 / ppm
+            nearh = mouth & (Yc > 0.25 * mr)
+            Y = img[..., :3] @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+            edge = max((al[:2] > 12).mean(), (al[-2:] > 12).mean(), (al[:, :2] > 12).mean(), (al[:, -2:] > 12).mean())
+            ring = (R > mr + 0.1) & (R < mr + 0.3)
+            print(f"  {tag}: mouth opaque {100 * (al[mouth] >= 250).mean():.2f}%, near half black (Y < 12) "
+                  f"{100 * (Y[nearh] < 12).mean():.1f}%, lip ring opaque {100 * (al[ring] >= 153).mean():.0f}%, "
+                  f"edge alpha {100 * edge:.2f}%")
+            ok = ok and (al[mouth] >= 250).mean() > 0.999 and (Y[nearh] < 12).mean() > 0.85 and edge == 0
+    print("floor decals", "OK" if ok else "FAIL")
     return ok
 
 
@@ -835,6 +1354,11 @@ def main(a):
     t0 = time.time()
     os.makedirs(OUT, exist_ok=True)
     only = a[1] if len(a) > 1 else "all"
+    if only == "floor":                                       # (the floor atlas alone: the bank's outputs untouched)
+        build_floor(OUT)
+        floor_preview(OUT)
+        print(f"floor decals done in {time.time() - t0:.0f} s -> {OUT}")
+        return
     if only in ("all", "bank"):
         build_bank(OUT)
         print(f"bank: {time.time() - t0:.0f} s")
@@ -842,6 +1366,9 @@ def main(a):
         build_decals(OUT)
         print(f"decals: {time.time() - t0:.0f} s")
     preview(OUT)
+    if only == "all":
+        build_floor(OUT)
+        floor_preview(OUT)
     print(f"done in {time.time() - t0:.0f} s -> {OUT}")
 
 
