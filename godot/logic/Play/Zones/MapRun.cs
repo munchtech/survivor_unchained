@@ -86,6 +86,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>The share of MapGen's pack spots set: in clearings, and along the ways (a pack about
     /// every 14 s: the experience lead's density, the ARPG's clear-speed fantasy).</summary>
     public static double ClearingKeep = 0.8, WayKeep = 0.62;
+    /// <summary>A dungeon's keeps (dungeon-gen, 15 Nov): its rooms' sockets all, its halls' four in five.</summary>
+    public static double DungeonRoomKeep = 1.0, DungeonHallKeep = 0.8;
     /// <summary>How near the survivor comes before a pack is set down (out of sight, so it is
     /// already there when seen), and how near a pack must be to wake.</summary>
     const double PlaceAt = 46, Wake = 14, Leash = 24;
@@ -128,7 +130,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             bool clearing = (s.X - a.X) * (s.X - a.X) + (s.Z - a.Z) * (s.Z - a.Z) < a.R * a.R;
             // A breath before the ruler: the last way to its clearing is left empty.
             if (!clearing && s.Area == map.Boss.Index - 1) continue;
-            if (rng.Next() >= (clearing ? ClearingKeep : WayKeep)) continue;
+            // A dungeon's rooms were drawn to hold their packs: all of them stay, and most of its halls'.
+            if (rng.Next() >= (map.Dungeon != null ? (clearing ? DungeonRoomKeep : DungeonHallKeep) : clearing ? ClearingKeep : WayKeep)) continue;
             packs.Add(new Pack { Spot = s, People = rival != null && rng.Next() < 1 / 3.0 ? rival : people });
         }
         foreach (var a in map.Altars) altars.Add(new Altar { Area = a });

@@ -74,14 +74,14 @@ public class DungeonTests
         Assert.Equal(50, sigs.Count);
         Assert.True(graphs.Count >= GraphFloor, $"{graphs.Count} graphs");
         Assert.InRange(rooms.Min(), RoomsLo, 99); Assert.InRange(rooms.Max(), 0, RoomsHi);
-        Assert.InRange(route.Min(), 7, 99); Assert.InRange(route.Max(), 0, 9);
+        Assert.InRange(route.Min(), 8, 99); Assert.InRange(route.Max(), 0, 10);
         Assert.InRange(branches.Min(), BranchLo, 99); Assert.InRange(branches.Max(), 0, BranchHi);
         Assert.InRange(packs.Min(), PackLo, 9999); Assert.InRange(packs.Max(), 0, PackHi);
         Assert.InRange(caches.Min(), 2, 99); Assert.InRange(caches.Max(), 0, CacheHi);
     }
 
     // Measured over seeds 1..50 (both dungeons): rooms 9-16, branches 2-7, packs 19-50, caches 2-4, 50 distinct graphs; bands +-15%.
-    const int GraphFloor = 45, RoomsLo = 8, RoomsHi = 18, BranchLo = 1, BranchHi = 8, PackLo = 16, PackHi = 58, CacheHi = 5;
+    const int GraphFloor = 45, RoomsLo = 8, RoomsHi = 20, BranchLo = 1, BranchHi = 8, PackLo = 16, PackHi = 64, CacheHi = 5;
 
     [Fact]
     public void The_same_seed_lays_the_same_dungeon_and_another_seed_another()

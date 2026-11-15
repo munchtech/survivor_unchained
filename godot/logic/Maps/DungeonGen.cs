@@ -14,7 +14,7 @@ namespace SurvivorUnchained.Maps;
  * a cache lies, where the way out is cut. The generator lays them on a coarse grid of cells:
  *
  *   - the entrance on any edge of the square, anywhere along it;
- *   - the route, a self-avoiding walk of 7 to 9 cells, to the ruler's room at its end, the way out
+ *   - the route, a self-avoiding walk of 8 to 10 cells, to the ruler's room at its end, the way out
  *     cut past the ruler on the far side from where she came in;
  *   - one room on the route holds the event (the map's altar), somewhere in its middle third;
  *   - two to four branches off the route, one or two rooms deep, ending in a cache (a deep branch's
@@ -177,7 +177,7 @@ public static class DungeonGen
         int side = rng.Int(0, 3), along = rng.Int(0, Grid - 1);
         var start = side switch { 0 => (along, 0), 1 => (along, Grid - 1), 2 => (0, along), _ => (Grid - 1, along) };
         // The route: a self-avoiding walk, its ruler at least four cells from the entrance as the crow walks.
-        int len = rng.Int(7, 9);
+        int len = rng.Int(8, 10);
         var route = new List<(int, int)> { start };
         var used = new HashSet<(int, int)> { start };
         if (!Walk(route, used, len, rng)) return null;
