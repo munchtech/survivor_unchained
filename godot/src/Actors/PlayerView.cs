@@ -1067,7 +1067,7 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)x, (float)y, (float)z);
         if (mine && !PlantOff)
         {
-            Position += plantOff + smoothOff;
+            Position += plantOff + smoothOff + Vector3.Up * BackAirLiftNow();
             plantGround = heightAt; plantDt = (float)dt;
             if (!plantHooked) { plantHooked = true; person.Skeleton.SkeletonUpdated += PlantStep; }
         }
@@ -2208,6 +2208,16 @@ public partial class PlayerView : Node3D
         BackHop = SurvivorUnchained.Args.Num("turn-back-hop", 0.08f), BackHopMin = SurvivorUnchained.Args.Num("turn-back-hop-min", 0.06f),
         BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 3f),
         BackIn = SurvivorUnchained.Args.Num("turn-back-in", 0.015f);
+    // (warden-move, judge r4: "cap every flight at 3-4 frames"; "finish the yaw on the ball of that foot") A flight lasts at
+    // most BackFlyLen frames whatever the turn left; what the flight did not turn, the foot it lands on turns on its ball at
+    // BackBallRate deg/s (held by the plant lock) until that foot lifts. --turn-back-fly-len 99: round 6's flights.
+    static readonly float BackFlyLen = SurvivorUnchained.Args.Num("turn-back-fly-len", 3f), BackBallRate = SurvivorUnchained.Args.Num("turn-back-ball-rate", 600f);
+    int backBallFoot = -1;
+    // (warden-move, judge r4: "in the air ... lift the pelvis 3-6 cm") Through a backpedal's flight her whole view rises on a
+    // half sine, BackAirLift m at its top (the flight planned last frame; 0 on the frame she lands).
+    static readonly float BackAirLift = SurvivorUnchained.Args.Num("turn-back-air-lift", 0.05f);
+    float BackAirLiftNow() => backpedal && backAirN >= 0 && (backSt == 1 || backSt == 3) && backAirLen > 0
+        ? BackAirLift * Mathf.Sin(Mathf.Pi * Mathf.Clamp((backAirN + 0.5f) / (backAirLen + 1f), 0f, 1f)) : 0f;
     // backSt: 0 none, 1 into it (until she lands behind her), 2 the backwards run, 3 out of it (until she lands), 4 landed out
     int backSt, backLiftFoot = -1, backAirN = -1, backAirLen = 1;
     float backAirP0, backAirTo, backGoal;
@@ -2231,6 +2241,7 @@ public partial class PlayerView : Node3D
         // (BackGateM of the cycle either side: a pose's stance can run on a little past the run's own)
         // (a foot un-landing is not held: it is off the ground on the next pose, so her turn starts with it)
         if (f >= 0 && f == backLiftFoot) return BackRate;
+        if (f >= 0 && f == backBallFoot) return BackBallRate;
         return f >= 0 && (BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f) ? BackHoldRate : BackRate;
     }
 
@@ -2253,12 +2264,12 @@ public partial class PlayerView : Node3D
     float BackPhase(float natural, float dt, float period, float strideK)
     {
         float normal = dt / Mathf.Max(period, 0.1f);
-        if (backSt == 0 || !backWas) { backSt = 1; backAirN = -1; backLiftFoot = -1; }
+        if (backSt == 0 || !backWas) { backSt = 1; backAirN = -1; backLiftFoot = -1; backBallFoot = -1; }
         if (hipGoal == null && backSt < 3) { backSt = 3; backAirN = -1; backLiftFoot = -1; }
         int down = BackDown(stride);
         if (down >= 0)
         {
-            if (backAirN >= 0) { backAirN = -1; backLiftFoot = -1; backSt = backSt == 1 ? 2 : backSt == 3 ? 4 : backSt; }
+            if (backAirN >= 0) { backAirN = -1; backLiftFoot = -1; backBallFoot = down; backSt = backSt == 1 ? 2 : backSt == 3 ? 4 : backSt; }
             if (backSt == 4) return natural;
             if (backSt == 1)
             {
@@ -2272,6 +2283,7 @@ public partial class PlayerView : Node3D
             }
             return BackStride(natural, dt, period, strideK);
         }
+        backBallFoot = -1;
         if (backSt == 2 || backSt == 4) return BackStride(natural, dt, period, strideK);
         // (in the air into it or out of it: the turn, its landing timed to the turn's last frame)
         if (backAirN < 0)
@@ -2287,7 +2299,7 @@ public partial class PlayerView : Node3D
             backAirTo = best;
             // (the flight's frames planned from the turn left at its start: a goal that moves on, her stick round a curve, does
             // not hold her up in the air)
-            backAirLen = Mathf.Max(BackSpinLeft(backGoal, dt), 1);
+            backAirLen = Mathf.Clamp(BackSpinLeft(backGoal, dt), 1, (int)BackFlyLen);
         }
         backAirN++;
         int left = Mathf.Max(backAirLen - backAirN, 0);
@@ -2430,7 +2442,8 @@ public partial class PlayerView : Node3D
         int pb = sk.FindBone("pelvis");
         if (cam == null || pb < 0) return;
         var s = cam.UnprojectPosition(sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin);
-        GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0}"));
+        var c = cam.GlobalPosition;   // (warden-move item 3: the camera's world place, for its catch-up after a 180)
+        GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0} cam {c.X:0.000} {c.Y:0.000} {c.Z:0.000}"));
     }
     public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
     bool held;
