@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -41,6 +41,7 @@ public static partial class DungeonDress
     public static Node3D? Build(ZoneData z)
     {
         if (z.WallField == null || z.Rooms.Count == 0) return null;
+        Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17;   // (round 9) the map's seed varies the dressing; seed 0 = as before
         var c = new Ctx { Z = z, Root = new Node3D { Name = "DungeonDress" } };
         c.Shrooms.Begin(Mesh.PrimitiveType.Triangles);
         c.Bones.Begin(Mesh.PrimitiveType.Triangles);
@@ -82,6 +83,13 @@ public static partial class DungeonDress
         {
             case "Start":
                 var at = new Vector2(r.X, r.Z - 0.45f * r.R);
+                if (Salt != 0)
+                {
+                    // (round 9) the camp sits at another bearing round the room's middle with the seed; the old spot if that one is shut
+                    float ca = (-90f + (Hash(s, 40, 0) - 0.5f) * 140f) * Mathf.Pi / 180f;
+                    var alt = new Vector2(r.X + Mathf.Cos(ca) * 0.45f * r.R, r.Z + Mathf.Sin(ca) * 0.45f * r.R);
+                    if (Open(c, alt.X, alt.Y, 2.5f)) at = alt;
+                }
                 if (Open(c, at.X, at.Y, 2.5f))
                 {
                     c.Root.AddChild(Campfire.Build(new Vector3(at.X, H(c, at.X, at.Y), at.Y), 1, true));
@@ -530,10 +538,12 @@ public static partial class DungeonDress
         };
     }
 
+    static int Salt;
     static float Hash(int a, int b, int c)
     {
         unchecked
         {
+            if (Salt != 0) a += Salt * 31 + b * 7;
             uint h = (uint)(a * 374761393 + b * 668265263 + c * 1274126177);
             h = (h ^ (h >> 13)) * 1274126177u;
             h ^= h >> 16;

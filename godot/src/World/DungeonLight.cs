@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 
 namespace SurvivorUnchained.View;
 
@@ -18,6 +18,7 @@ public static class DungeonLight
     public static Node3D? Build(ZoneData z)
     {
         if (z.DungeonTheme != "den" || z.Rooms.Count == 0) return null;
+        Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17;
         var root = new Node3D { Name = "DungeonLight" };
         var shader = GD.Load<Shader>("res://shaders/dungeon_shaft.gdshader");
         int i = 0;
@@ -97,10 +98,12 @@ public static class DungeonLight
         root.AddChild(new MeshInstance3D { Name = "shaft", Mesh = mesh, MaterialOverride = mat, Transform = new Transform3D(b, mid), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
     }
 
+    static int Salt;
     static float Hash(int a, int b, int c)
     {
         unchecked
         {
+            if (Salt != 0) a += Salt * 31 + b * 7;
             uint h = (uint)(a * 374761393 + b * 668265263 + c * 1274126177);
             h = (h ^ (h >> 13)) * 1274126177u;
             h ^= h >> 16;
