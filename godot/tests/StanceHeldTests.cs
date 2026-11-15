@@ -10,12 +10,12 @@ namespace SurvivorUnchained.Tests;
 public sealed class StanceHeldTests
 {
     [Fact]
-    public void Carry_l_parses_for_the_two_off_hand_pieces_and_not_for_the_shield()
+    public void Carry_l_parses_for_the_mace_and_not_for_the_shield_or_twin_blades()
     {
         Assert.Null(Stances.Find("shield")!.CarryL);
-        var tb = Stances.Find("twin_blades")!.CarryL!;
-        Assert.True(tb.Out > 0 && tb.Elbow > 0);
-        Assert.True(Stances.Find("mace")!.CarryL!.Out > 0);
+        Assert.Null(Stances.Find("twin_blades")!.CarryL);   // (r3: its forward guard read as reaching out; dropped)
+        var mc = Stances.Find("mace")!.CarryL!;
+        Assert.True(mc.Out > 0 && mc.Elbow > 0);
         Assert.Equal("dagger_b", Stances.Find("twin_blades")!.Piece("handslot.l", null));   // carry_l is no piece id
     }
 
