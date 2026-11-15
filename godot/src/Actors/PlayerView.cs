@@ -1067,7 +1067,7 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)x, (float)y, (float)z);
         if (mine && !PlantOff)
         {
-            Position += plantOff;
+            Position += plantOff + smoothOff;
             plantGround = heightAt; plantDt = (float)dt;
             if (!plantHooked) { plantHooked = true; person.Skeleton.SkeletonUpdated += PlantStep; }
         }
@@ -1673,7 +1673,8 @@ public partial class PlayerView : Node3D
         bool backNow = backpedal && hasWalk && !BackRun && velX * velX + velZ * velZ > 0.16f
             && Mathf.Abs(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi)) > Mathf.Pi / 2;
         backW = Mathf.Lerp(backW, backNow ? 1f : 0f, 1 - Mathf.Exp(-BackBlend * dt));
-        w *= 1 - backW;
+        // (round 4: judge r3 "a scurry, ~7.5 steps/s, 25-35% skate") the run mixed in at BackMix lengthens her backward step
+        w = Mathf.Lerp(w, BackMix, backW);
         logW = w; logWWalk = wWalk; logSpd = spd;
         if (!move2D)
         {
@@ -1689,7 +1690,7 @@ public partial class PlayerView : Node3D
         standT = spd < 0.05f ? standT + dt : 0;
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w0, hasWalk);
-        if (backW > 0.001f) period = Mathf.Lerp(period, walkLen * walkSpeed / Mathf.Max(spd, 0.5f), backW);
+        if (backW > 0.001f) period = Mathf.Lerp(period, ((1 - BackMix) * walkLen * walkSpeed + BackMix * runLen * runSpeed) / Mathf.Max(spd, 0.5f), backW);
         // (warden-turn) With her hips turned onto a blow behind her, the stride runs at her travel's part along her facing
         // (past 90 deg off it a backpedal), so the planted foot keeps more of its ground.
         float strideK = 1;
@@ -1933,12 +1934,12 @@ public partial class PlayerView : Node3D
     /// <summary>(warden-turn, the owner 10 Nov "movement looked weird especially turning"; A1 leads 20-21's view pieces ported
     /// to the heroine) Her turn, eased and rate-limited: the 4 Nov chase (FaceRate 36/s) put 126 deg of a 180 into ONE frame
     /// at 30 fps, 63 of a 90, and a blow flipped her whole. Now her yaw speed eases up (TurnEase/s) to a cap and settles on
-    /// the goal at TurnK/s: running TurnMax (35 deg a 30 fps frame), a 180 at a run TurnPivot (a pivot, ~5 frames), standing
+    /// the goal at TurnK/s: running TurnMax (35 deg a 30 fps frame), a 180 at a run TurnPivot (a pivot, 28 deg a frame over 7 frames: judge r3 on the 180 "a whirl"), standing
     /// to a blow TurnMaxStanding; her hips onto a blow behind her HipRate. --turn-snap: the 4 Nov snap (before pictures).</summary>
     static readonly bool TurnSnap = SurvivorUnchained.Args.Has("turn-snap"), CoilOff = SurvivorUnchained.Args.Has("turn-coil-off"),
         TurnLog = SurvivorUnchained.Args.Has("turn-log");
     static readonly bool HeldLogOn = SurvivorUnchained.Args.Has("held-log");
-    static readonly float TurnMax = SurvivorUnchained.Args.Num("turn-max", 1050f), TurnPivot = SurvivorUnchained.Args.Num("turn-pivot", 1350f),
+    static readonly float TurnMax = SurvivorUnchained.Args.Num("turn-max", 1050f), TurnPivot = SurvivorUnchained.Args.Num("turn-pivot", 840f),
         TurnK = SurvivorUnchained.Args.Num("turn-k", 18f), TurnEase = SurvivorUnchained.Args.Num("turn-ease", 20f),
         TurnMaxStanding = SurvivorUnchained.Args.Num("turn-max-standing", 1050f), TurnEaseStanding = SurvivorUnchained.Args.Num("turn-ease-standing", 30f),
         HipRate = SurvivorUnchained.Args.Num("turn-hip-rate", 600f), HipMax = SurvivorUnchained.Args.Num("turn-hip-max", 60f),
@@ -1955,7 +1956,8 @@ public partial class PlayerView : Node3D
     float backW;
     static readonly float BackBlend = SurvivorUnchained.Args.Num("turn-back-blend", 20f);
     static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 1350f),
-        BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f);
+        BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f), BackMix = SurvivorUnchained.Args.Num("turn-back-mix", 0.3f);
+    static readonly bool SmoothBack = !SurvivorUnchained.Args.Has("turn-smooth-back-off");
     /// <summary>A blow's facing her whole body turns to (standing or slow when struck), and the facing her hips turn to for a
     /// blow behind her at a run (radians), each held while aimHold lasts.</summary>
     float? faceGoal, hipGoal;
@@ -2006,6 +2008,8 @@ public partial class PlayerView : Node3D
         if (plantBallL == -2) { plantBallL = sk.FindBone("ball_l"); plantBallR = sk.FindBone("ball_r"); }
         if (plantBallL < 0 || plantBallR < 0) return;
         var f = new[] { sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallL).Origin, sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallR).Origin };
+        // (the plant lock works where she stands without the pelvis ease, SmoothStep; it is put back after)
+        Position -= smoothOff; f[0] -= smoothOff; f[1] -= smoothOff;
         for (int i = 0; i < 2; i++) plantH[i] = f[i].Y - (float)plantGround(f[i].X, f[i].Z);
         bool legsFree = !(bool)tree.Get("parameters/fullShot/active");
         Vector3 shift = Vector3.Zero;
@@ -2041,6 +2045,59 @@ public partial class PlayerView : Node3D
         plantOff += shift;
         Position += shift;
         for (int i = 0; i < 2; i++) { plantPrev[i] = f[i] + shift; plantPrevH[i] = plantH[i]; }
+        SmoothStep(sk);
+    }
+
+    // (turning r4, judge r3 on the 180: "a whirl ... pelvis surge 1.5-2.5x run f244-248, a 34 px pop at f248") Through a 180's
+    // pivot and a backpedal, her pelvis's ground path is eased: a spring (SmoothW/s, critically damped) after where the pose
+    // and the plant lock put it, its pace change held to SmoothAcc of the run's pace a frame and its pace to SmoothMax of the
+    // run's, the gap (with the plant lock's) at most SmoothLag m. The sim's reversal (two frames) and the yaw's swing about the
+    // planted foot no longer reach the screen as a stop-and-surge. View only; --turn-smooth-off: r3.
+    static readonly bool SmoothOffFlag = SurvivorUnchained.Args.Has("turn-smooth-off"), SmoothDbg = SurvivorUnchained.Args.Has("turn-smooth-dbg");
+    static readonly float SmoothW = SurvivorUnchained.Args.Num("turn-smooth-w", 0.5f), SmoothAcc = SurvivorUnchained.Args.Num("turn-smooth-acc", 0.36f),
+        SmoothMax = SurvivorUnchained.Args.Num("turn-smooth-max", 1.2f), SmoothLag = SurvivorUnchained.Args.Num("turn-smooth-lag", 0.48f),
+        SmoothRun = SurvivorUnchained.Args.Num("turn-smooth-run", 5.65f), SmoothSlow = SurvivorUnchained.Args.Num("turn-smooth-slow", 0.28f),
+        SmoothSlowYaw = SurvivorUnchained.Args.Num("turn-smooth-slow-yaw", 60f);
+    Vector3 smoothOff, smoothP, smoothV, smoothRawPrev, smoothRawV;
+    bool smoothOn, smoothHave;
+    int smoothCalls;
+    int smoothPelvis = -2;
+    void SmoothStep(Skeleton3D sk)
+    {
+        smoothCalls++;
+        if (smoothPelvis == -2) smoothPelvis = sk.FindBone("pelvis");
+        if (smoothPelvis < 0 || plantDt <= 0) return;
+        var pw = sk.GlobalTransform * sk.GetBoneGlobalPose(smoothPelvis).Origin;
+        var raw = new Vector3(pw.X, 0, pw.Z);   // (PlantStep took the ease off Position)
+        float dt = plantDt;
+        var rawV = smoothHave ? (raw - smoothRawPrev) / dt : Vector3.Zero;
+        bool want = !SmoothOffFlag && (pivot || pivotSeg > 0 || backpedal && SmoothBack) && !(bool)tree.Get("parameters/fullShot/active");
+        if (!smoothOn && want && smoothHave) { smoothOn = true; smoothP = smoothRawPrev; smoothV = smoothRawV; }
+        if (smoothOn)
+        {
+            float run = SmoothRun, aMax = SmoothAcc * run * 30f;   // (SmoothAcc of the run's pace per 30 fps frame)
+            // (the pace that closes the gap as fast as the pace change allows, braking in time: no overshoot)
+            var e = raw - smoothP - rawV * dt;   // (the gap left if it kept the pose's own pace this frame)
+            float el = e.Length();
+            var vWant = rawV + (el > 1e-5f ? e / el * Mathf.Min(Mathf.Sqrt(2 * SmoothW * aMax * el), el / dt) : Vector3.Zero);
+            // (a 180: through its first SmoothSlowYaw deg she stands on the pivot, at most SmoothSlow of the run's pace)
+            bool slow = pivot && Mathf.RadToDeg(Mathf.Abs(Mathf.Wrap(Rotation.Y - pivotYaw0, -Mathf.Pi, Mathf.Pi))) < SmoothSlowYaw;
+            float cap = (slow ? SmoothSlow : SmoothMax) * run;
+            if (vWant.Length() > cap) vWant = vWant.Normalized() * cap;
+            var dv = vWant - smoothV;
+            if (dv.Length() > aMax * dt) dv = dv.Normalized() * aMax * dt;
+            smoothV += dv;
+            if (SmoothDbg) GD.Print(System.FormattableString.Invariant($"SMOOTH raw {raw.X:0.000} {raw.Z:0.000} P {smoothP.X:0.000} {smoothP.Z:0.000} rawV {rawV.X:0.00} {rawV.Z:0.00} vW {vWant.X:0.00} {vWant.Z:0.00} V {smoothV.X:0.00} {smoothV.Z:0.00} want {want}"));
+            smoothP += smoothV * dt;
+            var off = smoothP - raw;
+            // (the whole gap from the sim, the plant lock's with this, at most SmoothLag)
+            var tot = off + new Vector3(plantOff.X, 0, plantOff.Z);
+            if (tot.Length() > SmoothLag) { tot = tot.Normalized() * SmoothLag; off = tot - new Vector3(plantOff.X, 0, plantOff.Z); smoothP = raw + off; }
+            smoothOff = off;
+            if (!want && off.Length() < 0.004f && (smoothV - rawV).Length() < 0.05f * run) { smoothOn = false; smoothOff = Vector3.Zero; }
+        }
+        Position += smoothOff;
+        smoothRawPrev = raw; smoothRawV = rawV; smoothHave = true;
     }
 
     // (turning r3, the solver; judge r2 on the 180: "she spins about 180 deg on one spot in the air while her legs scissor ...
@@ -2178,7 +2235,8 @@ public partial class PlayerView : Node3D
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
         if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; }
-        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X:0.000} {GlobalPosition.Z - plantOff.Z:0.000} pl {plantFoot} off {plantOff.X:0.000} {plantOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0}"));
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls}"));
+        smoothCalls = 0;
     }
     // (turning measure) her balls of the feet in the world where the skeleton has run its modifiers (see MeasCache's note)
     bool feetHooked; float logW, logWWalk, logSpd;
@@ -2189,7 +2247,10 @@ public partial class PlayerView : Node3D
         int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
         if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
         if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
+        int pb = sk.FindBone("pelvis");
+        if (pb >= 0) pelvW = sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin;
     }
+    Vector3 pelvW;
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
