@@ -11,10 +11,10 @@
   -0.8619
  ],
  "light_note": "painted from the rect's upper left (toward the light, image x right / y down); laid flat on the floor, image up = north (the play camera looks north, 62 degrees down); never turned",
- "alpha": "straight; the lip, the mouth and the roots (a hollow: its whole dish and rim) >= 0.6 (alpha scissor 0.6; the mouth and the dish are 1), the soft contact shadow 0.2-0.55 (rgb = palette shadow), 0 at the rect's edge",
+ "alpha": "straight; the lip, the mouth and the roots (a hollow: its whole dish) >= 0.6 (alpha scissor 0.6; the mouth and the dish are 1), the soft contact shadow 0.2-0.55 (rgb = palette shadow), 0 at the rect's edge",
  "kinds": {
   "bigpit": "a big pit at its own size (the game's holes, mean r 5.2-5.8 m): anchor = the mouth's centre (the rect's centre); the mouth r(theta) = mouth_r * (1 + sum a sin(k theta + p)) over mouth_harm [k, a, p] (theta = atan2(y, x), image x right / y down, metres from the centre), alpha 1 over all of it; the lip band up to lip_m outside the mouth, the contact shadow 0.9 m past that; the far wall in slate risers and shelves, black only past about 9 m down (the near part of the mouth)",
-  "hollow": "a shallow walkable hollow, no hole: the same mouth fields for the dish's edge; the dish and its raised rim opaque out to lip_m past the edge, the contact shadow 0.6 m past that; nothing black (darkest inside the dish about Y 30)"
+  "hollow": "a shallow walkable hollow, no hole: the same mouth fields for the dish's edge; the dish opaque out to lip_m past the edge (an ink break, a little lit crest on the upper left only, no raised rim: the floor meets it), no contact shadow ring (the roots' shadows only); nothing black (the bottom and the shade slope about sRGB (44, 31, 24))"
  },
  "anchor": "[fx, fy] in the rect (0..1, x right, y down)",
  "decals": [
@@ -164,7 +164,7 @@
     1.238,
     1.541
    ],
-   "lip_m": 0.42
+   "lip_m": 0.101
   },
   {
    "kind": "hollow",
@@ -210,7 +210,7 @@
     1.615,
     1.926
    ],
-   "lip_m": 0.438
+   "lip_m": 0.101
   },
   {
    "kind": "hollow",
@@ -256,7 +256,7 @@
     1.877,
     2.269
    ],
-   "lip_m": 0.452
+   "lip_m": 0.101
   },
   {
    "kind": "hollow",
@@ -302,7 +302,7 @@
     2.143,
     2.588
    ],
-   "lip_m": 0.47
+   "lip_m": 0.101
   }
  ]
 }
