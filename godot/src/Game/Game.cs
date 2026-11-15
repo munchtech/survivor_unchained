@@ -108,6 +108,8 @@ public partial class Game : Node, IZoneHost
         if (InkPass.On) AddChild(new Ink());
         // (L1 lead 21 QUIT) Every quit and the window's close go through QuitPath (early release, one frame, the guard).
         QuitPath.Install(this);
+        // --look-viewer DROP: the live look viewer (LookViewer, docs/tools/LOOK_VIEWER.md), once, on the root.
+        LookViewer.Install(this);
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);

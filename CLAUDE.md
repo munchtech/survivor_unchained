@@ -2,6 +2,16 @@
 
 Start with `docs/team/README.md` (how we work, safety, the roster), then `docs/team/RESUME.md` and your handoff.
 
+# Compact instructions
+
+Auto-compaction (about 166k) is the default cut for leads and the main session (measured 10-13 November: $0.34-0.93 a compaction against $1.75-3.54 a handoff, no quality loss). The summary must keep, exactly:
+- the owner's quotes, word for word, with their dates;
+- branch@sha of every branch in play, and each agent's id and worktree path;
+- the fixed list (the brief's items, or the plan) with each item's state: done (with the commit), in progress (what's left), not started;
+- decisions, each with its why; failed attempts and why they failed, so nobody retries them;
+- the path of the agent's state file (its handoff top block), which the next context reads first.
+Drop tool output, file dumps and anything already in a committed file: name the file instead.
+
 ## Disk and worktrees (the owner, 10 October 2026)
 
 C: went from 317 GB free to 13 GB in three days: 85 agent worktrees (about 4 GB each) never removed after their work merged, plus about 44 GB of session scratch in `%LOCALAPPDATA%\Temp\claude`. So:

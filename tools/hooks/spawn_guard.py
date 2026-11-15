@@ -4,9 +4,13 @@
 # caught it after the tokens were spent.
 #
 # 1. Judges and solvers (su-lead-max) don't spawn helpers, unless their own brief has a line "Spawning: allowed".
-# 2. A lead (su-lead-high / su-lead-sonnet) spawning a su-lead-max agent must put "Item: <name>" in its prompt,
+# 2. A lead (su-lead-high / su-lead-sonnet / su-lead-author) spawning a su-lead-max agent must put "Item: <name>" in its prompt,
 #    and gets at most 3 judge/solver rounds per item. The coordinator can send "Round cap raised for <name> to N".
-# The main session is always allowed. Spawns this hook denied are not counted as rounds.
+# 3. (13 Nov, usage cuts) Every spawn, the main session's too: a `Context budget: <n>k` line in the prompt; a
+#    general-purpose / claude / Explore spawn passes `model` (no silent inherit of the session's model); a judge
+#    spawn states `Effort tier: always-seen | less-seen | tier-3` and its effort matches the table in
+#    docs/handoff/lead_brief.md "Effort" (max / xhigh / high). No effort level is changed here, only checked.
+# Rules 1-2 skip the main session. Spawns this hook denied are not counted as rounds.
 # Never fails a tool call: any error exits 0 silently (a broken hook must never block work).
 import json
 import os
@@ -91,6 +95,40 @@ def scan(path, item, cur_id):
     return len(ran), cap
 
 
+TIERS = {"always-seen": "max", "less-seen": "xhigh", "tier-3": "high"}  # lead_brief.md "Effort", the single source
+NEED_MODEL = ("general-purpose", "claude", "Explore")
+JUDGE_TYPES = ("su-lead-max",)
+
+
+def is_judge(inp):
+    if inp.get("subagent_type") not in JUDGE_TYPES:
+        return False
+    text = (inp.get("description") or "") + chr(10) + (inp.get("prompt") or "")[:600]
+    return re.search(r"\bjudge\b|\bverdict\b", text, re.I) is not None and not re.search(r"\bsolver\b", inp.get("description") or "", re.I)
+
+
+def every_spawn(inp):
+    """Reason to refuse any spawn (main session included), or None."""
+    prompt = inp.get("prompt") or ""
+    typ = inp.get("subagent_type") or "general-purpose"
+    if not re.search(r"^[ \t>*-]*Context budget:\s*\d+\s*k", prompt, re.I | re.M):
+        return ("Every spawn carries a line `Context budget: <n>k` in its prompt (judges and solvers ~120-180k, "
+                "workers ~120k, runners ~60-100k; README \"Context budgets\"). Add it and spawn again.")
+    if typ in NEED_MODEL and not inp.get("model"):
+        return (f"A `{typ}` spawn must pass `model` (it would silently inherit this session's model). Pick the "
+                f"smallest that reaches the same quality: haiku for search and greps, sonnet for specified work, opus for taste.")
+    if is_judge(inp):
+        m = re.search(r"^[ \t>*-]*Effort tier:\s*(always-seen|less-seen|tier-3)\b", prompt, re.I | re.M)
+        if not m:
+            return ("A judge brief states its tier on a line `Effort tier: always-seen | less-seen | tier-3` "
+                    "(lead_brief.md \"Effort\": max on what the player sees all the time, xhigh on less-seen, high on tier-3).")
+        want = TIERS[m.group(1).lower()]
+        got = inp.get("effort") or "max"  # su-lead-max's own default
+        if got != want:
+            return f"Effort tier {m.group(1)} means `effort: \"{want}\"` (lead_brief.md \"Effort\"); this spawn has {got}. Spawn again with {want}."
+    return None
+
+
 def deny(reason):
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                              "permissionDecisionReason": f"{MARK} {reason}"}}))
@@ -99,6 +137,10 @@ def deny(reason):
 def main():
     d = json.load(sys.stdin)
     aid, atype = d.get("agent_id"), d.get("agent_type")
+    why = every_spawn(d.get("tool_input") or {})
+    if why:
+        deny(why)
+        return
     if not aid:
         return
     main_path = d.get("transcript_path") or ""
@@ -116,7 +158,7 @@ def main():
             deny("Judges and solvers don't spawn helpers. Put what you would delegate in your report "
                  "(what to run, check or build, and why) and the lead will route it.")
         return
-    if atype in ("su-lead-high", "su-lead-sonnet") and inp.get("subagent_type") == "su-lead-max":
+    if atype in ("su-lead-high", "su-lead-sonnet", "su-lead-author") and inp.get("subagent_type") == "su-lead-max":
         item = item_of(inp.get("prompt"))
         if not item:
             deny("Add a line `Item: <short item name>` to the judge or solver brief so rounds can be counted, then spawn again.")

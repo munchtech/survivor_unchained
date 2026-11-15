@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
@@ -251,6 +252,7 @@ public partial class PlayerView : Node3D
         AddChild(v);
         if (person.Own is { } o) own = o;
         mine = person.Own != null;
+        if (mine && person.Body == "heroine" && SurvivorUnchained.Args.Has("wear-inside")) person.Root.AddChild(new WearInside(person.Skeleton));   // (the armor-inside measure: nothing without the flag)
         var bt = new AnimationNodeBlendTree();
         AnimationNode moveNode;
         // B (P1): no arm-hold layer (ArmHold.Layered): its holds are clip data.
@@ -1042,6 +1044,14 @@ public partial class PlayerView : Node3D
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
         // sheathed, as the game plays it.
+        // --clip-tour LIST: her own clips played once each, start to end, at normal speed and the game's own delta, her pieces drawn
+        // as --hold draws them and the whole body keyed (no upper-only layering); for the armor-inside measure (WearInside).
+        if (mine && TourList != null)
+        {
+            tree.Active = false;
+            TourStep();
+            goto carriedLight;
+        }
         if (mine && Hold is { Length: 2 } hold)
         {
             tree.Active = false;
@@ -1728,6 +1738,70 @@ public partial class PlayerView : Node3D
         FolkAtt = SurvivorUnchained.Args.Num("ember-folk-att", 2f);
     // --ember-h H: the pool light's height over her feet; --ember-k K: her ember's gain times K (sweeps of any preset).
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
+    // --clip-tour LIST|all (--clip-tour-from S): the clip playing and its time, for the probes (null / -1 outside a tour).
+    static readonly string? TourArg = SurvivorUnchained.Args.Get("clip-tour");
+    static readonly float TourFrom = SurvivorUnchained.Args.Num("clip-tour-from", 0f);
+    public static string? TourClip { get; private set; }
+    public static double TourTime { get; private set; } = -1;
+    List<string>? tourList;
+    int tourAt = -1, tourPhase;   // 0: next clip to set up, 2: its first pose drawn for a frame, 1: playing, 3: done
+    List<string>? TourList => TourArg == null ? null : tourList ??= TourNames();
+
+    List<string> TourNames()
+    {
+        var names = new List<string>();
+        if (TourArg == "all")
+        {
+            if (own.Library() is { } lib) names.AddRange(lib.GetAnimationList().Select(n => n.ToString()));
+            if (P1Body.On && P1Body.HerClips() is { } hc) names.AddRange(hc.GetAnimationList().Select(n => n.ToString()));
+        }
+        else names.AddRange(TourArg!.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries));
+        return names.Distinct().Where(n => own.Has(n)).ToList();
+    }
+
+    void TourStep()
+    {
+        var list = tourList!;
+        if (tourPhase == 3) return;   // done, quitting
+        if (tourPhase == 1)
+        {
+            TourTime = person.Anim.CurrentAnimationPosition;
+            if (person.Anim.IsPlaying()) return;
+            GD.Print($"clip-tour: {list[tourAt]} end");
+        }
+        else if (tourPhase == 2) { tourPhase = 1; person.Anim.Play(); return; }   // (the first pose was drawn for one frame: let it run)
+        tourAt++;
+        if (tourAt >= list.Count)
+        {
+            GD.Print("clip-tour: done");
+            TourClip = null; TourTime = -1; tourPhase = 3;
+            WearInside.Finish();
+            GetTree().Quit();
+            return;
+        }
+        string clip = list[tourAt];
+        view?.Sheathe(clip.EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed"));
+        if (layered)
+        {
+            slide = own.GripSlide(clip); tilt = own.GripTilt(clip);
+            view?.Slide("handslot.r", slide, tilt);
+            slideL = own.GripSlideL(clip); tiltL = own.GripTiltL(clip);
+            pocketL = tiltL != 0 ? 1 : 0;
+            view?.Slide("handslot.l", slideL, tiltL, pocketL);
+        }
+        string full = own.Prefix + clip;
+        var anim = person.Anim.GetAnimation(full);
+        anim.LoopMode = Animation.LoopModeEnum.None;
+        person.Anim.Play(full);
+        person.Anim.Seek(TourFrom, true);
+        person.Anim.Pause();
+        TourClip = clip; TourTime = TourFrom;
+        bool moveClip = clip.StartsWith("idle_") || clip.StartsWith("run_") || clip.StartsWith("sprint_") || clip.StartsWith("stop_") || clip.StartsWith("walk_");
+        if (carriage != null) carriage.HeadLevel = moveClip || own.Stance(clip) ? HeadLevel : 0;
+        if (person.Pose != null) person.Pose.Native = 1;
+        GD.Print($"clip-tour: {clip} {TourFrom:0.###} {anim.Length:0.###}");
+        tourPhase = 2;
+    }
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
     /// <summary>--hold-mirror with a hold (L1 lead 22, pictures only): the held frame mirrored left for right (PoseMirror).</summary>

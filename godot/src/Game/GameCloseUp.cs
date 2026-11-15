@@ -438,8 +438,9 @@ public partial class Game
         if (SurvivorUnchained.Look.Rigs.Current[id] is not { Camera: true } r) { CelRigOff(); return; }
         if (celKey == null || !IsInstanceValid(celKey) || celKey.GetParent() != scene)
         {
+            // (its shadow's bias Look.SkinLight.KeyShadowBias: at 0.03 the jaw's shadow missed a lit wedge under her jaw at the Look)
             celKey = new DirectionalLight3D { Name = "CelRigKey", ShadowEnabled = true, DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal,
-                DirectionalShadowMaxDistance = 6, ShadowBias = 0.03f, LightCullMask = CelHerMask, LightSpecular = 0.5f };
+                DirectionalShadowMaxDistance = 6, ShadowBias = SurvivorUnchained.Look.SkinLight.KeyShadowBias, LightCullMask = CelHerMask, LightSpecular = 0.5f };
             scene.AddChild(celKey);
         }
         var cb = lens.GlobalTransform.Basis;

@@ -1270,6 +1270,12 @@ public static class People
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("H1DBG") is { Length: > 0 } dbg) H1Debug(p, dbg);
         // (env HAIRSET "through=0,shine2=0.2": her hair's uniforms tried in a shot without a build, every pass; face 30 cine)
+        HairSet(p);
+    }
+
+    /// <summary>Shot-only (env HAIRSET "k=v,..."): hair uniforms tried without a build, every pass; hers and an NPC package's.</summary>
+    internal static void HairSet(Person p)
+    {
         if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("HAIRSET") is { Length: > 0 } hs)
             foreach (var mi in p.Hair)
                 for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
@@ -1281,9 +1287,9 @@ public static class People
     }
 
     /// <summary>Shot-only switches to find what draws a patch on her head (face 30 H1b; env H1DBG, a comma list, off
-    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye), uv (her head's UV emitted:
+    /// unless set): nohair, nocap (the cap's cover 0), capgreen and cardsblue (their dye; finered: the fine hairs red, before cardsblue; fineshine0: the fine hairs without shine), uv (her head's UV emitted:
     /// with --tonemap linear --grade off), nospec (her head's sheen and rim off), hairnospec and hairnovar (her hair's shine, its strand tone variation off), nosss, mask (her scalp's tint green).</summary>
-    static void H1Debug(Person p, string dbg)
+    internal static void H1Debug(Person p, string dbg)
     {
         var on = new HashSet<string>(dbg.Split(','));
         foreach (var mi in p.Hair)
@@ -1295,6 +1301,8 @@ public static class People
                 if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial hm) continue;
                 if (name == "hair_cap" && on.Contains("nocap")) mi.SetSurfaceOverrideMaterial(s, new StandardMaterial3D { Transparency = BaseMaterial3D.TransparencyEnum.Alpha, AlbedoColor = new Color(0, 0, 0, 0) });
                 else if (name == "hair_cap" && on.Contains("capgreen")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 1, 0));
+                else if (name == "hair_fine" && on.Contains("finered")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(1, 0, 0));
+                else if (name == "hair_fine" && on.Contains("fineshine0")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
                 else if (name != "hair_cap" && on.Contains("cardsblue")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("colour", new Color(0, 0, 1));
                 if (on.Contains("hairnospec")) foreach (var pass in HairDraw.Passes(hm)) { pass.SetShaderParameter("shine", 0f); pass.SetShaderParameter("shine2", 0f); }
                 if (on.Contains("hairnovar")) foreach (var pass in HairDraw.Passes(hm)) pass.SetShaderParameter("variation", 0f);
@@ -1964,6 +1972,27 @@ public static class People
         // (and no stepped rim on the head: inside the face it lit the nose's side and the temple as hard stripes)
         if (SurvivorUnchained.Look.SkinHighlight.RimShare(src.ResourceName) is float rk)
             m.SetShaderParameter("cel_rim_k", rk);
+        // (Look.SkinLight: the sky's and the fill's hue half given back as her own warmth, not the night's hard navy in her
+        // shade; the head's cooler half-tone on every part, not the body's orange line at the shadow's edge; no soft rim on
+        // the body, whose stepped lobe broke into specks along her shoulders at night)
+        m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.SkyKeep);
+        m.SetShaderParameter("sky_skin_amb", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);
+        // (her shade warm: the fill where the key does not reach, Look.SkinLight.ShadeFill)
+        if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
+        if (!FaceMidOff)
+        {
+            m.SetShaderParameter("face_mid", HeadMid);
+            m.SetShaderParameter("face_mid_w", 1f);
+            m.SetShaderParameter("face_mid_mask", 0f);
+        }
+        if (SurvivorUnchained.Look.SkinLight.SoftRim(src.ResourceName) is float sr)
+            m.SetShaderParameter("rim", sr);
+        // (the head's half-tone kept to a band along the terminator: at the body's reach it pooled in her temple's hollow)
+        if (src.ResourceName == "skin_head")
+        {
+            var hb = SurvivorUnchained.Look.SkinLight.HeadCelBand;
+            m.SetShaderParameter("cel_band", new Vector4(hb.X, hb.Y, hb.Z, hb.W));
+        }
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
         SkinSet(m, src.ResourceName);
@@ -2098,6 +2127,17 @@ public static class People
         bool baseHead = isHead && (skin != null && skin.TryGetValue("base_head", out var bh) && bh.VariantType == Variant.Type.Bool
             ? bh.AsBool() : mesh != null && HeadVertexCount(mesh) is int hv && hv > 0 && hv == BaseHeadVerts());
         if (!isHead) SkinZones(m, deep, false);
+        // (the stepped rim kept off the body's inside folds, the cream line under the breast: body_p1's fold map, on a body
+        // with its topology, so its UVs; Look.SkinHighlight.FoldMap. Matched by TRIANGLES, not vertices: a package loaded at
+        // run time welds its seam duplicates (body_p1's 40328 vertices come in as 39051, 13 Nov) but keeps all 228264
+        // indices; the manifest's "base_body" overrides.)
+        bool baseBody = !isHead && (skin != null && skin.TryGetValue("base_body", out var bb) && bb.VariantType == Variant.Type.Bool
+            ? bb.AsBool() : mesh != null && SkinIndexCount(mesh, src.ResourceName) is int bi && bi > 0 && bi == BaseBodyIndices());
+        if (baseBody && ResourceLoader.Exists(SurvivorUnchained.Look.SkinHighlight.FoldMap))
+        {
+            m.SetShaderParameter("rim_fold_map", GD.Load<Texture2D>(SurvivorUnchained.Look.SkinHighlight.FoldMap));
+            m.SetShaderParameter("rim_fold", 1f);
+        }
         else if (baseHead) { SkinZones(m, deep, true); BaseHead(m); }
         ShaderMaterial? brows = null;
         if (baseHead && !(skin != null && skin.TryGetValue("brows", out var bw) && bw.VariantType == Variant.Type.Bool && !bw.AsBool())
@@ -2131,7 +2171,7 @@ public static class People
         {
             var l = SkinTone(new Look("female", System.Array.Empty<string>())).SrgbToLinear();
             var f = HerToneFit["fair"];
-            return new Vector3(l.R * f.X * HerCelTone.X, l.G * f.Y * HerCelTone.Y, l.B * f.Z * HerCelTone.Z);
+            return new Vector3(l.R * f.X * NpcCelFit.X, l.G * f.Y * NpcCelFit.Y, l.B * f.Z * NpcCelFit.Z);
         }
     }
 
@@ -2178,7 +2218,7 @@ public static class People
 
     static readonly Dictionary<ulong, float> npcMean = new();
     static float? refHeadMean, refBodyMean;
-    static int baseHeadVerts = -1;
+    static int baseHeadVerts = -1, baseBodyIndices = 0;
 
     static float PaintMean(Texture2D? tex)
     {
@@ -2224,11 +2264,32 @@ public static class People
 
     static float RefMean(string path) => ResourceLoader.Exists(path) ? PaintMean(GD.Load<Texture2D>(path)) : 0f;
 
-    static int? HeadVertexCount(Mesh mesh)
+    static int? HeadVertexCount(Mesh mesh) => SkinVertexCount(mesh, "skin_head");
+
+    /// <summary>The vertex count of a mesh's surface whose material is named so, or null.</summary>
+    static int? SkinVertexCount(Mesh mesh, string material)
     {
         for (int s = 0; s < mesh.GetSurfaceCount(); s++)
-            if (mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head") return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == material) return (mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length);
         return null;
+    }
+
+    /// <summary>The index count (3 per triangle) of a mesh's surface whose material is named so, or null. Unlike the
+    /// vertex count it survives the run-time glTF load's welding of seam duplicates.</summary>
+    static int? SkinIndexCount(Mesh mesh, string material)
+    {
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+            if (mesh.SurfaceGetMaterial(s)?.ResourceName == material)
+                return mesh is ArrayMesh am ? am.SurfaceGetArrayIndexLen(s) : mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Index].AsInt32Array().Length;
+        return null;
+    }
+
+    /// <summary>body_p1's body skin surface (its body mesh's "skin"/"Material_0.001"), by index count: an NPC's body with as
+    /// many triangles is on its topology, so shares its UVs (the fold map's).</summary>
+    static int BaseBodyIndices()
+    {
+        BaseHeadVerts();
+        return baseBodyIndices;
     }
 
     static int BaseHeadVerts()
@@ -2242,10 +2303,14 @@ public static class People
             {
                 var stack = new Stack<Node>();
                 stack.Push(inst);
-                while (stack.Count > 0 && baseHeadVerts == 0)
+                while (stack.Count > 0 && (baseHeadVerts == 0 || baseBodyIndices == 0))
                 {
                     var n = stack.Pop();
                     if (n is MeshInstance3D { Mesh: { } mm } && HeadVertexCount(mm) is int c) baseHeadVerts = c;
+                    if (n is MeshInstance3D { Mesh: { } mb } && HeadVertexCount(mb) == null)
+                        for (int s = 0; s < mb.GetSurfaceCount(); s++)
+                            if (mb.SurfaceGetMaterial(s)?.ResourceName is "skin" or "Material_0.001")
+                                baseBodyIndices = SkinIndexCount(mb, mb.SurfaceGetMaterial(s).ResourceName) ?? 0;
                     foreach (var ch in n.GetChildren()) stack.Push(ch);
                 }
                 inst.Free();
@@ -2513,7 +2578,10 @@ public static class People
     /// root is her albedo's chroma (as emission C .05; her tone trims off, or her highlights off, moved it under .005), so the fix is
     /// her skin's color FROM MB1 DAY's lit chip (#ee9962, C .127 h 45) and T08's lit skin (C .143 h 48): every swatch
     /// takes the same factor, so they keep their places against each other. (--cel-tone R,G,B: another, for judging it.)</summary>
-    static readonly Vector3 HerCelTone = ArgVec("cel-tone", new(1.39f, 0.80f, 0.54f));
+    /// <summary>The cel tone an NPC's warmth was fitted from (her cel tone until skin light r2, 13 Nov): an NPC on her base
+    /// derived from her newer, less red CelTone read grey-khaki by day and ashen at night, so it keeps this.</summary>
+    static readonly Vector3 NpcCelFit = new(1.39f, 0.80f, 0.54f);
+    static readonly Vector3 HerCelTone = ArgVec("cel-tone", new(SurvivorUnchained.Look.SkinLight.CelTone.R, SurvivorUnchained.Look.SkinLight.CelTone.G, SurvivorUnchained.Look.SkinLight.CelTone.B));
 
     static readonly Dictionary<string, Vector3> HerFaceSwatch = new()
     {
@@ -2647,7 +2715,8 @@ public static class People
     /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
     /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
     /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
-    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look);
+    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look)
+        * SurvivorUnchained.Look.SkinLight.HeadPaintLevel;   // (her head's paint at her body's level: Look.SkinLight.HeadPaintLevel)
 
     /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
     /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
@@ -2802,8 +2871,9 @@ public static class People
     static readonly bool HeadRigOff = SurvivorUnchained.Args.Get("head-rig") == "off";
     static readonly bool EarAoOff = SurvivorUnchained.Args.Get("ear-ao") == "off";
     static readonly bool FaceMidOff = SurvivorUnchained.Args.Get("face-mid") == "off";
-    /// <summary>The head's cel half-tone level (heroine_skin.gdshader face_mid; the skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
-    static readonly Vector3 HeadMid = new(0.45f, 0.55f, 0.65f);
+    /// <summary>The skin's cel half-tone level, head and body (heroine_skin.gdshader face_mid; Look.SkinLight.HalfTone; the
+    /// skin's CEL_MID is 0.85, 0.45, 0.38).</summary>
+    static readonly Vector3 HeadMid = new(SurvivorUnchained.Look.SkinLight.HalfTone.R, SurvivorUnchained.Look.SkinLight.HalfTone.G, SurvivorUnchained.Look.SkinLight.HalfTone.B);
 
     // (the rig's weight now, for her skin made while it is up: a look chosen at the close-up)
     static float lookRig;
@@ -2812,6 +2882,8 @@ public static class People
     {
         var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
         f *= FaceSwatch(look);
+        // (her own face trimmed to her lit chest at the Look again: Look.SkinLight.LookFaceTrim)
+        if (FaceId(look) == "own") f *= new Vector3(SurvivorUnchained.Look.SkinLight.LookFaceTrim.R, SurvivorUnchained.Look.SkinLight.LookFaceTrim.G, SurvivorUnchained.Look.SkinLight.LookFaceTrim.B);
         return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
     }
 

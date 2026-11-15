@@ -39,10 +39,25 @@ public static class MotionClock
     /// <summary>Followed from now: called before the game's first frame is drawn.</summary>
     public static void Start(Node node)
     {
-        if (clockOf != null) return;
+        // (a scene loaded afresh, the look viewer's replay: the clock follows the new game's frames; it was left on
+        // the freed one and stopped)
+        if (clockOf != null && GodotObject.IsInstanceValid(clockOf)) return;
+        bool first = clockOf == null;
         clockOf = node;
+        if (!first) return;
         rollover = (double)ProjectSettings.GetSetting("rendering/limits/time/time_rollover_secs", 3600.0);
         RenderingServer.FramePreDraw += Draw;
+    }
+
+    /// <summary>(the look viewer) Back to the game's start: TIME, the world's clock and the frame count at 0, as the
+    /// renderer's TIME is put back to 0 for the same draw (LookViewer, from a frame_pre_draw after this clock's own).</summary>
+    public static void Restart()
+    {
+        time = 0; world = 0; frame = 0; WorldRate = 1;
+        RenderingServer.GlobalShaderParameterSet(Then, -1e9f);
+        RenderingServer.GlobalShaderParameterSet(WorldWasName, 0f);
+        RenderingServer.GlobalShaderParameterSet(WorldName, 0f);
+        RenderingServer.GlobalShaderParameterSet(FrameName, 0f);
     }
 
     static void Draw()

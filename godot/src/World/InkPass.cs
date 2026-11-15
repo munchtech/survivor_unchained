@@ -29,7 +29,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     static bool rigPinned;
     public static void SetRig(Color c) { if (!rigPinned) RigInk = c; }
 
-    public static readonly bool On = Args.Get("ink") is not ("off" or "0");
+    public static bool On => Args.Get("ink") is not ("off" or "0");   // (read live: the look viewer's replays vary it)
     public static readonly bool Mask = Args.Get("ink-mask") is not ("off" or "0");
     public static float RClose = 2.5f, RPlay = 1.5f, ThA = 0.05f, ThB = 0.025f, CreaseDeg = 45, FadeNear = 30, FadeFar = 60, Dark = 0.25f,
         LumCut = 2.0f, ZClose = 3f, ZPlay = 16f, CreaseW = 0.5f, SilThin = 0.6f;

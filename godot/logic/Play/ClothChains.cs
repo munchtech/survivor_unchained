@@ -30,6 +30,16 @@ public sealed class ClothChains
 
     public readonly record struct Capsule(Vector3 A, Vector3 B, float R);
 
+    /// <summary>A pinned link held no farther off a capsule than its head (Collide); off only to measure the old way
+    /// (View/PieceSprings --springs-legacy).</summary>
+    public static bool HoldPinnedToHead = true;
+
+    /// <summary>A collider of its own run after the capsules in every solver iteration (PlateFollow: a plate's own points
+    /// held off the body's skin): the particles to move in place (pinned roots must not move), and how far through the
+    /// frame this substep ends (0..1; 1 settling after a cut).</summary>
+    public Action<Vector3[], float>? Hook;
+    float subA = 1;
+
     readonly int[] parent;
     readonly float[] radius, stiff;
     readonly Vector3[] x, xp, tPrev, tSub, tSubPrev, vel;
@@ -38,6 +48,10 @@ public sealed class ClothChains
     bool started;
     public Tuning Tune;
 
+    /// <summary>A link's collision radius as data may give it: 0 or more and finite. (A negative one at or past a capsule's
+    /// radius would silently turn that capsule's collision off: the bind limit is clamped at 0. R&amp;D rig lead 25.)</summary>
+    public static bool RadiusOk(float r) => r >= 0 && float.IsFinite(r);
+
     /// <summary>Particles in order (a parent before its children); parent[i] &lt; 0 for a pinned chain root; radius[i]
     /// the link ending at i (world); stiffness[i] (1/s) overrides the root-to-tip ramp where &gt; 0.</summary>
     public ClothChains(int[] parent, float[] radius, Tuning tune, float[]? stiffness = null)
@@ -45,6 +59,8 @@ public sealed class ClothChains
         int n = parent.Length;
         for (int i = 0; i < n; i++)
             if (parent[i] >= i) throw new ArgumentException($"particle {i}: its parent {parent[i]} must come before it");
+        for (int i = 0; i < radius.Length; i++)
+            if (!RadiusOk(radius[i])) throw new ArgumentException($"particle {i}: radius {radius[i]} (a link's radius is 0 or more)");
         this.parent = parent;
         this.radius = radius;
         Tune = tune;
@@ -95,6 +111,7 @@ public sealed class ClothChains
         if (limit.GetLength(1) != cols.Length) SetRest(t, cols);
         Array.Copy(t, x, x.Length); Array.Copy(t, xp, x.Length); Array.Copy(t, tPrev, x.Length);
         int steps = (int)MathF.Ceiling(Tune.SettleSeconds * 60);
+        subA = 1;
         for (int k = 0; k < steps; k++) Sub(1f / 60, t, t, cols, ground, down);
         Array.Copy(x, xp, x.Length);
         colPrev = (Capsule[])cols.Clone();
@@ -116,6 +133,7 @@ public sealed class ClothChains
             for (int i = 0; i < x.Length; i++) tSub[i] = Vector3.Lerp(tPrev[i], t[i], a);
             for (int c = 0; c < cols.Length; c++)
                 cs[c] = new Capsule(Vector3.Lerp(colPrev[c].A, cols[c].A, a), Vector3.Lerp(colPrev[c].B, cols[c].B, a), cols[c].R);
+            subA = a;
             Sub(h, tSubPrev, tSub, cs, ground, down);
         }
         Array.Copy(t, tPrev, x.Length);
@@ -160,6 +178,7 @@ public sealed class ClothChains
                 x[i] = dl > 1e-6f ? x[p] + d * (len / dl) : x[p] + (t[i] - t[p]);
             }
             Collide(cols, ground);
+            Hook?.Invoke(x, subA);
         }
     }
 
@@ -174,6 +193,15 @@ public sealed class ClothChains
             {
                 float lim = limit[i, c];
                 if (lim <= 0) continue;
+                // (a pinned link turns about its head, so it can stand no farther off a capsule than its head does: a
+                // limit past the head's own distance has no turn that meets it, and the push near the head (up to 3x at
+                // the tip, every iteration) flung the link round, her skirt's lappets on a thigh that swings about the
+                // hip right under their heads. Held to the head's distance, the push at the tip is the tangent turn.)
+                if (pinned && HoldPinnedToHead)
+                {
+                    var (_, _, dh) = Closest(x[p], x[p], cols[c].A, cols[c].B);
+                    if (dh < lim) lim = dh;
+                }
                 var (s, q, d) = Closest(x[p], x[i], cols[c].A, cols[c].B);
                 if (d >= lim) continue;
                 var r = PointOnSegment(cols[c].A, cols[c].B, q);

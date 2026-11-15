@@ -38,6 +38,24 @@ public static class NpcDye
     static int copies;
     static readonly HashSet<string> told = new();
 
+    /// <summary>(the look viewer) A package's dye definition and material dropped, read afresh at its next Build.</summary>
+    public static int Forget(string pkg)
+    {
+        lock (People.BuildLock)
+        {
+            int n = (defs.Remove(pkg) ? 1 : 0) + (mats.Remove(pkg) ? 1 : 0);
+            told.Remove(pkg);
+            return n;
+        }
+    }
+
+    /// <summary>(the look viewer) The copies counted from 0 again, as at the game's start: each copy's phase and dye
+    /// pick follow its count, so a replayed scene's people come out as a fresh run's.</summary>
+    public static void Restart()
+    {
+        lock (People.BuildLock) copies = 0;
+    }
+
     /// <summary>Called under People.BuildLock (the count and caches are shared with WalkerView's worker thread).</summary>
     public static void Apply(People.Person p, string pkg, SurvivorUnchained.World.PersonSpec spec)
     {

@@ -17,7 +17,7 @@ namespace SurvivorUnchained;
 /// </summary>
 public static class Args
 {
-    static Dictionary<string, string>? parsed;
+    static readonly Viewer.ArgTable table = new(() => Dev ? OS.GetCmdlineUserArgs() : System.Array.Empty<string>());
 
     /// <summary>Whether the developer's switches are read at all: in the
     /// editor and debug builds and the measuring build (export preset "Windows (perf)", feature "perf"), never in the player's release build. Every switch
@@ -26,20 +26,14 @@ public static class Args
     /// view the game does not offer (the legal brief, issue 3).</summary>
     public static bool Dev => OS.IsDebugBuild() || OS.HasFeature("perf");
 
-    static Dictionary<string, string> All()
+    static Dictionary<string, string> All() => table.All();
+
+    /// <summary>(dev only) Every later read sees these switches instead of the command line; null: the command line
+    /// again. The look viewer (LookViewer) sets a shot's switches before it loads the scene afresh. Switches a class
+    /// caches in a static field when first read keep their first value: the viewer only varies ones read live.</summary>
+    public static void Override(IReadOnlyList<string>? args)
     {
-        if (parsed != null) return parsed;
-        parsed = new();
-        if (!Dev) return parsed;
-        var a = OS.GetCmdlineUserArgs();
-        for (int i = 0; i < a.Length; i++)
-        {
-            if (!a[i].StartsWith("--")) continue;
-            var key = a[i][2..];
-            var val = i + 1 < a.Length && !a[i + 1].StartsWith("--") ? a[++i] : "1";
-            parsed[key] = val;
-        }
-        return parsed;
+        if (Dev) table.Override(args);
     }
 
     public static string? Get(string key) => All().TryGetValue(key, out var v) ? v : null;
@@ -68,6 +62,13 @@ public partial class Shots : Node
         return null;
     }
     static Shots? live;
+    /// <summary>(the look viewer, LookViewer) The run's frame is saved to this file instead of .shots, the run does not
+    /// quit after it, and ViewerTaken is told (the file, the pictures' clock, the frames drawn).</summary>
+    public static string? ViewerFile;
+    public static event System.Action<string, double, long>? ViewerTaken;
+    /// <summary>The look viewer's timing: a shot's Shots node is ready (the scene loaded, its first frame next).</summary>
+    public static event System.Action? ViewerReady;
+    long readyDrawn;
     /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
     public static double Clock => live?.time ?? 0;
     /// <summary>Frames the game asks for (--on boss): what, and when.</summary>
@@ -137,6 +138,8 @@ public partial class Shots : Node
         name = Args.Get("shot") ?? "";
         if (name == "") { SetProcess(false); return; }
         live = this;
+        readyDrawn = Engine.GetFramesDrawn();
+        if (ViewerFile != null) ViewerReady?.Invoke();
         RenderingServer.FramePostDraw += Drawn;
         seconds = Args.Num("seconds", 3);
         every = Args.Num("every", 0);
@@ -148,6 +151,39 @@ public partial class Shots : Node
         if (Args.Has("unshaded")) GetViewport().DebugDraw = Viewport.DebugDrawEnum.Unshaded;
         // --debugdraw Lighting (or NormalBuffer, ...): any of Godot's own views.
         if (Args.Get("debugdraw") is string dd && System.Enum.TryParse<Viewport.DebugDrawEnum>(dd, true, out var mode)) GetViewport().DebugDraw = mode;
+        // --lamp-off "#3,CelRigKey,a9c4ff": lamps out by index (as --lamp-dump numbers them), name or colour hex, held out just
+        // before every frame is drawn (after whatever set their energy that frame); --lamp-dump: every lit lamp listed at the shot
+        // (skin-light, 13 Nov 2026: which lamp draws a fault on her skin, one switch at a time)
+        if (Args.Get("lamp-off") is string lo) { lampOff = lo.Split(','); RenderingServer.FramePreDraw += LampsOut; }
+    }
+
+    string[] lampOff = System.Array.Empty<string>();
+
+    static List<Light3D> Lamps(Node root) { var l = new List<Light3D>(); foreach (var n in root.FindChildren("*", "Light3D", true, false)) if (n is Light3D x) l.Add(x); return l; }
+
+    void LampsOut()
+    {
+        var all = Lamps(GetTree().Root);
+        for (int i = 0; i < all.Count; i++)
+            foreach (var k in lampOff)
+                if (k == $"#{i}" || k == all[i].Name || k.Length == 6 && all[i].LightColor.ToHtml(false) == k.ToLowerInvariant()) all[i].LightEnergy = 0;
+    }
+
+    /// <summary>--lamp-dump: each lamp that is lit, its index, kind, name, colour, energy, cull mask and, for a directional or
+    /// spot, where it points from in the camera's frame (right, up, toward the lens).</summary>
+    void LampDump()
+    {
+        var c = GetViewport().GetCamera3D();
+        var all = Lamps(GetTree().Root);
+        for (int i = 0; i < all.Count; i++)
+        {
+            var l = all[i];
+            if (!l.IsVisibleInTree() || l.LightEnergy <= 0) continue;
+            var from = l.GlobalTransform.Basis.Z.Normalized();
+            string dir = c != null ? $" from cam ({from.Dot(c.GlobalTransform.Basis.X):0.00},{from.Dot(c.GlobalTransform.Basis.Y):0.00},{from.Dot(c.GlobalTransform.Basis.Z):0.00})" : "";
+            string pos = l is DirectionalLight3D ? "" : $" at {l.GlobalPosition}";
+            GD.Print($"LAMP #{i} {l.GetType().Name} {l.Name} #{l.LightColor.ToHtml(false)} e {l.LightEnergy:0.###} mask {l.LightCullMask} spec {l.LightSpecular:0.##}{dir}{pos}");
+        }
     }
 
     public override void _Process(double delta)
@@ -232,9 +268,11 @@ public partial class Shots : Node
         if (time < due) return;
         var dir = ProjectSettings.GlobalizePath("res://.shots");
         DirAccess.MakeDirRecursiveAbsolute(dir);
-        var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
+        var file = ViewerFile ?? (every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png");
+        if (ViewerFile != null) DirAccess.MakeDirRecursiveAbsolute(System.IO.Path.GetDirectoryName(ViewerFile)!);
         GetViewport().GetTexture().GetImage().SavePng(file);
         View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(file));   // (--cel-audit, L1 B2)
+        if (Args.Has("lamp-dump")) LampDump();
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         CamLines();
@@ -242,7 +280,10 @@ public partial class Shots : Node
         if (Args.Get("dump-her") is string dumpTo) DumpHer(dumpTo);
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);
+        // (the frames drawn when Shots began and at the picture: the look viewer's replay is lined up on them)
+        GD.Print($"shots: frames drawn {readyDrawn} at the start, {Engine.GetFramesDrawn()} at the picture");
         taken++;
+        if (ViewerFile != null) { ViewerTaken?.Invoke(file, time, Engine.GetFramesDrawn()); return; }
         if (taken >= count && until <= 0) QuitPath.Request(GetTree());
     }
 

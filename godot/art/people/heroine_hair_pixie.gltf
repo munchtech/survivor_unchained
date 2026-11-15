@@ -3,8 +3,9 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "9c37235ba5088701938c1b50fe305e1a",
-   "pixie_ear": "clear 2.5-4.5 mm, tip 3.0-5.0 mm, 32 views"
+   "data": "44d1113d6e835cd0d2efaad2f2f3e051",
+   "pixie_ear": "clear 2.5-4.5 mm, tip 3.0-5.0 mm, 32 views",
+   "cut_ends": "cut cards tapered over 8 mm, stubs dropped"
   }
  },
  "scene": 0,

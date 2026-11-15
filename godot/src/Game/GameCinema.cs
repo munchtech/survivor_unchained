@@ -2128,6 +2128,8 @@ public partial class Game
                 p.X = x; p.Z = z; p.Facing = heading;
                 p.Vx = moving > 0 ? herVel.X : 0; p.Vz = moving > 0 ? herVel.Z : 0;
                 pv?.Face((float)heading, new Vector3((float)x, (float)g.scene.HeightAt(x, z), (float)z), moving);
+                // (her armor's swing carried on from her double's, as the Warden's cape is: no settle at the hand-back)
+                if (pv != null && !player.Skipped && people.TryGetValue("her", out var hd) && hd.Visible) PieceSprings.TakeAll(pv, hd);
             }
             // Her look let go (her eyes ahead, her head's carry eased off) on whoever stays.
             foreach (var name in people.Keys) Life(name)?.Release();
