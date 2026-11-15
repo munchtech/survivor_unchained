@@ -1332,6 +1332,7 @@ public partial class PlayerView : Node3D
         if (mine && !ActLive && ActWalk == null) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
         if (mine) CoilStep();
+        if (mine && HeldLogOn) view?.HeldLog(GetViewport()?.GetCamera3D());
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, SurvivorUnchained.Play.TurnRun.Start));
@@ -1900,6 +1901,7 @@ public partial class PlayerView : Node3D
     /// to a blow TurnMaxStanding; her hips onto a blow behind her HipRate. --turn-snap: the 4 Nov snap (before pictures).</summary>
     static readonly bool TurnSnap = SurvivorUnchained.Args.Has("turn-snap"), CoilOff = SurvivorUnchained.Args.Has("turn-coil-off"),
         TurnLog = SurvivorUnchained.Args.Has("turn-log");
+    static readonly bool HeldLogOn = SurvivorUnchained.Args.Has("held-log");
     static readonly float TurnMax = SurvivorUnchained.Args.Num("turn-max", 1050f), TurnPivot = SurvivorUnchained.Args.Num("turn-pivot", 1350f),
         TurnK = SurvivorUnchained.Args.Num("turn-k", 18f), TurnEase = SurvivorUnchained.Args.Num("turn-ease", 20f),
         TurnMaxStanding = SurvivorUnchained.Args.Num("turn-max-standing", 1050f), TurnEaseStanding = SurvivorUnchained.Args.Num("turn-ease-standing", 30f),

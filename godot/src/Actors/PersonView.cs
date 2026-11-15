@@ -511,6 +511,41 @@ public partial class PersonView : Node3D, INpcView
         return true;
     }
 
+    ulong heldLogAt;
+    /// <summary>(--held-log, measuring) Once a second: each held node's piece id, global scale, merged mesh AABB size, its far end
+    /// from the hand bone, and the screen position of the far end.</summary>
+    public void HeldLog(Camera3D? cam)
+    {
+        ulong now = Godot.Time.GetTicksMsec();
+        if (now - heldLogAt < 1000) return;
+        heldLogAt = now;
+        foreach (var (slot, node) in held)
+        {
+            if (!GodotObject.IsInstanceValid(node)) continue;
+            int bi = person.Skeleton.FindBone(BoneOf(slot));
+            Vector3 hand = bi < 0 ? node.GlobalPosition : person.Skeleton.GlobalTransform * person.Skeleton.GetBonePose(bi).Origin;
+            if (bi >= 0) hand = person.Skeleton.ToGlobal(person.Skeleton.GetBoneGlobalPose(bi).Origin);
+            Aabb box = default; bool any = false; Vector3 far = hand; float best = -1;
+            var stack = new System.Collections.Generic.Stack<Node>(); stack.Push(node);
+            while (stack.Count > 0)
+            {
+                var n = stack.Pop();
+                foreach (var c in n.GetChildren()) stack.Push(c);
+                if (n is not MeshInstance3D mi || mi.Mesh == null) continue;
+                var lb = mi.Mesh.GetAabb();
+                for (int k = 0; k < 8; k++)
+                {
+                    var w = mi.GlobalTransform * lb.GetEndpoint(k);
+                    box = any ? box.Expand(w) : new Aabb(w, Vector3.Zero); any = true;
+                    float d = (w - hand).Length(); if (d > best) { best = d; far = w; }
+                }
+            }
+            var sc = node.GlobalTransform.Basis.Scale;
+            var scr = cam != null ? cam.UnprojectPosition(far) : Vector2.Zero;
+            GD.Print($"HELD {slot} piece={(pieces.TryGetValue(slot, out var id) ? id : "?")} node={node.Name} scale=({sc.X:0.###},{sc.Y:0.###},{sc.Z:0.###}) aabb=({box.Size.X:0.###},{box.Size.Y:0.###},{box.Size.Z:0.###}) far_from_hand={best:0.###} far_dy={(far.Y - hand.Y):0.###} far_screen=({scr.X:0},{scr.Y:0}) vis={(node is Node3D n3 && n3.IsVisibleInTree())}");
+        }
+    }
+
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();
