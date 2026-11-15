@@ -45,6 +45,8 @@ public sealed class MapSpec
     public string Story = "";
     /// <summary>A story night (ArenaSpec.Story), with a place of its own or not: never made a board (Content/Boards).</summary>
     public bool StoryNight;
+    /// <summary>A dungeon's kind (DungeonGen: "hollow", "roost"): hand-made rooms joined by the seed, not the snake.</summary>
+    public string Dungeon = "";
 }
 
 /// <summary>A Bend: a widening of the way where it turns, with nothing placed in it but the way's own.</summary>
@@ -111,6 +113,8 @@ public sealed class MapBuild
     public ArenaBoard? Board;
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
+    /// <summary>A dungeon's rooms, halls, caches and way out (DungeonGen); null on a map.</summary>
+    public DungeonLayout? Dungeon;
     /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point
     /// (where to walk, and how wide it is).</summary>
     public List<(double X, double Z, double Hw)[]> Ways = new();
@@ -151,7 +155,8 @@ public static class MapGen
         // ---------------------------------------------------------- layout --
         // A snake through a grid of cells: the way crosses the whole square
         // and back, and back again, so the map is long for its size.
-        var order = Snake(rng);
+        var lay = spec.Dungeon != "" ? DungeonGen.Layout(DungeonGen.Get(spec.Dungeon) ?? throw new ArgumentException($"no dungeon {spec.Dungeon}"), rng, Size) : null;
+        var order = lay != null ? new List<(int, int)>() : Snake(rng);
         // A map's way is cut to its clearings (the experience lead's shape: 9-10 minutes at tiers 1-2,
         // 10-12 from 3, a pack every 13-15 s): 15 turns of the snake for three clearings, 14 for four
         // (they are bigger fights), all 16 for five. (12 turns for three measured 7 minutes.)
@@ -167,13 +172,14 @@ public static class MapGen
             double r = kind switch { AreaKind.Start => 11, AreaKind.Boss => 24, _ => rng.Range(14, 20) };
             areas.Add(new Area(k, kind, cx, cz, r));
         }
+        if (lay != null) areas = lay.Areas;
         // Three of the clearings between hold altars: early, midway, late.
         int na = areas.Count;
-        if (spec.Clearings == 0) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
+        if (spec.Clearings == 0 && lay == null) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
             areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
         // A Wayfinder's map: its clearings spread evenly along the way, the rest of the turns bends;
         // the altars among the clearings, never the first (the way is learned before its question).
-        if (spec.Clearings > 0)
+        if (spec.Clearings > 0 && lay == null)
         {
             int between = na - 2, n = Math.Min(spec.Clearings, between);
             var at = Enumerable.Range(0, n).Select(i => 1 + (int)Math.Round((i + 0.5) * between / n - 0.5)).ToList();
@@ -188,8 +194,8 @@ public static class MapGen
         }
 
         // The ways between: a curve from each clearing to the next, bowed to one side.
-        var ways = new List<(double X, double Z, double Hw)[]>();
-        for (int k = 0; k + 1 < areas.Count; k++)
+        var ways = lay?.Halls ?? new List<(double X, double Z, double Hw)[]>();
+        for (int k = 0; lay == null && k + 1 < areas.Count; k++)
         {
             var a = areas[k]; var b = areas[k + 1];
             double mx = (a.X + b.X) / 2, mz = (a.Z + b.Z) / 2;
@@ -222,7 +228,14 @@ public static class MapGen
                 double x = i - half, z = j - half;
                 double edge = double.MinValue;      // > 0: walkable, by how much
                 double tn = 9;
-                foreach (var a in areas)
+                if (lay != null)
+                    // A dungeon's rooms as drawn, their edges wandering a metre or two (holes stay holes).
+                    foreach (var r in lay.Rooms)
+                    {
+                        if (Math.Abs(x - r.X) > 40 || Math.Abs(z - r.Z) > 40) continue;
+                        edge = Math.Max(edge, -r.Dist(x, z) + 1.5 * noise.Noise(x * 0.11 + r.Area * 5.1, z * 0.11));
+                    }
+                else foreach (var a in areas)
                 {
                     double d = MathX.Dist(x, z, a.X, a.Z);
                     double ang = Math.Atan2(z - a.Z, x - a.X);
@@ -236,9 +249,13 @@ public static class MapGen
                         if (Math.Abs(x - ax) > 12 && Math.Abs(x - bx) > 12) continue;
                         if (Math.Abs(z - az) > 12 && Math.Abs(z - bz) > 12) continue;
                         double d = MathX.DistToSegment(x, z, ax, az, bx, bz);
-                        edge = Math.Max(edge, (ah + bh) / 2 - d);
-                        tn = Math.Min(tn, d / ((ah + bh) / 2));
+                        // (a dungeon's halls wander in width as a map's ways do, by the noise here)
+                        double hwk = lay != null ? (ah + bh) / 2 * (1 + 0.3 * noise.Noise(x * 0.05 + 11, z * 0.05)) : (ah + bh) / 2;
+                        edge = Math.Max(edge, hwk - d);
+                        tn = Math.Min(tn, d / hwk);
                     }
+                // A room's holes stand even where a hall runs into them.
+                if (lay != null) foreach (var r in lay.Rooms) foreach (var h in r.Holes) edge = Math.Min(edge, h.Dist(x, z));
                 bool inBounds = Math.Abs(x) < half - 6 && Math.Abs(z) < half - 6;
                 walk[j * Res + i] = inBounds && edge > 0;
                 inside[j * Res + i] = edge;
@@ -257,7 +274,10 @@ public static class MapGen
                 double roll = noise.Fbm(x * 0.012 + 3.1, z * 0.012 - 1.7, 3) * 2.2;
                 double d = outside[j * Res + i];
                 // The ground climbs away from the way into banks, knolls and rock.
-                double bank = MathX.Smoothstep(0.5, 12, d) * (4.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3))
+                double bank = lay != null
+                    // A dungeon's walls stand steeper and higher: rock banks you fight under, the wood above them.
+                    ? MathX.Smoothstep(0.3, 7, d) * (5.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3)) + MathX.Smoothstep(6, 30, d) * 4 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3))
+                    : MathX.Smoothstep(0.5, 12, d) * (4.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3))
                     + MathX.Smoothstep(10, 40, d) * 3 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3));
                 heights[j * Res + i] = (float)(roll + bank);
             }
@@ -338,6 +358,8 @@ public static class MapGen
                 {
                     // The walls: trees thick near the way, thinning into the dark beyond.
                     double keep = d < 16 ? 0.62 : d < 34 ? 0.34 : 0.1;
+                    // A dungeon's walls are rock first: crags and boulders along the foot of the bank, the wood behind.
+                    if (lay != null && d < 7 && rng.Chance(0.34)) { Put(rng.Chance(0.6) ? "cliff" : "boulder", x, z, rng.Range(0.5, 0.95), 0.5); continue; }
                     if (rng.Chance(keep)) Put(rng.Pick(trees), x, z, 1 + Math.Min(0.4, d * 0.012));
                     if (d < 12 && rng.Chance(0.45)) Put(rng.Pick(new[] { "bush", "fern", "bramble", "fern" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1));
                     if (d < 8 && rng.Chance(0.12)) Put(rng.Pick(new[] { "boulder", "rock", "cliff" }), x, z, 1, 0.3);
@@ -356,7 +378,7 @@ public static class MapGen
         // A few boulders to fight round in the bigger clearings (not the start).
         var colliders = new List<ColliderDef>();
         int cid = 1;
-        foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing))
+        foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing && lay == null))
             for (int n = rng.Int(1, 3); n > 0; n--)
             {
                 double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(0.35, 0.65) * a.R;
@@ -392,8 +414,9 @@ public static class MapGen
             lights[^1].On = false;
         }
         var boss = areas[^1];
+        if (lay != null) DressDungeon(lay, rng, ground, Put, props, colliders, ref cid, Fire, lights);
         // Standing stones round the last clearing, fires between.
-        int stones = 8;
+        int stones = lay != null ? 0 : 8;
         for (int n = 0; n < stones; n++)
         {
             double ang = n * Math.PI * 2 / stones;
@@ -415,13 +438,15 @@ public static class MapGen
 
         // ----------------------------------------------------------- packs --
         var packs = new List<PackSpot>();
-        foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing or AreaKind.Altar))
+        // A dungeon's packs rest where its rooms were drawn to hold them, and along its halls.
+        if (lay != null) packs.AddRange(lay.Sockets.Where(p => walk[Idx(p.X, p.Z, half)]));
+        foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing or AreaKind.Altar && lay == null))
             for (int n = rng.Int(2, 3); n > 0; n--)
             {
                 double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(0.2, 0.6) * a.R;
                 packs.Add(new PackSpot(a.X + Math.Cos(ang) * rr, a.Z + Math.Sin(ang) * rr, a.Index, rng.Range(0.9, 1.4)));
             }
-        foreach (var w in ways.Select((w, k) => (w, k)))
+        foreach (var w in ways.Select((w, k) => (w, k)).Where(_ => lay == null))
         {
             // Along each way, a pack every 14 m or so, past the first stretch.
             double run = 0;
@@ -467,8 +492,66 @@ public static class MapGen
         return new MapBuild
         {
             Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props,
-            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways,
+            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways, Dungeon = lay,
         };
+    }
+
+    /// <summary>A dungeon's rooms dressed as their people keep them (RoomPlan.Dress): the Pack's bones in the corners, the
+    /// Kerchiefs' crates, fences and cookfires, a stash's barrels by its cache; crags on every hole; lanterns at the way out.</summary>
+    static void DressDungeon(DungeonLayout lay, Rng rng, Heightfield ground, Action<string, double, double, double, double> put,
+        List<PropPlace> props, List<ColliderDef> colliders, ref int cid, Action<double, double, double, double, string> fire, List<LightDef> lights)
+    {
+        void Prop(string id, double x, double z, double rot, double scale) => props.Add(new PropPlace(id, x, ground.HeightAt(x, z), z, rot, scale));
+        // A point inside a room, its edge so far in (from the edge), by trying.
+        (double X, double Z)? Near(DungeonRoom r, double lo, double hi)
+        {
+            double reach = r.Plan.Reach * r.Scale;
+            for (int t = 0; t < 40; t++)
+            {
+                double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(0, reach);
+                double x = r.X + Math.Cos(ang) * rr, z = r.Z + Math.Sin(ang) * rr, d = -r.Dist(x, z);
+                if (d >= lo && d <= hi) return (x, z);
+            }
+            return null;
+        }
+        foreach (var r in lay.Rooms)
+        {
+            foreach (var h in r.Holes)
+            {
+                // A hole is a knot of rock: one crag at its heart and boulders round it, all solid.
+                double hx = (h.X0 + h.X1) / 2, hz = (h.Z0 + h.Z1) / 2, len = MathX.Dist(h.X0, h.Z0, h.X1, h.Z1);
+                put("cliff", hx, hz, Math.Min(1.6, h.R * 0.32 + len * 0.04), 0.6);
+                for (int n = (int)(len / 3); n >= 0; n--)
+                {
+                    double t = len > 0 ? n / Math.Max(1.0, (int)(len / 3)) : 0;
+                    put("boulder", h.X0 + (h.X1 - h.X0) * t + rng.Range(-1, 1), h.Z0 + (h.Z1 - h.Z0) * t + rng.Range(-1, 1), h.R * 0.45, 0.4);
+                }
+            }
+            string dress = r.Plan.Dress;
+            if (dress == "bones")
+                for (int n = rng.Int(3, 6); n > 0; n--)
+                    if (Near(r, 0.6, 3.2) is { } p) Prop(rng.Pick(new[] { "halloween/bone_A", "halloween/bone_B", "halloween/bone_C", "halloween/bone_A", "halloween/ribcage", "halloween/skull" }), p.X, p.Z, rng.Range(0, Math.PI * 2), rng.Range(0.9, 1.3));
+            if (dress == "camp")
+            {
+                for (int n = rng.Int(3, 6); n > 0; n--)
+                    if (Near(r, 0.8, 2.6) is { } p) Prop(rng.Pick(new[] { "props/Crate_Wooden", "props/Barrel", "props/Bag", "props/Crate_Wooden", "halloween/fence_broken" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
+                // A cookfire kept in the bigger rooms: a light to fight by.
+                if (r.Role is RoomRole.Fight or RoomRole.Boss && Near(r, 4, 9) is { } f) { fire(f.X, f.Z, 0.7, 10, "#ff8a3a"); Prop("arena/cookpot", f.X + 0.9, f.Z, rng.Range(0, Math.PI * 2), 1); }
+            }
+            if (dress == "stash")
+                for (int n = rng.Int(2, 4); n > 0; n--)
+                    if (Near(r, 0.6, 2.2) is { } p) Prop(rng.Pick(new[] { "props/Barrel", "props/Crate_Wooden", "props/Bag", "props/Pouch_Large" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
+            if (r.Role == RoomRole.Boss)
+                // Torches round the ruler's room, inside its edge.
+                for (int n = 0; n < 4; n++)
+                    if (Near(r, 2.5, 4.5) is { } p) fire(p.X, p.Z, 0.6, 11, "#ff6a3a");
+        }
+        // The way out: two lantern posts either side of it, dark until the ruler is down (MapRun lights it).
+        var b = lay.Rooms[^1];
+        var (ex, ez) = lay.Exit;
+        double dx = ex - b.X, dz = ez - b.Z, dl = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
+        foreach (int side in new[] { -1, 1 })
+            Prop("halloween/post_lantern", ex - dz / dl * 3.2 * side, ez + dx / dl * 3.2 * side, Math.Atan2(dx, dz), 1.1);
     }
 
     internal static byte B(double v) => (byte)Math.Round(MathX.Clamp01(v) * 255);

@@ -38,9 +38,23 @@ public sealed class Chart
     public string? Pinned;
     public string Name = "";
     public string Theme = "wood";
+    /// <summary>A dungeon's kind (DungeonGen: "hollow", "roost"): its rooms joined by the seed. Empty: a Wayfinder's map.</summary>
+    public string Dungeon = "";
+    /// <summary>A dungeon's creatures stand at her level (no lower than its floor); 0: the tier's.</summary>
+    public int FoeLevel;
+    /// <summary>Where a dungeon lets her out: the zone and the spot she went in at (null: the Waystation, as a map).</summary>
+    public string? ReturnZone;
+    public double ReturnX, ReturnZ, ReturnFacing;
+
+    /// <summary>A dungeon to walk into from the story's ground: its seed new each time (unless pinned), its creatures at her level.</summary>
+    public static Chart ForDungeon(DungeonDef d, int seed, int herLevel, string? returnZone = null, double x = 0, double z = 0, double facing = 0) => new()
+    {
+        Dungeon = d.Id, Seed = seed, Tier = 1, People = d.People, Name = d.Name, Theme = d.Theme == "ravine" ? "autumn" : "wood",
+        FoeLevel = Math.Max(d.Floor, herLevel), ReturnZone = returnZone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
+    };
 
     /// <summary>Its creatures' level: tier 1 is Act 1's end (10), tier 16 the Depths (40).</summary>
-    [JsonIgnore] public int Level => 8 + 2 * Tier;
+    [JsonIgnore] public int Level => FoeLevel > 0 ? FoeLevel : 8 + 2 * Tier;
     /// <summary>What drops is made at this level.</summary>
     [JsonIgnore] public int ItemLevel => Math.Min(40, Level);
 
@@ -60,7 +74,7 @@ public sealed class Chart
     /// <summary>The ground: MapGen's winding way, with its oaths for the look.</summary>
     [JsonIgnore] public MapSpec Map => new()
     {
-        Seed = Seed, Tier = Tier, Theme = Theme, Night = false, Name = Name, Arena = false, People = People,
+        Seed = Seed, Tier = Tier, Theme = Theme, Night = false, Name = Name, Arena = false, People = People, Dungeon = Dungeon,
         // The experience lead's shape: three clearings before the ruler's at tiers 1-2, four at 3-5,
         // five from 6; an altar (the map's event) in each but the first, to three.
         Clearings = Tier <= 2 ? 3 : Tier <= 5 ? 4 : 5, AltarCount = Tier <= 2 ? 1 : Tier <= 5 ? 2 : 3,
