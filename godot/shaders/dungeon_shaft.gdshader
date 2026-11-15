@@ -4,7 +4,7 @@ shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
 
 uniform vec3 tint : source_color = vec3(0.86, 0.9, 0.94);
-uniform float strength = 0.55;
+uniform float strength = 0.3;   // (lead 6: 0.55 read as hard white cones against the targets' soft pale rays)
 uniform float height = 15.0;
 
 varying float hf;
@@ -25,7 +25,7 @@ void vertex() {
 
 void fragment() {
 	float face = abs(dot(normalize(NORMAL), normalize(VIEW)));
-	float a = pow(face, 2.5);
+	float a = pow(face, 4.0);
 	a *= smoothstep(0.0, 0.12, hf) * (1.0 - smoothstep(0.35, 0.95, hf));
 	float motes = 0.75 + 0.25 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
 	// rays: streaks along the shaft (by the angle round it), so it reads as light through a ragged hole, not a tube

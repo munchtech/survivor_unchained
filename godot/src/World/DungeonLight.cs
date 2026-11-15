@@ -60,10 +60,10 @@ public static class DungeonLight
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
             LightColor = new Color("f6f0e4"),
-            LightEnergy = 12f,
+            LightEnergy = 6f,   // (lead 6: 12 laid pools that lifted the boss frame median to 85; targets 40-57)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f) / Height)),
-            SpotAngleAttenuation = 0.6f,
+            SpotAngleAttenuation = 1.2f,
             SpotAttenuation = 0.4f,
             ShadowEnabled = false,
             LightSpecular = 0.2f,

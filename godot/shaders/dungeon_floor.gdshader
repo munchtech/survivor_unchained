@@ -170,7 +170,7 @@ void fragment() {
 			vec2 gin = -normalize(g0 + 1e-5);   // into the hole
 			if (pw >= 0.0) {
 				// (an albedo lift only, strongest on the key's side, the upper left: a tipped normal read as a dark ring)
-				col *= 1.0 + (0.1 + 0.4 * smoothstep(-0.2, 0.8, dot(-gin, vec2(-0.7071, -0.7071)))) * (1.0 - smoothstep(0.0, 0.2, pw));
+				col *= 1.0 + (0.15 + 0.7 * smoothstep(-0.2, 0.8, dot(-gin, vec2(-0.7071, -0.7071)))) * (1.0 - smoothstep(0.0, 0.28, pw));
 			} else {
 				vec3 rd = -normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
 				float dy = max(-rd.y, 0.2);
@@ -195,9 +195,9 @@ void fragment() {
 					vec3 tz = mix(texture(den_alb, vec3(vec2(p.x, d) / den_m[5], 5.0)).rgb, texture(den_alb, vec3(vec2(p.x, d) / den_m[5] + 0.37, 5.0)).rgb, tw);
 					vec3 tx = mix(texture(den_alb, vec3(vec2(p.z, d) / den_m[5], 5.0)).rgb, texture(den_alb, vec3(vec2(p.z, d) / den_m[5] + 0.37, 5.0)).rgb, tw);
 					col = mix(tz, tx, smoothstep(0.35, 0.65, abs(nw.x))) * den_tint * 1.6;
-					col *= mix(1.0, 0.03, smoothstep(0.05, 1.6, d));
+					col *= mix(1.0, 0.06, smoothstep(0.05, 2.6, d));   // (lead 6: the target shows the slate wall over half the depth)
 					// (lit as a face tipped up toward the mouth: the true wall's normal put it all in the black shade band)
-					NORMAL = normalize((VIEW_MATRIX * vec4(normalize(nw + vec3(0.0, 0.7, 0.0)), 0.0)).xyz);
+					NORMAL = normalize((VIEW_MATRIX * vec4(normalize(nw + vec3(0.0, 1.1, 0.0)), 0.0)).xyz);
 				} else {
 					col = vec3(0.003, 0.0025, 0.002);
 				}

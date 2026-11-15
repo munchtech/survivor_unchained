@@ -19,6 +19,8 @@ public static partial class DungeonDress
     // (the flora boulders draw black off their kit material: the scanned rocks, which carry their own)
     static readonly string[] RavineRocks = { "res://art/world/rock_07.glb", "res://art/world/rock_09.glb", "res://art/world/boulder_01.glb" };
     // (the den's rocks: our own painted plane rocks, env_rocks.py through tools/look/wild.py rocks, drawn in their kit look)
+    // (lead 6 tried the CC0 scans boulder_01 / rock_07 / rock_moss_set_01 here, lifted: crusty yellow sponge, not painted
+    // stone; and these plane rocks rebuilt with smooth normals: they lost their kit data and drew dark)
     static readonly string[] DenRocks = { "res://art/world/flora/boulder.gltf", "res://art/world/flora/bouldermid.gltf", "res://art/world/flora/boulderlarge.gltf" };
     static readonly string[] Logs = { "res://art/world/dead_tree_trunk.glb", "res://art/world/dead_tree_trunk_02.glb", "fallen_trunk" };
 
@@ -123,14 +125,14 @@ public static partial class DungeonDress
             int n = 2 + (int)(Hash(s, 1, 1) * 3);
             for (int k = 0; k < n; k++)
                 foreach (var sp in WallSpots(c, r, 0.5f + 0.7f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
-                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 0.8f + 0.8f * Hash(s, 3, k), 0.1f, "rocks");
+                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 0.8f + 0.8f * Hash(s, 3, k), 0.1f, "rocks");   // (1.4-2.4 tried: the plane rocks grew into big grey boxes)
         }
         if (r.Kind == "Clearing" || r.Kind == "Boss")
             foreach (var sp in WallSpots(c, r, 1.2f, 1, s * 7 + 5, true))
             {
                 string log = Logs[(int)(Hash(s, 8, 0) * Logs.Length)];
                 float yaw = sp.Yaw + Mathf.Pi / 2;
-                if (log.StartsWith("res:")) PlaceScene(c, log, sp.X, sp.Z, yaw, 1f, 0.1f, "logs");
+                if (log.StartsWith("res:")) PlaceScene(c, log, sp.X, sp.Z, yaw, 0.7f, 0.1f, "logs");   // (at 1 the trunks lay as long dark bars across a room)
                 else PlaceProp(c, log, sp.X, sp.Z, yaw, 1f);
             }
         Fungus(c, r, s);
@@ -252,6 +254,7 @@ public static partial class DungeonDress
         var n = GD.Load<PackedScene>(path)?.Instantiate<Node3D>();
         if (n == null) return;
         if (path.Contains("/flora/")) Kit(n, c.Z.DungeonTheme == "den");
+        else if (tag == "logs" && c.Z.DungeonTheme == "den") Lift(n, new Color(1.5f, 1.36f, 1.18f));   // (den_room.png's log: pale, weathered)
         var b = Bounds(n, Transform3D.Identity) ?? new Aabb();
         n.Scale = Vector3.One * scale;
         n.Position = new Vector3(x, H(c, x, zz) - (b.Position.Y + sink * b.Size.Y) * scale, zz);
@@ -274,7 +277,7 @@ public static partial class DungeonDress
                     if (k is ShaderMaterial sm && den)
                     {
                         sm = (ShaderMaterial)sm.Duplicate();
-                        sm.SetShaderParameter("paint_tint", new Vector3(0.86f, 0.8f, 0.66f));
+                        sm.SetShaderParameter("paint_tint", new Vector3(1.0f, 0.9f, 0.76f));   // (lead 6: warm grey-brown, not grey)
                         sm.SetShaderParameter("moss_amount", 1.0f);
                         sm.SetShaderParameter("moss_face", new Vector2(0.2f, 0.6f));
                         sm.SetShaderParameter("moss_edge", 0.0f);
@@ -286,6 +289,24 @@ public static partial class DungeonDress
             mi.Mesh = m;
         }
         foreach (var ch in n.GetChildren()) Kit(ch, den);
+    }
+
+    // A scan's own albedo lifted (the den's scanned trunks drew as dark bars against den_room.png's pale weathered log).
+    static void Lift(Node n, Color tint)
+    {
+        if (n is MeshInstance3D mi && mi.Mesh != null)
+        {
+            var m = (Mesh)mi.Mesh.Duplicate();
+            for (int i = 0; i < m.GetSurfaceCount(); i++)
+                if (m.SurfaceGetMaterial(i) is StandardMaterial3D sm)
+                {
+                    var d = (StandardMaterial3D)sm.Duplicate();
+                    d.AlbedoColor = tint;
+                    m.SurfaceSetMaterial(i, d);
+                }
+            mi.Mesh = m;
+        }
+        foreach (var ch in n.GetChildren()) Lift(ch, tint);
     }
 
     static Aabb? Bounds(Node3D n, Transform3D parent)
