@@ -96,6 +96,9 @@ public class SkinLightTests
         Assert.Equal(SkinLight.CloseDayKey, rigs["close_day"]!.Key.Intensity!.Value, 9);
         Assert.Equal(SkinLight.CloseDayKeyColor, rigs["close_day"]!.Key.Color);
         Assert.InRange(SkinLight.CloseDayKey, 0.6, 1.0);
+        // (r4c: pale enough that her lit skin isn't apricot-orange: green and blue near red, her lit R at AgX's top)
+        int Ch(int i) => Convert.ToInt32(SkinLight.CloseDayKeyColor.Substring(1 + 2 * i, 2), 16);
+        Assert.True(Ch(1) >= 230 && Ch(2) >= 216 && Ch(0) >= Ch(1) && Ch(1) >= Ch(2), "a pale warm key, not #ffd8b4's peach");
     }
 
     /// <summary>Fault 1 (her face near white over an orange body): her head's paint at her body's level outside the Look's

@@ -47,9 +47,13 @@ public static class SkinLight
     /// 1.25 her lit forehead and cheeks clipped under AgX to near white (Oklab L .91, C .053) beside a warm body. With her
     /// head's paint at her body's level (HeadPaintLevel) the orange key (#ffc296) and her warm cel tone turned face and body
     /// alike orange (C .13-.16, h 45-47) with the face still clipping red (R 250+ on 36% of it); the paler key at 0.85 with
-    /// CelTone: face R 250+ on 1%, forehead L .78 C .117 h 61, chest L .78 C .135 h 53, one tan skin (13 Nov r2).</summary>
+    /// CelTone: face R 250+ on 1%, forehead L .78 C .117 h 61, chest L .78 C .135 h 53, one tan skin (13 Nov r2). r4c (15 Nov):
+    /// #ffd8b4 still read apricot-orange (cheek 930,390 C .132 h 56, chest .127 h 57, belly .119 h 60): her lit R sits at
+    /// AgX's top, so the key's green and blue set the chroma (her albedo's warmth, cel_tone, moved .127 to .121 only).
+    /// #ffe4cc: chest .115; #ffe8d6 at 0.80: chest .108 but cheek .121 (face over chest by .013); #ffeee2 at 0.85: cheek
+    /// .114 h 58, chest .104 h 58, belly .097 h 62, face R 250+ on 3.5%, the shade's hue as before (h 53-58).</summary>
     public const double CloseDayKey = 0.85;
-    public const string CloseDayKeyColor = "#ffd8b4";
+    public const string CloseDayKeyColor = "#ffeee2";
 
     /// <summary>Her skin's warmth under cel (People.HerCelTone, the skin shader's cel_tone on her albedo, every part; an NPC's
     /// is derived from it). (1.39, 0.80, 0.54) read spray-tan orange on her body by day (h 45-47) once her face matched it;

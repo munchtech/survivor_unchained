@@ -57,6 +57,10 @@ uniform float neck_shade_out : hint_range(0.0, 1.0) = 0.0;
 // (Oklab h 335, C .028, its C/L under the grade's moon step). People.NpcSkin sets Look.SkinLight.NpcKeySkin. 0: the key's
 // hue whole, as before.
 uniform float key_skin : hint_range(0.0, 1.0) = 0.0;
+// (skin-light r4c, 15 Nov 2026) The same for a warm directional key (the sun's; redder than blue, eased in over (r - b) /
+// luminance 0 to 0.1), outside the Look's portrait rig (look_rig: her tones there are fitted against its warm key).
+// 0: the key's hue whole, as before.
+uniform float key_skin_warm : hint_range(0.0, 1.0) = 0.0;
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
 // 1.5 cm they read as large and even on her hands).
@@ -1013,6 +1017,10 @@ void light() {
 	if (key_skin > 0.0 && LIGHT_IS_DIRECTIONAL && cel_on > 0.0) {   // (key_skin: a cold key's hue given back as the skin's warmth)
 		float kl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 		lc *= mix(vec3(1.0), skin_hue_out(lcol / kl, key_skin), cel_on * smoothstep(0.0, 0.1, (lcol.b - lcol.r) / kl));
+	}
+	if (key_skin_warm > 0.0 && LIGHT_IS_DIRECTIONAL && cel_on > 0.0) {   // (key_skin_warm: a warm key's hue, outside the Look's rig)
+		float kl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		lc *= mix(vec3(1.0), skin_hue_out(lcol / kl, key_skin_warm), cel_on * (1.0 - clamp(look_rig, 0.0, 1.0)) * smoothstep(0.0, 0.1, (lcol.r - lcol.b) / kl));
 	}
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
