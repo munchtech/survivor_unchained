@@ -1986,6 +1986,7 @@ public static class People
         // (under a cold key the fill and the floor without that warmth: Look.SkinLight.ShadeCold)
         m.SetShaderParameter("shade_cold", SurvivorUnchained.Look.SkinLight.ShadeCold);
         m.SetShaderParameter("shade_floor_cold", SurvivorUnchained.Look.SkinLight.ShadeFloorCold);
+        m.SetShaderParameter("shade_floor_night", SurvivorUnchained.Look.SkinLight.ShadeFloorNight);
         // (her body's tone out of her neck's shade at the Look: Look.SkinLight.NeckShadeOut)
         m.SetShaderParameter("neck_shade_out", SurvivorUnchained.Look.SkinLight.NeckShadeOut);
         if (!FaceMidOff)
@@ -2613,7 +2614,11 @@ public static class People
             : Vector4.Zero
         : new(2.231f, 0.636f, 0.014f, 0.55f);   // (Oklab h 60, C .085 at L .37, luminance 0.93; fitted at the Look by night)
 
-    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck : new(1f, 1f, 1f, 0f);
+    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck
+        : SurvivorUnchained.Look.SkinLight.NeckPull is var (r, g, b, a) && a > 0f && !NoNeckPull ? new(r, g, b, a) : new(1f, 1f, 1f, 0f);
+
+    // (--neck-pull off: her other swatches' neck and collar band at the Look as before Look.SkinLight.NeckPull)
+    static readonly bool NoNeckPull = SurvivorUnchained.Args.Get("neck-pull") == "off";
 
     static Vector3 FaceSwatch(Look look) => ToneA1 && HerFaceSwatch.TryGetValue(HerSkinId(look), out var v) ? v : Vector3.One;
 

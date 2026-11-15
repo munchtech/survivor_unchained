@@ -176,7 +176,12 @@ public class SkinLightTests
         Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
         var shader = Read("shaders", "heroine_skin.gdshader");
         Assert.Contains("uniform float shade_floor_cold : hint_range(0.0, 1.0) = 0.0;", shader);
-        Assert.Contains("sh_floor = mix(shade_floor, max(shade_floor, shade_floor_cold), cold);", shader);
+        Assert.Contains("sh_floor = mix(shade_floor, max(shade_floor, mix(fl_night, shade_floor_cold, kcold)), cold);", shader);
+        // (the Look at night keeps its own floor: a cold key's 0.5 greyed her neck there, r6)
+        Assert.Contains("uniform float shade_floor_night : hint_range(-1.0, 1.0) = -1.0;", shader);
+        Assert.Contains("float fl_night = shade_floor_night >= 0.0 ? shade_floor_night : shade_floor_cold;", shader);
+        Assert.Contains("m.SetShaderParameter(\"shade_floor_night\", SurvivorUnchained.Look.SkinLight.ShadeFloorNight);", people);
+        Assert.InRange(SkinLight.ShadeFloorNight, SkinLight.ShadeFloor + 1e-4f, SkinLight.ShadeFloorCold);
     }
 
     [Fact]
@@ -229,7 +234,8 @@ public class SkinLightTests
     {
         var shader = Read("shaders", "heroine_skin.gdshader");
         Assert.Contains("uniform float shade_night : hint_range(0.0, 1.0) = 0.0;", shader);
-        Assert.Contains("float cold = max(smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl), shade_night);", shader);
+        Assert.Contains("float kcold = smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl);", shader);
+        Assert.Contains("float cold = max(kcold, shade_night);", shader);
         var front = Read("src", "Game", "GameFront.cs");
         Assert.Contains("People.HerShadeNight(herRig, scene?.View.Night == false ? 0f : p);", front);
         Assert.Contains("People.HerShadeNight(herRig, 0);", front);

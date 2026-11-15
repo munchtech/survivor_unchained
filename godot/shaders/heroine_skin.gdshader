@@ -58,6 +58,10 @@ uniform float shade_floor_cold : hint_range(0.0, 1.0) = 0.0;
 // warm fill tone turned her neck's and cheek's shade red-brown under a pale firelit chest (judge 4: C/L .18-.23 against
 // lit .106). 0: by the key alone.)
 uniform float shade_night : hint_range(0.0, 1.0) = 0.0;
+// (skin-light r6, 15 Nov 2026) The shade's floor there (shade_night, the Look's warm camp-fire key) apart from a cold key's;
+// -1: shade_floor_cold. A cold key's higher floor (ShadeFloorCold 0.5) greyed her neck at the Look by night (C/L .116 ->
+// .087) while it calmed the moonlit shade in play (Look.SkinLight.ShadeFloorNight).
+uniform float shade_floor_night : hint_range(-1.0, 1.0) = -1.0;
 // (skin-light r4b, 14 Nov 2026) Her body's tone (body_tone, a blue fitted against the Look rig's warm key) out of her
 // neck's shade, this share: under the rig her neck keeps that tone and only the key's light is warmed back (key_tone), so
 // in shade (the sky's light, the fill, the shade's floor) her neck kept the blue: grey at the Look by day (Oklab C .005),
@@ -1118,9 +1122,11 @@ void light() {
 	float sh_floor = shade_floor;
 	if (LIGHT_IS_DIRECTIONAL && (shade_cold > 0.0 || shade_floor_cold > shade_floor)) {
 		float fkl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
-		float cold = max(smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl), shade_night);
+		float kcold = smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl);
+		float cold = max(kcold, shade_night);
 		fill_tone = mix(cel_fill_tone, vec3(1.0), shade_cold * cold);
-		sh_floor = mix(shade_floor, max(shade_floor, shade_floor_cold), cold);
+		float fl_night = shade_floor_night >= 0.0 ? shade_floor_night : shade_floor_cold;   // (shade_floor_night)
+		sh_floor = mix(shade_floor, max(shade_floor, mix(fl_night, shade_floor_cold, kcold)), cold);
 	}
 	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * fill_tone
 		* (sky_skin > 0.0 ? skin_hue_out(cel_fill, sky_skin) : vec3(1.0));   // (sky_skin: the fill's hue too)

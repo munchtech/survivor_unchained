@@ -82,8 +82,15 @@ public static class SkinLight
     /// <summary>The shade's floor under a cold key (the skin shader's shade_floor_cold, eased in as ShadeCold is; ShadeFloor
     /// under a warm key, the Look's and the day's, unchanged). With ShadeCold's neutral fill a higher floor lifts the night
     /// shade toward her lit side's colour (15 Nov skin-light r5, 0.3: close_night collar C/L .199 -> .149, the NPC's
-    /// under-nose .181 -> .125, shade lightness about 0.6 of the lit side's).</summary>
-    public const float ShadeFloorCold = 0.3f;
+    /// under-nose .181 -> .125, shade lightness about 0.6 of the lit side's). r6 (15 Nov, judge 5: her moonlit shade C/L
+    /// 1.5-1.7x her lit side's, with HerKeySkin's hue matched): 0.5 (shade/lit C/L p1_close_night .153/.091 -> .117/.091,
+    /// p1_play_night .156 -> .119 /.095, play_night .141 -> .112 /.096; 0.4 .132, 0.45 .122; the sky's ambient at 1.5 only
+    /// .140 and it greyed the Look-night neck); the NPC's night shade .105 -> .112 h 44, its under-nose .137 -> .120.</summary>
+    public const float ShadeFloorCold = 0.5f;
+
+    /// <summary>The shade's floor at the Look by night (the skin shader's shade_floor_night: shade_night's rule under the Look's
+    /// warm fire key), kept at round 2's 0.3: ShadeFloorCold's 0.5 there took her shaded neck to C/L .087 (0.3: .116).</summary>
+    public const float ShadeFloorNight = 0.3f;
 
     /// <summary>Under a cold directional key (the moon's; a dungeon's cold light) the key's fill and the shade's floor take
     /// none of cel_fill_tone's warmth (the skin shader's shade_cold, every skin part, hers and an NPC's; eased in by the
@@ -104,6 +111,15 @@ public static class SkinLight
     /// read grey-beige over an orange lower chest at the Look by day (Oklab C .074 h 61 against .101 h 55, judge 4). 0.5
     /// (15 Nov skin-light r5): lower chest .085 h 59. Outside the Look (rig weight 0) nothing changes.</summary>
     public const float BodyGate = 0.5f;
+
+    /// <summary>Her neck and collar band at the Look drawn toward her body's colour (the skin shader's neck_pull, rgb a linear
+    /// colour at luminance about 1, a how far; under the Look's rig only, by her freckles' map's blue on her body and below
+    /// neck_pull_y on her head; her deep swatch keeps People.DeepNeck). The band kept HerBodyTone's blue where BodyGate takes
+    /// it out of her chest: an ash-beige yoke at the Look by day (judge 5: band C/L .116 h 60 against lower chest .136 h 59,
+    /// neck base .142 h 57). 0.25 (15 Nov skin-light r6): band .129 h 57, lower chest .136, neck base .155 h 54, left
+    /// shoulder top .141 h 55 (0.15: band .124; 0.35: band .135, neck base .16-.17 h 51-52). Raising BodyGate moved only the
+    /// lower chest (0.75: .147), so it stays.</summary>
+    public static readonly (float R, float G, float B, float A) NeckPull = (1.3f, 0.95f, 0.75f, 0.25f);
 
     /// <summary>Her body's tone out of her neck's shade under the Look's rig (the skin shader's neck_shade_out, every skin
     /// part; her neck is her head's mesh). Under the rig her head and neck keep HerBodyTone (own (0.66, 1.17, 2.15), a blue
