@@ -1067,7 +1067,7 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)x, (float)y, (float)z);
         if (mine && !PlantOff)
         {
-            Position += plantOff + smoothOff;
+            Position += plantOff + smoothOff + Vector3.Up * BackAirLiftNow();
             plantGround = heightAt; plantDt = (float)dt;
             if (!plantHooked) { plantHooked = true; person.Skeleton.SkeletonUpdated += PlantStep; }
         }
@@ -1957,7 +1957,7 @@ public partial class PlayerView : Node3D
     static readonly bool BackOff = SurvivorUnchained.Args.Has("turn-back-off"), BackRun = SurvivorUnchained.Args.Has("turn-back-run");
     float backW;
     static readonly float BackBlend = SurvivorUnchained.Args.Num("turn-back-blend", 20f);
-    static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 1350f),
+    static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 900f),
         BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f), BackMix = SurvivorUnchained.Args.Num("turn-back-mix", 1f);
     // (round 5) The pelvis ease moved the held foot after the plant lock; off in a backpedal unless --turn-smooth-back.
     static readonly bool SmoothBack = SurvivorUnchained.Args.Has("turn-smooth-back");
@@ -2201,13 +2201,26 @@ public partial class PlayerView : Node3D
     // and no foot is set down behind her. Which foot is down on a pose is read from its phase (the run's stance spans,
     // BackLandL..BackToeL and BackLandR..BackToeR): the phase set this frame shows next frame. --turn-back-air-off: round 5.
     static readonly bool BackAirOff = SurvivorUnchained.Args.Has("turn-back-air-off");
+    // (warden-move solver) The run's stance windows re-measured on the duty-0.26 run (ball under 0.07 m, m3 cast f150-250:
+    // L 0.99-0.21, R 0.45-0.75; were 0.98-0.25, 0.46-0.80 on the 0.33 run); the turn's top rate 900 deg/s (30 a frame, judge
+    // t1: 34-44 is a whirl, was 1350); a flight up to 4 frames (judge r4: 3-4), its phase at up to 4x the run's pace.
     static readonly float BackHoldRate = SurvivorUnchained.Args.Num("turn-back-hold-rate", 240f),
         BackLift = SurvivorUnchained.Args.Num("turn-back-lift", 2f), BackWait = SurvivorUnchained.Args.Num("turn-back-wait", 1.5f), BackGateM = SurvivorUnchained.Args.Num("turn-back-gate", 0.03f),
-        BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.98f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.25f),
-        BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.46f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.80f),
+        BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.99f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.21f),
+        BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.45f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.75f),
         BackHop = SurvivorUnchained.Args.Num("turn-back-hop", 0.08f), BackHopMin = SurvivorUnchained.Args.Num("turn-back-hop-min", 0.06f),
-        BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 3f),
+        BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 4f),
         BackIn = SurvivorUnchained.Args.Num("turn-back-in", 0.015f);
+    // (warden-move, judge r4: "cap every flight at 3-4 frames"; "finish the yaw on the ball of that foot") A flight lasts at
+    // most BackFlyLen frames whatever the turn left; what the flight did not turn, the foot it lands on turns on its ball at
+    // BackBallRate deg/s (held by the plant lock) until that foot lifts. --turn-back-fly-len 99: round 6's flights.
+    static readonly float BackFlyLen = SurvivorUnchained.Args.Num("turn-back-fly-len", 4f), BackBallRate = SurvivorUnchained.Args.Num("turn-back-ball-rate", 600f);
+    int backBallFoot = -1;
+    // (warden-move, judge r4: "in the air ... lift the pelvis 3-6 cm") Through a backpedal's flight her whole view rises on a
+    // half sine, BackAirLift m at its top (the flight planned last frame; 0 on the frame she lands).
+    static readonly float BackAirLift = SurvivorUnchained.Args.Num("turn-back-air-lift", 0.05f);
+    float BackAirLiftNow() => backpedal && backAirN >= 0 && (backSt == 1 || backSt == 3) && backAirLen > 0
+        ? BackAirLift * Mathf.Sin(Mathf.Pi * Mathf.Clamp((backAirN + 0.5f) / (backAirLen + 1f), 0f, 1f)) : 0f;
     // backSt: 0 none, 1 into it (until she lands behind her), 2 the backwards run, 3 out of it (until she lands), 4 landed out
     int backSt, backLiftFoot = -1, backAirN = -1, backAirLen = 1;
     float backAirP0, backAirTo, backGoal;
@@ -2231,7 +2244,24 @@ public partial class PlayerView : Node3D
         // (BackGateM of the cycle either side: a pose's stance can run on a little past the run's own)
         // (a foot un-landing is not held: it is off the ground on the next pose, so her turn starts with it)
         if (f >= 0 && f == backLiftFoot) return BackRate;
-        return f >= 0 && (BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f) ? BackHoldRate : BackRate;
+        bool held = f >= 0 && (f == backBallFoot || BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f);
+        if (held && !BackPivotOff) return BackPivotRate(f);
+        if (f >= 0 && f == backBallFoot) return BackBallRate;
+        return held ? BackHoldRate : BackRate;
+    }
+
+    // (warden-move solver: "turn yaw onto a planted foot's ball rather than a long flight") On a foot that is down her yaw
+    // goes as fast as the plant lock can hold that ball within BackShiftMax a frame: the ball swings BackPivotK of the cap
+    // about her root at |z| (its distance ahead or behind her along her facing), so a ball under her spins her freely and one
+    // far out holds her back. At most BackRate, at least BackHoldRate. --turn-back-pivot-off: the hold and ball rates.
+    static readonly bool BackPivotOff = SurvivorUnchained.Args.Has("turn-back-pivot-off");
+    static readonly float BackPivotK = SurvivorUnchained.Args.Num("turn-back-pivot-k", 0.6f), BackPivotZMin = SurvivorUnchained.Args.Num("turn-back-pivot-zmin", 0.08f);
+    float BackPivotRate(int f)
+    {
+        var b = plantFoot == f ? plantAt : plantPrev[f];
+        float yaw = Rotation.Y, z = Mathf.Abs((b.X - GlobalPosition.X) * Mathf.Sin(yaw) + (b.Z - GlobalPosition.Z) * Mathf.Cos(yaw));
+        float rate = Mathf.RadToDeg(BackPivotK * BackShiftMax * 30f / Mathf.Max(z, BackPivotZMin));
+        return Mathf.Clamp(rate, BackHoldRate, BackRate);
     }
 
     /// <summary>(round 6) Frames her eased turn (TurnTo at BackRate) needs from here to within BackDone deg of `goal`.</summary>
@@ -2253,12 +2283,12 @@ public partial class PlayerView : Node3D
     float BackPhase(float natural, float dt, float period, float strideK)
     {
         float normal = dt / Mathf.Max(period, 0.1f);
-        if (backSt == 0 || !backWas) { backSt = 1; backAirN = -1; backLiftFoot = -1; }
+        if (backSt == 0 || !backWas) { backSt = 1; backAirN = -1; backLiftFoot = -1; backBallFoot = -1; }
         if (hipGoal == null && backSt < 3) { backSt = 3; backAirN = -1; backLiftFoot = -1; }
         int down = BackDown(stride);
         if (down >= 0)
         {
-            if (backAirN >= 0) { backAirN = -1; backLiftFoot = -1; backSt = backSt == 1 ? 2 : backSt == 3 ? 4 : backSt; }
+            if (backAirN >= 0) { backAirN = -1; backLiftFoot = -1; backBallFoot = down; backSt = backSt == 1 ? 2 : backSt == 3 ? 4 : backSt; }
             if (backSt == 4) return natural;
             if (backSt == 1)
             {
@@ -2272,6 +2302,7 @@ public partial class PlayerView : Node3D
             }
             return BackStride(natural, dt, period, strideK);
         }
+        backBallFoot = -1;
         if (backSt == 2 || backSt == 4) return BackStride(natural, dt, period, strideK);
         // (in the air into it or out of it: the turn, its landing timed to the turn's last frame)
         if (backAirN < 0)
@@ -2287,7 +2318,7 @@ public partial class PlayerView : Node3D
             backAirTo = best;
             // (the flight's frames planned from the turn left at its start: a goal that moves on, her stick round a curve, does
             // not hold her up in the air)
-            backAirLen = Mathf.Max(BackSpinLeft(backGoal, dt), 1);
+            backAirLen = Mathf.Clamp(BackSpinLeft(backGoal, dt), 1, (int)BackFlyLen);
         }
         backAirN++;
         int left = Mathf.Max(backAirLen - backAirN, 0);
@@ -2390,8 +2421,8 @@ public partial class PlayerView : Node3D
         var pv = B("pelvis");
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
-        if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; }
-        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls}"));
+        if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; RenderingServer.FramePreDraw += Scr2; }
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0}"));
         smoothCalls = 0;
     }
     // (turning measure) her balls of the feet in the world where the skeleton has run its modifiers (see MeasCache's note)
@@ -2405,8 +2436,35 @@ public partial class PlayerView : Node3D
         if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
         int pb = sk.FindBone("pelvis");
         if (pb >= 0) pelvW = sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin;
+        // (warden-move) each leg's knee bend (deg, 0 straight) and thigh angle off vertical along her facing (+ behind)
+        var fwd = sk.GlobalTransform.Basis.Z.Normalized();
+        for (int s = 0; s < 2; s++)
+        {
+            string x = s == 0 ? "_l" : "_r";
+            int a = sk.FindBone("thigh" + x), b = sk.FindBone("calf" + x), c = sk.FindBone("foot" + x);
+            if (a < 0 || b < 0 || c < 0) continue;
+            Vector3 H = sk.GetBoneGlobalPose(a).Origin, K = sk.GetBoneGlobalPose(b).Origin, F = sk.GetBoneGlobalPose(c).Origin;
+            legBend[s] = Mathf.RadToDeg((K - H).AngleTo(F - K));
+            var u = sk.GlobalTransform.Basis * (K - H);
+            legThigh[s] = Mathf.RadToDeg(Mathf.Atan2(-u.Dot(fwd), -u.Y));
+        }
     }
+    readonly float[] legBend = new float[2], legThigh = new float[2];
     Vector3 pelvW;
+    /// <summary>(warden-move, judge r4: the sheets' crops sat 15-23 px ahead of her body) Her pelvis on screen as the frame is
+    /// drawn (SCR2 x y, one line a drawn frame): the final camera and pose, which TURN2's scr (taken in her _Process, before
+    /// the camera's and the skeleton's update) is not. View-only log.</summary>
+    void Scr2()
+    {
+        if (!IsInsideTree() || person?.Skeleton is not { } sk) return;
+        var cam = GetViewport()?.GetCamera3D();
+        int pb = sk.FindBone("pelvis");
+        if (cam == null || pb < 0) return;
+        var s = cam.UnprojectPosition(sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin);
+        var c = cam.GlobalPosition;   // (warden-move item 3: the camera's world place, for its catch-up after a 180)
+        GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0} cam {c.X:0.000} {c.Y:0.000} {c.Z:0.000}"));
+    }
+    public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
