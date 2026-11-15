@@ -1370,7 +1370,7 @@ public partial class PlayerView : Node3D
         if (mine && HeldLogOn) view?.HeldLog(GetViewport()?.GetCamera3D());
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
-        if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, SurvivorUnchained.Play.TurnRun.Start));
+        if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || SurvivorUnchained.Play.DirRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, System.Math.Max(SurvivorUnchained.Play.TurnRun.Start, SurvivorUnchained.Play.DirRun.Start)));
         else tree.Set(BlendPosition, speed);
         carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
