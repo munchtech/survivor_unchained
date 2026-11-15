@@ -725,7 +725,7 @@ def build_decals(out):
 # bottom). The pit is painted in plan for the play camera (looking image-up, 62 degrees down).
 FL_PPM = 128                # the floor atlas, px per metre (fields drawn at FL_PPM * S)
 FL_ATLAS_W = 4096
-FLOORS = [(1.6, 5.5), (2.2, 7.0), (1.2, 4.5), (2.5, 7.2), (1.8, 6.0), (2.0, 6.5)]   # (across, along) m
+FLOORS = [(2.4, 5.5), (3.0, 7.0), (2.0, 4.5), (3.2, 7.2), (2.6, 6.0), (2.8, 6.5)]   # (across, along) m
 FRAMES = [(4.0, 2.0), (4.8, 2.3), (3.4, 1.8), (4.4, 2.4)]                          # (along the wall, out) m
 PITS = 3
 PIT_M = 8.4                 # a pit's square rect, the mouth centred (room for the lip, its shadow and the root starts)
@@ -779,64 +779,108 @@ def tip_sink(D, frac=0.18, zd=0.8):
     return D
 
 
+def long_taper(D, keep=0.5, tail=0.2, tip_r=0.06):
+    """A floor root's radius along it: a slow taper to keep x the entry radius at (1 - tail) of the length, then down to
+    a fine tip (tip_r x the entry radius) over the tail; the radius's own small knots ride on top."""
+    s = arc(D)
+    u = s / max(s[-1], 1.0)
+    a = 1.0 - tail
+    g = np.where(u < a, 1.0 - (1.0 - keep) * (u / a) ** 1.15,
+                 tip_r + (keep - tip_r) * (1.0 - np.clip((u - a) / tail, 0, 1)) ** 0.8)
+    D[:, 3] *= g
+    return D
+
+
+def dive(D, s, sd, rng, ppm):
+    """The root goes under the earth at sd: it narrows into the earth over 0.6-0.9 m, is 0.1-0.25 m out of sight, then
+    rises back along a long shallow ramp (1.2-1.8 m), the way a pit root comes out of the earth: the radius eases from
+    a quarter back to full as it sinks from just under the earth to half sunk (a long point each way, never a cap, and
+    lit bark down to the point rather than a black ink wedge)."""
+    ld, lg, le = rng.uniform(0.6, 0.9) * ppm, rng.uniform(0.1, 0.25) * ppm, rng.uniform(1.2, 1.8) * ppm
+    v = np.where(s < sd, np.clip((sd - s) / ld, 0, 1),
+                 np.where(s < sd + lg, 0.0, np.clip((s - sd - lg) / le, 0, 1) ** 0.85))
+    v = smooth(v) * 0.6 + v * 0.4
+    zr = D[:, 2] / D[:, 3]                                    # (the height per radius the root lies at)
+    D[:, 3] *= 0.25 + 0.75 * v
+    D[:, 2] = D[:, 3] * (zr * v + (1 - v) * (-0.25 - 0.55 * (1 - v)))
+    return D, sd + lg + le
+
+
+def lie(D, rng, ppm, tip_frac=0.1):
+    """Half sunk at every radius (the height follows the taper, so a thin tip never pops in and out of the earth), a
+    long low swell, and the tip sinking over its last tip_frac."""
+    s = arc(D)
+    D[:, 2] = D[:, 3] * (-0.25 + 0.1 * np.sin(s / (rng.uniform(1.2, 2.0) * ppm) * 2 * math.pi + rng.uniform(0, 6.3)))
+    return tip_sink(D, frac=tip_frac, zd=0.5)
+
+
 def decal_floor(i, wm, hm):
-    """Long floor roots: 1-3 enter the TOP edge at full thickness (out of the bank), run down the rect in a slow S,
-    half sunk in the earth, dive under it once, fork once or twice and thin to tips that sink."""
+    """Long floor roots: 1-3 enter the TOP edge (out of the bank, 0.3-0.45 m thick), run the rect's length in one gentle
+    S, half sunk in the earth, keep about half their radius to the last fifth then thin to a fine sunk tip; most dive
+    under the earth once and rise back along a long shallow ramp; 1-2 long thin forks peel off at a low angle and run
+    on beside the parent the same way."""
     ppm = FL_PPM * S
     W, Hh = int(round(wm * FL_PPM)) * S, int(round(hm * FL_PPM)) * S
-    for attempt in range(300):
-        rng = np.random.default_rng(seed_of("den_roots", "floor", i, attempt, VERSION))
+    for attempt in range(400):
+        rng = np.random.default_rng(seed_of("den_roots", "floor", i, attempt, VERSION, 2))
         F = Field(W, Hh, ppm, False)
         RT = Roots(F, rng)
-        n = 1 if wm < 1.5 else (int(rng.integers(1, 3)) if wm < 2.1 else int(rng.integers(2, 4)))
+        n = 1 if wm < 2.2 else (int(rng.integers(1, 3)) if wm < 2.9 else int(rng.integers(2, 4)))
         xs = (np.arange(n) + 0.5) / n * wm + rng.normal(0, 0.06, n)
-        rr = np.concatenate([[rng.uniform(0.25, 0.4)], rng.uniform(0.18, 0.3, n - 1)])[rng.permutation(n)]
+        rr = np.concatenate([[rng.uniform(0.15, 0.225)], rng.uniform(0.12, 0.17, n - 1)])[rng.permutation(n)]
         dense, mains, ok = [], [], True
         for k in range(n):
             r0 = float(rr[k])
-            room = min(xs[k] - r0 - 0.08, wm - xs[k] - r0 - 0.08)
-            if room < 0.03:
-                ok = False; break
-            amp = rng.uniform(0.45, 0.9) * min(room, 0.45)
+            half = wm / n / 2
+            amp = rng.uniform(0.7, 1.0) * max(half - r0 - 0.1, 0.15)
+            drift = rng.uniform(-1, 1) * max(half - r0 - 0.1 - 0.5 * amp, 0.0)
             phi = rng.uniform(0, 2 * math.pi)
-            ly = rng.uniform(0.74, 0.92) * hm                 # the tip's y
-            u = np.linspace(0, 1, max(7, int((ly + 0.3) / 0.4) + 1))
-            C = np.column_stack([xs[k] + amp * np.sin(2 * math.pi * 0.9 * u + phi), -0.3 + u * (ly + 0.3)])
-            C[1:-1] += rng.normal(0, 0.03, (len(C) - 2, 2))
-            D = tip_sink(calm(RT.open_root(C * ppm, r0, -0.25 * r0, 0.02, tip=(0.45, 0.6), emerge=False, zdive=None,
-                                           tip_r=0.12), 0.5, ppm))
+            cyc = rng.uniform(0.55, 0.95)                     # (one gentle S, never more)
+            full = k == 0 or rng.random() < 0.6
+            ly = (rng.uniform(0.93, 0.97) if full else rng.uniform(0.72, 0.86)) * hm   # the tip's y
+            u = np.linspace(0, 1, max(8, int((ly + 0.3) / 0.45) + 1))
+            sw = np.sin(2 * math.pi * cyc * u + phi) + 0.12 * np.sin(4 * math.pi * cyc * u + 2 * phi)
+            x = xs[k] + drift * u + amp * (sw - sw[0] * (1 - u) ** 2)
+            C = np.column_stack([x, -0.3 + u * (ly + 0.3)])
+            D = RT.open_root(C * ppm, r0, 0.0, 0.0, tip=(0.01, 0.02), emerge=False, zdive=None, tip_r=1.0)
+            D = lie(long_taper(calm(D, 0.6, ppm), tip_r=0.2), rng, ppm)
             s = arc(D)
             D[:, 2] += (1 - smooth(s / (0.9 * ppm))) * 0.25 * D[:, 3]     # (round where it leaves the bank)
-            sd = rng.uniform(0.35, 0.6) * s[-1]
-            D[:, 2] -= 1.2 * D[:, 3] * np.exp(-((s - sd) / (0.35 * ppm)) ** 2)   # the dive under the earth
+            sd, se = None, None
+            if full and rng.random() < 0.6 and s[-1] > 5.0 * ppm:
+                sd = rng.uniform(0.3, 0.4) * s[-1]
+                D, se = dive(D, s, sd, rng, ppm)
             if not inside_rect(D, W, Hh, top=True):
                 ok = False; break
-            dense.append(D); mains.append((D, s, sd))
+            dense.append(D); mains.append((D, s, sd, se))
         if not ok:
             continue
-        for D, s, sd in mains:
+        for D, s, sd, se in mains:
             nf, tries = int(rng.integers(1, 3)), 0
-            while nf and tries < 30:
+            while nf and tries < 40:
                 tries += 1
-                lo, hi = max(1.1 * ppm, 0.22 * s[-1]), 0.62 * s[-1]          # (s from y = -0.3 m: 0.8 m into the rect)
-                if hi <= lo:
-                    break
-                si = rng.uniform(lo, hi)
-                if abs(si - sd) < 0.6 * ppm:
+                si = rng.uniform(max(1.0 * ppm, 0.18 * s[-1]), 0.5 * s[-1])
+                if sd is not None and sd - 1.0 * ppm < si < se:  # (not off the stretch under the earth or its ramp)
+                    continue
+                L = rng.uniform(0.4, 0.7) * (s[-1] - si)
+                if L < 0.9 * ppm:
                     continue
                 j = int(np.searchsorted(s, si))
-                tg = D[min(j + 4, len(D) - 1), :2] - D[max(j - 4, 0), :2]
-                thp = math.atan2(tg[1], tg[0])
-                h = thp + rng.choice([-1, 1]) * math.radians(rng.uniform(25, 42))
-                rc = D[j, 3] / ppm * rng.uniform(0.45, 0.62)
-                L, l, pts = rng.uniform(1.0, 2.2), 0.0, [D[j, :2] / ppm]
-                while l < L:                                   # (it splits off, then relaxes back along the run)
-                    st = rng.uniform(0.25, 0.4)
-                    h = thp + (h - thp) * 0.8 + rng.normal(0, math.radians(6))
-                    pts.append(pts[-1] + st * np.array([math.cos(h), math.sin(h)]))
-                    l += st
-                C = tip_sink(calm(RT.open_root(np.array(pts) * ppm, rc, -0.25 * rc, 0.02, tip=(0.45, 0.6),
-                                               emerge=False, zdive=None, tip_r=0.12), 0.4, ppm))
+                m = (s >= si) & (s <= si + L)
+                P = D[m, :2]
+                tg = np.gradient(P, axis=0)
+                tg /= np.maximum(np.linalg.norm(tg, axis=1, keepdims=True), 1e-6)
+                nrm = np.column_stack([-tg[:, 1], tg[:, 0]])
+                l = s[m] - si
+                a0 = math.radians(rng.uniform(12, 25))
+                tau = rng.uniform(2.0, 3.0) * ppm                 # (peels off at a0, then runs on beside the parent)
+                off = rng.choice([-1, 1]) * tau * math.tan(a0) * (1 - np.exp(-l / tau))
+                ctrl = (P + nrm * off[:, None])[::max(1, int(0.3 * ppm / max(np.median(np.diff(l)), 1e-3)))]
+                if len(ctrl) < 4:
+                    continue
+                rc = D[j, 3] / ppm * rng.uniform(0.45, 0.5)
+                C = RT.open_root(ctrl, rc, 0.0, 0.0, tip=(0.01, 0.02), emerge=False, zdive=None, tip_r=1.0)
+                C = lie(long_taper(calm(C, 0.5, ppm), keep=0.65, tail=0.25, tip_r=0.25), rng, ppm, 0.12)
                 kk = smooth(arc(C) / (0.5 * ppm))
                 C[:, 2] = (1 - kk) * D[j, 2] + kk * C[:, 2]
                 if inside_rect(C, W, Hh):
