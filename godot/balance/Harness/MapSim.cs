@@ -13,11 +13,11 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.Balance;
 
 /// <summary>One map to play: who, how hard, with what character, under which mods.</summary>
-public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25, string Dungeon = "")
+public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25, string Dungeon = "", bool AtBoss = false)
 {
     /// <summary>(M3) The hands: human, deft, careless, standing, idler (the press plan's) or plain (the old self-firing Pilot).</summary>
     public bool Deft => Bot == "deft";
-    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}{(Dungeon != "" ? "/dg:" + Dungeon : "")}";
+    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}{(Dungeon != "" ? "/dg:" + Dungeon : "")}{(AtBoss ? "/boss" : "")}";
 }
 
 public sealed class MapRunResult
@@ -43,7 +43,32 @@ public sealed class MapRunResult
     /// <summary>(M3) The press plan's hands (presses by skill) and the numbers round's measures (RunMeter).</summary>
     public PressHands? Hands;
     public RunMeasures Measures = new();
+    /// <summary>(dungeon-fights) XP paid in the run, the level at its start and end, the minute of each level-up.</summary>
+    public double XpGained;
+    public int LevelStart, LevelEnd;
+    public List<double> LevelUpAt = new();
+    /// <summary>Gear picked up, by rarity (0 plain .. 5).</summary>
+    public int[] DropsByRarity = new int[6];
+    /// <summary>Seconds with a roused foe within 24 m, in the rooms' fights and in the ruler's; marks laid on her in each;
+    /// the longest stretch of fight time with none (whole fight clock, from its first second).</summary>
+    public double FightSec, FightRoomSec, FightBossSec, GapAll, GapRoom, GapBoss;
+    public int MarksRoom, MarksBoss;
+    /// <summary>Heavy marks (the telegraph kit's, a boss's or a named one: the blows that bite when stood in): counts in rooms and at the ruler, and the longest fight stretch with none.</summary>
+    public int HeavyRoom, HeavyBoss;
+    public double HeavyGapRoom, HeavyGapBoss;
+    /// <summary>What the campaign taught her in the run: "minute level skill" for each (Ev.Taught) and each level reached.</summary>
+    public List<string> Taught = new();
+    /// <summary>Where she fell: the room's role and plan (or hall), the killer, the ruler's phase (-1: ruler not up), the fight clock.</summary>
+    public string DeathRoom = "", DeathPlan = "";
+    public int DeathBossPhase = -1;
+    /// <summary>Per room role: seconds in it, fight seconds, marks laid on her, rooms entered, entered rooms with no mark, damage taken (max lives).</summary>
+    public Dictionary<string, RoleStat> Roles = new();
+    /// <summary>The ruler's fight alone: damage to it by source (% of its life lost), and how long it was up.</summary>
+    public Dictionary<string, double> BossShare = new();
+    public double BossUpSec;
 }
+
+public sealed class RoleStat { public double Sec, FightSec, Dmg; public int Marks, Visits, QuietVisits; }
 
 /// <summary>A Wayfinder's map played through headless (Play/Zones/MapRun.cs on MapGen's winding
 /// way): the survivor's own build, kept for good, walked along the way by the Pilot's hands,
@@ -83,13 +108,18 @@ public static class MapSim
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new MapRun(host, map, chart);
         var at = zone.ArrivalFrom(null);
+        // (dungeon-fights) --at boss, as the game's: on the edge of the ruler's clearing, nothing else met.
+        if (spec.AtBoss) { var bc = map.Boss; at = new Arrival(bc.X, bc.Z - bc.R + 1, 0); }
         // (worldTier false, as the game starts a map: Game.cs; its press is the chart tier's row, set in MapRun.Begin)
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, worldTier: false);
         // As the game wires it: what is picked up goes into the pack (charts and materials); gear is
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
         b.Hooks = BattleHooks.Following(zh);
+        // (dungeon-fights) As the game wires it (Game.cs HookBattle): a kill teaches her first, then the zone sees it. Dungeons only: the old map numbers stay.
+        if (spec.Dungeon != "") b.Hooks.OnKill = (e, byPlayer) => { j.Killed(e, byPlayer); zh.OnKill?.Invoke(e, byPlayer); };
         int gear = 0, iron = 0, marks = 0;
+        var r0Drops = new int[6];
         b.Hooks.OnPickup = pk =>
         {
             if (zh.OnPickup != null && !zh.OnPickup(pk)) return false;
@@ -98,6 +128,7 @@ public static class MapSim
             {
                 gear++;
                 int rarity = pk.Payload is ItemInstance it ? it.Rarity : (int)pk.Tier;
+                r0Drops[Math.Clamp(rarity, 0, 5)]++;
                 iron += Crafting.Rules.BreakDown[Math.Clamp(rarity, 0, Crafting.Rules.BreakDown.Count - 1)];
                 return true;
             }
@@ -136,8 +167,34 @@ public static class MapSim
         if (human != null) human.Hands = hands;
         r.Hands = hands;
         var meter = new RunMeter();
+        // (dungeon-fights) the fight clock, the marks and the rooms.
+        double TotalXp(CharacterData c) { double x = c.Xp; for (int l = 1; l < c.Level; l++) x += Character.XpForLevel(l); return x; }
+        double xp0 = TotalXp(j.Ch); int lv0 = j.Ch.Level, lvNow = lv0;
+        r.LevelStart = lv0;
+        double fRoom = 0, fBoss = 0, lastMk = 0, lastMkRoom = 0, lastMkBoss = 0, bossUp = 0, lastHvRoom = 0, lastHvBoss = 0;
+        var dg = map.Dungeon;
+        DungeonRoom? inRoom = null; RoleStat? rs = null; bool visitMarked = false;
+        int step = 0;
         while (t < spec.Cap * 60 && !zone.Over)
         {
+            if (dg != null && step++ % 15 == 0)
+            {
+                DungeonRoom? best = null; double bd = 0;
+                foreach (var rm in dg.Rooms) { double d = rm.Dist(p.X, p.Z); if (d < bd) { bd = d; best = rm; } }
+                if (best != inRoom)
+                {
+                    if (rs != null && !visitMarked) rs.QuietVisits++;
+                    inRoom = best; visitMarked = false;
+                    rs = null;
+                    if (best != null)
+                    {
+                        string key = best.Role.ToString();
+                        if (!r.Roles.TryGetValue(key, out rs)) r.Roles[key] = rs = new RoleStat();
+                        rs.Visits++;
+                    }
+                    else { if (!r.Roles.TryGetValue("Hall", out rs)) r.Roles["Hall"] = rs = new RoleStat(); rs.Visits++; }
+                }
+            }
             // Onward: downhill on the way's distance to the ruler, a few metres ahead, by a line
             // that is clear of what stands on the ground.
             var onward = nav.Onward(p.X, p.Z);
@@ -178,7 +235,41 @@ public static class MapSim
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
             var evs = b.Events.Drain();
-            meter.Step(b, t, Dt, evs, RunMeter.Fighting(b));
+            bool fighting = RunMeter.Fighting(b);
+            meter.Step(b, t, Dt, evs, fighting);
+            fighting |= zone.Boss != null;
+            {
+                bool bossNow = zone.Boss != null;
+                if (bossNow) bossUp += Dt;
+                if (rs != null) { rs.Sec += Dt; if (fighting) rs.FightSec += Dt; }
+                if (fighting) { if (bossNow) fBoss += Dt; else fRoom += Dt; }
+                double fAll = fRoom + fBoss;
+                foreach (var ev in evs)
+                {
+                    if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius))
+                    {
+                        r.GapAll = Math.Max(r.GapAll, fAll - lastMk); lastMk = fAll;
+                        if (bossNow) { r.MarksBoss++; r.GapBoss = Math.Max(r.GapBoss, fBoss - lastMkBoss); lastMkBoss = fBoss; }
+                        else { r.MarksRoom++; r.GapRoom = Math.Max(r.GapRoom, fRoom - lastMkRoom); lastMkRoom = fRoom; }
+                        if (rs != null) { rs.Marks++; visitMarked = true; }
+                        if (tg.Boss || tg.Tell != null || tg.Label != null)
+                        {
+                            if (bossNow) { r.HeavyBoss++; r.HeavyGapBoss = Math.Max(r.HeavyGapBoss, fBoss - lastHvBoss); lastHvBoss = fBoss; }
+                            else { r.HeavyRoom++; r.HeavyGapRoom = Math.Max(r.HeavyGapRoom, fRoom - lastHvRoom); lastHvRoom = fRoom; }
+                        }
+                    }
+                    else if (ev is Ev.Taught tt) r.Taught.Add($"{t / 60:0.0}m L{j.Ch.Level} {tt.Skill}->{(tt.Slot < 0 ? "carried" : "slot " + tt.Slot)}");
+                    else if (ev is Ev.LevelUp lu) r.Taught.Add($"{t / 60:0.0}m reached L{lu.Level}");
+                    else if (ev is Ev.PlayerHit ph && rs != null && ph.Amount > 0) rs.Dmg += ph.Amount / Math.Max(1, b.MaxHp);
+                    else if (ev is Ev.PlayerDeath)
+                    {
+                        r.DeathRoom = inRoom != null ? inRoom.Role.ToString() : dg != null ? "Hall" : "";
+                        r.DeathPlan = inRoom?.Plan.Id ?? "";
+                        r.DeathBossPhase = bossNow ? (zone.BossScript?.PhaseIx ?? 0) : -1;
+                    }
+                }
+                if (j.Ch.Level > lvNow) { for (; lvNow < j.Ch.Level; lvNow++) r.LevelUpAt.Add(t / 60); }
+            }
             foreach (var ev in evs)
                 switch (ev)
                 {
@@ -200,6 +291,17 @@ public static class MapSim
             if (trace && (int)(t / 10) != (int)((t + Dt) / 10))
                 Console.Error.WriteLine($"{t / 60:0.00} at ({p.X:0.0},{p.Z:0.0}) m ({mx:0.00},{mz:0.00}) v ({p.Vx:0.0},{p.Vz:0.0}) blocked {b.Collision.Blocked(p.X, p.Z, p.Radius)} leap {p.Leap != null} dash {p.DashT:0.00} slow {p.SlowF:0.00} spd {b.Stats.Get(Stat.MoveSpeed):0.0} over {b.Over} stuck {stuck:0.0} to go {along:0} m onward ({onward.X:0},{onward.Z:0}) roused {b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused))} hp {p.Hp:0}/{b.MaxHp:0} packs {zone.PacksCleared}/{zone.PacksPlaced}");
             t += Dt;
+        }
+        {
+            double fAll = fRoom + fBoss;
+            r.GapAll = Math.Max(r.GapAll, fAll - lastMk); r.GapRoom = Math.Max(r.GapRoom, fRoom - lastMkRoom); r.GapBoss = Math.Max(r.GapBoss, fBoss - lastMkBoss);
+            r.HeavyGapRoom = Math.Max(r.HeavyGapRoom, fRoom - lastHvRoom); r.HeavyGapBoss = Math.Max(r.HeavyGapBoss, fBoss - lastHvBoss);
+            (r.FightSec, r.FightRoomSec, r.FightBossSec, r.BossUpSec) = (fAll, fRoom, fBoss, bossUp);
+            if (rs != null && !visitMarked) rs.QuietVisits++;
+            r.XpGained = TotalXp(j.Ch) - xp0; r.LevelEnd = j.Ch.Level;
+            Array.Copy(r0Drops, r.DropsByRarity, 6);
+            double bl = b.BossHealthBy.Values.Sum();
+            if (bl > 0) foreach (var (k, v) in b.BossHealthBy) r.BossShare[k] = 100 * v / bl;
         }
         r.Cleared = zone.Cleared;
         r.Closed = !zone.Cleared && (zone.Falls >= MapRun.FallsAllowed || !p.Alive);
