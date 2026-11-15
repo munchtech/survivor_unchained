@@ -13,7 +13,7 @@ A wave costs most in what each agent carries for its whole life. Spawn small, by
 - Live agents: 4 judged leads at most (memory "Usage rules"); data/systems leads past 4 are fine.
 
 ## 2. Each brief carries (the spawn guard refuses it otherwise)
-- `Context budget: <n>k` on its own line: judges and solvers 120-180k, workers about 120k, runners 60-100k, leads 200k (a backstop: compaction cuts at about 166k).
+- `Context budget: <n>k` on its own line: judges and solvers 120-180k, workers about 120k, runners 60-100k, leads 250k (the owner, 15 Nov: the hook's finish notice starts at 80% of the budget and an Opus lead compacts at about 192k, so a 200k line made leads stop before the cut).
 - `model` passed on every `general-purpose`, `claude` or `Explore` spawn (haiku for search, sonnet for specified work, opus for taste). Project types (`su-*`) carry their own.
 - Judges: a line `Effort tier: always-seen | less-seen | tier-3` and the matching `effort` (max / xhigh / high) from `docs/handoff/lead_brief.md` "Effort". Never lower a level.
 - Leads spawning `su-lead-max`: `Item: <name>` (3 rounds per item unless the coordinator raises it).

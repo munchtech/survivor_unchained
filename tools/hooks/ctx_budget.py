@@ -30,9 +30,9 @@ import sys
 
 DEFAULTS = {  # README "Working lean"
     None: 200_000,              # the main session (coordinator); owner 12 Nov: safe stop nearing 200k, 250k max (autoCompactWindow 250000)
-    "su-lead-high": 200_000,    # leads: auto-compaction (about 166k) makes the cut; this budget is the backstop
-    "su-lead-sonnet": 200_000,
-    "su-lead-author": 200_000,
+    "su-lead-high": 250_000,    # leads: auto-compaction makes the cut (Opus about 192k); the 80% notice must come after it (owner, 15 Nov)
+    "su-lead-sonnet": 250_000,
+    "su-lead-author": 250_000,
     "su-lead-max": 180_000,     # judges and solvers (150k to 180k, 12 October); story leads set their own in the brief
     "su-worker": 150_000,
     "su-worker-medium": 150_000,

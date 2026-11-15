@@ -1,6 +1,6 @@
 # The shared lead brief: Rules (read whole, ~2k tokens), then your area brief and your handoff's TOP block only
 
-Context budget: 200k
+Context budget: 250k
 
 You are a fresh successor lead. The coordinator is the main session: report with SendMessage to "main". Orientation reads, in order and by section (grep, then `sed -n`), never whole files: this Rules top; your area brief in `tools/scratch/coordinator/briefs/`; your handoff's TOP block in YOUR worktree. Nothing else unless a brief points at a line. Merge the latest `origin/claude/vigilant-galileo-l6jqyx` into your branch first (junction rule below).
 
