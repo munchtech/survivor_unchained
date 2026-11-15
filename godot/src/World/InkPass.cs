@@ -340,13 +340,17 @@ public partial class Ink : Node
 {
     readonly InkPass effect = new();
     readonly InkSnap snap = new();
+    // (rim round 3) where skin's rim may draw: the outline's near side (RimMask); rimShow its --rim-mask-dbg view
+    readonly RimMask rim = new(), rimShow = new(true);
     readonly Compositor own;
+    bool rimReady;
     double gpuSum, snapSum, vpSum; int gpuN; ulong frames;
 
     public Ink()
     {
         Name = "Ink";
         own = new Compositor { CompositorEffects = InkPass.Mask ? new Godot.Collections.Array<CompositorEffect> { snap, effect } : new Godot.Collections.Array<CompositorEffect> { effect } };
+        if (RimMask.On) own.CompositorEffects = Rims(own.CompositorEffects);
     }
 
     public override void _Ready()
@@ -357,10 +361,28 @@ public partial class Ink : Node
         RenderingServer.FramePreDraw += Sync;
         InkRelease.Live = true;
         if (InkPass.Time) RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
+        if (RimMask.On)
+        {
+            RenderingServer.GlobalShaderParameterSet(RimMask.Global, RimMask.Tex);
+        }
         if (Args.Get("ink-test") is string t) testAt = float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0 ? s : 4;
     }
 
-    public override void _ExitTree() { RenderingServer.FramePreDraw -= Sync; InkRelease.Release(); }
+    public override void _ExitTree()
+    {
+        RenderingServer.FramePreDraw -= Sync;
+        if (RimMask.On) RenderingServer.GlobalShaderParameterSet(RimMask.GlobalOn, 0f);
+        InkRelease.Release();
+    }
+
+    // The effects with the rim mask (and its debug view) at the end, if missing.
+    Godot.Collections.Array<CompositorEffect> Rims(Godot.Collections.Array<CompositorEffect> fx)
+    {
+        var d = fx.Duplicate();
+        if (!d.Contains(rim)) d.Add(rim);
+        if (RimMask.Dbg && !d.Contains(rimShow)) d.Add(rimShow);
+        return d;
+    }
 
     void Sync()
     {
@@ -380,6 +402,15 @@ public partial class Ink : Node
                 if (InkPass.Mask) d.Insert(1, snap);
                 comp.CompositorEffects = d;
             }
+            if (RimMask.On && (!comp.CompositorEffects.Contains(rim) || (RimMask.Dbg && !comp.CompositorEffects.Contains(rimShow))))
+                comp.CompositorEffects = Rims(comp.CompositorEffects);
+        }
+        if (RimMask.On)
+        {
+            // (the mask's texture remade between frames at the size the last frame wanted; the materials use it once it fits)
+            bool ready = RimMask.Ready;
+            if (!ready && RimMask.Want.X > 0) RenderingServer.CallOnRenderThread(Callable.From(RimMask.Make));
+            if (ready != rimReady) { rimReady = ready; RenderingServer.GlobalShaderParameterSet(RimMask.GlobalOn, ready ? 1f : 0f); }
         }
         var env = cam.Environment ?? cam.GetWorld3D()?.Environment;
         if (env != null && env.FogEnabled)
