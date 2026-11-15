@@ -1055,6 +1055,12 @@ public partial class PlayerView : Node3D
         double y = heightAt(x, z);
         if (leap >= 0) y += Mathf.Sin((float)(leap * Mathf.Pi)) * 2.2;
         Position = new Vector3((float)x, (float)y, (float)z);
+        if (mine && !PlantOff)
+        {
+            Position += plantOff;
+            plantGround = heightAt; plantDt = (float)dt;
+            if (!plantHooked) { plantHooked = true; person.Skeleton.SkeletonUpdated += PlantStep; }
+        }
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
         if (mine) XrayStep((float)dt);
@@ -1190,7 +1196,7 @@ public partial class PlayerView : Node3D
         // she is off at a run; a blow behind her running: her hips toward it (hipGoal) while it lasts.
         else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnMaxStanding, TurnEaseStanding);
         else if (mine && hipGoal is float hg && aimHold > 0 && p.Leap == null && p.DashT <= 0) TurnTo(hg, (float)dt, HipRate, TurnEase);
-        else if (sp > 0.4f && p.Leap == null)
+        else if ((sp > 0.4f || PivotHeld(p.StickX, p.StickZ)) && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
             float want = stick ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
@@ -1206,8 +1212,9 @@ public partial class PlayerView : Node3D
             else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
         }
         if (aimHold <= 0) { faceGoal = null; hipGoal = null; }
-        if (sp <= 0.4f) pivot = false;
+        if (sp <= 0.4f && !PivotHeld(p.StickX, p.StickZ)) pivot = false;
         turnedLast = turning; turning = false;
+        plantYawStep = Mathf.RadToDeg(Mathf.Abs(Mathf.Wrap(Rotation.Y - plantYawPrev, -Mathf.Pi, Mathf.Pi))); plantYawPrev = Rotation.Y;
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
@@ -1317,6 +1324,9 @@ public partial class PlayerView : Node3D
         // The run blend's speed after her ground speed: quick enough that a 180's plant shows in her legs
         // (at 10 a second they ran on through the stop, 3.6 m/s off her ground speed; at 40, 1.4).
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * (float)dt));
+        // (turning r2) Through a 180's pivot her legs keep the run (the sim's speed passes through zero as it reverses: at 40 a
+        // second the blend followed it to her stand for a frame, upright with her feet together, then back to the run).
+        if (mine && pivot && !TurnOld && !TurnSnap) speed = Mathf.Max(speed, PivotFloor);
         velX = (float)p.Vx; velZ = (float)p.Vz;
         ActWalkVel(ref sp);
         if (mine && !ActLive && ActWalk == null) Rest(b, dt, sp);
@@ -1553,7 +1563,7 @@ public partial class PlayerView : Node3D
             fullSoft = false;
         }
         if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
-        if (sp > 0.3) { stillT = 0; return; }
+        if (sp > 0.3 || (pivot && PivotHeld(p.StickX, p.StickZ))) { stillT = 0; return; }   // (a 180's reversal is not a stop)
         // Pulling up out of a run: onto whichever foot was coming down.
         if (runT > 0.4 && !(bool)tree.Get("parameters/fullShot/active"))
         {
@@ -1634,6 +1644,7 @@ public partial class PlayerView : Node3D
         }
         float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0);
         var (wWalk, w) = Stride.Weights(spd, walkSpeed, natural0, hasWalk);
+        logW = w; logWWalk = wWalk; logSpd = spd;
         if (!move2D)
         {
         tree.Set("parameters/move/blendW/blend_amount", wWalk);
@@ -1653,6 +1664,9 @@ public partial class PlayerView : Node3D
         float strideK = 1;
         if (!AimLegs && hipGoal != null && aimHold > 0 && velX * velX + velZ * velZ > 0.16f)
             strideK = Mathf.Cos(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi));
+        // (turning r2) Through a 180's pivot her stride goes at her ground speed, not the run's floor (PivotFloor): she
+        // slows onto the foot that is down and turns on it, then runs out of it.
+        if (pivot && !TurnOld && !TurnSnap) strideK *= Mathf.Clamp(sp / Mathf.Max(spd, 0.5f), 0f, 1f);
         stride = Stride.Advance(stride, dt * strideK, period);
         if (!move2D)
         {
@@ -1916,6 +1930,66 @@ public partial class PlayerView : Node3D
         Rotation = new Vector3(0, Rotation.Y + Mathf.DegToRad(step), 0);
     }
 
+    /// <summary>(turning r2) A 180's pivot under way with the stick still held: the sim's speed passing through zero as it
+    /// reverses is not a stop.</summary>
+    bool PivotHeld(double sx, double sz) => pivot && !TurnOld && !TurnSnap && sx * sx + sz * sz > 0.01;
+
+    // (turning r2, the owner 10 Nov "movement looked weird especially turning") Her turn at a run pivots on the planted foot.
+    // The body's yaw turned her about her root, so the foot on the ground was swung round with her (the 90's planted foot at
+    // 1.5-4.6 m/s for three frames; the 180's at 6-9). Now, when her yaw moves more than PlantYaw deg in a frame at a run and
+    // a ball of her foot was on the ground the frame before, that ball is held where it stood (her whole view shifted by the
+    // difference, plantOff) until it lifts (PlantLift above the ground), PlantHold s pass, or the shift reaches PlantMax. The
+    // shift goes back to the sim's place while no foot is down (PlantDecay/s; a third of it with a foot down). View only.
+    // --turn-plant-off: as before.
+    static readonly bool PlantOff = SurvivorUnchained.Args.Has("turn-plant-off");
+    static readonly float PlantYaw = SurvivorUnchained.Args.Num("turn-plant-yaw", 3f), PlantTouch = SurvivorUnchained.Args.Num("turn-plant-touch", 0.07f),
+        PlantLift = SurvivorUnchained.Args.Num("turn-plant-lift", 0.10f), PlantHold = SurvivorUnchained.Args.Num("turn-plant-hold", 0.35f),
+        PlantMax = SurvivorUnchained.Args.Num("turn-plant-max", 0.6f), PlantDecay = SurvivorUnchained.Args.Num("turn-plant-decay", 12f),
+        PivotFloor = SurvivorUnchained.Args.Num("turn-pivot-floor", 3.4f);
+    Vector3 plantOff, plantAt;
+    readonly Vector3[] plantPrev = new Vector3[2];
+    readonly float[] plantPrevH = { 1, 1 }, plantH = { 1, 1 };
+    int plantFoot = -1, plantBallL = -2, plantBallR = -2;
+    float plantT, plantYawStep, plantYawPrev, plantDt;
+    bool plantHooked;
+    System.Func<double, double, double>? plantGround;
+
+    void PlantStep()
+    {
+        var sk = person.Skeleton;
+        if (plantGround == null || sk == null) return;
+        if (plantBallL == -2) { plantBallL = sk.FindBone("ball_l"); plantBallR = sk.FindBone("ball_r"); }
+        if (plantBallL < 0 || plantBallR < 0) return;
+        var f = new[] { sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallL).Origin, sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallR).Origin };
+        for (int i = 0; i < 2; i++) plantH[i] = f[i].Y - (float)plantGround(f[i].X, f[i].Z);
+        bool legsFree = !(bool)tree.Get("parameters/fullShot/active");
+        Vector3 shift = Vector3.Zero;
+        if (plantFoot < 0 && legsFree && plantYawStep > PlantYaw && speed > 1.5f)
+        {
+            int i = plantPrevH[0] <= plantPrevH[1] ? 0 : 1;
+            if (plantPrevH[i] < PlantTouch) { plantFoot = i; plantAt = plantPrev[i]; plantT = 0; }
+        }
+        if (plantFoot >= 0)
+        {
+            plantT += plantDt;
+            if (plantH[plantFoot] > PlantLift || plantT > PlantHold || !legsFree) plantFoot = -1;
+            else
+            {
+                var want = plantOff + new Vector3(plantAt.X - f[plantFoot].X, 0, plantAt.Z - f[plantFoot].Z);
+                if (want.Length() > PlantMax) { want = want.Normalized() * PlantMax; plantFoot = -1; }
+                shift = want - plantOff;
+            }
+        }
+        if (plantFoot < 0)
+        {
+            float rate = Mathf.Min(plantH[0], plantH[1]) > PlantTouch ? PlantDecay : PlantDecay / 3;
+            shift = -plantOff * (1 - Mathf.Exp(-rate * plantDt));
+        }
+        plantOff += shift;
+        Position += shift;
+        for (int i = 0; i < 2; i++) { plantPrev[i] = f[i] + shift; plantPrevH[i] = plantH[i]; }
+    }
+
     // The swing's coil: while her shoulders come round onto the blow its wind plays slow (CoilPace of its pace), held at the
     // wind's end (CoilWind of the way to its contact); let go at its pace once they are within CoilTol deg, stop gaining, or
     // at CoilMax frames; then a little quick (CoilCatch) until it has made up the time it lost, never past contact. So the
@@ -1974,7 +2048,18 @@ public partial class PlayerView : Node3D
         var pv = B("pelvis");
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
-        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)}"));
+        if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; }
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X:0.000} {GlobalPosition.Z - plantOff.Z:0.000} pl {plantFoot} off {plantOff.X:0.000} {plantOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000}"));
+    }
+    // (turning measure) her balls of the feet in the world where the skeleton has run its modifiers (see MeasCache's note)
+    bool feetHooked; float logW, logWWalk, logSpd;
+    readonly Vector3[] feetW = new Vector3[2];
+    void FeetCache()
+    {
+        var sk = person.Skeleton;
+        int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
+        if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
+        if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
     }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
