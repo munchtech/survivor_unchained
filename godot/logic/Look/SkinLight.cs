@@ -51,7 +51,8 @@ public static class SkinLight
     /// #ffd8b4 still read apricot-orange (cheek 930,390 C .132 h 56, chest .127 h 57, belly .119 h 60): her lit R sits at
     /// AgX's top, so the key's green and blue set the chroma (her albedo's warmth, cel_tone, moved .127 to .121 only).
     /// #ffe4cc: chest .115; #ffe8d6 at 0.80: chest .108 but cheek .121 (face over chest by .013); #ffeee2 at 0.85: cheek
-    /// .114 h 58, chest .104 h 58, belly .097 h 62, face R 250+ on 3.5%, the shade's hue as before (h 53-58).</summary>
+    /// .114 h 58, chest .104 h 58, belly .097 h 62, face R 250+ on 3.5%, the shade's hue as before (h 53-58).
+    /// The play view by day idles into this rig too: its lit chest .126 to .102, cheek .137 to .119 (the world untouched).</summary>
     public const double CloseDayKey = 0.85;
     public const string CloseDayKeyColor = "#ffeee2";
 
