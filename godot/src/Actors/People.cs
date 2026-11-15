@@ -1913,6 +1913,8 @@ public static class People
             m.SetShaderParameter("back_spec", HerBackSpec);
             m.SetShaderParameter("back_neutral", HerBackNeutral);
             m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+            // (the moon's blue on her lit skin given back as her warmth, as an NPC's: Look.SkinLight.HerKeySkin)
+            m.SetShaderParameter("key_skin", SurvivorUnchained.Look.SkinLight.HerKeySkin);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)

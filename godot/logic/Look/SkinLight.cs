@@ -121,6 +121,14 @@ public static class SkinLight
     /// own night's lit skin (close_night h 36-40 C .05), the shade unchanged (L .17 h 54).</summary>
     public const float NpcKeySkin = 1f;
 
+    /// <summary>Hers (the skin shader's key_skin on her, every part): the cold key's hue given back as her skin's warmth on her
+    /// lit side, as an NPC's (NpcKeySkin). At 0 the moon's blue lay whole on her lit side, dusty pink (Oklab h 31, C/L .085)
+    /// beside a shade the moon doesn't reach in her own warm hue (h 54): two materials (judge 5, p1_close_night y 720). Split
+    /// (15 Nov skin-light r3): the shade's hue moved with none of skin_hold, the town's lamps or the grade (the grade took the
+    /// lit side 41 to 31); at 1 the lit side is h 56 against the shade's 54 at p1_close_night and p1_play_night, as by day
+    /// (shade a few degrees redder). Cold keys only (the shader's gate), so the sun and the Look's fire key are untouched.</summary>
+    public const float HerKeySkin = 1f;
+
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The
