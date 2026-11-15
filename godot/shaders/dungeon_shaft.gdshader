@@ -3,8 +3,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
 
-uniform vec3 tint : source_color = vec3(0.78, 0.86, 0.95);
-uniform float strength = 0.22;
+uniform vec3 tint : source_color = vec3(0.95, 0.9, 0.78);
+uniform float strength = 0.3;
 uniform float height = 15.0;
 
 varying float hf;

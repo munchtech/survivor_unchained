@@ -69,6 +69,12 @@ public static class Ground
             mesh.SurfaceSetMaterial(0, ArenaGround.Material(z));
             return Finish(z, mesh);
         }
+        // A dungeon's floor is its own, by rule from its walkable field (DungeonFloor), not the wild's painted splat.
+        if (z.WallField != null)
+        {
+            mesh.SurfaceSetMaterial(0, DungeonFloor.Material(z));
+            return Finish(z, mesh);
+        }
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
         // The paint reconciled with the roads, and the road, wet and puddle mask (GroundPaint.cs).

@@ -98,7 +98,14 @@ public static class DungeonWalls
         {
             float k = 1 + 0.2f * (2 * N2(x * 0.06f + 7.3f, z * 0.06f - 2.1f) - 1);
             if (!Ravine) return Hb * k * Mathf.Lerp(1f, 0.55f, Near(x, z));
-            float drop = Mathf.Max(Near(x, z), Sm(-1.5f, 1.5f, Bil(Wf, x, z) - Bil(Hf, x, z)));
+            // The ravine is a shelf on the canyon's side: only the back (north) rises, as the cliff; the near and side
+            // edges fall away (a side wall standing 13 m between two halls hid the next hall and half the frame).
+            // And the cliff rises only where nothing walkable lies behind it (a room's back wall seen from the hall
+            // north of it stood 13 m over that hall): probed 18 m on north, the rock must keep going.
+            var g = Grad(null, x, z, true);
+            float open = Sm(10f, 16f, S(x, z - 18f) - S(x, z));
+            float drop = Mathf.Max(Mathf.Max(Near(x, z), Sm(0.45f, 0.8f, Mathf.Abs(g.X))), Sm(-1.5f, 1.5f, Bil(Wf, x, z) - Bil(Hf, x, z)));
+            drop = Mathf.Max(drop, 1 - open);
             return Mathf.Lerp(Hb * k, -Drop * k, drop);
         }
         public const float Drop = 14f;
@@ -265,7 +272,7 @@ public static class DungeonWalls
                 at += next - acc; acc = 0;
                 var p = a.Lerp(e, len > 0 ? at / len : 0);
                 int hx = Mathf.RoundToInt(p.X * 4), hz = Mathf.RoundToInt(p.Y * 4);
-                next = 0.8f + 1.0f * Hash01(hx, hz, 5);
+                next = 0.7f + 0.8f * Hash01(hx, hz, 5);
                 if (Mathf.Abs(p.X) > lim || Mathf.Abs(p.Y) > lim) continue;
                 WallRoot(c, b, p, hx, hz);
             }
@@ -300,22 +307,23 @@ public static class DungeonWalls
     {
         float H(int k) => Hash01(hx, hz, k);
         var g = c.Grad(null, p.X, p.Y, true);
-        var t = new Vector2(-g.Y, g.X) * (H(20) < 0.5f ? -1 : 1);
+        // Roots along a stretch of wall all flow one way (by a slow noise, not per root): a braid, not crossed sticks.
+        var t = new Vector2(-g.Y, g.X) * (N2(p.X * 0.07f + 3.3f, p.Y * 0.07f - 8.1f) < 0.5f ? -1 : 1);
         float kind = H(21);
         var cps = new List<Cp>();
         float r0;
-        if (kind < 0.4f)
+        if (kind < 0.6f)
         {
             // A runner: high on the face, along it, down to the floor and under.
-            float L = 3f + 4f * H(22);
-            r0 = 0.15f + 0.3f * H(23) * H(23);
+            float L = 4f + 5f * H(22);
+            r0 = 0.16f + 0.36f * H(23) * H(23);
             cps.Add(new(0, 1.3f + 0.7f * H(24), 0.55f));
             cps.Add(new(0.3f * L, 0.8f + 0.5f * H(25), 1f));
             cps.Add(new(0.6f * L, 0.35f + 0.35f * H(26), 0.9f));
             cps.Add(new(0.82f * L, -0.25f, 0.7f));
             cps.Add(new(L, -0.8f - 0.9f * H(27), 0.35f));
         }
-        else if (kind < 0.78f)
+        else if (kind < 0.85f)
         {
             // A drop: from beyond the top, on a slant across the face, then a crawl over the floor.
             float U = 0.8f + 2.2f * H(22), C = 0.6f + 1.4f * H(28);
@@ -341,7 +349,7 @@ public static class DungeonWalls
         }
         Lay(c, b, p, t, cps, r0, hx, hz, true, true);
         // A thick one sometimes forks: a thinner branch off its first third, down to the floor on the other hand.
-        if (kind < 0.78f && r0 > 0.2f && H(30) < 0.5f)
+        if (kind < 0.85f && r0 > 0.2f && H(30) < 0.5f)
         {
             float u0 = cps[1].U, s0 = cps[1].S;
             var br = new List<Cp> { new(u0, s0, 0.45f), new(u0 - 0.6f, s0 - 0.5f, 0.4f), new(u0 - 1.1f, -0.2f, 0.3f), new(u0 - 1.6f - H(31), -0.7f - 0.6f * H(32), 0.15f) };
@@ -366,7 +374,7 @@ public static class DungeonWalls
     {
         float span = 0;
         for (int i = 1; i < cps.Count; i++) span += new Vector2(cps[i].U - cps[i - 1].U, cps[i].S - cps[i - 1].S).Length();
-        int per = Mathf.Max(3, Mathf.CeilToInt(span / 0.28f / (cps.Count - 1)));
+        int per = Mathf.Max(3, Mathf.CeilToInt(span / 0.34f / (cps.Count - 1)));
         var pts = new List<Vector3>(); var rs = new List<float>(); var ss = new List<float>();
         float seed = Hash01(hx, hz, 77) * 40f;
         for (int i = 0; i < cps.Count - 1; i++)
@@ -410,7 +418,7 @@ public static class DungeonWalls
     // coordinates in metres along it and the share round it.
     static void Tube(Buf b, List<Vector3> p, List<float> r, List<float> s, float floorY)
     {
-        const int Sides = 7;
+        const int Sides = 6;
         if (p.Count < 2) return;
         var rings = new int[p.Count][];
         Vector3 prevT = (p[1] - p[0]).Normalized();

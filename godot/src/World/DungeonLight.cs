@@ -28,14 +28,26 @@ public static class DungeonLight
             int count = r.R > 11 ? 2 : 1;
             for (int k = 0; k < count; k++)
             {
-                float a = Hash(i, k, 1) * Mathf.Tau, d = r.R * (0.25f + 0.35f * Hash(i, k, 2));
-                float x = r.X + Mathf.Cos(a) * d, zz = r.Z + Mathf.Sin(a) * d;
-                float w = 1.6f + 1.4f * Hash(i, k, 3);
+                // (clear of the pits and the walls: a shaft down a pit lit its roots bone-white)
+                float x = r.X, zz = r.Z;
+                for (int t = 0; t < 10; t++)
+                {
+                    float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = r.R * (0.25f + 0.35f * Hash(i, k + 7 * t, 2));
+                    x = r.X + Mathf.Cos(a) * d; zz = r.Z + Mathf.Sin(a) * d;
+                    if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
+                }
+                float w = 1.1f + 1.0f * Hash(i, k, 3);
                 AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w);
             }
         }
         GD.Print($"DungeonLight {z.DungeonTheme}: {root.GetChildCount() / 2} shafts over {z.Rooms.Count} rooms");
         return root;
+    }
+
+    static float At(ZoneData z, float[] f, float x, float zz)
+    {
+        int i = Mathf.Clamp((int)Mathf.Round((x + z.Half) / z.Step), 0, z.Res - 1), j = Mathf.Clamp((int)Mathf.Round((zz + z.Half) / z.Step), 0, z.Res - 1);
+        return f[j * z.Res + i];
     }
 
     static void AddShaft(Node3D root, Shader shader, Vector3 foot, float w)
@@ -47,8 +59,8 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color("dfe9ff"),
-            LightEnergy = 9f,
+            LightColor = new Color("fff0d8"),
+            LightEnergy = 6f,
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f) / Height)),
             SpotAngleAttenuation = 0.6f,

@@ -60,19 +60,46 @@ float vnoise(vec2 p) {
 
 // The ravine's rock, painted: tall plates parted by vertical fractures, stepped in three tones, thin strata across
 // them, violet-grey; the flat tops a shade warmer where dust lies.
-vec3 rock(vec3 p, vec3 n) {
-	vec2 t2 = normalize(vec2(-n.z, n.x) + vec2(1e-4));
-	float u = dot(p.xz, t2);
-	float steep = 1.0 - smoothstep(0.55, 0.85, n.y);
-	vec2 q = mix(p.xz * 0.5, vec2(u * 0.5, p.y * 0.16), steep);
+// One plane's plates (q: across, up), for the triplanar blend below: (tone, crack, the block's id). A block is a
+// column between two fractures, broken across now and then; each block leans its own way (rock_tilt), so the cel
+// light breaks the face into planes.
+vec3 plates(vec2 q) {
 	float w = vnoise(q + 3.1) * 0.65 + vnoise(q * 2.3) * 0.35;
-	float tone = floor(w * 3.2) / 3.0;
 	float fx = q.x * 1.3 + 0.35 * vnoise(q * vec2(0.4, 1.5));
 	float crack = 1.0 - smoothstep(0.02, 0.07, abs(fract(fx) - 0.5) * (0.6 + 0.8 * vnoise(q * 0.7 + 9.0)));
+	float col = floor(fx + 0.5);
+	float fy = q.y * 1.6 + hash2(vec2(col, 3.7)) * 4.0;
+	float row = floor(fy);
+	crack = max(crack, (1.0 - smoothstep(0.02, 0.06, abs(fract(fy) - 0.5) - 0.44)) * 0.7 * step(0.45, hash2(vec2(col, row + 0.5))));
+	return vec3(w, crack, hash2(vec2(col, row)));
+}
+
+
+vec3 rock(vec3 p, vec3 n, out vec3 rock_tilt) {
+	// World-axis triplanar (a tangent from the normal flipped from facet to facet and drew chevrons).
+	vec3 bw = pow(abs(n), vec3(4.0));
+	bw /= bw.x + bw.y + bw.z;
+	vec3 px = plates(vec2(p.z * 0.9, p.y * 0.4));
+	vec3 pz = plates(vec2(p.x * 0.9, p.y * 0.4));
+	vec3 py = plates(p.xz * 0.7);
+	vec3 wc = px * bw.x + pz * bw.z + py * bw.y;
+	float id = bw.x > max(bw.y, bw.z) ? px.z : (bw.z > bw.y ? pz.z : py.z);
+	// The block's lean: sideways and up or down, a third of a radian at most.
+	vec3 t = vec3(hash2(vec2(id, 1.3)), hash2(vec2(id, 7.1)), hash2(vec2(id, 4.9))) * 2.0 - 1.0;
+	rock_tilt = normalize(n + 0.22 * (t - n * dot(t, n)));
+	float steep = 1.0 - smoothstep(0.55, 0.85, n.y);
+	float u = p.x * bw.z + p.z * bw.x;
+	float w = wc.x;
+	float tone = floor((w * 0.75 + 0.25 * id) * 4.0) / 4.0;
+	float crack = wc.y;
 	float band = smoothstep(0.85, 0.95, fract(p.y * 0.55 + 0.4 * vnoise(vec2(u * 0.1, 0.0))));
-	vec3 base = mix(vec3(0.14, 0.12, 0.17), vec3(0.24, 0.21, 0.27), tone);
-	base = mix(base, base * vec3(1.08, 1.0, 0.92), 1.0 - steep);
-	base *= 1.0 - 0.45 * crack * steep;
+	vec3 base = mix(vec3(0.11, 0.1, 0.125), vec3(0.18, 0.165, 0.185), tone);
+	// the tops: dust, and moss and grass in patches
+	vec3 top = base * vec3(1.1, 1.02, 0.9);
+	float moss = smoothstep(0.5, 0.62, vnoise(p.xz * 0.35) * 0.7 + vnoise(p.xz * 1.3) * 0.3);
+	top = mix(top, vec3(0.13, 0.15, 0.06) * (0.8 + 0.4 * w), moss);
+	base = mix(base, top, 1.0 - steep);
+	base *= 1.0 - 0.55 * crack;
 	base *= 1.0 - 0.18 * band * steep;
 	return base;
 }
@@ -102,12 +129,14 @@ void fragment() {
 	} else if (kind > 0.75) {
 		// A root: dark warm bark, each root its own shade, fine streaks along it and a knot now and then.
 		float id = hash2(floor(vec2(along_m * 0.02, round_s * 0.1) + floor(wpos.xz * 0.25)));
-		vec3 bark = mix(vec3(0.11, 0.07, 0.045), vec3(0.17, 0.11, 0.065), id);
+		vec3 bark = mix(vec3(0.12, 0.062, 0.035), vec3(0.2, 0.105, 0.055), id);
 		float streak = vnoise(vec2(round_s * 9.0, along_m * 0.9)) * 0.6 + vnoise(vec2(round_s * 21.0, along_m * 2.3)) * 0.4;
 		bark *= mix(0.62, 1.12, smoothstep(0.25, 0.75, streak));
 		col = bark * (1.0 - 0.85 * smoothstep(1.4, 3.2, s_out)) * (1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.5, h)));
 	} else if (ravine > 0.5) {
-		col = rock(wpos, wnrm);
+		vec3 tilt;
+		col = rock(wpos, wnrm, tilt);
+		NORMAL = normalize((VIEW_MATRIX * vec4(tilt, 0.0)).xyz);
 		// A drop falls away into violet shade; the rock above darkens a little toward its top.
 		col = mix(col, vec3(0.05, 0.04, 0.08), smoothstep(0.5, 11.0, depth) * 0.92);
 		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
