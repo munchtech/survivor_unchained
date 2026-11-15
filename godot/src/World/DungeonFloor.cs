@@ -36,6 +36,8 @@ public static class DungeonFloor
         mat.SetShaderParameter("res", (float)z.Res);
         mat.SetShaderParameter("sheet", GD.Load<TextureLayered>(ArenaGround.Sheet(ravine ? "res://art/arena/dig" : "res://art/arena/hollow", "albedo")));
         mat.SetShaderParameter("ravine", ravine ? 1f : 0f);
+        // --env-off rim: the damp lip, wall-foot and pit darkening off (the den pit halo diagnosis, 15 Nov).
+        if (System.Array.IndexOf((Args.Get("env-off") ?? "").Split(','), "rim") >= 0) mat.SetShaderParameter("rim_dark", 0f);
         if (!ravine)
         {
             // (the den's own painted set, ground.json "den": tools/look/ground_paint.py build den)

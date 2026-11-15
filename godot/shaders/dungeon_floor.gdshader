@@ -16,6 +16,7 @@ uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic,
 uniform sampler2DArray den_arh : filter_linear_mipmap_anisotropic, repeat_enable;
 const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
 uniform vec3 den_tint = vec3(1.3, 1.2, 1.28);
+uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (--env-off rim, the den pit halo diagnosis, 15 Nov)
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
 
 varying vec3 wpos;
@@ -85,7 +86,7 @@ void fragment() {
 		float w_tr = smoothstep(3.5, 7.5, inside + wob * 1.5) * (1.0 - steep);   // (the rooms' open middles, worn paler: a vignette by rule)
 		float w_li = smoothstep(0.52, 0.7, fbm(wpos.xz * 0.23 + 41.0)) * smoothstep(0.6, 1.6, inside) * (1.0 - w_tr);
 		float w_rm = 1.0 - smoothstep(0.4, 2.4, inside + wob * 0.8);
-		float w_dk = max(1.0 - smoothstep(-0.2, 0.9, inside + wob * 0.3), 1.0 - smoothstep(-0.1, 0.4, hole + wob * 0.15));   // (a thin damp lip only: a wide dark ring read as a raised tub's shadow)
+		float w_dk = rim_dark * max(1.0 - smoothstep(-0.2, 0.9, inside + wob * 0.3), 1.0 - smoothstep(-0.1, 0.4, hole + wob * 0.15));   // (a thin damp lip only: a wide dark ring read as a raised tub's shadow)
 		float w_pf = steep * (1.0 - smoothstep(0.0, 2.0, hole));
 		float hb[6];
 		vec3 cb[6];
@@ -120,11 +121,11 @@ void fragment() {
 		// slow value masses: damper and drier ground
 		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
 		// the wall's foot in shade of the overhang
-		col *= mix(0.45, 1.0, smoothstep(0.0, 2.2, inside));
+		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
 		// the pits: the depths go black
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
 		float pit = 1.0 - smoothstep(0.0, 1.6, hole);
-		col *= mix(1.0, 0.015, max(smoothstep(0.45, -0.5, hole), pit * steep));
+		col *= mix(1.0, 0.015, rim_dark * max(smoothstep(0.45, -0.5, hole), pit * steep));
 	} else {
 		// Beyond the shelf's edge the ground is gone (the drop's rock falls away below): only the walkable shelf stays.
 		if (min(inside, hole) < -0.4) discard;

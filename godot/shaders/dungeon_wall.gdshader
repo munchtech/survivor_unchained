@@ -11,8 +11,12 @@ uniform sampler2DArray sheet : source_color, filter_linear_mipmap_anisotropic, r
 uniform float layer_a = 1.0;    // den: rot; ravine: face
 uniform float layer_b = 2.0;    // den: roots
 uniform float ravine = 0.0;
+uniform sampler2DArray bank_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray bank_nrm : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float bank_m = 5.0;
+uniform float bank_nk = 0.6;
 uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform vec3 void_col = vec3(0.008, 0.009, 0.013);   // the dark between and beyond: the concepts' cool grey (15, 16, 18), not black
+uniform vec3 void_col = vec3(0.004, 0.004, 0.006);   // the dark between and beyond: the concepts' cool grey (15, 16, 18), not black
 uniform vec3 root_lit = vec3(0.13, 0.07, 0.05);     // a root's albedo, a muted warm brown (its lit top)
 uniform vec3 root_under = vec3(0.4, 0.32, 0.5);    // its under side's purple
 uniform vec3 face_col = vec3(0.03, 0.024, 0.028);    // the root mass behind the roots
@@ -160,19 +164,19 @@ void fragment() {
 	} else if (kind > 0.25) {
 		col = void_col;
 	} else {
-		// The den's face: a dark root mass behind the roots (the den set's root mat, layer 3, as its value only, in a
-		// purple-brown), buried roots in it as faint ridges, fading over a few metres out into the dark grey beyond.
-		vec3 bw = pow(abs(wnrm), vec3(4.0));
-		bw /= bw.x + bw.y + bw.z;
-		vec3 mat = texture(den_alb, vec3(wpos.zy / 2.2, 3.0)).rgb * bw.x + texture(den_alb, vec3(wpos.xz / 2.2, 3.0)).rgb * bw.y
-			+ texture(den_alb, vec3(wpos.xy / 2.2, 3.0)).rgb * bw.z;
-		col = face_col * (0.55 + 0.6 * dot(mat, vec3(0.3333)) / 0.08);
-		float u = wpos.x * bw.z + wpos.z * bw.x;
-		col *= 0.8 + 0.45 * smoothstep(0.6, 0.95, 1.0 - abs(2.0 * vnoise(vec2(u * 1.1, wpos.y * 0.3)) - 1.0));
-		col = mix(col, void_col, smoothstep(0.7, 4.6, s_out));
+		// The den's bank (15 Nov): the painted bank set projected along the play camera's view so it is never stretched on
+		// the slope; slice 1 main, slice 0 blended in by slow noise; past the crest (COLOR.b) it fades to black.
+		vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
+		float vw = smoothstep(0.62 - 0.05, 0.62 + 0.05, vnoise(wpos.xz * 0.08));
+		vec2 uv0 = uv + vec2(0.37, 0.61);
+		col = mix(texture(bank_alb, vec3(uv, 1.0)).rgb, texture(bank_alb, vec3(uv0, 0.0)).rgb, vw);
+		vec3 n = mix(texture(bank_nrm, vec3(uv, 1.0)).xyz, texture(bank_nrm, vec3(uv0, 0.0)).xyz, vw) * 2.0 - 1.0;
+		vec3 wn = normalize(wnrm + bank_nk * (n.x * vec3(1.0, 0.0, 0.0) - n.y * vec3(0.0, 0.469, -0.883)));
+		NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
+		col = mix(col, void_col, smoothstep(0.0, 1.0, round_s));
 		// down a pit the face goes to black within a couple of metres
 		col *= mix(1.0, 0.06, smoothstep(0.15, 1.8, depth));
-		col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.6, h));
+		col *= 1.0 - 0.25 * (1.0 - smoothstep(0.0, 0.5, h));
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;

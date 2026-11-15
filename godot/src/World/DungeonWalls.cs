@@ -10,6 +10,7 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class DungeonWalls
 {
+    static bool UseRoots = false;
     const float Cell = 0.5f, CapCell = 2f, Lo = -0.6f, Hi = 5f;
 
     sealed class Buf
@@ -111,7 +112,22 @@ public static class DungeonWalls
         public const float Drop = 14f;
         public float Rise(float s) => Sm(-0.4f, 1.4f, s) * (1 - 0.03f * Sm(1.4f, Hi, s));
         // The wall's surface height at x, z (before the face's lumps): floor, tucked 0.1 under, up to the top.
-        public float SurfY(float x, float z) { float s = S(x, z); return Floor(x, z) - 0.1f + (HLoc(x, z) + 0.1f) * Rise(s); }
+        public float SurfY(float x, float z) { float s = S(x, z); return Ravine ? Floor(x, z) - 0.1f + (HLoc(x, z) + 0.1f) * Rise(s) : BankY(x, z, s, false); }
+        // The den's bank (15 Nov): ground rising unevenly from the floor to a rounded crest sc metres out, then falling away to
+        // floor - 3 by sc + 2.5. Crest distance and height are slow noise (near walls lower, the camera sees their top).
+        public float BankSc(float x, float z) => 1.5f + 1.5f * Mathf.Clamp(0.7f * N2(x * 0.12f + 11.3f, z * 0.12f - 4.7f) + 0.3f * N2(x * 0.5f - 2.2f, z * 0.5f + 6.9f), 0f, 1f);
+        public float BankHc(float x, float z)
+        {
+            float t = N2(x * 0.05f + 3.3f, z * 0.05f + 9.1f);
+            return Mathf.Lerp(Mathf.Lerp(1.6f, 2.8f, t), Mathf.Lerp(0.9f, 1.5f, t), Near(x, z));
+        }
+        public float BankY(float x, float z, float s, bool lumps = true)
+        {
+            float sc = BankSc(x, z), hc = BankHc(x, z), fl = Floor(x, z);
+            float y = fl - 0.1f + hc * Sm(-0.3f, sc, s) - (hc + 2.9f) * Sm(sc, sc + 2.5f, s);
+            if (lumps) y += 0.25f * (2 * N3(x * 1.0f + 5.7f, 0.3f, z * 1.0f - 1.9f) - 1) * Mathf.Sin(Mathf.Pi * Mathf.Clamp(s / sc, 0f, 1f));
+            return y;
+        }
         public Vector2 Grad(float[]? f, float x, float z, bool sField)
         {
             float e = 0.25f;
@@ -130,6 +146,7 @@ public static class DungeonWalls
         float size = z.Size;
         int n = (int)(size / Cell) + 1;
 
+        float hi = c.Ravine ? Hi : 6.5f;   // the den's bank band runs to its fall-off (sc + 3 at most 6)
         // s at every grid vertex; the band and its dilation get positions.
         var s = new float[n * n];
         var pos = new Vector3[n * n];
@@ -140,7 +157,7 @@ public static class DungeonWalls
                 float x = -c.Half + i * Cell, zz = -c.Half + j * Cell;
                 float sv = c.S(x, zz);
                 s[j * n + i] = sv;
-                if (sv < Lo - 1.6f || sv > Hi + 1.6f) continue;
+                if (sv < Lo - 1.6f || sv > hi + 1.6f) continue;
                 pos[j * n + i] = Place(c, x, zz, sv, out fly[j * n + i]);
             }
 
@@ -155,9 +172,11 @@ public static class DungeonWalls
             Vector3 P(int a, int b) => pos[Mathf.Clamp(b, 0, n - 1) * n + Mathf.Clamp(a, 0, n - 1)];
             var nrm = (P(i, j + 1) - P(i, j - 1)).Cross(P(i + 1, j) - P(i - 1, j));
             nrm = nrm.LengthSquared() < 1e-10f ? Vector3.Up : nrm.Normalized();
-            return map[k] = wall.Add(pos[k], nrm, 0f, fly[k], s[k]);
+            float bt = 0f;
+            if (!c.Ravine) { float sx = c.BankSc(pos[k].X, pos[k].Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
+            return map[k] = wall.Add(pos[k], nrm, 0f, fly[k], s[k], bt);
         }
-        bool In(int i, int j) { float v = s[j * n + i]; return v >= Lo && v <= Hi; }
+        bool In(int i, int j) { float v = s[j * n + i]; return v >= Lo && v <= hi; }
         for (int j = 0; j < n - 1; j++)
             for (int i = 0; i < n - 1; i++)
             {
@@ -180,12 +199,13 @@ public static class DungeonWalls
             int k = j * nc + i;
             if (cmap[k] >= 0) return cmap[k];
             float x = -c.Half + i * CapCell, zz = -c.Half + j * CapCell, fl = c.Floor(x, zz);
-            return cmap[k] = wall.Add(new Vector3(x, fl + 0.97f * c.HLoc(x, zz) - 0.04f, zz), Vector3.Up, 0.5f, fl, sc[k]);
+            return cmap[k] = wall.Add(new Vector3(x, c.Ravine ? fl + 0.97f * c.HLoc(x, zz) - 0.04f : fl - 3.01f, zz), Vector3.Up, 0.5f, fl, sc[k], c.Ravine ? 0f : 1f);
         }
         for (int j = 0; j < nc - 1; j++)
             for (int i = 0; i < nc - 1; i++)
             {
-                if (sc[j * nc + i] < 3.5f || sc[j * nc + i + 1] < 3.5f || sc[(j + 1) * nc + i] < 3.5f || sc[(j + 1) * nc + i + 1] < 3.5f) continue;
+                float capS = c.Ravine ? 3.5f : 5f;
+                if (sc[j * nc + i] < capS || sc[j * nc + i + 1] < capS || sc[(j + 1) * nc + i] < capS || sc[(j + 1) * nc + i + 1] < capS) continue;
                 int a = CVtx(i, j), b = CVtx(i + 1, j), cc = CVtx(i, j + 1), d = CVtx(i + 1, j + 1);
                 wall.Tri(a, b, cc); wall.Tri(b, d, cc);
             }
@@ -193,7 +213,7 @@ public static class DungeonWalls
         var mesh = new ArrayMesh();
         wall.ToMesh(mesh);
         int wallTris = wall.I.Count / 3, rootTris = 0;
-        if (!c.Ravine)
+        if (!c.Ravine && UseRoots)   // den roots: replaced by painted banks, 15 Nov (Roots() kept, unused)
         {
             var roots = new Buf();
             Roots(c, roots, s, n);
@@ -209,7 +229,7 @@ public static class DungeonWalls
     static Vector3 Place(Ctx c, float x, float z, float s, out float floorY)
     {
         floorY = c.Floor(x, z);
-        float y = floorY - 0.1f + (c.HLoc(x, z) + 0.1f) * c.Rise(s);
+        float y = c.Ravine ? floorY - 0.1f + (c.HLoc(x, z) + 0.1f) * c.Rise(s) : c.BankY(x, z, s);
         float w = Sm(-0.1f, 0.4f, s) * (1 - Sm(1.4f, 2.4f, s));
         if (w > 0)
         {
@@ -615,7 +635,12 @@ public static class DungeonWalls
         mat.SetShaderParameter("layer_b", c.Ravine ? 6f : 2f);
         mat.SetShaderParameter("ravine", c.Ravine ? 1f : 0f);
         mat.SetShaderParameter("wall_h", c.Hb);
-        if (!c.Ravine) mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
+        if (!c.Ravine)
+        {
+            mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
+            mat.SetShaderParameter("bank_alb", GD.Load<TextureLayered>("res://art/dungeon/den/bank_albedo.png"));
+            mat.SetShaderParameter("bank_nrm", GD.Load<TextureLayered>("res://art/dungeon/den/bank_normal.png"));
+        }
         return mat;
     }
 }
