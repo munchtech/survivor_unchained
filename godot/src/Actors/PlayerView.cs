@@ -1957,7 +1957,7 @@ public partial class PlayerView : Node3D
     static readonly bool BackOff = SurvivorUnchained.Args.Has("turn-back-off"), BackRun = SurvivorUnchained.Args.Has("turn-back-run");
     float backW;
     static readonly float BackBlend = SurvivorUnchained.Args.Num("turn-back-blend", 20f);
-    static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 1350f),
+    static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 900f),
         BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f), BackMix = SurvivorUnchained.Args.Num("turn-back-mix", 1f);
     // (round 5) The pelvis ease moved the held foot after the plant lock; off in a backpedal unless --turn-smooth-back.
     static readonly bool SmoothBack = SurvivorUnchained.Args.Has("turn-smooth-back");
@@ -2201,17 +2201,20 @@ public partial class PlayerView : Node3D
     // and no foot is set down behind her. Which foot is down on a pose is read from its phase (the run's stance spans,
     // BackLandL..BackToeL and BackLandR..BackToeR): the phase set this frame shows next frame. --turn-back-air-off: round 5.
     static readonly bool BackAirOff = SurvivorUnchained.Args.Has("turn-back-air-off");
+    // (warden-move solver) The run's stance windows re-measured on the duty-0.26 run (ball under 0.07 m, m3 cast f150-250:
+    // L 0.99-0.21, R 0.45-0.75; were 0.98-0.25, 0.46-0.80 on the 0.33 run); the turn's top rate 900 deg/s (30 a frame, judge
+    // t1: 34-44 is a whirl, was 1350); a flight up to 4 frames (judge r4: 3-4), its phase at up to 4x the run's pace.
     static readonly float BackHoldRate = SurvivorUnchained.Args.Num("turn-back-hold-rate", 240f),
         BackLift = SurvivorUnchained.Args.Num("turn-back-lift", 2f), BackWait = SurvivorUnchained.Args.Num("turn-back-wait", 1.5f), BackGateM = SurvivorUnchained.Args.Num("turn-back-gate", 0.03f),
-        BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.98f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.25f),
-        BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.46f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.80f),
+        BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.99f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.21f),
+        BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.45f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.75f),
         BackHop = SurvivorUnchained.Args.Num("turn-back-hop", 0.08f), BackHopMin = SurvivorUnchained.Args.Num("turn-back-hop-min", 0.06f),
-        BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 3f),
+        BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 4f),
         BackIn = SurvivorUnchained.Args.Num("turn-back-in", 0.015f);
     // (warden-move, judge r4: "cap every flight at 3-4 frames"; "finish the yaw on the ball of that foot") A flight lasts at
     // most BackFlyLen frames whatever the turn left; what the flight did not turn, the foot it lands on turns on its ball at
     // BackBallRate deg/s (held by the plant lock) until that foot lifts. --turn-back-fly-len 99: round 6's flights.
-    static readonly float BackFlyLen = SurvivorUnchained.Args.Num("turn-back-fly-len", 3f), BackBallRate = SurvivorUnchained.Args.Num("turn-back-ball-rate", 600f);
+    static readonly float BackFlyLen = SurvivorUnchained.Args.Num("turn-back-fly-len", 4f), BackBallRate = SurvivorUnchained.Args.Num("turn-back-ball-rate", 600f);
     int backBallFoot = -1;
     // (warden-move, judge r4: "in the air ... lift the pelvis 3-6 cm") Through a backpedal's flight her whole view rises on a
     // half sine, BackAirLift m at its top (the flight planned last frame; 0 on the frame she lands).
@@ -2241,8 +2244,24 @@ public partial class PlayerView : Node3D
         // (BackGateM of the cycle either side: a pose's stance can run on a little past the run's own)
         // (a foot un-landing is not held: it is off the ground on the next pose, so her turn starts with it)
         if (f >= 0 && f == backLiftFoot) return BackRate;
+        bool held = f >= 0 && (f == backBallFoot || BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f);
+        if (held && !BackPivotOff) return BackPivotRate(f);
         if (f >= 0 && f == backBallFoot) return BackBallRate;
-        return f >= 0 && (BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f) ? BackHoldRate : BackRate;
+        return held ? BackHoldRate : BackRate;
+    }
+
+    // (warden-move solver: "turn yaw onto a planted foot's ball rather than a long flight") On a foot that is down her yaw
+    // goes as fast as the plant lock can hold that ball within BackShiftMax a frame: the ball swings BackPivotK of the cap
+    // about her root at |z| (its distance ahead or behind her along her facing), so a ball under her spins her freely and one
+    // far out holds her back. At most BackRate, at least BackHoldRate. --turn-back-pivot-off: the hold and ball rates.
+    static readonly bool BackPivotOff = SurvivorUnchained.Args.Has("turn-back-pivot-off");
+    static readonly float BackPivotK = SurvivorUnchained.Args.Num("turn-back-pivot-k", 0.6f), BackPivotZMin = SurvivorUnchained.Args.Num("turn-back-pivot-zmin", 0.08f);
+    float BackPivotRate(int f)
+    {
+        var b = plantFoot == f ? plantAt : plantPrev[f];
+        float yaw = Rotation.Y, z = Mathf.Abs((b.X - GlobalPosition.X) * Mathf.Sin(yaw) + (b.Z - GlobalPosition.Z) * Mathf.Cos(yaw));
+        float rate = Mathf.RadToDeg(BackPivotK * BackShiftMax * 30f / Mathf.Max(z, BackPivotZMin));
+        return Mathf.Clamp(rate, BackHoldRate, BackRate);
     }
 
     /// <summary>(round 6) Frames her eased turn (TurnTo at BackRate) needs from here to within BackDone deg of `goal`.</summary>
