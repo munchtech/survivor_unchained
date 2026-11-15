@@ -266,6 +266,47 @@
      "variant": 2
     }
    ]
+  },
+  "den": {
+   "dir": "godot/art/dungeon/den",
+   "from": "(c) the den dungeon's floor shader (the den lead's layer order: earth, trodden, litter, rootmat, dark, pitface, bark; bark is the root meshes', u along the root); (b) survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build')",
+   "layers": [
+    {
+     "name": "earth",
+     "surface": "den_earth",
+     "metres": 4.0
+    },
+    {
+     "name": "trodden",
+     "surface": "den_trodden",
+     "metres": 4.0
+    },
+    {
+     "name": "litter",
+     "surface": "den_litter",
+     "metres": 3.0
+    },
+    {
+     "name": "rootmat",
+     "surface": "den_rootmat",
+     "metres": 3.0
+    },
+    {
+     "name": "dark",
+     "surface": "den_dark",
+     "metres": 4.0
+    },
+    {
+     "name": "pitface",
+     "surface": "den_pitface",
+     "metres": 4.0
+    },
+    {
+     "name": "bark",
+     "surface": "den_bark",
+     "metres": 1.5
+    }
+   ]
   }
  },
  "surfaces": {
@@ -1303,6 +1344,577 @@
    "l9": "L1 l9 kit (judge 1 fix 7: 07's lit setts busy, q80-q20 0.14 against T07's 0.085): FROM T07 at the play camera (her ~80 px tall in both), its setts ~34 x 15 px against ours ~22 x 11, so courses 20 -> 27 cm and stones 30 -> 45 cm (x1.35, x1.5); MB3's joints low contrast, so the joint x[0.58,0.6,0.68] of #6c6977 (was x0.4) and the lit/cool bevel 0.06 -> 0.035 over a 5 cm bevel and corner; the stones' own spread 0.05 -> 0.03 and tilt 0.5 -> 0.3 ('spread', ground_paint.py courses).",
    "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's).",
    "c6": "L1 W2 C6 (the color chain): x[1.006, 0.997, 0.994] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
+  },
+  "den_earth": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the packed warm mid-brown earth of the open floor, a fine painted grain of small flat dark and light flakes, dark grit specks and small pale pebbles, a few tiny twigs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "masses": {
+    "colors": [
+     "#755b48",
+     "#7c614d",
+     "#836651"
+    ],
+    "split": [
+     0.3,
+     0.72
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 170,
+     "size_cm": [
+      7,
+      14
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.045,
+     "dark_dL": -0.05,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "brush",
+     "per_m2": 60,
+     "size_cm": [
+      3,
+      5
+     ],
+     "lit_share": 0.0,
+     "lit_dL": 0.0,
+     "dark_dL": -0.08,
+     "tips": 0.0,
+     "squash": 0.7,
+     "facets": 5,
+     "jitter": [
+      0.75,
+      1.15
+     ],
+     "height": 0.4
+    },
+    {
+     "shape": "stone",
+     "per_m2": 3,
+     "size_cm": [
+      3,
+      6
+     ],
+     "colors": [
+      "#8f7f6d",
+      "#7f7062"
+     ],
+     "height": 0.8
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 0.35,
+     "size_cm": [
+      3,
+      3
+     ],
+     "length_cm": [
+      12,
+      34
+     ],
+     "wander": 0.3,
+     "taper": 0.15,
+     "taper_tip": 0.4,
+     "colors": [
+      "#4a3324",
+      "#8e7258"
+     ],
+     "height": 0.65
+    }
+   ]
+  },
+  "den_trodden": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the trodden middle of the rooms and the paths between (den_room's lit centre, den_boss's pale run past the boulder), the same earth a step lighter and smoother, fewer stones, a few scuffs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "masses": {
+    "colors": [
+     "#82664f",
+     "#896c56",
+     "#8f725b"
+    ],
+    "split": [
+     0.32,
+     0.74
+    ],
+    "scale_m": 1.8
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 130,
+     "size_cm": [
+      9,
+      16
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.032,
+     "dark_dL": -0.035,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "brush",
+     "per_m2": 25,
+     "size_cm": [
+      3,
+      5
+     ],
+     "lit_share": 0.0,
+     "lit_dL": 0.0,
+     "dark_dL": -0.06,
+     "tips": 0.0,
+     "squash": 0.7,
+     "facets": 5,
+     "jitter": [
+      0.75,
+      1.15
+     ],
+     "height": 0.4
+    },
+    {
+     "shape": "stone",
+     "per_m2": 0.7,
+     "size_cm": [
+      3,
+      6
+     ],
+     "colors": [
+      "#94846f"
+     ],
+     "height": 0.75
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 0.35,
+     "size_cm": [
+      4,
+      7
+     ],
+     "length_cm": [
+      30,
+      70
+     ],
+     "wander": 0.08,
+     "taper": 0.4,
+     "colors": [
+      "#9a7b61"
+     ],
+     "height": 0.4
+    }
+   ]
+  },
+  "den_litter": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the floor's margins and corners, the earth strewn with thin twigs (some forked) and small orange-brown dead leaves, crumbs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "masses": {
+    "colors": [
+     "#755b48",
+     "#7c614d",
+     "#836651"
+    ],
+    "split": [
+     0.3,
+     0.72
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 170,
+     "size_cm": [
+      7,
+      14
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.045,
+     "dark_dL": -0.05,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "brush",
+     "per_m2": 70,
+     "size_cm": [
+      3,
+      5
+     ],
+     "lit_share": 0.0,
+     "lit_dL": 0.0,
+     "dark_dL": -0.08,
+     "tips": 0.0,
+     "squash": 0.7,
+     "facets": 5,
+     "jitter": [
+      0.75,
+      1.15
+     ],
+     "height": 0.4
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 2.4,
+     "size_cm": [
+      3,
+      3
+     ],
+     "length_cm": [
+      14,
+      42
+     ],
+     "wander": 0.3,
+     "taper": 0.15,
+     "taper_tip": 0.4,
+     "colors": [
+      "#4a3324",
+      "#3f2c20",
+      "#8a6d54"
+     ],
+     "height": 0.65,
+     "forks": [
+      0,
+      3
+     ]
+    },
+    {
+     "shape": "leaf",
+     "per_m2": 9,
+     "size_cm": [
+      5,
+      9
+     ],
+     "colors": [
+      "#8a5a32",
+      "#7c5333",
+      "#93633d",
+      "#6f4b31"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "den_rootmat": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the floor at the root walls, darker earth crossed by thin wandering root runners that branch and thin out, darker than the earth (the concepts' floor roots read as dark lines), each a lit edge on the light's side and a dark ink edge on the other (the concepts' inked roots); values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "masses": {
+    "colors": [
+     "#5d4738",
+     "#634c3b",
+     "#69503f"
+    ],
+    "split": [
+     0.35,
+     0.75
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 170,
+     "size_cm": [
+      7,
+      14
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.04,
+     "dark_dL": -0.045,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "brush",
+     "per_m2": 40,
+     "size_cm": [
+      3,
+      5
+     ],
+     "lit_share": 0.0,
+     "lit_dL": 0.0,
+     "dark_dL": -0.08,
+     "tips": 0.0,
+     "squash": 0.7,
+     "facets": 5,
+     "jitter": [
+      0.75,
+      1.15
+     ],
+     "height": 0.4
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 1.3,
+     "size_cm": [
+      3,
+      6
+     ],
+     "length_cm": [
+      60,
+      150
+     ],
+     "wander": 0.28,
+     "taper": 0.12,
+     "taper_tip": 0.55,
+     "forks": [
+      1,
+      3
+     ],
+     "fork_len": [
+      0.35,
+      0.65
+     ],
+     "colors": [
+      "#4c3121",
+      "#553725",
+      "#4f3323"
+     ],
+     "lit_edge": 0.09,
+     "ink_edge": -0.13,
+     "ink": "#2a1a12",
+     "ink_w": 0.3,
+     "height": 0.9
+    },
+    {
+     "shape": "leaf",
+     "per_m2": 1.5,
+     "size_cm": [
+      5,
+      8
+     ],
+     "colors": [
+      "#7c5333",
+      "#6f4b31"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "den_dark": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the damp near-black-brown earth at the pit mouths and wall feet, a little grain; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075) (about 0.3x the earth)",
+   "masses": {
+    "colors": [
+     "#3f3026",
+     "#44342a",
+     "#49392d"
+    ],
+    "split": [
+     0.35,
+     0.75
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 150,
+     "size_cm": [
+      8,
+      14
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.03,
+     "dark_dL": -0.035,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "brush",
+     "per_m2": 25,
+     "size_cm": [
+      3,
+      5
+     ],
+     "lit_share": 0.0,
+     "lit_dL": 0.0,
+     "dark_dL": -0.05,
+     "tips": 0.0,
+     "squash": 0.7,
+     "facets": 5,
+     "jitter": [
+      0.75,
+      1.15
+     ],
+     "height": 0.4
+    }
+   ]
+  },
+  "den_pitface": {
+   "class": "soil",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the pits' steep sides (den_boss's pits, den_room's hollows under the roots), dark earth with exposed root strands and a few stones; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "masses": {
+    "colors": [
+     "#3f3026",
+     "#46362b",
+     "#4d3c2f"
+    ],
+    "split": [
+     0.35,
+     0.75
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 150,
+     "size_cm": [
+      8,
+      14
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.032,
+     "dark_dL": -0.038,
+     "tips": 0.0,
+     "squash": 0.62,
+     "facets": 6,
+     "jitter": [
+      0.7,
+      1.15
+     ],
+     "height": 0.5
+    },
+    {
+     "shape": "stone",
+     "per_m2": 1.2,
+     "size_cm": [
+      5,
+      12
+     ],
+     "colors": [
+      "#5a524a",
+      "#635a51"
+     ],
+     "height": 0.85
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 1.1,
+     "size_cm": [
+      3,
+      5
+     ],
+     "length_cm": [
+      30,
+      100
+     ],
+     "wander": 0.32,
+     "taper": 0.12,
+     "taper_tip": 0.55,
+     "forks": [
+      0,
+      2
+     ],
+     "fork_len": [
+      0.35,
+      0.65
+     ],
+     "colors": [
+      "#5a3c28",
+      "#634230"
+     ],
+     "lit_edge": 0.05,
+     "ink_edge": -0.1,
+     "ink": "#22150f",
+     "ink_w": 0.3,
+     "height": 0.9
+    }
+   ]
+  },
+  "den_bark": {
+   "class": "wood",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the roots' bark (the walls' and the floor's big roots: four to six ridges across a root's face), long ridges along the root (u) that thin out to points and overlap, lit ridges #6b4630-ish over deep dark cracks #2a1a12 reading as ink lines",
+   "masses": {
+    "colors": [
+     "#3a261a",
+     "#40291c"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.5
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 8,
+     "size_cm": [
+      8,
+      14
+     ],
+     "length_cm": [
+      80,
+      200
+     ],
+     "along": true,
+     "wander": 0.03,
+     "taper": 0.2,
+     "colors": [
+      "#5e3d29",
+      "#6b4630",
+      "#56382a"
+     ],
+     "lit_edge": 0.05,
+     "ink_edge": -0.12,
+     "ink": "#2a1a12",
+     "ink_w": 0.2,
+     "height": 0.8
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 3,
+     "size_cm": [
+      3,
+      3
+     ],
+     "length_cm": [
+      40,
+      120
+     ],
+     "along": true,
+     "wander": 0.03,
+     "taper": 0.3,
+     "colors": [
+      "#2a1a12"
+     ],
+     "height": 0.1
+    }
+   ]
   }
  },
  "grass_atlas": {

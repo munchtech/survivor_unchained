@@ -79,3 +79,7 @@ Owner answers (questions 1 to 7).
   Their brief: `docs/legal/LEGAL_BRIEF.md`, issue 5 (f52c1b4d on `worktree-agent-aa12c130ddf4b904c`).
 - **Everyone:** add any new third-party or AI asset to `public/assets/CREDITS.md` and `docs/legal/ASSET_PROVENANCE.md`, with its source URL and licence, before it lands. Never ship `tools/make3d` output.
 - **UI art:** the Krea-made list in the appendix assumes every `chrome.py` piece is painted over. Please confirm the boundary.
+
+## Ours, painted from nothing
+
+- `godot/art/dungeon/den/` (albedo, normal, arh, layers.json; 15 Nov 2026): ours, painted from nothing by `tools/look/ground_paint.py`, set "den" in `godot/data/look/ground.json`; no photo, scan or outside source. Risk: none.
