@@ -11,8 +11,11 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static partial class DungeonDress
 {
-    sealed record FloorDecal(string Kind, Rect2 Uv, Vector2 Metres, Vector2 Anchor, float MouthR);
-    const bool PitDecals = true, FrameDecals = true, FloorRoots = true;
+    sealed record FloorDecal(string Kind, Rect2 Uv, Vector2 Metres, Vector2 Anchor, float MouthR, float[] Harm);
+    /// <summary>The painted pits own the den's holes: the floor (dungeon_floor.gdshader pit_decals) draws no hole of its own.</summary>
+    internal const bool PitDecals = true;
+    const bool FrameDecals = true, FloorRoots = true;
+    static readonly float PitWarmLift = SurvivorUnchained.Args.Num("pit-warm-lift", 2.0f);
 
     static void DenFloorDecals(Ctx c)
     {
@@ -30,11 +33,14 @@ public static partial class DungeonDress
             var r = d.GetProperty("rect"); var m = d.GetProperty("metres"); var a = d.GetProperty("anchor");
             string kind = d.GetProperty("kind").GetString()!;
             float mr = d.TryGetProperty("mouth_r", out var mrp) ? mrp.GetSingle() : 0f;
+            var harm = new List<float>();
+            if (d.TryGetProperty("mouth_harm", out var hp))
+                foreach (var t in hp.EnumerateArray()) { harm.Add(t[0].GetSingle()); harm.Add(t[1].GetSingle()); harm.Add(t[2].GetSingle()); }
             var fd = new FloorDecal(kind, new Rect2(r[0].GetSingle() / AW, r[1].GetSingle() / AH, r[2].GetSingle() / AW, r[3].GetSingle() / AH),
-                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr);
+                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr, harm.ToArray());
             (kind == "pit" ? pits : kind == "frame" ? frames : roots).Add(fd);
         }
-        var b = new DecalBuf();
+        var b = new DecalBuf(); var bp = new DecalBuf();
         int nPit = 0, nFrame = 0, nRoot = 0;
         float cos70 = Mathf.Cos(Mathf.DegToRad(70f));
         bool LightOk(Vector2 top, bool mirror)
@@ -43,8 +49,8 @@ public static partial class DungeonDress
             return (right * lx + top * ly).Normalized().Dot(decalLight) >= cos70;
         }
 
-        // ---- pits: connected cells of Hole < 0; centre = centroid, radius = mean zero-crossing distance ----
-        var pitC = new List<(Vector2 p, float r)>();
+        // ---- pits: connected cells of Hole < 0; centre = centroid, the mouth's outline along 96 rays (to Hole = 0) ----
+        var pitC = new List<(Vector2 p, float r, float[] co)>();
         if (z.HoleField != null)
         {
             const float scan = 0.25f;
@@ -75,34 +81,30 @@ public static partial class DungeonDress
                 }
                 if (cnt < 32) continue;  // (under 2 m2: a dimple, not a pit)
                 var ctr = new Vector2((float)(sx / cnt), (float)(sz / cnt));
-                float tot = 0; int rays = 0;
-                for (int a = 0; a < 48; a++)
+                var rr = new float[96];
+                float tot = 0;
+                for (int a = 0; a < 96; a++)
                 {
-                    var dir = new Vector2(Mathf.Cos(a * Mathf.Tau / 48f), Mathf.Sin(a * Mathf.Tau / 48f));
-                    float s = 0;
-                    for (; s < 20f; s += 0.05f)
-                    {
-                        var w = ctr + dir * (s + 0.05f);
-                        if (Hole(c, w.X, w.Y) >= 0f) break;
-                    }
-                    tot += s + 0.025f; rays++;
+                    var dir = new Vector2(Mathf.Cos(a * Mathf.Tau / 96f), Mathf.Sin(a * Mathf.Tau / 96f));
+                    float s = 0.05f;
+                    while (s < 20f && Hole(c, ctr.X + dir.X * s, ctr.Y + dir.Y * s) < 0f) s += 0.05f;
+                    float lo = s - 0.05f, hi = s;
+                    for (int it = 0; it < 6; it++) { float mm = 0.5f * (lo + hi); if (Hole(c, ctr.X + dir.X * mm, ctr.Y + dir.Y * mm) < 0f) lo = mm; else hi = mm; }
+                    rr[a] = 0.5f * (lo + hi); tot += rr[a];
                 }
-                pitC.Add((ctr, tot / rays));
+                pitC.Add((ctr, tot / 96f, Fourier(rr, 6)));
             }
         }
         if (PitDecals)
-            foreach (var (p, rad) in pitC)
+            foreach (var (p, rad, co) in pitC)
             {
                 var d = pits[(int)(Hash((int)(p.X * 10), (int)(p.Y * 10), 951) * pits.Count) % pits.Count];
-                float sc = rad / d.MouthR;
-                // level to the mouth: the floor's height just outside the mouth
-                float y = H(c, p.X + rad + 0.3f, p.Y);
-                AddFlat(c, b, d, p, new Vector2(0, -1), sc, false, y + 0.06f, false);
+                AddPit(c, bp, d, p, co);
                 nPit++;
             }
         bool NearPit(Vector2 p, float m)
         {
-            foreach (var (pc, rad) in pitC) if (p.DistanceTo(pc) < rad + m) return true;
+            foreach (var (pc, rad, _) in pitC) if (p.DistanceTo(pc) < rad + m) return true;
             return false;
         }
 
@@ -164,32 +166,110 @@ public static partial class DungeonDress
                 }
         }
 
-        GD.Print($"DenFloorDecals: {nPit} pits, {nFrame} frame, {nRoot} floor, {b.I.Count / 3} tris");
-        if (b.Count == 0) return;
-        var arr = new Godot.Collections.Array();
-        arr.Resize((int)Mesh.ArrayType.Max);
-        var nrm = new Vector3[b.V.Count];
-        System.Array.Fill(nrm, Vector3.Up);
-        arr[(int)Mesh.ArrayType.Vertex] = b.V.ToArray();
-        arr[(int)Mesh.ArrayType.Normal] = nrm;
-        arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
-        arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
-        var mesh = new ArrayMesh();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        GD.Print($"DenFloorDecals: {nPit} pits, {nFrame} frame, {nRoot} floor, {(b.I.Count + bp.I.Count) / 3} tris");
         var tex = GD.Load<Texture2D>("res://art/dungeon/den/floor_decals.png");
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_bank_decal.gdshader") };
-        mat.SetShaderParameter("atlas", tex);
-        mat.SetShaderParameter("field", DungeonFloor.Field(z));
-        mat.SetShaderParameter("half_size", z.Half);
-        mat.SetShaderParameter("step", z.Step);
-        mat.SetShaderParameter("res", (float)z.Res);
         var shade = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_bank_shadow.gdshader") };
         shade.SetShaderParameter("atlas", tex);
-        mesh.SurfaceSetMaterial(0, mat);
-        mesh.SurfaceSetMaterial(1, shade);
-        c.Root.AddChild(new MeshInstance3D { Name = "FloorDecals", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        void Emit(DecalBuf buf, string name, bool pit)
+        {
+            if (buf.Count == 0) return;
+            var arr = new Godot.Collections.Array();
+            arr.Resize((int)Mesh.ArrayType.Max);
+            var nrm = new Vector3[buf.V.Count];
+            System.Array.Fill(nrm, Vector3.Up);
+            arr[(int)Mesh.ArrayType.Vertex] = buf.V.ToArray();
+            arr[(int)Mesh.ArrayType.Normal] = nrm;
+            arr[(int)Mesh.ArrayType.TexUV] = buf.U.ToArray();
+            arr[(int)Mesh.ArrayType.Index] = buf.I.ToArray();
+            var mesh = new ArrayMesh();
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+            var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_bank_decal.gdshader") };
+            mat.SetShaderParameter("atlas", tex);
+            mat.SetShaderParameter("field", DungeonFloor.Field(z));
+            mat.SetShaderParameter("half_size", z.Half);
+            mat.SetShaderParameter("step", z.Step);
+            mat.SetShaderParameter("res", (float)z.Res);
+            // (a pit paints its own hole: the darkening toward the holes would black out its far wall and lip)
+            // and its lip, painted against a floor (88, 58, 40) the game's is ~1.4x lighter than, lifted to stay lit
+            if (pit) { mat.SetShaderParameter("hole_dark", 0f); mat.SetShaderParameter("warm_lift", PitWarmLift); }
+            mesh.SurfaceSetMaterial(0, mat);
+            mesh.SurfaceSetMaterial(1, shade);
+            c.Root.AddChild(new MeshInstance3D { Name = name, Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        }
+        Emit(b, "FloorDecals", false);
+        Emit(bp, "PitDecals", true);
         c.Count["decal floor pit"] = nPit; c.Count["decal floor frame"] = nFrame; c.Count["decal floor root"] = nRoot;
+    }
+
+    /// <summary>The den floor's drawn height: the ground's own with MapGen's pit sink undone, node by node, as
+    /// dungeon_floor.gdshader's vertex() undoes it (the floor runs level to and over the mouth).</summary>
+    static float FloorY(Ctx c, float x, float zz)
+    {
+        var z = c.Z;
+        float u = Mathf.Clamp((x + z.Half) / z.Step, 0, z.Res - 1.001f), v = Mathf.Clamp((zz + z.Half) / z.Step, 0, z.Res - 1.001f);
+        int i = (int)u, j = (int)v; float fu = u - i, fv = v - j;
+        float N(int ii, int jj)
+        {
+            float nx = -z.Half + ii * z.Step, nz = -z.Half + jj * z.Step;
+            return H(c, nx, nz) + 2.4f * (1f - Mathf.SmoothStep(-1.6f, 0.3f, Hole(c, nx, nz)));
+        }
+        return Mathf.Lerp(Mathf.Lerp(N(i, j), N(i + 1, j), fu), Mathf.Lerp(N(i, j + 1), N(i + 1, j + 1), fu), fv);
+    }
+
+    /// <summary>A closed outline's radii (evenly round from +x) as a Fourier series to the k-th: [a0, a1, b1, .., ak, bk].</summary>
+    static float[] Fourier(float[] r, int k)
+    {
+        int n = r.Length;
+        var co = new float[2 * k + 1];
+        for (int i = 0; i < n; i++)
+        {
+            float th = i * Mathf.Tau / n;
+            co[0] += r[i] / n;
+            for (int h = 1; h <= k; h++) { co[2 * h - 1] += 2f / n * r[i] * Mathf.Cos(h * th); co[2 * h] += 2f / n * r[i] * Mathf.Sin(h * th); }
+        }
+        return co;
+    }
+    static float FourierAt(float[] co, float th)
+    {
+        float r = co[0];
+        for (int h = 1; 2 * h < co.Length; h++) r += co[2 * h - 1] * Mathf.Cos(h * th) + co[2 * h] * Mathf.Sin(h * th);
+        return r;
+    }
+
+    /// <summary>One pit decal, never turned: laid on the floor's drawn height (FloorY: a flat decal on a rolling floor
+    /// was cut by it along a straight line), its painted mouth (mouth_harm) stretched, angle by angle, onto the hole's
+    /// own outline `co` (Fourier, to the 6th), so the lip sits on the hole's edge all the way round.</summary>
+    static void AddPit(Ctx c, DecalBuf b, FloorDecal d, Vector2 ctr, float[] co)
+    {
+        float W = d.Metres.X, Hh = d.Metres.Y;
+        int nx = Mathf.CeilToInt(W / 0.25f) + 1, ny = Mathf.CeilToInt(Hh / 0.25f) + 1;
+        int base0 = b.V.Count;
+        float gmin = 9f, gmax = 0f;
+        for (int q = 0; q < ny; q++)
+            for (int p = 0; p < nx; p++)
+            {
+                float s = (float)p / (nx - 1), t = (float)q / (ny - 1);  // (t 0 = the image's top: north)
+                var l = new Vector2((s - d.Anchor.X) * W, (t - d.Anchor.Y) * Hh);  // painted metres from the mouth's centre (x east, y south)
+                float th = Mathf.Atan2(l.Y, l.X), rp = d.MouthR;
+                for (int h = 0; h + 2 < d.Harm.Length; h += 3) rp += d.MouthR * d.Harm[h + 1] * Mathf.Sin(d.Harm[h] * th + d.Harm[h + 2]);
+                float g = FourierAt(co, th) / rp;
+                gmin = Mathf.Min(gmin, g); gmax = Mathf.Max(gmax, g);
+                var w = ctr + l * g;
+                b.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.06f, w.Y));
+                b.U.Add(new Vector2(d.Uv.Position.X + s * d.Uv.Size.X, d.Uv.Position.Y + t * d.Uv.Size.Y));
+            }
+        for (int q = 0; q < ny - 1; q++)
+            for (int p = 0; p < nx - 1; p++)
+            {
+                int a = base0 + q * nx + p, e = a + 1, f = a + nx, g = f + 1;
+                b.I.Add(a); b.I.Add(f); b.I.Add(e); b.I.Add(e); b.I.Add(f); b.I.Add(g);
+            }
+        b.Count++;
+        // (the old flat lay, for the record: how far the rolling floor rose through it)
+        float flat = H(c, ctr.X + co[0] + 0.3f, ctr.Y) + 0.06f, rise = -9f;
+        for (int k = base0; k < b.V.Count; k++) rise = Mathf.Max(rise, b.V[k].Y - 0.06f - flat);
+        GD.Print($"DenPit at {ctr.X:F1},{ctr.Y:F1}: r {co[0]:F2}, painted stretch x{gmin:F2}-{gmax:F2}, floor over the old flat lay by {rise:F2} m");
     }
 
     /// <summary>One floor decal: its anchor point (fraction of the rect) on `anchor`, the rect's top edge facing `top`.

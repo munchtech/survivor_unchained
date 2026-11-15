@@ -18,6 +18,7 @@ const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
 uniform vec3 den_tint = vec3(0.95, 0.88, 0.94);   // (lead 6: 1.3 read as bright sand, frame median 68-80 against the targets' 40-57)
 uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (--env-off rim, the den pit halo diagnosis, 15 Nov)
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
+uniform float pit_decals = 0.0;   // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -176,7 +177,11 @@ void fragment() {
 		// The wall is the painted pit face, falling to black over a metre and a half; past PIT_DEEP the bottom is black.
 		// The lip: a hand-wide round-over whose normal tips into the hole, so it catches the key on the side facing it.
 		float pw = pit_w(wpos.xz);
-		if (pw < 0.25) {
+		if (pit_decals > 0.5) {
+			// (pit decal solver, 15 Nov) The painted pit, laid on this level floor with its mouth fitted to the hole's
+			// outline, draws the hole: the ray's black ran past its painted lip. Only plain black well inside, under it.
+			if (pw < -0.4) col = vec3(0.003, 0.0025, 0.002);
+		} else if (pw < 0.25) {
 			const float e = 0.12;
 			vec2 g0 = vec2(pit_w(wpos.xz + vec2(e, 0.0)) - pit_w(wpos.xz - vec2(e, 0.0)), pit_w(wpos.xz + vec2(0.0, e)) - pit_w(wpos.xz - vec2(0.0, e)));
 			vec2 gin = -normalize(g0 + 1e-5);   // into the hole

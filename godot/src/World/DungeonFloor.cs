@@ -43,6 +43,7 @@ public static class DungeonFloor
             // (the den's own painted set, ground.json "den": tools/look/ground_paint.py build den)
             mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
             mat.SetShaderParameter("den_arh", GD.Load<TextureLayered>("res://art/dungeon/den/arh.png"));
+            if (DungeonDress.PitDecals) mat.SetShaderParameter("pit_decals", 1f);
         }
         return mat;
     }
