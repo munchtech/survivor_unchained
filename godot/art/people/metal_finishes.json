@@ -15,5 +15,10 @@
    "plate.cups": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.7},
    "plate.plate": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
   }
+ },
+ "_meshes": "Warden polish r4 (15 Nov, judge: her three plate tops read alike at the play camera): a worn piece's own finish for one metal key, by wear piece id (the mesh name's start). The Forged Cuirass: blued steel darkened to gunmetal. The Gilded Plate Top: its steel a gold metal dye (finish 3, painted-cel brushed gold, worn bright at its edges). Warden's Plate: as it is.",
+ "meshes": {
+  "plate_cuirass_plain": {"steel": {"params": {"blued": [0.2, 0.21, 0.24], "blued_temper": [0.22, 0.21, 0.26], "metal_spec_cap": 0.55, "metal_env": 0.3, "metal_wear_bright": 1.0}}},
+  "plate_top_gilded": {"steel": {"finish": 3, "dye": "#ffc030", "params": {"dyed_env": 1.6, "dyed_ao": 1.0, "dyed_sheen": 1.0, "dyed_rough_min": 0.25, "metal_wear_bright": 1.8, "metal_spec_cap": 2.0}}}
  }
 }
