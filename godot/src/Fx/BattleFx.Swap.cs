@@ -216,6 +216,7 @@ public partial class BattleFx
         {
             var (at, t, edge, star) = swapGlints[i];
             t += frameDt;
+            if (SwapGlintAt() is { } onBlade) at = onBlade;   // (F3) follows the drawn weapon
             if (t >= 0.45f) { star.M.QueueFree(); swapGlints.RemoveAt(i); continue; }
             swapGlints[i] = (at, t, edge, star);
             float s = t < 0.15f ? Mathf.SmoothStep(0, 1, t / 0.15f) : t < 0.25f ? 1 : 1 - Mathf.SmoothStep(0, 1, (t - 0.25f) / 0.2f);

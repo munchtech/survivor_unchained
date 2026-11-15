@@ -726,7 +726,7 @@
    "icon": "armor_light",
    "value": 12,
    "base": true,
-   "description": "Quilted linen.",
+   "description": "Laced, padded leather.",
    "mods": [
     {
      "stat": "armor",

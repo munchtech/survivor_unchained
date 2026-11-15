@@ -465,6 +465,8 @@ public partial class BattleFx
                 {
                     var at = P7ShieldAt();
                     s.N.GlobalPosition = at;
+                    // (F1) the glow belongs to the shield: no shield held on the forearm (twin blades, mace), no glow
+                    s.N.Visible = P7ShieldHeld();
                     float t = (float)(time - p7VowStart), since = (float)(time - p7StoreAt);
                     float u = Mathf.Clamp(Mathf.Floor(t / P7Sample) * P7Sample / grow, 0, 1);
                     float px = Mathf.Lerp(spx[0], spx[1], u);
@@ -557,6 +559,13 @@ public partial class BattleFx
 
     /// <summary>The store as steps (0, then a quarter a step up to 1): the blows' kept fifths, 4, 10, 20, 35.</summary>
     static float P7StoreLevel(double stored) => stored >= 35 ? 1f : stored >= 20 ? 0.75f : stored >= 10 ? 0.5f : stored >= 4 ? 0.25f : stored > 0 ? 0.12f : 0f;
+
+    /// <summary>Whether a shield piece is held on her arm now (P7ShieldAt falls back to her chest when none is).</summary>
+    bool P7ShieldHeld()
+    {
+        P7ShieldAt();
+        return p7Shield != null;
+    }
 
     Vector3 P7ShieldAt()
     {
