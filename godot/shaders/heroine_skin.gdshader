@@ -952,6 +952,8 @@ void fragment() {
 	if (dbg_gate > 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(clamp((model_y - 1.4) / 0.4, 0.0, 1.0), fm.b, fk.b); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, her roughness before the ink tag, the tag, debug).
 	rim_edge = cel_rim_mask_on > 0.5 ? textureLod(cel_rim_mask, SCREEN_UV, 0.0).r : 1.0;
+	// (dbg_gate 20: the rim mask as she samples it, red; green its gate cel_rim_mask_on)
+	if (dbg_gate > 19.5 && dbg_gate < 20.5) { ALBEDO = vec3(0.0); EMISSION = vec3(textureLod(cel_rim_mask, SCREEN_UV, 0.0).r, cel_rim_mask_on * 0.3, 0.0); }
 	CEL_FRAGMENT;
 	CEL_HERO_FRAGMENT;
 }

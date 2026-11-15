@@ -40,7 +40,11 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
     const string Code = """
         #version 450
         layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+        #ifdef MS
+        layout(set = 0, binding = 0) uniform sampler2DMS depth_tex;
+        #else
         layout(set = 0, binding = 0) uniform sampler2D depth_tex;
+        #endif
         layout(set = 0, binding = 1, r8) uniform restrict writeonly image2D mask;
         layout(set = 0, binding = 2, std140) uniform M { mat4 inv_proj; } mt;
         layout(push_constant, std430) uniform P {
@@ -57,7 +61,11 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
             int li = int(gl_LocalInvocationIndex);
             for (int i = li; i < S * S; i += T * T) {
                 ivec2 p = clamp(base + ivec2(i % S, i / S), ivec2(0), isz - 1);
+                #ifdef MS
+                float d = texelFetch(depth_tex, p, 0).r;   // (sample 0 of the prepass's own MSAA depth)
+                #else
                 float d = texelFetch(depth_tex, p, 0).r;
+                #endif
                 vec2 ndc = (vec2(p) + 0.5) / pc.size * 2.0 - 1.0;
                 vec4 v = mt.inv_proj * vec4(ndc, d, 1.0);
                 sz[i] = d <= 0.0 ? 1e9 : -v.z / v.w;
@@ -98,7 +106,7 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
         """;
 
     RenderingDevice? rd;
-    Rid shader, pipe, showShader, showPipe, sampler, ubo;
+    Rid shader, pipe, shaderMs, pipeMs, showShader, showPipe, sampler, ubo;
     // (the mask's RD texture: the PreOpaque instance makes it, the --rim-mask-dbg one draws it)
     static Rid tex;
     static Vector2I texSize;
@@ -147,6 +155,12 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError($"rim mask shader: {spirv.CompileErrorCompute}"); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "rim_mask");
         pipe = rd.ComputePipelineCreate(shader);
+        // (with MSAA the prepass's depth is read itself: the resolved one is only made before the opaque pass when some
+        // effect wants it (SSAO), so in the Look (none) it held another frame's picture)
+        var ms = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Code.Replace("#version 450", "#version 450\n#define MS") });
+        if (!string.IsNullOrEmpty(ms.CompileErrorCompute)) { GD.PushError($"rim mask shader (MS): {ms.CompileErrorCompute}"); failed = true; return; }
+        shaderMs = rd.ShaderCreateFromSpirV(ms, "rim_mask_ms");
+        pipeMs = rd.ComputePipelineCreate(shaderMs);
         sampler = rd.SamplerCreate(new RDSamplerState
         {
             MinFilter = RenderingDevice.SamplerFilter.Nearest, MagFilter = RenderingDevice.SamplerFilter.Nearest,
@@ -158,10 +172,10 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
 
     public void FreeRids(RenderingDevice dev)
     {
-        foreach (var r in new[] { shader, showShader, sampler, ubo })
+        foreach (var r in new[] { shader, shaderMs, showShader, sampler, ubo })
             if (r.IsValid) dev.FreeRid(r);
         // (the mask texture stays: the Texture2DRD still wraps it; freed with the device)
-        shader = pipe = showShader = showPipe = sampler = ubo = default;
+        shader = pipe = shaderMs = pipeMs = showShader = showPipe = sampler = ubo = default;
         rd = null;
     }
 
@@ -195,14 +209,16 @@ public partial class RimMask : CompositorEffect, InkRelease.IRids
         float scale = size.Y / 1080f;
         var push = new float[] { size.X, size.Y, RClose * scale, RPlay * scale, ThA, ThB, InkPass.ZClose, InkPass.ZPlay };
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
-        var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+        bool msaa = buf.GetMsaa3D() != RenderingServer.ViewportMsaa.Disabled;
+        var sh = msaa ? shaderMs : shader;
+        var set = UniformSetCacheRD.GetCache(sh, 0, new Godot.Collections.Array<RDUniform>
         {
-            U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampler, buf.GetDepthLayer(0)),
+            U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampler, buf.GetDepthLayer(0, msaa)),
             U(RenderingDevice.UniformType.Image, 1, tex),
             U(RenderingDevice.UniformType.UniformBuffer, 2, ubo),
         });
         long l = rd.ComputeListBegin();
-        rd.ComputeListBindComputePipeline(l, pipe);
+        rd.ComputeListBindComputePipeline(l, msaa ? pipeMs : pipe);
         rd.ComputeListBindUniformSet(l, set, 0);
         rd.ComputeListSetPushConstant(l, pb, (uint)pb.Length);
         rd.ComputeListDispatch(l, (uint)((size.X + 15) / 16), (uint)((size.Y + 15) / 16), 1);

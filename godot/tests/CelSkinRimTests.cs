@@ -47,4 +47,26 @@ public class CelSkinRimTests
         Assert.True(fold > skin, "People.Skin cuts the fold line under her breast");
         Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", fold, System.StringComparison.Ordinal) > fold);
     }
+
+    /// <summary>(round 3) The rim only on her outline's near side: RimMask's depth mask at PreOpaque, made between frames,
+    /// sampled by the skin under its gate (no Ink node: the rim everywhere, as before).</summary>
+    [Fact]
+    public void RimMaskIsWired()
+    {
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("global uniform sampler2D cel_rim_mask;", shader);
+        Assert.Contains("rim_edge = cel_rim_mask_on > 0.5 ? textureLod(cel_rim_mask, SCREEN_UV, 0.0).r : 1.0;", shader);
+        Assert.Contains(") * rim_edge", shader);
+        Assert.DoesNotContain("rim_edge_px", shader);
+        Assert.DoesNotContain("rim_geo", shader);
+        var proj = Read("project.godot");
+        Assert.Contains("cel_rim_mask={", proj);
+        Assert.Matches("cel_rim_mask_on=\\{\\s*\"type\": \"float\",\\s*\"value\": 0\\.0", proj);
+        var mask = Read("src", "World", "RimMask.cs");
+        Assert.Contains("EffectCallbackTypeEnum.PreOpaque", mask);
+        Assert.Contains("AccessResolvedDepth = !show", mask);
+        var ink = Read("src", "World", "InkPass.cs");
+        Assert.Contains("RenderingServer.CallOnRenderThread(Callable.From(RimMask.Make))", ink);
+        Assert.Contains("RimMask.GlobalOn, ready ? 1f : 0f", ink);
+    }
 }
