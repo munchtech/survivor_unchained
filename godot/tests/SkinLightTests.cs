@@ -21,7 +21,7 @@ public class SkinLightTests
     [Fact]
     public void SkyKeepIsHalf_PeopleSetsIt_TheShaderUsesIt()
     {
-        Assert.Equal(0.5f, SkinLight.SkyKeep);
+        Assert.Equal(1f, SkinLight.SkyKeep);   // (r4c: the day fill's violet out of her shade whole, h 44-46 -> 53-58)
         var people = Read("src", "Actors", "People.cs");
         int at = people.IndexOf("m.SetShaderParameter(\"sky_skin\", SurvivorUnchained.Look.SkinLight.SkyKeep);", StringComparison.Ordinal);
         Assert.True(at > 0, "People.Skin sets sky_skin from Look.SkinLight.SkyKeep");

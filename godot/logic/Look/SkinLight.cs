@@ -11,8 +11,13 @@ public static class SkinLight
     /// and down her shaded neck at the Look and the close-up at night (Oklab h 262-264, C .050-.051), and grey-navy on
     /// an NPC's shaded cheek; by day the lavender fill on a yellower NPC paint read grey-olive. Isolated 13 Nov: with
     /// the key off the shade is still navy; cel_fill_tone 0 takes only part. At 0.5 the night shade sits in the bible's
-    /// night band as a muted cool (h 270, C .031); 0.75 turned it brown.</summary>
-    public const float SkyKeep = 0.5f;
+    /// night band as a muted cool (h 270, C .031); 0.75 turned it brown. r4c (14 Nov): with SkyKeepAmbient set apart this is the
+    /// fill's hue alone, and at 0.5 the day close-up's violet fill (#d2beff: green under red and blue even halved) turned every
+    /// shade on her rose against her lit h 56-60: face/jaw h 44, neck/chest 46, breast side 45, belly 45 (C .08; pixels the fill
+    /// lights, isolated: fill off moves only them, backlight 0 and sky_skin 1 the rest). At 1 the fill keeps its light, none
+    /// of its hue, ShadeFill's warmth carries it: h 53 / 58 / 57 / 56, C .08, one hue family. (The "pink shade" at 700,700 was
+    /// the shield behind her arm in its shadow, not skin: no skin term moved it.)</summary>
+    public const float SkyKeep = 1f;
 
     /// <summary>The same for the sky's own light (the ambient) alone (heroine_skin.gdshader sky_skin_amb; over 1 the sky's hue
     /// turns a little warm on her). Where the night sky is her only light, the shaded side of her neck under her jaw at the
