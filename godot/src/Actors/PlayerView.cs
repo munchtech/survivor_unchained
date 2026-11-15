@@ -2390,7 +2390,7 @@ public partial class PlayerView : Node3D
         var pv = B("pelvis");
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
-        if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; }
+        if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; RenderingServer.FramePreDraw += Scr2; }
         GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls}"));
         smoothCalls = 0;
     }
@@ -2407,6 +2407,19 @@ public partial class PlayerView : Node3D
         if (pb >= 0) pelvW = sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin;
     }
     Vector3 pelvW;
+    /// <summary>(warden-move, judge r4: the sheets' crops sat 15-23 px ahead of her body) Her pelvis on screen as the frame is
+    /// drawn (SCR2 x y, one line a drawn frame): the final camera and pose, which TURN2's scr (taken in her _Process, before
+    /// the camera's and the skeleton's update) is not. View-only log.</summary>
+    void Scr2()
+    {
+        if (!IsInsideTree() || person?.Skeleton is not { } sk) return;
+        var cam = GetViewport()?.GetCamera3D();
+        int pb = sk.FindBone("pelvis");
+        if (cam == null || pb < 0) return;
+        var s = cam.UnprojectPosition(sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin);
+        GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0}"));
+    }
+    public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
