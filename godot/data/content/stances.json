@@ -19,7 +19,7 @@
     },
     {
       "id": "twin_blades", "name": "Twin Fangs", "weapon": "two blades", "kinds": ["sword", "dagger", "cleaver", "axe"],
-      "held": { "forearm.l": "", "handslot.l": "dagger_b" },
+      "held": { "forearm.l": "", "handslot.l": "dagger_b", "grip_l": { "x": 205, "y": 0, "z": -30 } },
       "flavor": "Your blows come faster and bleed.",
       "mods": [
         { "stat": "cooldown", "kind": "more", "value": -0.18 },

@@ -18,7 +18,9 @@ public sealed class StanceHands
         applied ??= "";
         if (id == applied || view.FlareGripOn) return false;
         view.HoldPiece("forearm.l", Stances.Piece(stance, "forearm.l", arms.Forearm), sheathed);
-        view.HoldPiece("handslot.l", Stances.Piece(stance, "handslot.l", arms.Left), sheathed);
+        var gl = stance?.GripL;
+        if (Args.Get("grip-l") is { Length: > 0 } ov) { var q = ov.Split(','); gl = new double[3]; for (int i = 0; i < 3 && i < q.Length; i++) double.TryParse(q[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out gl[i]); }
+        view.HoldPiece("handslot.l", Stances.Piece(stance, "handslot.l", arms.Left), sheathed, gl);
         applied = id;
         return true;
     }

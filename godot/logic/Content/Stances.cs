@@ -77,6 +77,20 @@ public sealed class StanceDef
     }
     ArmCarry? carry;
 
+    /// <summary>(view only) A turn of the off-hand piece in its mount about the grip point, degrees about the mount's X, Y and Z
+    /// ("held"."grip_l": {x, y, z}, applied in that order of X then Y then Z); null: the plain seat. Twin Fangs' reverse grip.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public double[]? GripL
+    {
+        get
+        {
+            if (grip != null || !HeldRaw.TryGetValue("grip_l", out var e) || e.ValueKind != JsonValueKind.Object) return grip;
+            double N(string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
+            return grip = new[] { N("x"), N("y"), N("z") };
+        }
+    }
+    double[]? grip;
+
     /// <summary>The piece shown in `slot` in this stance (null: empty); `loadoutPiece` is what her loadout has there, kept when the stance names none.</summary>
     public string? Piece(string slot, string? loadoutPiece) =>
         Held.TryGetValue(slot, out var id) ? (id == "" ? null : id) : loadoutPiece;

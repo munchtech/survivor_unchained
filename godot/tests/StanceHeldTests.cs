@@ -20,6 +20,18 @@ public sealed class StanceHeldTests
     }
 
     [Fact]
+    public void Grip_l_turns_the_twin_fangs_dagger_into_a_reverse_grip_and_nothing_else()
+    {
+        var g = Stances.Find("twin_blades")!.GripL!;
+        Assert.Equal(3, g.Length);
+        Assert.InRange(g[0], 150, 250);   // flipped about the hand's across axis: the blade back toward the elbow
+        Assert.NotEqual(0, g[2]);         // the tip turned out clear of the forearm
+        Assert.Null(Stances.Find("mace")!.GripL);
+        Assert.Null(Stances.Find("shield")!.GripL);
+        Assert.Equal("dagger_b", Stances.Find("twin_blades")!.Piece("handslot.l", null));   // grip_l is no piece id
+    }
+
+    [Fact]
     public void Held_map_parses_and_resolves_per_slot()
     {
         var shield = Stances.Find("shield")!;
