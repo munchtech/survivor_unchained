@@ -132,24 +132,6 @@ public class SkinLightTests
         Assert.Contains("* cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * ns_f * cel_fill_tone;", shader);
     }
 
-    /// <summary>Judge 4 (b, d: her night shade a fixed warm brown under rose-beige lit skin; an NPC's deep night shade orange-umber):
-    /// every skin part takes the rule's shade_key before the --skin-set switch; under a cold key the shader puts the fill and the
-    /// floor in the key's own colour on the lit side (lc), their luminance kept; warm keys as before.</summary>
-    [Fact]
-    public void ShadeKeyIsTheRules_EveryPartTakesIt_ColdKeysOnly()
-    {
-        Assert.Equal(1f, SkinLight.ShadeKey);
-        var people = Read("src", "Actors", "People.cs");
-        int at = people.IndexOf("m.SetShaderParameter(\"shade_key\", SurvivorUnchained.Look.SkinLight.ShadeKey);", StringComparison.Ordinal);
-        Assert.True(at > 0, "People.Skin sets shade_key from Look.SkinLight.ShadeKey");
-        Assert.DoesNotContain("if (who == \"heroine\") m.SetShaderParameter(\"shade_key\"", people);
-        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
-        var shader = Read("shaders", "heroine_skin.gdshader");
-        Assert.Contains("uniform float shade_key : hint_range(0.0, 1.0) = 0.0;", shader);
-        Assert.Contains("sh_l = mix(sh_l, cel_lum(sh_l) * lc / max(cel_lum(lc), 1e-4), shade_key * smoothstep(0.0, 0.1, (lcol.b - lcol.r) / max(cel_lum(lcol), 1e-4)));", shader);
-        Assert.Contains("DIFFUSE_LIGHT += sh_l;", shader);
-    }
-
     /// <summary>Fault 2 (r4b: the Look's neck grey by day, blue-violet by night): her body's tone comes out of her neck's shade
     /// on every part (her neck is her head's mesh), the key's light divided back so her lit side is as before; the fill and
     /// the floor keep it.</summary>
