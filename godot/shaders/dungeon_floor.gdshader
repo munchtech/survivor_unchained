@@ -152,6 +152,18 @@ void fragment() {
 		col *= den_tint;
 		// slow value masses: damper and drier ground
 		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
+		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:
+		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
+		float m1 = fbm(wpos.xz * 0.075 + 23.0), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);
+		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
+		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85);
+		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
+		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
+		col = mix(col, vec3(0.095, 0.105, 0.045) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * 0.8);
+		float leaf = smoothstep(0.58, 0.7, m3) * (1.0 - damp);
+		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
+		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)
+		col *= 0.88;
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
 		// the pits: the depths go black
