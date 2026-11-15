@@ -1,0 +1,92 @@
+{
+ "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
+ "painted": 2,
+ "inputs": "f8141328093e",
+ "from": "(c) the den dungeon's floor shader (the den lead's layer order: earth, trodden, litter, rootmat, dark, pitface, bark; bark is the root meshes', u along the root); (b) survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build')",
+ "layers": [
+  {
+   "name": "earth",
+   "surface": "den_earth",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the packed warm mid-brown earth of the open floor, a fine painted grain of small flat dark and light flakes, dark grit specks and small pale pebbles, a few tiny twigs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "mean": [
+    0.19931,
+    0.11765,
+    0.07305
+   ]
+  },
+  {
+   "name": "trodden",
+   "surface": "den_trodden",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the trodden middle of the rooms and the paths between (den_room's lit centre, den_boss's pale run past the boulder), the same earth a step lighter and smoother, fewer stones, a few scuffs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "mean": [
+    0.24757,
+    0.14923,
+    0.09126
+   ]
+  },
+  {
+   "name": "litter",
+   "surface": "den_litter",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the floor's margins and corners, the earth strewn with thin twigs (some forked) and small orange-brown dead leaves, crumbs; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "mean": [
+    0.19965,
+    0.1171,
+    0.07227
+   ]
+  },
+  {
+   "name": "rootmat",
+   "surface": "den_rootmat",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the floor at the root walls, darker earth crossed by thin wandering root runners that branch and thin out, darker than the earth (the concepts' floor roots read as dark lines), each a lit edge on the light's side and a dark ink edge on the other (the concepts' inked roots); values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "mean": [
+    0.11869,
+    0.06717,
+    0.04131
+   ]
+  },
+  {
+   "name": "dark",
+   "surface": "den_dark",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the damp near-black-brown earth at the pit mouths and wall feet, a little grain; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075) (about 0.3x the earth)",
+   "mean": [
+    0.05697,
+    0.03424,
+    0.02255
+   ]
+  },
+  {
+   "name": "pitface",
+   "surface": "den_pitface",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the pits' steep sides (den_boss's pits, den_room's hollows under the roots), dark earth with exposed root strands and a few stones; values: the den lead's floor anchor under the den rig, linear (0.13, 0.072, 0.042) shade to (0.34, 0.205, 0.12) lit, earth mean about (0.2, 0.12, 0.075)",
+   "mean": [
+    0.06181,
+    0.03688,
+    0.02385
+   ]
+  },
+  {
+   "name": "bark",
+   "surface": "den_bark",
+   "metres": 1.5,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner: 'Yes, build'): the roots' bark (the walls' and the floor's big roots: four to six ridges across a root's face), long ridges along the root (u) that thin out to points and overlap, lit ridges #6b4630-ish over deep dark cracks #2a1a12 reading as ink lines",
+   "mean": [
+    0.09078,
+    0.03983,
+    0.02139
+   ]
+  }
+ ]
+}

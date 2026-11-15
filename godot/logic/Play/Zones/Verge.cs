@@ -560,6 +560,22 @@ public sealed class Verge : ZoneRuntime
             },
         });
         I.Add(new() { Id = "greymuzzle", X = hollow.X, Z = hollow.Z, R = 6, Verb = "Approach", Name = "Greymuzzle", When = () => Up(greymuzzle) && greymuzzle!.Disposition == Disposition.Neutral, Act = () => G.Talk("greymuzzle") });
+        // The dungeons (by day): a few metres off their landmarks, on ground checked open (the Greymuzzle's and Redcowl's
+        // interacts are clear of them); she comes out where she went in, facing outward from the landmark.
+        foreach (var (id, def, verb, name, lm, spot) in new[]
+        {
+            ("enter_hollow", SurvivorUnchained.Maps.DungeonGen.Hollow, "Enter the Den", "Wolf Hollow", hollow, new XZ(hollow.X, hollow.Z - 8.5)),
+            ("enter_roost", SurvivorUnchained.Maps.DungeonGen.Roost, "Climb the Ravine", "The Roost", V("roost"), new XZ(V("roost").X, V("roost").Z - 8.5)),
+        })
+        {
+            var (d, at, from) = (def, spot, lm);
+            I.Add(new()
+            {
+                Id = id, X = at.X, Z = at.Z, R = 3, Verb = verb, Name = name,
+                When = () => W.Time != TimeOfDay.Night,
+                Act = () => G.EnterMap(SurvivorUnchained.Maps.Chart.ForDungeon(d, G.DungeonSeed(), G.Journey.Ch.Level, "verge", at.X, at.Z, Math.Atan2(at.Z - from.Z, at.X - from.X))),
+            });
+        }
         I.Add(new() { Id = "redcowl", X = redcowlAt.X, Z = redcowlAt.Z, R = 3.2, Verb = "Talk", Name = "Redcowl", When = () => Actors.ContainsKey("redcowl") && !F("roost.hostile").Truthy, Act = () => G.Talk("redcowl") });
         for (int i = 0; i < 3; i++)
         {

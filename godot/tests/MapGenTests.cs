@@ -102,10 +102,10 @@ public class MapGenTests
         Assert.Equal(a.Ground.Heights, b.Ground.Heights);
     }
 
-    static int NavCell(SurvivorUnchained.Sim.CollisionWorld c, double x, double z) =>
+    internal static int NavCell(SurvivorUnchained.Sim.CollisionWorld c, double x, double z) =>
         (int)Math.Floor(z + c.Half) * c.NavSize + (int)Math.Floor(x + c.Half);
 
-    static HashSet<int> NavFlood(SurvivorUnchained.Sim.CollisionWorld c, double x, double z)
+    internal static HashSet<int> NavFlood(SurvivorUnchained.Sim.CollisionWorld c, double x, double z)
     {
         int n = c.NavSize;
         var seen = new HashSet<int>();
@@ -126,10 +126,10 @@ public class MapGenTests
         return seen;
     }
 
-    static int Cell(MapBuild m, double x, double z) =>
+    internal static int Cell(MapBuild m, double x, double z) =>
         (int)Math.Round(z + MapGen.Size / 2) * m.Meta.Res + (int)Math.Round(x + MapGen.Size / 2);
 
-    static HashSet<int> Flood(MapBuild m)
+    internal static HashSet<int> Flood(MapBuild m)
     {
         int res = m.Meta.Res;
         var seen = new HashSet<int>();
@@ -153,7 +153,7 @@ public class MapGenTests
 
     /// <summary>A picture of the layout (MAP_DUMP=dir): walkable ground,
     /// packs, clearings, the walls' boxes.</summary>
-    static void Dump(MapBuild m, string path)
+    internal static void Dump(MapBuild m, string path)
     {
         int res = m.Meta.Res;
         var px = new byte[res * res * 3];

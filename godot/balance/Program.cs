@@ -661,7 +661,8 @@ void Story()
  * creature level (8 + 2 x tier), capped at the character's 30. */
 void Maps()
 {
-    var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
+    var dungeon = opt.Get("dungeon", "");
+    var peoples = dungeon != "" ? [SurvivorUnchained.Maps.DungeonGen.Get(dungeon)!.People] : opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
     int seeds = opt.Int("seeds", 2), seed0 = opt.Int("seed0", 1);
     var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
     var mods = opt.Get("mods", "") is { Length: > 0 } m ? m.Split('+') : Array.Empty<string>();
@@ -678,7 +679,7 @@ void Maps()
                 for (int s = 0; s < seeds; s++)
                 {
                     int level = opt.Get("level", "tier") == "tier" ? Math.Min(30, 8 + 2 * tier) : opt.Int("level", 10);
-                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, bot, opt.Double("cap", 25)));
+                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, bot, opt.Double("cap", 25), dungeon));
                 }
     Console.WriteLine($"{specs.Count} maps, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<MapRunResult>();

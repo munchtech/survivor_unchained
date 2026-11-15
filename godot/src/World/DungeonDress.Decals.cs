@@ -1,0 +1,295 @@
+using System.Collections.Generic;
+using System.Text.Json;
+using Godot;
+
+namespace SurvivorUnchained.View;
+
+/// <summary>
+/// The den's floor decals (godot/art/dungeon/den/decals.png, painted by tools/look/den_decals.py), scattered by rule over
+/// the walkable field and by room kind: roots, fur, twigs and pebbles at the walls' feet; bones, leaves, fur and old blood
+/// in the open; the boss room's kills (hides, rib cages, a deer skull) toward its back. Every decal is a small grid draped
+/// on the ground's height, all in one mesh on one material (shaders/dungeon_decal.gdshader). A decal's painted light comes
+/// from its cell's top, so each is turned or mirrored to keep that side toward the rig's light (ground.json "light").
+/// </summary>
+public static partial class DungeonDress
+{
+    sealed record Decal(string Kind, Rect2 Uv, Vector2 Metres, float Weight);
+
+    static List<Decal>? decals;
+    static Vector2 decalLight = new(-0.45f, -0.89f);
+
+    static List<Decal> Decals()
+    {
+        if (decals != null) return decals;
+        decals = new();
+        using var f = FileAccess.Open("res://art/dungeon/den/decals.json", FileAccess.ModeFlags.Read);
+        var doc = JsonDocument.Parse(f.GetAsText());
+        var size = doc.RootElement.GetProperty("size");
+        float W = size[0].GetSingle(), Hh = size[1].GetSingle();
+        var l = doc.RootElement.GetProperty("light");
+        decalLight = new Vector2(l[0].GetSingle(), l[1].GetSingle()).Normalized();
+        foreach (var d in doc.RootElement.GetProperty("decals").EnumerateArray())
+        {
+            var r = d.GetProperty("rect");
+            var m = d.GetProperty("metres");
+            decals.Add(new Decal(d.GetProperty("kind").GetString()!,
+                new Rect2(r[0].GetSingle() / W, r[1].GetSingle() / Hh, r[2].GetSingle() / W, r[3].GetSingle() / Hh),
+                new Vector2(m[0].GetSingle(), m[1].GetSingle()), d.GetProperty("weight").GetSingle()));
+        }
+        return decals;
+    }
+
+    // Kind weights by where a decal lies: in a pile (a kill's leavings), a wall's foot, the open between, the lair's floor.
+    // (round 8) bones a third of a pile, not two thirds: a kill reads by its rib cage, skull and fur, the long bones were white noise
+    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 1.2f, ["wolf_skull"] = 0.35f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
+    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 1.2f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 0.4f };
+    static readonly Dictionary<string, float> AtFoot = new() { ["root"] = 2.0f, ["twigs"] = 1.2f, ["pebbles"] = 1.0f, ["leaves"] = 1.0f, ["fur"] = 0.4f, ["moss"] = 0.5f };
+    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.0f, ["pebbles"] = 0.6f, ["twigs"] = 0.5f, ["fur"] = 0.3f, ["blood"] = 0.35f };
+    static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.6f };
+
+    static Decal PickDecal(Dictionary<string, float> by, float u)
+    {
+        var all = Decals();
+        float sum = 0;
+        foreach (var d in all) sum += by.GetValueOrDefault(d.Kind) * d.Weight;
+        float t = u * sum;
+        foreach (var d in all)
+        {
+            float w = by.GetValueOrDefault(d.Kind) * d.Weight;
+            if (w <= 0) continue;
+            if (t < w) return d;
+            t -= w;
+        }
+        return all[0];
+    }
+
+    sealed class DecalBuf
+    {
+        public readonly List<Vector3> V = new();
+        public readonly List<Vector2> U = new();
+        public readonly List<int> I = new();
+        public int Count;
+        public readonly Dictionary<string, int> Kinds = new();
+    }
+
+    /// <summary>The den's litter by rule: the kills' leavings in PILES (round 6: an even scatter read as noise) round the
+    /// pits' lips, at the banks' feet and beside the boulders, the boss room's open floor piled on a jittered 4.5 m grid
+    /// with drag marks, moss and leaf drifts between; the open floor between piles sparse, the walls' feet busier.</summary>
+    static void DenDecals(Ctx c)
+    {
+        var z = c.Z;
+        var b = new DecalBuf();
+        var pits = DenPits(c);
+        var hollows = DenHollows(c);
+        bool Ok(float x, float zz, float wmin, float hmin)
+        {
+            if (Wall(c, x, zz) < wmin || Hole(c, x, zz) < hmin) return false;
+            foreach (var (hp, hr, _) in hollows) if (hp.DistanceSquaredTo(new Vector2(x, zz)) < (hr + 0.2f) * (hr + 0.2f)) return false;
+            return true;
+        }
+        int boss = -1;
+        for (int k = 0; k < z.Rooms.Count; k++) if (z.Rooms[k].Kind == "Boss") boss = k;
+        bool InBoss(Vector2 p) => boss >= 0 && p.DistanceTo(new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z)) < z.Rooms[boss].R * 1.05f;
+        Vector2 Inward(float x, float zz)
+        {
+            var g = new Vector2(Wall(c, x + 0.5f, zz) - Wall(c, x - 0.5f, zz), Wall(c, x, zz + 0.5f) - Wall(c, x, zz - 0.5f));
+            return g.LengthSquared() < 1e-8f ? Vector2.Right : g.Normalized();
+        }
+
+        // ---- the piles' seeds: (where, size, the boss room's) ----
+        var seeds = new List<(Vector2 p, float size, bool boss)>();
+        int pi = 0;
+        foreach (var (pc, pr, _) in pits)
+        {
+            pi++;
+            int m = 2 + (pr > 2.6f ? 1 : 0);
+            float a0 = Hash(pi, 1, 931) * Mathf.Tau;
+            for (int k = 0; k < m; k++)
+            {
+                float a = a0 + k * Mathf.Tau / m + (Hash(pi, k, 932) - 0.5f) * 1.2f;
+                var p = pc + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (pr + 0.9f + 0.6f * Hash(pi, k, 933));
+                if (Ok(p.X, p.Y, 0.6f, 0.6f)) seeds.Add((p, 0.9f, InBoss(p)));
+            }
+        }
+        int ri = 0;
+        foreach (var (rp, bh) in c.Boulders)   // (the boulders Den() set down: they stay where they sit)
+        {
+            ri++;
+            var dir = Inward(rp.X, rp.Y).Rotated((Hash(ri, 2, 934) - 0.5f) * 1.6f);
+            float dd = bh + 0.6f + 0.4f * Hash(ri, 3, 934);
+            var p = rp + dir * dd;
+            if (Ok(p.X, p.Y, 0.4f, 0.8f)) seeds.Add((p, 0.8f, InBoss(p)));
+        }
+        foreach (var (hp, hr, _) in DenHollows(c))   // (and the lair's hollows: bones heaped at their lips)
+        {
+            ri++;
+            float a = Hash(ri, 4, 934) * Mathf.Tau;
+            var p = hp + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr + 0.7f);
+            if (Ok(p.X, p.Y, 0.6f, 0.8f)) seeds.Add((p, 0.8f, InBoss(p)));
+        }
+        {
+            const float scan = 0.5f;
+            int n = (int)(z.Size / scan);
+            var taken = new List<Vector2>();
+            for (int j = 0; j < n; j++)
+                for (int i = 0; i < n; i++)
+                {
+                    float x = -z.Half + (i + 0.5f) * scan, zz = -z.Half + (j + 0.5f) * scan;
+                    float w = Wall(c, x, zz);
+                    if (Mathf.Abs(w - 1.1f) > 0.26f || Hole(c, x, zz) < 1.5f) continue;
+                    var p = new Vector2(x, zz);
+                    float gap = 5f + 2.5f * Hash(i, j, 935);
+                    bool near = false;
+                    foreach (var t in taken) if (t.DistanceSquaredTo(p) < gap * gap) { near = true; break; }
+                    foreach (var s in seeds) if (s.p.DistanceSquaredTo(p) < 9f) { near = true; break; }
+                    if (near) continue;
+                    taken.Add(p);
+                    if (Hash(i, j, 936) < 0.5f) seeds.Add((p, 0.7f, InBoss(p)));
+                }
+        }
+        if (boss >= 0)
+        {
+            var r = z.Rooms[boss];
+            const float g = 4.5f;
+            int m = (int)(r.R / g) + 1;
+            for (int j = -m; j <= m; j++)
+                for (int i = -m; i <= m; i++)
+                {
+                    var p = new Vector2(r.X + (i + (Hash(i, j, 937) - 0.5f) * 0.7f) * g, r.Z + (j + (Hash(i, j, 938) - 0.5f) * 0.7f) * g);
+                    if (p.DistanceTo(new Vector2(r.X, r.Z)) > r.R * 0.95f || !Ok(p.X, p.Y, 1.0f, 1.2f)) continue;
+                    bool near = false;
+                    foreach (var s in seeds) if (s.p.DistanceSquaredTo(p) < 6.25f) { near = true; break; }
+                    if (!near && Hash(i, j, 939) < 0.4f) seeds.Add((p, 1.15f, true));   // (round 8: 0.8 laid a pile every 4.5 m, an even sprinkle)
+                }
+        }
+
+        // ---- the piles: a ground layer (old blood or a leaf drift), then 4-10 pieces round the seed ----
+        int si = 0;
+        foreach (var (sp, size, inBoss) in seeds)
+        {
+            si++;
+            if (Hash(si, 0, 941) < (inBoss ? 0.9f : 0.8f))
+                AddDecal(c, b, PickDecal(Under, Hash(si, 0, 942)), sp.X + (Hash(si, 0, 943) - 0.5f), sp.Y + (Hash(si, 0, 944) - 0.5f), Hash(si, 0, 945) * Mathf.Tau, 0.9f + 0.3f * Hash(si, 0, 946));
+            int n = 3 + (int)(4f * size * Hash(si, 0, 947));
+            float sig = 0.45f + 0.35f * size;
+            for (int k = 1; k <= n; k++)
+            {
+                float u1 = Mathf.Max(Hash(si, k, 948), 1e-4f), u2 = Hash(si, k, 949);
+                float rad = sig * Mathf.Sqrt(-2f * Mathf.Log(u1));
+                float x = sp.X + rad * Mathf.Cos(Mathf.Tau * u2), zz = sp.Y + rad * Mathf.Sin(Mathf.Tau * u2);
+                if (!Ok(x, zz, 0.25f, 0.5f)) continue;
+                AddDecal(c, b, PickDecal(inBoss ? InBossPile : InPile, Hash(si, k, 950)), x, zz, Hash(si, k, 951) * Mathf.Tau, 0.9f + 0.25f * Hash(si, k, 952));
+            }
+        }
+
+        // ---- the walls' feet and the open between: thinner, and no bones heaped there ----
+        const float cell = 1.6f;
+        int nc = (int)(z.Size / cell);
+        for (int j = 0; j < nc; j++)
+            for (int i = 0; i < nc; i++)
+            {
+                float u0 = Hash(i, j, 901), u1 = Hash(i, j, 902), u2 = Hash(i, j, 903), u3 = Hash(i, j, 904);
+                float x = -z.Half + (i + u0) * cell, zz = -z.Half + (j + u1) * cell;
+                float w = Wall(c, x, zz), h = Hole(c, x, zz);
+                if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
+                bool foot = w < 1.8f;
+                float keep = foot ? 0.3f : w > 5f ? 0.03f : 0.05f;   // (round 8: the open scatter cut by more than half)
+                if (u2 > keep) continue;
+                var d = PickDecal(foot ? AtFoot : InOpen, u3);
+                if (d.Metres.X * 0.5f > w + 0.4f && d.Kind != "root") continue;
+                float yaw;
+                if (d.Kind == "root")
+                {
+                    // a root crawls out from the wall: its long axis along the field's rise, its far end into the room
+                    var g = Inward(x, zz);
+                    yaw = Mathf.Atan2(g.Y, g.X) + (Hash(i, j, 905) - 0.5f) * 0.9f;
+                }
+                else yaw = Hash(i, j, 906) * Mathf.Tau;
+                AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907));
+            }
+
+        // ---- the lair's floor: drag marks out from its piles, moss in the damp by the banks, drifts against them ----
+        if (boss >= 0)
+        {
+            var r = z.Rooms[boss];
+            var ctr = new Vector2(r.X, r.Z);
+            int nd = 0, k = 0;
+            foreach (var (sp, size, inBoss) in seeds)
+            {
+                k++;
+                if (nd >= 14 || Hash(k, 5, 953) < (inBoss ? 0.45f : 0.65f)) continue;   // (round 8: kills dragged in every room, not the lair only)
+                var dir = (ctr - sp).LengthSquared() > 1f ? (ctr - sp).Normalized() : Vector2.Right;
+                dir = dir.Rotated((Hash(k, 5, 954) - 0.5f) * 1.4f);
+                var mid = sp + dir * 1.6f;
+                if (!Ok(mid.X, mid.Y, 0.6f, 0.8f) || !Ok(sp.X + dir.X * 2.6f, sp.Y + dir.Y * 2.6f, 0.4f, 0.6f)) continue;
+                AddDecal(c, b, PickDecal(new() { ["drag"] = 1f }, Hash(k, 5, 955)), mid.X, mid.Y, Mathf.Atan2(dir.Y, dir.X), 0.95f + 0.2f * Hash(k, 5, 956));
+                nd++;
+            }
+            for (int q = 0; q < 26; q++)
+            {
+                float a = Hash(q, 9, 957) * Mathf.Tau, dd = Mathf.Sqrt(Hash(q, 9, 958)) * r.R * 0.98f;
+                float x = r.X + Mathf.Cos(a) * dd, zz = r.Z + Mathf.Sin(a) * dd;
+                float w = Wall(c, x, zz);
+                if (!Ok(x, zz, 0.5f, 0.8f)) continue;
+                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "drift") : (Hash(q, 9, 959) < 0.3f ? "moss" : Hash(q, 9, 959) < 0.65f ? "drift" : "blood");
+                AddDecal(c, b, PickDecal(new() { [kind] = 1f }, Hash(q, 9, 960)), x, zz, Hash(q, 9, 961) * Mathf.Tau, 0.95f + 0.35f * Hash(q, 9, 962));
+            }
+        }
+        c.Count["decal piles"] = seeds.Count;
+        if (b.Count == 0) return;
+        var arr = new Godot.Collections.Array();
+        arr.Resize((int)Mesh.ArrayType.Max);
+        var nrm = new Vector3[b.V.Count];
+        System.Array.Fill(nrm, Vector3.Up);
+        arr[(int)Mesh.ArrayType.Vertex] = b.V.ToArray();
+        arr[(int)Mesh.ArrayType.Normal] = nrm;
+        arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
+        arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_decal.gdshader") };
+        mat.SetShaderParameter("atlas", GD.Load<Texture2D>("res://art/dungeon/den/decals.png"));
+        mat.SetShaderParameter("field", DungeonFloor.Field(z));
+        mat.SetShaderParameter("half_size", z.Half);
+        mat.SetShaderParameter("step", z.Step);
+        mat.SetShaderParameter("res", (float)z.Res);
+        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
+        c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
+    }
+
+    /// <summary>One decal draped on the ground: its long axis at yaw, mirrored across it when that keeps the painted lit
+    /// side (the cell's top) toward the light.</summary>
+    static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale)
+    {
+        var ax = new Vector2(Mathf.Cos(yaw), Mathf.Sin(yaw));
+        var up = new Vector2(ax.Y, -ax.X);  // (the cell's top, before any mirror)
+        if (up.Dot(decalLight) < 0) up = -up;
+        // (the targets draw the den's litter larger than life, so it reads from the play camera: bones and kills x1.5)
+        if (d.Kind is "bone" or "ribcage" or "wolf_skull" or "deer_skull" or "fur" or "hide") scale *= 1.5f;
+        float W = d.Metres.X * scale, Hh = d.Metres.Y * scale;
+        int nx = Mathf.Max(2, Mathf.CeilToInt(W / 0.4f) + 1), ny = Mathf.Max(2, Mathf.CeilToInt(Hh / 0.4f) + 1);
+        int base0 = b.V.Count;
+        // (the ground layers, blood, drags, drifts and moss, under the pieces laid on them)
+        float lift = d.Kind is "blood" or "drag" or "drift" or "moss" ? 0.012f + 0.001f * (b.Count % 4) : 0.022f + 0.0015f * (b.Count % 8);
+        for (int q = 0; q < ny; q++)
+            for (int p = 0; p < nx; p++)
+            {
+                float s = (float)p / (nx - 1), t = (float)q / (ny - 1);  // (t 0 = the cell's top, the lit side)
+                var w = new Vector2(x, zz) + ax * ((s - 0.5f) * W) + up * ((0.5f - t) * Hh);
+                b.V.Add(new Vector3(w.X, H(c, w.X, w.Y) + lift, w.Y));
+                b.U.Add(new Vector2(d.Uv.Position.X + s * d.Uv.Size.X, d.Uv.Position.Y + t * d.Uv.Size.Y));
+            }
+        // (winding by the mirror, so every decal faces up)
+        bool flip = ax.X * up.Y - ax.Y * up.X > 0;
+        for (int q = 0; q < ny - 1; q++)
+            for (int p = 0; p < nx - 1; p++)
+            {
+                int a = base0 + q * nx + p, e = a + 1, f = a + nx, g = f + 1;
+                if (flip) { b.I.Add(a); b.I.Add(e); b.I.Add(f); b.I.Add(e); b.I.Add(g); b.I.Add(f); }
+                else { b.I.Add(a); b.I.Add(f); b.I.Add(e); b.I.Add(e); b.I.Add(f); b.I.Add(g); }
+            }
+        b.Count++;
+        b.Kinds[d.Kind] = b.Kinds.GetValueOrDefault(d.Kind) + 1;
+    }
+}

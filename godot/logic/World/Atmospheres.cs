@@ -71,6 +71,23 @@ public static class Atmospheres
         "#9cb2cc", "#463626", 1.0, 0.85, "#a4aeb4", 0.0055, 1.0, "#e6eef8", 0.18,
         new([0.01, 0.014, 0.026], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96], "#3a5872", "#ffd9a0", 0.2, 1.05, 0.16, 1.12)) { Rig = "day_wild" };
 
+    /// <summary>(Dungeon look) The den under Wolf Hollow (DungeonGen theme "den"): no sky. A dim cold key from above (what
+    /// light gets through the roof), a warm low fill off the earth, black beyond the walls; the pale shafts are placed per
+    /// room (View.DungeonLight). Its light is the rig's (rigs.json "den").</summary>
+    public static readonly AtmospherePreset Den = Day with
+    {
+        Sky = new SkySettings("#060504", "#0d0a08", "#060504", "#1a1612", 8, 0, 0),
+        FogColor = "#0e0a07", FogDensity = 0.002, Rig = "den",
+    };
+
+    /// <summary>(Dungeon look) The Roost, up the ravine (theme "ravine"): an evening sun low over the rim, a strip of it on
+    /// the shelf and the long shade of the rock across the rest, violet in the shade (rigs.json "ravine").</summary>
+    public static readonly AtmospherePreset Ravine = Day with
+    {
+        Sky = new SkySettings("#3a3a6a", "#d89a78", "#2a2230", "#ffc890", 8, 0, 0),
+        FogColor = "#5a4a6a", FogDensity = 0.003, Rig = "ravine",
+    };
+
     /* ------------------------------------------------- play's own (E1) -- */
     // Play's presets (look bible 1c, "The trick"): a low key that models the ground from the high
     // camera, the ambient two to three stops under it, no black lift, shadows cool and dark, and a

@@ -342,7 +342,8 @@ def brushes(cv, st, rng):
     L = cv.light
     perp = np.array([-L[1], L[0]])
     W = cv.W
-    k = 18
+    k = int(st.get("facets", 18))  # (facets: fewer corners, a chunky flake of packed earth, not a soft dab; off = 18)
+    jlo, jhi = st.get("jitter", (0.85, 1.1))
     ang = np.linspace(0, 2 * math.pi, k, endpoint=False)
     for _ in range(count):
         c = rng.uniform(0, W, 2)
@@ -353,13 +354,35 @@ def brushes(cv, st, rng):
         tw = rng.uniform(-0.35, 0.35)
         ax = perp * math.cos(tw) + L * math.sin(tw)
         ay = np.array([-ax[1], ax[0]]) if float(np.array([-ax[1], ax[0]]) @ L) > 0 else np.array([ax[1], -ax[0]])
-        jit = rng.uniform(0.85, 1.1, k)
+        jit = rng.uniform(jlo, jhi, k)
         pts = []
         for i, (a_, j) in enumerate(zip(ang, jit)):
             u, v = math.cos(a_), math.sin(a_)
             rr = j * (1.0 + (st.get("tips", 0.6) if (v > 0.25 and i % 2 == 0) else 0.0) * v)
             pts.append(c + ax * u * r * rr + ay * v * r * st.get("squash", 0.5) * rr)
         cv.poly(pts, shift_rgb(under, dL), st["height"] + (0.05 if lit else -0.05))
+
+
+def ribbon(pts, w, t0, t1, ds):
+    """A stroke as one polygon: the run resampled every ds pixels, its width w narrowing to a point over the first t0 and
+    the last t1 of its length (a root or a twig that thins out, not a plank's butt end)."""
+    P = np.asarray(pts, float)
+    seg = np.linalg.norm(np.diff(P, axis=0), axis=1)
+    s = np.concatenate([[0.0], np.cumsum(seg)])
+    n = max(int(s[-1] / max(ds, 1e-6)), 4) + 1
+    u = np.linspace(0, s[-1], n)
+    Q = np.stack([np.interp(u, s, P[:, 0]), np.interp(u, s, P[:, 1])], 1)
+    tg = np.gradient(Q, axis=0)
+    tg /= np.maximum(np.linalg.norm(tg, axis=1, keepdims=True), 1e-6)
+    nm = np.stack([-tg[:, 1], tg[:, 0]], 1)
+    f = u / max(s[-1], 1e-6)
+    prof = np.ones_like(f)
+    if t0 > 0:
+        prof = np.minimum(prof, np.clip(f / t0, 0, 1) ** 0.7)
+    if t1 > 0:
+        prof = np.minimum(prof, np.clip((1 - f) / t1, 0, 1) ** 0.7)
+    hw = (0.5 * w * prof)[:, None]
+    return np.concatenate([Q + nm * hw, (Q - nm * hw)[::-1]])
 
 
 def stamps(cv, st, rng):
@@ -427,15 +450,46 @@ def stamps(cv, st, rng):
             ang = rng.uniform(-0.15, 0.15) if st.get("along") else a
             p = c.copy(); pts = [p.copy()]
             step = max(cv.px(10.0), w)
+            wan = st.get("wander", 0.2)  # (how far each 10 cm step turns, radians; bark grain runs straighter)
             for _ in range(max(int(ln / step), 2)):
-                ang += rng.uniform(-0.2, 0.2)
+                ang += rng.uniform(-wan, wan)
                 p = p + step * np.array([math.cos(ang), math.sin(ang)])
                 pts.append(p.copy())
-            cv.line(pts, w, shift(hx, dL), st["height"])
-            if st.get("lit_edge"):
-                lw = min(max(w * 0.45, mn), w * 0.8)
-                off = L * (w - lw) * 0.5
-                cv.line(np.asarray(pts) + off, lw, shift(hx, dL + st["lit_edge"]), st["height"])
+            tp = st.get("taper", 0)  # (taper: the share of a run's length narrowing to a point at each end; off = butt lines)
+
+            def run(q, wq, t0, t1):
+                if st.get("ink_edge"):  # (a dark ink line along the shade side, under the stroke: the concepts' inked roots)
+                    iw = max(wq * st.get("ink_w", 0.35), mn)
+                    ink = shift(st["ink"], dL) if "ink" in st else shift(hx, dL + st["ink_edge"])  # (ink: its own color, else the stroke's moved ink_edge)
+                    draw(np.asarray(q) - L * iw * 0.5, wq + iw, ink, st["height"] * 0.5, t0, t1)
+                draw(q, wq, shift(hx, dL), st["height"], t0, t1)
+                if st.get("lit_edge"):
+                    lw = min(max(wq * 0.45, mn), wq * 0.8)
+                    draw(np.asarray(q) + L * (wq - lw) * 0.5, lw, shift(hx, dL + st["lit_edge"]), st["height"], t0, t1)
+
+            def draw(q, wq, col, hq, t0, t1):
+                if tp > 0:
+                    cv.poly(ribbon(q, wq, t0, t1, cv.px(2.0)), col, hq)
+                else:
+                    cv.line(q, wq, col, hq)
+
+            run(pts, w, tp, st.get("taper_tip", tp))  # (taper_tip: the tip end's own share, longer for a root thinning out)
+            for _ in range(int(rng.integers(*st["forks"])) if st.get("forks") else 0):  # (forks: [lo, hi) side twigs off the run)
+                i = int(rng.integers(1, len(pts)))
+                d_ = np.asarray(pts[i]) - np.asarray(pts[i - 1])
+                fa = math.atan2(d_[1], d_[0]) + rng.choice([-1, 1]) * rng.uniform(0.4, 0.8)
+                fl = ln * rng.uniform(*st.get("fork_len", (0.25, 0.5)))
+                q = np.asarray(pts[i - 1]) + 0.0
+                fp = [q.copy()]
+                for _ in range(max(int(fl / step), 1)):
+                    if tp > 0:
+                        fa += rng.uniform(-wan, wan)
+                    q = q + step * np.array([math.cos(fa), math.sin(fa)])
+                    fp.append(q.copy())
+                if tp > 0:
+                    run(fp, max(w * 0.6, mn), 0.05, 0.7)
+                else:
+                    cv.line(fp, max(w * 0.75, mn), shift(hx, dL), st["height"])
         elif sh == "chip":
             ln, wd = size, max(size * 0.4, mn)
             pts = rot([(-ln / 2, -wd / 2), (ln / 2, -wd / 2 * 0.8), (ln / 2, wd / 2 * 0.8), (-ln / 2, wd / 2)], a, c)

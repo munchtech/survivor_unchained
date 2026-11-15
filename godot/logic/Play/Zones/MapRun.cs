@@ -86,6 +86,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>The share of MapGen's pack spots set: in clearings, and along the ways (a pack about
     /// every 14 s: the experience lead's density, the ARPG's clear-speed fantasy).</summary>
     public static double ClearingKeep = 0.8, WayKeep = 0.62;
+    /// <summary>A dungeon's keeps (dungeon-gen, 15 Nov): its rooms' sockets all, its halls' four in five.</summary>
+    public static double DungeonRoomKeep = 1.0, DungeonHallKeep = 0.8;
     /// <summary>How near the survivor comes before a pack is set down (out of sight, so it is
     /// already there when seen), and how near a pack must be to wake.</summary>
     const double PlaceAt = 46, Wake = 14, Leash = 24;
@@ -128,7 +130,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             bool clearing = (s.X - a.X) * (s.X - a.X) + (s.Z - a.Z) * (s.Z - a.Z) < a.R * a.R;
             // A breath before the ruler: the last way to its clearing is left empty.
             if (!clearing && s.Area == map.Boss.Index - 1) continue;
-            if (rng.Next() >= (clearing ? ClearingKeep : WayKeep)) continue;
+            // A dungeon's rooms were drawn to hold their packs: all of them stay, and most of its halls'.
+            if (rng.Next() >= (map.Dungeon != null ? (clearing ? DungeonRoomKeep : DungeonHallKeep) : clearing ? ClearingKeep : WayKeep)) continue;
             packs.Add(new Pack { Spot = s, People = rival != null && rng.Next() < 1 / 3.0 ? rival : people });
         }
         foreach (var a in map.Altars) altars.Add(new Altar { Area = a });
@@ -137,7 +140,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     public override string Id => "map";
     public override string Name => Chart.Name;
-    public override string? Region => $"Tier {Chart.Tier} · {people.Name}";
+    public override string? Region => map.Dungeon is { } dl ? $"{dl.Def.Region} · held by {people.Name}" : $"Tier {Chart.Tier} · {people.Name}";
+    /// <summary>A dungeon (DungeonGen), not a Wayfinder's map: its caches, its way out past the ruler, no mark on the atlas.</summary>
+    public bool IsDungeon => map.Dungeon != null;
     public override bool Combat => true;
     public override IReadOnlyList<string> Creatures =>
         Charts.Kinds(people, Chart.Tier).Select(k => k.Def)
@@ -146,6 +151,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>By day: the maps are the day's build in the day's world, and a pack must be read
     /// before it is woken (at dusk the way was black past the start's fire).</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Day;
+    /// <summary>A dungeon is lit as its theme is (the den: no sky; the ravine: an evening sun), not by the day's clock.</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => map.Dungeon?.Def.Theme switch
+    {
+        "den" => Atmospheres.Den, "ravine" => Atmospheres.Ravine, _ => base.AtmosphereFor(t),
+    };
     /// <summary>A pack and the ground round it in view: higher than the road's, nearer than a night's.</summary>
     public override (double Pitch, double Distance)? Camera => (62, 24);
     public override Arrival ArrivalFrom(string? from) => new(map.Start.X, map.Start.Z, 0);
@@ -199,7 +209,13 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         var wt = Content.WorldTiers.ForMap(Chart.Tier);
         b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         press = new PackKit(b);
-        G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, "A Wayfinder's map"));
+        G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, IsDungeon ? "A dungeon" : "A Wayfinder's map"));
+        // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
+        // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
+        // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)
+        if (map.Dungeon != null) foreach (var p in map.Props)
+            G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale * (map.DungeonTheme == "den" && p.Id.StartsWith("halloween/bone_") ? 0.6 : 1));
+        if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();
     }
 
@@ -581,14 +597,15 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             return;
         }
         cleared = true;
-        bool first = firstClear = Atlas.Complete(G.Journey.World, Chart);
-        way = map.CanStand(x, z) ? (x, z) : (B.Player.X, B.Player.Z);
+        bool first = firstClear = !IsDungeon && Atlas.Complete(G.Journey.World, Chart);
+        // A dungeon's way out is cut past the ruler's room (DungeonGen); a map's opens where the ruler fell.
+        way = map.Dungeon is { } dl ? dl.Exit : map.CanStand(x, z) ? (x, z) : (B.Player.X, B.Player.Z);
         var (wx, wz) = way.Value;
         G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
         Interactables.Add(new Interactable { Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out", Hint = () => "The map is cleared", Act = Leave });
         B.Events.Emit(new Ev.Victory { X = x, Z = z });
         B.Events.Emit(new Ev.WayOutOpen { X = wx, Z = wz });  // the way out and its banner are already one moment here
-        G.Announce(new Announcement($"{Chart.Name} is cleared", first ? "A new mark on the Wayfinder's atlas" : "The way out is open", "reward", 4, "Cleared"));
+        G.Announce(new Announcement(IsDungeon ? $"{people.BossName} is dead" : $"{Chart.Name} is cleared", first ? "A new mark on the Wayfinder's atlas" : IsDungeon ? "The way out is open, past where it kept" : "The way out is open", "reward", 4, "Cleared"));
         Objectives();
     }
 
@@ -661,16 +678,16 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     bool OnPickup(Pickup p)
     {
         if (p.Kind == PickupKind.Material && p.Ref != null) picked[p.Ref] = picked.GetValueOrDefault(p.Ref) + (int)Math.Max(1, Math.Round(p.Value));
-        if (p.Kind == PickupKind.Chest && p.Ref == "strongbox" && B != null) Strongbox(p.X, p.Z);
+        if (p.Kind == PickupKind.Chest && p.Ref is "strongbox" or "hoard" && B != null) Strongbox(p.X, p.Z, hoard: p.Ref == "hoard");
         return true;
     }
 
     /// <summary>The event's strongbox: three to five things at the map's level (the atlas's "the
     /// keeper's due" adds), now and then a chart; flung out round it, and its opening shown
     /// (told: false spills it unshown, for a whole map cleared at once).</summary>
-    void Strongbox(double x, double z, bool told = true)
+    void Strongbox(double x, double z, bool told = true, bool hoard = false)
     {
-        var loot = Gear(DropSource.Strongbox, levelUp: 1);
+        var loot = Gear(DropSource.Strongbox, extra: hoard ? 2 : 0, levelUp: 1);
         if (R() < 0.25 * Chart.Quantity) loot.Add(new Loot(PickupKind.Item, Charts.Ref(Charts.Roll(rng, Chart.Tier, Chart.People, Chart.RarityBonus)), 1, true, 2));
         var shown = new List<ChestItem>();
         foreach (var l in loot)
@@ -687,7 +704,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         }
         if (!told) return;
         opened++;
-        G.Chest(new ChestOpened(x, z, opened, shown, "The strongbox", opened));
+        G.Chest(new ChestOpened(x, z, opened, shown, hoard ? "The hoard" : IsDungeon ? "A cache" : "The strongbox", opened));
     }
 
     /// <summary>The whole map as a thorough survivor leaves it, at once: every pack and keeper set

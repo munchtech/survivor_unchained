@@ -879,6 +879,101 @@ def mesh_planes(only=None):
     print('REPORT', json.dumps(dict(rocks=report, ppm=round(ppm, 1))))
 
 
+# ---------------------------------------------------------------- the den's boulders (dungeon lead 6, the den under Wolf Hollow)
+# FROM den_room.png's four boulders: 1.5-3 m chunky rounded stones, a few broad planes (a crown, two or three shoulders, three to
+# five sides) with rounded bevels, never boxes, never facets, never eggs. One rock per file (flora/den/den_rock_<v>.gltf, one
+# node, material Stone_OwnDenrock: no flora_species.json entry, so no packed species), all four on one atlas
+# (flora/den/den_rock_atlas.png, painted by tools/look/den_rocks.py from the dump this writes to painted/_forms/den_rocks/).
+# Each: ax its ellipsoid's half sizes (x, y, z up), cz its middle's height, cut faces wholly under it dropped (under the floor),
+# lump a low noise on its radius (share), plane spec as PLANES', tris its one LOD.
+# (round 1, fd 0.76-0.9 and k 0.12-0.2: pillows and a sausage, the planes too shallow to read; now cut deeper, bevels ~7 cm)
+DEN = [
+    dict(name='a', seed=6101, ax=(1.35, 1.0, 0.8), cz=0.35, cut=-0.08, lump=0.02, tris=1400,       # a wide low chunk
+         spec=dict(crown=(0.82, 0.95), sh=(3, 0.45, 0.7), sides=(4, -0.05, 0.25), fd=(0.64, 0.78), k=0.09, crease=0.6)),
+    dict(name='b', seed=6113, ax=(0.95, 0.85, 1.05), cz=0.55, cut=-0.08, lump=0.02, tris=1400,     # a taller block
+         spec=dict(crown=(0.8, 0.93), sh=(2, 0.45, 0.65), sides=(5, -0.1, 0.2), fd=(0.64, 0.78), k=0.09, crease=0.6)),
+    dict(name='c', seed=6127, ax=(1.55, 0.78, 0.72), cz=0.32, cut=-0.08, lump=0.02, tris=1400,     # a long one
+         spec=dict(crown=(0.84, 0.95), sh=(3, 0.45, 0.7), sides=(4, -0.05, 0.25), fd=(0.64, 0.78), k=0.09, crease=0.6)),
+    dict(name='d', seed=6131, ax=(1.02, 0.95, 0.85), cz=0.38, cut=-0.08, lump=0.025, tris=1300,    # a rounder one
+         spec=dict(crown=(0.85, 0.95), sh=(2, 0.5, 0.7), sides=(4, 0.0, 0.25), fd=(0.72, 0.85), k=0.14, crease=0.5)),
+]
+
+
+def mesh_den():
+    """The den's boulders (DEN): flora/den/den_rock_<name>.gltf, and painted/_forms/den_rocks/mesh.npz (each one's mesh, uvs,
+    smooth normals, baked colour and its planes) for tools/look/den_rocks.py's painter."""
+    import bpy
+    from mathutils import kdtree
+    out_dir = os.path.join(OUT, 'den')
+    dump_dir = os.path.join(ROOT, 'godot', 'art', 'world', 'painted', '_forms', 'den_rocks')
+    os.makedirs(out_dir, exist_ok=True); os.makedirs(dump_dir, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    built = []
+    for prm in DEN:
+        rng = np.random.default_rng(prm['seed'])
+        V, F, Np, pl = sculpt_planes(prm['ax'], (0.0, 0.0, prm['cz']), prm['spec'], rng, sub=5)
+        if prm.get('lump'):
+            P = V - pl['center']
+            V = pl['center'] + P * (1.0 + prm['lump'] * fbm3(P / np.asarray(prm['ax']), 0.9, prm['seed'], octs=2))[:, None]
+        V, F = cut(V, F, prm['cut'])
+        Wd = crease_weights(V, pl)
+        col, N = bake(V, F)
+        kd = kdtree.KDTree(len(V))
+        for i, q in enumerate(V):
+            kd.insert(q, i)
+        kd.balance()
+        L0 = decimate(V, F, prm['tris'])
+        C = charts_for(Np)
+        built.append(dict(prm=prm, dense=(V, F, col, N, kd), L0=L0, C=C, W=Wd, Np=Np, pl=pl))
+        print(f"  den {prm['name']}: planes {len(Np)}, charts {len(C)}, size {np.ptp(L0[0], 0).round(2)}, lod0 {len(L0[1])} tris")
+    atlas, ppm = rock_atlas([(vi, d['L0'][0], d['L0'][1], d['C']) for vi, d in enumerate(built)])
+    print(f'den rocks: atlas {ppm:.1f} px/m')
+    img_path = os.path.join(out_dir, 'den_rock_atlas.png')
+    dump = {}
+    report = {}
+    for vi, d in enumerate(built):
+        prm = d['prm']
+        V0, F0 = d['L0']
+        Vd, Fd, col, N, kd = d['dense']
+        idx = np.array([kd.find(p)[1] for p in V0])
+        UV = corner_uvs(V0, F0, d['C'], vi, atlas)
+        Nc = crease_normals(V0, F0, Vd, d['W'], N, kd, d['Np'], idx, 1 - prm['spec']['crease'])
+        C4 = np.concatenate([col[idx], np.ones((len(V0), 1))], 1)
+        pl = d['pl']
+        dump.update({f'{prm["name"]}_V': V0, f'{prm["name"]}_F': F0, f'{prm["name"]}_UV': UV, f'{prm["name"]}_N': N[idx],
+                     f'{prm["name"]}_col': col[idx], f'{prm["name"]}_center': pl['center'], f'{prm["name"]}_ax': pl['ax'],
+                     f'{prm["name"]}_Np': pl['Np'], f'{prm["name"]}_d': pl['d'], f'{prm["name"]}_k': np.array(pl['k'])})
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        mat = bpy.data.materials.new('Stone_OwnDenrock'); mat.use_nodes = True
+        bsdf = mat.node_tree.nodes['Principled BSDF']
+        if os.path.exists(img_path):
+            ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
+            mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        me = bpy.data.meshes.new('rock')
+        me.from_pydata(V0.tolist(), [], F0.tolist())
+        for p in me.polygons:
+            p.use_smooth = True
+        me.normals_split_custom_set([tuple(n) for n in Nc.reshape(-1, 3)])
+        ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+        ca.data.foreach_set('color', C4.astype(np.float32).ravel())
+        me.color_attributes.active_color = ca
+        uvl = me.uv_layers.new(name='UVMap')
+        uvl.data.foreach_set('uv', UV.reshape(-1, 2).astype(np.float32).ravel())
+        me.materials.append(mat)
+        ob = bpy.data.objects.new('rock', me)
+        bpy.context.scene.collection.objects.link(ob)
+        bpy.ops.export_scene.gltf(filepath=os.path.join(out_dir, f'den_rock_{prm["name"]}.gltf'), export_format='GLTF_SEPARATE',
+                                  export_texture_dir='', export_normals=True, export_tangents=False, export_materials='EXPORT',
+                                  export_image_format='AUTO', export_keep_originals=True, export_yup=True, export_apply=True,
+                                  export_vertex_color='ACTIVE')
+        report[prm['name']] = dict(tris=len(F0), size=np.ptp(V0, 0).round(2).tolist())
+    dump['names'] = np.array([p['name'] for p in DEN])
+    dump['ppm'] = np.array(ppm)
+    np.savez_compressed(os.path.join(dump_dir, 'mesh.npz'), **dump)
+    print('REPORT', json.dumps(dict(den=report, ppm=round(ppm, 1))))
+
+
 def mesh(only=None):
     import bpy
     from mathutils import kdtree
@@ -1471,6 +1566,8 @@ if __name__ == '__main__':
         night_mesh(arg('--preset', None))
     elif argv and argv[0] == 'tex':
         tex()
+    elif argv and argv[0] == 'mesh' and arg('--form', '') == 'den':
+        mesh_den()   # (the den's own boulders, one per file: tools/look/den_rocks.py runs this, then paints their atlas)
     elif argv and argv[0] == 'mesh' and arg('--form', 'planes') == 'planes':
         mesh_planes(arg('--preset', None))   # (L1 C3a; --form sculpt: E5's sculpted pieces on the triplanar sheet, kept to compare)
     elif argv and argv[0] == 'mesh':

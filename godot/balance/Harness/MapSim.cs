@@ -13,11 +13,11 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.Balance;
 
 /// <summary>One map to play: who, how hard, with what character, under which mods.</summary>
-public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25)
+public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25, string Dungeon = "")
 {
     /// <summary>(M3) The hands: human, deft, careless, standing, idler (the press plan's) or plain (the old self-firing Pilot).</summary>
     public bool Deft => Bot == "deft";
-    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}";
+    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}{(Dungeon != "" ? "/dg:" + Dungeon : "")}";
 }
 
 public sealed class MapRunResult
@@ -78,6 +78,7 @@ public static class MapSim
         // (bd-sockets) --drop a,b: those skills off her bar (to measure what one adds)
         foreach (var d in VergeZoneSim.Drop) SkillBook.Unslot(j.Ch, d);
         var chart = new Chart { Tier = spec.Tier, People = spec.People, Seed = spec.Seed * 7919 + spec.Tier, Mods = spec.Mods.ToList(), Rarity = spec.Mods.Length == 0 ? 0 : spec.Mods.Length <= 2 ? 1 : 2, Name = "The Harness Map" };
+        if (spec.Dungeon != "") chart = Chart.ForDungeon(DungeonGen.Get(spec.Dungeon)!, spec.Seed * 7919 + 1, spec.Level);
         var map = MapGen.Generate(chart.Map);
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new MapRun(host, map, chart);

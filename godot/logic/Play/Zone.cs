@@ -92,6 +92,10 @@ public interface IZoneHost
     /// stage says what came out in a line.</summary>
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
+    /// <summary>Into a map or a dungeon (the chart's ground); a host without a game does nothing.</summary>
+    void EnterMap(Maps.Chart chart) { }
+    /// <summary>The seed of the next dungeon entered (the game's: fresh, or pinned by --dungeon-seed).</summary>
+    int DungeonSeed() => 1;
     /// <summary>A lit lamp-post's menu (Play/PostMenu.cs: travel, the world tier, the Lamps, leave), opened where she stands
     /// at it; a host without a screen does nothing.</summary>
     void OpenPost(string postId) { }
