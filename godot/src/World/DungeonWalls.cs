@@ -8,7 +8,7 @@ namespace SurvivorUnchained.View;
 /// edge on a 0.5 m height grid (smooth outline, lumpy face, never the 1 m cells' steps), a continuous top beyond it, and
 /// for the den roots hanging down its face and over its pits' rims. shaders/dungeon_wall.gdshader shades it all.
 /// </summary>
-public static class DungeonWalls
+public static partial class DungeonWalls
 {
     static bool UseRoots = false;
     const float Cell = 0.5f, CapCell = 2f, Lo = -0.6f, Hi = 5f;
@@ -253,7 +253,9 @@ public static class DungeonWalls
         var mat = Material(c);
         for (int k = 0; k < mesh.GetSurfaceCount(); k++) mesh.SurfaceSetMaterial(k, mat);
         GD.Print($"DungeonWalls {z.DungeonTheme}: {wallTris} wall tris, {rootTris} root tris");
-        return new MeshInstance3D { Name = "DungeonWalls", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
+        var walls = new MeshInstance3D { Name = "DungeonWalls", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
+        if (!c.Ravine && BigRoots) BankRoots(c, s, n, walls, mat);   // (den round 9: the banks' big roots, DungeonWalls.BankRoots.cs)
+        return walls;
     }
 
     // One wall vertex: on the height profile, with the face's lumps (and the ravine's strata) pushed sideways.
@@ -262,7 +264,7 @@ public static class DungeonWalls
         floorY = c.Floor(x, z);
         float y = c.Ravine ? floorY - 0.1f + (c.HLoc(x, z) + 0.1f) * c.Rise(s) : c.BankY(x, z, s);
         float w = Sm(-0.1f, 0.4f, s) * (1 - Sm(1.4f, 2.4f, s));
-        if (w > 0)
+        if (w > 0 && (c.Ravine || !BigRoots))   // (den round 9: the big roots lie on the bank's own surface, BankY, unjittered)
         {
             float dx = 0.35f * w * (2 * N3(x * 0.9f + 3.1f, y * 0.6f, z * 0.9f) - 1);
             float dz = 0.35f * w * (2 * N3(x * 0.9f - 8.7f, y * 0.6f + 5f, z * 0.9f + 1.3f) - 1);
@@ -671,9 +673,17 @@ public static class DungeonWalls
             mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
             mat.SetShaderParameter("bank_alb", GD.Load<TextureLayered>("res://art/dungeon/den/bank_albedo.png"));
             mat.SetShaderParameter("bank_nrm", GD.Load<TextureLayered>("res://art/dungeon/den/bank_normal.png"));
-            mat.SetShaderParameter("beyond_k", Args.Num("den-beyond", 0.45f));
-            mat.SetShaderParameter("bank_gain", Args.Num("den-bank-gain", 1.6f));
-            mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", 0.1f));
+            // (den round 9, bank lane) With the big roots: the painted bank is the dark tangle between them, its hollows
+            // near black and cool (hollow 0.1 lifted every dark of the painting to a mid grey: the round-8 scrim), its
+            // normal map softer (its painted edges drew ink fringes), the far wall receding into the dark.
+            bool r9 = BigRoots;
+            mat.SetShaderParameter("beyond_k", Args.Num("den-beyond", r9 ? 0.3f : 0.45f));
+            mat.SetShaderParameter("bank_gain", Args.Num("den-bank-gain", r9 ? 0.9f : 1.6f));
+            mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", r9 ? 0.02f : 0.1f));
+            mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", r9 ? 0.25f : 0.6f));
+            mat.SetShaderParameter("r9", r9 ? 1f : 0f);
+            mat.SetShaderParameter("broot_col", Args.Get("den-root-col") is string rc ? new Color(rc).SrgbToLinear() : new Color(0.2f, 0.12f, 0.075f));
+            mat.SetShaderParameter("wall_top_k", Args.Num("den-wall-top", 0.55f));
         }
         return mat;
     }

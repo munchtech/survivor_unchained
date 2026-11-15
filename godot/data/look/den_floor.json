@@ -1,0 +1,223 @@
+{
+ "what": "The den floor's meso layer (den round 9, floor lane): flat stones, pebbles and clods; dry leaves in clusters, twigs and root fragments; packed-earth plates; cracks in dry earth. Painted from nothing by tools/look/den_floor_paint.py into godot/art/dungeon/den/meso_albedo.png and meso_aux.png; laid by rule in shaders/dungeon_floor.gdshader (each object shown where its rank is under the place's density).",
+ "from": "survivorsunchained_inputs/scratch_coord12/dungeon_concepts/den_room.png and den_boss.png (the owner, 15 Nov: 'Yes, build'): the floor at three scales (judge round 8: ours read as one scale of fine noise); sizes set at the size they read in our frame (pitch 56, distance 23, lens 34: about 73 px a metre); colours set by hand near the den earth's (ground.json den_earth) and the targets' stones (cool grey-brown), leaves (orange-brown), twigs (dark brown)",
+ "metres": 8.0,
+ "px": 1024,
+ "light": [
+  -0.45,
+  -0.89
+ ],
+ "spread_L": 0.04,
+ "shadow_rgb": "#1c1714",
+ "shadow_a": 0.6,
+ "objects": [
+  {
+   "name": "stones",
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.3,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#8a8176",
+      "#7b736a",
+      "#958a7c",
+      "#6e675f"
+     ],
+     "lit_dL": 0.07,
+     "shade_dL": 0.05,
+     "shadow_k": 0.35
+    },
+    {
+     "shape": "stone",
+     "per_m2": 0.35,
+     "size_cm": [
+      11,
+      22
+     ],
+     "colors": [
+      "#7f776c",
+      "#8d8478",
+      "#726a61"
+     ],
+     "lit_dL": 0.07,
+     "shade_dL": 0.06,
+     "shadow_k": 0.3,
+     "glint": 0.11,
+     "aspect": [
+      0.55,
+      0.85
+     ]
+    },
+    {
+     "shape": "clod",
+     "per_m2": 0.9,
+     "size_cm": [
+      7,
+      18
+     ],
+     "colors": [
+      "#6a523f",
+      "#7e6350",
+      "#5c4636",
+      "#86694f"
+     ],
+     "lit_dL": 0.05,
+     "shade_dL": 0.05,
+     "shadow_k": 0.28
+    },
+    {
+     "shape": "stone",
+     "per_m2": 1.0,
+     "size_cm": [
+      3,
+      5
+     ],
+     "colors": [
+      "#8e8276",
+      "#7d7064",
+      "#6b5a4b"
+     ],
+     "lit_dL": 0.04,
+     "shade_dL": 0.02,
+     "shadow_k": 0.4
+    }
+   ]
+  },
+  {
+   "name": "litter",
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 0.7,
+     "cluster": [
+      6,
+      16,
+      40
+     ],
+     "size_cm": [
+      8,
+      13
+     ],
+     "colors": [
+      "#8a5a32",
+      "#7c5333",
+      "#93633d",
+      "#6f4b31",
+      "#a06a3c",
+      "#9c8466"
+     ],
+     "lit_dL": 0.045,
+     "shadow_cm": 1.3
+    },
+    {
+     "shape": "leaf",
+     "per_m2": 0.8,
+     "size_cm": [
+      7,
+      12
+     ],
+     "colors": [
+      "#8a5a32",
+      "#7c5333",
+      "#93633d",
+      "#6f4b31"
+     ],
+     "lit_dL": 0.045,
+     "shadow_cm": 1.3
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 0.45,
+     "size_cm": [
+      3,
+      4
+     ],
+     "length_cm": [
+      18,
+      55
+     ],
+     "wander": 0.22,
+     "forks": [
+      0,
+      3
+     ],
+     "colors": [
+      "#4a3324",
+      "#3f2c20",
+      "#5a4030",
+      "#6b5038"
+     ],
+     "lit_dL": 0.09,
+     "shadow_cm": 1.6
+    },
+    {
+     "shape": "stroke",
+     "per_m2": 0.08,
+     "size_cm": [
+      5,
+      8
+     ],
+     "length_cm": [
+      35,
+      90
+     ],
+     "wander": 0.18,
+     "forks": [
+      0,
+      2
+     ],
+     "taper": 0.12,
+     "taper_tip": 0.55,
+     "colors": [
+      "#4c3121",
+      "#553725"
+     ],
+     "lit_dL": 0.09,
+     "shadow_cm": 2.2
+    },
+    {
+     "shape": "stone",
+     "per_m2": 0.6,
+     "size_cm": [
+      4,
+      9
+     ],
+     "colors": [
+      "#8a8176",
+      "#7b736a"
+     ],
+     "lit_dL": 0.06,
+     "shade_dL": 0.04,
+     "shadow_k": 0.35
+    }
+   ]
+  }
+ ],
+ "plates": {
+  "name": "plates",
+  "per_m2": 9,
+  "size_cm": [
+   26,
+   64
+  ],
+  "spread": 0.1,
+  "lit_cm": 2.6,
+  "lit_k": 1.26,
+  "crevice_cm": 3.0,
+  "crevice_v": 0.55,
+  "patch": 0.09
+ },
+ "cracks": {
+  "name": "cracks",
+  "cell_cm": 42,
+  "width_cm": 3.0,
+  "lip_cm": 2.6,
+  "groove_v": 0.5,
+  "lip_k": 1.2,
+  "spread": 0.07
+ }
+}

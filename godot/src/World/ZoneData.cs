@@ -41,6 +41,8 @@ public sealed class ZoneData
     /// <summary>A story fight's own place (its edge is its banks: the ember's lip burns low there).</summary>
     public readonly bool Story;
     /// <summary>A dungeon's theme ("den", "ravine") and its walls' field (MapBuild.WallField); "" and null elsewhere.</summary>
+    /// <summary>The map's seed (0 for zones that are not generated maps): the den's dressing and shaft pools are salted by it.</summary>
+    public readonly int Seed;
     public readonly string DungeonTheme = "";
     public readonly float[]? WallField;
     /// <summary>A dungeon's holes as a field (MapBuild.HoleField); null elsewhere.</summary>
@@ -201,6 +203,7 @@ public sealed class ZoneData
         Vents.AddRange(m.Vents);
         Gates.AddRange(m.Gates);
         Story = m.Spec.Story != "";
+        Seed = m.Spec.Seed;
         DungeonTheme = m.DungeonTheme;
         WallField = m.WallField;
         HoleField = m.HoleField;

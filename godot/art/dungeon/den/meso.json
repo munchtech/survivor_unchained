@@ -1,0 +1,16 @@
+{
+ "by": "tools/look/den_floor_paint.py (den r9 floor: painted from nothing; godot/data/look/den_floor.json)",
+ "painted": 1,
+ "inputs": "6782d9e0ec6a",
+ "metres": 8.0,
+ "albedo_layers": [
+  "stones",
+  "litter"
+ ],
+ "aux_layers": [
+  "stones",
+  "litter",
+  "plates",
+  "cracks"
+ ]
+}
