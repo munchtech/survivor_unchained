@@ -128,8 +128,8 @@ public class SkinLightTests
         Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
         var shader = Read("shaders", "heroine_skin.gdshader");
         Assert.Contains("uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;", shader);
-        Assert.Contains("if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && shade_floor > cel_rig.y)", shader);
-        Assert.Contains("* cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * ns_f * cel_fill_tone;", shader);
+        Assert.Contains("if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && sh_floor > cel_rig.y)", shader);
+        Assert.Contains("* cel_lum(lcol) * (sh_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * ns_f * fill_tone;", shader);
     }
 
     /// <summary>Fault 2 (r4b: the Look's neck grey by day, blue-violet by night): her body's tone comes out of her neck's shade
@@ -148,7 +148,51 @@ public class SkinLightTests
         Assert.Contains("uniform float neck_shade_out : hint_range(0.0, 1.0) = 0.0;", shader);
         Assert.Contains("vec3 nb = pow(max(body_tone, vec3(1e-3)), vec3(-neck_w * neck_shade_out));", shader);
         Assert.Contains("un /= ns_f;", shader);
-        Assert.Contains("cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * cel_fill_tone", shader);
+        Assert.Contains("cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * fill_tone", shader);
+    }
+
+    /// <summary>15 Nov skin-light r5: under a cold directional key the fill and the shade's floor take no cel_fill_tone warmth.</summary>
+    [Fact]
+    public void ShadeColdIsTheRules_EveryPartTakesIt_OnlyColdKeys()
+    {
+        Assert.Equal(1f, SkinLight.ShadeCold);
+        var people = Read("src", "Actors", "People.cs");
+        int at = people.IndexOf("m.SetShaderParameter(\"shade_cold\", SurvivorUnchained.Look.SkinLight.ShadeCold);", StringComparison.Ordinal);
+        Assert.True(at > 0, "People.Skin sets shade_cold from Look.SkinLight.ShadeCold");
+        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float shade_cold : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl)", shader);
+        Assert.Contains("fill_tone = mix(cel_fill_tone, vec3(1.0), shade_cold * cold);", shader);
+    }
+
+    [Fact]
+    public void ShadeFloorColdIsTheRules_AboveTheWarmFloor_EveryPartTakesIt()
+    {
+        Assert.InRange(SkinLight.ShadeFloorCold, SkinLight.ShadeFloor + 1e-4f, 0.5f);
+        var people = Read("src", "Actors", "People.cs");
+        int at = people.IndexOf("m.SetShaderParameter(\"shade_floor_cold\", SurvivorUnchained.Look.SkinLight.ShadeFloorCold);", StringComparison.Ordinal);
+        Assert.True(at > 0, "People.Skin sets shade_floor_cold from Look.SkinLight.ShadeFloorCold");
+        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float shade_floor_cold : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("sh_floor = mix(shade_floor, max(shade_floor, shade_floor_cold), cold);", shader);
+    }
+
+    [Fact]
+    public void NpcSkyKeepAndBodyGateAreTheRules_PeopleSetsThem()
+    {
+        Assert.Equal(0.5f, SkinLight.NpcSkyKeep);
+        var people = Read("src", "Actors", "People.cs");
+        int ks = people.IndexOf("m.SetShaderParameter(\"key_skin\", SurvivorUnchained.Look.SkinLight.NpcKeySkin);", StringComparison.Ordinal);
+        Assert.True(ks > 0);
+        int sk = people.IndexOf("m.SetShaderParameter(\"sky_skin\", SurvivorUnchained.Look.SkinLight.NpcSkyKeep);", ks, StringComparison.Ordinal);
+        Assert.True(sk > ks, "NpcSkin sets sky_skin from NpcSkyKeep after key_skin");
+        int npc = people.LastIndexOf("static ", ks, StringComparison.Ordinal);
+        int call = people.IndexOf("Skin(", npc, StringComparison.Ordinal);
+        Assert.True(call >= 0 && call < sk, "after NpcSkin's own Skin() call");
+        Assert.InRange(SkinLight.BodyGate, 0.01f, 0.99f);
+        Assert.Contains("m.SetShaderParameter(\"body_gate\", BodyGate ? SurvivorUnchained.Look.SkinLight.BodyGate : 0f);", people);
     }
 
     /// <summary>NPC night (r4b: the NPC's lit side lilac under the moon): every NPC skin part takes the rule's key_skin; the

@@ -1981,6 +1981,9 @@ public static class People
         if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
         // (and the shade's floor, cast shadow and dark side alike, where a rig's fill is small: Look.SkinLight.ShadeFloor)
         m.SetShaderParameter("shade_floor", SurvivorUnchained.Look.SkinLight.ShadeFloor);
+        // (under a cold key the fill and the floor without that warmth: Look.SkinLight.ShadeCold)
+        m.SetShaderParameter("shade_cold", SurvivorUnchained.Look.SkinLight.ShadeCold);
+        m.SetShaderParameter("shade_floor_cold", SurvivorUnchained.Look.SkinLight.ShadeFloorCold);
         // (her body's tone out of her neck's shade at the Look: Look.SkinLight.NeckShadeOut)
         m.SetShaderParameter("neck_shade_out", SurvivorUnchained.Look.SkinLight.NeckShadeOut);
         if (!FaceMidOff)
@@ -2127,6 +2130,8 @@ public static class People
         m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
         // (the moon's blue on an NPC's lit skin given back as its warmth, not lilac: Look.SkinLight.NpcKeySkin)
         m.SetShaderParameter("key_skin", SurvivorUnchained.Look.SkinLight.NpcKeySkin);
+        // (the sky's hue on an NPC half given back, as NpcCelSplit was fitted: Look.SkinLight.NpcSkyKeep)
+        m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.NpcSkyKeep);
         SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
         float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
             ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);
@@ -2192,7 +2197,7 @@ public static class People
     /// Unknown lightness (no paint): all of it.</summary>
     public static float NpcCelWarm(float ratio) => ratio < 0f ? 1f : Mathf.Clamp((ratio - NpcCelWarmAt.X) / (NpcCelWarmAt.Y - NpcCelWarmAt.X), 0f, 1f);
 
-    static readonly Vector2 NpcCelWarmAt = new(0.7f, 0.95f);
+    static readonly Vector2 NpcCelWarmAt = new(0.52f, 0.95f);
 
     /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
     /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
@@ -2428,7 +2433,7 @@ public static class People
         // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
         // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
         m.SetShaderParameter("throat_terminator", HerThroatTerminator);
-        m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
+        m.SetShaderParameter("body_gate", BodyGate ? SurvivorUnchained.Look.SkinLight.BodyGate : 0f);
         // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
         // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
         // to where she faces down and gated by ndl, the shade at the side of her neck stayed grey (own jaw chroma

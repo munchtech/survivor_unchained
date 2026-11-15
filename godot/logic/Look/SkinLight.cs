@@ -79,6 +79,32 @@ public static class SkinLight
     /// changes where a rig's fill is over it (the day close-up's 0.55).</summary>
     public const float ShadeFloor = 0.2f;
 
+    /// <summary>The shade's floor under a cold key (the skin shader's shade_floor_cold, eased in as ShadeCold is; ShadeFloor
+    /// under a warm key, the Look's and the day's, unchanged). With ShadeCold's neutral fill a higher floor lifts the night
+    /// shade toward her lit side's colour (15 Nov skin-light r5, 0.3: close_night collar C/L .199 -> .149, the NPC's
+    /// under-nose .181 -> .125, shade lightness about 0.6 of the lit side's).</summary>
+    public const float ShadeFloorCold = 0.3f;
+
+    /// <summary>Under a cold directional key (the moon's; a dungeon's cold light) the key's fill and the shade's floor take
+    /// none of cel_fill_tone's warmth (the skin shader's shade_cold, every skin part, hers and an NPC's; eased in by the
+    /// key's (b - r) / luminance as key_skin is, so the warm sun's key is untouched). Nearby warm lamps already warm the
+    /// shade; with the fill's warmth (her ShadeFill, an NPC's NpcCelSplit fill) on top the night shade read more orange
+    /// than the moonlit side (judge 4: her close_night collar C/L .199, the NPC's cheek .234, against lit .09). At 1 with
+    /// ShadeFloor 0.3 (15 Nov skin-light r5): .149 and about .10-.17. Not the key's own colour in the shade (ShadeKey, r4d,
+    /// failed: richer, not calmer).</summary>
+    public const float ShadeCold = 1f;
+
+    /// <summary>An NPC's share of the sky's and the fill's hue given back as its skin's warmth (sky_skin; hers is SkyKeep).
+    /// NpcCelSplit's fill shift was fitted at 0.5; at SkyKeep's 1 the NPC's day shade went ochre (jaw h 50 -> 59,
+    /// judge 4). 0.5 (15 Nov skin-light r5): h 48.</summary>
+    public const float NpcSkyKeep = 0.5f;
+
+    /// <summary>How much of HerBodyTone her body takes out from her collarbones down under the Look's rig (the skin
+    /// shader's body_gate; her head and neck keep it all). At 1 her collar band (part kept, by her freckles' map's blue)
+    /// read grey-beige over an orange lower chest at the Look by day (Oklab C .074 h 61 against .101 h 55, judge 4). 0.5
+    /// (15 Nov skin-light r5): lower chest .085 h 59. Outside the Look (rig weight 0) nothing changes.</summary>
+    public const float BodyGate = 0.5f;
+
     /// <summary>Her body's tone out of her neck's shade under the Look's rig (the skin shader's neck_shade_out, every skin
     /// part; her neck is her head's mesh). Under the rig her head and neck keep HerBodyTone (own (0.66, 1.17, 2.15), a blue
     /// fitted against the rig's warm key) and only the key's light was warmed back (key_tone), so where the key doesn't reach
