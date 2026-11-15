@@ -16,7 +16,8 @@ uniform vec3 right_dir = vec3(1.0, 0.0, 0.0);
 uniform vec3 up_dir = vec3(0.0, 0.469472, -0.882948);
 uniform vec3 view_dir = vec3(0.0, -0.882948, -0.469472);
 uniform float gain = 1.0;                      // the painting's albedo scale (calibrated on the den's frames)
-uniform float local_turn = 0.5;                // how much a spot or omni follows the painted normal (0 flat)
+uniform float cold_take = 0.5;                 // how much of a cold light's brightness the stone takes
+uniform float local_turn = 0.5;               // how much a spot or omni follows the painted normal (0 flat)
 
 varying vec3 lpos;
 
@@ -44,5 +45,9 @@ void fragment() {
 
 void light() {
 	float w = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(1.0, max(dot(NORMAL, LIGHT), 0.0), local_turn);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * w / PI;
+	// (round 7) a cold light (the fungus' teal omnis) gives the stone its brightness only, never its colour: it read green
+	vec3 lc = LIGHT_COLOR;
+	float ll = dot(lc, vec3(0.299, 0.587, 0.114));
+	lc = LIGHT_IS_DIRECTIONAL || lc.r >= lc.g ? lc : vec3(ll) * cold_take;
+	DIFFUSE_LIGHT += lc * ATTENUATION * w / PI;
 }

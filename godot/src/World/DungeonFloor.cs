@@ -44,6 +44,10 @@ public static class DungeonFloor
             mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
             mat.SetShaderParameter("den_arh", GD.Load<TextureLayered>("res://art/dungeon/den/arh.png"));
             if (DungeonDress.PitDecals) mat.SetShaderParameter("pit_decals", 1f);
+            foreach (var r in z.Rooms)
+                if (r.Kind == "Boss") mat.SetShaderParameter("boss_c", new Vector3(r.X, r.Z, r.R));
+            mat.SetShaderParameter("open_lift", Args.Num("den-open-lift", 1.08f));
+            mat.SetShaderParameter("boss_dim", Args.Num("den-boss-dim", 0.95f));
         }
         return mat;
     }

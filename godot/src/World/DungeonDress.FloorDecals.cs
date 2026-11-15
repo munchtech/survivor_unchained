@@ -15,34 +15,18 @@ public static partial class DungeonDress
     /// <summary>The painted pits own the den's holes: the floor (dungeon_floor.gdshader pit_decals) draws no hole of its own.</summary>
     internal const bool PitDecals = true;
     const bool FrameDecals = false, FloorRoots = true;   // (round 6: the camera-side frames never showed under the HUD: off; the floor roots repainted as the bank spilling onto the floor, on every bank, the camera side with its own lit set)
-    static readonly float PitWarmLift = SurvivorUnchained.Args.Num("pit-warm-lift", 2.0f);
+    static readonly float PitWarmLift = SurvivorUnchained.Args.Num("pit-warm-lift", 2.0f), HollowLift = SurvivorUnchained.Args.Num("den-hollow-lift", 1.0f);
 
     static void DenFloorDecals(Ctx c)
     {
         var z = c.Z;
         Decals();
-        using var f = FileAccess.Open("res://art/dungeon/den/floor_decals.json", FileAccess.ModeFlags.Read);
-        var doc = JsonDocument.Parse(f.GetAsText());
-        var size = doc.RootElement.GetProperty("size");
-        float AW = size[0].GetSingle(), AH = size[1].GetSingle();
-        var l = doc.RootElement.GetProperty("light");
-        float lx = l[0].GetSingle(), ly = -l[1].GetSingle();
-        var pits = new List<FloorDecal>(); var frames = new List<FloorDecal>(); var roots = new List<FloorDecal>(); var rootsS = new List<FloorDecal>();
-        foreach (var d in doc.RootElement.GetProperty("decals").EnumerateArray())
-        {
-            var r = d.GetProperty("rect"); var m = d.GetProperty("metres"); var a = d.GetProperty("anchor");
-            string kind = d.GetProperty("kind").GetString()!;
-            float mr = d.TryGetProperty("mouth_r", out var mrp) ? mrp.GetSingle() : 0f;
-            var harm = new List<float>();
-            if (d.TryGetProperty("mouth_harm", out var hp))
-                foreach (var t in hp.EnumerateArray()) { harm.Add(t[0].GetSingle()); harm.Add(t[1].GetSingle()); harm.Add(t[2].GetSingle()); }
-            var dl = d.TryGetProperty("light", out var lp) ? new Vector2(lp[0].GetSingle(), -lp[1].GetSingle()) : new Vector2(lx, ly);
-            var fd = new FloorDecal(kind, new Rect2(r[0].GetSingle() / AW, r[1].GetSingle() / AH, r[2].GetSingle() / AW, r[3].GetSingle() / AH),
-                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr, harm.ToArray(), dl);
-            (kind == "pit" ? pits : kind == "frame" ? frames : kind == "floor_s" ? rootsS : roots).Add(fd);
-        }
-        var b = new DecalBuf(); var bp = new DecalBuf();
-        int nPit = 0, nFrame = 0, nRoot = 0;
+        var all = LoadFloorDecals("res://art/dungeon/den/floor_decals.json");
+        var pits = all.FindAll(d => d.Kind == "pit"); var frames = all.FindAll(d => d.Kind == "frame");
+        var roots = all.FindAll(d => d.Kind == "floor"); var rootsS = all.FindAll(d => d.Kind == "floor_s");
+        var big = PitArt().FindAll(d => d.Kind == "bigpit"); var hol = PitArt().FindAll(d => d.Kind == "hollow");
+        var b = new DecalBuf(); var bp = new DecalBuf(); var bb = new DecalBuf(); var bhol = new DecalBuf();
+        int nPit = 0, nFrame = 0, nRoot = 0, nBig = 0, nHol = 0, nBr = 0;
         float cos70 = Mathf.Cos(Mathf.DegToRad(70f));
         bool LightOk(Vector2 top, bool mirror, Vector2 dl)
         {
@@ -54,10 +38,20 @@ public static partial class DungeonDress
         if (PitDecals)
             foreach (var (p, rad, co) in pitC)
             {
-                var d = pits[(int)(Hash((int)(p.X * 10), (int)(p.Y * 10), 951) * pits.Count) % pits.Count];
-                AddPit(c, bp, d, p, co);
-                nPit++;
+                // (round 7) a big hole (r over 4 m) takes a pit painted at its own size: the 2.6 m pit stretched 2.1-2.4x
+                // read as a flat black disk ringed by jagged black fragments
+                bool isBig = rad > 4f && big.Count > 0;
+                var set = isBig ? big : pits;
+                var d = set[(int)(Hash((int)(p.X * 10), (int)(p.Y * 10), 951) * set.Count) % set.Count];
+                AddPit(c, isBig ? bb : bp, d, p, co);
+                if (isBig) nBig++; else nPit++;
             }
+        // the lair's shallow hollows: painted dishes, walkable, no hole (laid like a pit, scaled whole, never turned)
+        foreach (var (hp, hr, vi) in DenHollows(c))
+        {
+            AddPit(c, bhol, hol[vi], hp, new[] { hr }, hr / hol[vi].MouthR);
+            nHol++;
+        }
         bool NearPit(Vector2 p, float m)
         {
             foreach (var (pc, rad, _) in pitC) if (p.DistanceTo(pc) < rad + m) return true;
@@ -136,11 +130,39 @@ public static partial class DungeonDress
                 }
         }
 
-        GD.Print($"DenFloorDecals: {nPit} pits, {nFrame} frame, {nRoot} floor, {(b.I.Count + bp.I.Count) / 3} tris");
+        // ---- (round 7) roots at the big boulders' feet: 1-3 of the floor set running out from under each ----
+        int bi = 0;
+        foreach (var (bp0, bh) in c.Boulders)
+        {
+            bi++;
+            if (bh < 1.0f || roots.Count == 0) continue;
+            var inw = new Vector2(Wall(c, bp0.X + 0.5f, bp0.Y) - Wall(c, bp0.X - 0.5f, bp0.Y), Wall(c, bp0.X, bp0.Y + 0.5f) - Wall(c, bp0.X, bp0.Y - 0.5f));
+            inw = inw.LengthSquared() < 1e-8f ? Vector2.Down : inw.Normalized();
+            int m = 1 + (int)(2.99f * Hash(bi, 1, 981));
+            for (int k = 0; k < m; k++)
+            {
+                var outd = inw.Rotated((k - 0.5f * (m - 1)) * 0.9f + (Hash(bi, k, 982) - 0.5f) * 0.5f);
+                var tp = -outd;   // (the rect's top against the stone, its run out over the floor)
+                var d = roots[(int)(Hash(bi, k, 983) * roots.Count) % roots.Count];
+                bool mirror;
+                if (LightOk(tp, false, d.Light)) mirror = false; else if (LightOk(tp, true, d.Light)) mirror = true; else continue;
+                var anchor = bp0 + outd * (bh * 0.55f);
+                float sc = 0.55f + 0.2f * Hash(bi, k, 984);
+                bool fits = true;
+                for (int q = 0; q < 6 && fits; q++)
+                {
+                    var sp = anchor + outd * (d.Metres.Y * sc * (q + 0.5f) / 6f);
+                    if (Hole(c, sp.X, sp.Y) < 0.4f || Wall(c, sp.X, sp.Y) < 0f) fits = false;
+                }
+                if (!fits) continue;
+                AddFlat(c, b, d, anchor, tp, sc, mirror, 0f, true);
+                nBr++;
+            }
+        }
+
+        GD.Print($"DenFloorDecals: {nBig} big pits, {nHol} hollows, {nBr} boulder roots, {nPit} pits, {nFrame} frame, {nRoot} floor, {(b.I.Count + bp.I.Count) / 3} tris");
         var tex = GD.Load<Texture2D>("res://art/dungeon/den/floor_decals.png");
-        var shade = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_bank_shadow.gdshader") };
-        shade.SetShaderParameter("atlas", tex);
-        void Emit(DecalBuf buf, string name, bool pit)
+        void Emit(DecalBuf buf, string name, bool pit, Texture2D tex, float lift)
         {
             if (buf.Count == 0) return;
             var arr = new Godot.Collections.Array();
@@ -162,14 +184,82 @@ public static partial class DungeonDress
             mat.SetShaderParameter("res", (float)z.Res);
             // (a pit paints its own hole: the darkening toward the holes would black out its far wall and lip)
             // and its lip, painted against a floor (88, 58, 40) the game's is ~1.4x lighter than, lifted to stay lit
-            if (pit) { mat.SetShaderParameter("hole_dark", 0f); mat.SetShaderParameter("warm_lift", PitWarmLift); }
+            if (pit) { mat.SetShaderParameter("hole_dark", 0f); mat.SetShaderParameter("warm_lift", lift); }
+            var shade = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_bank_shadow.gdshader") };
+            shade.SetShaderParameter("atlas", tex);
             mesh.SurfaceSetMaterial(0, mat);
             mesh.SurfaceSetMaterial(1, shade);
             c.Root.AddChild(new MeshInstance3D { Name = name, Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
-        Emit(b, "FloorDecals", false);
-        Emit(bp, "PitDecals", true);
-        c.Count["decal floor pit"] = nPit; c.Count["decal floor frame"] = nFrame; c.Count["decal floor root"] = nRoot;
+        Emit(b, "FloorDecals", false, tex, 1f);
+        Emit(bp, "PitDecals", true, tex, PitWarmLift);
+        var pitTex = GD.Load<Texture2D>("res://art/dungeon/den/pit_decals.png");
+        Emit(bb, "BigPitDecals", true, pitTex, PitWarmLift);
+        Emit(bhol, "HollowDecals", true, pitTex, HollowLift);   // (the hollows' bowls painted at the lair's own values: lifted x2 they read as pale tubs)
+        c.Count["decal floor pit"] = nPit; c.Count["decal big pit"] = nBig; c.Count["decal hollow"] = nHol; c.Count["decal floor frame"] = nFrame; c.Count["decal floor root"] = nRoot;
+    }
+
+    static List<FloorDecal> LoadFloorDecals(string path)
+    {
+        var list = new List<FloorDecal>();
+        if (!FileAccess.FileExists(path)) return list;
+        using var f = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+        var doc = JsonDocument.Parse(f.GetAsText());
+        var size = doc.RootElement.GetProperty("size");
+        float AW = size[0].GetSingle(), AH = size[1].GetSingle();
+        var l = doc.RootElement.GetProperty("light");
+        float lx = l[0].GetSingle(), ly = -l[1].GetSingle();
+        foreach (var d in doc.RootElement.GetProperty("decals").EnumerateArray())
+        {
+            var r = d.GetProperty("rect"); var m = d.GetProperty("metres"); var a = d.GetProperty("anchor");
+            float mr = d.TryGetProperty("mouth_r", out var mrp) ? mrp.GetSingle() : 0f;
+            var harm = new List<float>();
+            if (d.TryGetProperty("mouth_harm", out var hp))
+                foreach (var t in hp.EnumerateArray()) { harm.Add(t[0].GetSingle()); harm.Add(t[1].GetSingle()); harm.Add(t[2].GetSingle()); }
+            var dl = d.TryGetProperty("light", out var lp) ? new Vector2(lp[0].GetSingle(), -lp[1].GetSingle()) : new Vector2(lx, ly);
+            list.Add(new FloorDecal(d.GetProperty("kind").GetString()!, new Rect2(r[0].GetSingle() / AW, r[1].GetSingle() / AH, r[2].GetSingle() / AW, r[3].GetSingle() / AH),
+                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr, harm.ToArray(), dl));
+        }
+        return list;
+    }
+    static List<FloorDecal>? pitArt;
+    static List<FloorDecal> PitArt() => pitArt ??= LoadFloorDecals("res://art/dungeon/den/pit_decals.json");
+
+    static ZoneData? hollowsFor;
+    static List<(Vector2 p, float r, int v)> hollowsCache = new();
+
+    /// <summary>(round 7) The lair's shallow hollows, as den_boss.png's floor has them: 4-6 painted dishes (dish radius
+    /// 1.3-2.6 m) on its open floor, clear of the walls, the pits and each other; one in a clearing now and then. Cached per
+    /// zone (the floor decals lay them; the litter heaps bones at their lips and keeps off their dishes).</summary>
+    static List<(Vector2 p, float r, int v)> DenHollows(Ctx c)
+    {
+        var z = c.Z;
+        if (hollowsFor == z) return hollowsCache;
+        hollowsFor = z;
+        var res = hollowsCache = new();
+        var hol = PitArt().FindAll(d => d.Kind == "hollow");
+        if (hol.Count == 0) return res;
+        int ri = 0;
+        foreach (var r in z.Rooms)
+        {
+            ri++;
+            int want = r.Kind == "Boss" ? 4 + (int)(2.99f * Hash(ri, 1, 991)) : r.Kind == "Clearing" && Hash(ri, 2, 991) < 0.5f ? 1 : 0;
+            for (int t = 0; t < 40 && want > 0; t++)
+            {
+                float a = Hash(ri, t, 992) * Mathf.Tau, dd = Mathf.Sqrt(Hash(ri, t, 993)) * r.R * 0.85f;
+                var p = new Vector2(r.X + Mathf.Cos(a) * dd, r.Z + Mathf.Sin(a) * dd);
+                int v = (int)(Hash(ri, t, 994) * hol.Count) % hol.Count;
+                float hr = hol[v].MouthR * (0.95f + 0.15f * Hash(ri, t, 995));
+                float reach = hr + 0.5f;   // (the rim and its shadow)
+                if (Wall(c, p.X, p.Y) < reach + 0.8f || Hole(c, p.X, p.Y) < reach + 1.5f) continue;
+                bool clash = false;
+                foreach (var (q, qr, _) in res) if (q.DistanceTo(p) < qr + hr + 2.0f) { clash = true; break; }
+                if (clash) continue;
+                res.Add((p, hr, v));
+                want--;
+            }
+        }
+        return res;
     }
 
     static ZoneData? pitsFor;
@@ -266,7 +356,7 @@ public static partial class DungeonDress
     /// <summary>One pit decal, never turned: laid on the floor's drawn height (FloorY: a flat decal on a rolling floor
     /// was cut by it along a straight line), its painted mouth (mouth_harm) stretched, angle by angle, onto the hole's
     /// own outline `co` (Fourier, to the 6th), so the lip sits on the hole's edge all the way round.</summary>
-    static void AddPit(Ctx c, DecalBuf b, FloorDecal d, Vector2 ctr, float[] co)
+    static void AddPit(Ctx c, DecalBuf b, FloorDecal d, Vector2 ctr, float[] co, float fixedScale = 0f)
     {
         float W = d.Metres.X, Hh = d.Metres.Y;
         int nx = Mathf.CeilToInt(W / 0.25f) + 1, ny = Mathf.CeilToInt(Hh / 0.25f) + 1;
@@ -279,7 +369,7 @@ public static partial class DungeonDress
                 var l = new Vector2((s - d.Anchor.X) * W, (t - d.Anchor.Y) * Hh);  // painted metres from the mouth's centre (x east, y south)
                 float th = Mathf.Atan2(l.Y, l.X), rp = d.MouthR;
                 for (int h = 0; h + 2 < d.Harm.Length; h += 3) rp += d.MouthR * d.Harm[h + 1] * Mathf.Sin(d.Harm[h] * th + d.Harm[h + 2]);
-                float g = FourierAt(co, th) / rp;
+                float g = fixedScale > 0f ? fixedScale : FourierAt(co, th) / rp;
                 gmin = Mathf.Min(gmin, g); gmax = Mathf.Max(gmax, g);
                 var w = ctr + l * g;
                 b.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.06f, w.Y));

@@ -80,7 +80,7 @@ public partial class ZoneView : Node3D
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
-        if (DungeonWalls.Build(z) is Node3D walls) AddChild(walls);
+        if (DungeonWalls.Build(z) is Node3D walls && !(Args.Get("den-hide") ?? "").Contains("walls")) AddChild(walls);   // (--den-hide walls: a diagnosis toggle)
         if (DungeonLight.Build(z) is Node3D shafts) AddChild(shafts);
         if (DungeonDress.Build(z) is Node3D dress) AddChild(dress);
         yield return "ground";

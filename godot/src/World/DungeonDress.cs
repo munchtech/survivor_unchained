@@ -30,6 +30,7 @@ public static partial class DungeonDress
         public ZoneData Z = null!;
         public Node3D Root = null!;
         public readonly List<Vector2> Used = new();
+        public readonly List<(Vector2 p, float half)> Boulders = new();   // (the den's placed boulders: foot centre, half width)
         public readonly Dictionary<string, int> Count = new();
         public readonly SurfaceTool Shrooms = new(), Bones = new(), Poles = new(), Canvas = new(), Cloth = new();
         public int PoleParts, CanvasTris, ClothTris;
@@ -122,11 +123,25 @@ public static partial class DungeonDress
     {
         if (r.Kind != "Bend")
         {
-            // 2 to 4 mossy rocks, the first on a north/side wall, the rest anywhere.
-            int n = 2 + (int)(Hash(s, 1, 1) * 3);
-            for (int k = 0; k < n; k++)
-                foreach (var sp in WallSpots(c, r, 0.5f + 0.7f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
-                    PlaceBoulder(c, (int)(Hash(s * 3 + k, 9, (int)(sp.X * 10)) * 997), sp.X, sp.Z, 0.95f + 0.2f * Hash(s, 3, k));   // (painted 1.9-3.1 m across: 1.8-3.6 m placed, as the round 5 rocks)
+            // (round 7) boulders in groups along the walls' feet, as den_room.png sets them: one big (2.6-3.3 m across,
+            // taller than her) half into the bank, one or two smaller companions beside it along the wall
+            int groups = 1 + (r.R > 11f && Hash(s, 1, 1) < 0.6f ? 1 : 0);
+            for (int k = 0; k < groups; k++)
+                foreach (var sp in WallSpots(c, r, 0.35f + 0.3f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
+                {
+                    float half = PlaceBoulder(c, (int)(Hash(s * 3 + k, 9, (int)(sp.X * 10)) * 997), sp.X, sp.Z, 1.0f + 0.15f * Hash(s, 3, k), true);
+                    var tan = new Vector2(-sp.Dz, sp.Dx);
+                    var inw = new Vector2(-sp.Dx, sp.Dz * -1f);
+                    int m = 1 + (Hash(s, 4, k) < 0.55f ? 1 : 0);
+                    for (int q = 0; q < m; q++)
+                    {
+                        float side = (q == 0) == (Hash(s, 5, k) < 0.5f) ? 1f : -1f;
+                        float sc = 0.6f + 0.25f * Hash(s, 6 + q, k);
+                        var p = new Vector2(sp.X, sp.Z) + tan * side * (half + 0.9f * sc + 0.2f * Hash(s, 8, q)) + inw * (0.3f + 0.5f * Hash(s, 9, q));
+                        if (Wall(c, p.X, p.Y) < 0.2f || Hole(c, p.X, p.Y) < 2f) continue;
+                        PlaceBoulder(c, (int)(Hash(s * 5 + k, 11 + q, (int)(p.X * 10)) * 997), p.X, p.Y, sc, false);
+                    }
+                }
         }
         if (r.Kind == "Clearing" || r.Kind == "Boss")
             foreach (var sp in WallSpots(c, r, 1.2f, 1, s * 7 + 5, true))
@@ -265,7 +280,7 @@ public static partial class DungeonDress
                 lod0.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             }
         }
-        if (path.Contains("/flora/")) Kit(n, c.Z.DungeonTheme == "den");
+        if (path.Contains("/flora/")) Kit(n);
         else if (tag == "logs" && c.Z.DungeonTheme == "den") Lift(n, new Color(1.5f, 1.36f, 1.18f));   // (den_room.png's log: pale, weathered)
         var b = Bounds(n, Transform3D.Identity) ?? new Aabb();
         n.Scale = Vector3.One * scale;
@@ -275,12 +290,8 @@ public static partial class DungeonDress
         c.Tick(tag);
     }
 
-    static Shader? denInk;
-    static readonly Vector3 DenRockTint = new(0.94f, 0.97f, 1.03f);   // (the den light warms it: back toward den_room.png's grey-brown)
-    const float DenRockShade = 0.12f;
-
     // A flora piece's materials through the kit look (KitLook.For: our own rocks' painted OWN_ROCK); raw they draw black.
-    static void Kit(Node n, bool den)
+    static void Kit(Node n)
     {
         if (n is MeshInstance3D mi && mi.Mesh != null)
         {
@@ -289,39 +300,11 @@ public static partial class DungeonDress
                 if (m.SurfaceGetMaterial(i) is Material mat)
                 {
                     var k = KitLook.For(mat, KitLook.Look.Plain);
-                    // (the den's own boulders, Stone_OwnDenrock: their moss and warmth painted in, so the map as it is; their
-                    // shade lifted toward den_room.png's (70,62,55); the silhouette's ink a hull after the see-through rim)
-                    if (k is ShaderMaterial dm && den && mat.ResourceName == "Stone_OwnDenrock")
-                    {
-                        dm = (ShaderMaterial)dm.Duplicate();
-                        dm.SetShaderParameter("paint_tint", DenRockTint);
-                        dm.SetShaderParameter("moss_amount", 0.0f);
-                        dm.SetShaderParameter("shade_floor", DenRockShade);
-                        denInk ??= GD.Load<Shader>("res://shaders/den_rock_ink.gdshader");
-                        var ink = new ShaderMaterial { Shader = denInk };
-                        ink.SetShaderParameter("center", m.GetAabb().GetCenter());
-                        ink.SetShaderParameter("box_min", m.GetAabb().Position);
-                        ink.SetShaderParameter("box_max", m.GetAabb().End);
-                        if (dm.NextPass is ShaderMaterial rim) { rim = (ShaderMaterial)rim.Duplicate(); rim.NextPass = ink; dm.NextPass = rim; }
-                        else dm.NextPass = ink;
-                        k = dm;
-                    }
-                    // (the den's rocks: the one stone a step darker and olive, mossed over their tops, FROM den_room.png)
-                    else if (k is ShaderMaterial sm && den)
-                    {
-                        sm = (ShaderMaterial)sm.Duplicate();
-                        sm.SetShaderParameter("paint_tint", new Vector3(1.0f, 0.9f, 0.76f));   // (lead 6: warm grey-brown, not grey)
-                        sm.SetShaderParameter("moss_amount", 1.0f);
-                        sm.SetShaderParameter("moss_face", new Vector2(0.2f, 0.6f));
-                        sm.SetShaderParameter("moss_edge", 0.0f);
-                        sm.SetShaderParameter("moss_color", new Color(0.36f, 0.4f, 0.18f));
-                        k = sm;
-                    }
                     m.SurfaceSetMaterial(i, k);
                 }
             mi.Mesh = m;
         }
-        foreach (var ch in n.GetChildren()) Kit(ch, den);
+        foreach (var ch in n.GetChildren()) Kit(ch);
     }
 
     // A scan's own albedo lifted (the den's scanned trunks drew as dark bars against den_room.png's pale weathered log).
@@ -491,7 +474,7 @@ public static partial class DungeonDress
                 c.Shrooms.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
                 c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr, IsHemisphere = true, RadialSegments = 8, Rings = 4 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
             }
-            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 2.4f, OmniRange = 3.6f, ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.5f, cz) });
+            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 1.6f, OmniRange = 2.6f,   /* (round 7: 2.4 / 3.6 washed the floor and boulders green for metres round each cluster) */ ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.5f, cz) });
             c.Clusters++;
             c.Tick("fungus");
         }

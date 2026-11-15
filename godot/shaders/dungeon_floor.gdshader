@@ -18,7 +18,10 @@ const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
 uniform vec3 den_tint = vec3(0.95, 0.88, 0.94);   // (lead 6: 1.3 read as bright sand, frame median 68-80 against the targets' 40-57)
 uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (--env-off rim, the den pit halo diagnosis, 15 Nov)
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
-uniform float pit_decals = 0.0;   // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
+uniform vec3 boss_c = vec3(0.0);   // the den's boss lair: centre x, z and radius (0: none)
+uniform float open_lift = 1.08;   // the rooms' open middles, lifted (round 7: <= 10 %)
+uniform float boss_dim = 0.95;
+uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -165,6 +168,13 @@ void fragment() {
 		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
 		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)
 		col *= 0.88;
+		// (round 7) the rooms' open middles lifted (den_room.png's centre reads warm mid-brown; the room measured 33
+		// against ~40), the banks' feet and edges left dark; the boss lair instead takes damp dark patches (66 against 58)
+		float in_boss = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
+		col *= mix(vec3(1.0), open_lift * vec3(1.0, 1.03, 1.12), smoothstep(2.5, 5.5, inside) * (1.0 - in_boss));   // (and a touch less orange: den_room.png's centre (86,62,51) against ours (81,55,38))
+		float bdamp = smoothstep(0.47, 0.62, fbm(wpos.xz * 0.14 + 71.0) + 0.1 * (mid - 0.5)) * in_boss;
+		col = mix(col, col * vec3(0.56, 0.52, 0.52), bdamp * 0.9);
+		col *= mix(1.0, boss_dim, in_boss);
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
 		// the pits: the depths go black

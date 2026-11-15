@@ -15,7 +15,8 @@ public static partial class DungeonDress
 {
     const string BoulderJson = "res://art/dungeon/den/boulders.json";
 
-    sealed record Boulder(Vector4 Uv, Vector4 Card, Vector3 Pivot, Vector4 Foot, Vector3[] Hull, int[] Tri);
+    sealed record Boulder(Vector4 Uv, Vector4 Card, Vector3 Pivot, Vector4 Foot, Vector3[] Hull, int[] Tri, bool Big);
+    static readonly float BoulderGain = SurvivorUnchained.Args.Num("den-boulder-gain", 1.0f);
 
     static List<Boulder>? boulders;
     static Shader? boulderShader;
@@ -50,7 +51,7 @@ public static partial class DungeonDress
                 new Vector4(cd[0].GetSingle(), cd[1].GetSingle(), cd[2].GetSingle(), cd[3].GetSingle()),
                 V3(b.GetProperty("pivot")),
                 new Vector4(ft[0].GetSingle(), ft[1].GetSingle(), ft[2].GetSingle(), ft[3].GetSingle()),
-                hull, tri));
+                hull, tri, b.TryGetProperty("size", out var sz) && sz.GetString() == "big"));
         }
         bPaint = GD.Load<Texture2D>("res://art/dungeon/den/boulders_paint.png");
         bForm = GD.Load<Texture2D>("res://art/dungeon/den/boulders_form.png");
@@ -58,11 +59,13 @@ public static partial class DungeonDress
         return boulders;
     }
 
-    // One painted boulder at (x, zz) on the floor, kind by the hash, at yaw 0 (the painting's view).
-    static void PlaceBoulder(Ctx c, int pick, float x, float zz, float scale)
+    // One painted boulder at (x, zz) on the floor, kind by the hash among the big or the small forms, at yaw 0 (the
+    // painting's view). Returns its footprint's half width (m), 0 when none was placed.
+    static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
-        var all = Boulders();
-        if (all.Count == 0 || boulderShader == null) return;
+        var all = Boulders().FindAll(q => q.Big == big);
+        if (all.Count == 0) all = Boulders();
+        if (all.Count == 0 || boulderShader == null) return 0f;
         var b = all[pick % all.Count];
         var n = new Node3D { Name = "Boulder", Position = new Vector3(x, H(c, x, zz), zz), Scale = Vector3.One * scale };
         // the card: the plane through the pivot across the view, spanned by the camera's right and up
@@ -85,6 +88,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("form_tex", bForm);
         mat.SetShaderParameter("rect", b.Uv);
         mat.SetShaderParameter("dmax", bDmax);
+        mat.SetShaderParameter("gain", BoulderGain);
         mat.SetShaderParameter("right_dir", bRight);
         mat.SetShaderParameter("up_dir", bUp);
         mat.SetShaderParameter("view_dir", bView);
@@ -114,5 +118,8 @@ public static partial class DungeonDress
         });
         c.Root.AddChild(n);
         c.Tick("rocks");
+        float half = 0.5f * fw * scale;
+        c.Boulders.Add((new Vector2(x + 0.5f * (b.Foot.X + b.Foot.Y) * scale, zz + 0.5f * (b.Foot.Z + b.Foot.W) * scale), half));
+        return half;
     }
 }

@@ -79,7 +79,13 @@ public static partial class DungeonDress
         var z = c.Z;
         var b = new DecalBuf();
         var pits = DenPits(c);
-        bool Ok(float x, float zz, float wmin, float hmin) => Wall(c, x, zz) >= wmin && Hole(c, x, zz) >= hmin;
+        var hollows = DenHollows(c);
+        bool Ok(float x, float zz, float wmin, float hmin)
+        {
+            if (Wall(c, x, zz) < wmin || Hole(c, x, zz) < hmin) return false;
+            foreach (var (hp, hr, _) in hollows) if (hp.DistanceSquaredTo(new Vector2(x, zz)) < (hr + 0.2f) * (hr + 0.2f)) return false;
+            return true;
+        }
         int boss = -1;
         for (int k = 0; k < z.Rooms.Count; k++) if (z.Rooms[k].Kind == "Boss") boss = k;
         bool InBoss(Vector2 p) => boss >= 0 && p.DistanceTo(new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z)) < z.Rooms[boss].R * 1.05f;
@@ -105,15 +111,20 @@ public static partial class DungeonDress
             }
         }
         int ri = 0;
-        foreach (var ch in c.Root.GetChildren())   // (the boulders Den() set down: they stay where they sit)
+        foreach (var (rp, bh) in c.Boulders)   // (the boulders Den() set down: they stay where they sit)
         {
-            if (ch is not Node3D n3 || !n3.SceneFilePath.Contains("/flora/den/")) continue;
             ri++;
-            var rp = new Vector2(n3.Position.X, n3.Position.Z);
             var dir = Inward(rp.X, rp.Y).Rotated((Hash(ri, 2, 934) - 0.5f) * 1.6f);
-            float dd = 1.7f * n3.Scale.X + 0.4f * Hash(ri, 3, 934);
+            float dd = bh + 0.6f + 0.4f * Hash(ri, 3, 934);
             var p = rp + dir * dd;
             if (Ok(p.X, p.Y, 0.4f, 0.8f)) seeds.Add((p, 0.8f, InBoss(p)));
+        }
+        foreach (var (hp, hr, _) in DenHollows(c))   // (and the lair's hollows: bones heaped at their lips)
+        {
+            ri++;
+            float a = Hash(ri, 4, 934) * Mathf.Tau;
+            var p = hp + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr + 0.7f);
+            if (Ok(p.X, p.Y, 0.6f, 0.8f)) seeds.Add((p, 0.8f, InBoss(p)));
         }
         {
             const float scan = 0.5f;
@@ -179,7 +190,7 @@ public static partial class DungeonDress
                 float u0 = Hash(i, j, 901), u1 = Hash(i, j, 902), u2 = Hash(i, j, 903), u3 = Hash(i, j, 904);
                 float x = -z.Half + (i + u0) * cell, zz = -z.Half + (j + u1) * cell;
                 float w = Wall(c, x, zz), h = Hole(c, x, zz);
-                if (w < 0.15f || h < 0.5f) continue;
+                if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
                 bool foot = w < 1.8f;
                 float keep = foot ? 0.4f : w > 5f ? 0.08f : 0.13f;
                 if (u2 > keep) continue;

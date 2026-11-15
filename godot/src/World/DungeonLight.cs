@@ -13,6 +13,7 @@ public static class DungeonLight
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
     static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
+    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f);
 
     public static Node3D? Build(ZoneData z)
     {
@@ -37,7 +38,7 @@ public static class DungeonLight
                     if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
                 }
                 float w = 1.1f + 1.0f * Hash(i, k, 3);
-                AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w);
+                AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? 1f : PoolWide);
             }
         }
         GD.Print($"DungeonLight {z.DungeonTheme}: {root.GetChildCount() / 2} shafts over {z.Rooms.Count} rooms");
@@ -50,7 +51,7 @@ public static class DungeonLight
         return f[j * z.Res + i];
     }
 
-    static void AddShaft(Node3D root, Shader shader, Vector3 foot, float w)
+    static void AddShaft(Node3D root, Shader shader, Vector3 foot, float w, float pool)
     {
         var top = foot - Axis * Height;
         var basis = Basis.LookingAt(Axis, Mathf.Abs(Axis.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
@@ -62,8 +63,8 @@ public static class DungeonLight
             LightColor = new Color("ffe2b8"),
             LightEnergy = 9f,   // (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
-            SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f) / Height)),
-            SpotAngleAttenuation = 1.2f,
+            SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
+            SpotAngleAttenuation = pool > 1f ? PoolSoft : 1.2f,   // (round 7: the rooms' pools 1.5x wider and softer-edged, the room's centre warm mid-brown; the lair keeps its own)
             SpotAttenuation = 0.4f,
             ShadowEnabled = false,
             LightSpecular = 0.2f,

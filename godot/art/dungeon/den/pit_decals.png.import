@@ -2,8 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-path.bptc="res://.godot/imported/pit_decals.png-7e3a91c05b2d4f68a1c9e0d35b7f2a64.bptc.ctex"
-path.astc="res://.godot/imported/pit_decals.png-7e3a91c05b2d4f68a1c9e0d35b7f2a64.astc.ctex"
+uid="uid://17p2q450bwl4"
+path.bptc="res://.godot/imported/pit_decals.png-62689627d8bd59b015c54fc0cc0f7572.bptc.ctex"
+path.astc="res://.godot/imported/pit_decals.png-62689627d8bd59b015c54fc0cc0f7572.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://art/dungeon/den/pit_decals.png"
-dest_files=["res://.godot/imported/pit_decals.png-7e3a91c05b2d4f68a1c9e0d35b7f2a64.bptc.ctex", "res://.godot/imported/pit_decals.png-7e3a91c05b2d4f68a1c9e0d35b7f2a64.astc.ctex"]
+dest_files=["res://.godot/imported/pit_decals.png-62689627d8bd59b015c54fc0cc0f7572.bptc.ctex", "res://.godot/imported/pit_decals.png-62689627d8bd59b015c54fc0cc0f7572.astc.ctex"]
 
 [params]
 
