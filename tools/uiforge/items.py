@@ -36,6 +36,7 @@ ITEMS = {
     "chest": "an iron-bound wooden strongbox with a brass lock",
     "circlet": "a thin circlet of moonsilver set with a pale pearl",
     "cleaver": "a heavy butcher's cleaver with a worn wooden handle",
+    "corset": "a black leather corset bodice, padded, laced up the front with dark cord",
     "cloak": "a long dark traveller's cloak with a hood and a clasp",
     "dagger": "a pair of crossed throwing knives",
     "dust": "a small sack of grey barrow dust spilling at the top",

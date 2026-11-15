@@ -173,7 +173,7 @@ public class WardrobeTests
     public void A_piece_with_no_wear_draws_the_callings_kit_and_is_one_tile_with_the_look_that_draws_the_same()
     {
         var ch = Her();
-        ch.Equipment.Body = Own(ch, "padded_jerkin");
+        ch.Equipment.Body = Own(ch, "chain_shirt");   // (padded_jerkin now wears ranger.top)
         Assert.False(Wardrobe.OwnHasLook(ch, "body"));
         Wardrobe.BackFill(ch);
         // nothing found draws what her own does yet: no merged tile
@@ -185,7 +185,7 @@ public class WardrobeTests
     }
 
     [Theory]
-    [InlineData("body", "padded_jerkin")]
+    [InlineData("body", "chain_shirt")]
     [InlineData("head", "leather_cap")]
     public void A_piece_with_no_look_offers_the_dyes_of_the_kit_it_draws(string slot, string item)
     {

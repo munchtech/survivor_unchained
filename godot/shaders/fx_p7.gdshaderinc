@@ -44,11 +44,18 @@ uniform float p7_root = 0.06;  // star: a spike's root half-width
 uniform float p7_heart = 0.05; // star: the heart's radius
 uniform float p7_streaks = 7.0; // star: the thin streaks between the spikes
 varying float p7_wy;
+// (fight-ring, 13 Nov) the dome: how far this point stands on the camera's side of its centre, -1 the far side .. 1 the near
+varying float p7_near;
 
 void vertex() {
 	// the pulse lies on her own surface: pushed out a little along it so her depth twin does not fight it
 	if (p7_mode == 11) VERTEX += NORMAL * 0.014;
 	p7_wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+	if (p7_mode == 8) {
+		vec3 rel = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz - MODEL_MATRIX[3].xyz;
+		vec3 fwd = -INV_VIEW_MATRIX[2].xyz;
+		p7_near = -dot(normalize(rel.xz + vec2(1e-5)), normalize(fwd.xz + vec2(1e-5)));
+	}
 	if (p7_bill > 0.5) {
 		float s = length(MODEL_MATRIX[0].xyz);
 		mat4 bb = mat4(INV_VIEW_MATRIX[0] * s, INV_VIEW_MATRIX[1] * s, INV_VIEW_MATRIX[2] * s, MODEL_MATRIX[3]);

@@ -21,7 +21,7 @@ public static class GlyphPaths
     static readonly Dictionary<string, string> Items = new()
     {
         ["chest"] = "relic", ["picks"] = "key", ["lamp"] = "campfire", ["lantern"] = "campfire", ["helm_light"] = "helm", ["circlet"] = "ring",
-        ["armor_light"] = "armor", ["armor_heavy"] = "armor", ["root"] = "thorn", ["vial"] = "drop", ["vial_orange"] = "drop", ["potion"] = "heart",
+        ["armor_light"] = "armor", ["corset"] = "armor", ["armor_heavy"] = "armor", ["root"] = "thorn", ["vial"] = "drop", ["vial_orange"] = "drop", ["potion"] = "heart",
         ["antidote"] = "drop", ["bandage"] = "heart", ["pelt"] = "cloak", ["hide"] = "cloak", ["kerchief"] = "mask", ["wand_dark"] = "wand",
         ["ember"] = "flame", ["gem_garnet"] = "sigil", ["gem_sapphire"] = "sigil", ["gem_clear"] = "sigil", ["gem_bicolor"] = "sigil", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
         ["flower"] = "perennial", ["lens"] = "eye",

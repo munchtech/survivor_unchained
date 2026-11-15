@@ -1628,6 +1628,24 @@ public static class People
                     m.SetShaderParameter("piece_spec_mute", pmu);
                 }
             }
+            // (a worn piece's own finish for one metal key, by the wear piece's id: metal_finishes.json "meshes", Warden polish r4:
+            // the Forged Cuirass darker gunmetal, the Gilded Plate Top gold. "finish": the finish number; "dye": a metal dye's colour
+            // set as the plate's own (dye_amount 1); "params": shader uniforms, a float or a colour [r, g, b])
+            if (kind == 1 && metalFinishes != null && metalFinishes.TryGetValue("meshes", out var mp))
+            {
+                var nm = mi.Name.ToString();
+                foreach (var (wid, wv) in mp.AsGodotDictionary())
+                {
+                    if (!nm.StartsWith((string)wid + "_") || !wv.AsGodotDictionary().TryGetValue(key, out var ov)) continue;
+                    var od = ov.AsGodotDictionary();
+                    if (od.TryGetValue("finish", out var of)) m.SetShaderParameter("finish", (int)of);
+                    if (od.TryGetValue("dye", out var odye)) { m.SetShaderParameter("dye", new Color((string)odye)); m.SetShaderParameter("dye_amount", 1.0f); }
+                    if (od.TryGetValue("params", out var opr))
+                        foreach (var (pn, pv) in opr.AsGodotDictionary())
+                            if (pv.VariantType == Variant.Type.Array) { var a = pv.AsGodotArray(); m.SetShaderParameter((string)pn, new Color((float)a[0], (float)a[1], (float)a[2])); }
+                            else m.SetShaderParameter((string)pn, (float)pv);
+                }
+            }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
             m.SetShaderParameter("normal_map", src.NormalTexture);
             m.SetShaderParameter("orm", src.RoughnessTexture);

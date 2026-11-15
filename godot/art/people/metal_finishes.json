@@ -5,14 +5,20 @@
  "darksteel": "blued",
  "_dye_paint": "Keys bare as built when undyed; a colour dye paints them like the enamel (finish 2), a metal dye gives dyed metal (finish 3): fully metallic iron in a dye read as glassy coloured chrome edge-on.",
  "dye_paint": ["iron", "blacksteel"],
+ "_wp_interim": "Warden polish r3 (15 Nov, judge r2: the plate cups read as wet black vinyl at pack view): INTERIM plate.cups rough 0.22 -> 0.6, spec_mute 0.85 -> 0.7; plate.plate rough 0.38 -> 0.6. Hits every plate_* top and the Forged Cuirass (their gltfs carry steel). The L1 steel-finish row replaces this.",
  "pieces": {
   "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her pauldrons keep the key's 0.45 / 0.3. Armor 12 (c3): the cuirass's plate (piece word 'plate': only the cuirass has one; set 'plate' is every plate_* armor mesh) a step crisper at 0.38, its patina's patches halved (metal_blot, 1 the key's own). Armor 13 (c4): patches down to 0.2, fine scratches instead (metal_fine), its rolled edges glossier and brighter (metal_rim_rough, metal_rim_bright: a rolled binding's flag, COLOR.a 0). Armor 15 (b1): the cups (warden.cups, and plate.cups: every plate_* top's cups) polished at 0.22, patches at 0.2: at 0.45 the close-up's warm night key spread over each apex as a cloudy pink blot (read as a stain or a nipple, J1); now one small warm highlight. Armor 13 (c5): its rolled edges worn to bare steel (metal_rim_steel, a neutral grey F0, fading 3 mm onto the plate), its wear and grime by its shape and its oxide lifted 10% toward steel grey (metal_form).",
   "steel": {
    "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
    "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45},
    "warden.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
-   "plate.cups": {"metal_rough": 0.22, "metal_blot": 0.2, "metal_spec_mute": 0.85},
-   "plate.plate": {"metal_rough": 0.38, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
+   "plate.cups": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.7},
+   "plate.plate": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
   }
+ },
+ "_meshes": "Warden polish r4 (15 Nov, judge: her three plate tops read alike at the play camera): a worn piece's own finish for one metal key, by wear piece id (the mesh name's start). The Forged Cuirass: blued steel darkened to gunmetal. The Gilded Plate Top: its steel a gold metal dye (finish 3, painted-cel brushed gold, worn bright at its edges). Warden's Plate: as it is.",
+ "meshes": {
+  "plate_cuirass_plain": {"steel": {"params": {"blued": [0.2, 0.21, 0.24], "blued_temper": [0.22, 0.21, 0.26], "metal_spec_cap": 0.55, "metal_env": 0.3, "metal_wear_bright": 1.0}}},
+  "plate_top_gilded": {"steel": {"finish": 3, "dye": "#ffb020", "params": {"steel_dim": 1.9, "metal_grime": 0.35, "dyed_env": 0.7, "dyed_ao": 1.0, "dyed_sheen": 1.0, "dyed_rough_min": 0.25, "metal_wear_bright": 1.8, "metal_spec_cap": 2.0}}}
  }
 }
