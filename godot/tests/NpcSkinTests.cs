@@ -85,13 +85,13 @@ public sealed class NpcSkinTests(ITestOutputHelper log)
         Assert.False(b.GetProperty("skin_zones").GetBoolean());
         foreach (var r in new[] { h, b }) Assert.Equal(new[] { 1.0, 1.0, 1.0 }, Vec(r.GetProperty("cel_fill_tone")));
 
-        // A darker paint (0.65 of her paint's luminance) takes warm = (0.65 - 0.52) / (0.95 - 0.52) of the cel warmth on its
-        // albedo (People.NpcCelWarm, NpcCelWarmAt (0.52, 0.95); 15 Nov skin-light r5) and the rest on the key's fill, which
+        // A darker paint (0.65 of her paint's luminance) takes warm = (0.65 - 0.45) / (0.95 - 0.45) of the cel warmth on its
+        // albedo (People.NpcCelWarm, NpcCelWarmAt (0.45, 0.95); 15 Nov skin-light r5, trimmed so the NPC day forehead is C .085) and the rest on the key's fill, which
         // also keeps less of the sky's blue (People.NpcFillShift: red x1.04, blue x0.64 at none of the warmth, scaled by
         // 1 - warm, at the fill's own luminance; judge r2, the V3 smith's shade dusty rose).
         double Lum(double[] v) => 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
         var lk = Lum(cel);
-        double warm = (0.65 - 0.52) / (0.95 - 0.52);
+        double warm = (0.65 - 0.45) / (0.95 - 0.45);
         var mid = rows["head_mid"];
         var ma = Vec(mid.GetProperty("cel_tone"));
         var mf = Vec(mid.GetProperty("cel_fill_tone"));

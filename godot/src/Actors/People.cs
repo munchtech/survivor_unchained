@@ -2200,7 +2200,7 @@ public static class People
     /// Unknown lightness (no paint): all of it.</summary>
     public static float NpcCelWarm(float ratio) => ratio < 0f ? 1f : Mathf.Clamp((ratio - NpcCelWarmAt.X) / (NpcCelWarmAt.Y - NpcCelWarmAt.X), 0f, 1f);
 
-    static readonly Vector2 NpcCelWarmAt = new(0.52f, 0.95f);
+    static readonly Vector2 NpcCelWarmAt = new(0.45f, 0.95f);
 
     /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
     /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
