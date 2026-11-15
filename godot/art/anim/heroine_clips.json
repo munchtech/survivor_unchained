@@ -628,9 +628,69 @@
 		"weapon": ""
 	},
 	"run_warden": {
-		"cycle": 0.7,
+		"cycle": 0.6,
 		"layer": "full",
-		"length": 0.699999988079071,
+		"length": 0.600000023841858,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"run_warden_b": {
+		"cycle": 0.466666666666667,
+		"heading": 180.0,
+		"layer": "full",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"run_warden_bl": {
+		"cycle": 0.466666666666667,
+		"heading": 135.0,
+		"layer": "full",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"run_warden_br": {
+		"cycle": 0.466666666666667,
+		"heading": -135.0,
+		"layer": "full",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"run_warden_fl": {
+		"cycle": 0.6,
+		"heading": 45.0,
+		"layer": "full",
+		"length": 0.600000023841858,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"run_warden_fr": {
+		"cycle": 0.6,
+		"heading": -45.0,
+		"layer": "full",
+		"length": 0.600000023841858,
 		"licence": "own work",
 		"loop": true,
 		"source": "keyed (tools/anim/gait.py)",
@@ -639,9 +699,9 @@
 		"weapon": "sword+shield"
 	},
 	"run_warden_town": {
-		"cycle": 0.7,
+		"cycle": 0.6,
 		"layer": "full",
-		"length": 0.699999988079071,
+		"length": 0.600000023841858,
 		"licence": "own work",
 		"loop": true,
 		"source": "keyed (tools/anim/gait.py)",
@@ -773,9 +833,9 @@
 		"weapon": ""
 	},
 	"sprint_warden": {
-		"cycle": 0.7,
+		"cycle": 0.6,
 		"layer": "full",
-		"length": 0.699999988079071,
+		"length": 0.600000023841858,
 		"licence": "own work",
 		"loop": true,
 		"source": "keyed (tools/anim/gait.py)",
@@ -784,9 +844,9 @@
 		"weapon": "sword+shield"
 	},
 	"sprint_warden_town": {
-		"cycle": 0.7,
+		"cycle": 0.6,
 		"layer": "full",
-		"length": 0.699999988079071,
+		"length": 0.600000023841858,
 		"licence": "own work",
 		"loop": true,
 		"source": "keyed (tools/anim/gait.py)",
