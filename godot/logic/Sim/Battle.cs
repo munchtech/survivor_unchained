@@ -543,7 +543,7 @@ public sealed partial class Battle
             if (Lamps.Board) BoardTick(dt);
             TickFlare(dt);
         }
-        foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
+        foreach (var e in Enemies.Items) if (e.Alive) { Ai.Update(this, e, wdt); KeepOutOfSolid(e); }
         UpdateProjectiles(dt, wdt);
         UpdateZones(dt);
         UpdateStrikes(dt);
@@ -554,6 +554,15 @@ public sealed partial class Battle
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
         // The Flare's marks the view shows until the next tick, from where things stand now (FlareMarks.cs).
         FlareMarksTick(dt);
+    }
+
+    /// <summary>No foe ends a step inside solid: whatever moved it this tick (a knockback, a pull, a charge, a script's dash, a
+    /// spawn on a wall) it is set on open ground, pinched or not (CollisionWorld.Resolve squeezes it or finds the nearest open
+    /// spot). Pieces it may cross by design (a burrower underground, a boss over its gaps) are not its walls.</summary>
+    void KeepOutOfSolid(Enemy e)
+    {
+        if (e.State is EnemyState.Dying or EnemyState.Burrowed) return;
+        if (Collision.Depth(e.X, e.Z, CollisionWorld.WallRadius(e.Radius), overGaps: true) > CollisionWorld.Slop) Collision.Resolve(ref e.X, ref e.Z, e.Radius, overGaps: true);
     }
 
     void RebuildSpatial()

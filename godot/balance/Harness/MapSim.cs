@@ -163,6 +163,7 @@ public static class MapSim
         bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1", hits = Environment.GetEnvironmentVariable("MAP_HITS") == "1";
         // MAP_HITS=1: every blow that lands on her (all fights, not the ruler's only); MAP_TRACE_EVERY=s: seconds between trace lines (default 10).
         double traceEvery = double.TryParse(Environment.GetEnvironmentVariable("MAP_TRACE_EVERY"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var te) && te > 0 ? te : 10;
+        var foeWin = Environment.GetEnvironmentVariable("MAP_FOE") is { Length: > 0 } fw ? fw.Split(',').Select(v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : null;
         var packs = new List<double>();
         // (M3) The hands on the one press plan (Sim/PressPlan.cs), as ZoneSim's.
         var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
@@ -299,6 +300,9 @@ public static class MapSim
             if (zone.Cleared && clearedAt < 0) clearedAt = t;
             if (zone.Cleared && !zone.Over && t - clearedAt > 8) zone.Leave();
             if (!p.Alive) break;
+            // MAP_FOE=from,to (minutes): every tick the ruler's place, speed and whether it overlaps solid (why a foe sits where it does).
+            if (foeWin != null && t / 60 >= foeWin[0] && t / 60 <= foeWin[1] && zone.Boss is { } fb)
+                Console.Error.WriteLine($"FOE {t / 60:0.0000} ({fb.X:0.000},{fb.Z:0.000}) r {fb.Radius:0.00} v ({fb.Vx:0.00},{fb.Vz:0.00}) kb ({fb.Kbx:0.0},{fb.Kbz:0.0}) {fb.State} {fb.Anim} blocked {b.Collision.Blocked(fb.X, fb.Z, fb.Radius)} flow {(b.Flow.Dir(fb.X, fb.Z, out var ffx, out var ffz) ? $"({ffx:0.00},{ffz:0.00})" : "none")} her ({p.X:0.00},{p.Z:0.00})");
             // MAP_TRACE=1: where the hands are every ten seconds (why a map was not finished).
             if (trace && (int)(t / traceEvery) != (int)((t + Dt) / traceEvery))
                 Console.Error.WriteLine($"{t / 60:0.00} at ({p.X:0.0},{p.Z:0.0}) m ({mx:0.00},{mz:0.00}) v ({p.Vx:0.0},{p.Vz:0.0}) blocked {b.Collision.Blocked(p.X, p.Z, p.Radius)} leap {p.Leap != null} dash {p.DashT:0.00} slow {p.SlowF:0.00} spd {b.Stats.Get(Stat.MoveSpeed):0.0} over {b.Over} stuck {stuck:0.0} to go {along:0} m onward ({onward.X:0},{onward.Z:0}) roused {b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused))} hp {p.Hp:0}/{b.MaxHp:0} packs {zone.PacksCleared}/{zone.PacksPlaced}" + Near(b, p));
