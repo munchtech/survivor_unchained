@@ -12,9 +12,14 @@ sees it and drawn as a camera-facing card that writes its own painted depth (sha
 Each boulder is a form in code (an ellipsoid cut by a few broad planes, or two of them leaning together), cast along the
 camera's view (exact, per pixel: the face it hits, its point, its normal, its depth), then PAINTED in 2D at 5.3x the
 game's pixel: every face's value from the key (the image's upper left, rigs.json den az 243: a lit band on the planes
-that face it, a cooler shade side), broad mottles, directional value strokes laid along each face (overlapping lens dabs,
-never crossing a plane break), an olive moss cap on what faces up, the foot grimed, ink on the silhouette (heavier at the
-foot) and on the main plane breaks (broken), a thin light edge on the lit side of a break. FROM den_room.png: the colours
+that face it, a cooler shade side), worn soft edges between the planes; the light through the roots as angular diagonal
+shards (a step up) and root shadows (a step down); knife-chip strokes 2-4 game px wide laid along each face and the
+knife's diagonal, each painting ONE snapped value step (so a plane breaks into 2-3 painted values) and a hue that follows
+the value (warm ochre in the light, warm grey in the mids and shade, olive-brown in regions), never crossing a plane
+break; a little dull olive-brown moss on up-facing tops only; sparse short cracks with a lit lip; the foot grimed; ink on
+the silhouette (heavier at the foot) and, lightly, on the real plane breaks. Pass 3 (round 7): darker (the check's lit
+and shade medians on the target's), visible strokes, dull moss, two big forms ("size": "big", 2.6-2.9 m wide, 2 m tall)
+beside the six companions ("small"; the game places them smaller). FROM den_room.png: the colours
 by number (its boulders' lit (132,102,77) and shade (41,36,34), sRGB, measured), the forms by eye (bulky, boxy, broad
 tilted planes; one pair leaning together). No photo, scan, model or paid credit: drawn in code. Deterministic.
 
@@ -37,6 +42,7 @@ TARGET = r"C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord12\dung
 R = np.array([1.0, 0.0, 0.0])                                   # screen right
 U = np.array([0.0, math.cos(math.radians(62)), -math.sin(math.radians(62))])   # screen up (0, 0.469, -0.883)
 F = np.cross(U, R)                                              # the view (into the screen): (0, -0.883, -0.469)
+DIAG = math.radians(-28)  # the knife's lean (screen, from the right toward down): den_room.png's chips run diagonal
 GAME_PPM = 73.0          # the game's pixels per metre at 1080p (the play camera at the den's floor)
 SS = 2                   # the painting is cast and painted at 2x the stored resolution, then box-filtered (its anti-alias)
 PPM = 192                # stored pixels per metre (2.6x the game's: crisp after the mips)
@@ -46,29 +52,35 @@ DMAX = 2.5               # depth stored as d / DMAX * 0.5 + 0.5 (metres along th
 # ---- the look (sRGB). The ramp is the value a face takes by its turn to the key (n.L); lit and shade FROM den_room.png.
 LOOK = dict(
     ramp=[  # (n.L, sRGB)
-        (-1.00, (26, 25, 28)),
-        (-0.30, (33, 31, 32)),
-        (0.00, (41, 36, 34)),      # the shade (den_room.png's boulders' shade side, measured)
-        (0.22, (52, 45, 40)),
-        (0.42, (82, 66, 53)),
-        (0.60, (132, 102, 77)),    # the lit band (den_room.png's boulders' lit planes, measured)
-        (0.82, (152, 118, 86)),
-        (1.00, (160, 125, 90)),
+        (-1.00, (34, 32, 34)),
+        (-0.30, (42, 39, 38)),
+        (0.00, (50, 45, 42)),      # the shade (den_room.png's boulders' shade side, measured (41, 36, 34))
+        (0.20, (66, 59, 52)),
+        (0.40, (90, 77, 63)),
+        (0.60, (112, 89, 68)),     # the lit band (den_room.png's boulders' lit planes, measured (132, 102, 77))
+        (0.82, (132, 102, 76)),
+        (1.00, (142, 110, 80)),
     ],
-    band_pull=0.5,             # how far a face's value is pulled to its painted band's middle (flat planes, painted steps)
-    key=(-0.62, 0.74, 0.12),   # toward the key as den_room.png's boulders show it: up, the image's left, a little front
-    olive=(96, 100, 60), grey=(92, 92, 92), umber=(92, 66, 48),    # the hues the target's stone wanders between
-    hue_w=(0.45, 0.35, 0.4),   # their shares at most
-    dapple=(0.16, 0.38),       # the broad lit/unlit patches across a face (value, metres): the target's dappled planes
-    moss=(72, 80, 44), moss_k=0.68,   # the moss's hue (sRGB, at the stone's value x moss_k)
-    moss_up=(0.45, 0.8),       # the face's up share where the cap begins and is whole
-    moss_gate=(0.56, 0.66),      # the noise gate (patches, not a blanket)
+    key=(-0.62, 0.74, 0.25),   # toward the key as den_room.png's boulders show it: up, the image's left, a little front
+    # the hues a stroke may take (the target's stone: warm ochre in the light, cool grey and olive-brown between)
+    # the hue follows the value as in the target (the light warm, the mids and shade cool grey), olive-brown in regions
+    hues=dict(umber=(108, 76, 52), grey=(84, 82, 82), olive=(90, 85, 66)),
+    hue_w=(0.35, 0.7),         # a mid or shade stroke's pull to the grey (share, uniform between); the olive's at most
+    dapple=0.34, dapple_base=0.19,              # the light through the roots: angular diagonal shards of light across the lit planes (n.L)
+    shard_m=((0.3, 0.8), (0.07, 0.18), 0.4),
+    shadow_share=0.1,          # the share the roots' shadow shards drop a step   # a shard's length and width (metres) and the share of the face it lights
+    level=0.15,                # the value step a stroke paints in (n.L): each plane breaks into a few painted values
+    level_jit=0.6,             # a stroke's jitter in steps (so strokes interleave at a value's edge and a plane holds 2-3 values)
+    moss=(86, 78, 56), moss_k=0.8,   # the moss: olive-brown, low saturation, at the stone's value x moss_k
+    moss_up=(0.62, 0.9),       # the face's up share where the moss begins and is whole (up-facing tops only)
+    moss_gate=(0.6, 0.7),      # the noise gate (patches, not a blanket)
+    crack=((0.9, 1.4), (5.0, 12.0), 3.5, 0.6, 0.25),   # width, length (game px), per square metre, the dark, the lip's lift
     ink=(20, 16, 14), ink_px=(2.6, 1.7),        # the silhouette ink (game px): at the foot, at the crown
-    crease=(28, 22, 19), crease_px=1.4, crease_a=0.85, crease_deg=(20.0, 38.0),   # the inner breaks
-    edge_light=0.22, edge_px=1.2,                # the lit side of a break, lifted
-    foot_m=0.5, foot_dark=0.5,                   # grime and occlusion at the foot
-    dab_px=[(15.0, 6.0, 1.0), (11.0, 4.5, 0.8), (7.5, 3.2, 0.55)],   # stroke layers: length, width (game px), coverage
-    dab_jit=0.13,              # a stroke's value jitter (share)
+    crease=(30, 24, 21), crease_px=1.2, crease_a=0.35, crease_deg=(34.0, 56.0),   # the inner breaks (only the real ones)
+    edge_light=0.1, edge_px=1.0,                # the lit side of a break, lifted
+    foot_m=0.55, foot_dark=0.45,                 # grime and occlusion at the foot
+    # stroke layers: length, width (game px), coverage. 2-4 game px wide (3-5 cm at 73 px/m), 2.5-3.5x as long
+    dab_px=[(14.0, 4.0, 1.0), (10.0, 3.0, 1.0), (7.0, 2.2, 0.55)],
 )
 
 # ---- the forms: a dome (an ellipsoid whose middle sits cy of its height radius above the floor) cut by a box of broad
@@ -84,6 +96,13 @@ FORMS = [
     dict(name="pair", seed=67, parts=[
         dict(size=(1.9, 1.5, 1.7), at=(-0.55, 0.0, 0.15), cy=0.12, top=(-15, 78, 0.2), side=0.22, corner=0.18, chamfer=0.15, twist=10),
         dict(size=(1.6, 1.2, 1.5), at=(0.78, 0.0, -0.1), cy=0.12, top=(25, 74, 0.2), side=0.22, corner=0.18, chamfer=0.15, twist=-20)]),
+    # the two big ones (round 7): taller than the heroine (1.75 m), broad and blocky like den_room.png's big stones (its
+    # upper-left and upper-middle ones): a broad tilted top, near-upright sides cut deep, worn corners. Painted at their own
+    # size so the game never upscales them.
+    dict(name="bigblock", size_class="big", seed=79, size=(3.35, 2.25, 2.0), cy=0.1, top=(-25, 78, 0.16), side=0.3,
+         corner=0.24, chamfer=0.17, twist=6),
+    dict(name="bigtilt", size_class="big", seed=83, size=(3.3, 2.3, 1.9), cy=0.12, top=(40, 70, 0.18), side=0.28,
+         corner=0.22, chamfer=0.2, twist=-18),
 ]
 SINK = 0.12          # metres of each form under the floor (the floor rolls; the foot hides in it)
 
@@ -224,7 +243,7 @@ def surface(form, ppm):
         acc = n0.copy()
         # slack to every other face: ellipsoid in metres approx (1 - |q|) * mean radius
         se = (1 - np.linalg.norm(q, axis=-1)) * float(np.mean(rad))
-        b = 0.07
+        b = 0.16             # the worn edge: den_room.png's stones are rounded boxes, broad planes meeting soft
         we = np.where(f != 0, np.clip(1 - se / b, 0, 1) ** 2, 0)
         acc += 0.6 * we[:, None] * ne
         for j, (n, d) in enumerate(P):
@@ -250,14 +269,30 @@ def hue_of(rgb):
 
 
 def lens(cx, cy, ang, ln, wd, rng):
-    """Brush dabs: lens shapes, slightly asymmetric, ends tapered (n x 10 points)."""
+    """Brush dabs: knife chips, boxy with worn ends, slightly asymmetric and ragged (n x 10 points)."""
     a = np.linspace(0, 2 * np.pi, 10, endpoint=False)
     n = len(cx)
-    sk = rng.uniform(-0.25, 0.25, (n, 1))
-    u = np.cos(a)[None] * ln[:, None] / 2
-    v = np.sin(a)[None] * wd[:, None] / 2 * (1 + sk * np.cos(a)[None]) * rng.uniform(0.85, 1.15, (n, 10))
+    sk = rng.uniform(-0.3, 0.3, (n, 1))
+    ca_, sa_ = np.cos(a)[None], np.sin(a)[None]
+    u = np.sign(ca_) * np.abs(ca_) ** 0.6 * ln[:, None] / 2 * rng.uniform(0.85, 1.1, (n, 10))
+    v = np.sign(sa_) * np.abs(sa_) ** 0.6 * wd[:, None] / 2 * (1 + sk * ca_) * rng.uniform(0.8, 1.15, (n, 10))
     ca, sa = np.cos(ang)[:, None], np.sin(ang)[:, None]
     return np.stack([cx[:, None] + u * ca - v * sa, cy[:, None] + u * sa + v * ca], -1)
+
+
+def shards(H, W, salt, share):
+    """The light through the roots: angular diagonal shards (knife chips at the scale of a hand) in the card's plane,
+    1 lit, 0 unlit, crisp-edged (the strokes break their edges)."""
+    (l0, l1), (w0, w1), _ = LOOK["shard_m"]
+    rng = np.random.default_rng(salt + 101)
+    n = int(share * H * W / (IPPM ** 2 * (l0 + l1) / 2 * (w0 + w1) / 2 * 0.8)) + 1
+    cx = rng.uniform(0, W, n); cy = rng.uniform(0, H, n)
+    ang = DIAG + rng.normal(0, 0.22, n)
+    polys = lens(cx, cy, ang, rng.uniform(l0, l1, n) * IPPM, rng.uniform(w0, w1, n) * IPPM, rng)
+    im = Image.new("L", (W, H), 0); d = ImageDraw.Draw(im)
+    for k in range(n):
+        d.polygon([tuple(q) for q in polys[k]], fill=255)
+    return np.asarray(im, np.float64) / 255.0
 
 
 def paint(form):
@@ -280,54 +315,72 @@ def paint(form):
     def field(fn):                             # a noise on the hit points only, scattered back
         out = np.zeros((H, W)); out[hit] = fn(ph); return out
 
-    # value: each face's turn to the key (the bevel's softened), pulled toward its band's middle; the light falls off a
-    # little down the stone; broad dapples across a face (the target's planes are lit in patches)
-    v = np.einsum("ijk,k->ij", nb, L)
+    # value: each face's turn to the key (the bevel's softened); the light falls off a little down the stone; hard-edged
+    # dapples across a face (the target's planes are lit in patches), weaker in the shade
+    v0 = np.einsum("ijk,k->ij", nb, L)
     yb = np.where(hit, p[..., 1], 0.0)
     top = max(float(yb[hit].max()), 0.5)
-    v = v + 0.08 * (yb / top - 0.5)
-    bands = np.array([-0.15, 0.12, 0.32, 0.52, 0.72])
-    mids = np.array([-0.35, 0.0, 0.22, 0.42, 0.62, 0.84])
-    v = v + LOOK["band_pull"] * (mids[np.searchsorted(bands, v)] - v)
-    dk, ds = LOOK["dapple"]
-    v = v + 2 * dk * (field(lambda q: fbm(q, ds, salt + 1)) - 0.5) + 0.07 * (field(lambda q: fbm(q, 0.12, salt + 2)) - 0.5)
-    col = ramp(v)
-    lum = col @ LUMA
-    for hue, w_max, sk in ((LOOK["olive"], LOOK["hue_w"][0], 3), (LOOK["grey"], LOOK["hue_w"][1], 4), (LOOK["umber"], LOOK["hue_w"][2], 5)):
-        w = smoothstep(0.5, 0.72, field(lambda q: fbm(q, 0.5, salt + sk))) * w_max
-        col = col * (1 - w[..., None]) + (lum[..., None] * hue_of(hue)) * w[..., None]
-    # moss: on what faces up, in patches: the stone's own value turned olive (so it lies under the same light)
+    v0 = v0 + 0.08 * (yb / top - 0.5)
+    dk = LOOK["dapple"]
+    # light shards lift a plane a step, shadow shards (the roots' shadows) drop it one: a lit top stays mostly lit with
+    # dark gaps, a mid side stays mid with a few lights (den_room.png's left and upper-middle stones)
+    dap = shards(H, W, salt, LOOK["shard_m"][2]) - shards(H, W, salt + 50, LOOK["shadow_share"])
+    v = v0 + (dk * dap - LOOK["dapple_base"]) * (0.35 + 0.65 * np.clip(v0 / 0.6, 0, 1)) + 0.12 * (field(lambda q: fbm(q, 0.15, salt + 2)) - 0.5)
+    lev = LOOK["level"]
+    quant = lambda x: np.round(x / lev) * lev
+    # the hue fields: broad regions where the stone leans warm, grey or olive-brown (a stroke picks one by them + chance)
+    hnames = list(LOOK["hues"])
+    hf = np.stack([field(lambda q, k=k: fbm(q, 0.35, salt + 3 + k)) for k in range(len(hnames))], -1)
+    hcol = np.array([hue_of(LOOK["hues"][h]) for h in hnames])
+    # moss: on what faces up, in patches (never a stripe: the gate's noise is 2D on the face, the up share whole only on tops)
     up = nb[..., 1]
     mg = field(lambda q: fbm(q, 0.4, salt + 9) * 0.7 + fbm(q, 0.1, salt + 10) * 0.3)
     moss = smoothstep(*LOOK["moss_up"], up) * smoothstep(*LOOK["moss_gate"], mg + 0.1 * (form.get("moss", 0.7) - 0.7))
-    lum = col @ LUMA
-    moss_col = lum[..., None] * hue_of(LOOK["moss"]) * LOOK["moss_k"]
-    canvas = col * (1 - moss[..., None]) + moss_col * moss[..., None]
-    # strokes: lens dabs laid along each face's strike (its horizontal on screen), each the field's colour at its middle
-    # with a value jitter, never crossing a face's edge (a dab paints only the face its middle is on)
+    moss_hue = hue_of(LOOK["moss"]) * LOOK["moss_k"]
+    # the underpaint (what shows between strokes): the quantised value, the moss over it
+    canvas = ramp(quant(v))
+    canvas = canvas * (1 - moss[..., None]) + ((canvas @ LUMA)[..., None] * moss_hue) * moss[..., None]
+    # strokes: knife chips laid along each face (its strike on screen, turned a little per face), each painting ONE value
+    # step (the value at its middle jittered by about half a step, then snapped), a hue pulled from the stone's three,
+    # moss where the cap is; never crossing a face's edge (a dab paints only the face its middle is on)
     st = np.cross(n, np.array([0.0, 1.0, 0.0]))
     stn = np.linalg.norm(st, axis=-1)
     st = np.where((stn > 0.2)[..., None], st, R)
     sang = np.arctan2(-(st @ U), st @ R)
     rng = np.random.default_rng(salt)
+    face_turn = rng.normal(0, 0.45, 4 * 32)
     ids = Image.new("I", (W, H), -1)
     draw = ImageDraw.Draw(ids)
-    C, Fi = [], []
+    C, Fi, Mz = [], [], []
     for (ln, wd, cover) in LOOK["dab_px"]:
         ln *= sc; wd *= sc
-        step = wd * 1.2
+        step = wd * 1.25
         gy, gx = np.meshgrid(np.arange(step / 2, H, step), np.arange(step / 2, W, step), indexing="ij")
         cx = (gx + rng.uniform(-0.5, 0.5, gx.shape) * step).ravel(); cy = (gy + rng.uniform(-0.5, 0.5, gy.shape) * step).ravel()
         keep = rng.random(cx.shape) < cover
         ix = np.clip(cx, 0, W - 1).astype(int); iy = np.clip(cy, 0, H - 1).astype(int)
         keep &= hit[iy, ix]
         cx, cy, ix, iy = cx[keep], cy[keep], ix[keep], iy[keep]
+        o_ = rng.permutation(len(cx)); cx, cy, ix, iy = cx[o_], cy[o_], ix[o_], iy[o_]
         nd = len(cx)
-        ang = sang[iy, ix] + rng.normal(0, 0.3, nd)
-        c0 = canvas[iy, ix] * (1 + rng.normal(0, LOOK["dab_jit"], (nd, 1))) * (1 + rng.normal(0, 0.03, (nd, 3)))
+        f_ = fid[iy, ix]
+        # a stroke is axial (its angle and angle + pi are the same stroke): blend the strike and the knife's lean doubled
+        a2 = 0.45 * np.exp(2j * sang[iy, ix]) + 0.55 * np.exp(2j * DIAG)
+        ang = np.angle(a2) / 2 + face_turn[f_ % len(face_turn)] + rng.normal(0, 0.25, nd)
+        c0 = ramp(quant(v[iy, ix] + rng.normal(0, LOOK["level_jit"], nd) * lev))
+        lv = quant(v[iy, ix])
+        warm = smoothstep(0.3, 0.62, lv)[:, None]
+        wg = (1 - warm) * rng.uniform(*LOOK["hue_w"], (nd, 1))                   # the mids and the shade: cool grey
+        wo = smoothstep(0.5, 0.7, hf[iy, ix, 2])[:, None] * rng.uniform(0, LOOK["hue_w"][1], (nd, 1)) * (1 - 0.5 * warm)
+        wu = warm * smoothstep(0.45, 0.7, hf[iy, ix, 0])[:, None] * rng.uniform(0, 0.4, (nd, 1))   # deeper ochre
+        lum0 = (c0 @ LUMA)[:, None]
+        c0 = c0 * (1 - wg - wo - wu) + lum0 * (hcol[1] * wg + hcol[2] * wo + hcol[0] * wu)
+        mz = rng.random(nd) < moss[iy, ix]
+        c0[mz] = (c0[mz] @ LUMA)[:, None] * moss_hue[None] * rng.uniform(0.85, 1.15, (int(mz.sum()), 1))
+        c0 = c0 * (1 + rng.normal(0, 0.03, (nd, 3)))
         polys = lens(cx, cy, ang, ln * rng.uniform(0.75, 1.25, nd), wd * rng.uniform(0.8, 1.2, nd), rng)
         base = len(C)
-        C.extend(c0); Fi.extend(fid[iy, ix])
+        C.extend(c0); Fi.extend(f_); Mz.extend(mz)
         for k in range(nd):
             draw.polygon([tuple(q) for q in polys[k]], fill=base + k)
     idm = np.array(ids, np.int64)
@@ -335,6 +388,33 @@ def paint(form):
     same = (idm >= 0) & hit
     same[same] = Fi[idm[same]] == fid[same]
     canvas[same] = C[idm[same]]
+    mossy = moss > 0.5
+    mossy[same] = np.array(Mz)[idm[same]]
+    moss_share = float(mossy[hit].mean())          # the painted share of the boulder that is moss
+    # cracks and chip edges: short broken dark lines (the target's knife-cut chips), each with a lit lip on its key side
+    cw_, cl_, cden, cdark, clift = LOOK["crack"]
+    crng = np.random.default_rng(salt + 202)
+    ncr = int(cden * hit.sum() / IPPM ** 2)
+    ys_c, xs_c = np.nonzero(hit)
+    sel = crng.integers(0, len(ys_c), ncr)
+    cim = Image.new("L", (W, H), 0); lim = Image.new("L", (W, H), 0)
+    cd_, ld_ = ImageDraw.Draw(cim), ImageDraw.Draw(lim)
+    off = np.array([-0.7, -0.7]) * cw_[1] * sc          # the lip: toward the key (the image's upper left)
+    for k in range(ncr):
+        x_, y_ = float(xs_c[sel[k]]), float(ys_c[sel[k]])
+        a_ = (DIAG if crng.random() < 0.6 else sang[ys_c[sel[k]], xs_c[sel[k]]]) + crng.normal(0, 0.5)
+        L_ = crng.uniform(*cl_) * sc; segs = crng.integers(1, 3)
+        pts = [(x_, y_)]
+        for _ in range(segs):
+            a_ += crng.normal(0, 0.15)
+            x_ += math.cos(a_) * L_ / segs; y_ += math.sin(a_) * L_ / segs; pts.append((x_, y_))
+        wpx = max(1, int(round(crng.uniform(*cw_) * sc)))
+        ld_.line([(px + off[0], py + off[1]) for px, py in pts], fill=255, width=wpx)
+        cd_.line(pts, fill=255, width=wpx)
+    cm = np.asarray(cim, np.float64) / 255.0 * hit
+    lm = np.asarray(lim, np.float64) / 255.0 * hit * (1 - cm) * np.clip((v - 0.2) / 0.4, 0, 1)
+    canvas = canvas * (1 + clift * lm[..., None])
+    canvas = canvas * (1 - cm[..., None]) + canvas * cdark * cm[..., None]
     # the foot: grime and occlusion
     foot = smoothstep(-SINK, LOOK["foot_m"], yb)
     canvas = canvas * (LOOK["foot_dark"] + (1 - LOOK["foot_dark"]) * foot)[..., None]
@@ -380,7 +460,7 @@ def paint(form):
     # every empty texel takes its nearest painted one's colour, normal and depth (mip-safe)
     _, (iy, ix) = ndimage.distance_transform_edt(~(a > 0), return_indices=True)
     rgb, ncs, deps = rgb[iy, ix], ncs[iy, ix], deps[iy, ix]
-    return dict(S=S, rgb=rgb, a=a, n=ncs, d=deps, pivot=pivot, hull=hull(S["parts"]))
+    return dict(S=S, rgb=rgb, a=a, n=ncs, d=deps, pivot=pivot, hull=hull(S["parts"]), moss=moss_share)
 
 
 def card_pivot(S):
@@ -433,6 +513,7 @@ def build():
     rects, ah = pack([(r["rgb"].shape[1], r["rgb"].shape[0]) for r in res])
     ah = int(2 ** math.ceil(math.log2(ah)))
     AW = 2048
+    assert ah <= 2048, f"atlas {AW}x{ah} over 2048x2048"
     paint_img = np.zeros((ah, AW, 4)); form_img = np.zeros((ah, AW, 4))
     form_img[..., :3] = 0.5; form_img[..., 3] = 0.5
     meta = dict(source="tools/look/den_boulders.py", ppm=PPM, dmax=DMAX, sink=SINK, atlas=[AW, ah],
@@ -444,7 +525,7 @@ def build():
         S = r["S"]; pv = r["pivot"]
         hp = S["p"][S["hit"]]
         meta["boulders"].append(dict(
-            name=f["name"], rect=[x, y, w, h],
+            name=f["name"], size=f.get("size_class", "small"), rect=[x, y, w, h], moss=round(r["moss"], 4),
             # the card in the boulder's frame: its lower-left corner's (right, up) in metres and its size; the pivot (the
             # card's plane point) in boulder space
             card=[round(S["x0"], 4), round(S["y1"] - h / PPM, 4), round(w / PPM, 4), round(h / PPM, 4)],
@@ -469,20 +550,27 @@ def target_crops():
     return [im.crop(tuple(int(v * s) for v in b)) for b in boxes]
 
 
+TARGET_LIT, TARGET_SHADE = (132, 102, 77), (41, 36, 34)     # den_room.png's boulders, measured (sRGB)
+PREVIEW_FLOOR = (96, 68, 50)                                  # the den floor as the game shows it (sRGB, about)
+
+
 def preview(out):
+    """The boulders at the game's scale (73 px/m) on the den floor, four to a row, beside den_room.png's boulders at the
+    frame's 1:1 (its 1672 px scaled to 1080p); and a 2x nearest zoom of a big one and a small one (the strokes)."""
     meta = json.load(open(os.path.join(OUT, "boulders.json")))
     pimg = Image.open(os.path.join(OUT, "boulders_paint.png")).convert("RGBA")
     k = GAME_PPM / PPM
-    floor = (96, 72, 58)
     tiles = []
     for b in meta["boulders"]:
         x, y, w, h = b["rect"]
         t = pimg.crop((x, y, x + w, y + h)).resize((max(1, round(w * k)), max(1, round(h * k))), Image.LANCZOS)
-        bg = Image.new("RGBA", t.size, floor + (255,)); bg.alpha_composite(t); tiles.append(bg.convert("RGB"))
+        bg = Image.new("RGBA", t.size, PREVIEW_FLOOR + (255,)); bg.alpha_composite(t); tiles.append(bg.convert("RGB"))
+    big = [t for t, b in zip(tiles, meta["boulders"]) if b.get("size") == "big"]
+    small = [t for t, b in zip(tiles, meta["boulders"]) if b.get("size") != "big"]
     tc = target_crops()
     tc = [t.resize((round(t.width * 1920 / 1672), round(t.height * 1920 / 1672)), Image.LANCZOS) for t in tc]
-    Wd = 1600
-    rows = [tiles[:3], tiles[3:], tc]
+    rows = [big + small[:2], small[2:], tc]
+    Wd = max(sum(t.width + 8 for t in r) for r in rows)
     hh = sum(max(t.height for t in r) + 8 for r in rows)
     sheet = Image.new("RGB", (Wd, hh), (20, 20, 20)); yy = 0
     for r in rows:
@@ -491,29 +579,40 @@ def preview(out):
             sheet.paste(t, (xx, yy)); xx += t.width + 8
         yy += max(t.height for t in r) + 8
     sheet.save(out)
-    # a 2x zoom of the first two (pixel-exact, nearest) to see the strokes
-    z = Image.new("RGB", (tiles[0].width * 2 + tiles[1].width * 2 + 8, max(tiles[0].height, tiles[1].height) * 2), (20, 20, 20))
-    z.paste(tiles[0].resize((tiles[0].width * 2, tiles[0].height * 2), Image.NEAREST), (0, 0))
-    z.paste(tiles[1].resize((tiles[1].width * 2, tiles[1].height * 2), Image.NEAREST), (tiles[0].width * 2 + 8, 0))
+    pair = (big[:1] or tiles[:1]) + small[:1]
+    z = Image.new("RGB", (sum(t.width * 2 + 8 for t in pair), max(t.height for t in pair) * 2), (20, 20, 20)); xx = 0
+    for t in pair:
+        z.paste(t.resize((t.width * 2, t.height * 2), Image.NEAREST), (xx, 0)); xx += t.width * 2 + 8
     z.save(out.replace(".png", "_zoom.png"))
     print("preview", out)
 
 
 def check():
+    """Per boulder: the lit band (median of its brightest 20%) and the shade (median of its darkest 20%) against
+    den_room.png's measured boulders, the whole median, the painted moss share and the green-dominant share (G > R, the
+    in-game complaint), its size in metres; and the atlas's hygiene (nothing on a rect's edge, depth inside DMAX)."""
     meta = json.load(open(os.path.join(OUT, "boulders.json")))
     pimg = np.asarray(Image.open(os.path.join(OUT, "boulders_paint.png")).convert("RGBA")).astype(np.float64)
+    fimg = np.asarray(Image.open(os.path.join(OUT, "boulders_form.png")).convert("RGBA")).astype(np.float64)
     ok = True
+    print(f"atlas {meta['atlas'][0]}x{meta['atlas'][1]}; target lit {TARGET_LIT} shade {TARGET_SHADE}")
     for b in meta["boulders"]:
         x, y, w, h = b["rect"]
         t = pimg[y:y + h, x:x + w]
         m = t[..., 3] > 250
-        lum = t[..., :3] @ np.array([0.2126, 0.7152, 0.0722])
-        v = lum[m]
-        hi = t[..., :3][m][v >= np.percentile(v, 85)].mean(0); lo = t[..., :3][m][v <= np.percentile(v, 20)].mean(0)
+        px = t[..., :3][m]
+        lum = px @ LUMA
+        hi = np.median(px[lum >= np.percentile(lum, 80)], 0); lo = np.median(px[lum <= np.percentile(lum, 20)], 0)
+        md = np.median(px, 0)
+        green = float(np.mean(px[:, 1] > px[:, 0]))
+        ft = b["foot"]
         edge_a = np.concatenate([t[0, :, 3], t[-1, :, 3], t[:, 0, 3], t[:, -1, 3]]).max()
-        print(f"{b['name']:6s} lit(p85+) {hi.round().astype(int)} shade(p20-) {lo.round().astype(int)} size {w / PPM:.2f}x{h / PPM:.2f} m"
-              f" rect-edge alpha {edge_a:.0f}")
-        ok &= edge_a == 0
+        dp = fimg[y:y + h, x:x + w, 3][m]
+        clip = float(np.mean((dp <= 1) | (dp >= 254)))
+        print(f"{b['name']:8s} {b.get('size', '?'):5s} lit {hi.round().astype(int)} shade {lo.round().astype(int)} "
+              f"median {md.round().astype(int)} moss {b.get('moss', 0):.1%} green {green:.1%} "
+              f"{ft[1] - ft[0]:.2f}w x {ft[4]:.2f}h x {ft[3] - ft[2]:.2f}d m  edge-a {edge_a:.0f} depth-clip {clip:.1%}")
+        ok &= bool(edge_a == 0) and clip < 0.001 and "size" in b
     print("check", "OK" if ok else "FAIL")
     return ok
 
