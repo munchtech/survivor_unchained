@@ -145,6 +145,9 @@ public static class Campfire
             float len = 0.26f + 0.1f * rng.Randf(), wid = 0.18f + 0.07f * rng.Randf(), hi = 0.17f + 0.08f * rng.Randf();
             var at = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (0.6f + 0.06f * rng.Randf());
             at.Y = hi * 0.06f;
+            // (warden polish) the front-right stone sat behind her sword tip at creation: and the one behind it slid left (0.45 and 0.3 m)
+            if (k == 1) at += new Vector3(-0.45f, 0, 0);
+            if (k == 0) at += new Vector3(-0.3f, 0, 0);
             // Long side along the ring, each turned and tipped a little its own way.
             var basis = new Basis(Vector3.Up, -a + Mathf.Pi / 2 + (rng.Randf() - 0.5f) * 0.5f) * new Basis(Vector3.Right, (rng.Randf() - 0.5f) * 0.3f);
             Stone(b, new Transform3D(basis.Scaled(new Vector3(len, hi, wid)), at), rng.Randf() * 100);
