@@ -105,6 +105,16 @@ public static class MapSim
         var chart = new Chart { Tier = spec.Tier, People = spec.People, Seed = spec.Seed * 7919 + spec.Tier, Mods = spec.Mods.ToList(), Rarity = spec.Mods.Length == 0 ? 0 : spec.Mods.Length <= 2 ? 1 : 2, Name = "The Harness Map" };
         if (spec.Dungeon != "") chart = Chart.ForDungeon(DungeonGen.Get(spec.Dungeon)!, spec.Seed * 7919 + 1, spec.Level);
         var map = MapGen.Generate(chart.Map);
+        if (Environment.GetEnvironmentVariable("MAP_PROBE") is { Length: > 0 } pr)
+        {
+            // MAP_PROBE=x,z,r: the solid pieces within r m of a point (what an enemy or she is held by there).
+            var q = pr.Split(',').Select(v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            foreach (var c in map.Meta.Colliders) if (MathX.Dist(c.X, c.Z, q[0], q[1]) < q[2] + c.R + Math.Max(c.Hw, c.Hd))
+                Console.Error.WriteLine($"PROBE collider {c.Kind} {c.Tag} at ({c.X:0.0},{c.Z:0.0}) r {c.R:0.0} hw {c.Hw:0.0} hd {c.Hd:0.0} rot {c.Rot:0.00} soft {c.Soft} playerOnly {c.PlayerOnly}");
+            foreach (var pp in map.Props) if (MathX.Dist(pp.X, pp.Z, q[0], q[1]) < q[2] + 3) Console.Error.WriteLine($"PROBE prop {pp.Id} at ({pp.X:0.0},{pp.Z:0.0}) scale {pp.Scale:0.00}");
+            if (map.Dungeon != null) foreach (var rm in map.Dungeon.Rooms) { double d = rm.Dist(q[0], q[1]); if (d > -6) Console.Error.WriteLine($"PROBE room {rm.Role} {rm.Plan.Id} dist {d:0.0} holes {rm.Holes.Length}"); }
+        }
+        if (Environment.GetEnvironmentVariable("MAP_SIG") == "1") Console.Error.WriteLine(Signature(spec, map));
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new MapRun(host, map, chart);
         var at = zone.ArrivalFrom(null);
@@ -150,7 +160,9 @@ public static class MapSim
         int holds = 0;
         int lastCleared = 0;
         var kills = new List<double>();
-        bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1";
+        bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1", hits = Environment.GetEnvironmentVariable("MAP_HITS") == "1";
+        // MAP_HITS=1: every blow that lands on her (all fights, not the ruler's only); MAP_TRACE_EVERY=s: seconds between trace lines (default 10).
+        double traceEvery = double.TryParse(Environment.GetEnvironmentVariable("MAP_TRACE_EVERY"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var te) && te > 0 ? te : 10;
         var packs = new List<double>();
         // (M3) The hands on the one press plan (Sim/PressPlan.cs), as ZoneSim's.
         var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
@@ -276,7 +288,7 @@ public static class MapSim
                     case Ev.Kill k when k.ByPlayer: kills.Add(t - lastKill); lastKill = t; break;
                     case Ev.PlayerDeath d: r.KilledBy = d.Killer; break;
                     // MAP_BLOWS=1: the blows that land in the ruler's fight (why its fight was lost).
-                    case Ev.PlayerHit ph when blows && zone.Boss != null:
+                    case Ev.PlayerHit ph when (blows && zone.Boss != null) || hits:
                         Console.Error.WriteLine($"{t / 60:0.000} {ph.Source,-22} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : "")} hp {p.Hp:0}/{b.MaxHp:0} phase {zone.BossScript?.PhaseIx}");
                         break;
                 }
@@ -288,8 +300,8 @@ public static class MapSim
             if (zone.Cleared && !zone.Over && t - clearedAt > 8) zone.Leave();
             if (!p.Alive) break;
             // MAP_TRACE=1: where the hands are every ten seconds (why a map was not finished).
-            if (trace && (int)(t / 10) != (int)((t + Dt) / 10))
-                Console.Error.WriteLine($"{t / 60:0.00} at ({p.X:0.0},{p.Z:0.0}) m ({mx:0.00},{mz:0.00}) v ({p.Vx:0.0},{p.Vz:0.0}) blocked {b.Collision.Blocked(p.X, p.Z, p.Radius)} leap {p.Leap != null} dash {p.DashT:0.00} slow {p.SlowF:0.00} spd {b.Stats.Get(Stat.MoveSpeed):0.0} over {b.Over} stuck {stuck:0.0} to go {along:0} m onward ({onward.X:0},{onward.Z:0}) roused {b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused))} hp {p.Hp:0}/{b.MaxHp:0} packs {zone.PacksCleared}/{zone.PacksPlaced}");
+            if (trace && (int)(t / traceEvery) != (int)((t + Dt) / traceEvery))
+                Console.Error.WriteLine($"{t / 60:0.00} at ({p.X:0.0},{p.Z:0.0}) m ({mx:0.00},{mz:0.00}) v ({p.Vx:0.0},{p.Vz:0.0}) blocked {b.Collision.Blocked(p.X, p.Z, p.Radius)} leap {p.Leap != null} dash {p.DashT:0.00} slow {p.SlowF:0.00} spd {b.Stats.Get(Stat.MoveSpeed):0.0} over {b.Over} stuck {stuck:0.0} to go {along:0} m onward ({onward.X:0},{onward.Z:0}) roused {b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused))} hp {p.Hp:0}/{b.MaxHp:0} packs {zone.PacksCleared}/{zone.PacksPlaced}" + Near(b, p));
             t += Dt;
         }
         {
@@ -331,6 +343,28 @@ public static class MapSim
     /// <summary>(M3) --grant id[:rank],... / --grant-union id: what every map starts carrying (as ArenaSim's).</summary>
     public static string? Grant, GrantUnion;
     static int grantSaid, herSaid;
+    /// <summary>MAP_SIG=1: one line per map that changes if its rooms, its walkable cells, its packs or its solid pieces change (to compare two builds of the generator).</summary>
+    static string Signature(MapRunSpec spec, MapBuild map)
+    {
+        static uint H(uint h, string x) { foreach (char c in x) h = (h ^ c) * 16777619u; return h; }
+        uint rooms = 2166136261u, walk = 2166136261u, packs = 2166136261u, cols = 2166136261u, props = 2166136261u;
+        int cells = 0;
+        if (map.Dungeon != null) foreach (var r in map.Dungeon.Rooms) rooms = H(rooms, $"{r.Area} {r.Plan.Id} {r.X:0.00} {r.Z:0.00} {r.Rot:0.00} {r.Scale:0.00} {r.Holes.Length}");
+        for (int i = 0; i < map.Walkable.Length; i++) { if (map.Walkable[i]) cells++; walk = H(walk, map.Walkable[i] ? "1" : "0"); }
+        foreach (var k in map.Packs) packs = H(packs, $"{k.Area} {k.X:0.0} {k.Z:0.0} {k.Size:0.00}");
+        foreach (var c in map.Meta.Colliders) cols = H(cols, c.ToString());
+        foreach (var q in map.Props) props = H(props, $"{q.Id} {q.X:0.0} {q.Z:0.0}");
+        return $"SIG {spec.Dungeon} s{spec.Seed}: rooms {map.Dungeon?.Rooms.Count} #{rooms:x8} | walkable {cells} #{walk:x8} | packs {map.Packs.Count} #{packs:x8} | colliders {map.Meta.Colliders.Count} #{cols:x8} | props {map.Props.Count} #{props:x8}";
+    }
+
+    /// <summary>MAP_TRACE: the nearest roused hostile (kind, distance, life, state, whether a wall stands between).</summary>
+    static string Near(Battle b, PlayerState p)
+    {
+        Enemy? best = null; double bd = 1e9;
+        foreach (var e in b.Enemies.Living()) if (e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused)) { double d = MathX.Dist(e.X, e.Z, p.X, p.Z); if (d < bd) { bd = d; best = e; } }
+        return best == null ? "" : $" | near {best.Def.Name} {bd:0.0} m hp {best.Hp:0}/{best.MaxHp:0} at ({best.X:0.0},{best.Z:0.0}) {best.State} {best.Anim} solid {b.Collision.Blocked(best.X, best.Z, best.Radius)}";
+    }
+
     static readonly bool Bare = Environment.GetEnvironmentVariable("MAP_BARE") == "1";
 
     static void GiveGrants(Battle b, MapRunSpec spec)

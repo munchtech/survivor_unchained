@@ -7,8 +7,8 @@ using Xunit.Abstractions;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>The dungeons' fight numbers (data/content/dungeon_fights.json; dungeon-fights lane, 15 Nov). The 50-seed bands live in
-/// the harness (`dotnet run --project godot/balance -- dungeon --seeds 50`): hollow human 86% deft 100% standing 0%, roost human 82%
-/// deft 98% standing 0%. Here the rule in three seeds: a bot that never moves falls, the deft one clears.</summary>
+/// the harness (`dotnet run --project godot/balance -- dungeon --seeds 50`): hollow human 88% deft 98% standing 0%, roost human 86%
+/// deft 98% standing 0% (seeds 1-50; 51-100: 88/98, 84/98; castMove off). Here the rule in three seeds: a bot that never moves falls, the deft one clears.</summary>
 public class DungeonFightTests
 {
     readonly ITestOutputHelper _out;
