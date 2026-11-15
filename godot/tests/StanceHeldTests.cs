@@ -25,13 +25,17 @@ public sealed class StanceHeldTests
     }
 
     [Fact]
-    public void World_shield_follows_the_offhand_slot()
+    public void Set_a_shield_is_the_callings_whatever_the_offhand_slot_holds()
     {
+        // A new Warden starts with an empty off-hand slot (her second set) and must still carry her calling's shield.
         var a = Callings.Archetype("warden");
-        var ch = Character.Create(new CreationChoice { Name = "T", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
-        ch.Equipment[EquipSlot.Offhand] = Inventory.Make(ch, "watch_buckler");
-        Assert.Equal("shield_round", Loadouts.Of(ch).Arms.Forearm);
-        ch.Equipment[EquipSlot.Offhand] = null;
-        Assert.Null(Loadouts.Of(ch).Arms.Forearm);
+        foreach (var bg in new[] { "hunter", "scholar", "outcast", "devout" })
+        {
+            var ch = Character.Create(new CreationChoice { Name = "T", Archetype = "warden", Background = bg, Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
+            Assert.Null(ch.Equipment[EquipSlot.Offhand]);
+            Assert.Equal("shield_round", Loadouts.Of(ch).Arms.Forearm);
+            ch.Equipment[EquipSlot.Offhand] = Inventory.Make(ch, "watch_buckler");
+            Assert.Equal("shield_round", Loadouts.Of(ch).Arms.Forearm);
+        }
     }
 }

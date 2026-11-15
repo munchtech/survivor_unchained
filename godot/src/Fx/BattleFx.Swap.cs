@@ -238,7 +238,8 @@ public partial class BattleFx
         var rc = bronze ? (new Color("#8A5424"), new Color("#FFE2A8")) : cols;
         SwapRingAdd(ground, 0.6f, 1.6f, 0.25f, bronze ? 3 : 4, 10, rc, bronze);
         var side = GetViewport()?.GetCamera3D() is { } cam ? cam.GlobalBasis.X : Vector3.Right;
-        swapGlints.Add((ground + Vector3.Up * 1.0f + side * 0.3f, 0, cols.Edge, StarNew(cols.Edge, 4)));
+        // Camera-left: every damage number spawns camera-right of its impact (Hits.Beside), and a glint there sat on them.
+        swapGlints.Add((ground + Vector3.Up * 1.0f - side * 0.3f, 0, cols.Edge, StarNew(cols.Edge, 4)));
         Sfx.Blocked();
         if (e.Strike == "") return;
 
