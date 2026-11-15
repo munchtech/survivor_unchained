@@ -1009,7 +1009,24 @@ public partial class PlayerView : Node3D
         float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
         // (the 2D node: she faces the aim at any speed, her legs walking by the node; aimHold keeps it, Update)
         aimFace = face;
-        if (!mine || AimLegs || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
+        // (warden-turn, the owner 10 Nov "movement looked weird especially turning"; A1 leads 20-21 ported) Hers: never a
+        // one-frame flip. Standing or slow, her whole body turns to the blow on the eased turn (faceGoal, Update). Running,
+        // her waist takes up to 75 deg of it off her travel, eased (Carry); past 100 her hips join (hipGoal). Either way the
+        // swing coils on its wind until her shoulders are on the blow (Coil). The sim's aim and blow stay instant.
+        hipGoal = null;
+        if (mine && !AimLegs && !TurnSnap)
+        {
+            faceGoal = null;
+            if (speed < 1.5f) { faceGoal = face; aim = 0; }
+            else
+            {
+                float travel = velX * velX + velZ * velZ > 0.16f ? Mathf.Atan2(velX, velZ) : Rotation.Y;
+                float dt2 = Mathf.RadToDeg(Mathf.Wrap(face - travel, -Mathf.Pi, Mathf.Pi));
+                if (Mathf.Abs(dt2) > 100) hipGoal = travel + Mathf.DegToRad(Mathf.Sign(dt2) * Mathf.Min(Mathf.Abs(dt2) - WaistMax, HipMax));
+                aim = Mathf.Clamp(Mathf.RadToDeg(Mathf.Wrap(face - (hipGoal ?? Rotation.Y), -Mathf.Pi, Mathf.Pi)), -WaistMax, WaistMax);
+            }
+        }
+        else if (!mine || AimLegs || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
         {
             Rotation = new Vector3(0, face, 0);
             aim = 0;
@@ -1167,12 +1184,28 @@ public partial class PlayerView : Node3D
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
+        // (warden-turn) A blow struck standing or slow: her whole body to it on the eased turn, held while it lasts unless
+        // she is off at a run; a blow behind her running: her hips toward it (hipGoal) while it lasts.
+        else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnMaxStanding, TurnEaseStanding);
+        else if (mine && hipGoal is float hg && aimHold > 0 && p.Leap == null && p.DashT <= 0) TurnTo(hg, (float)dt, HipRate, TurnEase);
         else if (sp > 0.4f && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
             float want = stick ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
-            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
+            // (warden-turn) Eased and rate-limited: at most TurnMax a second (35 deg a 30 fps frame), a 180 at a run
+            // (a pivot) at TurnPivot. --turn-snap: the 4 Nov snap (FaceRate 36/s put 126 deg of a 180 in one frame).
+            if (mine && !TurnOld && !TurnSnap)
+            {
+                float off = Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+                if (!pivot && off > Mathf.DegToRad(120) && speed > 2.5f) pivot = true;
+                TurnTo(want, (float)dt, pivot ? TurnPivot : TurnMax, TurnEase);
+                if (pivot && Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi)) < Mathf.DegToRad(10)) pivot = false;
+            }
+            else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
         }
+        if (aimHold <= 0) { faceGoal = null; hipGoal = null; }
+        if (sp <= 0.4f) pivot = false;
+        turnedLast = turning; turning = false;
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
@@ -1255,6 +1288,9 @@ public partial class PlayerView : Node3D
             }
             swing++;
             if (mine) Strike(a.Angle);
+            if (mine && played && !AimLegs && !TurnSnap && !CoilOff) CoilStart(fullStart == time);
+            if (mine && SurvivorUnchained.Play.TurnRun.Start >= 0)
+                GD.Print(System.FormattableString.Invariant($"STRIKE {b.Time - SurvivorUnchained.Play.TurnRun.Start:0.0000} aim {Mathf.RadToDeg(aimFace):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} sp {speed:0.00} clip {(fullStart == time ? fullClip : upperClip)} full {fullStart == time} waist {aim:0.0} hips {(hipGoal is float h2 ? Mathf.RadToDeg(h2) : float.NaN):0.0}"));
         }
         // Casters raise a hand now and then as their spells go (hers move
         // with the spells themselves: OnMuzzle).
@@ -1283,8 +1319,10 @@ public partial class PlayerView : Node3D
         ActWalkVel(ref sp);
         if (mine && !ActLive && ActWalk == null) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
+        if (mine) CoilStep();
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
+        if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, SurvivorUnchained.Play.TurnRun.Start));
         else tree.Set(BlendPosition, speed);
         carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
@@ -1608,7 +1646,12 @@ public partial class PlayerView : Node3D
         standT = spd < 0.05f ? standT + dt : 0;
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w, hasWalk);
-        stride = Stride.Advance(stride, dt, period);
+        // (warden-turn) With her hips turned onto a blow behind her, the stride runs at her travel's part along her facing
+        // (past 90 deg off it a backpedal), so the planted foot keeps more of its ground.
+        float strideK = 1;
+        if (!AimLegs && hipGoal != null && aimHold > 0 && velX * velX + velZ * velZ > 0.16f)
+            strideK = Mathf.Cos(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi));
+        stride = Stride.Advance(stride, dt * strideK, period);
         if (!move2D)
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
@@ -1713,7 +1756,22 @@ public partial class PlayerView : Node3D
         carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * dt));
         // Her back to the blow while it lasts, then home.
         float aimTo = aimHold > 0 ? aim : 0;
-        carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
+        float bodyStep = Mathf.RadToDeg(Mathf.Wrap(Rotation.Y - lastBodyYaw, -Mathf.Pi, Mathf.Pi));
+        lastBodyYaw = Rotation.Y;
+        if (TurnSnap || AimLegs) carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
+        else
+        {
+            // (warden-turn; A1 L21's eased waist) At 30 a second the waist put 63% of a 90 deg blow in one frame. Now eased
+            // in (WaistFirst deg the first frame), at most WaistRate after, eased out on the goal, never past it; and her
+            // shoulders (body + waist) never turn more than ShoulderMax in a frame between them.
+            float rem = aimTo - carriage.Aim, f = dt * 30;
+            waistRamp = Mathf.Abs(rem) < 0.5f ? 0 : waistRamp <= 0 ? WaistFirst : WaistRate;
+            float k = aimHold > 0 ? 0.75f : 1 - Mathf.Exp(-8 * dt);
+            float stepA = Mathf.Min(waistRamp * f, Mathf.Abs(rem) * k) * Mathf.Sign(rem);
+            // (same way as the body's step: the pair together at most ShoulderMax; against it, unwinding, free)
+            if (stepA * bodyStep > 0) stepA = Mathf.Sign(stepA) * Mathf.Min(Mathf.Abs(stepA), Mathf.Max(0, ShoulderMax * f - Mathf.Abs(bodyStep)));
+            carriage.Aim += stepA;
+        }
         // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel);
         // left to the clip through a whole-body one (a roll, a leap, a vault, a
         // rush, a get-up), whose tucked head lifted would look wrong, and back after.
@@ -1819,6 +1877,103 @@ public partial class PlayerView : Node3D
     static readonly bool TurnOld = SurvivorUnchained.Args.Has("turn-old");
     static readonly float FaceRate = SurvivorUnchained.Args.Num("face-rate", 36f), BlendRate = SurvivorUnchained.Args.Num("blend-rate", 40f),
         BankRate = SurvivorUnchained.Args.Num("bank-rate", 14f);
+    /// <summary>(warden-turn, the owner 10 Nov "movement looked weird especially turning"; A1 leads 20-21's view pieces ported
+    /// to the heroine) Her turn, eased and rate-limited: the 4 Nov chase (FaceRate 36/s) put 126 deg of a 180 into ONE frame
+    /// at 30 fps, 63 of a 90, and a blow flipped her whole. Now her yaw speed eases up (TurnEase/s) to a cap and settles on
+    /// the goal at TurnK/s: running TurnMax (35 deg a 30 fps frame), a 180 at a run TurnPivot (a pivot, ~5 frames), standing
+    /// to a blow TurnMaxStanding; her hips onto a blow behind her HipRate. --turn-snap: the 4 Nov snap (before pictures).</summary>
+    static readonly bool TurnSnap = SurvivorUnchained.Args.Has("turn-snap"), CoilOff = SurvivorUnchained.Args.Has("turn-coil-off"),
+        TurnLog = SurvivorUnchained.Args.Has("turn-log");
+    static readonly float TurnMax = SurvivorUnchained.Args.Num("turn-max", 1050f), TurnPivot = SurvivorUnchained.Args.Num("turn-pivot", 1350f),
+        TurnK = SurvivorUnchained.Args.Num("turn-k", 18f), TurnEase = SurvivorUnchained.Args.Num("turn-ease", 20f),
+        TurnMaxStanding = SurvivorUnchained.Args.Num("turn-max-standing", 1050f), TurnEaseStanding = SurvivorUnchained.Args.Num("turn-ease-standing", 30f),
+        HipRate = SurvivorUnchained.Args.Num("turn-hip-rate", 600f), HipMax = SurvivorUnchained.Args.Num("turn-hip-max", 60f),
+        WaistMax = SurvivorUnchained.Args.Num("turn-waist-max", 75f), WaistFirst = SurvivorUnchained.Args.Num("turn-waist-first", 18f),
+        WaistRate = SurvivorUnchained.Args.Num("turn-waist-rate", 28f), ShoulderMax = SurvivorUnchained.Args.Num("turn-shoulder-max", 33f),
+        CoilTol = SurvivorUnchained.Args.Num("turn-coil-tol", 22f), CoilPace = SurvivorUnchained.Args.Num("turn-coil-pace", 0.4f),
+        CoilWind = SurvivorUnchained.Args.Num("turn-coil-wind", 0.9f), CoilCatch = SurvivorUnchained.Args.Num("turn-coil-catch", 1.3f);
+    static readonly int CoilMax = (int)SurvivorUnchained.Args.Num("turn-coil-max", 5f);
+    float yawVel, lastBodyYaw, waistRamp;
+    bool turning, turnedLast, pivot;
+    /// <summary>A blow's facing her whole body turns to (standing or slow when struck), and the facing her hips turn to for a
+    /// blow behind her at a run (radians), each held while aimHold lasts.</summary>
+    float? faceGoal, hipGoal;
+
+    /// <summary>One frame of the eased turn toward `want` (radians): at most `max` deg/s, its speed eased at `ease`/s.</summary>
+    void TurnTo(float want, float dt, float max, float ease)
+    {
+        if (!turnedLast) yawVel = 0;
+        turning = true;
+        float err = Mathf.RadToDeg(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+        float goal = Mathf.Clamp(err * TurnK, -max, max);
+        yawVel = Mathf.Lerp(yawVel, goal, 1 - Mathf.Exp(-ease * dt));
+        float step = yawVel * dt;
+        // (never past the goal, never away from it)
+        if (step * err < 0) step = 0;
+        else if (Mathf.Abs(step) > Mathf.Abs(err)) step = err;
+        Rotation = new Vector3(0, Rotation.Y + Mathf.DegToRad(step), 0);
+    }
+
+    // The swing's coil: while her shoulders come round onto the blow its wind plays slow (CoilPace of its pace), held at the
+    // wind's end (CoilWind of the way to its contact); let go at its pace once they are within CoilTol deg, stop gaining, or
+    // at CoilMax frames; then a little quick (CoilCatch) until it has made up the time it lost, never past contact. So the
+    // slash leaves on the blow's line (a coil, not a dead hold: A1 judge r2) and the view's contact stays near the hit's.
+    double coilAt = -1, coilDebt; bool coilFull, coilCatchOn; float coilRate, coilBest; string coilClip = ""; int coilN;
+    void CoilStart(bool full)
+    {
+        coilFull = full; coilClip = full ? fullClip : upperClip; coilRate = full ? fullSpeed : (float)upperRate;
+        coilAt = time; coilDebt = 0; coilCatchOn = false; coilBest = 999; coilN = 0;
+    }
+    void CoilStep()
+    {
+        if (coilAt < 0 && !coilCatchOn) return;
+        string sc = coilFull ? "parameters/fullScale/scale" : "parameters/upperScale/scale";
+        bool live = (bool)tree.Get(coilFull ? "parameters/fullShot/active" : "parameters/upperShot/active") || coilN == 0;
+        string now = coilFull ? fullClip : upperClip;
+        if (!live || now != coilClip) { coilAt = -1; coilCatchOn = false; return; }
+        // (the shot fired this frame starts on the next Advance: the position read now is the last clip's)
+        double pos = coilN == 0 && coilAt >= 0 ? 0 : (float)tree.Get(coilFull ? "parameters/full/current_position" : "parameters/upper/current_position");
+        double contact = SurvivorUnchained.Content.HerEvents.Contact(coilClip) ?? 0.25;
+        float f = (float)(probeDt * 30);
+        if (coilAt >= 0)
+        {
+            float sh = Rotation.Y + Mathf.DegToRad(carriage?.Aim ?? 0);
+            float err = Mathf.RadToDeg(Mathf.Abs(Mathf.Wrap(aimFace - sh, -Mathf.Pi, Mathf.Pi)));
+            bool stalled = coilN > 0 && err > coilBest - 1.5f * f;
+            coilBest = Mathf.Min(coilBest, err);
+            if (err > CoilTol && !stalled && coilN < CoilMax / f)
+            {
+                double pace = pos < CoilWind * contact ? CoilPace : 0;
+                tree.Set(sc, coilRate * pace);
+                coilDebt += probeDt * coilRate * (1 - pace);
+                coilN++;
+                return;
+            }
+            if (SurvivorUnchained.Play.TurnRun.Start >= 0 || TurnLog)
+                GD.Print(System.FormattableString.Invariant($"RELEASE {coilN} f err {err:0.0} pos {pos:0.000} contact {contact:0.000} debt {coilDebt:0.000}"));
+            coilAt = -1; coilCatchOn = coilDebt > 0;
+        }
+        if (coilCatchOn && coilDebt > 0 && pos < contact)
+        {
+            tree.Set(sc, coilRate * CoilCatch);
+            coilDebt -= probeDt * coilRate * (CoilCatch - 1);
+        }
+        else { tree.Set(sc, coilRate); coilCatchOn = false; }
+    }
+
+    /// <summary>(warden-turn) One frame's turn measures (TURN2, --fig8 or --turn-log): body yaw, the waist, her chest's and
+    /// pelvis's yaw from the bones, her pelvis on screen, the shots playing.</summary>
+    void TurnLog2(double t)
+    {
+        var sk = person.Skeleton;
+        Vector3 B(string n) { int i = sk.FindBone(n); return i < 0 ? GlobalPosition : sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin; }
+        float Yaw(string l, string r) { var d = B(l) - B(r); return Mathf.RadToDeg(Mathf.Atan2(-d.Z, d.X)); }
+        var cam = GetViewport()?.GetCamera3D();
+        var pv = B("pelvis");
+        var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
+        bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)}"));
+    }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
