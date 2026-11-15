@@ -81,12 +81,15 @@ void fragment() {
 		// 3 rootmat, 4 dark, 5 pitface. Laid by rule from the fields: trodden earth in the rooms' open middles, litter in
 		// patches, root mats spreading from the walls' feet, damp dark earth at the foot and the pit mouths, the pit
 		// face on the steep. Each layer read twice at two turns and blended by a slow field, so no tile repeats.
+		// Under and beyond the bank (DungeonWalls' den profile) the ground is gone: the bank's fall and its cap go black
+		// below it, and a floor left there showed as a lit brown plain behind every bank (lead 6, 15 Nov).
+		if (inside < -0.6) discard;
 		float steep = 1.0 - smoothstep(0.55, 0.9, wnrm.y);
 		float wob = (mid - 0.5) * 2.2;
 		float w_tr = smoothstep(3.5, 7.5, inside + wob * 1.5) * (1.0 - steep);   // (the rooms' open middles, worn paler: a vignette by rule)
 		float w_li = smoothstep(0.52, 0.7, fbm(wpos.xz * 0.23 + 41.0)) * smoothstep(0.6, 1.6, inside) * (1.0 - w_tr);
 		float w_rm = 1.0 - smoothstep(0.4, 2.4, inside + wob * 0.8);
-		float w_dk = rim_dark * max(1.0 - smoothstep(-0.2, 0.9, inside + wob * 0.3), 1.0 - smoothstep(-0.1, 0.4, hole + wob * 0.15));   // (a thin damp lip only: a wide dark ring read as a raised tub's shadow)
+		float w_dk = rim_dark * (1.0 - smoothstep(-0.2, 0.9, inside + wob * 0.3));   // (a thin damp lip only: a wide dark ring read as a raised tub's shadow)
 		float w_pf = steep * (1.0 - smoothstep(0.0, 2.0, hole));
 		float hb[6];
 		vec3 cb[6];
@@ -124,8 +127,10 @@ void fragment() {
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
 		// the pits: the depths go black
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
-		float pit = 1.0 - smoothstep(0.0, 1.6, hole);
-		col *= mix(1.0, 0.015, rim_dark * max(smoothstep(0.45, -0.5, hole), pit * steep));
+		// (lead 6: a pit reads as a hole by a LIT lip, the painted pit face down its throat falling to black over a metre
+		// and more, never a dark ring outside it: that ring read as a raised tub's shadow)
+		col *= 1.0 + 0.2 * smoothstep(0.05, 0.3, hole) * smoothstep(1.0, 0.35, hole);
+		col *= mix(1.0, 0.015, rim_dark * smoothstep(0.1, -1.3, hole));
 	} else {
 		// Beyond the shelf's edge the ground is gone (the drop's rock falls away below): only the walkable shelf stays.
 		if (min(inside, hole) < -0.4) discard;

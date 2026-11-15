@@ -21,7 +21,7 @@ public static class DungeonFloor
         var img = Image.CreateEmpty(n, n, false, Image.Format.Rgh);
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++)
-                img.SetPixel(i, j, new Color(z.WallField![j * n + i], z.HoleField?[j * n + i] ?? 8f, 0));
+                img.SetPixel(i, j, new Color(z.DungeonTheme == "den" && z.HoleField != null ? DungeonWalls.WallOnly(z.WallField![j * n + i], z.HoleField[j * n + i]) : z.WallField![j * n + i], z.HoleField?[j * n + i] ?? 8f, 0));   // (the den's pits are not walls: DungeonWalls.Ctx.S)
         fieldOf = z;
         return field = ImageTexture.CreateFromImage(img);
     }

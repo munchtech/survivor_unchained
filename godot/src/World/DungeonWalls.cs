@@ -72,6 +72,10 @@ public static class DungeonWalls
     }
     static float N2(float x, float z) => N3(x, 0.5f, z);
 
+    /// <summary>The den's distance in from a WALL only: where the nearest edge is a pit's (WallField within a few
+    /// tenths of HoleField) the wall is far as far as the floor and the banks care (8 m).</summary>
+    public static float WallOnly(float wf, float hf) => Mathf.Lerp(wf, 8f, Sm(0.6f, 0.15f, hf - wf));
+
     // ------------------------------------------------------------- the zone --
     sealed class Ctx
     {
@@ -89,7 +93,9 @@ public static class DungeonWalls
         }
         public float Floor(float x, float z) => Bil(Z.Heights, x, z);
         // Metres outside the walkable edge; the ravine takes its holes as rock too.
-        public float S(float x, float z) => Ravine ? -Mathf.Min(Bil(Wf, x, z), Bil(Hf, x, z)) : -Bil(Wf, x, z);
+        // (The den's pits are holes, never walls: its room shapes leave a pit outside them, so WallField alone raised
+        // a bank over every pit, the "raised black tub" of rounds 1-3; lead 6, 15 Nov.)
+        public float S(float x, float z) => Ravine ? -Mathf.Min(Bil(Wf, x, z), Bil(Hf, x, z)) : -WallOnly(Bil(Wf, x, z), Bil(Hf, x, z));
         // The wall's height by rule of which way it faces the play camera (south of her, looking north): a wall that
         // stands between her and the lens (its outside toward +z) would hide her and the floor, so the den keeps it low
         // and the ravine turns it into a drop, the shelf's edge falling away into shade (as do the ravine's holes);

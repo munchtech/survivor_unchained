@@ -188,7 +188,7 @@ public static partial class DungeonDress
         return Mathf.Lerp(Mathf.Lerp(f[j * res + i], f[j * res + i + 1], fu), Mathf.Lerp(f[(j + 1) * res + i], f[(j + 1) * res + i + 1], fu), fv);
     }
 
-    static float Wall(Ctx c, float x, float zz) => Bil(c.Z, c.Z.WallField!, x, zz);
+    static float Wall(Ctx c, float x, float zz) => c.Z.DungeonTheme == "den" && c.Z.HoleField != null ? DungeonWalls.WallOnly(Bil(c.Z, c.Z.WallField!, x, zz), Bil(c.Z, c.Z.HoleField, x, zz)) : Bil(c.Z, c.Z.WallField!, x, zz);   // (the den's pits are not walls)
     static float Hole(Ctx c, float x, float zz) => c.Z.HoleField == null ? 99f : Bil(c.Z, c.Z.HoleField, x, zz);
     static bool Open(Ctx c, float x, float zz, float m) => Wall(c, x, zz) > m && Hole(c, x, zz) > m;
     static float H(Ctx c, float x, float zz) => (float)c.Z.Ground.HeightAt(x, zz);
