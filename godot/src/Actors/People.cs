@@ -1981,6 +1981,8 @@ public static class People
         if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
         // (and the shade's floor, cast shadow and dark side alike, where a rig's fill is small: Look.SkinLight.ShadeFloor)
         m.SetShaderParameter("shade_floor", SurvivorUnchained.Look.SkinLight.ShadeFloor);
+        // (her body's tone out of her neck's shade at the Look: Look.SkinLight.NeckShadeOut)
+        m.SetShaderParameter("neck_shade_out", SurvivorUnchained.Look.SkinLight.NeckShadeOut);
         if (!FaceMidOff)
         {
             m.SetShaderParameter("face_mid", HeadMid);

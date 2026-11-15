@@ -69,6 +69,15 @@ public static class SkinLight
     /// changes where a rig's fill is over it (the day close-up's 0.55).</summary>
     public const float ShadeFloor = 0.2f;
 
+    /// <summary>Her body's tone out of her neck's shade under the Look's rig (the skin shader's neck_shade_out, every skin
+    /// part; her neck is her head's mesh). Under the rig her head and neck keep HerBodyTone (own (0.66, 1.17, 2.15), a blue
+    /// fitted against the rig's warm key) and only the key's light was warmed back (key_tone), so where the key doesn't reach
+    /// her neck kept the blue: grey at the Look by day (Oklab L .34 C .005 h 87) and blue-violet by night (L .38 C .014
+    /// h 281) under a warm jaw (C .025-.054 h 45-49), the shade's floor and its warm fill no help (floor 0.8: C .015 by day).
+    /// At 1 (14 Nov skin-light r4b): by day C .036 h 60, by night C .062 h 51, lightness kept (.34, .36); outside the Look
+    /// (rig weight 0) nothing changes.</summary>
+    public const float NeckShadeOut = 1f;
+
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The

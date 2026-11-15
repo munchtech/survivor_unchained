@@ -126,7 +126,26 @@ public class SkinLightTests
         var shader = Read("shaders", "heroine_skin.gdshader");
         Assert.Contains("uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;", shader);
         Assert.Contains("if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && shade_floor > cel_rig.y)", shader);
-        Assert.Contains("* cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * cel_fill_tone;", shader);
+        Assert.Contains("* cel_lum(lcol) * (shade_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * ns_f * cel_fill_tone;", shader);
+    }
+
+    /// <summary>Fault 2 (r4b: the Look's neck grey by day, blue-violet by night): her body's tone comes out of her neck's shade
+    /// on every part (her neck is her head's mesh), the key's light divided back so her lit side is as before; the fill and
+    /// the floor keep it.</summary>
+    [Fact]
+    public void NeckShadeOutIsTheRules_EveryPartTakesIt_TheKeyKeepsItsLight()
+    {
+        Assert.Equal(1f, SkinLight.NeckShadeOut);
+        var people = Read("src", "Actors", "People.cs");
+        int at = people.IndexOf("m.SetShaderParameter(\"neck_shade_out\", SurvivorUnchained.Look.SkinLight.NeckShadeOut);", StringComparison.Ordinal);
+        Assert.True(at > 0, "People.Skin sets neck_shade_out from Look.SkinLight.NeckShadeOut");
+        Assert.DoesNotContain("if (who == \"heroine\") m.SetShaderParameter(\"neck_shade_out\"", people);
+        Assert.True(people.IndexOf("SkinSet(m, src.ResourceName);", at, StringComparison.Ordinal) > at, "before the --skin-set switch");
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float neck_shade_out : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("vec3 nb = pow(max(body_tone, vec3(1e-3)), vec3(-neck_w * neck_shade_out));", shader);
+        Assert.Contains("un /= ns_f;", shader);
+        Assert.Contains("cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * cel_fill_tone", shader);
     }
 
     /// <summary>Fault 1 (spray-tan orange): her cel warmth is the rule's, warm but less red than (1.39, 0.80, 0.54).</summary>
