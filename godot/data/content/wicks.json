@@ -47,7 +47,12 @@
     "sunder.stroke":            { "name": "Splitting Stroke", "text": "Every 2nd swing is heavy and splits the ground; swings 15% slower.", "heavyEvery": 2, "cooldown": 1.15 },
     "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 35%, stunning again.", "again": 0.8, "againDamage": 0.35 },
     "rebuke.morning":           { "name": "Shield of Morning", "text": "Each rebuke strike leaves you a barrier of 0.1% of health for each creature it strikes.", "barrierEach": 0.001, "barrierMost": 0.004 },
-    "watch_bell.stone":         { "name": "Stone Bell", "text": "Each toll lays two stones, and each champion it draws lays one more.", "stones": 2, "stonesChampion": 1 }
+    "watch_bell.stone":         { "name": "Stone Bell", "text": "Each toll lays two stones, and each champion it draws lays one more.", "stones": 2, "stonesChampion": 1 },
+    // Bladestorm (her key 3 at level 5): its calling strand breaks harder, its own shape strand reaches further. The
+    // storm drains Resolve and has no wait in the campaign, so its lamps carry no cooldown (it would light nothing).
+    "bladestorm.lines": { "name": "Line on Line", "text": "Every 2nd turn of the storm throws a Sunder line, not every 4th; its cuts, lines and break strike 20% lighter.", "heavyEvery": 2, "damage": 0.8 },
+    "bladestorm.long":  { "name": "Long Blade", "text": "The storm reaches 30% further, and so do its lines and its break; its cuts, lines and break strike 20% lighter.", "area": 1.3, "damage": 0.8 },
+    "bladestorm.hold":  { "name": "Hold Fast", "text": "Every cut of the storm chills what it strikes for 3 s; the 5th cut on one creature freezes it where it stands (a boss staggers instead)." }
   },
 
   // The library's strands: kind, Turn, lead-ins, and which skills it suits. "suits" is a list of alternatives,
@@ -91,6 +96,27 @@
       "watch_bell.stone": { "kind": "calling", "turn": "watch_bell.stone", "lamps": [
         { "text": "+10% damage", "damage": 0.10 },
         { "text": "+10% reach", "area": 0.10 },
-        { "text": "8% shorter time between tolls", "cooldown": -0.08 } ] } } }
+        { "text": "8% shorter time between tolls", "cooldown": -0.08 } ] } } },
+    // Bladestorm: three strands of its own, not one and two of the library's: the library's shape and bind lamps shorten a
+    // cooldown the storm does not have in the campaign (it drains Resolve, no wait), and a library school Turn converts a
+    // status the storm does not have (it would chill nothing). Hold Fast is a rule strand ("effects", one list a place:
+    // Content/Wicks.cs OwnRules): its lamps are the generic skill.area and skill.status rules on Bladestorm alone.
+    "bladestorm": { "strands": ["bladestorm.lines", "bladestorm.long", "bladestorm.hold"], "suggested": "bladestorm.lines", "own": {
+      "bladestorm.lines": { "kind": "calling", "turn": "bladestorm.lines", "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% reach (and the lines' and the break's)", "area": 0.10 },
+        { "text": "+10% damage to champions", "vsChampion": 0.10 } ] },
+      "bladestorm.long": { "kind": "shape", "turn": "bladestorm.long", "suits": [ { "behaviors": ["spin"] } ], "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% reach (and the lines' and the break's)", "area": 0.10 },
+        { "text": "+10% damage to champions", "vsChampion": 0.10 } ] },
+      "bladestorm.hold": { "kind": "bind", "turn": "bladestorm.hold", "suits": [ { "behaviors": ["spin"] } ], "lamps": [
+        { "text": "+5% reach (and the lines' and the break's)" },
+        { "text": "+5% reach (and the lines' and the break's)" },
+        { "text": "+5% reach (and the lines' and the break's)" } ], "effects": [
+        [ { "do": "rule", "rule": "skill.area", "args": { "skill": "bladestorm", "inc": 0.05 } } ],
+        [ { "do": "rule", "rule": "skill.area", "args": { "skill": "bladestorm", "inc": 0.05 } } ],
+        [ { "do": "rule", "rule": "skill.area", "args": { "skill": "bladestorm", "inc": 0.05 } } ],
+        [ { "do": "rule", "rule": "skill.status", "args": { "skill": "bladestorm", "status": { "kind": "chill" } } } ] ] } } }
   }
 }
