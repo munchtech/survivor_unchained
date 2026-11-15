@@ -3,6 +3,7 @@
  "_l23": "L1 lead 23 (TUNE, the owner 10 Nov): her steel and darksteel to BLUED gunmetal (bare read warm grey under her key, C 0.013 h 48) (dark cool plate, gold trim brighter and warmer, one hot edge glint); the blue enamel was finish 2. Any value but blued / enamel is bare.",
  "steel": "blued",
  "darksteel": "blued",
+ "plainsteel": "blued",
  "_dye_paint": "Keys bare as built when undyed; a colour dye paints them like the enamel (finish 2), a metal dye gives dyed metal (finish 3): fully metallic iron in a dye read as glassy coloured chrome edge-on.",
  "dye_paint": ["iron", "blacksteel"],
  "pieces": {
@@ -13,6 +14,11 @@
    "warden.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
    "plate.cups": {"metal_rough": 0.22, "metal_blot": 0.2, "metal_spec_mute": 0.85},
    "plate.plate": {"metal_rough": 0.38, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
+  },
+  "plainsteel": {
+   "plate.plate": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.85},
+   "plate.cups": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.85},
+   "plate.pauldrons": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.85}
   }
  }
 }
