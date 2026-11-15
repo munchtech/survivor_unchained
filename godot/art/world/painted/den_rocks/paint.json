@@ -1,0 +1,45 @@
+{
+ "texels": 1331665,
+ "ink_share": 0.0239,
+ "moss_share": 0.1371,
+ "stone_srgb": [
+  160,
+  146,
+  128
+ ],
+ "moss_srgb": [
+  111,
+  122,
+  52
+ ],
+ "look": {
+  "stone": "#b3a58f",
+  "warm": "#c9ad84",
+  "cool": "#8f8c95",
+  "umber": "#6f6052",
+  "moss": "#6f7a34",
+  "moss_dark": "#4c5524",
+  "moss_light": "#8a9142",
+  "ink": "#2a1f19",
+  "ink_cm": 1.6,
+  "ink_deg": [
+   28.0,
+   48.0
+  ],
+  "dab_cm": [
+   9.0,
+   26.0
+  ],
+  "fine_cm": [
+   4.5,
+   11.0
+  ],
+  "moss_up": [
+   0.62,
+   0.86
+  ],
+  "moss_dabs": 0.3,
+  "foot_m": 0.3,
+  "foot_dark": 0.7
+ }
+}

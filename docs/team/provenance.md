@@ -82,6 +82,7 @@ Owner answers (questions 1 to 7).
 
 ## Ours, painted from nothing
 
+- `godot/art/world/flora/den/` (den_rock_a-d.gltf/.bin, den_rock_atlas.png; 15 Nov 2026): ours, built and painted from nothing by `tools/look/den_rocks.py` (meshes from `tools/assets/env_rocks.py` mesh --form den: an ellipsoid cut by planes, in code; the atlas painted in code from the meshes' own points); no photo, scan, paid credit or Meshy. Risk: none.
 - `godot/art/dungeon/den/` (albedo, normal, arh, layers.json; 15 Nov 2026): ours, painted from nothing by `tools/look/ground_paint.py`, set "den" in `godot/data/look/ground.json`; no photo, scan or outside source. Risk: none.
 - `godot/art/dungeon/den/decals.png` (+ `decals.json`; 15 Nov 2026): ours, painted from nothing by `tools/look/den_decals.py` (the den floor's bones, rib cages, skulls, hides, fur, twigs, leaves, blood, roots and pebbles, drawn in code); no outside source. Risk: none.
 - `godot/art/dungeon/den/bank_albedo.png`, `bank_normal.png`, `bank_arh.png` (+ `bank.json`), `bank_decals.png` (+ `bank_decals.json`) and `roots_preview.jpg` (15 Nov 2026): ours, painted from nothing by `tools/look/den_roots.py` (the den's root bank and root-cluster decals, a height-field tube compositor drawn in code; the palette sampled by number from the owner-approved den targets); no outside source. Risk: none.

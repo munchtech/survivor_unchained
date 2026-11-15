@@ -21,7 +21,10 @@ public static partial class DungeonDress
     // (the den's rocks: our own painted plane rocks, env_rocks.py through tools/look/wild.py rocks, drawn in their kit look)
     // (lead 6 tried the CC0 scans boulder_01 / rock_07 / rock_moss_set_01 here, lifted: crusty yellow sponge, not painted
     // stone; and these plane rocks rebuilt with smooth normals: they lost their kit data and drew dark)
-    static readonly string[] DenRocks = { "res://art/world/flora/boulder.gltf", "res://art/world/flora/bouldermid.gltf", "res://art/world/flora/boulderlarge.gltf" };
+    // (the den's own boulders since dungeon lead 6's round 5: tools/look/den_rocks.py, rounded, planed, painted with their ink and
+    // moss, one rock per file; the flora boulders were packed species (every variant and LOD drawn at once) and the night kit's boxes)
+    static readonly string[] DenRocks = { "res://art/world/flora/den/den_rock_a.gltf", "res://art/world/flora/den/den_rock_b.gltf",
+        "res://art/world/flora/den/den_rock_c.gltf", "res://art/world/flora/den/den_rock_d.gltf" };
     static readonly string[] Logs = { "res://art/world/dead_tree_trunk.glb", "res://art/world/dead_tree_trunk_02.glb", "fallen_trunk" };
 
     sealed class Ctx
@@ -125,7 +128,7 @@ public static partial class DungeonDress
             int n = 2 + (int)(Hash(s, 1, 1) * 3);
             for (int k = 0; k < n; k++)
                 foreach (var sp in WallSpots(c, r, 0.5f + 0.7f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
-                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 0.8f + 0.8f * Hash(s, 3, k), 0.1f, "rocks");   // (1.4-2.4 tried: the plane rocks grew into big grey boxes)
+                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 1.0f + 0.35f * Hash(s, 3, k), 0.12f, "rocks");   // (the den rocks built 1.4-2.3 m: 1.4-3.1 m placed)
         }
         if (r.Kind == "Clearing" || r.Kind == "Boss")
             foreach (var sp in WallSpots(c, r, 1.2f, 1, s * 7 + 5, true))
@@ -263,6 +266,10 @@ public static partial class DungeonDress
         c.Tick(tag);
     }
 
+    static Shader? denInk;
+    static readonly Vector3 DenRockTint = new(1f, 1f, 1f);
+    const float DenRockShade = 0.025f;
+
     // A flora piece's materials through the kit look (KitLook.For: our own rocks' painted OWN_ROCK); raw they draw black.
     static void Kit(Node n, bool den)
     {
@@ -273,8 +280,23 @@ public static partial class DungeonDress
                 if (m.SurfaceGetMaterial(i) is Material mat)
                 {
                     var k = KitLook.For(mat, KitLook.Look.Plain);
+                    // (the den's own boulders, Stone_OwnDenrock: their moss and warmth painted in, so the map as it is; their
+                    // shade lifted toward den_room.png's (70,62,55); the silhouette's ink a hull after the see-through rim)
+                    if (k is ShaderMaterial dm && den && mat.ResourceName == "Stone_OwnDenrock")
+                    {
+                        dm = (ShaderMaterial)dm.Duplicate();
+                        dm.SetShaderParameter("paint_tint", DenRockTint);
+                        dm.SetShaderParameter("moss_amount", 0.0f);
+                        dm.SetShaderParameter("shade_floor", DenRockShade);
+                        denInk ??= GD.Load<Shader>("res://shaders/den_rock_ink.gdshader");
+                        var ink = new ShaderMaterial { Shader = denInk };
+                        ink.SetShaderParameter("center", m.GetAabb().GetCenter());
+                        if (dm.NextPass is ShaderMaterial rim) { rim = (ShaderMaterial)rim.Duplicate(); rim.NextPass = ink; dm.NextPass = rim; }
+                        else dm.NextPass = ink;
+                        k = dm;
+                    }
                     // (the den's rocks: the one stone a step darker and olive, mossed over their tops, FROM den_room.png)
-                    if (k is ShaderMaterial sm && den)
+                    else if (k is ShaderMaterial sm && den)
                     {
                         sm = (ShaderMaterial)sm.Duplicate();
                         sm.SetShaderParameter("paint_tint", new Vector3(1.0f, 0.9f, 0.76f));   // (lead 6: warm grey-brown, not grey)
