@@ -81,6 +81,7 @@ public partial class ZoneView : Node3D
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         if (DungeonWalls.Build(z) is Node3D walls) AddChild(walls);
+        if (DungeonLight.Build(z) is Node3D shafts) AddChild(shafts);
         yield return "ground";
         AddChild(Water.Build(z));
         yield return "water";
@@ -98,7 +99,8 @@ public partial class ZoneView : Node3D
             }
         Perf.Lap("flora");
         yield return "flora";
-        if (Scatter.Build(z) is { } sc) AddChild(sc);
+        // (A dungeon dresses its own floor by rule: the wild's scatter is not its.)
+        if (z.WallField == null && Scatter.Build(z) is { } sc) AddChild(sc);
         Perf.Lap("scatter");
         yield return "scatter";
         foreach (var p in OwnProps.For(z.Id)?.Places ?? new())

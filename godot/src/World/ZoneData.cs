@@ -45,6 +45,8 @@ public sealed class ZoneData
     public readonly float[]? WallField;
     /// <summary>A dungeon's holes as a field (MapBuild.HoleField); null elsewhere.</summary>
     public readonly float[]? HoleField;
+    /// <summary>A dungeon's rooms (centre and reach, MapBuild.Areas), for what is placed by rule per room (the den's shafts).</summary>
+    public readonly List<(float X, float Z, float R, string Kind)> Rooms = new();
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -202,6 +204,8 @@ public sealed class ZoneData
         DungeonTheme = m.DungeonTheme;
         WallField = m.WallField;
         HoleField = m.HoleField;
+        if (m.WallField != null)
+            foreach (var a in m.Areas) Rooms.Add(((float)a.X, (float)a.Z, (float)a.R, a.Kind.ToString()));
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {

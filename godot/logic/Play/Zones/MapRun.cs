@@ -151,6 +151,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>By day: the maps are the day's build in the day's world, and a pack must be read
     /// before it is woken (at dusk the way was black past the start's fire).</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Day;
+    /// <summary>A dungeon is lit as its theme is (the den: no sky; the ravine: an evening sun), not by the day's clock.</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => map.Dungeon?.Def.Theme switch
+    {
+        "den" => Atmospheres.Den, "ravine" => Atmospheres.Ravine, _ => base.AtmosphereFor(t),
+    };
     /// <summary>A pack and the ground round it in view: higher than the road's, nearer than a night's.</summary>
     public override (double Pitch, double Distance)? Camera => (62, 24);
     public override Arrival ArrivalFrom(string? from) => new(map.Start.X, map.Start.Z, 0);

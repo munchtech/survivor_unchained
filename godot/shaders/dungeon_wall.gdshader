@@ -18,12 +18,18 @@ varying vec3 wpos;
 varying vec3 wnrm;
 varying float kind;
 varying float floor_y;
+varying float s_out;
+varying float along_m;
+varying float round_s;
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	kind = COLOR.r;
 	floor_y = UV2.x;
+	s_out = COLOR.g * 8.0 - 1.0;
+	along_m = UV2.y;
+	round_s = COLOR.b;
 }
 
 float bayer8(ivec2 p) {
@@ -44,6 +50,32 @@ vec3 tri(float layer, vec3 w) {
 		+ texture(sheet, vec3(wpos.xy / tile, layer)).rgb * b.z;
 }
 
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+// The ravine's rock, painted: tall plates parted by vertical fractures, stepped in three tones, thin strata across
+// them, violet-grey; the flat tops a shade warmer where dust lies.
+vec3 rock(vec3 p, vec3 n) {
+	vec2 t2 = normalize(vec2(-n.z, n.x) + vec2(1e-4));
+	float u = dot(p.xz, t2);
+	float steep = 1.0 - smoothstep(0.55, 0.85, n.y);
+	vec2 q = mix(p.xz * 0.5, vec2(u * 0.5, p.y * 0.16), steep);
+	float w = vnoise(q + 3.1) * 0.65 + vnoise(q * 2.3) * 0.35;
+	float tone = floor(w * 3.2) / 3.0;
+	float fx = q.x * 1.3 + 0.35 * vnoise(q * vec2(0.4, 1.5));
+	float crack = 1.0 - smoothstep(0.02, 0.07, abs(fract(fx) - 0.5) * (0.6 + 0.8 * vnoise(q * 0.7 + 9.0)));
+	float band = smoothstep(0.85, 0.95, fract(p.y * 0.55 + 0.4 * vnoise(vec2(u * 0.1, 0.0))));
+	vec3 base = mix(vec3(0.14, 0.12, 0.17), vec3(0.24, 0.21, 0.27), tone);
+	base = mix(base, base * vec3(1.08, 1.0, 0.92), 1.0 - steep);
+	base *= 1.0 - 0.45 * crack * steep;
+	base *= 1.0 - 0.18 * band * steep;
+	return base;
+}
 void fragment() {
 	// The cutaway: what stands nearer the camera than her, over her chest on screen, is cut away (dithered at its
 	// edge), keeping a 0.9 m footing so the wall still stands round her feet.
@@ -59,37 +91,36 @@ void fragment() {
 		}
 	}
 	float h = max(wpos.y - floor_y, 0.0);
+	float depth = max(floor_y - wpos.y, 0.0);
+	// The dark beyond goes by how far outside the walkable edge a point is (not by height), so the band's top and the
+	// coarse cap meet black on black.
+	float beyond = smoothstep(0.9, 2.4, s_out);
 	vec3 col;
 	if (!FRONT_FACING) {
 		// The cut mass inside.
 		col = vec3(0.043, 0.035, 0.031);
 	} else if (kind > 0.75) {
-		// A root: dark warm brown, a lit bevel along its top.
-		vec3 t = tri(layer_b, wpos);
-		float lum = dot(t, vec3(0.299, 0.587, 0.114));
-		col = mix(vec3(0.29, 0.2, 0.15), vec3(0.29, 0.2, 0.15) * lum * 3.0, 0.5);
-		col += vec3(0.29, 0.2, 0.15) * 0.9 * smoothstep(0.3, 0.8, wnrm.y);
-		col *= mix(1.0, 0.0, smoothstep(0.6 * wall_h, wall_h, h)) * (1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.6, h)));
+		// A root: dark warm bark, each root its own shade, fine streaks along it and a knot now and then.
+		float id = hash2(floor(vec2(along_m * 0.02, round_s * 0.1) + floor(wpos.xz * 0.25)));
+		vec3 bark = mix(vec3(0.11, 0.07, 0.045), vec3(0.17, 0.11, 0.065), id);
+		float streak = vnoise(vec2(round_s * 9.0, along_m * 0.9)) * 0.6 + vnoise(vec2(round_s * 21.0, along_m * 2.3)) * 0.4;
+		bark *= mix(0.62, 1.12, smoothstep(0.25, 0.75, streak));
+		col = bark * (1.0 - 0.85 * smoothstep(1.4, 3.2, s_out)) * (1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.5, h)));
+	} else if (ravine > 0.5) {
+		col = rock(wpos, wnrm);
+		// A drop falls away into violet shade; the rock above darkens a little toward its top.
+		col = mix(col, vec3(0.05, 0.04, 0.08), smoothstep(0.5, 11.0, depth) * 0.92);
+		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
+		if (kind > 0.25 && depth < 0.5) col *= 0.55;
 	} else if (kind > 0.25) {
-		// The top beyond: nearly black in the den, the rock darkened in the ravine.
-		vec3 t = tri(layer_a, wpos);
-		col = ravine > 0.5 ? t * vec3(0.12, 0.11, 0.14) : vec3(0.012, 0.01, 0.009);
+		col = vec3(0.012, 0.01, 0.009);
 	} else {
-		vec3 t;
-		if (ravine > 0.5) {
-			vec3 f = tri(layer_a, wpos);
-			float lum = dot(f, vec3(0.299, 0.587, 0.114));
-			vec3 tinted = vec3(lum) * vec3(0.478, 0.439, 0.533) * 2.0;
-			t = mix(tinted, f, 0.3);
-			t += vec3(0.478, 0.439, 0.533) * 0.14 * smoothstep(0.2, 0.7, wnrm.y);
-			t *= 1.0 - 0.3 * smoothstep(0.5 * wall_h, wall_h, h);
-		} else {
-			vec3 rot = tri(layer_a, wpos);
-			vec3 roots = tri(layer_b, wpos);
-			t = mix(rot, roots, 0.55);
-			t *= 1.0 - smoothstep(0.6 * wall_h, wall_h, h);
-		}
-		col = t * (1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.6, h)));
+		// The den's face: packed dark earth with the roots' own sheet in it, black beyond.
+		vec3 bed = tri(layer_a, wpos);
+		float lum = dot(bed, vec3(0.299, 0.587, 0.114));
+		col = vec3(0.12, 0.08, 0.055) * (0.55 + 1.2 * lum);
+		col *= 1.0 - beyond;
+		col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.6, h));
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;
