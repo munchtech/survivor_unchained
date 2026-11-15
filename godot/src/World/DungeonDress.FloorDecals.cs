@@ -14,7 +14,7 @@ public static partial class DungeonDress
     sealed record FloorDecal(string Kind, Rect2 Uv, Vector2 Metres, Vector2 Anchor, float MouthR, float[] Harm);
     /// <summary>The painted pits own the den's holes: the floor (dungeon_floor.gdshader pit_decals) draws no hole of its own.</summary>
     internal const bool PitDecals = true;
-    const bool FrameDecals = true, FloorRoots = true;
+    const bool FrameDecals = false, FloorRoots = false;   // (round 6: the camera-side frames never showed under the HUD; the thin floor roots read as scratches: both off)
     static readonly float PitWarmLift = SurvivorUnchained.Args.Num("pit-warm-lift", 2.0f);
 
     static void DenFloorDecals(Ctx c)
