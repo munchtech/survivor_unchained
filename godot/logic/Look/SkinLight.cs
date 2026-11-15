@@ -79,6 +79,15 @@ public static class SkinLight
     /// changes where a rig's fill is over it (the day close-up's 0.55).</summary>
     public const float ShadeFloor = 0.2f;
 
+    /// <summary>The share of a cold key's own colour (the moon's, as it lands on the lit side: an NPC's with NpcKeySkin) the
+    /// shade's light takes, the key's fill and the shade's floor alike, their luminance kept, in place of the part's fixed
+    /// warm fill (cel_fill_tone; the skin shader's shade_key, every skin part; warm keys untouched, so the sun's and the
+    /// fire's shade as before). Judge 4 (15 Nov): by night the floor's ShadeFill gave her shade a fixed warm brown (close
+    /// night collar under her jaw Oklab h 53, C/L .20; play night h 52, C/L .18) under rose-beige lit skin (h 34-40, C/L
+    /// .09), and an NPC's deep shade orange-umber with its blue clipped (cheek C/L .23 against its lit .09): one rule, the
+    /// shade in the key's light, so the shade is the lit skin's hue, darker.</summary>
+    public const float ShadeKey = 1f;
+
     /// <summary>Her body's tone out of her neck's shade under the Look's rig (the skin shader's neck_shade_out, every skin
     /// part; her neck is her head's mesh). Under the rig her head and neck keep HerBodyTone (own (0.66, 1.17, 2.15), a blue
     /// fitted against the rig's warm key) and only the key's light was warmed back (key_tone), so where the key doesn't reach
