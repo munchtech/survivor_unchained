@@ -29,4 +29,10 @@ public static class SkinHighlight
     /// 13 Nov judge r1): on her shoulders, neck base and cleavage it stepped into lilac-white specks and lines at night
     /// (the close-up and play) and a pink band on her shoulder at the Look at night; isolated with cel_rim_k 0, gone.</summary>
     public static float? RimShare(string part) => 0f;
+
+    /// <summary>body_p1's fold map (tools/assets/body_fold.py): 1 on the breast's underside, where the stepped rim, an n.v
+    /// band on the key's side, drew a cream line inside her form against her ribs (13 Nov, the owner); 0 everywhere else,
+    /// so the line stays on her outline, armpit, creases, thighs and elbows. People.NpcSkin sets it as heroine_skin.gdshader's
+    /// rim_fold_map (rim_fold 1) on a body skin with body_p1's triangle count (its topology, so its UVs).</summary>
+    public const string FoldMap = "res://art/people/body_p1/fold.png";
 }
