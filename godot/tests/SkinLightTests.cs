@@ -148,6 +148,21 @@ public class SkinLightTests
         Assert.Contains("cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * cel_fill_tone", shader);
     }
 
+    /// <summary>NPC night (r4b: the NPC's lit side lilac under the moon): every NPC skin part takes the rule's key_skin; the
+    /// shader takes a cold key's hue out, the sun's warm key untouched.</summary>
+    [Fact]
+    public void NpcKeySkinIsTheRules_NpcSkinSetsIt_OnlyColdKeys()
+    {
+        Assert.Equal(1f, SkinLight.NpcKeySkin);
+        var people = Read("src", "Actors", "People.cs");
+        int npc = people.IndexOf("public static Material NpcSkin(", StringComparison.Ordinal);
+        int at = people.IndexOf("m.SetShaderParameter(\"key_skin\", SurvivorUnchained.Look.SkinLight.NpcKeySkin);", StringComparison.Ordinal);
+        Assert.True(npc > 0 && at > npc, "People.NpcSkin sets key_skin from Look.SkinLight.NpcKeySkin");
+        var shader = Read("shaders", "heroine_skin.gdshader");
+        Assert.Contains("uniform float key_skin : hint_range(0.0, 1.0) = 0.0;", shader);
+        Assert.Contains("lc *= mix(vec3(1.0), skin_hue_out(lcol / kl, key_skin), cel_on * smoothstep(0.0, 0.1, (lcol.b - lcol.r) / kl));", shader);
+    }
+
     /// <summary>Fault 1 (spray-tan orange): her cel warmth is the rule's, warm but less red than (1.39, 0.80, 0.54).</summary>
     [Fact]
     public void HerCelToneIsTheRules()

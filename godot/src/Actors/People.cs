@@ -2125,6 +2125,8 @@ public static class People
         m.SetShaderParameter("back_spec", HerBackSpec);
         m.SetShaderParameter("back_neutral", HerBackNeutral);
         m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+        // (the moon's blue on an NPC's lit skin given back as its warmth, not lilac: Look.SkinLight.NpcKeySkin)
+        m.SetShaderParameter("key_skin", SurvivorUnchained.Look.SkinLight.NpcKeySkin);
         SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
         float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
             ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);

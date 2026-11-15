@@ -51,10 +51,11 @@ uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;
 // blue-violet by night (h 281), under a warm jaw. Its luminance kept; the key's light on her as before (light() divides it
 // back out). People.Skin sets Look.SkinLight.NeckShadeOut on the body's parts. 0: as before.
 uniform float neck_shade_out : hint_range(0.0, 1.0) = 0.0;
-// (skin-light r4b, 14 Nov 2026) The share of the sun's and the moon's hue (a directional key's light) skin gives back as its
-// own colour, as sky_skin for the sky and the fill: luminance kept, only the hue. Under the night's blue moon a package
-// NPC's lit forehead read lilac (Oklab h 335, C .028, its C/L under the grade's moon step). People.Skin sets
-// Look.SkinLight.KeySkin. 0: the key's hue whole, as before.
+// (skin-light r4b, 14 Nov 2026) The share of a cold directional key's hue (the moon's; a key bluer than red, eased in over
+// (b - r) / luminance 0 to 0.1, so the sun's warm key is untouched) skin gives back as its own colour, as sky_skin for the
+// sky and the fill: luminance kept, only the hue. Under the night's blue moon a package NPC's lit forehead read lilac
+// (Oklab h 335, C .028, its C/L under the grade's moon step). People.NpcSkin sets Look.SkinLight.NpcKeySkin. 0: the key's
+// hue whole, as before.
 uniform float key_skin : hint_range(0.0, 1.0) = 0.0;
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
@@ -1009,8 +1010,10 @@ void light() {
 		lcol = mix(LIGHT_COLOR, vec3(bl), bw * (LIGHT_IS_DIRECTIONAL ? back_neutral_sky : 1.0));
 	}
 	vec3 lc = lcol;
-	if (key_skin > 0.0 && LIGHT_IS_DIRECTIONAL && cel_on > 0.0)   // (key_skin: the sun's or the moon's hue partly her own warmth)
-		lc *= mix(vec3(1.0), skin_hue_out(lcol / max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4), key_skin), cel_on);
+	if (key_skin > 0.0 && LIGHT_IS_DIRECTIONAL && cel_on > 0.0) {   // (key_skin: a cold key's hue given back as the skin's warmth)
+		float kl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		lc *= mix(vec3(1.0), skin_hue_out(lcol / kl, key_skin), cel_on * smoothstep(0.0, 0.1, (lcol.b - lcol.r) / kl));
+	}
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
 		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);

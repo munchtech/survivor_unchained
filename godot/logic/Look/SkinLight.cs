@@ -78,6 +78,13 @@ public static class SkinLight
     /// (rig weight 0) nothing changes.</summary>
     public const float NeckShadeOut = 1f;
 
+    /// <summary>A package NPC's share of a cold key's hue (the moon's) given back as its skin's own warmth (the skin shader's
+    /// key_skin, People.NpcSkin, every NPC skin part; the sun's warm key untouched). Under the night's blue moon the NPC on
+    /// her base read lilac on its lit side (forehead Oklab L .53 C .028 h 335, the grade's moon step taking a C/L under
+    /// MoonLo) beside a warm shade (h 53). 0.5: h 20 C .041, still rose; at 1 (14 Nov skin-light r4b) h 46 C .047, her
+    /// own night's lit skin (close_night h 36-40 C .05), the shade unchanged (L .17 h 54).</summary>
+    public const float NpcKeySkin = 1f;
+
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
     /// along her shoulders at the night close-up (isolated 13 Nov: rim 0 and they are gone; cel_rim_k 0 left them). The
