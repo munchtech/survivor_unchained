@@ -73,8 +73,12 @@ public static class DungeonWalls
     static float N2(float x, float z) => N3(x, 0.5f, z);
 
     /// <summary>The den's distance in from a WALL only: where the nearest edge is a pit's (WallField within a few
-    /// tenths of HoleField) the wall is far as far as the floor and the banks care (8 m).</summary>
-    public static float WallOnly(float wf, float hf) => Mathf.Lerp(wf, 8f, Sm(0.6f, 0.15f, hf - wf));
+    /// tenths of HoleField) the wall is far as far as the floor and the banks care (8 m).
+    /// (The room's edge round a pit wanders by the room's noise, 1.5 m either way, so near a pit WallField = HoleField
+    /// - 1.5 n: up to 1.5 under it (1.50 at worst over seeds 1-40). The old 0.6-0.15 band let a quarter of every pit's
+    /// ring through as wall: bank lumps inside the pit, the floor discarded, the wall-foot dark ring. A genuine wall's
+    /// foot stands 2.15 m or more from any pit, so 1.95-1.6 parts them; pit solver, 15 Nov.)</summary>
+    public static float WallOnly(float wf, float hf) => Mathf.Lerp(wf, 8f, Sm(1.95f, 1.6f, hf - wf));
 
     // ------------------------------------------------------------- the zone --
     sealed class Ctx

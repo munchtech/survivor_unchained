@@ -24,6 +24,17 @@ varying vec3 wnrm;
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	if (ravine < 0.5) {
+		// The den's pits are drawn, not modelled: the mesh's sink (MapGen, 2.4 m by smoothstep(0.3, -1.6, hole) on its
+		// 1 m grid, a 5 m pit in a few faceted cells) is undone here and its tilted normals flattened, so the floor runs
+		// level to the mouth; fragment() paints the hole below it (pit_w). The faceted slope read as an angular slab
+		// and its normals, turned from the key, as a dark blob outside the pit (pit solver, 15 Nov).
+		float hd = textureLod(field, ((wpos.xz + half_size) / step + 0.5) / res, 0.0).g;
+		float sink = 2.4 * (1.0 - smoothstep(-1.6, 0.3, hd));
+		VERTEX.y += sink;
+		wpos.y += sink;
+		NORMAL = normalize(mix(NORMAL, vec3(0.0, 1.0, 0.0), 1.0 - smoothstep(1.3, 1.7, hd)));
+	}
 	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
@@ -49,6 +60,24 @@ float fbm(vec2 p) {
 	return s / 0.9375;
 }
 float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+// The den's pit mouth as a field: metres outside it (the hole field, its edge wobbled a hand either way). The field is
+// read as a cubic B-spline (four bilinear taps): read bilinear, its 1 m grid drew the mouth as a polygon.
+float pit_w(vec2 xz) {
+	vec2 t = (xz + half_size) / step;
+	vec2 i = floor(t), f = t - i;
+	vec2 w0 = (1.0 - f) * (1.0 - f) * (1.0 - f) / 6.0;
+	vec2 w1 = (4.0 - 6.0 * f * f + 3.0 * f * f * f) / 6.0;
+	vec2 w3 = f * f * f / 6.0;
+	vec2 w2 = 1.0 - w0 - w1 - w3;
+	vec2 g0 = w0 + w1, g1 = w2 + w3;
+	vec2 h0 = (i - 0.5 + w1 / g0) / res, h1 = (i + 1.5 + w3 / g1) / res;
+	float v = g0.y * (g0.x * textureLod(field, vec2(h0.x, h0.y), 0.0).g + g1.x * textureLod(field, vec2(h1.x, h0.y), 0.0).g)
+		+ g1.y * (g0.x * textureLod(field, vec2(h0.x, h1.y), 0.0).g + g1.x * textureLod(field, vec2(h1.x, h1.y), 0.0).g);
+	return v + 0.45 * (gnoise(xz * 0.8 + 3.7) - 0.5);
+}
+const float PIT_IN = 0.15;    // the inner wall leans in this much per metre down (more of the far wall in view)
+const float PIT_DEEP = 3.0;   // below this the ray finds the black bottom
 
 // Cobbles: the distance to the nearest cell's edge (x), the cell's id hash (y).
 vec2 cobble(vec2 p) {
@@ -129,8 +158,51 @@ void fragment() {
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
 		// (lead 6: a pit reads as a hole by a LIT lip, the painted pit face down its throat falling to black over a metre
 		// and more, never a dark ring outside it: that ring read as a raised tub's shadow)
-		col *= 1.0 + 0.2 * smoothstep(0.05, 0.3, hole) * smoothstep(1.0, 0.35, hole);
-		col *= mix(1.0, 0.015, rim_dark * smoothstep(0.1, -1.3, hole));
+		// (pit solver, 15 Nov) The floor runs level to the mouth (vertex()); the hole is painted by a ray: from this point
+		// on and down the view ray to where it meets the inner wall (pit_w >= 0, leaning in PIT_IN a metre), and that
+		// wall's own normal goes to the cel light, so the face turned from the key falls in its shade band as any wall.
+		// The wall is the painted pit face, falling to black over a metre and a half; past PIT_DEEP the bottom is black.
+		// The lip: a hand-wide round-over whose normal tips into the hole, so it catches the key on the side facing it.
+		float pw = pit_w(wpos.xz);
+		if (pw < 0.25) {
+			const float e = 0.12;
+			vec2 g0 = vec2(pit_w(wpos.xz + vec2(e, 0.0)) - pit_w(wpos.xz - vec2(e, 0.0)), pit_w(wpos.xz + vec2(0.0, e)) - pit_w(wpos.xz - vec2(0.0, e)));
+			vec2 gin = -normalize(g0 + 1e-5);   // into the hole
+			if (pw >= 0.0) {
+				// (an albedo lift only, strongest on the key's side, the upper left: a tipped normal read as a dark ring)
+				col *= 1.0 + (0.1 + 0.4 * smoothstep(-0.2, 0.8, dot(-gin, vec2(-0.7071, -0.7071)))) * (1.0 - smoothstep(0.0, 0.2, pw));
+			} else {
+				vec3 rd = -normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz);
+				float dy = max(-rd.y, 0.2);
+				float tmax = PIT_DEEP / dy, t0 = 0.0, t1 = tmax;
+				bool hit = false;
+				for (int s = 1; s <= 32; s++) {
+					float t = tmax * float(s) / 32.0;
+					vec3 p = wpos + rd * t;
+					if (pit_w(p.xz) + PIT_IN * dy * t >= 0.0) { t1 = t; hit = true; break; }
+					t0 = t;
+				}
+				if (hit) {
+					for (int s = 0; s < 6; s++) {
+						float t = 0.5 * (t0 + t1);
+						vec3 p = wpos + rd * t;
+						if (pit_w(p.xz) + PIT_IN * dy * t >= 0.0) t1 = t; else t0 = t;
+					}
+					vec3 p = wpos + rd * t1;
+					float d = dy * t1;   // metres below the mouth
+					vec2 g = vec2(pit_w(p.xz + vec2(e, 0.0)) - pit_w(p.xz - vec2(e, 0.0)), pit_w(p.xz + vec2(0.0, e)) - pit_w(p.xz - vec2(0.0, e)));
+					vec3 nw = normalize(vec3(-g.x, PIT_IN * length(g), -g.y) + vec3(0.0, 1e-5, 0.0));
+					vec3 tz = mix(texture(den_alb, vec3(vec2(p.x, d) / den_m[5], 5.0)).rgb, texture(den_alb, vec3(vec2(p.x, d) / den_m[5] + 0.37, 5.0)).rgb, tw);
+					vec3 tx = mix(texture(den_alb, vec3(vec2(p.z, d) / den_m[5], 5.0)).rgb, texture(den_alb, vec3(vec2(p.z, d) / den_m[5] + 0.37, 5.0)).rgb, tw);
+					col = mix(tz, tx, smoothstep(0.35, 0.65, abs(nw.x))) * den_tint * 1.6;
+					col *= mix(1.0, 0.03, smoothstep(0.05, 1.6, d));
+					// (lit as a face tipped up toward the mouth: the true wall's normal put it all in the black shade band)
+					NORMAL = normalize((VIEW_MATRIX * vec4(normalize(nw + vec3(0.0, 0.7, 0.0)), 0.0)).xyz);
+				} else {
+					col = vec3(0.003, 0.0025, 0.002);
+				}
+			}
+		}
 	} else {
 		// Beyond the shelf's edge the ground is gone (the drop's rock falls away below): only the walkable shelf stays.
 		if (min(inside, hole) < -0.4) discard;
