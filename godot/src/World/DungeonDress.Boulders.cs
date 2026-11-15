@@ -16,7 +16,7 @@ public static partial class DungeonDress
     const string BoulderJson = "res://art/dungeon/den/boulders.json";
 
     sealed record Boulder(Vector4 Uv, Vector4 Card, Vector3 Pivot, Vector4 Foot, Vector3[] Hull, int[] Tri, bool Big);
-    static readonly float BoulderGain = SurvivorUnchained.Args.Num("den-boulder-gain", 2.7f);
+    static readonly float BoulderGain = SurvivorUnchained.Args.Num("den-boulder-gain", 1.4f);
 
     static List<Boulder>? boulders;
     static Shader? boulderShader;

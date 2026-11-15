@@ -26,6 +26,7 @@ uniform float wall_h = 4.0;
 // the earth and root mass behind the roots sits at about 8-22 of 255). --den-beyond sets it.
 uniform float beyond_k = 0.3;
 uniform vec3 beyond_tint = vec3(0.8, 0.86, 1.0);
+uniform float bank_sat = 0.65;   // (round 8 judge: the banks less saturated, cool in their gaps)
 uniform float bank_gain = 1.0;     // (round 8) the bank set's value (--den-bank-gain)
 uniform float hollow_min = 0.0;    // (round 8) the floor under the bank set's black hollows between roots (--den-hollow): earth, never void
 uniform float tile = 5.0;
@@ -183,6 +184,7 @@ void fragment() {
 		float vw = smoothstep(0.62 - 0.05, 0.62 + 0.05, vnoise(wpos.xz * 0.08));
 		vec2 uv0 = uv + vec2(0.37, 0.61);
 		col = mix(texture(bank_alb, vec3(uv, 1.0)).rgb, texture(bank_alb, vec3(uv0, 0.0)).rgb, vw);
+		col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, bank_sat);
 		col = max(col * bank_gain, vec3(hollow_min) * vec3(1.0, 0.74, 0.58) * (0.7 + 0.6 * vnoise(wpos.xz * 0.7 + wpos.y)));
 		vec3 n = mix(texture(bank_nrm, vec3(uv, 1.0)).xyz, texture(bank_nrm, vec3(uv0, 0.0)).xyz, vw) * 2.0 - 1.0;
 		vec3 wn = normalize(wnrm + bank_nk * (n.x * vec3(1.0, 0.0, 0.0) - n.y * vec3(0.0, 0.469, -0.883)));

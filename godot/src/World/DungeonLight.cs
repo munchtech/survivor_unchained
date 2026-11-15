@@ -13,7 +13,7 @@ public static class DungeonLight
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
     static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
-    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 16f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 1.6f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
+    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 13f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 4f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
 
     public static Node3D? Build(ZoneData z)
     {

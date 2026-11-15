@@ -21,6 +21,7 @@ uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (-
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
 uniform vec3 boss_c = vec3(0.0);   // the den's boss lair: centre x, z and radius (0: none)
 uniform float open_lift = 1.08;
+uniform float den_sat = 0.65;   // (round 8 judge: the earth 35% less saturated; warmth comes from the shafts and fires)
 uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
@@ -156,6 +157,7 @@ void fragment() {
 		float lr = max(lum(ref), 1e-3);
 		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain), 0.3, 2.5);
 		col *= den_tint;
+		col = mix(vec3(lum(col)), col, den_sat);
 		// slow value masses: damper and drier ground
 		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
 		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:

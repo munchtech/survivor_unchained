@@ -52,6 +52,7 @@ public static class DungeonFloor
             if (Args.Get("den-tint") is string dt && dt.Split(',') is { Length: 3 } tp)
                 mat.SetShaderParameter("den_tint", new Vector3(float.Parse(tp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[2], System.Globalization.CultureInfo.InvariantCulture)));
             mat.SetShaderParameter("moss_k", Args.Num("den-moss", 0.35f));
+            mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.65f));
         }
         return mat;
     }
