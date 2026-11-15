@@ -1214,7 +1214,7 @@ public partial class PlayerView : Node3D
         // (warden-turn) A blow struck standing or slow: her whole body to it on the eased turn, held while it lasts unless
         // she is off at a run; a blow behind her running: her hips toward it (hipGoal) while it lasts.
         else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnMaxStanding, TurnEaseStanding);
-        else if (mine && hipGoal is float hg && aimHold > 0 && p.Leap == null && p.DashT <= 0) TurnTo(hg, (float)dt, backpedal ? BackRate : HipRate, TurnEase);
+        else if (mine && hipGoal is float hg && aimHold > 0 && p.Leap == null && p.DashT <= 0) TurnTo(hg, (float)dt, backpedal ? BackYawMax(hg) : HipRate, TurnEase);
         else if ((sp > 0.4f || PivotHeld(p.StickX, p.StickZ)) && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
@@ -1228,7 +1228,7 @@ public partial class PlayerView : Node3D
                 if (backpedal && off < Mathf.DegToRad(10)) backpedal = false;
                 if (!pivot && !backpedal && off > Mathf.DegToRad(120) && speed > 2.5f) { pivot = true; PivotStart(); }
                 // (turning r3) her yaw held back while the pivot foot comes down
-                TurnTo(want, (float)dt, backpedal ? BackRate : pivot ? (pivotSeg == 1 ? PivotBrakeYaw : TurnPivot) : TurnMax, pivotSeg == 2 ? PivotEase : TurnEase);
+                TurnTo(want, (float)dt, backpedal ? BackYawMax(want) : pivot ? (pivotSeg == 1 ? PivotBrakeYaw : TurnPivot) : TurnMax, pivotSeg == 2 ? PivotEase : TurnEase);
                 if (pivot && Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi)) < Mathf.DegToRad(10)) pivot = false;
             }
             else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
@@ -1700,7 +1700,9 @@ public partial class PlayerView : Node3D
         // slows onto the foot that is down and turns on it, then runs out of it.
         if (pivot && !TurnOld && !TurnSnap) strideK *= Mathf.Clamp(sp / Mathf.Max(spd, 0.5f), 0f, 1f);
         float strideRun = Stride.Advance(stride, dt * strideK, period);
-        stride = pivotSeg > 0 && pivotFoot >= 0 ? PivotStride(strideRun, dt, period) : strideRun;
+        stride = pivotSeg > 0 && pivotFoot >= 0 ? PivotStride(strideRun, dt, period) : backpedal && !BackDriveOff && !AimLegs && w >= 0.9f ? (BackAirOff ? BackStride(strideRun, dt, period, strideK) : BackPhase(strideRun, dt, period, strideK)) : strideRun;
+        if (!backpedal && backSt != 0 && plantOff.LengthSquared() < 1e-4f) backSt = 0;
+        backWas = backpedal;
         if (!move2D)
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
@@ -1956,8 +1958,10 @@ public partial class PlayerView : Node3D
     float backW;
     static readonly float BackBlend = SurvivorUnchained.Args.Num("turn-back-blend", 20f);
     static readonly float BackAt = SurvivorUnchained.Args.Num("turn-back-at", 110f), BackRate = SurvivorUnchained.Args.Num("turn-back-rate", 1350f),
-        BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f), BackMix = SurvivorUnchained.Args.Num("turn-back-mix", 0.3f);
-    static readonly bool SmoothBack = !SurvivorUnchained.Args.Has("turn-smooth-back-off");
+        BackLean = SurvivorUnchained.Args.Num("turn-back-lean", 10f), BackMix = SurvivorUnchained.Args.Num("turn-back-mix", 1f);
+    // (round 5) The pelvis ease moved the held foot after the plant lock; off in a backpedal unless --turn-smooth-back.
+    static readonly bool SmoothBack = SurvivorUnchained.Args.Has("turn-smooth-back");
+    static readonly float BackHold = SurvivorUnchained.Args.Num("turn-back-hold", 0.6f), BackShiftMax = SurvivorUnchained.Args.Num("turn-back-shift", 0.07f);
     /// <summary>A blow's facing her whole body turns to (standing or slow when struck), and the facing her hips turn to for a
     /// blow behind her at a run (radians), each held while aimHold lasts.</summary>
     float? faceGoal, hipGoal;
@@ -2008,6 +2012,13 @@ public partial class PlayerView : Node3D
         if (plantBallL == -2) { plantBallL = sk.FindBone("ball_l"); plantBallR = sk.FindBone("ball_r"); }
         if (plantBallL < 0 || plantBallR < 0) return;
         var f = new[] { sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallL).Origin, sk.GlobalTransform * sk.GetBoneGlobalPose(plantBallR).Origin };
+        // (round 5) into a backpedal the pelvis ease (a 180's tail) hands its gap to the plant lock: eased on, it moved the held foot
+        bool backDrive = backpedal && !BackDriveOff && !SmoothBack;
+        if (backDrive && smoothOn && pivotSeg == 0 && !pivot)
+        {
+            plantOff += smoothOff; plantAt += smoothOff; plantPrev[0] += smoothOff; plantPrev[1] += smoothOff;
+            smoothOff = Vector3.Zero; smoothOn = false;
+        }
         // (the plant lock works where she stands without the pelvis ease, SmoothStep; it is put back after)
         Position -= smoothOff; f[0] -= smoothOff; f[1] -= smoothOff;
         for (int i = 0; i < 2; i++) plantH[i] = f[i].Y - (float)plantGround(f[i].X, f[i].Z);
@@ -2019,22 +2030,26 @@ public partial class PlayerView : Node3D
             if (plantFoot >= 0 && plantFoot != pivotFoot) plantFoot = -1;
             if (plantFoot < 0 && !pivotHeld && legsFree && plantH[pivotFoot] < PlantTouch) { plantFoot = pivotFoot; plantAt = f[pivotFoot]; plantT = 0; pivotHeld = true; }
         }
-        else if (plantFoot < 0 && legsFree && plantYawStep > PlantYaw && speed > 1.5f)
+        else if (plantFoot < 0 && legsFree && (plantYawStep > PlantYaw || backpedal && !BackDriveOff) && speed > 1.5f)
         {
             int i = plantPrevH[0] <= plantPrevH[1] ? 0 : 1;
-            if (plantPrevH[i] < PlantTouch) { plantFoot = i; plantAt = plantPrev[i]; plantT = 0; }
+            if (plantPrevH[i] < PlantTouch && i != backLiftFoot) { plantFoot = i; plantAt = plantPrev[i]; plantT = 0; }
         }
+        if (plantFoot >= 0 && plantFoot == backLiftFoot) plantFoot = -1;   // (round 6: a foot un-landing into a backpedal is not held)
         if (plantFoot >= 0)
         {
             plantT += plantDt;
             // (t4) in a backpedal the foot is held only while her hips come round; then the backwards run carries her (held on, it
             // stood 8 frames with the view 0.48 m behind the sim, a wide held stance that slid)
-            if (plantH[plantFoot] > PlantLift || plantT > PlantHold || !legsFree || backpedal && plantYawStep <= PlantYaw) plantFoot = -1;
+            if (plantH[plantFoot] > PlantLift || plantT > (backpedal && !BackDriveOff ? BackHold : PlantHold) || !legsFree || backpedal && BackDriveOff && plantYawStep <= PlantYaw) plantFoot = -1;
             else
             {
                 var want = plantOff + new Vector3(plantAt.X - f[plantFoot].X, 0, plantAt.Z - f[plantFoot].Z);
                 if (want.Length() > PlantMax) { want = want.Normalized() * PlantMax; plantFoot = -1; }
                 shift = want - plantOff;
+                // (round 5) in a backpedal the view's correction is held to BackShiftMax m a 30 fps frame (the judge's catch-up)
+                float cap = BackShiftMax * plantDt * 30;
+                if (backDrive && shift.Length() > cap) shift = shift.Normalized() * cap;
             }
         }
         if (plantFoot < 0)
@@ -2042,6 +2057,8 @@ public partial class PlayerView : Node3D
             float rate = Mathf.Min(plantH[0], plantH[1]) > PlantTouch ? PlantDecay : PlantDecay / 3;
             shift = -plantOff * (1 - Mathf.Exp(-rate * plantDt));
         }
+        // (round 6) through a backpedal and until its shift is home the decay too is held to BackShiftMax a frame
+        if (backSt != 0 && !BackDriveOff && !BackAirOff) { float cap = BackShiftMax * plantDt * 30; if (shift.Length() > cap) shift = shift.Normalized() * cap; }
         plantOff += shift;
         Position += shift;
         for (int i = 0; i < 2; i++) { plantPrev[i] = f[i] + shift; plantPrevH[i] = plantH[i]; }
@@ -2142,6 +2159,138 @@ public partial class PlayerView : Node3D
             pivotLandN = Mathf.Max(1, Mathf.RoundToInt(PivotLand));
         }
         pivotHeld = false; pivotYaw0 = Rotation.Y;
+    }
+
+    // (t4 round 5; judge r3: "a scurry, ~7.5 steps/s, 25-35% skate, catch-up 16-18 px/frame") A backpedal at a run steps on her
+    // run played backwards, its phase driven by the foot that is down: each frame the phase that puts the clip's stance foot
+    // (fwd = -(phase - BackMid) * BackK along her facing, the run's stance line) where the plant lock holds it, at her place and
+    // yaw next frame, so the foot does not slide and her cadence is what her ground and the run's step give (no scurry). With
+    // no foot down (the run's flight, played backwards) the phase goes at BackFlight of the ground pace, so no split is held
+    // while she drifts back. The plant lock holds whichever foot is down through a backpedal (PlantStep). View only.
+    // --turn-back-drive-off: round 4 (the phase at her ground pace, strideK).
+    static readonly bool BackDriveOff = SurvivorUnchained.Args.Has("turn-back-drive-off");
+    static readonly float BackMidL = SurvivorUnchained.Args.Num("turn-back-mid-l", 0.139f), BackMidR = SurvivorUnchained.Args.Num("turn-back-mid-r", 0.638f),
+        BackKScale = SurvivorUnchained.Args.Num("turn-back-k", 0.97f), BackRateMax = SurvivorUnchained.Args.Num("turn-back-rate-max", 2.5f),
+        BackFlight = SurvivorUnchained.Args.Num("turn-back-flight", 1.8f);
+    float BackStride(float natural, float dt, float period, float strideK)
+    {
+        float normal = dt / Mathf.Max(period, 0.1f), k = Mathf.Max(runSpeed * runLen * BackKScale, 1f);
+        if (plantFoot >= 0)
+        {
+            var at = GlobalPosition + new Vector3(velX, 0, velZ) * dt;
+            float yaw = Rotation.Y + (turnedLast ? Mathf.DegToRad(yawVel * dt) : 0);
+            float fwd = (plantAt.X - at.X) * Mathf.Sin(yaw) + (plantAt.Z - at.Z) * Mathf.Cos(yaw);
+            float want = (plantFoot == 0 ? BackMidL : BackMidR) - fwd / k;
+            float step = Mathf.Clamp(Mathf.PosMod(want - stride + 0.5f, 1f) - 0.5f, -BackRateMax * normal, BackRateMax * normal);
+            return Mathf.PosMod(stride + step, 1f);
+        }
+        // (round 6) a foot down on the pose shown but not held yet (her landing frame): the run's own pace, not the flight's
+        if (!BackAirOff && BackDown(stride) >= 0) return natural;
+        return strideK < -0.5f ? Stride.Advance(stride, dt * strideK * BackFlight, period) : natural;
+    }
+
+    // (t4 round 6, the coordinator's plan; round 5 left the two hip spins on a foot that was down: 180 deg at BackRate while
+    // the sim carried her 0.15-0.18 m a frame sideways in her own frame, slip or catch-up whatever the phase) She turns only in
+    // the air. Through a backpedal her yaw is held to BackHoldRate deg/s while a foot is down (BackYawMax). When the blow
+    // comes, the foot that is down lifts within a frame or two: one that has just landed (less than BackUnland of the cycle
+    // into its stance) un-lands, her run played back at BackLift of its pace; one further on pushes off at the run's pace,
+    // held. Her hips go round in the flight that follows (BackRate), its phase run back so that her rear foot comes down behind
+    // her on the turn's last frame (the run's toe-off, BackToeL/R, at the pace that lands it then). Out of it the same: held
+    // while the backwards run's foot is down, round in the flight, and she lands on the foot she left from, now in front of
+    // her (the run's touchdown, BackLandL/R): a hop round, the phase dipping BackHop back and returning, so no stance is swept
+    // and no foot is set down behind her. Which foot is down on a pose is read from its phase (the run's stance spans,
+    // BackLandL..BackToeL and BackLandR..BackToeR): the phase set this frame shows next frame. --turn-back-air-off: round 5.
+    static readonly bool BackAirOff = SurvivorUnchained.Args.Has("turn-back-air-off");
+    static readonly float BackHoldRate = SurvivorUnchained.Args.Num("turn-back-hold-rate", 240f),
+        BackLift = SurvivorUnchained.Args.Num("turn-back-lift", 2f), BackUnland = SurvivorUnchained.Args.Num("turn-back-unland", 0.1f),
+        BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.98f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.25f),
+        BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.46f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.80f),
+        BackHop = SurvivorUnchained.Args.Num("turn-back-hop", 0.08f), BackHopMin = SurvivorUnchained.Args.Num("turn-back-hop-min", 0.06f),
+        BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 3f),
+        BackIn = SurvivorUnchained.Args.Num("turn-back-in", 0.015f);
+    // backSt: 0 none, 1 into it (until she lands behind her), 2 the backwards run, 3 out of it (until she lands), 4 landed out
+    int backSt, backLiftFoot = -1, backAirN = -1;
+    float backAirP0, backAirTo, backGoal;
+    bool backWas;
+
+    /// <summary>(round 6) The foot (0 left, 1 right, -1 none) down on the run's pose at phase `ph`.</summary>
+    static int BackDown(float ph)
+    {
+        if (Mathf.PosMod(ph - BackLandL, 1f) < Mathf.PosMod(BackToeL - BackLandL, 1f)) return 0;
+        if (Mathf.PosMod(ph - BackLandR, 1f) < Mathf.PosMod(BackToeR - BackLandR, 1f)) return 1;
+        return -1;
+    }
+
+    /// <summary>(round 6) Her yaw's top rate (deg/s) in a backpedal: BackHoldRate while the foot down on the pose shown stays
+    /// down on the next (the phase Carry set last frame), else BackRate.</summary>
+    float BackYawMax(float goal)
+    {
+        backGoal = goal;
+        if (BackAirOff || BackDriveOff || AimLegs) return BackRate;
+        int f = plantFoot >= 0 ? plantFoot : plantH[0] < PlantTouch && plantH[0] <= plantH[1] ? 0 : plantH[1] < PlantTouch ? 1 : -1;
+        return f >= 0 && BackDown(stride) == f ? BackHoldRate : BackRate;
+    }
+
+    /// <summary>(round 6) Frames her eased turn (TurnTo at BackRate) needs from here to within BackDone deg of `goal`.</summary>
+    int BackSpinLeft(float goal, float dt)
+    {
+        float err = Mathf.RadToDeg(Mathf.Wrap(goal - Rotation.Y, -Mathf.Pi, Mathf.Pi)), v = turnedLast ? yawVel : 0;
+        int n = 0;
+        while (Mathf.Abs(err) > BackDone && n < 20)
+        {
+            v = Mathf.Lerp(v, Mathf.Clamp(err * TurnK, -BackRate, BackRate), 1 - Mathf.Exp(-TurnEase * dt));
+            float s = v * dt;
+            if (s * err < 0) s = 0; else if (Mathf.Abs(s) > Mathf.Abs(err)) s = err;
+            err -= s; n++;
+        }
+        return n;
+    }
+
+    /// <summary>(round 6) This frame's stride phase through a backpedal (Carry): into it, the backwards run, and out of it.</summary>
+    float BackPhase(float natural, float dt, float period, float strideK)
+    {
+        float normal = dt / Mathf.Max(period, 0.1f);
+        if (backSt == 0 || !backWas) { backSt = 1; backAirN = -1; backLiftFoot = -1; }
+        if (hipGoal == null && backSt < 3) { backSt = 3; backAirN = -1; backLiftFoot = -1; }
+        int down = BackDown(stride);
+        if (down >= 0)
+        {
+            if (backAirN >= 0) { backAirN = -1; backLiftFoot = -1; backSt = backSt == 1 ? 2 : backSt == 3 ? 4 : backSt; }
+            if (backSt == 4) return natural;
+            if (backSt == 1)
+            {
+                float s = Mathf.PosMod(stride - (down == 0 ? BackLandL : BackLandR), 1f);
+                if (backLiftFoot == down || s < BackUnland && plantFoot != down)
+                {
+                    backLiftFoot = down;
+                    return Mathf.PosMod(stride - BackLift * normal, 1f);
+                }
+            }
+            return BackStride(natural, dt, period, strideK);
+        }
+        if (backSt == 2 || backSt == 4) return BackStride(natural, dt, period, strideK);
+        // (in the air into it or out of it: the turn, its landing timed to the turn's last frame)
+        if (backAirN < 0)
+        {
+            backAirN = 0; backAirP0 = stride;
+            float best = 9;
+            foreach (float c in backSt == 3 ? new[] { BackLandL, BackLandR } : new[] { BackToeL, BackToeR })
+            {
+                // (aimed BackIn inside the stance, so the landing pose is one the stance holds)
+                float d = backSt == 3 ? Mathf.PosMod(c + BackIn - stride, 1f) : -Mathf.PosMod(stride - (c - BackIn), 1f);
+                if (Mathf.Abs(d) < Mathf.Abs(best)) best = d;
+            }
+            backAirTo = best;
+        }
+        backAirN++;
+        int left = BackSpinLeft(backGoal, dt);
+        float u = (float)backAirN / (backAirN + left);
+        float arc = Mathf.Abs(backAirTo) < BackHopMin ? (backSt == 3 ? -1 : 1) * BackHop * Mathf.Sin(Mathf.Pi * u) : 0;
+        float next = backAirP0 + backAirTo * u + arc;
+        // (turned and not yet down: on to the landing at the run's pace)
+        if (left == 0) next = stride + (backSt == 3 ? normal : -normal);
+        float step = Mathf.Clamp(Mathf.PosMod(next - stride + 0.5f, 1f) - 0.5f, -BackFlyMax * normal, BackFlyMax * normal);
+        return Mathf.PosMod(stride + step, 1f);
     }
 
     /// <summary>This frame's stride phase while a 180's plan runs (Carry): `natural` is the phase the run's own pace would give.</summary>
