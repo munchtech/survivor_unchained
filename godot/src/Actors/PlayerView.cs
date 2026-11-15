@@ -383,6 +383,7 @@ public partial class PlayerView : Node3D
             }
             skip2D:
             GaitClips(People.Clip(person, "Jog_Fwd_Loop"));
+            if (!AimLegs && !DirLegsOff && run.StartsWith(own.Prefix)) BuildDir(mv, run, layered ? "arms" : "blend");
             carriage = new HerCarriage();
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
@@ -399,6 +400,14 @@ public partial class PlayerView : Node3D
             stanceCarry = new StanceCarry();
             person.Skeleton.AddChild(stanceCarry);
             person.Skeleton.MoveChild(stanceCarry, armMod != null ? 1 : 0);
+            // (aim-move) A has no lower-body turn (B's is People.Her's): hers sits right before HerPose, after the carriage and the
+            // layers above, so every reader of her pose (HerPose, Gestures, the shapes) sees the turned legs and the untouched chest.
+            if (dirChain && person.Turn == null)
+            {
+                person.Turn = new LowerTurnModifier { Frame = person.Root };
+                person.Skeleton.AddChild(person.Turn);
+                person.Skeleton.MoveChild(person.Turn, person.Pose != null ? person.Pose.GetIndex() : person.Skeleton.GetChildCount() - 1);
+            }
         }
         else
         {
@@ -1016,6 +1025,8 @@ public partial class PlayerView : Node3D
         float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
         // (the 2D node: she faces the aim at any speed, her legs walking by the node; aimHold keeps it, Update)
         aimFace = face;
+        // (aim-move) Her facing is Update's (DirFace: the cursor, or this blow's side while aimHold lasts); no flip, no waist, no hips.
+        if (mine && DirOn) { faceGoal = hipGoal = null; aim = 0; aimHold = 0.45f; return; }
         // (warden-turn, the owner 10 Nov "movement looked weird especially turning"; A1 leads 20-21 ported) Hers: never a
         // one-frame flip. Standing or slow, her whole body turns to the blow on the eased turn (faceGoal, Update). Running,
         // her waist takes up to 75 deg of it off her travel, eased (Carry); past 100 her hips join (hipGoal). Either way the
@@ -1196,6 +1207,7 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
+        if (mine && DirOn) { pivot = backpedal = false; hipGoal = faceGoal = null; }
         aimFacingNow = AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0;
         if (time < flareFaceUntil)
         {
@@ -1210,6 +1222,7 @@ public partial class PlayerView : Node3D
         // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
+        else if (mine && DirOn && DirFace(p, (float)dt, (float)x, (float)z, sp)) { }
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
         // (warden-turn) A blow struck standing or slow: her whole body to it on the eased turn, held while it lasts unless
         // she is off at a run; a blow behind her running: her hips toward it (hipGoal) while it lasts.
@@ -1676,6 +1689,8 @@ public partial class PlayerView : Node3D
         // (round 4: judge r3 "a scurry, ~7.5 steps/s, 25-35% skate") the run mixed in at BackMix lengthens her backward step
         w = Mathf.Lerp(w, BackMix, backW);
         logW = w; logWWalk = wWalk; logSpd = spd;
+        // (aim-move) The directional legs: the six weights, her pelvis's turn, and how much of her run the set takes over.
+        if (dirChain) DirFrame(dt, w);
         if (!move2D)
         {
         tree.Set("parameters/move/blendW/blend_amount", wWalk);
@@ -1691,6 +1706,13 @@ public partial class PlayerView : Node3D
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w0, hasWalk);
         if (backW > 0.001f) period = Mathf.Lerp(period, ((1 - BackMix) * walkLen * walkSpeed + BackMix * runLen * runSpeed) / Mathf.Max(spd, 0.5f), backW);
+        // (aim-move) With the set carrying weight, the stride's period is the set's: its clips' lengths by weight, at the run's own speed.
+        if (dirChain && dirBlend > 0.001f)
+        {
+            float sum = 0, per = 0;
+            for (int i = 0; i < 6; i++) { sum += dirW[i]; per += dirW[i] * dirLen[i]; }
+            if (sum > 0.01f) period = Mathf.Lerp(period, per / sum * runSpeed / Mathf.Max(spd, 0.5f), dirBlend);
+        }
         // (warden-turn) With her hips turned onto a blow behind her, the stride runs at her travel's part along her facing
         // (past 90 deg off it a backpedal), so the planted foot keeps more of its ground.
         float strideK = 1;
@@ -1708,6 +1730,7 @@ public partial class PlayerView : Node3D
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
             tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
         }
+        if (dirChain) for (int i = 0; i < 6; i++) tree.Set($"parameters/move/dSeek_{DirId[i]}/seek_request", stride * dirLen[i]);
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
         // On P1's B there is no arm-hold layer at all (ArmHold.Layered: no HerArmHold, no arms' copy; the owner, 5 Nov):
@@ -2410,6 +2433,98 @@ public partial class PlayerView : Node3D
         else { tree.Set(sc, coilRate); coilCatchOn = false; }
     }
 
+    // ---- (aim-move) the directional legs and the two facing modes ----
+    static readonly bool DirLegsOff = SurvivorUnchained.Args.Get("dir-legs") == "off";
+    static readonly string[] DirId = { "f", "fl", "fr", "b", "bl", "br" };
+    static readonly float DirTurnRate = SurvivorUnchained.Args.Num("dir-turn-rate", 840f);
+    /// <summary>Her six run clips (f, fl, fr, b, bl, br) are in the graph (her library has them all).</summary>
+    bool dirChain, dirBack;
+    bool DirOn => dirChain && !DirLegsOff;
+    readonly float[] dirW = new float[6], dirLen = new float[6];
+    float dirBackW, dirDelta, dirBlend, dirAlpha;
+    /// <summary>The cursor's ground point (WorldScene wires it each frame; null on a pad, for bots, off the window).</summary>
+    public System.Func<(double X, double Z)?>? Pointer;
+
+    /// <summary>Six run clips, each through its own seek, mixed by pairs into "dirSet", then laid over what fed the output ("dir").</summary>
+    void BuildDir(AnimationNodeBlendTree mv, string run, string feeder)
+    {
+        string[] n = { run, run + "_fl", run + "_fr", run + "_b", run + "_bl", run + "_br" };
+        for (int i = 1; i < 6; i++) if (!person.Anim.HasAnimation(n[i])) return;
+        for (int i = 0; i < 6; i++)
+        {
+            dirLen[i] = (float)person.Anim.GetAnimation(n[i]).Length;
+            mv.AddNode("d_" + DirId[i], new AnimationNodeAnimation { Animation = n[i] }, new Vector2(1000, 1000 + 100 * i));
+            mv.AddNode("dSeek_" + DirId[i], new AnimationNodeTimeSeek(), new Vector2(1200, 1000 + 100 * i));
+            mv.ConnectNode("dSeek_" + DirId[i], 0, "d_" + DirId[i]);
+        }
+        foreach (var nm in new[] { "dFA", "dFB", "dBA", "dBB", "dirSet", "dir" }) mv.AddNode(nm, new AnimationNodeBlend2 { Sync = true }, new Vector2(1500, 1000));
+        mv.ConnectNode("dFA", 0, "dSeek_fr"); mv.ConnectNode("dFA", 1, "dSeek_f");
+        mv.ConnectNode("dFB", 0, "dFA"); mv.ConnectNode("dFB", 1, "dSeek_fl");
+        mv.ConnectNode("dBA", 0, "dSeek_br"); mv.ConnectNode("dBA", 1, "dSeek_b");
+        mv.ConnectNode("dBB", 0, "dBA"); mv.ConnectNode("dBB", 1, "dSeek_bl");
+        mv.ConnectNode("dirSet", 0, "dFB"); mv.ConnectNode("dirSet", 1, "dBB");
+        // (a node's output feeds one input only: free the feeder from the output first)
+        mv.DisconnectNode("output", 0);
+        mv.ConnectNode("dir", 0, feeder); mv.ConnectNode("dir", 1, "dirSet");
+        mv.ConnectNode("output", 0, "dir");
+        dirW[0] = 1;
+        dirChain = true;
+    }
+
+    /// <summary>One frame of the directional legs (Carry): alpha (her travel's heading off her facing), the mode and the six weights
+    /// (eased 0.06 s, the back/forward split 0.08 s), the pelvis's turn Delta (0.08 s) into the lower-turn modifier, and the set's blend.</summary>
+    void DirFrame(float dt, float w)
+    {
+        float gs = Mathf.Sqrt(velX * velX + velZ * velZ);
+        double alpha = gs > 0.01f ? SurvivorUnchained.Play.LowerTurn.Wrap(Mathf.RadToDeg(Mathf.Atan2(velX, velZ)) - Mathf.RadToDeg(Rotation.Y)) : 0;
+        dirAlpha = (float)alpha;
+        var r = SurvivorUnchained.Play.DirLegs.Solve(alpha, gs, dirBack);
+        dirBack = r.Back;
+        float kw = 1 - Mathf.Exp(-dt / 0.06f);
+        for (int i = 0; i < 6; i++) dirW[i] += ((float)r.W[i] - dirW[i]) * kw;
+        dirBackW = (float)SurvivorUnchained.Play.DirLegs.Ease(dirBackW, r.Back ? 1 : 0, dt, 0.08);
+        dirDelta = (float)SurvivorUnchained.Play.DirLegs.Ease(dirDelta, r.Delta, dt, 0.08);
+        if (person.Turn != null) person.Turn.Delta = DirOn ? dirDelta : 0;
+        float Mix(float a, float b) => a + b > 1e-4f ? b / (a + b) : 0;
+        float sf = dirW[0] + dirW[1] + dirW[2], sb = dirW[3] + dirW[4] + dirW[5];
+        tree.Set("parameters/move/dFA/blend_amount", Mix(dirW[2], dirW[0]));
+        tree.Set("parameters/move/dFB/blend_amount", sf > 1e-4f ? dirW[1] / sf : 0f);
+        tree.Set("parameters/move/dBA/blend_amount", Mix(dirW[5], dirW[3]));
+        tree.Set("parameters/move/dBB/blend_amount", sb > 1e-4f ? dirW[4] / sb : 0f);
+        tree.Set("parameters/move/dirSet/blend_amount", dirBackW);
+        dirBlend = DirOn ? w : 0;
+        tree.Set("parameters/move/dir/blend_amount", dirBlend);
+    }
+
+    /// <summary>(aim-move) Her facing under the directional legs. Always (a cursor): the cursor, standing or moving. Skill, or no
+    /// cursor: the strike's side while aimHold lasts, else her travel (the stick if held, else her velocity), standing keeps.
+    /// At most DirTurnRate deg/s. False (the old chain decides) in a leap, a dash or a full-body clip.</summary>
+    bool DirFace(PlayerState p, float dt, float x, float z, float sp)
+    {
+        if (!p.Alive || p.Leap != null || p.DashT > 0 || (bool)tree.Get("parameters/fullShot/active")) return false;
+        float? goal = null;
+        var ptr = Pointer?.Invoke();
+        if (Facing.Current == FacingMode.Always && ptr is { } c)
+        {
+            float dx = (float)c.X - x, dz = (float)c.Z - z;
+            if (dx * dx + dz * dz > 0.01f) goal = Mathf.Atan2(dx, dz);
+        }
+        else if (aimHold > 0) goal = aimFace;
+        else if (sp > 0.4f) goal = p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01 ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
+        if (goal is float g) TurnTo(g, dt, DirTurnRate, TurnEase);
+        return true;
+    }
+
+    /// <summary>Her pelvis bone's global yaw in the world (deg; its local +Z, so it reads her facing when the rest pose has it so).</summary>
+    float PelYaw()
+    {
+        var sk = person.Skeleton;
+        int i = sk.FindBone("pelvis");
+        if (i < 0) return 0;
+        var z = (sk.GlobalTransform.Basis * sk.GetBoneGlobalPose(i).Basis).Z;
+        return Mathf.RadToDeg(Mathf.Atan2(z.X, z.Z));
+    }
+
     /// <summary>(warden-turn) One frame's turn measures (TURN2, --fig8 or --turn-log): body yaw, the waist, her chest's and
     /// pelvis's yaw from the bones, her pelvis on screen, the shots playing.</summary>
     void TurnLog2(double t)
@@ -2422,7 +2537,7 @@ public partial class PlayerView : Node3D
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
         if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; RenderingServer.FramePreDraw += Scr2; }
-        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0}"));
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0} dl {dirDelta:0.0} dw {dirW[0]:0.00} {dirW[1]:0.00} {dirW[2]:0.00} {dirW[3]:0.00} {dirW[4]:0.00} {dirW[5]:0.00} dir {dirBlend:0.00} al {dirAlpha:0.0} pel {PelYaw():0.0}"));
         smoothCalls = 0;
     }
     // (turning measure) her balls of the feet in the world where the skeleton has run its modifiers (see MeasCache's note)

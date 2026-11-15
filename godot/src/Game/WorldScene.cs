@@ -66,6 +66,8 @@ public partial class WorldScene : Node3D, IZoneLook
     /// and press goes through Battle.HoldSkill/PressSkill, as the keys' do.</summary>
     public Action<Battle>? Hands;
     public Func<(double X, double Z)?> Pointer = () => null;
+    /// <summary>(aim-move) The cursor point her view faces (Game.FacePointer: none under the autopilot or in an unscripted shot).</summary>
+    public Func<(double X, double Z)?> FacePointer = () => null;
     /// <summary>Each fixed step, before the fight's (the zone's own logic).</summary>
     public Action<double> OnStep = _ => { };
     /// <summary>What the fight said this frame, for the interface and the world.</summary>
@@ -440,6 +442,7 @@ public partial class WorldScene : Node3D, IZoneLook
             var flare = Fx.Flare;
             double herDt = flare.Frozen || flare.Stop > 0 ? dt * flare.HerRate : viewDt * stops.Rate(SurvivorUnchained.Look.HitStops.Her);
             Perf.Begin(Perf.Part.Player);
+            if (Player != null) Player.Pointer = FacePointer;
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
             // (--act: the shot harness moves her root off the fight's spot; the camera and the lights follow her)
