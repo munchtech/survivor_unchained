@@ -10,6 +10,13 @@ func _init():
 	var meta_out = args[2]
 	var lib = AnimationLibrary.new()
 	var metas = {}
+	# "--into" (build.py ANIM_PATCH=1): only the clips in <clips dir> are replaced in the library and meta already at
+	# <out> / <out meta.json>; the rest stay as packed (a rebuild of a few clips without every clip's JSON on disk).
+	if args.size() > 3 and args[3] == "--into" and ResourceLoader.exists(out):
+		lib = ResourceLoader.load(out, "", ResourceLoader.CACHE_MODE_IGNORE).duplicate()
+		var old = JSON.parse_string(FileAccess.get_file_as_string(meta_out))
+		if old != null:
+			metas = old
 	var files = DirAccess.get_files_at(dir)
 	files.sort()
 	for f in files:
@@ -35,6 +42,8 @@ func _init():
 					a.rotation_track_insert_key(i, t, Quaternion(v[0], v[1], v[2], v[3]).normalized())
 				else:
 					a.position_track_insert_key(i, t, Vector3(v[0], v[1], v[2]))
+		if lib.has_animation(StringName(d["name"])):
+			lib.remove_animation(StringName(d["name"]))
 		lib.add_animation(StringName(d["name"]), a)
 		var m = d["meta"]
 		m["length"] = a.length

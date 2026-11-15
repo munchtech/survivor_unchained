@@ -209,6 +209,14 @@ public partial class BattleFx
         return (xf * new Vector3(0, tip * 0.14f, 0), xf * new Vector3(0, tip, 0));
     }
 
+    /// <summary>(F3) The drawn weapon's point for the swap glint: out along its axis at 60% of its length (0.5 m if none is known).</summary>
+    Vector3? SwapGlintAt()
+    {
+        if (gripBlade is not { } bl || !IsInstanceValid(bl) || !bl.IsInsideTree()) return null;
+        float along = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") * 0.6f : 0.5f;
+        return bl.GlobalTransform * new Vector3(0, along, 0);
+    }
+
     /// <summary>Her skeleton has its frame's pose (and the attachments theirs): the blade's sample, a held cut's trail
     /// armed from the sim's swing, and the trail and the hot edge drawn from the samples.</summary>
     void GripSample()

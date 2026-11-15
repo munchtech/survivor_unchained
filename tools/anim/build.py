@@ -4,6 +4,9 @@
     python tools/anim/build.py run idle        only clips whose names contain these
     python tools/anim/build.py --no-pack ...   write the clips, leave the library
     python tools/anim/build.py --body hero     the hero's library from the same code
+    ANIM_PATCH=1 python tools/anim/build.py run_warden   only these clips replaced in the packed library (anim_pack.gd
+                                               --into), the rest kept; the manifest left alone. For a checkout whose
+                                               out/clips does not hold every clip (never pack a partial out/ without it)
 
 Each module in tools/anim/clips/ has a `clips(rig, want)` that returns Clips
 (keyed in code, or retargeted from mocap). They are written as JSON to
@@ -82,7 +85,7 @@ def pack(out=OUT, stem="heroine"):
         else:
             print("  arm roll OFF (ARM_ROLL=0)")
     r = subprocess.run([GODOT, "--headless", "--path", str(REPO / "godot"), "-s", "res://tools_scenes/anim_pack.gd", "--",
-                        str(src), res, str(lib / f"{stem}_clips.json")],
+                        str(src), res, str(lib / f"{stem}_clips.json")] + (["--into"] if os.environ.get("ANIM_PATCH") else []),
                        capture_output=True, text=True)
     for line in (r.stdout + r.stderr).splitlines():
         if "PACKED" in line or "ERROR" in line or "SCRIPT" in line:
@@ -119,7 +122,7 @@ def main(argv):
             print(f"  (kept, not made by this run: {', '.join(kept)})")
     if "--no-pack" not in argv:
         pack(out, stem)
-        if body == "heroine":
+        if body == "heroine" and not os.environ.get("ANIM_PATCH"):   # (ANIM_PATCH: out/ holds only the patched clips)
             import manifest
             manifest.main()
 

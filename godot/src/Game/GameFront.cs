@@ -292,7 +292,7 @@ public partial class Game
         // How much of the portrait's light: none for her whole figure, all of it from head and shoulders in.
         float p = Smooth((z - 0.15f) / 0.45f);
         // (her head's tones fitted under this rig, as much as it lights her: People.HerLookRig)
-        if (figure?.Person is { } herRig) People.HerLookRig(herRig, p);
+        if (figure?.Person is { } herRig) { People.HerLookRig(herRig, p); People.HerShadeNight(herRig, scene?.View.Night == false ? 0f : p); }
         if (CamLog && figure?.Person is { } herPx) FacePx(herPx);
         float k = 1 - Mathf.Exp(-4f * (float)dt);
         var camLeft = dir.Cross(Vector3.Up).Normalized();
@@ -519,7 +519,7 @@ public partial class Game
         CelRigOff();
         keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
-        if (figure?.Person is { } herRig) { People.HerLookRig(herRig, 0); People.HerSkinGain(herRig, 1); }
+        if (figure?.Person is { } herRig) { People.HerLookRig(herRig, 0); People.HerSkinGain(herRig, 1); People.HerShadeNight(herRig, 0); }
         Campfire.ClearNear(0);
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;

@@ -1,0 +1,38 @@
+{
+ "by": "tools/look/den_roots.py (painted from nothing; no outside source)",
+ "version": 1,
+ "from": "den_room.png's root walls, den_boss.png's roots over the pit rims (owner-approved den targets, 15 Nov)",
+ "metres": 5.0,
+ "px": 2048,
+ "variants": 2,
+ "layout": "variants stacked vertically (variant v = rows v*px .. (v+1)*px); each tiles seamlessly",
+ "orientation": "image up = up the bank / away from the camera; roots run mostly left-right along the bank",
+ "light": [
+  -0.507,
+  -0.8619
+ ],
+ "light_elevation_deg": 60,
+ "light_note": "baked into the albedo: toward the light in image x right / y down (the upper left)",
+ "normal": "tangent space, nrm = (-dh/dx, dh/dy, 1) (OpenGL, green up), slope clamped at 2.5",
+ "arh": "r = ao (the hollows' depth), g = roughness (roots 0.8, earth 0.95), b = height / height_m",
+ "height_m": 0.8,
+ "coverage": [
+  0.755,
+  0.7541
+ ],
+ "palette": {
+  "lit_hi": "#94613f",
+  "lit": "#805338",
+  "mid": "#583c2f",
+  "shade": "#352529",
+  "deep": "#221a1e",
+  "edge": "#a46d48",
+  "ink": "#140f10",
+  "earth": "#2c2322",
+  "earth_dk": "#1b1718",
+  "gap": "#0e0f13",
+  "moss": "#5f5c2c",
+  "moss_dk": "#46441f",
+  "shadow": "#1a1210"
+ }
+}

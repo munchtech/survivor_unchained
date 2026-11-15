@@ -242,7 +242,11 @@ AXES_L = ((10, 13, 150, -95), (-10, 10, 148, -95))
 # the bust (fist 129 cm in her rest frame, the underbust 130, navel 115) and 13 cm in front of it, the elbow 85 and
 # 27 cm out; back behind the hip (7.5 cm in the run, 15 in the sprint), the elbow opened to 112 and the forearm less out.
 WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
-WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
+# (warden-move, judge r4: "the rear leg held straight back about 6 frames a step") duty 0.33 -> 0.26: at 0.33 the stance
+# carried the ankle 0.80 m behind the pelvis, out of the leg's reach, so the knee locked straight (bend 3.6) for 2 stance
+# and 3 swing frames, thigh 28-45 back, then popped to 54 in one frame. At 0.26 (contact 0.18 s, a 5 m/s run's) the knee
+# never locks (toe-off bend ~22) and folds straight on through; thigh back at most ~25.
+WARDEN = Gait(frames=21, speed=SPEED, duty=0.26, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,

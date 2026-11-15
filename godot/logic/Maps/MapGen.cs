@@ -115,6 +115,15 @@ public sealed class MapBuild
     public required List<PackSpot> Packs;
     /// <summary>A dungeon's rooms, halls, caches and way out (DungeonGen); null on a map.</summary>
     public DungeonLayout? Dungeon;
+    /// <summary>A dungeon's theme ("den", "ravine"; DungeonDef.Theme), "" on a map: the view builds its walls, floor and light by it.</summary>
+    public string DungeonTheme = "";
+    /// <summary>A dungeon's walls as a field, Res by Res as the heights: metres inside the walkable edge (negative
+    /// outside, clamped to -16..8), smooth (the rooms' and halls' own distances, not the walkable cells), so the
+    /// view's wall mass follows the edge without the grid's steps. Null on a map.</summary>
+    public float[]? WallField;
+    /// <summary>A dungeon's holes as a field, as WallField: metres outside the nearest hole (negative inside it),
+    /// clamped to -8..8. The den sinks them into pits, the ravine raises them as rock. Null on a map.</summary>
+    public float[]? HoleField;
     /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point
     /// (where to walk, and how wide it is).</summary>
     public List<(double X, double Z, double Hw)[]> Ways = new();
@@ -221,6 +230,8 @@ public static class MapGen
         var walk = new bool[Res * Res];
         var inside = new double[Res * Res];         // how far in from the edge, where walkable
         var trailN = new double[Res * Res];         // distance from a way's middle, in its half-widths
+        var wallIn = new double[Res * Res];         // a dungeon's edge before its holes (the wall mesh's field)
+        var holeD = new double[Res * Res];          // a dungeon's nearest hole's distance (negative inside), 99 if none near
         System.Threading.Tasks.Parallel.For(0, Res, j =>
         {
             for (int i = 0; i < Res; i++)
@@ -255,7 +266,15 @@ public static class MapGen
                         tn = Math.Min(tn, d / hwk);
                     }
                 // A room's holes stand even where a hall runs into them.
-                if (lay != null) foreach (var r in lay.Rooms) foreach (var h in r.Holes) edge = Math.Min(edge, h.Dist(x, z));
+                double hd = 99;
+                wallIn[j * Res + i] = edge;
+                if (lay != null) foreach (var r in lay.Rooms) foreach (var h in r.Holes)
+                {
+                    double dh = h.Dist(x, z);
+                    hd = Math.Min(hd, dh);
+                    edge = Math.Min(edge, dh);
+                }
+                holeD[j * Res + i] = hd;
                 bool inBounds = Math.Abs(x) < half - 6 && Math.Abs(z) < half - 6;
                 walk[j * Res + i] = inBounds && edge > 0;
                 inside[j * Res + i] = edge;
@@ -275,8 +294,8 @@ public static class MapGen
                 double d = outside[j * Res + i];
                 // The ground climbs away from the way into banks, knolls and rock.
                 double bank = lay != null
-                    // A dungeon's walls stand steeper and higher: rock banks you fight under, the wood above them.
-                    ? MathX.Smoothstep(0.3, 7, d) * (5.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3)) + MathX.Smoothstep(6, 30, d) * 4 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3))
+                    // A dungeon's walls are meshes (DungeonWalls), not a bank: the floor stays as rolled.
+                    ? 0
                     : MathX.Smoothstep(0.5, 12, d) * (4.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3))
                     + MathX.Smoothstep(10, 40, d) * 3 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3));
                 heights[j * Res + i] = (float)(roll + bank);
@@ -294,6 +313,11 @@ public static class MapGen
                     heights[j * Res + i] = (float)MathX.Lerp(heights[j * Res + i], h0 + Math.Min(0, heights[j * Res + i] - h0) * 0.3, k * 0.85);
                 }
         }
+        // The den's holes sink into pits, a metre down at the rim and flat below (after the clearings' pull, which
+        // would shallow them).
+        if (lay != null && lay.Def.Theme == "den")
+            for (int k = 0; k < heights.Length; k++)
+                heights[k] -= (float)(2.4 * MathX.Smoothstep(0.3, -1.6, holeD[k]));
         var ground = new Heightfield(Size, Res, heights);
 
         // ---------------------------------------------------------- paint --
@@ -310,6 +334,10 @@ public static class MapGen
                 // A trodden line down the middle of each way; worn patches in the clearings.
                 double trail = 1 - MathX.Smoothstep(0.25, 0.6, Bilinear(trailN, x, z, half) + n2 * 0.14);
                 double dirt = Math.Max(trail * 0.85, MathX.Smoothstep(0.3, 0.8, n1) * MathX.Smoothstep(2, 8, inn) * 0.6);
+                // A dungeon's floors are trodden: the den's bare earth with a little grass left in its corners, the
+                // ravine's worn floor greener at its walls.
+                if (lay != null)
+                    dirt = Math.Max(dirt, MathX.Smoothstep(-0.4, 3, inn) * MathX.Smoothstep(-0.7, 0.1, n1 + n2 * 0.4) * (lay.Def.Theme == "den" ? 0.9 : 0.7));
                 double setts = 0, blight = 0, mud = 0;
                 foreach (var a in marked)
                 {
@@ -342,6 +370,12 @@ public static class MapGen
             flora.Add(new FloraPlace(kind, k.Pieces[rng.Int(0, k.Pieces.Length - 1)], x, ground.HeightAt(x, z) - sink, z,
                 rng.Range(0, Math.PI * 2), k.Scale * scale * rng.Range(0.85, 1.2)));
         }
+        // The same, turned as asked (a trunk laid along a wall).
+        void PutAt(string kind, double x, double z, double rot, double scale = 1, double sink = 0)
+        {
+            var k = kinds[kind];
+            flora.Add(new FloraPlace(kind, k.Pieces[rng.Int(0, k.Pieces.Length - 1)], x, ground.HeightAt(x, z) - sink, z, rot, k.Scale * scale * rng.Range(0.9, 1.1)));
+        }
         string[] trees = spec.Theme switch
         {
             "blight" => new[] { "dead", "dead", "pine", "autumn" },
@@ -354,15 +388,18 @@ public static class MapGen
             {
                 double x = gx + rng.Range(0, 3.2), z = gz + rng.Range(0, 3.2);
                 double d = Sample(outside, x, z, half), inn = Sample(inside, x, z, half);
-                if (d > 1.2)
+                if (lay != null)
+                {
+                    // A dungeon's walls are meshes (DungeonWalls): only a sparse scatter of pebbles on the floor.
+                    if (inn > 1.5 && rng.Chance(0.04)) Put("pebble", x, z);
+                }
+                else if (d > 1.2)
                 {
                     // The walls: trees thick near the way, thinning into the dark beyond.
-                    double keep = d < 16 ? 0.62 : d < 34 ? 0.34 : 0.1;
-                    // A dungeon's walls are rock first: crags and boulders along the foot of the bank, the wood behind.
-                    if (lay != null && d < 7 && rng.Chance(0.34)) { Put(rng.Chance(0.6) ? "cliff" : "boulder", x, z, rng.Range(0.5, 0.95), 0.5); continue; }
+                    double keep = d < 16 ? (lay != null ? 0.7 : 0.62) : d < 34 ? 0.34 : 0.1;
                     if (rng.Chance(keep)) Put(rng.Pick(trees), x, z, 1 + Math.Min(0.4, d * 0.012));
                     if (d < 12 && rng.Chance(0.45)) Put(rng.Pick(new[] { "bush", "fern", "bramble", "fern" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1));
-                    if (d < 8 && rng.Chance(0.12)) Put(rng.Pick(new[] { "boulder", "rock", "cliff" }), x, z, 1, 0.3);
+                    if (d < 8 && rng.Chance(0.12)) Put(rng.Pick(lay != null ? new[] { "boulder", "rock", "scan_mossrock" } : new[] { "boulder", "rock", "cliff" }), x, z, 1, 0.3);
                 }
                 else if (inn < 2.2)
                 {
@@ -414,7 +451,7 @@ public static class MapGen
             lights[^1].On = false;
         }
         var boss = areas[^1];
-        if (lay != null) DressDungeon(lay, rng, ground, Put, props, colliders, ref cid, Fire, lights);
+        if (lay != null) DressDungeon(lay, rng, ground, Put, PutAt, props, colliders, ref cid, Fire, lights);
         // Standing stones round the last clearing, fires between.
         int stones = lay != null ? 0 : 8;
         for (int n = 0; n < stones; n++)
@@ -493,12 +530,16 @@ public static class MapGen
         {
             Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props,
             Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways, Dungeon = lay,
+            DungeonTheme = lay?.Def.Theme ?? "",
+            WallField = lay == null ? null : wallIn.Select(v => (float)Math.Clamp(v, -16, 8)).ToArray(),
+            HoleField = lay == null ? null : holeD.Select(v => (float)Math.Clamp(v, -8, 8)).ToArray(),
         };
     }
 
     /// <summary>A dungeon's rooms dressed as their people keep them (RoomPlan.Dress): the Pack's bones in the corners, the
     /// Kerchiefs' crates, fences and cookfires, a stash's barrels by its cache; crags on every hole; lanterns at the way out.</summary>
     static void DressDungeon(DungeonLayout lay, Rng rng, Heightfield ground, Action<string, double, double, double, double> put,
+        Action<string, double, double, double, double, double> putAt,
         List<PropPlace> props, List<ColliderDef> colliders, ref int cid, Action<double, double, double, double, string> fire, List<LightDef> lights)
     {
         void Prop(string id, double x, double z, double rot, double scale) => props.Add(new PropPlace(id, x, ground.HeightAt(x, z), z, rot, scale));
@@ -516,17 +557,7 @@ public static class MapGen
         }
         foreach (var r in lay.Rooms)
         {
-            foreach (var h in r.Holes)
-            {
-                // A hole is a knot of rock: one crag at its heart and boulders round it, all solid.
-                double hx = (h.X0 + h.X1) / 2, hz = (h.Z0 + h.Z1) / 2, len = MathX.Dist(h.X0, h.Z0, h.X1, h.Z1);
-                put("cliff", hx, hz, Math.Min(1.6, h.R * 0.32 + len * 0.04), 0.6);
-                for (int n = (int)(len / 3); n >= 0; n--)
-                {
-                    double t = len > 0 ? n / Math.Max(1.0, (int)(len / 3)) : 0;
-                    put("boulder", h.X0 + (h.X1 - h.X0) * t + rng.Range(-1, 1), h.Z0 + (h.Z1 - h.Z0) * t + rng.Range(-1, 1), h.R * 0.45, 0.4);
-                }
-            }
+            // (a den's holes are pits and a ravine's rock outcrops in the wall mesh: nothing heaped on them)
             string dress = r.Plan.Dress;
             if (dress == "bones")
                 for (int n = rng.Int(3, 6); n > 0; n--)
@@ -534,7 +565,7 @@ public static class MapGen
             if (dress == "camp")
             {
                 for (int n = rng.Int(3, 6); n > 0; n--)
-                    if (Near(r, 0.8, 2.6) is { } p) Prop(rng.Pick(new[] { "props/Crate_Wooden", "props/Barrel", "props/Bag", "props/Crate_Wooden", "halloween/fence_broken" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
+                    if (Near(r, 0.8, 2.6) is { } p) Prop(rng.Pick(new[] { "props/Crate_Wooden", "props/Barrel", "props/Bag", "props/Crate_Wooden", "village/Prop_WoodenFence_Single", "props/WeaponStand", "props/Shield_Wooden" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
                 // A cookfire kept in the bigger rooms: a light to fight by.
                 if (r.Role is RoomRole.Fight or RoomRole.Boss && Near(r, 4, 9) is { } f) { fire(f.X, f.Z, 0.7, 10, "#ff8a3a"); Prop("arena/cookpot", f.X + 0.9, f.Z, rng.Range(0, Math.PI * 2), 1); }
             }

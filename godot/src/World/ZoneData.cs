@@ -40,6 +40,13 @@ public sealed class ZoneData
     public readonly List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
     /// <summary>A story fight's own place (its edge is its banks: the ember's lip burns low there).</summary>
     public readonly bool Story;
+    /// <summary>A dungeon's theme ("den", "ravine") and its walls' field (MapBuild.WallField); "" and null elsewhere.</summary>
+    public readonly string DungeonTheme = "";
+    public readonly float[]? WallField;
+    /// <summary>A dungeon's holes as a field (MapBuild.HoleField); null elsewhere.</summary>
+    public readonly float[]? HoleField;
+    /// <summary>A dungeon's rooms (centre and reach, MapBuild.Areas), for what is placed by rule per room (the den's shafts).</summary>
+    public readonly List<(float X, float Z, float R, string Kind)> Rooms = new();
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -194,6 +201,11 @@ public sealed class ZoneData
         Vents.AddRange(m.Vents);
         Gates.AddRange(m.Gates);
         Story = m.Spec.Story != "";
+        DungeonTheme = m.DungeonTheme;
+        WallField = m.WallField;
+        HoleField = m.HoleField;
+        if (m.WallField != null)
+            foreach (var a in m.Areas) Rooms.Add(((float)a.X, (float)a.Z, (float)a.R, a.Kind.ToString()));
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {
@@ -256,7 +268,9 @@ public sealed class ZoneData
                     new Vector3(x, (float)m.Ground.HeightAt(x, z), z))], KitLook.Look.Plain));
                 GD.Print($"stand-proof {at[0]} at {x:0.00},{z:0.00} yaw {F(2, 0):0} scale {F(3, 1):0.00}");
             }
-        foreach (var p in m.Props)
+        // A dungeon's dressing is made pieces too (the Pack's bones, the Kerchiefs' fences: Pieces, no file to load):
+        // MapRun sets it all down through the scene (AddProp), as an arena's cover is.
+        foreach (var p in m.Dungeon == null ? m.Props : [])
         {
             PropHouse.Add(-1);
             Props.Add((p.Id, new Transform3D(new Basis(Vector3.Up, (float)p.Rot).Scaled(Vector3.One * (float)p.Scale), new Vector3((float)p.X, (float)p.Y, (float)p.Z))));

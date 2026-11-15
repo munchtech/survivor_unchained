@@ -229,6 +229,24 @@ public partial class Shots : Node
                     if (Args.Get("tonemap") is string t && System.Enum.TryParse<Godot.Environment.ToneMapper>(t, true, out var mode)) env.TonemapMode = mode;
                     if (Args.Get("grade") == "off") env.AdjustmentEnabled = false;
                 }
+        // --env-off ssao,ssil,sdfgi,glow,fog,shadows,rim: those effects off, one by one (the den pit halo diagnosis, 15 Nov;
+        // rim is the floor's damp lip, wall-foot and pit darkening, set where DungeonFloor makes its material).
+        if (Args.Get("env-off") is string eo)
+        {
+            var offs = eo.Split(',');
+            bool Off(string k) => System.Array.IndexOf(offs, k) >= 0;
+            foreach (var we in GetTree().Root.FindChildren("*", "WorldEnvironment", true, false))
+                if (((WorldEnvironment)we).Environment is { } env)
+                {
+                    if (Off("ssao")) env.SsaoEnabled = false;
+                    if (Off("ssil")) env.SsilEnabled = false;
+                    if (Off("sdfgi")) env.SdfgiEnabled = false;
+                    if (Off("glow")) env.GlowEnabled = false;
+                    if (Off("fog")) { env.FogEnabled = false; env.VolumetricFogEnabled = false; }
+                }
+            if (Off("shadows"))
+                foreach (var l in GetTree().Root.FindChildren("*", "Light3D", true, false)) ((Light3D)l).ShadowEnabled = false;
+        }
         // --no-labels: the world's text off (names, marks, speech, hit numbers), for frames that are painted over.
         if (Args.Has("no-labels") && Engine.GetFramesDrawn() % 30 == 0)
             foreach (var n in GetTree().Root.FindChildren("*", "Node3D", true, false))

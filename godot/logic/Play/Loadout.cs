@@ -158,6 +158,9 @@ public static class Loadouts
         };
         // The wardrobe puts her sword and shield away (ArmsAway), the stance kept.
         if (ArmsAway) held = held with { Right = "", Left = null, Forearm = null };
+        // The shield on her forearm is set A's, her calling weapon's own (Held), not the off-hand slot's: that slot is her second
+        // set (stances.json "kinds", SkillBook.WornStance) and starts empty, so tying the shield to it left every new Warden
+        // shieldless in creation, the prologue and cinematics. Set B's off-hand look is StanceHands'.
         return new Loadout(person, held);
     }
 }

@@ -216,6 +216,7 @@ public partial class BattleFx
         {
             var (at, t, edge, star) = swapGlints[i];
             t += frameDt;
+            if (SwapGlintAt() is { } onBlade) at = onBlade;   // (F3) follows the drawn weapon
             if (t >= 0.45f) { star.M.QueueFree(); swapGlints.RemoveAt(i); continue; }
             swapGlints[i] = (at, t, edge, star);
             float s = t < 0.15f ? Mathf.SmoothStep(0, 1, t / 0.15f) : t < 0.25f ? 1 : 1 - Mathf.SmoothStep(0, 1, (t - 0.25f) / 0.2f);
@@ -238,7 +239,8 @@ public partial class BattleFx
         var rc = bronze ? (new Color("#8A5424"), new Color("#FFE2A8")) : cols;
         SwapRingAdd(ground, 0.6f, 1.6f, 0.25f, bronze ? 3 : 4, 10, rc, bronze);
         var side = GetViewport()?.GetCamera3D() is { } cam ? cam.GlobalBasis.X : Vector3.Right;
-        swapGlints.Add((ground + Vector3.Up * 1.0f + side * 0.3f, 0, cols.Edge, StarNew(cols.Edge, 4)));
+        // Camera-left: every damage number spawns camera-right of its impact (Hits.Beside), and a glint there sat on them.
+        swapGlints.Add((ground + Vector3.Up * 1.0f - side * 0.3f, 0, cols.Edge, StarNew(cols.Edge, 4)));
         Sfx.Blocked();
         if (e.Strike == "") return;
 

@@ -1628,6 +1628,24 @@ public static class People
                     m.SetShaderParameter("piece_spec_mute", pmu);
                 }
             }
+            // (a worn piece's own finish for one metal key, by the wear piece's id: metal_finishes.json "meshes", Warden polish r4:
+            // the Forged Cuirass darker gunmetal, the Gilded Plate Top gold. "finish": the finish number; "dye": a metal dye's colour
+            // set as the plate's own (dye_amount 1); "params": shader uniforms, a float or a colour [r, g, b])
+            if (kind == 1 && metalFinishes != null && metalFinishes.TryGetValue("meshes", out var mp))
+            {
+                var nm = mi.Name.ToString();
+                foreach (var (wid, wv) in mp.AsGodotDictionary())
+                {
+                    if (!nm.StartsWith((string)wid + "_") || !wv.AsGodotDictionary().TryGetValue(key, out var ov)) continue;
+                    var od = ov.AsGodotDictionary();
+                    if (od.TryGetValue("finish", out var of)) m.SetShaderParameter("finish", (int)of);
+                    if (od.TryGetValue("dye", out var odye)) { m.SetShaderParameter("dye", new Color((string)odye)); m.SetShaderParameter("dye_amount", 1.0f); }
+                    if (od.TryGetValue("params", out var opr))
+                        foreach (var (pn, pv) in opr.AsGodotDictionary())
+                            if (pv.VariantType == Variant.Type.Array) { var a = pv.AsGodotArray(); m.SetShaderParameter((string)pn, new Color((float)a[0], (float)a[1], (float)a[2])); }
+                            else m.SetShaderParameter((string)pn, (float)pv);
+                }
+            }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
             m.SetShaderParameter("normal_map", src.NormalTexture);
             m.SetShaderParameter("orm", src.RoughnessTexture);
@@ -1913,6 +1931,8 @@ public static class People
             m.SetShaderParameter("back_spec", HerBackSpec);
             m.SetShaderParameter("back_neutral", HerBackNeutral);
             m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+            // (the moon's blue on her lit skin given back as her warmth, as an NPC's: Look.SkinLight.HerKeySkin)
+            m.SetShaderParameter("key_skin", SurvivorUnchained.Look.SkinLight.HerKeySkin);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
@@ -1979,6 +1999,14 @@ public static class People
         m.SetShaderParameter("sky_skin_amb", SurvivorUnchained.Look.SkinLight.SkyKeepAmbient);
         // (her shade warm: the fill where the key does not reach, Look.SkinLight.ShadeFill)
         if (who == "heroine") m.SetShaderParameter("cel_fill_tone", new Vector3(SurvivorUnchained.Look.SkinLight.ShadeFill.R, SurvivorUnchained.Look.SkinLight.ShadeFill.G, SurvivorUnchained.Look.SkinLight.ShadeFill.B));
+        // (and the shade's floor, cast shadow and dark side alike, where a rig's fill is small: Look.SkinLight.ShadeFloor)
+        m.SetShaderParameter("shade_floor", SurvivorUnchained.Look.SkinLight.ShadeFloor);
+        // (under a cold key the fill and the floor without that warmth: Look.SkinLight.ShadeCold)
+        m.SetShaderParameter("shade_cold", SurvivorUnchained.Look.SkinLight.ShadeCold);
+        m.SetShaderParameter("shade_floor_cold", SurvivorUnchained.Look.SkinLight.ShadeFloorCold);
+        m.SetShaderParameter("shade_floor_night", SurvivorUnchained.Look.SkinLight.ShadeFloorNight);
+        // (her body's tone out of her neck's shade at the Look: Look.SkinLight.NeckShadeOut)
+        m.SetShaderParameter("neck_shade_out", SurvivorUnchained.Look.SkinLight.NeckShadeOut);
         if (!FaceMidOff)
         {
             m.SetShaderParameter("face_mid", HeadMid);
@@ -2121,6 +2149,10 @@ public static class People
         m.SetShaderParameter("back_spec", HerBackSpec);
         m.SetShaderParameter("back_neutral", HerBackNeutral);
         m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
+        // (the moon's blue on an NPC's lit skin given back as its warmth, not lilac: Look.SkinLight.NpcKeySkin)
+        m.SetShaderParameter("key_skin", SurvivorUnchained.Look.SkinLight.NpcKeySkin);
+        // (the sky's hue on an NPC half given back, as NpcCelSplit was fitted: Look.SkinLight.NpcSkyKeep)
+        m.SetShaderParameter("sky_skin", SurvivorUnchained.Look.SkinLight.NpcSkyKeep);
         SkinShade(m, HerAmbientTint, Vector3.One);   // (body tone 1: shade_tint 1)
         float deep = skin != null && skin.TryGetValue("deep", out var dv) && (dv.VariantType == Variant.Type.Float || dv.VariantType == Variant.Type.Int)
             ? (float)dv.AsDouble() : NpcDeep(src.AlbedoTexture, isHead);
@@ -2186,7 +2218,7 @@ public static class People
     /// Unknown lightness (no paint): all of it.</summary>
     public static float NpcCelWarm(float ratio) => ratio < 0f ? 1f : Mathf.Clamp((ratio - NpcCelWarmAt.X) / (NpcCelWarmAt.Y - NpcCelWarmAt.X), 0f, 1f);
 
-    static readonly Vector2 NpcCelWarmAt = new(0.7f, 0.95f);
+    static readonly Vector2 NpcCelWarmAt = new(0.45f, 0.95f);
 
     /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
     /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
@@ -2422,7 +2454,7 @@ public static class People
         // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
         // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
         m.SetShaderParameter("throat_terminator", HerThroatTerminator);
-        m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
+        m.SetShaderParameter("body_gate", BodyGate ? SurvivorUnchained.Look.SkinLight.BodyGate : 0f);
         // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
         // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
         // to where she faces down and gated by ndl, the shade at the side of her neck stayed grey (own jaw chroma
@@ -2600,7 +2632,11 @@ public static class People
             : Vector4.Zero
         : new(2.231f, 0.636f, 0.014f, 0.55f);   // (Oklab h 60, C .085 at L .37, luminance 0.93; fitted at the Look by night)
 
-    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck : new(1f, 1f, 1f, 0f);
+    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck
+        : SurvivorUnchained.Look.SkinLight.NeckPull is var (r, g, b, a) && a > 0f && !NoNeckPull ? new(r, g, b, a) : new(1f, 1f, 1f, 0f);
+
+    // (--neck-pull off: her other swatches' neck and collar band at the Look as before Look.SkinLight.NeckPull)
+    static readonly bool NoNeckPull = SurvivorUnchained.Args.Get("neck-pull") == "off";
 
     static Vector3 FaceSwatch(Look look) => ToneA1 && HerFaceSwatch.TryGetValue(HerSkinId(look), out var v) ? v : Vector3.One;
 
@@ -2838,6 +2874,17 @@ public static class People
                     var lin = b.SrgbToLinear(); var t = new Color(lin.R * k, lin.G * k, lin.B * k).LinearToSrgb();
                     m.SetShaderParameter("tone", t); m.SetMeta("su_tone0", b); m.SetMeta("su_tone_set", t);
                 }
+    }
+
+    /// <summary>Her skin's shade as under a cold key whatever the key (heroine_skin.gdshader's shade_night, 0 to 1): the Look
+    /// at night (GameFront, the Look rig's weight), whose warm camp-fire key leaves Look.SkinLight.ShadeCold off while its
+    /// shade is the night's fill. 0 outside it.</summary>
+    public static void HerShadeNight(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("shade_night", k);
     }
 
     public static void HerSkinHold(Person p, float k)

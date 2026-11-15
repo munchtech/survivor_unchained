@@ -93,6 +93,7 @@ public sealed class FollowCamera
     /// the pitch and height with it through the two framings.</summary>
     /// <summary>The lens at the nearest (vertical degrees; play's is 34): longer, as a portrait's, so her figure is
     /// not drawn wide by a near wide lens. The distance grows with it to keep CloseNear's framing. --close-lens.</summary>
+    public static readonly float LeadRate = Args.Num("cam-lead-rate", 2.5f);
     public static readonly float CloseLens = Args.Has("close-lens") ? Args.Num("close-lens", 24) : 24;
 
     /// <summary>The lens (vertical degrees) the close view wants at this nearness.</summary>
@@ -228,8 +229,13 @@ public sealed class FollowCamera
         orbitNow = Damp(orbitNow, Orbit, CloseRate, dt);
         // (near, the lead is the street ahead in a smaller frame: a quarter of it keeps her in view)
         float leadK = 1 - 0.75f * Mathf.Clamp(closeNow / 0.6f, 0, 1);
-        leadX = Damp(leadX, vx * Lead * 0.2f * leadK, 3, dt);
-        leadZ = Damp(leadZ, vz * Lead * 0.2f * leadK, 3, dt);
+        // (warden-move item 3: on a 180 the lead swings 5 m to her other side; damped alone it moved the camera at up to 1.95x
+        // her run for 20 frames, a whip of the whole frame. Its swing is held to LeadRate m/s, eased by the look's damp; the
+        // lead itself, pitch, distance and lens are as they were. --cam-lead-rate 0: as before.)
+        float lx = Damp(leadX, vx * Lead * 0.2f * leadK, 3, dt), lz = Damp(leadZ, vz * Lead * 0.2f * leadK, 3, dt);
+        float ldx = lx - leadX, ldz = lz - leadZ, ld = Mathf.Sqrt(ldx * ldx + ldz * ldz), lmax = LeadRate * dt;
+        if (LeadRate > 0 && ld > lmax) { lx = leadX + ldx * lmax / ld; lz = leadZ + ldz * lmax / ld; }
+        leadX = lx; leadZ = lz;
         float wx = 0, wz = 0;
         bool leaning = false;
         if (Toward is Vector3 tw)

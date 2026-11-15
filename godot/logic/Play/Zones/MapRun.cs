@@ -151,6 +151,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>By day: the maps are the day's build in the day's world, and a pack must be read
     /// before it is woken (at dusk the way was black past the start's fire).</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Day;
+    /// <summary>A dungeon is lit as its theme is (the den: no sky; the ravine: an evening sun), not by the day's clock.</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => map.Dungeon?.Def.Theme switch
+    {
+        "den" => Atmospheres.Den, "ravine" => Atmospheres.Ravine, _ => base.AtmosphereFor(t),
+    };
     /// <summary>A pack and the ground round it in view: higher than the road's, nearer than a night's.</summary>
     public override (double Pitch, double Distance)? Camera => (62, 24);
     public override Arrival ArrivalFrom(string? from) => new(map.Start.X, map.Start.Z, 0);
@@ -206,6 +211,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         press = new PackKit(b);
         G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, IsDungeon ? "A dungeon" : "A Wayfinder's map"));
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
+        // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
+        // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)
+        if (map.Dungeon != null) foreach (var p in map.Props)
+            G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale * (map.DungeonTheme == "den" && p.Id.StartsWith("halloween/bone_") ? 0.6 : 1));
         if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();
     }

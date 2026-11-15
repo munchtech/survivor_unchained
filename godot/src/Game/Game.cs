@@ -351,7 +351,7 @@ public partial class Game : Node, IZoneHost
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
-        if (Args.Get("at") is string s && s != "boss")
+        if (Args.Get("at") is string s && !s.StartsWith("boss"))
         {
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
@@ -391,10 +391,22 @@ public partial class Game : Node, IZoneHost
                 Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
             };
         // --at boss: on a map, at the edge of its ruler's clearing (pictures of the ruler's fight).
-        if (z == "map" && Args.Get("at") == "boss")
+        // --at boss-mid: in its middle (the den's pits in frame; dungeon look, 15 Nov).
+        if (z == "map" && Args.Get("at") is "boss" or "boss-mid")
         {
-            var bc = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map).Boss;
-            at = new Arrival(bc.X, bc.Z - bc.R + 1);
+            var mb = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map);
+            var bc = mb.Boss;
+            at = Args.Get("at") == "boss" ? new Arrival(bc.X, bc.Z - bc.R + 1) : new Arrival(bc.X, bc.Z);
+            GD.Print($"at {Args.Get("at")}: ruler's clearing ({bc.X:0.0}, {bc.Z:0.0}) r {bc.R:0.0}");
+            if (mb.HoleField is { } hf)
+                for (int j = 1; j < 300; j++)
+                    for (int i = 1; i < 300; i++)
+                    {
+                        float v = hf[j * 301 + i];
+                        double x = i - 150, zz = j - 150;
+                        if (v < -0.5f && v <= hf[j * 301 + i - 1] && v <= hf[j * 301 + i + 1] && v <= hf[(j - 1) * 301 + i] && v <= hf[(j + 1) * 301 + i] && (x - bc.X) * (x - bc.X) + (zz - bc.Z) * (zz - bc.Z) < (bc.R + 8) * (bc.R + 8))
+                            GD.Print($"  pit at ({x}, {zz}) depth {v:0.0}");
+                    }
         }
         // --night ID: straight into a story fight by night (a StoryFights id: hollow, roost, dig, vault),
         // back to the Verge at its place after (pictures of a story night, its falls and its loss).

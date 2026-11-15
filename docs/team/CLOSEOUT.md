@@ -77,3 +77,13 @@ Combat's not-started brief items (armour at depth, the Hollow's fourth beat, the
 - `armor-7` merged (Body 21-22's handoff and unregistered scripts, 6 files) and its worktree removed; `docs/handoff/body.md` is current at Body 22 ("closed in-team; the route is the owner's").
 - `tools/scratch/coordinator/wt_new.ps1`: a lead's worktree in one command (branch from integration, own assets junction, import cache seeded, cap checked). The app can now make a safe worktree without the junction DANGER.
 - Scratch: `Temp\claude` at 6.1 GB; the handoff inventory this plan was built from is in `survivorsunchained_inputs\scratch_closeout\inventory.md`.
+
+## Branch dispositions (coordinator #12, 15 Nov 2026)
+
+Measured against integration `b8fbe31b4`. Nothing was deleted on origin.
+
+- `cine-8@97f01afef`, `classes-8@6d9a123c9`, `classes-10@110ee98bc`, `ui-25@2e32e5dc5`, `hair6-39@0cb0cda47`: **merged** (0 commits ahead). The branch names can go at the next sweep.
+- `armor-7@582d93219`: **keep, not merged** (9 commits ahead: Body 23's arm rounds, r1 judged, early stop for the shoulder). #12's reading: her body moved to `body_p1` and the fixed roster, so this is a record of the arm work, not a merge candidate.
+- `body-p1b@cd356aa07`: **keep, parked** (123 commits ahead; Gate T 19/20, lead 24's handoff, base folds 13 Nov). Not this week's lane. Its worktree stays until disk needs it: about 2 GB of git-ignored build output sits in `tools\body\out` and must be moved to `survivorsunchained_inputs` before the worktree is removed.
+- `claude/priceless-borg-d08e89@558a5d051` (NPC held props): **keep, parked** at the first FAR, on its lead's own look (14 Nov). The lamp carry pose and the hammer grip need a redesign, and the base body cannot use the game's NPC clips yet. Sheets `.shots\npc_held_14nov\`. Worktree removed.
+- `rim-back@bce213a96` (skin rim / cream line): **keep, parked** at CLOSE after its one judge (15 Nov). Four marks left (breast over upper arm, inner upper arm, thigh-line blob, finger specks); the judge's fixes are in `npc_rim_state.md`. Suite not run on the tip. Worktree removed.

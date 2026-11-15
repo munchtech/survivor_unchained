@@ -223,7 +223,10 @@ public sealed class GroundPaint
         // The gutters: wall and building bases (not a heap of rubble: props_own.json no_gutter; E7b judge, a wet black square round the post's heaps).
         var boxes = new List<ColliderDef>();
         foreach (var c in z.Meta.Colliders)
-            if (c.Kind == ColliderKind.Box && !c.Soft && Math.Min(c.Hw, c.Hd) >= 0.4 && !Heap(c)) boxes.Add(c);
+            // (dungeon-look, 15 Nov: not a dungeon's walls. MapGen's are boxes merged over the cells off the floor, so
+            // read as buildings their stair-stepped halos laid leaf litter, gutters and puddles in dark steps over the
+            // rooms' floors; a dungeon's wall is its own mass (DungeonWalls), its foot shaded from the smooth field.)
+            if (c.Kind == ColliderKind.Box && !c.Soft && Math.Min(c.Hw, c.Hd) >= 0.4 && !Heap(c) && !(z.WallField != null && c.Tag == "wall")) boxes.Add(c);
         bool Heap(ColliderDef c) => OwnProps.For(z.Id)?.NoGutter is { } ng && ng.Exists(g => Math.Abs(g.X - c.X) < 0.5 && Math.Abs(g.Y - c.Z) < 0.5);
         var gut = new float[mr * mr];
         foreach (var c in boxes)

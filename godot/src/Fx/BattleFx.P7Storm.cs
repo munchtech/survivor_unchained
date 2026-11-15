@@ -457,12 +457,16 @@ public partial class BattleFx
                     s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 0.6f : 0.95f);
                 }));
                 // the store: a round glow on the shield's face growing over the brace (the data's px), the ground light with it
+                // (fight-ring, 13 Nov: px 20-60 -> 10-26, the boss heating, not a disc: at 60 px it covered the 77 px shield and
+                // read at the play camera as a flat orange UI disc on her chest; the wood rim now stays seen round it)
                 var spx = P7D.All("vow.store.px");
                 float grow = P7D["vow.store.grow"];
                 p7Glow = P7Quad(9, P7ShieldAt(), 0.1f, 9999, bill: true, top: true, step: s =>
                 {
                     var at = P7ShieldAt();
                     s.N.GlobalPosition = at;
+                    // (F1) the glow belongs to the shield: no shield held on the forearm (twin blades, mace), no glow
+                    s.N.Visible = P7ShieldHeld();
                     float t = (float)(time - p7VowStart), since = (float)(time - p7StoreAt);
                     float u = Mathf.Clamp(Mathf.Floor(t / P7Sample) * P7Sample / grow, 0, 1);
                     float px = Mathf.Lerp(spx[0], spx[1], u);
@@ -555,6 +559,13 @@ public partial class BattleFx
 
     /// <summary>The store as steps (0, then a quarter a step up to 1): the blows' kept fifths, 4, 10, 20, 35.</summary>
     static float P7StoreLevel(double stored) => stored >= 35 ? 1f : stored >= 20 ? 0.75f : stored >= 10 ? 0.5f : stored >= 4 ? 0.25f : stored > 0 ? 0.12f : 0f;
+
+    /// <summary>Whether a shield piece is held on her arm now (P7ShieldAt falls back to her chest when none is).</summary>
+    bool P7ShieldHeld()
+    {
+        P7ShieldAt();
+        return p7Shield != null;
+    }
 
     Vector3 P7ShieldAt()
     {

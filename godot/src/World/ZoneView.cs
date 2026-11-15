@@ -80,13 +80,17 @@ public partial class ZoneView : Node3D
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
+        if (DungeonWalls.Build(z) is Node3D walls && !(Args.Get("den-hide") ?? "").Contains("walls")) AddChild(walls);   // (--den-hide walls: a diagnosis toggle)
+        if (DungeonLight.Build(z) is Node3D shafts) AddChild(shafts);
+        if (DungeonDress.Build(z) is Node3D dress) AddChild(dress);
         yield return "ground";
         AddChild(Water.Build(z));
         yield return "water";
         if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
         yield return "mist";
-        var flora = Dressing.Flora(z);
+        // (The den grows nothing under its roof: DungeonDress lays its fungus and bones by rule.)
+        var flora = z.DungeonTheme == "den" ? new Node3D { Name = "Flora" } : Dressing.Flora(z);
         AddChild(flora);
         // Nothing grows in a fire pit: neither the flora nor the meadow (GrowGrass).
         foreach (var f in z.Meta.Fires)
@@ -97,7 +101,8 @@ public partial class ZoneView : Node3D
             }
         Perf.Lap("flora");
         yield return "flora";
-        if (Scatter.Build(z) is { } sc) AddChild(sc);
+        // (A dungeon dresses its own floor by rule: the wild's scatter is not its.)
+        if (z.WallField == null && Scatter.Build(z) is { } sc) AddChild(sc);
         Perf.Lap("scatter");
         yield return "scatter";
         foreach (var p in OwnProps.For(z.Id)?.Places ?? new())
@@ -841,6 +846,9 @@ public partial class ZoneView : Node3D
         grass?.QueueFree();
         leaves?.QueueFree();
         grass = Grass.Build(Data, at, radius, grassCell);
+        // (a dungeon grows no meadow: the den is under its roof, the ravine's shelf has its moss in its floor, and its
+        // drops have no ground for tufts to stand on)
+        if (Data.WallField != null) grass.Visible = false;
         if (pits.Count > 0 && grass.Multimesh.Mesh.SurfaceGetMaterial(0) is ShaderMaterial gm)
         {
             var bare = new Vector4[4];

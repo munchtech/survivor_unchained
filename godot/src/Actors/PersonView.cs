@@ -498,6 +498,76 @@ public partial class PersonView : Node3D, INpcView
     }
     bool emptyHanded;
 
+    /// <summary>(StanceHands) One hand slot's piece changed in place, view only: the old mount (and its attachment) freed, the new
+    /// one made, and sheathed if her kit is. False (nothing touched) while a Flare's grip holds her kit as stashed.</summary>
+    public bool HoldPiece(string slot, string? piece, bool sheathed, double[]? turnDeg = null)
+    {
+        if (flareGrip != null) return false;
+        if (held.Remove(slot, out var old)) (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
+        seats.Remove(slot);
+        lookSheathed.Remove(slot);
+        Hold(slot, null, string.IsNullOrEmpty(piece) ? null : piece);
+        // (a stance's own grip: the piece turned in the fist about its grip point, view only)
+        if (turnDeg != null && held.TryGetValue(slot, out var mnt) && mnt.GetChildCount() > 0 && mnt.GetChild(0) is Node3D pc)
+        {
+            var r = new Basis(Vector3.Back, Mathf.DegToRad((float)turnDeg[2])) * new Basis(Vector3.Up, Mathf.DegToRad((float)turnDeg[1])) * new Basis(Vector3.Right, Mathf.DegToRad((float)turnDeg[0]));
+            pc.Transform = new Transform3D(r * pc.Transform.Basis, pc.Transform.Origin);
+        }
+        if (turnDeg != null && held.TryGetValue(slot, out var mnt2) && mnt2.GetChildCount() > 0 && mnt2.GetChild(0) is Node3D pc2) BladeEdge(pc2);
+        if (sheathed && piece != null && pieces.TryGetValue(slot, out var id)) Swap(slot, id, true);
+        return true;
+    }
+
+    /// <summary>A thin bright painted edge along both cutting edges of a held dagger (the piece's blade runs +Y from its grip, 40 cm,
+    /// about 4 cm across: a unit-bright steel line 3 mm wide, a hair proud of both faces) so the steel catches at the play camera.
+    /// View only; no glow, unshaded flat steel like the cel's own highlights.</summary>
+    static void BladeEdge(Node3D piece)
+    {
+        var mat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.86f, 0.9f, 0.96f) };
+        foreach (float side in new[] { -1f, 1f })
+        {
+            var edge = new MeshInstance3D { Name = "bladeEdge", Mesh = new BoxMesh { Size = new Vector3(0.003f, 0.2f, 0.019f) }, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            edge.Position = new Vector3(side * EdgeHalf, 0.205f, 0.0152f);
+            piece.AddChild(edge);
+        }
+    }
+    const float EdgeHalf = 0.017f;
+
+    ulong heldLogAt;
+    /// <summary>(--held-log, measuring) Once a second: each held node's piece id, global scale, merged mesh AABB size, its far end
+    /// from the hand bone, and the screen position of the far end.</summary>
+    public void HeldLog(Camera3D? cam)
+    {
+        ulong now = Godot.Time.GetTicksMsec();
+        if (now - heldLogAt < 1000) return;
+        heldLogAt = now;
+        foreach (var (slot, node) in held)
+        {
+            if (!GodotObject.IsInstanceValid(node)) continue;
+            int bi = person.Skeleton.FindBone(BoneOf(slot));
+            Vector3 hand = bi < 0 ? node.GlobalPosition : person.Skeleton.GlobalTransform * person.Skeleton.GetBonePose(bi).Origin;
+            if (bi >= 0) hand = person.Skeleton.ToGlobal(person.Skeleton.GetBoneGlobalPose(bi).Origin);
+            Aabb box = default; bool any = false; Vector3 far = hand; float best = -1;
+            var stack = new System.Collections.Generic.Stack<Node>(); stack.Push(node);
+            while (stack.Count > 0)
+            {
+                var n = stack.Pop();
+                foreach (var c in n.GetChildren()) stack.Push(c);
+                if (n is not MeshInstance3D mi || mi.Mesh == null) continue;
+                var lb = mi.Mesh.GetAabb();
+                for (int k = 0; k < 8; k++)
+                {
+                    var w = mi.GlobalTransform * lb.GetEndpoint(k);
+                    box = any ? box.Expand(w) : new Aabb(w, Vector3.Zero); any = true;
+                    float d = (w - hand).Length(); if (d > best) { best = d; far = w; }
+                }
+            }
+            var sc = node.GlobalTransform.Basis.Scale;
+            var scr = cam != null ? cam.UnprojectPosition(far) : Vector2.Zero;
+            GD.Print($"HELD {slot} piece={(pieces.TryGetValue(slot, out var id) ? id : "?")} node={node.Name} scale=({sc.X:0.###},{sc.Y:0.###},{sc.Z:0.###}) aabb=({box.Size.X:0.###},{box.Size.Y:0.###},{box.Size.Z:0.###}) far_from_hand={best:0.###} far_dy={(far.Y - hand.Y):0.###} far_screen=({scr.X:0},{scr.Y:0}) vis={(node is Node3D n3 && n3.IsVisibleInTree())}");
+        }
+    }
+
     public void Hold(string slot, string? pack, string? piece)
     {
         if (held.Remove(slot, out var old)) old.QueueFree();

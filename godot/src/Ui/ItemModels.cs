@@ -47,6 +47,7 @@ public static class ItemModels
         ["armor"] = new(Mail, new(Pitch: 0.1f, Turn: 0.45f)),
         ["armor_heavy"] = new(Plate, new(Pitch: 0.1f, Turn: 0.45f)),
         ["armor_light"] = new(Jerkin, new(Pitch: 0.1f, Turn: 0.45f)),
+        ["corset"] = new(Corset, new(Pitch: 0.1f, Turn: 0.45f)),
         ["mask"] = new(Mask, new(Pitch: 0.15f, Turn: 0.7f)),
         ["kerchief"] = new(Kerchief, new(Pitch: -0.5f, Turn: 0.35f, Tilt: 0.1f)),
         ["circlet"] = new(Circlet, new(Pitch: 0.6f, Turn: 0.35f)),
@@ -543,6 +544,31 @@ public static class ItemModels
         for (int k = 0; k <= 8; k++) cross.Add(new Vector2(k % 2 == 0 ? -0.05f : 0.05f, 0.36f - k * 0.055f));
         Tube(lace, Along(front, cross, 0.035f), 0.012f, 5);
         Add(root, lace, Mat("#3a2616", 0, 0.8f));
+        return root;
+    }
+
+    /// <summary>The padded jerkin as she wears it: a near-black leather corset,
+    /// waisted, sweetheart top, crossed cord up the front.</summary>
+    static Node3D Corset()
+    {
+        var root = new Node3D();
+        var outside = new Build();
+        var lining = new Build();
+        // Sweetheart top (dip at the middle), narrow waist, flared hem.
+        var front = Cut(0, 0.34f, 0.12f, 0.42f, 0.2f, 0.5f, 0.3f, 0.5f, 0.36f, 0.3f, 0.3f, 0.12f, 0.25f, -0.08f, 0.29f, -0.3f, 0.33f, -0.5f, 0, -0.52f);
+        var back = Cut(0, 0.5f, 0.12f, 0.5f, 0.3f, 0.5f, 0.36f, 0.3f, 0.3f, 0.12f, 0.25f, -0.08f, 0.29f, -0.3f, 0.33f, -0.5f, 0, -0.52f);
+        Garment(outside, lining, front, back, 0.05f);
+        Add(root, outside, new StandardMaterial3D { AlbedoColor = new Color("#1d1511"), Roughness = 0.6f, RimEnabled = true, Rim = 0.25f, RimTint = 0.5f }, true);
+        Add(root, lining, Mat("#0f0b09", 0, 0.8f));
+        var lace = new Build();
+        var cross = new List<Vector2>();
+        for (int k = 0; k <= 8; k++) cross.Add(new Vector2(k % 2 == 0 ? -0.06f : 0.06f, 0.3f - k * 0.075f));
+        Tube(lace, Along(front, cross, 0.035f), 0.014f, 5);
+        Add(root, lace, Mat("#3b2a1c", 0, 0.7f));
+        var seam = new Build();
+        foreach (float sx in new[] { -0.17f, 0.17f })
+            Tube(seam, Along(front, Flat(10, t => new Vector2(sx * (1 - 0.3f * Mathf.Sin(t * Mathf.Pi)), 0.4f - t * 0.85f)), 0.03f), 0.01f, 5);
+        Add(root, seam, Mat("#2c2018", 0, 0.7f));
         return root;
     }
 

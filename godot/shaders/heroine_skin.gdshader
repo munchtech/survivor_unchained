@@ -39,6 +39,41 @@ uniform vec3 cel_tone = vec3(1.0);
 // paint is darker than hers takes less of cel_tone on its albedo (its lit side read saturated orange, x18 V3) and the rest
 // here, so its shade keeps the warmth cel_tone gave it (less of it read lilac). 1: as before, hers.)
 uniform vec3 cel_fill_tone = vec3(1.0);
+// (skin-light r4, 13 Nov 2026) The shade's floor: where the directional key doesn't reach, its band's dark side and its
+// cast shadow alike, the skin's shade takes at least this share of the key's luminance as fill, the rig's own fill
+// (cel_rig.y) counted and only the gap topped up, in cel_fill_tone's warmth and no sky's hue (Look.SkinLight.ShadeFloor).
+// The rig's fill alone is small at the Look and at night, so a shadow cast on her neck kept the ground's or the night
+// sky's hue (grey-green, violet-slate) beside a warm jaw and went near black at the night close-up. 0: as before.
+uniform float shade_floor : hint_range(0.0, 1.0) = 0.0;
+// (skin-light r5, 15 Nov 2026) Under a cold directional key (the moon's, a dungeon's cold light: bluer than red, eased in
+// as key_skin is, so the sun's warm key is untouched) the key's fill and the shade's floor take this share less of
+// cel_fill_tone's warmth, neutral at 1. The warm lamps nearby (her ember, a town's lanterns, a dungeon's torches) already
+// warm her shade; with the fill's warmth on top it went more orange than her moonlit side (judge 4: shade C/L .20-.24
+// against lit .09). Not the key's colour in the shade (ShadeKey, r4d: richer, not calmer). Look.SkinLight.ShadeCold.
+uniform float shade_cold : hint_range(0.0, 1.0) = 0.0;
+// (and the shade's floor under a cold key, eased in the same way; under it shade_floor. Look.SkinLight.ShadeFloorCold)
+uniform float shade_floor_cold : hint_range(0.0, 1.0) = 0.0;
+// (and the same as under a cold key wherever this says, whatever the key: the Look at night, whose key is the camp fire's
+// warm light and whose shade is the night's indigo fill (People.HerShadeNight, the Look rig's weight at night). There the
+// warm fill tone turned her neck's and cheek's shade red-brown under a pale firelit chest (judge 4: C/L .18-.23 against
+// lit .106). 0: by the key alone.)
+uniform float shade_night : hint_range(0.0, 1.0) = 0.0;
+// (skin-light r6, 15 Nov 2026) The shade's floor there (shade_night, the Look's warm camp-fire key) apart from a cold key's;
+// -1: shade_floor_cold. A cold key's higher floor (ShadeFloorCold 0.5) greyed her neck at the Look by night (C/L .116 ->
+// .087) while it calmed the moonlit shade in play (Look.SkinLight.ShadeFloorNight).
+uniform float shade_floor_night : hint_range(-1.0, 1.0) = -1.0;
+// (skin-light r4b, 14 Nov 2026) Her body's tone (body_tone, a blue fitted against the Look rig's warm key) out of her
+// neck's shade, this share: under the rig her neck keeps that tone and only the key's light is warmed back (key_tone), so
+// in shade (the sky's light, the fill, the shade's floor) her neck kept the blue: grey at the Look by day (Oklab C .005),
+// blue-violet by night (h 281), under a warm jaw. Its luminance kept; the key's light on her as before (light() divides it
+// back out). People.Skin sets Look.SkinLight.NeckShadeOut on the body's parts. 0: as before.
+uniform float neck_shade_out : hint_range(0.0, 1.0) = 0.0;
+// (skin-light r4b, 14 Nov 2026) The share of a cold directional key's hue (the moon's; a key bluer than red, eased in over
+// (b - r) / luminance 0 to 0.1, so the sun's warm key is untouched) skin gives back as its own colour, as sky_skin for the
+// sky and the fill: luminance kept, only the hue. Under the night's blue moon a package NPC's lit forehead read lilac
+// (Oklab h 335, C .028, its C/L under the grade's moon step). People.NpcSkin sets Look.SkinLight.NpcKeySkin. 0: the key's
+// hue whole, as before.
+uniform float key_skin : hint_range(0.0, 1.0) = 0.0;
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
 // 1.5 cm they read as large and even on her hands).
@@ -327,6 +362,7 @@ uniform vec3 face_world = vec3(1.0);
 // tones fitted on her neck she takes, 1 on her head and neck, 0 from her collarbones down)
 varying vec3 body_back;
 varying float neck_w;
+varying vec3 ns_f;   // (neck_shade_out's factor on her paint, 1 where none)
 // A body's own relief, baked from its sculpt (the hero's: every muscle and
 // vein his reduced mesh has only in paint), the pores laid over it.
 uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
@@ -900,6 +936,13 @@ void fragment() {
 	// sky's blue greyed her neck)
 	ALBEDO *= mix(mix(ambient_tint / body_back, vec3(1.0), pa), vec3(1.0), cel_on);
 	if (sky_amb_k() > 0.0 && cel_on > 0.0) ALBEDO *= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);   // (sky_skin, the sky's own share)
+	ns_f = vec3(1.0);
+	if (neck_shade_out > 0.0 && cel_on > 0.0 && neck_w > 0.0) {   // (her body's tone out of her neck's shade: neck_shade_out)
+		vec3 nlw = vec3(0.2126, 0.7152, 0.0722);
+		vec3 nb = pow(max(body_tone, vec3(1e-3)), vec3(-neck_w * neck_shade_out));
+		ns_f = mix(vec3(1.0), nb * dot(ALBEDO, nlw) / max(dot(ALBEDO * nb, nlw), 1e-4), cel_on);
+		ALBEDO *= ns_f;
+	}
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
@@ -984,6 +1027,10 @@ void light() {
 		lcol = mix(LIGHT_COLOR, vec3(bl), bw * (LIGHT_IS_DIRECTIONAL ? back_neutral_sky : 1.0));
 	}
 	vec3 lc = lcol;
+	if (key_skin > 0.0 && LIGHT_IS_DIRECTIONAL && cel_on > 0.0) {   // (key_skin: a cold key's hue given back as the skin's warmth)
+		float kl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		lc *= mix(vec3(1.0), skin_hue_out(lcol / kl, key_skin), cel_on * smoothstep(0.0, 0.1, (lcol.b - lcol.r) / kl));
+	}
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
 		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
@@ -1023,6 +1070,7 @@ void light() {
 	}
 	vec3 un = 1.0 / (mix(mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w), vec3(1.0), cel_on) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
 	if (sky_amb_k() > 0.0 && cel_on > 0.0) un /= mix(vec3(1.0), skin_hue_out(cel_sky, sky_amb_k()), cel_on);   // (sky_skin: the lamps as without it)
+	un /= ns_f;   // (neck_shade_out: the lamps' light on her neck as without it; the fill and the floor below keep it)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {
@@ -1069,8 +1117,22 @@ void light() {
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * cb_b * BACKLIGHT * un * mix(1.0, behind, backlight_behind);
 	// (cel: the key's fill where its light doesn't reach)
-	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * cel_fill_tone
+	// (shade_cold: under a cold key the fill and the floor without cel_fill_tone's warmth)
+	vec3 fill_tone = cel_fill_tone;
+	float sh_floor = shade_floor;
+	if (LIGHT_IS_DIRECTIONAL && (shade_cold > 0.0 || shade_floor_cold > shade_floor)) {
+		float fkl = max(dot(lcol, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		float kcold = smoothstep(0.0, 0.1, (lcol.b - lcol.r) / fkl);
+		float cold = max(kcold, shade_night);
+		fill_tone = mix(cel_fill_tone, vec3(1.0), shade_cold * cold);
+		float fl_night = shade_floor_night >= 0.0 ? shade_floor_night : shade_floor_cold;   // (shade_floor_night)
+		sh_floor = mix(shade_floor, max(shade_floor, mix(fl_night, shade_floor_cold, kcold)), cold);
+	}
+	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un * ns_f * fill_tone
 		* (sky_skin > 0.0 ? skin_hue_out(cel_fill, sky_skin) : vec3(1.0));   // (sky_skin: the fill's hue too)
+	// (the shade's floor: the gap to shade_floor of the key's light, where its fill is, warm; cast or turned away the same)
+	if (cel_on > 0.0 && LIGHT_IS_DIRECTIONAL && sh_floor > cel_rig.y)
+		DIFFUSE_LIGHT += cel_on * mouth_lit * cel_lum(lcol) * (sh_floor - cel_rig.y) * cel_gv() * (1.0 - cel_lit(cb_t) * cb_sh) / PI * un * ns_f * fill_tone;
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
