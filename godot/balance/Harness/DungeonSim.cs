@@ -38,6 +38,14 @@ public static class DungeonSim
                 sb.AppendLine($"| {g.Key} | {l.Count} | {100 * cl.Count / l.Count}% | {100 * l.Count(r => r.Closed) / l.Count}% | {F(Pct(cl.Select(r => r.Minutes), .1), "0.0")} / {F(Pct(cl.Select(r => r.Minutes), .5), "0.0")} / {F(Pct(cl.Select(r => r.Minutes), .9), "0.0")} | {F(Pct(l.Select(r => r.Minutes), .1), "0.0")} / {F(Pct(l.Select(r => r.Minutes), .5), "0.0")} / {F(Pct(l.Select(r => r.Minutes), .9), "0.0")} | {F(Pct(l.Where(r => r.BossTtk != null).Select(r => r.BossTtk!.Value), .5))} | {F(l.Sum(r => r.MarksRoom) / Math.Max(1e-6, rm), "0.0")} / {F(l.Sum(r => r.MarksBoss) / Math.Max(1e-6, bm), "0.0")} | {F(Pct(gr, .5))} / {F(Max(gr))} ; {F(Pct(gb, .5))} / {F(Max(gb))} | {F(l.Sum(r => r.HeavyRoom) / Math.Max(1e-6, rm), "0.0")} / {F(l.Sum(r => r.HeavyBoss) / Math.Max(1e-6, bm), "0.0")} | {F(Pct(l.Where(r => r.FightRoomSec > 30).Select(r => r.HeavyGapRoom), .5))} / {F(Max(l.Where(r => r.FightRoomSec > 30).Select(r => r.HeavyGapRoom)))} ; {F(Pct(l.Where(r => r.FightBossSec > 20).Select(r => r.HeavyGapBoss), .5))} / {F(Max(l.Where(r => r.FightBossSec > 20).Select(r => r.HeavyGapBoss)))} | {F(100 * l.Sum(r => r.FightSec) / Math.Max(1, l.Sum(r => r.Minutes * 60)))}% |");
             }
             sb.AppendLine();
+            sb.AppendLine("Runs with a fight stretch over 60 s with no mark on her (any / heavy), in rooms; over 60 s at the ruler:");
+            sb.AppendLine();
+            foreach (var g in dg.GroupBy(r => r.Spec.Bot).OrderBy(g => g.Key))
+            {
+                var l = g.Where(r => r.FightRoomSec > 30).ToList(); var lb = g.Where(r => r.FightBossSec > 20).ToList();
+                sb.AppendLine($"- {g.Key}: rooms {100 * l.Count(r => r.GapRoom > 60) / Math.Max(1, l.Count)}% / {100 * l.Count(r => r.HeavyGapRoom > 60) / Math.Max(1, l.Count)}% (over 45 s: {100 * l.Count(r => r.GapRoom > 45) / Math.Max(1, l.Count)}% / {100 * l.Count(r => r.HeavyGapRoom > 45) / Math.Max(1, l.Count)}%), ruler {100 * lb.Count(r => r.GapBoss > 60) / Math.Max(1, lb.Count)}%");
+            }
+            sb.AppendLine();
             sb.AppendLine("Where she falls (room role; plan; killer; ruler phase):");
             sb.AppendLine();
             foreach (var g in dg.GroupBy(r => r.Spec.Bot).OrderBy(g => g.Key))

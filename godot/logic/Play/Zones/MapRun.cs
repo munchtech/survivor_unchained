@@ -522,7 +522,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         boss = e;
         e.Boss = true;
         e.Named = new Named { Title = people.BossName };
-        double mul = BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
+        double mul = BossHealth * Content.DungeonFights.Of(Chart.Dungeon).BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
         e.MaxHp = e.Hp = e.MaxHp * mul;
         // Its blows as its people's champion's, not the night's ruler's third more: a day build carries
         // none of the ember's mending, and her bites took a level-ten warden from full in eight seconds.

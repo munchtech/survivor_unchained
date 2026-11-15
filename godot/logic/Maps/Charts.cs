@@ -61,14 +61,14 @@ public sealed class Chart
     [JsonIgnore] public IEnumerable<ChartMod> Rolled => Mods.Select(Charts.Mod);
     [JsonIgnore] public double Quantity => 1 + Rolled.Sum(m => m.Quantity) + Quality * 0.01;
     [JsonIgnore] public double RarityBonus => 1 + Rolled.Sum(m => m.Rarity);
-    [JsonIgnore] public double PackSize => 1 + Rolled.Sum(m => m.PackSize);
+    [JsonIgnore] public double PackSize => (1 + Rolled.Sum(m => m.PackSize)) * Content.DungeonFights.Of(Dungeon).PackSize;
     /// <summary>(Codex audit SU-085) The oaths it carries, as the table writes them: their pack size rides PackSize (the
     /// Swarm's half again), their champions Elites, their levels FoeLevels, all read by the map's runtime (MapRun).</summary>
     [JsonIgnore] public IEnumerable<OathDef> OathsOn => Rolled.Where(m => m.Oath != null).Select(m => MapOffers.Oath(m.Oath!));
     /// <summary>How many more of its packs a champion leads (the Oath of Champions: twice).</summary>
-    [JsonIgnore] public double Elites => OathsOn.Aggregate(1.0, (a, o) => a * o.Elites);
+    [JsonIgnore] public double Elites => OathsOn.Aggregate(Content.DungeonFights.Of(Dungeon).Elites, (a, o) => a * o.Elites);
     /// <summary>Levels its creatures stand above the chart's (the Oath of the Deep Dark: two). Drops keep the chart's ItemLevel.</summary>
-    [JsonIgnore] public int FoeLevels => OathsOn.Sum(o => o.Levels);
+    [JsonIgnore] public int FoeLevels => OathsOn.Sum(o => o.Levels) + Content.DungeonFights.Of(Dungeon).FoeUp;
     public bool Has(string mod) => Mods.Contains(mod);
 
     /// <summary>The ground: MapGen's winding way, with its oaths for the look.</summary>
