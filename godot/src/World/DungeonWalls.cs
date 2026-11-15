@@ -143,6 +143,19 @@ public static class DungeonWalls
         }
     }
 
+    static Ctx? bankCtx;
+    /// <summary>The den's bank surface height at x, z (the mesh profile's SurfY, without the face's lumps); the Ctx is built once per zone.</summary>
+    public static float BankY(ZoneData z, float x, float zz)
+    {
+        if (bankCtx == null || bankCtx.Z != z)
+        {
+            bankCtx = new Ctx { Z = z, Wf = z.WallField!, Hf = z.HoleField ?? new float[z.WallField!.Length], Ravine = z.DungeonTheme == "ravine", Half = z.Half, Step = z.Step, Res = z.Res };
+            if (z.HoleField == null) System.Array.Fill(bankCtx.Hf, 8f);
+            bankCtx.Hb = bankCtx.Ravine ? 13f : 4f;
+        }
+        return bankCtx.SurfY(x, zz);
+    }
+
     public static Node3D? Build(ZoneData z)
     {
         if (z.WallField == null) return null;
