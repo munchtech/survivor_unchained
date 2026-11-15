@@ -40,6 +40,11 @@ public sealed class ZoneData
     public readonly List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
     /// <summary>A story fight's own place (its edge is its banks: the ember's lip burns low there).</summary>
     public readonly bool Story;
+    /// <summary>A dungeon's theme ("den", "ravine") and its walls' field (MapBuild.WallField); "" and null elsewhere.</summary>
+    public readonly string DungeonTheme = "";
+    public readonly float[]? WallField;
+    /// <summary>A dungeon's holes as a field (MapBuild.HoleField); null elsewhere.</summary>
+    public readonly float[]? HoleField;
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -194,6 +199,9 @@ public sealed class ZoneData
         Vents.AddRange(m.Vents);
         Gates.AddRange(m.Gates);
         Story = m.Spec.Story != "";
+        DungeonTheme = m.DungeonTheme;
+        WallField = m.WallField;
+        HoleField = m.HoleField;
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {

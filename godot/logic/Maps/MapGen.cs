@@ -115,6 +115,15 @@ public sealed class MapBuild
     public required List<PackSpot> Packs;
     /// <summary>A dungeon's rooms, halls, caches and way out (DungeonGen); null on a map.</summary>
     public DungeonLayout? Dungeon;
+    /// <summary>A dungeon's theme ("den", "ravine"; DungeonDef.Theme), "" on a map: the view builds its walls, floor and light by it.</summary>
+    public string DungeonTheme = "";
+    /// <summary>A dungeon's walls as a field, Res by Res as the heights: metres inside the walkable edge (negative
+    /// outside, clamped to -16..8), smooth (the rooms' and halls' own distances, not the walkable cells), so the
+    /// view's wall mass follows the edge without the grid's steps. Null on a map.</summary>
+    public float[]? WallField;
+    /// <summary>A dungeon's holes as a field, as WallField: metres outside the nearest hole (negative inside it),
+    /// clamped to -8..8. The den sinks them into pits, the ravine raises them as rock. Null on a map.</summary>
+    public float[]? HoleField;
     /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point
     /// (where to walk, and how wide it is).</summary>
     public List<(double X, double Z, double Hw)[]> Ways = new();
@@ -221,6 +230,8 @@ public static class MapGen
         var walk = new bool[Res * Res];
         var inside = new double[Res * Res];         // how far in from the edge, where walkable
         var trailN = new double[Res * Res];         // distance from a way's middle, in its half-widths
+        var wallIn = new double[Res * Res];         // a dungeon's edge before its holes (the wall mesh's field)
+        var holeD = new double[Res * Res];          // a dungeon's nearest hole's distance (negative inside), 99 if none near
         System.Threading.Tasks.Parallel.For(0, Res, j =>
         {
             for (int i = 0; i < Res; i++)
@@ -255,7 +266,15 @@ public static class MapGen
                         tn = Math.Min(tn, d / hwk);
                     }
                 // A room's holes stand even where a hall runs into them.
-                if (lay != null) foreach (var r in lay.Rooms) foreach (var h in r.Holes) edge = Math.Min(edge, h.Dist(x, z));
+                double hd = 99;
+                wallIn[j * Res + i] = edge;
+                if (lay != null) foreach (var r in lay.Rooms) foreach (var h in r.Holes)
+                {
+                    double dh = h.Dist(x, z);
+                    hd = Math.Min(hd, dh);
+                    edge = Math.Min(edge, dh);
+                }
+                holeD[j * Res + i] = hd;
                 bool inBounds = Math.Abs(x) < half - 6 && Math.Abs(z) < half - 6;
                 walk[j * Res + i] = inBounds && edge > 0;
                 inside[j * Res + i] = edge;
@@ -275,8 +294,8 @@ public static class MapGen
                 double d = outside[j * Res + i];
                 // The ground climbs away from the way into banks, knolls and rock.
                 double bank = lay != null
-                    // A dungeon's walls stand steeper and higher: rock banks you fight under, the wood above them.
-                    ? MathX.Smoothstep(0.3, 7, d) * (5.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3)) + MathX.Smoothstep(6, 30, d) * 4 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3))
+                    // A dungeon's walls are meshes (DungeonWalls), not a bank: the floor stays as rolled.
+                    ? 0
                     : MathX.Smoothstep(0.5, 12, d) * (4.5 + 3 * noise.Fbm(x * 0.03, z * 0.03, 3))
                     + MathX.Smoothstep(10, 40, d) * 3 * (1 + noise.Ridged(x * 0.02 + 7, z * 0.02, 3));
                 heights[j * Res + i] = (float)(roll + bank);
@@ -294,6 +313,11 @@ public static class MapGen
                     heights[j * Res + i] = (float)MathX.Lerp(heights[j * Res + i], h0 + Math.Min(0, heights[j * Res + i] - h0) * 0.3, k * 0.85);
                 }
         }
+        // The den's holes sink into pits, a metre down at the rim and flat below (after the clearings' pull, which
+        // would shallow them).
+        if (lay != null && lay.Def.Theme == "den")
+            for (int k = 0; k < heights.Length; k++)
+                heights[k] -= (float)(2.4 * MathX.Smoothstep(0.3, -1.6, holeD[k]));
         var ground = new Heightfield(Size, Res, heights);
 
         // ---------------------------------------------------------- paint --
@@ -364,25 +388,10 @@ public static class MapGen
             {
                 double x = gx + rng.Range(0, 3.2), z = gz + rng.Range(0, 3.2);
                 double d = Sample(outside, x, z, half), inn = Sample(inside, x, z, half);
-                if (lay != null && d > 0.6 && d <= 5.5)
+                if (lay != null)
                 {
-                    // A dungeon's wall foot, as the story Hollow's folds are built (Arenas/Hollow.FoldWall): fallen trunks
-                    // laid along the edge with their roots, mossed rock and boulders heaped, stumps, bramble grown through;
-                    // the ravine's rock heavier. No crowns here: the wood stands back on the bank, off the floor.
-                    // (Not the "cliff" pieces: from the play camera their flat tops read as dark pits in the floor.)
-                    double gx2 = Sample(outside, x + 1, z, half) - Sample(outside, x - 1, z, half), gz2 = Sample(outside, x, z + 1, half) - Sample(outside, x, z - 1, half);
-                    // (a piece's +x lies along (cos rot, -sin rot), as ArenaGen.Builder.Along: here the edge's tangent)
-                    double along = Math.Atan2(-gx2, -gz2);
-                    bool ravine = lay.Def.Theme == "ravine";
-                    if (rng.Chance(0.7))
-                    {
-                        double roll = rng.Range(0, 1);
-                        if (roll < (ravine ? 0.12 : 0.35)) PutAt("scan_trunk", x, z, along + rng.Range(-0.15, 0.15), rng.Range(1.4, 1.75), 0.2);
-                        else if (roll < (ravine ? 0.55 : 0.62)) PutAt("scan_mossrock", x, z, rng.Range(0, Math.PI * 2), rng.Range(1.3, 1.9) * (ravine ? 1.2 : 1), 0.2);
-                        else if (roll < (ravine ? 0.88 : 0.8)) Put(ravine ? "scan_boulder" : "boulder", x, z, rng.Range(0.9, 1.3) * (ravine ? 1.15 : 1), 0.3);
-                        else PutAt(rng.Chance(0.5) ? "scan_stump" : "scan_root", x, z, rng.Range(0, Math.PI * 2), rng.Range(1.4, 1.8), 0.1);
-                    }
-                    if (rng.Chance(0.5)) Put(rng.Pick(new[] { "bramble", "fern", "bush", "scan_fern" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1), rng.Range(1.0, 1.3));
+                    // A dungeon's walls are meshes (DungeonWalls): only a sparse scatter of pebbles on the floor.
+                    if (inn > 1.5 && rng.Chance(0.04)) Put("pebble", x, z);
                 }
                 else if (d > 1.2)
                 {
@@ -521,6 +530,9 @@ public static class MapGen
         {
             Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props,
             Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways, Dungeon = lay,
+            DungeonTheme = lay?.Def.Theme ?? "",
+            WallField = lay == null ? null : wallIn.Select(v => (float)Math.Clamp(v, -16, 8)).ToArray(),
+            HoleField = lay == null ? null : holeD.Select(v => (float)Math.Clamp(v, -8, 8)).ToArray(),
         };
     }
 
@@ -545,25 +557,7 @@ public static class MapGen
         }
         foreach (var r in lay.Rooms)
         {
-            foreach (var h in r.Holes)
-            {
-                // A hole is a knot of mossed rock heaped on a boulder, bramble at its foot, all solid; a long one has a
-                // fallen trunk along it. (No "cliff" piece: its flat top reads as a pit from the play camera.)
-                double hx = (h.X0 + h.X1) / 2, hz = (h.Z0 + h.Z1) / 2, len = MathX.Dist(h.X0, h.Z0, h.X1, h.Z1);
-                if (len > 4) putAt("scan_trunk", hx, hz, Math.Atan2(-(h.Z1 - h.Z0), h.X1 - h.X0), Math.Min(2.2, 1.2 + len * 0.08), 0.2);
-                for (int n = (int)(len / 3); n >= 0; n--)
-                {
-                    double t = len > 0 ? n / Math.Max(1.0, (int)(len / 3)) : 0;
-                    double bx = h.X0 + (h.X1 - h.X0) * t + rng.Range(-0.6, 0.6), bz = h.Z0 + (h.Z1 - h.Z0) * t + rng.Range(-0.6, 0.6);
-                    put(lay.Def.Theme == "ravine" ? "scan_boulder" : "boulder", bx, bz, h.R * (lay.Def.Theme == "ravine" ? 0.55 : 0.5), 0.3);
-                    putAt("scan_mossrock", bx + rng.Range(-0.8, 0.8), bz + rng.Range(-0.8, 0.8), rng.Range(0, Math.PI * 2), h.R * 0.6, 0.15);
-                }
-                for (int n = 0; n < 3; n++)
-                {
-                    double a = rng.Range(0, Math.PI * 2);
-                    put(rng.Pick(new[] { "bramble", "fern", "scan_fern" }), hx + Math.Cos(a) * h.R * 0.9, hz + Math.Sin(a) * h.R * 0.9, rng.Range(0.9, 1.2), 0);
-                }
-            }
+            // (a den's holes are pits and a ravine's rock outcrops in the wall mesh: nothing heaped on them)
             string dress = r.Plan.Dress;
             if (dress == "bones")
                 for (int n = rng.Int(3, 6); n > 0; n--)

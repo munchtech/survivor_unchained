@@ -80,6 +80,7 @@ public partial class ZoneView : Node3D
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
+        if (DungeonWalls.Build(z) is Node3D walls) AddChild(walls);
         yield return "ground";
         AddChild(Water.Build(z));
         yield return "water";
