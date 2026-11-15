@@ -158,6 +158,8 @@ public static class Loadouts
         };
         // The wardrobe puts her sword and shield away (ArmsAway), the stance kept.
         if (ArmsAway) held = held with { Right = "", Left = null, Forearm = null };
+        // The shield on her forearm is the off-hand slot's: an empty slot (taken off, --unequip offhand) leaves her forearm bare, as the doll shows.
+        if (held.Forearm != null && ch.Equipment[EquipSlot.Offhand] == null) held = held with { Forearm = null };
         return new Loadout(person, held);
     }
 }
