@@ -21,10 +21,8 @@ public static partial class DungeonDress
     // (the den's rocks: our own painted plane rocks, env_rocks.py through tools/look/wild.py rocks, drawn in their kit look)
     // (lead 6 tried the CC0 scans boulder_01 / rock_07 / rock_moss_set_01 here, lifted: crusty yellow sponge, not painted
     // stone; and these plane rocks rebuilt with smooth normals: they lost their kit data and drew dark)
-    // (the den's own boulders since dungeon lead 6's round 5: tools/look/den_rocks.py, rounded, planed, painted with their ink and
-    // moss, one rock per file; the flora boulders were packed species (every variant and LOD drawn at once) and the night kit's boxes)
-    static readonly string[] DenRocks = { "res://art/world/flora/den/den_rock_a.gltf", "res://art/world/flora/den/den_rock_b.gltf",
-        "res://art/world/flora/den/den_rock_c.gltf", "res://art/world/flora/den/den_rock_d.gltf" };
+    // (the den's boulders are paintings from the play camera since 15 Nov: DungeonDress.Boulders.cs, tools/look/den_boulders.py;
+    // the 3D-painted den_rock_a-d (round 5) read as pale pillows and the flora boulders drew every LOD at once)
     static readonly string[] Logs = { "res://art/world/dead_tree_trunk.glb", "res://art/world/dead_tree_trunk_02.glb", "fallen_trunk" };
 
     sealed class Ctx
@@ -128,7 +126,7 @@ public static partial class DungeonDress
             int n = 2 + (int)(Hash(s, 1, 1) * 3);
             for (int k = 0; k < n; k++)
                 foreach (var sp in WallSpots(c, r, 0.5f + 0.7f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
-                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 1.15f + 0.45f * Hash(s, 3, k), 0.12f, "rocks");   // (the den rocks built 1.4-2.3 m: 1.6-3.7 m placed, den_room.png's ~190-410 px at 1920)
+                    PlaceBoulder(c, (int)(Hash(s * 3 + k, 9, (int)(sp.X * 10)) * 997), sp.X, sp.Z, 0.95f + 0.2f * Hash(s, 3, k));   // (painted 1.9-3.1 m across: 1.8-3.6 m placed, as the round 5 rocks)
         }
         if (r.Kind == "Clearing" || r.Kind == "Boss")
             foreach (var sp in WallSpots(c, r, 1.2f, 1, s * 7 + 5, true))
@@ -256,6 +254,17 @@ public static partial class DungeonDress
         if (!ResourceLoader.Exists(path)) return;
         var n = GD.Load<PackedScene>(path)?.Instantiate<Node3D>();
         if (n == null) return;
+        // (a kit species packs lod0, lod1, lod2 and a "shadow" node in one scene, meant one at a time: keep lod0, the shadow
+        // casting only, the far LODs dropped; every map's PlaceScene paths today are single-node scenes, so nothing else moves)
+        if (n.GetNodeOrNull<MeshInstance3D>("lod0") is MeshInstance3D lod0)
+        {
+            foreach (var nm in new[] { "lod1", "lod2" }) if (n.GetNodeOrNull(nm) is Node lod) { n.RemoveChild(lod); lod.Free(); }
+            if (n.GetNodeOrNull<MeshInstance3D>("shadow") is MeshInstance3D sh)
+            {
+                sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+                lod0.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            }
+        }
         if (path.Contains("/flora/")) Kit(n, c.Z.DungeonTheme == "den");
         else if (tag == "logs" && c.Z.DungeonTheme == "den") Lift(n, new Color(1.5f, 1.36f, 1.18f));   // (den_room.png's log: pale, weathered)
         var b = Bounds(n, Transform3D.Identity) ?? new Aabb();
