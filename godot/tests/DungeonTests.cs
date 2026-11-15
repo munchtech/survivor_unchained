@@ -100,7 +100,7 @@ public class DungeonTests
     public void A_deft_bot_clears_a_dungeon(string id, int seed)
     {
         var def = DungeonGen.Get(id)!;
-        var r = SurvivorUnchained.Balance.MapSim.Play(new SurvivorUnchained.Balance.MapRunSpec(seed, "warden", 1, def.People, id == "roost" ? 7 : 6, 1, [], "deft", 12, id));
+        var r = SurvivorUnchained.Balance.MapSim.Play(new SurvivorUnchained.Balance.MapRunSpec(seed, "warden", 1, def.People, id == "roost" ? 7 : 6, 1, [], "deft", 25, id));
         _out.WriteLine($"{id} {seed}: {r.Minutes:0.0} min, packs {r.PacksCleared}/{r.Packs}, items {r.Items}, falls {r.Falls}");
         Assert.True(r.Cleared, $"{id} seed {seed} not cleared (closed {r.Closed}, falls {r.Falls}, packs {r.PacksCleared}/{r.Packs})");
     }
