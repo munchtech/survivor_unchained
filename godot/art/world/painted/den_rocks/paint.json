@@ -1,30 +1,31 @@
 {
  "texels": 1331665,
- "ink_share": 0.0239,
- "moss_share": 0.1371,
+ "ink_share": 0.0313,
+ "moss_share": 0.0262,
  "stone_srgb": [
-  160,
-  146,
-  128
+  107,
+  100,
+  87
  ],
  "moss_srgb": [
-  111,
-  122,
-  52
+  66,
+  75,
+  35
  ],
  "look": {
-  "stone": "#b3a58f",
-  "warm": "#c9ad84",
-  "cool": "#8f8c95",
-  "umber": "#6f6052",
-  "moss": "#6f7a34",
-  "moss_dark": "#4c5524",
-  "moss_light": "#8a9142",
+  "stone": "#958877",
+  "warm": "#ab9172",
+  "cool": "#7d7570",
+  "umber": "#625244",
+  "moss": "#565f2c",
+  "moss_dark": "#424a22",
+  "moss_light": "#687034",
   "ink": "#2a1f19",
-  "ink_cm": 1.6,
+  "ink_cm": 2.4,
+  "ink_a": 0.8,
   "ink_deg": [
-   28.0,
-   48.0
+   26.0,
+   44.0
   ],
   "dab_cm": [
    9.0,
@@ -35,10 +36,31 @@
    11.0
   ],
   "moss_up": [
-   0.62,
-   0.86
+   0.75,
+   0.92
   ],
-  "moss_dabs": 0.3,
+  "big_m": 0.8,
+  "big_k": 0.34,
+  "moss_dabs": 0.25,
+  "moss_patch": [
+   0.6,
+   0.72
+  ],
+  "cool_shade": "#808478",
+  "shade_cool": 0.8,
+  "value": 0.62,
+  "side": [
+   -0.75,
+   0.5,
+   0.43
+  ],
+  "lit_k": [
+   0.75,
+   0.3
+  ],
+  "lit_pivot": 0.38,
+  "warm_lit": "#c29a6e",
+  "lit_warm": 0.45,
   "foot_m": 0.3,
   "foot_dark": 0.7
  }

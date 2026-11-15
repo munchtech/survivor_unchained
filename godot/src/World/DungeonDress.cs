@@ -128,7 +128,7 @@ public static partial class DungeonDress
             int n = 2 + (int)(Hash(s, 1, 1) * 3);
             for (int k = 0; k < n; k++)
                 foreach (var sp in WallSpots(c, r, 0.5f + 0.7f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
-                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 1.0f + 0.35f * Hash(s, 3, k), 0.12f, "rocks");   // (the den rocks built 1.4-2.3 m: 1.4-3.1 m placed)
+                    PlaceScene(c, Pick(DenRocks, s * 3 + k, sp), sp.X, sp.Z, Hash(s, 2, k) * Mathf.Tau, 1.15f + 0.45f * Hash(s, 3, k), 0.12f, "rocks");   // (the den rocks built 1.4-2.3 m: 1.6-3.7 m placed, den_room.png's ~190-410 px at 1920)
         }
         if (r.Kind == "Clearing" || r.Kind == "Boss")
             foreach (var sp in WallSpots(c, r, 1.2f, 1, s * 7 + 5, true))
@@ -267,8 +267,8 @@ public static partial class DungeonDress
     }
 
     static Shader? denInk;
-    static readonly Vector3 DenRockTint = new(1f, 1f, 1f);
-    const float DenRockShade = 0.025f;
+    static readonly Vector3 DenRockTint = new(0.94f, 0.97f, 1.03f);   // (the den light warms it: back toward den_room.png's grey-brown)
+    const float DenRockShade = 0.12f;
 
     // A flora piece's materials through the kit look (KitLook.For: our own rocks' painted OWN_ROCK); raw they draw black.
     static void Kit(Node n, bool den)
@@ -291,6 +291,8 @@ public static partial class DungeonDress
                         denInk ??= GD.Load<Shader>("res://shaders/den_rock_ink.gdshader");
                         var ink = new ShaderMaterial { Shader = denInk };
                         ink.SetShaderParameter("center", m.GetAabb().GetCenter());
+                        ink.SetShaderParameter("box_min", m.GetAabb().Position);
+                        ink.SetShaderParameter("box_max", m.GetAabb().End);
                         if (dm.NextPass is ShaderMaterial rim) { rim = (ShaderMaterial)rim.Duplicate(); rim.NextPass = ink; dm.NextPass = rim; }
                         else dm.NextPass = ink;
                         k = dm;

@@ -30,18 +30,23 @@ A = 2048
 
 # ---- the look (sRGB albedo; the den's key and fill turn these into den_room.png's lit ~(150,140,120), shade ~(70,62,55))
 LOOK = dict(
-    stone="#b3a58f",          # the warm grey-brown stone's middle
-    warm="#c9ad84",           # the ochre dabs (the lit side's)
-    cool="#8f8c95",           # the cool grey dabs
-    umber="#6f6052",          # the dark dabs
-    moss="#6f7a34", moss_dark="#4c5524", moss_light="#8a9142",
+    stone="#958877",          # the warm grey-brown stone's middle
+    warm="#ab9172",           # the ochre dabs (the lit side's)
+    cool="#7d7570",           # the cool grey dabs
+    umber="#625244",          # the dark dabs
+    moss="#565f2c", moss_dark="#424a22", moss_light="#687034",
     ink="#2a1f19",            # the crease line, dark warm brown
-    ink_cm=1.6,               # its half width (cm) at a full break
-    ink_deg=(28.0, 48.0),     # the angle between two planes' normals from which a break is inked (none under, whole over)
+    ink_cm=2.4,               # its half width (cm) at a full break
+    ink_a=0.8,                # its opacity (a painted dark stroke over the break, not a pen line)
+    ink_deg=(26.0, 44.0),     # the angle between two planes' normals from which a break is inked (none under, whole over)
     dab_cm=(9.0, 26.0),       # a dab's short and long side (cm)
     fine_cm=(4.5, 11.0),
-    moss_up=(0.62, 0.86),     # the normal's up share where the cap begins and is whole
-    moss_dabs=0.3,            # the share of its dabs that are moss at the cap's edge (more toward the crown)
+    moss_up=(0.75, 0.92),     # the normal's up share where the cap begins and is whole
+    big_m=0.8, big_k=0.34,   # the broad value patches: a plane lit unevenly, as a broad brush leaves it (den_room.png: a lit band)
+    moss_dabs=0.25,
+    moss_patch=(0.6, 0.72),   # the low-frequency gate: the cap is mossed only in a patch or two (den_room.png's are sparse)
+    cool_shade="#808478", shade_cool=0.8, value=0.62,
+    side=(-0.75, 0.5, 0.43), lit_k=(0.75, 0.3), lit_pivot=0.38, warm_lit="#c29a6e", lit_warm=0.45,   # the painted side light (den_room.png's median ~69 of 255, its lit band ~120): up, down   # (value: the whole stone, before the moss)   # the planes turned from the key pulled this far toward a cool grey            # the share of its dabs that are moss at the cap's edge (more toward the crown)
     foot_m=0.3, foot_dark=0.7,
 )
 
@@ -197,7 +202,7 @@ def paint(M, names):
         strength *= smoothstep(0.0, 0.15, p[k][:, 2])
         hw = L["ink_cm"] / 100.0 * (0.55 + 0.45 * strength) * (0.7 + 0.6 * vnoise(p[k], 0.35, 11 + vi))
         brk = smoothstep(0.32, 0.45, vnoise(p[k], 0.22, 23 + vi))       # (broken: a gap here and there along it)
-        ink[k] = strength * brk * (1 - smoothstep(0.6 * hw, hw, dist))
+        ink[k] = strength * brk * (1 - smoothstep(0.25 * hw, hw, dist))
         gap[k] = dist
         plane[k] = i1
         z = p[k][:, 2]
@@ -215,7 +220,7 @@ def paint(M, names):
         fn[k] = np.where((i1 > 0)[:, None], Nall[r, i1], np.array([0.0, 0.0, 1.0]))
     ax = frames(fn, along)
     # the stone: a broad value patch, then dabs, then fine dabs, each dab its value and a pull toward warm or cool
-    big = vnoise(p * [1, 1, 1] + 7.0 * v[:, None], 0.55, 3) - 0.5
+    big = vnoise(p * [1, 1, 1] + 7.0 * v[:, None], L["big_m"], 3) - 0.5
     v1, v2, e1 = dabs(p + 13.0 * v[:, None] + 0.37 * plane[:, None], ax, L["dab_cm"][0] / 100, L["dab_cm"][1] / 100, 5)
     f1, f2, _ = dabs(p + 17.0 * v[:, None] + 0.51 * plane[:, None], ax, L["fine_cm"][0] / 100, L["fine_cm"][1] / 100, 9)
     stone, warm, cool, umber = (hexc(L[q]) for q in ("stone", "warm", "cool", "umber"))
@@ -223,14 +228,25 @@ def paint(M, names):
     # dab colour: by its hue number a warm, cool or umber pull, by its value number how far (quantised: flat dabs)
     q = np.floor(v1 * 4) / 3.0
     tw = np.where(v2 < 0.45, 1.0, 0.0); tc = np.where((v2 >= 0.45) & (v2 < 0.75), 1.0, 0.0); tu = np.where(v2 >= 0.75, 1.0, 0.0)
-    pull = 0.25 + 0.55 * q
+    pull = 0.15 + 0.35 * q
     col = col + (pull * tw)[:, None] * (warm - stone) + (pull * tc)[:, None] * (cool - stone) + (pull * tu)[:, None] * (umber - stone)
-    col *= (1.0 + 0.28 * big)[:, None]
+    col *= (1.0 + L["big_k"] * big)[:, None]
     col *= (1.0 + 0.12 * (np.floor(f1 * 3) / 2.0 - 0.5))[:, None]
     # the painted light: up and toward the key's side lighter, under darker (a broad hand's gradient, under the game's own bands)
+    # (side-lit, den_room.png's: a plane turned toward the key bright, a level top mid, so the top-down view still splits)
     key = np.array([-0.45, 0.35, 0.82]); key /= np.linalg.norm(key)
-    lit = 0.6 * n[:, 2] + 0.4 * (n @ key)
-    col *= (1.0 + 0.16 * np.clip(lit, -1, 1))[:, None]
+    side = np.array(L["side"]); side /= np.linalg.norm(side)
+    # (split about a pivot, so the top's few planes part: the ones turned to the key lit and ochre, the rest a step down)
+    t = n @ side
+    up = np.clip((t - L["lit_pivot"]) / 0.3, 0, 1); dn = np.clip((L["lit_pivot"] - t) / 0.5, 0, 1)
+    col = col * (1 - L["lit_warm"] * up[:, None]) + hexc(L["warm_lit"]) * L["lit_warm"] * up[:, None]
+    col *= (1.0 + L["lit_k"][0] * up - L["lit_k"][1] * dn)[:, None]
+    lit = t
+    # (den_room.png's planes: warm where the key falls, a neutral cool grey turned from it (its shade (41,36,34), the
+    # front (73,64,55)), so the turned planes are pulled toward the cool grey, lifted a little, not only darkened)
+    away = smoothstep(0.1, -0.45, n @ key)
+    col = col * (1 - (L["shade_cool"] * away)[:, None]) + (hexc(L["cool_shade"]) * L["shade_cool"] * away[:, None])
+    col *= L["value"]
     # the bake: cavity and broad occlusion darker, the worn rims a touch lighter
     col *= ((1 - 0.25 * b[:, 1]) * (1 - 0.3 * b[:, 2]) * (1 + 0.12 * b[:, 0]))[:, None]
     # the foot: grimed up to foot_m, its line broken by the dabs
@@ -240,13 +256,13 @@ def paint(M, names):
     mz = smoothstep(L["moss_up"][0], L["moss_up"][1], n[:, 2] + 0.22 * (v1 - 0.5) + 0.12 * (vnoise(p, 0.3, 31) - 0.5) + 0.08 * h01)
     mz *= smoothstep(0.35, 0.5, h01)
     # (den_room.png's moss is olive dabs over the top, the stone between: a dab is moss by its hue number, more toward the crown)
-    mz *= np.where(v2 < L["moss_dabs"] + 0.35 * mz, 1.0, 0.0) * smoothstep(0.25, 0.6, vnoise(p, 0.45, 37) + 0.3 * mz)
+    mz *= np.where(f2 < L["moss_dabs"] + 0.3 * mz, 1.0, 0.0) * smoothstep(*L["moss_patch"], vnoise(p, 0.6, 37) + 0.15 * mz)
     moss = hexc(L["moss"]) + (np.floor(f2 * 3) / 2.0 - 0.5)[:, None] * (hexc(L["moss_light"]) - hexc(L["moss_dark"]))
     moss *= (1.0 + 0.2 * big)[:, None]
     col = col * (1 - mz[:, None]) + moss * mz[:, None]
     # the ink last, over moss and stone
     inkc = hexc(L["ink"])
-    col = col * (1 - ink[:, None]) + inkc * ink[:, None]
+    col = col * (1 - L["ink_a"] * ink[:, None]) + inkc * L["ink_a"] * ink[:, None]
     img = np.zeros((A, A, 3)); img[mask] = col
     img = dilate(img, mask)
     srgb = lin_to_srgb(img)
