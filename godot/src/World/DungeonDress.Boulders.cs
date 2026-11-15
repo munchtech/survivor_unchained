@@ -106,7 +106,7 @@ public static partial class DungeonDress
             Gradient = new Gradient { Offsets = new[] { 0f, 0.55f, 1f }, Colors = new[] { new Color(0, 0, 0, 1), new Color(0, 0, 0, 0.7f), new Color(0, 0, 0, 0) } },
         };
         float fw = b.Foot.Y - b.Foot.X, fd = b.Foot.W - b.Foot.Z;
-        n.AddChild(new Decal
+        n.AddChild(new Godot.Decal
         {
             Name = "Contact", TextureAlbedo = blob, Modulate = new Color(1, 1, 1, 0.6f), AlbedoMix = 1f,
             Size = new Vector3(fw * 1.25f, 1.2f, fd * 1.25f),
