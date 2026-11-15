@@ -15,11 +15,13 @@ uniform float ravine = 0.0;
 uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray den_arh : filter_linear_mipmap_anisotropic, repeat_enable;
 const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
-uniform vec3 den_tint = vec3(0.95, 0.88, 0.94);   // (lead 6: 1.3 read as bright sand, frame median 68-80 against the targets' 40-57)
+uniform vec3 den_tint = vec3(0.92, 0.92, 1.04);   // (round 8: cooler, less orange: the shade floor measured (58,35,27) against den_boss.png's (52,47,43))
+// (before round 8: (0.95, 0.88, 0.94))   // (lead 6: 1.3 read as bright sand, frame median 68-80 against the targets' 40-57)
 uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (--env-off rim, the den pit halo diagnosis, 15 Nov)
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
 uniform vec3 boss_c = vec3(0.0);   // the den's boss lair: centre x, z and radius (0: none)
-uniform float open_lift = 1.08;   // the rooms' open middles, lifted (round 7: <= 10 %)
+uniform float open_lift = 1.08;
+uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 
@@ -163,7 +165,7 @@ void fragment() {
 		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
 		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
-		col = mix(col, vec3(0.095, 0.105, 0.045) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * 0.8);
+		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k);
 		float leaf = smoothstep(0.58, 0.7, m3) * (1.0 - damp);
 		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
 		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)

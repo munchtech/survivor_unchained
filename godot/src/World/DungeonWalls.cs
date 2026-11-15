@@ -131,10 +131,18 @@ public static class DungeonWalls
             float t = N2(x * 0.05f + 3.3f, z * 0.05f + 9.1f);
             return Mathf.Lerp(Mathf.Lerp(1.6f, 2.8f, t), Mathf.Lerp(0.9f, 1.5f, t), Near(x, z));
         }
+        // (round 8, 15 Nov) The back (far) banks no longer fall away past their crest: they climb on as the cave's wall face,
+        // BackRise metres more over BackRun, so the top of the play frame reads as a wall (den_room.png's top row) and never
+        // as void; the near and side banks still fall to floor - 3 (the camera sees their top).
+        public static readonly float BackRise = Args.Num("den-back-rise", 4.5f), BackRun = Args.Num("den-back-run", 4f);
+        public float Back(float x, float z) => Mathf.Clamp(1f - 1.6f * Near(x, z), 0f, 1f);
+        public float BankTop(float x, float z) => BankSc(x, z) + BackRun * Back(x, z);
         public float BankY(float x, float z, float s, bool lumps = true)
         {
-            float sc = BankSc(x, z), hc = BankHc(x, z), fl = Floor(x, z);
-            float y = fl - 0.1f + hc * Sm(-0.3f, sc, s) - (hc + 2.9f) * Sm(sc, sc + 2.5f, s);
+            float sc = BankSc(x, z), hc = BankHc(x, z), fl = Floor(x, z), bk = Back(x, z);
+            float fall = fl - 0.1f + hc * Sm(-0.3f, sc, s) - (hc + 2.9f) * Sm(sc, sc + 2.5f, s);
+            float climb = fl - 0.1f + hc * Sm(-0.3f, sc, s) + BackRise * Sm(sc - 0.5f, sc + BackRun, s);
+            float y = Mathf.Lerp(fall, climb, bk);
             if (lumps) y += 0.25f * (2 * N3(x * 1.0f + 5.7f, 0.3f, z * 1.0f - 1.9f) - 1) * Mathf.Sin(Mathf.Pi * Mathf.Clamp(s / sc, 0f, 1f));
             return y;
         }
@@ -169,7 +177,7 @@ public static class DungeonWalls
         float size = z.Size;
         int n = (int)(size / Cell) + 1;
 
-        float hi = c.Ravine ? Hi : 6.5f;   // the den's bank band runs to its fall-off (sc + 3 at most 6)
+        float hi = c.Ravine ? Hi : 6.5f + Ctx.BackRun;   // the den's bank band runs to its fall-off (sc + 3 at most 6), and on up the back banks' climb (round 8)
         // s at every grid vertex; the band and its dilation get positions.
         var s = new float[n * n];
         var pos = new Vector3[n * n];
@@ -196,7 +204,7 @@ public static class DungeonWalls
             var nrm = (P(i, j + 1) - P(i, j - 1)).Cross(P(i + 1, j) - P(i - 1, j));
             nrm = nrm.LengthSquared() < 1e-10f ? Vector3.Up : nrm.Normalized();
             float bt = 0f;
-            if (!c.Ravine) { float sx = c.BankSc(pos[k].X, pos[k].Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
+            if (!c.Ravine) { float sx = c.BankTop(pos[k].X, pos[k].Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
             return map[k] = wall.Add(pos[k], nrm, 0f, fly[k], s[k], bt);
         }
         bool In(int i, int j) { float v = s[j * n + i]; return v >= Lo && v <= hi; }
@@ -222,12 +230,12 @@ public static class DungeonWalls
             int k = j * nc + i;
             if (cmap[k] >= 0) return cmap[k];
             float x = -c.Half + i * CapCell, zz = -c.Half + j * CapCell, fl = c.Floor(x, zz);
-            return cmap[k] = wall.Add(new Vector3(x, c.Ravine ? fl + 0.97f * c.HLoc(x, zz) - 0.04f : fl - 3.01f, zz), Vector3.Up, 0.5f, fl, sc[k], c.Ravine ? 0f : 1f);
+            return cmap[k] = wall.Add(new Vector3(x, c.Ravine ? fl + 0.97f * c.HLoc(x, zz) - 0.04f : c.BankY(x, zz, sc[k], false) - 0.06f, zz), Vector3.Up, 0.5f, fl, sc[k], c.Ravine ? 0f : 1f);
         }
         for (int j = 0; j < nc - 1; j++)
             for (int i = 0; i < nc - 1; i++)
             {
-                float capS = c.Ravine ? 3.5f : 5f;
+                float capS = c.Ravine ? 3.5f : hi - 0.6f;
                 if (sc[j * nc + i] < capS || sc[j * nc + i + 1] < capS || sc[(j + 1) * nc + i] < capS || sc[(j + 1) * nc + i + 1] < capS) continue;
                 int a = CVtx(i, j), b = CVtx(i + 1, j), cc = CVtx(i, j + 1), d = CVtx(i + 1, j + 1);
                 wall.Tri(a, b, cc); wall.Tri(b, d, cc);
@@ -663,6 +671,9 @@ public static class DungeonWalls
             mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
             mat.SetShaderParameter("bank_alb", GD.Load<TextureLayered>("res://art/dungeon/den/bank_albedo.png"));
             mat.SetShaderParameter("bank_nrm", GD.Load<TextureLayered>("res://art/dungeon/den/bank_normal.png"));
+            mat.SetShaderParameter("beyond_k", Args.Num("den-beyond", 0.45f));
+            mat.SetShaderParameter("bank_gain", Args.Num("den-bank-gain", 1.6f));
+            mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", 0.1f));
         }
         return mat;
     }

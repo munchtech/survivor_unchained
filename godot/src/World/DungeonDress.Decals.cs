@@ -40,10 +40,11 @@ public static partial class DungeonDress
     }
 
     // Kind weights by where a decal lies: in a pile (a kill's leavings), a wall's foot, the open between, the lair's floor.
-    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 2.4f, ["ribcage"] = 0.6f, ["fur"] = 1.1f, ["wolf_skull"] = 0.2f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
-    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 2.4f, ["ribcage"] = 0.9f, ["fur"] = 1.1f, ["hide"] = 0.35f, ["wolf_skull"] = 0.25f, ["deer_skull"] = 0.12f, ["leaves"] = 0.4f };
+    // (round 8) bones a third of a pile, not two thirds: a kill reads by its rib cage, skull and fur, the long bones were white noise
+    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 1.2f, ["wolf_skull"] = 0.35f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
+    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 1.2f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 0.4f };
     static readonly Dictionary<string, float> AtFoot = new() { ["root"] = 2.0f, ["twigs"] = 1.2f, ["pebbles"] = 1.0f, ["leaves"] = 1.0f, ["fur"] = 0.4f, ["moss"] = 0.5f };
-    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.0f, ["pebbles"] = 0.6f, ["twigs"] = 0.5f, ["fur"] = 0.4f, ["bone"] = 0.3f, ["blood"] = 0.2f };
+    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.0f, ["pebbles"] = 0.6f, ["twigs"] = 0.5f, ["fur"] = 0.3f, ["blood"] = 0.35f };
     static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.6f };
 
     static Decal PickDecal(Dictionary<string, float> by, float u)
@@ -158,7 +159,7 @@ public static partial class DungeonDress
                     if (p.DistanceTo(new Vector2(r.X, r.Z)) > r.R * 0.95f || !Ok(p.X, p.Y, 1.0f, 1.2f)) continue;
                     bool near = false;
                     foreach (var s in seeds) if (s.p.DistanceSquaredTo(p) < 6.25f) { near = true; break; }
-                    if (!near && Hash(i, j, 939) < 0.8f) seeds.Add((p, 1.15f, true));
+                    if (!near && Hash(i, j, 939) < 0.4f) seeds.Add((p, 1.15f, true));   // (round 8: 0.8 laid a pile every 4.5 m, an even sprinkle)
                 }
         }
 
@@ -167,9 +168,9 @@ public static partial class DungeonDress
         foreach (var (sp, size, inBoss) in seeds)
         {
             si++;
-            if (Hash(si, 0, 941) < (inBoss ? 0.75f : 0.5f))
+            if (Hash(si, 0, 941) < (inBoss ? 0.9f : 0.8f))
                 AddDecal(c, b, PickDecal(Under, Hash(si, 0, 942)), sp.X + (Hash(si, 0, 943) - 0.5f), sp.Y + (Hash(si, 0, 944) - 0.5f), Hash(si, 0, 945) * Mathf.Tau, 0.9f + 0.3f * Hash(si, 0, 946));
-            int n = 4 + (int)(6f * size * Hash(si, 0, 947));
+            int n = 3 + (int)(4f * size * Hash(si, 0, 947));
             float sig = 0.45f + 0.35f * size;
             for (int k = 1; k <= n; k++)
             {
@@ -192,7 +193,7 @@ public static partial class DungeonDress
                 float w = Wall(c, x, zz), h = Hole(c, x, zz);
                 if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
                 bool foot = w < 1.8f;
-                float keep = foot ? 0.4f : w > 5f ? 0.08f : 0.13f;
+                float keep = foot ? 0.3f : w > 5f ? 0.03f : 0.05f;   // (round 8: the open scatter cut by more than half)
                 if (u2 > keep) continue;
                 var d = PickDecal(foot ? AtFoot : InOpen, u3);
                 if (d.Metres.X * 0.5f > w + 0.4f && d.Kind != "root") continue;
@@ -216,7 +217,7 @@ public static partial class DungeonDress
             foreach (var (sp, size, inBoss) in seeds)
             {
                 k++;
-                if (!inBoss || nd >= 5 || Hash(k, 5, 953) < 0.45f) continue;
+                if (nd >= 14 || Hash(k, 5, 953) < (inBoss ? 0.45f : 0.65f)) continue;   // (round 8: kills dragged in every room, not the lair only)
                 var dir = (ctr - sp).LengthSquared() > 1f ? (ctr - sp).Normalized() : Vector2.Right;
                 dir = dir.Rotated((Hash(k, 5, 954) - 0.5f) * 1.4f);
                 var mid = sp + dir * 1.6f;
@@ -252,6 +253,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("half_size", z.Half);
         mat.SetShaderParameter("step", z.Step);
         mat.SetShaderParameter("res", (float)z.Res);
+        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
     }

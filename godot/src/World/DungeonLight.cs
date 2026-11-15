@@ -13,7 +13,7 @@ public static class DungeonLight
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
     static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
-    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f);
+    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 16f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 1.6f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
 
     public static Node3D? Build(ZoneData z)
     {
@@ -38,9 +38,24 @@ public static class DungeonLight
                     if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
                 }
                 float w = 1.1f + 1.0f * Hash(i, k, 3);
-                AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? 1f : PoolWide);
+                AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? BossPool : PoolWide);
             }
         }
+        // (round 8, 15 Nov) The pack reads in the den's light: the wolves' dark fur under a dim key read as black
+        // silhouettes (round 7's "black fragments" by the big pit were the resting pack). A fill from the camera's side,
+        // high, that reaches the crowd's own layer only (PlayerView.CrowdLayer): the floor, the banks and HER take none of
+        // it (her merged skin light is untouched). --den-pack-fill sets its energy (0 off).
+        if (PackFill > 0f)
+            root.AddChild(new DirectionalLight3D
+            {
+                Name = "pack_fill",
+                Transform = new Transform3D(Basis.LookingAt(new Vector3(0.25f, -0.75f, -0.6f).Normalized(), Vector3.Up), Vector3.Zero),
+                LightColor = new Color("e8d8c8"),
+                LightEnergy = PackFill,
+                LightCullMask = PlayerView.CrowdLayer,
+                ShadowEnabled = false,
+                LightSpecular = 0.3f,
+            });
         GD.Print($"DungeonLight {z.DungeonTheme}: {root.GetChildCount() / 2} shafts over {z.Rooms.Count} rooms");
         return root;
     }
@@ -60,8 +75,8 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color("ffe2b8"),
-            LightEnergy = 9f,   // (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
+            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? "ffd2a0"),   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
+            LightEnergy = PoolEnergy,   // (round 8: --den-pool-energy) (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
             SpotAngleAttenuation = pool > 1f ? PoolSoft : 1.2f,   // (round 7: the rooms' pools 1.5x wider and softer-edged, the room's centre warm mid-brown; the lair keeps its own)

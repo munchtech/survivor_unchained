@@ -119,6 +119,7 @@ public static partial class DungeonDress
         }
     }
 
+    static readonly float HeroScale = SurvivorUnchained.Args.Num("den-hero", 1.3f);
     static void Den(Ctx c, (float X, float Z, float R, string Kind) r, int s)
     {
         if (r.Kind != "Bend")
@@ -129,7 +130,8 @@ public static partial class DungeonDress
             for (int k = 0; k < groups; k++)
                 foreach (var sp in WallSpots(c, r, 0.35f + 0.3f * Hash(s, 1, 10 + k), 1, s * 7 + 10 + k, k == 0))
                 {
-                    float half = PlaceBoulder(c, (int)(Hash(s * 3 + k, 9, (int)(sp.X * 10)) * 997), sp.X, sp.Z, 1.0f + 0.15f * Hash(s, 3, k), true);
+                    // (round 8) the room's first group is its hero stone, 3.3-4 m across (den_room.png's two big stones dwarf her)
+                    float half = PlaceBoulder(c, (int)(Hash(s * 3 + k, 9, (int)(sp.X * 10)) * 997), sp.X, sp.Z, (k == 0 ? HeroScale : 1.0f) + 0.15f * Hash(s, 3, k), true);
                     var tan = new Vector2(-sp.Dz, sp.Dx);
                     var inw = new Vector2(-sp.Dx, sp.Dz * -1f);
                     int m = 1 + (Hash(s, 4, k) < 0.55f ? 1 : 0);

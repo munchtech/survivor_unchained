@@ -21,6 +21,13 @@ uniform vec3 root_lit = vec3(0.13, 0.07, 0.05);     // a root's albedo, a muted 
 uniform vec3 root_under = vec3(0.4, 0.32, 0.5);    // its under side's purple
 uniform vec3 face_col = vec3(0.03, 0.024, 0.028);    // the root mass behind the roots
 uniform float wall_h = 4.0;
+// (round 8, 15 Nov) The den's dark beyond the banks is no longer void black (value 0 read as a hole in the frame): a
+// dark painted cave mass, the bank set itself at this share of its value, cooled, mottled by slow noise (den_room.png:
+// the earth and root mass behind the roots sits at about 8-22 of 255). --den-beyond sets it.
+uniform float beyond_k = 0.3;
+uniform vec3 beyond_tint = vec3(0.8, 0.86, 1.0);
+uniform float bank_gain = 1.0;     // (round 8) the bank set's value (--den-bank-gain)
+uniform float hollow_min = 0.0;    // (round 8) the floor under the bank set's black hollows between roots (--den-hollow): earth, never void
 uniform float tile = 5.0;
 
 varying vec3 wpos;
@@ -114,6 +121,12 @@ vec3 rock(vec3 p, vec3 n, out vec3 rock_tilt) {
 	base *= 1.0 - 0.18 * band * steep;
 	return base;
 }
+vec3 beyond_col() {
+	vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
+	vec3 t = mix(texture(bank_alb, vec3(uv * 0.8 + vec2(0.21, 0.13), 1.0)).rgb, texture(bank_alb, vec3(uv * 0.8 + vec2(0.57, 0.71), 0.0)).rgb, smoothstep(0.4, 0.6, vnoise(wpos.xz * 0.06 + 3.0)));
+	t = max(t, vec3(hollow_min) * vec3(1.0, 0.74, 0.58) * (0.7 + 0.6 * vnoise(wpos.xz * 0.7)));
+	return t * beyond_k * beyond_tint * (0.65 + 0.7 * vnoise(wpos.xz * 0.11 + 9.0));
+}
 void fragment() {
 	// The cutaway: what stands nearer the camera than her, over her chest on screen, is cut away (dithered at its
 	// edge), keeping a 0.9 m footing so the wall still stands round her feet.
@@ -162,7 +175,7 @@ void fragment() {
 		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
 		if (kind > 0.25 && depth < 0.5) col *= 0.55;
 	} else if (kind > 0.25) {
-		col = void_col;
+		col = beyond_col();
 	} else {
 		// The den's bank (15 Nov): the painted bank set projected along the play camera's view so it is never stretched on
 		// the slope; slice 1 main, slice 0 blended in by slow noise; past the crest (COLOR.b) it fades to black.
@@ -170,13 +183,14 @@ void fragment() {
 		float vw = smoothstep(0.62 - 0.05, 0.62 + 0.05, vnoise(wpos.xz * 0.08));
 		vec2 uv0 = uv + vec2(0.37, 0.61);
 		col = mix(texture(bank_alb, vec3(uv, 1.0)).rgb, texture(bank_alb, vec3(uv0, 0.0)).rgb, vw);
+		col = max(col * bank_gain, vec3(hollow_min) * vec3(1.0, 0.74, 0.58) * (0.7 + 0.6 * vnoise(wpos.xz * 0.7 + wpos.y)));
 		vec3 n = mix(texture(bank_nrm, vec3(uv, 1.0)).xyz, texture(bank_nrm, vec3(uv0, 0.0)).xyz, vw) * 2.0 - 1.0;
 		vec3 wn = normalize(wnrm + bank_nk * (n.x * vec3(1.0, 0.0, 0.0) - n.y * vec3(0.0, 0.469, -0.883)));
 		NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
-		col = mix(col, void_col, smoothstep(0.0, 1.0, round_s));
 		// down a pit the face goes to black within a couple of metres
-		col *= mix(1.0, 0.06, smoothstep(0.15, 1.8, depth));
+		col *= mix(1.0, 0.06, smoothstep(0.15, 1.8, depth) * (1.0 - round_s));
 		col *= 1.0 - 0.25 * (1.0 - smoothstep(0.0, 0.5, h));
+		col = mix(col, beyond_col(), smoothstep(0.0, 1.0, round_s));
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;

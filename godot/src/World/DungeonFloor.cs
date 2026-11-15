@@ -48,6 +48,10 @@ public static class DungeonFloor
                 if (r.Kind == "Boss") mat.SetShaderParameter("boss_c", new Vector3(r.X, r.Z, r.R));
             mat.SetShaderParameter("open_lift", Args.Num("den-open-lift", 1.08f));
             mat.SetShaderParameter("boss_dim", Args.Num("den-boss-dim", 0.95f));
+            // (round 8) the earth's tint and the moss tongues' share, for steering the value bands against the targets
+            if (Args.Get("den-tint") is string dt && dt.Split(',') is { Length: 3 } tp)
+                mat.SetShaderParameter("den_tint", new Vector3(float.Parse(tp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[2], System.Globalization.CultureInfo.InvariantCulture)));
+            mat.SetShaderParameter("moss_k", Args.Num("den-moss", 0.35f));
         }
         return mat;
     }
