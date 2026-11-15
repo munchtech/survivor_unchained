@@ -59,6 +59,16 @@ public static class DungeonSim
                 sb.AppendLine($"- {g.Key}: {string.Join(", ", d.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0}"))}; bladestorm of all non-Flare damage {F(100 * d.GetValueOrDefault("bladestorm") / Math.Max(1e-6, noFlare))}%; ruler's life lost by: {string.Join(", ", bs.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0}"))}");
             }
             sb.AppendLine();
+            sb.AppendLine("Damage taken per run (max lives) by source, and kit marks landed per run (caught = stood in it, missed = left it):");
+            sb.AppendLine();
+            foreach (var g in dg.GroupBy(r => r.Spec.Bot).OrderBy(g => g.Key))
+            {
+                var l = g.ToList(); double n = l.Count;
+                var tk = l.SelectMany(r => r.Measures.Taken).GroupBy(kv => kv.Key).ToDictionary(x => x.Key, x => x.Sum(kv => kv.Value) / n);
+                string Top(Func<string, bool> f, int k) => string.Join(", ", tk.Where(kv => f(kv.Key)).OrderByDescending(kv => kv.Value).Take(k).Select(kv => $"{kv.Key.TrimStart('#')} {kv.Value:0.00}"));
+                sb.AppendLine($"- {g.Key}: by foe {Top(k => k[0] is not ('#' or '+' or '['), 6)}; by marked blow {Top(k => k[0] == '[', 6)}; kit marks {Top(k => k[0] == '#', 8)}; lowest life median {F(Pct(l.Select(r => r.LowHp), .5), "0.00")}, p10 {F(Pct(l.Select(r => r.LowHp), .1), "0.00")}");
+            }
+            sb.AppendLine();
             sb.AppendLine("XP, levels, drops per run (cleared runs; gear picked up by rarity 0..5, mean):");
             sb.AppendLine();
             foreach (var g in dg.GroupBy(r => r.Spec.Bot).OrderBy(g => g.Key))
