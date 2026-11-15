@@ -1,0 +1,308 @@
+{
+ "by": "tools/look/den_roots.py build pits (painted from nothing; no outside source)",
+ "version": 1,
+ "size": [
+  4096,
+  4096
+ ],
+ "px_per_m": 128,
+ "light": [
+  -0.507,
+  -0.8619
+ ],
+ "light_note": "painted from the rect's upper left (toward the light, image x right / y down); laid flat on the floor, image up = north (the play camera looks north, 62 degrees down); never turned",
+ "alpha": "straight; the lip, the mouth and the roots (a hollow: its whole dish and rim) >= 0.6 (alpha scissor 0.6; the mouth and the dish are 1), the soft contact shadow 0.2-0.55 (rgb = palette shadow), 0 at the rect's edge",
+ "kinds": {
+  "bigpit": "a big pit at its own size (the game's holes, mean r 5.2-5.8 m): anchor = the mouth's centre (the rect's centre); the mouth r(theta) = mouth_r * (1 + sum a sin(k theta + p)) over mouth_harm [k, a, p] (theta = atan2(y, x), image x right / y down, metres from the centre), alpha 1 over all of it; the lip band up to lip_m outside the mouth, the contact shadow 0.9 m past that; the far wall in slate risers and shelves, black only past about 9 m down (the near part of the mouth)",
+  "hollow": "a shallow walkable hollow, no hole: the same mouth fields for the dish's edge; the dish and its raised rim opaque out to lip_m past the edge, the contact shadow 0.6 m past that; nothing black (darkest inside the dish about Y 30)"
+ },
+ "anchor": "[fx, fy] in the rect (0..1, x right, y down)",
+ "decals": [
+  {
+   "kind": "bigpit",
+   "variant": 0,
+   "rect": [
+    10,
+    10,
+    1920,
+    1920
+   ],
+   "metres": [
+    15.0,
+    15.0
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 5.5,
+   "mouth_harm": [
+    [
+     2,
+     0.0389,
+     6.2809
+    ],
+    [
+     3,
+     0.0228,
+     3.5611
+    ],
+    [
+     5,
+     0.0125,
+     2.7414
+    ],
+    [
+     9,
+     0.0048,
+     2.8724
+    ],
+    [
+     14,
+     0.0024,
+     4.478
+    ]
+   ],
+   "mouth_r_range": [
+    5.206,
+    5.837
+   ],
+   "lip_m": 0.763
+  },
+  {
+   "kind": "bigpit",
+   "variant": 1,
+   "rect": [
+    1940,
+    10,
+    1920,
+    1920
+   ],
+   "metres": [
+    15.0,
+    15.0
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 5.5,
+   "mouth_harm": [
+    [
+     2,
+     0.0349,
+     1.4029
+    ],
+    [
+     3,
+     0.0232,
+     5.1099
+    ],
+    [
+     5,
+     0.0095,
+     0.0741
+    ],
+    [
+     9,
+     0.0044,
+     4.1047
+    ],
+    [
+     14,
+     0.0023,
+     2.6807
+    ]
+   ],
+   "mouth_r_range": [
+    5.182,
+    5.843
+   ],
+   "lip_m": 0.769
+  },
+  {
+   "kind": "hollow",
+   "variant": 0,
+   "rect": [
+    2932,
+    1940,
+    768,
+    768
+   ],
+   "metres": [
+    6.0,
+    6.0
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 1.4,
+   "mouth_harm": [
+    [
+     2,
+     0.0624,
+     1.9632
+    ],
+    [
+     3,
+     0.0478,
+     4.262
+    ],
+    [
+     5,
+     0.0131,
+     0.1359
+    ],
+    [
+     9,
+     0.0046,
+     1.0798
+    ]
+   ],
+   "mouth_r_range": [
+    1.238,
+    1.541
+   ],
+   "lip_m": 0.42
+  },
+  {
+   "kind": "hollow",
+   "variant": 1,
+   "rect": [
+    2052,
+    1940,
+    870,
+    870
+   ],
+   "metres": [
+    6.8,
+    6.8
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 1.75,
+   "mouth_harm": [
+    [
+     2,
+     0.0532,
+     1.134
+    ],
+    [
+     3,
+     0.0347,
+     3.3957
+    ],
+    [
+     5,
+     0.0138,
+     2.4136
+    ],
+    [
+     9,
+     0.0052,
+     0.0403
+    ]
+   ],
+   "mouth_r_range": [
+    1.615,
+    1.926
+   ],
+   "lip_m": 0.438
+  },
+  {
+   "kind": "hollow",
+   "variant": 2,
+   "rect": [
+    1082,
+    1940,
+    960,
+    960
+   ],
+   "metres": [
+    7.5,
+    7.5
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 2.05,
+   "mouth_harm": [
+    [
+     2,
+     0.053,
+     6.278
+    ],
+    [
+     3,
+     0.0442,
+     3.2054
+    ],
+    [
+     5,
+     0.0155,
+     1.6606
+    ],
+    [
+     9,
+     0.0064,
+     1.1197
+    ]
+   ],
+   "mouth_r_range": [
+    1.877,
+    2.269
+   ],
+   "lip_m": 0.452
+  },
+  {
+   "kind": "hollow",
+   "variant": 3,
+   "rect": [
+    10,
+    1940,
+    1062,
+    1062
+   ],
+   "metres": [
+    8.3,
+    8.3
+   ],
+   "anchor": [
+    0.5,
+    0.5
+   ],
+   "mouth_r": 2.4,
+   "mouth_harm": [
+    [
+     2,
+     0.0505,
+     5.3336
+    ],
+    [
+     3,
+     0.046,
+     2.7774
+    ],
+    [
+     5,
+     0.0117,
+     3.0278
+    ],
+    [
+     9,
+     0.0053,
+     0.2355
+    ]
+   ],
+   "mouth_r_range": [
+    2.143,
+    2.588
+   ],
+   "lip_m": 0.47
+  }
+ ]
+}
