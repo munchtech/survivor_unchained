@@ -381,7 +381,10 @@ public partial class Game : Node, IZoneHost
             Arenas.Begin(World, spec);
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
-        if (z == "map")
+        // --dungeon ID [--seed N]: a dungeon (hollow, roost) as the map, its seed N or a fresh one.
+        if (z == "map" && Args.Get("dungeon") is string dgId && SurvivorUnchained.Maps.DungeonGen.Get(dgId) is { } dgDef)
+            World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(dgDef, Args.Has("seed") ? (int)Args.Num("seed", 1) : System.Random.Shared.Next(), Journey.Ch.Level);
+        else if (z == "map")
             World.Map = new SurvivorUnchained.Maps.Chart
             {
                 Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
@@ -585,6 +588,9 @@ public partial class Game : Node, IZoneHost
         Travel("map", chart.Name, "A Wayfinder's map");
     }
 
+    /// <summary>The seed of the next dungeon entered: --dungeon-seed N pins every entry, else a fresh one.</summary>
+    public int DungeonSeed() => Args.Has("dungeon-seed") ? (int)Args.Num("dungeon-seed", 1) : System.Random.Shared.Next();
+
     /// <summary>The arena is over: what came of it, and then back to the story.</summary>
     public void ArenaOver(ArenaResult result)
     {
@@ -681,7 +687,9 @@ public partial class Game : Node, IZoneHost
     public void LeaveMap(MapResult r)
     {
         bool leaving = !inTransit;
-        Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+        // A dungeon returns to where it was entered; a map, to the Waystation.
+        if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
+        else Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
         if (leaving) Wait(0.8, () => screens.Close());
     }
 
