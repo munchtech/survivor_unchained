@@ -125,6 +125,7 @@ uniform float painted = 0.0;
 global uniform vec4 water_level;
 uniform float tile = 1.9;
 uniform vec3 stone_tint = vec3(1.0);
+uniform vec3 paint_tint = vec3(1.0);   // (the painted plane rocks' own tint: the den darkens and greens them, DungeonDress)
 uniform float macro = 0.22;
 uniform float bump = 0.55;
 uniform float edge_light = 0.32;
@@ -1194,7 +1195,7 @@ void fragment() {
 		vec3 col = st.rgb * stone_tint;
 		bool pnt = painted > 0.5;
 		if (pnt) {
-			col = texture(albedo_tex, UV).rgb * (1.0 + inst_val * (2.0 * v_jit - 1.0));
+			col = texture(albedo_tex, UV).rgb * paint_tint * (1.0 + inst_val * (2.0 * v_jit - 1.0));
 			st = vec4(col, 0.5);
 			bn = wn;
 		} else {

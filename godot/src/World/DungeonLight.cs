@@ -11,7 +11,7 @@ namespace SurvivorUnchained.View;
 public static class DungeonLight
 {
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
-    static readonly Vector3 Axis = new Vector3(0.22f, -1f, -0.12f).Normalized();
+    static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
 
     public static Node3D? Build(ZoneData z)
@@ -59,8 +59,8 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color("fff0d8"),
-            LightEnergy = 6f,
+            LightColor = new Color("f6f0e4"),
+            LightEnergy = 12f,
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f) / Height)),
             SpotAngleAttenuation = 0.6f,

@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// a ray from the room's centre to its wall. All randomness is the hash, seeded by room index: a map always dresses the same.
 /// The camera looks north from the south, so tall props stand on north and side walls only; nothing here has a collider.
 /// </summary>
-public static class DungeonDress
+public static partial class DungeonDress
 {
     // A place on a wall: x, z, yaw facing the room's centre, and the ray's outward direction.
     readonly record struct Spot(float X, float Z, float Yaw, float Dx, float Dz);
@@ -18,7 +18,8 @@ public static class DungeonDress
     static readonly string[] Stores = { "barrel", "barrels_door", "crate", "heap_crates", "heap_sacks" };
     // (the flora boulders draw black off their kit material: the scanned rocks, which carry their own)
     static readonly string[] RavineRocks = { "res://art/world/rock_07.glb", "res://art/world/rock_09.glb", "res://art/world/boulder_01.glb" };
-    static readonly string[] DenRocks = { "res://art/world/rock_moss_set_01.glb", "res://art/world/rock_moss_set_02.glb", "res://art/world/boulder_01.glb" };
+    // (the den's rocks: our own painted plane rocks, env_rocks.py through tools/look/wild.py rocks, drawn in their kit look)
+    static readonly string[] DenRocks = { "res://art/world/flora/boulder.gltf", "res://art/world/flora/bouldermid.gltf", "res://art/world/flora/boulderlarge.gltf" };
     static readonly string[] Logs = { "res://art/world/dead_tree_trunk.glb", "res://art/world/dead_tree_trunk_02.glb", "fallen_trunk" };
 
     sealed class Ctx
@@ -49,6 +50,7 @@ public static class DungeonDress
             int s = i + 1;
             if (den) Den(c, r, s); else Ravine(c, r, s);
         }
+        if (den) DenDecals(c);
         if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.45f, 1.0f, 0.88f) });
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });
         // Poles (palisade, tents, banners) in one mesh in bark; canvas (vertex-coloured per tent) and banner cloth in one each.
@@ -132,7 +134,6 @@ public static class DungeonDress
                 else PlaceProp(c, log, sp.X, sp.Z, yaw, 1f);
             }
         Fungus(c, r, s);
-        if (r.Kind != "Bend") Bones(c, r, s);
     }
 
     // ---- clusters ----
@@ -250,12 +251,41 @@ public static class DungeonDress
         if (!ResourceLoader.Exists(path)) return;
         var n = GD.Load<PackedScene>(path)?.Instantiate<Node3D>();
         if (n == null) return;
+        if (path.Contains("/flora/")) Kit(n, c.Z.DungeonTheme == "den");
         var b = Bounds(n, Transform3D.Identity) ?? new Aabb();
         n.Scale = Vector3.One * scale;
         n.Position = new Vector3(x, H(c, x, zz) - (b.Position.Y + sink * b.Size.Y) * scale, zz);
         n.Rotation = new Vector3(0, yaw, 0);
         c.Root.AddChild(n);
         c.Tick(tag);
+    }
+
+    // A flora piece's materials through the kit look (KitLook.For: our own rocks' painted OWN_ROCK); raw they draw black.
+    static void Kit(Node n, bool den)
+    {
+        if (n is MeshInstance3D mi && mi.Mesh != null)
+        {
+            var m = (Mesh)mi.Mesh.Duplicate();
+            for (int i = 0; i < m.GetSurfaceCount(); i++)
+                if (m.SurfaceGetMaterial(i) is Material mat)
+                {
+                    var k = KitLook.For(mat, KitLook.Look.Plain);
+                    // (the den's rocks: the one stone a step darker and olive, mossed over their tops, FROM den_room.png)
+                    if (k is ShaderMaterial sm && den)
+                    {
+                        sm = (ShaderMaterial)sm.Duplicate();
+                        sm.SetShaderParameter("paint_tint", new Vector3(0.86f, 0.8f, 0.66f));
+                        sm.SetShaderParameter("moss_amount", 1.0f);
+                        sm.SetShaderParameter("moss_face", new Vector2(0.2f, 0.6f));
+                        sm.SetShaderParameter("moss_edge", 0.0f);
+                        sm.SetShaderParameter("moss_color", new Color(0.36f, 0.4f, 0.18f));
+                        k = sm;
+                    }
+                    m.SurfaceSetMaterial(i, k);
+                }
+            mi.Mesh = m;
+        }
+        foreach (var ch in n.GetChildren()) Kit(ch, den);
     }
 
     static Aabb? Bounds(Node3D n, Transform3D parent)
@@ -389,10 +419,10 @@ public static class DungeonDress
     // 1 to 3 glow-fungus clusters at a room's wall foot, 4 to 8 mushrooms each, one cool light apiece; 14 to the map.
     static void Fungus(Ctx c, (float X, float Z, float R, string Kind) r, int s)
     {
-        int n = 1 + (int)(Hash(s, 20, 0) * 3);
-        for (int k = 0; k < n && c.Clusters < 14; k++)
+        int n = 3 + (int)(Hash(s, 20, 0) * 3);
+        for (int k = 0; k < n && c.Clusters < 48; k++)
         {
-            var sp = Ray(c, r, Hash(s, 21, k) * Mathf.Tau, 0.2f + 0.4f * Hash(s, 22, k), 0);
+            var sp = Ray(c, r, Hash(s, 21, k) * Mathf.Tau, 0.5f + 0.5f * Hash(s, 22, k), 0);
             if (sp == null) continue;
             float cx = sp.Value.X, cz = sp.Value.Z;
             int m = 4 + (int)(Hash(s, 23, k) * 5);
@@ -401,13 +431,13 @@ public static class DungeonDress
                 float a = Hash(s, 24 + q, k) * Mathf.Tau, d = Mathf.Sqrt(Hash(s, 25 + q, k)) * 0.5f;
                 float x = cx + Mathf.Cos(a) * d, zz = cz + Mathf.Sin(a) * d;
                 if (Wall(c, x, zz) < 0.05f || Hole(c, x, zz) < 0.3f) continue;
-                float sh = 0.06f + 0.14f * Hash(s, 26 + q, k), sr = 0.015f + 0.015f * Hash(s, 27 + q, k), cr = 0.04f + 0.08f * Hash(s, 28 + q, k);
+                float sh = 0.12f + 0.24f * Hash(s, 26 + q, k), sr = 0.025f + 0.025f * Hash(s, 27 + q, k), cr = 0.1f + 0.14f * Hash(s, 28 + q, k);
                 var basis = new Basis(Vector3.Right, (Hash(s, 29 + q, k) - 0.5f) * 0.4f) * new Basis(Vector3.Forward, (Hash(s, 30 + q, k) - 0.5f) * 0.4f);
                 var t = new Transform3D(basis, new Vector3(x, H(c, x, zz), zz));
                 c.Shrooms.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
                 c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr, IsHemisphere = true, RadialSegments = 8, Rings = 4 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
             }
-            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 0.8f, OmniRange = 2.2f, ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.3f, cz) });
+            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 2.4f, OmniRange = 3.6f, ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.5f, cz) });
             c.Clusters++;
             c.Tick("fungus");
         }

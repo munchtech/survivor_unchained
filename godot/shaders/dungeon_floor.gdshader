@@ -12,6 +12,11 @@ uniform float half_size = 100.0;
 uniform float step = 1.0;
 uniform float res = 200.0;
 uniform float ravine = 0.0;
+uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray den_arh : filter_linear_mipmap_anisotropic, repeat_enable;
+const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
+uniform vec3 den_tint = vec3(1.3, 1.2, 1.28);
+uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -71,23 +76,55 @@ void fragment() {
 	float mid = fbm(wpos.xz * 0.45 + 17.0);
 	vec3 col;
 	if (ravine < 0.5) {
-		// Hollow sheet: 0 litter, 3 mud. Warm packed earth, mottled at two scales.
-		float l1 = lum(texture(sheet, vec3(wpos.xz / 3.2, 0.0)).rgb);
-		float l2 = lum(texture(sheet, vec3(wpos.xz / 6.5 + 0.37, 3.0)).rgb);
-		float l = mix(l1, l2, smoothstep(0.4, 0.6, big)) * 2.0;
-		l = l * 0.55 + 0.45 * clamp((mid - 0.5) * 3.0 + 0.5, 0.0, 1.0);
-		// grit: small stones and crumbs
-		float grit = fbm(wpos.xz * 4.5 + 5.0);
-		l += 0.35 * (smoothstep(0.62, 0.7, grit) - smoothstep(0.38, 0.3, grit));
-		col = mix(vec3(0.13, 0.072, 0.042), vec3(0.34, 0.205, 0.12), clamp(l, 0.0, 1.0));
-		// darker, damper patches
-		col *= mix(0.72, 1.06, smoothstep(0.42, 0.58, big));
+		// The den's own painted set (ground.json "den", tools/look/ground_paint.py): 0 earth, 1 trodden, 2 litter,
+		// 3 rootmat, 4 dark, 5 pitface. Laid by rule from the fields: trodden earth in the rooms' open middles, litter in
+		// patches, root mats spreading from the walls' feet, damp dark earth at the foot and the pit mouths, the pit
+		// face on the steep. Each layer read twice at two turns and blended by a slow field, so no tile repeats.
+		float steep = 1.0 - smoothstep(0.55, 0.9, wnrm.y);
+		float wob = (mid - 0.5) * 2.2;
+		float w_tr = smoothstep(3.5, 7.5, inside + wob * 1.5) * (1.0 - steep);   // (the rooms' open middles, worn paler: a vignette by rule)
+		float w_li = smoothstep(0.52, 0.7, fbm(wpos.xz * 0.23 + 41.0)) * smoothstep(0.6, 1.6, inside) * (1.0 - w_tr);
+		float w_rm = 1.0 - smoothstep(0.4, 2.4, inside + wob * 0.8);
+		float w_dk = max(1.0 - smoothstep(-0.2, 0.9, inside + wob * 0.3), 1.0 - smoothstep(-0.1, 0.4, hole + wob * 0.15));   // (a thin damp lip only: a wide dark ring read as a raised tub's shadow)
+		float w_pf = steep * (1.0 - smoothstep(0.0, 2.0, hole));
+		float hb[6];
+		vec3 cb[6];
+		float tw = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.06 + 7.0));
+		const mat2 R1 = mat2(vec2(0.616, 0.788), vec2(-0.788, 0.616));
+		for (int i = 0; i < 6; i++) {
+			vec2 u0 = wpos.xz / den_m[i];
+			vec2 u1 = R1 * wpos.xz / den_m[i] + 0.37;
+			vec4 a0 = texture(den_alb, vec3(u0, float(i)));
+			vec4 a1 = texture(den_alb, vec3(u1, float(i)));
+			float h0 = texture(den_arh, vec3(u0, float(i))).b;
+			float h1 = texture(den_arh, vec3(u1, float(i))).b;
+			cb[i] = mix(a0.rgb, a1.rgb, tw);
+			hb[i] = mix(h0, h1, tw);
+		}
+		float wts[6] = float[](1.0, w_tr, w_li, w_rm, w_dk, w_pf);
+		// height blend: each layer's weight lifts its own high shapes over the one under it
+		float best = -9.0;
+		for (int i = 0; i < 6; i++) best = max(best, wts[i] * 1.0 + hb[i] * 0.35 * step(0.001, wts[i]) - (i == 0 ? 0.55 : 0.0));
+		vec3 acc = vec3(0.0); float ws = 0.0;
+		for (int i = 0; i < 6; i++) {
+			float v = wts[i] * 1.0 + hb[i] * 0.35 * step(0.001, wts[i]) - (i == 0 ? 0.55 : 0.0);
+			float w = max(v - best + 0.12, 0.0);
+			acc += cb[i] * w; ws += w;
+		}
+		col = acc / max(ws, 1e-4);
+		// the painted grain stretched about its local mean (the layers' mip), so the flakes and grit read at the play camera
+		vec3 ref = mix(textureLod(den_alb, vec3(wpos.xz / den_m[0], 0.0), 5.0).rgb, textureLod(den_alb, vec3(R1 * wpos.xz / den_m[0] + 0.37, 0.0), 5.0).rgb, tw);
+		float lr = max(lum(ref), 1e-3);
+		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain), 0.3, 2.5);
+		col *= den_tint;
+		// slow value masses: damper and drier ground
+		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
 		// the wall's foot in shade of the overhang
-		col *= mix(0.4, 1.0, smoothstep(0.0, 2.6, inside));
-		// the pits: steep sides and the depths go black
+		col *= mix(0.45, 1.0, smoothstep(0.0, 2.2, inside));
+		// the pits: the depths go black
+		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
 		float pit = 1.0 - smoothstep(0.0, 1.6, hole);
-		float steep = 1.0 - smoothstep(0.5, 0.92, wnrm.y);
-		col *= mix(1.0, 0.02, max(smoothstep(-0.3, 1.0, -hole), pit * steep));
+		col *= mix(1.0, 0.015, max(smoothstep(0.45, -0.5, hole), pit * steep));
 	} else {
 		// Beyond the shelf's edge the ground is gone (the drop's rock falls away below): only the walkable shelf stays.
 		if (min(inside, hole) < -0.4) discard;

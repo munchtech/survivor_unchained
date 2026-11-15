@@ -21,9 +21,9 @@ public static class DungeonWalls
         // kind: 0 wall, 0.5 top, 1 root (COLOR.r); COLOR.g the metres outside the walkable edge over 8 (the dark beyond
         // goes by it, not by height, so the top and the coarse cap meet black on black); a root's bark coordinates ride
         // UV2.y (metres along it) and COLOR.b (round it); floorY rides UV2.x for the cutaway's footing.
-        public int Add(Vector3 v, Vector3 n, float kind, float floorY, float s = 0, float along = 0, float round = 0)
+        public int Add(Vector3 v, Vector3 n, float kind, float floorY, float s = 0, float along = 0, float round = 0, float id = 1)
         {
-            V.Add(v); N.Add(n); C.Add(new Color(kind, Mathf.Clamp((s + 1) / 8f, 0, 1), round)); U.Add(new Vector2(floorY, along));
+            V.Add(v); N.Add(n); C.Add(new Color(kind, Mathf.Clamp((s + 1) / 8f, 0, 1), round, id)); U.Add(new Vector2(floorY, along));
             return V.Count - 1;
         }
         // A triangle wound so its front face looks along the vertex normal (Godot draws clockwise as front).
@@ -256,14 +256,20 @@ public static class DungeonWalls
         return segs;
     }
 
-    // The den's roots, a tangle by rule along every edge (never a comb of parallel spokes): runners that lie along the
-    // face and come down to the floor at one end, drops that cross the face on a slant and crawl a little way over the
-    // floor, and thin rootlets hanging from the top. Each is drawn in (metres along the edge, metres outside it) and
-    // laid back onto the wall, so it rides the face wherever the edge bends.
+    // The den's roots, grown by rule toward the concept pictures (den_room, den_boss): few big roots and their forks,
+    // never a comb of like sticks. Along every wall a big root comes out of the dark over the top and down the face in
+    // a long S, forking as it goes, its forks splaying out flat over the floor; loops run along the face (along a low
+    // near wall's top, which is what the camera sees of it) and lift off it in arches with dark hollows under them;
+    // thin rootlets hang from the crest; medium roots lie out over the top, sinking into the dark. Round a pit the
+    // roots hug the rim, fork into the throat and out over the floor, and some curl over the lip and down. Each root
+    // walks the surface it lies on (Walk), so it follows the edge wherever it bends.
+    const float Spread = 1.7f;   // the wall clusters' spacing (the tri budget's knob)
+
     static void Roots(Ctx c, Buf b, float[] s, int n)
     {
         float lim = c.Half - 8;
-        float acc = 0, next = 0.6f;
+        var wall = new Walk(c, true);
+        float acc = 0, next = 1.5f;
         foreach (var (a, e) in Contour(s, n, 0.2f, c.Half))
         {
             float len = a.DistanceTo(e), at = 0;
@@ -272,18 +278,17 @@ public static class DungeonWalls
                 at += next - acc; acc = 0;
                 var p = a.Lerp(e, len > 0 ? at / len : 0);
                 int hx = Mathf.RoundToInt(p.X * 4), hz = Mathf.RoundToInt(p.Y * 4);
-                next = 0.7f + 0.8f * Hash01(hx, hz, 5);
+                next = (3f + 1.6f * Hash01(hx, hz, 5)) * Spread;
                 if (Mathf.Abs(p.X) > lim || Mathf.Abs(p.Y) > lim) continue;
-                WallRoot(c, b, p, hx, hz);
+                WallCluster(wall, b, p, hx, hz);
             }
             acc += len - at;
         }
-        // The pits' roots: along the rim, dipping over the lip and down into the pit.
-        if (c.Hf.Length == 0) return;
+        var pit = new Walk(c, false);
         var hn = new float[n * n];
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++) hn[j * n + i] = c.Bil(c.Hf, -c.Half + i * Cell, -c.Half + j * Cell);
-        acc = 0; next = 1.0f;
+        acc = 0; next = 0.8f;
         foreach (var (a, e) in Contour(hn, n, 0f, c.Half))
         {
             float len = a.DistanceTo(e), at = 0;
@@ -292,154 +297,308 @@ public static class DungeonWalls
                 at += next - acc; acc = 0;
                 var p = a.Lerp(e, len > 0 ? at / len : 0);
                 int hx = Mathf.RoundToInt(p.X * 4), hz = Mathf.RoundToInt(p.Y * 4);
-                next = 1.1f + 0.9f * Hash01(hx, hz, 9);
+                next = 1.2f + 0.8f * Hash01(hx, hz, 9);
                 if (Mathf.Abs(p.X) > lim || Mathf.Abs(p.Y) > lim) continue;
-                PitRoot(c, b, p, hx, hz);
+                PitCluster(pit, b, p, hx, hz);
             }
             acc += len - at;
         }
     }
 
-    // A control point of a root: metres along the edge, metres outside it (the pit's: metres into it), radius share.
-    readonly record struct Cp(float U, float S, float R);
-
-    static void WallRoot(Ctx c, Buf b, Vector2 p, int hx, int hz)
+    static void WallCluster(Walk w, Buf b, Vector2 p, int hx, int hz)
     {
+        var c = w.C;
         float H(int k) => Hash01(hx, hz, k);
         var g = c.Grad(null, p.X, p.Y, true);
-        // Roots along a stretch of wall all flow one way (by a slow noise, not per root): a braid, not crossed sticks.
+        // The roots along a stretch of wall lean one way (by a slow noise, not per root): a braid, not crossed sticks.
         var t = new Vector2(-g.Y, g.X) * (N2(p.X * 0.07f + 3.3f, p.Y * 0.07f - 8.1f) < 0.5f ? -1 : 1);
-        float kind = H(21);
-        var cps = new List<Cp>();
-        float r0;
-        if (kind < 0.6f)
+        float vt = FaceLen(c.HLoc(p.X, p.Y)), fy = c.Floor(p.X, p.Y);
+        bool low = c.Near(p.X, p.Y) > 0.5f;   // a near wall: the camera sees its top, never its face
+        int sd = hx * 7919 + hz * 104729;
+        // A big root: out of the dark on the top, over the crest and down the face in an S, forking, the forks on out
+        // over the floor.
+        if (H(1) < 0.9f)
         {
-            // A runner: high on the face, along it, down to the floor and under.
-            float L = 4f + 5f * H(22);
-            r0 = 0.16f + 0.36f * H(23) * H(23);
-            cps.Add(new(0, 1.3f + 0.7f * H(24), 0.55f));
-            cps.Add(new(0.3f * L, 0.8f + 0.5f * H(25), 1f));
-            cps.Add(new(0.6f * L, 0.35f + 0.35f * H(26), 0.9f));
-            cps.Add(new(0.82f * L, -0.25f, 0.7f));
-            cps.Add(new(L, -0.8f - 0.9f * H(27), 0.35f));
-        }
-        else if (kind < 0.85f)
-        {
-            // A drop: from beyond the top, on a slant across the face, then a crawl over the floor.
-            float U = 0.8f + 2.2f * H(22), C = 0.6f + 1.4f * H(28);
-            r0 = 0.1f + 0.22f * H(23);
-            cps.Add(new(0, 2.2f + 0.8f * H(24), 0.8f));
-            cps.Add(new(0.4f * U, 1.1f, 1f));
-            cps.Add(new(0.75f * U, 0.35f, 0.9f));
-            cps.Add(new(U, -0.45f, 0.75f));
-            cps.Add(new(U + C, -0.9f - 1.0f * H(27), 0.3f));
-        }
-        else
-        {
-            // Rootlets: two or three thin ones hanging from the top, their tips free on the face.
-            int k = 2 + (int)(1.99f * H(29));
-            for (int q = 0; q < k; q++)
+            float v0 = vt + 0.4f + 1.2f * H(2);
+            var q = p + t * (1.4f * (2 * H(3) - 1));
+            if (w.Snap(ref q, v0))
             {
-                var pq = p + t * (0.4f * q);
-                float rr = 0.035f + 0.045f * Hash01(hx, hz, 40 + q), dr = 0.3f + 0.9f * Hash01(hx, hz, 50 + q);
-                var cl = new List<Cp> { new(0, 1.7f, 1f), new(0.5f * dr, 1.05f, 0.8f), new(dr, 0.3f + 0.4f * Hash01(hx, hz, 60 + q), 0.15f) };
-                Lay(c, b, pq, t, cl, rr, hx + 101 * q, hz, false, true);
+                var sp = new Spec { Pull = 0.55f, PullFloor = 0.3f, Wander = 1.1f, VMin = -0.5f - 0.7f * H(4), VMax = vt + 4f, Depth = low ? 1 : 2, ForkEvery = 1.8f, ForkShare = 0.58f, ForkSpread = 0.75f, ForkLen = 0.7f };
+                if (H(6) < 0.45f) sp.Arches = new[] { (v0 - vt + 0.3f * vt, 1.5f + 0.9f * H(7), 0.22f + 0.3f * H(8)) };
+                Grow(w, b, q, v0, t, -Mathf.Pi / 2 + 0.9f * (2 * H(9) - 1), 0.25f + 0.25f * H(5) * H(5), v0 + 3f, sp, sd + 1, fy);
             }
-            return;
         }
-        Lay(c, b, p, t, cps, r0, hx, hz, true, true);
-        // A thick one sometimes forks: a thinner branch off its first third, down to the floor on the other hand.
-        if (kind < 0.85f && r0 > 0.2f && H(30) < 0.5f)
+        // Loops: big roots running along the face (along a low wall's top), lifting off it in arches, forking.
+        int loops = low ? (H(20) < 0.85f ? 1 : 0) + (H(21) < 0.45f ? 1 : 0) : (H(20) < 0.5f ? 1 : 0);
+        for (int l = 0; l < loops; l++)
         {
-            float u0 = cps[1].U, s0 = cps[1].S;
-            var br = new List<Cp> { new(u0, s0, 0.45f), new(u0 - 0.6f, s0 - 0.5f, 0.4f), new(u0 - 1.1f, -0.2f, 0.3f), new(u0 - 1.6f - H(31), -0.7f - 0.6f * H(32), 0.15f) };
-            Lay(c, b, p, t, br, r0, hx + 7, hz + 13, true, true);
+            float len = 4.5f + 3f * H(26 + l);
+            float v0 = low ? vt + 0.3f + 2f * H(22 + l) : vt * (0.35f + 0.4f * H(22 + l));
+            var dir = H(28 + l) < 0.5f ? t : -t;
+            var q = p - dir * (0.4f * len);
+            if (!w.Snap(ref q, v0)) continue;
+            float lh = low ? 0.35f + 0.5f * H(30 + l) : 0.1f + 0.15f * H(30 + l);
+            var sp = new Spec
+            {
+                Band = v0, Pull = 0.4f, Wander = 0.8f, VMax = vt + 4f, Depth = 1, ForkEvery = 2.2f, ForkShare = 0.45f, ForkSpread = 0.9f, ForkLen = 0.5f,
+                Arches = new[] { (0.1f * len, 0.42f * len, lh), (0.56f * len, 0.32f * len, lh * 0.7f) },
+            };
+            if (!low && H(32 + l) < 0.5f) { sp.TurnAt = 0.62f * len; sp.VMin = -0.6f; }
+            Grow(w, b, q, v0, dir, 0.25f * (2 * H(34 + l) - 1), low ? 0.22f + 0.3f * H(24 + l) * H(24 + l) : 0.18f + 0.18f * H(24 + l), len, sp, sd + 10 + l, fy);
+        }
+        // Rootlets hanging from the crest (only the back and side walls show their face).
+        if (!low)
+        {
+            int k = 2 + (int)(1.99f * H(40));
+            for (int i = 0; i < k; i++)
+            {
+                float Q(int m) => Hash01(hx + 31 * i, hz, m);
+                var o = p + t * (2.2f * (2 * Q(41) - 1));
+                float v0 = vt - 0.1f;
+                if (!w.Snap(ref o, v0)) continue;
+                var sp = new Spec { Pull = 1.2f, Wander = 0.9f, FreeTip = Q(45) < 0.65f, VMin = -0.8f, VMax = vt + 1f, MinStand = 0.1f };
+                Grow(w, b, o, v0, t, -Mathf.Pi / 2 + 0.5f * (2 * Q(46) - 1), 0.028f + 0.035f * Q(47), 1.2f + 2.2f * Q(48), sp, sd + 40 + i, fy);
+            }
+        }
+        // A medium root lying out over the top, sinking into the dark there.
+        if (H(70) < 0.65f)
+        {
+            float len = 3f + 3f * H(72), v0 = vt + 1.1f + 2.4f * H(71);
+            var dir = H(74) < 0.5f ? t : -t;
+            var q = p - dir * (0.4f * len);
+            if (w.Snap(ref q, v0))
+                Grow(w, b, q, v0, dir, 0.3f * (2 * H(75) - 1), 0.14f + 0.16f * H(73), len,
+                    new Spec { Band = v0, Pull = 0.5f, Wander = 0.5f, VMax = vt + 4.5f, Depth = 1, ForkEvery = 1.8f, ForkShare = 0.5f, ForkLen = 0.5f, Arches = new[] { (0.3f * len, 0.4f * len, 0.2f * H(76)) } }, sd + 70, fy);
+        }
+        // Thin ones from the wall's foot out over the floor, forking.
+        if (H(80) < 0.45f)
+        {
+            var q = p + t * (2f * (2 * H(81) - 1));
+            if (w.Snap(ref q, 0.5f))
+                Grow(w, b, q, 0.5f, t, -Mathf.Pi / 2 + 0.7f * (2 * H(82) - 1), 0.05f + 0.06f * H(83), 2.2f + 1.6f * H(84),
+                    new Spec { Pull = 0.4f, PullFloor = 0.12f, Wander = 0.9f, FreeTip = true, VMin = -2.8f, Depth = 1, ForkEvery = 0.9f, ForkShare = 0.55f, ForkSpread = 0.7f, ForkLen = 0.6f }, sd + 80, fy);
         }
     }
 
-    static void PitRoot(Ctx c, Buf b, Vector2 p, int hx, int hz)
+    static void PitCluster(Walk w, Buf b, Vector2 p, int hx, int hz)
     {
+        var c = w.C;
         float H(int k) => Hash01(hx, hz, k);
         var g = c.Grad(c.Hf, p.X, p.Y, false);
-        var t = new Vector2(-g.Y, g.X) * (H(20) < 0.5f ? -1 : 1);
-        float L = 2f + 2.5f * H(22), dip = 0.6f + 1.2f * H(24);
-        float r0 = 0.1f + 0.22f * H(23) * H(23);
-        var cps = new List<Cp> { new(0, -0.9f, 0.4f), new(0.25f * L, -0.1f, 0.9f), new(0.5f * L, dip, 1f), new(0.78f * L, 0.1f, 0.85f), new(L, -0.8f - 0.6f * H(25), 0.3f) };
-        Lay(c, b, p, t, cps, r0, hx, hz, true, false);
-    }
-
-    // Lays a root's control points onto the wall (or the pit's floor): a smooth curve in (along, outside), every sample
-    // put back at its own distance from the edge, riding the surface; the end sinks if it is meant to.
-    static void Lay(Ctx c, Buf b, Vector2 p, Vector2 t, List<Cp> cps, float r0, int hx, int hz, bool sink, bool wall)
-    {
-        float span = 0;
-        for (int i = 1; i < cps.Count; i++) span += new Vector2(cps[i].U - cps[i - 1].U, cps[i].S - cps[i - 1].S).Length();
-        int per = Mathf.Max(3, Mathf.CeilToInt(span / 0.34f / (cps.Count - 1)));
-        var pts = new List<Vector3>(); var rs = new List<float>(); var ss = new List<float>();
-        float seed = Hash01(hx, hz, 77) * 40f;
-        for (int i = 0; i < cps.Count - 1; i++)
+        var t = new Vector2(-g.Y, g.X) * (H(1) < 0.5f ? -1 : 1);
+        // the floor outside the rim: what is below it is the throat, and goes dark
+        float fy = c.Floor(p.X + g.X * 0.8f, p.Y + g.Y * 0.8f);
+        int sd = hx * 7919 + hz * 104729 + 17;
+        // A root hugging the rim on the lip, forking into the throat and out over the floor; some curl over and down.
+        if (H(2) < 0.85f)
         {
-            var p0 = cps[Mathf.Max(i - 1, 0)]; var p1 = cps[i]; var p2 = cps[i + 1]; var p3 = cps[Mathf.Min(i + 2, cps.Count - 1)];
-            int last = i == cps.Count - 2 ? per : per - 1;
-            for (int k = 0; k <= last; k++)
+            float band = 0.15f + 0.4f * H(3), len = 1.8f + 1.8f * H(4);
+            var q = p;
+            if (w.Snap(ref q, band))
             {
-                float u = k / (float)per;
-                float CR(float a0, float a1, float a2, float a3) => 0.5f * (2 * a1 + (-a0 + a2) * u + (2 * a0 - 5 * a1 + 4 * a2 - a3) * u * u + (-a0 + 3 * a1 - 3 * a2 + a3) * u * u * u);
-                float U = CR(p0.U, p1.U, p2.U, p3.U), S = CR(p0.S, p1.S, p2.S, p3.S), R = CR(p0.R, p1.R, p2.R, p3.R);
-                // A slow sideways wander and knots along the length.
-                S += 0.14f * (2 * N3(U * 0.8f + seed, S * 0.5f, seed) - 1);
-                float r = Mathf.Max(0.008f, r0 * R * (1 + 0.22f * (2 * N3(U * 1.7f, seed, S * 1.3f) - 1)));
-                var h = p + t * U;
-                // Back to the wanted distance from the edge, along the field's own slope.
-                for (int it = 0; it < 3; it++)
-                {
-                    var gg = wall ? c.Grad(null, h.X, h.Y, true) : c.Grad(c.Hf, h.X, h.Y, false);
-                    float now = wall ? c.S(h.X, h.Y) : -c.Bil(c.Hf, h.X, h.Y);
-                    h += (wall ? gg : -gg) * (S - now);
-                }
-                float y;
-                if (wall)
-                {
-                    // On the face a root stands off it by its radius; over the top and on the floor it lies on them.
-                    var gg = c.Grad(null, h.X, h.Y, true);
-                    float top = Sm(1.1f, 1.7f, S), face = Sm(-0.3f, 0.2f, S) * (1 - top);
-                    y = Mathf.Max(c.SurfY(h.X, h.Y), c.Floor(h.X, h.Y)) + r * (0.3f + 0.4f * top + 0.15f * (1 - face));
-                    h -= gg * (r * 1.0f * face);
-                }
-                else y = c.Floor(h.X, h.Y) + r * 0.45f;
-                pts.Add(new Vector3(h.X, y, h.Y)); rs.Add(r); ss.Add(wall ? S : -2f);
+                var sp = new Spec { Band = band, Pull = 1f, Wander = 0.5f, VMin = -1.0f, VMax = 3.5f, Depth = 1, ForkEvery = 0.75f, ForkShare = 0.5f, ForkSpread = 0.9f, ForkLen = 0.6f, Kind = 0.9f };
+                if (H(6) < 0.55f) { sp.TurnAt = 0.6f * len; sp.FreeTip = true; len += 0.9f; }
+                Grow(w, b, q, band, t, -0.35f, 0.04f + 0.06f * H(5) * H(5), len, sp, sd, fy);
             }
         }
-        if (sink && pts.Count > 1) pts[^1] = pts[^1] with { Y = c.Floor(pts[^1].X, pts[^1].Z) - rs[^1] * 1.2f };
-        Tube(b, pts, rs, ss, c.Floor(p.X, p.Y));
+        // A thin one out over the floor from the lip, forking.
+        if (H(10) < 0.5f)
+        {
+            var q = p + t * (0.6f * (2 * H(11) - 1));
+            if (w.Snap(ref q, 0.1f))
+                Grow(w, b, q, 0.1f, t, Mathf.Pi / 2 + 0.8f * (2 * H(12) - 1), 0.035f + 0.04f * H(13), 1.4f + 1.6f * H(14),
+                    new Spec { Aim = Mathf.Pi / 2, Pull = 0.35f, Wander = 0.9f, FreeTip = true, VMin = -1.6f, VMax = 4f, Depth = 1, ForkEvery = 0.7f, ForkShare = 0.55f, ForkSpread = 0.7f, ForkLen = 0.6f, Kind = 0.9f }, sd + 5, fy);
+        }
     }
 
-    // A tube round the centre line, its rings carried along without twisting (parallel transport), the bark's
-    // coordinates in metres along it and the share round it.
-    static void Tube(Buf b, List<Vector3> p, List<float> r, List<float> s, float floorY)
+    // ------------------------------------------------- what a root walks on --
+    const float F0 = -0.4f, F1 = 1.4f;   // the face's foot and crest in s (Ctx.Rise)
+    static float RiseD(float s)
     {
-        const int Sides = 6;
+        float t = (s - F0) / (F1 - F0);
+        return t <= 0 || t >= 1 ? 0 : 6 * t * (1 - t) / (F1 - F0);
+    }
+    // The wall unrolled: s at v metres over its surface from the foot (s = F0), up the face of a wall hh tall and on
+    // over its top; the floor below 0 (v metres in from the foot). Drawn so, a curve keeps its shape on the steep face.
+    static float SofV(float v, float hh)
+    {
+        if (v <= 0) return F0 + v;
+        const int N = 20; const float ds = (F1 - F0) / N;
+        float k = hh + 0.1f, acc = 0, s = F0;
+        for (int i = 0; i < N; i++, s += ds)
+        {
+            float d = k * RiseD(s + 0.5f * ds), seg = ds * Mathf.Sqrt(1 + d * d);
+            if (acc + seg >= v) return s + ds * (v - acc) / seg;
+            acc += seg;
+        }
+        return F1 + (v - acc);
+    }
+    static float FaceLen(float hh)
+    {
+        const int N = 20; const float ds = (F1 - F0) / N;
+        float k = hh + 0.1f, acc = 0;
+        for (int i = 0; i < N; i++) { float d = k * RiseD(F0 + (i + 0.5f) * ds); acc += ds * Mathf.Sqrt(1 + d * d); }
+        return acc;
+    }
+
+    // A surface a root walks: the wall unrolled (v as SofV's) or the floor round a pit (v the hole field: metres out
+    // from the pit's edge, into it below 0).
+    sealed class Walk
+    {
+        public readonly Ctx C;
+        public readonly bool Wall;
+        public Walk(Ctx c, bool wall) { C = c; Wall = wall; }
+        float Field(Vector2 h) => Wall ? C.S(h.X, h.Y) : C.Bil(C.Hf, h.X, h.Y);
+        // The way v grows: out from the walkable floor and up the wall; out from the pit over the floor.
+        public Vector2 Up(Vector2 h) => Wall ? C.Grad(null, h.X, h.Y, true) : C.Grad(C.Hf, h.X, h.Y, false);
+        // Onto the line where the field is v's; false where it cannot get there (a hall narrower than the root's run).
+        public bool Snap(ref Vector2 h, float v)
+        {
+            float want = Wall ? SofV(v, C.HLoc(h.X, h.Y)) : v;
+            for (int it = 0; it < 3; it++) h += Up(h) * (want - Field(h));
+            return Mathf.Abs(Field(h) - want) < 0.3f;
+        }
+        // The surface there: its point, its normal, and s (metres outside the walkable edge; the pits' -1).
+        public (Vector3 P, Vector3 N, float S) At(Vector2 h)
+        {
+            float fl = C.Floor(h.X, h.Y);
+            float s = Wall ? C.S(h.X, h.Y) : -1f;
+            if (Wall && s > F0)
+            {
+                var g = C.Grad(null, h.X, h.Y, true);
+                float d = (C.HLoc(h.X, h.Y) + 0.1f) * RiseD(s);
+                return (new Vector3(h.X, Mathf.Max(C.SurfY(h.X, h.Y), fl), h.Y), new Vector3(-g.X * d, 1, -g.Y * d).Normalized(), s);
+            }
+            const float e = 0.3f;
+            var nf = new Vector3(C.Floor(h.X - e, h.Y) - C.Floor(h.X + e, h.Y), 2 * e, C.Floor(h.X, h.Y - e) - C.Floor(h.X, h.Y + e)).Normalized();
+            return (new Vector3(h.X, fl, h.Y), nf, s);
+        }
+    }
+
+    // How a root grows: its aim (a heading in the surface's (along, v) plane: -pi/2 straight down the face and on out
+    // over the floor; 0 along) and how hard it is pulled to it (on the floor more loosely, so the forks splay), its
+    // wander, a band of v it keeps to (a runner) and where it turns from that to TurnAim, its arches (lifts off the
+    // surface: from how far along, how long, how high), its forks, and its ends (sunk into the surface, or a free tip).
+    sealed class Spec
+    {
+        public float Aim = -Mathf.Pi / 2, Pull = 0.9f, PullFloor = 0.3f, Wander = 0.6f;
+        public float Band = float.NaN, TurnAt = 1e9f, TurnAim = -Mathf.Pi / 2;
+        public float VMin = -1.2f, VMax = 1e9f, MinStand;
+        public bool SinkStart = true, FreeTip;
+        public int Depth;
+        public float ForkEvery = 2f, ForkShare = 0.55f, ForkSpread = 0.75f, ForkLen = 0.6f;
+        public (float At, float W, float H)[] Arches = System.Array.Empty<(float, float, float)>();
+        public float Kind = 1f;   // COLOR.r: 1 a wall's root, 0.9 a pit's (the throat darkens it)
+        public Spec Child(float aim, bool wall) => new()
+        {
+            Aim = aim, Pull = 0.45f, PullFloor = 0.2f, Wander = Wander * 1.2f, VMin = wall ? Mathf.Max(VMin - 1.1f, -2.8f) : VMin,
+            VMax = VMax, MinStand = MinStand, SinkStart = false, FreeTip = true, Depth = Depth - 1,
+            ForkEvery = ForkEvery * 0.7f, ForkShare = ForkShare, ForkSpread = ForkSpread, ForkLen = ForkLen, Kind = Kind,
+        };
+    }
+
+    static float Wrap(float a) => Mathf.PosMod(a + Mathf.Pi, Mathf.Tau) - Mathf.Pi;
+
+    // Grows one root from h (at v) heading ang in the surface's plane (tl along it), r0 thick, len long at most: a
+    // smooth wandering path pulled to its aim, a little thicker at knots, tapering, forking on alternate hands (each
+    // fork grown the same way, a size down), standing off the surface by its own thickness and its arches.
+    static void Grow(Walk w, Buf b, Vector2 h, float v, Vector2 tl, float ang, float r0, float len, Spec sp, int seed, float floorY)
+    {
+        var pts = new List<Vector3>(); var rs = new List<float>(); var ss = new List<float>(); var lie = new List<Vector3>(); var press = new List<float>();
+        float ds = Mathf.Clamp(0.16f + 0.6f * r0, 0.2f, 0.42f);
+        int steps = Mathf.Max(3, Mathf.CeilToInt(len / ds));
+        ds = len / steps;
+        float fs = Hash01(seed, 7, 2) * 50f, rb = r0;
+        float fork = sp.Depth > 0 ? sp.ForkEvery * (0.5f + 0.6f * Hash01(seed, 3, 1)) : 1e9f;
+        int side = Hash01(seed, 9, 4) < 0.5f ? -1 : 1;
+        for (int k = 0; k <= steps; k++)
+        {
+            float a = k * ds, done = a / len;
+            if (k > 0)
+            {
+                float aim = a > sp.TurnAt ? sp.TurnAim : sp.Aim;
+                if (!float.IsNaN(sp.Band) && a <= sp.TurnAt) aim = Mathf.Clamp(1.1f * (sp.Band - v), -0.9f, 0.9f);
+                float pull = w.Wall && v < 0 ? sp.PullFloor : sp.Pull;
+                ang += (sp.Wander * (2 * N2(a * 0.45f + fs, fs * 0.37f) - 1) + pull * Wrap(aim - ang)) * ds;
+                h += tl * (Mathf.Cos(ang) * ds);
+                v = Mathf.Min(v + Mathf.Sin(ang) * ds, sp.VMax);
+                if (!w.Snap(ref h, v)) break;
+                var g = w.Up(h);
+                var nt = new Vector2(-g.Y, g.X);
+                tl = nt.Dot(tl) < 0 ? -nt : nt;
+            }
+            var (P, Nm, S) = w.At(h);
+            float r = rb * (sp.FreeTip ? Mathf.Lerp(1f, 0.16f, Sm(0.5f, 1f, done)) : Mathf.Lerp(1f, 0.6f, Sm(0.6f, 1f, done)));
+            r *= (1 + 0.14f * (2 * N3(a * 1.3f, fs, 1.7f) - 1)) * (1 + 0.3f * Sm(0.7f, 0.88f, N3(a * 1.9f + 11f, fs * 1.3f, 3f)));
+            float lift = 0;
+            foreach (var (at, wd, hh) in sp.Arches)
+                if (a > at && a < at + wd) lift += hh * Mathf.Sin(Mathf.Pi * (a - at) / wd);
+            float pr = Mathf.Lerp(Flat, 1f, Sm(0.04f, 0.3f, lift));
+            float stand = r * pr * 0.7f + lift;
+            if (w.Wall && S > F0 + 0.15f) stand = Mathf.Max(stand, sp.MinStand + r * pr * 0.7f);
+            pts.Add(P + Nm * stand); rs.Add(r); ss.Add(S); lie.Add(Nm); press.Add(pr);
+            if (a >= fork && done < 0.8f)
+            {
+                fork += sp.ForkEvery * (0.6f + 0.8f * Hash01(seed, k, 5));
+                float cr = rb * sp.ForkShare * (0.8f + 0.4f * Hash01(seed, k, 6));
+                if (cr >= 0.026f)
+                {
+                    float ca = ang + side * sp.ForkSpread * (0.7f + 0.6f * Hash01(seed, k, 7));
+                    side = -side;
+                    float cl = Mathf.Max(0.8f, (len - a) * sp.ForkLen * (0.7f + 0.6f * Hash01(seed, k, 8)));
+                    Grow(w, b, h, v, tl, ca, cr, cl, sp.Child(ca, w.Wall), seed * 31 + k * 7 + 1, floorY);
+                    rb *= 0.86f;
+                }
+            }
+            if (v < sp.VMin) break;
+        }
+        if (pts.Count < 2) return;
+        if (sp.SinkStart) pts[0] -= lie[0] * (rs[0] * 1.3f);
+        if (!sp.FreeTip)
+        {
+            pts[^1] -= lie[^1] * (rs[^1] * 1.4f);
+            if (pts.Count > 2) pts[^2] -= lie[^2] * (rs[^2] * 0.5f);
+        }
+        Tube(b, pts, rs, ss, lie, press, floorY, sp.Kind, Hash01(seed, 1, 99), Sides(r0));
+    }
+
+    // A root lies pressed to what it rides on: its section flattened along that surface's normal to Flat of round,
+    // round where it lifts off in an arch.
+    const float Flat = 0.62f;
+    static int Sides(float r) => r >= 0.27f ? 8 : r >= 0.1f ? 6 : r >= 0.045f ? 5 : 4;
+
+    // A tube round the centre line, its rings carried along without twisting (parallel transport), the bark's
+    // coordinates in metres along it and the share round it; COLOR.a the root's own shade.
+    static void Tube(Buf b, List<Vector3> p, List<float> r, List<float> s, List<Vector3> lie, List<float> press, float floorY, float kind, float id, int sides)
+    {
         if (p.Count < 2) return;
         var rings = new int[p.Count][];
-        Vector3 prevT = (p[1] - p[0]).Normalized();
-        var n1 = prevT.Cross(Mathf.Abs(prevT.Y) > 0.9f ? Vector3.Right : Vector3.Up).Normalized();
+        var t0 = (p[1] - p[0]).Normalized();
+        var n1 = t0.Cross(Mathf.Abs(t0.Y) > 0.9f ? Vector3.Right : Vector3.Up).Normalized();
         float along = 0;
         for (int q = 0; q < p.Count; q++)
         {
             var t = (p[Mathf.Min(q + 1, p.Count - 1)] - p[Mathf.Max(q - 1, 0)]).Normalized();
             if (q > 0) along += p[q].DistanceTo(p[q - 1]);
-            n1 = (n1 - t * n1.Dot(t)).Normalized();
+            var m = n1 - t * n1.Dot(t);
+            n1 = m.LengthSquared() > 1e-6f ? m.Normalized() : t.Cross(Mathf.Abs(t.Y) > 0.9f ? Vector3.Right : Vector3.Up).Normalized();
             var n2 = t.Cross(n1);
-            rings[q] = new int[Sides + 1];
-            for (int a = 0; a <= Sides; a++)
+            var ln = lie[q] - t * lie[q].Dot(t);
+            ln = ln.LengthSquared() > 1e-6f ? ln.Normalized() : n1;
+            float f = press[q];
+            rings[q] = new int[sides + 1];
+            for (int a = 0; a <= sides; a++)
             {
-                float ang = a * Mathf.Tau / Sides;
+                float ang = a * Mathf.Tau / sides;
                 var dir = n1 * Mathf.Cos(ang) + n2 * Mathf.Sin(ang);
-                rings[q][a] = b.Add(p[q] + dir * r[q], dir, 1f, floorY, s[q], along, a / (float)Sides);
+                float d = dir.Dot(ln);
+                var off = dir - ln * (d * (1 - f));
+                var nn = (dir - ln * d + ln * (d / f)).Normalized();
+                rings[q][a] = b.Add(p[q] + off * r[q], nn, kind, floorY, s[q], along, a / (float)sides, id);
             }
         }
         for (int q = 0; q + 1 < p.Count; q++)
-            for (int a = 0; a < Sides; a++)
+            for (int a = 0; a < sides; a++)
             {
                 b.Tri(rings[q][a], rings[q][a + 1], rings[q + 1][a]);
                 b.Tri(rings[q][a + 1], rings[q + 1][a + 1], rings[q + 1][a]);
@@ -456,6 +615,7 @@ public static class DungeonWalls
         mat.SetShaderParameter("layer_b", c.Ravine ? 6f : 2f);
         mat.SetShaderParameter("ravine", c.Ravine ? 1f : 0f);
         mat.SetShaderParameter("wall_h", c.Hb);
+        if (!c.Ravine) mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
         return mat;
     }
 }

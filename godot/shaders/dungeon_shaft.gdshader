@@ -3,8 +3,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
 
-uniform vec3 tint : source_color = vec3(0.95, 0.9, 0.78);
-uniform float strength = 0.3;
+uniform vec3 tint : source_color = vec3(0.86, 0.9, 0.94);
+uniform float strength = 0.55;
 uniform float height = 15.0;
 
 varying float hf;
@@ -28,5 +28,8 @@ void fragment() {
 	float a = pow(face, 2.5);
 	a *= smoothstep(0.0, 0.12, hf) * (1.0 - smoothstep(0.35, 0.95, hf));
 	float motes = 0.75 + 0.25 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
-	ALBEDO = tint * strength * a * motes;
+	// rays: streaks along the shaft (by the angle round it), so it reads as light through a ragged hole, not a tube
+	float ang = atan(wpos.x - MODEL_MATRIX[3].x, wpos.z - MODEL_MATRIX[3].z);
+	float rays = 0.45 + 0.9 * smoothstep(0.35, 0.8, vnoise(vec2(ang * 5.0, hf * 1.5)));
+	ALBEDO = tint * strength * a * motes * rays;
 }

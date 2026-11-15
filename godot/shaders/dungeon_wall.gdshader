@@ -11,6 +11,11 @@ uniform sampler2DArray sheet : source_color, filter_linear_mipmap_anisotropic, r
 uniform float layer_a = 1.0;    // den: rot; ravine: face
 uniform float layer_b = 2.0;    // den: roots
 uniform float ravine = 0.0;
+uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec3 void_col = vec3(0.008, 0.009, 0.013);   // the dark between and beyond: the concepts' cool grey (15, 16, 18), not black
+uniform vec3 root_lit = vec3(0.13, 0.07, 0.05);     // a root's albedo, a muted warm brown (its lit top)
+uniform vec3 root_under = vec3(0.4, 0.32, 0.5);    // its under side's purple
+uniform vec3 face_col = vec3(0.03, 0.024, 0.028);    // the root mass behind the roots
 uniform float wall_h = 4.0;
 uniform float tile = 5.0;
 
@@ -21,6 +26,7 @@ varying float floor_y;
 varying float s_out;
 varying float along_m;
 varying float round_s;
+varying float root_id;
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -30,6 +36,7 @@ void vertex() {
 	s_out = COLOR.g * 8.0 - 1.0;
 	along_m = UV2.y;
 	round_s = COLOR.b;
+	root_id = COLOR.a;
 }
 
 float bayer8(ivec2 p) {
@@ -119,20 +126,29 @@ void fragment() {
 	}
 	float h = max(wpos.y - floor_y, 0.0);
 	float depth = max(floor_y - wpos.y, 0.0);
-	// The dark beyond goes by how far outside the walkable edge a point is (not by height), so the band's top and the
-	// coarse cap meet black on black.
-	float beyond = smoothstep(0.9, 2.4, s_out);
 	vec3 col;
 	if (!FRONT_FACING) {
 		// The cut mass inside.
 		col = vec3(0.043, 0.035, 0.031);
 	} else if (kind > 0.75) {
-		// A root: dark warm bark, each root its own shade, fine streaks along it and a knot now and then.
-		float id = hash2(floor(vec2(along_m * 0.02, round_s * 0.1) + floor(wpos.xz * 0.25)));
-		vec3 bark = mix(vec3(0.12, 0.062, 0.035), vec3(0.2, 0.105, 0.055), id);
-		float streak = vnoise(vec2(round_s * 9.0, along_m * 0.9)) * 0.6 + vnoise(vec2(round_s * 21.0, along_m * 2.3)) * 0.4;
-		bark *= mix(0.62, 1.12, smoothstep(0.25, 0.75, streak));
-		col = bark * (1.0 - 0.85 * smoothstep(1.4, 3.2, s_out)) * (1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.5, h)));
+		// A root: a smooth cel tube (the concepts'), its bark sparse line work (grooves along it, wobbling, broken),
+		// never the planks of a striped texture; each root its own shade (COLOR.a), the under side purple-brown, the
+		// edge turning away a shade darker for the ink. Out over the top it sinks into the dark; down a pit (COLOR.r
+		// 0.9) into the throat's.
+		vec3 base = root_lit * mix(0.8, 1.18, root_id);
+		float a = round_s * 5.0 + 0.7 * (vnoise(vec2(along_m * 0.6, root_id * 37.0)) - 0.5);
+		float fa = fwidth(a);
+		float line = 1.0 - smoothstep(0.03, 0.03 + 1.2 * fa, abs(fract(a) - 0.5));
+		line *= smoothstep(0.4, 0.6, vnoise(vec2(along_m * 1.3 + floor(a) * 5.3, root_id * 11.0 + floor(a) * 1.7)));
+		line *= 1.0 - smoothstep(0.15, 0.4, fa);
+		base *= 1.0 - 0.5 * line;
+		base *= 1.0 + 0.08 * sin(6.2832 * (round_s * 3.0 + 0.5 * vnoise(vec2(along_m * 0.4, root_id * 23.0))));
+		base *= mix(vec3(1.0), root_under, smoothstep(0.35, -0.55, wnrm.y));
+		float nv = abs(dot(normalize(NORMAL), normalize(-VERTEX)));
+		base *= mix(0.55, 1.0, smoothstep(0.08, 0.4, nv));
+		base *= 1.0 - 0.22 * (1.0 - smoothstep(0.0, 0.4, h));
+		col = mix(base, void_col, 0.92 * smoothstep(1.6, 5.4, s_out));
+		if (kind < 0.95) col = mix(col, void_col, smoothstep(0.25, 1.5, depth));
 	} else if (ravine > 0.5) {
 		vec3 tilt;
 		col = rock(wpos, wnrm, tilt);
@@ -142,13 +158,20 @@ void fragment() {
 		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
 		if (kind > 0.25 && depth < 0.5) col *= 0.55;
 	} else if (kind > 0.25) {
-		col = vec3(0.012, 0.01, 0.009);
+		col = void_col;
 	} else {
-		// The den's face: packed dark earth with the roots' own sheet in it, black beyond.
-		vec3 bed = tri(layer_a, wpos);
-		float lum = dot(bed, vec3(0.299, 0.587, 0.114));
-		col = vec3(0.12, 0.08, 0.055) * (0.55 + 1.2 * lum);
-		col *= 1.0 - beyond;
+		// The den's face: a dark root mass behind the roots (the den set's root mat, layer 3, as its value only, in a
+		// purple-brown), buried roots in it as faint ridges, fading over a few metres out into the dark grey beyond.
+		vec3 bw = pow(abs(wnrm), vec3(4.0));
+		bw /= bw.x + bw.y + bw.z;
+		vec3 mat = texture(den_alb, vec3(wpos.zy / 2.2, 3.0)).rgb * bw.x + texture(den_alb, vec3(wpos.xz / 2.2, 3.0)).rgb * bw.y
+			+ texture(den_alb, vec3(wpos.xy / 2.2, 3.0)).rgb * bw.z;
+		col = face_col * (0.55 + 0.6 * dot(mat, vec3(0.3333)) / 0.08);
+		float u = wpos.x * bw.z + wpos.z * bw.x;
+		col *= 0.8 + 0.45 * smoothstep(0.6, 0.95, 1.0 - abs(2.0 * vnoise(vec2(u * 1.1, wpos.y * 0.3)) - 1.0));
+		col = mix(col, void_col, smoothstep(0.7, 4.6, s_out));
+		// down a pit the face goes to black within a couple of metres
+		col *= mix(1.0, 0.06, smoothstep(0.15, 1.8, depth));
 		col *= 1.0 - 0.35 * (1.0 - smoothstep(0.0, 0.6, h));
 	}
 	ALBEDO = col;

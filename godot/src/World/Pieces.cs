@@ -135,7 +135,8 @@ public static partial class Pieces
 
     static StandardMaterial3D Headstone() => Surface("rock_boulder_dry", 0.9f, "#7a7a74");
     static StandardMaterial3D Blocks() => Surface("medieval_blocks_03", 2.2f, "#94908a");
-    static StandardMaterial3D OldBone() => Mat("#a89c80", 0, 0.7f);
+    // (roughness 1: the ink pass's full class, so a bone carries the same line as the painted litter round it)
+    static StandardMaterial3D OldBone() => Mat("#a89c80", 0, 1f);
     static StandardMaterial3D Slates() => Surface("castle_wall_slates", 1.6f, "#9a9690");
     static StandardMaterial3D? roofSlates;
 
