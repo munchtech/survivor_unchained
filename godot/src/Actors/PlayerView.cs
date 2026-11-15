@@ -218,6 +218,7 @@ public partial class PlayerView : Node3D
     readonly Sheath sheath = new();
     readonly StanceHands stanceHands = new();
     StanceCarry? stanceCarry;
+    static readonly bool CarryLog = Args.Has("carry-log"); int carryLogT = -1;
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
@@ -1082,6 +1083,7 @@ public partial class PlayerView : Node3D
             stanceCarry.Carry = st?.CarryL;
             stanceCarry.On = st?.CarryL != null && !sheath.Sheathed && !dead && p.Alive && Content.Stances.Piece(st, "handslot.l", loadout.Arms.Left) != null
                 && !(bool)tree.Get("parameters/upperShot/active") && !(bool)tree.Get("parameters/fullShot/active");
+            if (CarryLog && st != null && (int)(time * 10) != carryLogT) { carryLogT = (int)(time * 10); GD.Print($"carry t {time:0.00} stance {st.Id} sheathed {sheath.Sheathed} upper {(bool)tree.Get("parameters/upperShot/active")} full {(bool)tree.Get("parameters/fullShot/active")} on {stanceCarry.On} W {stanceCarry.W:0.00}"); }
         }
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces

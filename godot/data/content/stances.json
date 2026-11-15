@@ -19,7 +19,7 @@
     },
     {
       "id": "twin_blades", "name": "Twin Fangs", "weapon": "two blades", "kinds": ["sword", "dagger", "cleaver", "axe"],
-      "held": { "forearm.l": "", "handslot.l": "dagger_b", "carry_l": { "out": 40, "fwd": 15, "elbow": 40 } },
+      "held": { "forearm.l": "", "handslot.l": "dagger_b", "carry_l": { "out": 12, "fwd": 35, "elbow": 100, "wrist": 60 } },
       "flavor": "Your blows come faster and bleed.",
       "mods": [
         { "stat": "cooldown", "kind": "more", "value": -0.18 },
@@ -32,7 +32,7 @@
     },
     {
       "id": "mace", "name": "Breaker", "weapon": "mace", "kinds": ["mace", "hammer"],
-      "held": { "forearm.l": "", "handslot.l": "mace", "carry_l": { "out": 40, "fwd": 0, "elbow": 25 } },
+      "held": { "forearm.l": "", "handslot.l": "mace", "carry_l": { "out": 12, "fwd": 10, "elbow": 40, "wrist": 30 } },
       "flavor": "Your blows stagger: they hit harder and throw them, and every second one rocks them on their feet.",
       "mods": [
         { "stat": "damage", "kind": "more", "value": 0.08 },

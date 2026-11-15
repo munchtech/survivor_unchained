@@ -71,8 +71,7 @@ public partial class StanceCarry : SkeletonModifier3D
         }
         if (hand >= 0 && last.Wrist != 0)
         {
-            var g = sk.GetBoneGlobalPose(hand);
-            Turn(sk, hand, (g.Basis * Vector3.Right).Normalized(), (float)last.Wrist * k * ElbowSign);
+            Turn(sk, hand, f, (float)last.Wrist * k * OutSign);   // tilts the piece out from her side (about her forward axis)
         }
     }
 
@@ -80,7 +79,7 @@ public partial class StanceCarry : SkeletonModifier3D
     static readonly float[] Signs = SignsArg();
     static float[] SignsArg()
     {
-        var s = (Args.Get("carry-signs") ?? "1,1,-1").Split(',');
+        var s = (Args.Get("carry-signs") ?? "1,-1,-1").Split(',');
         var r = new float[] { 1, 1, 1 };
         for (int i = 0; i < 3 && i < s.Length; i++) if (float.TryParse(s[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)) r[i] = v;
         return r;
