@@ -11,8 +11,13 @@ public static class SkinLight
     /// and down her shaded neck at the Look and the close-up at night (Oklab h 262-264, C .050-.051), and grey-navy on
     /// an NPC's shaded cheek; by day the lavender fill on a yellower NPC paint read grey-olive. Isolated 13 Nov: with
     /// the key off the shade is still navy; cel_fill_tone 0 takes only part. At 0.5 the night shade sits in the bible's
-    /// night band as a muted cool (h 270, C .031); 0.75 turned it brown.</summary>
-    public const float SkyKeep = 0.5f;
+    /// night band as a muted cool (h 270, C .031); 0.75 turned it brown. r4c (14 Nov): with SkyKeepAmbient set apart this is the
+    /// fill's hue alone, and at 0.5 the day close-up's violet fill (#d2beff: green under red and blue even halved) turned every
+    /// shade on her rose against her lit h 56-60: face/jaw h 44, neck/chest 46, breast side 45, belly 45 (C .08; pixels the fill
+    /// lights, isolated: fill off moves only them, backlight 0 and sky_skin 1 the rest). At 1 the fill keeps its light, none
+    /// of its hue, ShadeFill's warmth carries it: h 53 / 58 / 57 / 56, C .08, one hue family. (The "pink shade" at 700,700 was
+    /// the shield behind her arm in its shadow, not skin: no skin term moved it.)</summary>
+    public const float SkyKeep = 1f;
 
     /// <summary>The same for the sky's own light (the ambient) alone (heroine_skin.gdshader sky_skin_amb; over 1 the sky's hue
     /// turns a little warm on her). Where the night sky is her only light, the shaded side of her neck under her jaw at the
@@ -42,9 +47,14 @@ public static class SkinLight
     /// 1.25 her lit forehead and cheeks clipped under AgX to near white (Oklab L .91, C .053) beside a warm body. With her
     /// head's paint at her body's level (HeadPaintLevel) the orange key (#ffc296) and her warm cel tone turned face and body
     /// alike orange (C .13-.16, h 45-47) with the face still clipping red (R 250+ on 36% of it); the paler key at 0.85 with
-    /// CelTone: face R 250+ on 1%, forehead L .78 C .117 h 61, chest L .78 C .135 h 53, one tan skin (13 Nov r2).</summary>
+    /// CelTone: face R 250+ on 1%, forehead L .78 C .117 h 61, chest L .78 C .135 h 53, one tan skin (13 Nov r2). r4c (15 Nov):
+    /// #ffd8b4 still read apricot-orange (cheek 930,390 C .132 h 56, chest .127 h 57, belly .119 h 60): her lit R sits at
+    /// AgX's top, so the key's green and blue set the chroma (her albedo's warmth, cel_tone, moved .127 to .121 only).
+    /// #ffe4cc: chest .115; #ffe8d6 at 0.80: chest .108 but cheek .121 (face over chest by .013); #ffeee2 at 0.85: cheek
+    /// .114 h 58, chest .104 h 58, belly .097 h 62, face R 250+ on 3.5%, the shade's hue as before (h 53-58).
+    /// The play view by day idles into this rig too: its lit chest .126 to .102, cheek .137 to .119 (the world untouched).</summary>
     public const double CloseDayKey = 0.85;
-    public const string CloseDayKeyColor = "#ffd8b4";
+    public const string CloseDayKeyColor = "#ffeee2";
 
     /// <summary>Her skin's warmth under cel (People.HerCelTone, the skin shader's cel_tone on her albedo, every part; an NPC's
     /// is derived from it). (1.39, 0.80, 0.54) read spray-tan orange on her body by day (h 45-47) once her face matched it;
@@ -58,6 +68,82 @@ public static class SkinLight
     /// by day and navy under the night grade's painted shadow (which spares skin only at C .012-.025 up, h 15-90); with this
     /// and SkyKeepAmbient 2.2 the close-up's night neck shadow is (34,17,11) C .031 h 40 (13 Nov skin-light r3).</summary>
     public static readonly (float R, float G, float B) ShadeFill = (1.25f, 0.95f, 0.78f);
+
+    /// <summary>The shade's floor (the skin shader's shade_floor, every skin part, hers and every NPC's): where the key
+    /// doesn't reach, its dark side and its cast shadow alike, skin takes at least this share of the key's luminance as fill,
+    /// the rig's own fill counted, the gap in the part's warm fill (cel_fill_tone) and no sky's hue. The fill reached her cast
+    /// shadows (13 Nov r4: a red cel_fill_tone reddened her neck under her jaw as much as her jaw), but the rigs' fill is small
+    /// at the Look (0.08 by day) and at night, so the ambient's own hue by the normal's direction ruled her shade: the neck
+    /// facing down grey-green at the Look by day ((39,40,38) C .004) and violet-slate at night ((40,39,51) h 289) under a
+    /// warm jaw facing aside, and near black at the night close-up ((34,18,13), the nostrils at luminance 2-14). Nothing
+    /// changes where a rig's fill is over it (the day close-up's 0.55).</summary>
+    public const float ShadeFloor = 0.2f;
+
+    /// <summary>The shade's floor under a cold key (the skin shader's shade_floor_cold, eased in as ShadeCold is; ShadeFloor
+    /// under a warm key, the Look's and the day's, unchanged). With ShadeCold's neutral fill a higher floor lifts the night
+    /// shade toward her lit side's colour (15 Nov skin-light r5, 0.3: close_night collar C/L .199 -> .149, the NPC's
+    /// under-nose .181 -> .125, shade lightness about 0.6 of the lit side's). r6 (15 Nov, judge 5: her moonlit shade C/L
+    /// 1.5-1.7x her lit side's, with HerKeySkin's hue matched): 0.5 (shade/lit C/L p1_close_night .153/.091 -> .117/.091,
+    /// p1_play_night .156 -> .119 /.095, play_night .141 -> .112 /.096; 0.4 .132, 0.45 .122; the sky's ambient at 1.5 only
+    /// .140 and it greyed the Look-night neck); the NPC's night shade .105 -> .112 h 44, its under-nose .137 -> .120.</summary>
+    public const float ShadeFloorCold = 0.5f;
+
+    /// <summary>The shade's floor at the Look by night (the skin shader's shade_floor_night: shade_night's rule under the Look's
+    /// warm fire key), kept at round 2's 0.3: ShadeFloorCold's 0.5 there took her shaded neck to C/L .087 (0.3: .116).</summary>
+    public const float ShadeFloorNight = 0.3f;
+
+    /// <summary>Under a cold directional key (the moon's; a dungeon's cold light) the key's fill and the shade's floor take
+    /// none of cel_fill_tone's warmth (the skin shader's shade_cold, every skin part, hers and an NPC's; eased in by the
+    /// key's (b - r) / luminance as key_skin is, so the warm sun's key is untouched). Nearby warm lamps already warm the
+    /// shade; with the fill's warmth (her ShadeFill, an NPC's NpcCelSplit fill) on top the night shade read more orange
+    /// than the moonlit side (judge 4: her close_night collar C/L .199, the NPC's cheek .234, against lit .09). At 1 with
+    /// ShadeFloor 0.3 (15 Nov skin-light r5): .149 and about .10-.17. Not the key's own colour in the shade (ShadeKey, r4d,
+    /// failed: richer, not calmer).</summary>
+    public const float ShadeCold = 1f;
+
+    /// <summary>An NPC's share of the sky's and the fill's hue given back as its skin's warmth (sky_skin; hers is SkyKeep).
+    /// NpcCelSplit's fill shift was fitted at 0.5; at SkyKeep's 1 the NPC's day shade went ochre (jaw h 50 -> 59,
+    /// judge 4). 0.5 (15 Nov skin-light r5): h 48.</summary>
+    public const float NpcSkyKeep = 0.5f;
+
+    /// <summary>How much of HerBodyTone her body takes out from her collarbones down under the Look's rig (the skin
+    /// shader's body_gate; her head and neck keep it all). At 1 her collar band (part kept, by her freckles' map's blue)
+    /// read grey-beige over an orange lower chest at the Look by day (Oklab C .074 h 61 against .101 h 55, judge 4). 0.5
+    /// (15 Nov skin-light r5): lower chest .085 h 59. Outside the Look (rig weight 0) nothing changes.</summary>
+    public const float BodyGate = 0.5f;
+
+    /// <summary>Her neck and collar band at the Look drawn toward her body's colour (the skin shader's neck_pull, rgb a linear
+    /// colour at luminance about 1, a how far; under the Look's rig only, by her freckles' map's blue on her body and below
+    /// neck_pull_y on her head; her deep swatch keeps People.DeepNeck). The band kept HerBodyTone's blue where BodyGate takes
+    /// it out of her chest: an ash-beige yoke at the Look by day (judge 5: band C/L .116 h 60 against lower chest .136 h 59,
+    /// neck base .142 h 57). 0.25 (15 Nov skin-light r6): band .129 h 57, lower chest .136, neck base .155 h 54, left
+    /// shoulder top .141 h 55 (0.15: band .124; 0.35: band .135, neck base .16-.17 h 51-52). Raising BodyGate moved only the
+    /// lower chest (0.75: .147), so it stays.</summary>
+    public static readonly (float R, float G, float B, float A) NeckPull = (1.3f, 0.95f, 0.75f, 0.25f);
+
+    /// <summary>Her body's tone out of her neck's shade under the Look's rig (the skin shader's neck_shade_out, every skin
+    /// part; her neck is her head's mesh). Under the rig her head and neck keep HerBodyTone (own (0.66, 1.17, 2.15), a blue
+    /// fitted against the rig's warm key) and only the key's light was warmed back (key_tone), so where the key doesn't reach
+    /// her neck kept the blue: grey at the Look by day (Oklab L .34 C .005 h 87) and blue-violet by night (L .38 C .014
+    /// h 281) under a warm jaw (C .025-.054 h 45-49), the shade's floor and its warm fill no help (floor 0.8: C .015 by day).
+    /// At 1 (14 Nov skin-light r4b): by day C .036 h 60, by night C .062 h 51, lightness kept (.34, .36); outside the Look
+    /// (rig weight 0) nothing changes.</summary>
+    public const float NeckShadeOut = 1f;
+
+    /// <summary>A package NPC's share of a cold key's hue (the moon's) given back as its skin's own warmth (the skin shader's
+    /// key_skin, People.NpcSkin, every NPC skin part; the sun's warm key untouched). Under the night's blue moon the NPC on
+    /// her base read lilac on its lit side (forehead Oklab L .53 C .028 h 335, the grade's moon step taking a C/L under
+    /// MoonLo) beside a warm shade (h 53). 0.5: h 20 C .041, still rose; at 1 (14 Nov skin-light r4b) h 46 C .047, her
+    /// own night's lit skin (close_night h 36-40 C .05), the shade unchanged (L .17 h 54).</summary>
+    public const float NpcKeySkin = 1f;
+
+    /// <summary>Hers (the skin shader's key_skin on her, every part): the cold key's hue given back as her skin's warmth on her
+    /// lit side, as an NPC's (NpcKeySkin). At 0 the moon's blue lay whole on her lit side, dusty pink (Oklab h 31, C/L .085)
+    /// beside a shade the moon doesn't reach in her own warm hue (h 54): two materials (judge 5, p1_close_night y 720). Split
+    /// (15 Nov skin-light r3): the shade's hue moved with none of skin_hold, the town's lamps or the grade (the grade took the
+    /// lit side 41 to 31); at 1 the lit side is h 56 against the shade's 54 at p1_close_night and p1_play_night, as by day
+    /// (shade a few degrees redder). Cold keys only (the shader's gate), so the sun and the Look's fire key are untouched.</summary>
+    public const float HerKeySkin = 1f;
 
     /// <summary>The soft rim (heroine_skin.gdshader `rim`, an n.v lobe stepped hard under cel) a skin part is given, or
     /// null to keep its own. On the body its narrow lobe, stepped, broke on the normal map into small lilac-white specks
