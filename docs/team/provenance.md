@@ -83,3 +83,4 @@ Owner answers (questions 1 to 7).
 ## Ours, painted from nothing
 
 - `godot/art/dungeon/den/` (albedo, normal, arh, layers.json; 15 Nov 2026): ours, painted from nothing by `tools/look/ground_paint.py`, set "den" in `godot/data/look/ground.json`; no photo, scan or outside source. Risk: none.
+- `godot/art/dungeon/den/decals.png` (+ `decals.json`; 15 Nov 2026): ours, painted from nothing by `tools/look/den_decals.py` (the den floor's bones, rib cages, skulls, hides, fur, twigs, leaves, blood, roots and pebbles, drawn in code); no outside source. Risk: none.

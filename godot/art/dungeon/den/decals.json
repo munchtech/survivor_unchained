@@ -1,0 +1,555 @@
+{
+ "what": "The den floor's painted decals (tools/look/den_decals.py, VERSION 1): straight alpha, edges a 1 px alpha ramp; each decal's long axis horizontal in its rect, the painted light from the rect's top (ground.json light); rect = [x, y, w, h] px, metres = [w, h]; weight = a frequency hint (per kind, split over its variants).",
+ "version": 1,
+ "size": [
+  2048,
+  2048
+ ],
+ "px_per_m": 256,
+ "light": [
+  -0.4512,
+  -0.8924
+ ],
+ "decals": [
+  {
+   "kind": "bone",
+   "variant": 0,
+   "rect": [
+    10,
+    680,
+    88,
+    35
+   ],
+   "metres": [
+    0.344,
+    0.137
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "bone",
+   "variant": 1,
+   "rect": [
+    1624,
+    601,
+    112,
+    41
+   ],
+   "metres": [
+    0.438,
+    0.16
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "bone",
+   "variant": 2,
+   "rect": [
+    1483,
+    601,
+    131,
+    47
+   ],
+   "metres": [
+    0.512,
+    0.184
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "bone",
+   "variant": 3,
+   "rect": [
+    1249,
+    601,
+    151,
+    48
+   ],
+   "metres": [
+    0.59,
+    0.188
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "bone",
+   "variant": 4,
+   "rect": [
+    1878,
+    601,
+    101,
+    37
+   ],
+   "metres": [
+    0.395,
+    0.145
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "bone",
+   "variant": 5,
+   "rect": [
+    1746,
+    601,
+    122,
+    39
+   ],
+   "metres": [
+    0.477,
+    0.152
+   ],
+   "weight": 0.1667
+  },
+  {
+   "kind": "ribcage",
+   "variant": 0,
+   "rect": [
+    623,
+    449,
+    224,
+    108
+   ],
+   "metres": [
+    0.875,
+    0.422
+   ],
+   "weight": 0.1167
+  },
+  {
+   "kind": "ribcage",
+   "variant": 1,
+   "rect": [
+    1185,
+    10,
+    266,
+    203
+   ],
+   "metres": [
+    1.039,
+    0.793
+   ],
+   "weight": 0.1167
+  },
+  {
+   "kind": "ribcage",
+   "variant": 2,
+   "rect": [
+    368,
+    449,
+    245,
+    119
+   ],
+   "metres": [
+    0.957,
+    0.465
+   ],
+   "weight": 0.1167
+  },
+  {
+   "kind": "wolf_skull",
+   "variant": 0,
+   "rect": [
+    539,
+    601,
+    93,
+    58
+   ],
+   "metres": [
+    0.363,
+    0.227
+   ],
+   "weight": 0.25
+  },
+  {
+   "kind": "deer_skull",
+   "variant": 0,
+   "rect": [
+    961,
+    10,
+    214,
+    206
+   ],
+   "metres": [
+    0.836,
+    0.805
+   ],
+   "weight": 0.12
+  },
+  {
+   "kind": "hide",
+   "variant": 0,
+   "rect": [
+    646,
+    10,
+    305,
+    208
+   ],
+   "metres": [
+    1.191,
+    0.812
+   ],
+   "weight": 0.075
+  },
+  {
+   "kind": "hide",
+   "variant": 1,
+   "rect": [
+    271,
+    10,
+    365,
+    232
+   ],
+   "metres": [
+    1.426,
+    0.906
+   ],
+   "weight": 0.075
+  },
+  {
+   "kind": "fur",
+   "variant": 0,
+   "rect": [
+    1912,
+    449,
+    111,
+    69
+   ],
+   "metres": [
+    0.434,
+    0.27
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "fur",
+   "variant": 1,
+   "rect": [
+    10,
+    601,
+    149,
+    69
+   ],
+   "metres": [
+    0.582,
+    0.27
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "fur",
+   "variant": 2,
+   "rect": [
+    857,
+    449,
+    176,
+    102
+   ],
+   "metres": [
+    0.688,
+    0.398
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "fur",
+   "variant": 3,
+   "rect": [
+    1559,
+    449,
+    145,
+    81
+   ],
+   "metres": [
+    0.566,
+    0.316
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "twigs",
+   "variant": 0,
+   "rect": [
+    876,
+    601,
+    116,
+    54
+   ],
+   "metres": [
+    0.453,
+    0.211
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "twigs",
+   "variant": 1,
+   "rect": [
+    278,
+    601,
+    152,
+    61
+   ],
+   "metres": [
+    0.594,
+    0.238
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "twigs",
+   "variant": 2,
+   "rect": [
+    1714,
+    449,
+    188,
+    72
+   ],
+   "metres": [
+    0.734,
+    0.281
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "twigs",
+   "variant": 3,
+   "rect": [
+    727,
+    601,
+    139,
+    55
+   ],
+   "metres": [
+    0.543,
+    0.215
+   ],
+   "weight": 0.2
+  },
+  {
+   "kind": "leaves",
+   "variant": 0,
+   "rect": [
+    642,
+    601,
+    75,
+    56
+   ],
+   "metres": [
+    0.293,
+    0.219
+   ],
+   "weight": 0.25
+  },
+  {
+   "kind": "leaves",
+   "variant": 1,
+   "rect": [
+    440,
+    601,
+    89,
+    59
+   ],
+   "metres": [
+    0.348,
+    0.23
+   ],
+   "weight": 0.25
+  },
+  {
+   "kind": "leaves",
+   "variant": 2,
+   "rect": [
+    169,
+    601,
+    99,
+    68
+   ],
+   "metres": [
+    0.387,
+    0.266
+   ],
+   "weight": 0.25
+  },
+  {
+   "kind": "leaves",
+   "variant": 3,
+   "rect": [
+    1176,
+    601,
+    63,
+    49
+   ],
+   "metres": [
+    0.246,
+    0.191
+   ],
+   "weight": 0.25
+  },
+  {
+   "kind": "blood",
+   "variant": 0,
+   "rect": [
+    205,
+    449,
+    153,
+    135
+   ],
+   "metres": [
+    0.598,
+    0.527
+   ],
+   "weight": 0.125
+  },
+  {
+   "kind": "blood",
+   "variant": 1,
+   "rect": [
+    787,
+    253,
+    202,
+    174
+   ],
+   "metres": [
+    0.789,
+    0.68
+   ],
+   "weight": 0.125
+  },
+  {
+   "kind": "blood",
+   "variant": 2,
+   "rect": [
+    10,
+    10,
+    251,
+    233
+   ],
+   "metres": [
+    0.98,
+    0.91
+   ],
+   "weight": 0.125
+  },
+  {
+   "kind": "blood",
+   "variant": 3,
+   "rect": [
+    10,
+    449,
+    185,
+    142
+   ],
+   "metres": [
+    0.723,
+    0.555
+   ],
+   "weight": 0.125
+  },
+  {
+   "kind": "root",
+   "variant": 0,
+   "rect": [
+    1593,
+    253,
+    433,
+    159
+   ],
+   "metres": [
+    1.691,
+    0.621
+   ],
+   "weight": 0.15
+  },
+  {
+   "kind": "root",
+   "variant": 1,
+   "rect": [
+    999,
+    253,
+    584,
+    170
+   ],
+   "metres": [
+    2.281,
+    0.664
+   ],
+   "weight": 0.15
+  },
+  {
+   "kind": "root",
+   "variant": 2,
+   "rect": [
+    10,
+    253,
+    767,
+    186
+   ],
+   "metres": [
+    2.996,
+    0.727
+   ],
+   "weight": 0.15
+  },
+  {
+   "kind": "root",
+   "variant": 3,
+   "rect": [
+    1043,
+    449,
+    506,
+    87
+   ],
+   "metres": [
+    1.977,
+    0.34
+   ],
+   "weight": 0.15
+  },
+  {
+   "kind": "pebbles",
+   "variant": 0,
+   "rect": [
+    1410,
+    601,
+    63,
+    48
+   ],
+   "metres": [
+    0.246,
+    0.188
+   ],
+   "weight": 0.3
+  },
+  {
+   "kind": "pebbles",
+   "variant": 1,
+   "rect": [
+    1002,
+    601,
+    76,
+    54
+   ],
+   "metres": [
+    0.297,
+    0.211
+   ],
+   "weight": 0.3
+  },
+  {
+   "kind": "pebbles",
+   "variant": 2,
+   "rect": [
+    1088,
+    601,
+    78,
+    54
+   ],
+   "metres": [
+    0.305,
+    0.211
+   ],
+   "weight": 0.3
+  }
+ ]
+}
