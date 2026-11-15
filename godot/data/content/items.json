@@ -740,6 +740,9 @@
      "value": 12,
      "source": "item"
     }
+   ],
+   "wear": [
+    "ranger.top"
    ]
   },
   "chain_shirt": {
@@ -2249,7 +2252,6 @@
    ],
    "wear": [
     "plate_cuirass_plain",
-    "plate_gstring_plain",
     "plate_pauldrons_plain"
    ]
   },
