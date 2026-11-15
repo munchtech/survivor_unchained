@@ -20,7 +20,7 @@ public class LoadoutTests
             var away = Loadouts.Of(ch).Arms;
             Assert.Equal("", away.Right); Assert.Null(away.Left); Assert.Null(away.Forearm);
             Assert.Equal(held.Idle, away.Idle);
-            Assert.NotEqual(Loadouts.Look(Loadouts.Of(ch)), Loadouts.Look(new Loadout(Loadouts.Of(ch).Person, held, null)));
+            Assert.NotEqual(Loadouts.Look(Loadouts.Of(ch)), Loadouts.Look(new Loadout(Loadouts.Of(ch).Person, held)));
         }
         finally { Loadouts.ArmsAway = false; }
         Assert.Equal(held.Right, Loadouts.Of(ch).Arms.Right);

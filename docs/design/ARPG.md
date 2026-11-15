@@ -145,7 +145,7 @@ Every skill keeps its self-firing rule for the arena, so an assist setting ("the
 
 **The pushback:** taken literally, a Union is one key in two slots, which leaves the second key dead and makes the Union a loss on a four-slot bar. Players would skip it: it is the two-slot skill that never fires.
 
-**The fix:** a Union keeps both keys, one per half, and joins them with a **bond**: what one half does to the other. Bladestorm is the model.
+**The fix:** a Union keeps both keys, one per half, and joins them with a **bond**: what one half does to the other. The model is the bond Bladestorm had while it was a Union (Bladestorm is now the Warden's own skill in key 3 at level 5, so the example below is Cleaver + Sunder as the pattern, not a shipped Union).
 - Cleaver's key, held, spins her through the crowd with the blade out, a cut every turn.
 - Sunder's key breaks the storm: she plants the blade, and every heavy line she threw in the spin splits at once. The longer the storm, the bigger the break.
 
@@ -154,7 +154,7 @@ Each half is still its part: the part's wick, rank and Turn apply to its half, s
 **Gate and cost** (ONE_BUILD's, kept):
 - It opens when both parts burn a Turn, and it costs one point from each.
 - Joining and unjoining are free at a lamp-post.
-- With section 3.5's rate, the first Union arrives about level 11, at Act 2's door, when all six of her slots are open (call 13).
+- With section 3.5's rate, the Warden's first Union (Falling Wall) arrives at level 15, in Act 2, when all four of her keys are open (BUILD_UNLOCKS).
 - The harness holds it honest. **A Union does at least the damage of its two skills apart, at equal gear, in every case, and may do more** (the owner, 13 Nov: "= to both of them or more"; this replaces the old ×1.15-1.3 band). **The lower its damage gain, the greater its extra effect** (the owner: "the lower the damage the greater the extra effect"). A Union at about ×1.0 must pay in its bond: control, defense or reach the two apart can't give. A Union well above its halves carries a light extra. It is power and a combo for the two slots, never mandatory.
 
 **The first Union list** (working names are drafts for the story lead; "built" means it is in `skills.json` today):
@@ -163,7 +163,6 @@ Each half is still its part: the part's wick, rank and Turn apply to its half, s
 |---|---|---|---|---|
 | Warden | ~~Bladestorm~~ (retired as a Union, 13 Nov: now her own skill in key 3 at level 5, BUILD_UNLOCKS) | Cleaver + Sunder | hold: the spin | the storm breaks; the thrown lines split |
 | Warden | **Falling Wall** (built; her first Union, at 15) | Heroic Leap + Shield Charge | the leap lands shield first; a wider ring knocked flat | each one struck shields her |
-| Warden | **Dawn's Judgment** (built; not reachable in the campaign: the Disc has no source) | Judgment Disc + Dawnpulse | the disc ricochets and breaks into light | recall: it flies back through everything, and the dawn bursts on the catch |
 | Warden | **Earthfall** | Heroic Leap + Groundbreaker | the leap; the landing cracks to the three densest packs | heave: every crack at once, stunning |
 | Warden | **The Last Bell** | Watch Bell + Rebuke | the toll drags all within 8 m onto her shield | for 2 s every blow on her answers on its striker and three near it |
 | Reaver | **Gallows Wheel** | Red Whirl + Chain Lash | hold: she whirls with the chain out and hooks what it touches | yank: the hooked are knotted at her feet and hoisted |
@@ -178,6 +177,8 @@ Each half is still its part: the part's wick, rank and Turn apply to its half, s
 | Stalker | **Rotwood** (built) | Blightfield + Thornbloom | the thicket holds what it rots | it bursts, and the rot spreads from what dies in it |
 | Stalker | **Shadow Step** | Shadow Double + Cutting Wake | her shadow stays and repeats her blows | she swaps places with it, leaving blades along the way |
 | Stalker | **The Stoop** | Heartseeker + The Hawk | the heavy arrow pierces the line | the hawk dives where it struck |
+
+Dawn's Judgment (Judgment Disc + Dawnpulse) is built but not on the list: it is unreachable in the campaign (the Disc is on no road, taught slot or affix, and Dawnpulse is only an offer), so the Warden's first Union is Falling Wall (BUILD_UNLOCKS).
 
 Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to the reaver and the stalker. Every bond is a press that cashes in what the first key built, so each Union reads as a combo, not a merge.
 

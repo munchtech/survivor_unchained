@@ -254,11 +254,12 @@ public sealed partial class Battle
         if (!Combat || !p.Alive) return;
         double keep = p.AbilityCd;
         int rk = rankNow;
-        double wait = r.Def.Wait;
+        var def = Abilities.All[r.Kind];
+        // The lamp's wait, or, where it gives none, the art's own (as FormWait: Bulwark's 15 s).
+        double wait = r.Def.Wait > 0 ? r.Def.Wait : def.Cooldown;
         if (r.Kind == AbilityKind.RedTide && Lamp("red_tide.second")) wait = Lamps.Full("red_tide.second", "wait", wait);
         p.AbilityCd = wait * Stats.Get(Stat.AbilityCooldown) * Abilities.RankHaste(r.Rank);
         rankNow = r.Rank;
-        var def = Abilities.All[r.Kind];
         // Toward the nearest thing that hunts her; with none, the way she faces.
         var t = NearestHostile(p.X, p.Z, 12);
         double angle = t != null ? Math.Atan2(t.Z - p.Z, t.X - p.X) : Math.Atan2(Math.Cos(p.Facing), Math.Sin(p.Facing));
