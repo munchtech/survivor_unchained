@@ -40,6 +40,12 @@ public sealed class SwapStrike
     public StanceStatus? Bleed;
 }
 
+/// <summary>Degrees her left arm turns out from her side (Out, about her forward axis), forward (Fwd), at the elbow (Elbow) and at the wrist (Wrist).</summary>
+public sealed class ArmCarry
+{
+    public double Out, Fwd, Elbow, Wrist;
+}
+
 public sealed class StanceDef
 {
     public string Id = "", Name = "", Weapon = "", Flavor = "";
@@ -50,7 +56,26 @@ public sealed class StanceDef
     public SwapStrike Strike = new();
     /// <summary>(view only) What her off-hand shows in this stance, by slot ("forearm.l", "handslot.l"): an Arms piece id, "" for
     /// empty; a slot left out is as her loadout has it.</summary>
-    public Dictionary<string, string> Held = new();
+    [System.Text.Json.Serialization.JsonPropertyName("held")]
+    public Dictionary<string, JsonElement> HeldRaw = new();
+
+    /// <summary>"held" as piece ids by slot (its string entries; "carry_l" is the one object entry).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public Dictionary<string, string> Held => held ??= HeldRaw.Where(kv => kv.Value.ValueKind == JsonValueKind.String).ToDictionary(kv => kv.Key, kv => kv.Value.GetString() ?? "");
+    Dictionary<string, string>? held;
+
+    /// <summary>(view only) How her left arm carries the off-hand piece out from her side in this stance ("held"."carry_l"), degrees; null: no carry.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ArmCarry? CarryL
+    {
+        get
+        {
+            if (carry != null || !HeldRaw.TryGetValue("carry_l", out var e) || e.ValueKind != JsonValueKind.Object) return carry;
+            double N(string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
+            return carry = new ArmCarry { Out = N("out"), Fwd = N("fwd"), Elbow = N("elbow"), Wrist = N("wrist") };
+        }
+    }
+    ArmCarry? carry;
 
     /// <summary>The piece shown in `slot` in this stance (null: empty); `loadoutPiece` is what her loadout has there, kept when the stance names none.</summary>
     public string? Piece(string slot, string? loadoutPiece) =>

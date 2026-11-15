@@ -217,6 +217,7 @@ public partial class PlayerView : Node3D
     // Weapons sheathed in town (Play/Sheath.cs): fed each frame from the close-up's situation (Calm).
     readonly Sheath sheath = new();
     readonly StanceHands stanceHands = new();
+    StanceCarry? stanceCarry;
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
@@ -393,6 +394,10 @@ public partial class PlayerView : Node3D
                 person.Skeleton.AddChild(armMod);
                 person.Skeleton.MoveChild(armMod, 0);
             }
+            // Her off-hand piece carried out from her side in a stance (view only), right after the arm-hold layer.
+            stanceCarry = new StanceCarry();
+            person.Skeleton.AddChild(stanceCarry);
+            person.Skeleton.MoveChild(stanceCarry, armMod != null ? 1 : 0);
         }
         else
         {
@@ -1070,6 +1075,14 @@ public partial class PlayerView : Node3D
         if (mine) XrayStep((float)dt);
         if (mine) FloorStep(b, (float)dt);
         if (mine && view != null && stanceHands.Follow(view, loadout.Arms, b.StanceNow, sheath.Sheathed) && armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;   // (her off-hand follows the stance)
+        if (mine && stanceCarry != null)
+        {
+            // The piece carried out only while it is drawn, she lives, and no swing or full-body shot owns the arm.
+            var st = b.StanceNow;
+            stanceCarry.Carry = st?.CarryL;
+            stanceCarry.On = st?.CarryL != null && !sheath.Sheathed && !dead && p.Alive && Content.Stances.Piece(st, "handslot.l", loadout.Arms.Left) != null
+                && !(bool)tree.Get("parameters/upperShot/active") && !(bool)tree.Get("parameters/fullShot/active");
+        }
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
         // sheathed, as the game plays it.
