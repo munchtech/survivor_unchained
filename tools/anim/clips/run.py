@@ -246,7 +246,10 @@ WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 # carried the ankle 0.80 m behind the pelvis, out of the leg's reach, so the knee locked straight (bend 3.6) for 2 stance
 # and 3 swing frames, thigh 28-45 back, then popped to 54 in one frame. At 0.26 (contact 0.18 s, a 5 m/s run's) the knee
 # never locks (toe-off bend ~22) and folds straight on through; thigh back at most ~25.
-WARDEN = Gait(frames=21, speed=SPEED, duty=0.26, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
+# (aim-move) frames 21 -> 18 and duty 0.26 -> 0.30: the flight was 5 frames a step (the brief's bar: 4); the stance carries
+# the ankle as far back as before (0.54 m: the knee never locks). The recovery leg (judge r1 fix 3): the heel folded up
+# toward the glute by 15 % of the swing (2 frames after toe-off), fold_kick high.
+WARDEN = Gait(frames=18, speed=SPEED, duty=0.30, fold_at=0.15, fold_kick=0.46, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
