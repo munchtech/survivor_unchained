@@ -658,7 +658,8 @@ public static class Ai
         var side = Allegiance.Of(e);
         // A reflection of the survivor is the first thing anything hunting them goes for.
         // Champions and bosses are not fooled by a reflection: Mirror Step saves you from the crowd, not from them.
-        if (hostileToPlayer && b.Decoys.Count > 0 && !e.Elite && !e.Boss)
+        // Bulwark: while she stands planted the horde turns on her (Abilities.cs), before any reflection or rival.
+        if (hostileToPlayer && b.Decoys.Count > 0 && !e.Elite && !e.Boss && p.BulwarkT <= 0)
         {
             Enemy? decoy = null;
             double dd = 14;
@@ -680,7 +681,11 @@ public static class Ai
             // (M5 r3: not in the lamp's moment, LampQuiet after a post is lit; a blow still wakes it)
             if (e.Wake > 0 && !e.Roused && d < e.Wake && !b.LampHush) b.Rouse(e);
             bool resting = e.Wake > 0 && !e.Roused;
-            if (!resting && d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6)) { best = -1; bd = d * 0.8; }
+            if (!resting && d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6))
+            {
+                if (p.BulwarkT > 0) return -1;
+                best = -1; bd = d * 0.8;
+            }
         }
         // Rivals and the survivor's allies nearby.
         b.Spatial.Query(e.X, e.Z, 9, b.AiScratch);

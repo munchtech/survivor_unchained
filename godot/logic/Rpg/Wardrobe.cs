@@ -22,7 +22,7 @@ public sealed class DyesFile { public List<DyeDef> Dyes = new(); }
 /* The wardrobe (bd-ui W18): looks collected from gear she has found, shown over any piece of the same place (head, body,
  * feet), and dyes, as data. It changes how she looks, never what she wears: her stats come from her equipment alone.
  * Her only: a look is listed or collected only for the sex whose cut it is (no cross-gender swap). The cloak is not
- * here: ch.Cloak is read into the Loadout and drawn by nothing today. */
+ * here: ch.Cloak is kept on the Character (old saves) and drawn by nothing today; the Loadout no longer carries it. */
 public static class Wardrobe
 {
     public static readonly string[] LookSlots = ["head", "body", "feet"];

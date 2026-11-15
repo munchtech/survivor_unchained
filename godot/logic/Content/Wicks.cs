@@ -76,6 +76,11 @@ public sealed class StrandDef
     /// lead-ins carry no numbers; null on wicks.json's strands.</summary>
     public WickRule[][]? Rules;
 
+    /// <summary>(storm-wick) A wicks.json strand's rule effects, one list for each place (1-4), in skill_lamps.json's
+    /// effect shape ({"do": "rule", "rule": "skill.status", "args": {...}}): loaded into Rules, so the strand fights as a
+    /// rule strand (its lamps' "text" is their card line, the effects their numbers). Null: a numbers strand.</summary>
+    public List<System.Text.Json.JsonElement[]>? Effects;
+
     public WickLeadIn[] LeadIns => Lamps is { Length: 3 } l ? l : Wicks.LeadInsOf(Kind);
     public TurnDef TurnDef => Wicks.Turn(Turn);
     public string LampId(int n) => $"{Id}.{n}";
@@ -113,7 +118,7 @@ public static class Wicks
         foreach (var (id, t) in f.Turns) t.Id = id;
         foreach (var (id, s) in f.Strands) s.Id = id;
         foreach (var w in f.Skills.Values)
-            if (w.Own != null) foreach (var (id, s) in w.Own) s.Id = id;
+            if (w.Own != null) foreach (var (id, s) in w.Own) { s.Id = id; OwnRules(s); }
         RuleTrees(f, LampsData);
         return f;
     }
@@ -152,6 +157,15 @@ public static class Wicks
             if (own.Count != 3) continue;
             f.Skills[sk.Id] = new SkillWick { Strands = own.Keys.ToArray(), Suggested = $"{sk.Id}.{sk.Suggested}", Own = own };
         }
+    }
+
+    /// <summary>(storm-wick) A bespoke strand written with rule effects (wicks.json "effects", four places) becomes a rule
+    /// strand: each place's effects as the fight lights them (Turns.Build gathers them, Battle.SyncWickRules lights them).
+    /// Bladestorm's Hold Fast is one: the generic "skill.status" rule on its own skill.</summary>
+    static void OwnRules(StrandDef s)
+    {
+        if (s.Effects is not { Count: PerStrand } fx) return;
+        s.Rules = fx.Select((row, i) => row.Select(e => RuleOf(s.LampId(i + 1), e)).Where(x => x != null).Select(x => x!).ToArray()).ToArray();
     }
 
     /// <summary>A lamp effect as the fight takes it: a rule with its numeric args (a "skill" word names its skill; a

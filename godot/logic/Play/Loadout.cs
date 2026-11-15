@@ -16,7 +16,7 @@ namespace SurvivorUnchained.Play;
 /// the stance, and library clips (Universal Animation Libraries).</summary>
 public sealed record HeldArms(string Right, string? Left, string? Forearm, string Idle, string[] Attack, string Heavy, string? Cast = null);
 
-public sealed record Loadout(PersonSpec Person, HeldArms Arms, string? Cloak);
+public sealed record Loadout(PersonSpec Person, HeldArms Arms);
 
 public static class Loadouts
 {
@@ -127,7 +127,6 @@ public static class Loadouts
         var pal = a.Palettes.FirstOrDefault(p => p.Id == ch.Palette) ?? a.Palettes[0];
         string? skin = Lore.Skins.FirstOrDefault(s => s.Id == ch.Skin)?.Color;
         string? hair = Lore.Hairs.FirstOrDefault(x => x.Id == ch.Hair)?.Color;
-        string? cloak = ch.Cloak == "none" ? null : Lore.CloakDyes.FirstOrDefault(d => d.Id == ch.Cloak)?.Color;
         // A hero's own body is shaped by what it offers (Lore.Hero): hers now;
         // the male hero's when his body wears one (his cuts then come in here too).
         var kit = HeroKit(sex);
@@ -159,6 +158,6 @@ public static class Loadouts
         };
         // The wardrobe puts her sword and shield away (ArmsAway), the stance kept.
         if (ArmsAway) held = held with { Right = "", Left = null, Forearm = null };
-        return new Loadout(person, held, string.IsNullOrEmpty(cloak) ? null : cloak);
+        return new Loadout(person, held);
     }
 }
