@@ -2192,8 +2192,8 @@ public partial class PlayerView : Node3D
     // (t4 round 6, the coordinator's plan; round 5 left the two hip spins on a foot that was down: 180 deg at BackRate while
     // the sim carried her 0.15-0.18 m a frame sideways in her own frame, slip or catch-up whatever the phase) She turns only in
     // the air. Through a backpedal her yaw is held to BackHoldRate deg/s while a foot is down (BackYawMax). When the blow
-    // comes, the foot that is down lifts within a frame or two: one that has just landed (less than BackUnland of the cycle
-    // into its stance) un-lands, her run played back at BackLift of its pace; one further on pushes off at the run's pace,
+    // comes, the foot that is down lifts within a frame or two: one whose toe-off is more than BackWait frames off at the
+    // run's pace un-lands, her run played back at BackLift of its pace; one further on pushes off at the run's pace,
     // held. Her hips go round in the flight that follows (BackRate), its phase run back so that her rear foot comes down behind
     // her on the turn's last frame (the run's toe-off, BackToeL/R, at the pace that lands it then). Out of it the same: held
     // while the backwards run's foot is down, round in the flight, and she lands on the foot she left from, now in front of
@@ -2202,14 +2202,14 @@ public partial class PlayerView : Node3D
     // BackLandL..BackToeL and BackLandR..BackToeR): the phase set this frame shows next frame. --turn-back-air-off: round 5.
     static readonly bool BackAirOff = SurvivorUnchained.Args.Has("turn-back-air-off");
     static readonly float BackHoldRate = SurvivorUnchained.Args.Num("turn-back-hold-rate", 240f),
-        BackLift = SurvivorUnchained.Args.Num("turn-back-lift", 2f), BackUnland = SurvivorUnchained.Args.Num("turn-back-unland", 0.1f),
+        BackLift = SurvivorUnchained.Args.Num("turn-back-lift", 2f), BackWait = SurvivorUnchained.Args.Num("turn-back-wait", 1.5f), BackGateM = SurvivorUnchained.Args.Num("turn-back-gate", 0.03f),
         BackLandL = SurvivorUnchained.Args.Num("turn-back-land-l", 0.98f), BackToeL = SurvivorUnchained.Args.Num("turn-back-toe-l", 0.25f),
         BackLandR = SurvivorUnchained.Args.Num("turn-back-land-r", 0.46f), BackToeR = SurvivorUnchained.Args.Num("turn-back-toe-r", 0.80f),
         BackHop = SurvivorUnchained.Args.Num("turn-back-hop", 0.08f), BackHopMin = SurvivorUnchained.Args.Num("turn-back-hop-min", 0.06f),
         BackDone = SurvivorUnchained.Args.Num("turn-back-done", 6f), BackFlyMax = SurvivorUnchained.Args.Num("turn-back-fly-max", 3f),
         BackIn = SurvivorUnchained.Args.Num("turn-back-in", 0.015f);
     // backSt: 0 none, 1 into it (until she lands behind her), 2 the backwards run, 3 out of it (until she lands), 4 landed out
-    int backSt, backLiftFoot = -1, backAirN = -1;
+    int backSt, backLiftFoot = -1, backAirN = -1, backAirLen = 1;
     float backAirP0, backAirTo, backGoal;
     bool backWas;
 
@@ -2228,7 +2228,10 @@ public partial class PlayerView : Node3D
         backGoal = goal;
         if (BackAirOff || BackDriveOff || AimLegs) return BackRate;
         int f = plantFoot >= 0 ? plantFoot : plantH[0] < PlantTouch && plantH[0] <= plantH[1] ? 0 : plantH[1] < PlantTouch ? 1 : -1;
-        return f >= 0 && BackDown(stride) == f ? BackHoldRate : BackRate;
+        // (BackGateM of the cycle either side: a pose's stance can run on a little past the run's own)
+        // (a foot un-landing is not held: it is off the ground on the next pose, so her turn starts with it)
+        if (f >= 0 && f == backLiftFoot) return BackRate;
+        return f >= 0 && (BackDown(stride) == f || BackDown(stride + BackGateM) == f || BackDown(stride - BackGateM) == f) ? BackHoldRate : BackRate;
     }
 
     /// <summary>(round 6) Frames her eased turn (TurnTo at BackRate) needs from here to within BackDone deg of `goal`.</summary>
@@ -2259,8 +2262,9 @@ public partial class PlayerView : Node3D
             if (backSt == 4) return natural;
             if (backSt == 1)
             {
-                float s = Mathf.PosMod(stride - (down == 0 ? BackLandL : BackLandR), 1f);
-                if (backLiftFoot == down || s < BackUnland && plantFoot != down)
+                // (it pushes off only if its toe-off is at most BackWait frames away at the run's pace; else it un-lands)
+                float rem = Mathf.PosMod((down == 0 ? BackToeL : BackToeR) - stride, 1f);
+                if (backLiftFoot == down || rem > BackWait * normal && plantFoot != down)
                 {
                     backLiftFoot = down;
                     return Mathf.PosMod(stride - BackLift * normal, 1f);
@@ -2281,10 +2285,13 @@ public partial class PlayerView : Node3D
                 if (Mathf.Abs(d) < Mathf.Abs(best)) best = d;
             }
             backAirTo = best;
+            // (the flight's frames planned from the turn left at its start: a goal that moves on, her stick round a curve, does
+            // not hold her up in the air)
+            backAirLen = Mathf.Max(BackSpinLeft(backGoal, dt), 1);
         }
         backAirN++;
-        int left = BackSpinLeft(backGoal, dt);
-        float u = (float)backAirN / (backAirN + left);
+        int left = Mathf.Max(backAirLen - backAirN, 0);
+        float u = Mathf.Min((float)backAirN / backAirLen, 1f);
         float arc = Mathf.Abs(backAirTo) < BackHopMin ? (backSt == 3 ? -1 : 1) * BackHop * Mathf.Sin(Mathf.Pi * u) : 0;
         float next = backAirP0 + backAirTo * u + arc;
         // (turned and not yet down: on to the landing at the run's pace)
