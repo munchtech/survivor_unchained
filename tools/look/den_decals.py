@@ -51,6 +51,8 @@ BARK = "#4c301f"
 TWIG = ("#7d5c41", "#584130", "#3b2a1f")
 LEAF = [("#a8683a", "#8a522d", "#663b21"), ("#ad7840", "#8f5f31", "#6b4423"), ("#8e6542", "#73502f", "#553a22")]
 LEAF_INK = "#2f1a10"
+MOSS = ("#6f7438", "#555b2b", "#3a3f1f")
+MOSS_INK = "#24240f"
 STONE = [("#8f8576", "#6e6558", "#4c443b"), ("#857d72", "#666054", "#463f37"), ("#968a78", "#746a5b", "#50473c")]
 
 # ---- the list: kind, variants (each its longest extent in metres), the frequency hint per kind ------------------------
@@ -66,6 +68,9 @@ KINDS = [
     ("blood",      [0.65, 0.9, 1.15, 0.8], 0.5),
     ("root",       [1.6, 2.2, 2.9, 1.9], 0.6),
     ("pebbles",    [0.26, 0.32, 0.3], 0.9),
+    ("drag",       [1.8, 2.4, 2.1], 0.2),        # (the lair's floor, round 6: a kill dragged through its own blood,
+    ("moss",       [1.0, 1.4, 1.2, 0.8], 0.4),   #  moss cushions in the damp, leaf drifts banked against the litter)
+    ("drift",      [0.9, 1.25, 1.5], 0.4),
 ]
 
 
@@ -714,8 +719,108 @@ def k_pebbles(L, g, v):
     return pad, 0.012
 
 
+def field_mask(pad, g, cs, rs, thr=0.6, nz_amp=0.4, nz_m=0.03):
+    """A soft-edged blob as a hard mask: gaussians at cs (metres) of radii rs, broken by noise, holes filled."""
+    yy, xx = np.mgrid[0:pad.H, 0:pad.W]
+    X, Y = (xx - pad.c[0]) / P, (yy - pad.c[1]) / P
+    f = np.zeros(X.shape, np.float32)
+    for c, r in zip(cs, rs):
+        f += np.exp(-((X - c[0]) ** 2 + (Y - c[1]) ** 2) / (r * r))
+    nz = ndimage.gaussian_filter(g.standard_normal(X.shape).astype(np.float32), nz_m * P)
+    nz /= nz.std() + 1e-9
+    return ndimage.binary_fill_holes(f * (1 + nz_amp * nz) > thr), X, Y
+
+
+def k_drag(L, g, v):
+    """A kill dragged off: a dark smear along x thinning away from the pool it left, 2-3 claw-straight streaks of
+    fresher blood inside it, broken where the body lifted, drops thrown to the sides."""
+    pad = Pad(L * 1.12 + 0.1, 0.62)
+    n = 26
+    xs = np.linspace(-0.46, 0.46, n) * L
+    ys = np.cumsum(g.normal(0, 0.012, n)); ys -= ys.mean()
+    rs = 0.13 * (1.15 - 0.6 * np.linspace(0, 1, n)) * g.uniform(0.85, 1.15, n)
+    cs = list(zip(xs, ys)) + [(xs[0] + 0.05, ys[0] + 0.02)]
+    smear, X, Y = field_mask(pad, g, cs, list(rs) + [0.2], thr=0.55, nz_amp=0.45, nz_m=0.02)
+    streak = pad.mask()
+    k = int(g.integers(2, 4))
+    for j in range(k):
+        off = (j - (k - 1) / 2) * g.uniform(0.07, 0.1)
+        a, b = g.uniform(0.0, 0.12), g.uniform(0.6, 0.95)
+        u = np.linspace(a, b, 40)
+        pts = np.stack([(-0.46 + 0.92 * u) * L, np.interp(u, np.linspace(0, 1, n), ys) + off * (1 - 0.4 * u)], 1)
+        w = np.maximum(0.05 * (1 - 0.75 * (u - a) / (b - a)), 0.012)
+        gap = g.uniform(0.35, 0.6)
+        keep = np.abs(u - gap) > g.uniform(0.03, 0.06)        # (a break where it lifted)
+        for seg in (keep & (u < gap), keep & (u > gap)):
+            if seg.sum() > 2:
+                streak.stroke(pts[seg], w[seg])
+    drops = pad.mask()
+    for _ in range(int(10 + 6 * L)):
+        c = np.array([g.uniform(-0.45, 0.4) * L, g.choice([-1, 1]) * g.uniform(0.12, 0.24)])
+        drops.circle(c, g.uniform(0.012, 0.024))
+    sm = streak.m & smear
+    pad.add(smear, flat=BLOOD["edge"], ink=None, cast=False, details=[(sm, BLOOD["body"]), (sm & (X < -0.2 * L), BLOOD["mottle"])])
+    pad.add(drops.m & ~smear, flat=BLOOD["drop"], ink=None, cast=False)
+    return pad, 0.0
+
+
+def k_moss(L, g, v):
+    """A low moss cushion: lumpy lobes (a few big, many small) shaded as one soft mound, lit tufts on the light side."""
+    pad = Pad(L * 1.15 + 0.1, L * 0.8 + 0.1)
+    nl = 5 + int(3 * L)
+    cs = [(g.uniform(-0.32, 0.32) * L, g.uniform(-0.18, 0.18) * L) for _ in range(nl)]
+    rs = [g.uniform(0.09, 0.17) * L for _ in range(nl)]
+    m, X, Y = field_mask(pad, g, cs, rs, thr=0.62, nz_amp=0.5, nz_m=0.018)
+    lab, nlab = ndimage.label(m)
+    if nlab > 1:                                              # (the one cushion: its largest part)
+        sz = ndimage.sum(m, lab, range(1, nlab + 1))
+        m = lab == (1 + int(np.argmax(sz)))
+    tuft = pad.mask()
+    for _ in range(int(40 * L * L)):
+        c = np.array([g.uniform(-0.45, 0.45) * L, g.uniform(-0.3, 0.3) * L])
+        tuft.circle(c, g.uniform(0.012, 0.03))
+    dk = pad.mask()
+    for _ in range(int(25 * L * L)):
+        c = np.array([g.uniform(-0.45, 0.45) * L, g.uniform(-0.3, 0.3) * L])
+        dk.circle(c, g.uniform(0.008, 0.018))
+    # (tufts lit only toward the light: the half of each lobe facing it)
+    side = np.zeros(m.shape, bool)
+    for (cx, cy), r in zip(cs, rs):
+        side |= ((X - cx) * LIGHT[0] + (Y - cy) * LIGHT[1] > 0.25 * r) & ((X - cx) ** 2 + (Y - cy) ** 2 < r * r)
+    pad.add(m, MOSS, ink=MOSS_INK, ink_m=0.006, k=0.45, tl=0.74, ts=0.6,
+            details=[(tuft.m & side, MOSS[0]), (dk.m & ~side, MOSS[2])])
+    return pad, 0.012
+
+
+def k_drift(L, g, v):
+    """Dead leaves banked into a drift: many overlapping leaves, thick in the middle, thinning to strays at its ends."""
+    pad = Pad(L * 1.25 + 0.15, L * 0.75 + 0.15)
+    n = int(42 * L * L) + 12
+    pts = []
+    for _ in range(n):
+        r = g.uniform(0, 1) ** 0.7
+        a = g.uniform(0, 2 * math.pi)
+        pts.append(np.array([math.cos(a) * r * 0.48 * L, math.sin(a) * r * 0.26 * L]))
+    pts.sort(key=lambda c: -np.hypot(c[0] / L, 2 * c[1] / L))   # (the strays first, the middle's leaves on top)
+    for c in pts:
+        ln = g.uniform(0.09, 0.14)
+        a = g.uniform(0, 2 * math.pi)
+        kind = int(g.integers(2))
+        poly = leaf_poly(c, ln, a, kind, g)
+        lm = pad.mask().poly(poly).m
+        d = np.array([math.cos(a), math.sin(a)])
+        nrm = np.array([-d[1], d[0]])
+        sg = 1 if nrm @ LIGHT > 0 else -1
+        half = pad.mask().poly([c + d * ln, c + d * ln + nrm * ln * sg, c - d * ln + nrm * ln * sg, c - d * ln]).m
+        vein = pad.mask().stroke([c - d * ln * 0.62, c + d * ln * 0.42], 0.007).m
+        cols = LEAF[int(g.integers(len(LEAF)))]
+        pad.add(lm, flat=cols[1], ink=LEAF_INK, ink_m=0.005, details=[(half, cols[0]), (vein, cols[2])])
+    return pad, 0.007
+
+
 DRAW = {"bone": k_bone, "ribcage": k_ribcage, "wolf_skull": k_wolf_skull, "deer_skull": k_deer_skull, "hide": k_hide,
-        "fur": k_fur, "twigs": k_twigs, "leaves": k_leaves, "blood": k_blood, "root": k_root, "pebbles": k_pebbles}
+        "fur": k_fur, "twigs": k_twigs, "leaves": k_leaves, "blood": k_blood, "root": k_root, "pebbles": k_pebbles,
+        "drag": k_drag, "moss": k_moss, "drift": k_drift}
 
 
 # ---- build ---------------------------------------------------------------------------------------------------------------

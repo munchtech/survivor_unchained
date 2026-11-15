@@ -11,10 +11,10 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static partial class DungeonDress
 {
-    sealed record FloorDecal(string Kind, Rect2 Uv, Vector2 Metres, Vector2 Anchor, float MouthR, float[] Harm);
+    sealed record FloorDecal(string Kind, Rect2 Uv, Vector2 Metres, Vector2 Anchor, float MouthR, float[] Harm, Vector2 Light);
     /// <summary>The painted pits own the den's holes: the floor (dungeon_floor.gdshader pit_decals) draws no hole of its own.</summary>
     internal const bool PitDecals = true;
-    const bool FrameDecals = false, FloorRoots = false;   // (round 6: the camera-side frames never showed under the HUD; the thin floor roots read as scratches: both off)
+    const bool FrameDecals = false, FloorRoots = true;   // (round 6: the camera-side frames never showed under the HUD: off; the floor roots repainted as the bank spilling onto the floor, on every bank, the camera side with its own lit set)
     static readonly float PitWarmLift = SurvivorUnchained.Args.Num("pit-warm-lift", 2.0f);
 
     static void DenFloorDecals(Ctx c)
@@ -27,7 +27,7 @@ public static partial class DungeonDress
         float AW = size[0].GetSingle(), AH = size[1].GetSingle();
         var l = doc.RootElement.GetProperty("light");
         float lx = l[0].GetSingle(), ly = -l[1].GetSingle();
-        var pits = new List<FloorDecal>(); var frames = new List<FloorDecal>(); var roots = new List<FloorDecal>();
+        var pits = new List<FloorDecal>(); var frames = new List<FloorDecal>(); var roots = new List<FloorDecal>(); var rootsS = new List<FloorDecal>();
         foreach (var d in doc.RootElement.GetProperty("decals").EnumerateArray())
         {
             var r = d.GetProperty("rect"); var m = d.GetProperty("metres"); var a = d.GetProperty("anchor");
@@ -36,65 +36,21 @@ public static partial class DungeonDress
             var harm = new List<float>();
             if (d.TryGetProperty("mouth_harm", out var hp))
                 foreach (var t in hp.EnumerateArray()) { harm.Add(t[0].GetSingle()); harm.Add(t[1].GetSingle()); harm.Add(t[2].GetSingle()); }
+            var dl = d.TryGetProperty("light", out var lp) ? new Vector2(lp[0].GetSingle(), -lp[1].GetSingle()) : new Vector2(lx, ly);
             var fd = new FloorDecal(kind, new Rect2(r[0].GetSingle() / AW, r[1].GetSingle() / AH, r[2].GetSingle() / AW, r[3].GetSingle() / AH),
-                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr, harm.ToArray());
-            (kind == "pit" ? pits : kind == "frame" ? frames : roots).Add(fd);
+                new Vector2(m[0].GetSingle(), m[1].GetSingle()), new Vector2(a[0].GetSingle(), a[1].GetSingle()), mr, harm.ToArray(), dl);
+            (kind == "pit" ? pits : kind == "frame" ? frames : kind == "floor_s" ? rootsS : roots).Add(fd);
         }
         var b = new DecalBuf(); var bp = new DecalBuf();
         int nPit = 0, nFrame = 0, nRoot = 0;
         float cos70 = Mathf.Cos(Mathf.DegToRad(70f));
-        bool LightOk(Vector2 top, bool mirror)
+        bool LightOk(Vector2 top, bool mirror, Vector2 dl)
         {
             var right = new Vector2(-top.Y, top.X) * (mirror ? -1f : 1f);
-            return (right * lx + top * ly).Normalized().Dot(decalLight) >= cos70;
+            return (right * dl.X + top * dl.Y).Normalized().Dot(decalLight) >= cos70;
         }
 
-        // ---- pits: connected cells of Hole < 0; centre = centroid, the mouth's outline along 96 rays (to Hole = 0) ----
-        var pitC = new List<(Vector2 p, float r, float[] co)>();
-        if (z.HoleField != null)
-        {
-            const float scan = 0.25f;
-            int n = (int)(z.Size / scan);
-            var id = new int[n * n];
-            var q = new Queue<int>();
-            int pid = 0;
-            for (int k0 = 0; k0 < n * n; k0++)
-            {
-                if (id[k0] != 0) continue;
-                int i0 = k0 % n, j0 = k0 / n;
-                if (Hole(c, -z.Half + (i0 + 0.5f) * scan, -z.Half + (j0 + 0.5f) * scan) >= 0f) continue;
-                pid++; id[k0] = pid; q.Enqueue(k0);
-                int cnt = 0; double sx = 0, sz = 0;
-                while (q.Count > 0)
-                {
-                    int cur = q.Dequeue(); cnt++;
-                    int ci = cur % n, cj = cur / n;
-                    sx += -z.Half + (ci + 0.5f) * scan; sz += -z.Half + (cj + 0.5f) * scan;
-                    for (int dd = 0; dd < 4; dd++)
-                    {
-                        int ni = ci + (dd == 0 ? 1 : dd == 1 ? -1 : 0), nj = cj + (dd == 2 ? 1 : dd == 3 ? -1 : 0);
-                        if (ni < 0 || nj < 0 || ni >= n || nj >= n) continue;
-                        int nk = nj * n + ni;
-                        if (id[nk] != 0 || Hole(c, -z.Half + (ni + 0.5f) * scan, -z.Half + (nj + 0.5f) * scan) >= 0f) continue;
-                        id[nk] = pid; q.Enqueue(nk);
-                    }
-                }
-                if (cnt < 32) continue;  // (under 2 m2: a dimple, not a pit)
-                var ctr = new Vector2((float)(sx / cnt), (float)(sz / cnt));
-                var rr = new float[96];
-                float tot = 0;
-                for (int a = 0; a < 96; a++)
-                {
-                    var dir = new Vector2(Mathf.Cos(a * Mathf.Tau / 96f), Mathf.Sin(a * Mathf.Tau / 96f));
-                    float s = 0.05f;
-                    while (s < 20f && Hole(c, ctr.X + dir.X * s, ctr.Y + dir.Y * s) < 0f) s += 0.05f;
-                    float lo = s - 0.05f, hi = s;
-                    for (int it = 0; it < 6; it++) { float mm = 0.5f * (lo + hi); if (Hole(c, ctr.X + dir.X * mm, ctr.Y + dir.Y * mm) < 0f) lo = mm; else hi = mm; }
-                    rr[a] = 0.5f * (lo + hi); tot += rr[a];
-                }
-                pitC.Add((ctr, tot / 96f, Fourier(rr, 6)));
-            }
-        }
+        var pitC = DenPits(c);
         if (PitDecals)
             foreach (var (p, rad, co) in pitC)
             {
@@ -126,9 +82,9 @@ public static partial class DungeonDress
                     var top = -g.Normalized();
                     var p = new Vector2(x, zz);
                     var edge = p + top * w;  // (the walkable edge: the foot of the bank)
-                    if (top.Y > 0.64f)
+                    bool south = top.Y > 0.64f;
+                    if (south && FrameDecals)
                     {
-                        if (!FrameDecals) continue;
                         float gap = 3.5f + 1.0f * Hash(i, j, 961);
                         bool near = false;
                         foreach (var t in takenF) { float g2 = Mathf.Max(gap, t.gap); if (t.p.DistanceSquaredTo(p) < g2 * g2) { near = true; break; } }
@@ -139,28 +95,42 @@ public static partial class DungeonDress
                         AddFlat(c, b, d, edge + top * 0.2f, top, 1f, false, 0f, true);
                         nFrame++;
                     }
-                    else
+                    else if (FloorRoots)
                     {
-                        if (!FloorRoots) continue;
-                        float gap = 5f + 3f * Hash(i, j, 971);
+                        // the bank spilling onto the floor: a root set every 3-4.5 m along every bank's foot (the camera
+                        // side's painted for its own light), turned up to +-18 degrees, shortened (to 0.7) before it is
+                        // dropped where its run would reach a pit or the far wall
+                        float gap = 3.0f + 1.5f * Hash(i, j, 971);
                         bool near = false;
                         foreach (var t in takenR) { float g2 = Mathf.Max(gap, t.gap); if (t.p.DistanceSquaredTo(p) < g2 * g2) { near = true; break; } }
                         if (near) continue;
                         takenR.Add((p, gap));
-                        if (Hash(i, j, 972) < 0.4f) continue;
-                        bool mirror = false;
-                        if (!LightOk(top, false)) { if (!LightOk(top, true)) continue; mirror = true; }
-                        var d = roots[(int)(Hash(i, j, 973) * roots.Count) % roots.Count];
-                        float sc = 0.9f + 0.25f * Hash(i, j, 974);
-                        float len = d.Metres.Y * sc;
-                        bool bad = false;
-                        for (int s = 0; s < 6 && !bad; s++)
+                        if (Hash(i, j, 972) < 0.12f) continue;
+                        var set = south && rootsS.Count > 0 ? rootsS : roots;
+                        var d = set[(int)(Hash(i, j, 973) * set.Count) % set.Count];
+                        var tp = top.Rotated((Hash(i, j, 975) - 0.5f) * Mathf.DegToRad(36f));
+                        bool mirror;
+                        if (LightOk(tp, false, d.Light)) mirror = false;
+                        else if (LightOk(tp, true, d.Light)) mirror = true;
+                        else if (LightOk(top, false, d.Light)) { tp = top; mirror = false; }
+                        else if (LightOk(top, true, d.Light)) { tp = top; mirror = true; }
+                        else continue;
+                        float sc = 0.95f + 0.2f * Hash(i, j, 974);
+                        bool fits = false;
+                        for (int tries = 0; ; tries++)
                         {
-                            var sp = edge - top * (len * (s + 0.5f) / 6f);
-                            if (Hole(c, sp.X, sp.Y) < 0.5f || Wall(c, sp.X, sp.Y) < 0f) bad = true;
+                            float len = d.Metres.Y * sc * 0.9f;
+                            fits = true;
+                            for (int s = 0; s < 8 && fits; s++)
+                            {
+                                var sp = edge - tp * (len * (s + 0.5f) / 8f);
+                                if (Hole(c, sp.X, sp.Y) < 0.4f || Wall(c, sp.X, sp.Y) < 0f) fits = false;
+                            }
+                            if (fits || tries == 3) break;
+                            sc *= 0.88f;
                         }
-                        if (bad) continue;
-                        AddFlat(c, b, d, edge, top, sc, mirror, 0f, true);
+                        if (!fits) continue;
+                        AddFlat(c, b, d, edge, tp, sc, mirror, 0f, true);
                         nRoot++;
                     }
                 }
@@ -200,6 +170,62 @@ public static partial class DungeonDress
         Emit(b, "FloorDecals", false);
         Emit(bp, "PitDecals", true);
         c.Count["decal floor pit"] = nPit; c.Count["decal floor frame"] = nFrame; c.Count["decal floor root"] = nRoot;
+    }
+
+    static ZoneData? pitsFor;
+    static List<(Vector2 p, float r, float[] co)> pitsCache = new();
+
+    /// <summary>The den's pits (connected cells of Hole &lt; 0 over 2 m2): centre = centroid, the mouth's outline along
+    /// 96 rays (to Hole = 0) as a Fourier series to the 6th; cached per zone (the floor decals and the litter's piles).</summary>
+    static List<(Vector2 p, float r, float[] co)> DenPits(Ctx c)
+    {
+        var z = c.Z;
+        if (pitsFor == z) return pitsCache;
+        pitsFor = z;
+        var pitC = pitsCache = new List<(Vector2 p, float r, float[] co)>();
+        if (z.HoleField == null) return pitC;
+        const float scan = 0.25f;
+        int n = (int)(z.Size / scan);
+        var id = new int[n * n];
+        var q = new Queue<int>();
+        int pid = 0;
+        for (int k0 = 0; k0 < n * n; k0++)
+        {
+            if (id[k0] != 0) continue;
+            int i0 = k0 % n, j0 = k0 / n;
+            if (Hole(c, -z.Half + (i0 + 0.5f) * scan, -z.Half + (j0 + 0.5f) * scan) >= 0f) continue;
+            pid++; id[k0] = pid; q.Enqueue(k0);
+            int cnt = 0; double sx = 0, sz = 0;
+            while (q.Count > 0)
+            {
+                int cur = q.Dequeue(); cnt++;
+                int ci = cur % n, cj = cur / n;
+                sx += -z.Half + (ci + 0.5f) * scan; sz += -z.Half + (cj + 0.5f) * scan;
+                for (int dd = 0; dd < 4; dd++)
+                {
+                    int ni = ci + (dd == 0 ? 1 : dd == 1 ? -1 : 0), nj = cj + (dd == 2 ? 1 : dd == 3 ? -1 : 0);
+                    if (ni < 0 || nj < 0 || ni >= n || nj >= n) continue;
+                    int nk = nj * n + ni;
+                    if (id[nk] != 0 || Hole(c, -z.Half + (ni + 0.5f) * scan, -z.Half + (nj + 0.5f) * scan) >= 0f) continue;
+                    id[nk] = pid; q.Enqueue(nk);
+                }
+            }
+            if (cnt < 32) continue;  // (under 2 m2: a dimple, not a pit)
+            var ctr = new Vector2((float)(sx / cnt), (float)(sz / cnt));
+            var rr = new float[96];
+            float tot = 0;
+            for (int a = 0; a < 96; a++)
+            {
+                var dir = new Vector2(Mathf.Cos(a * Mathf.Tau / 96f), Mathf.Sin(a * Mathf.Tau / 96f));
+                float s = 0.05f;
+                while (s < 20f && Hole(c, ctr.X + dir.X * s, ctr.Y + dir.Y * s) < 0f) s += 0.05f;
+                float lo = s - 0.05f, hi = s;
+                for (int it = 0; it < 6; it++) { float mm = 0.5f * (lo + hi); if (Hole(c, ctr.X + dir.X * mm, ctr.Y + dir.Y * mm) < 0f) lo = mm; else hi = mm; }
+                rr[a] = 0.5f * (lo + hi); tot += rr[a];
+            }
+            pitC.Add((ctr, tot / 96f, Fourier(rr, 6)));
+        }
+        return pitC;
     }
 
     /// <summary>The den floor's drawn height: the ground's own with MapGen's pit sink undone, node by node, as

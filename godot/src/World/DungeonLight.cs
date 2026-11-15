@@ -24,8 +24,8 @@ public static class DungeonLight
         {
             i++;
             if (r.Kind == "Bend") continue;
-            // One shaft to a room, two in a big one; off its centre so the fight is not always in the spot.
-            int count = r.R > 11 ? 2 : 1;
+            // One shaft to a room, two in a big one, three in the boss lair; off its centre so the fight is not always in the spot.
+            int count = r.Kind == "Boss" ? 3 : r.R > 11 ? 2 : 1;   // (the lair three: round 6, its open floor read as one empty stretch)
             for (int k = 0; k < count; k++)
             {
                 // (clear of the pits and the walls: a shaft down a pit lit its roots bone-white)

@@ -725,7 +725,8 @@ def build_decals(out):
 # bottom). The pit is painted in plan for the play camera (looking image-up, 62 degrees down).
 FL_PPM = 128                # the floor atlas, px per metre (fields drawn at FL_PPM * S)
 FL_ATLAS_W = 4096
-FLOORS = [(2.4, 5.5), (3.0, 7.0), (2.0, 4.5), (3.2, 7.2), (2.6, 6.0), (2.8, 6.5)]   # (across, along) m
+FLOORS = [(2.4, 3.8), (3.1, 4.9), (2.8, 4.4), (3.1, 6.2), (3.0, 4.6), (3.1, 6.0)]   # (across, along) m
+FLOORS_S = [(2.4, 3.8), (3.1, 4.9), (3.0, 4.4)]   # the same lit for the camera-side banks (image light from below)
 FRAMES = [(4.0, 2.0), (4.8, 2.3), (3.4, 1.8), (4.4, 2.4)]                          # (along the wall, out) m
 PITS = 3
 PIT_M = 8.4                 # a pit's square rect, the mouth centred (room for the lip, its shadow and the root starts)
@@ -762,15 +763,6 @@ def inside_rect(D, W, Hh, top=False, bottom=True):
     return not bad
 
 
-def calm(D, win_m, ppm):
-    """Low-pass a root's radius and height along it (half sunk, open_root's knots read as lumps)."""
-    n = max(3, int(win_m * ppm / max(np.median(np.hypot(np.diff(D[:, 0]), np.diff(D[:, 1]))), 1e-3)) | 1)
-    k = np.hanning(n + 2)[1:-1]; k /= k.sum()
-    for j in (2, 3):
-        D[:, j] = np.convolve(np.pad(D[:, j], n // 2, mode="edge"), k, mode="valid")
-    return D
-
-
 def tip_sink(D, frac=0.18, zd=0.8):
     """The tip sinks into the earth over its last frac of the length only (to zd x r below 0)."""
     s = arc(D)
@@ -779,111 +771,52 @@ def tip_sink(D, frac=0.18, zd=0.8):
     return D
 
 
-def long_taper(D, keep=0.5, tail=0.2, tip_r=0.06):
-    """A floor root's radius along it: a slow taper to keep x the entry radius at (1 - tail) of the length, then down to
-    a fine tip (tip_r x the entry radius) over the tail; the radius's own small knots ride on top."""
-    s = arc(D)
-    u = s / max(s[-1], 1.0)
-    a = 1.0 - tail
-    g = np.where(u < a, 1.0 - (1.0 - keep) * (u / a) ** 1.15,
-                 tip_r + (keep - tip_r) * (1.0 - np.clip((u - a) / tail, 0, 1)) ** 0.8)
-    D[:, 3] *= g
-    return D
-
-
-def dive(D, s, sd, rng, ppm):
-    """The root goes under the earth at sd: it narrows into the earth over 0.6-0.9 m, is 0.1-0.25 m out of sight, then
-    rises back along a long shallow ramp (1.2-1.8 m), the way a pit root comes out of the earth: the radius eases from
-    a quarter back to full as it sinks from just under the earth to half sunk (a long point each way, never a cap, and
-    lit bark down to the point rather than a black ink wedge)."""
-    ld, lg, le = rng.uniform(0.6, 0.9) * ppm, rng.uniform(0.1, 0.25) * ppm, rng.uniform(1.2, 1.8) * ppm
-    v = np.where(s < sd, np.clip((sd - s) / ld, 0, 1),
-                 np.where(s < sd + lg, 0.0, np.clip((s - sd - lg) / le, 0, 1) ** 0.85))
-    v = smooth(v) * 0.6 + v * 0.4
-    zr = D[:, 2] / D[:, 3]                                    # (the height per radius the root lies at)
-    D[:, 3] *= 0.25 + 0.75 * v
-    D[:, 2] = D[:, 3] * (zr * v + (1 - v) * (-0.25 - 0.55 * (1 - v)))
-    return D, sd + lg + le
-
-
-def lie(D, rng, ppm, tip_frac=0.1):
-    """Half sunk at every radius (the height follows the taper, so a thin tip never pops in and out of the earth), a
-    long low swell, and the tip sinking over its last tip_frac."""
-    s = arc(D)
-    D[:, 2] = D[:, 3] * (-0.25 + 0.1 * np.sin(s / (rng.uniform(1.2, 2.0) * ppm) * 2 * math.pi + rng.uniform(0, 6.3)))
-    return tip_sink(D, frac=tip_frac, zd=0.5)
-
-
-def decal_floor(i, wm, hm):
-    """Long floor roots: 1-3 enter the TOP edge (out of the bank, 0.3-0.45 m thick), run the rect's length in one gentle
-    S, half sunk in the earth, keep about half their radius to the last fifth then thin to a fine sunk tip; most dive
-    under the earth once and rise back along a long shallow ramp; 1-2 long thin forks peel off at a low angle and run
-    on beside the parent the same way."""
+def decal_floor(i, wm, hm, tag="floor"):
+    """The bank spilling onto the floor, in the wall decals' language at floor length: 2-4 thick roots enter the TOP
+    edge together (out of the bank's foot, 0.4-0.6 m across, high where they leave it), fan out down the rect for 3-6 m
+    crossing over and under one another (a braid, not a comb), lying ON the earth (not sunk), tapering to about 0.15 m
+    and sinking at the tip; about half shed one fork the way a wall root does."""
     ppm = FL_PPM * S
     W, Hh = int(round(wm * FL_PPM)) * S, int(round(hm * FL_PPM)) * S
     for attempt in range(400):
-        rng = np.random.default_rng(seed_of("den_roots", "floor", i, attempt, VERSION, 2))
+        rng = np.random.default_rng(seed_of("den_roots", tag, i, attempt, VERSION, 3))
         F = Field(W, Hh, ppm, False)
         RT = Roots(F, rng)
-        n = 1 if wm < 2.2 else (int(rng.integers(1, 3)) if wm < 2.9 else int(rng.integers(2, 4)))
-        xs = (np.arange(n) + 0.5) / n * wm + rng.normal(0, 0.06, n)
-        rr = np.concatenate([[rng.uniform(0.15, 0.225)], rng.uniform(0.12, 0.17, n - 1)])[rng.permutation(n)]
-        dense, mains, ok = [], [], True
+        n = 2 if wm < 2.6 else int(rng.integers(2, 4))
+        x0s = wm / 2 + np.sort(rng.uniform(-1, 1, n)) * min(0.55, 0.18 * n)        # (a mass at the bank's foot)
+        xe = np.linspace(-1, 1, n) * (wm / 2 - 0.45) + rng.normal(0, 0.12, n)
+        if n > 2 and rng.random() < 0.8:                       # (one pair swaps sides on the way: they cross)
+            k = int(rng.integers(n - 1)); xe[k], xe[k + 1] = xe[k + 1], xe[k]
+        xe += wm / 2
+        rr = rng.uniform(0.2, 0.3, n); rr[int(rng.integers(n))] = rng.uniform(0.26, 0.3)
+        dense, ok = [], True
         for k in range(n):
             r0 = float(rr[k])
-            half = wm / n / 2
-            amp = rng.uniform(0.7, 1.0) * max(half - r0 - 0.1, 0.15)
-            drift = rng.uniform(-1, 1) * max(half - r0 - 0.1 - 0.5 * amp, 0.0)
-            phi = rng.uniform(0, 2 * math.pi)
-            cyc = rng.uniform(0.55, 0.95)                     # (one gentle S, never more)
-            full = k == 0 or rng.random() < 0.6
-            ly = (rng.uniform(0.93, 0.97) if full else rng.uniform(0.72, 0.86)) * hm   # the tip's y
-            u = np.linspace(0, 1, max(8, int((ly + 0.3) / 0.45) + 1))
-            sw = np.sin(2 * math.pi * cyc * u + phi) + 0.12 * np.sin(4 * math.pi * cyc * u + 2 * phi)
-            x = xs[k] + drift * u + amp * (sw - sw[0] * (1 - u) ** 2)
+            ly = rng.uniform(0.72, 0.96) * hm - 0.12              # the tip's y
+            m = max(7, int((ly + 0.3) / 0.42) + 1)
+            u = np.linspace(0, 1, m)
+            fan = smooth(np.clip(u / 0.7, 0, 1))
+            x = x0s[k] + (xe[k] - x0s[k]) * fan + 0.3 * np.sin(2 * math.pi * rng.uniform(0.6, 1.1) * u + rng.uniform(0, 6.3)) * u
             C = np.column_stack([x, -0.3 + u * (ly + 0.3)])
-            D = RT.open_root(C * ppm, r0, 0.0, 0.0, tip=(0.01, 0.02), emerge=False, zdive=None, tip_r=1.0)
-            D = lie(long_taper(calm(D, 0.6, ppm), tip_r=0.2), rng, ppm)
+            C[1:-1] += rng.normal(0, 0.045, (m - 2, 2))           # (hand jitter, the ends kept)
+            D = RT.open_root(C * ppm, r0, 0.0, 0.05, tip=(0.01, 0.02), emerge=False, zdive=None, tip_r=1.0)
             s = arc(D)
-            D[:, 2] += (1 - smooth(s / (0.9 * ppm))) * 0.25 * D[:, 3]     # (round where it leaves the bank)
-            sd, se = None, None
-            if full and rng.random() < 0.6 and s[-1] > 5.0 * ppm:
-                sd = rng.uniform(0.3, 0.4) * s[-1]
-                D, se = dive(D, s, sd, rng, ppm)
+            uu = s / s[-1]
+            D[:, 3] *= 1.0 - (1.0 - 0.075 / r0) * uu ** 0.85      # (0.4-0.6 m at the bank to ~0.15 m at the end)
+            D[:, 2] += (1 - smooth(s / (1.0 * ppm))) * 0.2 * ppm  # (high where it leaves the bank, down onto the floor)
+            D = tip_sink(D, frac=0.14, zd=0.5)
             if not inside_rect(D, W, Hh, top=True):
                 ok = False; break
-            dense.append(D); mains.append((D, s, sd, se))
+            dense.append(D)
         if not ok:
             continue
-        for D, s, sd, se in mains:
-            nf, tries = int(rng.integers(1, 3)), 0
-            while nf and tries < 40:
+        for D in list(dense):
+            nf, tries = int(rng.random() < 0.55), 0           # (a fork or none: more read as a claw)
+            while nf and tries < 16:
                 tries += 1
-                si = rng.uniform(max(1.0 * ppm, 0.18 * s[-1]), 0.5 * s[-1])
-                if sd is not None and sd - 1.0 * ppm < si < se:  # (not off the stretch under the earth or its ramp)
-                    continue
-                L = rng.uniform(0.4, 0.7) * (s[-1] - si)
-                if L < 0.9 * ppm:
-                    continue
-                j = int(np.searchsorted(s, si))
-                m = (s >= si) & (s <= si + L)
-                P = D[m, :2]
-                tg = np.gradient(P, axis=0)
-                tg /= np.maximum(np.linalg.norm(tg, axis=1, keepdims=True), 1e-6)
-                nrm = np.column_stack([-tg[:, 1], tg[:, 0]])
-                l = s[m] - si
-                a0 = math.radians(rng.uniform(12, 25))
-                tau = rng.uniform(2.0, 3.0) * ppm                 # (peels off at a0, then runs on beside the parent)
-                off = rng.choice([-1, 1]) * tau * math.tan(a0) * (1 - np.exp(-l / tau))
-                ctrl = (P + nrm * off[:, None])[::max(1, int(0.3 * ppm / max(np.median(np.diff(l)), 1e-3)))]
-                if len(ctrl) < 4:
-                    continue
-                rc = D[j, 3] / ppm * rng.uniform(0.45, 0.5)
-                C = RT.open_root(ctrl, rc, 0.0, 0.0, tip=(0.01, 0.02), emerge=False, zdive=None, tip_r=1.0)
-                C = lie(long_taper(calm(C, 0.5, ppm), keep=0.65, tail=0.25, tip_r=0.25), rng, ppm, 0.12)
-                kk = smooth(arc(C) / (0.5 * ppm))
-                C[:, 2] = (1 - kk) * D[j, 2] + kk * C[:, 2]
-                if inside_rect(C, W, Hh):
+                C = RT.fork(D, 1, ang=(18, 32), ratio=(0.45, 0.6), length=(0.9, 1.6), zbase=0.0, zamp=0.04, zdive=0.5,
+                            tip=(0.4, 0.4), tip_r=0.2, wig=9)
+                if inside_rect(C, W, Hh) and C[0, 1] > 0.6 * ppm:
                     dense.append(C); nf -= 1
         for D in dense:
             RT.add(D)
@@ -1103,6 +1036,18 @@ def build_floor(out):
         items.append(dict(kind="floor", variant=i, metres=[wm, hm], anchor=[0.5, 0.0],
                           img=decal_image(F, RT, seed_of("den_roots", "floor_shade", i, VERSION))))
         print(f"  floor {i}: {len(RT.send)} roots")
+    global L2
+    keep = L2
+    L2 = np.array([keep[0], -keep[1]])                       # (a camera-side bank's roots run image-down = north: their
+    try:                                                      # light painted from the image's lower left, mirrored in game)
+        for i, (wm, hm) in enumerate(FLOORS_S):
+            F, RT = decal_floor(i, wm, hm, "floor_s")
+            items.append(dict(kind="floor_s", variant=i, metres=[wm, hm], anchor=[0.5, 0.0],
+                              light=[round(float(c), 4) for c in L2],
+                              img=decal_image(F, RT, seed_of("den_roots", "floor_s_shade", i, VERSION))))
+            print(f"  floor_s {i}: {len(RT.send)} roots")
+    finally:
+        L2 = keep
     for i, (wm, hm) in enumerate(FRAMES):
         items.append(dict(kind="frame", variant=i, metres=[wm, hm], anchor=[0.5, 0.0], img=decal_frame(i, wm, hm)))
         print(f"  frame {i}")
@@ -1126,10 +1071,12 @@ def build_floor(out):
            "alpha": "straight; roots, lip, pit mouth and the frame's gap fill >= 0.6 (alpha scissor 0.6; the whole mouth "
                     "and the frame's top band are 1), the soft contact shadow 0.2-0.55 (rgb = palette shadow), 0 "
                     "elsewhere",
-           "kinds": {"floor": "long floor roots: 1-3 enter the rect's TOP edge (y = 0) at full thickness (they continue "
-                              "into the bank: put the top edge on the bank's foot) and run down the rect across the "
-                              "floor, half sunk, diving under once, forking, thinning to sunk tips; anchor = the top "
-                              "edge's middle",
+           "kinds": {"floor": "the bank spilling onto the floor: 2-4 thick roots (0.4-0.6 m) enter the rect's TOP edge "
+                              "(y = 0) together at full thickness (they continue into the bank: put the top edge on the "
+                              "bank's foot), fan out down the rect crossing over and under, lying on the earth, tapering "
+                              "to ~0.15 m and sinking at the tip, forking; anchor = the top edge's middle",
+                     "floor_s": "the same for the camera-side banks (laid with the top edge south): painted with the "
+                                "decal's own light (its 'light', the image's lower left), mirrored in game",
                      "frame": "a dark root mass for the camera-side wall line: the TOP edge (y = 0) sits against the "
                               "bank (the band above an irregular line 0.2-0.35 m down is opaque near black), roots reach "
                               "1-1.5 m toward the rect's bottom; darkened by depth (x 0.12 at the top to x 0.36 below "
@@ -1357,7 +1304,7 @@ def check_floor():
         img = atl[y:y + h, x:x + w].astype(np.float32)
         al = img[..., 3]
         tag = f"{d['kind']} {d['variant']}"
-        if d["kind"] == "floor":
+        if d["kind"] in ("floor", "floor_s"):
             top = (al[0] >= 153).mean()
             cut = max((al[-2:] >= 153).mean(), (al[:, :2] >= 153).mean(), (al[:, -2:] >= 153).mean())
             print(f"  {tag}: roots across the top edge {100 * top:.0f}% of it, at the other edges {100 * cut:.2f}%, "
