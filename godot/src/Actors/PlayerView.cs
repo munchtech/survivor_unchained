@@ -2578,7 +2578,23 @@ public partial class PlayerView : Node3D
         var s = cam.UnprojectPosition(sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin);
         var c = cam.GlobalPosition;   // (warden-move item 3: the camera's world place, for its catch-up after a 180)
         GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0} cam {c.X:0.000} {c.Y:0.000} {c.Z:0.000}"));
+        // (aim-move) BODY2: the drawn pose's joints in the world (x y z each), for the rows' measures (aim_move\tools\rows.py):
+        // the hips' line (thigh_l, thigh_r), the ankles, the balls, the shoulders' line (upperarm_l, upperarm_r), the hands,
+        // spine_03 and the head; then her facing (deg).
+        if (Args.Has("dirrun") || Args.Has("body-log"))
+        {
+            var sb = new System.Text.StringBuilder("BODY2");
+            foreach (var bn in BodyBones)
+            {
+                int bi = sk.FindBone(bn);
+                var w = bi >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bi).Origin : Vector3.Zero;
+                sb.Append(System.FormattableString.Invariant($" {w.X:0.0000} {w.Y:0.0000} {w.Z:0.0000}"));
+            }
+            sb.Append(System.FormattableString.Invariant($" face {Mathf.RadToDeg(Rotation.Y):0.00}"));
+            GD.Print(sb.ToString());
+        }
     }
+    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
     public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;

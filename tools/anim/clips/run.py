@@ -92,7 +92,7 @@ def _swivel(h, phi):
     return tuple(20.0 * (math.cos(a) * ref + math.sin(a) * np.cross(d, ref)))
 
 
-def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, fwd=0.0):
+def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, fwd=0.0, pump=0.0):
     """The shield up across the body, riding the step a little. It rides the
     forearm's hinge (its face is the plane of shoulder, elbow and wrist), so
     the guard is set by where the hand goes and how the elbow swings, never
@@ -101,7 +101,10 @@ def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, f
     elbow near square it reached over the shoulder, through the pauldron.)
     The hand rides the forearm, the wrist straight in the grip."""
     def f(ph, k, hand):
-        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph), hand_at[2] + fwd)
+        # (aim-move, the owner: "the running animation dosn't move anything but her legs") pump: the guard rides the
+        # stride fore and aft (m each way, k 1 forward), against the sword arm.
+        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph) + 0.25 * pump * (k - 0.5),
+             hand_at[2] + fwd + pump * (2 * k - 1))
         return {"arc": arc_of(h), "pole": _swivel(h, swivel), "frame": "chest"}
     return f
 
@@ -248,9 +251,10 @@ WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 # never locks (toe-off bend ~22) and folds straight on through; thigh back at most ~25.
 # (aim-move) frames 21 -> 18 and duty 0.26 -> 0.30: the flight was 5 frames a step (the brief's bar: 4); the stance carries
 # the ankle as far back as before (0.54 m: the knee never locks). The recovery leg (judge r1 fix 3): the heel folded up
-# toward the glute by 15 % of the swing (2 frames after toe-off), fold_kick high.
-WARDEN = Gait(frames=18, speed=SPEED, duty=0.30, fold_at=0.15, fold_kick=0.46, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
-              hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
+# toward the glute by 15 % of the swing (2 frames after toe-off), fold_kick high. The torso works (the owner, 15 Nov):
+# the shoulder line turns 10 against the pelvis's 8 (was 6/6), the hips sway and shift more over the plant.
+WARDEN = Gait(frames=18, speed=SPEED, duty=0.30, fold_at=0.15, fold_kick=0.46, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=8, hip_roll=4,
+              hip_shift=0.028, chest_yaw=10, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
@@ -377,7 +381,7 @@ AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
 # blend, not the arm hold, so the axe would slide in her fist through every walk-run change).
 # Measured (solver holdB p3): sword pitch -46..-29, 19-21 out, tip 0.29 m off the floor at the lowest, 61 mm from her
 # thigh (sprint 34); axe -63..-46, 16-22 out, 96 mm (sprint 74); the second axe -55..-42, 23-30 out, never within 140 mm.
-def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
+def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0, lag=0.0):
     """The held piece's line (hand to point or head) forward and down: `pitch` degrees (fist forward, fist back) and
     `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward).
     `grip` (m, Animation 57): her fist that much higher up the haft (the clip's meta carries it as a negative
@@ -387,8 +391,10 @@ def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
 
     def f(ph, k, hand):
         hand = dict(hand)
-        p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * k)
-        o = math.radians(out[1] + (out[0] - out[1]) * k)
+        # (aim-move) lag: the piece's line follows the swing that much of a cycle late (its weight; the wrist gives)
+        kl = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - lag - hand["_koff"])) if lag and "_koff" in hand else k
+        p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * kl)
+        o = math.radians(out[1] + (out[0] - out[1]) * kl)
         b = np.array((sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)))
         hand.update({"blade": tuple(b), "frame": "char"})
         if grip:
@@ -501,15 +507,21 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
 # (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high57")
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "live")
 REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
+# (aim-move, the owner 15 Nov: "her holding sword arm ... while running its held rigid not moving at all") the high carry
+# alive: the upper arm swings 30 degrees with the stride (was 10), the elbow folds on the back swing and opens forward,
+# and the blade's line lags the fist by LIVE_LAG of a cycle (tips back as the fist drives forward), the wrist giving.
+HIGH_ARM_LIVE = ((24, 28, 74, -18), (-6, 31, 90, -24))
+LIVE_LAG = 0.1
 HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
 WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
                   "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
                   "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
-                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30)))}
+                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30))),
+                  "live": (HIGH_ARM_LIVE, dict(pitch=(94, 70), out=(27, 33), lag=LIVE_LAG))}
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -551,7 +563,7 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY == "live" else 0.0)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
     # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).

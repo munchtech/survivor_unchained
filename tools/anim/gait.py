@@ -239,7 +239,10 @@ def pose_at(g: Gait, rig: Rig, ph):
         if g.swing is not None:
             hand = _swung(g.swing_r if side == "r" and g.swing_r is not None else g.swing, rig, side, k)
             if side in g.arms:
-                hand = g.arms[side](ph, k, hand)
+                # (aim-move) the carry may read the swing at another phase (a blade lagging the fist): k(ph') =
+                # 0.5 - 0.5 cos(2 pi (ph' - _koff))
+                hand = g.arms[side](ph, k, dict(hand, _koff=off + (0.0 if backpedal else 0.5)))
+                hand.pop("_koff", None)
             pose[f"hand_{side}"] = hand
             pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
             continue

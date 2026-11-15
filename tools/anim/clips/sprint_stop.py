@@ -45,7 +45,7 @@ if REAVER_CARRY == "high":  # Animation 58: the back elbow 7 closer (at the defa
     # free one 5 (at 3 the upper arms went 5-7 mm into her side, at 3/5 the free one 1; motion --outfits).
     SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.25, -7, 5, 6)
     SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.25, -7, 6, 6)
-if WARDEN_CARRY == "high57":
+if WARDEN_CARRY in ("high57", "live"):
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
 if WARDEN_CARRY == "high":  # Animation 58: 4 (at 3 its upper arm went 7 mm into her plate)
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 4)
