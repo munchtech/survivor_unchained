@@ -13,6 +13,7 @@ namespace SurvivorUnchained.View;
 public static partial class DungeonDress
 {
     sealed record BankDecal(bool Rim, Rect2 Uv, Vector2 Metres);
+    static readonly bool RimDecals = false;
 
     static void DenBankDecals(Ctx c)
     {
@@ -77,7 +78,8 @@ public static partial class DungeonDress
         }
 
         // ---- rim decals: round the pits ----
-        if (z.HoleField != null)
+        // (OFF, lead 6: the painted rim decals read as benches and ring the pit like a raised tub; repaint first)
+        if (RimDecals && z.HoleField != null)
         {
             const float scan = 0.25f;
             int n = (int)(z.Size / scan);

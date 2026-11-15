@@ -15,7 +15,7 @@ uniform float ravine = 0.0;
 uniform sampler2DArray den_alb : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray den_arh : filter_linear_mipmap_anisotropic, repeat_enable;
 const float den_m[6] = float[](4.0, 4.0, 3.0, 3.0, 4.0, 4.0);
-uniform vec3 den_tint = vec3(1.3, 1.2, 1.28);
+uniform vec3 den_tint = vec3(0.95, 0.88, 0.94);   // (lead 6: 1.3 read as bright sand, frame median 68-80 against the targets' 40-57)
 uniform float rim_dark = 1.0;   // 0: no damp lip, wall-foot or pit darkening (--env-off rim, the den pit halo diagnosis, 15 Nov)
 uniform float den_grain = 0.6;   // the painted grain's value contrast, stretched about its local mean
 
