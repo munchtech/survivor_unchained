@@ -26,9 +26,9 @@ public sealed class SideCarry
     /// <summary>The blade's on-screen angle wanted at a run and standing (deg from straight down, toward her screen-back).</summary>
     public float RunAngle = 41f, StandAngle = 22f;
     /// <summary>Degrees less of it on a strafe (full sideways travel).</summary>
-    public float StrafeCut = 8f;
+    public float StrafeCut = 14f;
     /// <summary>The swing: screen degrees per m/s² of the fist's acceleration along her facing (forward pull, tip back).</summary>
-    public float Gain = 0.6f;
+    public float Gain = 0.7f;
     /// <summary>The swing's spring: natural frequency (Hz) and damping ratio.</summary>
     public float Hz = 3f, Damping = 0.7f;
     /// <summary>How far the swing may go (screen deg), tip back and tip forward (less: a stop's swing forward never stands
@@ -42,7 +42,7 @@ public sealed class SideCarry
     public float MaxRate = 200f;
     /// <summary>The tip turned in toward her body at full weight (deg), more by <see cref="SplayAway"/> heading away from
     /// the camera (her back to it), less by <see cref="SplayStrafe"/> on a strafe.</summary>
-    public float Splay = 3f, SplayAway = 10f, SplayStrafe = 6f;
+    public float Splay = 3f, SplayAway = 10f, SplayStrafe = 18f;
     /// <summary>The clamp on the blade's own tip-back from her vertical (deg; the clip's and the layer's together).</summary>
     public float BackMin = 0f, BackMax = 50f;
     /// <summary>Screen degrees the target keeps under the clamp's angle (room for the back swing where the clamp binds).</summary>
