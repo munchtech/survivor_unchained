@@ -251,7 +251,11 @@ def prowl_stop(rig, side):
 
 # (solver 4a) the sword arm's swing out (deg, STOP_OUT times each key's share) through the landing, none at the end
 # (Prowl's own): the left plant throws her right hip out at f9-f12, the right plant at f13-f18.
-STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "4"))  # (solver 11a: 4, was 8)
+# (lane A, 16 Nov: 0, was 4) Solver 12's idle arm hangs out 30 from her side (was 20), so the landing's hip no longer
+# reaches the hand: at 0 the stops' arm is clear (fist.py hd 0, war 0, every frame) and the line reads best (pitch 62:
+# share from behind 0.449 L / 0.416 R, at f0 under the fade; within 45 of the front 26.9 / 31.7); at 2 the share
+# rose to 0.484 and at 4 to 0.518 (+-45 17.0). STOP_OUT_L / _R below are its shares, kept for a nonzero try.
+STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "0"))  # (solver 11a: 4, was 8)
 # (solver 11c, 16 Nov) and further out at the crouch keys only (L f5/f9 +1.5 deg, R f5/f9 +2.5 and f13 +0.84; the
 # shares were L 0.9, 1.0; R 0.8, 0.9, 1.0): the crouch's lowered hips under 11a's steeper blade took the tip to 0.042 (L)
 # and 0.035 m (R) off the floor; out, the arm, fist and blade turn whole (the wrist kept, armroll turns nothing) and the

@@ -35,7 +35,9 @@ BODY = {"pelvis": "pelvis", "spine_01": "spine_02", "spine_02": "spine_03", "spi
         "foot_l": "foot_l", "foot_r": "foot_r", "ball_l": "ball_l", "ball_r": "ball_r"}
 # Prowl's sword line (char space) and its life: degrees of pitch with her weight shift, of yaw with her breath.
 BLADE = (-0.623, -0.695, -0.359)
-BLADE_PITCH = float(os.environ.get("PROWL_BLADE_PITCH", "4.0"))
+BLADE_PITCH = float(os.environ.get("PROWL_BLADE_PITCH", "2.0"))  # (solver 12, 16 Nov: 2, was 4: the pitch life swung the hanging
+# line 66-74 below level; at 4 the tip came to 0.03 m off the floor at the steep end and the share from behind to 0.41+
+# at the shallow end, no line between them; at 2 the line plays 64-70, tip 0.05+, share 0.41-)
 BLADE_YAW = float(os.environ.get("PROWL_BLADE_YAW", "1.5"))  # (solver 6a: 1.5, was 2.5: the heading swung 19 deg p-p, over the 20-wide band)
 # The sword elbow's bend at least this (deg; B's Prowl held 16-27, which reads straight at the play camera). 0 = B's.
 ELBOW_R = float(os.environ.get("PROWL_ELBOW_R", "38"))
@@ -77,8 +79,17 @@ TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
 # solve11a/tools/cand11.py's grip): as played -129..-107 / 70-77 below level, 54+ deg down-screen from the front and
 # within 45 of it, sideways share from behind 0.32 max, the tip 0.06 m off the floor, the fist 50 mm clear of her hip
 # (out 14: 24 mm into it at f76). Was (-30, 12, 145, 30) / ((-0.3448, -0.9363, -0.0475), (0.7678, -0.2518, -0.5876)).
-IDLE_ARM = (-30.0, 20.0, 125.0, 50.0)
-IDLE_GRIP = ((-0.2718, -0.953, 0.1261), (0.4317, -0.2367, -0.8694)) if GRIP_TILT == -35.0 else TRAIL_GRIP
+# (solver 12, 16 Nov) From the DEFAULT facing (toward the den camera, pitch 62) that arm, trailing back, put the fist on
+# screen only 0.05 m under her right shoulder and the elbow above it: a fist raised by her head, the blade hidden (the
+# owner, 15 Nov: "the idle pose out of town is still so weak ... that locked elbow"). Now the arm hangs at her side
+# (the lead's try e): 5 back of hanging, out 30, inside angle 130 (bend 41-48 as played), turned in 45; the fist at
+# her hip, 0.18-0.20 m under her shoulder on screen facing the camera and from behind. The grip read off e's PLAYED
+# wrist (e's keyed grip sat 10 past the ulnar cap; armroll turned it 9.7 back, so the stops and skill ends landed off
+# the played hand) and turned 8 forward about her up, 5 up and 3 about the blade (s12/tools/g12.py, t2.py): in the
+# caps (dev -17, pro 60, flex -34; armroll turns nothing), as played 68-85 to her right, 64-70 below level.
+# Was (-30, 20, 125, 50) / ((-0.2718, -0.953, 0.1261), (0.4317, -0.2367, -0.8694)).
+IDLE_ARM = (-5.0, 30.0, 130.0, 45.0)
+IDLE_GRIP = ((-0.3471, -0.8573, 0.3802), (0.2497, -0.4752, -0.8437)) if GRIP_TILT == -35.0 else TRAIL_GRIP
 if os.environ.get("PROWL_IDLE_ARM", "1") == "0":  # the old idle line (TRAIL_ARM / TRAIL_GRIP)
     IDLE_ARM, IDLE_GRIP = TRAIL_ARM, TRAIL_GRIP
 
