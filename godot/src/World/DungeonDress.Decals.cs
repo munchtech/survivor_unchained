@@ -47,6 +47,8 @@ public static partial class DungeonDress
     static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.0f, ["pebbles"] = 0.6f, ["twigs"] = 0.5f, ["fur"] = 0.3f, ["blood"] = 0.35f };
     static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.6f };
 
+    static readonly int LairDeerCap = (int)SurvivorUnchained.Args.Num("den-lair-deer", 3f);
+    static int lairDeer;
     static Decal PickDecal(Dictionary<string, float> by, float u)
     {
         var all = Decals();
@@ -78,7 +80,7 @@ public static partial class DungeonDress
     static void DenDecals(Ctx c)
     {
         var z = c.Z;
-        var b = new DecalBuf();
+        var b = new DecalBuf(); lairDeer = 0;
         var pits = DenPits(c);
         var hollows = DenHollows(c);
         bool Ok(float x, float zz, float wmin, float hmin)
@@ -179,7 +181,10 @@ public static partial class DungeonDress
                 float rad = sig * Mathf.Sqrt(-2f * Mathf.Log(u1));
                 float x = sp.X + rad * Mathf.Cos(Mathf.Tau * u2), zz = sp.Y + rad * Mathf.Sin(Mathf.Tau * u2);
                 if (!Ok(x, zz, 0.25f, 0.5f)) continue;
-                AddDecal(c, b, PickDecal(inBoss ? InBossPile : InPile, Hash(si, k, 950)), x, zz, Hash(si, k, 951) * Mathf.Tau, 0.9f + 0.25f * Hash(si, k, 952));
+                var pd = PickDecal(inBoss ? InBossPile : InPile, Hash(si, k, 950));
+                // (den r13 rooms) at most --den-lair-deer deer skulls in a lair, the rest small scatter (a bone)
+                if (inBoss && pd.Kind == "deer_skull") { if (++lairDeer > LairDeerCap) { lairDeer--; pd = PickDecal(InPile, Hash(si, k, 957)); } else GD.Print($"[den-lair] deer skull {lairDeer}"); }
+                AddDecal(c, b, pd, x, zz, Hash(si, k, 951) * Mathf.Tau, 0.9f + 0.25f * Hash(si, k, 952));
             }
         }
 
