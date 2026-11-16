@@ -160,7 +160,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         "den" => Atmospheres.Den, "ravine" => Atmospheres.Ravine, _ => base.AtmosphereFor(t),
     };
     /// <summary>A pack and the ground round it in view: higher than the road's, nearer than a night's.</summary>
-    public override (double Pitch, double Distance)? Camera => (62, 24);
+    /// <summary>The map's play camera: pitch (degrees) and distance (metres); the den's painted set casts along it
+    /// (src/World/DungeonDress.Set.cs).</summary>
+    public const double CamPitch = 62, CamDistance = 24;
+    public override (double Pitch, double Distance)? Camera => (CamPitch, CamDistance);
     public override Arrival ArrivalFrom(string? from) => new(map.Start.X, map.Start.Z, 0);
 
     /// <summary>The map's clock and how it stands.</summary>

@@ -22,6 +22,7 @@ render_mode sss_mode_skin, cull_disabled;
 #define CEL_OWN_LIGHT
 #define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
+global uniform vec4 cel_her_den;   // (demo-look r2 her: z her ember's steps in the den, View/HeroDen.cs; zero: as before)
 // (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)
 uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
 // (both sides drawn for her head alone (mouth_in), and only inside her mouth (mouth_c): its inside, seen through her
@@ -1065,6 +1066,13 @@ void light() {
 		vec4 c_fmid = mix(cel_mid, vec4(face_mid, cel_mid.a), face_mid_w * mix(1.0, 1.0 - soft_w, face_mid_mask));
 		cb_lv = LIGHT_IS_DIRECTIONAL ? cel_level_mid(cb_t, c_fmid)
 			: mix(vec3(1.0), c_fmid.rgb, c_fmid.a * (1.0 - smoothstep(0.0, CEL_SOFT_TURN, cb_t))) * clamp(cb_t, 0.0, 1.0);
+		// (demo-look r2 her: the den's steps, cel_her_den.z = hero_den value 17, 0 off) her ember models her in three flat
+		// steps, not Lambert's gradient: lit (Lambert's level at n.l 0.7) from n.l 0.42, the terminator at z of it from 0.08,
+		// the shade (no ember) below; each edge 0.02 of n.l wide, so a step reads as one px of change at the play camera
+		if (cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL) {
+			float c_up = smoothstep(0.40, 0.44, cb_t), c_in = smoothstep(0.06, 0.10, cb_t);
+			cb_lv = mix(vec3(1.0), c_fmid.rgb, c_fmid.a * (1.0 - c_up)) * (0.7 * mix(cel_her_den.z, 1.0, c_up) * c_in);
+		}
 		cb_d = mix(cb_d, cb_lv * (cb_sh / PI), cel_on);
 		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);
 	}

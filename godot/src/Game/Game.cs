@@ -1527,6 +1527,7 @@ public partial class Game : Node, IZoneHost
     }
 
     static readonly int SimLogN = (int)Args.Num("simlog", 0);
+    static readonly float ShotBruise = (float)Args.Num("shot-bruise", 1);
     int simLogF;
 
     public override void _Process(double delta)
@@ -1815,7 +1816,7 @@ public partial class Game : Node, IZoneHost
             }
             else hud.ArenaClock(null, "");
         }
-        hud.SetBruise(scene.Bruise);
+        hud.SetBruise(scene.Bruise * ShotBruise);   // (den r12: --shot-bruise 0 for look frames: the lair frame's red edges were her damage vignette)
         // The boss's script, for the looks that read its state (Grimtunnel under the ground).
         scene.Fx.Boss = zone switch { ArenaRun ar => ar.BossScript, MapRun mr => mr.BossScript, StoryNight sn => sn.BossScript, _ => null };
         // A story night's deadfalls and where they burn, for the look of a fed fire.
@@ -1992,6 +1993,7 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
+            if (SurvivorUnchained.View.MarkPass.Den && tier is LootTier.Rare or LootTier.Epic) col = SurvivorUnchained.View.Palette.CapChroma(col);   // (the den: the set's verdigris is the loudest)
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
@@ -2171,10 +2173,10 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("loot") && Battle is { } lootB && lootI < (gemLoot ? gemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootI];
+            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootMode == "set" ? 5 : lootI];   // (--loot set: only the Set piece, watch_coif, the verdigris beam)
             // --loot gift: the same drop as --loot legendary (same place and time), but a gift unique (herd_callers_horn) in the Legendary's place.
             if (lootMode == "gift") { def = "herd_callers_horn"; rarity = null; look = Verdict.Emphasised; }
-            lootI = lootMode is "legendary" or "gift" ? LootRing.Length : lootI + 1;
+            lootI = lootMode is "legendary" or "gift" or "set" ? LootRing.Length : lootI + 1;
             int ringLen = gemLoot ? gemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)
@@ -2312,7 +2314,13 @@ public partial class Game : Node, IZoneHost
             }
         }
         // --no-foes: nothing spawns (a still of her and a prop in a combat zone).
-        if (Battle is { } nf && Args.Has("no-foes")) nf.NoSpawn = true;
+        if (Battle is { } nf && Args.Has("no-foes"))
+        {
+            nf.NoSpawn = true;
+            // (den r14) and the ones already placed (a dungeon's packs are laid before this): released, so a still of a
+            // corridor shows no fight, no charge telegraph, no damage numbers
+            foreach (var e in nf.Enemies.Living().ToList()) nf.Enemies.Release(e);
+        }
         // --lab: no drafts and no dying, so a run of pictures is all the skill in hand.
         if (Args.Has("lab") && Battle is { } lb)
         {

@@ -55,6 +55,7 @@ public static partial class DungeonDress
                     float x = -z.Half + (i + 0.5f) * scan, zz = -z.Half + (j + 0.5f) * scan;
                     float w = Wall(c, x, zz);
                     if (Mathf.Abs(w - 0.3f) > 0.12f || Hole(c, x, zz) < 1.2f) continue;
+                    if (SetMode > 0 && SetIn(x, zz)) continue;   // (round 10: the painted set's banks own this edge)
                     var p = new Vector2(x, zz);
                     float gap = 2.6f + 1.0f * Hash(i, j, 931);
                     bool near = false;

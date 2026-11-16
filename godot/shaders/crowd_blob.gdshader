@@ -16,6 +16,16 @@ global uniform vec4 crowd_night;
 // (L1 lead 12, B4: under a rig with "foe_moon" the soft dark is off: each foe stands on its own hard shadow, the moon's cast one
 // outside her fire and crowd_blob_cast.gdshader's inside it; a soft multiplied dark over leaf shade was a product, rule R3)
 global uniform vec4 crowd_shade;
+// (demo-look r2 foes (solver 2: 0.8 x the blob a hand away, was 1.35 and 0.3: a big soft disc round each wolf, not a shadow
+// under it; the blob has no facing to stretch it along the body (Vat.Push writes it axis-aligned)): in the den, rigs.json "foe_den" on (crowd_den.y), every foe stands on a soft CEL shadow: a flat dark
+// ellipse with a short soft edge, DEN_BLOB_SIZE x the blob (a wolf is longer than it is tall), a hand away from the key
+// (key_dir, world, toward the light) so it shows past the body from the play camera, DEN_BLOB_K of the ground kept)
+global uniform vec4 crowd_den;
+global uniform vec4 key_dir;
+#define DEN_BLOB_SIZE 0.8
+#define DEN_BLOB_AWAY 0.18
+#define DEN_BLOB_K 0.55
+#define DEN_BLOB_EDGE vec2(0.8, 0.95)
 #define BLOB_WIDE 0.25
 #define BLOB_DARK 0.2
 #define BLOB_AWAY 0.25
@@ -23,7 +33,12 @@ varying float pool;
 
 void vertex() {
 	pool = 0.0;
-	if (crowd_night.w > 0.5 && crowd_ember.w > 0.0) {
+	if (crowd_den.y > 0.0) {
+		float wd = max(length(MODEL_MATRIX[0].xyz), 1e-3);
+		vec2 kd = key_dir.xz / max(length(key_dir.xz), 1e-3);
+		VERTEX.xz = VERTEX.xz * DEN_BLOB_SIZE - kd * DEN_BLOB_AWAY / wd;
+	}
+	else if (crowd_night.w > 0.5 && crowd_ember.w > 0.0) {
 		vec3 o = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 		vec2 away = o.xz - crowd_ember.xz;
 		float d = length(away);
@@ -39,4 +54,5 @@ void fragment() {
 	a *= a;
 	if (crowd_shade.a > 0.0) a = 0.0;
 	ALBEDO = vec3(1.0 - a * min(strength * (1.0 + BLOB_DARK * pool), 0.95) * COLOR.a);
+	if (crowd_den.y > 0.0) ALBEDO = vec3(1.0 - (1.0 - DEN_BLOB_K) * (1.0 - smoothstep(DEN_BLOB_EDGE.x, DEN_BLOB_EDGE.y, d)) * COLOR.a);
 }

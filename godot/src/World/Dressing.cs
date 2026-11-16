@@ -808,6 +808,9 @@ public static class Dressing
             if (pi % 16 == 15) yield return null;
             var (id, at) = z.Props[pi];
             int house = pi < z.PropHouse.Count ? z.PropHouse[pi] : -1;
+            // (den r14 floor, judge r13 item 14) the kit's skull (a whole cranium: it read as an olive dome over a skull in both
+            // entry rooms) is cut from the den's litter: the painted decals and set carry the skulls. --den-kit-skull 1 restores it.
+            if (id == "halloween/skull" && z.DungeonTheme == "den" && SurvivorUnchained.Args.Num("den-kit-skull", 0f) <= 0f) continue;
             if (walls != null && walls.Take(id, house, at, cell)) continue;
             // (E9c2) nothing of the street's left standing inside a closed house (the cutaway shows the inside: a cart
             // parked in house 17, barrels in house 14's): its own furnishings below stand there instead

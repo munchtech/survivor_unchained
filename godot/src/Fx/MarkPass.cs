@@ -77,6 +77,11 @@ public partial class MarkPass : CompositorEffect
     /// named set of Tune numbers ("scarlet" the defaults above, "salmon" the old amber-over-dirt look).</summary>
     public static string Look { get; private set; } = "scarlet";
 
+    /// <summary>The den: a red mark is a crisp 3 px edge on a bed of at most 15% (lane E r2; the arena keeps its look).</summary>
+    public static bool Den;
+    /// <summary>The den's red: its edge reads Oklab .565 / .192 / 30 (ui_language.json hostile): the bed's value k, the green and blue shares.</summary>
+    public static float DenK = float.Parse(System.Environment.GetEnvironmentVariable("DEN_K") ?? "1.4", CultureInfo.InvariantCulture), DenTg = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TG") ?? "0.05", CultureInfo.InvariantCulture), DenTb = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TB") ?? "0.02", CultureInfo.InvariantCulture);
+
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
     public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice", "none" };
     /// <summary>mark_look.json "patterns": a telegraph's pattern by its school's name, else by its shape's (line, circle,
@@ -264,13 +269,13 @@ public partial class MarkPass : CompositorEffect
         var push = new float[]
         {
             size.X, size.Y, n, hasN ? 1 : 0,
-            waterOn ? 1 : 0, waterY, T["k"], exposure,
-            T["tg"], T["tb"], T["hg"], T["hb"],
+            waterOn ? 1 : 0, waterY, Den ? DenK : T["k"], exposure,
+            Den ? DenTg : T["tg"], Den ? DenTb : T["tb"], Den ? DenTg : T["hg"], Den ? DenTb : T["hb"],
             T["glow"], T["g0"], T["g1"], T["roof"],
             T["front"], T["tail"], T["body"], T["fill"],
             bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
             T["le"], T["fs"], T["fh"], T["knee"],
-            T["bed"], 1, 2f / (size.Y * Mathf.Max(Mathf.Abs(proj.Y.Y), 1e-4f)), 0,
+            T["bed"], 1, 2f / (size.Y * Mathf.Max(Mathf.Abs(proj.Y.Y), 1e-4f)), Den ? 1 : 0,
         };
         // (the tiles: each 8 x 8 px's mean seen value, a first dispatch of the same shader, mode 0)
         var ts = new Vector2I((size.X + 7) / 8, (size.Y + 7) / 8);
@@ -686,6 +691,17 @@ public partial class MarkPass : CompositorEffect
             cover = max(cover, min(f * 4.0, 1.0) * (1.0 - pc.bed));
             light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
             pl = pl * s.z * pc.le + fln * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
+            if (pc.pad2 > 0.5) {
+                // the den: a crisp edge about 3 px wide (no glow, no keyline), a bed of at most 15%, no pattern;
+                // the running fill is the same faint bed (the cast line stays a hairline)
+                float hw = 1.5 * gpx, aa = max(0.5 * gpx, 0.002);
+                float ed = clamp((hw + 0.5 * aa - abs(d)) / aa, 0.0, 1.0) * ends;
+                float bed = (d < 0.0 ? 0.15 : 0.0) * ends * smoothstep(0.0, aa, -d);
+                pl = 0.0; pd = 0.0;
+                cover = max(bed, ed);
+                light = ed * 0.3 * s.z * pc.le + (f * 0.15 * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0));
+                pl = fln * 0.0;
+            }
         }
 
         void main() {

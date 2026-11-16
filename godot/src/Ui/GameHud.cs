@@ -68,7 +68,7 @@ public partial class GameHud : CanvasLayer
     Control bossSheen = null!;
     TextureRect bossGlint = null!;
     ShieldMark bossShield = null!;
-    static readonly Color BossRed = new("#a8141c");   // (judge r1, 18: the orb's crimson; #b0222a under the old whole-bar sheen read rose)
+    static readonly Color BossRed = new("#cf3626");   // (lane E r2: ui_language.json blocks.hostile, Oklab L .565 C .192 h 30; was #a8141c, measured L .47 with the foot shade)
     ColorRect bossFill = null!, bossTrail = null!, bossChannelEdge = null!;
     TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
@@ -456,7 +456,7 @@ public partial class GameHud : CanvasLayer
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);
-        bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossFill = new ColorRect { Color = BossRed, Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
         // Shielded (judge r1, 7: the 2 px paler row read as a bevel): a steel plate laid over the upper half of the red,
         // as long as the life under it, a dark seam at its foot, a steel end on the fill's leading edge, a slow glint
@@ -474,7 +474,7 @@ public partial class GameHud : CanvasLayer
         bossSheen.AddChild(new ColorRect { Color = new Color("#e8edf3"), MouseFilter = Control.MouseFilterEnum.Ignore, AnchorLeft = 1, AnchorRight = 1, AnchorBottom = 1, OffsetLeft = -2, OffsetRight = 0, OffsetBottom = 0 });
         // (the bar's light: a pale line along its top and a shade along its foot, over the fill)
         track.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
-        track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
+        track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.1f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
         // An iron clamp over each end, the groove held between them (UI art's boss_groove.png has its own).
         if (!UiArt.Has("boss_groove"))
             foreach (float cx in new[] { -6f, w - 6 })

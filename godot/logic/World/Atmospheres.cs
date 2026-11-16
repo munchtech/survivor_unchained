@@ -404,6 +404,10 @@ public static class Atmospheres
         // rule 3). Warm belongs to sources (rule 3): the sun's color is the rig's key, not the grade's.)
         "rig_day" => WaystationDay.Grade with { HighlightTint = "#bcbcbc" },
         "rig_day_wild" => Day.Grade with { HighlightTint = "#bcbcbc" },
+        // (demo-look, lane E, 16 Nov: the den's own grade. The day rig's paint ran before SceneColor, which erased it (the den read
+        // midC 0.041, banks C 0.005, grey); PaintLate lays it after. The shadow is warm umber, never the day's violet #403878 (late, it
+        // measured shH 264 and cold 62%: the mauve of round 10). Measured against den_room/den_boss (LOOK_BIBLE "The demo frame: the den").)
+        "rig_den" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#3a2618", PaintShadowK = 0.45, PaintVib = 1.2, PaintHi = 0.6 },
         _ => null,
     };
 

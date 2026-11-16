@@ -1,0 +1,112 @@
+{
+ "what": "The demo frame's targets measured per class (docs/design/LOOK_BIBLE.md 'The demo frame: the den'). Each class is a list of boxes (full-size target px) on an image, kept where the Oklab key holds (L 0-1, C, h degrees; a key range lo > hi wraps) and dropped where a 'not' key holds. Read by tools/style/demo_look_check.py targets.",
+ "images": {"R": "scratch_coord12/dungeon_concepts/den_room.png", "B": "scratch_coord12/dungeon_concepts/den_boss.png", "P": "look_l1/owner_ref_10nov/owner_ref_play_camera.webp"},
+ "classes": {
+  "her_skin": [
+   {"img": "R", "box": [745, 400, 790, 480], "key": {"L": [0.7, 1.0], "C": [0.03, 0.115], "h": [35, 85]}},
+   {"img": "B", "box": [760, 405, 815, 495], "key": {"L": [0.7, 1.0], "C": [0.03, 0.115], "h": [35, 85]}}
+  ],
+  "her_hair": [
+   {"img": "R", "box": [745, 395, 795, 480], "key": {"L": [0.4, 0.85], "C": [0.115, 0.4], "h": [20, 62]}},
+   {"img": "B", "box": [760, 395, 815, 495], "key": {"L": [0.4, 0.85], "C": [0.115, 0.4], "h": [20, 62]}}
+  ],
+  "her_plate": [
+   {"img": "R", "box": [750, 405, 790, 478], "key": {"L": [0, 0.34]}},
+   {"img": "B", "box": [772, 415, 812, 490], "key": {"L": [0, 0.34]}}
+  ],
+  "her_trim": [
+   {"img": "P", "box": [790, 380, 920, 560], "key": {"L": [0.55, 1.0], "C": [0.07, 0.2], "h": [62, 100]}}
+  ],
+  "her_shadow": [
+   {"img": "B", "box": [745, 405, 768, 440], "key": {"L": [0, 0.4]}}
+  ],
+  "her_ink": [
+   {"img": "R", "box": [745, 395, 795, 480], "key": {"L": [0, 0.2]}}
+  ],
+  "ground_by_her": [
+   {"img": "B", "box": [700, 400, 740, 500]},
+   {"img": "B", "box": [820, 400, 860, 500]},
+   {"img": "R", "box": [690, 440, 730, 500]},
+   {"img": "R", "box": [800, 420, 840, 500]}
+  ],
+  "pack": [
+   {"img": "B", "box": [287, 447, 360, 507], "key": {"L": [0, 0.36]}, "not": [{"C": [0.06, 1], "h": [0, 45]}]},
+   {"img": "B", "box": [433, 487, 520, 580], "key": {"L": [0, 0.36]}, "not": [{"C": [0.06, 1], "h": [0, 45]}]},
+   {"img": "B", "box": [200, 553, 273, 633], "key": {"L": [0, 0.36]}, "not": [{"C": [0.06, 1], "h": [0, 45]}]},
+   {"img": "B", "box": [260, 560, 353, 640], "key": {"L": [0, 0.36]}, "not": [{"C": [0.06, 1], "h": [0, 45]}]}
+  ],
+  "boss_body": [
+   {"img": "B", "box": [805, 60, 895, 230], "key": {"L": [0, 0.42]}, "not": [{"C": [0.07, 1], "h": [0, 45]}]}
+  ],
+  "boss_back": [
+   {"img": "B", "box": [805, 30, 895, 230], "key": {"h": [220, 320], "C": [0.015, 1], "L": [0.1, 0.6]}}
+  ],
+  "boss_mane": [
+   {"img": "B", "box": [790, 100, 910, 200], "key": {"C": [0.07, 1], "h": [0, 45], "L": [0.2, 0.8]}}
+  ],
+  "ground_lit": [
+   {"img": "R", "box": [180, 320, 300, 420]},
+   {"img": "R", "box": [820, 400, 1000, 470]},
+   {"img": "R", "box": [1000, 330, 1200, 380]},
+   {"img": "B", "box": [900, 300, 1000, 390]},
+   {"img": "B", "box": [1000, 400, 1250, 460]},
+   {"img": "B", "box": [600, 480, 760, 540]}
+  ],
+  "ground_pool": [
+   {"img": "B", "box": [250, 205, 330, 245]},
+   {"img": "B", "box": [1300, 380, 1390, 410]}
+  ],
+  "ground_shade": [
+   {"img": "R", "box": [400, 540, 600, 590]},
+   {"img": "R", "box": [1100, 520, 1350, 580]},
+   {"img": "B", "box": [1150, 760, 1350, 830]},
+   {"img": "B", "box": [100, 650, 300, 720]}
+  ],
+  "bank": [
+   {"img": "R", "box": [0, 600, 1672, 941], "key": {"L": [0.12, 0.6]}},
+   {"img": "B", "box": [0, 0, 1672, 60], "key": {"L": [0.12, 0.6]}}
+  ],
+  "black_beyond": [
+   {"img": "R", "box": [0, 600, 1672, 941], "key": {"L": [0.0, 0.12]}}
+  ],
+  "fungus": [
+   {"img": "R", "box": [0, 0, 1672, 941], "key": {"h": [170, 230], "C": [0.05, 1], "L": [0.55, 1]}},
+   {"img": "B", "box": [0, 0, 1672, 941], "key": {"h": [170, 230], "C": [0.05, 1], "L": [0.55, 1]}}
+  ],
+  "rot_glow": [
+   {"img": "B", "box": [0, 250, 700, 941], "key": {"h": [120, 160], "C": [0.08, 1], "L": [0.35, 1]}}
+  ],
+  "blood": [
+   {"img": "B", "box": [80, 450, 400, 650], "key": {"h": [0, 40], "C": [0.07, 1], "L": [0.15, 0.6]}},
+   {"img": "R", "box": [300, 280, 650, 580], "key": {"h": [0, 40], "C": [0.07, 1], "L": [0.15, 0.6]}}
+  ]
+ },
+ "bands": {
+  "her_skin": {"L": [0.74, 0.88], "C": [0.094, 0.125], "h": [45, 69], "rule": "the lightest figure; skin L50 >= ground_by_her L50 + 0.25"},
+  "her_hair": {"L": [0.52, 0.76], "C": [0.12, 0.18], "h": [33, 52], "rule": "copper, the most saturated surface on her"},
+  "her_plate": {"L": [0.22, 0.4], "C": [0.02, 0.05], "h": [15, 60], "rule": "warm dark gunmetal, never cold silver; glints L >= 0.85 on at most 3% of her"},
+  "her_trim": {"L": [0.7, 0.9], "C": [0.07, 0.12], "h": [56, 80], "rule": "gold, at least 0.30 L over the plate"},
+  "her_shadow": {"L": [0.2, 0.42], "C": [0.0, 0.03], "h": [10, 60], "rule": "her cast shadow at least 0.10 L under ground_by_her"},
+  "her_ink": {"L": [0.08, 0.22], "C": [0.0, 0.035], "h": [10, 60], "rule": "a deeper tone of what it sits on, never black (L >= 0.08)"},
+  "ground_by_her": {"L": [0.4, 0.58], "C": [0.04, 0.068], "h": [38, 62], "rule": "the floor in a 1-2 body ring round her"},
+  "pack": {"L": [0.2, 0.36], "C": [0.01, 0.04], "h": [10, 50], "rule": "dark warm fur, at least 0.15 L under the ground they stand on; never pale, silver or lavender"},
+  "elite": {"L": [0.2, 0.38], "C": [0.01, 0.04], "h": [10, 50], "rule": "the pack's body plus one affix accent (C 0.08-0.14) on 6-15% of its px and a full rim"},
+  "boss_body": {"L": [0.24, 0.4], "C": [0.01, 0.035], "h": [0, 40], "rule": "the same blocks as the pack, one step paler and larger"},
+  "boss_back": {"L": [0.27, 0.47], "C": [0.02, 0.04], "h": [270, 312], "rule": "the cold blue-black back: the one cold figure in the den"},
+  "boss_mane": {"L": [0.34, 0.57], "C": [0.08, 0.12], "h": [20, 40], "rule": "the blood-red mane: the boss reads by it"},
+  "ground_lit": {"L": [0.4, 0.56], "C": [0.043, 0.065], "h": [37, 61], "rule": "the open floor: warm earth, the middle mass"},
+  "ground_pool": {"L": [0.56, 0.75], "C": [0.059, 0.089], "h": [47, 71], "rule": "the pale shafts and lane pools: the brightest ground, never white"},
+  "ground_shade": {"L": [0.31, 0.46], "C": [0.025, 0.038], "h": [25, 65], "rule": "the floor under the banks: warm umber, never mauve (h 290-20) or grey"},
+  "bank": {"L": [0.15, 0.3], "C": [0.008, 0.025], "h": [17, 57], "rule": "the root banks: dark warm mass"},
+  "black_beyond": {"L": [0.0, 0.12], "C": [0.0, 0.02], "h": [0, 360], "rule": "beyond the banks: black, under 0.12"},
+  "fungus": {"L": [0.6, 0.8], "C": [0.053, 0.08], "h": [171, 195], "rule": "the den's cold accent: pale teal, small"},
+  "rot_glow": {"L": [0.45, 0.62], "C": [0.08, 0.12], "h": [121, 145], "rule": "the sickly green in the boss lair fissures"},
+  "blood": {"L": [0.36, 0.52], "C": [0.072, 0.11], "h": [25, 42], "rule": "dark red, never magenta"},
+  "fx_steel": {"L": [0.6, 1.0], "C": [0.14, 0.19], "h": [52, 85], "rule": "her steel (physical school, fx_language.json): edge 0.63/0.149/58, mid 0.81/0.165/79, core L >= 0.90 C <= 0.05; the only C >= 0.14 px in the den's world"},
+  "loot_set": {"L": [0.7, 0.92], "C": [0.12, 0.18], "h": [150, 175], "rule": "the set's verdigris light (BattleFx.Loot Verdigris, 0.76/0.137/173): twice the fungus's chroma, on the green side of its teal"},
+  "hud_hostile": {"L": [0.54, 0.59], "C": [0.175, 0.21], "h": [25, 35], "rule": "ui_language accents, held exactly (boss bar, hostile marks)"},
+  "hud_level": {"L": [0.79, 0.84], "C": [0.15, 0.18], "h": [118, 130], "rule": "ui_language level green"},
+  "hud_skill": {"L": [0.72, 0.78], "C": [0.07, 0.095], "h": [300, 313], "rule": "ui_language skill lavender"}
+ },
+ "frame_bands": {"what": "palette.py stats over the world (targets: whole frame; ours: the play crop y 8-80%)", "Lp50": [0.26, 0.38], "key": [1.5, 2.0], "midC": [0.045, 0.065], "shC": [0.009, 0.025], "shH": [15, 60], "warm": [75, 100], "cold": [4, 15], "black": [0, 2]}
+}

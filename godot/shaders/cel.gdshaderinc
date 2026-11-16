@@ -1078,6 +1078,9 @@ void light() {
 #ifdef CEL_S3
 		c_sb += cel_s3_add(LIGHT, LIGHT_COLOR, c_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, INV_VIEW_MATRIX);
 #endif
+#ifdef CEL_KEY_ADD
+		c_db += CEL_KEY_ADD;   // (demo-look item 4 pass 2: a shader's own diffuse on the key, cast shadow kept: vat's den top band)
+#endif
 		DIFFUSE_LIGHT += mix(c_da, c_db, cel_on);
 		SPECULAR_LIGHT += mix(c_sa, c_sb, cel_on);
 	}

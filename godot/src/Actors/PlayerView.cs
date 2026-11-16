@@ -155,7 +155,7 @@ public partial class PlayerView : Node3D
     /// crowd's own light is on (the shader's lamp curve is then the whole of her light on it: 0 at 7 m, the crowd round her held under her;
     /// the real light added about a third within 1.5 m and nothing past 3 m), and lights it as before by day or with --crowd-fill off.</summary>
     static readonly string CrowdOmniArg = SurvivorUnchained.Args.Get("crowd-omni") ?? "";
-    static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew));
+    static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew) && !Atmosphere.CrowdDen);   // (demo-look item 4: the den's pack takes her as a rim, not a flood)
     /// <summary>--pool-log: her light's reach and energy printed as they change (L1 S2b-N2, the pool in metres).</summary>
     static readonly bool PoolLog = SurvivorUnchained.Args.Has("pool-log");
     float poolLogged = -1;
@@ -180,6 +180,7 @@ public partial class PlayerView : Node3D
     /// <summary>(L1 lead 19, SH2) Her own fire shadow: one cast quad (World/FireCast.cs, shaders/crowd_blob_cast.gdshader)
     /// and its shape, m (--her-cast-long, --her-cast-wide: its length from her feet and its width at them).</summary>
     MultiMeshInstance3D? herCast;
+    HerShadow? herShadow;
     const float HerCastTall = 1.7f;
     static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 1.2f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.4f);   // (SH3: a short tapered trail her stance wide, not a disc)
     readonly OwnClips own = OwnClips.Her;
@@ -475,6 +476,7 @@ public partial class PlayerView : Node3D
         AddChild(FolkLight);
         // (L1 lead 19, SH2) Her own short shadow under her fire (FireCast: one quad; placed every frame below).
         if (mine) { herCast = FireCast.Make("HerCast", 1); AddChild(herCast); }
+        if (mine) { herShadow = new HerShadow(); AddChild(herShadow); }   // (demo-look r2 her: her cast shadow in the den)
         Reflections = new Reflections(lo);
         AddChild(Reflections);
         Gather(this);
@@ -1421,6 +1423,8 @@ public partial class PlayerView : Node3D
                 FireCast.Set(herCast.Multimesh, 0, me, HerCastTall, HerCastWide, ce > 0 ? 1 : 0, HerCastLong, new Vector2(me.X - lf.X, me.Z - lf.Z));
                 if (FireCast.Count) FireCast.Report(lf);
             }
+            herShadow?.Place(GlobalPosition, Visible && IsVisibleInTree());
+            if (herShadow != null) HerSteel.Wear(view?.HeldMount("handslot.r"), HeroDen.SteelOn);   // (demo-look r2 her: her blade as painted steel in the den)
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
             // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;

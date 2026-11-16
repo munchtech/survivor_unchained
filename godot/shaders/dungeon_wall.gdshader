@@ -30,13 +30,17 @@ uniform float bank_sat = 0.65;   // (round 8 judge: the banks less saturated, co
 uniform float bank_gain = 1.0;     // (round 8) the bank set's value (--den-bank-gain)
 uniform float hollow_min = 0.0;    // (round 8) the floor under the bank set's black hollows between roots (--den-hollow): earth, never void
 uniform float tile = 5.0;
-// (den round 9, bank lane, 15 Nov) r9 1: the banks with their big roots (src/World/DungeonWalls.BankRoots.cs, COLOR.r 0.8):
-// a root's albedo warm only on the side the key falls on (cel_key), grey and a touch cool turned away from it (the
-// targets' shade (36, 32, 32)), and the far wall (bank and roots) receding into the dark with height (wall_top_k at 7 m).
-uniform float r9 = 0.0;
-uniform vec3 broot_col = vec3(0.2, 0.12, 0.075);
-uniform vec3 broot_cool = vec3(0.86, 0.9, 1.0);
-uniform float wall_top_k = 0.3;
+// (den round 10b) Where the painted set dresses the banks (src/World/DungeonDress.Set.cs) the mound is only the dark mass
+// behind the paintings: cool near-black earth, the targets' deep gaps between roots (10-20 of 255, blue-grey), so every
+// gap, cut and keyed hole in the set reads as shade between roots. The old bank painting showed through them as a pale
+// mauve film over the far banks and pale wedges on the side banks (p10c).
+uniform vec4 set_area = vec4(0.0);   // x, z, radius; w: 0 off, 1 within the radius (the prototype room), 2 everywhere
+uniform vec3 set_mass = vec3(0.016, 0.013, 0.012);   // (r11: warm dark, the banks' painted shade (36,32,32); cool, it read as a navy shard between the cards)
+uniform float set_glow = 0.008;   // (r10d) the mass under the set lit at least this, cool: it was flat black at the frame corners
+uniform float set_flat = 0.0;    // (r14) under the set the mass lit on a level normal (1) instead of its mesh's facets (0)
+uniform vec3 deep_tint = vec3(1.18, 0.96, 0.74);   // (r13; was the cool grey 0.8, 0.9, 1.25)
+uniform float deep_mip = 3.0;   // (r13) the deep painting's mip: its shapes soft, no drawn edge
+uniform float set_deep = 0.5;    // the old bank painting's share in it, greyed cool: dark roots receding past the set's reach
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -133,10 +137,21 @@ vec3 beyond_col() {
 	vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
 	vec3 t = mix(texture(bank_alb, vec3(uv * 0.8 + vec2(0.21, 0.13), 1.0)).rgb, texture(bank_alb, vec3(uv * 0.8 + vec2(0.57, 0.71), 0.0)).rgb, smoothstep(0.4, 0.6, vnoise(wpos.xz * 0.06 + 3.0)));
 	t = max(t, vec3(hollow_min) * vec3(1.0, 0.74, 0.58) * (0.7 + 0.6 * vnoise(wpos.xz * 0.7)));
-	vec3 b = t * beyond_k * beyond_tint * (0.65 + 0.7 * vnoise(wpos.xz * 0.11 + 9.0));
-	// (round 9) never under the targets' dark (their deep gaps sit at 12-20 of 255, cool): a mottled cool floor
-	if (r9 > 0.5) b = max(b, vec3(0.0058, 0.006, 0.0072) * (0.75 + 0.5 * vnoise(wpos.xz * 0.23 + 4.0)));
-	return b;
+	return t * beyond_k * beyond_tint * (0.65 + 0.7 * vnoise(wpos.xz * 0.11 + 9.0));
+}
+float in_set() {
+	if (set_area.w < 0.5) return 0.0;
+	if (set_area.w > 1.5) return 1.0;
+	return 1.0 - smoothstep(set_area.z + 7.0, set_area.z + 9.0, distance(wpos.xz, set_area.xy));
+}
+vec3 set_mass_col() {
+	vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
+	// (r13) the painting read blurred (deep_mip) and in warm umber: crisp and greyed cool it drew mauve faceted root shapes
+	// past the cards' reach (the seed-11 corridor's far left, L .24 C .005 h 2 against lane E's Banks band h 17-57)
+	vec3 p = mix(textureLod(bank_alb, vec3(uv, 1.0), deep_mip).rgb, textureLod(bank_alb, vec3(uv + vec2(0.37, 0.61), 0.0), deep_mip).rgb, smoothstep(0.57, 0.67, vnoise(wpos.xz * 0.08)));
+	float l = dot(p, vec3(0.299, 0.587, 0.114));
+	vec3 deep = mix(vec3(l) * deep_tint, p, 0.35) * set_deep;
+	return set_mass * (0.7 + 0.6 * vnoise(wpos.xz * 0.45 + vec2(wpos.y * 0.3, 2.0))) + deep;
 }
 void fragment() {
 	// The cutaway: what stands nearer the camera than her, over her chest on screen, is cut away (dithered at its
@@ -158,24 +173,6 @@ void fragment() {
 	if (!FRONT_FACING) {
 		// The cut mass inside.
 		col = vec3(0.043, 0.035, 0.031);
-	} else if (kind > 0.75 && kind < 0.85) {
-		// A big bank root (round 9): a smooth cel tube, its bark long broken grooves along it and lighter dabs on its lit
-		// top; each root its own shade (COLOR.a). Warm where the key falls, grey turned from it; the far wall's dark above.
-		vec3 base = broot_col * mix(0.8, 1.15, root_id);
-		float a = round_s * 7.0 + 0.8 * (vnoise(vec2(along_m * 0.5, root_id * 37.0)) - 0.5);
-		float fa = fwidth(a);
-		float groove = 1.0 - smoothstep(0.05, 0.05 + 1.5 * fa, abs(fract(a) - 0.5));
-		groove *= smoothstep(0.35, 0.6, vnoise(vec2(along_m * 0.9 + floor(a) * 5.3, root_id * 11.0 + floor(a) * 1.7)));
-		groove *= 1.0 - smoothstep(0.2, 0.5, fa);
-		base *= 1.0 - 0.4 * groove;
-		float kl = dot(wnrm, normalize(cel_key.xyz));
-		float dab = smoothstep(0.5, 0.75, vnoise(vec2(along_m * 1.4 + root_id * 7.0, round_s * 5.0)));
-		base *= 1.0 + 0.3 * dab * smoothstep(0.2, 0.6, kl);
-		float lb = dot(base, vec3(0.299, 0.587, 0.114));
-		base = mix(vec3(lb) * broot_cool, base, smoothstep(-0.25, 0.35, kl));
-		base *= mix(1.0, wall_top_k, smoothstep(2.6, 7.5, h));
-		base *= 1.0 - 0.3 * (1.0 - smoothstep(-0.05, 0.25, wpos.y - floor_y));
-		col = base;
 	} else if (kind > 0.75) {
 		// A root: a smooth cel tube (the concepts'), its bark sparse line work (grooves along it, wobbling, broken),
 		// never the planks of a striped texture; each root its own shade (COLOR.a), the under side purple-brown, the
@@ -204,7 +201,7 @@ void fragment() {
 		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
 		if (kind > 0.25 && depth < 0.5) col *= 0.55;
 	} else if (kind > 0.25) {
-		col = beyond_col();
+		col = mix(beyond_col(), set_mass_col(), in_set());
 	} else {
 		// The den's bank (15 Nov): the painted bank set projected along the play camera's view so it is never stretched on
 		// the slope; slice 1 main, slice 0 blended in by slow noise; past the crest (COLOR.b) it fades to black.
@@ -220,15 +217,15 @@ void fragment() {
 		// down a pit the face goes to black within a couple of metres
 		col *= mix(1.0, 0.06, smoothstep(0.15, 1.8, depth) * (1.0 - round_s));
 		col *= 1.0 - 0.25 * (1.0 - smoothstep(0.0, 0.5, h));
-		if (r9 > 0.5) {
-			// (round 9) the painting's shade grey and a touch cool (warm only where it is lit); the far wall into the dark
-			float lc = dot(col, vec3(0.299, 0.587, 0.114));
-			col = mix(vec3(lc) * broot_cool, col, smoothstep(0.012, 0.07, lc));
-			col *= mix(1.0, wall_top_k, smoothstep(2.4, 7.0, h));
-		}
 		col = mix(col, beyond_col(), smoothstep(0.0, 1.0, round_s));
+		float ks = in_set();
+		col = mix(col, set_mass_col(), ks);
+		// (r14) under the set the mass takes the light on a level normal: the mesh's own (0.5 m cells, central differences) put
+		// the cel terminator across it in straight-sided facets (the seed-11 corridor's far left, r13 judge B1)
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(normalize(mix(wnrm, vec3(0.0, 1.0, 0.0), set_flat)), 0.0)).xyz, ks));   // (no painted normal under the set)
 	}
 	ALBEDO = col;
+	EMISSION = vec3(1.0, 0.9, 0.86) * set_glow * in_set() * (0.7 + 0.6 * vnoise(wpos.xz * 0.45));
 	ROUGHNESS = 0.95;
 	CEL_FRAGMENT;
 }

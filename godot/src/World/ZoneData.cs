@@ -45,6 +45,9 @@ public sealed class ZoneData
     public readonly int Seed;
     public readonly string DungeonTheme = "";
     public readonly float[]? WallField;
+    /// <summary>(den r13) The walkable edge's field as the generator made it; WallField is the DRAWN one (in the den's
+    /// corridors pushed outward, DenRagged). Elsewhere the same array.</summary>
+    public readonly float[]? WalkField;
     /// <summary>A dungeon's holes as a field (MapBuild.HoleField); null elsewhere.</summary>
     public readonly float[]? HoleField;
     /// <summary>A dungeon's rooms (centre and reach, MapBuild.Areas), for what is placed by rule per room (the den's shafts).</summary>
@@ -205,10 +208,12 @@ public sealed class ZoneData
         Story = m.Spec.Story != "";
         Seed = m.Spec.Seed;
         DungeonTheme = m.DungeonTheme;
-        WallField = m.WallField;
+        WallField = WalkField = m.WallField;
         HoleField = m.HoleField;
         if (m.WallField != null)
             foreach (var a in m.Areas) Rooms.Add(((float)a.X, (float)a.Z, (float)a.R, a.Kind.ToString()));
+        if (m.WallField != null && DungeonTheme == "den")
+            WallField = DenRagged.Drawn(m.WallField, Res, Half, Step, Seed, Rooms);
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {

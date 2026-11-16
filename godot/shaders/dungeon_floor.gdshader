@@ -24,14 +24,33 @@ uniform float open_lift = 1.08;
 uniform float den_sat = 0.65;   // (round 8 judge: the earth 35% less saturated; warmth comes from the shafts and fires)
 uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
+uniform float boss_damp = 0.9;
+uniform float boss_sat = 1.0;
+uniform vec3 boss_tint = vec3(1.0);
+uniform float den_chroma = 1.0;
+uniform float den_chroma_lo = 0.03;
+uniform float den_chroma_hi = 0.1;   // (r12) the darks' saturation cap (1: none)
+uniform vec3 gloom_tint = vec3(0.8, 0.95, 1.25);   // (den r14) the lair's fall: the grey's tint (DungeonFloor sets the warm umber by default)
+uniform float gloom_mix = 0.7;
+uniform float open_grit = 0.0;   // (den r14 item 8) the open floor's fine grit contrast (DungeonFloor: --den-grit)
+uniform float boss_gloom = 0.0;   // (r12) the lair falls dark and cool from its pools toward its walls (den_set.gdshaderinc's lair_gloom, the same rule)
+uniform float boss_dry = 0.0;   // (r11) the damp tile (F8) kept out of the lair by this share: it read as a dark grey-mauve speckle   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
-// (den r9 floor) The meso layer (tools/look/den_floor_paint.py, godot/data/look/den_floor.json): stones, clods, litter, plates
-// and cracks painted with their own lit edge and shadow, read unrotated (the painted light stays the key's) at two scales;
-// each object shows where its rank (aux r, or a for plates and cracks) is under the place's density, a macro mask.
-uniform sampler2DArray den_meso : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2DArray den_aux : filter_linear_mipmap_anisotropic, repeat_enable;
-uniform float meso_k = 0.0;   // 0: off (round 8's floor); 1: on (--den-meso)
-const float MESO_M = 8.0;
+// (den round 10) the painted set's floor (tools/look/den_set.py: art/dungeon/den/set/floor.png, 4 m tiles made seamless):
+// F1 packed earth, F2 trodden, F3 damp with moss, F4 thin root runs, laid by the same weights as the layers above
+uniform sampler2DArray set_floor : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the den floor's albedo
+uniform float set_gain = 1.0;   // the set floor's albedo scale (--den-set-floor-gain)
+uniform float set_band = 0.6;   // (r10b) the tiles' 3 cm-1 m masses stretched by this (0: as painted)
+uniform float set_damp = 0.45;  // (r13) the damp patches' depth in the open: at 1 a 2-3 m one read as a black smudge on the seed-23 corridor (judge r12)
+uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow fields (0: the walls' vignette only)
+// (r11) the floor read as a soft brown cloud: each tile was read twice at two turns and the two AVERAGED over wide
+// bands (every stone at half strength, ghosted), the band stretch multiplied a blurred copy back in, and the slow
+// damp, leaf and value clouds were laid on top. set_sharp 1: the two turns switch over a narrow seam, the tiles are read
+// a little sharper (mip bias); set_clouds scales the slow clouds under the set (1: as before).
+uniform float set_sharp = 1.0;
+uniform float set_clouds = 0.35;
+uniform float set_trod = 0.5;   // (r11) the trodden tile's share (F7: paw prints, few stones): the open middle was all of it
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -162,53 +181,62 @@ void fragment() {
 		// the painted grain stretched about its local mean (the layers' mip), so the flakes and grit read at the play camera
 		vec3 ref = mix(textureLod(den_alb, vec3(wpos.xz / den_m[0], 0.0), 5.0).rgb, textureLod(den_alb, vec3(R1 * wpos.xz / den_m[0] + 0.37, 0.0), 5.0).rgb, tw);
 		float lr = max(lum(ref), 1e-3);
-		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain * mix(1.0, 0.45, meso_k)), 0.3, 2.5);   // (meso on: the fine grain ~30% quieter)
-		if (meso_k > 0.0) {
-			vec2 ua = wpos.xz / MESO_M, ub = wpos.xz / (MESO_M * 0.79) + vec2(0.37, 0.61);
-			float ka = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.09 + 29.0));
-			float open = meso_k * (1.0 - steep) * smoothstep(-0.3, 0.5, inside);
-			// packed-earth plates: the higher plate of the two readings wins; none shown: the grain under it
-			float dpl = open * mix(0.85, 1.0, w_tr) * (1.0 - 0.5 * w_dk);
-			vec4 pa = texture(den_aux, vec3(ua, 2.0)), pb = texture(den_aux, vec3(ub, 2.0));
-			float sa = step(pa.a, dpl * ka), sb = step(pb.a, dpl * (1.0 - ka));
-			vec4 p = (sa > 0.5 && (sb < 0.5 || pa.g >= pb.g)) ? pa : pb;
-			float sp = max(sa, sb);
-			col *= mix(1.0, 2.0 * p.r, sp);
-			col = mix(col, col * vec3(0.9, 0.96, 1.1), p.b * sp);
-			// cracks: dry patches in the rooms' open middles, growing from each patch's middle
-			float dcr = open * smoothstep(0.52, 0.7, fbm(wpos.xz * 0.1 + 83.0)) * smoothstep(2.0, 4.5, inside);
-			vec4 cr = texture(den_aux, vec3(wpos.xz / MESO_M + vec2(0.21, 0.83), 3.0));
-			float sc = step(cr.a, dcr);
-			col *= mix(1.0, 2.0 * cr.r, sc);
-			col = mix(col, col * vec3(0.9, 0.96, 1.1), cr.b * sc);
-			// stones and clods everywhere, thicker in patches; litter in drifts and toward the banks' feet
-			float d0 = open * (0.3 + 0.55 * smoothstep(0.3, 0.7, fbm(wpos.xz * 0.15 + 3.0)));
-			float d1 = open * clamp(0.1 + 0.9 * w_li + 0.8 * (1.0 - smoothstep(0.5, 3.5, inside + wob)) * smoothstep(0.35, 0.6, fbm(wpos.xz * 0.2 + 57.0)), 0.0, 1.0);
-			for (int l = 0; l < 2; l++) {
-				float dn = l == 0 ? d0 : d1;
-				vec4 oa = texture(den_meso, vec3(ua, float(l))), ob = texture(den_meso, vec3(ub, float(l)));
-				float ra = texture(den_aux, vec3(ua, float(l))).r, rb = texture(den_aux, vec3(ub, float(l))).r;
-				col = mix(col, oa.rgb, oa.a * step(ra, dn * ka));
-				col = mix(col, ob.rgb, ob.a * step(rb, dn * (1.0 - ka)));
+		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain), 0.3, 2.5);
+			if (set_k > 0.5) {
+				// each tile read twice at two turns, the two switched by the slow field (no repeat reads); the painting's own grain
+				vec2 s0 = wpos.xz / 4.0, s1 = R1 * wpos.xz / 4.0 + 0.37;
+				float twf = fbm(wpos.xz * 0.06 + 7.0);
+				float tws = mix(tw, smoothstep(0.47, 0.53, twf), set_sharp);
+				float bi = -0.6 * set_sharp;
+				vec4 t1 = mix(texture(set_floor, vec3(s0, 0.0), bi), texture(set_floor, vec3(s1, 0.0), bi), tws);
+				vec4 t2 = mix(texture(set_floor, vec3(s0 + 0.5, 1.0), bi), texture(set_floor, vec3(s1 + 0.5, 1.0), bi), tws);
+				vec4 t3 = mix(texture(set_floor, vec3(s0, 2.0), bi), texture(set_floor, vec3(s1, 2.0), bi), tws);
+				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0), bi), texture(set_floor, vec3(s1 + 0.25, 3.0), bi), tws);
+				// (r11) a second base earth (F6) in patches 6-12 m across, switched in by its high shapes
+				vec4 t5 = mix(texture(set_floor, vec3(s0 + 0.62, 4.0), bi), texture(set_floor, vec3(s1 + 0.62, 4.0), bi), tws);
+				float k5 = smoothstep(0.0, 1.0, (fbm(wpos.xz * 0.09 + 31.0) - 0.5) * 9.0 + 0.5 + 0.8 * (t5.a - t1.a));
+				t1 = mix(t1, t5, k5);
+				// (r10b) the frame's macro value structure: worn ways wandering through the open (F2, lighter) and damp
+				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
+				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
+				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
+				float wdp = max(max(w_dk, w_li * 0.5), set_paths * set_damp * smoothstep(0.52, 0.76, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
+				float inb = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
+				wdp *= 1.0 - boss_dry * inb;
+				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
+				float k2 = smoothstep(0.0, 1.0, wtr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5));
+				float k4 = smoothstep(0.0, 1.0, w_rm * 1.6 - 0.3 + 0.6 * (t4.a - 0.5));
+				float k3 = smoothstep(0.0, 1.0, wdp * 1.6 - 0.3 + 0.6 * (t3.a - 0.5));
+				vec3 sc = mix(mix(mix(t1.rgb, t2.rgb, k2), t4.rgb, k4), t3.rgb, k3);
+				// (r10b) the tiles' own clods, prints and patches (3 cm to 1 m) stretched about their metre's mean, so they
+				// read at the play camera; the finest grain and the tiles' choice are left as they are
+				vec3 n1 = mix(textureLod(set_floor, vec3(s0, 0.0), 2.0).rgb, textureLod(set_floor, vec3(s1, 0.0), 2.0).rgb, tw);
+				vec3 n2 = mix(textureLod(set_floor, vec3(s0 + 0.5, 1.0), 2.0).rgb, textureLod(set_floor, vec3(s1 + 0.5, 1.0), 2.0).rgb, tw);
+				vec3 n3 = mix(textureLod(set_floor, vec3(s0, 2.0), 2.0).rgb, textureLod(set_floor, vec3(s1, 2.0), 2.0).rgb, tw);
+				vec3 n4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 2.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 2.0).rgb, tw);
+				vec3 m1 = mix(textureLod(set_floor, vec3(s0, 0.0), 7.0).rgb, textureLod(set_floor, vec3(s1, 0.0), 7.0).rgb, tw);
+				vec3 m2 = mix(textureLod(set_floor, vec3(s0 + 0.5, 1.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.5, 1.0), 7.0).rgb, tw);
+				vec3 m3 = mix(textureLod(set_floor, vec3(s0, 2.0), 7.0).rgb, textureLod(set_floor, vec3(s1, 2.0), 7.0).rgb, tw);
+				vec3 m4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 7.0).rgb, tw);
+				float ln = lum(mix(mix(mix(n1, n2, k2), n4, k4), n3, k3)), lm = lum(mix(mix(mix(m1, m2, k2), m4, k4), m3, k3));
+				if (set_band > 0.001) sc *= clamp(pow(max(ln, 1e-4) / max(lm, 1e-4), set_band), 0.45, 2.2);
+				col = sc * set_gain;
 			}
-		}
 		col *= den_tint;
 		col = mix(vec3(lum(col)), col, den_sat);
 		// slow value masses: damper and drier ground
-		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
+		float cl = mix(1.0, set_clouds, set_k);   // (r11) the slow clouds' share under the painted set
+		col *= mix(1.0, mix(0.86, 1.08, smoothstep(0.3, 0.7, big)), cl);
 		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:
 		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
 		float m1 = fbm(wpos.xz * 0.075 + 23.0), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);
 		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
-		col = mix(col, mix(col * vec3(0.5, 0.48, 0.5), vec3(lum(col)) * vec3(0.47, 0.49, 0.54), meso_k), damp * 0.85);
-		// (den r9 floor) damp cool-grey earth toward the banks, in tongues (never a ring: a ring read as a tub's shadow)
-		float bankd = meso_k * (1.0 - smoothstep(0.6, 4.0, inside + wob * 1.2)) * smoothstep(0.38, 0.62, m1 + 0.25 * (big - 0.5));
-		col = mix(col, vec3(lum(col)) * vec3(0.92, 0.95, 1.05) * 0.78, bankd * 0.7);
+		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85 * cl);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
 		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
-		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k);
+		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k * (1.0 - set_k));
 		float leaf = smoothstep(0.58, 0.7, m3) * (1.0 - damp);
-		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
+		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * cl * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
 		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)
 		col *= 0.88;
 		// (round 7) the rooms' open middles lifted (den_room.png's centre reads warm mid-brown; the room measured 33
@@ -216,10 +244,27 @@ void fragment() {
 		float in_boss = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 		col *= mix(vec3(1.0), open_lift * vec3(1.0, 1.03, 1.12), smoothstep(2.5, 5.5, inside) * (1.0 - in_boss));   // (and a touch less orange: den_room.png's centre (86,62,51) against ours (81,55,38))
 		float bdamp = smoothstep(0.47, 0.62, fbm(wpos.xz * 0.14 + 71.0) + 0.1 * (mid - 0.5)) * in_boss;
-		col = mix(col, col * vec3(0.56, 0.52, 0.52), bdamp * 0.9);
+		col = mix(col, mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, 0.4) * vec3(0.6, 0.59, 0.6), bdamp * boss_damp);   // (grey shade: den_boss.png's (52,47,43), ours ran (71,52,45))   // (r11: neutral damp; 0.56/0.52/0.52 pushed the lair red, (R-B)/L .48)
+		col = mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, mix(1.0, boss_sat, in_boss));
+		col *= mix(vec3(1.0), boss_tint, in_boss);   // (r11: desaturated it read mauve (131,88,78); den_boss.png lit (147,109,84))   // (r11: den_boss.png's floor is tan-grey, its shade near neutral (52,47,43))
 		col *= mix(1.0, boss_dim, in_boss);
+		if (boss_c.z > 0.0 && boss_gloom > 0.0) {
+			float bdg = distance(wpos.xz, boss_c.xy);
+			float gl = boss_gloom * smoothstep(boss_c.z * 0.3, boss_c.z * 0.75, bdg) * (1.0 - smoothstep(boss_c.z * 1.2, boss_c.z * 1.5, bdg));
+			col = mix(col, vec3(dot(col, vec3(0.3, 0.55, 0.15))) * gloom_tint, gloom_mix * gl) * (1.0 - 0.55 * gl);   // (den r14: the fall to a warm umber, was cool (0.8, 0.95, 1.25) at 0.7: the lair's edges read mauve, h 0-10 and 290-360)
+		}
+		// (den r14 item 8) fine grit in the open floor, at den_room.png's density (floorstat grit 4.8-9.3): stones and clods a hand across
+		col *= 1.0 + open_grit * (gnoise(wpos.xz * 13.0) - 0.5) * smoothstep(1.5, 4.0, inside) * (1.0 - smoothstep(0.35, 0.8, steep));
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
+		// (r12) the floor's darks no more saturated than den_chroma (HSV-like, in albedo): the seed-23 room's shade read
+		// red-brown (satShade .35 against den_room.png's .21) where its damp and leaf masses fell; the lit floor keeps its warmth
+		if (den_chroma < 1.0) {
+			float cmx = max(col.r, max(col.g, col.b)), cmn = min(col.r, min(col.g, col.b));
+			float cs = (cmx - cmn) / max(cmx, 1e-4), cl0 = lum(col);
+			float ck = min(1.0, den_chroma / max(cs, 1e-4)) ;
+			col = mix(col, vec3(cl0) + (col - vec3(cl0)) * ck, 1.0 - smoothstep(den_chroma_lo, den_chroma_hi, cl0));
+		}
 		// the pits: the depths go black
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
 		// (lead 6: a pit reads as a hole by a LIT lip, the painted pit face down its throat falling to black over a metre
