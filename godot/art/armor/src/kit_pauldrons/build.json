@@ -72,15 +72,15 @@
   "outline": [
    [
     0,
-    46
+    30
    ],
    [
     45,
-    58
+    44
    ],
    [
     90,
-    78
+    74
    ],
    [
     135,
@@ -108,7 +108,12 @@
    "rim_h": 0.0025
   },
   "flare": 0.01,
-  "flare_pow": 2.0
+  "flare_pow": 2.0,
+  "pose": {
+   "clip": "idle_warden",
+   "frame": 0
+  },
+  "env_margin": 8
  },
  "lames": {
   "theta": 112,
@@ -160,6 +165,10 @@
   "trim_pad": 2.0,
   "trim_round": 6.0,
   "trim_tol": 0.0,
-  "cop_lift_max": 0.0
+  "cop_lift_max": 0.012,
+  "cop_ride": {
+   "delt_l": 0.5,
+   "clavicle_l": 0.5
+  }
  }
 }

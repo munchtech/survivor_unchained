@@ -230,6 +230,53 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     return P
 
 
+def pose_frame(ride, centre, radius, clip, frame=0):
+    """Her skin within `radius` of `centre` (rest, left side, no hands) in one frame of a clip, carried into the rest
+    frame of a rigid plate riding the blend `ride` ({bone: weight}, as its rigid_ride), with her upper arm's joint, its
+    direction and world up in that frame: a plate built round these fits her in that pose (and rides from there).
+    Cached by its inputs (git-ignored .shots). Returns P [n, 3], T [m, 3], joint, arm direction, up."""
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))
+    os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
+                                                   else kb.REPO, "tools", "anim", "out"))
+    import skin
+    if not (skin.OUT / "clips").is_dir():
+        from pathlib import Path
+        skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
+    deps = [kb.BODY, str(skin.OUT / "clips" / f"{clip}.json")]
+    stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
+    key = hashlib.sha1(json.dumps(["pf1", sorted((k, round(float(v), 5)) for k, v in ride.items()),
+                                   [round(float(v), 5) for v in centre], radius, clip, frame, stamp]).encode()
+                       ).hexdigest()[:14]
+    cache = os.path.join(kb.CACHE, f"paul_pose_{key}.npz")
+    if os.path.exists(cache):
+        z = np.load(cache)
+        return z["P"], z["T"], z["c"], z["a"], z["up"]
+    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
+    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+                     label="her", helpers=True)
+    names = list(body.sk.names)
+    hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
+    hw = (body.W * hand[np.minimum(body.Jv, len(hand) - 1)]).sum(1)
+    G = body.frames(body.clip(clip))[frame]
+    S = body.skin_mats(G)
+    Mi = np.linalg.inv(sum(w * S[names.index(b)] for b, w in ride.items()))
+    near = np.linalg.norm(body.P - np.asarray(centre, float), axis=1) < radius
+    sel = near[body.T].all(1) & (hw[body.T] < 0.05).all(1)
+    idx, T = np.unique(body.T[sel], return_inverse=True)
+    T = T.reshape(-1, 3)
+    P = body.pose(G, idx) @ Mi[:3, :3].T + Mi[:3, 3]
+
+    def joint(n):
+        return Mi[:3, :3] @ G[names.index(n)][:3, 3] + Mi[:3, 3]
+    c = joint("upperarm_l")
+    a = U(joint("lowerarm_l") - c)
+    up = U(Mi[:3, :3] @ np.array([0.0, 1.0, 0.0]))
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez_compressed(cache, P=P, T=T, c=c, a=a, up=up)
+    return P, T, c, a, up
+
+
 def room_on_dirs(P, O, D, F, ring=1):
     """Per unit direction D (an icosphere chart, faces F) the farthest point of P from O binned to it (nan: none),
     dilated by `ring` rings."""
@@ -304,20 +351,36 @@ def pauldrons(cfg, ref):
     # raised by "rise" m: at k 0 the pole stands square to her A-pose arm, the cop sat low and outboard on the deltoid's
     # side; the sheet's cop caps the shoulder's top)
     k_up = ck.get("pole_up", 0.0)
-    ec = U((1 - k_up) * e + k_up * np.array([0.0, 1.0, 0.0]))
-    fc = U(np.cross(a, ec))
-    fc = fc if fc[2] >= 0 else -fc
     near = ref.T[(np.linalg.norm(ref.V[ref.T].mean(1) - c, axis=1) < 0.24)]
     body = [(ref.V, near)]
+    # (cop "pose" {"clip", "frame"}: the cop designed on her in that frame (the game's idle), in its ride's rest frame
+    # (params.rigid_ride "cop_l"): her skin, arm and world up there; built at her A-pose rest, the half-riding cop
+    # tipped its back and neck side up off her shoulder in the idle (16 Nov, lead 3's 1:1 look: a fin by her jaw))
+    ca, cup, cbody, cc = a, np.array([0.0, 1.0, 0.0]), body, c
+    if ck.get("pose"):
+        ride = next(r["weights"] for r in cfg["params"]["rigid_ride"] if r["match"] == "cop_l")
+        Pp, Tp, cc, ca, cup = pose_frame(ride, np.round(c, 4), 0.24, ck["pose"]["clip"], ck["pose"].get("frame", 0))
+        # ("with_rest": her rest skin joined in, the outer of the two: the cop clears her A-pose too)
+        cbody = [(Pp, Tp)] + (body if ck["pose"].get("with_rest") else [])
+    e0 = U(cup - (cup @ ca) * ca)
+    f0 = U(np.cross(ca, e0))
+    f0 = f0 if f0[2] >= 0 else -f0
+    ec = U((1 - k_up) * e0 + k_up * cup)
+    fc = U(np.cross(ca, ec))
+    fc = fc if fc[2] >= 0 else -fc
     # ---- the cop: rays from inside her shoulder round the up-out pole e
     Vs, Fs = icosphere(ck.get("subdiv", 5))
-    O = c - e * ck["sink"] + np.array([0.0, ck.get("rise", 0.0), 0.0])
-    ce, cf = (ec, fc) if k_up else (e, f)
+    O = cc - e0 * ck["sink"] + cup * ck.get("rise", 0.0)
+    ce, cf = (ec, fc) if k_up else (e0, f0)
     alpha = np.degrees(np.arccos(np.clip(Vs @ ce, -1, 1)))
     keep = alpha < ck["chart_deg"]
-    dome = Dome(O, Vs, Fs, keep, body, 0.25, ck["dilate"], ck["smooth"], ck["clear"])
+    if "env_margin" in ck:
+        # (the envelope from the directions within the outline + env_margin deg only: rays past the neck-side rim
+        # met her neck far out, and the dilation carried that height onto the cop's neck side)
+        keep &= alpha < interp_table(ck["outline"], np.abs(np.degrees(np.arctan2(Vs @ cf, Vs @ -ca)))) + ck["env_margin"]
+    dome = Dome(O, Vs, Fs, keep, cbody, 0.25, ck["dilate"], ck["smooth"], ck["clear"])
     al = np.degrees(np.arccos(np.clip(dome.D @ ce, -1, 1)))
-    be = np.degrees(np.arctan2(dome.D @ cf, dome.D @ -a))
+    be = np.degrees(np.arctan2(dome.D @ cf, dome.D @ -ca))
     amax = interp_table(ck["outline"], np.abs(be))
     g = amax - al
     # (the sheet's cop is a round dome whose rim stands well off the arm: "flare" m added toward the rim, as
@@ -365,7 +428,7 @@ def pauldrons(cfg, ref):
 
     def on_cop(al_, be_, lift):
         d = U(np.cos(np.radians(al_))[:, None] * ce + np.sin(np.radians(al_))[:, None] *
-              (np.cos(np.radians(be_))[:, None] * -a + np.sin(np.radians(be_))[:, None] * cf))
+              (np.cos(np.radians(be_))[:, None] * -ca + np.sin(np.radians(be_))[:, None] * cf))
         t = cast_union(O, d, [(V + N * th, F)], 0.3)
         ok = np.isfinite(t)
         return O + d[ok] * t[ok, None], d[ok], ok
@@ -384,7 +447,7 @@ def pauldrons(cfg, ref):
     bb = bb[ok]
     q, n, _ = nref.closest(base)
     h = rd["h"] * np.sin(np.pi * np.clip((bb + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
-    lean = U(n + (-a) * rd["lean"])
+    lean = U(n + (-ca) * rd["lean"])
     top = base + lean * h[:, None]
     tg = U(np.gradient(base, axis=0))
     side = U(np.cross(tg, lean))
