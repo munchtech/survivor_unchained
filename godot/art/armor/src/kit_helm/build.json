@@ -53,7 +53,7 @@
   "tmax": 0.3,
   "dilate": 2,
   "smooth": 6,
-  "clear": 0.0055,
+  "clear": 0.007,
   "wall_y": 1.768,
   "wall_smooth": 5,
   "bottom": [

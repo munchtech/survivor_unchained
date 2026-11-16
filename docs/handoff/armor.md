@@ -2,6 +2,12 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## DEMO ARMOR LEAD 3 (16 Nov, live state file; lead 3 = spawned by coordinator #15)
+Caps now: pauldronfit 5 (3 spent), finish 4 (3 spent), hipfit 2/3, limbfit 2/3, helm 2/3, bodicefit 1/3; demo-armor judge 0 spent.
+COORDINATOR'S BELT DECISION: the sheet's front tasset and front hip plates are SKINNED plates (top edge to the pelvis, body to the thigh; each plate pivots as a whole, no stretch or bend across a plate; the gaps between lames take the motion). Sides and back stay rigid. Why: the owner's 13 Nov word is "need not swing", not "may never move with the leg"; a rigid plate over the front thigh cannot clear the leap (70-210 mm short) and the r3 clearance cut lost the sheet's look. r2 design 804d3c96c.
+Order: (1) pauldrons S3c list (solver, round 4) + helm S5c list (helm clear 0.0055->0.007, runner chain `l3/helm/chain.sh`); (2) belt skinned plates (solver, hipfit round 3); (3) whole-set game shoot close front/back + den, my 1:1 look incl. run and leap; (4) ONE max judge on the item-3 sheet; STOP for the owner (items 4-6 wait).
+Progress: (filled as it goes)
+
 ## DEMO ARMOR LEAD 2 -> LEAD 3: HANDOFF (16 Nov, lead 2 at its context line; NOT at the item-3 stop)
 Read this block, then rounds 1-2 below it (facts, tools), then lead 1's block. Rules every solver gets: scratchpad `l2/common.md` (with "Round 2"; scratchpad = `C:/Users/munch/AppData/Local/Temp/claude/2a15606791177975/c34eb482-797d-4fde-aa9d-a0820ac44f08/scratchpad/`, back it up to `survivorsunchained_inputs/scratch_demo_armor/l2/` if the session ends). Every solver stopped at ~150k: give each ONE piece and ONE step list, hand ship/wearcheck/lookdev chains to su-runner (`l2/run3/belt_chain.sh` is the pattern), quote skin numbers only with wearcheck `--confirm`.
 ROUND CAPS USED: demo-armor-finish 3/3, demo-armor-pauldronfit 3/3, demo-armor-hipfit 2/3, demo-armor-limbfit 2/3, demo-armor-helm 2/3, demo-armor-bodicefit 1/3 (ask the coordinator to raise a cap if a piece needs it).
