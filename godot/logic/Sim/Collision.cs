@@ -38,12 +38,17 @@ public sealed class Collider
     /// <summary>A gap in the ground (a crack, a sinkhole): walked into, it holds; a dash, a leap or a burrow
     /// carries over it (Resolve's overGaps).</summary>
     public bool Gap;
+    /// <summary>The ground ends here (a dungeon's wall and holes: a bank falling to black). Solid to everything but, like a Gap, what
+    /// is thrown over it falls: a normal foe whose centre goes in by a forced move dies (Battle.FallOver, "ledge kills").</summary>
+    public bool Drop;
+    /// <summary>Ground ends here: a Drop or a Gap.</summary>
+    public bool Falls => Drop || Gap;
 }
 
 public readonly record struct RayHit(double T, Collider Collider);
 
 /// <summary>Options for a new collider.</summary>
-public readonly record struct ColliderOpts(string? Tag = null, bool Soft = false, bool PlayerOnly = false, bool Gap = false);
+public readonly record struct ColliderOpts(string? Tag = null, bool Soft = false, bool PlayerOnly = false, bool Gap = false, bool Drop = false);
 
 public sealed class CollisionWorld
 {
@@ -57,6 +62,9 @@ public sealed class CollisionWorld
     public byte[] NavBlocked;
     /// <summary>Playable bounds (square, centred).</summary>
     public double Bound;
+    /// <summary>While set, a foe's body does not meet the ground's end (Collider.Falls): the one that is going over an edge is let go
+    /// to it (Battle's foe loop sets it for that foe alone, around its step).</summary>
+    public bool IgnoreDrops;
     readonly List<Collider> scratch = new();
     readonly HashSet<int> seen = new();
 
@@ -81,10 +89,10 @@ public sealed class CollisionWorld
     }
 
     public Collider AddCircle(double x, double z, double r, ColliderOpts o = default) =>
-        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Circle, X = x, Z = z, R = r, Hw = r, Hd = r, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap });
+        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Circle, X = x, Z = z, R = r, Hw = r, Hd = r, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap, Drop = o.Drop });
 
     public Collider AddBox(double x, double z, double hw, double hd, double rot = 0, ColliderOpts o = default) =>
-        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Box, X = x, Z = z, R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = rot, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap });
+        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Box, X = x, Z = z, R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = rot, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap, Drop = o.Drop });
 
     /// <summary>A collider as another world had it, its id kept (a zone
     /// loaded from data: the runtime refers to some colliders by id).</summary>
@@ -179,7 +187,7 @@ public sealed class CollisionWorld
             bool moved = false;
             foreach (var c in Near(px, pz, r + 0.5, scratch))
             {
-                if (c.PlayerOnly && !isPlayer || c.Gap && overGaps) continue;
+                if (c.PlayerOnly && !isPlayer || c.Gap && overGaps || IgnoreDrops && c.Falls) continue;
                 if (c.Kind == ColliderKind.Circle)
                 {
                     double dx = px - c.X, dz = pz - c.Z;
@@ -238,7 +246,7 @@ public sealed class CollisionWorld
         double deepest = 0;
         foreach (var c in Near(x, z, r + 0.5, scratch))
         {
-            if (c.PlayerOnly || c.Gap && overGaps) continue;
+            if (c.PlayerOnly || c.Gap && overGaps || IgnoreDrops && c.Falls) continue;
             double dx, dz, min;
             if (c.Kind == ColliderKind.Circle) { dx = x - c.X; dz = z - c.Z; min = c.R + r; }
             else
@@ -277,6 +285,49 @@ public sealed class CollisionWorld
                 Push(ref px, ref pz, rs, false, overGaps, 3);
                 return true;
             }
+        return false;
+    }
+
+    /// <summary>Is the point over the ground's end (inside a Drop or a Gap)?</summary>
+    public bool InDrop(double x, double z)
+    {
+        foreach (var c in Near(x, z, 0.5, scratch))
+            if (c.Falls && !c.PlayerOnly && Inside(c, x, z)) return true;
+        return false;
+    }
+
+    static bool Inside(Collider c, double x, double z)
+    {
+        if (c.Kind == ColliderKind.Circle) { double dx = x - c.X, dz = z - c.Z; return dx * dx + dz * dz < c.R * c.R; }
+        double cos = Math.Cos(-c.Rot), sin = Math.Sin(-c.Rot);
+        double lx = (x - c.X) * cos - (z - c.Z) * sin, lz = (x - c.X) * sin + (z - c.Z) * cos;
+        return Math.Abs(lx) < c.Hw && Math.Abs(lz) < c.Hd;
+    }
+
+    /// <summary>Does a slide from (x, z) by (dx, dz) carry the centre over the ground's end before the body (radius r) meets any
+    /// other solid? The crossing point is where the centre goes in. (A piece the body already touches at the start is not
+    /// counted: a foe leaning on a cart still slides.) Marched in 0.15 m steps, no randomness.</summary>
+    public bool EdgeAhead(double x, double z, double dx, double dz, double r, out double cx, out double cz)
+    {
+        cx = cz = 0;
+        double len = Math.Sqrt(dx * dx + dz * dz);
+        if (len < 1e-6) return false;
+        bool any = false;
+        foreach (var c in Near((x + dx / 2), (z + dz / 2), len / 2 + 0.6, scratch)) if (c.Falls && !c.PlayerOnly) { any = true; break; }
+        if (!any) return false;
+        var touching = new HashSet<int>();
+        foreach (var c in Near(x, z, r + 0.5, scratch)) if (!c.PlayerOnly && !c.Falls && Overlaps(c, x, z, r)) touching.Add(c.Id);
+        int steps = Math.Max(1, (int)Math.Ceiling(len / 0.15));
+        for (int i = 1; i <= steps; i++)
+        {
+            double t = (double)i / steps, px = x + dx * t, pz = z + dz * t;
+            foreach (var c in Near(px, pz, r + 0.5, scratch))
+            {
+                if (c.PlayerOnly) continue;
+                if (c.Falls) { if (Inside(c, px, pz)) { cx = px; cz = pz; return true; } }
+                else if (!touching.Contains(c.Id) && Overlaps(c, px, pz, r)) return false;
+            }
+        }
         return false;
     }
 

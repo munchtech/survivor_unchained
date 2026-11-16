@@ -145,6 +145,15 @@ public sealed class Enemy : Pooled
     /// <summary>Its death burst it apart: nothing left to lie there.</summary>
     public bool Burst;
     public double DieT;
+    /// <summary>(Ledge kills) A forced move is carrying it over the ground's end: its body is let go to the edge (Battle.MayFall,
+    /// Ai's slide). Cleared when the slide ends.</summary>
+    public bool Edge;
+    /// <summary>(Ledge kills) A slide that no normal foe's rule applies to (an elite, a boss) is carrying it to the ground's end: told to the view (Ev.Brink) when it stops there.</summary>
+    public bool AtBrink;
+    /// <summary>(Ledge kills) It went over the edge and died of it (Battle.FallOver): where its centre crossed, the way it was going,
+    /// and the ground where its loot lies.</summary>
+    public bool Fell;
+    public double FellX, FellZ, FellDx, FellDz, LedgeX, LedgeZ;
     /// <summary>A named creature: promoted when it killed the survivor, carrying what it took.</summary>
     public Named? Named;
     /// <summary>(M5) Its rank in its pack, read before its plate: 1 a captain, 2 a champion (Content/Champions.Look), and
