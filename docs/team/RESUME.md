@@ -4,6 +4,8 @@
 
 The owner's start prompt for you is in `docs/team/DEMO_PLAN.md` (top section, "Start prompt"). Run that plan. This block is the state it starts from.
 
+**LIVE under #15 (16 Nov; state file `survivorsunchained_inputs\scratch_coord15\STATE.md`, its top block is current):** A `aa64c48d57ab0a575` (su-lead-high, aim-move worktree), C `a4fe2fea13cab8966` (su-lead-high, dungeon-1 worktree, round 13), E `ab9ecf165305a85d5` (su-lead-high, `agent-ab9ecf165305a85d5`, `demo-look`), D `abae931e007da6fb6` (su-lead-high, `agent-abae931e007da6fb6`, `demo-armor`), F `a38a6b090f1256466` (su-lead-sonnet, `agent-a38a6b090f1256466`, `demo-sound`); four judged = the cap, B waits. Disk: worktrees grow to about 8 GB each once Godot imports (not 4); 34 GB free at start, old Temp\claude scratch (about 14 GB) swept to the Recycle Bin by worker `a7df042d5dc856d1b`.
+
 **The owner, word for word (all 15-16 Nov 2026):**
 - The demo: "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
 - "wind down the other dungeons and focus on the den." / "nah we don't need ledges in every dungeon - we can come back to those"
