@@ -1,5 +1,35 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026, night: ARMOR FOR THE DEMO IS THE ONE NEW SET, AND IT IS THE SET THAT DROPS
+
+The owner, word for word: "actually change the armor scope to just the 1 new set - the one we designed to replace her current starter one, have it be the set that drops" Then: "and don't even worry about new other slots, just the armor set" and "I want something to have people do the dungeon a few times at least, that should be more than enough trying to get the armor pieces to have enough testing"
+
+Coordinator #14's reading: this replaces "a couple of each armor slot". One set (the 10 Nov kit), no new slots, no other pieces. She starts in her current starter look; the set's pieces drop in the den over several clears, which is the reason to replay it (and gives the testing). Brief: `tools/scratch/coordinator/briefs/demo_15nov/D_armor.md`.
+
+## 15 November 2026, evening: FINISH WHAT IS RUNNING, THEN A PLAN FOR AN OPUS SESSION
+
+The owner, word for word: "get what we have going here finished, and then make a plan for us to start an opus session with this fable plan here"
+
+Coordinator #14's reading: no new lanes from the Fable session; the running leads finish and merge; the demo plan (five things, above or below) is written so an Opus coordinator can run it from `docs/team/DEMO_PLAN.md`.
+
+## 15 November 2026 (~19:15, coordinator #14): WHAT THE DEMO NEEDS
+
+- "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
+- **Routed:** RESUME #14 "THE DEMO'S SCOPE": A movement and animation, B skills and tree, C the den, D armor (a couple per slot + the new starting kit), E the art-style pass (cel + painterly overlay, vibrant).
+
+## 15 November 2026 (evening, coordinator #14): THE DEMO IS THE DEN
+
+- "wind down the other dungeons and focus on the den.  how long is it currently? its procedurally different each time?"
+- **Routed:** the ravine look dropped from the order; no roost tuning; unlock cards, movement and ledge-view told den only. Asked: should some den rooms get an open drop edge for ledge kills.
+
+## 15 November 2026 (evening, coordinator #14): HER IDLE OUT OF TOWN IS STILL RIGID; THE RUN MOVES ONLY HER LEGS (movement lead, open, FIRST)
+
+- "i'm also still disappointed in her holding sword arm.  for example while running its held rigid not moving at all.  it dosn't look badass OR sexy, and the running animation dosn't move anything but her legs"
+- With a play-camera crop of her standing in the den (upright, square, sword arm straight down): "along with the animation of the arm, just the idle pose out of town is still so weak, we've mentioned it many times before .  that locked elbow instead of relaxed casual badass that we've been wanting"
+- "or idle is bad, the "default" view.  they run with that as well or whatever.  its all part of the rigidness"
+- **Found:** Prowl (picked 10 Nov, `tools/anim/p4/specs/idle_fight_a.json`) never became the game's idle; the game plays the old `idle_warden`. The "after the pick" step (`docs/handoff/animation.md`, grep "After the pick") was never run.
+- **Routed:** the movement lead (branch `aim-move`), first in its lane: Prowl as the drawn idle with idle life; the carry in every locomotion clip from it (whole body, live sword arm); the demo kit's skill ends fitted to it; judge rows "idle out of town" and "run, upper body and sword arm" with these quotes.
+
 ## 10 November 2026, ~23:50: THE KIT SHEET IS PICKED ("Yes, build it")
 
 The owner picked the Sol concept sheets of her full gunmetal-and-gold kit for P2 to build from: `survivorsunchained_inputs\gpt_sol\kit\01_turnaround.png`, `02_pieces.png` (helm, pauldrons, bodice, vambraces, belt and hip plates, boots), `03_tiers.png` (three tiers by adornment on one silhouette). Built from the owner's own `owner_ref_shield_braid`. Today's plate cups stay as the lower tier; the strap fix is still owed. The pick is the design, not a frozen look: P2 owns fit and tiers.

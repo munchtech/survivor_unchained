@@ -1,0 +1,32 @@
+using System.Collections.Generic;
+using SurvivorUnchained.Core;
+
+namespace SurvivorUnchained.Content;
+
+/* How hard each dungeon fights (dungeon-fights lane, 15 Nov; data/content/dungeon_fights.json). A dungeon's rooms and halls
+ * are DungeonGen's; this is what stands in them: its creatures' levels over hers, its packs' size, how many are led by a
+ * champion, and its ruler's health. Measured by the harness's `dungeon` command (godot/balance) against the targets in the
+ * json's "about". A dungeon the file does not name: all ones (a map's numbers). */
+public static class DungeonFights
+{
+    public sealed class Row
+    {
+        /// <summary>Levels its creatures (and its ruler) stand above max(its floor, her level).</summary>
+        public int FoeUp;
+        /// <summary>Pack size, over the map's (MapRun.Place).</summary>
+        public double PackSize = 1;
+        /// <summary>Chance a pack is led by a champion, over the map's.</summary>
+        public double Elites = 1;
+        /// <summary>The ruler's health, over MapRun.BossHealth.</summary>
+        public double BossHealth = 1;
+    }
+
+    sealed class File { public Dictionary<string, Row> Dungeons = new(); }
+    static File? file;
+    static File F => file ??= Json.Parse<File>(Json.ReadContent("dungeon_fights.json"));
+
+    public static readonly Row Plain = new();
+
+    /// <summary>The dungeon's row (the map's own numbers for one the file does not name).</summary>
+    public static Row Of(string dungeon) => dungeon != "" && F.Dungeons.TryGetValue(dungeon, out var r) ? r : Plain;
+}

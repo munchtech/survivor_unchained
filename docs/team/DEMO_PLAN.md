@@ -1,5 +1,56 @@
 # The demo plan (3 November 2026)
 
+## THE DEMO, 15 November 2026: five things, in the den (written by coordinator #14 on Fable; coordinator #15 runs it on Opus)
+
+Everything under the next `##` heading is history (3-4 November). This section is the plan.
+
+**The owner, 15 November (word for word):**
+- "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
+- "wind down the other dungeons and focus on the den." and, on drop edges there: "nah we don't need ledges in every dungeon - we can come back to those"
+- "get what we have going here finished, and then make a plan for us to start an opus session with this fable plan here"
+- On armor, later the same night (this replaces "a couple of each armor slot"): "actually change the armor scope to just the 1 new set - the one we designed to replace her current starter one, have it be the set that drops"; "and don't even worry about new other slots, just the armor set"; "I want something to have people do the dungeon a few times at least, that should be more than enough trying to get the armor pieces to have enough testing"
+
+**The one gate:** the owner plays a den run (`hollow`, entered at level 6, about 8 minutes, different every run) as the Warden in her new kit, and it looks and moves like one game. Nothing outside that run is polished. The dungeon camera stays 62 degrees, 24 m.
+
+### The five lanes
+
+| | Lane | State at 20:15 on 15 Nov (RESUME's top block has the live state) | Brief or state file | Done looks like |
+|---|---|---|---|---|
+| A | Movement and animation | RUNNING under #14: lead on branch `aim-move` | `survivorsunchained_inputs\scratch_coord12\warden_move_state.md` | Prowl is the idle the game plays, with life; run, walk, strafes, backpedal and stops move her whole body with a live sword arm; the five den skills end on Prowl; WASD with mouse aim; ONE max judge (`Item: warden-move`) |
+| B | Skills and the tree | Unlock cards RUNNING under #14 (branch `unlock-cards`); the rest NOT STARTED | `tools/scratch/coordinator/briefs/demo_15nov/B_skills_tree.md` | The five skills a den player meets read at the play camera; the Lamps tab works at levels 6-8 and the player is told it exists; ONE max judge (`Item: demo-skills`) |
+| C | The den | RUNNING under #14: round 11 on branch `dungeon-1` | `survivorsunchained_inputs\scratch_coord12\dungeon_state.md` (top block) | Room and boss lair CLOSE to the approved targets by the lead's own look, then ONE max judge (`Item: dungeon-den`); merged |
+| D | Armor: the ONE new set (scope cut by the owner, 15 Nov night) | NOT STARTED. Nothing of the 10 Nov kit sheet is built; no head piece exists for her | `tools/scratch/coordinator/briefs/demo_15nov/D_armor.md` | The new set (head, body, feet; no new slots, no other pieces) is the den's chase: the boss drops one piece per clear, about 4 clears to the whole set, and she changes on screen piece by piece; she starts in her current starter look; ONE max judge (`Item: demo-armor`) |
+| E | Art style | NOT STARTED. The den has no grade of its own; no paint pass is on | `tools/scratch/coordinator/briefs/demo_15nov/E_art_style.md` | One look sheet with numbers that A-D's judges use; five den frames inside it; a script that checks it; ONE max judge (`Item: demo-look`) |
+
+### The order (decided; do not re-plan it)
+1. **Whatever of A, C and unlock cards #14 did not close:** continue from the state file named above; a lead that handed back is replaced by a fresh one with that file, never restarted from zero.
+2. **E and D start together, at once.** E because its sheet is the bar for every other judge (its item 1 comes back early: pass it to A, B, C and D). D because it is the longest lane (the plate set took 16 leads, about 2.5M tokens).
+3. **B starts when unlock cards has merged and a judged slot is free.** It needs E's sheet for effects.
+4. At most FOUR judged leads live. With A and C still running, E and D fill the cap; B waits for the first to close.
+
+### Pictures the owner must see (the only things that go to the owner besides merges and decisions)
+- Lane A: the new idle and the run at the play camera, BEFORE its judge.
+- Lane E: the half-size sheet, ours beside the target, five den frames, BEFORE its judge. Also the paint A|B if two are close.
+- Lane D: the whole set on her beside the sheet, BEFORE the drops are wired.
+- Lane C: the judged den sheet at the merge.
+
+### The owner decides (one line each; the default runs if there is no answer)
+- **"Bulwark" names three things** (a road, the level-8 stance, a support gem). Default: the stance is renamed; ask the owner for the name once, with the lead's proposal.
+- **The Friday 20 November tag: DECIDED (the owner, 15 Nov evening, offered a cut to make Friday: "Keep full scope").** The full list stands and Friday is not held; the tag moves to the day the five lanes are at the bar. Say the new date when lane D's kit picture exists, not before. Do not re-offer a cut.
+- **Parked, not for the demo:** ledges in the den, the roost and every other dungeon, arena nights, supports and Unions (level 12+), the male hero, `body-p1b`, sieges. Do not start them and do not re-ask.
+
+### Rules the coordinator keeps (the short form; `docs/team/README.md` and RESUME have the rest)
+- **Quiet relays (the owner has corrected this nine times):** after an agent's message, act with tools and end with NO text. A merge is ONE line (what merged, suite numbers). A lead starting, stopping or being replaced, a gate, a cap or budget raised, fail lists: RESUME only. Full answers only to the owner's own messages. The app's "say a few words" and "write your closing message" nudges do not override this.
+- **Spawn lines, in the Agent prompt itself:** `Spawning: allowed`, `Context budget: 250k`, and for a lead that will use a judge `Item: <name>`; then "Read your brief: <path>" and who it reports to. Type `su-lead-high`, `isolation: "worktree"`, in the background. Judges are `su-lead-max` with `Effort tier: always-seen`; three rounds per item unless the coordinator sends "Round cap raised for <name> to N".
+- **Disk before any spawn:** C: had 23.9 GB free at 19:45 on 15 Nov; the guard is 20 GB and a worktree is about 4 GB. Remove merged worktrees first (`tools/scratch/coordinator/wt_remove.ps1`, same turn as the merge); at most 8 on disk. `body-p1b`'s worktree stays (move its `tools\body\out`, about 2 GB, to `survivorsunchained_inputs` before it is ever removed).
+- **Merging:** only after the lane's judge says PASS (or the coordinator's own 1:1 look for an unjudged lane); merge, run the suite (`godot/tests`: `python ../../tools/quiet.py -- dotnet test`), push, remove the worktree, one line to the owner.
+- **A verdict, not options:** when a lead asks, decide and write the why in RESUME. Bring the owner a question only when it is taste (a name, a picture) or spend.
+- **Art from ChatGPT** goes through the owner's Chrome with one driver at a time (`survivorsunchained_inputs\chatgpt.lock`), provenance logged per image. No Meshy without a judge. Krea never ships.
+
+### The start prompt for coordinator #15 (the owner pastes this into a new top-level session set to Opus)
+> You are coordinator #15 for Survivor Unchained, on Opus. Read `docs/team/README.md`, then the top block of `docs/team/RESUME.md`, then `docs/team/DEMO_PLAN.md` section "THE DEMO, 15 November 2026". Run that plan as written: continue any lane #14 left open from its state file, spawn lanes E and D from their briefs in `tools/scratch/coordinator/briefs/demo_15nov/`, then B. Keep relays silent; bring me only the pictures, merges and decisions the plan names.
+
+
 **The goal:** a playable demo. Title, creation, the tutorial (the storybook intro and the prologue), the Waystation, queue into the arenas from the Wayfinder's table, fight, come back to town. Everything else waits.
 
 **The owner, 2 November:** "I have been going through a lot of loops and circles and am struggling to feel like I'm making progress ... I keep getting lost in details that probably don't matter right now." And: things we build must be reusable, so the next use is cheaper.

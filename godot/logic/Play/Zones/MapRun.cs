@@ -210,6 +210,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         press = new PackKit(b);
         G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, IsDungeon ? "A dungeon" : "A Wayfinder's map"));
+        // Her road, if it is due and was never raised (she reached its level where no card could say it): its card shows here, once.
+        if (IsDungeon) G.Journey.RaiseRoad();
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
         // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
         // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)
@@ -531,7 +533,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         boss = e;
         e.Boss = true;
         e.Named = new Named { Title = people.BossName };
-        double mul = BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
+        double mul = BossHealth * Content.DungeonFights.Of(Chart.Dungeon).BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
         e.MaxHp = e.Hp = e.MaxHp * mul;
         // Its blows as its people's champion's, not the night's ruler's third more: a day build carries
         // none of the ember's mending, and her bites took a level-ten warden from full in eight seconds.

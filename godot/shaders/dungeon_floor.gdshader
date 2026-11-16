@@ -25,6 +25,13 @@ uniform float den_sat = 0.65;   // (round 8 judge: the earth 35% less saturated;
 uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
+// (den r9 floor) The meso layer (tools/look/den_floor_paint.py, godot/data/look/den_floor.json): stones, clods, litter, plates
+// and cracks painted with their own lit edge and shadow, read unrotated (the painted light stays the key's) at two scales;
+// each object shows where its rank (aux r, or a for plates and cracks) is under the place's density, a macro mask.
+uniform sampler2DArray den_meso : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray den_aux : filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float meso_k = 0.0;   // 0: off (round 8's floor); 1: on (--den-meso)
+const float MESO_M = 8.0;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -155,7 +162,36 @@ void fragment() {
 		// the painted grain stretched about its local mean (the layers' mip), so the flakes and grit read at the play camera
 		vec3 ref = mix(textureLod(den_alb, vec3(wpos.xz / den_m[0], 0.0), 5.0).rgb, textureLod(den_alb, vec3(R1 * wpos.xz / den_m[0] + 0.37, 0.0), 5.0).rgb, tw);
 		float lr = max(lum(ref), 1e-3);
-		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain), 0.3, 2.5);
+		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain * mix(1.0, 0.45, meso_k)), 0.3, 2.5);   // (meso on: the fine grain ~30% quieter)
+		if (meso_k > 0.0) {
+			vec2 ua = wpos.xz / MESO_M, ub = wpos.xz / (MESO_M * 0.79) + vec2(0.37, 0.61);
+			float ka = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.09 + 29.0));
+			float open = meso_k * (1.0 - steep) * smoothstep(-0.3, 0.5, inside);
+			// packed-earth plates: the higher plate of the two readings wins; none shown: the grain under it
+			float dpl = open * mix(0.85, 1.0, w_tr) * (1.0 - 0.5 * w_dk);
+			vec4 pa = texture(den_aux, vec3(ua, 2.0)), pb = texture(den_aux, vec3(ub, 2.0));
+			float sa = step(pa.a, dpl * ka), sb = step(pb.a, dpl * (1.0 - ka));
+			vec4 p = (sa > 0.5 && (sb < 0.5 || pa.g >= pb.g)) ? pa : pb;
+			float sp = max(sa, sb);
+			col *= mix(1.0, 2.0 * p.r, sp);
+			col = mix(col, col * vec3(0.9, 0.96, 1.1), p.b * sp);
+			// cracks: dry patches in the rooms' open middles, growing from each patch's middle
+			float dcr = open * smoothstep(0.52, 0.7, fbm(wpos.xz * 0.1 + 83.0)) * smoothstep(2.0, 4.5, inside);
+			vec4 cr = texture(den_aux, vec3(wpos.xz / MESO_M + vec2(0.21, 0.83), 3.0));
+			float sc = step(cr.a, dcr);
+			col *= mix(1.0, 2.0 * cr.r, sc);
+			col = mix(col, col * vec3(0.9, 0.96, 1.1), cr.b * sc);
+			// stones and clods everywhere, thicker in patches; litter in drifts and toward the banks' feet
+			float d0 = open * (0.3 + 0.55 * smoothstep(0.3, 0.7, fbm(wpos.xz * 0.15 + 3.0)));
+			float d1 = open * clamp(0.1 + 0.9 * w_li + 0.8 * (1.0 - smoothstep(0.5, 3.5, inside + wob)) * smoothstep(0.35, 0.6, fbm(wpos.xz * 0.2 + 57.0)), 0.0, 1.0);
+			for (int l = 0; l < 2; l++) {
+				float dn = l == 0 ? d0 : d1;
+				vec4 oa = texture(den_meso, vec3(ua, float(l))), ob = texture(den_meso, vec3(ub, float(l)));
+				float ra = texture(den_aux, vec3(ua, float(l))).r, rb = texture(den_aux, vec3(ub, float(l))).r;
+				col = mix(col, oa.rgb, oa.a * step(ra, dn * ka));
+				col = mix(col, ob.rgb, ob.a * step(rb, dn * (1.0 - ka)));
+			}
+		}
 		col *= den_tint;
 		col = mix(vec3(lum(col)), col, den_sat);
 		// slow value masses: damper and drier ground
@@ -164,7 +200,10 @@ void fragment() {
 		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
 		float m1 = fbm(wpos.xz * 0.075 + 23.0), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);
 		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
-		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85);
+		col = mix(col, mix(col * vec3(0.5, 0.48, 0.5), vec3(lum(col)) * vec3(0.47, 0.49, 0.54), meso_k), damp * 0.85);
+		// (den r9 floor) damp cool-grey earth toward the banks, in tongues (never a ring: a ring read as a tub's shadow)
+		float bankd = meso_k * (1.0 - smoothstep(0.6, 4.0, inside + wob * 1.2)) * smoothstep(0.38, 0.62, m1 + 0.25 * (big - 0.5));
+		col = mix(col, vec3(lum(col)) * vec3(0.92, 0.95, 1.05) * 0.78, bankd * 0.7);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
 		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
 		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k);
