@@ -52,16 +52,39 @@ public static class DenSound
         }
     }
 
-    /// <summary>Her effort: a heavy swing grunts most times, a light cut seldom, never twice inside a cooldown.</summary>
+    /// <summary>Her effort, as the den bot's log set it (DenSoundRunTests: a heavy swing lands about every 2.3 s in a fight, a light cut
+    /// more often): Sunder grunts about every other cast (0.5, 1.5 s apart), another heavy swing less (0.4, 2 s apart), a light
+    /// cut seldom (0.05, 3.5 s apart); never twice inside a cooldown.</summary>
     public sealed class GruntRule
     {
         double last = -99;
-        public bool Admit(bool heavy, double now, double roll)
+        public bool Admit(bool heavy, double now, double roll, bool sunder = false)
         {
-            if (now - last < (heavy ? 0.7 : 2.0)) return false;
-            if (roll >= (heavy ? 0.8 : 0.16)) return false;
+            if (now - last < (sunder ? 1.5 : heavy ? 2.0 : 3.5)) return false;
+            if (roll >= (sunder ? 0.5 : heavy ? 0.4 : 0.05)) return false;
             last = now;
             return true;
+        }
+    }
+
+    /// <summary>Her own voice from the sim's moments: an effort grunt on a heavy swing or Sunder (most times) and on a light
+    /// cut (seldom), the leap's shout and the landing's exhale, the dodge (the dash, never twice in half a second) and the stance
+    /// taken up or put down. Returns the bank's ids with the gain and pitch to play them at.</summary>
+    public sealed class HerVoice
+    {
+        readonly GruntRule grunt = new();
+        double lastDash = -99;
+        public IEnumerable<(string Id, double Gain, double Pitch)> Of(CombatEvent e, double now, double roll)
+        {
+            switch (e)
+            {
+                case Ev.Cast c when c.Heavy || c.Weapon == "sunder": if (grunt.Admit(true, now, roll, c.Weapon == "sunder")) yield return ("her.grunt", 1, 1); break;
+                case Ev.Slash: if (grunt.Admit(false, now, roll)) yield return ("her.grunt", 1, 1); break;
+                case Ev.Leap { Phase: LeapPhase.Takeoff }: yield return ("her.leap", 1, 1); break;
+                case Ev.Leap { Phase: LeapPhase.Land }: yield return ("her.land", 1, 1); break;
+                case Ev.Dash: if (now - lastDash >= 0.6) { lastDash = now; if (roll < 0.7) yield return ("her.dodge", 1, 1); } break;
+                case Ev.Swap sw: yield return ("her.stance", sw.Stance != "" ? 1 : 0.8, sw.Stance != "" ? 1 : 0.88); break;
+            }
         }
     }
 
@@ -131,16 +154,23 @@ public static class DenSound
         return res;
     }
 
-    /// <summary>A blow big enough that the music steps back for it (a crit, a heavy hit on a foe, a boss or elite falling, a hit
-    /// on her that takes a sixth of her health).</summary>
+    /// <summary>A blow big enough that the music steps back for it: a boss or elite falling, a hit that takes a fifth of her
+    /// health, a hit that takes half of a foe's, her landing from Heroic Leap.</summary>
     public static bool BigHit(CombatEvent e, double herMaxHp) => e switch
     {
-        Ev.Hit h => !h.Dot && !h.Blocked && (h.Crit || h.Amount >= 0.2 * Math.Max(1, h.MaxHp)),
+        Ev.Hit h => !h.Dot && !h.Blocked && h.Amount >= 0.5 * Math.Max(1, h.MaxHp) && h.MaxHp >= 60,
         Ev.Kill k => k.Boss || k.Elite,
-        Ev.PlayerHit ph => !ph.Dodged && !ph.Blocked && !ph.Dot && ph.Amount >= herMaxHp / 6,
+        Ev.PlayerHit ph => !ph.Dodged && !ph.Blocked && !ph.Dot && ph.Amount >= herMaxHp / 5,
         Ev.Leap { Phase: LeapPhase.Land } => true,
         _ => false,
     };
+
+    /// <summary>The music steps back for a big blow, not for every one: not again within a second and a half.</summary>
+    public sealed class BigHitRule
+    {
+        double last = -99;
+        public bool Admit(double now) { if (now - last < 1.5) return false; last = now; return true; }
+    }
 
     public enum Track { None, Explore, Boss, Falls }
 
@@ -161,16 +191,18 @@ public static class DenSound
         }
     }
 
-    /// <summary>The pack at a distance: now and then before the first fight, never during one (nor after the first has begun).</summary>
+    /// <summary>The pack at a distance: now and then while it is quiet, never during a fight. (The brief said "before the first fight":
+    /// the first pack wakes 23-29 m from the mouth and is on her in 4-8 s in every bot run, so that window is nothing; the rule
+    /// counts the quiet stretches instead, and the first fight, the Pack-Mother's arrival included, silences it. The owner can say strict.)
+    /// `fighting`: a hostile near, a blow in the last ten seconds, or the ruler up. The quiet counts down to the next one.</summary>
     public sealed class PackFarRule
     {
-        public const double First = 14, Every = 40, Spread = 30;
-        double due = First; bool fought;
+        public const double First = 6, Every = 45, Spread = 30;
+        double due = First;
         public bool Admit(bool inDen, bool fighting, double dt, double roll)
         {
-            if (!inDen) { due = First; fought = false; return false; }
-            if (fighting) fought = true;
-            if (fought) return false;
+            if (!inDen) { due = First; return false; }
+            if (fighting) return false;
             due -= dt;
             if (due > 0) return false;
             due = Every + Spread * roll;

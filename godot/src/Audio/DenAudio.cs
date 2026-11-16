@@ -17,13 +17,15 @@ public sealed class DenAudio
     readonly Synth a;
     readonly DenSound.MusicRule rule = new();
     readonly DenSound.PackFarRule far = new();
+    readonly DenSound.BigHitRule bigHit = new();
     readonly DenSound.VoiceLimiter limiter = new();
     readonly Random rng = new(11);
     readonly Dictionary<string, bool> known = new();
     /// <summary>Per id: how many voices played, how many the limiter held back (--soundlog prints it).</summary>
     public static readonly Dictionary<string, (int Played, int Dropped)> Counts = new();
 
-    DenBed? pits, explore, boss, falls;
+    DenBed? pits, explore, boss, falls, packFar;
+    double farUntil;
     float[]? pitKey;
     List<(double X, double Z, double R)> pitList = new();
     bool wasIn, warmed;
@@ -45,7 +47,7 @@ public sealed class DenAudio
             if (e is Ev.Hit or Ev.PlayerHit) lastCombat = now;
             if (!big && DenSound.BigHit(e, herMaxHp)) big = true;
         }
-        if (big && ScoreOn) a.DuckBeds(SoundBank.Duck("bighit", "music", 0.6f), 0.4);
+        if (big && ScoreOn && bigHit.Admit(now)) a.DuckBeds(SoundBank.Duck("bighit", "music", 0.6f), 0.4);
     }
 
     /// <summary>The creatures' voices this frame, through the limiter, nearest first.</summary>
@@ -101,14 +103,23 @@ public sealed class DenAudio
         if (boss != null) boss.Target = want == DenSound.Track.Boss ? 1 : 0;
         if (falls != null) falls.Target = want == DenSound.Track.Falls ? 1 : 0;
         // The pack, far off, now and then, before the first fight and never during one.
-        bool fighting = hostilesNear > 0 || now - lastCombat < 6;
-        if (far.Admit(true, fighting, dt, rng.NextDouble()))
-            SoundBank.Play("den.pack_far", new Sfx.Where((rng.NextDouble() - 0.5) * 1.2, 0), 0.9);
+        // It is a one-shot bed, so a fight beginning fades it out rather than letting it run over the blows.
+        bool fighting = hostilesNear > 0 || now - lastCombat < 10 || s.Boss;
+        if (packFar != null)
+        {
+            if (far.Admit(true, fighting, dt, rng.NextDouble()))
+            {
+                packFar.Pan = (float)((rng.NextDouble() - 0.5) * 1.4);
+                packFar.Target = 1;
+                farUntil = now + 26;
+            }
+            else if (fighting || now > farUntil) packFar.Target = 0;
+        }
     }
 
     void SetAll(float t)
     {
-        foreach (var b in new[] { pits, explore, boss, falls }) if (b != null) b.Target = t;
+        foreach (var b in new[] { pits, explore, boss, falls, packFar }) if (b != null) b.Target = t;
     }
 
     /// <summary>The den's takes, read and the beds started (silent) as she steps in, so nothing is read at the boss's arrival.</summary>
@@ -130,6 +141,7 @@ public sealed class DenAudio
         explore = Make("music.den.explore", "music_den_explore", Bus.Music, true, 2.5f, 2.5f);
         boss = Make("music.den.boss", "music_den_boss", Bus.Music, true, 2.5f, 0.8f);
         falls = Make("music.den.falls", "music_den_falls", Bus.Music, false, 0.05f, 1.0f);
+        packFar = Make("den.pack_far", "den_pack_far", Bus.Amb, false, 0.6f, 0.8f);
     }
 
     public static void PrintLog()

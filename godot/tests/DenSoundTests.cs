@@ -63,13 +63,28 @@ public class DenSoundTests
     public void HerEffortIsChancePlusCooldownAndAHeavyOneGrunts()
     {
         var g = new DenSound.GruntRule();
-        Assert.True(g.Admit(true, 10, 0.5));
-        Assert.False(g.Admit(true, 10.3, 0.5));   // cooldown
-        Assert.False(g.Admit(true, 11, 0.9));     // the chance said no
-        Assert.True(g.Admit(true, 11, 0.5));
-        Assert.False(g.Admit(false, 11.5, 0.1));  // a light cut after a grunt: cooldown
-        Assert.False(g.Admit(false, 14, 0.5));    // a light cut seldom
-        Assert.True(g.Admit(false, 14, 0.1));
+        Assert.True(g.Admit(true, 10, 0.3));
+        Assert.False(g.Admit(true, 10.3, 0.3));   // cooldown
+        Assert.False(g.Admit(true, 12.5, 0.9));   // the chance said no
+        Assert.True(g.Admit(true, 12.5, 0.3));
+        Assert.True(g.Admit(true, 14.1, 0.45, sunder: true));   // Sunder: a better chance, a shorter cooldown
+        Assert.False(g.Admit(false, 15, 0.01));   // a light cut after a grunt: cooldown
+        Assert.False(g.Admit(false, 18, 0.5));    // a light cut seldom
+        Assert.True(g.Admit(false, 18, 0.04));
+    }
+
+    [Fact]
+    public void TheMusicStepsBackForABigBlowButNotTwiceInASecondAndAHalf()
+    {
+        var r = new DenSound.BigHitRule();
+        Assert.True(r.Admit(10));
+        Assert.False(r.Admit(11));
+        Assert.True(r.Admit(11.6));
+        Assert.True(DenSound.BigHit(new Ev.Kill { Boss = true }, 100));
+        Assert.False(DenSound.BigHit(new Ev.Kill { }, 100));
+        Assert.True(DenSound.BigHit(new Ev.PlayerHit { Amount = 25 }, 100));
+        Assert.False(DenSound.BigHit(new Ev.PlayerHit { Amount = 25, Dodged = true }, 100));
+        Assert.False(DenSound.BigHit(new Ev.Hit { Amount = 9, MaxHp = 100, Crit = true }, 100));   // a crit alone is not big
     }
 
     [Fact]
@@ -133,14 +148,16 @@ public class DenSoundTests
     }
 
     [Fact]
-    public void ThePackIsHeardFarOffBeforeTheFirstFightAndNeverDuringOrAfter()
+    public void ThePackIsHeardFarOffNowAndThenInTheQuietAndNeverDuringAFight()
     {
         var r = new DenSound.PackFarRule();
         int heard = 0;
         for (double t = 0; t < 120; t += 0.1) if (r.Admit(true, false, 0.1, 0.5)) heard++;
-        Assert.InRange(heard, 2, 4);
-        Assert.False(r.Admit(true, true, 0.1, 0.5));       // a fight begins
-        for (double t = 0; t < 200; t += 0.1) Assert.False(r.Admit(true, false, 0.1, 0.5));   // and the pack is never far again
+        Assert.InRange(heard, 2, 3);
+        for (double t = 0; t < 200; t += 0.1) Assert.False(r.Admit(true, true, 0.1, 0.5));    // a fight: never, and the quiet does not count down
+        int after = 0;
+        for (double t = 0; t < 60; t += 0.1) if (r.Admit(true, false, 0.1, 0.5)) after++;     // and when it is quiet again, now and then
+        Assert.InRange(after, 1, 1);
         Assert.False(new DenSound.PackFarRule().Admit(false, false, 100, 0.5));   // not in the den
     }
 

@@ -29,7 +29,7 @@ public sealed class SoundBridge
     public readonly Music Music;
     /// <summary>The den's recorded sound (pits, far pack, score, creatures' voices; DenAudio).</summary>
     public readonly DenAudio Den;
-    readonly DenSound.GruntRule grunt = new();
+    readonly DenSound.HerVoice her = new();
     readonly Random dice = new(23);
     int xpStep, swellTier = -1;
     double xpT, hostilesNear, beatT, sweepT, swellT, now;
@@ -69,6 +69,8 @@ public sealed class SoundBridge
         Den.Voices(evs, px, pz, At);
         foreach (var e in evs)
         {
+            // Her own voice: effort, leap, landing, dodge, stance (DenSound.HerVoice).
+            foreach (var (hid, hg, hp) in her.Of(e, now, dice.NextDouble())) SoundBank.Play(hid, default, hg, null, hp);
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
@@ -91,23 +93,14 @@ public sealed class SoundBridge
                 case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
                 case Ev.Nova n: Sfx.Nova(n.School, n.Art); break;
                 // Each skill in its own voice (Sfx.Skills), the school's where it has none.
-                case Ev.Slash s:
-                    Sfx.Swing(s.Art, At(s.X, s.Z));
-                    // Her effort on a light cut: seldom (chance and cooldown).
-                    if (grunt.Admit(false, now, dice.NextDouble())) Sfx.Cue("her.grunt");
-                    break;
-                // Her effort on a heavy swing and on Sunder: most times (never twice inside the cooldown).
-                case Ev.Cast c when c.Heavy || c.Weapon == "sunder": if (grunt.Admit(true, now, dice.NextDouble())) Sfx.Cue("her.grunt"); break;
+                case Ev.Slash s: Sfx.Swing(s.Art, At(s.X, s.Z)); break;
                 case Ev.Muzzle m: Sfx.Cast(m.Art, m.School, At(m.X, m.Z)); break;
                 case Ev.Strike st when st.Art != null: Sfx.Falling(st.Art, st.Delay, At(st.X, st.Z)); break;
                 case Ev.Chain ch when ch.Points.Length >= 2: Sfx.Arc(At(ch.Points[0], ch.Points[1])); break;
                 case Ev.Beam bm when bm.Art?.StartsWith("beam") == true: Sfx.Lance(bm.Art, bm.Duration, At(bm.X1, bm.Z1)); break;
                 case Ev.Telegraph t when t.Tell != null && t.Phase != TellPhase.Off: Sfx.Telegraph(t.Tell, t.Phase == TellPhase.Land, t.Boss, At(t.X, t.Z), t.Duration > 0 ? t.Duration : null); break;
-                case Ev.Dash: Sfx.Dash(); if (a.Gate("her.dodge", 1, 500)) Sfx.Cue("her.dodge"); break;
-                case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); Sfx.Cue("her.leap"); break;
-                case Ev.Leap { Phase: LeapPhase.Land }: Sfx.Cue("her.land"); break;
-                // The stance taken up and put down (the same breath, lower and softer going out).
-                case Ev.Swap sw: SoundBank.Play("her.stance", default, sw.Stance != "" ? 1 : 0.8, null, sw.Stance != "" ? 1 : 0.88); break;
+                case Ev.Dash: Sfx.Dash(); break;
+                case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); break;
                 case Ev.Charge ch2: Sfx.ShieldCharge(ch2.Phase, At(ch2.X, ch2.Z)); break;
                 case Ev.HardLanding hl2: Sfx.Cue("dash.hard_landing", At(hl2.X, hl2.Z)); break;
                 // (P7) Bladestorm: the whir chained on every blow of the spin, the break, each line's split; Iron Vow's
@@ -195,7 +188,9 @@ public sealed class SoundBridge
     {
         switch (an.Kind)
         {
-            case "danger": Sfx.Stinger(boss ? "boss" : "danger"); break;
+            // In the den the Pack-Mother's own howls lead (her arrival at the master's input is about 1 dB over stinger.boss,
+            // and a lead voice); the boss stinger would sit on top of them, so it is left out there.
+            case "danger": if (!(boss && Den.InDen)) Sfx.Stinger(boss ? "boss" : "danger"); break;
             case "zone": Sfx.Stinger("zone"); break;
             case "story": Sfx.Stinger("story"); break;
             case "boon": Sfx.Stinger("triumph"); break;
