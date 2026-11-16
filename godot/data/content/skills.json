@@ -1558,7 +1558,7 @@
       "bossDamage": 1.6,
       "art": "slash_spin",
       "description": "Hold its key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. A fresh press of Sunder's key breaks the storm with one great blow, the greater the longer you spun, and every line splits at once.",
-      "_doc": "In the campaign with the Warden's Resolve (Sim/Resolve.cs) the spin drains press.drain Resolve a second while held, with no cap and no cooldown (press.wait 0), and ends at 0; its break grows with the Resolve the storm spent (breakFloor at none to breakGrow at breakSpent; bd-storm 13 Nov: floor 0.3 so a tapped spin breaks small, full at 40 spent, about 3.3 s of spin; the radius never below x1). No wick yet (it can't take Turns). cooldown, channelTime and breakFrom are the arena's (self-firing) and a campaign without Resolve's.",
+      "_doc": "In the campaign with the Warden's Resolve (Sim/Resolve.cs) the spin drains press.drain Resolve a second while held, with no cap and no cooldown (press.wait 0), and ends at 0; its break grows with the Resolve the storm spent (breakFloor at none to breakGrow at breakSpent; bd-storm 13 Nov: floor 0.3 so a tapped spin breaks small, full at 40 spent, about 3.3 s of spin; the radius never below x1). Its wick: wicks.json (Line on Line, Long Blade, Hold Fast, each three lamps and a Turn; storm-wick). Lane B 16 Nov: damage 18->15, lineDamage 40->16, breakDamage 85->70 (hollow share deft 38, human 34). cooldown, channelTime and breakFrom are the arena's (self-firing) and a campaign without Resolve's.",
       "base": {
         "cooldown": 6,
         "damage": 15,
