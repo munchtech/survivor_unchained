@@ -99,11 +99,25 @@ def ride_weights(mean_w, names, ride, bone_names):
     return mean_w, None
 
 
-def pin(path, pre, body, B=None, drop=(), ride=()):
+def part_names(Q, sels, objs):
+    """The authored object (a node of the free mesh, `_glb_objects`) most of a rigid shell's points `Q[sels]` sit on:
+    its name, as a {name} for the shell's rigid_ride match (the installed meshes are named by material only:
+    `<id>.<slot>.steel` holds both cops and both lame sets). Nearest point, by majority (its LOD points too)."""
+    on = list(objs)
+    if not on:
+        return set()
+    A = np.vstack([objs[k] for k in on])
+    lab = np.repeat(np.arange(len(on)), [len(objs[k]) for k in on])
+    _, j = cKDTree(A).query(Q[np.concatenate(sels)])
+    return {on[int(np.bincount(lab[j]).argmax())]}
+
+
+def pin(path, pre, body, B=None, drop=(), ride=(), authored=None):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
-    head as she turned it)."""
+    head as she turned it). `authored` (the free mesh file): each rigid shell is also named by its authored object
+    (part_names), so a `ride` match can name a part ("cop_l"), not only a material's mesh."""
     B = B or bf.Body(body)
     G, Gp = _Gl(path), _Gl(pre)
     g = G.g
@@ -152,6 +166,10 @@ def pin(path, pre, body, B=None, drop=(), ride=()):
             kk_ = ks.pop()
             groups.setdefault(kk_, []).append(sel)
             gnames.setdefault(kk_, set()).update(mname[i] for i in sel)
+    if authored and ride:
+        objs = _glb_objects(authored)
+        for kk_, sels in groups.items():
+            gnames[kk_] |= part_names(Q, sels, objs)
     Wq, sd = her_weights(B, Q)
     nb = len(B.names)
     TOP = np.zeros((len(Q), 8), int)

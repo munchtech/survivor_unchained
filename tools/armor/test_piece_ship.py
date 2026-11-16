@@ -180,6 +180,19 @@ def test_rigid_ride_picks_first_match_mixes_and_names_unknown_bones():
         pn.ride_weights(mean, ["k.lame"], [{"match": "lame", "weights": {"nobone": 1}}], names)
 
 
+
+def test_rigid_shell_named_by_its_authored_part():
+    """pin's rigid_ride match sees the authored object a shell sits on (installed meshes are named by material)."""
+    import pin_shipped as pn
+    objs = {"pauldron_cop_l_rigid": np.array([[0.2, 1.5, 0.0], [0.21, 1.5, 0.0]]),
+            "pauldron_lames_l_rigid": np.array([[0.22, 1.4, 0.0], [0.23, 1.39, 0.0]])}
+    Q = np.array([[0.2, 1.5, 0.0], [0.21, 1.501, 0.0], [0.225, 1.4, 0.0], [0.2, 1.49, 0.0]])
+    assert pn.part_names(Q, [np.array([0, 1, 3])], objs) == {"pauldron_cop_l_rigid"}
+    assert pn.part_names(Q, [np.array([2])], objs) == {"pauldron_lames_l_rigid"}
+    w, hit = pn.ride_weights(np.array([1.0, 0.0]), {"k.pauldrons.steel", "pauldron_cop_l_rigid"},
+                             [{"match": "lames_l", "weights": {"b": 1}}, {"match": "cop_l", "weights": {"b": 1}}], ["a", "b"])
+    assert hit == "cop_l" and np.allclose(w, [0, 1])
+
 def test_follow_env_shoulder_shapes_switch():
     import piece_ship as ps
     assert ps.follow_env({"params": {"shoulder_shapes": False}})["BF_PAUL_SHAPES"] == "0"
