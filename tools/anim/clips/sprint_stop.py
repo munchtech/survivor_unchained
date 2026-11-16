@@ -158,18 +158,33 @@ def prowl_stop(rig, side):
     the right comes in behind her; planting the right, the left steps through and the right draws back a step."""
     from clips import prowl
     from gait import arc_of
-    from rig import qaxis, qrot
+    from rig import qaxis, qeuler, qinv, qmul, qrot
     E = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
     arms0 = {k: E[k] for k in ("hand_l", "hand_r", "fingers_l", "fingers_r")}
     pole = {"l": (0.15, 0, 1.0), "r": (-0.15, 0, 1.0)}
+    cp = qmul(qeuler(*E["hips"]["rot"]), qeuler(*E["spine"]))  # Prowl's chest (end_keys' turns)
 
-    def armsw(a):
+    def hold(d):
+        # (solver 11a) the sword arm hangs as Prowl's does in the world while the chest leans: the key's chest turn off
+        # Prowl's (the run's lean and turn eased into Prowl's by the key's w), PROWL_HOLD of its pitch (about the chest's
+        # left-right) and PROWL_HOLD_YAW of its turn about her up turned back off the arm, fist and blade. Riding the
+        # chest whole, f0's lean of 16 pitched the line 10-16 up off the idle's (from the front at the play camera it
+        # read level, a bar at her side).
+        Q = qmul(qinv(qmul(qeuler(*d["hips"]["rot"]), qeuler(*d["spine"]))), cp)
+        Q = Q if Q[3] >= 0 else -Q
+        px, yy = (math.degrees(2.0 * math.atan2(Q[i], Q[3])) for i in (0, 1))
+        return qmul(qaxis([0.0, 1.0, 0.0], PROWL_HOLD_YAW * yy), qaxis([1.0, 0.0, 0.0], PROWL_HOLD * px))
+
+    def armsw(a, d=None):
         # (solver 4a) Prowl's arms with the sword arm swung `a` deg further out from her side about the shoulder (the
         # chest's forward line), the fist and blade with it (the bend and the wrist kept): through the landing her right
         # hip and thigh swing out under a hand held where Prowl's stance holds it (motion --outfits: 80 mm into her)
-        if not a:
+        hd = d is not None and (PROWL_HOLD or PROWL_HOLD_YAW)
+        if not a and not hd:
             return arms0
         q = qaxis([0.0, 0.0, 1.0], -a)
+        if hd:
+            q = qmul(hold(d), q)
         h = dict(arms0["hand_r"])
         az, el, r = h["arc"]
         v = r * np.array([math.sin(math.radians(az)) * math.cos(math.radians(el)), math.sin(math.radians(el)),
@@ -227,7 +242,7 @@ def prowl_stop(rig, side):
             (26, {**arms, **body(1.0, 0), "foot_l": foot("l", L["pos"], L["rot"], w=1.0), "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)},
              "ease"),
         ]
-    keys = [(f, dict(d, hand_r=armsw(ao.get(f, 0.0))["hand_r"]), e) for f, d, e in keys]
+    keys = [(f, dict(d, hand_r=armsw(ao.get(f, 0.0), d)["hand_r"]), e) for f, d, e in keys]
     meta = {"layer": "full", "weapon": "sword+shield"}
     if prowl.GRIP_TILT:  # (solver 6a) the idle's hold (end_keys at its tilt): the stop lands its hand and blade
         meta["grip_tilt"] = prowl.GRIP_TILT
@@ -236,9 +251,19 @@ def prowl_stop(rig, side):
 
 # (solver 4a) the sword arm's swing out (deg, STOP_OUT times each key's share) through the landing, none at the end
 # (Prowl's own): the left plant throws her right hip out at f9-f12, the right plant at f13-f18.
-STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "8"))
-STOP_OUT_L = {0: 0.6, 5: 0.9, 9: 1.0, 16: 0.5, 26: 0.0}
-STOP_OUT_R = {0: 0.6, 5: 0.8, 9: 0.9, 13: 1.0, 18: 0.6, 26: 0.0}
+STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "4"))  # (solver 11a: 4, was 8)
+# (solver 11c, 16 Nov) and further out at the crouch keys only (L f5/f9 +1.5 deg, R f5/f9 +2.5 and f13 +0.84; the
+# shares were L 0.9, 1.0; R 0.8, 0.9, 1.0): the crouch's lowered hips under 11a's steeper blade took the tip to 0.042 (L)
+# and 0.035 m (R) off the floor; out, the arm, fist and blade turn whole (the wrist kept, armroll turns nothing) and the
+# point rises 1.1-1.8 cm (0.053 both), the share from behind 0.373 / 0.378 (was 0.370 / 0.343). Tried: more elbow bend
+# there (the line kept: the wrist went past its caps, armroll turned the hand back 1.4-5.8 deg, the tip rose 0.1-0.6 cm
+# only), all of the chest's pitch held off the arm (PROWL_HOLD 1: R 0.043, armroll 0.9), less of it (0.3: lower still).
+STOP_OUT_L = {0: 0.6, 5: 1.275, 9: 1.375, 16: 0.5, 26: 0.0}
+STOP_OUT_R = {0: 0.6, 5: 1.425, 9: 1.525, 13: 1.21, 18: 0.6, 26: 0.0}
+# (solver 11a) prowl_stop's hold: the share of each key's chest pitch (PROWL_HOLD) and turn (PROWL_HOLD_YAW) off Prowl's
+# taken back off the sword arm (0, 0: the arm rides the chest whole, as before)
+PROWL_HOLD = float(os.environ.get("PROWL_STOP_HOLD", "0.6"))
+PROWL_HOLD_YAW = float(os.environ.get("PROWL_STOP_HOLD_YAW", "1"))
 
 
 def stop(rig, calling, side):

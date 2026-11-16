@@ -70,8 +70,15 @@ TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
 # 5+ to spare, so the pack turns nothing back): as played -147..-131 / 62-68 below level, sideways share
 # -sin(heading)cos(down) 0.27-0.35, the tip 0.09-0.12 m off the floor by her right foot, the fist 0.18-0.20 m out of her
 # pelvis, bend 33-38, 19.9 cm off her leg.
-IDLE_ARM = (-30.0, 12.0, 145.0, 30.0)
-IDLE_GRIP = ((-0.3448, -0.9363, -0.0475), (0.7678, -0.2518, -0.5876)) if GRIP_TILT == -35.0 else TRAIL_GRIP
+# (solver 11a, 16 Nov) At the PLAY camera (pitch 56, she faces it) that line, trailing back, threw its point up-screen
+# and cancelled its fall: the idle read as a short level stub at her side, and the elbow near straight (33-38) read
+# locked. Now the upper arm 30 back, out 20, inside angle 125 (bend 54-59 as played, soft), turned in 50, the fist at
+# armroll's reading pro 64, flex -30, dev -5 (7 inside the caps; solve11/tools/reach11.py over frames 0/52/76/104/156,
+# solve11a/tools/cand11.py's grip): as played -129..-107 / 70-77 below level, 54+ deg down-screen from the front and
+# within 45 of it, sideways share from behind 0.32 max, the tip 0.06 m off the floor, the fist 50 mm clear of her hip
+# (out 14: 24 mm into it at f76). Was (-30, 12, 145, 30) / ((-0.3448, -0.9363, -0.0475), (0.7678, -0.2518, -0.5876)).
+IDLE_ARM = (-30.0, 20.0, 125.0, 50.0)
+IDLE_GRIP = ((-0.2718, -0.953, 0.1261), (0.4317, -0.2367, -0.8694)) if GRIP_TILT == -35.0 else TRAIL_GRIP
 if os.environ.get("PROWL_IDLE_ARM", "1") == "0":  # the old idle line (TRAIL_ARM / TRAIL_GRIP)
     IDLE_ARM, IDLE_GRIP = TRAIL_ARM, TRAIL_GRIP
 
@@ -306,7 +313,16 @@ BREAK_F = 96
 # (solver 6a, at grip tilt -35: cone 20 took the wrist to the ulnar cap (armroll turned 21.5 back), the bend to 53, the
 # tip 0.94 m out)
 BREAK_CONE = float(os.environ.get("PROWL_BREAK_CONE", "12"))
+# (solver 11a) the circle's rise (deg, at its top) and its sweep across (deg, side to side) apart; both BREAK_CONE: the
+# round circle as before
+BREAK_RISE = float(os.environ.get("PROWL_BREAK_RISE", "0"))  # (solver 11a: 0, 12 sweep; the rise took the wrist past its caps)
+BREAK_SWEEP = float(os.environ.get("PROWL_BREAK_SWEEP", "12"))
 BREAK_LIFT = float(os.environ.get("PROWL_BREAK_LIFT", "0.01"))
+# (solver 11c, 16 Nov) the break's own wrist caps (armroll W_PRO: meta "wrist_caps", widen only; pack and every check
+# re-solve it alike): extension 48 (armroll's 45; life's 60-70). Solved open (not as the idle's loop), the break's wrist
+# passed 45 by under 2 deg and armroll turned the hand 1.4 back, at any sweep (10: 1.35, 12: 1.39); at 47 or 48 it turns
+# nothing and the flourish plays as keyed. "null": armroll's own caps.
+BREAK_CAPS = json.loads(os.environ.get("PROWL_BREAK_CAPS") or '{"ext": 48}')
 BREAK_GRIP = 0.045  # m, the wrist to the fist's grip point along the knuckles
 
 
@@ -328,8 +344,8 @@ def build_break(rig, name="idle_warden_break", fingers_l=None):
             th = 2 * math.pi * u
             # the point's way off the line: a circle through the line, above it (the point first rises and comes
             # forward, sweeps over and back, and comes down onto the line again), BREAK_CONE across
-            w = e2 * (1.0 - math.cos(th)) * 0.5 - e1 * math.sin(th) * 0.5
-            c = BREAK_CONE * min(1.0, 2.0 * env) * float(np.linalg.norm(w))
+            w = e2 * (1.0 - math.cos(th)) * 0.5 * BREAK_RISE - e1 * math.sin(th) * 0.5 * BREAK_SWEEP
+            c = min(1.0, 2.0 * env) * float(np.linalg.norm(w))
             if c > 1e-6:
                 q = qaxis(_norm(np.cross(b0, _norm(w))), c)
                 grip = np.array(h["pos"]) + BREAK_GRIP * k0
@@ -338,7 +354,7 @@ def build_break(rig, name="idle_warden_break", fingers_l=None):
         out.append(pose)
     r2, p2 = solve_frames(rig, out, [(rot[t], pos[t]) for t in range(n + 1)], loop=False, weapon="sword+shield", tilt=GRIP_TILT)
     meta = {"layer": "full", "weapon": "sword+shield", "made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)",
-            **({"grip_tilt": GRIP_TILT} if GRIP_TILT else {})}
+            **({"grip_tilt": GRIP_TILT} if GRIP_TILT else {}), **({"wrist_caps": BREAK_CAPS} if BREAK_CAPS else {})}
     return Clip(name, fps, r2, p2, loop=False, meta=meta)
 
 

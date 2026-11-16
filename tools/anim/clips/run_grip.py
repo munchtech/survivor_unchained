@@ -72,13 +72,17 @@ def fist_frame(spec, pro, flex, dev, side="r", tilt=0.0):
 def wrist_carry(fwd, back, lag=0.0, side="r", tilt=0.0):
     """A carry (Gait.arms) for an arm keyed by its joints (Gait.swing / swing_r): the fist at wrist reading `fwd`
     (pro, flex, dev) with the fist forward, `back` with it back, eased between by the swing read `lag` of a cycle late
-    (the blade trails the fist). `tilt`: the clip's "grip_tilt" (fist_frame; the clip's meta must carry the same)."""
+    (the blade trails the fist). `tilt`: the clip's "grip_tilt" (fist_frame; the clip's meta must carry the same).
+    (solver 11d, 16 Nov) `lag` may be one per reading, [pro, flex, dev]: the blade's down is the forearm's turn and the
+    wrist's deviation, its heading the wrist's flexion, and to leave the blade trailing the fist each must counter the
+    arm's swing of the line at its own (early) phase; one shared lag could not lag both."""
     fw, bk = np.array(fwd, float), np.array(back, float)
+    lg = np.broadcast_to(np.asarray(lag, float), (3,)).copy()
     cache = {}
 
     def f(ph, k, hand):
         hand = dict(hand)
-        kl = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - lag - hand["_koff"])) if lag and "_koff" in hand else k
+        kl = 0.5 - 0.5 * np.cos(2 * np.pi * (ph - lg - hand["_koff"])) if np.any(lg) and "_koff" in hand else k
         pro, flex, dev = bk + (fw - bk) * kl
         key = (tuple(np.round(hand.get("arc", (0, 0, 0)), 6)), tuple(np.round(hand.get("pole", (0, 0, 0)), 6)),
                round(pro, 4), round(flex, 4), round(dev, 4))

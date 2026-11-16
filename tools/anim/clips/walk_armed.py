@@ -70,7 +70,10 @@ PROWL_LAG = 7.0
 # -111..-60 heading, the tip 0.41 m ahead of her hips) with the forearm turned past armroll's 80 and the wrist at its
 # extension cap (the pack turned the hand 15 deg back). None: that keyed line. PROWL_EL: the elbow's inside angle off
 # TRAIL_ARM's with the fist back and forward (was 0, -8: bend 39-49 as played; the idle's 32-38).
-PROWL_WRIST = ((76.0, -27.0, -8.0), (66.0, -17.0, -3.0))
+# (solver 11c, 16 Nov) On 11a's idle arm (-30, 20, 125, 50) the old readings hung the blade 74-86 down, the tip 0.038 m
+# off the floor: fist-back now the idle's own grip reading (64, -30, -5; was 66, -17, -3), fist-forward dev -3 (was -8):
+# as played 71-80 down (the idle 70-77), tip 0.058, share 0.313, armroll 0.8, bend 54-60.
+PROWL_WRIST = ((76.0, -27.0, -3.0), (64.0, -30.0, -5.0))
 PROWL_WRIST_LAG = -1.0
 PROWL_EL = (0.0, -4.0)
 # (solver 9b, 15 Nov) PROWL_ARM: the sword arm's joints (th, out, el, turn; gait.arm_joints), None: prowl.TRAIL_ARM.
