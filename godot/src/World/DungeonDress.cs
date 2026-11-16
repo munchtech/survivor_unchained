@@ -43,6 +43,7 @@ public static partial class DungeonDress
         if (z.WallField == null || z.Rooms.Count == 0) return null;
         Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17;   // (round 9) the map's seed varies the dressing; seed 0 = as before
         var c = new Ctx { Z = z, Root = new Node3D { Name = "DungeonDress" } };
+        if (z.DungeonTheme == "den" && SetMode > 0) PickSetRoom(z);   // (den round 10: the painted set, --den-set)
         c.Shrooms.Begin(Mesh.PrimitiveType.Triangles);
         c.Bones.Begin(Mesh.PrimitiveType.Triangles);
         c.Poles.Begin(Mesh.PrimitiveType.Triangles);
@@ -55,7 +56,8 @@ public static partial class DungeonDress
             int s = i + 1;
             if (den) Den(c, r, s); else Ravine(c, r, s);
         }
-        if (den) { DenDecals(c); DenBankDecals(c); DenFloorDecals(c); }
+        if (den) { DenCaps.Clear(); DenDecals(c); DenBankDecals(c); DenFloorDecals(c); }
+        if (den && SetMode > 0) DenSet(c);
         if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.45f, 1.0f, 0.88f) });
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });
         // Poles (palisade, tents, banners) in one mesh in bark; canvas (vertex-coloured per tent) and banner cloth in one each.
@@ -472,6 +474,7 @@ public static partial class DungeonDress
             var sp = Ray(c, r, Hash(s, 21, k) * Mathf.Tau, 0.5f + 0.5f * Hash(s, 22, k), 0);
             if (sp == null) continue;
             float cx = sp.Value.X, cz = sp.Value.Z;
+            if (SetMode > 0 && SetIn(cx, cz)) continue;   // (round 10b: the bank paintings carry their own glow fungus)
             int m = 4 + (int)(Hash(s, 23, k) * 5);
             for (int q = 0; q < m; q++)
             {

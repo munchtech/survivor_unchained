@@ -63,6 +63,7 @@ public static partial class DungeonDress
     // painting's view). Returns its footprint's half width (m), 0 when none was placed.
     static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
+        if (SetMode > 0 && SetIn(x, zz)) return PlaceSetBoulder(c, pick, x, zz, scale, big);   // (round 10: the painted set's O1)
         var all = Boulders().FindAll(q => q.Big == big);
         if (all.Count == 0) all = Boulders();
         if (all.Count == 0 || boulderShader == null) return 0f;

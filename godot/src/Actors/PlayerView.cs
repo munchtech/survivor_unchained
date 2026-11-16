@@ -155,7 +155,7 @@ public partial class PlayerView : Node3D
     /// crowd's own light is on (the shader's lamp curve is then the whole of her light on it: 0 at 7 m, the crowd round her held under her;
     /// the real light added about a third within 1.5 m and nothing past 3 m), and lights it as before by day or with --crowd-fill off.</summary>
     static readonly string CrowdOmniArg = SurvivorUnchained.Args.Get("crowd-omni") ?? "";
-    static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew));
+    static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew) && !Atmosphere.CrowdDen);   // (demo-look item 4: the den's pack takes her as a rim, not a flood)
     /// <summary>--pool-log: her light's reach and energy printed as they change (L1 S2b-N2, the pool in metres).</summary>
     static readonly bool PoolLog = SurvivorUnchained.Args.Has("pool-log");
     float poolLogged = -1;

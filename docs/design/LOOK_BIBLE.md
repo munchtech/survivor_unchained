@@ -26,3 +26,82 @@
 **The blocks and their state** (`docs/handoff/art_style.md` has the detail): B1 the shading model, built, her shaders included (B1a d8e70cf05, B1b 694a339b7). B5 the ink pass, built (fc546bff5). B0 the lookdev stage, built (ba5cc9693). Next, after the owner's G1 pick: B2 the material library (presets as data, plus a loader that puts every StandardMaterial3D on the model), B3 texture authoring, B4 the lighting rigs (per time of day; the close-up keyed from the front), and B6 the VFX and UI language as data. Then C, the thirteen frames rebuilt through the blocks.
 
 **Off the bible today, in short** (r0: `survivorsunchained_inputs\look_l1\r0\`): surfaces are photographic (the ground's noise, stone, bark); there is no ink, and figures separate only by value; light is soft Lambert with gray-blue shade; standard-material props and her shield are outside the model; the close-up keys her from behind. All of it is the blocks' work, never a patch on a frame.
+
+## The demo frame: the den (lane E, demo-look, 16 November)
+
+**The owner, 15 Nov:** "a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"; 19 Oct: "the 'correct' colors just somehow more vibrant". **Nailed down** = one look, stated as numbers, on by default, checked by a script, so it stops drifting lane by lane. This section is the bar for every demo lane (A movement, B skills, C the den, D the armor set, E the grade and rig) and for their judges. The demo is ONE dungeon, the den (`--zone map --dungeon hollow`), seen only from the dungeon camera (pitch 62 degrees, 24 m, `MapRun.CamPitch/CamDistance`; she is 40-60 px tall at 1080 lines). The camera is never moved to match a target.
+
+**From:** (b) the den targets the owner approved on 15 Nov (`survivorsunchained_inputs\scratch_coord12\dungeon_concepts\den_room.png`, `den_boss.png`: "Yes, build"), for every class they show; her plate and trim also from `look_l1\owner_ref_10nov\owner_ref_play_camera.webp` (her look, 10 Nov); (c) `godot/data/look/fx_language.json` (her steel) and `ui_language.json` (HUD accents); (a) the game's need where no target shows the class (elites, loot). **The den is not the night:** the targets' darks are warm umber and near-neutral (shH 25-48, shC 0.009-0.011), so rule 2's moon-indigo shade does not apply underground; rule 2's "never grey, never brown-black" becomes "warm umber, never mauve" here (the den's round 10 failed as mauve and dark against these targets).
+
+**Vibrant, by rule 4:** each band's chroma runs from 0.9x to 1.35x the target's median, so ours may be "the correct colors, a step more vibrant", never a different hue. LIT classes (her skin and hair, lit ground and pools, the fungus, her steel, the loot) aim for the UPPER half of their chroma band; the DARK classes (banks, shade, foes' bodies) sit at the target. Color goes into the light, never a global saturation lift.
+
+**How to measure:** `python tools/style/demo_look_check.py targets` re-measures every class below on the targets (boxes and Oklab keys in `tools/style/demo_look_targets.json` "classes"; `--overlay DIR` writes the masks); `... frame PNG... [--masks M.json]` checks our frames: the whole-frame bands over the play crop (y 8-80%), and each class a manifest names for that frame, in the same box + key format. A class passes when its medians (L50, C50, chroma-weighted h) sit inside its band; the script exits 1 on any miss. The bands live in the same JSON ("bands", "frame_bands"); this table is their reading. Oklab throughout: L 0-1, C chroma, h degrees.
+
+**The whole frame** (palette.py's numbers; targets den_room / den_boss): Lp50 0.26-0.38 (0.28 / 0.35); key 1.50-2.00 (1.85 / 1.58); midC 0.045-0.065 (0.050 / 0.046); shadows shC 0.009-0.025 at shH 15-60 (warm umber); warm share of all chroma 75%+ (82 / 83), cold 4-15% (9 / 6: the fungus and the shafts); true black (L under 0.12) at most 2% (0.03 / 0.02: "black beyond" is a very dark umber, not a hole). For scale, lane C's r12 frames today: v2_room in band; v2_boss Lp50 0.39, midC 0.042, shH 11 (toward mauve), cold 3.7: out.
+
+| Class | One rule | Value L | Chroma C | Hue h | Target median L / C / h |
+|---|---|---|---|---|---|
+| Her skin | the lightest figure in the frame: skin L50 at least ground-by-her + 0.25 (targets +0.30 to +0.34) | 0.74-0.88 | 0.094-0.125 | 45-69 | 0.81 / 0.104 / 57 |
+| Her hair | copper, the most saturated surface on her | 0.52-0.76 | 0.120-0.180 | 33-52 | 0.63 / 0.125 / 45 (owner ref 0.66 / 0.177 / 42) |
+| Her plate | warm dark gunmetal, never cold silver; hot glints (L 0.85+) on at most 3% of her | 0.22-0.40 | 0.020-0.050 | 15-60 | 0.28 / 0.027 / 36 (owner ref 0.31 / 0.041 / 30) |
+| Her trim | gold, at least 0.30 L over the plate | 0.70-0.90 | 0.070-0.120 | 56-80 | owner ref 0.82 / 0.081 / 68 |
+| Her shadow | a cast shadow under her, at least 0.10 L under the ground beside her | 0.20-0.42 | 0-0.030 | 10-60 | 0.36 / 0.016 / 26 (ground beside 0.49) |
+| Her line | a deeper tone of what it sits on, never black | 0.08-0.22 | 0-0.035 | 10-60 | 0.18 / 0.016 / 32 |
+| Ground by her | the floor in a one-to-two-body ring round her | 0.40-0.58 | 0.040-0.068 | 38-62 | 0.49 / 0.053 / 50 |
+| Foes (the pack) | dark warm fur, at least 0.15 L under the ground they stand on; the line and a stepped rim separate them (rules 7, 8); never pale, silver or lavender | 0.20-0.36 | 0.010-0.040 | 10-50 | 0.28 / 0.018 / 30 |
+| Elites | a step above the pack: the pack's body plus one affix accent (C 0.08-0.14) on 6-15% of its px and a full rim (no target shows one: (a)) | 0.20-0.38 | 0.010-0.040 | 10-50 | (derived) |
+| The boss: body | the pack's blocks, one step paler and larger | 0.24-0.40 | 0.010-0.035 | 0-40 | 0.31 / 0.017 / 17 |
+| The boss: back | the cold blue-black back: the one cold figure in the den | 0.27-0.47 | 0.020-0.040 | 270-312 | 0.37 / 0.025 / 292 |
+| The boss: mane | the blood-red mane the boss reads by | 0.34-0.57 | 0.080-0.120 | 20-40 | 0.43 / 0.089 / 30 |
+| Ground lit | the open floor: warm earth, the middle mass | 0.40-0.56 | 0.043-0.065 | 37-61 | 0.47 / 0.048 / 49 |
+| Ground pools | the pale shafts' and lane pools' ground: the brightest ground, never white | 0.56-0.75 | 0.059-0.089 | 47-71 | 0.63 / 0.066 / 59 |
+| Ground in shade | the floor under the banks: warm umber, never mauve (h 290-20) or grey | 0.31-0.46 | 0.025-0.038 | 25-65 | 0.39 / 0.028 / 45 |
+| Banks | the root banks: the dark warm mass | 0.15-0.30 | 0.008-0.025 | 17-57 | 0.22 / 0.010 / 37 |
+| Fungus | the den's cold accent: small pale teal | 0.60-0.80 | 0.053-0.080 | 171-195 | 0.68 / 0.059 / 183 |
+| Lair glow | the sickly green in the boss lair's fissures | 0.45-0.62 | 0.080-0.120 | 121-145 | 0.53 / 0.088 / 133 |
+| Blood | dark red, never magenta | 0.36-0.52 | 0.072-0.110 | 25-42 | 0.44 / 0.081 / 33 |
+| Effects (her steel) | the physical school's bands (edge 0.63 / 0.149 / 58, mid 0.81 / 0.165 / 79, core L 0.90+ at C 0.05 or under); the only px at C 0.14+ in the den's world | 0.60-1.00 | 0.140-0.190 | 52-85 | fx_language.json (c) |
+| Loot (the set) | the set's verdigris light (`BattleFx.Loot` Verdigris, 0.76 / 0.137 / 173): twice the fungus's chroma, on the green side of its teal | 0.70-0.92 | 0.120-0.180 | 150-175 | (derived) |
+| HUD accents | `ui_language.json` held exactly: hostile red (boss bar) 0.565 / 0.192 / 30, level green 0.819 / 0.164 / 124, skill lavender 0.749 / 0.082 / 307; text cream #e8dcc0, one gold line #d9b56a | as listed, +-0.03 | as listed, +-0.02 | +-6 | ui_language.json (c) |
+
+**For the lanes:** C builds the ground, banks, fungus, lair glow and blood to these rows (its grade moves to E's den preset once it lands); B builds every effect to the steel row and keeps its pixels the only C 0.14+ world pixels; D's starting kit sits in the plate and trim rows under the den's light; A changes no color. Any lane's frame is checked with `demo_look_check.py frame` before its judge.
+
+
+### Effects in the den: the rules for lane B (lane E, 16 November; judge 1's fx rows all MISS)
+
+1. **Steel is the only loud thing.** Every pixel of her skill strokes sits in the steel row's bands (edge 0.63 / 0.149 / 58, mid 0.81 / 0.165 / 79, core L 0.90+ at C 0.05 or under: `fx_language.json`, the physical school). The stroke's colored part reaches C 0.14-0.19. These are the only world pixels at C 0.14+ in the den. Measured 16 Nov: the Sunder crescent is C 0.064 (cream, it vanishes on warm earth); the Bladestorm arcs are C 0.10.
+2. **Hit puffs are dust or steel, never pink.** Impact puffs and sparks sit at h 55-80. No fx pixel at C 0.04+ falls in h 290-25 (magenta, pink, violet). Measured: the puffs read h 18-21.
+3. **Blood is dark red.** Droplets, sprays and fx blood decals use the blood row: L 0.36-0.52, C 0.072-0.110, h 25-42. Measured: droplets at C 0.164, decals at h 21-24.
+4. **Sunder reads at the dungeon camera** (the PoE/Diablo play camera, 1080p):
+   - (a) Its ground mark is a shock ring plus a crack, drawn at the skill's real hit radius, so what shows is what it hits.
+   - (b) At its peak the mark spans at least 1.5 times her on-screen height (she is about 85 px tall at 1080p), and it lies on the ground in front of her. It never sits under her body or her HP plate.
+   - (c) The core holds L 0.90+ for at least 3 frames at 60 fps, which puts it 0.35+ over the den floor (L 0.40-0.56). The steel edge then fades over 0.25-0.4 s.
+   - (d) The crack decal stays at least 1 s, as a deeper tone of the ground (the line row, L 0.08-0.22). It is never black.
+5. **Bladestorm is a full ring.** Steel arcs go all the way round her, with at least 3 visible in any frame, at C 0.14-0.19.
+6. **Boss telegraphs** (E and B; whoever builds them): a hostile-red edge (`ui_language` 0.565 / 0.192 / 30) and a fill at 15% opacity or less. No flat hatched slab: the 16 Nov lair frame had one covering about 9% of the play area.
+7. **Check before the judge.**
+   - Shoot at the play camera. E's Sunder frame: `--auto idle --horde 10:wolf --horde-hp 40 --horde-arc 0:120:2.5:2.5:6 --no-spawn --slots sunder --press 1:6.3:3,0:hold=0.6`. For Bladestorm, use `--horde-arc 0:360:2.5:3:9 --grant-union bladestorm --resolve-at 0.5:100 --press 1:2:0,0:hold=6`.
+   - Add an `fx_steel` box (and a `blood` box where blood shows) to a masks manifest. Use the format of `tools/style/demo_look_masks.json`.
+   - Run `python tools/style/demo_look_check.py frame PNG --masks M.json`.
+
+### Judge 1 on the den frames (16 November): FAR
+
+- **Frames:** `godot/.shots` f2_her, f2_sun, f2_storm, f4_boss and f2_loot on `demo-look@5673c2460`.
+- **The owner's word on the sheet:** "Yes, judge it".
+- **Classes the masks manifest checks:** `tools/style/demo_look_masks.json`. `demo_look_check.py frame` fails (exit 1) on the same rows the judge failed: cold share, ground in shade, her shadow, her hair, pack hue, the lair floor, fungus, lair glow, boss back, boss mane and blood. It agrees with the eye; that is all it promises.
+- **Held:** the set's paint, the warm umber darks, the den grade (`rig_den`), her skin at the play camera (0.75 / 0.125 / 53) and the HUD.
+
+**What's wrong at the root:**
+1. **The look stops at the set.** She, the pack and the boss don't get the cel treatment: the line is partial, the shading smooth, and nothing casts a shadow. So they float.
+2. **There is no light design.** With no pools and no lit shafts, every lit class sits at its band's floor, and "vibrant" has nowhere to go. A global saturation lift is not the fix.
+3. **Four of the five frames don't show their subject:** no slam; a black S-shaped shadow; the boss is a black blob under a red slab; no set drop.
+
+**Rules added by this judge:**
+- **Loot in the den:** Rare and Epic beams and labels are capped at C 0.14, so the set's verdigris stays the loudest drop. The tier colors go into `ui_language.json`.
+- **The boss bar fill** is held at L 0.565.
+- The judge's ordered fix list is in `docs/handoff/art_style.md` (TOP).
+
+**rim-back@bce213a96: DROPPED for the demo, still parked.**
+- It's a skin-rim mask (a compute pass in `RimMask.cs`, plus `heroine_skin` changes) for close and NPC skin. It stopped at CLOSE with four known artifacts, and its suite never ran. It is two days behind integration.
+- At the den's play camera her skin already reads in band without it (0.75 / 0.125). The judge's root faults are the line, stepped shading and cast shadows on figures, plus the light design, and the rim fixes none of them. Taking it would add a GPU pass, a merge and a rim judge to a FAR round.
+- Pick it up when close-ups or NPC skin are the item.
