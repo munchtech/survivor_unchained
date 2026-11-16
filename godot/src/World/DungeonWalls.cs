@@ -181,9 +181,9 @@ public static class DungeonWalls
         // s at every grid vertex; the band and its dilation get positions up front, and any other corner a drawn cell or a
         // normal reaches is placed when it is first asked for (Pos).
         // (den r11 solver, 15 Nov: a cell is drawn when any corner is in the band, and the 1.6 m dilation was taken to cover
-        // its other corners. The den's s is no distance field since WallOnly (pit solver, 15 Nov): where a wall gives way
-        // to a pit it leaps from the band to -8 within one 0.5 m cell, so those corners were never placed and stood at
-        // Vector3.Zero, the world's origin. Their triangles ran from the pits' walls to the origin: the fan over the seed-23
+        // its other corners. The den's s is no distance field: where a wall gives way to a pit WallOnly (pit solver, 15 Nov)
+        // takes it from the band to -8 within one 0.5 m cell, and along MapGen's per-room and per-hall culling boxes it
+        // leaps to WallField's clamp (16). Those corners were never placed and stood at Vector3.Zero, the world's origin. Their triangles ran from the pits' walls to the origin: the fan over the seed-23
         // lair (the origin under its middle), the dark plank across seed 11's corridor at -108,-78 (the origin behind the
         // lens), and the normals beside them pointed at it. 290 such corners on seed 23, triangles up to 148 m long.)
         var s = new float[n * n];
