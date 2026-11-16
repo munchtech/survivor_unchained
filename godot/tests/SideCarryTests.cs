@@ -188,4 +188,57 @@ public class SideCarryTests
         c.Step(Dt, true, float.NaN, At(90f));
         Assert.True(float.IsFinite(c.Tilt) && float.IsFinite(c.Spring));
     }
+    // (judge r4, solver 17) A frame at `face` with the clip's blade swayed by `back` (tip back) and `outward` (tip out).
+    static SideCarry.Frame Swayed(float face, float back, float outward, float moving = 0f)
+    {
+        var (a, l, b) = Her(face);
+        b = SideCarry.Rot(a, -outward, SideCarry.Rot(l, back, b));
+        return new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, moving, 0f);
+    }
+    static float ShownOf(SideCarry c, in SideCarry.Frame f)
+        => SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), f.Jx, f.Jy, c.Sigma);
+
+    [Theory]
+    [InlineData(90f)]      // side_x
+    [InlineData(135f)]     // away_x: the stand's angle needs the extra turn in
+    public void StandHoldsStillWhileTheIdleSways(float face)
+    {
+        var c = new SideCarry();
+        float lo = float.MaxValue, hi = float.MinValue;
+        for (int i = 0; i < 60; i++)
+        {
+            var f = Swayed(face, 10f * MathF.Sin(i * 0.4f), 8f + 8f * MathF.Sin(i * 0.25f));
+            c.Step(Dt, true, 0f, f);
+            if (i < 20) continue;
+            float a = ShownOf(c, f);
+            lo = MathF.Min(lo, a); hi = MathF.Max(hi, a);
+        }
+        Assert.True(hi - lo <= 2f, $"stand wandered {lo:F1}..{hi:F1}");
+        Assert.InRange(lo, c.Floor - 0.5f, c.StandAngle + 1f);
+    }
+
+    [Fact]
+    public void WeightFadesNoFasterThanFadeOut()
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        Near(1f, c.Weight, 1e-3f);
+        c.Step(Dt, true, 0f, At(-90f, 0f));
+        Assert.True(c.Weight >= 1f - Dt / c.FadeOut - 1e-4f, $"weight fell to {c.Weight:F3}");
+    }
+
+    [Fact]
+    public void NeverPastTheEdgeWhereTheClipIsInside()
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 240; i++)
+        {
+            float face = 90f + 60f * MathF.Sin(i * 0.07f);
+            var f = Swayed(face, 15f * MathF.Sin(i * 0.3f), 10f * MathF.Sin(i * 0.17f), 0.5f + 0.5f * MathF.Sin(i * 0.05f));
+            c.Step(Dt, true, 20f * MathF.Sin(i * 0.7f), f);
+            float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            if (MathF.Abs(a0) <= c.Edge) Assert.True(MathF.Abs(a) <= c.Edge + 0.5f, $"frame {i}: {a:F1} past the edge");
+        }
+    }
 }

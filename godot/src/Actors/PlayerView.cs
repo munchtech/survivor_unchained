@@ -2677,7 +2677,8 @@ public partial class PlayerView : Node3D
     // (warden-move) The side carry (SideCarry): the sword turned in her fist while her sword side faces the camera. Stepped
     // once her pose is made (SkeletonUpdated, as HairSway is: the modifiers' arm in it), so the grip's acceleration and the
     // tilt's sign are this frame's. --side-carry off: none (the clips' grip, as before); --side-carry-tune
-    // runangle,gain,hz,damping,loose,ease,maxrate,splay,loosefwd,maxaccel,standangle,strafecut,splayaway,splaystrafe,backmax,caproom,side0,side1:
+    // runangle,gain,hz,damping,loose,ease,maxrate,splay,loosefwd,maxaccel,standangle,strafecut,splayaway,splaystrafe,backmax,caproom,side0,side1,
+    // fadeout,screenrate,edge,splayoutmax,standsettle,floor,inmax:
     // its tuning (SideCarry's fields, in that order).
     readonly SideCarry carry = CarryTuned();
     static readonly bool CarryOn = SurvivorUnchained.Args.Get("side-carry") is not ("off" or "0");
@@ -2696,6 +2697,8 @@ public partial class PlayerView : Node3D
             c.Loose = F(4, c.Loose); c.Ease = F(5, c.Ease); c.MaxRate = F(6, c.MaxRate); c.Splay = F(7, c.Splay); c.LooseFwd = F(8, c.LooseFwd); c.MaxAccel = F(9, c.MaxAccel);
             c.StandAngle = F(10, c.StandAngle); c.StrafeCut = F(11, c.StrafeCut); c.SplayAway = F(12, c.SplayAway); c.SplayStrafe = F(13, c.SplayStrafe);
             c.BackMax = F(14, c.BackMax); c.CapRoom = F(15, c.CapRoom); c.Side0 = F(16, c.Side0); c.Side1 = F(17, c.Side1);
+            c.FadeOut = F(18, c.FadeOut); c.ScreenRate = F(19, c.ScreenRate); c.Edge = F(20, c.Edge); c.SplayOutMax = F(21, c.SplayOutMax);
+            c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
         }
         return c;
     }
@@ -2730,6 +2733,9 @@ public partial class PlayerView : Node3D
             vel.Y = 0f;
             float sp = vel.Length(), sw = sp > 0.3f ? Mathf.Abs(vel.Dot(GlobalBasis.X.Normalized())) / sp * Mathf.Clamp((sp - 0.3f) / 0.7f, 0f, 1f) : 0f;
             carryStrafe += (sw - carryStrafe) * (1f - Mathf.Exp(-d / 0.15f));
+            // (judge r4, solver 17) How much she moves, from her own speed (none under 0.3 m/s, full from 4.3): prompt at a
+            // stop, where the walk weight (logWWalk) holds full ~5 frames after she has stopped (the stand's angle came late).
+            carryMove = Mathf.Clamp((sp - 0.3f) / 4f, 0f, 1f);
         }
         carryPos = pos;
         var cam = GetViewport()?.GetCamera3D();
@@ -2752,7 +2758,7 @@ public partial class PlayerView : Node3D
                 var ah = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
                 carryB0 = (hbd.Tip - hbd.Grip).Normalized();
                 f = new SideCarry.Frame(N(carryB0), N(lf), N(ah), new(dx.X, dy.X, dz.X), new(dx.Y, dy.Y, dz.Y), N(cam.GlobalBasis.Z),
-                    Mathf.Clamp(logWWalk, 0f, 1f), carryStrafe);
+                    Mathf.Min(Mathf.Clamp(logWWalk, 0f, 1f), carryMove), carryStrafe);
             }
             else on = false;
         }
@@ -2760,7 +2766,7 @@ public partial class PlayerView : Node3D
         if (layered) CarrySlide(bone);
     }
     Vector3 carryPos, carryB0;
-    float carryStrafe;
+    float carryStrafe, carryMove;
 
     /// <summary>Her right piece gripped as the clips grip it (slide, tilt), then the side carry's turns on it: tip back about
     /// her left (level; + tips the blade behind her), and in toward her body about her facing (level), through the fist.</summary>

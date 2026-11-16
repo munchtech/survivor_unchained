@@ -65,6 +65,10 @@ public sealed class SideCarry
     public float StandSettle = 0.08f;
     /// <summary>(judge r4) The wanted angle never under this (deg toward her screen-back) where the clamp allows it.</summary>
     public float Floor = 20f;
+    /// <summary>(judge r4, solver 17) Standing, the most extra turn in toward her body (deg) the layer takes where the stand's
+    /// angle is out of the tilt's reach (the away diagonals, where the stop clip throws the blade out): just enough to reach it,
+    /// so the stand holds still on screen while the clip's idle moves; none at a run (scaled by 1 - moving).</summary>
+    public float InMax = 20f;
 
     /// <summary>The eased weight (0..1).</summary>
     public float Weight { get; private set; }
@@ -226,9 +230,26 @@ public sealed class SideCarry
         if (own - psi > SplayOutMax) psi = own - SplayOutMax;
         float back = BackOf(b, ahead), lo = BackMin - back, hi = BackMax - back;
         float aim = StandAngle + (RunAngle - StandAngle) * moving - StrafeCut * strafe;
-        float cap = ScreenAngle(Turned(b, left, hi, ahead, psi), f.Jx, f.Jy, Sigma) - CapRoom;
+        // The room under the clamp is for the run's back swing: none standing (no swing), so the stand reaches its angle.
+        float room = CapRoom * moving, sg = Sigma;
+        Vector3 jx = f.Jx, jy = f.Jy, bc = b;
+        float CapAt(float p) => ScreenAngle(Turned(bc, left, hi, ahead, p), jx, jy, sg);
+        float cap = CapAt(psi) - room;
+        // Standing, where the aim is past the clamp's reach: the tip turned in just enough more (up to InMax) to reach it.
+        float im = InMax * (1f - moving);
+        if (im > 0f && cap > -90f && cap < aim)
+        {
+            if (CapAt(psi + im) - room >= aim)
+            {
+                float l0 = psi, l1 = psi + im;
+                for (int i = 0; i < 10; i++) { float m = 0.5f * (l0 + l1); if (CapAt(m) - room >= aim) l1 = m; else l0 = m; }
+                psi = l1;
+            }
+            else psi += im;
+            cap = CapAt(psi) - room;
+        }
         if (cap > -90f && cap < aim) aim = cap;
-        Want = MathF.Max(aim + Spring, MathF.Min(Floor, cap + CapRoom));
+        Want = MathF.Max(aim + Spring, MathF.Min(Floor, cap + room));
         Raw = Weight > 0f ? Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw) : Raw;
         // The drawn blade on screen (deg, screen right +): toward the weighted tilt's, turning at most ScreenRate faster than
         // the clip's own blade turns (holding still is always allowed), inside the Edge.
