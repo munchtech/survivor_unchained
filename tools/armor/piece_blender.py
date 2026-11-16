@@ -3065,7 +3065,7 @@ COV = NEAR[R0["covered"]]
 g_ = R0["gap"][R0["covered"]]
 NUM["rest"] = {"skin_points_near": int(len(NEAR)), "covered": int(len(COV)),
                "gap_mm": {"max": round(float(g_.max() * 1000), 2), "p99": round(float(np.percentile(g_, 99) * 1000), 2),
-                          "p50": round(float(np.median(g_) * 1000), 2)},
+                          "p50": round(float(np.median(g_) * 1000), 2)} if len(g_) else None,  # (a helm covers none of her body)
                "through_untucked": int(R0["through"].sum()), "through_tucked": int(R0["through_t"].sum()),
                "tucked_not_covered": int(((tuck[NEAR] > 0.5) & ~R0["covered"]).sum())}
 # (by place: under the cups' lower rims, along their inner rims, under the gore, the crown (over 30 mm in from a rim))
