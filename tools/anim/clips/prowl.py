@@ -43,11 +43,39 @@ FORE_R = float(os.environ.get("PROWL_FORE_R", "0"))  # deg the sword forearm tip
 # (m) each hand moved out from her side (motion --outfits: at 0 the sword hand met her hip 6 mm, the warden plate 24/19;
 # at r 0.025 / l 0.02: skin 0, warden plate 2 r / 9 l, reaver 3 l)
 HAND_OUT = {"r": float(os.environ.get("PROWL_OUT_R", "0.025")), "l": float(os.environ.get("PROWL_OUT_L", "0.02"))}
+# (aim-move solver 2, 15 Nov; PROWL_TRAIL=1, off by default until the walk and run carry match it) the sword arm keyed
+# by its joints (gait.arm_joints: th fwd of hanging, out, the elbow's inside angle, turn in; chest frame) and the fist by
+# its grip frame (blade, knuckles; chest frame), found INSIDE armroll's caps (solve2 reach.py: forearm turned out 77,
+# wrist extended 36 (W_EXT 45), 15 ulnar (W_DEV_LOW 20)), so the pack turns nothing back. Prowl's keyed line (BLADE)
+# needed a forearm roll past 95 and the pack's 80 turned it out to the wing (as played -100..-85 heading, 26-35 below
+# level, tip 1.04-1.16 m out); this one plays -109 / 53, tip 0.72 m out, 0.27 m behind her hips, 0.14 m off the floor.
+TRAIL = os.environ.get("PROWL_TRAIL", "0") == "1"
+TRAIL_ARM = (-10.0, 0.0, 150.0, 0.0)
+TRAIL_GRIP = ((-0.5909, -0.8055, 0.0019), (0.7888, -0.5781, -0.2026))
 
 
 def _norm(v):
     v = np.asarray(v, float)
     return v / max(np.linalg.norm(v), 1e-9)
+
+
+def _trail_spec(sk, ag, g, p, sw, ph):
+    """PROWL_TRAIL's hand_r key on one frame's body (globals g, p): the wrist where TRAIL_ARM's joints put it from the
+    shoulder (the elbow 3 deg softer or firmer with her weight shift), the elbow's way as the pole, the fist's grip frame
+    turned whole with the chest and by the blade's life (BLADE_PITCH with the weight shift, BLADE_YAW with the breath)."""
+    from gait import arm_joints
+    u, lo, h, c = (sk.i(n) for n in ("upperarm_r", "lowerarm_r", "hand_r", "spine_03"))
+    ap = sk.rest_globals()[1][0]
+    l1, l2 = float(np.linalg.norm(ap[lo] - ap[u])), float(np.linalg.norm(ap[h] - ap[lo]))
+    C = qmul(g[c], qinv(ag[c]))
+    th, out, el, turn = TRAIL_ARM
+    E, H = arm_joints(th, out, el + 3.0 * sw, turn, l1, l2)
+    E, H = qrot(C, E * np.array([-1.0, 1, 1])), qrot(C, H * np.array([-1.0, 1, 1]))
+    bc, kc = qrot(C, np.array(TRAIL_GRIP[0])), qrot(C, np.array(TRAIL_GRIP[1]))
+    q = qmul(qaxis([0.0, 1.0, 0.0], BLADE_YAW * math.sin(2 * ph * 2)), qaxis(_norm(np.cross([0.0, 1.0, 0.0], bc)), BLADE_PITCH * sw))
+    wrist = p[u] + H + np.array([-HAND_OUT["r"], 0.0, 0.0])
+    return {"pos": tuple(wrist), "pole": tuple(_norm(E)), "pole_at": "shoulder", "frame": "char",
+            "blade": tuple(qrot(q, bc)), "knuckles": tuple(qrot(q, kc))}
 
 
 def b_globals():
@@ -164,6 +192,7 @@ def specs(rig, fingers_l=None):
     bl0 = _norm(BLADE)
     side = _norm(np.cross([0.0, 1.0, 0.0], bl0))
     poses = []
+    gT, pT = sk.fk(rot, pos) if TRAIL else (None, None)
     for t in range(T):
         hands = {}
         for s in "lr":
@@ -196,6 +225,8 @@ def specs(rig, fingers_l=None):
                 b = qrot(qaxis(side, BLADE_PITCH * float(sway[t])), bl0)
                 b = qrot(qaxis([0.0, 1.0, 0.0], BLADE_YAW * math.sin(2 * ph * 2)), b)
                 spec["blade"] = tuple(b)
+            if s == "r" and TRAIL:
+                spec = _trail_spec(sk, ag, gT[t], pT[t], float(sway[t]), 2 * math.pi * t / T)
             hands[f"hand_{s}"] = spec
         pose = dict(hands)
         pose["fingers_r"] = "grip"
