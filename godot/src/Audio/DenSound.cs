@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Sound;
 
@@ -102,5 +103,78 @@ public static class DenSound
         double d = Math.Max(0, dist - radius);
         double k = Math.Clamp(1 - d / reach, 0, 1);
         return k * k;
+    }
+
+    /// <summary>One creature voice the sim asks for this frame.</summary>
+    public readonly record struct Want(string Kind, string Moment, double X, double Z, double Dist);
+
+    /// <summary>The voices a frame's events ask for, nearest first: Ev.Voice (notice, bite, lunge), a hit that did not kill (hurt),
+    /// a kill (death); a creature with no voice kind asks for nothing. Her Pack-Mother's moves are Ev.Sound ids, not here.</summary>
+    public static List<Want> Wants(IReadOnlyList<CombatEvent> evs, double px, double pz)
+    {
+        var res = new List<Want>();
+        HashSet<int>? killed = null;
+        foreach (var e in evs) if (e is Ev.Kill k) (killed ??= new()).Add(k.Enemy);
+        double D(double x, double z) => Math.Sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
+        foreach (var e in evs)
+            switch (e)
+            {
+                case Ev.Voice v when KindOf(v.Def) is { } k1:
+                    res.Add(new(k1, v.Moment, v.X, v.Z, D(v.X, v.Z))); break;
+                case Ev.Hit h when !h.Dot && !h.Blocked && h.Target >= 0 && h.Def != null && KindOf(h.Def) is { } k2 && killed?.Contains(h.Target) != true:
+                    res.Add(new(k2, "hurt", h.X, h.Z, D(h.X, h.Z))); break;
+                case Ev.Kill kl when kl.Def != "mirror" && KindOf(kl.Def) is { } k3:
+                    res.Add(new(k3, "death", kl.X, kl.Z, D(kl.X, kl.Z))); break;
+            }
+        res.RemoveAll(w => w.Dist > MaxHearing && !Unlimited(w.Kind));
+        res.Sort((a, b) => a.Dist.CompareTo(b.Dist));
+        return res;
+    }
+
+    /// <summary>A blow big enough that the music steps back for it (a crit, a heavy hit on a foe, a boss or elite falling, a hit
+    /// on her that takes a sixth of her health).</summary>
+    public static bool BigHit(CombatEvent e, double herMaxHp) => e switch
+    {
+        Ev.Hit h => !h.Dot && !h.Blocked && (h.Crit || h.Amount >= 0.2 * Math.Max(1, h.MaxHp)),
+        Ev.Kill k => k.Boss || k.Elite,
+        Ev.PlayerHit ph => !ph.Dodged && !ph.Blocked && !ph.Dot && ph.Amount >= herMaxHp / 6,
+        Ev.Leap { Phase: LeapPhase.Land } => true,
+        _ => false,
+    };
+
+    public enum Track { None, Explore, Boss, Falls }
+
+    /// <summary>The den's recorded score: the exploration track from the entrance, the boss track from the Pack-Mother's arrival
+    /// (a crossfade), the sting when she dies, then quiet for the rest of the den.</summary>
+    public sealed class MusicRule
+    {
+        public const double FallsSeconds = 6.0;
+        bool bossSeen; double fallsT;
+        public Track Want { get; private set; }
+        public void Update(bool inDen, bool bossUp, double dt)
+        {
+            if (!inDen) { bossSeen = false; fallsT = 0; Want = Track.None; return; }
+            if (bossUp) { bossSeen = true; fallsT = 0; Want = Track.Boss; return; }
+            if (!bossSeen) { Want = Track.Explore; return; }
+            fallsT += dt;
+            Want = fallsT < FallsSeconds ? Track.Falls : Track.None;
+        }
+    }
+
+    /// <summary>The pack at a distance: now and then before the first fight, never during one (nor after the first has begun).</summary>
+    public sealed class PackFarRule
+    {
+        public const double First = 14, Every = 40, Spread = 30;
+        double due = First; bool fought;
+        public bool Admit(bool inDen, bool fighting, double dt, double roll)
+        {
+            if (!inDen) { due = First; fought = false; return false; }
+            if (fighting) fought = true;
+            if (fought) return false;
+            due -= dt;
+            if (due > 0) return false;
+            due = Every + Spread * roll;
+            return true;
+        }
     }
 }

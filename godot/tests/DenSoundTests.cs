@@ -95,6 +95,34 @@ public class DenSoundTests
         Assert.Equal(0, DenSound.Falloff(40, 3));
     }
 
+    [Fact]
+    public void TheMusicFollowsTheDenFromEntranceToBossToStingToQuiet()
+    {
+        var m = new DenSound.MusicRule();
+        m.Update(false, false, 1); Assert.Equal(DenSound.Track.None, m.Want);
+        m.Update(true, false, 1); Assert.Equal(DenSound.Track.Explore, m.Want);
+        m.Update(true, true, 1); Assert.Equal(DenSound.Track.Boss, m.Want);
+        m.Update(true, true, 1); Assert.Equal(DenSound.Track.Boss, m.Want);
+        m.Update(true, false, 0.1); Assert.Equal(DenSound.Track.Falls, m.Want);
+        m.Update(true, false, 5); Assert.Equal(DenSound.Track.Falls, m.Want);
+        m.Update(true, false, 1.5); Assert.Equal(DenSound.Track.None, m.Want);   // then quiet
+        m.Update(true, false, 30); Assert.Equal(DenSound.Track.None, m.Want);
+        m.Update(false, false, 1); m.Update(true, false, 1);                     // a new den run begins again
+        Assert.Equal(DenSound.Track.Explore, m.Want);
+    }
+
+    [Fact]
+    public void ThePackIsHeardFarOffBeforeTheFirstFightAndNeverDuringOrAfter()
+    {
+        var r = new DenSound.PackFarRule();
+        int heard = 0;
+        for (double t = 0; t < 120; t += 0.1) if (r.Admit(true, false, 0.1, 0.5)) heard++;
+        Assert.InRange(heard, 2, 4);
+        Assert.False(r.Admit(true, true, 0.1, 0.5));       // a fight begins
+        for (double t = 0; t < 200; t += 0.1) Assert.False(r.Admit(true, false, 0.1, 0.5));   // and the pack is never far again
+        Assert.False(new DenSound.PackFarRule().Admit(false, false, 100, 0.5));   // not in the den
+    }
+
     /// <summary>The 5-wolf pack fight the limiter's numbers were picked from: every voice the sim wants, offered nearest first.</summary>
     internal sealed record Row(double T, string Kind, string Moment, double Dist, bool Played);
 
@@ -114,21 +142,9 @@ public class DenSoundTests
         for (double t = 0; t < 40; t += dt)
         {
             b.Tick(dt, Math.Sin(t * 0.7) * 0.3, Math.Cos(t * 0.7) * 0.3);
-            var want = new List<(string Kind, string Moment, double Dist)>();
-            foreach (var ev in b.Events.Drain())
-            {
-                switch (ev)
-                {
-                    case Ev.Voice v when DenSound.KindOf(v.Def) is { } k:
-                        want.Add((k, v.Moment, Math.Sqrt((v.X - b.Player.X) * (v.X - b.Player.X) + (v.Z - b.Player.Z) * (v.Z - b.Player.Z)))); break;
-                    case Ev.Hit h when h.Def != null && h.Target >= 0 && DenSound.KindOf(h.Def) is { } k2 && !h.Dot:
-                        want.Add((k2, "hurt", Math.Sqrt((h.X - b.Player.X) * (h.X - b.Player.X) + (h.Z - b.Player.Z) * (h.Z - b.Player.Z)))); break;
-                    case Ev.Kill kl when DenSound.KindOf(kl.Def) is { } k3:
-                        want.Add((k3, "death", Math.Sqrt((kl.X - b.Player.X) * (kl.X - b.Player.X) + (kl.Z - b.Player.Z) * (kl.Z - b.Player.Z)))); break;
-                }
-            }
+            var want = DenSound.Wants(b.Events.Drain(), b.Player.X, b.Player.Z);
             wanted += want.Count;
-            foreach (var w in want.OrderBy(x => x.Dist).Where(x => x.Dist <= DenSound.MaxHearing))
+            foreach (var w in want)
                 rows.Add(new Row(t, w.Kind, w.Moment, w.Dist, limiter.Admit(w.Kind, w.Moment, t)));
         }
         return rows;
@@ -182,7 +198,7 @@ public class DenSoundTests
         var data = SoundBankData.Parse(File.ReadAllText(Path.Combine(root, "data", "content", "sounds.json")));
         var fam = JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(Path.Combine(root, "art", "sound", "sounds.json")))!;
         var ids = new List<string> { "bed.den", "den.pits", "den.pack_far", "music.den.explore", "music.den.boss", "music.den.falls",
-            "her.grunt", "her.leap", "her.land", "dodge", "dodge.perfect", "her.stance", "heartbeat", "voice.wolf.bite" };
+            "her.grunt", "her.leap", "her.land", "her.dodge", "dodge.perfect", "her.stance", "heartbeat", "voice.wolf.bite" };
         foreach (var k in new[] { "wolf", "wolfb", "boar", "yearling" })
             foreach (var m in new[] { "notice", "lunge", "death" }) ids.Add($"voice.{k}.{m}");
         foreach (var m in new[] { "arrival", "drive", "hamstring", "moonhowl", "phase", "call", "death" }) ids.Add($"voice.packmother.{m}");

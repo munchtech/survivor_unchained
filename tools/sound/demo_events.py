@@ -65,7 +65,7 @@ ev("voice.packmother.death", "sfx", "voice_packmother_death", 0.8, near=1, stere
 ev("her.grunt", "sfx", "her_grunt", 0.55, pitch=[0.97, 1.03], near=1)
 ev("her.leap", "sfx", "her_leap", 0.6, pitch=[0.98, 1.02], near=1)
 ev("her.land", "sfx", "her_land", 0.6, pitch=[0.98, 1.02], near=1)
-ev("dodge", "sfx", "her_dodge", 0.55, pitch=[0.97, 1.03], near=1, synth="under")
+ev("her.dodge", "sfx", "her_dodge", 0.55, pitch=[0.97, 1.03], near=1)
 ev("dodge.perfect", "sfx", "her_perfect", 0.6, near=1, synth="under")
 ev("her.stance", "sfx", "her_stance", 0.5, near=1)
 ev("heartbeat", "sfx", "her_heartbeat", 0.6, near=1)

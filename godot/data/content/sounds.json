@@ -214,7 +214,7 @@
     "her.grunt": {"bus": "sfx", "near": 1, "layers": [{"take": "her_grunt", "gain": 0.55, "pitch": [0.97, 1.03]}]},
     "her.leap": {"bus": "sfx", "near": 1, "layers": [{"take": "her_leap", "gain": 0.6, "pitch": [0.98, 1.02]}]},
     "her.land": {"bus": "sfx", "near": 1, "layers": [{"take": "her_land", "gain": 0.6, "pitch": [0.98, 1.02]}]},
-    "dodge": {"bus": "sfx", "near": 1, "synth": "under", "layers": [{"take": "her_dodge", "gain": 0.55, "pitch": [0.97, 1.03]}]},
+    "her.dodge": {"bus": "sfx", "near": 1, "layers": [{"take": "her_dodge", "gain": 0.55, "pitch": [0.97, 1.03]}]},
     "dodge.perfect": {"bus": "sfx", "near": 1, "synth": "under", "layers": [{"take": "her_perfect", "gain": 0.6}]},
     "her.stance": {"bus": "sfx", "near": 1, "layers": [{"take": "her_stance", "gain": 0.5}]},
     "heartbeat": {"bus": "sfx", "near": 1, "layers": [{"take": "her_heartbeat", "gain": 0.6}]}
