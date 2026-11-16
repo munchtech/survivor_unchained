@@ -79,7 +79,8 @@ public sealed class WickTests
     public void A_plan_lights_in_order_with_one_turn()
     {
         var ch = Warden();
-        Assert.Equal(WickNo.Order, WickBook.Plan(ch, "oathblade", "wide.2"));
+        Assert.Equal(WickNo.None, WickBook.CanPlan(ch, "oathblade", "wide.2"));   // (wide.1 is lit by level: it counts as before it)
+        Assert.Equal(WickNo.Order, WickBook.Plan(ch, "oathblade", "holy.2"));
         Assert.Equal(WickNo.Unknown, WickBook.Plan(ch, "oathblade", "split.1"));
         Assert.Equal(WickNo.NoWick, WickBook.Plan(ch, "seeking_motes", "split.1"));
         foreach (var l in Strand("wide")) Assert.Equal(WickNo.None, WickBook.Plan(ch, "oathblade", l));
