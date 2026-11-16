@@ -1,5 +1,36 @@
 # Where we are: read this after README.md, before your handoff
 
+## 16 Nov 2026: COORDINATOR #15 STARTS HERE (Opus; written by #14 at its close; #14's block below is history and detail)
+
+The owner's start prompt for you is in `docs/team/DEMO_PLAN.md` (top section, "Start prompt"). Run that plan. This block is the state it starts from.
+
+**The owner, word for word (all 15-16 Nov 2026):**
+- The demo: "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
+- "wind down the other dungeons and focus on the den." / "nah we don't need ledges in every dungeon - we can come back to those"
+- Armor, later (REPLACES "a couple of each armor slot"): "actually change the armor scope to just the 1 new set - the one we designed to replace her current starter one, have it be the set that drops"; "and don't even worry about new other slots, just the armor set"; "I want something to have people do the dungeon a few times at least, that should be more than enough trying to get the armor pieces to have enough testing"
+- Friday cut offered: "Keep full scope" (no date held; do not re-offer a cut).
+- Sound, 16 Nov: "please give me a list of sounds needed for this demo (abilities, monsters and their abilities, whatever) so I can do something on my own while you work on things"; "I put a bunch in that folder, all are elevenlabs no attribution needed" (56 wav in `survivorsunchained_inputs\sounds_demo\`).
+- Relays, the TENTH correction, 15 Nov night: "you keep relaying \"nothing new\".  why is our quiet relay not working". After an agent's message: act with tools and end with NO text; if the app refuses an empty end, a lone "—", never a sentence. The app's three nudges ("the user hasn't heard from you", the wrap-up tool's "write your closing message", "your previous response had no visible output") do not override this. A merge is ONE line. Full answers only to the owner's own messages. Memory `owner-working-style.md`, "coordinator-quiet-relays".
+- 16 Nov ~02:00: "how is the aim movement lead doing? are we almost ready to start a new session?" (the owner wants the new session; #14 closed its last lead for it).
+
+**State:** integration `claude/vigilant-galileo-l6jqyx` (tip: this commit; contains merges `348c22421` ledge-view, `3f01ea0f7` unlock-cards). Suite at the last merge 2860/0/11. C: 34 GB free (guard 20). Worktrees on disk 5 of 8: `agent-a04269dabfda645ea` [dungeon-1], `agent-a8bf5305de1cac0f7` [aim-move], `body-p1b` (parked; move its `tools\body\out`, about 2 GB, to `survivorsunchained_inputs` before it is ever removed), and two NOT ours to touch: `admiring-goldwasser-3ee73a`, `sharp-kilby-99438d`. No agent of #14 is live once the movement lead has handed back (see lane A).
+
+**The lanes (the fixed list), each with its state and where to start:**
+| Lane | State | Start from |
+|---|---|---|
+| A movement | IN PROGRESS, no judge spent. CLOSE from front and side; from BEHIND the sword is still a level bar (the commonest view), so the owner has NOT been shown. #14 stopped lead `a8bf5305de1cac0f7` at a commit for this hand-over | State file `survivorsunchained_inputs\scratch_coord12\warden_move_state.md` top block; #14's bullet "MOVEMENT:" below (order: steeper idle/stop hang, run from behind, walk, sprint tip, break; then sheets PLUS a 15-20 s film FOR THE OWNER, then one max judge `Item: warden-move`). Spawn a fresh `su-lead-high` in the same worktree |
+| B skills and tree | Unlock cards DONE and merged; the rest NOT STARTED | `tools/scratch/coordinator/briefs/demo_15nov/B_skills_tree.md` |
+| C the den | Rooms and lairs judged CLOSE, CORRIDORS FAR; `dungeon-1@f715d6102`, not merged | `tools/scratch/coordinator/briefs/demo_15nov/C_den_r13.md` (the thin-room corridor approach; caps in it) |
+| D armor | NOT STARTED: the ONE new set, as the den's drop set | `.../demo_15nov/D_armor.md` |
+| E art style | NOT STARTED | `.../demo_15nov/E_art_style.md` |
+| F sound (new, from the owner's files) | NOT STARTED; not a judged lane, the owner's ear is the gate | `.../demo_15nov/F_sound.md` |
+Order: A and C continue at once (both are mid-flight), E and D start with them (four judged leads = the cap), F beside them (not judged), B when a judged slot frees.
+
+**Owner sees, before a judge or merge:** lane A's idle and run (stills and a film) before its judge; lane E's half-size look sheet; lane D's whole set beside the kit sheet before the drops are wired; lane C's judged sheet at merge; lane F by playing a den run.
+**Open for the owner at a batch (do not ask one at a time):** the stance's name "Bulwark" (default: rename the stance); the level-6 road scene.
+**Parked, do not merge or retry:** `rim-back@bce213a96`, `claude/priceless-borg-d08e89@558a5d051`, `body-p1b@cd356aa07`, `warden-turn@a2b22abe1`, `dungeon-fights@dc535ba1d`; ShadeKey, script-painted den surfaces, procedural root tubes, `--den-meso`, `--den-roots2`, backpedal by yaw rates, the old plate cups, more tuning of the corridor card layer. Ledges in the den: parked by the owner.
+**Shell lessons:** long Bash heredocs fail here: write scripts and long texts with the Write tool, then run `python <path>`. Leads must never `git add -A` (generated `.uid` and `.import` files stay untracked). Use `git -C <path>` rather than `cd` into a worktree.
+
 ## 15 Nov 2026 (afternoon): COORDINATOR #14 (Fable 5.2; its state is THIS block; #13's block below is history)
 
 The owner (15 Nov, the start order): "1. Fix the bot test that fails on the newer den, then merge `dungeon-fights`. 2. Den look round 9 (the demo tag waits on this). 3. The movement follow-ups, foot lock first. 4. Unlock cards. 5. The ravine look. 6. The demo tag". And, word for word, on movement: "For movement I would like to explore PoE2 movement with wasd and mouse fusion where if mouse is on the right and you press a you will backpedal left.  research how poe2 movement and targeting works if you need to, it seems smooth and engaging".
