@@ -665,32 +665,45 @@ def belt(cfg, ref):
             # two hinged lames (the sheet's): the upper rides her pelvis (short, above the hip joint), the lower hangs
             # OUTSIDE its bottom edge by `lap` and rides her thigh (its own node: its own blend, the mean of her
             # weights over it), so it swings with the thigh and slides under nothing; a plate without "split" is one.
-            R_ = G.shape[0]
+            R_, C_ = G.shape[:2]
             if pl.get("split"):
                 k_ = int(round(pl["split"] * (R_ - 1)))
                 sp = pl.get("lap_rows", 2)
-                lames = [("_up", slice(0, k_ + 1), 0.0, False), ("_lo", slice(max(k_ - sp, 0), R_), pl.get("lap", 0.004), True)]
+                lo = slice(max(k_ - sp, 0), R_)
+                lames = [("_up", slice(0, k_ + 1), slice(0, C_), 0.0, False, "lbr")]
+                if pl.get("halves"):  # (the lower lame cut at the centre column: each half its own node on its own thigh,
+                    # no rim on the seam (the keel's ridge line), so at rest the two read as one V)
+                    c_ = C_ // 2
+                    lames += [("_lo_l", lo, slice(c_, C_), pl.get("lap", 0.004), True, "br"),
+                              ("_lo_r", lo, slice(0, c_ + 1), pl.get("lap", 0.004), True, "lb")]
+                else:
+                    lames.append(("_lo", lo, slice(0, C_), pl.get("lap", 0.004), True, "lbr"))
             else:
-                lames = [("", slice(0, R_), 0.0, True)]
-            for sfx, rs, push, band_on in lames:
-                Gl, Nl = G[rs] + Nn[rs] * push, Nn[rs]
-                exl = None if ex is None else ex[rs]
+                lames = [("", slice(0, R_), slice(0, C_), 0.0, True, "lbr")]
+            for sfx, rs, cs, push, band_on, sides in lames:
+                Gl, Nl = G[rs, cs] + Nn[rs, cs] * push, Nn[rs, cs]
+                exl = None if ex is None else ex[rs, cs]
                 plate_p = kb.slab(nm + sfx + "_rigid", M["plate"], Gl, Nl, pt_th, extra=exl)
                 plate_p.name = nm + sfx + "_rigid"
                 rigid.append(plate_p)
-                # its rim (all but the top, which is under the belt or the lame above): one rigid gold part with the band
-                E = np.vstack([Gl[:, 0], Gl[-1, 1:], Gl[::-1, -1][1:]])
+                # its rim (all but the top, which is under the belt or the lame above; `sides` l/b/r: the left column,
+                # bottom row, right column): one rigid gold part with the band
+                E = np.vstack(([Gl[:, 0]] if "l" in sides else []) + ([Gl[-1, (1 if "l" in sides else 0):]] if "b" in sides else [])
+                              + ([Gl[::-1, -1][1:]] if "r" in sides else []))
                 gold = [kb.bead(Normals(Gl.reshape(-1, 3), Nl.reshape(-1, 3)), nm + sfx + "_rim", M["trim"], E, rim, edge_off,
                                 False, relax_it=1)]
                 if pl.get("band") and band_on:
                     b_ = pl["band"]
                     Gs = Gl + Nl * (pt_th + (0 if exl is None else exl[..., None]))
-                    gold += interlace(Gs, Nl, 1.2, len(ths) - 2.2, b_["v"][0], b_["v"][1], b_["wl"], nm + sfx + "_band",
+                    gold += interlace(Gs, Nl, 1.2, Gl.shape[1] - 2.2, b_["v"][0], b_["v"][1], b_["wl"], nm + sfx + "_band",
                                       M["trim"], 0.0, [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
                                                        dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
                 # (the SAME node name as its plate: the importer reads them as one source part (`<name>_rigid`, `.001`),
                 # whose parts ride ONE common blend (piece_blender by_src), so the gold never drifts off its steel)
                 rigid.append(Part.join(nm + sfx + "_rigid", M["trim"], gold))
+                rd = pl.get("rides", {}).get(sfx)
+                if rd is not None and hg:  # (its own single-bone ride: a skinned plate that pivots whole, params.rigid_ride)
+                    ride_out.append({"match": nm + sfx, "weights": side_ride(rd, h) if pl.get("mirror", True) else dict(rd), "mix": 1.0})
             print(nm, "tilt", np.round(tilt.min(), 1), np.round(tilt.max(), 1), "len", np.round(length.max(), 3))
     if hg:  # each lame's ride, into the piece's install params (pin_shipped params.rigid_ride; first match wins)
         pid = cfg["piece"]["id"]
