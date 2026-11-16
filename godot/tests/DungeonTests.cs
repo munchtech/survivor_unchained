@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Content;
 using SurvivorUnchained.Maps;
+using SurvivorUnchained.Sim;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -103,5 +105,58 @@ public class DungeonTests
         var r = SurvivorUnchained.Balance.MapSim.Play(new SurvivorUnchained.Balance.MapRunSpec(seed, "warden", 1, def.People, id == "roost" ? 7 : 6, 1, [], "deft", 25, id));
         _out.WriteLine($"{id} {seed}: {r.Minutes:0.0} min, packs {r.PacksCleared}/{r.Packs}, items {r.Items}, falls {r.Falls}");
         Assert.True(r.Cleared, $"{id} seed {seed} not cleared (closed {r.Closed}, falls {r.Falls}, packs {r.PacksCleared}/{r.Packs})");
+    }
+    /// <summary>(the owner, 15 Nov evening: no ledges in the den for now) A normal foe knocked into a den wall stops there alive.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(23)]
+    public void A_normal_foe_knocked_into_a_den_wall_lives(int seed)
+    {
+        var wall = Make("hollow", seed).Meta.Colliders.Where(c => c.Tag == "wall").OrderByDescending(c => c.Hd).First();
+        var col = new CollisionWorld(400);
+        col.AddBox(wall.X, wall.Z, wall.Hw, wall.Hd, 0, new ColliderOpts(Tag: "wall", Drop: wall.Drop));
+        var b = new Battle(new BattleSetup { Seed = (uint)seed, Collision = col, Combat = true, Campaign = true, Stats = BattleTests.BaseStats(), Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash });
+        b.Player.X = wall.X - wall.Hw - 12; b.Player.Z = wall.Z;
+        var e = b.SpawnEnemy("risen", wall.X - wall.Hw - 1.5, wall.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk })!;
+        e.Kbx = 60;
+        for (int i = 0; i < 120; i++) b.Tick(1.0 / 60, 0, 0);
+        Assert.True(e.Alive && e.State != EnemyState.Dying && !e.Fell, $"hollow {seed}: knocked into its wall, it died");
+        Assert.Equal(0, b.LedgeKillCount);
+        Assert.True(e.X < wall.X - wall.Hw, "it stopped at the wall");
+    }
+
+    /// <summary>(Ledge view, 15 Nov) Where a wall is a drop follows what the play camera sees (data/content/ledge.json "edges"): the
+    /// den has none (parked, 15 Nov evening: its banks rise, and its pits are off); the ravine's back cliff stops it and its near
+    /// and side edges drop.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(23)]
+    public void A_dungeons_drops_are_where_its_view_falls_away(int seed)
+    {
+        // (the owner, 15 Nov evening: no ledges in the den for now) Its walls and pits all stop a foe.
+        var den = Make("hollow", seed);
+        var walls = den.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
+        Assert.NotEmpty(walls);
+        Assert.DoesNotContain(walls, c => c.Drop);
+        var ravine = Make("roost", seed);
+        var rw = ravine.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
+        double dropA = rw.Where(c => c.Drop).Sum(c => c.Hw * c.Hd), riseA = rw.Where(c => !c.Drop).Sum(c => c.Hw * c.Hd);
+        _out.WriteLine($"seed {seed}: hollow drops {walls.Count(c => c.Drop)} of {walls.Count}; roost drop area {dropA * 4:0} m2, cliff {riseA * 4:0} m2");
+        Assert.True(dropA > 0 && riseA > 0, "the ravine has both its drops and its cliff");
+        // The cliff stands at the back: every rising box has walkable ground to its south (toward the lens), none to its north.
+        var walk = ravine.Walkable; int res = (int)Math.Round(Math.Sqrt(walk.Length)), half = res / 2;
+        bool W(double x, double z) { int i = (int)Math.Round(x) + half, j = (int)Math.Round(z) + half; return i >= 0 && j >= 0 && i < res && j < res && walk[j * res + i]; }
+        int faced = 0, total = 0;
+        foreach (var c in rw.Where(c => !c.Drop))
+        {
+            bool south = false, north = false;
+            for (double x = c.X - c.Hw; x <= c.X + c.Hw; x += 1) { south |= W(x, c.Z + c.Hd + 1); north |= W(x, c.Z - c.Hd - 1); }
+            if (south || north) total++;
+            if (south && !north) faced++;
+        }
+        _out.WriteLine($"roost {seed}: cliff boxes on the way {total}, from the back {faced}");
+        Assert.True(faced >= total * 0.6, $"roost {seed}: {faced} of {total} cliff boxes face the lens from the back");
     }
 }

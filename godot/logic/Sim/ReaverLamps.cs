@@ -117,7 +117,7 @@ public sealed partial class Battle
         // (M3 MR 3) a chained cut pulls its share of the blow's pull (w.CutW is live inside its cast, 1 otherwise), as
         // the cut's own knockback is weighed in HitEnemy: the pull a second holds.
         double k = 0.8 * w.CutW * Stats.Get(Stat.Knockback) * 7 / Math.Max(0.5, last.Mass) * (last.Elite ? 0.35 : 1);
-        last.Kbx += dx / d * k;
+        last.Kbx += dx / d * k; last.KbBy = w.Id;
         last.Kbz += dz / d * k;
     }
 

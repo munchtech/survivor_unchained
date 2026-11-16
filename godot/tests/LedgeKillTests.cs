@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
@@ -109,6 +109,24 @@ public class LedgeKillTests
             return $"{b.LedgeKillCount}/{b.KillCount}/" + string.Join(",", b.Pickups.Items.Where(p => p.Alive).Select(p => $"{p.X:0.000}:{p.Z:0.000}"));
         }
         Assert.Equal(One(), One());
+    }
+
+    [Fact]
+    public void A_ledge_kill_is_the_pushing_skills_kill_and_damage()
+    {
+        var b = Edge();
+        var w = b.Weapons.First(x => x.Id == "oathblade");
+        var e = b.SpawnEnemy("risen", 8.5, 1, new Battle.SpawnOpts { Style = SpawnStyle.Walk })!;
+        int kills0 = w.Kills;
+        b.HitEnemy(e, 1, School.Physical, [Tag.Melee], new HitOpts { Weapon = w, Knockback = 3, DirX = 1, NoProcs = true });
+        Assert.True(e.Alive && e.State != EnemyState.Dying, "the blow alone does not kill it");
+        Assert.Equal("oathblade", e.KbBy);
+        double left = e.Hp, dealt = b.DamageBy.GetValueOrDefault("oathblade");
+        Run(b, 1.5);
+        Assert.True(e.Fell, "the push carried it over");
+        Assert.Equal(kills0 + 1, w.Kills);
+        Assert.Equal(dealt + left, b.DamageBy.GetValueOrDefault("oathblade"), 3);
+        Assert.False(b.DamageBy.ContainsKey("other"), "nothing of the fall is credited to no one");
     }
 }
 
