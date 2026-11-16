@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://c3n58635skgeg"
+path="res://.godot/imported/B1.png-c472703b1781bd7b5edfdf6621b2f1b9.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/dungeon/den/set/B1.png"
+dest_files=["res://.godot/imported/B1.png-c472703b1781bd7b5edfdf6621b2f1b9.ctex"]
 
 [params]
 

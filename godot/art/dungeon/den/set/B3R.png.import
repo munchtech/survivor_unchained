@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://blv45l5gtfqjh"
+path="res://.godot/imported/B3R.png-a3ed8dcf2e19fab0e572c7c8c6f958f3.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/dungeon/den/set/B3R.png"
+dest_files=["res://.godot/imported/B3R.png-a3ed8dcf2e19fab0e572c7c8c6f958f3.ctex"]
 
 [params]
 

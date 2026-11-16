@@ -53,10 +53,6 @@ public static class DungeonFloor
                 mat.SetShaderParameter("den_tint", new Vector3(float.Parse(tp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(tp[2], System.Globalization.CultureInfo.InvariantCulture)));
             mat.SetShaderParameter("moss_k", Args.Num("den-moss", 0.35f));
             mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.65f));
-            // (den r9 floor) the meso layer: stones, clods, litter, plates, cracks (tools/look/den_floor_paint.py); --den-meso 0..1
-            mat.SetShaderParameter("den_meso", GD.Load<TextureLayered>("res://art/dungeon/den/meso_albedo.png"));
-            mat.SetShaderParameter("den_aux", GD.Load<TextureLayered>("res://art/dungeon/den/meso_aux.png"));
-            mat.SetShaderParameter("meso_k", Args.Num("den-meso", 0f));
             if (DungeonDress.SetMode > 0 && Args.Num("den-set-floor", 1f) > 0f)   // (den round 10: the painted set's floor tiles)
             {
                 mat.SetShaderParameter("set_floor", GD.Load<TextureLayered>("res://art/dungeon/den/set/floor.png"));
