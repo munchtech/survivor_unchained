@@ -470,7 +470,7 @@ public static class MapGen
         foreach (var (i0, j0, w, h) in Merge(outside, 4.5))
         {
             double hw = w / 2.0, hd = h / 2.0;
-            colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = i0 - half - 0.5 + hw, Z = j0 - half - 0.5 + hd, Hw = hw, Hd = hd, R = Math.Sqrt(hw * hw + hd * hd), Tag = "wall" });
+            colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = i0 - half - 0.5 + hw, Z = j0 - half - 0.5 + hd, Hw = hw, Hd = hd, R = Math.Sqrt(hw * hw + hd * hd), Tag = "wall", Drop = lay != null });
         }
 
         // ----------------------------------------------------------- packs --

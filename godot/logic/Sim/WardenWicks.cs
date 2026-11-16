@@ -595,9 +595,7 @@ public sealed partial class Battle
                     if (e.Elite || e.Boss || !marched.Add(Lifetime.Of(e))) continue;
                     double vl = Len(p.Vx, p.Vz), sx = -p.Vz / vl, sz = p.Vx / vl;
                     if ((e.X - p.X) * sx + (e.Z - p.Z) * sz < 0) { sx = -sx; sz = -sz; }
-                    e.X += sx * Wn("iron_vow.iron_march", "shove", 2);
-                    e.Z += sz * Wn("iron_vow.iron_march", "shove", 2);
-                    Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+                    ForceTo(e, e.X + sx * Wn("iron_vow.iron_march", "shove", 2), e.Z + sz * Wn("iron_vow.iron_march", "shove", 2));
                 }
         }
     }
@@ -611,10 +609,8 @@ public sealed partial class Battle
         double dx = e.X - fx, dz = e.Z - fz, l = Len(dx, dz);
         if (l < 0.01) { dx = Math.Sin(Player.Facing); dz = Math.Cos(Player.Facing); l = 1; }
         double to = Math.Max(Player.Radius + e.Radius + 0.1, l + d);
-        e.X = fx + dx / l * to;
-        e.Z = fz + dz / l * to;
         e.Kbx = e.Kbz = 0;
-        Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+        ForceTo(e, fx + dx / l * to, fz + dz / l * to);
     }
 
     void Stun(Enemy e, double seconds)

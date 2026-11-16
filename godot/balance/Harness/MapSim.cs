@@ -28,6 +28,8 @@ public sealed class MapRunResult
     /// <summary>(M3) What her feet did in the fights (Pilot.Meter).</summary>
     public Pilot.FeetMeter Feet = new();
     public int Falls, Kills, Packs, PacksCleared, Quaffs, Items, Charts, Gold;
+    /// <summary>(Ledge kills) Her credited kills in the run, and how many of them were foes forced over an edge.</summary>
+    public int AllKills, LedgeKills;
     /// <summary>What crafting reads (docs/CRAFTING_DESIGN.md 20.1): the people's own material and the
     /// ember shards picked up, the old iron the gear would break down to, and the rulers' Marks.</summary>
     public int Material, Shards, Iron, Marks;
@@ -126,6 +128,8 @@ public static class MapSim
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
         b.Hooks = BattleHooks.Following(zh);
+        // MAP_LEDGE=0: the ledge-kill rule off (what it changes, measured against the same seeds).
+        if (Environment.GetEnvironmentVariable("MAP_LEDGE") == "0") b.LedgeKills = false;
         // (dungeon-fights) As the game wires it (Game.cs HookBattle): a kill teaches her first, then the zone sees it. Dungeons only: the old map numbers stay.
         if (spec.Dungeon != "") b.Hooks.OnKill = (e, byPlayer) => { j.Killed(e, byPlayer); zh.OnKill?.Invoke(e, byPlayer); };
         int gear = 0, iron = 0, marks = 0;
@@ -163,6 +167,7 @@ public static class MapSim
         bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1", hits = Environment.GetEnvironmentVariable("MAP_HITS") == "1";
         // MAP_HITS=1: every blow that lands on her (all fights, not the ruler's only); MAP_TRACE_EVERY=s: seconds between trace lines (default 10).
         double traceEvery = double.TryParse(Environment.GetEnvironmentVariable("MAP_TRACE_EVERY"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var te) && te > 0 ? te : 10;
+        var foeWin = Environment.GetEnvironmentVariable("MAP_FOE") is { Length: > 0 } fw ? fw.Split(',').Select(v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : null;
         var packs = new List<double>();
         // (M3) The hands on the one press plan (Sim/PressPlan.cs), as ZoneSim's.
         var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
@@ -299,6 +304,9 @@ public static class MapSim
             if (zone.Cleared && clearedAt < 0) clearedAt = t;
             if (zone.Cleared && !zone.Over && t - clearedAt > 8) zone.Leave();
             if (!p.Alive) break;
+            // MAP_FOE=from,to (minutes): every tick the ruler's place, speed and whether it overlaps solid (why a foe sits where it does).
+            if (foeWin != null && t / 60 >= foeWin[0] && t / 60 <= foeWin[1] && zone.Boss is { } fb)
+                Console.Error.WriteLine($"FOE {t / 60:0.0000} ({fb.X:0.000},{fb.Z:0.000}) r {fb.Radius:0.00} v ({fb.Vx:0.00},{fb.Vz:0.00}) kb ({fb.Kbx:0.0},{fb.Kbz:0.0}) {fb.State} {fb.Anim} blocked {b.Collision.Blocked(fb.X, fb.Z, fb.Radius)} flow {(b.Flow.Dir(fb.X, fb.Z, out var ffx, out var ffz) ? $"({ffx:0.00},{ffz:0.00})" : "none")} her ({p.X:0.00},{p.Z:0.00})");
             // MAP_TRACE=1: where the hands are every ten seconds (why a map was not finished).
             if (trace && (int)(t / traceEvery) != (int)((t + Dt) / traceEvery))
                 Console.Error.WriteLine($"{t / 60:0.00} at ({p.X:0.0},{p.Z:0.0}) m ({mx:0.00},{mz:0.00}) v ({p.Vx:0.0},{p.Vz:0.0}) blocked {b.Collision.Blocked(p.X, p.Z, p.Radius)} leap {p.Leap != null} dash {p.DashT:0.00} slow {p.SlowF:0.00} spd {b.Stats.Get(Stat.MoveSpeed):0.0} over {b.Over} stuck {stuck:0.0} to go {along:0} m onward ({onward.X:0},{onward.Z:0}) roused {b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && (e.Wake == 0 || e.Roused))} hp {p.Hp:0}/{b.MaxHp:0} packs {zone.PacksCleared}/{zone.PacksPlaced}" + Near(b, p));
@@ -320,6 +328,7 @@ public static class MapSim
         r.Minutes = (clearedAt >= 0 ? clearedAt : t) / 60;
         r.Falls = zone.Falls;
         r.Kills = zone.Kills;
+        r.AllKills = b.KillCount; r.LedgeKills = b.LedgeKillCount;
         r.PacksCleared = zone.PacksCleared;
         r.BossTtk = zone.Result?.BossTtk;
         r.BossPhase = zone.BossScript?.PhaseIx ?? -1;

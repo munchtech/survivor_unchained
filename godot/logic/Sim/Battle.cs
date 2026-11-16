@@ -543,7 +543,7 @@ public sealed partial class Battle
             if (Lamps.Board) BoardTick(dt);
             TickFlare(dt);
         }
-        foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
+        foreach (var e in Enemies.Items) if (e.Alive) { Collision.IgnoreDrops = e.Edge; Ai.Update(this, e, wdt); KeepOutOfSolid(e); Collision.IgnoreDrops = false; }
         UpdateProjectiles(dt, wdt);
         UpdateZones(dt);
         UpdateStrikes(dt);
@@ -554,6 +554,15 @@ public sealed partial class Battle
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
         // The Flare's marks the view shows until the next tick, from where things stand now (FlareMarks.cs).
         FlareMarksTick(dt);
+    }
+
+    /// <summary>No foe ends a step inside solid: whatever moved it this tick (a knockback, a pull, a charge, a script's dash, a
+    /// spawn on a wall) it is set on open ground, pinched or not (CollisionWorld.Resolve squeezes it or finds the nearest open
+    /// spot). Pieces it may cross by design (a burrower underground, a boss over its gaps) are not its walls.</summary>
+    void KeepOutOfSolid(Enemy e)
+    {
+        if (e.State is EnemyState.Dying or EnemyState.Burrowed) return;
+        if (Collision.Depth(e.X, e.Z, CollisionWorld.WallRadius(e.Radius), overGaps: true) > CollisionWorld.Slop) Collision.Resolve(ref e.X, ref e.Z, e.Radius, overGaps: true);
     }
 
     void RebuildSpatial()
@@ -1285,19 +1294,21 @@ public sealed partial class Battle
         }
         // A spectacular death is a reward (DeathShow): a crit, an overkill or an elite, a share of them, at a capped rate.
         // A Burst comes apart (fire does it its own way); a Launch is thrown along the blow; the rest fall.
-        var show = DeathShows.Decide(Time, e.Id, KillCount, e.Boss, credited, e.LastCrit, e.LastBlow, e.Elite, e.LastSchool == School.Fire);
+        var show = e.Fell ? DeathKind.Fall : DeathShows.Decide(Time, e.Id, KillCount, e.Boss, credited, e.LastCrit, e.LastBlow, e.Elite, e.LastSchool == School.Fire);
+        // (Ledge kills) what its death does on the ground happens at the ledge, not over the drop.
+        double lx = e.Fell ? e.LedgeX : e.X, lz = e.Fell ? e.LedgeZ : e.Z;
         bool burst = show == DeathKind.Burst;
         e.Burst = burst; e.Launch = show == DeathKind.Launch;
         var kill = new Ev.Kill
         {
             X = e.X, Z = e.Z, Enemy = e.Id, Def = e.Def.Id, Family = e.Def.Family, School = e.LastSchool, Elite = e.Elite, Boss = e.Boss,
-            ByPlayer = credited, Burst = burst, Launch = e.Launch, ByFlare = credit == "flare", Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1,
+            ByPlayer = credited, Burst = burst, Launch = e.Launch, ByFlare = credit == "flare", Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1, Fell = e.Fell,
         };
         // A mass kill is one moment: once the step has felled massFrom, every body it felled (hers, not the Flare's, which
         // shows its own) is re-shown, the first few thrown out from her and the rest toppled (its earlier kills' events are
         // still this step's, unread, so they are rewritten with it).
         if (Time != massStepT) { massStepT = Time; massStep.Clear(); }
-        if (credited && credit != "flare" && !e.Boss && e.Disposition != Disposition.Ally) massStep.Add((e, kill));
+        if (credited && credit != "flare" && !e.Boss && !e.Fell && e.Disposition != Disposition.Ally) massStep.Add((e, kill));
         if (DeathShows.Mass)
         {
             for (int i = 0; i < massStep.Count; i++)
@@ -1310,57 +1321,59 @@ public sealed partial class Battle
             if (massStep.Count > 0) massGraceUntil = Math.Max(massGraceUntil, Time + MassKillGrace);
         }
         Events.Emit(kill);
-        Graves.Add((e.X, e.Z, e.Def.Id, Time));
+        Graves.Add((lx, lz, e.Def.Id, Time));
 
+        if (e.Fell) { ledgeLoot = e; ledgeUsed.Clear(); }
         if (e.Disposition != Disposition.Ally)
         {
             // The dead leave a stone with light still in it.
             double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain * (credited ? Rules.KillEmber : 1);
-            if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
+            if (xp > 0 && EmberOn && !e.Raised) DropEmber(lx, lz, xp);
             if (credited)
             {
                 double luck = Stats.Get(Stat.Luck);
-                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Boss || e.Def.Miniboss ? 1 : e.Elite ? Rules.ChampionGold : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
-                if (Rng.Next() < (0.012 * luck * FodderHeals + (e.Elite ? 0.4 * EliteHeals : 0))) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
-                if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, e.X, e.Z, 1);
+                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Boss || e.Def.Miniboss ? 1 : e.Elite ? Rules.ChampionGold : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, lx, lz, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
+                if (Rng.Next() < (0.012 * luck * FodderHeals + (e.Elite ? 0.4 * EliteHeals : 0))) SpawnPickup(PickupKind.Heal, lx, lz, e.Elite ? 40 : 25);
+                if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, lx, lz, 1);
                 if (Hooks.OnLoot != null)
                     foreach (var d in Hooks.OnLoot(e))
                     {
-                        var pk = SpawnPickup(d.Kind, e.X, e.Z, d.Value, d.Ref);
+                        var pk = SpawnPickup(d.Kind, lx, lz, d.Value, d.Ref);
                         if (d.Persistent) pk.Persistent = true;
                         if (d.Rarity is { } r) pk.Tier = r;
                         Dress(pk, d);
                     }
             }
         }
+        ledgeLoot = null;
         // Death verbs.
         if (e.Disposition == Disposition.Hostile && !e.Boss)
         {
             // The map's oath: the dead burn, or burst.
             if (Rules.DeathFire && Rng.Next() < 0.3)
             {
-                var zn = SpawnZone(Side.Enemy, e.X, e.Z, 1.4, 3.5, e.Damage * 0.35, School.Fire);
+                var zn = SpawnZone(Side.Enemy, lx, lz, 1.4, 3.5, e.Damage * 0.35, School.Fire);
                 if (zn != null) { zn.Tags = [Tag.Zone]; zn.Art = "zone_fire_enemy"; }
             }
             if (Rules.DeathBurst && Rng.Next() < 0.22 && Charges.MayFuse(this, 0.7))
             {
-                Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = 1.8, Duration = 0.7, Hostile = true });
-                strikes.Add(new StrikeSpec(e.X, e.Z, 1.8, e.Damage * 0.9, School.Shadow, [Tag.Explosion], 0.7, null, Side.Enemy, 0));
+                Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = lx, Z = lz, Radius = 1.8, Duration = 0.7, Hostile = true });
+                strikes.Add(new StrikeSpec(lx, lz, 1.8, e.Damage * 0.9, School.Shadow, [Tag.Explosion], 0.7, null, Side.Enemy, 0));
             }
         }
         if (e.Def.Burst is { } b && Charges.MayFuse(this, b.Fuse))
         {
-            Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = b.Radius, Duration = b.Fuse, Hostile = true });
-            strikes.Add(new StrikeSpec(e.X, e.Z, b.Radius, e.Damage * b.DamagePct, b.School, [Tag.Explosion], b.Fuse, null, Side.Enemy, 0));
+            Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = lx, Z = lz, Radius = b.Radius, Duration = b.Fuse, Hostile = true });
+            strikes.Add(new StrikeSpec(lx, lz, b.Radius, e.Damage * b.DamagePct, b.School, [Tag.Explosion], b.Fuse, null, Side.Enemy, 0));
         }
         if (e.Def.Split is { } split)
             for (int i = 0; i < split.Count; i++)
             {
                 double a = (double)i / split.Count * Tau;
-                SpawnEnemy(split.Into, e.X + Math.Cos(a) * 0.8, e.Z + Math.Sin(a) * 0.8, new SpawnOpts { Level = e.Level, Style = SpawnStyle.Walk, Faction = e.Faction });
+                SpawnEnemy(split.Into, lx + Math.Cos(a) * 0.8, lz + Math.Sin(a) * 0.8, new SpawnOpts { Level = e.Level, Style = SpawnStyle.Walk, Faction = e.Faction });
             }
         if (credited && depth < 3)
-            Fire(TriggerEvent.Kill, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = e.MaxHp, School = e.LastSchool, Tags = Array.Empty<Tag>(), Weapon = weapon, Depth = depth + 1 });
+            Fire(TriggerEvent.Kill, new ProcCtx { Target = e, X = lx, Z = lz, Damage = e.MaxHp, School = e.LastSchool, Tags = Array.Empty<Tag>(), Weapon = weapon, Depth = depth + 1 });
         ArtOnKill(e, credited);
         Hooks.OnKill?.Invoke(e, credited);
     }
@@ -2038,6 +2051,7 @@ public sealed partial class Battle
         e.Def = def;
         e.Level = lvl;
         e.X = x; e.Z = z; e.Vx = e.Vz = e.Kbx = e.Kbz = 0;
+        e.Edge = e.Fell = e.AtBrink = false;
         e.Facing = Math.Atan2(Player.Z - z, Player.X - x);
         e.Radius = def.Radius;
         e.Mass = def.Mass ?? 1;
@@ -2155,6 +2169,8 @@ public sealed partial class Battle
     {
         var p = Pickups.Spawn();
         if (p == null) { p = new Pickup(-1); held.Add(p); }
+        // (Ledge kills) a fallen foe's drops lie on open ground at the ledge, each clear of the others, whatever they were asked.
+        if (ledgeLoot != null) (x, z) = LedgeSpot(ledgeLoot);
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
         p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null; p.Payload = null; p.Loot = -1; p.Look = Verdict.Shown;
