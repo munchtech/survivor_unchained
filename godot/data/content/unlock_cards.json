@@ -5,7 +5,7 @@
       "teach": { "when": "none", "title": "", "text": "", "key": "" } },
     { "level": 1, "kind": "auto", "id": "groundbreaker", "lands": "auto 1", "title": "AN AUTO SKILL", "line": "A crack runs to the nearest pack and the earth heaves, stunning it.", "icon": "", "start": true,
       "teach": { "when": "none", "title": "", "text": "", "key": "" } },
-    { "level": 4, "kind": "key", "id": "heroic_leap", "lands": "key 2", "title": "A NEW KEY", "line": "Leap where you aim, untouchable in the air; land and knock them down.", "icon": "",
+    { "level": 4, "kind": "key", "id": "heroic_leap", "lands": "key 2", "title": "A NEW KEY", "line": "Leap where you aim, untouchable in the air, and knock them down.", "icon": "",
       "teach": { "when": "next_fight", "title": "Heroic Leap", "text": "*Aim* with the mouse and press *{key}*: you leap there, untouchable in the air, and knock down what you land on.", "key": "Skill2" } },
     { "level": 5, "kind": "key", "id": "bladestorm", "lands": "key 3", "title": "A NEW KEY", "line": "Hold to spin, cutting everything around you. Sunder's key breaks it.", "icon": "",
       "teach": { "when": "next_fight", "title": "Bladestorm", "text": "*Hold* {key} to spin, cutting all around you. Press Sunder's key to break the storm with one great blow.", "key": "Skill3" } },
@@ -17,7 +17,7 @@
       "teach": { "when": "next_fight", "title": "Bulwark", "text": "Press *{key}* to swap to Bulwark: every swap lands a strike.", "key": "Swap" } },
     { "level": 9, "kind": "key", "id": "shield_charge", "lands": "key 4", "title": "A NEW KEY", "line": "Charge 8 m behind your shield; gain a barrier of 15% of your health.", "icon": "",
       "teach": { "when": "next_fight", "title": "Shield Charge", "text": "Press *{key}* to charge behind your shield: what stands in the way is struck and thrown aside.", "key": "Skill4" } },
-    { "level": 10, "kind": "auto", "id": "watch_bell", "lands": "auto 3", "title": "AN AUTO SKILL", "line": "A bell draws everything near in to face you, and gives you a barrier.", "icon": "",
+    { "level": 10, "kind": "auto", "id": "watch_bell", "lands": "auto 3", "title": "AN AUTO SKILL", "line": "A bell draws everything near to face you and gives you a barrier.", "icon": "",
       "teach": { "when": "first_fire", "title": "", "text": "", "key": "" } }
   ]
 }
