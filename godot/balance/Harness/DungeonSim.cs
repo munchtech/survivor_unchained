@@ -77,6 +77,14 @@ public static class DungeonSim
                 sb.AppendLine($"- {g.Key}: by foe {Top(k => k[0] is not ('#' or '+' or '['), 6)}; by marked blow {Top(k => k[0] == '[', 6)}; kit marks {Top(k => k[0] == '#', 8)}; lowest life median {F(Pct(l.Select(r => r.LowHp), .5), "0.00")}, p10 {F(Pct(l.Select(r => r.LowHp), .1), "0.00")}");
             }
             sb.AppendLine();
+            sb.AppendLine("Ledge kills (foes forced over an edge: credited kills, their share of all her kills; per run):");
+            sb.AppendLine();
+            foreach (var g in dg.GroupBy(r => r.Spec.Bot))
+            {
+                var l = g.ToList();
+                sb.AppendLine($"- {g.Key}: kills/run {l.Average(r => r.AllKills):0.0}, ledge kills/run {l.Average(r => r.LedgeKills):0.0}, ledge share {100.0 * l.Sum(r => r.LedgeKills) / Math.Max(1, l.Sum(r => r.AllKills)):0.0}%");
+            }
+            sb.AppendLine();
             sb.AppendLine("XP, levels, drops per run (cleared runs; gear picked up by rarity 0..5, mean):");
             sb.AppendLine();
             foreach (var g in dg.GroupBy(r => r.Spec.Bot).OrderBy(g => g.Key))
