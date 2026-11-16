@@ -54,3 +54,9 @@ As B3 but mirrored in layout only: the bank runs top to bottom on the RIGHT side
 As B4 mirrored in layout only: the far bank runs in from the top-left and meets a right-hand wall (face looking left) running down to the bottom-right; the L's inside opens toward the lower left; both arms cut straight by the top and right image edges; the lower-left two thirds magenta. Light still from the upper left.
 ### B1b, B2b: second variants of B1 and B2
 The same prompts as B1 and B2, with a different arrangement of roots (add to the prompt: "A different arrangement from any earlier image: other roots, other arches, one large root diving under the others.").
+
+## Batch 3 (pits and hollows for the boss lair)
+### H1 (1536x1024): shallow hollows, two pieces
+Two separate shallow hollows dug into packed earth, seen from the camera: bowls about 3 m and 4 m across and 1 m deep, their rims ringed by thick roots (0.3 to 0.6 m) that wrap over the lip and dive in, the inside stepping down in soft cool grey-brown earth terraces to a dark (not black) floor with a few bones. The earth AROUND each hollow fades out within half a metre so it can sit on any floor. Spaced apart, not touching each other or the image edges, on magenta.
+### H2 (1536x1536): a big pit
+One big pit about 10 m across, seen from the camera, dropping away into a dark throat: a lit lip of packed earth on the far side (top of the image) where we see its inner wall, layered slate and earth bands stepping down into cool darkness; huge roots 0.8 to 1.2 m thick arch over the rim and plunge in; the near rim (bottom of the image) shows only its top edge. The earth around the rim fades out within a metre. Not touching the image edges, on magenta.
