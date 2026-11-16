@@ -34,10 +34,13 @@ uniform float rim_out = 1.45;
 // noise's edges over the painting's own darks inside the lip; COLOR.a < 0.75 marks a lair hole (PlaceSetHole)
 uniform float pit_glow = 0.0;
 uniform vec3 pit_col : source_color = vec3(0.5, 0.9, 0.28);
+uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark: a slow noise mask on the veins
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
 uniform vec3 boss_c = vec3(0.0);
 uniform float boss_gloom = 0.0;
+uniform float bank_gloom = 0.0;   // (den r13 corr) the corridor banks' depth gloom (--den-set-gloom)
+uniform vec2 gloom_m = vec2(2.5, 6.5);   // metres into the bank: from, full
 varying vec3 wpos;
 void vertex() { wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
 float lair_gloom(vec3 p) {
@@ -68,7 +71,13 @@ void fragment() {
 	col = mix(vec3(l), col, sat);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
 	col = gloom_col(col, lair_gloom(wpos));
-	ALBEDO = col * gain * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));   // (r11 judge: the nearest banks fall off, as den_room.png's bottom row)
+#ifndef SET_SOFT
+	// (den r13 corr) a corridor bank's roots go dark warm umber as they lie deeper in the bank (COLOR.b: metres in / 10,
+	// 0 outside the corridors and on objects): the deep rows' borders and the mound behind them meet in the gloom
+	float bg = bank_gloom * smoothstep(gloom_m.x, gloom_m.y, COLOR.b * 10.0);
+	col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))) * vec3(1.0, 0.84, 0.7) * 0.3, bg);
+#endif
+	ALBEDO =col * gain * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));   // (r11 judge: the nearest banks fall off, as den_room.png's bottom row)
 	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
 	EMISSION += c.rgb * glow_k * smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
@@ -92,6 +101,9 @@ void fragment() {
 		// (r12) a lit core in a wide smoky halo (den_boss.png's veins glow, they are not wire)
 		float v = (0.55 * exp(-e * 14.0) + 0.35 * exp(-e * 4.0)) * (0.2 + 0.8 * m) + 0.2 * exp(-pg_edge(q * 2.3 + 1.7) * 12.0) * m;
 		float inner = 1.0 - smoothstep(0.55, 0.95, 2.0 * COLOR.b);
+		// (den r13 rooms) clusters: veins only where the slow cell mask clears its threshold (about pit_dark of the area stays dark)
+		float pm = smoothstep(0.0, 0.06, pg_edge(q * 0.16 + 11.3) - pit_dark * 0.55);
+		inner *= pm;
 		float dark = 1.0 - smoothstep(0.015, 0.09, l);
 		float pulse = 0.85 + 0.15 * sin(TIME * 1.3 + q.x * 0.2);
 		EMISSION += pit_col * pit_glow * v * inner * dark * pulse;
