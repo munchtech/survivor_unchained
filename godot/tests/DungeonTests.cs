@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Content;
 using SurvivorUnchained.Maps;
+using SurvivorUnchained.Sim;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -104,20 +106,40 @@ public class DungeonTests
         _out.WriteLine($"{id} {seed}: {r.Minutes:0.0} min, packs {r.PacksCleared}/{r.Packs}, items {r.Items}, falls {r.Falls}");
         Assert.True(r.Cleared, $"{id} seed {seed} not cleared (closed {r.Closed}, falls {r.Falls}, packs {r.PacksCleared}/{r.Packs})");
     }
+    /// <summary>(the owner, 15 Nov evening: no ledges in the den for now) A normal foe knocked into a den wall stops there alive.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(23)]
+    public void A_normal_foe_knocked_into_a_den_wall_lives(int seed)
+    {
+        var wall = Make("hollow", seed).Meta.Colliders.Where(c => c.Tag == "wall").OrderByDescending(c => c.Hd).First();
+        var col = new CollisionWorld(400);
+        col.AddBox(wall.X, wall.Z, wall.Hw, wall.Hd, 0, new ColliderOpts(Tag: "wall", Drop: wall.Drop));
+        var b = new Battle(new BattleSetup { Seed = (uint)seed, Collision = col, Combat = true, Campaign = true, Stats = BattleTests.BaseStats(), Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash });
+        b.Player.X = wall.X - wall.Hw - 12; b.Player.Z = wall.Z;
+        var e = b.SpawnEnemy("risen", wall.X - wall.Hw - 1.5, wall.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk })!;
+        e.Kbx = 60;
+        for (int i = 0; i < 120; i++) b.Tick(1.0 / 60, 0, 0);
+        Assert.True(e.Alive && e.State != EnemyState.Dying && !e.Fell, $"hollow {seed}: knocked into its wall, it died");
+        Assert.Equal(0, b.LedgeKillCount);
+        Assert.True(e.X < wall.X - wall.Hw, "it stopped at the wall");
+    }
+
     /// <summary>(Ledge view, 15 Nov) Where a wall is a drop follows what the play camera sees (data/content/ledge.json "edges"): the
-    /// den's banks rise and stop a foe, only its pits drop; the ravine's back cliff stops it and its near and side edges drop.</summary>
+    /// den has none (parked, 15 Nov evening: its banks rise, and its pits are off); the ravine's back cliff stops it and its near
+    /// and side edges drop.</summary>
     [Theory]
     [InlineData(1)]
     [InlineData(7)]
     [InlineData(23)]
     public void A_dungeons_drops_are_where_its_view_falls_away(int seed)
     {
+        // (the owner, 15 Nov evening: no ledges in the den for now) Its walls and pits all stop a foe.
         var den = Make("hollow", seed);
         var walls = den.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
-        Assert.Contains(walls, c => !c.Drop);
-        var holes = den.Dungeon!.Rooms.SelectMany(r => r.Holes).ToList();
-        foreach (var c in walls.Where(c => c.Drop))
-            Assert.True(holes.Any(h => h.Dist(c.X, c.Z) < 1.5 + Math.Max(c.Hw, c.Hd)), $"hollow {seed}: a drop at ({c.X:0},{c.Z:0}) is no pit");
+        Assert.NotEmpty(walls);
+        Assert.DoesNotContain(walls, c => c.Drop);
         var ravine = Make("roost", seed);
         var rw = ravine.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
         double dropA = rw.Where(c => c.Drop).Sum(c => c.Hw * c.Hd), riseA = rw.Where(c => !c.Drop).Sum(c => c.Hw * c.Hd);
