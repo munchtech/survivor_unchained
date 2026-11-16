@@ -372,20 +372,39 @@ def pauldrons(cfg, ref):
     Vs, Fs = icosphere(ck.get("subdiv", 5))
     O = cc - e0 * ck["sink"] + cup * ck.get("rise", 0.0)
     ce, cf = (ec, fc) if k_up else (e0, f0)
+
+    def outline_at(b):
+        # (cop "outline_signed": the outline over signed beta -180..180 (+ toward f), in place of the symmetric
+        # "outline": built on her idle the chart turns with her arm (beta 0 points up-in-FRONT there, beta 90
+        # front-out, -45 the neck side), and the sheet's cop caps the front of her shoulder down to about her arm's
+        # joint, which r5's symmetric one left bare (16 Nov, lead 4))
+        b = np.asarray(b, float)
+        if "outline_signed" in ck:
+            return interp_table(ck["outline_signed"], b)
+        return interp_table(ck["outline"], np.abs(b))
     alpha = np.degrees(np.arccos(np.clip(Vs @ ce, -1, 1)))
     keep = alpha < ck["chart_deg"]
     if "env_margin" in ck:
         # (the envelope from the directions within the outline + env_margin deg only: rays past the neck-side rim
         # met her neck far out, and the dilation carried that height onto the cop's neck side)
-        keep &= alpha < interp_table(ck["outline"], np.abs(np.degrees(np.arctan2(Vs @ cf, Vs @ -ca)))) + ck["env_margin"]
+        keep &= alpha < outline_at(np.degrees(np.arctan2(Vs @ cf, Vs @ -ca))) + ck["env_margin"]
     dome = Dome(O, Vs, Fs, keep, cbody, 0.25, ck["dilate"], ck["smooth"], ck["clear"])
     al = np.degrees(np.arccos(np.clip(dome.D @ ce, -1, 1)))
     be = np.degrees(np.arctan2(dome.D @ cf, dome.D @ -ca))
-    amax = interp_table(ck["outline"], np.abs(be))
+    amax = outline_at(be)
     g = amax - al
     # (the sheet's cop is a round dome whose rim stands well off the arm: "flare" m added toward the rim, as
     # (alpha / alpha_max) ** flare_pow)
     rho = dome.rho + ck.get("flare", 0.0) * np.clip(al / amax, 0, 1) ** ck.get("flare_pow", 2.0)
+    cr = ck.get("crown")
+    if cr:
+        # (cop "crown" {"h": m, "al": deg, "be": deg, "r": deg}: the dome's rise, h on the chart's direction (al, be),
+        # falling as cos^2 to 0 at r deg off it: her skin's envelope alone read flat on her shoulder's top, and the
+        # sheet's cop is a high round dome over the deltoid's front and top)
+        ta, tb = np.radians(cr.get("al", 0.0)), np.radians(cr.get("be", 0.0))
+        ax = U(np.cos(ta) * ce + np.sin(ta) * (np.cos(tb) * -ca + np.sin(tb) * cf))
+        ang = np.degrees(np.arccos(np.clip(dome.D @ ax, -1, 1)))
+        rho = rho + cr["h"] * np.cos(np.clip(ang / cr["r"], 0, 1) * np.pi / 2) ** 2
     sw = cfg.get("sweep")
     room = None
     rim_al = None
@@ -414,7 +433,7 @@ def pauldrons(cfg, ref):
             g = np.minimum(g, h * 1000.0 * sw.get("deg_per_mm", 2.0))
     if rim_al is None:
         def rim_al(b):
-            return interp_table(ck["outline"], np.abs(b))
+            return outline_at(b)
     dome.rho = rho
     dome.P = dome.O + dome.D * rho[:, None]
     V, F, N = dome.cut(g)
@@ -442,11 +461,14 @@ def pauldrons(cfg, ref):
         G["cop_gold"].append(rivet(p, n[0], r=rv["r"], h=rv["h"], name="cop_rivet", material=gold))
     # the upturned ridge on the neck-side edge, along the (trimmed) rim
     rd = ck["ridge"]
-    bb = np.linspace(-rd["beta"], rd["beta"], 41)
+    # (ridge "be0": the beta it centres on; built on her idle the neck side is near beta -45, and beta 0 points
+    # up-in-front, where a ridge stood on the dome's face (16 Nov, lead 4))
+    b0 = rd.get("be0", 0.0)
+    bb = np.linspace(b0 - rd["beta"], b0 + rd["beta"], 41)
     base, d, ok = on_cop(rim_al(bb) - rd["in_deg"], bb, 0)
     bb = bb[ok]
     q, n, _ = nref.closest(base)
-    h = rd["h"] * np.sin(np.pi * np.clip((bb + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
+    h = rd["h"] * np.sin(np.pi * np.clip((bb - b0 + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
     lean = U(n + (-ca) * rd["lean"])
     top = base + lean * h[:, None]
     tg = U(np.gradient(base, axis=0))
