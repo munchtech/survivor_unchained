@@ -1,20 +1,158 @@
 {
  "recipe": "pauldrons",
  "module": "kit_upper",
- "piece": {"id": "kit_pauldrons", "name": "Gilded Gunmetal Pauldrons", "slot": "pauldrons", "covers": ["pauldrons"], "layer": 3,
-           "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
- "mat": {"plate": "steel", "trim": "gold", "strap": "darkleather"},
- "params": {"graft": "leather", "shoulder_shapes": false,
-            "rigid_ride": [{"match": "cop_l", "weights": {"delt_l": 1}}, {"match": "cop_r", "weights": {"delt_r": 1}},
-                           {"match": "lames_l", "weights": {"delt_l": 1}}, {"match": "lames_r", "weights": {"delt_r": 1}}]},
- "clear_min": 0.0022, "thick": 0.0022,
- "rim": {"w": 0.0095, "h": 0.0034, "sides": 6, "step": 0.005},
- "cop": {"subdiv": 5, "sink": 0.01, "pole_up": 0.6, "rise": 0.0, "chart_deg": 95, "dilate": 4, "smooth": 30, "clear": 0.016,
-         "outline": [[0, 42], [45, 50], [90, 64], [135, 60], [180, 52]],
-         "rivets": {"beta": 150, "step": 25, "in_deg": 4.5, "r": 0.0026, "h": 0.0016},
-         "ridge": {"beta": 50, "in_deg": 5, "h": 0.012, "lean": 0.5, "thick": 0.0025, "rim_w": 0.006, "rim_h": 0.0025}},
- "lames": {"theta": 95, "cols": 41, "rivet_r": 0.0024, "rivet_h": 0.0015,
-           "rows": [{"s": [0.015, 0.065], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.011, "flare": 0.003},
-                    {"s": [0.05, 0.10], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.008, "flare": 0.003}]},
- "strap": {"s": 0.118, "w": 0.018, "clear": 0.0025, "thick": 0.002, "buckle_deg": 100}
+ "piece": {
+  "id": "kit_pauldrons",
+  "name": "Gilded Gunmetal Pauldrons",
+  "slot": "pauldrons",
+  "covers": [
+   "pauldrons"
+  ],
+  "layer": 3,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "plate": "steel",
+  "trim": "gold",
+  "strap": "darkleather"
+ },
+ "params": {
+  "graft": "leather",
+  "shoulder_shapes": false,
+  "rigid_ride": [
+   {
+    "match": "cop_l",
+    "weights": {
+     "delt_l": 1
+    }
+   },
+   {
+    "match": "cop_r",
+    "weights": {
+     "delt_r": 1
+    }
+   },
+   {
+    "match": "lames_l",
+    "weights": {
+     "delt_l": 1
+    }
+   },
+   {
+    "match": "lames_r",
+    "weights": {
+     "delt_r": 1
+    }
+   }
+  ]
+ },
+ "clear_min": 0.0022,
+ "thick": 0.0022,
+ "rim": {
+  "w": 0.0095,
+  "h": 0.0034,
+  "sides": 6,
+  "step": 0.005
+ },
+ "cop": {
+  "subdiv": 5,
+  "sink": 0.01,
+  "pole_up": 0.6,
+  "rise": 0.0,
+  "chart_deg": 110,
+  "dilate": 4,
+  "smooth": 30,
+  "clear": 0.018,
+  "outline": [
+   [
+    0,
+    46
+   ],
+   [
+    45,
+    58
+   ],
+   [
+    90,
+    78
+   ],
+   [
+    135,
+    72
+   ],
+   [
+    180,
+    64
+   ]
+  ],
+  "rivets": {
+   "beta": 160,
+   "step": 25,
+   "in_deg": 4.5,
+   "r": 0.0026,
+   "h": 0.0016
+  },
+  "ridge": {
+   "beta": 50,
+   "in_deg": 5,
+   "h": 0.012,
+   "lean": 0.5,
+   "thick": 0.0025,
+   "rim_w": 0.006,
+   "rim_h": 0.0025
+  },
+  "flare": 0.014,
+  "flare_pow": 2.0
+ },
+ "lames": {
+  "theta": 112,
+  "cols": 41,
+  "rivet_r": 0.0024,
+  "rivet_h": 0.0015,
+  "rows": [
+   {
+    "s": [
+     0.035,
+     0.095
+    ],
+    "n": 12,
+    "dip": 0.012,
+    "dil": 3,
+    "clear": 0.022,
+    "flare": 0.01
+   },
+   {
+    "s": [
+     0.08,
+     0.145
+    ],
+    "n": 12,
+    "dip": 0.012,
+    "dil": 3,
+    "clear": 0.026,
+    "flare": 0.012
+   }
+  ]
+ },
+ "strap": {
+  "s": 0.112,
+  "w": 0.018,
+  "clear": 0.0025,
+  "thick": 0.002,
+  "buckle_deg": 140
+ },
+ "sweep": {
+  "bone": "delt_l",
+  "radius": 0.22,
+  "clear": 0.005,
+  "lift_max": 0.014,
+  "ring": 1,
+  "lift_smooth": 8,
+  "trim_smooth": 4,
+  "deg_per_mm": 2.0
+ }
 }

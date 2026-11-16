@@ -160,6 +160,85 @@ class Dome:
 
 # ---------------------------------------------------------------- pauldrons
 
+SWEEP_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")   # the demo's clips (docs/handoff/armor.md, lead 2)
+HAND_PARTS = ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
+
+
+def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True):
+    """The room a rigid plate riding `bone` (left side) needs: her skin within `radius` of `centre` (rest), over her rest
+    and every frame of the demo clips, carried back into that bone's rest frame; the right side's (mirrored onto the
+    left) joined in, so one mirrored design clears both arms. Hands and forearms left out (they swing past). Every
+    triangle sampled at its corners, edge middles and centre, reduced to the outermost point per `vox` cell. Cached by
+    its inputs (git-ignored .shots). Returns points [n, 3] at her rest, left side."""
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))   # (as wearcheck: the main checkout's built clips)
+    os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
+                                                   else kb.REPO, "tools", "anim", "out"))
+    import skin
+    if not (skin.OUT / "clips").is_dir():
+        from pathlib import Path
+        skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
+    deps = [kb.BODY] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
+    stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
+    key = hashlib.sha1(json.dumps(["v1", bone, [round(float(v), 5) for v in centre], radius, list(clips), vox,
+                                   stamp]).encode()).hexdigest()[:14]
+    cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
+    if os.path.exists(cache):
+        return np.load(cache)["P"]
+    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
+    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+                     label="her", helpers=True)
+    names = list(body.sk.names)
+    hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
+    hw = (body.W * hand[np.minimum(body.Jv, len(hand) - 1)]).sum(1)
+    out = []
+    for side, sgn in (("l", 1.0), ("r", -1.0)):
+        c = np.asarray(centre, float) * [sgn, 1, 1]
+        near = np.linalg.norm(body.P - c, axis=1) < radius
+        sel = near[body.T].all(1) & (hw[body.T] < 0.05).all(1)
+        T = body.T[sel]
+        idx, Tl = np.unique(T, return_inverse=True)
+        Tl = Tl.reshape(T.shape)
+        E_ = np.unique(np.sort(np.r_[Tl[:, [0, 1]], Tl[:, [1, 2]], Tl[:, [2, 0]]], 1), axis=0)
+        b = names.index(bone[:-2] + "_" + side)
+
+        def samples(P):
+            return np.vstack([P, (P[E_[:, 0]] + P[E_[:, 1]]) / 2, P[Tl].mean(1)])
+        # (per vox cell keep one point: the room is the cloud's outer hull from the plate's side; a cell's points are
+        # within vox of each other, so any one serves)
+        def reduce(X):
+            _, first = np.unique(np.floor(X / vox).astype(np.int64), axis=0, return_index=True)
+            return X[first]
+        acc = samples(body.P[idx])
+        for cl in clips:
+            pts = [acc]
+            for G in body.frames(body.clip(cl)):
+                S = body.skin_mats(G)
+                Mi = np.linalg.inv(S[b])
+                pts.append(samples(body.pose(G, idx)) @ Mi[:3, :3].T + Mi[:3, 3])
+            acc = reduce(np.vstack(pts))
+            if verbose:
+                print(f"sweep_room {side} {cl} {len(acc)} pts", flush=True)
+        out.append(acc * [sgn, 1, 1])
+    P = np.vstack(out)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez_compressed(cache, P=P)
+    return P
+
+
+def room_on_dirs(P, O, D, F, ring=1):
+    """Per unit direction D (an icosphere chart, faces F) the farthest point of P from O binned to it (nan: none),
+    dilated by `ring` rings."""
+    from scipy.spatial import cKDTree
+    Q = P - O
+    r = np.linalg.norm(Q, axis=1)
+    _, j = cKDTree(D).query(Q / r[:, None])
+    R = np.full(len(D), -1.0)
+    np.maximum.at(R, j, r)
+    R = np.where(R > 0, R, np.nan)
+    return ring_max(fill_nan(R, F), F, ring) if ring else R
+
+
 def arm_frame(ref, side="l"):
     c = ref.joints[f"upperarm_{side}"]
     a = U(ref.joints[f"lowerarm_{side}"] - c)
@@ -195,7 +274,27 @@ def pauldrons(cfg, ref):
     be = np.degrees(np.arctan2(dome.D @ cf, dome.D @ -a))
     amax = interp_table(ck["outline"], np.abs(be))
     g = amax - al
+    # (the sheet's cop is a round dome whose rim stands well off the arm: "flare" m added toward the rim, as
+    # (alpha / alpha_max) ** flare_pow)
+    rho = dome.rho + ck.get("flare", 0.0) * np.clip(al / amax, 0, 1) ** ck.get("flare_pow", 2.0)
+    sw = cfg.get("sweep")
+    room = None
+    if sw:
+        # (rigid by the swept room: her skin over the demo clips carried into the ride's rest frame; the cop stands
+        # sw.clear outside it, lifted by at most sw.lift_max (smoothed); where it would need more, the outline is
+        # trimmed there: her trapezius under the cop's neck side when the arm is raised)
+        room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"])
+        R = room_on_dirs(room, O, dome.D, dome.F, sw.get("ring", 1))
+        need = np.where(np.isfinite(R), R + sw["clear"], 0.0)
+        lift = np.clip(need - rho, 0.0, sw["lift_max"])
+        lift = smooth_scalar(ring_max(lift, dome.F, 2), dome.F, sw.get("lift_smooth", 8))
+        rho = rho + lift
+        h = smooth_scalar(rho - need, dome.F, sw.get("trim_smooth", 4))
+        g = np.minimum(g, h * 1000.0 * sw.get("deg_per_mm", 2.0))
+    dome.rho = rho
+    dome.P = dome.O + dome.D * rho[:, None]
     V, F, N = dome.cut(g)
+    print("cop rim loops", len(kh.boundary_loops(F)), "pts", len(V), flush=True)
     th = cfg["thick"]
     cop = kh.shell("cop", steel, V, F, N, th)
     nref = kh.Normals(V + N * th, N)
@@ -235,22 +334,60 @@ def pauldrons(cfg, ref):
                                    {**rim, "w": rd["rim_w"], "h": rd["rim_h"]}, 0.0, False))
     # ---- the lames: a cylinder chart round the arm's axis
     C = lk["cols"]
-    thd = np.linspace(-lk["theta"], lk["theta"], C)
-    thr = np.radians(thd)
-    rad = np.cos(thr)[:, None] * e + np.sin(thr)[:, None] * f
-    for k, lm in enumerate(lk["rows"]):
+    from scipy.ndimage import grey_dilation
+    if room is not None:
+        Qr = room - c
+        sp_ = Qr @ a
+        rp_ = np.linalg.norm(Qr - sp_[:, None] * a, axis=1)
+        tp_ = np.degrees(np.arctan2(Qr @ f, Qr @ e))
+
+    def lame_row(lm, lo, hi):
+        """One row over theta lo..hi (deg): its cells' axis points Oa, directions Dd, radius r (her rest envelope
+        dilated, smoothed, + clear + flare; with the swept room: at least sw.clear outside it), the room's lift."""
         Rn = lm["n"]
         s0, s1 = lm["s"]
+        thd = np.linspace(lo, hi, C)
+        thr = np.radians(thd)
+        rad = np.cos(thr)[:, None] * e + np.sin(thr)[:, None] * f
         dip = lm["dip"] * np.cos(np.radians(thd) * 90.0 / lk["theta"])
         S = np.linspace(0, 1, Rn)[:, None] * (s1 + dip - s0)[None, :] + s0
         Oa = c[None, None] + S[..., None] * a
         Dd = np.broadcast_to(rad[None], (Rn, C, 3)).copy()
         t = cast_union(Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), body, 0.2).reshape(Rn, C)
         t = kb.fill_rows(t)
-        from scipy.ndimage import grey_dilation
         r = grey_dilation(t, size=(lm["dil"], lm["dil"]))
         r = kb.gsmooth(r, (1.5, 2.0), False)
         r = np.maximum(r, t) + lm["clear"] + lm["flare"] * np.linspace(0, 1, Rn)[:, None] ** 2
+        lift = np.zeros(C)
+        if room is not None:
+            # (the row's cells (s, theta) over the swept room, its farthest radius per cell)
+            j = np.round((tp_ - lo) / (hi - lo) * (C - 1)).astype(int)
+            okj = (j >= 0) & (j < C)
+            j = np.clip(j, 0, C - 1)
+            i = np.round((sp_ - s0) / np.maximum(S[-1, j] - s0, 1e-6) * (Rn - 1)).astype(int)
+            ok = okj & (i >= 0) & (i < Rn) & (rp_ < 0.2)
+            Rm = np.full(Rn * C, -1.0)
+            np.maximum.at(Rm, i[ok] * C + j[ok], rp_[ok])
+            Rm = grey_dilation(Rm.reshape(Rn, C), size=(3, 3))
+            need = np.where(Rm > 0, Rm + sw["clear"], 0.0)
+            lift = (need - r).max(0)
+            r = np.maximum(r, kb.gsmooth(np.maximum(r, need), (1.0, 1.0), False))
+            r = np.maximum(r, need)
+        return Rn, thd, Oa, Dd, r, lift
+
+    for k, lm in enumerate(lk["rows"]):
+        lo, hi = -lk["theta"], lk["theta"]
+        Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
+        if room is not None and (lift > sw["lift_max"]).any():
+            # (trimmed: each end moves in to the last column (from the middle) the room lifts by at most lift_max)
+            m = C // 2
+            bad = lift > sw["lift_max"]
+            jl = max([j for j in range(m) if bad[j]], default=-1) + 1
+            jh = min([j for j in range(m, C) if bad[j]], default=C) - 1
+            lo, hi = thd[jl], thd[jh]
+            Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
+        print(f"lame{k} theta {lo:.0f}..{hi:.0f} r {r.min():.3f}..{r.max():.3f} lift max {lift.max() * 1000:.1f} mm",
+              flush=True)
         Pin = Oa + Dd * r[..., None]
         lame = kb.slab(f"lame{k}", steel, Pin, Dd.copy(), th)
         G["lames"].append(lame)
