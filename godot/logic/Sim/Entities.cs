@@ -154,6 +154,8 @@ public sealed class Enemy : Pooled
     /// and the ground where its loot lies.</summary>
     public bool Fell;
     public double FellX, FellZ, FellDx, FellDz, LedgeX, LedgeZ;
+    /// <summary>(Ledge kills) What gave it its last forced move (a skill's id, "flare", a trigger's credit): a fall is its kill.</summary>
+    public string? KbBy;
     /// <summary>A named creature: promoted when it killed the survivor, carrying what it took.</summary>
     public Named? Named;
     /// <summary>(M5) Its rank in its pack, read before its plate: 1 a captain, 2 a champion (Content/Champions.Look), and

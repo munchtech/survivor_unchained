@@ -57,7 +57,7 @@ public sealed partial class Battle
                 if (kd < 1e-6 || e.Def.Behavior == Behavior.Stationary) continue;
                 double room = f.Arg("knotSpread", 1.2) + e.Radius + 0.4 * (i++ % 3);
                 double pull = e.Boss ? Math.Min(f.Arg("bossDrag", 3), Math.Max(0, kd - room)) : Math.Max(0, kd - room);
-                e.Kbx = kx / kd * pull * 9;
+                e.Kbx = kx / kd * pull * 9; e.KbBy = "flare";
                 e.Kbz = kz / kd * pull * 9;
                 if (e.Boss || e.Elite) Interrupt(e);
             }

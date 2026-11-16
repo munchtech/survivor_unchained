@@ -331,7 +331,7 @@ public sealed partial class Battle
             if (d < 0.3) { dx = e.X - p.X; dz = e.Z - p.Z; d = Len(dx, dz); }
             if (d < 0.3) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); d = 1; }
             // Knockback slides and settles at 9 per second (Ai.cs): a slide of v/9 metres.
-            e.Kbx += dx / d * dist * 9;
+            e.Kbx += dx / d * dist * 9; e.KbBy = "flare";
             e.Kbz += dz / d * dist * 9;
             if (e.Elite) Interrupt(e);
             ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, f.Arg("shoveStun", 0.5)), 0);

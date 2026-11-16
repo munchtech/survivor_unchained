@@ -289,7 +289,7 @@ public sealed partial class Battle
                 if (kd > 1e-6 && e.Def.Behavior != Behavior.Stationary)
                 {
                     double pull = Math.Max(0, kd - stop - e.Radius);
-                    e.Kbx = kx / kd * pull * 9;
+                    e.Kbx = kx / kd * pull * 9; e.KbBy = w.Id;
                     e.Kbz = kz / kd * pull * 9;
                 }
                 if (iron) { e.SlowUntil = Math.Max(e.SlowUntil, Time + held); e.SlowBy = Math.Max(e.SlowBy, slow); }
