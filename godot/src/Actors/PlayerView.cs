@@ -2701,6 +2701,7 @@ public partial class PlayerView : Node3D
             c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
             c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
             c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
+            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand);
         }
         return c;
     }

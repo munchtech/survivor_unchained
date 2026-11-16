@@ -78,6 +78,13 @@ public sealed class SideCarry
     /// Clear 0: off. Needs the frame's grip, length and calves.</summary>
     public float Clear = 0.055f, OutMax = 15f, ClearRate = 90f, ClearAtk = 100f, ClearDown = 90f, CalfKnee = 0.074f, CalfAnkle = 0.046f;
     public int ClearLook = 4;
+    /// <summary>(judge r4 fix 2, lead r5) Reach for the rate-limited drawn blade: where the tilt alone (itself held to
+    /// <see cref="MaxRate"/>) can't put the blade on the screen angle the rate limit allows (a turn out of a sword-side stand,
+    /// where the tilt's reach collapses), the tip also turns in or out, up to <see cref="InReach"/> deg in <see cref="InStep"/>
+    /// steps: first keeping the calves <see cref="ClearReach"/> (m) clear (or as far as the clip's blade is), then nearest the
+    /// angle (to <see cref="MissTol"/> deg), then, within <see cref="DownBand"/> deg of straight down, the tip above her boots
+    /// on screen (<see cref="BootPx"/> px under the lower ankle), then least change from the last frame's turn. InReach 0: off.</summary>
+    public float InReach = 30f, InStep = 0.5f, ClearReach = 0.08f, MissTol = 1f, DownBand = 10f, BootPx = 4f;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -339,11 +346,43 @@ public sealed class SideCarry
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
         if (MathF.Abs(Wrap(aW - aT)) > 0.05f)
-            tilt = Solve(b, left, ahead, inward, f.Jx, f.Jy, 1f, aW, MathF.Min(0f, MathF.Min(lo, hi)), MathF.Max(0f, hi), Tilt);
+        {
+            float tlo = MathF.Min(0f, MathF.Min(lo, hi)), thi = MathF.Max(0f, hi);
+            if (InReach > 0f) { tlo = MathF.Max(tlo, Tilt - step); thi = MathF.Min(thi, Tilt + step); }
+            tilt = Solve(b, left, ahead, inward, f.Jx, f.Jy, 1f, aW, tlo, thi, Tilt);
+            if (InReach > 0f && MathF.Abs(Wrap(ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f) - aW)) > 0.5f)
+                (tilt, inward) = Reach(b, left, ahead, f, aW, inward, tlo, thi);
+        }
         Tilt += Math.Clamp(tilt - Tilt, -step, step);
         Inward = inward;
-        Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
         clipPrev = a0;
         ClearCalves(dt, f, b, left, ahead, moving);
+        // The layer's shift as drawn (the calf pass's out-turn included), so next frame's rate limit starts from what was seen.
+        Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
+    }
+
+    /// <summary>The tilt and inward turn for the drawn screen angle `aW` where the tilt alone can't reach it (see
+    /// <see cref="InReach"/>); the tilt kept in `tlo`..`thi`.</summary>
+    (float tilt, float inward) Reach(Vector3 b, Vector3 left, Vector3 ahead, in Frame f, float aW, float inward, float tlo, float thi)
+    {
+        bool legs = Clear > 0f && f.Length > 0.1f;
+        Span<Vector3> c = stackalloc Vector3[4] { f.KneeL - f.Grip, f.AnkleL - f.Grip, f.KneeR - f.Grip, f.AnkleR - f.Grip };
+        float want = legs ? MathF.Min(ClearReach, ClearOf(b, f.Length, c)) : -9f;
+        float boot = MathF.Max(Vector3.Dot(f.Jy, c[1]), Vector3.Dot(f.Jy, c[3])) + BootPx, prev = Inward + OutTurn;
+        bool down = f.Length > 0.1f && MathF.Abs(aW) < DownBand;
+        float bt = 0f, bi = inward, bch = float.MaxValue; int bc = int.MaxValue, bm = int.MaxValue, bd = int.MaxValue;
+        int n = (int)MathF.Round(2f * InReach / MathF.Max(InStep, 1e-3f));
+        for (int i = 0; i <= n; i++)
+        {
+            float iw = inward - InReach + i * InStep, t = Solve(b, left, ahead, iw, f.Jx, f.Jy, 1f, aW, tlo, thi, Tilt);
+            var dd = Turned(b, left, t, ahead, iw);
+            int cb = legs && ClearOf(dd, f.Length, c) < want - 1e-4f ? 1 : 0;
+            int mr = (int)MathF.Round(MathF.Abs(Wrap(ScreenAngle(dd, f.Jx, f.Jy, 1f) - aW)) / MathF.Max(MissTol, 1e-3f));
+            int db = down && Vector3.Dot(f.Jy, dd) * f.Length > boot ? 1 : 0;
+            float ch = MathF.Abs(iw - prev);
+            if (cb < bc || (cb == bc && (mr < bm || (mr == bm && (db < bd || (db == bd && ch < bch))))))
+            { bc = cb; bm = mr; bd = db; bch = ch; bt = t; bi = iw; }
+        }
+        return (bt, bi);
     }
 }

@@ -242,6 +242,39 @@ public class SideCarryTests
         }
     }
 
+    // (judge r4 fix 2, lead r5) Out of a sword-side stand into a fast turn (the start flick): the drawn blade turns on
+    // screen no faster than the clip's own turn plus ScreenRate, the tip turning in or out where the tilt can't reach.
+    static float MaxExcess(SideCarry c, float to)
+    {
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float worst = float.MinValue, pa = float.NaN, pc = float.NaN;
+        for (int i = 0; i < 30; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / 6f);
+            var f = At(face, MathF.Min(1f, i / 3f));
+            c.Step(Dt, true, 0f, f);
+            float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            if (!float.IsNaN(pa))
+            {
+                float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
+                worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - MathF.Abs(W(a0 - pc)) - c.ScreenRate * Dt);
+            }
+            pa = a; pc = a0;
+        }
+        return worst;
+    }
+
+    [Theory]
+    [InlineData(-90f)]     // side_x stand to side_mx: the half turn through facing the camera
+    [InlineData(270f)]     // the half turn the other way, through facing away
+    [InlineData(0f)]       // a quarter turn to face the camera
+    public void OutOfASideStandTheBladeTurnsNoFasterThanHerPlusTheRate(float to)
+    {
+        float e = MaxExcess(new SideCarry(), to);
+        Assert.True(e <= 1f, $"blade outran her turn by {e:F1} deg in a frame");
+    }
+
     // (judge r4, solver 18) A calf across the drawn blade's line (strafe_fx_a: the crossing foot behind the blade's middle):
     // the tip turns out by the least that keeps the blade Clear off it, no more than OutMax; with the calf away, none.
     [Fact]
