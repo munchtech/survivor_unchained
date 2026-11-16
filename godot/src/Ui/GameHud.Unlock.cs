@@ -91,7 +91,8 @@ public partial class GameHud
         }
         double now = Time.GetTicksMsec() / 1000.0;
         if (lessonHint != null && now >= lessonUntil) TakeLessonDown(game, expired: true);
-        if (Lessons()?.Tick(near && game.CurrentHint == null && !HudPin.Active, dt) is { } row)
+        // (a lesson waits for its card to leave: the card says what opened, the lesson then says how, never both at once)
+        if (Lessons()?.Tick(near && !LevelCardUp && game.CurrentHint == null && !HudPin.Active, dt) is { } row)
         {
             var t = row.Teach;
             game.SetHint(new Hint("unlock." + row.Id, t.Title, UnlockLessons.TextFor(row, game.KeyLabel), t.Key != "" ? [game.KeyLabel(t.Key)] : []));
@@ -109,6 +110,8 @@ public partial class GameHud
     /// <summary>She used a skill (its id) or swapped ("stance"): its lesson is no longer owed, and its hint comes down.</summary>
     public void UnlockUsed(string id)
     {
+        // (--lesson-keep, shots only: the shown lesson stays up through the bot's own use of the key, so its frame can be taken)
+        if (Args.Has("lesson-keep")) return;
         if (Lessons()?.Used(id) == true && GetParent() is Game game) TakeLessonDown(game, expired: false);
     }
 }
