@@ -348,6 +348,7 @@ public partial class Game : Node, IZoneHost
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)
         DevWardrobe.Apply(Journey.Ch);
+        if (Args.Get("offhand") != null) Journey.RefreshKit(Battle); // the world her matches the emptied off-hand
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
