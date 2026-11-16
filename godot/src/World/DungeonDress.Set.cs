@@ -34,11 +34,23 @@ public static partial class DungeonDress
         mat.SetShaderParameter("gain", gain);
         mat.SetShaderParameter("sat", SetSat);
         mat.SetShaderParameter("shade_k", SetCool);
+        mat.SetShaderParameter("dark_floor", SetDark);
+        mat.SetShaderParameter("amb_floor", SetAmb);
         return mat;
     }
     const string SetDir = "res://art/dungeon/den/set/";
-    // the play camera's basis in a dungeon (it never turns: it looks north, pitch 56)
-    static readonly Vector3 CamUp = new(0f, 0.55919f, -0.82904f), CamView = new(0f, -0.82904f, -0.55919f);
+    // the play camera's basis in a dungeon (it never turns: it looks north at the map's pitch, MapRun.CamPitch 62; r10c: it
+    // was cast at 56, the road's, so every painting drew 6% tall on the floor and its raised parts sank)
+    static readonly float CamPitchR = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch);
+    static readonly Vector3 CamUp = new(0f, Mathf.Cos(CamPitchR), -Mathf.Sin(CamPitchR)), CamView = new(0f, -Mathf.Sin(CamPitchR), -Mathf.Cos(CamPitchR));
+    static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 2f);       // (r10c) side walls: rows of modules deeper in the bank
+    static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 1f);    // (r10c) B4/B4R_2 where a far run meets a wall's
+    static readonly float SetSpills = SurvivorUnchained.Args.Num("den-set-spills", 1f);      // (r10c) B6 spills on the floor at the banks' feet and pits
+    static readonly float SetDark = SurvivorUnchained.Args.Num("den-set-dark", 0.005f);      // (r10c) the paintings' darks lit at least this (cool)
+    static readonly float SetAmb = SurvivorUnchained.Args.Num("den-set-amb", 0.12f);        // (r10c) and at least this share of their painted value
+    // (r10c) the objects in one mesh per sheet (they were a node each: ~137 draws) and the boulders' shadow hulls in one
+    static readonly Dictionary<string, SetBuf> objBufs = new();
+    static readonly List<Transform3D> hulls = new();
 
     sealed record SetBank(string Name, string Kind, Vector2 Metres, float FootV, float FootU);
     sealed record SetPiece(string Sheet, Rect2 Uv, Vector2 Metres, float FootV);
@@ -105,7 +117,7 @@ public static partial class DungeonDress
     {
         setRoom = z.Rooms[0];
         foreach (var r in z.Rooms) if (r.Kind == "Start") { setRoom = r; break; }
-        surfCache.Clear();
+        surfCache.Clear(); objBufs.Clear(); hulls.Clear();
     }
 
     static float SetSm(float a, float b, float x) { float t = Mathf.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
@@ -167,7 +179,7 @@ public static partial class DungeonDress
         var rooms = new List<(float X, float Z, float R, string Kind)>();
         if (SetMode >= 2) { foreach (var r in c.Z.Rooms) if (r.Kind != "Bend") rooms.Add(r); }
         else rooms.Add(setRoom);
-        int modules = 0, runs = 0;
+        int modules = 0, runs = 0, corners = 0, spills = 0;
         int ri = 0;
         foreach (var r in rooms)
         {
@@ -204,6 +216,7 @@ public static partial class DungeonDress
                 th[k] = Mathf.RadToDeg(Mathf.Atan2(o.X, -o.Y));
             }
             float top = H(c, r.X, r.Z) + 14f;
+            var ends = new List<(int cls, List<Vector3> pts)>();
             for (int cls = 0; cls < 4; cls++)
             {
                 // runs of the class round the ring (cut at openings and jumps of the edge)
@@ -218,31 +231,84 @@ public static partial class DungeonDress
                     if (inRun) run.Add(P[k]);
                     if ((!inRun || s == n) && run.Count > 0)
                     {
-                        if (run.Count >= 6) { modules += SetRun(c, bufs, run, cls, ri * 16 + cls * 4 + runs, top); runs++; }
+                        if (run.Count >= 6) { modules += SetRun(c, bufs, run, cls, ri * 16 + cls * 4 + runs, top); runs++; ends.Add((cls, new List<Vector3>(run))); }
                         run.Clear();
                         if (!open[k] && SetClassOf(th[k], cls) == 1) run.Add(P[k]);
                     }
                 }
             }
+            // (r10c) the inner corners: where a far run's end meets a wall run's north end, the corner painting (B4 back-left,
+            // B4R_2 back-right) with its inner point on the meeting, over both runs' ends; its arms fade to their bright roots
+            if (SetCorners > 0f)
+                foreach (var (fc, fp) in ends)
+                {
+                    if (fc != 0) continue;
+                    var w = fp[0]; var e = fp[0];
+                    foreach (var p in fp) { if (p.X < w.X) w = p; if (p.X > e.X) e = p; }
+                    foreach (var (sc, sp) in ends)
+                    {
+                        if (sc != 1 && sc != 3) continue;
+                        var nth = sp[0];
+                        foreach (var p in sp) if (p.Z < nth.Z) nth = p;
+                        var at = sc == 3 ? w : e;
+                        if (new Vector2(nth.X - at.X, nth.Z - at.Z).Length() > 5f) continue;
+                        string nm = sc == 3 ? "B4" : "B4R_2";
+                        var b = setBanks!.Find(q => q.Name == nm);
+                        if (b == null) continue;
+                        if (!bufs.TryGetValue(nm, out var cb)) bufs[nm] = cb = new SetBuf();
+                        SetCorner(c, cb, b, nth.X, at.Dot(CamUp), top);
+                        corners++;
+                    }
+                }
+            // (r10c) root spills lying on the floor at the far and side banks' feet, every 6-9 m, now and then skipped
+            if (SetSpills > 0f)
+                foreach (var (sc, sp) in ends)
+                {
+                    if (sc == 2) continue;
+                    float acc = 0f, next = 2f + 4f * Hash(ri, sc, 811);
+                    for (int i = 1; i < sp.Count; i++)
+                    {
+                        acc += sp[i].DistanceTo(sp[i - 1]);
+                        if (acc < next) continue;
+                        next = acc + 6f + 3f * Hash(ri * 31 + i, sc, 812);
+                        if (Hash(ri * 31 + i, sc, 813) < 0.3f) continue;
+                        var dir = new Vector2(r.X - sp[i].X, r.Z - sp[i].Z).Normalized();
+                        var at = new Vector2(sp[i].X, sp[i].Z) + dir * (1.2f + 1.0f * Hash(ri * 31 + i, sc, 814));
+                        if (SetPick("B6", Hash(ri * 31 + i, sc, 815)) is SetPiece pc && Wall(c, at.X, at.Y) > 0.5f)
+                        { PlaceSetObj(c, "B6", pc, at.X, at.Y, 0.5f + 0.25f * Hash(ri * 31 + i, sc, 816), 0f, false, 0f); spills++; }
+                    }
+                }
         }
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
             if (b.I.Count == 0) continue;
-            var arr = new Godot.Collections.Array();
-            arr.Resize((int)Mesh.ArrayType.Max);
-            arr[(int)Mesh.ArrayType.Vertex] = b.V.ToArray();
-            arr[(int)Mesh.ArrayType.Normal] = b.N.ToArray();
-            arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
-            arr[(int)Mesh.ArrayType.Color] = b.C.ToArray();
-            arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
-            var mesh = new ArrayMesh();
-            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
-            c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = mesh, MaterialOverride = SetMat(name, SetGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             tris += b.I.Count / 3;
         }
-        c.Count["set modules"] = modules; c.Count["set tris"] = tris;
-        GD.Print($"DenSet: mode {SetMode}, {rooms.Count} rooms, {runs} runs, {modules} modules, {tris} tris, {bufs.Count} draws");
+        // (r10c) the objects (boulders, logs, bones, spills): one mesh a sheet; the boulders' shadow hulls in one
+        int otris = 0;
+        foreach (var (name, b) in objBufs)
+        {
+            if (b.I.Count == 0) continue;
+            c.Root.AddChild(new MeshInstance3D { Name = "SetObj_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain * SetObjGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            otris += b.I.Count / 3;
+        }
+        if (hulls.Count > 0)
+        {
+            var sph = new SphereMesh { Radius = 1f, Height = 2f, RadialSegments = 16, Rings = 8 }.GetMeshArrays();
+            var sv = (Vector3[])sph[(int)Mesh.ArrayType.Vertex]; var si = (int[])sph[(int)Mesh.ArrayType.Index];
+            var hb = new SetBuf();
+            foreach (var t in hulls)
+            {
+                int b0 = hb.V.Count;
+                foreach (var v in sv) { hb.V.Add(t * v); hb.N.Add(Vector3.Up); hb.U.Add(Vector2.Zero); hb.C.Add(Colors.White); }
+                foreach (int ix in si) hb.I.Add(b0 + ix);
+            }
+            c.Root.AddChild(new MeshInstance3D { Name = "SetObjShadows", Mesh = SetMesh(hb), CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly });
+        }
+        c.Count["set modules"] = modules; c.Count["set tris"] = tris; c.Count["set corners"] = corners; c.Count["set spills"] = spills;
+        GD.Print($"DenSet: mode {SetMode}, {rooms.Count} rooms, {runs} runs, {modules} modules, {corners} corners, {spills} spills, {tris} bank tris, {otris} object tris, {bufs.Count + objBufs.Count + (hulls.Count > 0 ? 1 : 0)} draws");
     }
 
     // One run of a class: modules end to end along it, each laid in the camera's plane with its foot on the edge and cast
@@ -286,15 +352,44 @@ public static partial class DungeonDress
                 if (!bufs.TryGetValue(b.Name, out var buf)) bufs[b.Name] = buf = new SetBuf();
                 SetModule(c, buf, b, alongX, s, L, from, to, FootAt, true, s + L > a1 + ext, 0.05f + 0.03f * (k % 2), top);
                 laid++;
+                // (r10c) a wall's bank part is 3.8-5.4 m deep: rows behind it, each its bank part 1 m into the one before,
+                // drawn under it, so the frame's sides are root tangle to their edges and not the mound's dark mass
+                if (!alongX)
+                    for (int row = 1; row < SetRows; row++)
+                    {
+                        var b2 = choices[(int)(Hash(seed + 97 * row, 64, k) * choices.Count) % choices.Count];
+                        float deep = row * Mathf.Max(1.5f, (cls == 3 ? b2.FootU : 1f - b2.FootU) * b2.Metres.X * SetScale - 1f);
+                        float sh = cls == 3 ? -deep : deep;
+                        if (!bufs.TryGetValue(b2.Name, out var buf2)) bufs[b2.Name] = buf2 = new SetBuf();
+                        SetModule(c, buf2, b2, false, s, L, from, to, a => FootAt(a) + sh, true, s + L > a1 + ext, 0.0f - 0.01f * row, top, true);
+                    }
             }
             s += L - ov;
             k++;
+        }
+        // (r10c) a far run's row behind, its foot 4 m up the bank and 7 m past the run's ends, its bank part only (under the
+        // front row and the corners): the deep bank beyond the corners was the mound's flat black
+        if (cls == 0 && SetRows >= 2)
+        {
+            float e2 = 7f, s2 = a0 - e2 - Hash(seed, 66, 0) * 4f;
+            for (int k2 = 0; s2 < a1 + e2 && k2 < 40; k2++)
+            {
+                var b = choices[(int)(Hash(seed, 67, k2) * choices.Count) % choices.Count];
+                float L = b.Metres.X * SetScale;
+                float from = Mathf.Max(s2, a0 - e2), to = Mathf.Min(s2 + L, a1 + e2);
+                if (to - from > 0.5f)
+                {
+                    if (!bufs.TryGetValue(b.Name, out var buf)) bufs[b.Name] = buf = new SetBuf();
+                    SetModule(c, buf, b, true, s2, L, from, to, a => FootAt(a) + 4f, true, s2 + L > a1 + e2, -0.01f, top, true);
+                }
+                s2 += L - ov;
+            }
         }
         return laid;
     }
 
     static void SetModule(Ctx c, SetBuf buf, SetBank b, bool alongX, float s, float L, float from, float to,
-        System.Func<float, float> footAt, bool fadeIn, bool fadeOut, float lift, float top)
+        System.Func<float, float> footAt, bool fadeIn, bool fadeOut, float lift, float top, bool bankOnly = false)
     {
         float Wm = b.Metres.X * SetScale, Hm = b.Metres.Y * SetScale, ov = 2.0f;
         const float cell = 0.35f;
@@ -333,6 +428,9 @@ public static partial class DungeonDress
                 var pc = new Vector3(X, 0f, 0f) + CamUp * Y;
                 var q = SetCast(pc, surf, top);
                 bool keep = !(bankSide && Wall(c, q.X, q.Z) > 0.3f);
+                // (r10c) a row behind: its bank part only (its pour would double the front row's on the floor)
+                if (bankOnly && !alongX && (b.Kind == "left" ? u > b.FootU + 1f / Wm : u < b.FootU - 1f / Wm)) keep = false;
+                if (bankOnly && alongX && (b.Kind == "far" ? v > b.FootV + 1f / Hm : v < b.FootV - 1f / Hm)) keep = false;
                 keepv[i * nc + j] = keep;
                 buf.V.Add(q - CamView * lift);
                 buf.N.Add(Vector3.Up);
@@ -368,7 +466,7 @@ public static partial class DungeonDress
     /// <summary>(round 10b) A painted object from a sheet (O1 boulders, O2 logs, O3 bone piles) on its half-ellipsoid
     /// proxy: ry is its height as a share of its half width (a boulder 0.62, a log 0.18, bones 0.1); the shadow-only hull
     /// for the tall ones. Returns the proxy's half width.</summary>
-    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull)
+    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f)
     {
         float W = pc.Metres.X * k, Hr = pc.Metres.Y * k;
         float rx = 0.46f * W, ry = ryk * rx;
@@ -376,16 +474,16 @@ public static partial class DungeonDress
         float bb = Mathf.Max((hm * hm - aa * aa) / (2f * hm), 0.25f * rx);
         float rz = bb / -CamUp.Z;
         float y0 = H(c, x, zz);
-        var n = new Node3D { Name = "SetBoulder" };
         float yFront = new Vector3(x, y0, zz + rz).Dot(CamUp);
         System.Func<float, float, float> surf = (px, pz) =>
         {
             float ex = (px - x) / rx, ez = (pz - zz) / rz;
             float e = 1f - ex * ex - ez * ez;
-            float s = e > 0f ? y0 + ry * Mathf.Sqrt(e) : -99f;
+            float s = e > 0f && ry > 0f ? y0 + ry * Mathf.Sqrt(e) : -99f;
             return Mathf.Max(s, SurfBank(c, px, pz));
         };
-        var buf = new SetBuf();
+        if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
+        int ob = buf.V.Count;
         const int nu = 16, nv = 14;
         float top = y0 + ry + 10f;
         for (int j = 0; j < nv; j++)
@@ -394,7 +492,7 @@ public static partial class DungeonDress
                 float u = (float)i / (nu - 1), v = (float)j / (nv - 1);
                 float X = x + (u - 0.5f) * W, Y = yFront + (pc.FootV - v) * Hr;
                 var q = SetCast(new Vector3(X, 0f, 0f) + CamUp * Y, surf, top);
-                buf.V.Add(q - CamView * 0.04f);
+                buf.V.Add(q - CamView * (ry > 0f ? 0.04f : 0.03f));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
                 buf.C.Add(new Color(1f, 1f, 0f, 1f));
@@ -403,35 +501,21 @@ public static partial class DungeonDress
             for (int i = 0; i < nu - 1; i++)
             {
                 int k0 = j * nu + i, k1 = k0 + 1, k2 = k0 + nu, k3 = k2 + 1;
-                buf.I.Add(k0); buf.I.Add(k2); buf.I.Add(k1); buf.I.Add(k1); buf.I.Add(k2); buf.I.Add(k3);
+                buf.I.Add(ob + k0); buf.I.Add(ob + k2); buf.I.Add(ob + k1); buf.I.Add(ob + k1); buf.I.Add(ob + k2); buf.I.Add(ob + k3);
             }
-        var arr = new Godot.Collections.Array();
-        arr.Resize((int)Mesh.ArrayType.Max);
-        arr[(int)Mesh.ArrayType.Vertex] = buf.V.ToArray();
-        arr[(int)Mesh.ArrayType.Normal] = buf.N.ToArray();
-        arr[(int)Mesh.ArrayType.TexUV] = buf.U.ToArray();
-        arr[(int)Mesh.ArrayType.Color] = buf.C.ToArray();
-        arr[(int)Mesh.ArrayType.Index] = buf.I.ToArray();
-        var mesh = new ArrayMesh();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
-        n.AddChild(new MeshInstance3D { Name = "Painting", Mesh = mesh, MaterialOverride = SetMat(sheet, SetGain * SetObjGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-        if (hull) n.AddChild(new MeshInstance3D
-        {
-            Name = "Shadow", Mesh = new SphereMesh { Radius = 1f, Height = 2f, RadialSegments = 16, Rings = 8 },
-            Transform = new Transform3D(Basis.FromScale(new Vector3(rx, ry, rz)), new Vector3(x, y0, zz)),
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly,
-        });
+        if (hull) hulls.Add(new Transform3D(Basis.FromScale(new Vector3(rx, ry, rz)), new Vector3(x, y0, zz)));
+        float ca = contact >= 0f ? contact : hull ? 0.6f : 0.35f;
+        if (ca <= 0f) return rx;
         blob ??= new GradientTexture2D
         {
             Width = 128, Height = 128, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f),
             Gradient = new Gradient { Offsets = new[] { 0f, 0.55f, 1f }, Colors = new[] { new Color(0, 0, 0, 1), new Color(0, 0, 0, 0.7f), new Color(0, 0, 0, 0) } },
         };
-        n.AddChild(new Godot.Decal
+        c.Root.AddChild(new Godot.Decal
         {
-            Name = "Contact", TextureAlbedo = blob, Modulate = new Color(1, 1, 1, hull ? 0.6f : 0.35f), AlbedoMix = 1f,
+            Name = "SetContact", TextureAlbedo = blob, Modulate = new Color(1, 1, 1, ca), AlbedoMix = 1f,
             Size = new Vector3(2.5f * rx, 1.2f, 2.5f * rz), Position = new Vector3(x, y0, zz),
         });
-        c.Root.AddChild(n);
         return rx;
     }
 
@@ -461,4 +545,58 @@ public static partial class DungeonDress
 
     /// <summary>(round 10b) Decal kinds the set's paintings replace where it dresses (off-style beside them).</summary>
     static bool SetDrops(string kind) => kind is "bone" or "ribcage" or "wolf_skull" or "deer_skull" or "blood" or "hide" or "drag" or "fur";
+
+    static ArrayMesh SetMesh(SetBuf b)
+    {
+        var arr = new Godot.Collections.Array();
+        arr.Resize((int)Mesh.ArrayType.Max);
+        arr[(int)Mesh.ArrayType.Vertex] = b.V.ToArray();
+        arr[(int)Mesh.ArrayType.Normal] = b.N.ToArray();
+        arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
+        arr[(int)Mesh.ArrayType.Color] = b.C.ToArray();
+        arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        return mesh;
+    }
+
+    /// <summary>(r10c) An inner corner (B4 back-left, B4R_2 back-right) laid in the camera's plane with its inner point (the
+    /// image's foot_u, foot_v: where its far arm's foot meets its wall arm's) on the plane point (X, Y), cast onto the bank
+    /// and floor under the two runs' front rows: it shows where they end, in the corner between them.</summary>
+    static void SetCorner(Ctx c, SetBuf buf, SetBank b, float X, float Y, float top)
+    {
+        float W = b.Metres.X * SetScale, Hm = b.Metres.Y * SetScale;
+        const float cell = 0.35f;
+        int nu = Mathf.CeilToInt(W / cell) + 1, nv = Mathf.CeilToInt(Hm / cell) + 1;
+        int base0 = buf.V.Count;
+        var keepv = new bool[nu * nv];
+        bool left = b.Kind == "corner_l";
+        System.Func<float, float, float> surf = (x, zz) => SurfBank(c, x, zz);
+        for (int j = 0; j < nv; j++)
+            for (int i = 0; i < nu; i++)
+            {
+                float u = (float)i / (nu - 1), v = (float)j / (nv - 1);
+                float PX = X + (u - b.FootU) * W, PY = Y + (b.FootV - v) * Hm;
+                var q = SetCast(new Vector3(PX, 0f, 0f) + CamUp * PY, surf, top);
+                // along the arms from the inner point (the far arm runs away from the wall, the wall arm down the frame)
+                // under the runs' front rows (they carry on over its arms), over the rows behind; toward its image's edges only its
+                // bright roots, as a module over its neighbour
+                float fa = Mathf.Min(Mathf.Min(u * W, (1f - u) * W), Mathf.Min(v * Hm, (1f - v) * Hm)) / 2f;
+                bool bankSide = (left ? u < b.FootU - 0.02f : u > b.FootU + 0.02f) || v < b.FootV - 0.02f;
+                bool keep = !(bankSide && Wall(c, q.X, q.Z) > 0.3f);
+                keepv[j * nu + i] = keep;
+                buf.V.Add(q - CamView * 0.02f);
+                buf.N.Add(Vector3.Up);
+                buf.U.Add(new Vector2(u, v));
+                buf.C.Add(new Color(fa, keep ? 1f : 0f, 0f, 1f));
+            }
+        for (int j = 0; j < nv - 1; j++)
+            for (int i = 0; i < nu - 1; i++)
+            {
+                int k0 = j * nu + i, k1 = k0 + 1, k2 = k0 + nu, k3 = k2 + 1;
+                if (!keepv[k0] && !keepv[k1] && !keepv[k2] && !keepv[k3]) continue;
+                buf.I.Add(base0 + k0); buf.I.Add(base0 + k2); buf.I.Add(base0 + k1);
+                buf.I.Add(base0 + k1); buf.I.Add(base0 + k2); buf.I.Add(base0 + k3);
+            }
+    }
 }

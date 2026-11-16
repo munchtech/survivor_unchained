@@ -23,6 +23,12 @@ uniform vec3 shade_tint = vec3(0.84, 0.92, 1.2);
 uniform float shade_lo = 0.01;
 uniform float shade_hi = 0.08;
 uniform float shade_k = 1.0;
+// (r10c) The darks between the roots never go black: the targets' sit at L 12-20 of 255, cool; the painting's own darks
+// lit at least dark_floor (an emission in shade_tint, fading out over the painting's darkest 5%), whatever light reaches them.
+uniform float dark_floor = 0.0;
+// (r10c) and the painting shows at least amb_floor of its own painted value where little light reaches (the frame's edges
+// fell to 1/20 of it: flat black between roots the target paints at L 20-40)
+uniform float amb_floor = 0.0;
 
 void fragment() {
 	vec4 c = texture(paint_tex, UV);
@@ -34,6 +40,7 @@ void fragment() {
 	col = mix(vec3(l), col, sat);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
 	ALBEDO = col * gain;
+	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	ALPHA = c.a * show * step(0.5, COLOR.g);
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	// the ink tag (cel.gdshaderinc's cel_tag): roughness 1, class 2 (no post ink: the painting carries its own)
