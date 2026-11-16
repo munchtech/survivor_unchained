@@ -157,9 +157,29 @@ def prowl_stop(rig, side):
     trailing, the shield at her left hip) from the landing on, riding the chest through the lean. Planting the left,
     the right comes in behind her; planting the right, the left steps through and the right draws back a step."""
     from clips import prowl
+    from gait import arc_of
+    from rig import qaxis, qrot
     E = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
-    arms = {k: E[k] for k in ("hand_l", "hand_r", "fingers_l", "fingers_r")}
+    arms0 = {k: E[k] for k in ("hand_l", "hand_r", "fingers_l", "fingers_r")}
     pole = {"l": (0.15, 0, 1.0), "r": (-0.15, 0, 1.0)}
+
+    def armsw(a):
+        # (solver 4a) Prowl's arms with the sword arm swung `a` deg further out from her side about the shoulder (the
+        # chest's forward line), the fist and blade with it (the bend and the wrist kept): through the landing her right
+        # hip and thigh swing out under a hand held where Prowl's stance holds it (motion --outfits: 80 mm into her)
+        if not a:
+            return arms0
+        q = qaxis([0.0, 0.0, 1.0], -a)
+        h = dict(arms0["hand_r"])
+        az, el, r = h["arc"]
+        v = r * np.array([math.sin(math.radians(az)) * math.cos(math.radians(el)), math.sin(math.radians(el)),
+                          math.cos(math.radians(az)) * math.cos(math.radians(el))])
+        h["arc"] = arc_of(qrot(q, v))
+        for k in ("blade", "knuckles", "pole"):
+            h[k] = tuple(float(x) for x in qrot(q, np.array(h[k], float)))
+        return dict(arms0, hand_r=h)
+    arms = arms0
+    ao = {f: STOP_OUT * w for f, w in (STOP_OUT_L if side == "l" else STOP_OUT_R).items()}
 
     def foot(s, pos, rot=(0, 0, 0), toe=0, w=0.0):
         return {"pos": pos, "rot": rot, "toe": toe, "pole": _mix(pole[s], E[f"foot_{s}"]["pole"], w)}
@@ -207,8 +227,16 @@ def prowl_stop(rig, side):
             (26, {**arms, **body(1.0, 0), "foot_l": foot("l", L["pos"], L["rot"], w=1.0), "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)},
              "ease"),
         ]
+    keys = [(f, dict(d, hand_r=armsw(ao.get(f, 0.0))["hand_r"]), e) for f, d, e in keys]
     meta = {"layer": "full", "weapon": "sword+shield"}
     return build(f"stop_warden_{side}", rig, keys, meta=meta)
+
+
+# (solver 4a) the sword arm's swing out (deg, STOP_OUT times each key's share) through the landing, none at the end
+# (Prowl's own): the left plant throws her right hip out at f9-f12, the right plant at f13-f18.
+STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "8"))
+STOP_OUT_L = {0: 0.6, 5: 0.9, 9: 1.0, 16: 0.5, 26: 0.0}
+STOP_OUT_R = {0: 0.6, 5: 0.8, 9: 0.9, 13: 1.0, 18: 0.6, 26: 0.0}
 
 
 def stop(rig, calling, side):

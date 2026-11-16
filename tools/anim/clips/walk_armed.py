@@ -91,6 +91,13 @@ def _trail_hand(k, f):
     m = np.array([-1.0, 1, 1])
     E0, H0 = arm_joints(th, out, el, turn, lu, lf)
     E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out, el - 8.0 * k, turn, lu, lf)
+    # (solver 4a) where her mesh needs the fist let out (_solve's push, m), the whole arm swung that much further out
+    # from her side about the shoulder (the reach and the elbow's bend kept; the push laid on the wrist as a longer
+    # reach straightened the elbow to 4 deg and turned the wrist past armroll's caps)
+    p = float(_CTX.get("push_r", np.zeros(f + 1))[f])
+    if p > 0:
+        E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out + math.degrees(p / max(float(np.hypot(H[0], H[1])), 0.2)),
+                          el - 8.0 * k, turn, lu, lf)
     E0, H0, E, H = E0 * m, H0 * m, E * m, H * m
     # the forearm's turn from Prowl's (its line, then its hinge's way: the elbow's side of the arm)
     q = qbetween(H0 - E0, H - E)
@@ -233,12 +240,15 @@ def _solve(rig, name, town, k, push):
     rot, pos = town.rot.copy(), town.pos.copy()
     n = len(rot) - 1  # the closing frame is the first again
     way = PUSH.get(name, OUT)
+    # (solver 4a) the trailing sword arm takes its push as more out at the shoulder (walk_armed._trail_hand)
+    joints = name == "walk_warden" and "r" in _PROWL and bool(_CTX.get("trail"))
+    _CTX["push_r"] = push["r"] if joints else np.zeros(n)
     specs = []
     for f in range(n):
         sp = {}
         for s, carry in arms.items():
             h = dict(carry(float(k[s][f]), f))
-            if push[s][f] > 0:
+            if push[s][f] > 0 and not (joints and s == "r"):
                 from gait import arc_of as _arc
                 az, el, r = h["arc"]
                 a, e = math.radians(az), math.radians(el)

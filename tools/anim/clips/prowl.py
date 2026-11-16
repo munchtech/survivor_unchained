@@ -42,7 +42,7 @@ ELBOW_R = float(os.environ.get("PROWL_ELBOW_R", "38"))
 FORE_R = float(os.environ.get("PROWL_FORE_R", "0"))  # deg the sword forearm tips forward about B's elbow (replaces ELBOW_R)
 # (m) each hand moved out from her side (motion --outfits: at 0 the sword hand met her hip 6 mm, the warden plate 24/19;
 # at r 0.025 / l 0.02: skin 0, warden plate 2 r / 9 l, reaver 3 l)
-HAND_OUT = {"r": float(os.environ.get("PROWL_OUT_R", "0.025")), "l": float(os.environ.get("PROWL_OUT_L", "0.02"))}
+HAND_OUT = {"r": float(os.environ.get("PROWL_OUT_R", "0.04")), "l": float(os.environ.get("PROWL_OUT_L", "0.02"))}
 # (aim-move solver 2, 15 Nov; PROWL_TRAIL=1, off by default until the walk and run carry match it) the sword arm keyed
 # by its joints (gait.arm_joints: th fwd of hanging, out, the elbow's inside angle, turn in; chest frame) and the fist by
 # its grip frame (blade, knuckles; chest frame), found INSIDE armroll's caps (solve2 reach.py: forearm turned out 77,
@@ -53,8 +53,8 @@ TRAIL = os.environ.get("PROWL_TRAIL", "1") == "1"
 # (solver 3a, 15 Nov: on by default; PROWL_TRAIL=0 is the old keyed line) the elbow's inside angle 147 (bend 30-36 with
 # her weight shift), the grip re-keyed to 11 ulnar (was 19-25, past W_DEV_LOW), and the arm and fist ride TRAIL_FOLLOW
 # of the chest's turn from its mean: the whole chest's turn swung the line -130..-97 and the tip 0.63-0.83 m out.
-TRAIL_ARM = (-10.0, 0.0, 147.0, 0.0)
-TRAIL_GRIP = ((-0.6261, -0.7783, 0.0147), (0.7770, -0.6250, -0.0558))  # (pro 71-78, ext 30-37, 13-20 ulnar; 11 needs pro 85-91)
+TRAIL_ARM = (-10.0, 14.0, 147.0, 22.0)  # (solver 4a: out 14, turned in 22; was out 0: the fist 58 mm into her hip)
+TRAIL_GRIP = ((-0.6261, -0.7783, 0.0147), (0.7324, -0.5943, -0.3285))  # (solver 4a: knuckles rolled -16 about the blade)
 TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
 
 
@@ -267,8 +267,12 @@ def build(rig, name="idle_warden", arms_l=None, fingers_l=None):
 # BREAK_LIFT), then falls back to the trail. (Replaces soul.warden_break, which rested the flat on her shoulder from the
 # old square stand: from Prowl the game's blend into it snapped her feet and hips.)
 BREAK_F = 96
-BREAK_CONE = 34.0
-BREAK_LIFT = 0.04
+# (solver 4a) the circle drawn ABOVE the trailing line (it starts and ends on it, rising BREAK_CONE at its top), the
+# blade and knuckles turned together about the fist's grip (the fist stays where Prowl holds it, clear of her hip): at
+# 34 deg about the line the point dipped onto her right thigh (-0.1 cm) and the wrist went past armroll's caps.
+BREAK_CONE = float(os.environ.get("PROWL_BREAK_CONE", "20"))
+BREAK_LIFT = 0.02
+BREAK_GRIP = 0.045  # m, the wrist to the fist's grip point along the knuckles
 
 
 def build_break(rig, name="idle_warden_break", fingers_l=None):
@@ -276,9 +280,6 @@ def build_break(rig, name="idle_warden_break", fingers_l=None):
     rot, pos, poses, fps, loop = specs(rig, fingers_l)
     n = BREAK_F
     a0, a1 = 14, 74  # the circle's frames
-    bl0 = _norm(BLADE)
-    e1 = _norm(np.cross(bl0, [0.0, 1.0, 0.0]))
-    e2 = _norm(np.cross(e1, bl0))
     out = []
     for t in range(n + 1):
         pose = {k: (dict(v) if isinstance(v, dict) else v) for k, v in poses[t].items()}
@@ -286,12 +287,19 @@ def build_break(rig, name="idle_warden_break", fingers_l=None):
         env = math.sin(math.pi * u) ** 2
         if env > 0:
             h = pose["hand_r"]
+            b0, k0 = _norm(h["blade"]), _norm(h["knuckles"])
+            e1 = _norm(np.cross(b0, [0.0, 1.0, 0.0]))  # (level, square to the blade)
+            e2 = _norm(np.cross(e1, b0))  # (up, square to the blade)
             th = 2 * math.pi * u
-            # the point first rises and comes forward (the circle starts up, over the front)
-            c = math.radians(BREAK_CONE * env)
-            b = np.array(h["blade"]) * math.cos(c) + (e2 * math.cos(th) - e1 * math.sin(th)) * math.sin(c)
-            h["blade"] = tuple(_norm(b))
-            h["pos"] = tuple(np.array(h["pos"]) + np.array([0.0, BREAK_LIFT * env, 0.01 * env]))
+            # the point's way off the line: a circle through the line, above it (the point first rises and comes
+            # forward, sweeps over and back, and comes down onto the line again), BREAK_CONE across
+            w = e2 * (1.0 - math.cos(th)) * 0.5 - e1 * math.sin(th) * 0.5
+            c = BREAK_CONE * min(1.0, 2.0 * env) * float(np.linalg.norm(w))
+            if c > 1e-6:
+                q = qaxis(_norm(np.cross(b0, _norm(w))), c)
+                grip = np.array(h["pos"]) + BREAK_GRIP * k0
+                h["blade"], h["knuckles"] = tuple(qrot(q, b0)), tuple(qrot(q, k0))
+                h["pos"] = tuple(grip + qrot(q, np.array(h["pos"]) - grip) + np.array([0.0, BREAK_LIFT * env, 0.0]))
         out.append(pose)
     r2, p2 = solve_frames(rig, out, [(rot[t], pos[t]) for t in range(n + 1)], loop=False, weapon="sword+shield")
     meta = {"layer": "full", "weapon": "sword+shield", "made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)"}

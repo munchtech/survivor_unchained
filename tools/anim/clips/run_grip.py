@@ -38,12 +38,16 @@ def _rig():
     return _RIG["r"]
 
 
-def fist_frame(spec, pro, flex, dev, side="r"):
+def fist_frame(spec, pro, flex, dev, side="r", tilt=0.0):
     """The grip's (blade, knuckles) in the chest's frame for an arm keyed by `spec` (arc / pos and pole, chest frame)
-    with the fist at wrist reading (pro, flex, dev) (armroll.wrist's, before keyed's forearm share)."""
+    with the fist at wrist reading (pro, flex, dev) (armroll.wrist's, before keyed's forearm share). `tilt`: the clip's
+    "grip_tilt" (degrees; keyed.grip_of: the blade's lean in the fist 35 - tilt about hand +X, - toward her fingers), the
+    same the clip's meta carries, so keyed's solve (rig.grip = grip_of(weapon, tilt)) lands the fist at this reading."""
+    from keyed import grip_of
     from rig import qaxis, qinv, qmul, qrot
     import armroll
     rig = _rig()
+    rig.grip = grip_of("sword+shield", tilt)
     sk, I = rig.sk, rig.I
     s2 = {k: v for k, v in spec.items() if k in ("arc", "pos", "pole", "pole_at", "frame")}
     s2["frame"] = "chest"
@@ -65,10 +69,10 @@ def fist_frame(spec, pro, flex, dev, side="r"):
     return tuple(qrot(G, np.array([0, 0, 1.0]))), tuple(qrot(G, np.array([0, 1.0, 0])))
 
 
-def wrist_carry(fwd, back, lag=0.0, side="r"):
+def wrist_carry(fwd, back, lag=0.0, side="r", tilt=0.0):
     """A carry (Gait.arms) for an arm keyed by its joints (Gait.swing / swing_r): the fist at wrist reading `fwd`
     (pro, flex, dev) with the fist forward, `back` with it back, eased between by the swing read `lag` of a cycle late
-    (the blade trails the fist)."""
+    (the blade trails the fist). `tilt`: the clip's "grip_tilt" (fist_frame; the clip's meta must carry the same)."""
     fw, bk = np.array(fwd, float), np.array(back, float)
     cache = {}
 
@@ -79,7 +83,7 @@ def wrist_carry(fwd, back, lag=0.0, side="r"):
         key = (tuple(np.round(hand.get("arc", (0, 0, 0)), 6)), tuple(np.round(hand.get("pole", (0, 0, 0)), 6)),
                round(pro, 4), round(flex, 4), round(dev, 4))
         if key not in cache:
-            cache[key] = fist_frame(hand, pro, flex, dev, side)
+            cache[key] = fist_frame(hand, pro, flex, dev, side, tilt)
         b, kn = cache[key]
         hand.update({"blade": b, "knuckles": kn, "frame": "chest"})
         hand.pop("pole_frame", None)

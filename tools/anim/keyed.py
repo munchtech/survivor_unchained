@@ -1175,7 +1175,13 @@ WRAP_TILT = {"staff": {20.0: {"bends": {"index": (77.9, 60.1, 60.1), "middle": (
              "sword": {30.0: {"bends": {"index": (70.7, 58.2, 60.2), "middle": (64.5, 65.4, 60.5), "ring": (62.4, 55.0, 60.2),
                                         "pinky": (57.2, 40.6, 60.5), "thumb": (7.3, 59.52, -10.21)},
                               "spreads": {"index": -18.2, "middle": -5.7, "ring": -1.4, "pinky": 8.8},
-                              "oppose": 0.01, "thumb_roll": 30.07}}}
+                              "oppose": 0.01, "thumb_roll": 30.07},
+                       # aim-move (15 Nov): the warden's relaxed run carry, the blade hanging toward the fingers
+                       # (fistfit.py sword --fit --grip-tilt -35; a loose fist, NOT JUDGED: fistfit reports 9 fails, tips hang 2-8 mm).
+                       -35.0: {"bends": {"index": (10.4, 28.7, 60.2), "middle": (0.5, 86.5, 29.8), "ring": (48.9, 58.5, 60.7),
+                                         "pinky": (68.0, 37.2, 60.5), "thumb": (57.81, -10.41, -12.26)},
+                               "spreads": {"index": -30.0, "middle": -21.2, "ring": -8.9, "pinky": 15.9},
+                               "oppose": 0.09, "thumb_roll": -45.98}}}
 
 
 # The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
