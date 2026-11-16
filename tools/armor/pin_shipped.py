@@ -187,13 +187,16 @@ def pin(path, pre, body, B=None):
 
 
 def _glb_objects(path):
-    """{node name: its points} of a mesh file (identity transforms: the contract's)."""
+    """{node name: its points} of a mesh file (identity transforms: the contract's). Nodes sharing a name are one
+    source part (a plate and its gold, one material each: the importer reads them as `<name>`, `<name>.001` and puts
+    them on ONE blend), so their points join."""
     G = _Gl(path)
     out = {}
     for n in G.g["nodes"]:
         if "mesh" in n:
             pts = [G.get(p["attributes"]["POSITION"]).astype(float) for p in G.g["meshes"][n["mesh"]]["primitives"]]
-            out[n.get("name", "")] = np.vstack(pts)
+            nm = n.get("name", "")
+            out[nm] = np.vstack([out[nm]] + pts) if nm in out else np.vstack(pts)
     return out
 
 

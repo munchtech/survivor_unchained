@@ -287,7 +287,7 @@ def outer_rho(UV, UF, nsk, wrap, Y, TH, R=0.42):
     return rho, (i < nsk).reshape(Y.shape)
 
 
-def hang(ref, wrap, name, ths, y_top, rho_top, length, a0, need, it=8, sig=1.5, rows=14):
+def hang(ref, wrap, name, ths, y_top, rho_top, length, a0, need, it=8, sig=1.5, rows=14, a_max=None):
     """A rigid hanging plate: columns at ths from (y_top, rho_top) down a cone tilted a0 (deg) out from vertical,
     each column's tilt raised until every point stands `need` (m, per row fraction) off her skin. Returns the inner
     grid (rows, cols, 3), its outward normals and the tilts."""
@@ -312,6 +312,8 @@ def hang(ref, wrap, name, ths, y_top, rho_top, length, a0, need, it=8, sig=1.5, 
             break
         a = a + np.clip(defi, 0, None) * 1.1
         a = np.maximum(a, gaussian_filter1d(a, sig, mode="nearest"))
+        if a_max is not None:  # (a plate never flares past a_max: the design hangs them near her line)
+            a = np.minimum(a, np.radians(a_max))
     G = grid(a)
     du = np.gradient(G, axis=1)
     dv = np.gradient(G, axis=0)
@@ -443,7 +445,7 @@ def belt(cfg, ref):
             length = interp1d(np.linspace(0, 1, len(Lk)), Lk, kind="quadratic" if len(Lk) > 2 else "linear")(np.clip(u, 0, 1))
             nd = pl["need"]
             G, Nn, tilt = hang(ref, wrap, nm, ths, y_top, rho_t, length, pl["tilt"],
-                               lambda f, nd=nd: nd[0] + (nd[1] - nd[0]) * f, rows=pl["rows"])
+                               lambda f, nd=nd: nd[0] + (nd[1] - nd[0]) * f, rows=pl["rows"], a_max=pl.get("tilt_max"))
             ex = None
             if pl.get("keel"):
                 k_ = pl["keel"]
@@ -462,7 +464,9 @@ def belt(cfg, ref):
                 gold += interlace(Gs, Nn, 1.2, len(ths) - 2.2, b_["v"][0], b_["v"][1], b_["wl"], nm + "_band", M["trim"], 0.0,
                                   [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
                                    dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
-            rigid.append(Part.join(nm + "_gold_rigid", M["trim"], gold))
+            # (the SAME node name as its plate: the importer reads them as one source part (`<name>_rigid`, `.001`), whose
+            # parts ride ONE common blend (piece_blender by_src), so the gold never drifts off its steel in motion)
+            rigid.append(Part.join(nm + "_rigid", M["trim"], gold))
             print(nm, "tilt", np.round(tilt.min(), 1), np.round(tilt.max(), 1), "len", np.round(length.max(), 3))
     return plate, trim, straps, rigid
 
