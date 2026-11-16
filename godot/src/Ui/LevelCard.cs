@@ -372,7 +372,8 @@ public partial class LevelCard : Control
                 float gs = SeatPicture.CardPx + 2 * DgGold.Pad;
                 DrawTextureRect(glyph, new Rect2(wc - new Vector2(gs, gs) / 2, new Vector2(gs, gs)), false);
             }
-            else if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : s.Kind == LevelCardKind.NewRoad ? -6 : -8), false);
+            // (an auto's picture fills its 40 px well as it fills its 26 px tile on the bar: drawn at the tile's own ratio, not its pixel size)
+            else if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -6 : s.Kind == LevelCardKind.NewRoad ? -6 : s.Kind == LevelCardKind.NewAuto ? -2 : -8), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, nameSz, Cream);
             if (s.Kind != LevelCardKind.LampLit)
             {

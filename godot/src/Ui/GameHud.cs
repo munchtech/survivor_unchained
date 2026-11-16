@@ -350,6 +350,8 @@ public partial class GameHud : CanvasLayer
         corner = c;
         c.Position = new Vector2(1920 - 31 - 400, 22);
         c.Size = new Vector2(400, 0);
+        // (a name wider than the column grows it leftward: its right margin holds, it never runs off the screen's edge)
+        c.GrowHorizontal = Control.GrowDirection.Begin;
         play.AddChild(c);
         zoneName = Rimmed(Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right));
         c.AddChild(zoneName);
@@ -1800,12 +1802,15 @@ public partial class GameHud : CanvasLayer
 
     float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(AutoRow.RowTop))).Y : null;
 
+    /// <summary>(judged 15 Nov at 1:1) the stance disc's blue ring is drawn ~3 px outside its rect (4: the 2 px gap kept); the tile's bezel starts 1 px inside its rect: the tail aims at what is drawn.</summary>
+    const float DiscRingOut = 4, TileBezelIn = 1;
+
     /// <summary>bd-ui W6: the card's tail ends on the top of what opened: its key seat's cap, its auto tile, the front stance disc.</summary>
     Vector2? CardTopOf(LevelCardSpec s)
     {
         if (!campaignNow) return null;
-        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y); }
-        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y);
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y - DiscRingOut); }
+        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y + TileBezelIn);
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return null;
         float capTop = AutoRowModel.CapTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
