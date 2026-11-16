@@ -676,6 +676,7 @@ public static class DungeonWalls
             mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", 0.1f));
             mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", 0.6f));
             mat.SetShaderParameter("set_area", DungeonDress.SetArea(c.Z));   // (den round 10b: the mound is the dark mass behind the set)
+            mat.SetShaderParameter("set_glow", Args.Num("den-set-glow", 0.025f));   // (r11 0.008 -> 0.025: the frame's top-left corner was 59 % near-black)
         }
         return mat;
     }

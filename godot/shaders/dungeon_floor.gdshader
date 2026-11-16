@@ -24,6 +24,7 @@ uniform float open_lift = 1.08;
 uniform float den_sat = 0.65;   // (round 8 judge: the earth 35% less saturated; warmth comes from the shafts and fires)
 uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
+uniform float boss_damp = 0.9;   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 // (den round 10) the painted set's floor (tools/look/den_set.py: art/dungeon/den/set/floor.png, 4 m tiles made seamless):
 // F1 packed earth, F2 trodden, F3 damp with moss, F4 thin root runs, laid by the same weights as the layers above
@@ -230,7 +231,7 @@ void fragment() {
 		float in_boss = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 		col *= mix(vec3(1.0), open_lift * vec3(1.0, 1.03, 1.12), smoothstep(2.5, 5.5, inside) * (1.0 - in_boss));   // (and a touch less orange: den_room.png's centre (86,62,51) against ours (81,55,38))
 		float bdamp = smoothstep(0.47, 0.62, fbm(wpos.xz * 0.14 + 71.0) + 0.1 * (mid - 0.5)) * in_boss;
-		col = mix(col, col * vec3(0.56, 0.52, 0.52), bdamp * 0.9);
+		col = mix(col, col * vec3(0.56, 0.52, 0.52), bdamp * boss_damp);
 		col *= mix(1.0, boss_dim, in_boss);
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));

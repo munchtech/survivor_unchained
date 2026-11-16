@@ -63,8 +63,10 @@ public static class DungeonFloor
                 mat.SetShaderParameter("set_clouds", Args.Num("den-set-clouds", 0.35f)); // (r11) the slow damp/leaf/value clouds' share under the set
                 mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));     // (r10b) worn ways and damp patches
                 mat.SetShaderParameter("set_trod", Args.Num("den-set-trod", 0.5f));     // (r11) the trodden tile's share
+                mat.SetShaderParameter("boss_dim", Args.Num("den-boss-dim", 1.3f));     // (r11) the lair measured median 42 against 68
+                mat.SetShaderParameter("boss_damp", Args.Num("den-boss-damp", 0.35f));
                 if (Args.Get("den-tint") == null) mat.SetShaderParameter("den_tint", new Vector3(0.93f, 0.92f, 0.96f));   // (r11) the floor's quartiles ran 6-11% too blue against den_room.png
-                mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.68f));   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
+                mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.55f));   // (r11 0.68 -> 0.55 with the less blue tint)   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
             }
         }
         return mat;
