@@ -199,9 +199,9 @@ float crowd_edge(float rim) {
 // 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
 // they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
 #define DEN_BOSS_BODY vec2(0.040, 50.0)
-#define DEN_BOSS_BACK vec4(0.43, 0.045, 272.0, 0.93)
+#define DEN_BOSS_BACK vec4(0.43, 0.021, 289.0, 0.93)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.50, 0.16, 42.0)
+#define DEN_MANE vec3(0.54, 0.11, 34.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -214,6 +214,10 @@ float crowd_edge(float rim) {
 // (lead 3 foes: a den foe's hit is a step in its own paint, never a lift toward white: L up by at most DEN_HIT.x and never
 // past DEN_FLASH_L (a block already paler keeps its L), its chroma to at least DEN_HIT.y at hue DEN_HIT.z, warm)
 #define DEN_HIT vec3(0.08, 0.075, 40.0)
+// (lead 3 foes r2: the boss's hit is half the pack's, its body only: L up DEN_HIT_BOSS.x over its own block (its body sits at
+// the cap, so no cap), chroma to at least DEN_HIT_BOSS.y at DEN_HIT's hue; its back and mane keep theirs. At the pack's step
+// a struck boss, struck all fight long, read orange-red)
+#define DEN_HIT_BOSS vec2(0.04, 0.05)
 float vat_den_cut(float c_v, float c_at) {
 	float c_w = fwidth(c_v) * 0.5 + 1e-4;
 	return smoothstep(c_at - c_w, c_at + c_w, c_v);
@@ -241,6 +245,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(crowd_den_boss.rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	vec2 c_btab = vec2(dot(vec3(1.9779984951, -2.4285922050, 0.4505937099), c_bt), dot(vec3(0.0259040371, 0.7827717662, -0.8086757660), c_bt));
 	vec2 c_ab = c_boss ? DEN_BOSS_BODY.x * normalize(c_btab + vec2(1e-5, 0.0)) : vat_den_ab(crowd_den.z, crowd_den.w);
+	float c_hb = c_hit;   // (the hit's share: the boss's body only)
 	if (c_boss) {
 		float c_back = vat_den_cut(c_n.y, DEN_BOSS_BACK.w) * vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
 		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
@@ -248,6 +253,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_mane = vat_den_mane(c_p);
 		c_l = mix(c_l, DEN_MANE.x, c_mane);
 		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z), c_mane);
+		c_hb = c_hit * (1.0 - c_back) * (1.0 - c_mane);
 	}
 	else if (c_cls > 0.5) {
 		// (its accent's hue from the rig's elite tint, crowd_den_elite.rgb, linear)
@@ -258,8 +264,8 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		c_l = mix(c_l, DEN_ACCENT.x, c_acc);
 		c_ab = mix(c_ab, DEN_ACCENT.y * normalize(c_eab + vec2(1e-5, 0.0)), c_acc);
 	}
-	c_l += c_hit * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
-	c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), DEN_HIT.y), DEN_HIT.z), c_hit);
+	c_l += c_boss ? c_hb * DEN_HIT_BOSS.x : c_hit * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
+	c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), c_boss ? DEN_HIT_BOSS.y : DEN_HIT.y), DEN_HIT.z), c_hb);
 	c_l = mix(c_l0, c_l, c_pull);
 	c_ab = mix(c_ab0, c_ab, c_pull);
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
