@@ -78,8 +78,11 @@ def _top(W, k):
     return top, tw
 
 
-def pin(path, pre, body, B=None):
-    """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers."""
+def pin(path, pre, body, B=None, drop=()):
+    """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
+    `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
+    (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
+    head as she turned it)."""
     B = B or bf.Body(body)
     G, Gp = _Gl(path), _Gl(pre)
     g = G.g
@@ -127,7 +130,12 @@ def pin(path, pre, body, B=None):
     for gi, sels in enumerate(groups.values()):
         sel = np.concatenate(sels)
         rigid[sel] = gi
-        t, w = _top(Wq[sel].mean(0)[None], 4)
+        mw = Wq[sel].mean(0)
+        if drop:
+            kd = np.array([not str(nm_).startswith(tuple(drop)) for nm_ in B.names])
+            if (mw * kd).sum() > 1e-6:
+                mw = mw * kd
+        t, w = _top(mw[None], 4)
         TOP[sel, :4], TW[sel, :4] = t[0], w[0]
     bend = rigid < 0
     if bend.any():

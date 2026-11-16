@@ -586,7 +586,7 @@ def clearance(ref, part):
 def build(pid):
     d = os.path.join(SRC, pid)
     cfg = json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
-    if cfg.get("module") in ("kit_limbs", "kit_upper"):  # limbs; pauldrons + helm (multi-material rigid nodes): own build
+    if cfg.get("module") in ("kit_limbs", "kit_upper", "kit_helm"):  # limbs; pauldrons, helm (multi-material rigid nodes): own build
         import importlib
         return importlib.import_module(cfg["module"]).build(pid, cfg)
     mats = json.load(open(MATS, encoding="utf-8"))

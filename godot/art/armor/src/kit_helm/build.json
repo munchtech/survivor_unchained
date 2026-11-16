@@ -1,0 +1,23 @@
+{
+ "recipe": "helm",
+ "module": "kit_helm",
+ "piece": {"id": "kit_helm", "name": "Gilded Gunmetal Helm", "slot": "head", "covers": ["head"], "layer": 3,
+           "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
+ "params": {"graft": false, "rigid_drop": ["neck", "spine", "clavicle", "trap", "pec", "upperarm", "breast"]},
+ "mat": {"plate": "steel", "trim": "gold"},
+ "clear_min": 0.0022, "thick": 0.0025,
+ "rim": {"w": 0.0085, "h": 0.0032, "sides": 6, "step": 0.004},
+ "helm": {"hair": "heroine_hair_braid", "hair_node": "hair_braid", "hair_above": 1.60,
+          "centre": [0.0, 1.755, 0.005], "subdiv": 5, "keep_dy": -0.9, "tmax": 0.3,
+          "dilate": 3, "smooth": 8, "clear": 0.008, "wall_y": 1.74, "wall_flare": 0.12, "wall_smooth": 6,
+          "brow": [[0, 1.787], [8, 1.792], [25, 1.803], [45, 1.806], [90, 1.800], [140, 1.795], [168, 1.787], [180, 1.781]],
+          "bottom": [[0, 1.655], [60, 1.655], [100, 1.662], [140, 1.660], [165, 1.652], [180, 1.640]],
+          "face": {"half_w": [[1.60, 0.064], [1.66, 0.062], [1.70, 0.064], [1.74, 0.069], [1.78, 0.073], [1.82, 0.076]],
+                   "corner_r": 0.006, "z_min": 0.0},
+          "crest": {"from": -68, "to": 64, "w": 0.016, "h": 0.0045, "taper": 0.12},
+          "band": {"h": 0.016, "lift": 0.0015, "thick": 0.0018, "rim_w": 0.0065, "rim_h": 0.0025, "rim_gap": 0.007,
+                   "waves": 26, "knot_amp": 0.32, "knot_w": 0.0032, "knot_h": 0.0016},
+          "knot": {"at": 0.5, "w": 0.009, "h": 0.012, "depth": 0.004, "lift": 0.0005},
+          "rivets": [[48, 1.735], [47, 1.690], [140, 1.705], [163, 1.690]],
+          "rivet_r": 0.0028, "rivet_h": 0.0017}
+}
