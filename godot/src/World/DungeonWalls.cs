@@ -178,10 +178,18 @@ public static class DungeonWalls
         int n = (int)(size / Cell) + 1;
 
         float hi = c.Ravine ? Hi : 6.5f + Ctx.BackRun;   // the den's bank band runs to its fall-off (sc + 3 at most 6), and on up the back banks' climb (round 8)
-        // s at every grid vertex; the band and its dilation get positions.
+        // s at every grid vertex; the band and its dilation get positions up front, and any other corner a drawn cell or a
+        // normal reaches is placed when it is first asked for (Pos).
+        // (den r11 solver, 15 Nov: a cell is drawn when any corner is in the band, and the 1.6 m dilation was taken to cover
+        // its other corners. The den's s is no distance field since WallOnly (pit solver, 15 Nov): where a wall gives way
+        // to a pit it leaps from the band to -8 within one 0.5 m cell, so those corners were never placed and stood at
+        // Vector3.Zero, the world's origin. Their triangles ran from the pits' walls to the origin: the fan over the seed-23
+        // lair (the origin under its middle), the dark plank across seed 11's corridor at -108,-78 (the origin behind the
+        // lens), and the normals beside them pointed at it. 290 such corners on seed 23, triangles up to 148 m long.)
         var s = new float[n * n];
         var pos = new Vector3[n * n];
         var fly = new float[n * n];
+        var placed = new bool[n * n];
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++)
             {
@@ -190,7 +198,21 @@ public static class DungeonWalls
                 s[j * n + i] = sv;
                 if (sv < Lo - 1.6f || sv > hi + 1.6f) continue;
                 pos[j * n + i] = Place(c, x, zz, sv, out fly[j * n + i]);
+                placed[j * n + i] = true;
             }
+        int late = 0;
+        float lateLo = float.MaxValue, lateHi = float.MinValue;
+        Vector3 Pos(int i, int j)
+        {
+            int k = j * n + i;
+            if (!placed[k])
+            {
+                pos[k] = Place(c, -c.Half + i * Cell, -c.Half + j * Cell, s[k], out fly[k]);
+                placed[k] = true;
+                late++; lateLo = Mathf.Min(lateLo, s[k]); lateHi = Mathf.Max(lateHi, s[k]);
+            }
+            return pos[k];
+        }
 
         var wall = new Buf();
         var map = new int[n * n];
@@ -200,12 +222,13 @@ public static class DungeonWalls
             int k = j * n + i;
             if (map[k] >= 0) return map[k];
             // Normal by central differences on the displaced grid (as the ground's).
-            Vector3 P(int a, int b) => pos[Mathf.Clamp(b, 0, n - 1) * n + Mathf.Clamp(a, 0, n - 1)];
+            Vector3 P(int a, int b) => Pos(Mathf.Clamp(a, 0, n - 1), Mathf.Clamp(b, 0, n - 1));
             var nrm = (P(i, j + 1) - P(i, j - 1)).Cross(P(i + 1, j) - P(i - 1, j));
             nrm = nrm.LengthSquared() < 1e-10f ? Vector3.Up : nrm.Normalized();
+            var p = Pos(i, j);
             float bt = 0f;
-            if (!c.Ravine) { float sx = c.BankTop(pos[k].X, pos[k].Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
-            return map[k] = wall.Add(pos[k], nrm, 0f, fly[k], s[k], bt);
+            if (!c.Ravine) { float sx = c.BankTop(p.X, p.Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
+            return map[k] = wall.Add(p, nrm, 0f, fly[k], s[k], bt);
         }
         bool In(int i, int j) { float v = s[j * n + i]; return v >= Lo && v <= hi; }
         for (int j = 0; j < n - 1; j++)
@@ -252,7 +275,7 @@ public static class DungeonWalls
         }
         var mat = Material(c);
         for (int k = 0; k < mesh.GetSurfaceCount(); k++) mesh.SurfaceSetMaterial(k, mat);
-        GD.Print($"DungeonWalls {z.DungeonTheme}: {wallTris} wall tris, {rootTris} root tris");
+        GD.Print($"DungeonWalls {z.DungeonTheme}: {wallTris} wall tris, {rootTris} root tris, {late} corners past the band placed late" + (late > 0 ? $" (s {lateLo:F1} to {lateHi:F1})" : ""));
         return new MeshInstance3D { Name = "DungeonWalls", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
     }
 
