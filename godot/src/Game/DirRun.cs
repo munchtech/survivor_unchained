@@ -21,7 +21,8 @@ public static class DirRun
     static readonly bool Views = Args.Get("dirrun-set") == "views";
     static readonly (double At, string Name, double X, double Z)[] ViewSegs =
     {
-        (0, "away", 0, 1), (1.6, "stand_a", 0, 0), (4.0, "front", 0, -1), (5.6, "stand_f", 0, 0),
+        // (+Z is toward the camera, down-screen: "toward" runs at the camera, "away" up-screen, seen from behind)
+        (0, "toward", 0, 1), (1.6, "stand_t", 0, 0), (4.0, "away", 0, -1), (5.6, "stand_a", 0, 0),
         (8.0, "side_x", 1, 0), (9.6, "stand_x", 0, 0), (12.0, "side_mx", -1, 0), (13.6, "stand_mx", 0, 0),
     };
     /// <summary>--dirrun-set film: the owner's short film (15 Nov) under the ALWAYS facing mode, the cursor leading her as a
@@ -30,8 +31,9 @@ public static class DirRun
     static readonly bool Film = Args.Get("dirrun-set") == "film";
     static readonly (double At, string Name, double X, double Z, double AX, double AZ)[] FilmSegs =
     {
-        (0, "idle_away", 0, 0, 0, 1), (2.5, "turn_f", 0, 0, 0, -1), (3.7, "turn_a", 0, 0, 0, 1), (4.9, "away", 0, 1, 0, 1),
-        (6.5, "stand_a", 0, 0, 0, 1), (8.7, "front", 0, -1, 0, -1), (10.3, "stand_f", 0, 0, 0, -1),
+        // (+Z is toward the camera, down-screen; -Z away, up-screen)
+        (0, "idle_away", 0, 0, 0, -1), (2.5, "turn_t", 0, 0, 0, 1), (3.7, "turn_a", 0, 0, 0, -1), (4.9, "away", 0, -1, 0, -1),
+        (6.5, "stand_a", 0, 0, 0, -1), (8.7, "toward", 0, 1, 0, 1), (10.3, "stand_t", 0, 0, 0, 1),
         (12.5, "side_x", 1, 0, 1, 0), (14.1, "stand_x", 0, 0, 1, 0),
     };
     static int seg = -1;
