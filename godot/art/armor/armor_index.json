@@ -14,7 +14,7 @@
    "kit_belt.belt.steel"
   ],
   "tuck": "armor_tuck/kit_belt.bin",
-  "tuck_count": 0,
+  "tuck_count": 110,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_belt.gltf",
   "tier": 2,
@@ -63,7 +63,7 @@
    "kit_boots.boots.steel"
   ],
   "tuck": "armor_tuck/kit_boots.bin",
-  "tuck_count": 3894,
+  "tuck_count": 3915,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_boots.gltf",
   "tier": 2,
@@ -84,7 +84,7 @@
    "kit_brief.bottom.steel"
   ],
   "tuck": "armor_tuck/kit_brief.bin",
-  "tuck_count": 572,
+  "tuck_count": 697,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_brief.gltf",
   "tier": 2,
@@ -105,10 +105,32 @@
    "kit_gloves.gloves.gold"
   ],
   "tuck": "armor_tuck/kit_gloves.bin",
-  "tuck_count": 1902,
+  "tuck_count": 2020,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_gloves.gltf",
   "tier": 2,
+  "source": "mesh",
+  "body_glb": "66182af6",
+  "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
+ },
+ {
+  "id": "kit_helm",
+  "outfit": null,
+  "slot": "head",
+  "layer": 3,
+  "covers": [
+   "head"
+  ],
+  "meshes": [
+   "kit_helm.head.gold",
+   "kit_helm.head.steel"
+  ],
+  "tuck": "armor_tuck/kit_helm.bin",
+  "tuck_count": 0,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_helm.gltf",
+  "tier": 2,
+  "rigid": true,
   "source": "mesh",
   "body_glb": "66182af6",
   "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
@@ -149,7 +171,7 @@
    "kit_vambraces.bracers.steel"
   ],
   "tuck": "armor_tuck/kit_vambraces.bin",
-  "tuck_count": 5438,
+  "tuck_count": 5803,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_vambraces.gltf",
   "tier": 2,
