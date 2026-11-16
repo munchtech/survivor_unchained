@@ -1,5 +1,10 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026 (evening, coordinator #14): THE DEMO IS THE DEN
+
+- "wind down the other dungeons and focus on the den.  how long is it currently? its procedurally different each time?"
+- **Routed:** the ravine look dropped from the order; no roost tuning; unlock cards, movement and ledge-view told den only. Asked: should some den rooms get an open drop edge for ledge kills.
+
 ## 15 November 2026 (evening, coordinator #14): HER IDLE OUT OF TOWN IS STILL RIGID; THE RUN MOVES ONLY HER LEGS (movement lead, open, FIRST)
 
 - "i'm also still disappointed in her holding sword arm.  for example while running its held rigid not moving at all.  it dosn't look badass OR sexy, and the running animation dosn't move anything but her legs"
