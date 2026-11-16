@@ -24,6 +24,33 @@ uniform float glow_k = 0.7;
 uniform float fg_dark = 0.65;
 uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
 uniform float rim_out = 1.45;
+// (r12) the lair's holes glow green from below (den_boss.png: lime veins down in the pits' dark): veins by a cell
+// noise's edges over the painting's own darks inside the lip; COLOR.a < 0.75 marks a lair hole (PlaceSetHole)
+uniform float pit_glow = 0.0;
+uniform vec3 pit_col : source_color = vec3(0.5, 0.9, 0.28);
+// (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
+// ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
+uniform vec3 boss_c = vec3(0.0);
+uniform float boss_gloom = 0.0;
+varying vec3 wpos;
+void vertex() { wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+float lair_gloom(vec3 p) {
+	if (boss_c.z <= 0.0 || boss_gloom <= 0.0) return 0.0;
+	float d = distance(p.xz, boss_c.xy);
+	return boss_gloom * smoothstep(boss_c.z * 0.3, boss_c.z * 0.75, d) * (1.0 - smoothstep(boss_c.z * 1.2, boss_c.z * 1.5, d));
+}
+vec3 gloom_col(vec3 c, float g) { return mix(c, vec3(dot(c, vec3(0.3, 0.55, 0.15))) * vec3(0.8, 0.95, 1.25), 0.7 * g) * (1.0 - 0.55 * g); }
+vec2 pg_h2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+float pg_edge(vec2 p) {
+	vec2 i = floor(p), f = fract(p);
+	float d1 = 8.0, d2 = 8.0;
+	for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+		vec2 g = vec2(float(x), float(y)), o = pg_h2(i + g);
+		float d = length(g + o - f);
+		if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+	}
+	return d2 - d1;
+}
 
 void fragment() {
 	vec4 c = texture(paint_tex, UV);
@@ -34,6 +61,7 @@ void fragment() {
 	float l = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(vec3(l), col, sat);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
+	col = gloom_col(col, lair_gloom(wpos));
 	ALBEDO = col * gain * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));   // (r11 judge: the nearest banks fall off, as den_room.png's bottom row)
 	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
@@ -42,6 +70,19 @@ void fragment() {
 #ifdef SET_SOFT
 	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
+	if (pit_glow > 0.0 && COLOR.a < 0.75) {
+		vec2 q = UV * 13.0;
+		float e = pg_edge(q + 0.35 * vec2(pg_edge(q * 0.5 + 3.1), pg_edge(q * 0.5 - 7.3)));
+		// fissures, not a net: the cell edges lit only where a slow mask says so, the brightest where two meet
+		float m = smoothstep(0.25, 0.65, pg_edge(q * 0.33 + 5.3) * 1.6);
+		// (r12) a lit core in a wide smoky halo (den_boss.png's veins glow, they are not wire)
+		float v = (0.55 * exp(-e * 14.0) + 0.35 * exp(-e * 4.0)) * (0.2 + 0.8 * m) + 0.2 * exp(-pg_edge(q * 2.3 + 1.7) * 12.0) * m;
+		float inner = 1.0 - smoothstep(0.55, 0.95, 2.0 * COLOR.b);
+		float dark = 1.0 - smoothstep(0.015, 0.09, l);
+		float pulse = 0.85 + 0.15 * sin(TIME * 1.3 + q.x * 0.2);
+		EMISSION += pit_col * pit_glow * v * inner * dark * pulse;
+		EMISSION += pit_col * pit_glow * 0.07 * inner * dark * (0.3 + m);
+	}
 #endif
 #ifndef SET_SOFT
 	ALPHA_SCISSOR_THRESHOLD = 0.5;

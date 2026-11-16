@@ -27,6 +27,10 @@ uniform float boss_dim = 0.95;
 uniform float boss_damp = 0.9;
 uniform float boss_sat = 1.0;
 uniform vec3 boss_tint = vec3(1.0);
+uniform float den_chroma = 1.0;
+uniform float den_chroma_lo = 0.03;
+uniform float den_chroma_hi = 0.1;   // (r12) the darks' saturation cap (1: none)
+uniform float boss_gloom = 0.0;   // (r12) the lair falls dark and cool from its pools toward its walls (den_set.gdshaderinc's lair_gloom, the same rule)
 uniform float boss_dry = 0.0;   // (r11) the damp tile (F8) kept out of the lair by this share: it read as a dark grey-mauve speckle   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 // (den round 10) the painted set's floor (tools/look/den_set.py: art/dungeon/den/set/floor.png, 4 m tiles made seamless):
@@ -240,8 +244,21 @@ void fragment() {
 		col = mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, mix(1.0, boss_sat, in_boss));
 		col *= mix(vec3(1.0), boss_tint, in_boss);   // (r11: desaturated it read mauve (131,88,78); den_boss.png lit (147,109,84))   // (r11: den_boss.png's floor is tan-grey, its shade near neutral (52,47,43))
 		col *= mix(1.0, boss_dim, in_boss);
+		if (boss_c.z > 0.0 && boss_gloom > 0.0) {
+			float bdg = distance(wpos.xz, boss_c.xy);
+			float gl = boss_gloom * smoothstep(boss_c.z * 0.3, boss_c.z * 0.75, bdg) * (1.0 - smoothstep(boss_c.z * 1.2, boss_c.z * 1.5, bdg));
+			col = mix(col, vec3(dot(col, vec3(0.3, 0.55, 0.15))) * vec3(0.8, 0.95, 1.25), 0.7 * gl) * (1.0 - 0.55 * gl);
+		}
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
+		// (r12) the floor's darks no more saturated than den_chroma (HSV-like, in albedo): the seed-23 room's shade read
+		// red-brown (satShade .35 against den_room.png's .21) where its damp and leaf masses fell; the lit floor keeps its warmth
+		if (den_chroma < 1.0) {
+			float cmx = max(col.r, max(col.g, col.b)), cmn = min(col.r, min(col.g, col.b));
+			float cs = (cmx - cmn) / max(cmx, 1e-4), cl0 = lum(col);
+			float ck = min(1.0, den_chroma / max(cs, 1e-4)) ;
+			col = mix(col, vec3(cl0) + (col - vec3(cl0)) * ck, 1.0 - smoothstep(den_chroma_lo, den_chroma_hi, cl0));
+		}
 		// the pits: the depths go black
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
 		// (lead 6: a pit reads as a hole by a LIT lip, the painted pit face down its throat falling to black over a metre
