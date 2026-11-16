@@ -48,13 +48,16 @@ public static class DungeonLight
         // high, that reaches the crowd's own layer only (PlayerView.CrowdLayer): the floor, the banks and HER take none of
         // it (her merged skin light is untouched). --den-pack-fill sets its energy (0 off).
         // (r11) 4 -> 7.5: the Pack-Mother's fur read at 0.4 of the lair floor's value (p25 30 against 75), a dark cut-out; 9 gave 0.68.
-        if (PackFill > 0f)
+        // (demo-look item 4: with the den rig's own pack look, rigs.json "foe_den", no pack fill: its cool light lifted the body to
+        // L 0.40 at h 19 against the bar's 0.20-0.36 at 10-50; --den-pack-fill still sets it)
+        float packFill = SurvivorUnchained.Args.Get("den-pack-fill") == null && SurvivorUnchained.Look.Rigs.Current["den"] is { FoeDen: not null } ? 0f : PackFill;
+        if (packFill > 0f)
             root.AddChild(new DirectionalLight3D
             {
                 Name = "pack_fill",
                 Transform = new Transform3D(Basis.LookingAt(new Vector3(0.25f, -0.75f, -0.6f).Normalized(), Vector3.Up), Vector3.Zero),
                 LightColor = new Color(SurvivorUnchained.Args.Get("den-pack-fill-colour") ?? "a8b8d8"),   // (r11 judge: her fur read in the floor's own hue at 0.78 of it; cool and lower)
-                LightEnergy = PackFill,
+                LightEnergy = packFill,
                 LightCullMask = PlayerView.CrowdLayer,
                 ShadowEnabled = false,
                 LightSpecular = 0.3f,

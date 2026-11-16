@@ -145,6 +145,11 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// and LB DAWN's shade is lilac on every surface. The step re-hues only the weakly colored and the dark (MoonLo..MoonHi,
     /// MoonTop), so what her ember, a lamp or a fire lights keeps the scene's own color.</summary>
     public double SceneMoon { get; init; }
+    /// <summary>(demo-look, lane E, 16 Nov) The paint grade (Paint*) after SceneColor (1) rather than before it (0). Why: in the den
+    /// (rig "den" on the day rigs' scene_color 1) SceneColor restored the scene's channel ratios after the paint and erased its
+    /// chroma: --grade-try vib, hi and shadow moved a den frame by a mean 0.35 of 255. Late, the Oklab paint is hue-held, so the
+    /// warm-to-mauve drift SceneColor was made against (a per-channel push) cannot come back through it.</summary>
+    public double PaintLate { get; init; }
 }
 
 public sealed record AtmospherePreset(
@@ -220,6 +225,13 @@ public sealed record AtmospherePreset(
     /// far (0-1), then each foe's hard shadow inside her fire: its level (scene light; 0: none), R, G, B (sRGB 0-255), the
     /// fire's residue in it (a share of the ground's ramp)] (crowd_moon, crowd_shade). Read only with FoeFire.</summary>
     public double[]? FoeMoon { get; init; }
+    /// <summary>(demo-look lane E, item 4; rigs.json "foe_den") The den's pack: [body Oklab L, its pull (0-1), chroma, hue (deg),
+    /// the line's px, the body's tone in it, the rim's px, its share on the key's side, her reach (m), the rim's level, R, G, B
+    /// (sRGB 0-255)] (vat.gdshaderinc crowd_den, crowd_den_edge, crowd_den_rim); her lamp off the pack while it is on. Null: none.
+    /// (pass 2, 25 values: then the top band's cut in n.m, the key's lean up, its gain on the key; the boss's pull; the elite's
+    /// band tint R, G, B and its full rim's level; the boss's band tint R, G, B (her cold back) and her body's L: crowd_den_top,
+    /// crowd_den_elite, crowd_den_boss.)</summary>
+    public double[]? FoeDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

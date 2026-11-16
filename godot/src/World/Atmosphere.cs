@@ -112,6 +112,8 @@ public partial class Atmosphere : Node3D
     /// <summary>The preset's crowd light by night (CrowdFill; 0 by day). --crowd-fill off: none (Rendering 4's A/B);
     /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
     public static float CrowdFill;
+    /// <summary>(demo-look item 4) The den's pack look is on (rigs.json "foe_den"): her lamp leaves the pack (PlayerView.CrowdOmni).</summary>
+    public static bool CrowdDen;
     static readonly bool CrowdFillOn = SurvivorUnchained.Args.Get("crowd-fill") != "off";
     const float CrowdSkyRef = 2f;
     static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", R4 ? 0.3f : 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
@@ -317,7 +319,8 @@ public partial class Atmosphere : Node3D
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
             || ReferenceEquals(orig, Atmospheres.WaystationDawn) || ReferenceEquals(orig, Atmospheres.WaystationDay) || ReferenceEquals(orig, Atmospheres.NightTown)
             || p.CrowdFill > 0 || ReferenceEquals(orig, Atmospheres.Front)   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
-            || ReferenceEquals(orig, Atmospheres.Title) || ReferenceEquals(orig, Atmospheres.CineNight)))   // (L1 lead 9: the title's and the cinematics' night rigs)
+            || ReferenceEquals(orig, Atmospheres.Title) || ReferenceEquals(orig, Atmospheres.CineNight)
+            || ReferenceEquals(orig, Atmospheres.Den)))   // (L1 lead 9: the title's and the cinematics' night rigs)
         {
             bool front = ReferenceEquals(orig, Atmospheres.Front);
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
@@ -594,6 +597,30 @@ public partial class Atmosphere : Node3D
             RenderingServer.GlobalShaderParameterSet("crowd_shade", fsl > 0 ? new Vector4(fsc.R / fsm, fsc.G / fsm, fsc.B / fsm, 1) : Vector4.Zero);
         }
         else { RenderingServer.GlobalShaderParameterSet("crowd_moon", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("crowd_shade", Vector4.Zero); }
+        // (demo-look lane E, item 4) The den's pack (rigs.json "foe_den"; vat.gdshaderinc crowd_den): no rig but the den has one,
+        // so the night's foes are as they were. --air-tune fden=a/b/... tries a whole row.
+        double[]? fd = Tune != null && Tune.TryGetValue("fden", out var fdt) ? fdt.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : p.FoeDen;
+        CrowdDen = CelRigs && cam == null && fd is { Length: >= 13 } && fd[1] > 0;
+        if (CrowdDen)
+        {
+            var dr = new Color((float)fd![10] / 255f, (float)fd[11] / 255f, (float)fd[12] / 255f).SrgbToLinear() * (float)fd[9];
+            RenderingServer.GlobalShaderParameterSet("crowd_den", new Vector4((float)fd[0], (float)fd[1], (float)fd[2], (float)fd[3]));
+            RenderingServer.GlobalShaderParameterSet("crowd_den_edge", new Vector4((float)fd[4], (float)fd[5], (float)fd[6], (float)fd[7]));
+            RenderingServer.GlobalShaderParameterSet("crowd_den_rim", new Vector4(dr.R, dr.G, dr.B, (float)fd[8]));
+            // (pass 2: the top band, the elite's accent and full rim, the boss: fd[13..24]; a 13-value row has none of them)
+            bool top = fd.Length >= 25;
+            static Vector3 Tint(double r, double g, double b)
+            {
+                var t = new Color((float)r / 255f, (float)g / 255f, (float)b / 255f).SrgbToLinear();
+                float l = Mathf.Max(0.2126f * t.R + 0.7152f * t.G + 0.0722f * t.B, 1e-4f);
+                return new Vector3(t.R / l, t.G / l, t.B / l);
+            }
+            var et = top ? Tint(fd[17], fd[18], fd[19]) : Vector3.Zero; var bt = top ? Tint(fd[21], fd[22], fd[23]) : Vector3.Zero;
+            RenderingServer.GlobalShaderParameterSet("crowd_den_top", top ? new Vector4((float)fd[13], (float)fd[14], (float)fd[15], (float)fd[16]) : Vector4.Zero);
+            RenderingServer.GlobalShaderParameterSet("crowd_den_elite", top ? new Vector4(et.X, et.Y, et.Z, (float)fd[20]) : Vector4.Zero);
+            RenderingServer.GlobalShaderParameterSet("crowd_den_boss", top ? new Vector4(bt.X, bt.Y, bt.Z, (float)fd[24]) : Vector4.Zero);
+        }
+        else foreach (var g in new[] { "crowd_den", "crowd_den_edge", "crowd_den_rim", "crowd_den_top", "crowd_den_elite", "crowd_den_boss" }) RenderingServer.GlobalShaderParameterSet(g, Vector4.Zero);
         if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves, p.DappleMass);
         static Vector3 Hue(Color c)
         {
@@ -947,6 +974,8 @@ public partial class Atmosphere : Node3D
         // --grade-toe X: the toe hold for pictures (0, the grade before it).
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
         var paint = new Paint(g, Try);
+        // (demo-look: --grade-try scene= and late= override GradeSettings.SceneColor and PaintLate for pictures)
+        float sceneK = Try?.Scene ?? (float)g.SceneColor; bool late = (Try?.Late ?? (float)g.PaintLate) > 0;
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         // (L1 W2: the tone curve on Oklab L, tabled once per grade)
         float[]? tone = null;
@@ -995,16 +1024,17 @@ public partial class Atmosphere : Node3D
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
-                    if (g.Moon > 0 && !(g.SceneColor > 0 && g.SceneMoon > 0)) outLin = Moonlight(c, outLin, g);
-                    if (paint.On) outLin = paint.Apply(outLin);
+                    if (g.Moon > 0 && !(sceneK > 0 && g.SceneMoon > 0)) outLin = Moonlight(c, outLin, g);
+                    if (paint.On && !late) outLin = paint.Apply(outLin);
                     if (skinGuard > 0) outLin = SkinGuard(outLin, skinGuard);
                     if (shadeHue > 0) outLin = ShadeHue(outLin, shadeHue);
                     if (skinCool > 0) outLin = SkinCool(c, outLin, skinCool);
                     if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
                     if (tone != null) outLin = Tone(outLin, tone);
-                    if (g.SceneColor > 0) outLin = SceneColour(c, outLin, (float)g.SceneColor);
+                    if (sceneK > 0) outLin = SceneColour(c, outLin, sceneK);
+                    if (paint.On && late) outLin = paint.Apply(outLin);
                     // (L1 lead 7, S2: GradeSettings.SceneMoon, the moon's blue (dawn's lilac) over the scene's own color)
-                    if (g.SceneColor > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
+                    if (sceneK > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
@@ -1338,12 +1368,12 @@ public partial class Atmosphere : Node3D
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
     /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
-    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin, scene (SceneColor), late (PaintLate). Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin;
+        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin, Scene, Late;
         public string? Shadow;
 
         public static GradeTry? Parse(string? spec)
@@ -1367,6 +1397,8 @@ public partial class Atmosphere : Node3D
                     case "lift": t.Lift = f; break;
                     case "hi": t.Hi = f; break;
                     case "shskin": t.ShadowSkin = f; break;
+                    case "scene": t.Scene = f; break;
+                    case "late": t.Late = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
