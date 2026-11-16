@@ -21,7 +21,7 @@ public static partial class DungeonDress
 {
     public static readonly int SetMode = (int)SurvivorUnchained.Args.Num("den-set", 2f);
     static readonly float SetScale = SurvivorUnchained.Args.Num("den-set-scale", 1f);
-    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 1.25f);
+    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 1.1f);   // (r10d 1.25 -> 1.1: the lit root tops measured (166,122,100) against (134,95,73))
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
     static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 0.7f);
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
@@ -29,7 +29,8 @@ public static partial class DungeonDress
 
     static ShaderMaterial SetMat(string sheet, float gain)
     {
-        var mat = new ShaderMaterial { Shader = setShader };
+        // (r10d) the hole paintings (H1, H2) lie on the floor blended (their surround fades into it); the rest cut at alpha 0.5
+        var mat = new ShaderMaterial { Shader = sheet[0] == 'H' ? setSoftShader : setShader };
         mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + sheet + ".png"));
         mat.SetShaderParameter("gain", gain);
         mat.SetShaderParameter("sat", SetSat);
@@ -53,7 +54,7 @@ public static partial class DungeonDress
     static readonly List<Transform3D> hulls = new();
 
     sealed record SetBank(string Name, string Kind, Vector2 Metres, float FootV, float FootU);
-    sealed record SetPiece(string Sheet, Rect2 Uv, Vector2 Metres, float FootV);
+    sealed record SetPiece(string Sheet, Rect2 Uv, Vector2 Metres, float FootV, Vector4 Mouth);
     sealed class SetBuf
     {
         public readonly List<Vector3> V = new(), N = new();
@@ -65,7 +66,9 @@ public static partial class DungeonDress
     static List<SetBank>? setBanks;
     static Dictionary<string, List<SetPiece>>? setSheets;
     static (float X, float Z, float R, string Kind) setRoom;
-    static Shader? setShader;
+    static Shader? setShader, setSoftShader;
+    static readonly float SetHoles = SurvivorUnchained.Args.Num("den-set-holes", 1f);   // (r10d) H2 over the pits, H1 over the hollows
+    static readonly float SetOpenK = SurvivorUnchained.Args.Num("den-set-open", 1f);    // (r10d) things in the rooms' open floor
     static readonly Dictionary<long, float> surfCache = new();
 
     static bool LoadSet()
@@ -91,11 +94,13 @@ public static partial class DungeonDress
             {
                 var rc = p.GetProperty("rect"); var m = p.GetProperty("metres");
                 list.Add(new SetPiece(name, new Rect2(rc[0].GetSingle() / aw, rc[1].GetSingle() / ah, rc[2].GetSingle() / aw, rc[3].GetSingle() / ah),
-                    new Vector2(m[0].GetSingle(), m[1].GetSingle()), p.GetProperty("foot_v").GetSingle()));
+                    new Vector2(m[0].GetSingle(), m[1].GetSingle()), p.GetProperty("foot_v").GetSingle(),
+                    p.TryGetProperty("mouth", out var mo) ? new Vector4(mo[0].GetSingle(), mo[1].GetSingle(), mo[2].GetSingle(), mo[3].GetSingle()) : Vector4.Zero));
             }
             setSheets[name] = list;
         }
         setShader = GD.Load<Shader>("res://shaders/den_set.gdshader");
+        setSoftShader = GD.Load<Shader>("res://shaders/den_set_soft.gdshader");
         return setBanks.Count > 0;
     }
 
@@ -279,6 +284,7 @@ public static partial class DungeonDress
                     }
                 }
         }
+        if (SetOpenK > 0f) SetOpen(c, rooms);
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
@@ -517,6 +523,86 @@ public static partial class DungeonDress
             Size = new Vector3(2.5f * rx, 1.2f, 2.5f * rz), Position = new Vector3(x, y0, zz),
         });
         return rx;
+    }
+
+    /// <summary>(r10d) A hole painting (H2 a pit, H1 a hollow) over a hole of the floor: laid in the camera's plane, each
+    /// painted point's offset from the painted lip's centre (the piece's mouth) taken to the floor and scaled by the hole's
+    /// radius over the painted lip's at its bearing (as the old pit decals were fitted to the outline), then laid on the
+    /// level floor; blended at its fading surround. False when there is no such painting.</summary>
+    static bool PlaceSetHole(Ctx c, string sheet, Vector2 ctr, float[] co, int pick)
+    {
+        if (SetHoles <= 0f || !LoadSet() || !setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) return false;
+        var pc = all[pick % all.Count];
+        if (pc.Mouth.Z <= 0f) return false;
+        float sn = -CamUp.Z;   // a floor metre north draws this many metres up the camera's plane
+        float W = pc.Metres.X, Hr = pc.Metres.Y, ma = pc.Mouth.Z * W, mb = pc.Mouth.W * Hr / sn;
+        if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
+        int ob = buf.V.Count;
+        int nu = Mathf.Clamp(Mathf.CeilToInt(W / 0.3f) + 1, 8, 48), nv = Mathf.Clamp(Mathf.CeilToInt(Hr / 0.3f) + 1, 8, 48);
+        for (int j = 0; j < nv; j++)
+            for (int i = 0; i < nu; i++)
+            {
+                float u = (float)i / (nu - 1), v = (float)j / (nv - 1);
+                float dx = (u - pc.Mouth.X) * W, dz = (v - pc.Mouth.Y) * Hr / sn;   // floor metres from the lip's centre (x east, z south)
+                float th = Mathf.Atan2(dz, dx), cs = Mathf.Cos(th), si = Mathf.Sin(th);
+                float rp = ma * mb / Mathf.Sqrt(mb * mb * cs * cs + ma * ma * si * si);
+                float g = Mathf.Clamp(FourierAt(co, th) / Mathf.Max(rp, 0.05f), 0.15f, 4f);
+                var w = ctr + new Vector2(dx, dz) * g;
+                buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
+                buf.N.Add(Vector3.Up);
+                buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
+                buf.C.Add(new Color(1f, 1f, 0f, 1f));
+            }
+        for (int j = 0; j < nv - 1; j++)
+            for (int i = 0; i < nu - 1; i++)
+            {
+                int k0 = j * nu + i, k1 = k0 + 1, k2 = k0 + nu, k3 = k2 + 1;
+                buf.I.Add(ob + k0); buf.I.Add(ob + k2); buf.I.Add(ob + k1); buf.I.Add(ob + k1); buf.I.Add(ob + k2); buf.I.Add(ob + k3);
+            }
+        c.Tick("set " + sheet);
+        return true;
+    }
+
+    /// <summary>(r10d) The rooms' open floor dressed, as den_room.png has things IN the room: bone piles (O3) through it, a
+    /// small stone (O1) or a short log (O2) a few metres off the banks; seed-salted (Hash), clear of the room's middle (her
+    /// start and the fight), the walls' feet, the pits and hollows, the boulders and each other (the decals' Ok() rule).
+    /// Not in the boss lair (its piles are laid by its own grid).</summary>
+    static void SetOpen(Ctx c, List<(float X, float Z, float R, string Kind)> rooms)
+    {
+        var hollows = DenHollows(c);
+        var taken = new List<Vector2>();
+        foreach (var (bp, _) in c.Boulders) taken.Add(bp);
+        int ri = 0, n = 0;
+        foreach (var r in rooms)
+        {
+            ri++;
+            if (r.Kind == "Boss") continue;
+            int want = Mathf.RoundToInt(SetOpenK * (1.5f + r.R / 4f)), got = 0;
+            float a0 = Hash(ri, 21, 990) * Mathf.Tau;
+            for (int k = 0; k < 48 && got < want; k++)
+            {
+                float rad = r.R * (0.3f + 0.65f * Mathf.Sqrt(Hash(ri, k, 991))), ang = a0 + k * 2.39996f;
+                var p = new Vector2(r.X + Mathf.Cos(ang) * rad, r.Z + Mathf.Sin(ang) * rad);
+                float w = Wall(c, p.X, p.Y);
+                if (w < 1.4f || Hole(c, p.X, p.Y) < 2.2f || p.DistanceTo(new Vector2(r.X, r.Z)) < 3.5f) continue;
+                bool near = false;
+                foreach (var (hp, hr, _) in hollows) if (hp.DistanceTo(p) < hr + 1.2f) near = true;
+                foreach (var t in taken) if (t.DistanceTo(p) < 3.2f) near = true;
+                if (near) continue;
+                float u = Hash(ri, k, 992), q = Hash(ri, k, 993);
+                string sheet = w < 3.8f && u < 0.3f ? "O1" : w < 4.5f && u < 0.45f ? "O2" : "O3";
+                if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
+                var sorted = new List<SetPiece>(all);
+                sorted.Sort((a, b) => a.Metres.X.CompareTo(b.Metres.X));
+                // (stones and logs from the sheet's smaller half, a stone at most 1.6 m across: she walks through them)
+                int half = Mathf.Max(1, sorted.Count / 2);
+                var pc = sheet == "O3" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * half) % half];
+                float k2 = sheet == "O1" ? Mathf.Min(0.8f, 1.6f / pc.Metres.X) : sheet == "O2" ? 0.7f + 0.2f * Hash(ri, k, 994) : 0.85f + 0.3f * Hash(ri, k, 994);
+                PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
+                taken.Add(p); got++; n++;
+            }
+        }
+        c.Count["set open"] = n;
     }
 
     /// <summary>(round 10b) One piece of a set sheet by a hash, or null.</summary>

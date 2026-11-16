@@ -3,8 +3,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
 
-uniform vec3 tint : source_color = vec3(0.86, 0.9, 0.94);
-uniform float strength = 0.3;   // (lead 6: 0.55 read as hard white cones against the targets' soft pale rays)
+uniform vec3 tint : source_color = vec3(1.0, 0.86, 0.66);   // (r10d: warm and faint; the cool 0.3 read as grey fog sheets over the far bank)
+uniform float strength = 0.12;   // (lead 6: 0.55 read as hard white cones against the targets' soft pale rays)
 uniform float height = 15.0;
 
 varying float hf;

@@ -37,7 +37,9 @@ BANKS = {   # name: kind (far: its face looks at the camera; near: seen from abo
 }
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
     "B6": ("spill", None), "O1": ("boulder", 3.2), "O2": ("log", 6.0), "O3": ("bones", 2.0),
+    "H1": ("hollow", 5.0), "H2": ("pit", 12.0),   # (r10d) the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
 }
+DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 FLOORS = ["F1", "F2", "F3", "F4"]
 BANK_PPM = 80.0      # source px per metre of the camera's plane (the frame's middle draws 76.8 px/m)
 OBJ_PPM = 96.0       # objects resampled to this (crisp from the frame's top, 61 px/m, to its bottom, 93)
@@ -175,11 +177,60 @@ def seamless(img, rng):
     return img * m[..., None] + rolled * (1.0 - m[..., None])
 
 
+def destreak(img, k):
+    """(r10d) The tile's brush strokes made non-directional: in each octave of its 2-128 px band, every direction's
+    amplitude brought down to the median direction's (never up), on the luminance; the colour follows by ratio. The worn
+    tile's diagonal strokes drew parallel streaks across the floor at the play camera."""
+    if k <= 0:
+        return img
+    h, w, _ = img.shape
+    lum = img @ np.array([0.299, 0.587, 0.114])
+    F = np.fft.fft2(lum)
+    fy, fx = np.meshgrid(np.fft.fftfreq(h), np.fft.fftfreq(w), indexing="ij")
+    rad = np.hypot(fx, fy)
+    ang = np.mod(np.arctan2(fy, fx), np.pi)
+    nb = 36
+    ab = np.minimum((ang / np.pi * nb).astype(int), nb - 1)
+    gain = np.ones_like(rad)
+    for lo in (1 / 128, 1 / 64, 1 / 32, 1 / 16, 1 / 8, 1 / 4):
+        ring = (rad >= lo) & (rad < 2 * lo)
+        amp = np.array([np.abs(F[ring & (ab == b)]).mean() if (ring & (ab == b)).any() else 0.0 for b in range(nb)])
+        amp = (np.roll(amp, 1) + 2 * amp + np.roll(amp, -1)) / 4.0
+        med = np.median(amp)
+        fac = np.clip(med / np.maximum(amp, 1e-9), 0.2, 1.0) ** k
+        gain[ring] = fac[ab[ring]]
+    nl = np.real(np.fft.ifft2(F * gain))
+    return np.clip(img * (np.maximum(nl, 0.0) / np.maximum(lum, 1.0))[..., None], 0, 255)
+
+
+def mouth(f, a, kind):
+    """(r10d) A hole painting's mouth (its lip's ellipse) as its centre and half sizes in fractions of the piece (cu, cv,
+    ru, rv): the biggest dark mass (luminance blurred at 3% of the piece, under the 2nd percentile + 0.65 of the way to
+    the median); for a pit its lit far inner wall stands above that throat, so the lip reaches a quarter further up."""
+    h, w = a.shape
+    lum = ndimage.gaussian_filter(f @ np.array([0.299, 0.587, 0.114]), 0.03 * max(w, h))
+    inside = a > 0.5
+    lo, med = np.percentile(lum[inside], 2), np.median(lum[inside])
+    dark = inside & (lum < lo + 0.65 * (med - lo))
+    lab, n = ndimage.label(dark)
+    if n == 0:
+        return [0.5, 0.5, 0.3, 0.3]
+    big = 1 + int(np.argmax(ndimage.sum(dark, lab, range(1, n + 1))))
+    ys, xs = np.nonzero(lab == big)
+    cu, cv = (xs.min() + xs.max() + 1) / 2 / w, (ys.min() + ys.max() + 1) / 2 / h
+    ru, rv = (xs.max() + 1 - xs.min()) / 2 / w, (ys.max() + 1 - ys.min()) / 2 / h
+    if kind == "pit":
+        cv, rv = cv - 0.125 * rv, 1.125 * rv
+    return [round(cu, 4), round(cv, 4), round(1.08 * ru, 4), round(1.08 * rv, 4)]
+
+
 def ingest():
     os.makedirs(SRC, exist_ok=True)
     open(os.path.join(SRC, ".gdignore"), "w").close()
     names = list(BANKS) + list(SHEETS) + FLOORS
     for n in names:
+        if os.path.exists(os.path.join(SRC, n + ".png")) and len(sys.argv) < 3:
+            continue   # (r10d: once; `ingest all` copies every source again)
         shutil.copy2(os.path.join(INPUTS, n + ".png"), os.path.join(SRC, n + ".png"))
     for t in ("PROMPTS.md", "PROVENANCE.txt"):
         shutil.copy2(os.path.join(INPUTS, t), os.path.join(SRC, t))
@@ -240,7 +291,10 @@ def build():
             cols = ca[:, cw // 4:3 * cw // 4] > 0.5
             rows = np.nonzero(cols.any(1))[0]
             fv = (rows.max() + 1) / ch if len(rows) else 1.0
-            sh["pieces"].append({"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)})
+            pe = {"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)}
+            if kind in ("hollow", "pit"):
+                pe["mouth"] = mouth(cf, ca, kind)
+            sh["pieces"].append(pe)
         h, w = H, W
         meta["sheets"].append(sh)
         print(f"sheet {name}: {kind}, {len(ps)} pieces, {w}x{h} px at {ppm:.1f} px/m (x{k:.2f})")
@@ -248,7 +302,7 @@ def build():
     strip = []
     for name in FLOORS:
         im = Image.open(os.path.join(SRC, name + ".png")).convert("RGB").resize((FLOOR_PX, FLOOR_PX), Image.LANCZOS)
-        img = seamless(np.asarray(im, dtype=np.float64), rng)
+        img = destreak(seamless(np.asarray(im, dtype=np.float64), rng), DESTREAK.get(name, 0.0))
         lum = img @ np.array([0.299, 0.587, 0.114])
         hgt = ndimage.gaussian_filter(lum, 3.0, mode="wrap")
         lo, hi = np.percentile(hgt, [2, 98])

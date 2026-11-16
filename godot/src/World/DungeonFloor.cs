@@ -60,7 +60,7 @@ public static class DungeonFloor
                 mat.SetShaderParameter("set_gain", Args.Num("den-set-floor-gain", 1.05f));
                 mat.SetShaderParameter("set_band", Args.Num("den-set-band", 0.3f));     // (r10b) the tiles' clods and patches stretched (r10c 0.6 -> 0.3: it drew the worn tile's brush strokes as streaks)
                 mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));     // (r10b) worn ways and damp patches
-                mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.55f));
+                mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.68f));   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
             }
         }
         return mat;

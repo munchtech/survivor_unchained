@@ -38,6 +38,7 @@ public static partial class DungeonDress
         if (PitDecals)
             foreach (var (p, rad, co) in pitC)
             {
+                if (SetMode > 0 && SetIn(p.X, p.Y) && PlaceSetHole(c, "H2", p, co, 0)) continue;   // (r10d: the painted pit H2)
                 // (round 7) a big hole (r over 4 m) takes a pit painted at its own size: the 2.6 m pit stretched 2.1-2.4x
                 // read as a flat black disk ringed by jagged black fragments
                 bool isBig = rad > 4f && big.Count > 0;
@@ -49,6 +50,7 @@ public static partial class DungeonDress
         // the lair's shallow hollows: painted dishes, walkable, no hole (laid like a pit, scaled whole, never turned)
         foreach (var (hp, hr, vi) in DenHollows(c))
         {
+            if (SetMode > 0 && SetIn(hp.X, hp.Y) && PlaceSetHole(c, "H1", hp, new[] { hr }, vi)) continue;   // (r10d: the painted hollows H1)
             AddPit(c, bhol, hol[vi], hp, new[] { hr }, hr / hol[vi].MouthR);
             nHol++;
         }
