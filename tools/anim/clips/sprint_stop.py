@@ -19,7 +19,7 @@ import os
 import numpy as np
 
 from clips import idle
-from clips.run import POST, REAVER_CARRY, RUN_GRIPS, RUNS, SPRINT_ARMS, WARDEN_CARRY
+from clips.run import POST, REAVER_CARRY, RUN_GRIPS, RUNS, SPRINT_ARMS, SPRINT_SWING_R, WARDEN_CARRY
 from gait import arc_of, run_cycle
 from keyed import build
 
@@ -58,6 +58,8 @@ STALKER_STOP_POLE_L = (0.6, -0.5, -0.8)
 def sprint(rig, run):
     """The sprint for one of her runs (run_<calling>[_<weapon>])."""
     g, arms, weapon = RUNS[run]
+    if run in SPRINT_SWING_R:
+        g = replace(g, swing_r=SPRINT_SWING_R[run])
     arms = {**arms, **SPRINT_ARMS.get(run, {})}
     # The arms drive further, but the elbow stays bent, as a sprinter's does:
     # an arm flung out straight behind her has no hinge to read, and the
