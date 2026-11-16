@@ -21,6 +21,14 @@ public static class DungeonLight
         Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17;
         var root = new Node3D { Name = "DungeonLight" };
         var shader = GD.Load<Shader>("res://shaders/dungeon_shaft.gdshader");
+        HoleTex = null;
+        if (z.HoleField != null && SurvivorUnchained.Args.Num("den-shaft-pitmask", 1f) > 0f)   // (r15) the veil is masked off over pits
+        {
+            var px = new byte[z.Res * z.Res];
+            for (int q = 0; q < px.Length; q++) px[q] = (byte)Mathf.Clamp(Mathf.Round((z.HoleField[q] + 4f) / 8f * 255f), 0f, 255f);
+            HoleTex = ImageTexture.CreateFromImage(Image.CreateFromData(z.Res, z.Res, false, Image.Format.R8, px));
+            HoleMap = new Vector3(-z.Half - 0.5f * z.Step, -z.Half - 0.5f * z.Step, 1f / (z.Res * z.Step));
+        }
         int i = 0;
         foreach (var r in z.Rooms)
         {
@@ -72,6 +80,9 @@ public static class DungeonLight
         return f[j * z.Res + i];
     }
 
+    static ImageTexture? HoleTex;
+    static Vector3 HoleMap;
+
     static void AddShaft(Node3D root, Shader shader, Vector3 foot, float w, float pool, bool lair = false)
     {
         var top = foot - Axis * Height;
@@ -81,7 +92,7 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffd68a" : "ffc890")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
+            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffd68a" : "ffd8a0")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
             LightEnergy = PoolEnergy * (lair ? SurvivorUnchained.Args.Num("den-lair-pool", 0.73f) : 1f),   // (r12) the lair's pools against its floor (lit/median 109/68 in den_boss.png)   // (round 8: --den-pool-energy) (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
@@ -95,6 +106,10 @@ public static class DungeonLight
         var mesh = new CylinderMesh { TopRadius = w * 0.55f, BottomRadius = w, Height = Height, RadialSegments = 20, Rings = 1, CapTop = false, CapBottom = false };
         var mat = new ShaderMaterial { Shader = shader };
         mat.SetShaderParameter("height", Height);
+        mat.SetShaderParameter("veil_cut", SurvivorUnchained.Args.Num("den-veil-cut", 0.75f));
+        mat.SetShaderParameter("floor_fade", SurvivorUnchained.Args.Num("den-veil-floor", 1.0f));
+        if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
+        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "fff0c8"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
         mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.18f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.8f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
         var mid = foot - Axis * (Height * 0.5f);
         // CylinderMesh stands along +y: turn +y to the shaft's upward axis (-Axis).
@@ -120,7 +135,7 @@ public static class DungeonLight
             {
                 Name = "room_wash",
                 Transform = new Transform3D(Basis.LookingAt(Axis, Vector3.Up), top),
-                LightColor = new Color(SurvivorUnchained.Args.Get("den-wash-colour") ?? "ffc47a"),
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-wash-colour") ?? "ffd088"),
                 LightEnergy = e * (n == 0 ? 1f : 0.8f),
                 SpotRange = Height + 4f,
                 SpotAngle = Mathf.RadToDeg(Mathf.Atan(wide / Height)),

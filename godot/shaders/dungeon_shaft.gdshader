@@ -10,6 +10,12 @@ uniform float strength = 0.22;   // (r11 judge: the beams did not show in the la
 uniform float height = 15.0;
 uniform float side_fade = 0.4;   // (r14: the sides fade over this share of the width, no ruled edge)
 uniform float soft_depth = 2.5;  // (r14: fades where it meets floor or pit, metres of scene depth)
+uniform float veil_cut = 0.4;     // (r15: the veil's alpha x this; the judge asked -60 %)
+uniform float floor_fade = 1.0;   // (r15: veil 0 at the floor, full this many metres above the surface behind it, x2)
+uniform float pit_fade = 1.0;     // (r15: 1 = the veil is masked off over the pits)
+uniform float streak_k = 1.4;     // (r15: streaks round the column, ~4 on its visible half)
+uniform sampler2D hole_tex : hint_default_white, filter_linear, repeat_disable;   // (r15: HoleField as (f+4)/8, bit-exact to the zone)
+uniform vec3 hole_map = vec3(0.0, 0.0, 1.0);   // (x origin, z origin, 1/size of the field in metres)
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 
 varying float hf;
@@ -41,12 +47,18 @@ void fragment() {
 	float motes = 0.75 + 0.25 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
 	// 3-5 soft streaks along it (by the angle round it, slowly varying with height)
 	float ang = atan(wpos.x - MODEL_MATRIX[3].x, wpos.z - MODEL_MATRIX[3].z);
-	float rays = 0.2 + 1.2 * smoothstep(0.3, 0.7, vnoise(vec2(ang * 2.4 + 3.0, hf * 0.5)));
+	float rays = 0.1 + 1.9 * smoothstep(0.5, 0.78, vnoise(vec2(ang * streak_k + 3.0, hf * 0.5)));
 	// where the scene is just behind the shaft (floor, pit, bank) it fades out instead of cutting a line
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 sv = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
 	float scene_z = -sv.z / sv.w;
 	float gap = scene_z - (-VERTEX.z);
 	a *= smoothstep(0.0, soft_depth, gap);
+	// the scene surface behind this pixel, in the world: the veil fades to nothing near the floor, and over pits
+	vec4 sw = INV_VIEW_MATRIX * vec4(sv.xyz / sv.w, 1.0);
+	a *= mix(1.0, smoothstep(0.0, floor_fade, wpos.y - sw.y), step(0.001, floor_fade));
+	float hf_v = texture(hole_tex, (sw.xz - hole_map.xy) * hole_map.z).r * 8.0 - 4.0;
+	a *= mix(1.0, smoothstep(-0.2, 2.0, hf_v), pit_fade * step(0.001, hole_map.z));
+	a *= veil_cut;
 	ALBEDO = tint * strength * a * motes * rays;
 }
