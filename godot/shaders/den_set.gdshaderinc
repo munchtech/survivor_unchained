@@ -27,7 +27,7 @@ uniform float mush_glow = 0.0;
 uniform float fungus_sat = 1.0;   // (den r14) the painted caps' saturation (DungeonDress.SetMat: --den-fungus-sat)
 uniform float mush_lod = 4.5;
 uniform float mush_drop = 0.012;
-uniform vec3 mush_col : source_color = vec3(0.3, 0.85, 0.78);
+uniform vec3 mush_col : source_color = vec3(0.42, 0.68, 0.64);   // (den r15 C) was .3,.85,.78: the glow pool under the caps over the band
 uniform float fg_dark = 0.65;
 uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
 uniform float rim_out = 1.45;
@@ -37,7 +37,7 @@ uniform float pit_glow = 0.0;
 uniform vec3 pit_col : source_color = vec3(0.5, 0.9, 0.28);
 uniform float blood_rust = 0.0;   // (den r15 C) share of the blood pulled to a rust hue (O5 only)
 uniform vec3 blood_dir = vec3(1.5, 0.9, 0.45);
-uniform float pit_sat = 0.7;   // (den r15 C) pit glow core saturation (judge r14: C90 .18 against .089)
+uniform float pit_sat = 0.3;   // (den r15 C) pit glow core saturation (judge r14: C90 .18 against .089)
 uniform float pit_halo = 0.14;   // (den r15 C) the soft halo (was .07)
 uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark: a slow noise mask on the veins
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the

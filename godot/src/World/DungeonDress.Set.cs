@@ -75,9 +75,9 @@ public static partial class DungeonDress
         {
             // (r12 judge: the seed-23 room's blood read magenta) the set's half saturation and its grey-violet shade turned the
             // painted blood pink-mauve: blood keeps its own red, a touch darker and browner
-            mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.5f));
-            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(1.0f, 1.25f, 0.8f)));
-            mat.SetShaderParameter("blood_rust", SurvivorUnchained.Args.Num("den-blood-rust", 0.6f));   // (den r15 C) crimson h 15-22 into rust 33-37
+            mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.6f));
+            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(1.35f, 1.2f, 1.0f)));
+            mat.SetShaderParameter("blood_rust", SurvivorUnchained.Args.Num("den-blood-rust", 0.55f));   // (den r15 C) crimson h 15-22 into rust 33-37
             mat.SetShaderParameter("blood_dir", V3("den-blood-dir", new Vector3(1.5f, 0.9f, 0.45f)));
             mat.SetShaderParameter("shade_k", 0f);
         }
@@ -91,13 +91,13 @@ public static partial class DungeonDress
         mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
         mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
-        mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 1f));   // (den r14, lane E) the painted caps' cyan into its band
+        mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 0.4f));   // (den r14, lane E) the painted caps' cyan into its band
         if (sheet[0] == 'H')
         {
             mat.SetShaderParameter("pit_glow", SurvivorUnchained.Args.Num("den-pit-glow", 0.8f));
         mat.SetShaderParameter("pit_dark", SurvivorUnchained.Args.Num("den-pit-dark", 0.35f));
         mat.SetShaderParameter("pit_col", new Color(SurvivorUnchained.Args.Num("den-pit-r", 0.5f), SurvivorUnchained.Args.Num("den-pit-g", 0.8f), SurvivorUnchained.Args.Num("den-pit-b", 0.4f)));   // (den r13 rooms) less neon   // (r12) den_boss.png's green pits
-            mat.SetShaderParameter("pit_sat", SurvivorUnchained.Args.Num("den-pit-sat", 0.7f));
+            mat.SetShaderParameter("pit_sat", SurvivorUnchained.Args.Num("den-pit-sat", 0.3f));
             mat.SetShaderParameter("pit_halo", SurvivorUnchained.Args.Num("den-pit-halo", 0.14f));
             mat.SetShaderParameter("rim_in", SurvivorUnchained.Args.Num("den-hole-rim-in", 1.15f));
             mat.SetShaderParameter("rim_out", SurvivorUnchained.Args.Num("den-hole-rim-out", 1.45f));
