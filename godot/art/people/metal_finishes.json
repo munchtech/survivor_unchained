@@ -82,9 +82,9 @@
     "finish": 2,
     "params": {
      "enamel": [
-      0.36,
-      0.31,
-      0.3
+      0.3,
+      0.26,
+      0.25
      ],
      "enamel_chip": 0.15,
      "enamel_metal": 0.3,
@@ -96,22 +96,22 @@
     }
    },
    "gold": {
+    "dye": "#ffb84a",
     "params": {
-     "brass_dim": 1.15,
      "metal_grime": 0.1,
-     "gold_floor": 0.5,
+     "gold_floor": 0.8,
      "gold_gloss": 1.0,
      "gold_rough": 0.3,
-     "metal_spec_cap": 1.6,
-     "gold_tone": [
-      1.0,
-      0.8,
-      0.45
-     ]
-    },
-    "dye": "#ffc24a"
+     "metal_spec_cap": 1.6
+    }
+   },
+   "darkleather": {
+    "dye": "#5a3a24"
+   },
+   "brownleather": {
+    "dye": "#5a3a24"
    }
   }
  },
- "_kit": "Demo armor lane D r2 (16 Nov, WIP): the kit set (wear ids kit_*) own finish: steel as warm gunmetal enamel (was blued navy), gold brighter. Measured (Oklab L50) day close plate 0.49 / den 0.20, gold 0.60 / 0.30: NOT yet in lane E bands (plate 0.22-0.40, gold 0.70-0.90); the gold params and dye barely move it."
+ "_kit": "Demo armor lane D lead 2 S1b (16 Nov, WIP, not in lane E bands): the kit set (wear ids kit_*) own finish. Steel: warm gunmetal enamel, paint [0.30,0.26,0.25] at metal 0.3 (the plate is diffuse-led: less metal/env made it LIGHTER). Gold: a dye kept (#ffb84a; brass_dim/gold_tone do nothing on a dyed gold, heroine_outfit.gdshaderinc 405), floor 0.8. Leather keys dyed dark brown #5a3a24 (People.cs mesh finishes reach leather; kit_boots/kit_gloves need S4's re-ship). The den is NOT hero abs paint (rig den has no hero_pool): it is lit. Measured Oklab L50 (s1r2 masks: debug 14 plate, debug 4 gold): plate close 0.41 / den 0.23 (h 27 / 65), gold close 0.62 / den 0.40 (ink costs den gold 0.08). Den/close plate ratio ~0.53, so one paint barely spans both bands; den gold is sub-pixel trim mixed with plate."
 }
