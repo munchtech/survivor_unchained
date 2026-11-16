@@ -144,11 +144,37 @@ public sealed class CollisionWorld
     }
 
     /// <summary>Push a circle out of every collider it overlaps. True if it
-    /// touched anything. isPlayer lets player-only edges apply.</summary>
+    /// touched anything. isPlayer lets player-only edges apply. A foe (not the player) that the push cannot
+    /// free squeezes: pinched between two walls that stand closer than its body (a boss in a doorway the
+    /// 1 m nav grid called open), it is held a little smaller until it is clear, and one whose centre is
+    /// still in solid is set on the nearest open ground (<see cref="Unwedge"/>).</summary>
     public bool Resolve(ref double px, ref double pz, double r, bool isPlayer = false, bool overGaps = false)
     {
+        if (!isPlayer) r = WallRadius(r);
+        bool touched = Push(ref px, ref pz, r, isPlayer, overGaps, 3);
+        if (!isPlayer && Depth(px, pz, r, overGaps) > Slop && Unwedge(ref px, ref pz, r, overGaps)) touched = true;
+        double b = Bound;
+        if (px < -b) { px = -b; touched = true; } else if (px > b) { px = b; touched = true; }
+        if (pz < -b) { pz = -b; touched = true; } else if (pz > b) { pz = b; touched = true; }
+        return touched;
+    }
+
+    /// <summary>The widest a foe's body is against the world's solid pieces (m). The map's doors are 2.0 m between their corners and
+    /// the nav grid sends every foe through them; the Red Hand (radius 1.1) jammed in one for 15 minutes (Roost seed 16). Past this a
+    /// foe's body (its blows, its pushing of others) is its own; against walls and trees it is no bigger.</summary>
+    public const double FoeWallCap = 0.95;
+    /// <summary>A foe's radius as the walls see it.</summary>
+    public static double WallRadius(double r) => Math.Min(r, FoeWallCap);
+
+    /// <summary>How far into a solid piece a circle may stand before it counts as wedged (the push leaves a hair).</summary>
+    public const double Slop = 0.03;
+    /// <summary>The smallest a squeezing foe is held to (share of its radius): a body 30% too wide for a door gets through.</summary>
+    public const double SqueezeMin = 0.6;
+
+    bool Push(ref double px, ref double pz, double r, bool isPlayer, bool overGaps, int iters)
+    {
         bool touched = false;
-        for (int iter = 0; iter < 3; iter++)
+        for (int iter = 0; iter < iters; iter++)
         {
             bool moved = false;
             foreach (var c in Near(px, pz, r + 0.5, scratch))
@@ -203,10 +229,55 @@ public sealed class CollisionWorld
             }
             if (!moved) break;
         }
-        double b = Bound;
-        if (px < -b) { px = -b; touched = true; } else if (px > b) { px = b; touched = true; }
-        if (pz < -b) { pz = -b; touched = true; } else if (pz > b) { pz = b; touched = true; }
         return touched;
+    }
+
+    /// <summary>The deepest a circle at (x, z) sits in a solid piece (0 when clear): the push-out it would need.</summary>
+    public double Depth(double x, double z, double r, bool overGaps = false)
+    {
+        double deepest = 0;
+        foreach (var c in Near(x, z, r + 0.5, scratch))
+        {
+            if (c.PlayerOnly || c.Gap && overGaps) continue;
+            double dx, dz, min;
+            if (c.Kind == ColliderKind.Circle) { dx = x - c.X; dz = z - c.Z; min = c.R + r; }
+            else
+            {
+                double cos = Math.Cos(-c.Rot), sin = Math.Sin(-c.Rot);
+                double lx = (x - c.X) * cos - (z - c.Z) * sin;
+                double lz = (x - c.X) * sin + (z - c.Z) * cos;
+                dx = lx - Math.Max(-c.Hw, Math.Min(c.Hw, lx)); dz = lz - Math.Max(-c.Hd, Math.Min(c.Hd, lz));
+                min = r;
+            }
+            double d = Math.Sqrt(dx * dx + dz * dz);
+            if (min - d > deepest) deepest = min - d;
+        }
+        return deepest;
+    }
+
+    /// <summary>A foe the push left in or against solid: held smaller (up to <see cref="SqueezeMin"/>) until it is clear;
+    /// failing that, set on the nearest open ground (rings of 0.25 m outward, sixteen points a ring, first clear spot:
+    /// no randomness, so the sim stays seed-stable). True if it moved.</summary>
+    public bool Unwedge(ref double px, ref double pz, double r, bool overGaps = false)
+    {
+        double x0 = px, z0 = pz;
+        for (double f = 0.9; f >= SqueezeMin - 1e-9; f -= 0.1)
+        {
+            double rr = r * f, sx = px, sz = pz;
+            Push(ref sx, ref sz, rr, false, overGaps, 4);
+            if (Depth(sx, sz, rr, overGaps) <= Slop) { px = sx; pz = sz; return Math.Abs(px - x0) + Math.Abs(pz - z0) > 1e-9; }
+        }
+        double rs = r * SqueezeMin;
+        for (int ring = 1; ring <= 48; ring++)
+            for (int k = 0; k < 16; k++)
+            {
+                double a = (k + (ring & 1) * 0.5) * Math.PI / 8, sx = x0 + Math.Cos(a) * ring * 0.25, sz = z0 + Math.Sin(a) * ring * 0.25;
+                if (Depth(sx, sz, rs, overGaps) > Slop) continue;
+                px = sx; pz = sz;
+                Push(ref px, ref pz, rs, false, overGaps, 3);
+                return true;
+            }
+        return false;
     }
 
     /// <summary>Is a circle at (x, z) overlapping anything solid?</summary>

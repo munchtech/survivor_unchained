@@ -45,4 +45,15 @@ public class DungeonFightTests
         _out.WriteLine($"{id} {seed}: {(r.Cleared ? "cleared" : "fell")} {r.Minutes:0.0} min, {r.KilledBy}, in {r.DeathRoom}");
         Assert.False(r.Cleared, $"{id} seed {seed}: standing still cleared it");
     }
+
+    /// <summary>Roost seed 16, deft (15 Nov): the Red Hand jammed in the Boss camp's 2.0 m door (his body is 2.2 m across), nothing
+    /// reached him, and the run timed out at 25 minutes with 9054 life left. Foes now squeeze through a door a little narrower than they are.</summary>
+    [Fact]
+    public void The_ruler_does_not_wedge_in_the_boss_camp_door_roost_seed_16()
+    {
+        var def = DungeonGen.Get("roost")!;
+        var r = MapSim.Play(new MapRunSpec(16, "warden", 1, def.People, 7, 1, [], "deft", 25, "roost"));
+        _out.WriteLine($"roost 16: {(r.Cleared ? "cleared" : "not cleared")} {r.Minutes:0.0} min, boss ttk {r.BossTtk}, falls {r.Falls}");
+        Assert.True(r.Cleared, $"roost seed 16 not cleared in {r.Minutes:0.0} min (falls {r.Falls}, ruler left {r.BossLeft:0.00})");
+    }
 }
