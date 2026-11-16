@@ -39,6 +39,7 @@ BLADE_PITCH = float(os.environ.get("PROWL_BLADE_PITCH", "4.0"))
 BLADE_YAW = float(os.environ.get("PROWL_BLADE_YAW", "2.5"))
 # The sword elbow's bend at least this (deg; B's Prowl held 16-27, which reads straight at the play camera). 0 = B's.
 ELBOW_R = float(os.environ.get("PROWL_ELBOW_R", "38"))
+FORE_R = float(os.environ.get("PROWL_FORE_R", "0"))  # deg the sword forearm tips forward about B's elbow (replaces ELBOW_R)
 # (m) each hand moved out from her side (motion --outfits: at 0 the sword hand met her hip 6 mm, the warden plate 24/19;
 # at r 0.025 / l 0.02: skin 0, warden plate 2 r / 9 l, reaver 3 l)
 HAND_OUT = {"r": float(os.environ.get("PROWL_OUT_R", "0.025")), "l": float(os.environ.get("PROWL_OUT_L", "0.02"))}
@@ -172,7 +173,14 @@ def specs(rig, fingers_l=None):
             elbow = pB[t, bi[f"lowerarm_{s}"]]
             sh = pB[t, bi[f"upperarm_{s}"]]
             pole = _norm(elbow - (sh + wrist) / 2)
-            if s == "r" and ELBOW_R > 0:
+            if s == "r" and FORE_R > 0:
+                # the sword forearm tipped FORE_R deg forward about the elbow (a hanging forearm leaves the blade, square
+                # off the fist, level: the tip out at her right at hip height, a bar; tipped forward, the trail can fall)
+                l2 = np.linalg.norm(ap[sk.i("hand_r")] - ap[sk.i("lowerarm_r")])
+                tip = qaxis([1.0, 0.0, 0.0], -FORE_R)
+                wrist = elbow + qrot(tip, _norm(wrist - elbow)) * l2
+                H = qmul(tip, H)
+            elif s == "r" and ELBOW_R > 0:
                 # the sword elbow soft (the owner: "that locked elbow"): the wrist drawn in along the shoulder's line
                 # until the elbow bends ELBOW_R
                 l1 = np.linalg.norm(ap[sk.i("lowerarm_r")] - ap[sk.i("upperarm_r")])

@@ -16,6 +16,14 @@ public static class DirRun
         (0, "forward"), (2, "strafe_left"), (4, "strafe_right"), (6, "backpedal"), (8, "diag_fl"), (10, "diag_fr"),
         (12, "diag_bl"), (14, "diag_br"), (16, "circle"), (20, "sweep"), (24, "fwd2"), (25, "the180"), (26, "the90"), (27, "stop"),
     };
+    /// <summary>--dirrun-set views: runs out and back along the camera's axes with a stop and a stand after each (her run seen
+    /// away, front and side, each stop landing in her idle), for a small room (each leg 1.6 s, back where she began).</summary>
+    static readonly bool Views = Args.Get("dirrun-set") == "views";
+    static readonly (double At, string Name, double X, double Z)[] ViewSegs =
+    {
+        (0, "away", 0, 1), (1.6, "stand_a", 0, 0), (4.0, "front", 0, -1), (5.6, "stand_f", 0, 0),
+        (8.0, "side_x", 1, 0), (9.6, "stand_x", 0, 0), (12.0, "side_mx", -1, 0), (13.6, "stand_mx", 0, 0),
+    };
     static int seg = -1;
     static (double X, double Z)? origin;
 
@@ -26,6 +34,15 @@ public static class DirRun
     {
         if (Start < 0 || time < Start) return null;
         double t = time - Start;
+        if (Views)
+        {
+            while (seg + 1 < ViewSegs.Length && t >= ViewSegs[seg + 1].At)
+            {
+                seg++;
+                GD.Print(FormattableString.Invariant($"DIRSEG {ViewSegs[seg].Name} {t:0.00}"));
+            }
+            return seg < 0 ? (0, 0) : (ViewSegs[seg].X, ViewSegs[seg].Z);
+        }
         while (seg + 1 < Segs.Length && t >= Segs[seg + 1].At)
         {
             seg++;
