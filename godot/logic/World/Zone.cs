@@ -56,6 +56,8 @@ public sealed class ColliderDef
     public double X, Z, R, Hw, Hd, Rot;
     public string? Tag;
     public bool Soft, PlayerOnly;
+    /// <summary>The ground ends here (a dungeon's wall: Collider.Drop).</summary>
+    public bool Drop;
 }
 
 public sealed class ZoneMapDef
@@ -434,7 +436,7 @@ public sealed class ZoneMeta
             w.Restore(new Collider
             {
                 Id = c.Id, Kind = c.Kind, X = c.X, Z = c.Z, R = c.R, Hw = c.Hw, Hd = c.Hd, Rot = c.Rot,
-                Tag = c.Tag, Soft = c.Soft, PlayerOnly = c.PlayerOnly,
+                Tag = c.Tag, Soft = c.Soft, PlayerOnly = c.PlayerOnly, Drop = c.Drop,
             });
         return w;
     }

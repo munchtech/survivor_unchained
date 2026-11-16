@@ -1,5 +1,13 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026 (evening, coordinator #14): HER IDLE OUT OF TOWN IS STILL RIGID; THE RUN MOVES ONLY HER LEGS (movement lead, open, FIRST)
+
+- "i'm also still disappointed in her holding sword arm.  for example while running its held rigid not moving at all.  it dosn't look badass OR sexy, and the running animation dosn't move anything but her legs"
+- With a play-camera crop of her standing in the den (upright, square, sword arm straight down): "along with the animation of the arm, just the idle pose out of town is still so weak, we've mentioned it many times before .  that locked elbow instead of relaxed casual badass that we've been wanting"
+- "or idle is bad, the "default" view.  they run with that as well or whatever.  its all part of the rigidness"
+- **Found:** Prowl (picked 10 Nov, `tools/anim/p4/specs/idle_fight_a.json`) never became the game's idle; the game plays the old `idle_warden`. The "after the pick" step (`docs/handoff/animation.md`, grep "After the pick") was never run.
+- **Routed:** the movement lead (branch `aim-move`), first in its lane: Prowl as the drawn idle with idle life; the carry in every locomotion clip from it (whole body, live sword arm); the demo kit's skill ends fitted to it; judge rows "idle out of town" and "run, upper body and sword arm" with these quotes.
+
 ## 10 November 2026, ~23:50: THE KIT SHEET IS PICKED ("Yes, build it")
 
 The owner picked the Sol concept sheets of her full gunmetal-and-gold kit for P2 to build from: `survivorsunchained_inputs\gpt_sol\kit\01_turnaround.png`, `02_pieces.png` (helm, pauldrons, bodice, vambraces, belt and hip plates, boots), `03_tiers.png` (three tiers by adornment on one silhouette). Built from the owner's own `owner_ref_shield_braid`. Today's plate cups stay as the lower tier; the strap fix is still owed. The pick is the design, not a frozen look: P2 owns fit and tiers.

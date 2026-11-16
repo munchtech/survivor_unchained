@@ -143,6 +143,7 @@ switch (cmd)
     case "lamped": Lamped(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
+    case "dungeon": Dungeons(); break;
     case "story": Story(); break;
     case "verge-day": VergeDay(); break;
     case "lowford-day": LowfordDay(); break;
@@ -715,6 +716,40 @@ void FeetLines(IEnumerable<(string Label, Pilot.FeetMeter M)> rows)
         var by = g.SelectMany(x => x.M.By).GroupBy(kv => kv.Key).OrderByDescending(k => k.Sum(kv => kv.Value)).Select(k => $"{k.Key} {k.Sum(kv => kv.Value) / n:0.0}");
         Console.WriteLine($"feet {g.Key}: in reach {inReach / n:0.0} s a run, stood {g.Sum(x => x.M.Stood) / inReach * 100:0}%, {g.Sum(x => x.M.AbsTurn) / (2 * Math.PI) / inReach * 10:0.00} turns per 10 s (net {g.Sum(x => x.M.NetTurn) / (2 * Math.PI) / inReach * 10:0.00}), plants {g.Sum(x => x.M.Plants) / n:0} and stand charges {g.Sum(x => x.M.StandCharges) / n:0.0} a run; by rule (s a run): {string.Join(" ", by)}");
     }
+}
+
+// (dungeon-fights) --dungeons hollow,roost --bots standing,human,deft --seeds 50 --seed0 1 --levels hollow=6,roost=7 --gear 1 [--at boss] [--out PATH.md] [--lines]
+void Dungeons()
+{
+    var ids = opt.List("dungeons", "hollow,roost");
+    var lv = opt.List("levels", "").Where(x => x.Contains('=')).ToDictionary(x => x.Split('=')[0], x => int.Parse(x.Split('=')[1]));
+    var bots = opt.List("bots", "standing,human,deft");
+    int seeds = opt.Int("seeds", 50), seed0 = opt.Int("seed0", 1);
+    bool atBoss = opt.Get("at", "") == "boss";
+    var specs = new List<MapRunSpec>();
+    foreach (var id in ids)
+    {
+        var def = SurvivorUnchained.Maps.DungeonGen.Get(id) ?? throw new ArgumentException($"no dungeon {id}");
+        int level = lv.GetValueOrDefault(id, id == "roost" ? 7 : 6);
+        foreach (var bot in bots)
+            for (int s = 0; s < seeds; s++)
+                specs.Add(new MapRunSpec(seed0 + s, "warden", 1, def.People, level, opt.Int("gear", 1), [], bot, opt.Double("cap", 25), id, atBoss));
+    }
+    if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
+    var results = new ConcurrentBag<MapRunResult>();
+    var sw = Stopwatch.StartNew();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 12) }, spec =>
+    {
+        try { results.Add(MapSim.Play(spec)); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
+    });
+    Console.Error.WriteLine($"{specs.Count} dungeon runs in {sw.Elapsed:mm\\:ss}");
+    if (opt.Has("lines"))
+        foreach (var r in results.OrderBy(r => r.Spec.Key))
+            Console.WriteLine($"{r.Spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : $"closed {r.Minutes:0.0} ({r.KilledBy}) in {r.DeathRoom}/{r.DeathPlan} ruler {r.DeathBossPhase}")} fight {r.FightSec:0}s marks {r.MarksRoom}+{r.MarksBoss} boss {(r.BossTtk is double bt ? $"{bt:0}s" : "-")} xp {r.XpGained:0} L{r.LevelStart}->{r.LevelEnd}");
+    var md = DungeonSim.Report(results.ToList());
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "dungeon.md"), md);
+    Console.WriteLine(md);
 }
 
 void ProbeAll()

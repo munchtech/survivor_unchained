@@ -94,6 +94,8 @@ public sealed class EnemyDef
     /// <summary>Contact attack rhythm.</summary>
     public double? AttackEvery;
     public bool Elite, Boss;
+    /// <summary>Flies: no ground to fall from (a forced move never takes it over an edge: Battle.MayFall).</summary>
+    public bool Flies;
     public double? AggroRange;
     /// <summary>Tags it carries for items and procs.</summary>
     public Tag[]? Tags;

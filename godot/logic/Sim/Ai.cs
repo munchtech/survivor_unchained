@@ -33,6 +33,14 @@ public static class Ai
         if (e.State == EnemyState.Dying)
         {
             e.DieT += dt;
+            // Over the edge it goes on sliding the way it went (the view drops it out of sight there).
+            if (e.Fell && (e.Kbx != 0 || e.Kbz != 0))
+            {
+                e.X += e.Kbx * dt; e.Z += e.Kbz * dt;
+                double kd = Math.Exp(-dt * 9);
+                e.Kbx *= kd; e.Kbz *= kd;
+                if (Math.Abs(e.Kbx) + Math.Abs(e.Kbz) < 0.05) e.Kbx = e.Kbz = 0;
+            }
             if (e.DieT >= DieTime) b.Enemies.Release(e);
             return;
         }
@@ -48,17 +56,10 @@ public static class Ai
         // A reflection stands where it was left, until it breaks.
         if (e.Decoy) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
 
-        // Knockback slides, then settles.
+        // Knockback slides, then settles (a normal foe it carries over the ground's end falls: Battle.SlideStep).
         if (e.Kbx != 0 || e.Kbz != 0)
         {
-            e.X += e.Kbx * dt;
-            e.Z += e.Kbz * dt;
-            // Knocked into a wall, it stops at the wall (a scripted boss's own step never resolved it, and
-            // Grimtunnel was knocked out through the shut gate behind her, where she could not reach him).
-            b.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
-            double k = Math.Exp(-dt * 9);
-            e.Kbx *= k; e.Kbz *= k;
-            if (Math.Abs(e.Kbx) + Math.Abs(e.Kbz) < 0.05) e.Kbx = e.Kbz = 0;
+            if (b.SlideStep(e, dt)) return;
         }
 
         var s = e.Status;
