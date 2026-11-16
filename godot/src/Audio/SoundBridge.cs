@@ -9,7 +9,10 @@ namespace SurvivorUnchained.Sound;
 
 /// <summary>What the game is, this frame, as far as sound cares.</summary>
 public readonly record struct SoundState(string Mode, string? Zone, TimeOfDay Time, double Px, double Pz, Battle? Battle,
-    bool Boss, string? Overlay, Func<double, double, AmbienceMix>? Ambience, Func<double, double, string?>? MusicMood);
+    bool Boss, string? Overlay, Func<double, double, AmbienceMix>? Ambience, Func<double, double, string?>? MusicMood, DenHoles? Holes = null);
+
+/// <summary>A dungeon's hole field (res by res cells of `Step` metres from -Half): where the den's pits are, for the placed loop.</summary>
+public readonly record struct DenHoles(float[] Field, int Res, double Half, double Step);
 
 /// <summary>
 /// Where the game becomes sound (the web game's game/soundBridge.ts).
@@ -24,6 +27,10 @@ public sealed class SoundBridge
     readonly Synth a;
     public readonly Ambience Ambience;
     public readonly Music Music;
+    /// <summary>The den's recorded sound (pits, far pack, score, creatures' voices; DenAudio).</summary>
+    public readonly DenAudio Den;
+    readonly DenSound.GruntRule grunt = new();
+    readonly Random dice = new(23);
     int xpStep, swellTier = -1;
     double xpT, hostilesNear, beatT, sweepT, swellT, now;
     /// <summary>The player's kills in the last second and a half, for the swell (S-08).</summary>
@@ -44,6 +51,7 @@ public sealed class SoundBridge
         this.a = a;
         Ambience = new Ambience(a);
         Music = new Music(a);
+        Den = new DenAudio(a);
     }
 
     /// <summary>Combat events, panned and attenuated from the survivor's position.</summary>
@@ -57,6 +65,8 @@ public sealed class SoundBridge
             return new Sfx.Where(Math.Clamp((x - px) / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32));
         }
         int stones = 0, fell = 0;
+        Den.Combat(evs, b?.MaxHp ?? 100);
+        Den.Voices(evs, px, pz, At);
         foreach (var e in evs)
         {
             switch (e)
@@ -81,14 +91,23 @@ public sealed class SoundBridge
                 case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
                 case Ev.Nova n: Sfx.Nova(n.School, n.Art); break;
                 // Each skill in its own voice (Sfx.Skills), the school's where it has none.
-                case Ev.Slash s: Sfx.Swing(s.Art, At(s.X, s.Z)); break;
+                case Ev.Slash s:
+                    Sfx.Swing(s.Art, At(s.X, s.Z));
+                    // Her effort on a light cut: seldom (chance and cooldown).
+                    if (grunt.Admit(false, now, dice.NextDouble())) Sfx.Cue("her.grunt");
+                    break;
+                // Her effort on a heavy swing and on Sunder: most times (never twice inside the cooldown).
+                case Ev.Cast c when c.Heavy || c.Weapon == "sunder": if (grunt.Admit(true, now, dice.NextDouble())) Sfx.Cue("her.grunt"); break;
                 case Ev.Muzzle m: Sfx.Cast(m.Art, m.School, At(m.X, m.Z)); break;
                 case Ev.Strike st when st.Art != null: Sfx.Falling(st.Art, st.Delay, At(st.X, st.Z)); break;
                 case Ev.Chain ch when ch.Points.Length >= 2: Sfx.Arc(At(ch.Points[0], ch.Points[1])); break;
                 case Ev.Beam bm when bm.Art?.StartsWith("beam") == true: Sfx.Lance(bm.Art, bm.Duration, At(bm.X1, bm.Z1)); break;
                 case Ev.Telegraph t when t.Tell != null && t.Phase != TellPhase.Off: Sfx.Telegraph(t.Tell, t.Phase == TellPhase.Land, t.Boss, At(t.X, t.Z), t.Duration > 0 ? t.Duration : null); break;
-                case Ev.Dash: Sfx.Dash(); break;
-                case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); break;
+                case Ev.Dash: Sfx.Dash(); if (a.Gate("her.dodge", 1, 500)) Sfx.Cue("her.dodge"); break;
+                case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); Sfx.Cue("her.leap"); break;
+                case Ev.Leap { Phase: LeapPhase.Land }: Sfx.Cue("her.land"); break;
+                // The stance taken up and put down (the same breath, lower and softer going out).
+                case Ev.Swap sw: SoundBank.Play("her.stance", default, sw.Stance != "" ? 1 : 0.8, null, sw.Stance != "" ? 1 : 0.88); break;
                 case Ev.Charge ch2: Sfx.ShieldCharge(ch2.Phase, At(ch2.X, ch2.Z)); break;
                 case Ev.HardLanding hl2: Sfx.Cue("dash.hard_landing", At(hl2.X, hl2.Z)); break;
                 // (P7) Bladestorm: the whir chained on every blow of the spin, the break, each line's split; Iron Vow's
@@ -231,6 +250,7 @@ public sealed class SoundBridge
                 if (e.Alive && e.Disposition == Disposition.Hostile && Math.Abs(e.X - s.Px) < 20 && Math.Abs(e.Z - s.Pz) < 20
                     && (e.X - s.Px) * (e.X - s.Px) + (e.Z - s.Pz) * (e.Z - s.Pz) < 400) hostile++;
         hostilesNear += (hostile - hostilesNear) * Math.Min(1, dt * (hostile > hostilesNear ? 2 : 0.35));
+        Den.Update(dt, s, hostile);
         Mood mood;
         if (s.Mode is "title" or "create") mood = Mood.Title;
         else if (s.Boss) mood = Mood.Boss;
@@ -241,6 +261,8 @@ public sealed class SoundBridge
         else mood = Mood.Explore;
         // A cinematic scores itself: its mood and intensity, silence included.
         if (CineMood is Mood cm) mood = cm;
+        // In the den the score is the owner's recording (or, after the Pack-Mother, quiet): the synth keeps out of it.
+        else if (Den.InDen) mood = Mood.Silence;
         Music.Set(mood);
         Music.Intensity = CineMood != null ? CineIntensity : s.Boss ? 1 : Math.Min(1, hostilesNear / 18);
         // Close to the end, your own heart: faster the worse it gets.
@@ -259,7 +281,8 @@ public sealed class SoundBridge
         }
         else beatT = 0;
         // A chest opening has the room: the score steps well back for its jingle.
-        a.DuckMusic(o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
+        // (In the den the unlock cards, the draft, duck the recorded score too.)
+        a.DuckMusic(Den.ScoreOn && o == "draft" ? SoundBank.Duck("draft", "music", 0.45f) : o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
         // The zone's recorded room, looked up only when the place or the hour changes (SoundBank.Has logs each ask).

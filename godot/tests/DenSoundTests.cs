@@ -86,6 +86,27 @@ public class DenSoundTests
         Assert.InRange(pit.R, 1.9, 2.4);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void TheRealDensHaveTheirPitsFoundInTheHoleField(int seed)
+    {
+        var m = SurvivorUnchained.Maps.MapGen.Generate(new SurvivorUnchained.Maps.MapSpec { Seed = seed, Dungeon = "hollow", Tier = 1, Night = false });
+        Assert.Equal("den", m.DungeonTheme);
+        double half = m.Meta.Size / 2, step = m.Meta.Size / (m.Meta.Res - 1);
+        var pits = DenSound.Pits(m.HoleField!, m.Meta.Res, half, step);
+        Assert.NotEmpty(pits);
+        foreach (var (x, z, r) in pits)
+        {
+            Assert.InRange(x, -half, half); Assert.InRange(z, -half, half);
+            Assert.True(r >= 0.7, $"a pit of radius {r}");
+        }
+        // she starts well clear of every pit
+        var st = m.Start;
+        Assert.All(pits, p => Assert.True(Math.Sqrt((p.X - st.X) * (p.X - st.X) + (p.Z - st.Z) * (p.Z - st.Z)) > p.R + 3));
+    }
+
     [Fact]
     public void ALoopIsFullInsideAPitAndGoneBeyondItsReach()
     {
