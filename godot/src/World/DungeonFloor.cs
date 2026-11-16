@@ -62,6 +62,8 @@ public static class DungeonFloor
                 mat.SetShaderParameter("set_floor", GD.Load<TextureLayered>("res://art/dungeon/den/set/floor.png"));
                 mat.SetShaderParameter("set_k", 1f);
                 mat.SetShaderParameter("set_gain", Args.Num("den-set-floor-gain", 1f));
+                mat.SetShaderParameter("set_band", Args.Num("den-set-band", 0.6f));     // (r10b) the tiles' clods and patches stretched
+                mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));     // (r10b) worn ways and damp patches
                 mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.85f));
             }
         }

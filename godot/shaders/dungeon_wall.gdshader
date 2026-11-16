@@ -37,6 +37,13 @@ uniform float r9 = 0.0;
 uniform vec3 broot_col = vec3(0.2, 0.12, 0.075);
 uniform vec3 broot_cool = vec3(0.86, 0.9, 1.0);
 uniform float wall_top_k = 0.3;
+// (den round 10b) Where the painted set dresses the banks (src/World/DungeonDress.Set.cs) the mound is only the dark mass
+// behind the paintings: cool near-black earth, the targets' deep gaps between roots (10-20 of 255, blue-grey), so every
+// gap, cut and keyed hole in the set reads as shade between roots. The old bank painting showed through them as a pale
+// mauve film over the far banks and pale wedges on the side banks (p10c).
+uniform vec4 set_area = vec4(0.0);   // x, z, radius; w: 0 off, 1 within the radius (the prototype room), 2 everywhere
+uniform vec3 set_mass = vec3(0.012, 0.013, 0.019);
+uniform float set_deep = 0.5;    // the old bank painting's share in it, greyed cool: dark roots receding past the set's reach
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -138,6 +145,18 @@ vec3 beyond_col() {
 	if (r9 > 0.5) b = max(b, vec3(0.0058, 0.006, 0.0072) * (0.75 + 0.5 * vnoise(wpos.xz * 0.23 + 4.0)));
 	return b;
 }
+float in_set() {
+	if (set_area.w < 0.5) return 0.0;
+	if (set_area.w > 1.5) return 1.0;
+	return 1.0 - smoothstep(set_area.z + 7.0, set_area.z + 9.0, distance(wpos.xz, set_area.xy));
+}
+vec3 set_mass_col() {
+	vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
+	vec3 p = mix(texture(bank_alb, vec3(uv, 1.0)).rgb, texture(bank_alb, vec3(uv + vec2(0.37, 0.61), 0.0)).rgb, smoothstep(0.57, 0.67, vnoise(wpos.xz * 0.08)));
+	float l = dot(p, vec3(0.299, 0.587, 0.114));
+	vec3 deep = mix(vec3(l) * vec3(0.8, 0.9, 1.25), p, 0.35) * set_deep;
+	return set_mass * (0.7 + 0.6 * vnoise(wpos.xz * 0.45 + vec2(wpos.y * 0.3, 2.0))) + deep;
+}
 void fragment() {
 	// The cutaway: what stands nearer the camera than her, over her chest on screen, is cut away (dithered at its
 	// edge), keeping a 0.9 m footing so the wall still stands round her feet.
@@ -204,7 +223,7 @@ void fragment() {
 		col *= 1.0 - 0.25 * smoothstep(0.5 * wall_h, wall_h, h);
 		if (kind > 0.25 && depth < 0.5) col *= 0.55;
 	} else if (kind > 0.25) {
-		col = beyond_col();
+		col = mix(beyond_col(), set_mass_col(), in_set());
 	} else {
 		// The den's bank (15 Nov): the painted bank set projected along the play camera's view so it is never stretched on
 		// the slope; slice 1 main, slice 0 blended in by slow noise; past the crest (COLOR.b) it fades to black.
@@ -227,6 +246,9 @@ void fragment() {
 			col *= mix(1.0, wall_top_k, smoothstep(2.4, 7.0, h));
 		}
 		col = mix(col, beyond_col(), smoothstep(0.0, 1.0, round_s));
+		float ks = in_set();
+		col = mix(col, set_mass_col(), ks);
+		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(wnrm, 0.0)).xyz, ks));   // (no painted normal under the set)
 	}
 	ALBEDO = col;
 	ROUGHNESS = 0.95;

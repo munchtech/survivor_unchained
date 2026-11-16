@@ -684,6 +684,7 @@ public static partial class DungeonWalls
             mat.SetShaderParameter("r9", r9 ? 1f : 0f);
             mat.SetShaderParameter("broot_col", Args.Get("den-root-col") is string rc ? new Color(rc).SrgbToLinear() : new Color(0.2f, 0.12f, 0.075f));
             mat.SetShaderParameter("wall_top_k", Args.Num("den-wall-top", 0.55f));
+            mat.SetShaderParameter("set_area", DungeonDress.SetArea(c.Z));   // (den round 10b: the mound is the dark mass behind the set)
         }
         return mat;
     }

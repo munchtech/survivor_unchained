@@ -25,6 +25,17 @@ public static partial class DungeonDress
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
     static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 1f);
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
+    static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 1f);   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
+
+    static ShaderMaterial SetMat(string sheet, float gain)
+    {
+        var mat = new ShaderMaterial { Shader = setShader };
+        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + sheet + ".png"));
+        mat.SetShaderParameter("gain", gain);
+        mat.SetShaderParameter("sat", SetSat);
+        mat.SetShaderParameter("shade_k", SetCool);
+        return mat;
+    }
     const string SetDir = "res://art/dungeon/den/set/";
     // the play camera's basis in a dungeon (it never turns: it looks north, pitch 56)
     static readonly Vector3 CamUp = new(0f, 0.55919f, -0.82904f), CamView = new(0f, -0.82904f, -0.55919f);
@@ -79,6 +90,16 @@ public static partial class DungeonDress
     /// <summary>True where the painted set dresses the den (mode 1: the entry room and its banks; mode 2: everywhere).</summary>
     static bool SetIn(float x, float zz) =>
         SetMode >= 2 || (SetMode == 1 && new Vector2(x - setRoom.X, zz - setRoom.Z).Length() < setRoom.R + 9f);
+
+    /// <summary>Where the set dresses, for the mound's shader (dungeon_wall.gdshader set_area): the prototype room's x, z and
+    /// radius; w the mode (0 off, 1 that room, 2 everywhere).</summary>
+    public static Vector4 SetArea(ZoneData z)
+    {
+        if (SetMode <= 0 || z.DungeonTheme != "den" || z.Rooms.Count == 0) return Vector4.Zero;
+        var r = z.Rooms[0];
+        foreach (var q in z.Rooms) if (q.Kind == "Start") { r = q; break; }
+        return new Vector4(r.X, r.Z, r.R, SetMode >= 2 ? 2f : 1f);
+    }
 
     static void PickSetRoom(ZoneData z)
     {
@@ -217,11 +238,7 @@ public static partial class DungeonDress
             arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
             var mesh = new ArrayMesh();
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
-            var mat = new ShaderMaterial { Shader = setShader };
-            mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + name + ".png"));
-            mat.SetShaderParameter("gain", SetGain);
-            mat.SetShaderParameter("sat", SetSat);
-            c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = mesh, MaterialOverride = SetMat(name, SetGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             tris += b.I.Count / 3;
         }
         c.Count["set modules"] = modules; c.Count["set tris"] = tris;
@@ -342,9 +359,19 @@ public static partial class DungeonDress
         sorted.Sort((p, q) => q.Metres.X.CompareTo(p.Metres.X));
         var pool = sorted.GetRange(big ? 0 : sorted.Count / 2, Mathf.Max(1, sorted.Count / 2));
         var pc = pool[pick % pool.Count];
-        float k = scale * SetBoulderScale * (big ? 1f : 0.8f);
+        float rx = PlaceSetObj(c, "O1", pc, x, zz, scale * SetBoulderScale * (big ? 1f : 0.8f), 0.62f, true);
+        c.Tick("set boulders");
+        c.Boulders.Add((new Vector2(x, zz), rx));
+        return rx;
+    }
+
+    /// <summary>(round 10b) A painted object from a sheet (O1 boulders, O2 logs, O3 bone piles) on its half-ellipsoid
+    /// proxy: ry is its height as a share of its half width (a boulder 0.62, a log 0.18, bones 0.1); the shadow-only hull
+    /// for the tall ones. Returns the proxy's half width.</summary>
+    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull)
+    {
         float W = pc.Metres.X * k, Hr = pc.Metres.Y * k;
-        float rx = 0.46f * W, ry = 0.62f * rx;
+        float rx = 0.46f * W, ry = ryk * rx;
         float aa = CamUp.Y * ry, hm = 0.94f * Hr;
         float bb = Mathf.Max((hm * hm - aa * aa) / (2f * hm), 0.25f * rx);
         float rz = bb / -CamUp.Z;
@@ -387,12 +414,8 @@ public static partial class DungeonDress
         arr[(int)Mesh.ArrayType.Index] = buf.I.ToArray();
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
-        var mat = new ShaderMaterial { Shader = setShader };
-        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + "O1.png"));
-        mat.SetShaderParameter("gain", SetGain * SetObjGain);
-        mat.SetShaderParameter("sat", SetSat);
-        n.AddChild(new MeshInstance3D { Name = "Painting", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-        n.AddChild(new MeshInstance3D
+        n.AddChild(new MeshInstance3D { Name = "Painting", Mesh = mesh, MaterialOverride = SetMat(sheet, SetGain * SetObjGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        if (hull) n.AddChild(new MeshInstance3D
         {
             Name = "Shadow", Mesh = new SphereMesh { Radius = 1f, Height = 2f, RadialSegments = 16, Rings = 8 },
             Transform = new Transform3D(Basis.FromScale(new Vector3(rx, ry, rz)), new Vector3(x, y0, zz)),
@@ -405,12 +428,37 @@ public static partial class DungeonDress
         };
         n.AddChild(new Godot.Decal
         {
-            Name = "Contact", TextureAlbedo = blob, Modulate = new Color(1, 1, 1, 0.6f), AlbedoMix = 1f,
+            Name = "Contact", TextureAlbedo = blob, Modulate = new Color(1, 1, 1, hull ? 0.6f : 0.35f), AlbedoMix = 1f,
             Size = new Vector3(2.5f * rx, 1.2f, 2.5f * rz), Position = new Vector3(x, y0, zz),
         });
         c.Root.AddChild(n);
-        c.Tick("set boulders");
-        c.Boulders.Add((new Vector2(x, zz), rx));
         return rx;
     }
+
+    /// <summary>(round 10b) One piece of a set sheet by a hash, or null.</summary>
+    static SetPiece? SetPick(string sheet, float u)
+    {
+        if (!LoadSet() || !setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) return null;
+        return all[(int)(u * all.Count) % all.Count];
+    }
+
+    /// <summary>(round 10b) The kills' leavings where the set dresses: a painted bone pile (O3) at a pile's seed in place
+    /// of the old decal bones, rib cages, skulls, fur and blood; by a bank's foot now and then a painted log (O2).</summary>
+    static void SetLitter(Ctx c, Vector2 p, int si, float wall)
+    {
+        if (wall < 2.2f && Hash(si, 7, 971) < 0.22f && SetPick("O2", Hash(si, 7, 972)) is SetPiece lg)
+        {
+            PlaceSetObj(c, "O2", lg, p.X, p.Y, 0.7f + 0.2f * Hash(si, 7, 973), 0.18f, false);
+            c.Tick("set logs");
+            return;
+        }
+        if (Hash(si, 7, 974) < 0.7f && SetPick("O3", Hash(si, 7, 975)) is SetPiece bn)
+        {
+            PlaceSetObj(c, "O3", bn, p.X, p.Y, 0.85f + 0.3f * Hash(si, 7, 976), 0.1f, false);
+            c.Tick("set bones");
+        }
+    }
+
+    /// <summary>(round 10b) Decal kinds the set's paintings replace where it dresses (off-style beside them).</summary>
+    static bool SetDrops(string kind) => kind is "bone" or "ribcage" or "wolf_skull" or "deer_skull" or "blood" or "hide" or "drag" or "fur";
 }

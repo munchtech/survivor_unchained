@@ -16,6 +16,13 @@ uniform float sat = 1.0;
 uniform float cold_take = 0.5;                  // how much of a cold light's brightness it takes (never its colour)
 uniform float local_turn = 0.5;                 // how much a spot or omni follows the proxy's normal (0 flat)
 uniform float key_shadow = 0.0;                 // 1: the key's shadow falls on it (her shadow on a spill); 0: pre-lit only
+// (round 10b) The painting's own shade goes cool grey-violet, its lit masses keep their warmth: the targets' darks between
+// the roots are blue-grey (90% of their pixels under 20 of 255 have B >= R), their lit root tops warm. By the painting's own
+// luminance (linear): under shade_lo all shade_tint, over shade_hi all the painting's colour.
+uniform vec3 shade_tint = vec3(0.84, 0.92, 1.2);
+uniform float shade_lo = 0.01;
+uniform float shade_hi = 0.08;
+uniform float shade_k = 1.0;
 
 void fragment() {
 	vec4 c = texture(paint_tex, UV);
@@ -23,7 +30,9 @@ void fragment() {
 	float s = smoothstep(0.1, 0.4, sqrt(max(lb, 0.0)));
 	float show = step(1.0, s + COLOR.r + 0.001);
 	vec3 col = c.rgb * tint;
-	col = mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, sat);
+	float l = dot(col, vec3(0.299, 0.587, 0.114));
+	col = mix(vec3(l), col, sat);
+	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
 	ALBEDO = col * gain;
 	ALPHA = c.a * show * step(0.5, COLOR.g);
 	ALPHA_SCISSOR_THRESHOLD = 0.5;

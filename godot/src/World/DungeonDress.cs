@@ -474,6 +474,7 @@ public static partial class DungeonDress
             var sp = Ray(c, r, Hash(s, 21, k) * Mathf.Tau, 0.5f + 0.5f * Hash(s, 22, k), 0);
             if (sp == null) continue;
             float cx = sp.Value.X, cz = sp.Value.Z;
+            if (SetMode > 0 && SetIn(cx, cz)) continue;   // (round 10b: the bank paintings carry their own glow fungus)
             int m = 4 + (int)(Hash(s, 23, k) * 5);
             for (int q = 0; q < m; q++)
             {

@@ -35,7 +35,9 @@ uniform float meso_k = 0.0;
 // F1 packed earth, F2 trodden, F3 damp with moss, F4 thin root runs, laid by the same weights as the layers above
 uniform sampler2DArray set_floor : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the den floor's albedo
-uniform float set_gain = 1.0;   // 0: off (round 8's floor); 1: on (--den-meso)
+uniform float set_gain = 1.0;   // the set floor's albedo scale (--den-set-floor-gain)
+uniform float set_band = 0.6;   // (r10b) the tiles' 3 cm-1 m masses stretched by this (0: as painted)
+uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow fields (0: the walls' vignette only)
 const float MESO_M = 8.0;
 
 varying vec3 wpos;
@@ -175,11 +177,28 @@ void fragment() {
 				vec4 t2 = mix(texture(set_floor, vec3(s0 + 0.5, 1.0)), texture(set_floor, vec3(s1 + 0.5, 1.0)), tw);
 				vec4 t3 = mix(texture(set_floor, vec3(s0, 2.0)), texture(set_floor, vec3(s1, 2.0)), tw);
 				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0)), texture(set_floor, vec3(s1 + 0.25, 3.0)), tw);
+				// (r10b) the frame's macro value structure: worn ways wandering through the open (F2, lighter) and damp
+				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
+				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
+				float wtr = clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
+				float wdp = max(max(w_dk, w_li * 0.5), set_paths * smoothstep(0.56, 0.7, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
-				vec3 sc = t1.rgb;
-				sc = mix(sc, t2.rgb, smoothstep(0.0, 1.0, w_tr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5)));
-				sc = mix(sc, t4.rgb, smoothstep(0.0, 1.0, w_rm * 1.6 - 0.3 + 0.6 * (t4.a - 0.5)));
-				sc = mix(sc, t3.rgb, smoothstep(0.0, 1.0, max(w_dk, w_li * 0.5) * 1.6 - 0.3 + 0.6 * (t3.a - 0.5)));
+				float k2 = smoothstep(0.0, 1.0, wtr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5));
+				float k4 = smoothstep(0.0, 1.0, w_rm * 1.6 - 0.3 + 0.6 * (t4.a - 0.5));
+				float k3 = smoothstep(0.0, 1.0, wdp * 1.6 - 0.3 + 0.6 * (t3.a - 0.5));
+				vec3 sc = mix(mix(mix(t1.rgb, t2.rgb, k2), t4.rgb, k4), t3.rgb, k3);
+				// (r10b) the tiles' own clods, prints and patches (3 cm to 1 m) stretched about their metre's mean, so they
+				// read at the play camera; the finest grain and the tiles' choice are left as they are
+				vec3 n1 = mix(textureLod(set_floor, vec3(s0, 0.0), 2.0).rgb, textureLod(set_floor, vec3(s1, 0.0), 2.0).rgb, tw);
+				vec3 n2 = mix(textureLod(set_floor, vec3(s0 + 0.5, 1.0), 2.0).rgb, textureLod(set_floor, vec3(s1 + 0.5, 1.0), 2.0).rgb, tw);
+				vec3 n3 = mix(textureLod(set_floor, vec3(s0, 2.0), 2.0).rgb, textureLod(set_floor, vec3(s1, 2.0), 2.0).rgb, tw);
+				vec3 n4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 2.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 2.0).rgb, tw);
+				vec3 m1 = mix(textureLod(set_floor, vec3(s0, 0.0), 7.0).rgb, textureLod(set_floor, vec3(s1, 0.0), 7.0).rgb, tw);
+				vec3 m2 = mix(textureLod(set_floor, vec3(s0 + 0.5, 1.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.5, 1.0), 7.0).rgb, tw);
+				vec3 m3 = mix(textureLod(set_floor, vec3(s0, 2.0), 7.0).rgb, textureLod(set_floor, vec3(s1, 2.0), 7.0).rgb, tw);
+				vec3 m4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 7.0).rgb, tw);
+				float ln = lum(mix(mix(mix(n1, n2, k2), n4, k4), n3, k3)), lm = lum(mix(mix(mix(m1, m2, k2), m4, k4), m3, k3));
+				sc *= clamp(pow(max(ln, 1e-4) / max(lm, 1e-4), set_band), 0.45, 2.2);
 				col = sc * set_gain;
 			}
 		if (meso_k > 0.0) {

@@ -168,6 +168,7 @@ public static partial class DungeonDress
         foreach (var (sp, size, inBoss) in seeds)
         {
             si++;
+            if (SetMode > 0 && SetIn(sp.X, sp.Y)) SetLitter(c, sp, si, Wall(c, sp.X, sp.Y));   // (round 10b: painted O3 / O2)
             if (Hash(si, 0, 941) < (inBoss ? 0.9f : 0.8f))
                 AddDecal(c, b, PickDecal(Under, Hash(si, 0, 942)), sp.X + (Hash(si, 0, 943) - 0.5f), sp.Y + (Hash(si, 0, 944) - 0.5f), Hash(si, 0, 945) * Mathf.Tau, 0.9f + 0.3f * Hash(si, 0, 946));
             int n = 3 + (int)(4f * size * Hash(si, 0, 947));
@@ -262,6 +263,7 @@ public static partial class DungeonDress
     /// side (the cell's top) toward the light.</summary>
     static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale)
     {
+        if (SetMode > 0 && SetDrops(d.Kind) && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills)
         var ax = new Vector2(Mathf.Cos(yaw), Mathf.Sin(yaw));
         var up = new Vector2(ax.Y, -ax.X);  // (the cell's top, before any mirror)
         if (up.Dot(decalLight) < 0) up = -up;
