@@ -511,7 +511,7 @@ void fragment() {
 	// wheel, CrowdView/Vat.Push). The rim: a colored edge glow of the affix's hue, emitted (so night and shade keep it),
 	// tight at the silhouette with a faint wider breath, never a neon outline. Functional; L1 owns the final look.
 	float champ_code = floor(COLOR.a) - 128.0 * floor(COLOR.a / 128.0);
-	e += c * (COLOR.a - champ_code);
+	e += c * fract(COLOR.a);   // (the glow is the fraction alone: the den class rides in the 128s, pass 2)
 	if (champ_code > 0.5) {
 		float ch_h = (champ_code - 1.0) / 64.0;
 		vec3 ch_c = clamp(abs(mod(ch_h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
