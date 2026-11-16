@@ -39,6 +39,7 @@ uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark:
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
 uniform vec3 boss_c = vec3(0.0);
 uniform float boss_gloom = 0.0;
+uniform float hi_roll = 1.0;   // (den r14 corr) the near banks' highlights' scale (1 off)
 uniform float bank_gloom = 0.0;   // (den r13 corr) the corridor banks' depth gloom (--den-set-gloom)
 uniform vec2 gloom_m = vec2(2.5, 6.5);   // metres into the bank: from, full
 varying vec3 wpos;
@@ -71,6 +72,8 @@ void fragment() {
 	col = mix(vec3(l), col, sat);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
 	col = gloom_col(col, lair_gloom(wpos));
+	// (den r14 corr, item 9) the camera-side banks' lit tops rolled off and warmed (hi_roll 1: off; DungeonDress.SetMat)
+	col = mix(col, col * hi_roll * vec3(1.0, 0.93, 0.84), smoothstep(0.05, 0.22, l) * step(hi_roll, 0.999));
 #ifndef SET_SOFT
 	// (den r13 corr) a corridor bank's roots go dark warm umber as they lie deeper in the bank (COLOR.b: metres in / 10,
 	// 0 outside the corridors and on objects): the deep rows' borders and the mound behind them meet in the gloom

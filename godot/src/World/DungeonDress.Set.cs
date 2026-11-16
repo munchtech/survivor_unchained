@@ -48,6 +48,9 @@ public static partial class DungeonDress
         mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
         mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(1.0f, 0.95f, 0.85f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
+        // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
+        // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
+        if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
         if (sheet == "O5")
         {
             // (r12 judge: the seed-23 room's blood read magenta) the set's half saturation and its grey-violet shade turned the
@@ -738,6 +741,21 @@ public static partial class DungeonDress
         return laid;
     }
 
+    // (den r14 corr) the ragged cut's field: isotropic 2-octave value noise in the world (0..1, sharpened); 0 keeps the sines
+    static readonly float SetRaggedIso = SurvivorUnchained.Args.Num("den-set-ragged-iso", 1.6f);
+    static float SetRagNoise(float x, float zz)
+    {
+        static float Vn(float px, float pz, int s)
+        {
+            int i = Mathf.FloorToInt(px), j = Mathf.FloorToInt(pz);
+            float fx = px - i, fz = pz - j;
+            fx = fx * fx * (3 - 2 * fx); fz = fz * fz * (3 - 2 * fz);
+            return Mathf.Lerp(Mathf.Lerp(Hash(i, j, s), Hash(i + 1, j, s), fx), Mathf.Lerp(Hash(i, j + 1, s), Hash(i + 1, j + 1, s), fx), fz);
+        }
+        float n = 0.65f * Vn(x / 2.4f, zz / 2.4f, 871) + 0.35f * Vn(x / 0.9f, zz / 0.9f, 872);
+        return SetSm(0.25f, 0.75f, n);
+    }
+
     static void SetModule(Ctx c, SetBuf buf, SetBank b, bool alongX, float s, float L, float from, float to,
         System.Func<float, float> footAt, bool fadeIn, bool fadeOut, float lift, float top, bool bankOnly = false, float deepAdd = 0f)
     {
@@ -820,7 +838,11 @@ public static partial class DungeonDress
                     float dEdge = alongX ? (b.Kind == "far" ? v : 1f - v) * Hm : (b.Kind == "left" ? u : 1f - u) * Wm;
                     float dEnd = Mathf.Min(fadeIn ? a - from : 99f, fadeOut ? to - a : 99f);
                     float nz = 0.5f + 0.3f * Mathf.Sin(q.X * 2.1f + 1.3f * Mathf.Sin(q.Z * 1.7f + 0.4f)) + 0.2f * Mathf.Sin(q.Z * 2.9f - q.X * 1.1f + 0.7f);
-                    g = Mathf.Min(g, SetSm(0.15f, 0.45f, Mathf.Min(dEdge, dEnd) - SetRagged * nz));
+                    // (den r14 corr, item 1a) that field is a sine of X: along a north-south border (a corridor's side bank) X
+                    // hardly changes, so the cut wandered +-0.2 m (the seed-11 left bank's vertical at x ~206, IQR 24 px). An
+                    // isotropic value noise (2.4 m and 0.9 m) wanders the full 0..1 along any border.
+                    if (SetRaggedIso > 0f) nz = SetRagNoise(q.X, q.Z);
+                    g = Mathf.Min(g, SetSm(0.15f, 0.45f, Mathf.Min(dEdge, dEnd) - SetRagged * (SetRaggedIso > 0f ? SetRaggedIso : 1f) * nz));
                     // (den r13 corr) the module's end under its neighbour (no fade: the next one's faded start lies over it) was
                     // cut at the painting's own end, a ruled line where the neighbour shows only its bright masses (the seed-11
                     // left bank's horizontal at y 590); ragged too, by a share of SetRagged (it must still meet the neighbour)
