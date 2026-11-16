@@ -20,6 +20,9 @@ for o in list(bpy.data.objects):
     bpy.data.objects.remove(o)
 bpy.ops.import_scene.gltf(filepath=os.path.join(ROOT, "godot", "art", "people", "heroine.glb"))
 bpy.ops.import_scene.gltf(filepath=PID if PID.endswith(".glb") else os.path.join(ROOT, "godot", "art", "armor", f"{PID}.gltf"))
+# (optional: LOOKDEV_WITH="kit_bodice,<glb path>,.." worn with it, e.g. the set's other pieces)
+for _w in [w for w in os.environ.get("LOOKDEV_WITH", "").split(",") if w]:
+    bpy.ops.import_scene.gltf(filepath=_w if _w.endswith(".glb") else os.path.join(ROOT, "godot", "art", "armor", f"{_w}.gltf"))
 # (the full piece only: its gameplay and shadow LODs (piece_lod.py) share the file)
 for o in [o for o in bpy.data.objects if o.type == "MESH" and (".lod1." in o.name or o.name.endswith(".shadow") or "_lod1_" in o.name)]:
     bpy.data.objects.remove(o)
@@ -42,7 +45,7 @@ for m in bpy.data.materials:
 # (a free mesh's materials carry names only (the game's shaders draw them): a flat stand-in colour by name where the
 # material has no texture, so the plate, trim and leather read apart)
 TINT = {"steel": ((0.075, 0.068, 0.072, 1), 0.75, 0.38), "gold": ((0.95, 0.58, 0.16, 1), 1.0, 0.3),
-        "darkleather": ((0.085, 0.045, 0.028, 1), 0.0, 0.6)}
+        "darkleather": ((0.085, 0.045, 0.028, 1), 0.0, 0.6), "brownleather": ((0.16, 0.075, 0.035, 1), 0.0, 0.55)}
 for m in bpy.data.materials:
     key = m.name.split(".")[0]
     print("MAT", m.name, m.use_nodes, [n.type for n in m.node_tree.nodes] if m.use_nodes else None)
