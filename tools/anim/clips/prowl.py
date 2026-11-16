@@ -36,7 +36,7 @@ BODY = {"pelvis": "pelvis", "spine_01": "spine_02", "spine_02": "spine_03", "spi
 # Prowl's sword line (char space) and its life: degrees of pitch with her weight shift, of yaw with her breath.
 BLADE = (-0.623, -0.695, -0.359)
 BLADE_PITCH = float(os.environ.get("PROWL_BLADE_PITCH", "4.0"))
-BLADE_YAW = float(os.environ.get("PROWL_BLADE_YAW", "2.5"))
+BLADE_YAW = float(os.environ.get("PROWL_BLADE_YAW", "1.5"))  # (solver 6a: 1.5, was 2.5: the heading swung 19 deg p-p, over the 20-wide band)
 # The sword elbow's bend at least this (deg; B's Prowl held 16-27, which reads straight at the play camera). 0 = B's.
 ELBOW_R = float(os.environ.get("PROWL_ELBOW_R", "38"))
 FORE_R = float(os.environ.get("PROWL_FORE_R", "0"))  # deg the sword forearm tips forward about B's elbow (replaces ELBOW_R)
@@ -53,9 +53,30 @@ TRAIL = os.environ.get("PROWL_TRAIL", "1") == "1"
 # (solver 3a, 15 Nov: on by default; PROWL_TRAIL=0 is the old keyed line) the elbow's inside angle 147 (bend 30-36 with
 # her weight shift), the grip re-keyed to 11 ulnar (was 19-25, past W_DEV_LOW), and the arm and fist ride TRAIL_FOLLOW
 # of the chest's turn from its mean: the whole chest's turn swung the line -130..-97 and the tip 0.63-0.83 m out.
-TRAIL_ARM = (-10.0, 14.0, 147.0, 22.0)  # (solver 4a: out 14, turned in 22; was out 0: the fist 58 mm into her hip)
-TRAIL_GRIP = ((-0.6261, -0.7783, 0.0147), (0.7324, -0.5943, -0.3285))  # (solver 4a: knuckles rolled -16 about the blade)
+TRAIL_ARM = (-10.0, 14.0, float(os.environ.get("PROWL_TRAIL_EL", "141")), 22.0)  # (solver 4a: out 14, turned in 22; was out 0: the fist 58 mm into her hip; solver 6a: inside angle 141, was 147: bend 25-32 as played)
+# (solver 6a, 15 Nov) ONE hold for every carry: the idle, its break, the walk and the stops carry the run's grip tilt
+# (GRIP_TILT, the clips' meta "grip_tilt"; keyed.grip_of: the blade's lean in the fist 35 - tilt, - toward her fingers),
+# so locomotion never turns the blade in her fist; the skills stay at 0 and land on the idle's HAND (end_keys' tilt).
+# TRAIL_GRIP re-keyed for it: the wrist read in armroll's caps (pro 75, flex -40, dev 6 on f0; solve6a grip6.py), the
+# line -121 / 50 below level. At tilt 0 the same line pinned pronation and the ulnar cap (armroll turned 9.9 back).
+GRIP_TILT = float(os.environ.get("PROWL_GRIP_TILT", "-35"))
+TRAIL_GRIP = ((-0.5866, -0.8081, -0.0249), (0.7772, -0.5541, -0.2939)) if GRIP_TILT == -35.0 else \
+    ((-0.6261, -0.7783, 0.0147), (0.7324, -0.5943, -0.3285))  # (solver 4a's, at tilt 0: knuckles rolled -16 about the blade)
 TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
+
+
+def grip_at(blade, knuckles, tilt, frm=None):
+    """(solver 6a) The grip (blade, knuckles) that puts the SAME hand bone where (blade, knuckles) does at the idle's
+    tilt `frm` (GRIP_TILT if None) in a clip solved at `tilt` (keyed: hand = grip * turn(+X, 35 - tilt)), so only the
+    blade turns in her fist as the game eases the tilt across the fade."""
+    frm = GRIP_TILT if frm is None else frm
+    if abs(tilt - frm) < 1e-6:
+        return tuple(blade), tuple(knuckles)
+    z = _norm(blade)
+    y = np.asarray(knuckles, float)
+    y = _norm(y - z * np.dot(y, z))
+    G = qmul(qfrom_basis(np.cross(y, z), y, z), qaxis([1.0, 0.0, 0.0], tilt - frm))
+    return tuple(float(x) for x in qrot(G, [0.0, 0.0, 1.0])), tuple(float(x) for x in qrot(G, [0.0, 1.0, 0.0]))
 
 
 def _norm(v):
@@ -256,9 +277,10 @@ def build(rig, name="idle_warden", arms_l=None, fingers_l=None):
     from keyed import solve_frames
     rot, pos, poses, fps, loop = specs(rig, fingers_l)
     T = rot.shape[0]
-    r2, p2 = solve_frames(rig, poses, [(rot[t], pos[t]) for t in range(T)], loop=loop, weapon="sword+shield")
+    r2, p2 = solve_frames(rig, poses, [(rot[t], pos[t]) for t in range(T)], loop=loop, weapon="sword+shield", tilt=GRIP_TILT)
     meta = {"weapon": "sword+shield", "made_by": "Prowl (P4 idle_fight_a on B, Kimodo take + Marionette fit) carried onto A",
-            "changes": "B's body as world turns from rest, legs re-solved onto B's ankles, hands keyed on A"}
+            "changes": "B's body as world turns from rest, legs re-solved onto B's ankles, hands keyed on A",
+            **({"grip_tilt": GRIP_TILT} if GRIP_TILT else {})}
     return Clip(name, fps, r2, p2, loop=loop, meta=meta)
 
 
@@ -270,8 +292,10 @@ BREAK_F = 96
 # (solver 4a) the circle drawn ABOVE the trailing line (it starts and ends on it, rising BREAK_CONE at its top), the
 # blade and knuckles turned together about the fist's grip (the fist stays where Prowl holds it, clear of her hip): at
 # 34 deg about the line the point dipped onto her right thigh (-0.1 cm) and the wrist went past armroll's caps.
-BREAK_CONE = float(os.environ.get("PROWL_BREAK_CONE", "20"))
-BREAK_LIFT = 0.02
+# (solver 6a, at grip tilt -35: cone 20 took the wrist to the ulnar cap (armroll turned 21.5 back), the bend to 53, the
+# tip 0.94 m out)
+BREAK_CONE = float(os.environ.get("PROWL_BREAK_CONE", "12"))
+BREAK_LIFT = float(os.environ.get("PROWL_BREAK_LIFT", "0.01"))
 BREAK_GRIP = 0.045  # m, the wrist to the fist's grip point along the knuckles
 
 
@@ -301,8 +325,9 @@ def build_break(rig, name="idle_warden_break", fingers_l=None):
                 h["blade"], h["knuckles"] = tuple(qrot(q, b0)), tuple(qrot(q, k0))
                 h["pos"] = tuple(grip + qrot(q, np.array(h["pos"]) - grip) + np.array([0.0, BREAK_LIFT * env, 0.0]))
         out.append(pose)
-    r2, p2 = solve_frames(rig, out, [(rot[t], pos[t]) for t in range(n + 1)], loop=False, weapon="sword+shield")
-    meta = {"layer": "full", "weapon": "sword+shield", "made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)"}
+    r2, p2 = solve_frames(rig, out, [(rot[t], pos[t]) for t in range(n + 1)], loop=False, weapon="sword+shield", tilt=GRIP_TILT)
+    meta = {"layer": "full", "weapon": "sword+shield", "made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)",
+            **({"grip_tilt": GRIP_TILT} if GRIP_TILT else {})}
     return Clip(name, fps, r2, p2, loop=False, meta=meta)
 
 
@@ -313,10 +338,12 @@ def _eul(q):
     return (float(y), float(x), float(z))
 
 
-def end_keys(rig, fingers_l=None, t=0):
+def end_keys(rig, fingers_l=None, t=0, tilt=None):
     """Prowl's frame t as keyed controls (no base), for clips that land in her stance or leave it (the stops): each
     foot's ankle and heading, the hips' place and turn, the spine, neck and head as the turns between them, and the
-    hands as chest-frame arcs from the shoulder (so they ride the chest as a stop's lean throws it)."""
+    hands as chest-frame arcs from the shoulder (so they ride the chest as a stop's lean throws it). `tilt` (solver 6a):
+    the grip tilt of the clip the keys go into (None: the idle's, GRIP_TILT): the sword hand's grip re-keyed (grip_at)
+    so that clip's solve lands the idle's hand bone, the blade then off the idle's by the tilts' difference."""
     sk = rig.sk
     rot, pos, poses, fps, loop = specs(rig, fingers_l)
     g, p = sk.fk(rot[t:t + 1], pos[t:t + 1])
@@ -342,6 +369,8 @@ def end_keys(rig, fingers_l=None, t=0):
         for k in ("blade", "knuckles", "pole"):
             h[k] = tuple(float(x) for x in qrot(ch, np.array(h[k])))
         h["frame"] = "chest"
+        if s == "r" and tilt is not None:
+            h["blade"], h["knuckles"] = grip_at(h["blade"], h["knuckles"], tilt)
         out[f"hand_{s}"] = h
     out["fingers_r"], out["fingers_l"] = poses[t]["fingers_r"], poses[t]["fingers_l"]
     return out
@@ -355,7 +384,10 @@ def frame0(rig, fingers_l=None):
     if id(rig) not in _F0:
         from keyed import solve_frames
         rot, pos, poses, fps, loop = specs(rig, fingers_l)
-        r2, p2 = solve_frames(rig, poses[:2], [(rot[t], pos[t]) for t in range(2)], loop=False, weapon="sword+shield")
+        # (solver 6a) the whole loop solved as build() solves it, at the idle's tilt: a two-frame solve's hand_r was 5.4
+        # deg off the built idle's f0 (the loop's elbow smoothing), and the leap settled onto that
+        r2, p2 = solve_frames(rig, poses, [(rot[t], pos[t]) for t in range(len(poses))], loop=loop, weapon="sword+shield",
+                              tilt=GRIP_TILT)
         _F0[id(rig)] = (r2[0].copy(), p2[0].copy())
     return _F0[id(rig)]
 

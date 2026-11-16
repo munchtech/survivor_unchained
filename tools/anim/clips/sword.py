@@ -138,7 +138,9 @@ def prowl_end(rig):
         return None
     if id(rig) not in _PROWL:
         from clips import idle, prowl
-        _PROWL[id(rig)] = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
+        # (solver 6a) the skills hold at grip tilt 0: keyed to land the idle's hand bone (the blade then turns in her
+        # fist by the idle's tilt as the game eases it over the fade)
+        _PROWL[id(rig)] = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"], tilt=0.0)
     return {k: (dict(v) if isinstance(v, dict) else v) for k, v in _PROWL[id(rig)].items()}
 
 

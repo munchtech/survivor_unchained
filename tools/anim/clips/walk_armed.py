@@ -234,6 +234,14 @@ OUTFIT = {"warden": "warden", "reaver": "reaver", "arcanist": "arcanist", "stalk
 _LAST = {}  # per clip: the hands' push (m, per side per frame) and the arms' clearance after it (read by the checks)
 
 
+def _tilt(name):
+    """(solver 6a) The grip tilt the walk holds: the warden's Prowl walk the idle's (prowl.GRIP_TILT), else none."""
+    if name == "walk_warden" and "r" in _PROWL:
+        from clips import prowl
+        return prowl.GRIP_TILT
+    return 0.0
+
+
 def _solve(rig, name, town, k, push):
     from keyed import solve_frames
     calling, arms, fingers, weapon = WALKS[name]
@@ -258,7 +266,7 @@ def _solve(rig, name, town, k, push):
             sp[f"fingers_{s}"] = fingers[s]
         specs.append(sp)
     bases = [(rot[f], pos[f]) for f in range(n)]
-    srot, _ = solve_frames(rig, specs, bases, loop=True, weapon=weapon)
+    srot, _ = solve_frames(rig, specs, bases, loop=True, weapon=weapon, tilt=_tilt(name))
     I = rig.I
     for s in arms:
         chain = [I[f"upperarm_{s}"]]
@@ -278,6 +286,8 @@ def make(rig, name, rounds=6):
         end = prowl_end(rig)
         if end is not None:
             from clips import prowl
+            # (solver 6a) the walk holds at the idle's grip tilt (prowl.GRIP_TILT), so its keys are the idle's own
+            end = prowl.end_keys(rig, fingers_l=end["fingers_l"])
             _PROWL.update({s: end[f"hand_{s}"] for s in "lr"})
             ap = rig.sk.rest_globals()[1][0]
             I = rig.I
@@ -317,6 +327,8 @@ def make(rig, name, rounds=6):
     meta.update({"weapon": weapon,
                  "changes": town.meta["changes"] + "; the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
                  "note": f"her armed walk, {calling} ({weapon}); her town walk's gait; loop starts at the left heel strike"})
+    if _tilt(name):
+        meta["grip_tilt"] = _tilt(name)
     return Clip(name, 30, rot, pos, loop=True, meta=meta)
 
 

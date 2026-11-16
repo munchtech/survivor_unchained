@@ -229,6 +229,8 @@ def prowl_stop(rig, side):
         ]
     keys = [(f, dict(d, hand_r=armsw(ao.get(f, 0.0))["hand_r"]), e) for f, d, e in keys]
     meta = {"layer": "full", "weapon": "sword+shield"}
+    if prowl.GRIP_TILT:  # (solver 6a) the idle's hold (end_keys at its tilt): the stop lands its hand and blade
+        meta["grip_tilt"] = prowl.GRIP_TILT
     return build(f"stop_warden_{side}", rig, keys, meta=meta)
 
 

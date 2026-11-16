@@ -568,8 +568,11 @@ WARDEN_CARRIES = {"trail": (TRAIL_ARM, dict(pitch=tuple(TRAIL_BLADE[:2]), out=tu
 # the elbow 30 -> 45. Its "out" stays 10: at 8 the warden plate took 11 mm, at 5 16-18 (motion --outfits), so the hand
 # rides 0.35-0.40 m out, not 0.24-0.32. Readings by solve5b/tools/opt5.py on this arm (band, tip, jump, caps, lag).
 WRIST_ARM = ((12, 10, 150, -50), (-18, 10, 135, -50))
-WRIST_GRIP = json.loads(os.environ.get("WARDEN_WRIST", "[[72.1, -33.2, 12.1], [87.1, -24.6, -4.8]]"))
-WRIST_LAG = float(os.environ.get("WARDEN_WRIST_LAG", "0.0"))
+# (solver 6b, 15 Nov) The follow-through: the wrist counters most of the arm's swing of the line (on a still wrist the
+# line swings 28-60 down) a little EARLY (lag -0.026 of a cycle, a lead), so what is left of the blade's swing comes
+# 1-2.6 frames behind the fist (as played: heading 1 frame, down 2.6, m5 lag +1; was 0). Readings by solve6b/tools/opt6.py.
+WRIST_GRIP = json.loads(os.environ.get("WARDEN_WRIST", "[[71.2, -31.9, 9.5], [84.7, -16.8, -10.7]]"))
+WRIST_LAG = float(os.environ.get("WARDEN_WRIST_LAG", "-0.026"))
 WRIST_TILT = float(os.environ.get("WARDEN_WRIST_TILT", "-35"))
 if os.environ.get("WARDEN_WRIST_ARM"):  # (exploration: a json pair of (fwd, out, elbow, turn))
     WRIST_ARM = tuple(tuple(x) for x in json.loads(os.environ["WARDEN_WRIST_ARM"]))
@@ -696,7 +699,16 @@ if WARDEN_CARRY == "wrist":
     # (solver 3b) the sprint's fist by the wrist too, on the sprint's wider swing (sprint_stop.sprint: SPRINT_SWING)
     from clips.run_grip import wrist_carry as _wc
     _sw = json.loads(os.environ.get("SPRINT_WRIST") or json.dumps(WRIST_GRIP))
-    SPRINT_ARMS["run_warden"]["r"] = _wc(fwd=tuple(_sw[0]), back=tuple(_sw[1]), lag=WRIST_LAG, tilt=WRIST_TILT)
+    SPRINT_ARMS["run_warden"]["r"] = _wc(fwd=tuple(_sw[0]), back=tuple(_sw[1]), lag=float(os.environ.get("SPRINT_WRIST_LAG", WRIST_LAG)), tilt=WRIST_TILT)
+# (solver 6b, 15 Nov) The backpedals' own sword arm and fist (run_dir applies them at headings past 90). On the run's
+# they lay steep and short of back (-128..-115 / 51-53 down): her chest leans 7 there, 23 in the run, and no in-cap
+# wrist made it up (opt6: pronation, extension and deviation at the caps). The upper arm 14 further back both ends (8:
+# still -122 at the front), the run's out 10, elbow and turn; its readings by opt6 on that arm, a lead as the run's.
+BACK_ARM = tuple(tuple(x) for x in json.loads(os.environ.get("WARDEN_BACK_ARM") or "[[-2, 10, 150, -50], [-32, 10, 135, -50]]"))
+BACK_WRIST = json.loads(os.environ.get("WARDEN_BACK_WRIST") or "[[68.8, -32.1, 6.3], [86.0, -20.1, -5.7]]")
+BACK_ARMS = {}
+if WARDEN_CARRY == "wrist":
+    BACK_ARMS["run_warden"] = {"r": _wc(fwd=tuple(BACK_WRIST[0]), back=tuple(BACK_WRIST[1]), lag=float(os.environ.get("WARDEN_BACK_WRIST_LAG", "-0.040")), tilt=WRIST_TILT)}
 
 
 def clips(rig, want):

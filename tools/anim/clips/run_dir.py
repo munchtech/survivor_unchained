@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from clips.run import RUN_GRIPS, RUNS
+from clips.run import BACK_ARM, BACK_ARMS, RUN_GRIPS, RUNS, WARDEN_CARRY
 from gait import run_cycle
 
 # The backpedal's carriage (over the run's): low and athletic, the body a touch forward, quick short steps.
@@ -28,6 +28,8 @@ def clips(rig, want):
             name = f"{src}_{tag}"
             if want and not any(w in name for w in want):
                 continue
-            gd = replace(g, arms=arms, heading=float(h), **over)
+            back = abs(h) > 90
+            sw = {"swing_r": BACK_ARM} if back and BACK_ARM and src == "run_warden" and WARDEN_CARRY == "wrist" else {}
+            gd = replace(g, arms={**arms, **BACK_ARMS.get(src, {})} if back else arms, heading=float(h), **over, **sw)
             out.append(run_cycle(name, rig, gd, {"weapon": weapon, "heading": h, **RUN_GRIPS.get(src, {})}))
     return out
