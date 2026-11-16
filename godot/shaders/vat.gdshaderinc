@@ -186,16 +186,30 @@ float crowd_edge(float rim) {
 }
 // (demo-look item 4) The den's body: the paint in Oklab, its L pulled to crowd_den.x by crowd_den.y, its hue and chroma set.
 // (pass 2: the boss, class 2, pulled crowd_den_top.w of the way to crowd_den_boss.w, its own hue kept the rest)
-vec3 vat_den_body(vec3 c_c, float c_cls) {
+// (r2 foes: three hard fur steps by the world normal's height, c_ny: back DEN_BACK under the flank, belly and ruff DEN_BELLY
+// over it; the boss's back takes the cold blue-black, DEN_BOSS_BACK (Oklab C, h), the one cold figure in the den)
+#define DEN_BACK -0.08
+#define DEN_BELLY 0.08
+#define DEN_STEP vec2(0.45, -0.2)
+#define DEN_BOSS_BACK vec3(0.02, 280.0, 0.75)
+vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny) {
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	float c_l0 = dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
 	vec2 c_ab0 = vec2(dot(vec3(1.9779984951, -2.4285922050, 0.4505937099), c_lms), dot(vec3(0.0259040371, 0.7827717662, -0.8086757660), c_lms));
 	bool c_boss = c_cls > 1.5;
 	float c_pull = c_boss ? crowd_den_top.w : crowd_den.y;
-	float c_l = mix(c_l0, c_boss ? crowd_den_boss.w : crowd_den.x, c_pull);
+	float c_w = fwidth(c_ny) * 0.5 + 0.002;
+	float c_back = smoothstep(DEN_STEP.x - c_w, DEN_STEP.x + c_w, c_ny), c_belly = 1.0 - smoothstep(DEN_STEP.y - c_w, DEN_STEP.y + c_w, c_ny);
+	float c_band = DEN_BACK * c_back + DEN_BELLY * c_belly;
+	float c_l = mix(c_l0, (c_boss ? crowd_den_boss.w : crowd_den.x) + c_band, c_pull);
 	float c_h = radians(crowd_den.w);
 	vec2 c_ab = mix(c_ab0, crowd_den.z * vec2(cos(c_h), sin(c_h)), c_boss ? c_pull : 1.0);
+	if (c_boss) {
+		float c_cold = smoothstep(DEN_BOSS_BACK.z - c_w, DEN_BOSS_BACK.z + c_w, c_ny);
+		c_l = mix(c_l, crowd_den_boss.w + 0.05, c_cold);
+		c_ab = mix(c_ab, DEN_BOSS_BACK.x * vec2(cos(radians(DEN_BOSS_BACK.y)), sin(radians(DEN_BOSS_BACK.y))), c_cold);
+	}
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);
 	c_m = c_m * c_m * c_m;
@@ -204,7 +218,10 @@ vec3 vat_den_body(vec3 c_c, float c_cls) {
 }
 // (the rim's side: toward her leaned up this much, whole past DEN_RIM_CUT of n.s, one screen derivative wide)
 #define DEN_RIM_UP 0.2
-#define DEN_RIM_CUT 0.2
+#define DEN_RIM_CUT 0.0
+// (r2 foes: the den body's flat share, moved from the lit albedo into its own light, so no smooth tube shading; the flash's cap)
+#define DEN_FLAT 0.8
+#define DEN_FLASH 1.6
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -350,7 +367,9 @@ void fragment() {
 	bool den_on = crowd_den.y > 0.0 && cel_on > 0.0;
 	float dn_cls = floor(COLOR.a / 128.0);   // (pass 2: 0 the pack, 1 an elite, 2 the boss; Vat.Push)
 	vat_den_k = vec3(0.0);
-	if (den_on) c = vat_den_body(c, dn_cls);
+	float dn_ny = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
+	if (den_on) c = vat_den_body(c, dn_cls, dn_ny);
+	vec3 dn_c0 = c;   // (r2 foes: the den body before any flash, for the flash's cap below)
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
 	float vat_s3k = 1.0;
@@ -462,6 +481,8 @@ void fragment() {
 	// (F1 r5: the hit kit's flag with a critical's (never both otherwise) is the ember look, CrowdView: no blend there)
 	float fx_ember = fx_aa * fx_crit;
 	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa * (1.0 - fx_ember));
+	// (r2 foes: in the den a hit lifts the body at most DEN_FLASH x in linear, about +0.06 L: a pale hit wolf read L 0.61-0.75)
+	if (den_on) c = min(c, dn_c0 * DEN_FLASH);
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -656,7 +677,8 @@ void fragment() {
 		float dn_tw = fwidth(dn_tt) * 0.5 + 0.005;
 		float dn_top = smoothstep(crowd_den_top.x - dn_tw, crowd_den_top.x + dn_tw, dn_tt) * dn_alive * (1.0 - dn_line);
 		vat_den_k = (dn_cls > 1.5 ? crowd_den_boss.rgb : dn_cls > 0.5 ? crowd_den_elite.rgb : vec3(1.0)) * (crowd_den_top.z * dn_top);
-		ALBEDO *= mix(1.0, crowd_den_edge.y, dn_line);
+		e += ALBEDO * (DEN_FLAT * dn_alive);
+		ALBEDO *= (1.0 - DEN_FLAT * dn_alive) * mix(1.0, crowd_den_edge.y, dn_line);
 		e *= mix(1.0, crowd_den_edge.y, dn_line);
 	}
 	EMISSION = e;
