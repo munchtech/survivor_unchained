@@ -241,4 +241,34 @@ public class SideCarryTests
             if (MathF.Abs(a0) <= c.Edge) Assert.True(MathF.Abs(a) <= c.Edge + 0.5f, $"frame {i}: {a:F1} past the edge");
         }
     }
+
+    // (judge r4, solver 18) A calf across the drawn blade's line (strafe_fx_a: the crossing foot behind the blade's middle):
+    // the tip turns out by the least that keeps the blade Clear off it, no more than OutMax; with the calf away, none.
+    [Fact]
+    public void CalfAcrossTheBladeTurnsTheTipOutJustEnough()
+    {
+        var c = new SideCarry();
+        var (a, l, b) = Her(90f);
+        Vector3 Far = new(0f, -0.6f, 3f);
+        SideCarry.Frame F(Vector3 k, Vector3 an) => new(b, l, a, Jx, Jy, CamBack, 1f, 0f, Vector3.Zero, 1.0f, Far, Far + new Vector3(0f, -0.4f, 0f), k, an);
+        for (int i = 0; i < 40; i++) c.Step(Dt, true, 0f, F(Far, Far + new Vector3(0f, -0.4f, 0f)));
+        Assert.Equal(0f, c.OutTurn);
+        // the calf upright, 0.10 m in from the drawn blade's point 0.5 m out (its skin 3-4 cm off it)
+        var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+        var p = d * 0.5f + l * 0.10f;
+        Vector3 knee = p + new Vector3(0f, 0.2f, 0f), ankle = p - new Vector3(0f, 0.2f, 0f);
+        Span<Vector3> cv = stackalloc Vector3[4] { Far, Far + new Vector3(0f, -0.4f, 0f), knee, ankle };
+        Assert.InRange(c.ClearOf(d, 1.0f, cv), -1f, c.Clear - 1e-4f);
+        for (int i = 0; i < 12; i++) c.Step(Dt, true, 0f, F(knee, ankle));   // (its arrival, a jump, reads as motion for two frames)
+        Assert.InRange(c.OutTurn, 0.5f, c.OutMax - 0.5f);
+        var drawn = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+        Assert.InRange(c.ClearOf(drawn, 1.0f, cv), MathF.Min(c.Clear, c.ClearOf(b, 1.0f, cv)) - 1e-4f, 9f);
+        // the least: half a degree less would not clear
+        var less = SideCarry.Turned(b, l, c.Tilt, a, c.Inward + 0.5f);
+        Assert.InRange(c.ClearOf(less, 1.0f, cv), -1f, c.Clear);
+        // the calf gone: it eases back (ClearDown a second), not at once
+        float was = c.OutTurn;
+        c.Step(Dt, true, 0f, F(Far, Far + new Vector3(0f, -0.4f, 0f)));
+        Near(MathF.Max(0f, was - c.ClearDown * Dt), c.OutTurn, 0.6f);
+    }
 }

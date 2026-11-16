@@ -69,6 +69,19 @@ public sealed class SideCarry
     /// angle is out of the tilt's reach (the away diagonals, where the stop clip throws the blade out): just enough to reach it,
     /// so the stand holds still on screen while the clip's idle moves; none at a run (scaled by 1 - moving).</summary>
     public float InMax = 20f;
+    /// <summary>(judge r4, solver 18) Blade-calf clearance: while a calf (the capsule <see cref="CalfKnee"/> at the knee to
+    /// <see cref="CalfAnkle"/> at the ankle, m) nears the drawn blade (from 0.10 m along it to the tip), the tip turns out
+    /// from her body (<see cref="OutTurn"/>) by the least that keeps it <see cref="Clear"/> (m) off, or as far as the clip's own
+    /// blade is where that is nearer; at most <see cref="OutMax"/> (deg) times the weight. Moving, it starts early on the
+    /// calves' paths extrapolated <see cref="ClearLook"/> frames (rising at most <see cref="ClearAtk"/> deg/s past this frame's
+    /// need, a need j frames out taken less j times <see cref="ClearRate"/>), and eases back at <see cref="ClearDown"/> deg/s.
+    /// Clear 0: off. Needs the frame's grip, length and calves.</summary>
+    public float Clear = 0.055f, OutMax = 15f, ClearRate = 90f, ClearAtk = 100f, ClearDown = 90f, CalfKnee = 0.074f, CalfAnkle = 0.046f;
+    public int ClearLook = 4;
+    /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
+    public float OutTurn { get; private set; }
+    readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
+    int calfN;
 
     /// <summary>The eased weight (0..1).</summary>
     public float Weight { get; private set; }
@@ -91,7 +104,8 @@ public sealed class SideCarry
     /// facing (level), the camera's screen map at the grip (rows: screen x and screen y, y down, per metre), the camera's
     /// back (its basis Z), how much she moves (0 standing .. 1 at a run) and how much of her travel is sideways (0..1).</summary>
     public readonly record struct Frame(Vector3 Blade, Vector3 Left, Vector3 Ahead, Vector3 Jx, Vector3 Jy, Vector3 CamBack,
-        float Moving, float Strafe);
+        float Moving, float Strafe, Vector3 Grip = default, float Length = 0f, Vector3 KneeL = default, Vector3 AnkleL = default,
+        Vector3 KneeR = default, Vector3 AnkleR = default);
 
     /// <summary>The weight wanted for a side facing: `side` is the cosine between the holding hand's side (out from her,
     /// level) and the way back to the camera (level): full from <see cref="Side1"/> (the diagonals, 0.71, are full), none
@@ -174,7 +188,71 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; }
+
+    /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
+    static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
+    {
+        Vector3 d1 = p1 - p0, d2 = q1 - q0, r = p0 - q0;
+        float a = Vector3.Dot(d1, d1), e = Vector3.Dot(d2, d2), f = Vector3.Dot(d2, r), c = Vector3.Dot(d1, r), b = Vector3.Dot(d1, d2);
+        if (a < 1e-12f || e < 1e-12f) return ((p0 - q0).Length(), 0f);
+        float den = a * e - b * b, s = den > 1e-12f ? Math.Clamp((b * f - c * e) / den, 0f, 1f) : 0f, u = (b * s + f) / e;
+        if (u < 0f) { u = 0f; s = Math.Clamp(-c / a, 0f, 1f); }
+        else if (u > 1f) { u = 1f; s = Math.Clamp((b - c) / a, 0f, 1f); }
+        return ((p0 + d1 * s - (q0 + d2 * u)).Length(), u);
+    }
+
+    /// <summary>The blade along unit `d` (from the grip, 0.10 m out to `len`) clear of the calves `c` (knee L, ankle L, knee R,
+    /// ankle R from the grip): the least gap to their capsules (m).</summary>
+    public float ClearOf(Vector3 d, float len, ReadOnlySpan<Vector3> c)
+    {
+        float best = 9f;
+        for (int s = 0; s < 2; s++)
+        {
+            var (dd, u) = SegDist(d * 0.10f, d * len, c[2 * s], c[2 * s + 1]);
+            best = MathF.Min(best, dd - (CalfKnee + (CalfAnkle - CalfKnee) * u));
+        }
+        return best;
+    }
+
+    /// <summary>The least out-turn (deg, 0.5 steps, to OutMax times the weight) that keeps the drawn blade `Clear` off the
+    /// calves `c`, or as far as the clip's blade `b` is where that is nearer.</summary>
+    float OutNeed(Vector3 b, Vector3 left, Vector3 ahead, float len, ReadOnlySpan<Vector3> c)
+    {
+        float want = MathF.Min(Clear, ClearOf(b, len, c)), top = OutMax * Weight;
+        for (float p = 0f; p <= top + 0.01f; p += 0.5f)
+            if (ClearOf(Turned(b, left, Tilt, ahead, Inward - p), len, c) >= want) return p;
+        return top;
+    }
+
+    /// <summary>The calf clearance's out-turn (see <see cref="Clear"/>), taken off Inward; the calves' history kept.</summary>
+    void ClearCalves(float dt, in Frame f, Vector3 b, Vector3 left, Vector3 ahead, float moving)
+    {
+        if (!(Clear > 0f) || !(f.Length > 0.1f)) { OutTurn = 0f; calfN = 0; return; }
+        Span<Vector3> cur = stackalloc Vector3[4] { f.KneeL - f.Grip, f.AnkleL - f.Grip, f.KneeR - f.Grip, f.AnkleR - f.Grip };
+        for (int i = 0; i < 8; i++) calfHist[i] = calfHist[i + 4];
+        for (int i = 0; i < 4; i++) calfHist[8 + i] = cur[i];
+        calfN = Math.Min(calfN + 1, 3);
+        if (Weight == 0f && Tilt == 0f) { OutTurn = 0f; return; }
+        float n0 = OutNeed(b, left, ahead, f.Length, cur), tg = n0, up = ClearRate * dt;
+        if (moving >= 0.5f && calfN >= 2)
+        {
+            Span<Vector3> p = stackalloc Vector3[4];
+            for (int j = 1; j <= ClearLook; j++)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    Vector3 p2 = calfHist[8 + i], p1 = calfHist[4 + i];
+                    p[i] = p2 + j * (p2 - p1);
+                    if (calfN >= 3) p[i] += 0.5f * j * (j + 1) * (p2 - 2f * p1 + calfHist[i]);
+                }
+                tg = MathF.Max(tg, OutNeed(b, left, ahead, f.Length, p) - j * up);
+            }
+        }
+        if (ClearAtk > 0f) tg = MathF.Max(n0, MathF.Min(tg, OutTurn + ClearAtk * dt));
+        OutTurn = MathF.Max(tg, OutTurn - ClearDown * dt);
+        Inward -= OutTurn;
+    }
 
     /// <summary>One step of `dt` seconds on the drawn pose `f`: the weight eased toward <see cref="Target"/> of her holding
     /// side's facing to the camera (none unless `on`; falling no faster than <see cref="FadeOut"/>), the swing driven by the
@@ -214,6 +292,7 @@ public sealed class SideCarry
             if (MathF.Abs(Tilt) < 1e-3f) Tilt = 0f;
             Inward = Weight == 0f ? 0f : Inward;
             if (Tilt == 0f && Weight == 0f) { Shift = 0f; clipPrev = float.NaN; }
+            OutTurn = 0f; calfN = 0;
             return;
         }
         b = Vector3.Normalize(b);
@@ -265,5 +344,6 @@ public sealed class SideCarry
         Inward = inward;
         Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
         clipPrev = a0;
+        ClearCalves(dt, f, b, left, ahead, moving);
     }
 }

@@ -2678,7 +2678,7 @@ public partial class PlayerView : Node3D
     // once her pose is made (SkeletonUpdated, as HairSway is: the modifiers' arm in it), so the grip's acceleration and the
     // tilt's sign are this frame's. --side-carry off: none (the clips' grip, as before); --side-carry-tune
     // runangle,gain,hz,damping,loose,ease,maxrate,splay,loosefwd,maxaccel,standangle,strafecut,splayaway,splaystrafe,backmax,caproom,side0,side1,
-    // fadeout,screenrate,edge,splayoutmax,standsettle,floor,inmax:
+    // fadeout,screenrate,edge,splayoutmax,standsettle,floor,inmax,clear,outmax,clearrate,clearatk,cleardown,clearlook:
     // its tuning (SideCarry's fields, in that order).
     readonly SideCarry carry = CarryTuned();
     static readonly bool CarryOn = SurvivorUnchained.Args.Get("side-carry") is not ("off" or "0");
@@ -2699,6 +2699,8 @@ public partial class PlayerView : Node3D
             c.BackMax = F(14, c.BackMax); c.CapRoom = F(15, c.CapRoom); c.Side0 = F(16, c.Side0); c.Side1 = F(17, c.Side1);
             c.FadeOut = F(18, c.FadeOut); c.ScreenRate = F(19, c.ScreenRate); c.Edge = F(20, c.Edge); c.SplayOutMax = F(21, c.SplayOutMax);
             c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
+            c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
+            c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
         }
         return c;
     }
@@ -2757,8 +2759,11 @@ public partial class PlayerView : Node3D
                 var lf = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z);
                 var ah = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
                 carryB0 = (hbd.Tip - hbd.Grip).Normalized();
+                // (judge r4, solver 18) her calves (knee: the calf bone's head; ankle: the foot's), for the blade's clearance
+                Vector3 J(string n) { int x = sk.FindBone(n); return x >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(x).Origin : g; }
                 f = new SideCarry.Frame(N(carryB0), N(lf), N(ah), new(dx.X, dy.X, dz.X), new(dx.Y, dy.Y, dz.Y), N(cam.GlobalBasis.Z),
-                    Mathf.Min(Mathf.Clamp(logWWalk, 0f, 1f), carryMove), carryStrafe);
+                    Mathf.Min(Mathf.Clamp(logWWalk, 0f, 1f), carryMove), carryStrafe, N(g), (hbd.Tip - hbd.Grip).Length(),
+                    N(J("calf_l")), N(J("foot_l")), N(J("calf_r")), N(J("foot_r")));
             }
             else on = false;
         }
