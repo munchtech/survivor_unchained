@@ -295,7 +295,7 @@ def _ship_exact(pid, piece, stage, sa, body, r, text):
     ps_ = os.path.join(stage, "pre", pid + ".sockets.json")
     if os.path.exists(ps_):
         shutil.copyfile(ps_, os.path.join(sa, pid + ".sockets.json"))      # (sockets at their authored place too)
-    r2, text2 = _follow(body, body, stage)
+    r2, text2 = _follow(body, body, stage, piece)      # (params.shoulder_shapes holds here too: this follow carries the shapes)
     open(os.path.join(stage, "follow_identity.log"), "w", encoding="utf-8").write(text2)
     for l in text2.splitlines():
         if l.startswith(("FOLLOW", "Traceback")):
