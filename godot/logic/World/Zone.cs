@@ -145,6 +145,11 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// and LB DAWN's shade is lilac on every surface. The step re-hues only the weakly colored and the dark (MoonLo..MoonHi,
     /// MoonTop), so what her ember, a lamp or a fire lights keeps the scene's own color.</summary>
     public double SceneMoon { get; init; }
+    /// <summary>(demo-look, lane E, 16 Nov) The paint grade (Paint*) after SceneColor (1) rather than before it (0). Why: in the den
+    /// (rig "den" on the day rigs' scene_color 1) SceneColor restored the scene's channel ratios after the paint and erased its
+    /// chroma: --grade-try vib, hi and shadow moved a den frame by a mean 0.35 of 255. Late, the Oklab paint is hue-held, so the
+    /// warm-to-mauve drift SceneColor was made against (a per-channel push) cannot come back through it.</summary>
+    public double PaintLate { get; init; }
 }
 
 public sealed record AtmospherePreset(

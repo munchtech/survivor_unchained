@@ -317,7 +317,8 @@ public partial class Atmosphere : Node3D
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
             || ReferenceEquals(orig, Atmospheres.WaystationDawn) || ReferenceEquals(orig, Atmospheres.WaystationDay) || ReferenceEquals(orig, Atmospheres.NightTown)
             || p.CrowdFill > 0 || ReferenceEquals(orig, Atmospheres.Front)   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
-            || ReferenceEquals(orig, Atmospheres.Title) || ReferenceEquals(orig, Atmospheres.CineNight)))   // (L1 lead 9: the title's and the cinematics' night rigs)
+            || ReferenceEquals(orig, Atmospheres.Title) || ReferenceEquals(orig, Atmospheres.CineNight)
+            || ReferenceEquals(orig, Atmospheres.Den)))   // (L1 lead 9: the title's and the cinematics' night rigs)
         {
             bool front = ReferenceEquals(orig, Atmospheres.Front);
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
@@ -947,6 +948,8 @@ public partial class Atmosphere : Node3D
         // --grade-toe X: the toe hold for pictures (0, the grade before it).
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
         var paint = new Paint(g, Try);
+        // (demo-look: --grade-try scene= and late= override GradeSettings.SceneColor and PaintLate for pictures)
+        float sceneK = Try?.Scene ?? (float)g.SceneColor; bool late = (Try?.Late ?? (float)g.PaintLate) > 0;
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
         // (L1 W2: the tone curve on Oklab L, tabled once per grade)
         float[]? tone = null;
@@ -995,16 +998,17 @@ public partial class Atmosphere : Node3D
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
-                    if (g.Moon > 0 && !(g.SceneColor > 0 && g.SceneMoon > 0)) outLin = Moonlight(c, outLin, g);
-                    if (paint.On) outLin = paint.Apply(outLin);
+                    if (g.Moon > 0 && !(sceneK > 0 && g.SceneMoon > 0)) outLin = Moonlight(c, outLin, g);
+                    if (paint.On && !late) outLin = paint.Apply(outLin);
                     if (skinGuard > 0) outLin = SkinGuard(outLin, skinGuard);
                     if (shadeHue > 0) outLin = ShadeHue(outLin, shadeHue);
                     if (skinCool > 0) outLin = SkinCool(c, outLin, skinCool);
                     if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
                     if (tone != null) outLin = Tone(outLin, tone);
-                    if (g.SceneColor > 0) outLin = SceneColour(c, outLin, (float)g.SceneColor);
+                    if (sceneK > 0) outLin = SceneColour(c, outLin, sceneK);
+                    if (paint.On && late) outLin = paint.Apply(outLin);
                     // (L1 lead 7, S2: GradeSettings.SceneMoon, the moon's blue (dawn's lilac) over the scene's own color)
-                    if (g.SceneColor > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
+                    if (sceneK > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
@@ -1338,12 +1342,12 @@ public partial class Atmosphere : Node3D
     static Vector3 Srgb(Vector3 c) => new(Srgb1(c.X), Srgb1(c.Y), Srgb1(c.Z));
 
     /// <summary>--grade-try k=v,...: a trial paint grade over the preset's own (GradeSettings.Paint*), key by key, for style
-    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin. Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
+    /// frames. Keys: mute, vib, skin, shadow (#hex or _hex), shadowk, lift, hi, shskin, scene (SceneColor), late (PaintLate). Its numpy twin is tools/scratch/art_style/grade_try.py.</summary>
     static readonly GradeTry? Try = GradeTry.Parse(SurvivorUnchained.Args.Get("grade-try"));
 
     sealed class GradeTry
     {
-        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin;
+        public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin, Scene, Late;
         public string? Shadow;
 
         public static GradeTry? Parse(string? spec)
@@ -1367,6 +1371,8 @@ public partial class Atmosphere : Node3D
                     case "lift": t.Lift = f; break;
                     case "hi": t.Hi = f; break;
                     case "shskin": t.ShadowSkin = f; break;
+                    case "scene": t.Scene = f; break;
+                    case "late": t.Late = f; break;
                     default: GD.PushWarning($"--grade-try: unknown key '{k}'"); break;
                 }
             }
