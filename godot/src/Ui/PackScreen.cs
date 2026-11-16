@@ -237,7 +237,7 @@ public partial class InventoryScreen : Overlay
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
             view.Drag = it != null && slot != EquipSlot.Weapon && !asDay ? $"eq:{slot}:{it.Uid}" : null;
             view.CanTake = d => d.StartsWith("pack:") && Inventory.Find(Ch, d[5..]) is { } w && Items.Fits(Items.Get(w.Item.Def), slot);
-            view.Take = d => { Sound.Sfx.Equip(); PutOn(d[5..], slot); };
+            view.Take = d => { Sound.Sfx.Equip(slot); PutOn(d[5..], slot); };
             holder.AddChild(view);
         }
         return holder;
@@ -484,7 +484,7 @@ public partial class InventoryScreen : Overlay
         var def = Items.Get(it.Def);
         if (Kits.Of(Ch, it.Uid) is { } k) { if (k is not (KitKind.Day, EquipSlot.Weapon)) TakeOff(it.Uid); else Sound.Sfx.Deny(); return; }
         if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
-        else if (Items.SlotFor(def) != null) { Sound.Sfx.Equip(); PutOn(it.Uid, null); }
+        else if (Items.SlotFor(def) is { } worn) { Sound.Sfx.Equip(worn); PutOn(it.Uid, null); }
         else Sound.Sfx.Deny();
     }
 
