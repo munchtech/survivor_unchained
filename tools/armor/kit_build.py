@@ -86,8 +86,8 @@ def fill_rows(A):
 
 def slab(name, mat, Pin, Nout, thick, closed_c=False, fan=None, extra=None, col_w=1.0):
     """A plate from inner points (R, C, 3) and outward unit directions: inner face, outer face (thick + extra), edge
-    wall. closed_c: the columns wrap (a band: walls on its first and last rows); fan: a centre point (inner, outer)
-    closing row 0 (a cup: wall on its last row only)."""
+    wall. closed_c: the columns wrap (a band: walls on its first and last rows); fan: row 0 is a small ring
+    closed by a strip (a cup: wall on its last row only)."""
     R, C = Pin.shape[:2]
     ex = np.zeros((R, C)) if extra is None else extra
     Pout = Pin + Nout * (thick + ex)[..., None]
@@ -97,12 +97,8 @@ def slab(name, mat, Pin, Nout, thick, closed_c=False, fan=None, extra=None, col_
         V = P.reshape(-1, 3)
         T = grid_tris(R, C, close=closed_c)
         D = Nout.reshape(-1, 3) * sgn
-        if fan is not None:
-            c = fan[0] if sgn < 0 else fan[1]
-            k = len(V)
-            V = np.vstack([V, c])
-            D = np.vstack([D, D[:C].mean(0)])
-            T = np.vstack([T, np.c_[np.full(C, k), np.arange(C), (np.arange(C) + 1) % C]])
+        if fan:  # row 0 is a small ring: closed by a zig-zag strip (no fan: every point keeps a low valence)
+            T = np.vstack([T, strip_cap(C)])
         T = orient(V, T, D)
         parts.append(Part(name, mat, V, T, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
                           col=np.tile([1.0, rn, 0.0, col_w], (len(V), 1))))
@@ -128,6 +124,20 @@ def slab(name, mat, Pin, Nout, thick, closed_c=False, fan=None, extra=None, col_
         parts.append(Part(name, mat, V, T, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
                           col=np.tile([1.0, rn, 0.0, 0.0], (len(V), 1))))
     return Part.join(name, mat, parts)
+
+
+def strip_cap(C):
+    """A ring 0..C-1 closed by a zig-zag strip between its two halves."""
+    lo, hi, T, k = 0, C - 1, [], 0
+    while hi - lo > 1:
+        if k % 2 == 0:
+            T.append([lo, lo + 1, hi])
+            lo += 1
+        else:
+            T.append([lo, hi - 1, hi])
+            hi -= 1
+        k += 1
+    return np.array(T)
 
 
 def orient(V, T, D):
@@ -417,8 +427,8 @@ def bodice(cfg, ref):
         shell_r = np.clip(rsm + cl, rf + cfg["clear_min"], rf + cl + 0.003)  # on her own skin's ray, never past it
         from scipy.interpolate import RegularGridInterpolator
         fr = RegularGridInterpolator((phis, np.r_[psis, 360.0]), np.c_[shell_r, shell_r[:, :1]])
-        u = (np.arange(1, K + 1) / K)
-        u = 1 - (1 - u) ** 1.35  # rings denser at the rim
+        u = np.linspace(0.07, 1.0, K)
+        u = 1 - (1 - u) ** 1.35  # rings denser at the rim; ring 0 a small ring round the apex
         PH = u[:, None] * edge_phi[None, :]
         PS = np.broadcast_to(psis[None, :], PH.shape)
         D = pol.dirs(PH, PS)
@@ -426,10 +436,8 @@ def bodice(cfg, ref):
         Pin = pol.c + rr[..., None] * D
         # outward = the shell's normal, from a fine local difference
         Nn = shell_normals(pol, fr, PH, PS)
-        r0 = float(fr([[0.0, 0.0]])[0])
-        cen = pol.c + r0 * pol.a
         nm = "cup_" + ("l" if hand > 0 else "r")
-        plate.append(slab(nm, M["plate"], Pin, Nn, th_, fan=(cen, cen + pol.a * th_)))
+        plate.append(slab(nm, M["plate"], Pin, Nn, th_, closed_c=True, fan=True))
         trim.append(bead(ref, "trim_" + nm, M["trim"], Pin[-1], rim, edge_off, True, relax_it=1))
         if hand > 0:
             clasp_y = cy
