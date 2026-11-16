@@ -1314,6 +1314,9 @@ public partial class BattleFx : Node3D
     {
         // A reflection breaking is glass, not a body (Ability: mirror_break).
         if (e.Def == "mirror") return;
+        // (Ledge view) Knocked off the edge: no gore, no blood and no burst of light on the ground it left (its kick of dust and
+        // pebbles at the lip is LedgeFallFx's).
+        if (e.Fell) return;
         if (WgBeats && wgHitAt.TryGetValue(e.Enemy, out var wka)) GD.Print($"[wg-beats] kill fx on {e.Enemy} frame {Engine.GetFramesDrawn()} blow f{Engine.GetFramesDrawn() + (wka - time) * 60:F0} burst {e.Burst} t={time:F3}");
         float gy = Y(e.X, e.Z);
         var pal = Palette.Of(e.School);
@@ -1504,6 +1507,12 @@ public partial class BattleFx : Node3D
                     }
                     break;
                 }
+                case Ev.Fell lf:
+                    LedgeFallFx(lf);
+                    break;
+                case Ev.Brink lb:
+                    LedgeBrinkFx(lb);
+                    break;
                 case Ev.Kill e:
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
@@ -2113,6 +2122,31 @@ public partial class BattleFx : Node3D
             Sparks.Spawn(at + new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f) * 0.6f, new Vector3(Mathf.Cos(a) * v, 1 + R() * 3, Mathf.Sin(a) * v), 0.5f + R() * 0.4f,
                 0.09f + R() * 0.08f, GlassCore, GlassGlow, 0.02f, 9, 1.5f, sprite: Sprites.Of("star"), spinV: 10);
         }
+    }
+
+    /// <summary>(Ledge view) Where a foe went over the edge: a kick of dust at the lip and a few pebbles going over after it
+    /// (data/content/ledge.json "fall": dust, dustSpeed).</summary>
+    void LedgeFallFx(Ev.Fell f)
+    {
+        var r = CrowdView.Fall;
+        double s = Math.Clamp(f.Scale, 0.7, 2);
+        double lx = f.X - f.Dx * 0.35, lz = f.Z - f.Dz * 0.35;
+        Dust(lx, lz, (int)Math.Round(r.Dust * s), (float)(r.DustSpeed * s));
+        var at = V(lx, Y(lx, lz) + 0.1, lz);
+        for (int i = 0; i < (int)Math.Round(5 * s); i++)
+        {
+            float v = (float)(1.2 + R() * 2.2), side = (R() - 0.5f) * 1.6f;
+            var dir = new Vector3((float)f.Dx * v + (float)-f.Dz * side, 0.6f + R() * 1.6f, (float)f.Dz * v + (float)f.Dx * side);
+            Smoke.Spawn(at, dir, 0.9f + R() * 0.4f, 0.05f + R() * 0.05f, new Color("#7a6a58"), gravity: 18, sprite: Sprites.Of("dirt"), spinV: 8);
+        }
+    }
+
+    /// <summary>(Ledge view) An elite or a boss caught at the brink: a scuff of dust at its feet on the drop's side.</summary>
+    void LedgeBrinkFx(Ev.Brink b)
+    {
+        var r = CrowdView.Brinks;
+        double fx = b.X + b.Dx * 0.45, fz = b.Z + b.Dz * 0.45;
+        Dust(fx, fz, (int)Math.Round(r.Dust * (b.Boss ? 1.6 : 1)), (float)r.DustSpeed);
     }
 
     /// <summary>Kicked-up earth at the feet.</summary>

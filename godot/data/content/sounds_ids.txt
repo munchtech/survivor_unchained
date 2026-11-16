@@ -46,6 +46,8 @@ art.<id>  Sfx.Art
 telegraph.<tell>.windup.boss  Sfx.Telegraph   (then telegraph.<tell>.windup; recorded only, no synth fallback)
 telegraph.<tell>.land.boss  Sfx.Telegraph   (then telegraph.<tell>.land)
 tell.<howl|drum|fuse|horn|...>  Sfx.Tell   (tell_drum -> tell.drum)
+ledge_fall  Sfx.Cue (SoundBridge, Ev.Fell)   hook only, no audio yet: a foe knocked off a dungeon edge; a short scrape at the lip, then gone into the drop (no landing)
+ledge_brink  Sfx.Cue (SoundBridge, Ev.Brink)   hook only, no audio yet: an elite or boss skidding to the lip and catching itself; boots scraping on stone, a few pebbles going over
 # pickups and growth
 pickup.ember  Sfx.Xp   (pitched up the ladder by the step; gain by the stones merged)
 pickup.gold  Sfx.Gold

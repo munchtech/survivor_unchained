@@ -1526,6 +1526,7 @@ public partial class Game : Node, IZoneHost
     public override void _Process(double delta)
     {
         PumpAhead();
+        LedgeShotTick();
         storyLine?.Tick();
         // (M5 r5: a level's title waits while a screen/card is open and 0.6 s after it closes: LEVEL 4 printed into the Legendary's card)
         if (Overlay != null) hud.XpHoldUntil = Math.Max(hud.XpHoldUntil, Now + 0.6);
