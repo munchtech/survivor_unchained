@@ -2,6 +2,14 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## DEMO ARMOR LEAD 4 (16 Nov, live state file; lead 4 = spawned by coordinator #15; read this, then lead 3's block below)
+Branch demo-armor@ae62a2521 at start (worktree agent-abae931e007da6fb6; godot/assets = junction to its own public/assets, 1673 files: check after every merge/cherry-pick). Scratch: `scratch_demo_armor/l4/` (scratchpad `l4/`, backed up to inputs).
+Caps: hipfit 6 (3 spent), pauldronfit 7 (5 spent), finish 5 (3 spent), demo-armor judge 3 (1 spent: round 1 CLOSE).
+Coordinator decisions: hinge helper APPROVED (one runtime helper bone per side, ~half the thigh flex about the belt line, like her shoulder shares; armor only, her skin weights unchanged; own commit with tests); her skin is lane E's (never tune it).
+Fixed list: (1) finish: glint <=15% dome h 40-55, lit plate <= L .40 in den, lavender blotch gone, gold keeps L .73-.85 h 72-77; (2) hinge helper, then belt on it (V tasset rigid pelvis closed mesh, hip plates V-length w/ flare rigid + interlace, brief->belt 0, brief high cut, gusset lump); (3) vambrace brown blob; (4) pauldrons forward+up to cap the shoulder front; (5) merge origin/demo-look tip before the final shoot. Reshoot in godot/.shots: full-body close front/back to the boots, den close, frame D, held leap/run/heavy sword, no town tree behind her head. Then my 1:1 look, ONE max judge (round 2), PASS -> STOP with the owner picture (set beside kit 01_turnaround front/back 1:1 + den play-camera frame). Items 4-6 wait for the owner.
+Overlap: aim-move does not touch tools/anim/helpers.py, rig_helpers.json, HerJoints.cs; it DOES change tools/anim/clips/run.py, sword.py, PlayerView.cs, PersonView.cs (clips will move under the armor when A merges).
+Done: (none yet). In progress: (starting solvers).
+
 ## DEMO ARMOR LEAD 3 (16 Nov, live state file; lead 3 = spawned by coordinator #15)
 Caps now: pauldronfit 5 (3 spent), finish 4 (3 spent), hipfit 2/3, limbfit 2/3, helm 2/3, bodicefit 1/3; demo-armor judge 0 spent.
 COORDINATOR'S BELT DECISION: the sheet's front tasset and front hip plates are SKINNED plates (top edge to the pelvis, body to the thigh; each plate pivots as a whole, no stretch or bend across a plate; the gaps between lames take the motion). Sides and back stay rigid. Why: the owner's 13 Nov word is "need not swing", not "may never move with the leg"; a rigid plate over the front thigh cannot clear the leap (70-210 mm short) and the r3 clearance cut lost the sheet's look. r2 design 804d3c96c.
