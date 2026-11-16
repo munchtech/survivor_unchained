@@ -888,6 +888,7 @@ public partial class Game : Node, IZoneHost
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
+        if (Graphics.DenNow != SurvivorUnchained.View.Atmosphere.CrowdDen) ApplySettings();   // (the den's SMAA comes and goes with the zone)
         air.Air(scene!.Data.Place?.Air, scene!.Data.Place?.Id ?? "", scene!.Data.Place?.Mood ?? "");
         scene.View.SetNight(time == TimeOfDay.Night);
         scene.Fx.Flare.Night = time == TimeOfDay.Night;
@@ -1993,6 +1994,7 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
+            if (SurvivorUnchained.View.MarkPass.Den && tier is LootTier.Rare or LootTier.Epic) col = SurvivorUnchained.View.Palette.CapChroma(col);   // (the den: the set's verdigris is the loudest)
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
@@ -2172,10 +2174,10 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("loot") && Battle is { } lootB && lootI < (gemLoot ? gemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootI];
+            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootMode == "set" ? 5 : lootI];   // (--loot set: only the Set piece, watch_coif, the verdigris beam)
             // --loot gift: the same drop as --loot legendary (same place and time), but a gift unique (herd_callers_horn) in the Legendary's place.
             if (lootMode == "gift") { def = "herd_callers_horn"; rarity = null; look = Verdict.Emphasised; }
-            lootI = lootMode is "legendary" or "gift" ? LootRing.Length : lootI + 1;
+            lootI = lootMode is "legendary" or "gift" or "set" ? LootRing.Length : lootI + 1;
             int ringLen = gemLoot ? gemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)

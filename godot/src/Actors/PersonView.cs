@@ -469,6 +469,9 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
+    /// <summary>(demo-look r2 her) The mount a slot holds now (null: none), for HerSteel.</summary>
+    public Node3D? HeldMount(string slot) => held.TryGetValue(slot, out var m) && IsInstanceValid(m) ? m : null;
+
     /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).
     /// With them put away her hands are empty, so she stands as she does in a safe place with nothing in them (her
     /// calling's town stand: relaxed arms, open hands), not in the stand made around a hilt and a shield, whose

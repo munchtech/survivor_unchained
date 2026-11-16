@@ -28,6 +28,7 @@ uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight 
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
+global uniform vec4 cel_her_den;   // (demo-look r2 her: x the den's copper chroma gain, y its value gain, View/HeroDen.cs; zero: as before)
 uniform float roots = 0.4;
 uniform float variation = 0.35;
 uniform vec3 shine_colour : source_color = vec3(1.0, 0.93, 0.86);
@@ -374,6 +375,7 @@ void fragment() {
 	// (the ash on the lighter strands only: on the dark ones, deep in the hair and lit by the sky, it turned them
 	// blue-grey, 0.5% to 6.9% of her crown's pixels bluish: judge j1, face 34)
 	ALBEDO *= mix(vec3(1.0), ash_tone, (tie ? 0.0 : ash_w) * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
+	if (cel_her_den.x > 0.0 && !tie) { float c_hl = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)); ALBEDO = max(mix(vec3(c_hl), ALBEDO, cel_her_den.x) * cel_her_den.y, vec3(0.0)); }
 #if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
 #elif defined(BLEND)

@@ -225,13 +225,26 @@ public sealed record AtmospherePreset(
     /// far (0-1), then each foe's hard shadow inside her fire: its level (scene light; 0: none), R, G, B (sRGB 0-255), the
     /// fire's residue in it (a share of the ground's ramp)] (crowd_moon, crowd_shade). Read only with FoeFire.</summary>
     public double[]? FoeMoon { get; init; }
-    /// <summary>(demo-look lane E, item 4; rigs.json "foe_den") The den's pack: [body Oklab L, its pull (0-1), chroma, hue (deg),
-    /// the line's px, the body's tone in it, the rim's px, its share on the key's side, her reach (m), the rim's level, R, G, B
-    /// (sRGB 0-255)] (vat.gdshaderinc crowd_den, crowd_den_edge, crowd_den_rim); her lamp off the pack while it is on. Null: none.
-    /// (pass 2, 25 values: then the top band's cut in n.m, the key's lean up, its gain on the key; the boss's pull; the elite's
-    /// band tint R, G, B and its full rim's level; the boss's band tint R, G, B (her cold back) and her body's L: crowd_den_top,
-    /// crowd_den_elite, crowd_den_boss.)</summary>
+    /// <summary>(demo-look lane E, item 4; rigs.json "foe_den") The den's foes, painted in Oklab blocks (vat.gdshaderinc
+    /// vat_den_body; crowd_den, crowd_den_edge, crowd_den_rim, crowd_den_top, crowd_den_elite, crowd_den_boss); her lamp off
+    /// the pack while it is on. Null: none. 25 values (r2 foes; a 13-value row has no top band, elite or boss):
+    /// [0] the pack's flank Oklab L (paint; the play camera reads it about as is), [1] its pull (0-1: how far the paint goes to
+    /// the blocks), [2] chroma, [3] hue (deg); [4] the line's px at the silhouette, [5] the body's tone in it (a multiplier,
+    /// never black); [6] the rim's px inside the line, [7] its side's lean to screen-up (0 the key's screen side, 1 straight
+    /// up), [8] unused (was her reach, m), [9] the rim's level (0: no rim at all), [10-12] its R, G, B (sRGB 0-255);
+    /// [13] the top band's cut in the world normal's y, [14] its L step over the flank (the boss takes half), [15] the probe
+    /// (0 in play, always the committed value; 1 each class flat in its own colour for masks: pack green, elite blue, boss
+    /// magenta; 2 the model's space), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
+    /// C are the shader's DEN_ACCENT), [20] the full rim's level on an elite or the boss; [21-23] unused (was the boss's back
+    /// tint: the back, the mane and the belly are the shader's DEN_BOSS_BACK, DEN_MANE, DEN_BELLY), [24] the boss's body L.</summary>
     public double[]? FoeDen { get; init; }
+    /// <summary>(demo-look r2 her; rigs.json "hero_den") Her figure in the den (View.HeroDen): [her cast shadow on (0/1), its
+    /// contact ellipse's half width and half depth (m), the trail's length and its tip's half width (m), the trail's world
+    /// bearing (deg, x toward z), the ground's multiplier R, G, B (linear), the contact core's extra multiplier; her line's
+    /// width (px at 1080p), its tone R, G, B (sRGB 0-255) and level; her hair's chroma gain and value gain; her skin and hair
+    /// steps' strength (0 smooth, 1 stepped); her held steel's level, its lit, shade and glint tones (R, G, B each, sRGB 0-255),
+    /// the glint's place along the piece (0-1) and half length (share), the grip's light]. Null: none of it (every rig but the den).</summary>
+    public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

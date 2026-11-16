@@ -1,14 +1,14 @@
 {
- "what": "lane E demo-look: class boxes on the five den frames (godot/.shots), keyed by PNG name; python tools/style/demo_look_check.py frame <the five> --masks tools/style/demo_look_masks.json. Boxes fit the 16 Nov f2/f4 shots (her at about 960,540; boss body 740-1140 x 485-565); re-fit when a frame is re-shot. her_shadow has no key on purpose: it measures the ground right under her feet, which must sit in the shadow band (a keyed dark box picks her boots).",
+ "what": "lane E demo-look: class boxes on the five den frames (godot/.shots), keyed by PNG name; python tools/style/demo_look_check.py frame <the five> --masks tools/style/demo_look_masks.json. Boxes fit the 16 Nov f2/f4 shots (her at about 960,540; boss body 740-1140 x 485-565); re-fit when a frame is re-shot. her_skin [944,506,974,527] (face, shoulders, chest) and her_hair [951,493,969,507] (the head only, inside her line) are her px only: no ground in the box (16 Nov, h3). her_shadow has no key on purpose: it measures the ground right under her feet, which must sit in the shadow band (a keyed dark box picks her boots).",
  "f2_her.png": {
   "her_skin": [
    {
     "img": "x",
     "box": [
-     920,
-     500,
-     1000,
-     600
+     944,
+     506,
+     974,
+     527
     ],
     "key": {
      "L": [
@@ -95,10 +95,10 @@
    {
     "img": "x",
     "box": [
-     920,
-     470,
-     1000,
-     540
+     951,
+     493,
+     969,
+     507
     ],
     "key": {
      "L": [
@@ -178,10 +178,10 @@
    {
     "img": "x",
     "box": [
-     920,
-     500,
-     1000,
-     600
+     944,
+     506,
+     974,
+     527
     ],
     "key": {
      "L": [
@@ -268,10 +268,10 @@
    {
     "img": "x",
     "box": [
-     920,
-     470,
-     1000,
-     540
+     951,
+     493,
+     969,
+     507
     ],
     "key": {
      "L": [
@@ -384,10 +384,10 @@
    {
     "img": "x",
     "box": [
-     920,
-     470,
-     1000,
-     540
+     951,
+     493,
+     969,
+     507
     ],
     "key": {
      "L": [
@@ -444,10 +444,10 @@
    {
     "img": "x",
     "box": [
-     920,
-     470,
-     1000,
-     540
+     951,
+     493,
+     969,
+     507
     ],
     "key": {
      "L": [
