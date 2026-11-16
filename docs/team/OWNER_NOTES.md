@@ -1,5 +1,11 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026, evening: FINISH WHAT IS RUNNING, THEN A PLAN FOR AN OPUS SESSION
+
+The owner, word for word: "get what we have going here finished, and then make a plan for us to start an opus session with this fable plan here"
+
+Coordinator #14's reading: no new lanes from the Fable session; the running leads finish and merge; the demo plan (five things, above or below) is written so an Opus coordinator can run it from `docs/team/DEMO_PLAN.md`.
+
 ## 15 November 2026 (~19:15, coordinator #14): WHAT THE DEMO NEEDS
 
 - "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
