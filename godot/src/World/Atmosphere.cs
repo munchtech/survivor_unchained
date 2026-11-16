@@ -607,8 +607,20 @@ public partial class Atmosphere : Node3D
             RenderingServer.GlobalShaderParameterSet("crowd_den", new Vector4((float)fd[0], (float)fd[1], (float)fd[2], (float)fd[3]));
             RenderingServer.GlobalShaderParameterSet("crowd_den_edge", new Vector4((float)fd[4], (float)fd[5], (float)fd[6], (float)fd[7]));
             RenderingServer.GlobalShaderParameterSet("crowd_den_rim", new Vector4(dr.R, dr.G, dr.B, (float)fd[8]));
+            // (pass 2: the top band, the elite's accent and full rim, the boss: fd[13..24]; a 13-value row has none of them)
+            bool top = fd.Length >= 25;
+            static Vector3 Tint(double r, double g, double b)
+            {
+                var t = new Color((float)r / 255f, (float)g / 255f, (float)b / 255f).SrgbToLinear();
+                float l = Mathf.Max(0.2126f * t.R + 0.7152f * t.G + 0.0722f * t.B, 1e-4f);
+                return new Vector3(t.R / l, t.G / l, t.B / l);
+            }
+            var et = top ? Tint(fd[17], fd[18], fd[19]) : Vector3.Zero; var bt = top ? Tint(fd[21], fd[22], fd[23]) : Vector3.Zero;
+            RenderingServer.GlobalShaderParameterSet("crowd_den_top", top ? new Vector4((float)fd[13], (float)fd[14], (float)fd[15], (float)fd[16]) : Vector4.Zero);
+            RenderingServer.GlobalShaderParameterSet("crowd_den_elite", top ? new Vector4(et.X, et.Y, et.Z, (float)fd[20]) : Vector4.Zero);
+            RenderingServer.GlobalShaderParameterSet("crowd_den_boss", top ? new Vector4(bt.X, bt.Y, bt.Z, (float)fd[24]) : Vector4.Zero);
         }
-        else foreach (var g in new[] { "crowd_den", "crowd_den_edge", "crowd_den_rim" }) RenderingServer.GlobalShaderParameterSet(g, Vector4.Zero);
+        else foreach (var g in new[] { "crowd_den", "crowd_den_edge", "crowd_den_rim", "crowd_den_top", "crowd_den_elite", "crowd_den_boss" }) RenderingServer.GlobalShaderParameterSet(g, Vector4.Zero);
         if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves, p.DappleMass);
         static Vector3 Hue(Color c)
         {

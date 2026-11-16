@@ -18,6 +18,11 @@
 #define CEL_S3_SHARE vat_s3k
 // (L1 lead 9: the fur class has no highlight, crowd_fur cel.spec z 0, bible rule 6; the fallback equals the class)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (demo-look item 4 pass 2: the den's TOP band, a second light step on the key's planes: fragment() gives its gain x its hard
+// mask (vat_den_k, rgb), light() adds it as the key's own diffuse on the albedo, so the fur's value pattern stays and the
+// key's cast shadow takes it away like the rest of the key)
+varying vec3 vat_den_k;
+#define CEL_KEY_ADD (LIGHT_IS_DIRECTIONAL && dot((INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz, cel_key.xyz) > 0.98 ? LIGHT_COLOR * vat_den_k * (cel_shadow(ATTENUATION, true) / PI) : vec3(0.0))
 #include "res://shaders/cel.gdshaderinc"
 uniform vec2 cel_edge = CEL_CROWD_EDGE;
 // (L1 l9 PACK2, rule 7: the moon's rim on the pack in the class's own hue, materials.json crowd_fur "edge_color" FROM target 09's
@@ -114,6 +119,12 @@ global uniform vec4 crowd_moon;
 global uniform vec4 crowd_den;
 global uniform vec4 crowd_den_edge;
 global uniform vec4 crowd_den_rim;
+// (pass 2) crowd_den_top: x the top band's cut in n.m (m: the key leaned up by y), z its gain on the key's diffuse, w the boss's
+// pull (its own paint kept the rest). crowd_den_elite: rgb the elite's band tint (its accent), w its full rim's level.
+// crowd_den_boss: rgb the boss's band tint (her cold back), w the boss's body L. The class rides in COLOR.a's 128s (Vat.Push).
+global uniform vec4 crowd_den_top;
+global uniform vec4 crowd_den_elite;
+global uniform vec4 crowd_den_boss;
 // (L1 lead 18, W2: the foes' VALUE PLAN by night, target 09. Lead 12's rule "a moonlit foe reads lighter than its ground" is
 // withdrawn: the pack was a flat bright-blue cutout (S3's top band lay over a whole back from the play camera) and the
 // frame's top contrast, where SHE should be. Now, under crowd_fire (cf_on): OUT IN THE DARK a foe's body sits at the floor's
@@ -174,14 +185,19 @@ float crowd_edge(float rim) {
 #endif
 }
 // (demo-look item 4) The den's body: the paint in Oklab, its L pulled to crowd_den.x by crowd_den.y, its hue and chroma set.
-vec3 vat_den_body(vec3 c_c) {
+// (pass 2: the boss, class 2, pulled crowd_den_top.w of the way to crowd_den_boss.w, its own hue kept the rest)
+vec3 vat_den_body(vec3 c_c, float c_cls) {
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	float c_l0 = dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
-	float c_l = mix(c_l0, crowd_den.x, crowd_den.y);
+	vec2 c_ab0 = vec2(dot(vec3(1.9779984951, -2.4285922050, 0.4505937099), c_lms), dot(vec3(0.0259040371, 0.7827717662, -0.8086757660), c_lms));
+	bool c_boss = c_cls > 1.5;
+	float c_pull = c_boss ? crowd_den_top.w : crowd_den.y;
+	float c_l = mix(c_l0, c_boss ? crowd_den_boss.w : crowd_den.x, c_pull);
 	float c_h = radians(crowd_den.w);
+	vec2 c_ab = mix(c_ab0, crowd_den.z * vec2(cos(c_h), sin(c_h)), c_boss ? c_pull : 1.0);
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
-		* vec3(c_l, crowd_den.z * cos(c_h), crowd_den.z * sin(c_h));
+		* vec3(c_l, c_ab);
 	c_m = c_m * c_m * c_m;
 	return clamp(mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147),
 		vec3(0.2309699292, -0.3413193965, 1.7076147010)) * c_m, vec3(0.0), vec3(1.0));
@@ -332,7 +348,9 @@ void fragment() {
 	c = cel_alb_apply(c);
 	// (demo-look item 4: in the den the pack's body is the rig's, crowd_den, before the copy's tint so the dead still darken)
 	bool den_on = crowd_den.y > 0.0 && cel_on > 0.0;
-	if (den_on) c = vat_den_body(c);
+	float dn_cls = floor(COLOR.a / 128.0);   // (pass 2: 0 the pack, 1 an elite, 2 the boss; Vat.Push)
+	vat_den_k = vec3(0.0);
+	if (den_on) c = vat_den_body(c, dn_cls);
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
 	float vat_s3k = 1.0;
@@ -492,7 +510,7 @@ void fragment() {
 	// (M5 r3) COLOR.a: the glow in its fraction; a champion's affix rim in its whole part (1 + its hue in 64ths of the
 	// wheel, CrowdView/Vat.Push). The rim: a colored edge glow of the affix's hue, emitted (so night and shade keep it),
 	// tight at the silhouette with a faint wider breath, never a neon outline. Functional; L1 owns the final look.
-	float champ_code = floor(COLOR.a);
+	float champ_code = floor(COLOR.a) - 128.0 * floor(COLOR.a / 128.0);
 	e += c * (COLOR.a - champ_code);
 	if (champ_code > 0.5) {
 		float ch_h = (champ_code - 1.0) / 64.0;
@@ -503,7 +521,7 @@ void fragment() {
 		e += ch_c * ch_k * (1.0 - fx.y);
 	}
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
-	if (crowd_rim.a > 0.0 && !cf_on) {
+	if (crowd_rim.a > 0.0 && !cf_on && !den_on) {   // (demo-look item 4 pass 2: the den's pack has its own stepped rim)
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
 		vec3 cr_c = mix(crowd_rim.rgb, cel_edge_hue.rgb * dot(crowd_rim.rgb, vec3(0.2126, 0.7152, 0.0722)), cel_edge_hue.a * cel_on);
@@ -629,7 +647,15 @@ void fragment() {
 		float dn_t = dot(dn_n, normalize(vec3(dn_d.x, DEN_RIM_UP, dn_d.y)));
 		float dn_w = fwidth(dn_t) * 0.75 + 0.01;
 		float dn_side = smoothstep(DEN_RIM_CUT - dn_w, DEN_RIM_CUT + dn_w, dn_t);
-		e += crowd_den_rim.rgb * (dn_band * dn_side * mix(crowd_den_edge.w, 1.0, dn_near) * dn_alive);
+		// (pass 2: an elite or the boss takes a FULL rim, all round, at crowd_den_elite.w at least)
+		float dn_full = step(0.5, dn_cls);
+		e += crowd_den_rim.rgb * (dn_band * dn_alive * mix(dn_side * mix(crowd_den_edge.w, 1.0, dn_near), max(crowd_den_elite.w, dn_side), dn_full));
+		// (pass 2) The TOP band: the planes toward the key leaned up (backs, crowns, the key's shoulder) one light step over the
+		// body, a hard edge one screen derivative wide; flanks and bellies stay body. Its light is added in light() (CEL_KEY_ADD).
+		float dn_tt = dot(dn_n, normalize(mix(key_dir.xyz, vec3(0.0, 1.0, 0.0), crowd_den_top.y)));
+		float dn_tw = fwidth(dn_tt) * 0.5 + 0.005;
+		float dn_top = smoothstep(crowd_den_top.x - dn_tw, crowd_den_top.x + dn_tw, dn_tt) * dn_alive * (1.0 - dn_line);
+		vat_den_k = (dn_cls > 1.5 ? crowd_den_boss.rgb : dn_cls > 0.5 ? crowd_den_elite.rgb : vec3(1.0)) * (crowd_den_top.z * dn_top);
 		ALBEDO *= mix(1.0, crowd_den_edge.y, dn_line);
 		e *= mix(1.0, crowd_den_edge.y, dn_line);
 	}

@@ -227,7 +227,10 @@ public sealed record AtmospherePreset(
     public double[]? FoeMoon { get; init; }
     /// <summary>(demo-look lane E, item 4; rigs.json "foe_den") The den's pack: [body Oklab L, its pull (0-1), chroma, hue (deg),
     /// the line's px, the body's tone in it, the rim's px, its share on the key's side, her reach (m), the rim's level, R, G, B
-    /// (sRGB 0-255)] (vat.gdshaderinc crowd_den, crowd_den_edge, crowd_den_rim); her lamp off the pack while it is on. Null: none.</summary>
+    /// (sRGB 0-255)] (vat.gdshaderinc crowd_den, crowd_den_edge, crowd_den_rim); her lamp off the pack while it is on. Null: none.
+    /// (pass 2, 25 values: then the top band's cut in n.m, the key's lean up, its gain on the key; the boss's pull; the elite's
+    /// band tint R, G, B and its full rim's level; the boss's band tint R, G, B (her cold back) and her body's L: crowd_den_top,
+    /// crowd_den_elite, crowd_den_boss.)</summary>
     public double[]? FoeDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
