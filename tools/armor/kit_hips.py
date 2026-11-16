@@ -303,15 +303,19 @@ def outer_rho(UV, UF, nsk, wrap, Y, TH, R=0.42):
 SWEEP_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")   # the demo's clips (docs/handoff/armor.md, lead 2)
 
 
-def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, dth=1.0, verbose=True):
+def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, dth=1.0, verbose=True, extra=None):
     """The room each rigid ride needs: {name: E (ny, nth)}, the outermost radius (about the axis x = 0, z = z0) of her
     skin and of the pieces `under_ids` (installed, posed by their own weights), over every frame of the demo clips (and
     her rest), carried back into the rest frame of a rigid shell riding `rides[name]` ({bone: w}, as params.rigid_ride
     gives it): a lame on that blend clears her in every frame if it stands outside E. Her springs as wearcheck runs
-    them (amount 1, squash 1); every triangle sampled at its corners, edge middles and centre. Cached by its inputs.
+    them (amount 1, squash 1); every triangle sampled at its corners, edge middles and centre. Cached by its inputs
+    (with her hip hinges' spec: a ride may name thigh_hinge_*).
+    extra: {name: [(P (n, 3) rest points, {bone: w})]}: rigid point sets riding their own blend (a lame on another
+    ride that this ride's plate laps over), carried into that ride's room alone: E[name] then holds only them.
     Returns (E, ys, ths)."""
     import hashlib
     sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    import helpers as hp_
     main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))   # (as wearcheck: the main checkout's built clips)
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
                                                    else kb.REPO, "tools", "anim", "out"))
@@ -328,8 +332,13 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
     paths = [os.path.join(art, f"{g}.gltf") for g in under_ids]
     deps = [kb.BODY] + paths + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
+    xh = hashlib.sha1()
+    for k_ in sorted(extra or {}):
+        for P_, w_ in extra[k_]:
+            xh.update(k_.encode() + np.round(np.asarray(P_, float), 5).tobytes() + json.dumps(sorted(w_.items())).encode())
     key = hashlib.sha1(json.dumps(["v2 no arms", sorted((k, sorted(v.items())) for k, v in rides.items()), list(under_ids), list(clips),
-                                   y0, y1, dy, dth, z0, stamp]).encode()).hexdigest()[:14]
+                                   y0, y1, dy, dth, z0, stamp, hp_.SPEC.get("hinges"), xh.hexdigest() if extra else None]
+                                  ).encode()).hexdigest()[:14]
     cache = os.path.join(kb.REPO, ".shots", "armor2", "kit_hips_sweep", key + ".npz")
     if os.path.exists(cache):
         z = np.load(cache)
@@ -352,8 +361,13 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
     E = {k: np.full((len(ys), len(ths)), np.nan) for k in rides}
     ang = {}
 
-    def add(Q, S):
+    xr = set(extra or ())
+    body_rides = [k for k in rides if k not in xr]
+
+    def add(Q, S, only=None):
         for k, wts in rides.items():
+            if (only is None and k in xr) or (only is not None and k != only):
+                continue
             if S is None:
                 X = Q
             else:
@@ -374,13 +388,27 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
     def samples(P):
         return np.vstack([P, (P[E_[:, 0]] + P[E_[:, 1]]) / 2, P[Tl].mean(1)])
 
-    add(samples(body.P[idx]), None)
+    def add_extra(S):
+        for k in xr:
+            for P_, w_ in extra[k]:
+                P_ = np.asarray(P_, float)
+                if S is None:
+                    add(P_, None, k)
+                    continue
+                Me = sum(float(w) * S[names.index(b)] for b, w in w_.items()) / sum(w_.values())
+                add(P_ @ Me[:3, :3].T + Me[:3, 3], S, k)
+
+    if body_rides:
+        add(samples(body.P[idx]), None)
+    add_extra(None)
     for c in clips:
         clip = body.clip(c)
         frames = body.frames(clip)
         for G in frames:
             S = body.skin_mats(G)
-            add(samples(body.pose(G, idx)), S)
+            if body_rides:
+                add(samples(body.pose(G, idx)), S)
+            add_extra(S)
             for side, th_ in (("l", "thigh_l"), ("r", "thigh_r")):
                 Rr = S[names.index("pelvis"), :3, :3].T @ S[names.index(th_), :3, :3]
                 a = np.degrees(np.arccos(np.clip((np.trace(Rr) - 1) / 2, -1, 1)))
@@ -635,13 +663,16 @@ def belt(cfg, ref):
                 for h in ((1, -1) if pl.get("mirror", True) else (1,)):
                     rides[ride_key(lm["ride"], h)] = side_ride(lm["ride"], h)
         Esw, ys_, ths_ = sweep(rides, hg.get("under", ["kit_brief"]), z0)
-        rooms = {k: room_fn(dilate(Esw[k], ys_, ths_, hg["need"]), ys_, ths_) for k in rides}
+        Eroom = {k: dilate(Esw[k], ys_, ths_, hg["need"]) for k in rides}
         skin_rho = wrap.field(wrap.rho)
-        ride_out = []
+        ride_out, built = [], {}
     for pl in cfg["plates"]:
         if hg and pl.get("lames"):
-            for h in ((1, -1) if pl.get("mirror", True) else (1,)):
-                hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0)
+            hs = (1, -1) if pl.get("mirror", True) else (1,)
+            rooms = lap_rooms(pl, hs, built, Eroom, ys_, ths_, z0, hg.get("lap_gap", 0.0015), pt_th + rim["h"])
+            for h in hs:
+                hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms[h], skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0,
+                          built)
             continue
         for h in ((1, -1) if pl.get("mirror", True) else (1,)):
             nm = pl["name"] + ("" if not pl.get("mirror", True) else ("_l" if h > 0 else "_r"))
@@ -717,10 +748,60 @@ def side_ride(ride, h):
 
 
 def ride_key(ride, h):
-    return ",".join(f"{b}:{w:g}" for b, w in sorted(side_ride(ride, h).items()))
+    return wkey(side_ride(ride, h))
 
 
-def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0):
+def wkey(w):
+    return ",".join(f"{b}:{v:g}" for b, v in sorted(w.items()))
+
+
+def dense(G, f=6):
+    """A plate grid (R, C, 3) resampled f times finer each way (bilinear): points every ~2 mm for a room."""
+    from scipy.ndimage import zoom
+    return np.stack([zoom(G[..., i], f, order=1) for i in range(3)], -1).reshape(-1, 3)
+
+
+def bin_room(X, ys, ths, z0):
+    """Points (n, 3) binned as sweep() bins them: the outermost radius per (y, theta) cell (nan: none)."""
+    iy = np.round((X[:, 1] - ys[0]) / (ys[1] - ys[0])).astype(int)
+    th = np.degrees(np.arctan2(X[:, 0], X[:, 2] - z0))
+    it = np.round((th + 180.0) / (ths[1] - ths[0])).astype(int) % len(ths)
+    ok = (iy >= 0) & (iy < len(ys))
+    flat = np.full(len(ys) * len(ths), -1.0)
+    np.maximum.at(flat, iy[ok] * len(ths) + it[ok], np.hypot(X[ok, 0], X[ok, 2] - z0))
+    flat = flat.reshape(len(ys), len(ths))
+    return np.where(flat > 0, flat, np.nan)
+
+
+def lap_rooms(pl, hs, built, Eroom, ys, ths, z0, gap, up):
+    """Per side h, {ride key: room} for a plate (its ride's room, dilated): raised, for a plate that laps over others
+    (plates[].over, built before it), over each one's outer face and rim (`up` over its inner face) wherever that
+    plate stands in this plate's ride frame through the demo clips: where it rests if it rides the same blend, else
+    swept (sweep extra); grown by `gap`. So a lap clears the lame under it in every frame (rigid on both)."""
+    out, stat, extra, ride_w = {}, {}, {}, {}
+    for h in hs:
+        out[h] = {k: room_fn(Eroom[k], ys, ths) for k in Eroom}
+        for lm in pl["lames"]:
+            k, w = ride_key(lm["ride"], h), side_ride(lm["ride"], h)
+            for o in pl.get("over", ()):
+                for G, N, wo in built.get(o + ("_l" if h > 0 else "_r"), built.get(o, [])):
+                    P = dense(G + N * up)
+                    if wkey(wo) == k:
+                        stat[(h, k)] = np.fmax(stat.get((h, k), np.full(Eroom[k].shape, np.nan)), bin_room(P, ys, ths, z0))
+                    else:
+                        extra.setdefault(f"{k}|{h}", []).append((P, wo))
+                        ride_w[f"{k}|{h}"] = w
+    Ex = sweep(ride_w, [], z0, extra=extra)[0] if extra else {}
+    for h in hs:
+        for lm in pl["lames"]:
+            k = ride_key(lm["ride"], h)
+            L = np.fmax(stat.get((h, k), np.full(Eroom[k].shape, np.nan)), Ex.get(f"{k}|{h}", np.nan))
+            if np.isfinite(L).any():
+                out[h][k] = room_fn(np.fmax(Eroom[k], dilate(L, ys, ths, gap)), ys, ths)
+    return out
+
+
+def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0, built=None):
     """A plate of hugging lames (build.json plates[].lames, top to bottom): each its own rigid node riding its own
     blend (lames[].ride), its columns the least outward-bowing curve over that ride's room through the demo clips
     (sweep, dilate), the first hung from under the belt, each next from the one above (`ov` up under it, `lap` out)."""
@@ -773,7 +854,10 @@ def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M
                               M["trim"], 0.0, [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
                                                dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
         rigid.append(Part.join(node, M["trim"], gold))
-        ride_out.append({"match": node[:-6], "weights": side_ride(lm["ride"], h), "mix": 1.0})
+        ride_out.append({"match": node[:-6], "weights": side_ride(lm["ride"], h) if pl.get("mirror", True) else dict(lm["ride"]),
+                         "mix": 1.0})
+        if built is not None:  # (its inner face, for a plate built later that laps over it: lap_rooms)
+            built.setdefault(nm, []).append((G, Nl, side_ride(lm["ride"], h) if pl.get("mirror", True) else dict(lm["ride"])))
         st = Rg - skin_rho(y_top[None] - Sg, np.broadcast_to(ths[None], Sg.shape))
         print(f"{node}: len {np.round((Sg[-1] - Sg[0]).min() * 1000)}-{np.round((Sg[-1] - Sg[0]).max() * 1000)} mm, "
               f"bottom y {np.round((y_top - Sg[-1]).min(), 3)}-{np.round((y_top - Sg[-1]).max(), 3)}, stand-off off her "
