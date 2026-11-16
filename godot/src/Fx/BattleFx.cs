@@ -2131,7 +2131,7 @@ public partial class BattleFx : Node3D
         var r = CrowdView.Fall;
         double s = Math.Clamp(f.Scale, 0.7, 2);
         double lx = f.X - f.Dx * 0.35, lz = f.Z - f.Dz * 0.35;
-        Dust(lx, lz, (int)Math.Round(r.Dust * s), (float)(r.DustSpeed * s));
+        EarthKick(lx, lz, f.Dx, f.Dz, (int)Math.Round(r.Dust * s), (float)(r.DustSpeed * s), r.DustColor);
         var at = V(lx, Y(lx, lz) + 0.1, lz);
         for (int i = 0; i < (int)Math.Round(5 * s); i++)
         {
@@ -2146,10 +2146,26 @@ public partial class BattleFx : Node3D
     {
         var r = CrowdView.Brinks;
         double fx = b.X + b.Dx * 0.45, fz = b.Z + b.Dz * 0.45;
-        Dust(fx, fz, (int)Math.Round(r.Dust * (b.Boss ? 1.6 : 1)), (float)r.DustSpeed);
+        EarthKick(fx, fz, b.Dx, b.Dz, (int)Math.Round(r.Dust * (b.Boss ? 1.6 : 1)), (float)r.DustSpeed, CrowdView.Fall.DustColor);
     }
 
     /// <summary>Kicked-up earth at the feet.</summary>
+    /// <summary>(Ledge view) A kick of the ground's own earth, thrown mostly along dx, dz (pale on the lit floor: Dust's dim
+    /// smoke read as dark smudges, holes in the ground, on the ravine's sunlit dirt).</summary>
+    void EarthKick(double x, double z, double dx, double dz, int n, float speed, string color)
+    {
+        var at = V(x, Y(x, z) + 0.15, z);
+        var c = new Color(color);
+        double l = Math.Max(1e-6, Math.Sqrt(dx * dx + dz * dz));
+        float ux = (float)(dx / l), uz = (float)(dz / l);
+        for (int i = 0; i < n; i++)
+        {
+            float a = (R() - 0.5f) * 2.4f, v = speed * (0.4f + R() * 0.8f);
+            float cx = ux * Mathf.Cos(a) - uz * Mathf.Sin(a), cz = uz * Mathf.Cos(a) + ux * Mathf.Sin(a);
+            Smoke.Spawn(at, new Vector3(cx * v, 0.15f + R() * 0.35f, cz * v), 0.45f + R() * 0.3f, 0.22f, c, c * new Color(1, 1, 1, 0), 0.8f, 0, 3f, 0.3f);
+        }
+    }
+
     void Dust(double x, double z, int n, float speed)
     {
         var at = V(x, Y(x, z) + 0.15, z);

@@ -98,6 +98,10 @@ public partial class CrowdView : Node3D
         /// <summary>(Ledge view) An elite or boss skidding to the brink (Enemy.AtBrink) and caught there: since when it stopped (-1: not), the way to the drop.</summary>
         public double BrinkT = -1, BrinkDx, BrinkDz, BrinkLean;
         public bool WasBrink;
+        /// <summary>(Ledge view) Its fall over the edge, ridden in the view: metres past the crossing and across, speed out,
+        /// height under the lip and its speed, how dark the drop has made it.</summary>
+        public bool Falling;
+        public double FallS, FallSide, FallVs, FallY, FallVy, FallDark;
         /// <summary>Shoved back against its facing: its steps run backward.</summary>
         public bool Back;
         public bool HasLast;
@@ -1004,8 +1008,8 @@ public partial class CrowdView : Node3D
             float w = Smooth(e.DieT, Ai.DieTime * 0.3, Ai.DieTime - 0.12);
             if (w > 0) basis = Godot.Basis.Identity.Slerp(RestTilt(heightAt, ex, ez, FallHeading(asset, role, g.Facing), sc), w) * basis;
         }
-        if (e.Fell && e.State == EnemyState.Dying) FellLook(e, dieT, sc, ref at, ref basis, ref dissolve);
-        else BrinkLook(e, g, ref basis);
+        if (e.Fell && e.State == EnemyState.Dying) FellLook(e, g, dieT, sc, heightAt, ref at, ref basis, ref dissolve);
+        else { g.Falling = false; BrinkLook(e, g, ref basis); }
         // (Held by a ground that is not the cold, a thicket's or a rot's: its slow is no rime.)
         bool held = battle != null && e.HeldUntil > battle.Time;
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : !held && e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
@@ -1013,7 +1017,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = TintOf(e);
         float chr = e.State == EnemyState.Dying ? g.Char : FlareChar?.Invoke(ex, ez, true) ?? 0;
         tint = Charred(tint, chr);
-        if (e.Fell && e.State == EnemyState.Dying) tint = Darkened(tint, FellDark(e, dieT));
+        if (e.Fell && e.State == EnemyState.Dying) tint = Darkened(tint, (float)g.FallDark);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         if (MassTrace && e.MassKill && e.State == EnemyState.Dying)
@@ -1071,8 +1075,8 @@ public partial class CrowdView : Node3D
      * on past the lip by its push, it tips over along the push (a light body flips, a heavy one drags over and goes later), then
      * drops fast, shrinking and darkening into the drop, and is gone by the end of DieTime; it never lies down (no corpse, no blood:
      * BattleFx). Numbers: data/content/ledge.json "fall" and "brink". */
-    public sealed class FallRules { public double Carry = 0.9, CarryT = 0.32, DropAt = 0.12, G = 30, FlipDeg = 200, DragDeg = 95, LightMass = 1.2, HeavyMass = 3.5, HeavyLag = 0.1, ShrinkTo = 0.6, DarkTo = 0.15, FadeT = 0.25, Dust = 10, DustSpeed = 1.6; }
-    public sealed class BrinkRules { public double LeanDeg = 16, LeanIn = 0.08, LeanOut = 0.55, Dust = 7, DustSpeed = 1.3; }
+    public sealed class FallRules { public double RunMin = 3, RunMax = 7, HeavyRun = 0.35, G = 30, Rub = 1.5, FlipDeg = 200, DragDeg = 95, LightMass = 1.2, HeavyMass = 3.5, HeavyLag = 0.1, ShrinkTo = 0.6, DarkTo = 0.3, DarkDeep = 14, TipDeep = 2.5, FadeT = 0.25, Dust = 7, DustSpeed = 1.8; public string DustColor = "#9c8468"; }
+    public sealed class BrinkRules { public double LeanDeg = 24, LeanIn = 0.08, LeanOut = 0.55, Teeter = 0.6, Dust = 12, DustSpeed = 1.7; }
     sealed class LedgeFile { public FallRules Fall = new(); public BrinkRules Brink = new(); }
     static LedgeFile? ledgeFile;
     static LedgeFile Ledge => ledgeFile ??= SurvivorUnchained.Core.Json.Parse<LedgeFile>(SurvivorUnchained.Core.Json.ReadContent("ledge.json"));
@@ -1082,32 +1086,55 @@ public partial class CrowdView : Node3D
     /// <summary>How heavy it is to throw: 0 light (flips off), 1 heavy (drags over).</summary>
     public static double Heft(Enemy e) => Smooth(e.Mass * (e.Def.Scale ?? 1), Fall.LightMass, Fall.HeavyMass);
 
-    static float FellDark(Enemy e, double t) => Smooth(t, Fall.DropAt + Fall.HeavyLag * Heft(e), Ai.DieTime * 0.85) * (float)(1 - Fall.DarkTo);
-
     static Color Darkened(Color tint, float k) => k <= 0 ? tint : new Color(Math.Sign(tint.R + 1e-9f) * Mathf.Lerp(Math.Abs(tint.R), 0.04f, k), Mathf.Lerp(tint.G, 0.035f, k), Mathf.Lerp(tint.B, 0.05f, k), tint.A);
 
-    static void FellLook(Enemy e, double t, float sc, ref Vector3 at, ref Godot.Basis basis, ref float dissolve)
+    void FellLook(Enemy e, Gait g, double t, float sc, Func<double, double, double> heightAt, ref Vector3 at, ref Godot.Basis basis, ref float dissolve)
     {
         var f = Fall;
         double ux = e.FellDx, uz = e.FellDz, ul = Math.Sqrt(ux * ux + uz * uz);
         if (ul < 1e-6) { ux = 0; uz = 1; } else { ux /= ul; uz /= ul; }
         double heft = Heft(e), lag = f.HeavyLag * heft;
-        // Carried on past the lip: at least Carry metres a metre of its size beyond where its centre crossed, eased out.
-        double along = (at.X - e.FellX) * ux + (at.Z - e.FellZ) * uz;
-        double c = Math.Clamp(t / (f.CarryT * (1 + heft * 0.5)), 0, 1);
-        double want = f.Carry * Math.Max(0.6, sc) * (1 - (1 - c) * (1 - c));
-        if (want > along) { at.X += (float)(ux * (want - along)); at.Z += (float)(uz * (want - along)); }
-        // Tipping over along the push, about its middle (a light body's whole turn, a heavy one's slow lean over the lip; a heavy
-        // body hangs a moment on the lip, then goes: its turn eases in harder).
+        // The ground it rides: the floor (a den's pit is in it) and the drawn fall of a ravine's edge (the shelf's shoulder,
+        // then its cliff). A point thrown on along the push from where it crossed: it runs, leaves the ground where the
+        // ground falls away faster than it drops, lands on the slope and runs down it, until it goes over the cliff.
+        double Ground(double x, double z) => heightAt(x, z) + (View.DungeonWalls.EdgeFall?.Invoke((float)x, (float)z) ?? 0);
+        double y0 = heightAt(e.FellX, e.FellZ);
+        if (!g.Falling)
+        {
+            g.Falling = true;
+            g.FallS = Math.Max(0, (at.X - e.FellX) * ux + (at.Z - e.FellZ) * uz);
+            g.FallSide = (at.X - e.FellX) * -uz + (at.Z - e.FellZ) * ux;
+            g.FallVs = Math.Clamp(Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz), f.RunMin, f.RunMax) * (1 - f.HeavyRun * heft);
+            g.FallY = 0; g.FallVy = 0;
+        }
+        else
+        {
+            double step = Math.Min(dt, 0.05);
+            g.FallS += g.FallVs * step;
+            g.FallVy -= f.G * step; g.FallY += g.FallVy * step;
+            double gx = e.FellX + ux * g.FallS - uz * g.FallSide, gz = e.FellZ + uz * g.FallS + ux * g.FallSide;
+            double surf = Ground(gx, gz) - y0;
+            if (g.FallY <= surf)
+            {
+                double slope = (surf - (Ground(gx - ux * 0.25, gz - uz * 0.25) - y0)) / 0.25;   // dy/ds: < 0 going down
+                g.FallY = surf;
+                g.FallVs = Math.Max(0, (g.FallVs + -slope / Math.Sqrt(1 + slope * slope) * f.G * 0.5 * step) * Math.Exp(-f.Rub * step));
+                g.FallVy = slope * g.FallVs;
+            }
+        }
+        at = new Vector3((float)(e.FellX + ux * g.FallS - uz * g.FallSide), (float)(y0 + g.FallY), (float)(e.FellZ + uz * g.FallS + ux * g.FallSide));
+        // Tipping over along the push, about its middle: a light body's whole turn, a heavy one's slow lean over the lip (its
+        // turn eases in harder, a moment later).
         double tipDeg = f.FlipDeg + (f.DragDeg - f.FlipDeg) * heft, tipT = 0.5 + 0.45 * heft;
-        double u = Math.Clamp((t - lag) / tipT, 0, 1), k = Math.Pow(u * u * (3 - 2 * u), 1 + heft);
+        // (it tips as it goes down, not on the floor: a body flung flat across the ground before the edge read as knocked down)
+        double u = Math.Max(Math.Clamp((t - lag) / tipT, 0, 1) * 0.35, Math.Clamp(-g.FallY / f.TipDeep, 0, 1)), k = Math.Pow(u * u * (3 - 2 * u), 1 + heft);
         var tip = new Godot.Basis(new Vector3((float)uz, 0, (float)-ux), Mathf.DegToRad((float)(tipDeg * k)));
         var mid = Vector3.Up * (0.55f * sc);
-        // Dropping: gravity from DropAt (a heavy one later), shrinking and darkening into the drop.
-        double td = Math.Max(0, t - f.DropAt - lag);
-        at += mid - tip * mid + Vector3.Down * (float)(0.5 * f.G * td * td);
-        float shrink = Mathf.Lerp(1f, (float)f.ShrinkTo, Smooth(t, f.DropAt + lag, Ai.DieTime));
+        at += mid - tip * mid;
+        // Shrinking and darkening into the drop: with time, and with depth (the shade under the shelf).
+        float shrink = Mathf.Lerp(1f, (float)f.ShrinkTo, Math.Max(Smooth(t, lag, Ai.DieTime), Smooth(-g.FallY, 1, f.DarkDeep * 1.5)));
         basis = tip * basis * Godot.Basis.FromScale(Vector3.One * shrink);
+        g.FallDark = Math.Max(Smooth(t, 0.1 + lag, Ai.DieTime * 0.85), Smooth(-g.FallY, 0.3, f.DarkDeep)) * (1 - f.DarkTo);
         dissolve = Math.Max(dissolve, Smooth(e.DieT, Ai.DieTime - f.FadeT, Ai.DieTime - 0.02));
     }
 
@@ -1126,7 +1153,7 @@ public partial class CrowdView : Node3D
         {
             g.BrinkT += dt;
             double ts = g.BrinkT;
-            lean = g.BrinkLean * (1 - Smooth(ts, 0.08, 0.08 + r.LeanOut)) - 0.35 * Math.Sin(Math.PI * Math.Clamp((ts - 0.04) / 0.3, 0, 1));
+            lean = g.BrinkLean * (1 - Smooth(ts, 0.08, 0.08 + r.LeanOut)) - r.Teeter * Math.Sin(Math.PI * Math.Clamp((ts - 0.04) / 0.35, 0, 1));
             if (ts > 0.08 + r.LeanOut) { g.BrinkT = -1; g.BrinkLean = 0; }
         }
         else { g.BrinkLean = 0; return; }

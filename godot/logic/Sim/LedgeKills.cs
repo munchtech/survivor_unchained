@@ -54,11 +54,21 @@ public sealed partial class Battle
             }
         }
         col.IgnoreDrops = e.Edge;
+        double x0 = e.X, z0 = e.Z;
         e.X += e.Kbx * dt;
         e.Z += e.Kbz * dt;
         // Knocked into a wall, it stops at the wall (a scripted boss's own step never resolved it, and Grimtunnel was knocked out
         // through the shut gate behind her, where she could not reach him). A foe going over meets no wall but the ground's own props.
         col.Resolve(ref e.X, ref e.Z, e.Radius);
+        // An elite or a boss carried to the brink is caught there the moment the lip stops it: the push is spent (what is left
+        // of it only pressed it into the edge, the catch heard and seen 0.6 s late), and the catch is now.
+        if (e.AtBrink && !e.Edge && Math.Sqrt((e.X - x0) * (e.X - x0) + (e.Z - z0) * (e.Z - z0)) < 0.35 * Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz) * dt)
+        {
+            e.Kbx = e.Kbz = 0;
+            e.AtBrink = false;
+            if (e.State != EnemyState.Dying) Events.Emit(new Ev.Brink { X = e.X, Z = e.Z, Dx = e.FellDx, Dz = e.FellDz, Enemy = e.Id, Boss = e.Boss });
+            return false;
+        }
         if (e.Edge && col.InDrop(e.X, e.Z))
         {
             double d = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);

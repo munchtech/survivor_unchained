@@ -168,12 +168,29 @@ public static partial class DungeonWalls
         return bankCtx.SurfY(x, zz);
     }
 
+    /// <summary>(Ledge view shots) The drawn ground's height over the floor at x, z: 0 on the floor, below it where the edge
+    /// falls away, above it where a wall or bank rises. Diagnosis only.</summary>
+    public static float SurfOverFloor(ZoneData z, float x, float zz)
+    {
+        if (z.WallField == null) return 0;
+        var c = new Ctx { Z = z, Wf = z.WallField, Hf = z.HoleField ?? new float[z.WallField.Length], Ravine = z.DungeonTheme == "ravine", Half = z.Half, Step = z.Step, Res = z.Res, Hb = z.DungeonTheme == "ravine" ? 13f : 4f };
+        if (z.HoleField == null) System.Array.Fill(c.Hf, 8f);
+        return c.SurfY(x, zz) - c.Floor(x, zz);
+    }
+
+    /// <summary>(Ledge view) How far the drawn ground falls below the floor at x, z where an edge falls away (the ravine's
+    /// shelf edges; 0 elsewhere, and null out of a ravine: a den's pits are in the floor's own heights). A body knocked off
+    /// the edge rides this down (CrowdView.FellLook).</summary>
+    public static System.Func<float, float, float>? EdgeFall;
+
     public static Node3D? Build(ZoneData z)
     {
+        EdgeFall = null;
         if (z.WallField == null) return null;
         var c = new Ctx { Z = z, Wf = z.WallField, Hf = z.HoleField ?? new float[z.WallField.Length], Ravine = z.DungeonTheme == "ravine", Half = z.Half, Step = z.Step, Res = z.Res };
         if (z.HoleField == null) System.Array.Fill(c.Hf, 8f);
         c.Hb = c.Ravine ? 13f : 4f;
+        if (c.Ravine) EdgeFall = (x, zz) => Mathf.Min(0f, c.SurfY(x, zz) + 0.1f - c.Floor(x, zz));
         float size = z.Size;
         int n = (int)(size / Cell) + 1;
 

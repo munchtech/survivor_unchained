@@ -2173,6 +2173,9 @@ public sealed partial class Battle
         // (Ledge kills) a fallen foe's drops lie on open ground at the ledge, each clear of the others, whatever they were asked.
         if (ledgeLoot != null) (x, z) = LedgeSpot(ledgeLoot);
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
+        // (and it pops back onto the ground, away from the drop: a scatter toward the lip stopped at the drop's face, a coin
+        // lying at the very brink)
+        if (ledgeLoot != null) a = Math.Atan2(-ledgeLoot.FellDz, -ledgeLoot.FellDx) + (a / Tau - 0.5) * 2.4;   // (the same draw: no other roll moves)
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
         p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null; p.Payload = null; p.Loot = -1; p.Look = Verdict.Shown;
         if (kind == PickupKind.Ember) p.Tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
