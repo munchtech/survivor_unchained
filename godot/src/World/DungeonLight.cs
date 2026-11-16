@@ -11,7 +11,7 @@ namespace SurvivorUnchained.View;
 public static class DungeonLight
 {
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
-    static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
+    static readonly Vector3 Axis = new Vector3(SurvivorUnchained.Args.Num("den-shaft-lean", 0.3f), -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
     static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 8f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 4.5f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
 
@@ -39,6 +39,7 @@ public static class DungeonLight
                     if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
                 }
                 float w = 1.6f + 1.4f * Hash(i, k, 3);   // (r11 judge: broad beams, 150-250 px; was 1.1 + 1.0)
+                if (k == 0 && r.Kind != "Boss") AddWash(root, r.X, z.HeightAt(r.X, r.Z), r.Z, r.R, i);
                 AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? BossPool : PoolWide, r.Kind == "Boss");
             }
         }
@@ -80,7 +81,7 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? "ffc890"),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
+            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffd68a" : "ffc890")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
             LightEnergy = PoolEnergy * (lair ? SurvivorUnchained.Args.Num("den-lair-pool", 0.73f) : 1f),   // (r12) the lair's pools against its floor (lit/median 109/68 in den_boss.png)   // (round 8: --den-pool-energy) (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
@@ -101,6 +102,35 @@ public static class DungeonLight
         var side = up.Cross(Vector3.Back).Normalized();
         var b = new Basis(side, up, side.Cross(up).Normalized());
         root.AddChild(new MeshInstance3D { Name = "shaft", Mesh = mesh, MaterialOverride = mat, Transform = new Transform3D(b, mid), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+    }
+
+    // (r14) The room's play floor read dim grey (ring by her L.31 C.028): where the room's light falls it pools warm,
+    // a broad soft wash of two overlapping uneven spots (not a disc, not on her), light through the roots.
+    static void AddWash(Node3D root, float x, float y, float zz, float rad, int i)
+    {
+        float e = SurvivorUnchained.Args.Num("den-wash", 4.8f);
+        if (e <= 0f) return;
+        for (int n = 0; n < 2; n++)
+        {
+            float a = Hash(i, n, 11) * Mathf.Tau, d = rad * (0.1f + 0.2f * Hash(i, n, 12));
+            var foot = new Vector3(x + Mathf.Cos(a) * d, y, zz + Mathf.Sin(a) * d);
+            var top = foot - Axis * Height;
+            float wide = rad * (n == 0 ? 0.75f : 0.5f);
+            root.AddChild(new SpotLight3D
+            {
+                Name = "room_wash",
+                Transform = new Transform3D(Basis.LookingAt(Axis, Vector3.Up), top),
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-wash-colour") ?? "ffc47a"),
+                LightEnergy = e * (n == 0 ? 1f : 0.8f),
+                SpotRange = Height + 4f,
+                SpotAngle = Mathf.RadToDeg(Mathf.Atan(wide / Height)),
+                SpotAngleAttenuation = 0.5f,
+                SpotAttenuation = 0.5f,
+                ShadowEnabled = false,
+                LightSpecular = 0.1f,
+            });
+            root.AddChild(new Node3D { Name = "wash_pad" });   // (keeps the child/2 shaft count in the log honest)
+        }
     }
 
     static int Salt;

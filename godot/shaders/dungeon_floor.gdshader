@@ -30,6 +30,9 @@ uniform vec3 boss_tint = vec3(1.0);
 uniform float den_chroma = 1.0;
 uniform float den_chroma_lo = 0.03;
 uniform float den_chroma_hi = 0.1;   // (r12) the darks' saturation cap (1: none)
+uniform vec3 gloom_tint = vec3(0.8, 0.95, 1.25);   // (den r14) the lair's fall: the grey's tint (DungeonFloor sets the warm umber by default)
+uniform float gloom_mix = 0.7;
+uniform float open_grit = 0.0;   // (den r14 item 8) the open floor's fine grit contrast (DungeonFloor: --den-grit)
 uniform float boss_gloom = 0.0;   // (r12) the lair falls dark and cool from its pools toward its walls (den_set.gdshaderinc's lair_gloom, the same rule)
 uniform float boss_dry = 0.0;   // (r11) the damp tile (F8) kept out of the lair by this share: it read as a dark grey-mauve speckle   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
@@ -39,6 +42,7 @@ uniform sampler2DArray set_floor : source_color, filter_linear_mipmap_anisotropi
 uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the den floor's albedo
 uniform float set_gain = 1.0;   // the set floor's albedo scale (--den-set-floor-gain)
 uniform float set_band = 0.6;   // (r10b) the tiles' 3 cm-1 m masses stretched by this (0: as painted)
+uniform float set_damp = 0.45;  // (r13) the damp patches' depth in the open: at 1 a 2-3 m one read as a black smudge on the seed-23 corridor (judge r12)
 uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow fields (0: the walls' vignette only)
 // (r11) the floor read as a soft brown cloud: each tile was read twice at two turns and the two AVERAGED over wide
 // bands (every stone at half strength, ghosted), the band stretch multiplied a blurred copy back in, and the slow
@@ -196,7 +200,7 @@ void fragment() {
 				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
 				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
 				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
-				float wdp = max(max(w_dk, w_li * 0.5), set_paths * smoothstep(0.56, 0.7, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
+				float wdp = max(max(w_dk, w_li * 0.5), set_paths * set_damp * smoothstep(0.52, 0.76, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
 				float inb = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 				wdp *= 1.0 - boss_dry * inb;
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
@@ -247,8 +251,10 @@ void fragment() {
 		if (boss_c.z > 0.0 && boss_gloom > 0.0) {
 			float bdg = distance(wpos.xz, boss_c.xy);
 			float gl = boss_gloom * smoothstep(boss_c.z * 0.3, boss_c.z * 0.75, bdg) * (1.0 - smoothstep(boss_c.z * 1.2, boss_c.z * 1.5, bdg));
-			col = mix(col, vec3(dot(col, vec3(0.3, 0.55, 0.15))) * vec3(0.8, 0.95, 1.25), 0.7 * gl) * (1.0 - 0.55 * gl);
+			col = mix(col, vec3(dot(col, vec3(0.3, 0.55, 0.15))) * gloom_tint, gloom_mix * gl) * (1.0 - 0.55 * gl);   // (den r14: the fall to a warm umber, was cool (0.8, 0.95, 1.25) at 0.7: the lair's edges read mauve, h 0-10 and 290-360)
 		}
+		// (den r14 item 8) fine grit in the open floor, at den_room.png's density (floorstat grit 4.8-9.3): stones and clods a hand across
+		col *= 1.0 + open_grit * (gnoise(wpos.xz * 13.0) - 0.5) * smoothstep(1.5, 4.0, inside) * (1.0 - smoothstep(0.35, 0.8, steep));
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));
 		// (r12) the floor's darks no more saturated than den_chroma (HSV-like, in albedo): the seed-23 room's shade read
