@@ -163,3 +163,25 @@ def test_exact_weights_are_hers_and_the_probe_sits_off_her():
     P, F = pm.band(B)
     _, sd = pn.her_weights(B, P[::7])
     assert np.median(sd) == pytest.approx(pm.OFF, abs=2e-4) and F.max() < len(P)
+
+
+def test_rigid_ride_picks_first_match_mixes_and_names_unknown_bones():
+    import pin_shipped as pn
+    names = ["hip", "thigh", "wrist"]
+    mean = np.array([1.0, 0.0, 0.0])
+    ride = [{"match": "lame", "weights": {"thigh": 2, "wrist": 2}}, {"match": "lame_l", "weights": {"hip": 1}}]
+    w, hit = pn.ride_weights(mean, ["k.lame_l"], ride, names)
+    assert hit == "lame" and np.allclose(w, [0, .5, .5])
+    w, hit = pn.ride_weights(mean, ["k.cop"], ride, names)
+    assert hit is None and np.allclose(w, mean)
+    w, _ = pn.ride_weights(mean, ["k.lame"], [{"match": "lame", "weights": {"wrist": 1}, "mix": 0.25}], names)
+    assert np.allclose(w, [.75, 0, .25])
+    with pytest.raises(SystemExit, match="nobone"):
+        pn.ride_weights(mean, ["k.lame"], [{"match": "lame", "weights": {"nobone": 1}}], names)
+
+
+def test_follow_env_shoulder_shapes_switch():
+    import piece_ship as ps
+    assert ps.follow_env({"params": {"shoulder_shapes": False}})["BF_PAUL_SHAPES"] == "0"
+    assert ps.follow_env({"params": {}}).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")
+    assert ps.follow_env(None).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")

@@ -78,7 +78,28 @@ def _top(W, k):
     return top, tw
 
 
-def pin(path, pre, body, B=None, drop=()):
+def ride_weights(mean_w, names, ride, bone_names):
+    """params.rigid_ride: [{"match": substring of a mesh name, "weights": {bone: w}, "mix": 0-1 (default 1)}]. The first
+    entry whose `match` is in any of the group's mesh `names` replaces the mean blend (mixed with it by `mix`, then
+    normalized). Returns (weights, the entry's match or None). An unknown bone is a SystemExit naming it."""
+    for e in ride:
+        if not any(e["match"] in (n or "") for n in names):
+            continue
+        g = np.zeros(len(bone_names))
+        for bn, w in e["weights"].items():
+            if bn not in bone_names:
+                raise SystemExit("PIN: rigid_ride bone %r is not one of her joints" % bn)
+            g[list(bone_names).index(bn)] += float(w)
+        if g.sum() <= 0:
+            raise SystemExit("PIN: rigid_ride %r has no weight" % e["match"])
+        g = g / g.sum()
+        t = float(e.get("mix", 1.0))
+        w = (1 - t) * np.asarray(mean_w, float) + t * g
+        return w / w.sum(), e["match"]
+    return mean_w, None
+
+
+def pin(path, pre, body, B=None, drop=(), ride=()):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
@@ -118,15 +139,24 @@ def pin(path, pre, body, B=None, drop=()):
     # rigid shells: welded components whose built points all carry one weight set, grouped by that set
     rigid = np.full(len(Q), -1)
     groups = {}
+    gnames = {}
+    mname = [None] * len(Q)
+    for (n_, m_, k_, p_), a_, b_ in zip(pr, offs[:-1], offs[1:]):
+        for i in inv[a_:b_]:
+            if mname[i] is None:
+                mname[i] = m_.get("name") or ""
     for c in np.unique(comp):
         sel = np.nonzero(comp == c)[0]
         ks = {key[i] for i in sel}
         if len(sel) >= 3 and len(ks) == 1 and None not in ks:
-            groups.setdefault(ks.pop(), []).append(sel)
+            kk_ = ks.pop()
+            groups.setdefault(kk_, []).append(sel)
+            gnames.setdefault(kk_, set()).update(mname[i] for i in sel)
     Wq, sd = her_weights(B, Q)
     nb = len(B.names)
     TOP = np.zeros((len(Q), 8), int)
     TW = np.zeros((len(Q), 8))
+    mesh_names = {gi_: gnames[k_] for gi_, k_ in enumerate(groups)}
     for gi, sels in enumerate(groups.values()):
         sel = np.concatenate(sels)
         rigid[sel] = gi
@@ -135,6 +165,11 @@ def pin(path, pre, body, B=None, drop=()):
             kd = np.array([not str(nm_).startswith(tuple(drop)) for nm_ in B.names])
             if (mw * kd).sum() > 1e-6:
                 mw = mw * kd
+        if ride:
+            mw, hit = ride_weights(mw, mesh_names.get(gi, ()), ride, B.names)
+            if hit is not None:
+                res.setdefault("rigid_ride", {})
+                res["rigid_ride"][hit] = res["rigid_ride"].get(hit, 0) + 1
         t, w = _top(mw[None], 4)
         TOP[sel, :4], TW[sel, :4] = t[0], w[0]
     bend = rigid < 0

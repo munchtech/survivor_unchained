@@ -200,8 +200,17 @@ def latest_stage(pid):
     return os.path.dirname(st[-1])
 
 
-def _follow(base, body, stage):
-    r = subprocess.run([sys.executable, FOLLOW, base, body, stage, "--parts", "armor"], cwd=ROOT, capture_output=True, text=True)
+def follow_env(piece):
+    """The follow's environment: params.shoulder_shapes false -> BF_PAUL_SHAPES=0 (no shoulder shapes on its plates)."""
+    env = dict(os.environ)
+    if piece and piece.get("params", {}).get("shoulder_shapes", True) is False:
+        env["BF_PAUL_SHAPES"] = "0"
+    return env
+
+
+def _follow(base, body, stage, piece=None):
+    r = subprocess.run([sys.executable, FOLLOW, base, body, stage, "--parts", "armor"], cwd=ROOT, capture_output=True, text=True,
+                       env=follow_env(piece))
     return r, r.stdout + r.stderr
 
 
@@ -249,7 +258,7 @@ def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRA
         say(f"{pid}: BUILD FAILED (stage {stage}, log {log}); nothing installed")
         return False
     shutil.copytree(sa, os.path.join(stage, "pre"), dirs_exist_ok=True)      # (before the follow: its variants adorn this)
-    r, text = _follow(os.path.join(stage, "base.glb"), body, stage)
+    r, text = _follow(os.path.join(stage, "base.glb"), body, stage, piece)
     open(os.path.join(stage, "follow.log"), "w", encoding="utf-8").write(text)
     if exact:
         return _ship_exact(pid, piece, stage, sa, body, r, text)
@@ -278,7 +287,8 @@ def _ship_exact(pid, piece, stage, sa, body, r, text):
     say(f"{pid}: exact: blend -> body follow twins {follow_ratio(text):.1%} (its moves undone; kept: the tuck re-key, her helper joints)")
     gp, pre = os.path.join(sa, pid + ".gltf"), os.path.join(stage, "pre", pid + ".gltf")
     B = pn.bf.Body(body)
-    res = pn.pin(gp, pre, body, B, drop=tuple(piece.get("params", {}).get("rigid_drop") or ()))
+    res = pn.pin(gp, pre, body, B, drop=tuple(piece.get("params", {}).get("rigid_drop") or ()),
+                 ride=tuple(piece.get("params", {}).get("rigid_ride") or ()))
     say(f"{pid}: exact pin: {json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in res.items()})}")
     ps_ = os.path.join(stage, "pre", pid + ".sockets.json")
     if os.path.exists(ps_):

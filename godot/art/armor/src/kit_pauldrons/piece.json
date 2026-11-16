@@ -5,7 +5,8 @@
  "style": "mesh",
  "params": {
   "file": "kit_pauldrons.glb",
-  "graft": "leather"
+  "graft": "leather",
+  "shoulder_shapes": false
  },
  "covers": [
   "pauldrons"

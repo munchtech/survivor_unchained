@@ -4,7 +4,7 @@
  "piece": {"id": "kit_pauldrons", "name": "Gilded Gunmetal Pauldrons", "slot": "pauldrons", "covers": ["pauldrons"], "layer": 3,
            "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
  "mat": {"plate": "steel", "trim": "gold", "strap": "darkleather"},
- "params": {"graft": "leather"},
+ "params": {"graft": "leather", "shoulder_shapes": false},
  "clear_min": 0.0022, "thick": 0.0022,
  "rim": {"w": 0.0095, "h": 0.0034, "sides": 6, "step": 0.005},
  "cop": {"subdiv": 5, "sink": 0.01, "pole_up": 0.6, "rise": 0.0, "chart_deg": 95, "dilate": 4, "smooth": 30, "clear": 0.016,
