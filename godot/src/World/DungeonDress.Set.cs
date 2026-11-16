@@ -665,6 +665,8 @@ public static partial class DungeonDress
 
     // One run of a class: modules end to end along it, each laid in the camera's plane with its foot on the edge and cast
     // onto the bank and floor. Returns the modules laid.
+    static readonly float SetBankLift = SurvivorUnchained.Args.Num("den-set-banklift", 1f);   // (den r14 corr r3; d14g_L: a 1 m lift lit 1b .26 -> .32, 1c box .25 -> .39) metres the cards over the bank come toward the camera
+    static readonly float SetShearMax = SurvivorUnchained.Args.Num("den-set-shear", 0.5f);   // (den r14 corr r3) a far/near run's steepest foot slope (0: all laid)
     static int SetRun(Ctx c, Dictionary<string, SetBuf> bufs, List<Vector3> run, int cls, int seed, float top)
     {
         bool alongX = cls == 0 || cls == 2;
@@ -679,6 +681,20 @@ public static partial class DungeonDress
             pts.Add(alongX ? (X, Y) : (Y, X));
         }
         pts.Sort((u, v) => u.a.CompareTo(v.a));
+        // (den r14 corr r3, items 1 slab/1c) a far or near run along a wall that climbs steeply on screen shears its modules:
+        // each column shifted by the foot, the painting's lying roots drawn as diagonal planks and its deep cut a ruled
+        // diagonal (seed 11's corridor: room 2's far runs up the corridor mouth's diagonal walls, slopes .84 and .56, laid B1
+        // as two dark wedges over the corridor banks' B3/B3R). Past SetShearMax (screen metres per metre, least squares)
+        // the run is not laid: the side classes' overlap (40-50 degrees) covers those walls.
+        if (alongX && SetShearMax > 0f && pts.Count >= 2)
+        {
+            float ma = 0f, mf = 0f;
+            foreach (var (pa, pf) in pts) { ma += pa; mf += pf; }
+            ma /= pts.Count; mf /= pts.Count;
+            float sxy = 0f, sxx = 0f;
+            foreach (var (pa, pf) in pts) { sxy += (pa - ma) * (pf - mf); sxx += (pa - ma) * (pa - ma); }
+            if (sxx > 1e-4f && Mathf.Abs(sxy / sxx) > SetShearMax) { if (SetLog > 0f) GD.Print($"DenSet run dropped: cls {cls} slope {sxy / sxx:0.00}"); return 0; }
+        }
         float FootAt(float a)
         {
             if (a <= pts[0].a) return pts[0].f;
@@ -868,7 +884,12 @@ public static partial class DungeonDress
                 if (g <= 0.01f) keep = false;
                 if (!keep) g = 0f;
                 keepv[i * nc + j] = keep;
-                buf.V.Add(q - CamView * (lift + lay + SetLiftAdd));
+                // (den r14 corr r3, items 1a/1b/1c) the wall mesh's lumps poked through the cards where the blurred proxy sank under
+                // them (the dark mass in front: 1b's black slab, 1c's black box, half of 1a's ruled edge; hidden walls, those boxes
+                // lit .26 -> .32, .25 -> .35). Over the bank (never over walkable floor, where she and the floor's things stand) every
+                // card is pulled toward the camera by up to SetBankLift metres, the same at a point for all modules (their order holds)
+                float bl = SetBankLift > 0f ? SetBankLift * SetSm(0.3f, 1.5f, -Wall(c, q.X, q.Z)) : 0f;
+                buf.V.Add(q - CamView * (lift + lay + SetLiftAdd + bl));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(Mathf.Clamp(u, 0f, 1f), Mathf.Clamp(v, 0f, 1f)));
                 // (den r13 corr) COLOR.b: metres into the drawn bank / 10, in the corridors only (DenRagged's weight): the
