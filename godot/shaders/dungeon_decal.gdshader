@@ -30,6 +30,8 @@ void fragment() {
 	col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));
 	col *= mix(vec3(1.0), vec3(0.98, 0.94, 0.86), smoothstep(0.3, 0.6, l));
 	col *= mix(0.45, 1.0, smoothstep(0.0, 2.2, f.x));
+	// (den r15 D) pale litter in the shade warms toward umber (it read grey-violet, hue ~210): its own material, not the grade
+	col *= mix(mix(vec3(1.0), vec3(1.08, 0.94, 0.74), smoothstep(0.25, 0.5, l)), vec3(1.0), smoothstep(0.0, 2.2, f.x));
 	col *= mix(1.0, 0.05, 1.0 - smoothstep(0.0, 0.45, f.y));
 	// (both faces lit as the floor: the normal is the world's up whichever side the camera sees)
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);

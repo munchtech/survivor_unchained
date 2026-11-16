@@ -41,12 +41,13 @@ public static partial class DungeonDress
 
     // Kind weights by where a decal lies: in a pile (a kill's leavings), a wall's foot, the open between, the lair's floor.
     // (round 8) bones a third of a pile, not two thirds: a kill reads by its rib cage, skull and fur, the long bones were white noise
-    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 0.5f, ["wolf_skull"] = 0.35f, ["leaves"] = 1.1f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
-    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 0.5f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 1.0f };
+    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 0.5f, ["wolf_skull"] = 0.35f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
+    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 0.5f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 0.45f };
     static readonly Dictionary<string, float> AtFoot = new() { ["root"] = 2.0f, ["twigs"] = 1.2f, ["pebbles"] = 1.0f, ["leaves"] = 1.0f, ["fur"] = 0.4f, ["moss"] = 0.5f };
-    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.5f, ["root"] = 0.5f, ["fur"] = 0.2f, ["blood"] = 0.35f };   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
-    static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.6f };
+    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.6f, ["root"] = 2.4f, ["fur"] = 0.2f, ["blood"] = 0.35f, ["bone"] = 0.6f };   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
+    static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.08f };   // (den r15 D: the leaf drifts read as orange bean clumps at the camera; kept rare)
 
+    static readonly float OpenLitter = SurvivorUnchained.Args.Num("den-open-litter", 6f);   // (den r15 D) the open floor's litter density, x
     static readonly int LairDeerCap = (int)SurvivorUnchained.Args.Num("den-lair-deer", 3f);
     static int lairDeer;
     static Decal PickDecal(Dictionary<string, float> by, float u)
@@ -199,9 +200,10 @@ public static partial class DungeonDress
                 float w = Wall(c, x, zz), h = Hole(c, x, zz);
                 if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
                 bool foot = w < 1.8f;
-                float keep = foot ? 0.3f : w > 5f ? 0.07f : 0.09f;   // (round 8: the open scatter cut by more than half)
+                float keep = (foot ? 0.3f : w > 5f ? 0.07f : 0.09f) * (foot ? 1f : OpenLitter);   // (round 8: the open scatter cut by more than half; den r15 D: the open floor was empty, x --den-open-litter)
                 if (u2 > keep) continue;
                 var d = PickDecal(foot ? AtFoot : InOpen, u3);
+                if (d.Kind == "bone" && !DenCaps.Take("openbone", new Vector2(x, zz), 2, 12f)) d = PickDecal(InOpen, Hash(i, j, 908));
                 if (d.Metres.X * 0.5f > w + 0.4f && d.Kind != "root") continue;
                 float yaw;
                 if (d.Kind == "root")
@@ -211,7 +213,8 @@ public static partial class DungeonDress
                     yaw = Mathf.Atan2(g.Y, g.X) + (Hash(i, j, 905) - 0.5f) * 0.9f;
                 }
                 else yaw = Hash(i, j, 906) * Mathf.Tau;
-                AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907));
+                if (d.Kind == "root" && w > 3f) yaw = Hash(i, j, 909) * Mathf.Pi;   // (den r15 D: a root across the open floor lies any way)
+                AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907) + (d.Kind == "root" && w > 3f ? 0.35f : 0f), d.Kind == "bone");
             }
 
         // ---- the lair's floor: drag marks out from its piles, moss in the damp by the banks, drifts against them ----
@@ -237,7 +240,7 @@ public static partial class DungeonDress
                 float x = r.X + Mathf.Cos(a) * dd, zz = r.Z + Mathf.Sin(a) * dd;
                 float w = Wall(c, x, zz);
                 if (!Ok(x, zz, 0.5f, 0.8f)) continue;
-                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "drift") : (Hash(q, 9, 959) < 0.55f ? "drift" : "blood");   // (r11 judge: no moss alone on the open lair floor: it read as stickers)
+                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "leaves") : (Hash(q, 9, 959) < 0.55f ? "leaves" : "blood");   // (r11 judge: no moss alone on the open lair floor: it read as stickers)
                 AddDecal(c, b, PickDecal(new() { [kind] = 1f }, Hash(q, 9, 960)), x, zz, Hash(q, 9, 961) * Mathf.Tau, 0.95f + 0.35f * Hash(q, 9, 962));
             }
         }
@@ -266,9 +269,11 @@ public static partial class DungeonDress
 
     /// <summary>One decal draped on the ground: its long axis at yaw, mirrored across it when that keeps the painted lit
     /// side (the cell's top) toward the light.</summary>
-    static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale)
+    static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale, bool litterBone = false)
     {
-        if (SetMode > 0 && SetDrops(d.Kind) && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills)
+        if (SetMode > 0 && SetDrops(d.Kind) && !(litterBone && d.Kind == "bone") && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills; den r15 D: a lone floor bone is litter, kept)
+        // (den r15 D) the orange "bean" clumps were leaves in a pile: at most 3 within 1.5 m, each one then a flat leaf (scaled, turned)
+        if (d.Kind == "leaves") { if (!DenCaps.Take("leaf", new Vector2(x, zz), 3, 1.5f)) return; scale *= 1.25f; }
         // (den r14 floor, judge r13 item 4) per camera footprint at most 2 deer skulls and 3 rib cages (DenCaps, radius 9 m);
         // a refused one is small litter instead (a single bone, a leaf, a fur tuft), scaled .8-1.2 and turned by its hash
         if (d.Kind is "deer_skull" or "ribcage" && !DenCaps.Take(d.Kind, new Vector2(x, zz), d.Kind == "deer_skull" ? 2 : 3, 9f))
