@@ -1,0 +1,20 @@
+{
+ "recipe": "bodice",
+ "piece": {"id": "kit_bodice", "name": "Gilded Gunmetal Bodice", "slot": "top", "covers": ["top"], "layer": 1,
+           "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded",
+           "hold": {"amount": 0.55, "squash": 0}, "adorn": []},
+ "mat": {"plate": "steel", "trim": "gold", "strap": "darkleather"},
+ "clear": 0.003, "clear_min": 0.0022, "thick": 0.0016,
+ "rim": {"w": 0.0060, "h": 0.0027, "sides": 6, "step": 0.007},
+ "axis_z": 0.02,
+ "cup": {"apex": [0.091, 1.376, 0.170], "base_back": 0.045, "ub": 1.312, "clasp": [0.0, 1.308],
+         "root": [0.103, 1.478], "root_w": 0.030, "bow": 0.85, "arm": [0.150, 1.432], "theta_side": 74.0,
+         "rings": 11, "spokes": 48},
+ "corset": {"point": 0.985, "hip": 1.050, "back_bot": 1.065, "v_theta": 70.0,
+            "side_top": 1.400, "back_corner": [148.0, 1.455], "back_mid": 1.385, "rows": 19, "cols": 80,
+            "ridge": {"h": 0.0015, "w": 0.012},
+            "seams": [[[30.0, 1.312], [8.0, 1.02]]],
+            "straps": [{"y": 1.175, "th": [34, 84], "buckle": 62}, {"y": 1.105, "th": [26, 82], "buckle": 58}],
+            "back_straps": [{"y": 1.33}, {"y": 1.235}, {"y": 1.14}], "back_th": [140, 220], "strap_w": 0.018},
+ "shoulder": {"top": [0.118, 1.572], "w": 0.030}
+}
