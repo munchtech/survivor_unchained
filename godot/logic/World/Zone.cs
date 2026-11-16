@@ -232,6 +232,12 @@ public sealed record AtmospherePreset(
     /// band tint R, G, B and its full rim's level; the boss's band tint R, G, B (her cold back) and her body's L: crowd_den_top,
     /// crowd_den_elite, crowd_den_boss.)</summary>
     public double[]? FoeDen { get; init; }
+    /// <summary>(demo-look r2 her; rigs.json "hero_den") Her figure in the den (View.HeroDen): [her cast shadow on (0/1), its
+    /// contact ellipse's half width and half depth (m), the trail's length and its tip's half width (m), the trail's world
+    /// bearing (deg, x toward z), the ground's multiplier R, G, B (linear), the contact core's extra multiplier; her line's
+    /// width (px at 1080p), its tone R, G, B (sRGB 0-255) and level; her hair's chroma gain and value gain; her skin and hair
+    /// steps' strength (0 smooth, 1 stepped)]. Null: none of it (every rig but the den).</summary>
+    public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

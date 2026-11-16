@@ -669,6 +669,7 @@ public partial class Atmosphere : Node3D
         var anchor = hp != null ? new Color((float)hp[3] / 255f, (float)hp[4] / 255f, (float)hp[5] / 255f).SrgbToLinear() * (float)hp[2] : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
         HeroLine(hp, toFoot != Vector2.Zero, anchor);   // (L1 lead 20, HER5) her line: values 8, 9
+        HeroDen.Apply(CelRigs && cam == null ? p.HeroDen : null, hp != null && toFoot != Vector2.Zero);   // (demo-look r2 her: her shadow, line, hair and steps in the den)
         // (L1 lead 19, HER3; CEL_HERO_ARM) her held pieces as bodies: row values 10-19 = the body's level, r, g, b, its side edge, the
         // warm light's level, r, g, b, the least screen width in px. A shorter row: both zero, her shield and blade as they were.
         var ha = hp is { Length: >= 20 } ? hp : null;
