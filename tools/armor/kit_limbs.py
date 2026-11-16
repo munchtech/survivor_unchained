@@ -410,24 +410,37 @@ def vambraces(cfg, ref):
         Fe = tube.field(env)
         cl, tl, tp = cfg["clear"], cfg["thick"], cfg["plate_thick"]
         lin = cfg["lining"]
-        th = np.linspace(-180, 180, lin.get("nc", 120), endpoint=False)
-        c = np.cos(np.radians(th))
-        s_lo = lin["elbow"] + (lin["elbow_in"] - lin["elbow"]) * (1 - c) / 2
-        P, N = patch(tube, Fe, th, u_of(s_lo), np.full_like(th, u_of(lin["wrist"])), lin.get("nr", 40), cl)
-        G["leather"].append(kb.slab(f"vamb_lining_{side}", M["leather"], P, N, tl, closed_c=True))
-
         p = cfg["plate"]
+        th = np.linspace(-180, 180, lin.get("nc", 120), endpoint=False)
+        # (16 Nov, the brown blob: a full lining ran under the rigid plate 0.2-0.6 mm below it; the lining follows
+        # her forearm's skin and the plate rides rigid, so in a pose the leather poked through the plate's middle.
+        # "tuck" (degrees): the lining is only the open inner side, running that far under each plate edge)
+        if lin.get("tuck") is not None:
+            a0 = p["th"] - lin["tuck"]
+            th_l = np.linspace(a0, 360.0 - a0, max(8, int(lin.get("nc", 120) * (360.0 - 2 * a0) / 360.0)))
+        else:
+            th_l = th
+        c = np.cos(np.radians(th_l))
+        s_lo = lin["elbow"] + (lin["elbow_in"] - lin["elbow"]) * (1 - c) / 2
+        P, N = patch(tube, Fe, th_l, u_of(s_lo), np.full_like(th_l, u_of(lin["wrist"])), lin.get("nr", 40), cl)
+        G["leather"].append(kb.slab(f"vamb_lining_{side}", M["leather"], P, N, tl, closed_c=lin.get("tuck") is None))
+
         tp_ = np.linspace(-p["th"], p["th"], p.get("nc", 61))
-        lo = cl + tl + 0.0006
+        lo = cl + tl + p.get("gap", 0.0006)
         fl = p["flare"]
         flare = lambda uu, t: lo + fl * np.clip(1 - (np.interp(uu, tube.rows, rows_s) - p["elbow"]) / p["flare_len"], 0, 1) ** 2  # noqa: E731
         se = p["elbow"] + p["elbow_dip"] * (np.abs(tp_) / p["th"]) ** 2
         Pp, Np = patch(tube, Fe, tp_, u_of(se), np.full_like(tp_, u_of(p["wrist"])), p.get("nr", 36), flare)
         eo = tp * 0.5 + 0.0003
-        # the plate is rigid on her forearm (by clearance: metal need not bend); its rim one ring round it
-        rigid.append(kb.slab(f"vamb_plate_{side}_rigid", M["plate"], Pp, Np, tp))
+        # the plate on her forearm, its rim one ring round it. (16 Nov: build.json "plate_follow": the plate and rim
+        # follow her skin like the lining instead of riding rigid. No rigid blend clears her forearm's twist in the
+        # leap (mid-forearm skin rides lowerarm_twist_01, the wrist twist_02: 8-22 mm through the plate), and the
+        # full lining that hid it poked through the plate as a brown blob)
+        flw = cfg.get("plate_follow", False)
+        dst = G["plate"] if flw else rigid
+        dst.append(kb.slab(f"vamb_plate_{side}" + ("" if flw else "_rigid"), M["plate"], Pp, Np, tp))
         edge = np.vstack([Pp[0], Pp[1:, -1], Pp[-1][::-1][1:], Pp[-2:0:-1, 0]])
-        rigid.append(kb.bead(ref, f"vamb_plate_{side}_trim_rigid", M["trim"], edge, dict(rim, w=rim["w"] * p.get("rim_k", 0.85)), eo, True, relax_it=1))
+        (G["trim"] if flw else rigid).append(kb.bead(ref, f"vamb_plate_{side}_trim" + ("" if flw else "_rigid"), M["trim"], edge, dict(rim, w=rim["w"] * p.get("rim_k", 0.85)), eo, True, relax_it=1))
         # the gold elbow band: a rim round the lining's top edge
         G["trim"].append(kb.bead(ref, f"trim_vamb_top_{side}", M["trim"], P[0], dict(rim, w=rim["w"] * 0.7, h=rim["h"] * 0.8), tl * 0.5 + 0.0003, True, relax_it=1))
         # the gold wrist band: a full ring over plate and lining

@@ -50,7 +50,8 @@
   "elbow_in": 0.07,
   "wrist": 0.218,
   "nr": 24,
-  "nc": 72
+  "nc": 72,
+  "tuck": 16.0
  },
  "plate": {
   "th": 112.0,
@@ -61,7 +62,8 @@
   "wrist": 0.21,
   "flare": 0.016,
   "flare_len": 0.06,
-  "rim_k": 0.85
+  "rim_k": 0.85,
+  "gap": 0.0012
  },
  "wrist_band": {
   "s0": 0.198,
@@ -74,24 +76,6 @@
   "n": 6,
   "half": 0.011
  },
- "params": {
-  "rigid_ride": [
-   {
-    "match": "vamb_plate_l",
-    "weights": {
-     "lowerarm_twist_02_l": 0.8,
-     "lowerarm_twist_01_l": 0.2
-    },
-    "mix": 1.0
-   },
-   {
-    "match": "vamb_plate_r",
-    "weights": {
-     "lowerarm_twist_02_r": 0.8,
-     "lowerarm_twist_01_r": 0.2
-    },
-    "mix": 1.0
-   }
-  ]
- }
+ "params": {},
+ "plate_follow": true
 }
