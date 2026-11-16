@@ -224,6 +224,8 @@ class Field:
              % (len(A.U), len(B.U), ok.sum(), len(lost), len(s.new), mv.max() * 1000, (mv > 5e-4).sum(),
                 (np.abs(s.dW).sum(1) / 2 > 0.05).sum()))
         live = (mv > 1e-5) | (np.abs(s.dW).max(1) > 1e-4)
+        if not live.any():
+            live[:] = True          # (the identity, BASE = BODY (piece_ship's exact install): no move or weight change; the shapes still carried)
         s.lo, s.hi = A.U[live].min(0) - FAR, A.U[live].max(0) + FAR
 
 

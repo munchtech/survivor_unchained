@@ -134,3 +134,32 @@ def test_adorn_four_weight_shell_stays_one_set():
     parts = [(P, np.tile([0, 0, 1.0], (len(P), 1)), np.zeros((len(P), 2)), np.zeros((len(P), 2)), np.zeros((len(P), 4)), d, np.array([[0, 1, 2]]))]
     adorn.append(m, parts, nb)
     assert adorn.weight_sets(m["attrs"]) == 1 and m["attrs"]["JOINTS_0"][0].dtype == np.uint8
+
+
+def test_exact_verdict_gates_on_the_authored_points():
+    ok = {"move_max_mm": 0.0, "installed_to_authored_mm": 0.0}
+    assert ps.exact_verdict(0, 1.0, ok, 0.5) is None
+    assert "exit" in ps.exact_verdict(1, 1.0, ok, 0.5)
+    assert "twins" in ps.exact_verdict(0, 0.49, ok, 0.5)                    # (the identity follow: every twin)
+    assert "0.600 mm" in ps.exact_verdict(0, 1.0, dict(ok, move_max_mm=0.6), 0.5)
+    assert "0.700 mm" in ps.exact_verdict(0, 1.0, dict(ok, installed_to_authored_mm=0.7), 0.5)
+
+
+BODY_GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb")
+
+
+@pytest.mark.skipif(not os.path.exists(BODY_GLB), reason="no heroine.glb")
+def test_exact_weights_are_hers_and_the_probe_sits_off_her():
+    """The exact install's weights at her own points are her skin's (eight kept, normalized), and the probe fixture's
+    band stands its offset off her skin."""
+    import pin_shipped as pn
+    import probe_mesh as pm
+    B = pn.bf.Body(BODY_GLB)
+    i = np.arange(0, len(B.U), 97)
+    Wq, sd = pn.her_weights(B, B.U[i])
+    assert np.abs(Wq - B.W[i]).max() < 1e-4 and np.abs(sd).max() < 1e-5
+    top, tw = pn._top(Wq, 8)
+    assert np.allclose(tw.sum(1), 1.0) and (tw >= 0).all()
+    P, F = pm.band(B)
+    _, sd = pn.her_weights(B, P[::7])
+    assert np.median(sd) == pytest.approx(pm.OFF, abs=2e-4) and F.max() < len(P)

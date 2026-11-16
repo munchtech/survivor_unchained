@@ -2107,6 +2107,10 @@ MESH = SPEC_PIECE.get("style") == "mesh"
 # second-skin pieces 1 mm, layer 2 (belts, bracers, greaves, boots) 2 mm, layer 3 (pauldrons, cloak, head) 3 mm)
 SLOT_BAND = {0: 0.0005, 1: 0.0010, 2: 0.0020, 3: 0.0030}
 IMPORT = {}
+# (ARMOR_EXACT=1 (piece_ship.py's exact install of a free mesh, 16 Nov): the mesh was modelled at the SHIPPED body's
+# rest (heroine.glb), not this blend's, so neither push-out runs here (this blend's skin is not hers); piece_ship
+# puts it back on its authored points and her own weights after the follow, and reports its clearance off her skin)
+EXACT = MESH and os.environ.get("ARMOR_EXACT") == "1"
 
 
 def _base_name(n):
@@ -2291,7 +2295,7 @@ def build_mesh():
     sig = PRM.get("band_sigma", 0.010)
     allco = [np.array([v.co[:] for v in p_.data.vertices]) for p_ in parts]
     start = np.vstack(allco)
-    for rnd in range(6):
+    for rnd in range(0 if EXACT else 6):
         X = np.vstack(allco)
         Q, D, A = [], [], []
         for x in X:
@@ -2887,7 +2891,7 @@ pushed = {}
 # (a free mesh: at rest only unless params.pose_push. Its rigid plates don't bend in a pose, so her skin coming
 # through one there is her own skin folding (an elbow, a shoulder): a rest-pose bump for it only dents the plate;
 # the pose check below still counts it)
-for rnd in range(PRM.get("push_rounds", 4)):
+for rnd in range(0 if EXACT else PRM.get("push_rounds", 4)):
     defs = {}
     for pname, rots in [("rest", [])] + ([] if MESH and not PRM.get("pose_push") else list(POSES.items())):
         bv, bn, dg = pose_body(rots)

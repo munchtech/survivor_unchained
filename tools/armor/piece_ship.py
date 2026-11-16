@@ -2,6 +2,14 @@
 
     python tools/armor/piece_ship.py <id> [<id> ...] [--src <blend>] [--body <glb>] [--min <twin share, 0.95>] [--max-move <mm, 15>] [--max-strain <mm, 5>]
     python tools/armor/piece_ship.py --check            every installed piece's body stamp against the shipped body
+    python tools/armor/piece_ship.py <id> --no-exact     a free mesh (style mesh) by the follow, as any other piece
+
+A free mesh (piece.json style "mesh") is modelled at the SHIPPED body's rest, so it is installed EXACTLY by default
+(lane D, 16 Nov): built with ARMOR_EXACT=1 (no push-out against the blend's skin), followed onto the body only for the
+tuck re-key and her helper joints, then pin_shipped.pin: every point back on its authored place, her own weights at the
+closest place on her skin (a rigid shell on one blend of them), her bind; then the follow once more with the body as
+both bodies (the identity: twins 100%, no move) for her shoulder shapes at those points. Gated on the largest move off
+the authored points (pin_shipped.EXACT_MAX_MM, 0.5 mm) instead of the follow's twins and move.
 
 Take a blender turn first (tools/turn.py take blender ...) when any id is a Blender build (no `base`).
 
@@ -192,13 +200,20 @@ def latest_stage(pid):
     return os.path.dirname(st[-1])
 
 
-def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRAIN):
+def _follow(base, body, stage):
+    r = subprocess.run([sys.executable, FOLLOW, base, body, stage, "--parts", "armor"], cwd=ROOT, capture_output=True, text=True)
+    return r, r.stdout + r.stderr
+
+
+def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRAIN, exact=None):
     import build as bd
     piece = json.load(open(os.path.join(ART, "src", pid, "piece.json"), encoding="utf-8"))
+    exact = piece.get("style") == "mesh" if exact is None else (exact and piece.get("style") == "mesh")
     stage = os.path.join(SHIP, pid, time.strftime("%Y%m%d_%H%M%S"))
     sa = os.path.join(stage, "armor")
     os.makedirs(sa, exist_ok=True)
     os.environ["ARMOR_STAGE"] = stage
+    os.environ["ARMOR_EXACT"] = "1" if exact else "0"
     log = os.path.join(stage, "ship.log")
     if piece.get("base"):
         bs = latest_stage(piece["base"])
@@ -229,14 +244,15 @@ def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRA
                 ok = bd.adorn(pid, post=True)
             ok = ok and bd.fan_fill(pid, gl_)
     del os.environ["ARMOR_STAGE"]
+    del os.environ["ARMOR_EXACT"]
     if not ok:
         say(f"{pid}: BUILD FAILED (stage {stage}, log {log}); nothing installed")
         return False
     shutil.copytree(sa, os.path.join(stage, "pre"), dirs_exist_ok=True)      # (before the follow: its variants adorn this)
-    r = subprocess.run([sys.executable, FOLLOW, os.path.join(stage, "base.glb"), body, stage, "--parts", "armor"],
-                       cwd=ROOT, capture_output=True, text=True)
-    text = r.stdout + r.stderr
+    r, text = _follow(os.path.join(stage, "base.glb"), body, stage)
     open(os.path.join(stage, "follow.log"), "w", encoding="utf-8").write(text)
+    if exact:
+        return _ship_exact(pid, piece, stage, sa, body, r, text)
     for l in text.splitlines():
         if l.startswith(("FOLLOW", "Traceback")):
             say(l[:300])
@@ -253,6 +269,57 @@ def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRA
     return True
 
 
+def _ship_exact(pid, piece, stage, sa, body, r, text):
+    """The free mesh's exact install (the module doc): after the blend -> body follow (tuck, helpers) in `stage`."""
+    import pin_shipped as pn
+    if r.returncode != 0:
+        say(f"{pid}: FOLLOW FAILED (exit {r.returncode}, {stage}/follow.log); nothing installed")
+        return False
+    say(f"{pid}: exact: blend -> body follow twins {follow_ratio(text):.1%} (its moves undone; kept: the tuck re-key, her helper joints)")
+    gp, pre = os.path.join(sa, pid + ".gltf"), os.path.join(stage, "pre", pid + ".gltf")
+    B = pn.bf.Body(body)
+    res = pn.pin(gp, pre, body, B)
+    say(f"{pid}: exact pin: {json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in res.items()})}")
+    ps_ = os.path.join(stage, "pre", pid + ".sockets.json")
+    if os.path.exists(ps_):
+        shutil.copyfile(ps_, os.path.join(sa, pid + ".sockets.json"))      # (sockets at their authored place too)
+    r2, text2 = _follow(body, body, stage)
+    open(os.path.join(stage, "follow_identity.log"), "w", encoding="utf-8").write(text2)
+    for l in text2.splitlines():
+        if l.startswith(("FOLLOW", "Traceback")):
+            say(l[:300])
+    ratio = follow_ratio(text2)
+    src_glb = os.path.join(ART, "src", pid, piece.get("params", {}).get("file", ""))
+    m = pn.measure(gp, pre, body, src_glb if src_glb.endswith((".glb", ".gltf")) and os.path.exists(src_glb) else None, B)
+    m["identity_twins"] = ratio
+    json.dump({"pin": res, "measure": m}, open(os.path.join(stage, "exact.json"), "w"), indent=1)
+    say(f"{pid}: exact measure: {json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in m.items()})}")
+    why = exact_verdict(r2.returncode, ratio, m)
+    if why:
+        say(f"{pid}: EXACT REFUSED ({why}); nothing installed")
+        return False
+    built_on = json.load(open(os.path.join(stage, "built_on.json")))["body_hash"]
+    files = install(pid, sa, ART, glb_body_hash(body), shipped_label(), built_on)
+    say(f"{pid}: INSTALLED EXACT {len(files)} files into godot/art/armor (on {glb_body_hash(body)}, max move {m['move_max_mm']:.3f} mm); stage {stage}")
+    return True
+
+
+def exact_verdict(code, ratio, m, max_mm=None):
+    """None when the exact install holds, else the reason: the identity follow ran with every twin, and no point of the
+    piece is more than max_mm (pin_shipped.EXACT_MAX_MM) off its authored place."""
+    if max_mm is None:
+        import pin_shipped as pn
+        max_mm = pn.EXACT_MAX_MM
+    if code != 0:
+        return f"identity follow exit {code}"
+    if ratio < 0.999:
+        return f"identity follow twins {ratio:.1%}"
+    mv = max(m["move_max_mm"], m.get("installed_to_authored_mm", 0.0))
+    if mv > max_mm:
+        return f"moved {mv:.3f} mm off its authored points, {max_mm} allowed"
+    return None
+
+
 def main(argv):
     if "--check" in argv:
         sys.exit(1 if check() else 0)
@@ -263,7 +330,8 @@ def main(argv):
             opt[k] = argv[argv.index(k) + 1]
     body = os.path.abspath(opt["--body"])
     ids = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in opt)]
-    bad = [p for p in ids if not ship(p, opt["--src"], body, float(opt["--min"]), float(opt["--max-move"]), float(opt["--max-strain"]))]
+    exact = False if "--no-exact" in argv else None
+    bad = [p for p in ids if not ship(p, opt["--src"], body, float(opt["--min"]), float(opt["--max-move"]), float(opt["--max-strain"]), exact)]
     sys.exit(1 if bad else 0)
 
 
