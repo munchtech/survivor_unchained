@@ -45,8 +45,17 @@ public static partial class DungeonDress
         mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
         mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(0.84f, 0.93f, 1.0f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
+        if (sheet == "O5")
+        {
+            // (r12 judge: the seed-23 room's blood read magenta) the set's half saturation and its grey-violet shade turned the
+            // painted blood pink-mauve: blood keeps its own red, a touch darker and browner
+            mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.7f));
+            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(0.66f, 0.6f, 0.5f)));
+            mat.SetShaderParameter("shade_k", 0f);
+        }
         mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
+        mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
         if (sheet[0] == 'H')
         {
             mat.SetShaderParameter("pit_glow", SurvivorUnchained.Args.Num("den-pit-glow", 0.8f));   // (r12) den_boss.png's green pits
@@ -201,6 +210,7 @@ public static partial class DungeonDress
     static readonly float SetKeepAll = SurvivorUnchained.Args.Num("den-set-keepall", 0f);   // (r12 diagnosis)
     static int setLayer;
     static readonly float SetLairWant = SurvivorUnchained.Args.Num("den-lair-want", 70f), SetLairRing = SurvivorUnchained.Args.Num("den-lair-ring", 13f);   // (r12) the lair's open pieces and their ring (3 m + this)
+    static readonly float SetEdgeWave = SurvivorUnchained.Args.Num("den-set-wave", 0f);   // (r12) metres
     static readonly float SetBends = SurvivorUnchained.Args.Num("den-set-bends", 0f);
     static readonly float SetFootFade = SurvivorUnchained.Args.Num("den-set-footfade", 1f);   // (r12) a bank card's floor-side border fades to its bright masses
     static readonly float SetLayerStep = SurvivorUnchained.Args.Num("den-set-layer", 0.04f);   // (r12) metres between modules' depth layers
@@ -536,7 +546,10 @@ public static partial class DungeonDress
                 var q = SetCast(pc, surf, top);
                 // (r12) the bank side hidden where its cast lands on walkable floor, by a smooth measure (its 0.5 contour follows
                 // the edge's own curve; a flag per vertex cut grid-aligned steps: the pale square cut-outs)
-                float g = SetKeepAll > 0f || !bankSide ? 1f : 1f - SetSm(0.05f, 0.55f, Wall(c, q.X, q.Z));
+                // (r12) its 0.5 contour wanders up to SetEdgeWave out onto the floor (a slow two-sine field in the world): the
+                // corridors' edges ran dead straight (the generator's capsules), a ruled cut down both sides of the frame
+                float wv = SetEdgeWave * (0.5f + 0.25f * Mathf.Sin(q.X * 0.83f + 1.7f * Mathf.Sin(q.Z * 0.61f + 0.4f)) + 0.25f * Mathf.Sin(q.Z * 1.37f - q.X * 0.29f + 2.1f));
+                float g = SetKeepAll > 0f || !bankSide ? 1f : 1f - SetSm(0.05f, 0.55f, Wall(c, q.X, q.Z) - wv);
                 bool keep = g > 0.01f;
                 // (r10c) a row behind: its bank part only (its pour would double the front row's on the floor)
                 // (r12) its cut fades first (only its brightest masses past it, gone 1.2 m on): the hard cut's straight lines and

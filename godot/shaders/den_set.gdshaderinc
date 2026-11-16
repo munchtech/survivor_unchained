@@ -21,6 +21,12 @@ uniform float dark_floor = 0.0;
 // fell to 1/20 of it: flat black between roots the target paints at L 20-40)
 uniform float amb_floor = 0.0;
 uniform float glow_k = 0.7;
+// (r12 judge: den_room.png's mushrooms light the ground beneath them teal) the painted caps' halo: their cyan in a coarse
+// mip, a little below them in the painting (the ground they stand on), as a soft teal emission on the painting round them
+uniform float mush_glow = 0.0;
+uniform float mush_lod = 4.5;
+uniform float mush_drop = 0.012;
+uniform vec3 mush_col : source_color = vec3(0.3, 0.85, 0.78);
 uniform float fg_dark = 0.65;
 uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
 uniform float rim_out = 1.45;
@@ -66,6 +72,14 @@ void fragment() {
 	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
 	EMISSION += c.rgb * glow_k * smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
+	if (mush_glow > 0.0) {
+		vec3 hb = textureLod(paint_tex, UV - vec2(0.0, mush_drop), mush_lod).rgb;
+		vec3 hc = textureLod(paint_tex, UV - vec2(0.0, mush_drop), mush_lod + 1.0).rgb;
+		// cyan AND bright in the mip: the painting's cool dark hollows (B over R, dim) take none
+		float hm = max(smoothstep(-0.02, 0.05, min(hb.g, hb.b) - hb.r * 0.9) * smoothstep(0.1, 0.2, dot(hb, vec3(0.299, 0.587, 0.114))),
+			0.6 * smoothstep(-0.03, 0.04, min(hc.g, hc.b) - hc.r * 0.9) * smoothstep(0.07, 0.15, dot(hc, vec3(0.299, 0.587, 0.114))));
+		EMISSION += mush_col * mush_glow * hm * (1.0 - smoothstep(0.05, 0.2, min(c.g, c.b) - c.r));
+	}
 	ALPHA = c.a * show * step(0.5, COLOR.g);
 #ifdef SET_SOFT
 	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
