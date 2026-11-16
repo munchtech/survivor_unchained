@@ -159,7 +159,7 @@ public static partial class DungeonDress
     {
         setRoom = z.Rooms[0];
         foreach (var r in z.Rooms) if (r.Kind == "Start") { setRoom = r; break; }
-        setLayer = 0; surfCache.Clear(); foreach (var d in smCache) d.Clear(); objBufs.Clear(); hulls.Clear();
+        setLayer = 0; setCov.Clear(); surfCache.Clear(); foreach (var d in smCache) d.Clear(); objBufs.Clear(); hulls.Clear();
     }
 
     static float SetSm(float a, float b, float x) { float t = Mathf.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
@@ -208,6 +208,8 @@ public static partial class DungeonDress
     }
     static readonly float SetLiftAdd = SurvivorUnchained.Args.Num("den-set-lift", 0f);   // (r12 diagnosis) every bank card pulled this much more toward the camera
     static readonly float SetKeepAll = SurvivorUnchained.Args.Num("den-set-keepall", 0f);   // (r12 diagnosis)
+    static readonly float SetLog = SurvivorUnchained.Args.Num("den-set-log", 0f);   // (r13 diagnosis) every ring's runs printed
+    static readonly string[]? SetOnly = SurvivorUnchained.Args.Get("den-set-only")?.Split(',');   // (r13 diagnosis) only these sheets drawn (B3,B3R,...)
     static int setLayer;
     static readonly float SetLairWant = SurvivorUnchained.Args.Num("den-lair-want", 70f), SetLairRing = SurvivorUnchained.Args.Num("den-lair-ring", 13f);   // (r12) the lair's open pieces and their ring (3 m + this)
     static readonly float SetEdgeWave = SurvivorUnchained.Args.Num("den-set-wave", 0f);   // (r12) metres
@@ -306,7 +308,8 @@ public static partial class DungeonDress
                     if (inRun) run.Add(P[k]);
                     if ((!inRun || s == n) && run.Count > 0)
                     {
-                        if (run.Count >= 6) { modules += SetRun(c, bufs, run, cls, ri * 16 + cls * 4 + runs, top); runs++; ends.Add((cls, new List<Vector3>(run))); }
+                        if (SetLog > 0f) GD.Print($"DenSet run: room {ri} ({r.X:0.0},{r.Z:0.0}) cls {cls} n {run.Count} from ({run[0].X:0.0},{run[0].Z:0.0}) to ({run[^1].X:0.0},{run[^1].Z:0.0})");
+                        if (run.Count >= 6) { modules += SetRun(c, bufs, run, cls, ri * 16 + cls * 4 + runs, top); runs++; ends.Add((cls, new List<Vector3>(run))); foreach (var q in run) SetCover(q); }
                         run.Clear();
                         if (!open[k] && SetClassOf(th[k], cls) == 1) run.Add(P[k]);
                     }
@@ -375,13 +378,14 @@ public static partial class DungeonDress
                     }
                 }
         }
+        if (SetLanes > 0f && SetMode >= 2) SetLaneRings(c, bufs, ref modules, ref runs, ref spills);
         setBossC = Vector3.Zero;
         foreach (var rb in c.Z.Rooms) if (rb.Kind == "Boss") setBossC = new Vector3(rb.X, rb.Z, rb.R);
         if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
-            if (b.I.Count == 0) continue;
+            if (b.I.Count == 0 || (SetOnly != null && System.Array.IndexOf(SetOnly, name) < 0)) continue;
             c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             tris += b.I.Count / 3;
         }
@@ -389,7 +393,7 @@ public static partial class DungeonDress
         int otris = 0;
         foreach (var (name, b) in objBufs)
         {
-            if (b.I.Count == 0) continue;
+            if (b.I.Count == 0 || (SetOnly != null && System.Array.IndexOf(SetOnly, name) < 0)) continue;
             c.Root.AddChild(new MeshInstance3D { Name = "SetObj_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain * SetObjGain), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             otris += b.I.Count / 3;
         }
@@ -408,6 +412,129 @@ public static partial class DungeonDress
         }
         c.Count["set modules"] = modules; c.Count["set tris"] = tris; c.Count["set corners"] = corners; c.Count["set spills"] = spills;
         GD.Print($"DenSet: mode {SetMode}, {rooms.Count} rooms, {runs} runs, {modules} modules, {corners} corners, {spills} spills, {tris} bank tris, {otris} object tris, {bufs.Count + objBufs.Count + (hulls.Count > 0 ? 1 : 0)} draws");
+    }
+
+    // (r13) The lanes. A room's ring sees a corridor's walls only at grazing angles, and a wall in line with the room's middle
+    // never: seed 11's corridor north of its first clearing had no card on its west bank (the Start ring's 4 points there
+    // fell under a run's 6), so the wall mesh's dark mound and its foot along the generator's straight capsule showed (the
+    // ruled edge and the muddy left bank, r12 judge). Rings from the corridors' own middles (a 2 m lattice where the floor
+    // is open round the point, outside every room's circle) gather the edge points no room's run dressed, outside the rooms'
+    // circles; each class's points joined where they lie within 1.5 m make one run (one long run a bank, not a short run a
+    // ring: every run's ends fade), laid by the rooms' own SetRun, with root spills at its feet. Cards only: nothing collides.
+    static readonly float SetLanes = SurvivorUnchained.Args.Num("den-set-lanes", 1f);
+    static readonly HashSet<long> setCov = new();
+    static long CovK(int i, int j) => ((long)i << 32) ^ (uint)j;
+    static void SetCover(Vector3 p)
+    {
+        const float cs = 0.5f; const int rad = 2;   // (1 m round every dressed edge point)
+        int ci = Mathf.FloorToInt(p.X / cs), cj = Mathf.FloorToInt(p.Z / cs);
+        for (int i = -rad; i <= rad; i++) for (int j = -rad; j <= rad; j++) if (i * i + j * j <= rad * rad) setCov.Add(CovK(ci + i, cj + j));
+    }
+    static bool SetCovered(Vector3 p) => setCov.Contains(CovK(Mathf.FloorToInt(p.X / 0.5f), Mathf.FloorToInt(p.Z / 0.5f)));
+
+    static void SetLaneRings(Ctx c, Dictionary<string, SetBuf> bufs, ref int modules, ref int runs, ref int spills)
+    {
+        const int n = 360;
+        const float reach = 9f, lat = 2f, cs = 0.4f;
+        bool InRoom(float x, float zz, float pad)
+        {
+            foreach (var r in c.Z.Rooms) if (r.Kind != "Bend" && new Vector2(x - r.X, zz - r.Z).Length() < r.R + pad) return true;
+            return false;
+        }
+        var P = new Vector3[n]; var open = new bool[n];
+        var pool = new Dictionary<long, Vector3>[4];
+        for (int q = 0; q < 4; q++) pool[q] = new();
+        int rings = 0, lanes = 0;
+        float half = c.Z.Half;
+        for (float cz = -half + lat; cz < half; cz += lat)
+            for (float cx = -half + lat; cx < half; cx += lat)
+            {
+                if (!SetIn(cx, cz) || Wall(c, cx, cz) < 1.5f || InRoom(cx, cz, 0f)) continue;
+                rings++;
+                for (int k = 0; k < n; k++)
+                {
+                    float a = k * Mathf.Tau / n;
+                    var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                    float t = 0.5f;
+                    while (t < reach && Wall(c, cx + d.X * t, cz + d.Y * t) >= 0f) t += 0.1f;
+                    open[k] = t >= reach;
+                    if (open[k]) continue;
+                    float lo = t - 0.1f, hi = t;
+                    for (int b = 0; b < 10; b++) { float m = 0.5f * (lo + hi); if (Wall(c, cx + d.X * m, cz + d.Y * m) < 0f) hi = m; else lo = m; }
+                    float x = cx + d.X * lo, zz = cz + d.Y * lo;
+                    P[k] = new Vector3(x, H(c, x, zz), zz);
+                }
+                for (int k = 0; k < n; k++)
+                {
+                    if (open[k] || SetCovered(P[k]) || InRoom(P[k].X, P[k].Z, 0.5f)) continue;
+                    // the outward normal smoothed over the neighbours' +-3 degrees, as the rooms' rings (their +-1.5 m of edge)
+                    var g = Vector2.Zero;
+                    for (int j = -3; j <= 3; j++)
+                    {
+                        int kk = (k + j + n) % n;
+                        if (open[kk]) continue;
+                        var p = P[kk];
+                        g += new Vector2(Wall(c, p.X + 0.3f, p.Z) - Wall(c, p.X - 0.3f, p.Z), Wall(c, p.X, p.Z + 0.3f) - Wall(c, p.X, p.Z - 0.3f));
+                    }
+                    var o = -g.Normalized();
+                    float th = Mathf.RadToDeg(Mathf.Atan2(o.X, -o.Y));
+                    long key = CovK(Mathf.FloorToInt(P[k].X / cs), Mathf.FloorToInt(P[k].Z / cs));
+                    for (int cls = 0; cls < 4; cls++)
+                        if (SetClassOf(th, cls) == 1) pool[cls].TryAdd(key, P[k]);
+                }
+            }
+        // each class's points joined where within 1.5 m (cells of 0.4 m, +-4), a component a run
+        for (int cls = 0; cls < 4; cls++)
+        {
+            var left = new HashSet<long>(pool[cls].Keys);
+            var keys = new List<long>(pool[cls].Keys);
+            keys.Sort();
+            foreach (long k0 in keys)
+            {
+                if (!left.Remove(k0)) continue;
+                var run = new List<Vector3>();
+                var todo = new Stack<long>(); todo.Push(k0);
+                while (todo.Count > 0)
+                {
+                    long k = todo.Pop();
+                    var p = pool[cls][k];
+                    run.Add(p);
+                    int ci = Mathf.FloorToInt(p.X / cs), cj = Mathf.FloorToInt(p.Z / cs);
+                    for (int i = -4; i <= 4; i++)
+                        for (int j = -4; j <= 4; j++)
+                        {
+                            long kk = CovK(ci + i, cj + j);
+                            if (left.Contains(kk) && pool[cls][kk].DistanceTo(p) < 1.5f) { left.Remove(kk); todo.Push(kk); }
+                        }
+                }
+                bool alongX = cls == 0 || cls == 2;
+                run.Sort((u, v) => alongX ? u.X.CompareTo(v.X) : u.Dot(CamUp).CompareTo(v.Dot(CamUp)));
+                if (run.Count < 6 || run[0].DistanceTo(run[^1]) < 3f) continue;
+                float top = -1e9f;
+                foreach (var p in run) top = Mathf.Max(top, p.Y);
+                int seed = 7919 + (int)(k0 & 0xffff) * 7 + (int)((k0 >> 32) & 0xffff) * 13 + cls;
+                if (SetLog > 0f) GD.Print($"DenSet lane: cls {cls} n {run.Count} from ({run[0].X:0.0},{run[0].Z:0.0}) to ({run[^1].X:0.0},{run[^1].Z:0.0})");
+                modules += SetRun(c, bufs, run, cls, seed, top + 14f); runs++; lanes++;
+                foreach (var q in run) SetCover(q);
+                // the rooms' root spills at these feet too (far and side banks), toward the floor (the wall field's rise)
+                if (SetSpills > 0f && cls != 2)
+                {
+                    float acc = 0f, next = 1f + 3f * Hash(seed, cls, 831);
+                    for (int i = 1; i < run.Count; i++)
+                    {
+                        acc += run[i].DistanceTo(run[i - 1]);
+                        if (acc < next) continue;
+                        next = acc + 4f + 3f * Hash(seed + i, cls, 832);
+                        var p = run[i];
+                        var dir = new Vector2(Wall(c, p.X + 0.3f, p.Z) - Wall(c, p.X - 0.3f, p.Z), Wall(c, p.X, p.Z + 0.3f) - Wall(c, p.X, p.Z - 0.3f)).Normalized();
+                        var at = new Vector2(p.X, p.Z) + dir * (1.0f + 0.8f * Hash(seed + i, cls, 834));
+                        if (SetPick("B6", Hash(seed + i, cls, 835)) is SetPiece pc && Wall(c, at.X, at.Y) > 0.5f)
+                        { PlaceSetObj(c, "B6", pc, at.X, at.Y, 0.5f + 0.25f * Hash(seed + i, cls, 836), 0f, false, 0f); spills++; }
+                    }
+                }
+            }
+        }
+        GD.Print($"DenSet lanes: {rings} rings, {lanes} runs");
     }
 
     // One run of a class: modules end to end along it, each laid in the camera's plane with its foot on the edge and cast
