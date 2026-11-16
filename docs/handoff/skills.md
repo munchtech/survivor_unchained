@@ -2,8 +2,8 @@
 
 ## Lane B demo-skills lead (16 Nov 2026): WORKING. State file = this block.
 The owner (16 Nov): "yes start B". Brief `tools/scratch/coordinator/briefs/demo_15nov/B_skills_tree.md`; lane E's fx rules `tools/scratch/coordinator/briefs/demo_15nov/E_rules_for_B.md`. Worktree `.claude/worktrees/agent-a0bdc9d7b545f6204`, branch `demo-skills` (from integration 3ef5f4a02, origin/demo-look 3acc97a91 merged at 7922f3834; godot/assets = junction to own public/assets, assume-unchanged).
-- **Item 6 (stance name):** asked main 16 Nov; main: "the stance name is with the owner now ... If no word reaches you by then, ship "Shieldwall" as your default".
-- **Fixed list state:** 1 skill views (leap, storm, vow rebuild; groundbreaker + vow contact look; Sunder one pass + E's ground mark): not started. 2 Lamps tab faults: not started. 3 L prompt: not started. 4 Bladestorm wick: not started. 5 Bladestorm share: not started. 6 rename: waiting on the owner (default Shieldwall).
+- **Item 6 (stance name): DONE.** The owner, 16 Nov 2026, word for word: "Shieldwall". The level-8 stance (stances.json `shield`) and its teach card are Shieldwall; the road and the support gem keep "Bulwark".
+- **Fixed list state:** 1 skill views (leap, storm, vow rebuild; groundbreaker + vow contact look; Sunder one pass + E's ground mark): not started. 2 Lamps tab faults: not started. 3 L prompt: not started. 4 Bladestorm wick: not started. 5 Bladestorm share: not started. 6 rename: DONE.
 - **Next in order:** survey code + shoot today's five at the den camera; then items 2-5 (code) by workers while the fx rebuild runs.
 
 ## M7a classes lead 1 (skills-p7, 10 Nov): MR READY skills-p7 (JOB 1: P7 into integration as it stands; Sunder paint take 10 NOT judged, polish later by the owner's word)
