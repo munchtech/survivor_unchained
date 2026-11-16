@@ -225,6 +225,10 @@ public sealed record AtmospherePreset(
     /// far (0-1), then each foe's hard shadow inside her fire: its level (scene light; 0: none), R, G, B (sRGB 0-255), the
     /// fire's residue in it (a share of the ground's ramp)] (crowd_moon, crowd_shade). Read only with FoeFire.</summary>
     public double[]? FoeMoon { get; init; }
+    /// <summary>(demo-look lane E, item 4; rigs.json "foe_den") The den's pack: [body Oklab L, its pull (0-1), chroma, hue (deg),
+    /// the line's px, the body's tone in it, the rim's px, its share on the key's side, her reach (m), the rim's level, R, G, B
+    /// (sRGB 0-255)] (vat.gdshaderinc crowd_den, crowd_den_edge, crowd_den_rim); her lamp off the pack while it is on. Null: none.</summary>
+    public double[]? FoeDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

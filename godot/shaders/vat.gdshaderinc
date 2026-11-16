@@ -105,6 +105,15 @@ global uniform vec4 crowd_r4;
 // rim is S3's.
 global uniform vec4 crowd_fire;
 global uniform vec4 crowd_moon;
+// (demo-look lane E, item 4: the den's pack, rigs.json "foe_den"; Atmosphere.SetCel. Zero on every other rig: none of it.)
+// crowd_den: the body, the paint pulled in Oklab to L x by y, at chroma z and hue w (degrees), so the pack is one dark warm
+// grey-brown a step under its ground whatever its fur paint (LOOK_BIBLE "The demo frame: the den", the pack row).
+// crowd_den_edge: x the line's width in px at the silhouette, y the body's tone there (a deeper tone, never black), z the
+// rim's width in px inside the line, w the rim's share on the key's side for a foe out of her reach.
+// crowd_den_rim: rgb the warm rim (linear, its level in), w her reach in metres: inside it the rim is on the side toward her.
+global uniform vec4 crowd_den;
+global uniform vec4 crowd_den_edge;
+global uniform vec4 crowd_den_rim;
 // (L1 lead 18, W2: the foes' VALUE PLAN by night, target 09. Lead 12's rule "a moonlit foe reads lighter than its ground" is
 // withdrawn: the pack was a flat bright-blue cutout (S3's top band lay over a whole back from the play camera) and the
 // frame's top contrast, where SHE should be. Now, under crowd_fire (cf_on): OUT IN THE DARK a foe's body sits at the floor's
@@ -164,6 +173,22 @@ float crowd_edge(float rim) {
 	return e;
 #endif
 }
+// (demo-look item 4) The den's body: the paint in Oklab, its L pulled to crowd_den.x by crowd_den.y, its hue and chroma set.
+vec3 vat_den_body(vec3 c_c) {
+	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
+		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
+	float c_l0 = dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
+	float c_l = mix(c_l0, crowd_den.x, crowd_den.y);
+	float c_h = radians(crowd_den.w);
+	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
+		* vec3(c_l, crowd_den.z * cos(c_h), crowd_den.z * sin(c_h));
+	c_m = c_m * c_m * c_m;
+	return clamp(mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147),
+		vec3(0.2309699292, -0.3413193965, 1.7076147010)) * c_m, vec3(0.0), vec3(1.0));
+}
+// (the rim's side: toward her leaned up this much, whole past DEN_RIM_CUT of n.s, one screen derivative wide)
+#define DEN_RIM_UP 0.2
+#define DEN_RIM_CUT 0.2
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -305,6 +330,9 @@ void fragment() {
 	// (L1 W2, B2: the crowd fur class's albedo control, materials.json "albedo", after the night lift and before the copy's own
 	// tint, so the dead's darkening and the mud still read; LOOK_BIBLE rule 7: mid-dark bodies, never pale silver)
 	c = cel_alb_apply(c);
+	// (demo-look item 4: in the den the pack's body is the rig's, crowd_den, before the copy's tint so the dead still darken)
+	bool den_on = crowd_den.y > 0.0 && cel_on > 0.0;
+	if (den_on) c = vat_den_body(c);
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
 	float vat_s3k = 1.0;
@@ -426,7 +454,7 @@ void fragment() {
 	ROUGHNESS = min(rough, 0.9);
 	SPECULAR = 0.5 * (1.0 - busy);
 	METALLIC = metallic;
-	RIM = rim_amount * (1.0 - busy);
+	RIM = den_on ? 0.0 : rim_amount * (1.0 - busy);
 	RIM_TINT = rim_tint;
 	// Struck: a warm flare that lives at the rim, so the body keeps its shape
 	// from thirty metres up, with only an instant's glow across the whole of it
@@ -585,6 +613,26 @@ void fragment() {
 	// (r3c: out by fx.y 0.62, so the last ~30% of a body (dn spans ~0.14-0.86) goes as dark ash, not gold lace or dust)
 	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_hue.a) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + dn_ew, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * 0.0 /* final cuts: no gold burn edge */ : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
+	// (demo-look item 4) The den's pack: a line at the silhouette, the body's own tone deepened (crowd_den_edge.y, never
+	// black), and inside it a hard warm rim on the side toward her within her reach (crowd_den_rim.w), toward the key past
+	// it at crowd_den_edge.w of the level; none on the dead. Her lamp does not light the pack here (PlayerView.CrowdOmni).
+	if (den_on) {
+		float dn_alive = step(0.6, dot(abs(COLOR.rgb), vec3(0.333)));
+		float dn_line = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x);
+		float dn_band = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z) * (1.0 - dn_line) * (1.0 - busy);
+		vec3 dn_p = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 dn_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec2 dn_to = crowd_ember.xz - dn_p.xz;
+		float dn_near = 1.0 - smoothstep(crowd_den_rim.w, crowd_den_rim.w + 1.0, length(dn_to));
+		vec2 dn_kd = normalize(key_dir.xz + vec2(1e-4, 0.0));
+		vec2 dn_d = normalize(mix(dn_kd, dn_to / max(length(dn_to), 1e-3), dn_near));
+		float dn_t = dot(dn_n, normalize(vec3(dn_d.x, DEN_RIM_UP, dn_d.y)));
+		float dn_w = fwidth(dn_t) * 0.75 + 0.01;
+		float dn_side = smoothstep(DEN_RIM_CUT - dn_w, DEN_RIM_CUT + dn_w, dn_t);
+		e += crowd_den_rim.rgb * (dn_band * dn_side * mix(crowd_den_edge.w, 1.0, dn_near) * dn_alive);
+		ALBEDO *= mix(1.0, crowd_den_edge.y, dn_line);
+		e *= mix(1.0, crowd_den_edge.y, dn_line);
+	}
 	EMISSION = e;
 
 	// The Flare's drain and glaze (flare_world.gdshaderinc).

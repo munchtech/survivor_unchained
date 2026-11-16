@@ -417,6 +417,18 @@ crowd_shade={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+crowd_den={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_den_edge={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_den_rim={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_canopy_r={
 "type": "vec4",
 "value": Vector4(-150, -150, 0.00333, 0.00333)

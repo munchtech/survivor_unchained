@@ -112,6 +112,8 @@ public partial class Atmosphere : Node3D
     /// <summary>The preset's crowd light by night (CrowdFill; 0 by day). --crowd-fill off: none (Rendering 4's A/B);
     /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
     public static float CrowdFill;
+    /// <summary>(demo-look item 4) The den's pack look is on (rigs.json "foe_den"): her lamp leaves the pack (PlayerView.CrowdOmni).</summary>
+    public static bool CrowdDen;
     static readonly bool CrowdFillOn = SurvivorUnchained.Args.Get("crowd-fill") != "off";
     const float CrowdSkyRef = 2f;
     static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", R4 ? 0.3f : 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
@@ -595,6 +597,18 @@ public partial class Atmosphere : Node3D
             RenderingServer.GlobalShaderParameterSet("crowd_shade", fsl > 0 ? new Vector4(fsc.R / fsm, fsc.G / fsm, fsc.B / fsm, 1) : Vector4.Zero);
         }
         else { RenderingServer.GlobalShaderParameterSet("crowd_moon", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("crowd_shade", Vector4.Zero); }
+        // (demo-look lane E, item 4) The den's pack (rigs.json "foe_den"; vat.gdshaderinc crowd_den): no rig but the den has one,
+        // so the night's foes are as they were. --air-tune fden=a/b/... tries a whole row.
+        double[]? fd = Tune != null && Tune.TryGetValue("fden", out var fdt) ? fdt.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : p.FoeDen;
+        CrowdDen = CelRigs && cam == null && fd is { Length: >= 13 } && fd[1] > 0;
+        if (CrowdDen)
+        {
+            var dr = new Color((float)fd![10] / 255f, (float)fd[11] / 255f, (float)fd[12] / 255f).SrgbToLinear() * (float)fd[9];
+            RenderingServer.GlobalShaderParameterSet("crowd_den", new Vector4((float)fd[0], (float)fd[1], (float)fd[2], (float)fd[3]));
+            RenderingServer.GlobalShaderParameterSet("crowd_den_edge", new Vector4((float)fd[4], (float)fd[5], (float)fd[6], (float)fd[7]));
+            RenderingServer.GlobalShaderParameterSet("crowd_den_rim", new Vector4(dr.R, dr.G, dr.B, (float)fd[8]));
+        }
+        else foreach (var g in new[] { "crowd_den", "crowd_den_edge", "crowd_den_rim" }) RenderingServer.GlobalShaderParameterSet(g, Vector4.Zero);
         if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves, p.DappleMass);
         static Vector3 Hue(Color c)
         {
