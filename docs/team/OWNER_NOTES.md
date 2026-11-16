@@ -1,10 +1,5 @@
 # The owner's notes waiting for the leads
 
-## 15 November 2026 (evening, coordinator #14): LEDGE KILLS (ledge-kills lead, open)
-
-- "I see enemies being knocked off the edge in this dungeon testing.  thats AWESOME.  that should make them die, with any loot they would have dropped spawning up near the ledge.  it cannot kill elites or bosses (they will just get knocked to the ledge)"
-- **Routed:** a systems lead on branch `ledge-kills`. The coordinator's readings, not the owner's words: it is a full kill (credit, experience, on-kill effects); only forced movement kills (a foe's own charge or leap never takes it over, flyers do not fall); she never falls; objective carriers are held at the brink like elites.
-
 ## 15 November 2026 (evening, coordinator #14): HER IDLE OUT OF TOWN IS STILL RIGID; THE RUN MOVES ONLY HER LEGS (movement lead, open, FIRST)
 
 - "i'm also still disappointed in her holding sword arm.  for example while running its held rigid not moving at all.  it dosn't look badass OR sexy, and the running animation dosn't move anything but her legs"
