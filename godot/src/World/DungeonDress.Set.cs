@@ -15,15 +15,15 @@ namespace SurvivorUnchained.View;
 /// north of the floor, its face to the camera, B1/B1b; near: south, seen from above and behind, B2/B2b; left and right
 /// walls, B3/B3R), runs of a class laid with modules end to end (2 m overlaps; a module over its neighbour shows only its
 /// brightest masses at first, roots crossing roots, never a seam), the module's foot following the edge.
-/// --den-set: 0 off (round 9 unchanged, the default), 1 the entry room only (the prototype gate), 2 every room.
+/// --den-set: 0 off (round 9), 1 the entry room only (the prototype gate), 2 every room (r10c: the default).
 /// </summary>
 public static partial class DungeonDress
 {
-    public static readonly int SetMode = (int)SurvivorUnchained.Args.Num("den-set", 0f);
+    public static readonly int SetMode = (int)SurvivorUnchained.Args.Num("den-set", 2f);
     static readonly float SetScale = SurvivorUnchained.Args.Num("den-set-scale", 1f);
-    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 1f);
+    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 1.25f);
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
-    static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 1f);
+    static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 0.7f);
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
     static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 1f);   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
 
@@ -46,8 +46,8 @@ public static partial class DungeonDress
     static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 2f);       // (r10c) side walls: rows of modules deeper in the bank
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 1f);    // (r10c) B4/B4R_2 where a far run meets a wall's
     static readonly float SetSpills = SurvivorUnchained.Args.Num("den-set-spills", 1f);      // (r10c) B6 spills on the floor at the banks' feet and pits
-    static readonly float SetDark = SurvivorUnchained.Args.Num("den-set-dark", 0.005f);      // (r10c) the paintings' darks lit at least this (cool)
-    static readonly float SetAmb = SurvivorUnchained.Args.Num("den-set-amb", 0.12f);        // (r10c) and at least this share of their painted value
+    static readonly float SetDark = SurvivorUnchained.Args.Num("den-set-dark", 0.008f);      // (r10c) the paintings' darks lit at least this (cool)
+    static readonly float SetAmb = SurvivorUnchained.Args.Num("den-set-amb", 0.2f);        // (r10c) and at least this share of their painted value
     // (r10c) the objects in one mesh per sheet (they were a node each: ~137 draws) and the boulders' shadow hulls in one
     static readonly Dictionary<string, SetBuf> objBufs = new();
     static readonly List<Transform3D> hulls = new();
