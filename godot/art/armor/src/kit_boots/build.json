@@ -1,22 +1,164 @@
 {
  "recipe": "boots",
  "module": "kit_limbs",
- "piece": {"id": "kit_boots", "name": "Gilded Lace-Up Boots", "slot": "boots", "covers": ["boots", "greaves"], "layer": 2,
-           "material": "darkleather", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
- "mat": {"leather": "darkleather", "plate": "steel", "trim": "gold", "sole": "darkleather"},
- "clear": 0.003, "clear_min": 0.0022, "thick": 0.0018, "plate_thick": 0.0016,
- "rim": {"w": 0.0095, "h": 0.0034, "sides": 6, "step": 0.005},
- "faces_y": 0.75, "mesh": [50, 36],
- "axis": [[0.0, 0.69, -0.02], [-0.003, 0.45, -0.042], [-0.008, 0.22, -0.048], [-0.011, 0.115, -0.042],
-          [-0.009, 0.07, -0.012], [-0.005, 0.045, 0.035], [-0.002, 0.032, 0.09], [-0.001, 0.028, 0.13]],
- "step": 0.004, "dth": 3.0, "cap": 10, "cap_max": 80.0, "y_bend": 0.13,
- "close": [5, 5], "sig": [2.0, 2.0],
- "toe": {"from_z": 0.02, "blend": 0.04, "close": [9, 17], "sig": [4.0, 5.0], "lift": 0.003},
- "cuff": {"top_front": 0.54, "top_back": 0.495, "h": 0.042, "under": 0.01, "flare": 0.004},
- "toecap": {"th": 100.0, "u": 5.0, "sweep": 6.0, "close": [1, 1], "sig": [0.5, 0.5], "lift": 0.0, "nr": 14, "smooth": 60},
- "kneecop": {"th": 62.0, "bot": 0.505, "bot_rise": 0.012, "top": 0.66, "side_top": 0.575, "point": 1.4,
-             "off": 0.009, "ridge": 0.003, "ridge_w": 14.0, "dome": 0.003},
- "laces": {"below_cuff": 0.006, "z_start": -0.012, "n": 9, "half": 0.016, "w": 0.0055, "h": 0.0027},
- "sole": {"y_top": 0.014, "y_bot": -0.0045, "floor": -0.0026, "hollow": 0.0045, "foot_y": 0.03, "margin": 0.0025, "bevel": 0.002, "heel_len": 0.065,
-          "heel_top": 0.036, "heel_taper": 0.92, "heel_extra": 0.003}
+ "piece": {
+  "id": "kit_boots",
+  "name": "Gilded Lace-Up Boots",
+  "slot": "boots",
+  "covers": [
+   "boots",
+   "greaves"
+  ],
+  "layer": 2,
+  "material": "darkleather",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "leather": "darkleather",
+  "plate": "steel",
+  "trim": "gold",
+  "sole": "darkleather"
+ },
+ "clear": 0.003,
+ "clear_min": 0.0022,
+ "thick": 0.0018,
+ "plate_thick": 0.0016,
+ "rim": {
+  "w": 0.0095,
+  "h": 0.0034,
+  "sides": 6,
+  "step": 0.005
+ },
+ "faces_y": 0.75,
+ "mesh": [
+  50,
+  36
+ ],
+ "axis": [
+  [
+   0.0,
+   0.69,
+   -0.02
+  ],
+  [
+   -0.003,
+   0.45,
+   -0.042
+  ],
+  [
+   -0.008,
+   0.22,
+   -0.048
+  ],
+  [
+   -0.011,
+   0.115,
+   -0.042
+  ],
+  [
+   -0.009,
+   0.07,
+   -0.012
+  ],
+  [
+   -0.005,
+   0.045,
+   0.035
+  ],
+  [
+   -0.002,
+   0.032,
+   0.09
+  ],
+  [
+   -0.001,
+   0.028,
+   0.13
+  ]
+ ],
+ "step": 0.004,
+ "dth": 3.0,
+ "cap": 10,
+ "cap_max": 80.0,
+ "y_bend": 0.13,
+ "close": [
+  5,
+  5
+ ],
+ "sig": [
+  2.0,
+  2.0
+ ],
+ "toe": {
+  "from_z": 0.02,
+  "blend": 0.04,
+  "close": [
+   9,
+   17
+  ],
+  "sig": [
+   4.0,
+   5.0
+  ],
+  "lift": 0.003
+ },
+ "cuff": {
+  "top_front": 0.54,
+  "top_back": 0.495,
+  "h": 0.042,
+  "under": 0.01,
+  "flare": 0.004
+ },
+ "toecap": {
+  "th": 100.0,
+  "u": 5.0,
+  "sweep": 6.0,
+  "close": [
+   1,
+   1
+  ],
+  "sig": [
+   0.5,
+   0.5
+  ],
+  "lift": 0.0,
+  "nr": 14,
+  "smooth": 60
+ },
+ "kneecop": {
+  "th": 62.0,
+  "bot": 0.505,
+  "bot_rise": 0.012,
+  "top": 0.66,
+  "side_top": 0.575,
+  "point": 1.4,
+  "off": 0.009,
+  "ridge": 0.003,
+  "ridge_w": 14.0,
+  "dome": 0.003
+ },
+ "laces": {
+  "below_cuff": 0.006,
+  "z_start": -0.012,
+  "n": 9,
+  "half": 0.016,
+  "w": 0.0055,
+  "h": 0.0027
+ },
+ "sole": {
+  "y_top": 0.014,
+  "y_bot": -0.0045,
+  "floor": -0.0026,
+  "hollow": 0.0045,
+  "foot_y": 0.03,
+  "margin": 0.0025,
+  "bevel": 0.002,
+  "heel_len": 0.065,
+  "heel_top": 0.04,
+  "heel_taper": 0.94,
+  "heel_extra": 0.0045
+ }
 }

@@ -63,7 +63,7 @@
    "kit_boots.boots.steel"
   ],
   "tuck": "armor_tuck/kit_boots.bin",
-  "tuck_count": 3915,
+  "tuck_count": 3895,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_boots.gltf",
   "tier": 2,
@@ -105,7 +105,7 @@
    "kit_gloves.gloves.gold"
   ],
   "tuck": "armor_tuck/kit_gloves.bin",
-  "tuck_count": 2020,
+  "tuck_count": 1886,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_gloves.gltf",
   "tier": 2,

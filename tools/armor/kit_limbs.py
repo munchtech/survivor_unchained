@@ -573,7 +573,9 @@ def build(pid, cfg=None):
     gn.write_glb(os.path.join(d, f"{pid}.glb"), [p.node() for p in parts], {"kit_build": {"piece": pid}})
     piece = {k: v for k, v in cfg["piece"].items() if k != "layer"}
     piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
-             "params": {"file": f"{pid}.glb"}, **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
+             # (build.json "params": e.g. tuck_under, her skin sunk under named parts as piece_blender reads it)
+             "params": {"file": f"{pid}.glb", **cfg.get("params", {})},
+             **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
              "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.BODY, "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
