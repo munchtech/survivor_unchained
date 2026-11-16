@@ -36,6 +36,33 @@ public static class DirRun
         (6.5, "stand_a", 0, 0, 0, -1), (8.7, "toward", 0, 1, 0, 1), (10.3, "stand_t", 0, 0, 0, 1),
         (12.5, "side_x", 1, 0, 1, 0), (14.1, "stand_x", 0, 0, 1, 0),
     };
+    /// <summary>--dirrun-set eight (warden-move, judge r3): under the ALWAYS facing mode, the run in the eight screen headings
+    /// (facing her run), then backpedals and strafes with her facing the camera, away and to both sides; each leg 1.2 s and a
+    /// 0.8 s stand, legs in opposite pairs so she ends where she began (about 32 s). +Z toward the camera, +X screen-right.</summary>
+    static readonly bool Eight = Args.Get("dirrun-set") == "eight";
+    const double S2 = 0.70710678;
+    static readonly (string Name, double X, double Z, double AX, double AZ)[] EightLegs =
+    {
+        ("away", 0, -1, 0, -1), ("toward", 0, 1, 0, 1), ("side_x", 1, 0, 1, 0), ("side_mx", -1, 0, -1, 0),
+        ("away_x", S2, -S2, S2, -S2), ("toward_mx", -S2, S2, -S2, S2), ("away_mx", -S2, -S2, -S2, -S2), ("toward_x", S2, S2, S2, S2),
+        ("back_ft", 0, -1, 0, 1), ("back_fa", 0, 1, 0, -1), ("back_fx", -1, 0, 1, 0), ("back_fmx", 1, 0, -1, 0),
+        ("strafe_fx_t", 0, 1, 1, 0), ("strafe_fx_a", 0, -1, 1, 0), ("strafe_fmx_a", 0, -1, -1, 0), ("strafe_fmx_t", 0, 1, -1, 0),
+    };
+    static (string Name, double X, double Z, double AX, double AZ) EightAt(double t)
+    {
+        int i = (int)Math.Floor(t / 2.0);
+        if (i >= EightLegs.Length) return ("end", 0, 0, 0, 1);
+        var l = EightLegs[i];
+        bool run = t - 2.0 * i < 1.2;
+        var r = run ? l : ("stand_" + l.Name, 0.0, 0.0, l.AX, l.AZ);
+        int k = 2 * i + (run ? 0 : 1);
+        if (k > seg)
+        {
+            seg = k;
+            GD.Print(FormattableString.Invariant($"DIRSEG {r.Item1} {t:0.00}"));
+        }
+        return r;
+    }
     static int seg = -1;
 
     static int FilmSeg(double t)
@@ -60,6 +87,11 @@ public static class DirRun
         {
             var f = FilmSegs[FilmSeg(t)];
             return (f.X, f.Z);
+        }
+        if (Eight)
+        {
+            var e = EightAt(t);
+            return (e.X, e.Z);
         }
         if (Views)
         {
@@ -105,6 +137,11 @@ public static class DirRun
         {
             var f = FilmSegs[FilmSeg(t)];
             return (px + 60 * f.AX, pz + 60 * f.AZ);
+        }
+        if (Eight)
+        {
+            var e = EightAt(t);
+            return (px + 60 * e.AX, pz + 60 * e.AZ);
         }
         if (t >= 20 && t < 24)
         {
