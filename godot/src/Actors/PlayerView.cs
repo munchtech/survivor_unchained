@@ -1826,7 +1826,10 @@ public partial class PlayerView : Node3D
                 own.GripTilt(idleNode.Animation), own.GripTilt((walkNode ?? idleNode).Animation), own.GripTilt(runNode.Animation));
             slide = GripSlide.Ease(slide, to, dt);
             tilt = GripSlide.Ease(tilt, toT, dt);
-            view?.Slide("handslot.r", slide, tilt);
+            // (warden-move) the side carry's tilt on top (SideCarry), stepped on her drawn pose (CarryPosed); none at no weight
+            CarrySlide(null);
+            carryDt += dt;
+            if (!carryHooked && person.Skeleton is { } csk && view != null) { carryHooked = true; csk.SkeletonUpdated += CarryPosed; }
             float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), wWalk, w,
                 own.GripSlideL(idleNode.Animation), own.GripSlideL((walkNode ?? idleNode).Animation), own.GripSlideL(runNode.Animation));
             slideL = GripSlide.Ease(slideL, toL, dt);
@@ -2603,6 +2606,7 @@ public partial class PlayerView : Node3D
         var sk = person.Skeleton;
         // (aim-move) BODY2's joints, taken here: after the modifiers (SkeletonUpdated); a FramePreDraw read sees the pose they restored
         for (int bi = 0; bi < BodyBones.Length; bi++) { int bx = sk.FindBone(BodyBones[bi]); bodyW[bi] = bx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bx).Origin : Vector3.Zero; }
+        { int hx = sk.FindBone("Head"); if (hx < 0) hx = sk.FindBone("head"); headW = hx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(hx).Origin : Vector3.Zero; }
         int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
         if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
         if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
@@ -2616,12 +2620,15 @@ public partial class PlayerView : Node3D
             int a = sk.FindBone("thigh" + x), b = sk.FindBone("calf" + x), c = sk.FindBone("foot" + x);
             if (a < 0 || b < 0 || c < 0) continue;
             Vector3 H = sk.GetBoneGlobalPose(a).Origin, K = sk.GetBoneGlobalPose(b).Origin, F = sk.GetBoneGlobalPose(c).Origin;
+            kneeW[s] = sk.GlobalTransform * K;   // (warden-move, BLADE: the blade's clearance from her legs)
             legBend[s] = Mathf.RadToDeg((K - H).AngleTo(F - K));
             var u = sk.GlobalTransform.Basis * (K - H);
             legThigh[s] = Mathf.RadToDeg(Mathf.Atan2(-u.Dot(fwd), -u.Y));
         }
     }
     readonly float[] legBend = new float[2], legThigh = new float[2];
+    readonly Vector3[] kneeW = new Vector3[2];
+    Vector3 headW;
     Vector3 pelvW;
     /// <summary>(warden-move, judge r4: the sheets' crops sat 15-23 px ahead of her body) Her pelvis on screen as the frame is
     /// drawn (SCR2 x y, one line a drawn frame): the final camera and pose, which TURN2's scr (taken in her _Process, before
@@ -2647,11 +2654,87 @@ public partial class PlayerView : Node3D
             }
             sb.Append(System.FormattableString.Invariant($" face {Mathf.RadToDeg(Rotation.Y):0.00}"));
             GD.Print(sb.ToString());
+            // (warden-move, side carry) BLADE: the right piece as drawn, on screen (px): its grip point, its tip, then the right
+            // fist, the head and both feet and balls (BODY2's joints); then the grip and tip in the world, the tilt axis (the
+            // palm's normal), and the side carry's weight and added tilt (deg). View-only log.
+            if (view?.BladeOf("handslot.r") is { } bd)
+            {
+                Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
+                Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
+                GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00}"));
+            }
         }
     }
     readonly Vector3[] bodyW = new Vector3[13];
     static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
-    public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
+    public override void _ExitTree()
+    {
+        if (feetHooked) RenderingServer.FramePreDraw -= Scr2;
+        if (carryHooked && person?.Skeleton is { } sk && IsInstanceValid(sk)) sk.SkeletonUpdated -= CarryPosed;
+        base._ExitTree();
+    }
+
+    // (warden-move) The side carry (SideCarry): the sword turned in her fist while her sword side faces the camera. Stepped
+    // once her pose is made (SkeletonUpdated, as HairSway is: the modifiers' arm in it), so the grip's acceleration and the
+    // tilt's sign are this frame's. --side-carry off: none (the clips' grip, as before); --side-carry-tune
+    // rest,gain,hz,damping,loose,ease,maxrate: its tuning (SideCarry's fields, in that order).
+    readonly SideCarry carry = CarryTuned();
+    static readonly bool CarryOn = SurvivorUnchained.Args.Get("side-carry") is not ("off" or "0");
+    bool carryHooked;
+    float carryDt;
+    Vector3 carryAt, carryV;
+    int carryHist;
+    static SideCarry CarryTuned()
+    {
+        var c = new SideCarry();
+        if (SurvivorUnchained.Args.Get("side-carry-tune") is { } t)
+        {
+            var v = t.Split(',');
+            float F(int i, float d) => i < v.Length && float.TryParse(v[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : d;
+            c.Rest = F(0, c.Rest); c.Gain = F(1, c.Gain); c.Hz = F(2, c.Hz); c.Damping = F(3, c.Damping);
+            c.Loose = F(4, c.Loose); c.Ease = F(5, c.Ease); c.MaxRate = F(6, c.MaxRate); c.Splay = F(7, c.Splay); c.LooseFwd = F(8, c.LooseFwd); c.MaxAccel = F(9, c.MaxAccel);
+        }
+        return c;
+    }
+
+    void CarryPosed()
+    {
+        if (!IsInstanceValid(this) || !IsInsideTree() || view == null || person?.Skeleton is not { } sk) return;
+        float d = carryDt;
+        carryDt = 0f;
+        if (!(d > 0f)) return;
+        int hb = sk.FindBone("hand_r");
+        if (hb < 0) return;
+        // The fist's acceleration along her travel (level), from its last two drawn places; a jump (a cut, a teleport) restarts it.
+        var at = sk.GlobalTransform * sk.GetBoneGlobalPose(hb).Origin;
+        var fwd = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+        fwd = fwd.LengthSquared() > 1e-8f ? fwd.Normalized() : Vector3.Back;
+        float acc = 0f;
+        if (carryHist > 0 && at.DistanceTo(carryAt) > 1.5f) carryHist = 0;
+        if (carryHist >= 1)
+        {
+            var v = (at - carryAt) / d;
+            if (carryHist >= 2) acc = (v - carryV).Dot(fwd) / d;
+            carryV = v;
+        }
+        carryAt = at;
+        carryHist = System.Math.Min(carryHist + 1, 2);
+        var cam = GetViewport()?.GetCamera3D();
+        var back = cam != null ? cam.GlobalBasis.Z : Vector3.Back;
+        float target = CarryOn && !held && TourList == null ? SideCarry.Target(SideCarry.Side(Rotation.Y, back.X, back.Z)) : 0f;
+        carry.Step(d, target, acc);
+        if (layered) CarrySlide(sk.GlobalTransform * sk.GetBoneGlobalPose(hb));
+    }
+
+    /// <summary>Her right piece gripped as the clips grip it (slide, tilt), then the side carry's turns on it: tip back about
+    /// her left (level; + tips the blade behind her), and in toward her body about her facing (level), through the fist.</summary>
+    void CarrySlide(Transform3D? bone)
+    {
+        var left = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z);
+        var ahead = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+        if (left.LengthSquared() < 1e-8f || ahead.LengthSquared() < 1e-8f) { view?.Slide("handslot.r", slide, tilt); return; }
+        view?.Slide("handslot.r", slide, tilt, left.Normalized(), carry.Tilt, ahead.Normalized(), carry.Inward, bone);
+    }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
