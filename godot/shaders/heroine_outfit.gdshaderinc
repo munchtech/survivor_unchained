@@ -52,6 +52,18 @@ uniform float gold_floor = 0.08;                  // (gold's own colour added as
 uniform float gold_floor_far = 0.0;
 uniform vec3 paint_far = vec3(1.0);
 uniform vec2 far_px = vec2(120.0, 300.0);
+// (armor-D finish r4, 16 Nov, the max judge's round 1: the kit's lit domes read L .70-.77 pink in the den at the play camera
+// (her carried light, ember 4, on paint_far's lift) and its lit side one flat lavender step L .42-.44 by day: metal's broad
+// 20 degree band in the sky's hue, capped flat by enamel_spec_cap. The kit's toon ramp on finish 2's paint: each light's lit
+// share eased toward kit_lit (the paint's own lit output, linear luminance, past half of it; 0: all of this off), the hard
+// band softened to n.l by kit_soft, and metal's two bands replaced by one narrow glint in kit_glint_color (its output at a
+// white card of 1 or more) of kit_glint.x degrees close, .y at the play camera (far_px), .z its soft edge.
+// Defaults off: every other gear bit for bit; set only from metal_finishes.json meshes.kit)
+uniform float kit_lit = 0.0;
+uniform float kit_soft = 0.0;
+uniform vec3 kit_glint = vec3(5.0, 8.0, 1.0);
+uniform vec3 kit_glint_color = vec3(0.0);
+varying float v_kit_far;
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
 uniform float look_rig = 0.0;
@@ -290,6 +302,7 @@ void fragment() {
 	float kit_far = 0.0;                             // (armor-D S1c: 1 at the play camera, 0 close; only when a far rule is set)
 	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0)))) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
 		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
+	v_kit_far = kit_far;
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -713,6 +726,22 @@ void light() {
 		dm = mix(dm, LIGHT_COLOR * cel_level(ob_t) * (ob_sh / PI) + cel_fill_add(LIGHT_COLOR, lit_sh, LIGHT_IS_DIRECTIONAL), cel_on);
 		s = mix(s, outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, lit_sh, r, v_metal, ALBEDO, 0.5, SPECULAR_AMOUNT), cel_on);
 	}
+	// (armor-D finish r4: the kit's toon ramp on its paint, see kit_lit; its fill as it was)
+	float kp = (kit_lit > 0.0 && cel_on > 0.0) ? clamp(v_paint, 0.0, 1.0) : 0.0;
+	vec3 kg = vec3(0.0);
+	if (kp > 0.0) {
+		vec3 klw = vec3(0.2126, 0.7152, 0.0722);
+		float klit = cel_lit(ob_t) * ob_sh;
+		vec3 kd = LIGHT_COLOR * mix(cel_level(ob_t), vec3(smoothstep(-0.05, 0.8, ob_t)), kit_soft) * (ob_sh / PI);
+		float ky = dot(ALBEDO * kd, klw) * (1.0 - v_metal);
+		float kk = 0.5 * kit_lit;
+		if (ky > kk) kd *= (kk + kk * (1.0 - exp(-(ky - kk) / kk))) / ky;
+		dm = mix(dm, kd + cel_fill_add(LIGHT_COLOR, klit, LIGHT_IS_DIRECTIONAL), kp);
+		float krad = mix(kit_glint.x, kit_glint.y, v_kit_far);
+		float kang = degrees(acos(clamp(dot(NORMAL, H), -1.0, 1.0)));
+		float kdisc = 1.0 - smoothstep(krad - kit_glint.z, krad + max(kit_glint.z, 1e-3), kang);
+		kg = kit_glint_color * (kdisc * klit * min(dot(LIGHT_COLOR, klw) * ATTENUATION / PI, 1.0) * SPECULAR_AMOUNT * kp);
+	}
 	DIFFUSE_LIGHT += dm;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 	float cap = mix(metal_spec_cap, mix(enamel_gloss_cap, enamel_spec_cap, smoothstep(0.38, 0.52, r)), v_paint) * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
@@ -725,6 +754,7 @@ void light() {
 	// (armor 16 N4: a muted piece's highlight takes the steel's grey-blue, not the lamp's hue: blued steel under a warm key)
 	s = mix(s, vec3(dot(s, lw)) * spec_mute_tint, v_spec_mute);
 	if (finish == 3) s *= mix(1.0, dyed_sheen, smoothstep(0.36, 0.5, r));   // (dyed metal's brushed plate: the sun's broad lobe muted (an edge-on pauldron at full read as a pale glassy cap); the polished cups keep theirs)
+	s = s * (1.0 - kp) + kg;   // (armor-D finish r4: the kit's paint, its glint past the enamel's cap in place of metal's two bands)
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
