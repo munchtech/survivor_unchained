@@ -1404,10 +1404,10 @@ public partial class PlayerView : Node3D
             var down = right.Cross(Vector3.Up);   // along the ground toward the camera = down the screen (+Z at yaw 0)
             var foot = right * Atmosphere.HeroFoot.X + down * Atmosphere.HeroFoot.Y;
             var own = GlobalBasis.Inverse() * foot;
-            Light.Position = new Vector3(own.X, EmberH, own.Z);
+            Light.Position = new Vector3(own.X, EmberHNow, own.Z);
             if (mine) Atmosphere.HeroFootWorld(new Vector2(foot.X, foot.Z));
         }
-        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);
+        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberHNow, Atmosphere.HeroFoot.Y);
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {
@@ -1856,6 +1856,10 @@ public partial class PlayerView : Node3D
         FolkAtt = SurvivorUnchained.Args.Num("ember-folk-att", 2f);
     // --ember-h H: the pool light's height over her feet; --ember-k K: her ember's gain times K (sweeps of any preset).
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
+    // (demo-look r2 her) in the den the rig's own height (hero_den value 33, HeroDen.EmberH: a pool ~120 px round her, brighter
+    // at its centre; at 1.7 it was flat to 160 px); --ember-h given wins.
+    static readonly bool EmberHArg = SurvivorUnchained.Args.Get("ember-h") != null;
+    static float EmberHNow => !EmberHArg && HeroDen.EmberH > 0 ? HeroDen.EmberH : EmberH;
     // --clip-tour LIST|all (--clip-tour-from S): the clip playing and its time, for the probes (null / -1 outside a tour).
     static readonly string? TourArg = SurvivorUnchained.Args.Get("clip-tour");
     static readonly float TourFrom = SurvivorUnchained.Args.Num("clip-tour-from", 0f);

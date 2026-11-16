@@ -243,9 +243,13 @@ public sealed record AtmospherePreset(
     /// <summary>(demo-look r2 her; rigs.json "hero_den") Her figure in the den (View.HeroDen): [her cast shadow on (0/1), its
     /// contact ellipse's half width and half depth (m), the trail's length and its tip's half width (m), the trail's world
     /// bearing (deg, x toward z), the ground's multiplier R, G, B (linear), the contact core's extra multiplier; her line's
-    /// width (px at 1080p), its tone R, G, B (sRGB 0-255) and level; her hair's chroma gain and value gain; her skin and hair
-    /// steps' strength (0 smooth, 1 stepped); her held steel's level, its lit, shade and glint tones (R, G, B each, sRGB 0-255),
-    /// the glint's place along the piece (0-1) and half length (share), the grip's light]. Null: none of it (every rig but the den).</summary>
+    /// width (px at 1080p), its tone R, G, B (sRGB 0-255) and level; her hair's chroma gain and value gain; her skin's shade
+    /// step under her ember (share of the lit step; 0: no steps, Lambert as before); her held steel's level, its lit, shade and
+    /// glint tones (R, G, B each, sRGB 0-255), the glint's place along the piece (0-1) and half length (share), the grip's light;
+    /// (round 2, the D judge: "pasty") her steps' painted direction (0 her ember's own, from over her; 1 the den key's, from the
+    /// screen's upper left), the lit step's chroma (share of its light's; 0 as is), her ember's height over her feet (m; 0:
+    /// --ember-h, 1.7), the steps' n.l (0: 0.42), the lit step's level (0: 0.7), the shade step's warmth (the light's own hue
+    /// again, share), her hair's shade step (share of the lit, in the dye's hue)]. Null: none of it (every rig but the den).</summary>
     public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";

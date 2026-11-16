@@ -5,7 +5,8 @@ namespace SurvivorUnchained.View;
 /// <summary>(demo-look r2 her, 16 Nov; judge 1: "the look stops at the set") Her figure in the den, from the rig's hero_den row
 /// (Zone.HeroDen): her cast shadow (shaders/hero_cast.gdshader, Actors/HerShadow.cs), her line where no hero_pool row draws it
 /// (hero_line.gdshader through Atmosphere.HeroLinePx), her hair's chroma and her skin and hair steps (cel_her_den), and her
-/// held steel (Actors/HerSteel.cs, shaders/hero_steel.gdshader). A rig
+/// held steel (Actors/HerSteel.cs, shaders/hero_steel.gdshader), her steps' painted direction (toward the den key, cel_key)
+/// and levels (cel_her_den2, cel_her_den3), and her ember's height over her feet (PlayerView reads EmberH). A rig
 /// without the row: every global zero, nothing drawn, her look as before.</summary>
 public static class HeroDen
 {
@@ -14,6 +15,8 @@ public static class HeroDen
     public static bool CastOn;
     /// <summary>Whether her held steel wears the den's painted steel (HerSteel, each frame from PlayerView).</summary>
     public static bool SteelOn;
+    /// <summary>Her ember's (the pool light's) height over her feet in the den, m (value 33); 0: PlayerView's own (--ember-h, 1.7).</summary>
+    public static float EmberH;
 
     static double V(double[] d, int i, double or) => d.Length > i ? d[i] : or;
 
@@ -36,8 +39,15 @@ public static class HeroDen
             var t = new Color((float)d[11] / 255f, (float)d[12] / 255f, (float)d[13] / 255f).SrgbToLinear() * (float)d[14];
             RenderingServer.GlobalShaderParameterSet("cel_hero_line", new Vector4(t.R, t.G, t.B, Atmosphere.HeroLinePx));
         }
-        // her hair's chroma and value gain (values 15-16), her skin and hair steps (value 17)
-        RenderingServer.GlobalShaderParameterSet("cel_her_den", d is { Length: >= 18 } ? new Vector4((float)d[15], (float)d[16], (float)d[17], 0) : Vector4.Zero);
+        // her hair's chroma and value gain (values 15-16), her skin and hair steps (value 17: the shade step's share of the lit;
+        // 0 off), the lit step's chroma (value 32, its light's chroma kept: 1 as is)
+        RenderingServer.GlobalShaderParameterSet("cel_her_den", d is { Length: >= 18 } ? new Vector4((float)d[15], (float)d[16], (float)d[17], (float)V(d, 32, 0)) : Vector4.Zero);
+        // (round 2 her, the D judge: "pasty") the steps' painted direction: toward the den key (cel_key), value 31 of the way
+        // from her ember's own (heroine_skin, heroine_hair light()); the steps' n.l (34, 0: 0.42), the lit step's level (35, 0:
+        // 0.7), the shade step's warmth (36: the light's own hue again, share) and her hair's shade step (37, share of the lit)
+        RenderingServer.GlobalShaderParameterSet("cel_her_den2", d != null ? new Vector4((float)V(d, 31, 0), (float)V(d, 34, 0), (float)V(d, 35, 0), (float)V(d, 36, 0)) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("cel_her_den3", d != null ? new Vector4((float)V(d, 37, 0), 0, 0, 0) : Vector4.Zero);
+        EmberH = d != null ? (float)V(d, 33, 0) : 0;
         // her held steel (values 18-30: its level, lit R, G, B, shade R, G, B, glint R, G, B (sRGB 0-255), the glint's place
         // along the piece (0-1) and half length (share), the grip's light): shaders/hero_steel.gdshader through HerSteel
         SteelOn = d is { Length: >= 31 } && d[18] > 0;
