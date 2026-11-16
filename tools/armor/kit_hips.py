@@ -300,6 +300,184 @@ def outer_rho(UV, UF, nsk, wrap, Y, TH, R=0.42):
     return rho, (i < nsk).reshape(Y.shape)
 
 
+SWEEP_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")   # the demo's clips (docs/handoff/armor.md, lead 2)
+
+
+def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, dth=1.0, verbose=True):
+    """The room each rigid ride needs: {name: E (ny, nth)}, the outermost radius (about the axis x = 0, z = z0) of her
+    skin and of the pieces `under_ids` (installed, posed by their own weights), over every frame of the demo clips (and
+    her rest), carried back into the rest frame of a rigid shell riding `rides[name]` ({bone: w}, as params.rigid_ride
+    gives it): a lame on that blend clears her in every frame if it stands outside E. Her springs as wearcheck runs
+    them (amount 1, squash 1); every triangle sampled at its corners, edge middles and centre. Cached by its inputs.
+    Returns (E, ys, ths)."""
+    import hashlib
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))   # (as wearcheck: the main checkout's built clips)
+    os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
+                                                   else kb.REPO, "tools", "anim", "out"))
+    import skin
+    ys = np.arange(y0, y1 + dy / 2, dy)
+    ths = np.arange(-180.0, 180.0, dth)
+    art = os.path.join(kb.REPO, "godot", "art", "armor")
+    idx_rows = {r["id"]: r for r in json.load(open(os.path.join(art, "armor_index.json"))) if isinstance(r, dict)}
+    paths = [os.path.join(art, f"{g}.gltf") for g in under_ids]
+    deps = [kb.BODY] + paths + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
+    stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
+    key = hashlib.sha1(json.dumps(["v2 no arms", sorted((k, sorted(v.items())) for k, v in rides.items()), list(under_ids), list(clips),
+                                   y0, y1, dy, dth, z0, stamp]).encode()).hexdigest()[:14]
+    cache = os.path.join(kb.REPO, ".shots", "armor2", "kit_hips_sweep", key + ".npz")
+    if os.path.exists(cache):
+        z = np.load(cache)
+        return {k: z[k] for k in rides}, ys, ths
+    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
+    files = [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")]
+    for g, p in zip(under_ids, paths):
+        files.append((skin.Path(p), lambda n, s=frozenset(idx_rows[g]["meshes"]): n in s, "garment"))
+    body = skin.Body(sk, files, skin.Jiggle(sk, 1, 1), label="her", helpers=True)
+    sel = (body.P[body.T][..., 1] > y0 - 0.03).all(1) & (body.P[body.T][..., 1] < y1 + 0.03).all(1)
+    # (not her arms and hands: they swing past the plates in the clips, and no plate is built to clear a hand)
+    arm_j = np.array([str(n).startswith(skin.ARM_PARTS) for n in body.sk.names] + [False] * 64)
+    arm_w = (body.W * arm_j[np.minimum(body.Jv, len(arm_j) - 1)]).sum(1)
+    sel &= (arm_w[body.T] < 0.05).all(1)
+    T = body.T[sel]
+    idx, Tl = np.unique(T, return_inverse=True)
+    Tl = Tl.reshape(T.shape)
+    E_ = np.unique(np.sort(np.r_[Tl[:, [0, 1]], Tl[:, [1, 2]], Tl[:, [2, 0]]], 1), axis=0)
+    names = list(body.sk.names)
+    E = {k: np.full((len(ys), len(ths)), np.nan) for k in rides}
+    ang = {}
+
+    def add(Q, S):
+        for k, wts in rides.items():
+            if S is None:
+                X = Q
+            else:
+                M = sum(float(w) * S[names.index(b)] for b, w in wts.items()) / sum(wts.values())
+                Mi = np.linalg.inv(M)
+                X = Q @ Mi[:3, :3].T + Mi[:3, 3]
+            iy = np.round((X[:, 1] - y0) / dy).astype(int)
+            th = np.degrees(np.arctan2(X[:, 0], X[:, 2] - z0))
+            it = np.round((th + 180.0) / dth).astype(int) % len(ths)
+            ok = (iy >= 0) & (iy < len(ys))
+            rho = np.hypot(X[:, 0], X[:, 2] - z0)
+            A = E[k]
+            flat = np.full(A.size, -1.0)
+            np.maximum.at(flat, iy[ok] * len(ths) + it[ok], rho[ok])
+            flat = flat.reshape(A.shape)
+            E[k] = np.where(flat > 0, np.fmax(A, flat), A)
+
+    def samples(P):
+        return np.vstack([P, (P[E_[:, 0]] + P[E_[:, 1]]) / 2, P[Tl].mean(1)])
+
+    add(samples(body.P[idx]), None)
+    for c in clips:
+        clip = body.clip(c)
+        frames = body.frames(clip)
+        for G in frames:
+            S = body.skin_mats(G)
+            add(samples(body.pose(G, idx)), S)
+            for side, th_ in (("l", "thigh_l"), ("r", "thigh_r")):
+                Rr = S[names.index("pelvis"), :3, :3].T @ S[names.index(th_), :3, :3]
+                a = np.degrees(np.arccos(np.clip((np.trace(Rr) - 1) / 2, -1, 1)))
+                ang[(c, side)] = max(ang.get((c, side), 0.0), a)
+        if verbose:
+            print(f"sweep: {c} {len(frames)} frames; thigh vs pelvis max deg l {ang[(c, 'l')]:.0f} r {ang[(c, 'r')]:.0f}", flush=True)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez_compressed(cache, **E)
+    return E, ys, ths
+
+
+def dilate(E, ys, ths, need, rho_ref=0.16):
+    """E grown by a ball of radius `need` (m) in (y, arc length at rho_ref): the radius a plate must stand at."""
+    dy, dth = ys[1] - ys[0], np.radians(ths[1] - ths[0]) * rho_ref
+    ky, kt = int(need / dy), int(need / dth)
+    out = np.full_like(E, np.nan)
+    for a in range(-ky, ky + 1):
+        for b in range(-kt, kt + 1):
+            h = need ** 2 - (a * dy) ** 2 - (b * dth) ** 2
+            if h < 0:
+                continue
+            S_ = np.roll(E, (-a, -b), (0, 1))
+            if a > 0:
+                S_[-a:] = np.nan
+            elif a < 0:
+                S_[:-a] = np.nan
+            out = np.fmax(out, S_ + np.sqrt(h))
+    return out
+
+
+def room_fn(R, ys, ths):
+    """(y, th) -> the dilated room R at the four grid cells round it, the most of them (nan: nothing there)."""
+    def f(y, th):
+        fy = np.clip((np.asarray(y, float) - ys[0]) / (ys[1] - ys[0]), 0, len(ys) - 1.001)
+        ft = ((np.asarray(th, float) + 180.0) % 360.0) / (ths[1] - ths[0])
+        y0, t0 = np.floor(fy).astype(int), np.floor(ft).astype(int)
+        out = np.full(np.broadcast(fy, ft).shape, np.nan)
+        for a in (0, 1):
+            for b in (0, 1):
+                out = np.fmax(out, R[np.minimum(y0 + a, len(ys) - 1), (t0 + b) % len(ths)])
+        return out
+    return f
+
+
+def upper_hull(s, r):
+    """The least concave function over the points (s ascending): its knots."""
+    h = []
+    for p in zip(s, r):
+        while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (p[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (p[0] - h[-2][0]) >= 0:
+            h.pop()
+        h.append(p)
+    return np.array(h)
+
+
+def hug_col(room, skin_rho, th, y_top, s0, r0, s1, a_in, smax, floor=None, ds=0.002):
+    """One column of a hugging lame: its radius r(s) at drops s (below y_top) from (s0, r0) to s1, the least concave
+    (outward-bowing) curve over the room (and `floor`), never leaning in faster than a_in deg; cut short where it would
+    stand over smax off her rest skin. Returns (S, r)."""
+    for _ in range(3):
+        S = np.linspace(s0, max(s1, s0 + 2 * ds), max(int(round((s1 - s0) / ds)) + 1, 3))
+        t = room(y_top - S, np.full(len(S), th))
+        if floor is not None:
+            t = np.fmax(t, floor(S))
+        ok = np.isfinite(t)
+        ok[0] = False
+        H = upper_hull(np.r_[s0, S[ok]], np.r_[r0, t[ok]])
+        r = np.interp(S, H[:, 0], H[:, 1])
+        k = np.tan(np.radians(a_in)) * (S[1] - S[0])
+        for i in range(1, len(r)):
+            r[i] = max(r[i], r[i - 1] - k)
+        st = r - skin_rho(y_top - S, np.full(len(S), th))
+        bad = np.nonzero(st[1:] > smax)[0]
+        if not len(bad):
+            return S, r
+        s1 = max(S[bad[0]], s0 + 0.012)
+    return S, r
+
+
+def hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, rows, a_in, smax, floors=None, sig=1.0):
+    """A hugging lame: a column per theta (hug_col), resampled to `rows` evenly down each, the radii raised to their
+    smoothing across the columns (never lowered). Returns (S (rows, cols) drops, Rg radii, per-column functions r(s))."""
+    from scipy.ndimage import gaussian_filter1d
+    C = len(ths)
+    Sg, Rg, fns = np.zeros((rows, C)), np.zeros((rows, C)), []
+    for j in range(C):
+        S, r = hug_col(room, skin_rho, ths[j], y_top[j], s0[j], r0[j], s1[j], a_in, smax,
+                       None if floors is None else floors[j])
+        Sg[:, j] = np.linspace(S[0], S[-1], rows)
+        Rg[:, j] = np.interp(Sg[:, j], S, r)
+    # (the lengths: a column cut short shortens its neighbours a little, so the edge runs smooth)
+    L = Sg[-1] - Sg[0]
+    L = np.minimum(L, gaussian_filter1d(L, sig, mode="nearest") + 0.004)
+    for j in range(C):
+        s_new = np.linspace(Sg[0, j], Sg[0, j] + L[j], rows)
+        Rg[:, j] = np.interp(s_new, Sg[:, j], Rg[:, j])
+        Sg[:, j] = s_new
+    Rg = np.maximum(Rg, gaussian_filter1d(Rg, sig, axis=1, mode="nearest"))
+    for j in range(C):
+        fns.append(lambda s, a=Sg[:, j].copy(), b=Rg[:, j].copy(): np.interp(s, a, b, left=b[0], right=b[-1]))
+    return Sg, Rg, fns
+
+
 def hang(ref, wrap, name, ths, y_top, rho_top, length, a0, need, it=8, sig=1.5, rows=14, a_max=None):
     """A rigid hanging plate: columns at ths from (y_top, rho_top) down a cone tilted a0 (deg) out from vertical,
     each column's tilt raised until every point stands `need` (m, per row fraction) off her skin. Returns the inner
@@ -444,7 +622,22 @@ def belt(cfg, ref):
     pt_th = cfg["plate_thick"]
     edge_off = pt_th * 0.5 + 0.0003
     from scipy.interpolate import interp1d
+    hg = cfg.get("hug")
+    if hg:  # the room every ride needs through the demo clips (sweep), grown by the clearance
+        rides = {}
+        for pl in cfg["plates"]:
+            for lm in pl.get("lames", ()):
+                for h in ((1, -1) if pl.get("mirror", True) else (1,)):
+                    rides[ride_key(lm["ride"], h)] = side_ride(lm["ride"], h)
+        Esw, ys_, ths_ = sweep(rides, hg.get("under", ["kit_brief"]), z0)
+        rooms = {k: room_fn(dilate(Esw[k], ys_, ths_, hg["need"]), ys_, ths_) for k in rides}
+        skin_rho = wrap.field(wrap.rho)
+        ride_out = []
     for pl in cfg["plates"]:
+        if hg and pl.get("lames"):
+            for h in ((1, -1) if pl.get("mirror", True) else (1,)):
+                hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0)
+            continue
         for h in ((1, -1) if pl.get("mirror", True) else (1,)):
             nm = pl["name"] + ("" if not pl.get("mirror", True) else ("_l" if h > 0 else "_r"))
             a0, a1 = pl["th"]
@@ -494,7 +687,81 @@ def belt(cfg, ref):
                 # whose parts ride ONE common blend (piece_blender by_src), so the gold never drifts off its steel)
                 rigid.append(Part.join(nm + sfx + "_rigid", M["trim"], gold))
             print(nm, "tilt", np.round(tilt.min(), 1), np.round(tilt.max(), 1), "len", np.round(length.max(), 3))
+    if hg:  # each lame's ride, into the piece's install params (pin_shipped params.rigid_ride; first match wins)
+        pid = cfg["piece"]["id"]
+        cfg["piece"]["params"] = {"file": f"{pid}.glb", **cfg["piece"].get("params", {}), "rigid_ride": ride_out}
     return plate, trim, straps, rigid
+
+
+def side_ride(ride, h):
+    """A ride written for her left ({bone: w}, *_l bones) on side h (1 left, -1 right)."""
+    return {(b[:-2] + ("_l" if h > 0 else "_r") if b.endswith(("_l", "_r")) else b): w for b, w in ride.items()}
+
+
+def ride_key(ride, h):
+    return ",".join(f"{b}:{w:g}" for b, w in sorted(side_ride(ride, h).items()))
+
+
+def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M, rim, pt_th, edge_off, z0):
+    """A plate of hugging lames (build.json plates[].lames, top to bottom): each its own rigid node riding its own
+    blend (lames[].ride), its columns the least outward-bowing curve over that ride's room through the demo clips
+    (sweep, dilate), the first hung from under the belt, each next from the one above (`ov` up under it, `lap` out)."""
+    from scipy.interpolate import interp1d
+    nm = pl["name"] + ("" if not pl.get("mirror", True) else ("_l" if h > 0 else "_r"))
+    a0, a1 = pl["th"]
+    ths = np.linspace(a0, a1, pl["cols"]) * h if pl.get("mirror", True) else np.linspace(-a1, a1, pl["cols"])
+    u = (np.abs(ths) - min(abs(a0), abs(a1))) / max(abs(a1 - a0), 1e-6) if pl.get("mirror", True) else np.abs(ths) / a1
+    hw = bl["w"] / 2
+    y_top = belt_line(ths, bl) - hw + pl["tuck"]
+    r_top = np.array([np.linalg.norm((belt_pt(yy, t, 0.0010)[0][0] - [0, yy, z0])[[0, 2]]) for yy, t in zip(y_top, ths)])
+    s0, prev = np.zeros(len(ths)), None
+    for k, lm in enumerate(pl["lames"]):
+        Lk = np.array(lm["len"])
+        s1 = interp1d(np.linspace(0, 1, len(Lk)), Lk, kind="quadratic" if len(Lk) > 2 else "linear")(np.clip(u, 0, 1))
+        room = rooms[ride_key(lm["ride"], h)]
+        if prev is None:
+            r0, floors = r_top, None
+            s1 = s1 + 0.0
+        else:
+            ov, lap = lm.get("ov", 0.008), lm.get("lap", 0.004)
+            s0 = prev[0][-1] - ov
+            r0 = np.array([prev[2][j](s0[j]) + lap for j in range(len(ths))])
+            s1 = s0 + ov + s1
+            floors = [lambda s, f=prev[2][j], e=prev[0][-1, j]: np.where(s <= e + 0.002, f(s) + lap, np.nan)
+                      for j in range(len(ths))]
+        Sg, Rg, fns = hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, lm.get("rows", 8), lm.get("a_in", 6.0),
+                               lm.get("smax", 0.03), floors, sig=lm.get("sig", 1.0))
+        G = wrap.pt(y_top[None] - Sg, ths[None], Rg)
+        du, dv = np.gradient(G, axis=1), np.gradient(G, axis=0)
+        Nl = U(np.cross(dv, du))
+        o = wrap.dirs(ths)
+        Nl = np.where(((Nl * o[None]).sum(-1) < 0)[..., None], -Nl, Nl)
+        ex = None
+        if pl.get("keel"):
+            k_ = pl["keel"]
+            xs = np.linalg.norm(G - G[:, [len(ths) // 2]], axis=-1)
+            ex = k_["h"] * np.clip(1 - xs / (k_["w"] / 2), 0, 1)
+        node = nm + lm.get("sfx", "") + "_rigid"
+        rigid.append(kb.slab(node, M["plate"], G, Nl, pt_th, extra=ex))
+        rigid[-1].name = node
+        E = np.vstack([G[:, 0], G[-1, 1:], G[::-1, -1][1:]])
+        gold = [kb.bead(Normals(G.reshape(-1, 3), Nl.reshape(-1, 3)), node[:-6] + "_rim", M["trim"], E, rim, edge_off,
+                        False, relax_it=1)]
+        b_ = pl.get("band")
+        if b_ and lm.get("band", True) and float(np.median(Sg[-1] - Sg[0])) > b_.get("min_len", 0.03):
+            Gs = G + Nl * (pt_th + (0 if ex is None else ex[..., None]))
+            bv = lm.get("band_v", b_["v"])
+            gold += interlace(Gs, Nl, 1.2, len(ths) - 2.2, bv[0], bv[1], b_["wl"], node[:-6] + "_band",
+                              M["trim"], 0.0, [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
+                                               dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
+        rigid.append(Part.join(node, M["trim"], gold))
+        ride_out.append({"match": node[:-6], "weights": side_ride(lm["ride"], h), "mix": 1.0})
+        st = Rg - skin_rho(y_top[None] - Sg, np.broadcast_to(ths[None], Sg.shape))
+        print(f"{node}: len {np.round((Sg[-1] - Sg[0]).min() * 1000)}-{np.round((Sg[-1] - Sg[0]).max() * 1000)} mm, "
+              f"bottom y {np.round((y_top - Sg[-1]).min(), 3)}-{np.round((y_top - Sg[-1]).max(), 3)}, stand-off off her "
+              f"skin mm: top {np.round(st[1].min() * 1000)}-{np.round(st[1].max() * 1000)}, bottom "
+              f"{np.round(st[-1].min() * 1000)}-{np.round(st[-1].max() * 1000)}, max {np.round(st.max() * 1000)}")
+        prev = (Sg, Rg, fns)
 
 
 RECIPES = {"brief": brief, "belt": belt}
