@@ -232,7 +232,7 @@ public sealed record AtmospherePreset(
     /// the blocks), [2] chroma, [3] hue (deg); [4] the line's px at the silhouette, [5] the body's tone in it (a multiplier,
     /// never black); [6] the rim's px inside the line, [7] its side's lean to screen-up (0 the key's screen side, 1 straight
     /// up), [8] the MID band's L step over the flank (the fur's three bands: flank, mid past the shader's DEN_MID_CUT 0.3 of the world normal's y, top past [13]), [9] the rim's level (0: no rim at all), [10-12] its R, G, B (sRGB 0-255);
-    /// [13] the top band's cut in the world normal's y, [14] its L step over the flank (the boss takes half), [15] the probe
+    /// [13] the top band's cut in the world normal's y, [14] its L step over the flank (the boss takes half; the pack's top also a chroma step, the shader's DEN_TOP_C), [15] the probe
     /// (0 in play, always the committed value; 1 each class flat in its own colour for masks: pack green, elite blue, boss
     /// magenta; 2 the model's space), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
     /// C are the shader's DEN_ACCENT), [20] the full rim's level on an elite or the boss; [21-23] the boss body's tint R, G, B (its hue only,
