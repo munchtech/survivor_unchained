@@ -82,7 +82,7 @@ SPEC = {
     "her_dodge": ("shot", 1, ["hurt_her"], ["her dodge1", "her dodge2"]),
     "her_perfect": ("shot", 1, ["hurt_her"], ["her perfect"]),
     "her_stance": ("shot", 1, ["hurt_her"], ["Stance1", "Stance2"]),
-    "her_heartbeat": ("shot", 1, ["hurt_her"], ["low-health-heartbeat"]),
+    "her_heartbeat": ("shot", 1, ["hurt_her"], [f"low-health-heartbeat#{k}" for k in range(4)]),
 }
 
 IMPORT_TEMPLATE = (SOUND / "anvil_0.wav.import")
@@ -252,9 +252,13 @@ def main():
         if kind == "music":
             target += 2.0
         for i, stem in enumerate(stems):
-            p = src / f"{stem}.wav"
+            p = src / f"{stem.split('#')[0]}.wav"
             x, r = read(p)
             x = to_rate(x, r)
+            if "#" in stem:
+                # one cycle (lub-dub, 1 s apart from 0.51 s) of a source that holds several: the heart is paced by the game's timer
+                a0 = int((0.45 + int(stem.split("#")[1])) * RATE)
+                x = x[a0:a0 + int(0.95 * RATE)]
             if kind in ("shot", "sting"):
                 x = trim(x)
                 x = fade_in(x, 0.002)

@@ -62,7 +62,10 @@ Level: each family takes the mean LUFS of its nearest banked neighbour (column `
 | her_perfect_0 | her perfect.wav | 2.31 | shot | 1 | -17.2 | -22.7 | -22.7 | -9.3 |  | hurt_her |
 | her_stance_0 | Stance1.wav | 1.25 | shot | 1 | -19.8 | -22.7 | -22.7 | -4.6 |  | hurt_her |
 | her_stance_1 | Stance2.wav | 1.44 | shot | 1 | -14.3 | -22.7 | -22.7 | -9.9 |  | hurt_her |
-| her_heartbeat_0 | low-health-heartbeat.wav | 5.00 | shot | 1 | -23.0 | -22.7 | -22.7 | -1.7 |  | hurt_her |
+| her_heartbeat_0 | low-health-heartbeat#0.wav | 0.95 | shot | 1 | -24.1 | -22.7 | -22.7 | -1.5 |  | hurt_her |
+| her_heartbeat_1 | low-health-heartbeat#1.wav | 0.95 | shot | 1 | -23.8 | -22.7 | -22.7 | -1.5 |  | hurt_her |
+| her_heartbeat_2 | low-health-heartbeat#2.wav | 0.95 | shot | 1 | -23.8 | -22.8 | -22.7 | -1.0 | yes | hurt_her |
+| her_heartbeat_3 | low-health-heartbeat#3.wav | 0.95 | shot | 1 | -23.6 | -22.7 | -22.7 | -1.3 |  | hurt_her |
 
 ## Loops: the seam, by measurement
 
