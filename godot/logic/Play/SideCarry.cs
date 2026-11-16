@@ -24,9 +24,9 @@ namespace SurvivorUnchained.Play;
 public sealed class SideCarry
 {
     /// <summary>The blade's on-screen angle wanted at a run and standing (deg from straight down, toward her screen-back).</summary>
-    public float RunAngle = 41f, StandAngle = 22f;
+    public float RunAngle = 41f, StandAngle = 30f;
     /// <summary>Degrees less of it on a strafe (full sideways travel).</summary>
-    public float StrafeCut = 14f;
+    public float StrafeCut = 4f;
     /// <summary>The swing: screen degrees per m/s² of the fist's acceleration along her facing (forward pull, tip back).</summary>
     public float Gain = 0.7f;
     /// <summary>The swing's spring: natural frequency (Hz) and damping ratio.</summary>
@@ -38,17 +38,33 @@ public sealed class SideCarry
     public float MaxAccel = 24f;
     /// <summary>The weight's ease, a time constant (s).</summary>
     public float Ease = 0.1f;
-    /// <summary>The fastest the added tilt may change (deg/s; 150 is 5 a frame at 30 fps).</summary>
-    public float MaxRate = 200f;
+    /// <summary>The fastest the added tilt may change (deg/s; a safety only: the on-screen limit is <see cref="ScreenRate"/>).</summary>
+    public float MaxRate = 900f;
     /// <summary>The tip turned in toward her body at full weight (deg), more by <see cref="SplayAway"/> heading away from
     /// the camera (her back to it), less by <see cref="SplayStrafe"/> on a strafe.</summary>
-    public float Splay = 3f, SplayAway = 10f, SplayStrafe = 18f;
+    public float Splay = 3f, SplayAway = 30f, SplayStrafe = 18f;
     /// <summary>The clamp on the blade's own tip-back from her vertical (deg; the clip's and the layer's together).</summary>
     public float BackMin = 0f, BackMax = 50f;
     /// <summary>Screen degrees the target keeps under the clamp's angle (room for the back swing where the clamp binds).</summary>
     public float CapRoom = 6f;
     /// <summary>The weight's ramp: none at or under `side` Side0, full at Side1 (smooth between).</summary>
     public float Side0 = 0.15f, Side1 = 0.6f;
+    /// <summary>(judge r4) The weight falls at most from full to none in this long (s; 0.27 is 8 frames at 30 fps): a fade
+    /// out of a sword-side stand never flicks.</summary>
+    public float FadeOut = 0.27f;
+    /// <summary>(judge r4) The layer's own on-screen turn of the blade (its shift over the clip's blade) changes at most this
+    /// fast (deg/s; 150 is 5 a frame): the drawn blade turns at most that much faster than the body turns it.</summary>
+    public float ScreenRate = 150f;
+    /// <summary>(judge r4) The layer never turns the blade past this from straight down on screen (deg), nor further out than
+    /// the clip's own blade where that is already past it.</summary>
+    public float Edge = 65f;
+    /// <summary>(judge r4) The most out-splay (deg, tip out from her holding side) the blade may have with the layer's turn:
+    /// on a strafe the out-turn foreshortens it toward the camera.</summary>
+    public float SplayOutMax = 18f;
+    /// <summary>(judge r4) Standing, the swing settles with this time constant (s) and takes no stride drive: a static stand.</summary>
+    public float StandSettle = 0.08f;
+    /// <summary>(judge r4) The wanted angle never under this (deg toward her screen-back) where the clamp allows it.</summary>
+    public float Floor = 20f;
 
     /// <summary>The eased weight (0..1).</summary>
     public float Weight { get; private set; }
@@ -63,7 +79,9 @@ public sealed class SideCarry
     public float Raw { get; private set; }
     /// <summary>The screen side behind her (-1 = screen left, +1 = right).</summary>
     public float Sigma { get; private set; } = -1f;
-    float springV;
+    /// <summary>The layer's own turn of the blade on screen now (deg, screen right +): the drawn blade's angle less the clip's.</summary>
+    public float Shift { get; private set; }
+    float springV, clipPrev = float.NaN;
 
     /// <summary>One drawn pose, in the world (y up): the clip's blade (grip to tip, before the layer), her left and her
     /// facing (level), the camera's screen map at the grip (rows: screen x and screen y, y down, per metre), the camera's
@@ -152,24 +170,27 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; }
 
     /// <summary>One step of `dt` seconds on the drawn pose `f`: the weight eased toward <see cref="Target"/> of her holding
-    /// side's facing to the camera (none unless `on`), the swing driven by the grip's acceleration `accel` along her facing
-    /// (m/s², + forward), the full-weight tilt solved for the target angle plus the swing, and the tilt moved toward
-    /// Weight times it at most MaxRate.</summary>
+    /// side's facing to the camera (none unless `on`; falling no faster than <see cref="FadeOut"/>), the swing driven by the
+    /// grip's acceleration `accel` along her facing (m/s², + forward) while she moves and settled out standing, the
+    /// full-weight tilt solved for the target angle plus the swing; then the layer's on-screen shift of the blade moved
+    /// toward Weight times that at most <see cref="ScreenRate"/>, kept inside <see cref="Edge"/>, and the tilt solved for it.</summary>
     public void Step(float dt, bool on, float accel, in Frame f)
     {
         if (!(dt > 0f)) return;
         var cb = new Vector3(f.CamBack.X, 0f, f.CamBack.Z);
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
         float target = on && float.IsFinite(side) ? Target(side) : 0f;
-        Weight = Ease > 0f ? Weight + (target - Weight) * (1f - MathF.Exp(-dt / Ease)) : target;
-        if (Weight < 1e-4f && target == 0f) Weight = 0f;
-        // The swing: a damped spring toward 0, pushed tip-back by a forward pull (fixed sub-steps for any frame rate).
+        float wn = Ease > 0f ? Weight + (target - Weight) * (1f - MathF.Exp(-dt / Ease)) : target;
+        if (wn < Weight && FadeOut > 0f) wn = MathF.Max(wn, Weight - dt / FadeOut);
+        Weight = wn < 1e-4f && target == 0f ? 0f : wn;
+        float moving = Math.Clamp(float.IsFinite(f.Moving) ? f.Moving : 0f, 0f, 1f);
+        // The swing: a damped spring toward 0, pushed tip-back by a forward pull while she moves (fixed sub-steps).
         float k = MathF.Pow(2f * MathF.PI * Hz, 2f), cd = 2f * Damping * 2f * MathF.PI * Hz;
         int n = Math.Max(1, (int)MathF.Ceiling(dt / (1f / 240f)));
-        float h = dt / n, drive = k * Gain * Math.Clamp(float.IsFinite(accel) ? accel : 0f, -MaxAccel, MaxAccel);
+        float h = dt / n, drive = moving * k * Gain * Math.Clamp(float.IsFinite(accel) ? accel : 0f, -MaxAccel, MaxAccel);
         for (int i = 0; i < n; i++)
         {
             float acc = drive - k * Spring - cd * springV;
@@ -178,13 +199,17 @@ public sealed class SideCarry
             if (Spring > Loose) { Spring = Loose; if (springV > 0f) springV = 0f; }
             if (Spring < -LooseFwd) { Spring = -LooseFwd; if (springV < 0f) springV = 0f; }
         }
+        if (moving < 1f && StandSettle > 0f) { float g = MathF.Exp(-dt * (1f - moving) / StandSettle); Spring *= g; springV *= g; }
         float step = MaxRate * dt;
         var b = f.Blade;
-        if (Weight == 0f || b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f)
+        bool idle = Weight == 0f && Tilt == 0f && MathF.Abs(Shift) < 1e-3f;
+        if (idle || b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f
+            || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f)
         {
             Tilt += Math.Clamp(-Tilt, -step, step);
             if (MathF.Abs(Tilt) < 1e-3f) Tilt = 0f;
             Inward = Weight == 0f ? 0f : Inward;
+            if (Tilt == 0f && Weight == 0f) { Shift = 0f; clipPrev = float.NaN; }
             return;
         }
         b = Vector3.Normalize(b);
@@ -194,15 +219,30 @@ public sealed class SideCarry
         float fx = Vector3.Dot(ahead, f.Jx);
         if (MathF.Abs(fx) > 1e-4f * (f.Jx.Length() + 1e-6f)) Sigma = fx > 0f ? -1f : 1f;
         float away = cb.LengthSquared() > 1e-8f ? Math.Clamp(-Vector3.Dot(ahead, Vector3.Normalize(cb)), 0f, 1f) : 0f;
-        float strafe = Math.Clamp(f.Strafe, 0f, 1f), moving = Math.Clamp(f.Moving, 0f, 1f);
+        float strafe = Math.Clamp(f.Strafe, 0f, 1f);
         float psi = Splay + SplayAway * away - SplayStrafe * strafe;
+        // The out-splay cap: the clip's own (tip out to her holding side, + ) less the turn in stays under SplayOutMax.
+        float own = MathF.Asin(Math.Clamp(-Vector3.Dot(b, left), -1f, 1f)) * R2D;
+        if (own - psi > SplayOutMax) psi = own - SplayOutMax;
         float back = BackOf(b, ahead), lo = BackMin - back, hi = BackMax - back;
         float aim = StandAngle + (RunAngle - StandAngle) * moving - StrafeCut * strafe;
         float cap = ScreenAngle(Turned(b, left, hi, ahead, psi), f.Jx, f.Jy, Sigma) - CapRoom;
         if (cap > -90f && cap < aim) aim = cap;
-        Want = aim + Spring;
-        Raw = Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw);
-        Tilt += Math.Clamp(Weight * Raw - Tilt, -step, step);
-        Inward = Weight * psi;
+        Want = MathF.Max(aim + Spring, MathF.Min(Floor, cap + CapRoom));
+        Raw = Weight > 0f ? Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw) : Raw;
+        // The drawn blade on screen (deg, screen right +): toward the weighted tilt's, turning at most ScreenRate faster than
+        // the clip's own blade turns (holding still is always allowed), inside the Edge.
+        float tilt = Weight * Raw, inward = Weight * psi;
+        float a0 = ScreenAngle(b, f.Jx, f.Jy, 1f), aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
+        float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
+        float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim);
+        if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
+        else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
+        if (MathF.Abs(Wrap(aW - aT)) > 0.05f)
+            tilt = Solve(b, left, ahead, inward, f.Jx, f.Jy, 1f, aW, MathF.Min(0f, MathF.Min(lo, hi)), MathF.Max(0f, hi), Tilt);
+        Tilt += Math.Clamp(tilt - Tilt, -step, step);
+        Inward = inward;
+        Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
+        clipPrev = a0;
     }
 }
