@@ -346,10 +346,12 @@ public partial class Synth : Node
                 if (s == 0 && s2 == 0) continue;
                 // (H7 fix: the beds under DuckBeds too, as its summary says: they were left out, so a Flare's
                 // intake sat under the world's noise it ducked)
-                float amb = Level[(int)Bus.Amb] * voiceAmbNow * bedDuckNow, l = s * amb, r = s2 * amb;
+                // (A bed on the music bus, the den's recorded score, rides the music's ducks as its voices do.)
+                int bi = (int)b.Bus;
+                float amb = Level[bi] * (b.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voiceAmbNow * bedDuckNow), l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
-                if (stems != null) { stemAcc[(int)Bus.Amb * 2] += l; stemAcc[(int)Bus.Amb * 2 + 1] += r; }
-                wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
+                if (stems != null) { stemAcc[bi * 2] += l; stemAcc[bi * 2 + 1] += r; }
+                wl += l * Send[bi]; wr += r * Send[bi];
             }
             // The master's dynamics, in the mix itself so a tape (--wav) is what the speakers get: the compressor
             // that sat on Godot's master bus (-16 dB, 4:1, 4 ms, 250 ms), then a limiter at -1 dBFS (instant down,
@@ -393,6 +395,7 @@ public partial class Synth : Node
         running = false;
         worker?.Join(200);
         SoundBank.PrintLog();
+        if (SoundBank.Log) DenAudio.PrintLog();
         if (tape == null || tapePath == null) return;
         WriteWav(tapePath, tape);
         if (stems != null)
@@ -730,6 +733,8 @@ public partial class Synth : Node
     public abstract class Bed
     {
         public float Target, Level;
+        /// <summary>The bus it sounds on: the ambience (default), or the music (the den's recorded score).</summary>
+        public Bus Bus = Bus.Amb;
         /// <summary>A wide bed's right side, set by each Sample (which gives its
         /// left); a narrow one sounds the same on both.</summary>
         public bool Wide;

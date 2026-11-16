@@ -205,6 +205,8 @@ public sealed class Enemy : Pooled
     /// roused, it hunts as far as its leash.</summary>
     public double Wake;
     public bool Roused;
+    /// <summary>It has turned on the survivor and said so (Ev.Voice "notice"): once a life.</summary>
+    public bool Noticed;
     /// <summary>A reflection of the survivor: the horde turns on it.</summary>
     public bool Decoy;
     /// <summary>Laid down by its story while still alive (Corvane down in the doorway, CorvaneStory.Lie): drawn lying in

@@ -9,7 +9,10 @@ namespace SurvivorUnchained.Sound;
 
 /// <summary>What the game is, this frame, as far as sound cares.</summary>
 public readonly record struct SoundState(string Mode, string? Zone, TimeOfDay Time, double Px, double Pz, Battle? Battle,
-    bool Boss, string? Overlay, Func<double, double, AmbienceMix>? Ambience, Func<double, double, string?>? MusicMood);
+    bool Boss, string? Overlay, Func<double, double, AmbienceMix>? Ambience, Func<double, double, string?>? MusicMood, DenHoles? Holes = null);
+
+/// <summary>A dungeon's hole field (res by res cells of `Step` metres from -Half): where the den's pits are, for the placed loop.</summary>
+public readonly record struct DenHoles(float[] Field, int Res, double Half, double Step);
 
 /// <summary>
 /// Where the game becomes sound (the web game's game/soundBridge.ts).
@@ -24,6 +27,10 @@ public sealed class SoundBridge
     readonly Synth a;
     public readonly Ambience Ambience;
     public readonly Music Music;
+    /// <summary>The den's recorded sound (pits, far pack, score, creatures' voices; DenAudio).</summary>
+    public readonly DenAudio Den;
+    readonly DenSound.HerVoice her = new();
+    readonly Random dice = new(23);
     int xpStep, swellTier = -1;
     double xpT, hostilesNear, beatT, sweepT, swellT, now;
     /// <summary>The player's kills in the last second and a half, for the swell (S-08).</summary>
@@ -44,6 +51,7 @@ public sealed class SoundBridge
         this.a = a;
         Ambience = new Ambience(a);
         Music = new Music(a);
+        Den = new DenAudio(a);
     }
 
     /// <summary>Combat events, panned and attenuated from the survivor's position.</summary>
@@ -57,8 +65,12 @@ public sealed class SoundBridge
             return new Sfx.Where(Math.Clamp((x - px) / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32));
         }
         int stones = 0, fell = 0;
+        Den.Combat(evs, b?.MaxHp ?? 100);
+        Den.Voices(evs, px, pz, At);
         foreach (var e in evs)
         {
+            // Her own voice: effort, leap, landing, dodge, stance (DenSound.HerVoice).
+            foreach (var (hid, hg, hp) in her.Of(e, now, dice.NextDouble())) SoundBank.Play(hid, default, hg, null, hp);
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
@@ -176,7 +188,9 @@ public sealed class SoundBridge
     {
         switch (an.Kind)
         {
-            case "danger": Sfx.Stinger(boss ? "boss" : "danger"); break;
+            // In the den the Pack-Mother's own howls lead (her arrival at the master's input is about 1 dB over stinger.boss,
+            // and a lead voice); the boss stinger would sit on top of them, so it is left out there.
+            case "danger": if (!(boss && Den.InDen)) Sfx.Stinger(boss ? "boss" : "danger"); break;
             case "zone": Sfx.Stinger("zone"); break;
             case "story": Sfx.Stinger("story"); break;
             case "boon": Sfx.Stinger("triumph"); break;
@@ -231,6 +245,7 @@ public sealed class SoundBridge
                 if (e.Alive && e.Disposition == Disposition.Hostile && Math.Abs(e.X - s.Px) < 20 && Math.Abs(e.Z - s.Pz) < 20
                     && (e.X - s.Px) * (e.X - s.Px) + (e.Z - s.Pz) * (e.Z - s.Pz) < 400) hostile++;
         hostilesNear += (hostile - hostilesNear) * Math.Min(1, dt * (hostile > hostilesNear ? 2 : 0.35));
+        Den.Update(dt, s, hostile);
         Mood mood;
         if (s.Mode is "title" or "create") mood = Mood.Title;
         else if (s.Boss) mood = Mood.Boss;
@@ -241,6 +256,8 @@ public sealed class SoundBridge
         else mood = Mood.Explore;
         // A cinematic scores itself: its mood and intensity, silence included.
         if (CineMood is Mood cm) mood = cm;
+        // In the den the score is the owner's recording (or, after the Pack-Mother, quiet): the synth keeps out of it.
+        else if (Den.InDen) mood = Mood.Silence;
         Music.Set(mood);
         Music.Intensity = CineMood != null ? CineIntensity : s.Boss ? 1 : Math.Min(1, hostilesNear / 18);
         // Close to the end, your own heart: faster the worse it gets.
@@ -259,7 +276,8 @@ public sealed class SoundBridge
         }
         else beatT = 0;
         // A chest opening has the room: the score steps well back for its jingle.
-        a.DuckMusic(o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
+        // (In the den the unlock cards, the draft, duck the recorded score too.)
+        a.DuckMusic(Den.ScoreOn && o == "draft" ? SoundBank.Duck("draft", "music", 0.45f) : o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
         // The zone's recorded room, looked up only when the place or the hour changes (SoundBank.Has logs each ask).

@@ -79,6 +79,10 @@ public static class MapSim
 {
     const double Dt = 1 / 60.0;
 
+    /// <summary>A listener on every frame of a run (the run clock, its drained events, the battle, whether a ruler is up): the sound
+    /// lane's den log (tests/DenSoundRunTests.cs). Null: none. Per thread, so a parallel test's runs never reach it.</summary>
+    [ThreadStatic] public static Action<double, IReadOnlyList<CombatEvent>, Battle, bool>? Tap;
+
     /// <summary>A survivor at a level, as a player would have dressed them by then: the calling's own
     /// path's skills at the day's rank, as many as the level's slots hold, the points in the calling's attribute, and plain gear
     /// at a rarity in every slot.</summary>
@@ -252,6 +256,7 @@ public static class MapSim
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
             var evs = b.Events.Drain();
+            Tap?.Invoke(t, evs, b, zone.Boss != null);
             bool fighting = RunMeter.Fighting(b);
             meter.Step(b, t, Dt, evs, fighting);
             fighting |= zone.Boss != null;
