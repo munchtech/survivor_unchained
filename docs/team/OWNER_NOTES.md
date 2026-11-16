@@ -1,5 +1,10 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026 (~19:15, coordinator #14): WHAT THE DEMO NEEDS
+
+- "so we need the animations and movement cleaned up, skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high), a polished dungeon, and a couple of each armor slot as well as the newly designed starting armor we designed for our heroine last week.  and a big polish pass on getting our cell shader painterly overlay art style with vibrant colors nailed down"
+- **Routed:** RESUME #14 "THE DEMO'S SCOPE": A movement and animation, B skills and tree, C the den, D armor (a couple per slot + the new starting kit), E the art-style pass (cel + painterly overlay, vibrant).
+
 ## 15 November 2026 (evening, coordinator #14): THE DEMO IS THE DEN
 
 - "wind down the other dungeons and focus on the den.  how long is it currently? its procedurally different each time?"
