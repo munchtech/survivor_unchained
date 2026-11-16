@@ -258,7 +258,11 @@ STOP_OUT = float(os.environ.get("PROWL_STOP_OUT", "4"))  # (solver 11a: 4, was 8
 # point rises 1.1-1.8 cm (0.053 both), the share from behind 0.373 / 0.378 (was 0.370 / 0.343). Tried: more elbow bend
 # there (the line kept: the wrist went past its caps, armroll turned the hand back 1.4-5.8 deg, the tip rose 0.1-0.6 cm
 # only), all of the chest's pitch held off the arm (PROWL_HOLD 1: R 0.043, armroll 0.9), less of it (0.3: lower still).
-STOP_OUT_L = {0: 0.6, 5: 1.275, 9: 1.375, 16: 0.5, 26: 0.0}
+# (lane A, 16 Nov) L f0 0.6 -> 1.2 (only the keyed frames read these): at 0.6 the left plant's f0 (hips yawed 4 to her
+# left, the chest's turn held off the arm) put the right arm 17 mm into the warden plate (f1 14, f2 4; fist.py); at 1.2
+# it clears by 2 mm (hand 24 mm off her skin), the share from behind 0.408 at f0 only (0.373 before), under the stop's
+# soft fade-in from the live run. 1.6 cleared 17 mm but took f0's share to 0.433.
+STOP_OUT_L = {0: 1.2, 5: 1.275, 9: 1.375, 16: 0.5, 26: 0.0}
 STOP_OUT_R = {0: 0.6, 5: 1.425, 9: 1.525, 13: 1.21, 18: 0.6, 26: 0.0}
 # (solver 11a) prowl_stop's hold: the share of each key's chest pitch (PROWL_HOLD) and turn (PROWL_HOLD_YAW) off Prowl's
 # taken back off the sword arm (0, 0: the arm rides the chest whole, as before)

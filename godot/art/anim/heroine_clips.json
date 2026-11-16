@@ -440,17 +440,22 @@
 	},
 	"idle_warden": {
 		"changes": "B's body as world turns from rest, legs re-solved onto B's ankles, hands keyed on A",
+		"grip_tilt": -35.0,
 		"length": 6.90000009536743,
 		"loop": true,
 		"made_by": "Prowl (P4 idle_fight_a on B, Kimodo take + Marionette fit) carried onto A",
 		"weapon": "sword+shield"
 	},
 	"idle_warden_break": {
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 3.20000004768372,
 		"loop": false,
 		"made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)",
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"ext": 48.0
+		}
 	},
 	"idle_warden_town": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 4 deg, carried 0 cm, knees 22/5 deg, the free foot -6.0 cm in, a settle of 0%); shoulders let down 4/4 deg",
@@ -635,6 +640,7 @@
 	},
 	"run_warden": {
 		"cycle": 0.6,
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 0.600000023841858,
 		"licence": "own work",
@@ -642,10 +648,16 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_b": {
 		"cycle": 0.466666666666667,
+		"grip_tilt": -35.0,
 		"heading": 180.0,
 		"layer": "full",
 		"length": 0.466666668653488,
@@ -654,10 +666,16 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_bl": {
 		"cycle": 0.466666666666667,
+		"grip_tilt": -35.0,
 		"heading": 135.0,
 		"layer": "full",
 		"length": 0.466666668653488,
@@ -666,10 +684,16 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_br": {
 		"cycle": 0.466666666666667,
+		"grip_tilt": -35.0,
 		"heading": -135.0,
 		"layer": "full",
 		"length": 0.466666668653488,
@@ -678,10 +702,16 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_fl": {
 		"cycle": 0.6,
+		"grip_tilt": -35.0,
 		"heading": 45.0,
 		"layer": "full",
 		"length": 0.600000023841858,
@@ -690,10 +720,16 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_fr": {
 		"cycle": 0.6,
+		"grip_tilt": -35.0,
 		"heading": -45.0,
 		"layer": "full",
 		"length": 0.600000023841858,
@@ -702,7 +738,12 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 5.1,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"run_warden_town": {
 		"cycle": 0.6,
@@ -840,6 +881,7 @@
 	},
 	"sprint_warden": {
 		"cycle": 0.6,
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 0.600000023841858,
 		"licence": "own work",
@@ -847,7 +889,12 @@
 		"source": "keyed (tools/anim/gait.py)",
 		"speed": 7.395,
 		"steps": 2.0,
-		"weapon": "sword+shield"
+		"weapon": "sword+shield",
+		"wrist_caps": {
+			"dev_low": 25.0,
+			"ext": 60.0,
+			"pro": 90.0
+		}
 	},
 	"sprint_warden_town": {
 		"cycle": 0.6,
@@ -923,6 +970,7 @@
 		"weapon": "crossbow"
 	},
 	"stop_warden_l": {
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 0.866666674613953,
 		"licence": "own work",
@@ -931,6 +979,7 @@
 		"weapon": "sword+shield"
 	},
 	"stop_warden_r": {
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 0.866666674613953,
 		"licence": "own work",
@@ -979,6 +1028,10 @@
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
+		"twist_unwind": [
+			24.0,
+			29.0
+		],
 		"weapon": "sword+shield"
 	},
 	"take_from_log": {
@@ -1635,6 +1688,7 @@
 	},
 	"walk_warden": {
 		"changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+		"grip_tilt": -35.0,
 		"layer": "full",
 		"length": 1.33333337306976,
 		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
