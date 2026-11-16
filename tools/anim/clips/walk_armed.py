@@ -63,6 +63,16 @@ def _arc_v(arc):
 _PROWL = {}
 PROWL_SWING = 9.0  # deg either way about the shoulder (the reach kept: the elbow stays at Prowl's bend)
 PROWL_LAG = 7.0
+# (aim-move solver 7, 15 Nov) The trailing fist set by the wrist, not by a blade line: armroll's own reading (pro, flex,
+# dev; run_grip.fist_frame, as the run's wrist carry) eased between PROWL_WRIST's fist-forward and fist-back readings with
+# the stride read PROWL_WRIST_LAG frames late, so the blade trails the fist. Keyed by the line (the grip turned with the
+# forearm, then PROWL_LAG about her chest), the front of the swing laid the line out sideways again (as played
+# -111..-60 heading, the tip 0.41 m ahead of her hips) with the forearm turned past armroll's 80 and the wrist at its
+# extension cap (the pack turned the hand 15 deg back). None: that keyed line. PROWL_EL: the elbow's inside angle off
+# TRAIL_ARM's with the fist back and forward (was 0, -8: bend 39-49 as played; the idle's 32-38).
+PROWL_WRIST = ((75.0, -40.0, 6.0), (75.0, -40.0, 6.0))
+PROWL_WRIST_LAG = 1.5
+PROWL_EL = (4.0, -2.0)
 
 
 def _prowl_hand(side, k, f, swing, lag):
@@ -90,15 +100,24 @@ def _trail_hand(k, f):
     lu, lf = _CTX["arm"]
     m = np.array([-1.0, 1, 1])
     E0, H0 = arm_joints(th, out, el, turn, lu, lf)
-    E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out, el - 8.0 * k, turn, lu, lf)
+    ek = el + PROWL_EL[0] + (PROWL_EL[1] - PROWL_EL[0]) * k
+    E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out, ek, turn, lu, lf)
     # (solver 4a) where her mesh needs the fist let out (_solve's push, m), the whole arm swung that much further out
     # from her side about the shoulder (the reach and the elbow's bend kept; the push laid on the wrist as a longer
     # reach straightened the elbow to 4 deg and turned the wrist past armroll's caps)
     p = float(_CTX.get("push_r", np.zeros(f + 1))[f])
     if p > 0:
         E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out + math.degrees(p / max(float(np.hypot(H[0], H[1])), 0.2)),
-                          el - 8.0 * k, turn, lu, lf)
+                          ek, turn, lu, lf)
     E0, H0, E, H = E0 * m, H0 * m, E * m, H * m
+    if PROWL_WRIST:
+        from clips.run_grip import fist_frame
+        spec = {"arc": arc_of(H), "pole": _n(E), "pole_at": "shoulder", "frame": "chest"}
+        fw, bk = np.array(PROWL_WRIST[0], float), np.array(PROWL_WRIST[1], float)
+        pro, flex, dev = bk + (fw - bk) * float(_CTX["kw"][f])
+        b, kn = fist_frame(spec, pro, flex, dev, "r", prowl.GRIP_TILT)
+        spec.update(blade=tuple(b), knuckles=tuple(kn))
+        return spec
     # the forearm's turn from Prowl's (its line, then its hinge's way: the elbow's side of the arm)
     q = qbetween(H0 - E0, H - E)
     n0, n = np.cross(E0, H0 - E0), np.cross(E, H - E)
@@ -304,6 +323,7 @@ def make(rig, name, rounds=6):
     for s in "lr":
         vel = np.gradient(np.concatenate([k[s][-3:-1], k[s][:n], k[s][:2]]))[2:-2]
         _CTX[s] = (vel / max(np.abs(vel).max(), 1e-6), wt._shift(k[s][:n], LAG))
+    _CTX["kw"] = wt._shift(k["r"][:n], PROWL_WRIST_LAG)  # (solver 7) the wrist's reading eased by the swing, late
     push = {s: np.zeros(n) for s in "lr"}
     c = {"outfit": OUTFIT[calling]}
     # The hands let out where (and as much as) her real mesh needs: the forearm and hand wt.NEAR clear of her and her

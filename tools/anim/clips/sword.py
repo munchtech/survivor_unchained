@@ -214,6 +214,12 @@ def sword_heavy(rig):
     ]
     keys = with_shield(keys, HEAVY_L)
     keys = _land(keys, rig, step=(25, 0.035))
+    if prowl_end(rig) is not None:
+        # (aim-move solver 7) Prowl reached a frame early and held: solve_frames smooths each elbow's way over +-6
+        # frames, one-sided at a clip's end, so a recovery still turning into its last key (3.7 deg a frame) left the
+        # hand 12.2 deg off the idle's frame 0 (the back and fore cuts 4.0). Held from 29 it lands 4.0 off, easing in
+        # (0.2 deg the last frame); the cut's own elbows keep their smoothing (elbow_sigma 1 also gave 4.0, clip-wide).
+        keys = sorted(keys + [(29, prowl_end(rig), "ease")], key=lambda k: k[0])
     return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
 
 
