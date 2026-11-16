@@ -49,9 +49,13 @@ HAND_OUT = {"r": float(os.environ.get("PROWL_OUT_R", "0.025")), "l": float(os.en
 # wrist extended 36 (W_EXT 45), 15 ulnar (W_DEV_LOW 20)), so the pack turns nothing back. Prowl's keyed line (BLADE)
 # needed a forearm roll past 95 and the pack's 80 turned it out to the wing (as played -100..-85 heading, 26-35 below
 # level, tip 1.04-1.16 m out); this one plays -109 / 53, tip 0.72 m out, 0.27 m behind her hips, 0.14 m off the floor.
-TRAIL = os.environ.get("PROWL_TRAIL", "0") == "1"
-TRAIL_ARM = (-10.0, 0.0, 150.0, 0.0)
-TRAIL_GRIP = ((-0.5909, -0.8055, 0.0019), (0.7888, -0.5781, -0.2026))
+TRAIL = os.environ.get("PROWL_TRAIL", "1") == "1"
+# (solver 3a, 15 Nov: on by default; PROWL_TRAIL=0 is the old keyed line) the elbow's inside angle 147 (bend 30-36 with
+# her weight shift), the grip re-keyed to 11 ulnar (was 19-25, past W_DEV_LOW), and the arm and fist ride TRAIL_FOLLOW
+# of the chest's turn from its mean: the whole chest's turn swung the line -130..-97 and the tip 0.63-0.83 m out.
+TRAIL_ARM = (-10.0, 0.0, 147.0, 0.0)
+TRAIL_GRIP = ((-0.6261, -0.7783, 0.0147), (0.7770, -0.6250, -0.0558))  # (pro 71-78, ext 30-37, 13-20 ulnar; 11 needs pro 85-91)
+TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
 
 
 def _norm(v):
@@ -59,15 +63,27 @@ def _norm(v):
     return v / max(np.linalg.norm(v), 1e-9)
 
 
-def _trail_spec(sk, ag, g, p, sw, ph):
+def _trail_frame(sk, ag, gT):
+    """Per frame, the turn the trail arm and fist ride: TRAIL_FOLLOW of the chest's turn from its mean (a relaxed arm
+    hangs; it does not lean and turn with the chest whole)."""
+    from rig import qslerp
+    c = sk.i("spine_03")
+    C = np.array([qmul(gT[t, c], qinv(ag[c])) for t in range(len(gT))])
+    C = C * np.where(C @ C[0] < 0, -1.0, 1.0)[:, None]
+    m = _norm(C.mean(0))
+    return np.array([qslerp(m, q, TRAIL_FOLLOW) for q in C])
+
+
+def _trail_spec(sk, ag, g, p, sw, ph, C=None):
     """PROWL_TRAIL's hand_r key on one frame's body (globals g, p): the wrist where TRAIL_ARM's joints put it from the
     shoulder (the elbow 3 deg softer or firmer with her weight shift), the elbow's way as the pole, the fist's grip frame
-    turned whole with the chest and by the blade's life (BLADE_PITCH with the weight shift, BLADE_YAW with the breath)."""
+    turned whole with the arm's frame C (_trail_frame; the chest's own turn if None) and by the blade's life
+    (BLADE_PITCH with the weight shift, BLADE_YAW with the breath)."""
     from gait import arm_joints
     u, lo, h, c = (sk.i(n) for n in ("upperarm_r", "lowerarm_r", "hand_r", "spine_03"))
     ap = sk.rest_globals()[1][0]
     l1, l2 = float(np.linalg.norm(ap[lo] - ap[u])), float(np.linalg.norm(ap[h] - ap[lo]))
-    C = qmul(g[c], qinv(ag[c]))
+    C = qmul(g[c], qinv(ag[c])) if C is None else C
     th, out, el, turn = TRAIL_ARM
     E, H = arm_joints(th, out, el + 3.0 * sw, turn, l1, l2)
     E, H = qrot(C, E * np.array([-1.0, 1, 1])), qrot(C, H * np.array([-1.0, 1, 1]))
@@ -193,6 +209,7 @@ def specs(rig, fingers_l=None):
     side = _norm(np.cross([0.0, 1.0, 0.0], bl0))
     poses = []
     gT, pT = sk.fk(rot, pos) if TRAIL else (None, None)
+    KT = _trail_frame(sk, ag, gT) if TRAIL else None
     for t in range(T):
         hands = {}
         for s in "lr":
@@ -226,7 +243,7 @@ def specs(rig, fingers_l=None):
                 b = qrot(qaxis([0.0, 1.0, 0.0], BLADE_YAW * math.sin(2 * ph * 2)), b)
                 spec["blade"] = tuple(b)
             if s == "r" and TRAIL:
-                spec = _trail_spec(sk, ag, gT[t], pT[t], float(sway[t]), 2 * math.pi * t / T)
+                spec = _trail_spec(sk, ag, gT[t], pT[t], float(sway[t]), 2 * math.pi * t / T, KT[t])
             hands[f"hand_{s}"] = spec
         pose = dict(hands)
         pose["fingers_r"] = "grip"

@@ -78,9 +78,36 @@ def _prowl_hand(side, k, f, swing, lag):
     return h
 
 
+def _trail_hand(k, f):
+    """(solver 3a, 15 Nov; prowl.TRAIL) Prowl's trailing sword arm by its joints (prowl.TRAIL_ARM, chest frame): the
+    upper arm swung PROWL_SWING deg about the shoulder with the stride, the elbow bending 33-41 (more as the fist comes
+    forward), the fist's grip (prowl.TRAIL_GRIP) turned with the forearm so the wrist keeps Prowl's set, the point
+    trailing a further PROWL_LAG deg as the fist comes through."""
+    from clips import prowl
+    from gait import arm_joints
+    from rig import qaxis, qbetween, qmul
+    th, out, el, turn = prowl.TRAIL_ARM
+    lu, lf = _CTX["arm"]
+    m = np.array([-1.0, 1, 1])
+    E0, H0 = arm_joints(th, out, el, turn, lu, lf)
+    E, H = arm_joints(th + PROWL_SWING * (2.0 * k - 1.0), out, el - 8.0 * k, turn, lu, lf)
+    E0, H0, E, H = E0 * m, H0 * m, E * m, H * m
+    # the forearm's turn from Prowl's (its line, then its hinge's way: the elbow's side of the arm)
+    q = qbetween(H0 - E0, H - E)
+    n0, n = np.cross(E0, H0 - E0), np.cross(E, H - E)
+    a = math.degrees(math.atan2(np.dot(np.cross(qrot(q, n0), n), _n(H - E)), np.dot(qrot(q, n0), n)))
+    q = qmul(qaxis(_n(H - E), a), q)
+    lag = qaxis([1.0, 0, 0], -PROWL_LAG * float(_CTX["r"][0][f]))
+    b, kn = (qrot(q, np.array(v, float)) for v in prowl.TRAIL_GRIP)
+    return {"arc": arc_of(H), "pole": _n(E), "pole_at": "shoulder", "frame": "chest",
+            "blade": tuple(qrot(lag, b)), "knuckles": tuple(qrot(lag, kn))}
+
+
 def sword(k, f):
     """The sword low at her right, as her armed idle holds it (idle.warden: the point 34 deg below level ahead, the
     thumb forward, the elbow swung out over the hilt), the fist swinging a little with the stride."""
+    if "r" in _PROWL and _CTX.get("trail"):
+        return _trail_hand(k, f)
     if "r" in _PROWL:
         return _prowl_hand("r", k, f, PROWL_SWING, PROWL_LAG)
     return {"arc": arc_of(_at((-0.12, -0.45, 0.04), 0.08, k, 0.01)), "pole": (-0.744, 0.09, -0.662), "frame": "chest",
@@ -240,7 +267,13 @@ def make(rig, name, rounds=6):
         from clips.sword import prowl_end
         end = prowl_end(rig)
         if end is not None:
+            from clips import prowl
             _PROWL.update({s: end[f"hand_{s}"] for s in "lr"})
+            ap = rig.sk.rest_globals()[1][0]
+            I = rig.I
+            _CTX["trail"] = prowl.TRAIL
+            _CTX["arm"] = (float(np.linalg.norm(ap[I["lowerarm_r"]] - ap[I["upperarm_r"]])),
+                           float(np.linalg.norm(ap[I["hand_r"]] - ap[I["lowerarm_r"]])))
             fingers = dict(fingers, l=end["fingers_l"])
             WALKS[name] = (calling, arms, fingers, weapon)
     if calling not in _TOWN:

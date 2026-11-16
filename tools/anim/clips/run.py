@@ -519,7 +519,7 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
 # (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "trail")
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "trail")  # trail | wrist (solver 3b, below; not tuned yet) | low | belt | high | high57 | live
 REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
@@ -548,6 +548,27 @@ WARDEN_CARRIES = {"trail": (TRAIL_ARM, dict(pitch=tuple(TRAIL_BLADE[:2]), out=tu
                   "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
                   "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30))),
                   "live": (HIGH_ARM_LIVE, dict(pitch=(94, 70), out=(27, 33), lag=LIVE_LAG))}
+# (aim-move solver 3b, 15 Nov; WARDEN_CARRY "wrist", the default; "trail" is the carry above) The defect as played: the
+# trail's char-space line needed the wrist past armroll's caps (ulnar 39-54 raw, pronation past 80), the pack turned the
+# fist back and the blade played out to her right as a stiff bar (heading -99..-63, 0-27 below level, the tip 1.1-1.4 m
+# out). Here the arm swings on TRAIL's own joints (contra, the elbow soft) and the fist is set on its forearm by the wrist
+# inside the caps (run_grip.wrist_carry: forearm turned out, wrist extended, a little ulnar), the reading eased with the
+# swing LIVE_LAG late, so the blade lies back and down behind her hip and trails the fist. (pro, flex, dev) fist forward,
+# fist back (armroll.wrist's reading before keyed's forearm share).
+WRIST_ARM = TRAIL_ARM
+WRIST_GRIP = json.loads(os.environ.get("WARDEN_WRIST", "[[62, -22, -13], [70, -30, -13]]"))
+WRIST_LAG = float(os.environ.get("WARDEN_WRIST_LAG", str(LIVE_LAG)))
+if os.environ.get("WARDEN_WRIST_ARM"):  # (exploration: a json pair of (fwd, out, elbow, turn))
+    WRIST_ARM = tuple(tuple(x) for x in json.loads(os.environ["WARDEN_WRIST_ARM"]))
+WARDEN_CARRIES["wrist"] = (WRIST_ARM, dict(fwd=tuple(WRIST_GRIP[0]), back=tuple(WRIST_GRIP[1]), lag=WRIST_LAG))
+
+
+def _warden_carry():
+    from clips.run_grip import wrist_carry
+    kw = WARDEN_CARRIES[WARDEN_CARRY][1]
+    if WARDEN_CARRY == "wrist":
+        return wrist_carry(**kw)
+    return (haft_carry if WARDEN_CARRY == "high" else low_point)(**kw)
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -589,7 +610,7 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY in ("live", "trail") else 0.0)}, "sword+shield"),
+                   {"r": _warden_carry(), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY in ("live", "trail", "wrist") else 0.0)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
     # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
@@ -656,6 +677,11 @@ if WARDEN_CARRY == "trail":
     # arm then met the warden plate 16 mm, 3 at 70). Pitch f,b, out f,b.
     _sb = json.loads(os.environ.get("SPRINT_BLADE") or "[-32, -46, 70, 136]")
     SPRINT_ARMS["run_warden"]["r"] = low_point(pitch=tuple(_sb[:2]), out=tuple(_sb[2:]), lag=LIVE_LAG, knuckles=TRAIL_KNUCKLES, pole_chest=True)
+if WARDEN_CARRY == "wrist":
+    # (solver 3b) the sprint's fist by the wrist too, on the sprint's wider swing (sprint_stop.sprint: SPRINT_SWING)
+    from clips.run_grip import wrist_carry as _wc
+    _sw = json.loads(os.environ.get("SPRINT_WRIST") or json.dumps(WRIST_GRIP))
+    SPRINT_ARMS["run_warden"]["r"] = _wc(fwd=tuple(_sw[0]), back=tuple(_sw[1]), lag=WRIST_LAG)
 
 
 def clips(rig, want):
