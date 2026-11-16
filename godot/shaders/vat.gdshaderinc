@@ -195,14 +195,18 @@ float crowd_edge(float rim) {
 // flank (r2 solver 1) and a back cold by the world normal past 0.75, which from the play camera was most of the boss. The
 // mane's and accent's paint L sits under its screen target: on the top, in the key, they read about 0.1 paler.)
 #define DEN_BELLY vec2(-0.2, -0.04)
-#define DEN_BOSS_BACK vec4(0.37, 0.025, 292.0, 0.93)
+// (solver 3: the boss's body paint, its own chroma and hue: at the pack's 0.028/32 she read purple-grey on screen, 0.25-0.35 /
+// 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
+// they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
+#define DEN_BOSS_BODY vec2(0.040, 50.0)
+#define DEN_BOSS_BACK vec4(0.43, 0.045, 272.0, 0.93)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.35, 0.12, 30.0)
+#define DEN_MANE vec3(0.50, 0.16, 42.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
-#define DEN_ACCENT vec3(0.36, 0.12, 0.65)
+#define DEN_ACCENT vec3(0.36, 0.12, 0.80)
 float vat_den_cut(float c_v, float c_at) {
 	float c_w = fwidth(c_v) * 0.5 + 1e-4;
 	return smoothstep(c_at - c_w, c_at + c_w, c_v);
@@ -223,7 +227,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n) {
 	float c_pull = c_boss ? crowd_den_top.w : crowd_den.y;
 	float c_top = vat_den_cut(c_ny, crowd_den_top.x), c_belly = 1.0 - vat_den_cut(c_ny, DEN_BELLY.x);
 	float c_l = (c_boss ? crowd_den_boss.w : crowd_den.x) + crowd_den_top.y * c_top * (c_boss ? 0.5 : 1.0) + DEN_BELLY.y * c_belly;
-	vec2 c_ab = vat_den_ab(crowd_den.z, crowd_den.w);
+	vec2 c_ab = c_boss ? vat_den_ab(DEN_BOSS_BODY.x, DEN_BOSS_BODY.y) : vat_den_ab(crowd_den.z, crowd_den.w);
 	if (c_boss) {
 		float c_back = vat_den_cut(c_n.y, DEN_BOSS_BACK.w) * vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
 		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
