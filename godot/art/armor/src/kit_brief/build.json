@@ -2,18 +2,69 @@
  "recipe": "brief",
  "module": "kit_hips",
  "prefix": "brief",
- "piece": {"id": "kit_brief", "name": "Gilded Gunmetal Brief", "slot": "bottom", "covers": ["bottom"], "layer": 1,
-           "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
- "mat": {"plate": "steel", "trim": "gold", "strap": "darkleather"},
+ "piece": {
+  "id": "kit_brief",
+  "name": "Gilded Gunmetal Brief",
+  "slot": "bottom",
+  "covers": [
+   "bottom"
+  ],
+  "layer": 1,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "plate": "steel",
+  "trim": "gold",
+  "strap": "darkleather"
+ },
  "clear": 0.003,
  "clear_min": 0.0022,
  "thick": 0.0014,
- "rim": {"w": 0.0072, "h": 0.0026, "sides": 6, "step": 0.005},
+ "rim": {
+  "w": 0.0072,
+  "h": 0.0026,
+  "sides": 6,
+  "step": 0.005
+ },
  "axis_z": -0.02,
- "bodice": {"point": 1.0, "hip": 1.095, "back_bot": 1.105, "v_theta": 70.0},
- "belt": {"front_y": 1.012, "side_y": 1.085, "back_y": 1.093, "side_th": 75.0, "w": 0.048},
- "brief": {"y_min": 0.83, "y_max": 1.13, "subdiv": 1, "tuck": 0.012, "under_bodice": 0.004, "side_w": 0.014,
-           "leg_front": {"y0": 0.922, "y1": 1.06, "s1": 0.15, "p": 1.0},
-           "leg_back": {"y0": 0.935, "y1": 1.06, "s1": 0.15, "p": 1.6},
-           "z_mid": -0.03, "smooth": 6}
+ "bodice": {
+  "point": 1.0,
+  "hip": 1.095,
+  "back_bot": 1.105,
+  "v_theta": 70.0
+ },
+ "belt": {
+  "front_y": 1.012,
+  "side_y": 1.085,
+  "back_y": 1.093,
+  "side_th": 75.0,
+  "w": 0.048
+ },
+ "brief": {
+  "y_min": 0.83,
+  "y_max": 1.13,
+  "subdiv": 1,
+  "tuck": 0.012,
+  "under_bodice": 0.004,
+  "side_w": 0.014,
+  "leg_front": {
+   "y0": 0.922,
+   "y1": 1.06,
+   "s1": 0.15,
+   "p": 1.0
+  },
+  "leg_back": {
+   "y0": 0.935,
+   "y1": 1.06,
+   "s1": 0.15,
+   "p": 1.6
+  },
+  "z_mid": -0.03,
+  "smooth": 6
+ },
+ "live": true
 }

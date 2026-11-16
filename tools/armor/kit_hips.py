@@ -199,7 +199,20 @@ def belt_line(th, bl):
     return y + (bl["back_y"] - bl["side_y"]) * smooth01((a - bl["side_th"]) / (180 - bl["side_th"]))
 
 
+def live_lines(cfg):
+    """(build.json "live": true) the bodice's bottom line and the belt's line read from their own build.json, so the
+    brief always tucks under what they are now (the bodice is another builder's)."""
+    if not cfg.get("live"):
+        return
+    for key, pid, sub in (("bodice", "kit_bodice", "corset"), ("belt", "kit_belt", "belt")):
+        f = os.path.join(kb.SRC, pid, "build.json")
+        if os.path.exists(f):
+            src = json.load(open(f, encoding="utf-8"))[sub]
+            cfg[key] = {k: src[k] for k in cfg[key]}
+
+
 def brief(cfg, ref):
+    live_lines(cfg)
     M, bc, bl = cfg["mat"], cfg["brief"], cfg["belt"]
     z0 = cfg["axis_z"]
     V, F = ref.V, ref.T
@@ -420,7 +433,7 @@ def belt(cfg, ref):
         YY, AG = np.meshgrid(ys, AA, indexing="ij")
         PP, NN = belt_pt(YY.ravel(), AG.ravel(), bt + 0.0006)
         straps.append(kb.slab(f"tab_{h}", M["strap"], PP.reshape(YY.shape + (3,)), NN.reshape(YY.shape + (3,)), 0.0025))
-        pc, nc = belt_pt(y0 - rg["R"] + 0.004, th, bt + 0.004)
+        pc, nc = belt_pt(y0 - rg["R"] + 0.004, th, bt + rg.get("out", 0.004))
         rigid.append(torus(pc[0], nc[0], [0, 1.0, 0], rg["R"], rg["r"], f"ring_{'l' if h > 0 else 'r'}_rigid", M["trim"]))
         pr, nr = belt_pt(y0 + 0.006, th, bt + 0.003)
         rigid.append(rivet(pr[0], nr[0], r=0.003, h=0.002, name=f"tabrivet_{'l' if h > 0 else 'r'}_rigid",
@@ -451,22 +464,35 @@ def belt(cfg, ref):
                 k_ = pl["keel"]
                 xs = np.linalg.norm(G - G[:, [len(ths) // 2]], axis=-1)
                 ex = k_["h"] * np.clip(1 - xs / (k_["w"] / 2), 0, 1) ** 1.0
-            # the plate: a slab along the grid; its outward = the grid's normal
-            plate_p = kb.slab(nm + "_rigid", M["plate"], G, Nn, pt_th, extra=ex)
-            plate_p.name = nm + "_rigid"
-            rigid.append(plate_p)
-            # its rim (all but the top, which is under the belt): one rigid gold part with the band
-            E = np.vstack([G[:, 0], G[-1, 1:], G[::-1, -1][1:]])
-            gold = [kb.bead(Normals(G.reshape(-1, 3), Nn.reshape(-1, 3)), nm + "_rim", M["trim"], E, rim, edge_off, False, relax_it=1)]
-            if pl.get("band"):
-                b_ = pl["band"]
-                Gs = G + Nn * (pt_th + (0 if ex is None else ex[..., None]))
-                gold += interlace(Gs, Nn, 1.2, len(ths) - 2.2, b_["v"][0], b_["v"][1], b_["wl"], nm + "_band", M["trim"], 0.0,
-                                  [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
-                                   dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
-            # (the SAME node name as its plate: the importer reads them as one source part (`<name>_rigid`, `.001`), whose
-            # parts ride ONE common blend (piece_blender by_src), so the gold never drifts off its steel in motion)
-            rigid.append(Part.join(nm + "_rigid", M["trim"], gold))
+            # two hinged lames (the sheet's): the upper rides her pelvis (short, above the hip joint), the lower hangs
+            # OUTSIDE its bottom edge by `lap` and rides her thigh (its own node: its own blend, the mean of her
+            # weights over it), so it swings with the thigh and slides under nothing; a plate without "split" is one.
+            R_ = G.shape[0]
+            if pl.get("split"):
+                k_ = int(round(pl["split"] * (R_ - 1)))
+                sp = pl.get("lap_rows", 2)
+                lames = [("_up", slice(0, k_ + 1), 0.0, False), ("_lo", slice(max(k_ - sp, 0), R_), pl.get("lap", 0.004), True)]
+            else:
+                lames = [("", slice(0, R_), 0.0, True)]
+            for sfx, rs, push, band_on in lames:
+                Gl, Nl = G[rs] + Nn[rs] * push, Nn[rs]
+                exl = None if ex is None else ex[rs]
+                plate_p = kb.slab(nm + sfx + "_rigid", M["plate"], Gl, Nl, pt_th, extra=exl)
+                plate_p.name = nm + sfx + "_rigid"
+                rigid.append(plate_p)
+                # its rim (all but the top, which is under the belt or the lame above): one rigid gold part with the band
+                E = np.vstack([Gl[:, 0], Gl[-1, 1:], Gl[::-1, -1][1:]])
+                gold = [kb.bead(Normals(Gl.reshape(-1, 3), Nl.reshape(-1, 3)), nm + sfx + "_rim", M["trim"], E, rim, edge_off,
+                                False, relax_it=1)]
+                if pl.get("band") and band_on:
+                    b_ = pl["band"]
+                    Gs = Gl + Nl * (pt_th + (0 if exl is None else exl[..., None]))
+                    gold += interlace(Gs, Nl, 1.2, len(ths) - 2.2, b_["v"][0], b_["v"][1], b_["wl"], nm + sfx + "_band",
+                                      M["trim"], 0.0, [dict(rim, w=b_["border_w"], h=b_["border_h"], below=0.0003),
+                                                       dict(rim, w=b_["w"], h=b_["h"], below=0.0003)])
+                # (the SAME node name as its plate: the importer reads them as one source part (`<name>_rigid`, `.001`),
+                # whose parts ride ONE common blend (piece_blender by_src), so the gold never drifts off its steel)
+                rigid.append(Part.join(nm + sfx + "_rigid", M["trim"], gold))
             print(nm, "tilt", np.round(tilt.min(), 1), np.round(tilt.max(), 1), "len", np.round(length.max(), 3))
     return plate, trim, straps, rigid
 
