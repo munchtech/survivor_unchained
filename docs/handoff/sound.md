@@ -16,5 +16,14 @@ FINDINGS (verified 16 Nov):
 - Plan: add `Ev.Voice` (Def, Moment, X, Z) from the sim for bite/lunge/notice and `Ev.Sound` ids for Pack-Mother moves; the SoundBridge turns them into `voice.<kind>.<moment>` events with limits. Enemy pool fields are reset at ~Battle.cs:2122 (add any new field there).
 - Disk: C: 27 GB free after checkout (guard 20): NO full Godot import.
 
-PLAN (fixed list 1-7 of the brief) STATE: 1 ingest NOT STARTED; 2 bed/pits/distance pack NOT STARTED; 3 music NOT STARTED; 4 voices NOT STARTED; 5 Pack-Mother NOT STARTED; 6 her NOT STARTED; 7 proof/tables/owner list NOT STARTED.
-NEXT IN ORDER: step 1 `tools/sound/demo_ingest.py`.
+STEP 1 DONE `383235995` (demo_ingest.py, table `tools/sound/demo_ingest_table.md`, 54 takes in 40 families: den_ambience, den_pits, den_pack_far, music_den_explore|boss|falls, voice_<wolf|wolfb|boar|yearling|packmother>_<notice|bite|lunge|hurt|death|arrival|drive|hamstring|moonhowl|phase|call>, her_grunt|leap|land|dodge|perfect|stance|heartbeat; seams all pass; 44.1 kHz 16-bit, mono for world takes, stereo loops/music/boss calls; levelled by mono-mix LUFS to the nearest banked neighbour).
+
+DESIGN DECIDED (implement in this order, commit each):
+ a) Godot-free `src/Audio/DenSound.cs` (add to godot/tests/Tests.csproj like LeadRule.cs): def->voice kind map (wolf->wolf, wolf_blighted->wolfb, boar->boar, lt_pack->yearling, boss_pack->packmother), VoiceLimiter (max voices at once, per-kind cooldown per moment, nearest first), her-grunt chance+cooldown. Numbers picked from a 5-wolf fight log (tests/den sim), written in docs/team/den_sound_events.md.
+ b) Sim: `Ev.Voice{Def,Moment,X,Z}` emitted at bite (Ai.cs contact ~454), lunge windup (Ai.Run), notice (new Enemy.Noticed, reset at Battle.cs ~2122); `Ev.Sound` ids from PackMother (drive/hamstring/howl/phase/call/lunge) in ArenaBosses.cs.
+ c) sounds.json events: bed.den, den.pits, den.pack_far, music.den.explore|boss|falls, voice.<kind>.<moment>, her.* (grunt, leap, land, dodge, perfect, stance, heartbeat as existing id `heartbeat`, `dodge`, `dodge.perfect`), boss: voice.packmother.* ; common wolf bite borrows voice_wolfb_bite pitched 0.9.
+ d) Engine: SoundState gets the dungeon theme as zone id "den" (Game.cs ~1789, MapRun.IsDungeon + map.Dungeon.Def.Theme) so `bed.den` is found by the existing SetZone path; Synth.Bed gets a Bus field (music beds on the music bus: ducks apply); Recordings lazy for `music_*` families (not in the eager load; mono mix = left); recorded music TakeBed pair with crossfade; synth Music.Set(Silence) in the den; pits = emitters (positions from DenPits via a Godot-free list on ZoneData) with distance fall-off, loop bed per nearest 2 pits; pack_far one-shots before first fight, never during one.
+ e) Proof: no Godot import (C: ~22 GB free, guard 20): sim-driven den bot in tests logs voice events through the real limiter (counts, peaks) + an offline mixer replica in tools/sound/ (Python) for master peak; say plainly that no Godot run was done.
+ f) Owner's listen list + not-supplied list in docs/team/den_sound_events.md; provenance rows docs/team/provenance.md; PIPELINE.md row.
+STATE: 1 DONE; 2-7 NOT STARTED (a-f above is the order).
+NEXT IN ORDER: (b) sim events, then (a), (c), (d), (e), (f).
