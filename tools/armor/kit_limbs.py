@@ -147,7 +147,7 @@ def lace_rim(w=0.0042, h=0.0021):
     return {"w": w, "h": h, "sides": 5, "step": 0.004, "below": 0.0012}
 
 
-def laces(ref, tube, F, u0, u1, n, half_arc, off, mat, tag, rho_ref):
+def laces(ref, tube, F, u0, u1, n, half_arc, off, mat, tag, rho_ref, rim=None):
     """Crossed laces up a front: n crossings between eyelet columns `half_arc` m either side of th 0, studs at each."""
     us = np.linspace(u0, u1, n + 1)
     th_at = lambda u: float(np.degrees(half_arc / max(float(np.ravel(F(u, 0.0))[0]) + rho_ref, 0.02)))  # noqa: E731
@@ -157,7 +157,7 @@ def laces(ref, tube, F, u0, u1, n, half_arc, off, mat, tag, rho_ref):
         ta, tb = th_at(a), th_at(b)
         for sgn, lift in ((1, 0.0), (-1, 0.0009)):
             E = along(tube, F, [(a, sgn * ta), ((a + b) / 2, 0.0), (b, -sgn * tb)], off + lift, 0.002)
-            parts.append(kb.bead(ref, f"lace_{tag}{k}{sgn}", mat, E, lace_rim(), 0.0, False, relax_it=1))
+            parts.append(kb.bead(ref, f"lace_{tag}{k}{sgn}", mat, E, rim or lace_rim(), 0.0, False, relax_it=1))
     for u in us:
         for sgn in (1, -1):
             P, N = tube.surf(F, np.array([u]), np.array([sgn * th_at(u)]), off)
@@ -263,7 +263,11 @@ def boots(cfg, ref):
         tcap = cfg["toecap"]
         tt = np.linspace(-tcap["th"], tcap["th"], 41)
         u_back = tcap["u"] - tcap["sweep"] * (tt / tcap["th"]) ** 2
-        Pc, Nc = patch(tube, Fe, tt, nA - 1 - u_back, np.full_like(tt, R - 1.0), 16, lo)
+        # (its own field: her toes closed under one wide smooth round, never under the boot's: a smooth cap, no toe bumps)
+        Fc = tube.field(np.maximum(envelope(tube.rho, tuple(tcap.get("close", (9, 17))), tuple(tcap.get("sig", (4.0, 5.0)))) +
+                                   tcap.get("lift", 0.0), env))
+        Pc, Nc = patch(tube, Fc, tt, nA - 1 - u_back, np.full_like(tt, R - 1.0), tcap.get("nr", 16), lo)
+        Pc, Nc = smooth_out(Pc, Nc, tcap.get("smooth", 0))
         G["plate"].append(kb.slab(f"toecap_{side}", M["plate"], Pc, Nc, cfg["plate_thick"]))
         G["trim"].append(kb.bead(ref, f"trim_toecap_{side}", M["trim"], Pc[0], rim, eo, False, relax_it=1))
 
@@ -286,11 +290,34 @@ def boots(cfg, ref):
         L = cfg["laces"]
         u_inst = float(np.argmax(tube.O[:nA, 2] > L["z_start"]))
         G["laces"] += laces(ref, tube, Fe, u_of_y(c["top_front"] - c["h"] - L["below_cuff"]), u_inst, L["n"],
-                            L["half"], cl + th_l + 0.0002, M["trim"], side, 0.0)
+                            L["half"], cl + th_l + 0.0002, M["trim"], side, 0.0,
+                            lace_rim(L.get("w", 0.0042), L.get("h", 0.0021)))
 
         # -- the sole and the block heel (her foot stays flat: the heel is a block round her heel, at her stance)
         G["sole"] += sole(cfg, P_bottom(tube, Fe, cl, nA, R), side, M["sole"])
     return G, rigid
+
+
+def smooth_out(P, N, it):
+    """A grid surface smoothed `it` times (Laplacian on the grid), never moved inward of where it started: bumps
+    bridged over (a cap over toes), its outline kept. Returns the points and fresh normals."""
+    if not it:
+        return P, N
+    P0, N0 = P.copy(), N.copy()
+    P = P.copy()
+    for _ in range(it):
+        Q = P.copy()
+        Q[1:-1, 1:-1] = (P[:-2, 1:-1] + P[2:, 1:-1] + P[1:-1, :-2] + P[1:-1, 2:]) / 4.0
+        Q[0, 1:-1] = (P[0, :-2] + P[0, 2:]) / 2.0
+        Q[-1, 1:-1] = (P[-1, :-2] + P[-1, 2:]) / 2.0
+        P = P + (Q - P) * 0.7
+        s = ((P - P0) * N0).sum(-1)
+        P = P - N0 * np.minimum(s, 0.0)[..., None]
+    du = np.gradient(P, axis=0)
+    dt = np.gradient(P, axis=1)
+    n = U(np.cross(du, dt))
+    n = n * np.sign((n * N0).sum(-1, keepdims=True) + 1e-12)
+    return P, n
 
 
 def P_bottom(tube, F, cl, nA, R):
@@ -365,6 +392,7 @@ def prism(name, mat, ring, y0, y1, bevel, bot=None, hollow=0.0):
 def vambraces(cfg, ref):
     M, rim = cfg["mat"], cfg["rim"]
     G = {"leather": [], "plate": [], "trim": [], "laces": []}
+    rigid = []
     for side, sx in (("l", 1.0), ("r", -1.0)):
         J = ref.joints
         e, h = J[f"lowerarm_{side}"], J[f"hand_{side}"]
@@ -381,27 +409,27 @@ def vambraces(cfg, ref):
         env = envelope(tube.rho, tuple(cfg["close"]), tuple(cfg["sig"]))
         Fe = tube.field(env)
         cl, tl, tp = cfg["clear"], cfg["thick"], cfg["plate_thick"]
-        th = np.linspace(-180, 180, 120, endpoint=False)
-        c = np.cos(np.radians(th))
         lin = cfg["lining"]
+        th = np.linspace(-180, 180, lin.get("nc", 120), endpoint=False)
+        c = np.cos(np.radians(th))
         s_lo = lin["elbow"] + (lin["elbow_in"] - lin["elbow"]) * (1 - c) / 2
-        P, N = patch(tube, Fe, th, u_of(s_lo), np.full_like(th, u_of(lin["wrist"])), 40, cl)
+        P, N = patch(tube, Fe, th, u_of(s_lo), np.full_like(th, u_of(lin["wrist"])), lin.get("nr", 40), cl)
         G["leather"].append(kb.slab(f"vamb_lining_{side}", M["leather"], P, N, tl, closed_c=True))
 
         p = cfg["plate"]
-        tp_ = np.linspace(-p["th"], p["th"], 61)
+        tp_ = np.linspace(-p["th"], p["th"], p.get("nc", 61))
         lo = cl + tl + 0.0006
         fl = p["flare"]
         flare = lambda uu, t: lo + fl * np.clip(1 - (np.interp(uu, tube.rows, rows_s) - p["elbow"]) / p["flare_len"], 0, 1) ** 2  # noqa: E731
         se = p["elbow"] + p["elbow_dip"] * (np.abs(tp_) / p["th"]) ** 2
-        Pp, Np = patch(tube, Fe, tp_, u_of(se), np.full_like(tp_, u_of(p["wrist"])), 36, flare)
-        G["plate"].append(kb.slab(f"vamb_plate_{side}", M["plate"], Pp, Np, tp))
+        Pp, Np = patch(tube, Fe, tp_, u_of(se), np.full_like(tp_, u_of(p["wrist"])), p.get("nr", 36), flare)
         eo = tp * 0.5 + 0.0003
+        # the plate is rigid on her forearm (by clearance: metal need not bend); its rim one ring round it
+        rigid.append(kb.slab(f"vamb_plate_{side}_rigid", M["plate"], Pp, Np, tp))
         edge = np.vstack([Pp[0], Pp[1:, -1], Pp[-1][::-1][1:], Pp[-2:0:-1, 0]])
-        # the plate's rims: elbow end (bold), both long edges; the wrist end sits under the gold band
-        G["trim"].append(kb.bead(ref, f"trim_vamb_elbow_{side}", M["trim"], Pp[0], dict(rim, w=rim["w"] * 1.15), eo, False, relax_it=1))
-        G["trim"].append(kb.bead(ref, f"trim_vamb_a_{side}", M["trim"], Pp[:, 0], dict(rim, w=rim["w"] * 0.8, h=rim["h"] * 0.8), eo, False, relax_it=1))
-        G["trim"].append(kb.bead(ref, f"trim_vamb_b_{side}", M["trim"], Pp[:, -1], dict(rim, w=rim["w"] * 0.8, h=rim["h"] * 0.8), eo, False, relax_it=1))
+        rigid.append(kb.bead(ref, f"vamb_plate_{side}_trim_rigid", M["trim"], edge, dict(rim, w=rim["w"] * p.get("rim_k", 0.85)), eo, True, relax_it=1))
+        # the gold elbow band: a rim round the lining's top edge
+        G["trim"].append(kb.bead(ref, f"trim_vamb_top_{side}", M["trim"], P[0], dict(rim, w=rim["w"] * 0.7, h=rim["h"] * 0.8), tl * 0.5 + 0.0003, True, relax_it=1))
         # the gold wrist band: a full ring over plate and lining
         wb = cfg["wrist_band"]
         lob = lo + tp + 0.0006
@@ -409,12 +437,15 @@ def vambraces(cfg, ref):
         G["trim"].append(kb.slab(f"vamb_band_{side}", M["trim"], Pb, Nb, wb["thick"], closed_c=True))
         G["trim"].append(kb.bead(ref, f"trim_band_a_{side}", M["trim"], Pb[0], dict(rim, w=rim["w"] * 0.6, h=rim["h"] * 0.7), wb["thick"] * 0.5 + 0.0003, True, relax_it=1))
         G["trim"].append(kb.bead(ref, f"trim_band_b_{side}", M["trim"], Pb[-1], dict(rim, w=rim["w"] * 0.6, h=rim["h"] * 0.7), wb["thick"] * 0.5 + 0.0003, True, relax_it=1))
+        for k, tr in enumerate(np.linspace(-180, 180, wb.get("rivets", 8), endpoint=False)):
+            Pr, Nr = tube.surf(Fe, np.array([u_of((wb["s0"] + wb["s1"]) / 2)]), np.array([tr]), lob + wb["thick"])
+            G["trim"].append(rivet(Pr[0], Nr[0], r=0.0024, h=0.0014, name=f"vamb_rivet_{side}{k}", material=M["trim"]))
         # crossed laces over the open inner side
         lc = cfg["laces"]
         Fi = lambda uu, t: Fe(uu, np.asarray(t) + 180.0)  # noqa: E731
         tube_in = _Rot(tube, 180.0)
         G["laces"] += laces(ref, tube_in, Fi, u_of(lc["s0"]), u_of(lc["s1"]), lc["n"], lc["half"], cl + tl + 0.0002, M["trim"], "v" + side, 0.0)
-    return G, []
+    return G, rigid
 
 
 class _Rot:
@@ -450,16 +481,58 @@ def gloves(cfg, ref):
         s = (V - h) @ a
         best = np.full(len(V), np.inf)
         keep = np.zeros(len(V), bool)
-        for p0, p1, tmax, _ in segs:
+        seg_of = np.full(len(V), -1)
+        for k, (p0, p1, tmax, _) in enumerate(segs):
             d = p1 - p0
             t = np.clip(((V - p0) @ d) / (d @ d), 0, 1)
             dist = np.linalg.norm(V - (p0 + t[:, None] * d), axis=1)
             better = dist < best
             best = np.where(better, dist, best)
             keep = np.where(better, t <= tmax + 1e-9, keep)
+            seg_of = np.where(better, k, seg_of)
         keep &= near & (s > cfg["wrist_s"])
-        T = ref.T[keep[ref.T].all(1)]
-        G["leather"].append(skin_shell(f"glove_{side}", M["leather"], ref.V, T, ref.N, cfg["clear"], cfg["thick"]))
+        # the finger openings cut clean: every triangle touching a kept point, its points past a cut slid back onto
+        # the cut's plane (a ring across the finger at finger_t / thumb_t, not her triangles' saw edge)
+        inr = near & (s > cfg["wrist_s"])
+        T = ref.T[keep[ref.T].any(1) & inr[ref.T].all(1)]
+        Vg = V.copy()
+        out = np.unique(T[~keep[T]])
+        ok = keep.copy()
+        for k, (p0, p1, tmax, _) in enumerate(segs):
+            if not 0.0 < tmax < 1.0:
+                continue
+            d = p1 - p0
+            dn = U(d)
+            # the points past this cut: nearest to this segment or to the next ones of the same finger
+            sel = out[np.isin(seg_of[out], [k, k + 1]) & (segs[k][3] == np.array([segs[j][3] for j in seg_of[out]]))]
+            sl = ((V[sel] - p0) @ dn) - tmax * np.linalg.norm(d)
+            sel, sl = sel[sl < 0.012], sl[sl < 0.012]
+            Vg[sel] -= dn * np.maximum(sl, 0.0)[:, None]
+            ok[sel] = True
+        T = T[ok[T].all(1)]  # (a triangle reaching past a cut it cannot slide to: left out)
+        G["leather"].append(skin_shell(f"glove_{side}", M["leather"], Vg, T, ref.N, cfg["clear"], cfg["thick"]))
+        G.setdefault("trim", [])
+        # the cuff: a stiffer leather band round her wrist over the glove, gold studs round it, a gold bead at its top
+        c = cfg["cuff"]
+        wide = U(J[f"index_01_{side}"] - J[f"pinky_01_{side}"])
+        dors = U(np.cross(wide, a))
+        dors = dors if dors[1] > 0 else -dors
+        sx = 1.0 if side == "l" else -1.0
+        F = faces(ref, lambda q: (q[:, 0] * sx > 0.26) & (q[:, 1] > 0.95) & (q[:, 1] < 1.45))
+        tube = Tube(ref, F, np.array([h + a * c["s0"], h + a * (c["s0"] + c["s1"]) / 2, h + a * c["s1"]]), dors,
+                    step=0.003, dth=3.0)
+        rows_s = c["s0"] + (c["s1"] - c["s0"]) * tube.rows / tube.rows[-1]
+        u_of = lambda q: np.interp(q, rows_s, tube.rows)  # noqa: E731
+        Fe = tube.field(envelope(tube.rho, (3, 7), (1.5, 2.5)))
+        lo = cfg["clear"] + cfg["thick"] + c["gap"]
+        th = np.linspace(-180, 180, c.get("nc", 64), endpoint=False)
+        P, N = patch(tube, Fe, th, np.full_like(th, u_of(c["bot"])), np.full_like(th, u_of(c["top"])), c.get("nr", 8), lo)
+        G["leather"].append(kb.slab(f"glove_cuff_{side}", M["leather"], P, N, c["thick"], closed_c=True))
+        rim = cfg["rim"]
+        G["trim"].append(kb.bead(ref, f"glove_cuff_top_{side}", M["trim"], P[-1], rim, c["thick"] * 0.5 + 0.0003, True, relax_it=1))
+        for k, tr in enumerate(np.linspace(-180, 180, c["studs"], endpoint=False)):
+            Pr, Nr = tube.surf(Fe, np.array([u_of((c["bot"] + c["top"]) / 2 - 0.002)]), np.array([tr]), lo + c["thick"])
+            G["trim"].append(rivet(Pr[0], Nr[0], r=c["stud_r"], h=c["stud_h"], name=f"glove_stud_{side}{k}", material=M["trim"]))
     return G, []
 
 

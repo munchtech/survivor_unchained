@@ -31,7 +31,8 @@
   "slot": "boots",
   "layer": 2,
   "covers": [
-   "boots"
+   "boots",
+   "greaves"
   ],
   "meshes": [
    "kit_boots.boots.darkleather",
@@ -39,7 +40,7 @@
    "kit_boots.boots.steel"
   ],
   "tuck": "armor_tuck/kit_boots.bin",
-  "tuck_count": 3833,
+  "tuck_count": 3894,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_boots.gltf",
   "tier": 2,
@@ -294,5 +295,48 @@
   },
   "file": "res://art/armor/plate_top_plain.gltf",
   "tier": 1
+ },
+ {
+  "id": "kit_vambraces",
+  "outfit": null,
+  "slot": "bracers",
+  "layer": 2,
+  "covers": [
+   "bracers"
+  ],
+  "meshes": [
+   "kit_vambraces.bracers.darkleather",
+   "kit_vambraces.bracers.gold",
+   "kit_vambraces.bracers.steel"
+  ],
+  "tuck": "armor_tuck/kit_vambraces.bin",
+  "tuck_count": 5438,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_vambraces.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "66182af6",
+  "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
+ },
+ {
+  "id": "kit_gloves",
+  "outfit": null,
+  "slot": "gloves",
+  "layer": 1,
+  "covers": [
+   "gloves"
+  ],
+  "meshes": [
+   "kit_gloves.gloves.darkleather",
+   "kit_gloves.gloves.gold"
+  ],
+  "tuck": "armor_tuck/kit_gloves.bin",
+  "tuck_count": 1902,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_gloves.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "66182af6",
+  "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  }
 ]

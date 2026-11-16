@@ -1,0 +1,12 @@
+{
+ "recipe": "gloves",
+ "module": "kit_limbs",
+ "piece": {"id": "kit_gloves", "name": "Gilded Fingerless Gloves", "slot": "gloves", "covers": ["gloves"], "layer": 1,
+           "material": "darkleather", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
+ "mat": {"leather": "darkleather", "trim": "gold"},
+ "clear": 0.002, "clear_min": 0.0018, "thick": 0.001,
+ "finger_t": 0.55, "thumb_t": 0.45, "wrist_s": -0.05,
+ "rim": {"w": 0.0045, "h": 0.0022, "sides": 6, "step": 0.003},
+ "cuff": {"s0": -0.068, "s1": 0.02, "bot": -0.005, "top": -0.045, "gap": 0.0005, "thick": 0.0018, "nc": 64, "nr": 8,
+          "studs": 7, "stud_r": 0.0022, "stud_h": 0.0014}
+}
