@@ -1424,6 +1424,7 @@ public partial class PlayerView : Node3D
                 if (FireCast.Count) FireCast.Report(lf);
             }
             herShadow?.Place(GlobalPosition, Visible && IsVisibleInTree());
+            if (herShadow != null) HerSteel.Wear(view?.HeldMount("handslot.r"), HeroDen.SteelOn);   // (demo-look r2 her: her blade as painted steel in the den)
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
             // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;

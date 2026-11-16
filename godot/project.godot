@@ -453,6 +453,18 @@ cel_her_den={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+hero_steel_lit={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hero_steel_shade={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hero_steel_glint={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_canopy_r={
 "type": "vec4",
 "value": Vector4(-150, -150, 0.00333, 0.00333)

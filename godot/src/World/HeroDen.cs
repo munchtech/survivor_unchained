@@ -4,13 +4,16 @@ namespace SurvivorUnchained.View;
 
 /// <summary>(demo-look r2 her, 16 Nov; judge 1: "the look stops at the set") Her figure in the den, from the rig's hero_den row
 /// (Zone.HeroDen): her cast shadow (shaders/hero_cast.gdshader, Actors/HerShadow.cs), her line where no hero_pool row draws it
-/// (hero_line.gdshader through Atmosphere.HeroLinePx), and her hair's chroma and her skin and hair steps (cel_her_den). A rig
+/// (hero_line.gdshader through Atmosphere.HeroLinePx), her hair's chroma and her skin and hair steps (cel_her_den), and her
+/// held steel (Actors/HerSteel.cs, shaders/hero_steel.gdshader). A rig
 /// without the row: every global zero, nothing drawn, her look as before.</summary>
 public static class HeroDen
 {
     /// <summary>The trail's world direction (x, z) and whether her shadow shows (HerShadow reads them each frame).</summary>
     public static Vector2 CastDir = new(0.77f, 0.64f);
     public static bool CastOn;
+    /// <summary>Whether her held steel wears the den's painted steel (HerSteel, each frame from PlayerView).</summary>
+    public static bool SteelOn;
 
     static double V(double[] d, int i, double or) => d.Length > i ? d[i] : or;
 
@@ -35,5 +38,13 @@ public static class HeroDen
         }
         // her hair's chroma and value gain (values 15-16), her skin and hair steps (value 17)
         RenderingServer.GlobalShaderParameterSet("cel_her_den", d is { Length: >= 18 } ? new Vector4((float)d[15], (float)d[16], (float)d[17], 0) : Vector4.Zero);
+        // her held steel (values 18-30: its level, lit R, G, B, shade R, G, B, glint R, G, B (sRGB 0-255), the glint's place
+        // along the piece (0-1) and half length (share), the grip's light): shaders/hero_steel.gdshader through HerSteel
+        SteelOn = d is { Length: >= 31 } && d[18] > 0;
+        Color T(int i) => SteelOn ? new Color((float)d![i] / 255f, (float)d[i + 1] / 255f, (float)d[i + 2] / 255f).SrgbToLinear() * (float)d[18] : new Color(0, 0, 0);
+        Color lit = T(19), shade = T(22), glint = T(25);
+        RenderingServer.GlobalShaderParameterSet("hero_steel_lit", new Vector4(lit.R, lit.G, lit.B, SteelOn ? (float)d![28] : 0));
+        RenderingServer.GlobalShaderParameterSet("hero_steel_shade", new Vector4(shade.R, shade.G, shade.B, SteelOn ? (float)d![29] : 0));
+        RenderingServer.GlobalShaderParameterSet("hero_steel_glint", new Vector4(glint.R, glint.G, glint.B, SteelOn ? (float)d![30] : 0));
     }
 }
