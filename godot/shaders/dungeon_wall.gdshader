@@ -38,6 +38,8 @@ uniform vec4 set_area = vec4(0.0);   // x, z, radius; w: 0 off, 1 within the rad
 uniform vec3 set_mass = vec3(0.016, 0.013, 0.012);   // (r11: warm dark, the banks' painted shade (36,32,32); cool, it read as a navy shard between the cards)
 uniform float set_glow = 0.008;   // (r10d) the mass under the set lit at least this, cool: it was flat black at the frame corners
 uniform float set_flat = 0.0;    // (r14) under the set the mass lit on a level normal (1) instead of its mesh's facets (0)
+uniform vec3 deep_tint = vec3(1.18, 0.96, 0.74);   // (r13; was the cool grey 0.8, 0.9, 1.25)
+uniform float deep_mip = 3.0;   // (r13) the deep painting's mip: its shapes soft, no drawn edge
 uniform float set_deep = 0.5;    // the old bank painting's share in it, greyed cool: dark roots receding past the set's reach
 
 varying vec3 wpos;
@@ -144,9 +146,11 @@ float in_set() {
 }
 vec3 set_mass_col() {
 	vec2 uv = vec2(wpos.x, -(0.469 * wpos.y - 0.883 * wpos.z)) / bank_m;
-	vec3 p = mix(texture(bank_alb, vec3(uv, 1.0)).rgb, texture(bank_alb, vec3(uv + vec2(0.37, 0.61), 0.0)).rgb, smoothstep(0.57, 0.67, vnoise(wpos.xz * 0.08)));
+	// (r13) the painting read blurred (deep_mip) and in warm umber: crisp and greyed cool it drew mauve faceted root shapes
+	// past the cards' reach (the seed-11 corridor's far left, L .24 C .005 h 2 against lane E's Banks band h 17-57)
+	vec3 p = mix(textureLod(bank_alb, vec3(uv, 1.0), deep_mip).rgb, textureLod(bank_alb, vec3(uv + vec2(0.37, 0.61), 0.0), deep_mip).rgb, smoothstep(0.57, 0.67, vnoise(wpos.xz * 0.08)));
 	float l = dot(p, vec3(0.299, 0.587, 0.114));
-	vec3 deep = mix(vec3(l) * vec3(0.8, 0.9, 1.25), p, 0.35) * set_deep;
+	vec3 deep = mix(vec3(l) * deep_tint, p, 0.35) * set_deep;
 	return set_mass * (0.7 + 0.6 * vnoise(wpos.xz * 0.45 + vec2(wpos.y * 0.3, 2.0))) + deep;
 }
 void fragment() {

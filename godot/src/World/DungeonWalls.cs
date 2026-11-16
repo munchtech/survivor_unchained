@@ -733,6 +733,9 @@ public static class DungeonWalls
             mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", 0.6f));
             mat.SetShaderParameter("set_area", DungeonDress.SetArea(c.Z));   // (den round 10b: the mound is the dark mass behind the set)
             mat.SetShaderParameter("set_glow", Args.Num("den-set-glow", 0.025f));
+            mat.SetShaderParameter("deep_tint", DungeonDress.V3("den-deep-tint", new Vector3(1.18f, 0.96f, 0.74f)));   // (r13) the mass past the cards warm umber, not cool grey
+            mat.SetShaderParameter("deep_mip", Args.Num("den-deep-mip", 3f));
+            mat.SetShaderParameter("set_deep", Args.Num("den-set-deep", 0.2f));   // (r13 0.5 -> 0.2: past the cards the mass reads as gloom, its border dark against dark)   // (r13) the deep painting's share in the mass past the cards
             // (r14, B1) under the painted set the mass behind the cards is lit level and draws no ink: its cel facets and its
             // silhouette ink (the mesh's own crease and cap seams) drew straight lines between the cards
             if (DungeonDress.SetArea(c.Z).W > 1.5f)

@@ -25,7 +25,7 @@ public static partial class DungeonDress
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
     static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 0.5f);   // (r11 0.7 -> 0.5 with shade-hi 0.15: satShade .34 -> .18, cool 15 -> 25 %, as den_room.png)
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
-    static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 1f);   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
+    static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 0.4f);   // (r13 1 -> 0.4 with shade-tint 1,.95,.85: the banks' darks h 233-331 (mauve) -> 7-17, lane E Banks band warm umber)   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
 
     static readonly float SetRockGain = SurvivorUnchained.Args.Num("den-rock-gain", 0.45f);   // (den r13 rooms) the O1 boulders: their brightest 10 % at luminance <= 85
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
@@ -46,7 +46,7 @@ public static partial class DungeonDress
         // (r11) the roots and shade read pink-mauve: the paintings' mids warmed (less blue), the shade's cool narrowed to the
         // deepest darks and turned blue-teal (den_room.png: warm brown in the light, cool only down in the hollows)
         mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
-        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(0.84f, 0.93f, 1.0f)));
+        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(1.0f, 0.95f, 0.85f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
         if (sheet == "O5")
         {
@@ -85,6 +85,7 @@ public static partial class DungeonDress
     // was cast at 56, the road's, so every painting drew 6% tall on the floor and its raised parts sank)
     static readonly float CamPitchR = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch);
     static readonly Vector3 CamUp = new(0f, Mathf.Cos(CamPitchR), -Mathf.Sin(CamPitchR)), CamView = new(0f, -Mathf.Sin(CamPitchR), -Mathf.Cos(CamPitchR));
+    static readonly float SetRowJit = SurvivorUnchained.Args.Num("den-set-row-jit", 2.5f);   // (r13) metres a row behind's depth varies by module
     static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 2f);       // (r10c) side walls: rows of modules deeper in the bank
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 0f);    // (r10c) B4/B4R_2 where a far run meets a wall's (r11 1 -> 0: the corner's arm drew a straight seam and a dark band across the room's top, c_p13)
     static readonly float SetSpills = SurvivorUnchained.Args.Num("den-set-spills", 1f);      // (r10c) B6 spills on the floor at the banks' feet and pits
@@ -570,10 +571,42 @@ public static partial class DungeonDress
                 pools++;
             }
         }
+        // (r13) the corridors dressed as thin rooms: den_room.png has things IN the floor, the corridors were bare earth. A
+        // stone, a short log or a bone pile now and then off the lane's middle (wall field 0.9-2.0 m in: never its middle
+        // 1.5 m), 4.5 m apart at least, about half the lattice's chances skipped; cards, she walks through them.
+        int dressed = 0;
+        if (SetLaneDress > 0f)
+        {
+            var taken = new List<Vector2>();
+            foreach (var m in laneMid)
+            {
+                int hx = Mathf.FloorToInt(m.X * 1.7f), hz = Mathf.FloorToInt(m.Y * 1.7f);
+                if (Hash(hx, hz, 861) > 0.5f * SetLaneDress) continue;
+                float a = Hash(hx, hz, 862) * Mathf.Tau, d = 1.0f + 1.5f * Hash(hx, hz, 863);
+                var p = m + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
+                float w = Wall(c, p.X, p.Y);
+                if (w < 0.9f || w > 2.0f || Hole(c, p.X, p.Y) < 2.2f || InRoom(p.X, p.Y, 2f)) continue;
+                bool near = false;
+                foreach (var t in taken) if (t.DistanceTo(p) < 4.5f) { near = true; break; }
+                if (near) continue;
+                float u = Hash(hx, hz, 864), q = Hash(hx, hz, 865), k = Hash(hx, hz, 866);
+                string sheet = u < 0.4f ? "O1" : u < 0.6f ? "O2" : "O3";
+                if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
+                var sorted = new List<SetPiece>(all);
+                sorted.Sort((x, y) => x.Metres.X.CompareTo(y.Metres.X));
+                int hf = Mathf.Max(1, sorted.Count / 2);
+                var pc = sheet == "O3" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * hf) % hf];
+                if (sheet == "O1") PlaceSetObj(c, "O1", pc, p.X, p.Y, Mathf.Min(1f, (1.1f + 0.6f * k) / pc.Metres.X), 0.62f, true);
+                else if (sheet == "O2") PlaceSetObj(c, "O2", pc, p.X, p.Y, 0.75f + 0.2f * k, 0.18f, false);
+                else PlaceSetObj(c, "O3", pc, p.X, p.Y, 0.9f + 0.3f * k, 0.1f, false);
+                taken.Add(p); dressed++;
+            }
+        }
         laneMid.Clear();
-        GD.Print($"DenSet lanes: {rings} rings, {lanes} runs, {pools} lane pools");
+        GD.Print($"DenSet lanes: {rings} rings, {lanes} runs, {pools} lane pools, {dressed} lane pieces");
     }
     static readonly List<Vector2> laneMid = new();
+    static readonly float SetLaneDress = SurvivorUnchained.Args.Num("den-lane-dress", 1f);   // (r13) the corridors' floor pieces (0 off)
 
     // (r13) The alcoves: ground the drawn wall line bares outside the walkable edge (DenRagged: the corridors' banks pushed
     // outward), which she cannot walk on, is never open floor: a root spill (B6), a stone (O1) or a bone pile (O3) on it,
@@ -661,6 +694,9 @@ public static partial class DungeonDress
                     {
                         var b2 = choices[(int)(Hash(seed + 97 * row, 64, k) * choices.Count) % choices.Count];
                         float deep = row * Mathf.Max(1.5f, (cls == 3 ? b2.FootU : 1f - b2.FootU) * b2.Metres.X * SetScale - 1f);
+                        // (r13) each module's row behind its own depth: at one depth the cards' far border ran parallel to the
+                        // corridor down the whole frame (the seed-11 vertical at x ~200)
+                        deep += SetRowJit * (Hash(seed + 97 * row, 68, k) - 0.35f);
                         float sh = cls == 3 ? -deep : deep;
                         if (!bufs.TryGetValue(b2.Name, out var buf2)) bufs[b2.Name] = buf2 = new SetBuf();
                         SetModule(c, buf2, b2, false, s, L, from, to, a => FootAt(a) + sh, true, s + L > a1 + ext, 0.0f - 0.01f * row, top, true, deep);
