@@ -590,7 +590,11 @@ def build(pid):
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
     ref = her_a()
+    if cfg["recipe"] not in RECIPES:  # (a recipe in another module: build.json "module", e.g. kit_hips)
+        import importlib
+        RECIPES.update(importlib.import_module(cfg["module"]).RECIPES)
     plate, trim, straps, rigid = RECIPES[cfg["recipe"]](cfg, ref)
+    pre = cfg.get("prefix", "bodice")
     pushed = 0
     for p in plate + trim + straps:  # never closer than clear_min (a rim's underside: 1.2 mm) along her normal
         fl = cfg["clear_min"] if p in plate else 0.0012
@@ -605,8 +609,8 @@ def build(pid):
         p.N = vertex_normals(p.P, p.T)
     low_trim = {p.name: round(float(clearance(ref, p).min()) * 1000, 1) for p in trim + rigid}
     low_trim = {k: v for k, v in low_trim.items() if v < 1.5}
-    parts = [Part.join("bodice_plate", cfg["mat"]["plate"], plate), Part.join("bodice_trim", cfg["mat"]["trim"], trim),
-             Part.join("bodice_straps", cfg["mat"]["strap"], straps)] + rigid
+    parts = [Part.join(pre + "_plate", cfg["mat"]["plate"], plate), Part.join(pre + "_trim", cfg["mat"]["trim"], trim),
+             Part.join(pre + "_straps", cfg["mat"]["strap"], straps)] + rigid
     for p in parts:
         p.N = vertex_normals(p.P, p.T)
     import gear_native as gn
@@ -626,7 +630,7 @@ def build(pid):
            "plate_clear_mm": [round(float(cp.min()) * 1000, 2), round(float(np.percentile(inner, 99)) * 1000, 2)],
            "trim_min_mm": round(float(clearance(ref, parts[1]).min()) * 1000, 2),
            "trim_low": low_trim, "strap_min_mm": round(float(clearance(ref, parts[2]).min()) * 1000, 2),
-           "rigid_min_mm": round(float(min(clearance(ref, p).min() for p in rigid)) * 1000, 2)}
+           "rigid_min_mm": round(float(min(clearance(ref, p).min() for p in rigid)) * 1000, 2) if rigid else None}
     print(json.dumps(rep, indent=1))
     return rep
 
