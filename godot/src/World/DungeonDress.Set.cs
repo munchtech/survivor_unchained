@@ -144,7 +144,7 @@ public static partial class DungeonDress
     {
         setRoom = z.Rooms[0];
         foreach (var r in z.Rooms) if (r.Kind == "Start") { setRoom = r; break; }
-        surfCache.Clear(); objBufs.Clear(); hulls.Clear();
+        setLayer = 0; surfCache.Clear(); foreach (var d in smCache) d.Clear(); objBufs.Clear(); hulls.Clear();
     }
 
     static float SetSm(float a, float b, float x) { float t = Mathf.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
@@ -157,18 +157,49 @@ public static partial class DungeonDress
         float fx = x / q, fz = zz / q;
         int ix = Mathf.FloorToInt(fx), iz = Mathf.FloorToInt(fz);
         float tx = fx - ix, tz = fz - iz;
-        float L(int i, int j)
+        static long K(int i, int j) => ((long)i << 32) ^ (uint)j;
+        float Raw(int i, int j)
         {
-            long k = ((long)i << 32) ^ (uint)j;
+            long k = K(i, j);
             if (surfCache.TryGetValue(k, out float v)) return v;
             float px = i * q, pz = j * q;
             float s = -Wall(c, px, pz);
-            v = Mathf.Max(H(c, px, pz), DungeonWalls.BankY(c.Z, px, pz) + 0.3f * SetSm(0.05f, 0.6f, s));
+            float bank = SetProxy > 0f ? DungeonWalls.BankHoldY(c.Z, px, pz) : DungeonWalls.BankY(c.Z, px, pz);
+            v = Mathf.Max(H(c, px, pz), bank + 0.3f * SetSm(0.05f, 0.6f, s));
             surfCache[k] = v;
             return v;
         }
+        // (den r12) the proxy box-blurred twice over +-SetSmooth metres (separable): no crease left for a card to span
+        int r = SetProxy > 0f ? Mathf.RoundToInt(SetSmooth / q) : 0;
+        float Bz(int i, int j, Dictionary<long, float> cache, System.Func<int, int, float> f)
+        {
+            long k = K(i, j);
+            if (cache.TryGetValue(k, out float v)) return v;
+            float acc = 0f;
+            for (int d = -r; d <= r; d++) acc += f(i, j + d);
+            v = acc / (2 * r + 1); cache[k] = v; return v;
+        }
+        float Bx(int i, int j, Dictionary<long, float> cache, System.Func<int, int, float> f)
+        {
+            long k = K(i, j);
+            if (cache.TryGetValue(k, out float v)) return v;
+            float acc = 0f;
+            for (int d = -r; d <= r; d++) acc += f(i + d, j);
+            v = acc / (2 * r + 1); cache[k] = v; return v;
+        }
+        float L1(int i, int j) => Bx(i, j, smCache[1], (a, b) => Bz(a, b, smCache[0], Raw));
+        float L(int i, int j) => r <= 0 ? Raw(i, j) : Bx(i, j, smCache[3], (a, b) => Bz(a, b, smCache[2], L1));
         return Mathf.Lerp(Mathf.Lerp(L(ix, iz), L(ix + 1, iz), tx), Mathf.Lerp(L(ix, iz + 1), L(ix + 1, iz + 1), tx), tz);
     }
+    static readonly float SetLiftAdd = SurvivorUnchained.Args.Num("den-set-lift", 0f);   // (r12 diagnosis) every bank card pulled this much more toward the camera
+    static readonly float SetKeepAll = SurvivorUnchained.Args.Num("den-set-keepall", 0f);   // (r12 diagnosis)
+    static int setLayer;
+    static readonly float SetBends = SurvivorUnchained.Args.Num("den-set-bends", 0f);
+    static readonly float SetFootFade = SurvivorUnchained.Args.Num("den-set-footfade", 1f);   // (r12) a bank card's floor-side border fades to its bright masses
+    static readonly float SetLayerStep = SurvivorUnchained.Args.Num("den-set-layer", 0.04f);   // (r12) metres between modules' depth layers
+    static readonly Dictionary<long, float>[] smCache = { new(), new(), new(), new() };
+    static readonly float SetProxy = SurvivorUnchained.Args.Num("den-set-proxy", 1f);    // (r12) 0: the bank's own profile (crest and fall); 1: its rise held at the crest, smoothed
+    static readonly float SetSmooth = SurvivorUnchained.Args.Num("den-set-smooth", 1.25f); // (r12) the proxy's blur half-width, metres (twice, box)
 
     /// <summary>The point where the view ray through p (any point on it) meets the surface: marched down from the height top.</summary>
     static Vector3 SetCast(Vector3 p, System.Func<float, float, float> surf, float top)
@@ -204,7 +235,7 @@ public static partial class DungeonDress
         if (!LoadSet()) { GD.Print("DenSet: no set.json"); return; }
         var bufs = new Dictionary<string, SetBuf>();
         var rooms = new List<(float X, float Z, float R, string Kind)>();
-        if (SetMode >= 2) { foreach (var r in c.Z.Rooms) if (r.Kind != "Bend") rooms.Add(r); }
+        if (SetMode >= 2) { foreach (var r in c.Z.Rooms) if (r.Kind != "Bend" || SetBends > 0f) rooms.Add(r); }   // (r12 --den-set-bends: the corridors' bends ring too)
         else rooms.Add(setRoom);
         int modules = 0, runs = 0, corners = 0, spills = 0;
         int ri = 0;
@@ -327,7 +358,7 @@ public static partial class DungeonDress
                     }
                 }
         }
-        if (SetOpenK > 0f) SetOpen(c, rooms);
+        if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
@@ -457,6 +488,10 @@ public static partial class DungeonDress
         int na = Mathf.Max(2, Mathf.CeilToInt((to - from) / cell) + 1);
         int nc = Mathf.Max(2, Mathf.CeilToInt((alongX ? Hm : Wm) / cell) + 1);
         int base0 = buf.V.Count;
+        // (r12) every module its own depth layer: two rooms' rings both laid cards over one corridor bank at the same lift,
+        // and the two coplanar casts took the depth test a triangle each (the corridor's checkerboard facets, c_p15)
+        float lay = bankOnly ? -0.03f * (setLayer % 5) : SetLayerStep * (setLayer % 10);
+        setLayer++;
         var keepv = new bool[na * nc];
         System.Func<float, float, float> surf = (x, zz) => SurfBank(c, x, zz);
         for (int i = 0; i < na; i++)
@@ -478,6 +513,7 @@ public static partial class DungeonDress
                     X = a; Y = foot + (b.FootV - v) * Hm;
                     bankSide = b.Kind == "far" ? v < b.FootV - 0.02f : v > b.FootV + 0.02f;
                     fe = b.Kind == "far" ? v / 0.08f : (1f - v) / 0.08f;   // (the image's straight cut deep in the bank)
+                    if (SetFootFade > 0f) fe = Mathf.Min(fe, (b.Kind == "far" ? 1f - v : v) / 0.08f);   // (r12) and its straight cut out on the floor
                 }
                 else
                 {
@@ -485,18 +521,33 @@ public static partial class DungeonDress
                     Y = a; X = foot + (u - b.FootU) * Wm;
                     bankSide = b.Kind == "left" ? u < b.FootU - 0.02f : u > b.FootU + 0.02f;
                     fe = b.Kind == "left" ? u / 0.1f : (1f - u) / 0.1f;
+                    if (SetFootFade > 0f) fe = Mathf.Min(fe, (b.Kind == "left" ? 1f - u : u) / 0.1f);   // (r12: the corridor's straight floor edge)
                 }
                 var pc = new Vector3(X, 0f, 0f) + CamUp * Y;
                 var q = SetCast(pc, surf, top);
-                bool keep = !(bankSide && Wall(c, q.X, q.Z) > 0.3f);
+                // (r12) the bank side hidden where its cast lands on walkable floor, by a smooth measure (its 0.5 contour follows
+                // the edge's own curve; a flag per vertex cut grid-aligned steps: the pale square cut-outs)
+                float g = SetKeepAll > 0f || !bankSide ? 1f : 1f - SetSm(0.05f, 0.55f, Wall(c, q.X, q.Z));
+                bool keep = g > 0.01f;
                 // (r10c) a row behind: its bank part only (its pour would double the front row's on the floor)
-                if (bankOnly && !alongX && (b.Kind == "left" ? u > b.FootU + 1f / Wm : u < b.FootU - 1f / Wm)) keep = false;
-                if (bankOnly && alongX && (b.Kind == "far" ? v > b.FootV + 1f / Hm : v < b.FootV - 1f / Hm)) keep = false;
+                // (r12) its cut fades first (only its brightest masses past it, gone 1.2 m on): the hard cut's straight lines and
+                // corners drew pale square cut-outs at a corridor's edge
+                if (bankOnly)
+                {
+                    float d = !alongX ? (b.Kind == "left" ? u - b.FootU - 1f / Wm : b.FootU - 1f / Wm - u) * Wm
+                                      : (b.Kind == "far" ? v - b.FootV - 1f / Hm : b.FootV - 1f / Hm - v) * Hm;
+                    if (SetFootFade > 0f) { if (d > 1.2f) keep = false; else if (d > 0f) fe = Mathf.Min(fe, 1f - d / 1.0f); }
+                    else if (d > 0f) keep = false;
+                }
+                // (r12) a row behind never reaches the floor's edge (its cut there followed a straight corridor edge: pale slabs)
+                if (bankOnly && SetFootFade > 0f) g = Mathf.Min(g, SetSm(0.8f, 1.6f, -Wall(c, q.X, q.Z)));
+                if (g <= 0.01f) keep = false;
+                if (!keep) g = 0f;
                 keepv[i * nc + j] = keep;
-                buf.V.Add(q - CamView * lift);
+                buf.V.Add(q - CamView * (lift + lay + SetLiftAdd));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(Mathf.Clamp(u, 0f, 1f), Mathf.Clamp(v, 0f, 1f)));
-                buf.C.Add(new Color(Mathf.Clamp(Mathf.Min(fa, fe), 0f, 1f), keep ? 1f : 0f, 0f, 1f));
+                buf.C.Add(new Color(Mathf.Clamp(Mathf.Min(fa, fe), 0f, 1f), g, 0f, 1f));
             }
         }
         for (int i = 0; i < na - 1; i++)

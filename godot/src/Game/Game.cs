@@ -1527,6 +1527,7 @@ public partial class Game : Node, IZoneHost
     }
 
     static readonly int SimLogN = (int)Args.Num("simlog", 0);
+    static readonly float ShotBruise = (float)Args.Num("shot-bruise", 1);
     int simLogF;
 
     public override void _Process(double delta)
@@ -1814,7 +1815,7 @@ public partial class Game : Node, IZoneHost
             }
             else hud.ArenaClock(null, "");
         }
-        hud.SetBruise(scene.Bruise);
+        hud.SetBruise(scene.Bruise * ShotBruise);   // (den r12: --shot-bruise 0 for look frames: the lair frame's red edges were her damage vignette)
         // The boss's script, for the looks that read its state (Grimtunnel under the ground).
         scene.Fx.Boss = zone switch { ArenaRun ar => ar.BossScript, MapRun mr => mr.BossScript, StoryNight sn => sn.BossScript, _ => null };
         // A story night's deadfalls and where they burn, for the look of a fed fire.

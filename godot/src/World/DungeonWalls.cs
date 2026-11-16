@@ -146,6 +146,15 @@ public static class DungeonWalls
             if (lumps) y += 0.25f * (2 * N3(x * 1.0f + 5.7f, 0.3f, z * 1.0f - 1.9f) - 1) * Mathf.Sin(Mathf.Pi * Mathf.Clamp(s / sc, 0f, 1f));
             return y;
         }
+        // (den r12) The painted set's proxy: the bank's rise held at its crest (no fall past it), so a card cast over the crest
+        // lies on one smooth sheet and never across the crease and down the fall (the corridor's faceted right bank, c_p15).
+        public float HoldY(float x, float z)
+        {
+            if (Ravine) return SurfY(x, z);
+            float s = S(x, z), sc = BankSc(x, z), hc = BankHc(x, z), fl = Floor(x, z), bk = Back(x, z);
+            float rise = fl - 0.1f + hc * Sm(-0.3f, sc, s);
+            return Mathf.Lerp(rise, rise + BackRise * Sm(sc - 0.5f, sc + BackRun, s), bk);
+        }
         public Vector2 Grad(float[]? f, float x, float z, bool sField)
         {
             float e = 0.25f;
@@ -166,6 +175,13 @@ public static class DungeonWalls
             bankCtx.Hb = bankCtx.Ravine ? 13f : 4f;
         }
         return bankCtx.SurfY(x, zz);
+    }
+
+    /// <summary>(den r12) The bank's height with its rise held at the crest (Ctx.HoldY): the painted set's cast proxy.</summary>
+    public static float BankHoldY(ZoneData z, float x, float zz)
+    {
+        BankY(z, x, zz);
+        return bankCtx!.HoldY(x, zz);
     }
 
     /// <summary>(Ledge view shots) The drawn ground's height over the floor at x, z: 0 on the floor, below it where the edge
