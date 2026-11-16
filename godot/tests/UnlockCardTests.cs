@@ -71,7 +71,7 @@ public sealed class UnlockCardTests
             Assert.Equal(row.Line, card.Line);
             Assert.Equal($"LEVEL {l} · {row.Title}", LevelCards.Header(card));
         }
-        Assert.Equal("LEVEL 6 · YOUR ROAD", LevelCards.Header(LevelCards.CardsFor(6, Warden, SlotOf, 0, null, true)[0]));
+        Assert.Equal("LEVEL 6 · A ROAD TO WALK", LevelCards.Header(LevelCards.CardsFor(6, Warden, SlotOf, 0, null, true)[0]));
         // (the road not raised: level 6 is a plain card)
         Assert.Equal(LevelCardKind.Plain, LevelCards.CardsFor(6, Warden, SlotOf, 0)[0].Kind);
         // (a layer's level never takes the road's card, raised or not)
@@ -102,7 +102,9 @@ public sealed class UnlockCardTests
     public void The_road_card_says_its_row_with_no_key_and_no_prompt_row()
     {
         var road = LevelCards.RoadCard(6, "warden")!;
-        Assert.Equal((LevelCardKind.NewRoad, "Your road"), (road.Kind, road.Skill));
+        Assert.Equal((LevelCardKind.NewRoad, string.Join(" or ", Lamps.RoadsOf("warden").Select(r => r.Name))), (road.Kind, road.Skill));
+        Assert.Contains(" or ", road.Skill);
+        Assert.Equal("Your road", LevelCards.RoadNames("nobody"));
         Assert.Equal(UnlockCards.Of("warden", "road")!.Line, road.Line);
         Assert.False(road.HasPrompt);
         Assert.Equal(-1, road.Slot);

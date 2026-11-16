@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.Ui;
@@ -185,8 +186,15 @@ public static class LevelCards
     /// <summary>Your road's card: its row's words (title, line, glyph), no key cap and no prompt row. Null: the calling has no road row.</summary>
     public static LevelCardSpec? RoadCard(int level, string? calling) =>
         Content.UnlockCards.Of(calling, "road") is { } row
-            ? new LevelCardSpec { Kind = LevelCardKind.NewRoad, Level = level, Skill = "Your road", Title = row.Title, Line = row.Line, Icon = row.Icon }
+            ? new LevelCardSpec { Kind = LevelCardKind.NewRoad, Level = level, Skill = RoadNames(calling), Title = row.Title, Line = row.Line, Icon = row.Icon }
             : null;
+
+    /// <summary>The calling's roads' names joined with " or " (lamps.json), else "Your road".</summary>
+    public static string RoadNames(string? calling)
+    {
+        var names = calling == null ? [] : Content.Lamps.RoadsOf(calling).Select(r => r.Name).ToList();
+        return names.Count > 0 ? string.Join(" or ", names) : "Your road";
+    }
 
     /// <summary>The cards one campaign level makes (always one: a level that teaches a layer teaches nothing else, and the
     /// calling's own skill is queued apart, at a quiet moment: CallingDue).</summary>

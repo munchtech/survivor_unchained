@@ -9,7 +9,7 @@
       "teach": { "when": "next_fight", "title": "Heroic Leap", "text": "*Aim* with the mouse and press the key: you leap there, untouchable in the air, and knock down what you land on.", "key": "Skill2" } },
     { "level": 5, "kind": "key", "id": "bladestorm", "lands": "key 3", "title": "A NEW KEY", "line": "Hold to spin, cutting everything around you. Sunder's key breaks it.", "icon": "",
       "teach": { "when": "next_fight", "title": "Bladestorm", "text": "*Hold* the key to spin, cutting all around you. Press Sunder's key to break the storm with one great blow.", "key": "Skill3" } },
-    { "level": 6, "kind": "road", "id": "road", "lands": "lamp-post", "title": "YOUR ROAD", "line": "Two roads open: walk one at a lamp-post. Each changes how you fight.", "icon": "compass",
+    { "level": 6, "kind": "road", "id": "road", "lands": "lamp-post", "title": "A ROAD TO WALK", "line": "Walk one at a lamp-post: each changes how you fight.", "icon": "compass",
       "teach": { "when": "none", "title": "", "text": "", "key": "" } },
     { "level": 7, "kind": "auto", "id": "iron_vow", "lands": "auto 2", "title": "AN AUTO SKILL", "line": "For 2 s every blow on you lands at half, then bursts back in a ring.", "icon": "",
       "teach": { "when": "first_fire", "title": "", "text": "", "key": "" } },
