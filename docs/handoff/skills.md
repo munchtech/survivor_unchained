@@ -1,5 +1,11 @@
 # Handoff: skills look and feel
 
+## Lane B demo-skills lead (16 Nov 2026): WORKING. State file = this block.
+The owner (16 Nov): "yes start B". Brief `tools/scratch/coordinator/briefs/demo_15nov/B_skills_tree.md`; lane E's fx rules `tools/scratch/coordinator/briefs/demo_15nov/E_rules_for_B.md`. Worktree `.claude/worktrees/agent-a0bdc9d7b545f6204`, branch `demo-skills` (from integration 3ef5f4a02, origin/demo-look 3acc97a91 merged at 7922f3834; godot/assets = junction to own public/assets, assume-unchanged).
+- **Item 6 (stance name):** asked main 16 Nov; main: "the stance name is with the owner now ... If no word reaches you by then, ship "Shieldwall" as your default".
+- **Fixed list state:** 1 skill views (leap, storm, vow rebuild; groundbreaker + vow contact look; Sunder one pass + E's ground mark): not started. 2 Lamps tab faults: not started. 3 L prompt: not started. 4 Bladestorm wick: not started. 5 Bladestorm share: not started. 6 rename: waiting on the owner (default Shieldwall).
+- **Next in order:** survey code + shoot today's five at the den camera; then items 2-5 (code) by workers while the fx rebuild runs.
+
 ## M7a classes lead 1 (skills-p7, 10 Nov): MR READY skills-p7 (JOB 1: P7 into integration as it stands; Sunder paint take 10 NOT judged, polish later by the owner's word)
 - Integration f7c943eeb merged in (junction rule; 40 untracked .uid files that blocked it moved to `survivorsunchained_inputs/scratch_m7a/uid_aside/`). Conflicts, both intents kept: `fx_p7_b.gdshaderinc` and `BattleFx.P7Storm.cs` keep P7's r3 rebuild (the vow burst is p7_wave from fx_language.json, the data-driven star, p7_nick), and M4 lead 14's r3d seam fix is carried into P7's dome rim and store glow (angle noise sampled on a circle). M4's p7_bring / p7_bstar ring and star are superseded by p7_wave / p7_star (already seamless, broken into arcs): **the HUD-loudness check M4's judge made on the old vow ring is owed at P7's next skill view.**
 - PlayerHit's shake is `HitShake(min(0.5, 0.12 + Amount / 60), "her")` (raise to, never a sum), with a source test (7036ad7b0).
