@@ -246,7 +246,7 @@ SPEC = {
     # thigh's flex -62..76); a two-bone blend shrinks a rigid plate. A belt-line pivot turning part of the swing keeps
     # the plate rigid, on the belt, and over the thigh. Users: a piece's rigid_ride {"thigh_hinge_l": 1.0}.
     "hinges": [
-        {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.12, 0.0], "amount": 0.5},
+        {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth

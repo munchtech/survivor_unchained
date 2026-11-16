@@ -279,10 +279,10 @@
    "bone": "thigh_{s}",
    "pivot": [
     0.11,
-    1.12,
-    0.0
+    1.08,
+    -0.03
    ],
-   "amount": 0.5
+   "amount": 0.4
   }
  ],
  "twist_chain": {
