@@ -1,5 +1,11 @@
 # The owner's notes waiting for the leads
 
+## 15 November 2026, night: ARMOR FOR THE DEMO IS THE ONE NEW SET, AND IT IS THE SET THAT DROPS
+
+The owner, word for word: "actually change the armor scope to just the 1 new set - the one we designed to replace her current starter one, have it be the set that drops" Then: "and don't even worry about new other slots, just the armor set" and "I want something to have people do the dungeon a few times at least, that should be more than enough trying to get the armor pieces to have enough testing"
+
+Coordinator #14's reading: this replaces "a couple of each armor slot". One set (the 10 Nov kit), no new slots, no other pieces. She starts in her current starter look; the set's pieces drop in the den over several clears, which is the reason to replay it (and gives the testing). Brief: `tools/scratch/coordinator/briefs/demo_15nov/D_armor.md`.
+
 ## 15 November 2026, evening: FINISH WHAT IS RUNNING, THEN A PLAN FOR AN OPUS SESSION
 
 The owner, word for word: "get what we have going here finished, and then make a plan for us to start an opus session with this fable plan here"
