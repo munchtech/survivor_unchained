@@ -57,6 +57,13 @@ public static class DungeonFloor
             mat.SetShaderParameter("den_meso", GD.Load<TextureLayered>("res://art/dungeon/den/meso_albedo.png"));
             mat.SetShaderParameter("den_aux", GD.Load<TextureLayered>("res://art/dungeon/den/meso_aux.png"));
             mat.SetShaderParameter("meso_k", Args.Num("den-meso", 0f));
+            if (DungeonDress.SetMode > 0 && Args.Num("den-set-floor", 1f) > 0f)   // (den round 10: the painted set's floor tiles)
+            {
+                mat.SetShaderParameter("set_floor", GD.Load<TextureLayered>("res://art/dungeon/den/set/floor.png"));
+                mat.SetShaderParameter("set_k", 1f);
+                mat.SetShaderParameter("set_gain", Args.Num("den-set-floor-gain", 1f));
+                mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.85f));
+            }
         }
         return mat;
     }

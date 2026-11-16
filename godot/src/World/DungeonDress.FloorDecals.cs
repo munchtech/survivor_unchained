@@ -69,6 +69,7 @@ public static partial class DungeonDress
                 {
                     float x = -z.Half + (i + 0.5f) * scan, zz = -z.Half + (j + 0.5f) * scan;
                     float w = Wall(c, x, zz);
+                    if (SetMode > 0 && SetIn(x, zz)) continue;   // (round 10: the painted set's spills own the banks' feet)
                     if (Mathf.Abs(w - 0.3f) > 0.12f || Hole(c, x, zz) < 1.2f) continue;
                     float gx = Wall(c, x + 0.4f, zz) - Wall(c, x - 0.4f, zz), gz = Wall(c, x, zz + 0.4f) - Wall(c, x, zz - 0.4f);
                     var g = new Vector2(gx, gz);
@@ -135,7 +136,7 @@ public static partial class DungeonDress
         foreach (var (bp0, bh) in c.Boulders)
         {
             bi++;
-            if (bh < 1.0f || roots.Count == 0) continue;
+            if (bh < 1.0f || roots.Count == 0 || (SetMode > 0 && SetIn(bp0.X, bp0.Y))) continue;
             var inw = new Vector2(Wall(c, bp0.X + 0.5f, bp0.Y) - Wall(c, bp0.X - 0.5f, bp0.Y), Wall(c, bp0.X, bp0.Y + 0.5f) - Wall(c, bp0.X, bp0.Y - 0.5f));
             inw = inw.LengthSquared() < 1e-8f ? Vector2.Down : inw.Normalized();
             int m = 1 + (int)(2.99f * Hash(bi, 1, 981));

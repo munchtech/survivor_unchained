@@ -30,7 +30,12 @@ uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the hole
 // each object shows where its rank (aux r, or a for plates and cracks) is under the place's density, a macro mask.
 uniform sampler2DArray den_meso : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray den_aux : filter_linear_mipmap_anisotropic, repeat_enable;
-uniform float meso_k = 0.0;   // 0: off (round 8's floor); 1: on (--den-meso)
+uniform float meso_k = 0.0;
+// (den round 10) the painted set's floor (tools/look/den_set.py: art/dungeon/den/set/floor.png, 4 m tiles made seamless):
+// F1 packed earth, F2 trodden, F3 damp with moss, F4 thin root runs, laid by the same weights as the layers above
+uniform sampler2DArray set_floor : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the den floor's albedo
+uniform float set_gain = 1.0;   // 0: off (round 8's floor); 1: on (--den-meso)
 const float MESO_M = 8.0;
 
 varying vec3 wpos;
@@ -163,6 +168,20 @@ void fragment() {
 		vec3 ref = mix(textureLod(den_alb, vec3(wpos.xz / den_m[0], 0.0), 5.0).rgb, textureLod(den_alb, vec3(R1 * wpos.xz / den_m[0] + 0.37, 0.0), 5.0).rgb, tw);
 		float lr = max(lum(ref), 1e-3);
 		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain * mix(1.0, 0.45, meso_k)), 0.3, 2.5);   // (meso on: the fine grain ~30% quieter)
+			if (set_k > 0.5) {
+				// each tile read twice at two turns, blended by the slow field (no repeat reads); the painting's own grain
+				vec2 s0 = wpos.xz / 4.0, s1 = R1 * wpos.xz / 4.0 + 0.37;
+				vec4 t1 = mix(texture(set_floor, vec3(s0, 0.0)), texture(set_floor, vec3(s1, 0.0)), tw);
+				vec4 t2 = mix(texture(set_floor, vec3(s0 + 0.5, 1.0)), texture(set_floor, vec3(s1 + 0.5, 1.0)), tw);
+				vec4 t3 = mix(texture(set_floor, vec3(s0, 2.0)), texture(set_floor, vec3(s1, 2.0)), tw);
+				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0)), texture(set_floor, vec3(s1 + 0.25, 3.0)), tw);
+				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
+				vec3 sc = t1.rgb;
+				sc = mix(sc, t2.rgb, smoothstep(0.0, 1.0, w_tr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5)));
+				sc = mix(sc, t4.rgb, smoothstep(0.0, 1.0, w_rm * 1.6 - 0.3 + 0.6 * (t4.a - 0.5)));
+				sc = mix(sc, t3.rgb, smoothstep(0.0, 1.0, max(w_dk, w_li * 0.5) * 1.6 - 0.3 + 0.6 * (t3.a - 0.5)));
+				col = sc * set_gain;
+			}
 		if (meso_k > 0.0) {
 			vec2 ua = wpos.xz / MESO_M, ub = wpos.xz / (MESO_M * 0.79) + vec2(0.37, 0.61);
 			float ka = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.09 + 29.0));
@@ -206,7 +225,7 @@ void fragment() {
 		col = mix(col, vec3(lum(col)) * vec3(0.92, 0.95, 1.05) * 0.78, bankd * 0.7);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
 		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
-		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k);
+		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k * (1.0 - set_k));
 		float leaf = smoothstep(0.58, 0.7, m3) * (1.0 - damp);
 		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
 		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)
