@@ -1,0 +1,30 @@
+{
+ "recipe": "belt",
+ "module": "kit_hips",
+ "prefix": "belt",
+ "piece": {"id": "kit_belt", "name": "Gilded Gunmetal Belt", "slot": "belt", "covers": ["belt", "skirt"], "layer": 2,
+           "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
+ "mat": {"plate": "steel", "trim": "gold", "strap": "brownleather"},
+ "under": ["kit_bodice", "kit_brief"],
+ "clear": 0.003,
+ "clear_min": 0.0022,
+ "thick": 0.002,
+ "plate_thick": 0.002,
+ "rim": {"w": 0.0095, "h": 0.0034, "sides": 6, "step": 0.007},
+ "axis_z": -0.02,
+ "belt": {"front_y": 1.012, "side_y": 1.085, "back_y": 1.093, "side_th": 75.0, "w": 0.048, "col_step": 2.0,
+          "gap": 0.0015, "thick": 0.0042, "sig": 2.0,
+          "studs": {"step": 9.0, "rows": [0.0], "r": 0.0034, "h": 0.0024, "skip": [22.0, -22.0], "skip_w": 7.0, "skip_front": 14.0},
+          "buckle": {"w": 0.064, "h": 0.056, "bar": 0.0085},
+          "rings": {"th": 22.0, "drop": 0.006, "tab_w": 0.016, "R": 0.017, "r": 0.0035}},
+ "plates": [
+  {"name": "tasset", "mirror": false, "th": [0.0, 20.0], "cols": 41, "rows": 16, "tuck": 0.010,
+   "len": [0.125, 0.06, 0.012], "tilt": 8.0, "need": [0.008, 0.012], "keel": {"h": 0.003, "w": 0.03}},
+  {"name": "hip", "th": [40.0, 104.0], "cols": 25, "rows": 14, "tuck": 0.010,
+   "len": [0.085, 0.13, 0.12], "tilt": 12.0, "need": [0.007, 0.02],
+   "band": {"v": [0.62, 0.88], "wl": 0.032, "w": 0.0026, "h": 0.0012, "border_w": 0.0028, "border_h": 0.001}},
+  {"name": "back", "th": [108.0, 150.0], "cols": 17, "rows": 12, "tuck": 0.010,
+   "len": [0.10, 0.085, 0.06], "tilt": 14.0, "need": [0.007, 0.018],
+   "band": {"v": [0.58, 0.86], "wl": 0.032, "w": 0.0026, "h": 0.0012, "border_w": 0.0028, "border_h": 0.001}}
+ ]
+}

@@ -632,7 +632,7 @@ def build(pid):
     inner = cp[cp < cfg["clear"] + 0.0015]
     rep = {"tris": int(sum(len(p.T) for p in parts)), "points": int(sum(len(p.P) for p in parts)),
            "by_part": {p.name: int(len(p.T)) for p in parts if not p.name.endswith("_rigid")}, "pushed_to_min": pushed,
-           "plate_clear_mm": [round(float(cp.min()) * 1000, 2), round(float(np.percentile(inner, 99)) * 1000, 2)],
+           "plate_clear_mm": [round(float(cp.min()) * 1000, 2), round(float(np.percentile(inner, 99)) * 1000, 2) if len(inner) else None],
            "trim_min_mm": mn[1], "trim_low": low_trim, "strap_min_mm": mn[2],
            "rigid_min_mm": round(float(min(clearance(ref, p).min() for p in rigid)) * 1000, 2) if rigid else None}
     print(json.dumps(rep, indent=1))
