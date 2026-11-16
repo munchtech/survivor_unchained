@@ -285,7 +285,7 @@ public partial class LampPage : Control
         var st = LampBook.State(ch);
         bool ro = w?.Arena != null, open = !ro && LampBook.LayoutsOpen(w, zone), active = i == st.Active;
         var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
-        string stateLine = ro ? "In the arena the board is read-only" : active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change at a lamp-post";
+        string stateLine = ro ? "In the arena the board is read-only." : active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change at a lamp-post";
         var pr = new List<(string, string)>();
         if (active && open)
         {
@@ -299,7 +299,7 @@ public partial class LampPage : Control
     void Pick(int i, bool right)
     {
         var st = LampBook.State(ch);
-        if (i <= 2 && w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
+        if (i <= 2 && w?.Arena != null) { Board.Deny("In the arena the board is read-only."); return; }
         if (i <= 2)
         {
             if (right) Copy(i);
@@ -317,7 +317,7 @@ public partial class LampPage : Control
 
     void Copy(int to)
     {
-        if (w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
+        if (w?.Arena != null) { Board.Deny("In the arena the board is read-only."); return; }
         if (LampAsk.CopyLayout(ch, to, w, zone)) { Sound.Sfx.Pick(); GD.Print($"LAMPBOARD copy {LampBook.State(ch).Active + 1} to {to + 1}"); Header.Refresh(); }
         else Board.Deny("Layouts change at a lamp-post");
     }
@@ -1014,7 +1014,7 @@ public partial class LampHeader : Control
         if (posts > 0) parts.Add($"{posts} from the lamp-posts");
         sub = $"{lit} lit  ·  {string.Join(", ", parts)}";
         bool inArena = w?.Arena != null;
-        if (inArena) night = "In the arena the board is read-only";
+        if (inArena) night = "In the arena the board is read-only.";
         else if (LampBook.LayoutsOpen(w, zone))
             post = $"At the {Style.Cap1(zone ?? "")}’s lamp-post: lamps go out free";
         else post = null;
