@@ -612,8 +612,10 @@ def build(pid):
         p.N = vertex_normals(p.P, p.T)
     low_trim = {p.name: round(float(clearance(ref, p).min()) * 1000, 1) for p in trim + rigid}
     low_trim = {k: v for k, v in low_trim.items() if v < 1.5}
-    parts = [Part.join(pre + "_plate", cfg["mat"]["plate"], plate), Part.join(pre + "_trim", cfg["mat"]["trim"], trim),
-             Part.join(pre + "_straps", cfg["mat"]["strap"], straps)] + rigid
+    parts = [Part.join(pre + k, cfg["mat"][m], ps) if ps else None
+             for k, m, ps in (("_plate", "plate", plate), ("_trim", "trim", trim), ("_straps", "strap", straps))]
+    mn = [round(float(clearance(ref, p).min()) * 1000, 2) if p else None for p in parts]  # (an empty list: no node)
+    parts = [p for p in parts if p] + rigid
     for p in parts:
         p.N = vertex_normals(p.P, p.T)
     import gear_native as gn
@@ -629,10 +631,9 @@ def build(pid):
     cp = clearance(ref, parts[0])
     inner = cp[cp < cfg["clear"] + 0.0015]
     rep = {"tris": int(sum(len(p.T) for p in parts)), "points": int(sum(len(p.P) for p in parts)),
-           "by_part": {p.name: int(len(p.T)) for p in parts[:3]}, "pushed_to_min": pushed,
+           "by_part": {p.name: int(len(p.T)) for p in parts if not p.name.endswith("_rigid")}, "pushed_to_min": pushed,
            "plate_clear_mm": [round(float(cp.min()) * 1000, 2), round(float(np.percentile(inner, 99)) * 1000, 2)],
-           "trim_min_mm": round(float(clearance(ref, parts[1]).min()) * 1000, 2),
-           "trim_low": low_trim, "strap_min_mm": round(float(clearance(ref, parts[2]).min()) * 1000, 2),
+           "trim_min_mm": mn[1], "trim_low": low_trim, "strap_min_mm": mn[2],
            "rigid_min_mm": round(float(min(clearance(ref, p).min() for p in rigid)) * 1000, 2) if rigid else None}
     print(json.dumps(rep, indent=1))
     return rep
