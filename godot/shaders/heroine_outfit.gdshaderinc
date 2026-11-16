@@ -45,6 +45,13 @@ uniform bool test_flat = false;                  // (the legal motion check: eve
 uniform float gold_gloss = 0.0;                   // (0 = as before; 1 = gold's roughness drawn to gold_rough: crisper, brighter highlights, tint and albedo untouched)
 uniform float gold_rough = 0.2;
 uniform float gold_floor = 0.08;                  // (gold's own colour added as a dim emission, less in crevices, so it never goes black at night; 0.08 by judge g4: warm gold at night, no change by day, 0.15 turned shadowed trim to flat tan)
+// (armor-D S1c, 16 Nov: the kit set's far read. At the play camera its gold trim is under a pixel wide and blends into the
+// plate. By the figure's size on screen (px per metre at 1080p, as cel.gdshaderinc's cel_hero_near: whole under far_px.x,
+// none from far_px.y) gold's floor glow goes to gold_floor_far and finish 2's paint is scaled by paint_far. Defaults off:
+// every other gear bit for bit; set only from metal_finishes.json meshes.kit)
+uniform float gold_floor_far = 0.0;
+uniform vec3 paint_far = vec3(1.0);
+uniform vec2 far_px = vec2(120.0, 300.0);
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
 uniform float look_rig = 0.0;
@@ -280,6 +287,9 @@ void fragment() {
 	vec3 dbg6 = vec3(0.0);
 	float dbg_paint = -1.0;                         // (debug_view 14: finish 2's paint, green; its bare steel red)
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
+	float kit_far = 0.0;                             // (armor-D S1c: 1 at the play camera, 0 close; only when a far rule is set)
+	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0)))) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
+		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -332,7 +342,7 @@ void fragment() {
 		col = dye_apply(mean_col, mean_col);
 		// (gold and claspgold: mean linear red 0.95, blue 0.15 of it; every other metal's red is under 0.41)
 		gold = smoothstep(0.6, 0.75, mean_col.r) * (1.0 - smoothstep(0.3, 0.45, mean_col.b / max(mean_col.r, 1e-4)));
-		gold_emit = dye_apply(mean_col, mean_col) * gold * gold_floor;
+		gold_emit = dye_apply(mean_col, mean_col) * gold * mix(gold_floor, gold_floor_far > 0.0 ? gold_floor_far : gold_floor, kit_far);
 		float rusty = 1.0 - step(0.95, metallic_value);   // (rust: the only metal not built fully metallic)
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
@@ -433,6 +443,7 @@ void fragment() {
 			vec3 coat = dye_amount > 0.0 ? dye_apply(mean_col, mean_col)
 				: enamel * clamp(dot(mean_col, vec3(0.3, 0.59, 0.11)) / 0.42, 0.55, 1.0);
 			coat *= 0.95 + 0.1 * blot_c;
+			coat *= mix(vec3(1.0), paint_far, kit_far);
 			paint = (1.0 - chip) * (1.0 - gold);
 			col = mix(col, mix(steel_c, coat, 1.0 - chip), 1.0 - gold);
 			float r_paint = enamel_rough + (p_rough - metal_rough) + 0.06 * (blot_c - 0.5) + (dtl.b - 0.5) * detail_rough * 0.5;
