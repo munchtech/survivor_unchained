@@ -26,8 +26,11 @@ public partial class LevelCard : Control
     /// <summary>The chips' scale: the bar's KeyTag chip at 16 px tall on screen (judge r1, 15: at the bottom HUD's own
     /// scale it was a 12 px chip beside a 26 px name).</summary>
     const float CapK = 1f;
-    const float MinW = 230, Pad = 18, WellD = 40, NameX = Pad + WellD + 14, CoinR = 43, StemMax = 64;   // (CoinR: the coin arch's top, 43 over its middle: the stem ends on it)
-    const int HeadSize = 14, NameSize = 26, LineSize = 16, PromptSize = 15;
+    const float MinW = 230, Pad = 18, WellD = 40, NameX = Pad + WellD + 14, CoinR = 31, StemMax = 90;   // (CoinR: the stem ends 2 px above the coin arch's top (From.Y - 31 = 1011 against the arch at 1013))
+    const int HeadSize = 14, PromptSize = 15;
+    const int NameSize = 26, LineSize = 16;
+    float promptW;
+    int nameSz = 26;
 
     public readonly LevelCardQueue Queue = new();
     /// <summary>True while the card must wait (banners held, a screen open): GameHud sets it once.</summary>
@@ -44,6 +47,16 @@ public partial class LevelCard : Control
     public Func<LevelCardSpec, Vector2?> TopOf = _ => null;
     /// <summary>bd-ui W13: the global rects of the auto tiles and the stance discs, which the tail breaks around (3 px clear).</summary>
     public Func<List<Rect2>> Avoid = () => new();
+
+    /// <summary>The global screen rects of what the card must not cover (her, the telegraph marks): GameHud sets it each frame.
+    /// While any meets the card (grown 8 px) it fades to a quarter and its hold clock waits, 3 s at most (CardFade).</summary>
+    public Func<List<Rect2>> Under = () => new();
+    readonly CardFade fade = new();
+    bool wasBlocked;
+    /// <summary>The battle's time (GameHud sets it each frame) and whether underBuf's first rect is hers: the shots' fade log.</summary>
+    public double Clock;
+    public bool HerIn;
+    readonly List<(float, float, float, float)> underBuf = new();
 
     /// <summary>Where it rises from (the coin's middle).</summary>
     public Vector2 From = new(960, 1042);
@@ -77,7 +90,11 @@ public partial class LevelCard : Control
     public void Refresh(LevelCardSpec s) { if (shown == s) Begin(s, true); }
 
     /// <summary>A card to show (in turn, after any showing).</summary>
-    public void Add(LevelCardSpec s) => Queue.Add(s);
+    public void Add(LevelCardSpec s)
+    {
+        if (Queue.Count > 0 && Args.Has("shot")) GD.Print($"level card: waiting {LevelCards.Header(s)}");
+        Queue.Add(s);
+    }
 
     /// <summary>A line broken at a space into at most two lines that fit room (the second carries the rest).</summary>
     static (string, string) Wrap(string text, float room)
@@ -127,11 +144,19 @@ public partial class LevelCard : Control
             if (s.Kind == LevelCardKind.NewKey && Args.Get("level-card") != null) GD.Print($"level-card picture: key {gk} = DgGold gold line glyph {SeatPicture.CardPx} px (card)");
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(s.Skill, wd.Description);
         }
-        else if (body) { name = s.Skill; line = s.Line ?? ""; }
+        else if (body)
+        {
+            name = s.Skill; line = s.Line ?? "";
+            // (the road's card: its row's glyph, as a skill's card draws its own)
+            if (s.Kind == LevelCardKind.NewRoad && s.Icon != "") glyph = Glyphs.Texture(s.Icon, 80, GlyphGold, s.Icon == "roads" ? 2f : 1.6f, line: true);
+        }
         if (s.Kind == LevelCardKind.LampLit) { measure = " " + s.Measure; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
             // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
             if (s.Measure is "a blow" or "a cut") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }
         prompt = s.HasPrompt ? s.PromptText! : "";
+        // (hold long enough to read: by the words of its name and line, plus the prompt row)
+        Queue.HoldNow = LevelCards.HoldSecs(LevelCards.Words(name + " " + line + " " + line2 + (s.Kind == LevelCardKind.LampLit ? " " + before + " " + after + measure : "")), s.HasPrompt);
+        if (!again) fade.Reset();
 
         // the skill's key chip (a new key only), after its name
         float need = MinW;
@@ -152,15 +177,20 @@ public partial class LevelCard : Control
             cap.Refresh();
         }
         else if (cap != null) { cap.QueueFree(); cap = null; }
-        float nameW = TextW(Style.Display, name, NameSize);
+        nameSz = NameSize; promptW = 0;
+        float nameW = TextW(Style.Display, name, nameSz);
+        float capW = 0;
         if (body)
         {
-            float capW = cap != null ? cap.ChipBox().Size.X * CapK + 12 : 0;
+            capW = cap != null ? cap.ChipBox().Size.X * CapK + 12 : 0;
+            // (a long name, the road's two roads joined, shrinks to the card's widest body rather than run off it)
+            float nroom = LevelCardPlace.LineRoom;
+            if (nameW + capW > nroom) { nameSz = Math.Max(16, (int)(NameSize * nroom / (nameW + capW))); nameW = TextW(Style.Display, name, nameSz); }
             float lineW = s.Kind == LevelCardKind.LampLit
                 ? TextW(Style.Ui, before + arrow + after + measure, LineSize)
                 : TextW(Style.Ui, line, LineSize);
             // (bd-ui W8: at most 470 wide; a longer body wraps to two lines)
-            float room = LevelCardPlace.MaxW - NameX - Pad;
+            float room = LevelCardPlace.LineRoom;
             if (s.Kind != LevelCardKind.LampLit && lineW > room) { (line, line2) = Balanced(line, room); lineW = Math.Max(TextW(Style.Ui, line, LineSize), line2 == "" ? 0 : TextW(Style.Ui, line2, LineSize)); }
             need = Math.Max(need, NameX + Math.Max(nameW + capW, lineW) + Pad);
         }
@@ -175,12 +205,13 @@ public partial class LevelCard : Control
             promptCap = new KeyTag(pk) { Chip = true };
             promptHost.AddChild(promptCap);
             promptCap.Refresh();
-            need = Math.Max(need, Pad + promptCap.ChipBox().Size.X * CapK + 10 + TextW(Style.Ui, prompt, PromptSize) + Pad);
+            promptW = promptCap.ChipBox().Size.X * CapK + 10 + TextW(Style.Ui, prompt, PromptSize);
+            need = Math.Max(need, Pad + promptW + Pad);
         }
         else if (promptCap != null) { promptCap.QueueFree(); promptCap = null; }
         w = Mathf.Min(LevelCardPlace.MaxW, Mathf.Ceil(Math.Max(need, headW)));
         float bodyTop = 32, extra = line2 != "" ? LineSize + 4 : 0, promptTop = body ? 88 + extra : 36;
-        h = s.HasPrompt ? promptTop + 24 : body ? 86 + extra : 44;
+        h = s.HasPrompt ? promptTop + 30 : body ? 92 + extra : 44;
         Size = new Vector2(w, h);
         PivotOffset = Size / 2;
         // the chips, placed in their hosts' (scaled) space: the name's cap on the name's middle, the prompt's on its row
@@ -226,7 +257,25 @@ public partial class LevelCard : Control
     public override void _Process(double delta)
     {
         bool held = Held();
-        Queue.Tick(Read && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
+        // (the card never covers her or a telegraph: faded while any is under it, its hold waiting, 3 s at most)
+        bool paused = false;
+        if (Visible && !held)
+        {
+            underBuf.Clear();
+            foreach (var r in Under()) underBuf.Add((r.Position.X, r.Position.Y, r.End.X, r.End.Y));
+            var cr = GetGlobalRect();
+            var card = (cr.Position.X, cr.Position.Y, cr.End.X, cr.End.Y);
+            bool blocked = CardFade.Blocked(card, underBuf);
+            paused = fade.Step(blocked, Queue.Now == LevelCardQueue.Phase.Hold, (float)delta);
+            // (evidence for the shots: once when the fade starts, once when it comes back)
+            if (blocked != wasBlocked && Args.Has("shot"))
+            {
+                bool her = HerIn && underBuf.Count > 0 && CardFade.Blocked(card, underBuf.GetRange(0, 1));
+                GD.Print(blocked ? $"level card: faded ({(her ? "her" : "telegraph")}) t={Clock:0.0}" : $"level card: clear t={Clock:0.0}");
+            }
+            wasBlocked = blocked;
+        }
+        Queue.Tick((Read || paused) && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
         if (Queue.Began && Queue.Current != null) Begin(Queue.Current);
         if (Queue.Current == null) { if (Visible) Visible = false; return; }
         if (held) { if (Visible) Visible = false; return; }
@@ -241,11 +290,11 @@ public partial class LevelCard : Control
                 float e = 1 - (1 - kk) * (1 - kk);
                 Position = rest + new Vector2(0, 18 * (1 - e));
                 Scale = Vector2.One;
-                Modulate = Colors.White with { A = e };
+                Modulate = Colors.White with { A = e * fade.Alpha };
                 break;
             }
             case LevelCardQueue.Phase.Hold:
-                Position = rest; Scale = Vector2.One; Modulate = Colors.White;
+                Position = rest; Scale = Vector2.One; Modulate = Colors.White with { A = fade.Alpha };
                 break;
             case LevelCardQueue.Phase.Out:
             {
@@ -254,7 +303,7 @@ public partial class LevelCard : Control
                 var mid = rest + Size / 2;
                 Position = rest + (fold - mid) * e;
                 Scale = new Vector2(1 - 0.75f * e, 1 - 0.85f * e);
-                Modulate = Colors.White with { A = 1 - e };
+                Modulate = Colors.White with { A = (1 - e) * fade.Alpha };
                 break;
             }
         }
@@ -278,7 +327,7 @@ public partial class LevelCard : Control
         if (stem > 0)
         {
             float m = Mathf.Round(tailX);
-            var far = Rule with { A = 0.5f };
+            var far = Ring with { A = 0.9f };
             var gp = GetGlobalTransform().Origin;
             var avoid = Avoid().Select(r => (r.Position.X - gp.X, r.Position.Y - gp.Y, r.End.X - gp.X, r.End.Y - gp.Y));
             foreach (var (a0, a1) in LevelCardPlace.StemSpans(m, h, h + stem, avoid))
@@ -300,9 +349,9 @@ public partial class LevelCard : Control
             if (s.Kind == LevelCardKind.NewAuto)
             {
                 // (an auto skill's frame is the tile's: a square, the bronze bezel)
-                DrawRect(well, WellInk);
-                DrawRect(well.Grow(-0.5f), new Color("#1a120a") with { A = 0.8f }, false, 1);
-                DrawRect(well.Grow(-1.75f), Ring, false, 1.5f);
+                // (the bar's tile: field #2c302e, a 2 px bezel #d3a464)
+                DrawRect(well, new Color("#2c302e"));
+                DrawRect(well.Grow(-1), new Color("#d3a464"), false, 2);
             }
             else if (s.Kind == LevelCardKind.NewStance)
             {
@@ -323,8 +372,9 @@ public partial class LevelCard : Control
                 float gs = SeatPicture.CardPx + 2 * DgGold.Pad;
                 DrawTextureRect(glyph, new Rect2(wc - new Vector2(gs, gs) / 2, new Vector2(gs, gs)), false);
             }
-            else if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -9 : -8), false);
-            DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
+            // (an auto's picture fills its 40 px well as it fills its 26 px tile on the bar: drawn at the tile's own ratio, not its pixel size)
+            else if (glyph != null) DrawTextureRect(glyph, well.Grow(s.Kind == LevelCardKind.NewStance ? -6 : s.Kind == LevelCardKind.NewRoad ? -6 : s.Kind == LevelCardKind.NewAuto ? -2 : -8), false);
+            DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, nameSz, Cream);
             if (s.Kind != LevelCardKind.LampLit)
             {
                 DrawString(Style.Ui, new Vector2(NameX, top + 44), line, HorizontalAlignment.Left, -1, LineSize, Parch);

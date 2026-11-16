@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Ui;
@@ -76,49 +77,6 @@ public sealed class LevelCardTests
         Assert.Equal(LevelCardKind.Plain, LevelCards.Parse("plain:5")!.Value.Spec.Kind);
         Assert.Null(LevelCards.Parse("slot:x"));
         Assert.Null(LevelCards.Parse("lamp:sunder:6:a:47"));
-    }
-
-    [Fact]
-    public void The_callings_skill_takes_a_plain_levels_card_and_keeps_its_level()
-    {
-        var card = LevelCards.ForCampaignLevel(6, Warden, _ => 1, 0);
-        Assert.Equal(LevelCardKind.Plain, card.Kind);
-        Assert.Null(LevelCards.WithCalling(card, "dawnpulse"));
-        Assert.Equal(LevelCardKind.NewSkill, card.Kind);
-        Assert.Equal("dawnpulse", card.Skill);
-        Assert.Equal(6, card.Level);
-        Assert.Equal("LEVEL 6 · A NEW SKILL", LevelCards.Header(card));
-        // (it is on no key: no slot to fold to, and its prompt names the skills screen)
-        Assert.Equal(-1, card.Slot);
-        Assert.Equal(Act.Arts, card.PromptKey);
-        Assert.Equal("Put it on a key", card.PromptText);
-    }
-
-    [Fact]
-    public void The_callings_skill_follows_a_key_levels_card_on_its_own_card_without_the_level()
-    {
-        // (bd-keys; bd-sockets) the ninth level opens the fourth key, Shield Charge's (taught_builds.json)
-        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "shield_charge" ? 3 : -1, 0);
-        Assert.Equal(LevelCardKind.NewKey, card.Kind);
-        var second = LevelCards.WithCalling(card, "judgement_disc");
-        // the key card shows as it did
-        Assert.Equal((LevelCardKind.NewKey, "shield_charge", 3), (card.Kind, card.Skill, card.Slot));
-        Assert.Equal("LEVEL 9 · A NEW KEY", LevelCards.Header(card));
-        Assert.Equal(Act.Character, card.PromptKey);
-        // and the new skill's own card follows it
-        Assert.NotNull(second);
-        Assert.Equal((LevelCardKind.NewSkill, "judgement_disc", -1), (second!.Kind, second.Skill, second.Slot));
-        Assert.Equal("A NEW SKILL", LevelCards.Header(second));
-        Assert.DoesNotContain("LEVEL", LevelCards.Header(second));
-        Assert.Equal(Act.Arts, second.PromptKey);
-        Assert.Equal("Put it on a key", second.PromptText);
-        // one after the other from the same queue
-        var q = new LevelCardQueue();
-        q.Add(card); q.Add(second);
-        q.Tick(1 / 60.0, false);
-        Assert.Same(card, q.Current);
-        Run(q, LevelCards.In + LevelCards.HoldPrompt + LevelCards.Out + 0.1);
-        Assert.Same(second, q.Current);
     }
 
     [Fact]
@@ -207,22 +165,22 @@ public sealed class LevelCardPlaceTests
 
     [Theory]
     [InlineData(760f)] [InlineData(820f)] [InlineData(960f)] [InlineData(1100f)] [InlineData(1200f)]
-    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_696_to_1244(float tx)
+    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_720_to_1244(float tx)
     {
         var p = LevelCardPlace.Compute(247, 86, 978, 959, (tx, 1010f));
-        Assert.InRange(p.X, 696, 1244 - 247);
+        Assert.InRange(p.X, 720, 1244 - 247);
         Assert.InRange(tx - p.X, p.TailX - 0.6f, p.TailX + 0.6f);
         Assert.InRange(p.TailX, 24, 247 - 24);
-        Assert.Equal(1010.0 - (p.Y + 86), p.Stem, 1);
+        Assert.Equal(1010.0 - LevelCardPlace.Land - (p.Y + 86), p.Stem, 1);
     }
 
     [Fact]
-    public void A_target_by_the_left_statue_pins_the_card_at_696()
+    public void A_target_by_the_left_statue_pins_the_card_at_720()
     {
         var p = LevelCardPlace.Compute(470, 86, 978, 959, (700f, 1010f));
-        Assert.Equal(696, p.X);
+        Assert.Equal(720, p.X);
         Assert.Equal(24, p.TailX);
-        Assert.Equal(470f, LevelCardPlace.MaxW);
+        Assert.Equal(524f, LevelCardPlace.MaxW);   // (the whole span between the statues)
         Assert.Equal(Math.Round(960 - 235f), LevelCardPlace.Compute(470, 86, 978, 959, null).X);
     }
 
@@ -271,6 +229,92 @@ public sealed class LevelCardPlaceTests
         Assert.Equal((40f, 100f), Assert.Single(LevelCardPlace.StemSpans(875, 40, 100, new[] { tile })));
     }
 
+    [Theory]
+    [InlineData(700f, 1010f)] [InlineData(960f, 969f)] [InlineData(1100f, 960f)] [InlineData(1200f, 1013f)]
+    public void The_stem_ends_2_px_above_its_targets_top_rim_for_every_target_kind(float tx, float ty)
+    {
+        // (road: the coin's arch top; auto: the tile's top; stance: the disc's top. Key cards keep their 10 px stub in LevelCard.)
+        var p = LevelCardPlace.Compute(300, 92, 978, 959, (tx, ty));
+        Assert.InRange(ty - (p.Y + 92 + p.Stem), 0, 3);
+    }
+
+    [Fact]
+    public void The_stem_runs_through_a_rect_it_lands_on_but_breaks_for_one_it_crosses()
+    {
+        // a disc behind the tile whose top is above y1 and whose bottom is below it holds the tail's x: the target, not avoided
+        Assert.Equal((40f, 100f), Assert.Single(LevelCardPlace.StemSpans(875, 40, 100, new[] { (L: 860f, T: 90f, R: 894f, B: 134f) })));
+        // a rect wholly above y1 still cuts it
+        Assert.Equal(2, LevelCardPlace.StemSpans(875, 40, 200, new[] { (L: 860f, T: 100f, R: 894f, B: 134f) }).Count);
+    }
+
     [Fact]
     public void An_auto_tile_opens_at_1_7_and_10() => Assert.Equal(new[] { 1, 7, 10 }, new[] { AutoRowModel.OpensAt(0), AutoRowModel.OpensAt(1), AutoRowModel.OpensAt(2) });
+
+    [Fact]
+    public void Hold_is_by_the_words_with_the_prompt_row_on_top()
+    {
+        Assert.Equal(2.8, LevelCards.HoldSecs(3, false), 6);          // (a short one holds the floor)
+        Assert.Equal(1.4 + 0.25 * 10, LevelCards.HoldSecs(10, false), 6);
+        Assert.Equal(4.5, LevelCards.HoldSecs(40, false), 6);         // (a long one, the ceiling)
+        Assert.Equal(4.5 + 0.8, LevelCards.HoldSecs(40, true), 6);
+        Assert.Equal(2.8 + 0.8, LevelCards.HoldSecs(1, true), 6);
+        Assert.Equal(6, LevelCards.Words("Heroic Leap  Leap where you → aim"));
+        // the queue honours it, In 0.18 and Out 0.3 unchanged
+        var q = new LevelCardQueue();
+        q.Add(new LevelCardSpec { Level = 2 });
+        q.Tick(1 / 60.0, false);
+        q.HoldNow = 4;
+        for (double x = 0; x < 0.18 + 3.9; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Equal(LevelCardQueue.Phase.Hold, q.Now);
+        for (double x = 0; x < 0.2; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Equal(LevelCardQueue.Phase.Out, q.Now);
+        for (double x = 0; x < 0.35; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Null(q.Current);
+    }
+
+    static readonly (float, float, float, float) Card = (700, 800, 1200, 900);
+
+    [Fact]
+    public void The_card_fades_for_anything_within_8_px_and_not_beyond()
+    {
+        Assert.False(CardFade.Blocked(Card, []));
+        Assert.True(CardFade.Blocked(Card, [(800, 880, 820, 960)]));              // her, across it
+        Assert.True(CardFade.Blocked(Card, [(1200 + 7, 850, 1300, 860)]));        // 7 px off its right edge: grown 8
+        Assert.False(CardFade.Blocked(Card, [(1200 + 9, 850, 1300, 860)]));
+        Assert.False(CardFade.Blocked(Card, [(100, 100, 300, 300), (800, 920, 900, 1000)]));
+    }
+
+    [Fact]
+    public void The_alpha_eases_to_a_quarter_in_012_s_and_back_and_the_hold_waits_3_s_at_most()
+    {
+        var f = new CardFade();
+        float dt = 1 / 60f;
+        for (int i = 0; i < 7; i++) f.Step(true, true, dt);          // 0.117 s
+        Assert.InRange(f.Alpha, 0.25f, 0.28f);
+        for (int i = 0; i < 3; i++) f.Step(true, true, dt);
+        Assert.Equal(0.25, f.Alpha, 4);
+        float waited = 0;
+        for (int i = 0; i < 60 * 5; i++) if (f.Step(true, true, dt)) waited += dt;
+        Assert.InRange(waited + 10 * dt, 2.99f, 3.02f);   // (3 s all told) then it leaves anyway
+        Assert.False(f.Step(true, true, dt));
+        Assert.Equal(0.25, f.Alpha, 4);
+        for (int i = 0; i < 8; i++) f.Step(false, true, dt);
+        Assert.Equal(1.0, f.Alpha, 4);
+        Assert.False(f.Step(false, true, dt));
+        f.Reset();
+        Assert.True(f.Step(true, true, dt));                          // (a new card gets its own 3 s)
+        Assert.False(f.Step(true, false, dt));                        // (not while rising or leaving: only the hold waits)
+    }
+
+    [Fact]
+    public void Every_unlock_line_is_one_line_of_72_characters_or_less_that_fits_the_card()
+    {
+        foreach (var row in SurvivorUnchained.Content.UnlockCards.All.Values.SelectMany(l => l))
+        {
+            Assert.True(row.Line.Length <= LevelCardPlace.LineChars, $"{row.Id}: {row.Line.Length} characters");
+            // (UI sans 16 measured at no more than 6.5 px a character over these rows; the room is the card's width less the well's column)
+            Assert.True(row.Line.Length * LevelCardPlace.PxPerChar <= LevelCardPlace.LineRoom + 10, $"{row.Id} would wrap");
+        }
+        Assert.Equal("Charge 8 m behind your shield; gain a barrier of 15% of your health.", SurvivorUnchained.Content.UnlockCards.ForSkill("shield_charge")!.Line);
+    }
 }

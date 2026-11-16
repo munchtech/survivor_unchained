@@ -336,7 +336,7 @@ public sealed partial class Journey
         {
             Teach(campaignFight);
             Grew();
-            RaiseRoad();
+            RaiseRoad(true);
             OnTouch();
         }
     }
@@ -358,12 +358,18 @@ public sealed partial class Journey
     /// <summary>The road's choice waits on her: her level has reached it and she walks none.</summary>
     public bool RoadDue => LampBook.RoadOpen(Ch) && LampBook.Roadless(Ch);
 
+    /// <summary>The road was raised in a campaign fight and its card is owed (the HUD's): the level it opened at, or 0 when it
+    /// was raised outside a level-up (the first dungeon's entrance). The HUD clears it once carded.</summary>
+    public int? RoadCarded;
+
     /// <summary>Raise the road's choice once, when it is due: the fact road.open, the announcement, OnRoadOpen. True when raised now.</summary>
-    public bool RaiseRoad()
+    public bool RaiseRoad(bool levelUp = false)
     {
         if (!RoadDue || World.Fact(RoadOpenFact).Truthy) return false;
         World.Facts[RoadOpenFact] = true;
-        OnAnnounce(new Announcement("Choose your road", "Two roads lie open to you. Take one at a lamp-post", "boon", 4.5, "Your road"));
+        // (in a campaign fight the HUD's own card says it: the level's card, or one of its own when raised outside a level-up)
+        if (campaignFight is { Campaign: true }) RoadCarded = levelUp ? Ch.Level : 0;
+        else OnAnnounce(new Announcement("Choose your road", "Two roads lie open to you. Take one at a lamp-post", "boon", 4.5, "Your road"));
         OnRoadOpen();
         return true;
     }

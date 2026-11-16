@@ -36,6 +36,8 @@ public partial class GroundLabels : Control
     /// <summary>Where the HUD's words are this frame (a tip, the corner, the notices, a banner): a label
     /// that would fall on one gives way to it, faint, and never runs through its words.</summary>
     public readonly List<Rect2> KeepOut = new();
+    /// <summary>The level card's rect: a name that would fall within 6 px of it is not drawn (as GoalMarks.Cover does for pins).</summary>
+    public Rect2? Cover;
 
     /// <summary>Where the names stood at the last draw (screen px): the combat floaters give way to them (Hits.Show).</summary>
     public static readonly List<Rect2> Drawn = new();
@@ -67,6 +69,7 @@ public partial class GroundLabels : Control
             for (int k = 0; k < 8 && placed.Exists(r => r.Grow(2).Intersects(box)); k++) box.Position -= new Vector2(0, box.Size.Y + 3);
             // Still on another after stepping up (a heap): left unsaid rather than written over it.
             if (placed.Exists(r => r.Grow(1).Intersects(box))) continue;
+            if (Cover is Rect2 cv && cv.Grow(6).Intersects(box.Grow(10))) continue;
             placed.Add(box);
             Drawn.Add(box);
             // Under the HUD's own words it gives way: faint, and its light not drawn.

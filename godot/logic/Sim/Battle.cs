@@ -1167,6 +1167,7 @@ public sealed partial class Battle
             double k = o.Knockback * (heavy ? (cw == 1 ? HW.Knockback : cw + HW.Knockback - 1) : cw) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
+            e.KbBy = by;
         }
 
         // Status payloads ride the hit.
@@ -2051,7 +2052,7 @@ public sealed partial class Battle
         e.Def = def;
         e.Level = lvl;
         e.X = x; e.Z = z; e.Vx = e.Vz = e.Kbx = e.Kbz = 0;
-        e.Edge = e.Fell = e.AtBrink = false;
+        e.Edge = e.Fell = e.AtBrink = false; e.KbBy = null;
         e.Facing = Math.Atan2(Player.Z - z, Player.X - x);
         e.Radius = def.Radius;
         e.Mass = def.Mass ?? 1;
@@ -2172,6 +2173,9 @@ public sealed partial class Battle
         // (Ledge kills) a fallen foe's drops lie on open ground at the ledge, each clear of the others, whatever they were asked.
         if (ledgeLoot != null) (x, z) = LedgeSpot(ledgeLoot);
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
+        // (and it pops back onto the ground, away from the drop: a scatter toward the lip stopped at the drop's face, a coin
+        // lying at the very brink)
+        if (ledgeLoot != null) a = Math.Atan2(-ledgeLoot.FellDz, -ledgeLoot.FellDx) + (a / Tau - 0.5) * 2.4;   // (the same draw: no other roll moves)
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
         p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null; p.Payload = null; p.Loot = -1; p.Look = Verdict.Shown;
         if (kind == PickupKind.Ember) p.Tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
@@ -3546,6 +3550,7 @@ public sealed partial class Battle
                     if (e.Boss) return;
                     double dd = d == 0 ? 1 : d;
                     e.Kbx += (x - e.X) / dd * fx.Strength;
+                    e.KbBy = credit;
                     e.Kbz += (z - e.Z) / dd * fx.Strength;
                 });
                 break;

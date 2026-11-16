@@ -467,11 +467,26 @@ public static class MapGen
         // Solid boxes over the unwalkable cells within reach of the way (the
         // survivor and everything chasing them stop at the trees), merged
         // into as few boxes as will cover them.
-        foreach (var (i0, j0, w, h) in Merge(outside, 4.5))
+        // A dungeon's are of two kinds, merged apart: the edges its view shows as a drop (a foe forced over one dies of it,
+        // Sim/LedgeKills.cs) and the walls that rise (LedgeEdges, data/content/ledge.json "edges").
+        bool[]? dropCell = null;
+        if (lay != null)
         {
-            double hw = w / 2.0, hd = h / 2.0;
-            colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = i0 - half - 0.5 + hw, Z = j0 - half - 0.5 + hd, Hw = hw, Hd = hd, R = Math.Sqrt(hw * hw + hd * hd), Tag = "wall", Drop = lay != null });
+            var rule = LedgeEdges.For(lay.Def.Id);
+            dropCell = new bool[Res * Res];
+            for (int j = 0; j < Res; j++)
+                for (int i = 0; i < Res; i++)
+                {
+                    int k = j * Res + i;
+                    if (outside[k] > 0 && outside[k] <= 4.5) dropCell[k] = LedgeEdges.Drops(rule, LedgeEdges.KindAt(wallIn, holeD, Res, i, j, rule));
+                }
         }
+        foreach (bool drop in dropCell != null ? new[] { false, true } : new[] { false })
+            foreach (var (i0, j0, w, h) in Merge(outside, 4.5, dropCell == null ? null : k => dropCell[k] == drop))
+            {
+                double hw = w / 2.0, hd = h / 2.0;
+                colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = i0 - half - 0.5 + hw, Z = j0 - half - 0.5 + hd, Hw = hw, Hd = hd, R = Math.Sqrt(hw * hw + hd * hd), Tag = "wall", Drop = drop });
+            }
 
         // ----------------------------------------------------------- packs --
         var packs = new List<PackSpot>();
@@ -652,10 +667,10 @@ public static class MapGen
 
     /// <summary>The unwalkable cells within `reach` of the way, as few
     /// axis-aligned boxes as a greedy sweep finds: (i, j, width, height).</summary>
-    internal static List<(int, int, int, int)> Merge(double[] outside, double reach)
+    internal static List<(int, int, int, int)> Merge(double[] outside, double reach, Func<int, bool>? only = null)
     {
         var want = new bool[Res * Res];
-        for (int k = 0; k < want.Length; k++) want[k] = outside[k] > 0 && outside[k] <= reach;
+        for (int k = 0; k < want.Length; k++) want[k] = outside[k] > 0 && outside[k] <= reach && (only == null || only(k));
         var boxes = new List<(int, int, int, int)>();
         for (int j = 0; j < Res; j++)
             for (int i = 0; i < Res; i++)

@@ -1,0 +1,21 @@
+# Lane B: skills and the skill tree, to the demo's level (brief, 15 Nov 2026, written by coordinator #14 on Fable)
+
+Read `tools/scratch/coordinator/briefs/wave1_15nov.md` "## Common" first (read "#13" as the coordinator who spawned you). Type `su-lead-high`, judged, own worktree from integration, branch `demo-skills`. State file: the TOP block of `docs/handoff/skills.md`, kept current from your first commit.
+
+## The owner (15 Nov 2026, word for word)
+"skills and skill tree to a certain level polished (whatever you think, dosn't need to be very high)"
+Earlier (10 Nov, after playing): "had no idea what the skills did, they don't have tooltips on hover" (FIXED 11 Nov, merge a133d4fad; do not redo).
+
+## The level (the coordinator's call; do not raise it)
+A den run (`hollow`) is entered at level 6, every clear reaches 7, about 15 % reach 8. The player meets FIVE skills: sunder (key 1), groundbreaker (auto 1), heroic_leap (key 2), bladestorm (key 3), iron_vow (auto 2), and rarely the level-8 stance. Polish only what that player meets. Each of the five must be: explained (its tip is right), readable at the dungeon camera (62 degrees, 24 m: its own effect, a clear telegraph and contact), and its tree must open, read and take the points a den run gives. NOT in this lane: shield_charge, watch_bell, supports, sockets, Unions (level 9+), other callings, new skills, balance beyond item 5.
+
+## The fixed list, in order
+1. **Skill views that failed and shipped as a named KNOWN** (`docs/handoff/skills.md` lines 96 and 117: judge r1 and r2 FAIL; leap medium, storm and vow FAR; round 3 never ran): heroic_leap, bladestorm, iron_vow rebuilt to the art-style lane's bar (ask the coordinator for lane E's judged rules for effects before you start; if E has not landed them, build to `docs/design/LOOK_BIBLE.md`). Then a look check on groundbreaker and iron_vow's contact (no verdict exists). Sunder's stroke paint (take 10, lines 3-15: "flicks are whiskers", cut 1's flat white body): one honest pass, then leave it.
+2. **The Lamps tab (the tree; `godot/src/Ui/LampsScreen.cs`, `LampPage.cs`, `LampBoard.cs`, `LampWick.cs`, `LampBoardModel.cs`; L opens it)**, at a den player's levels and points: the known faults (`docs/handoff/ui_design.md` lines 6 and 183, RESUME grep "S2", "M7a"): held (unburned) lamps drawn as "Lit" while stats count only burned ones; a lamp lit by level still gates the next lamp with "Plan the lamp before it in this strand first"; the 1 px gap under the tip's rule; the read-only gate tested by the night clock in UI code instead of `LampBook.LayoutsOpen`. Then play it as a level-6 to level-8 Warden: every point a den run gives can be spent, no dead button, no clipped text.
+3. **The player is told the tree exists:** nothing teaches that L opens it. One prompt where a point is first held (the level card or the HUD), in the HUD's own language. The UI lead's looks stand; add no new art style.
+4. **Bladestorm has no wick** (RESUME grep "Bladestorm has no wick"): it is key 3 and about 40 % of a den run's damage, and its tree is empty. Cheapest honest answer first: one strand of four lamps ending in a Turn, data and rules, with tests. If that is more than a small job, show the empty tree cleanly and name it.
+5. **Bladestorm's share in the den** is 41 % (deft) and 36 % (human) against a 20-35 % target (`survivorsunchained_inputs\scratch_coord14\ledge\t_s51.md`): a numbers-only pass in data; the bands must hold (deft >= 95 %, human 80-90 %, standing 0 %; in `godot`: `dotnet run --project balance -- dungeon --seeds 50 --bots standing,human,deft`).
+6. **"Bulwark" names three things** (the road, the level-8 stance, a support gem): default if the owner has not answered: the STANCE is renamed (cards and tips read names from data; `godot/data/content/stances.json` line 8). Ask the coordinator for the name before you touch it.
+
+## Checks and the gate
+Shots in the den only, at the play camera, 1:1. Suite: in `godot/tests`, `python ../../tools/quiet.py -- dotnet test`. Gate: your own 1:1 look says each of the five reads; then ONE max judge (`Item: demo-skills`, `Effort tier: always-seen`) on one sheet: the five skills at contact, the Lamps tab at level 7, the prompt. On PASS: merge integration in, suite, push, report (verdict first, branch@sha, suite, sheet path).

@@ -54,11 +54,21 @@ public sealed partial class Battle
             }
         }
         col.IgnoreDrops = e.Edge;
+        double x0 = e.X, z0 = e.Z;
         e.X += e.Kbx * dt;
         e.Z += e.Kbz * dt;
         // Knocked into a wall, it stops at the wall (a scripted boss's own step never resolved it, and Grimtunnel was knocked out
         // through the shut gate behind her, where she could not reach him). A foe going over meets no wall but the ground's own props.
         col.Resolve(ref e.X, ref e.Z, e.Radius);
+        // An elite or a boss carried to the brink is caught there the moment the lip stops it: the push is spent (what is left
+        // of it only pressed it into the edge, the catch heard and seen 0.6 s late), and the catch is now.
+        if (e.AtBrink && !e.Edge && Math.Sqrt((e.X - x0) * (e.X - x0) + (e.Z - z0) * (e.Z - z0)) < 0.35 * Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz) * dt)
+        {
+            e.Kbx = e.Kbz = 0;
+            e.AtBrink = false;
+            if (e.State != EnemyState.Dying) Events.Emit(new Ev.Brink { X = e.X, Z = e.Z, Dx = e.FellDx, Dz = e.FellDz, Enemy = e.Id, Boss = e.Boss });
+            return false;
+        }
         if (e.Edge && col.InDrop(e.X, e.Z))
         {
             double d = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);
@@ -82,9 +92,10 @@ public sealed partial class Battle
 
     /// <summary>A direct forced move (a shove, a drag) to (nx, nz): a normal foe it carries over an edge falls; any other is
     /// stopped by the walls as it was.</summary>
-    public void ForceTo(Enemy e, double nx, double nz)
+    public void ForceTo(Enemy e, double nx, double nz, string? by = null)
     {
         double dx = nx - e.X, dz = nz - e.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        e.KbBy = by ?? credit;
         if (d > 1e-6 && MayFall(e) && Collision.EdgeAhead(e.X, e.Z, dx, dz, CollisionWorld.WallRadius(e.Radius), out double cx, out double cz))
         {
             e.X = cx; e.Z = cz;
@@ -108,7 +119,17 @@ public sealed partial class Battle
         LedgeKillCount++;
         Events.Emit(new Ev.Fell { X = e.X, Z = e.Z, Dx = ux, Dz = uz, LedgeX = e.LedgeX, LedgeZ = e.LedgeZ, Enemy = e.Id, Def = e.Def.Id, Scale = e.Def.Scale ?? 1 });
         e.LastDx = ux; e.LastDz = uz;
-        KillEnemy(e, true, null);
+        // The kill is the forced move's: the skill (or the Flare, or the trigger) that gave it, for its kill, its on-kill effects
+        // and the life the fall took (the shares of damage and kills stay true).
+        var weapon = WeaponById(e.KbBy);
+        string by = e.KbBy ?? "other";
+        double left = Math.Max(0, e.Hp);
+        DamageBy[by] = DamageBy.GetValueOrDefault(by) + left;
+        if (weapon != null) weapon.DamageDealt += left;
+        var was = credit;
+        credit = e.KbBy ?? credit;
+        KillEnemy(e, true, weapon);
+        credit = was;
     }
 
     /// <summary>The ledge: open ground, back along the way it went from where its centre crossed (0.45 m of clear ground round the
