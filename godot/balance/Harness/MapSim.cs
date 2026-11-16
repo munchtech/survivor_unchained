@@ -28,6 +28,8 @@ public sealed class MapRunResult
     /// <summary>(M3) What her feet did in the fights (Pilot.Meter).</summary>
     public Pilot.FeetMeter Feet = new();
     public int Falls, Kills, Packs, PacksCleared, Quaffs, Items, Charts, Gold;
+    /// <summary>(Ledge kills) Her credited kills in the run, and how many of them were foes forced over an edge.</summary>
+    public int AllKills, LedgeKills;
     /// <summary>What crafting reads (docs/CRAFTING_DESIGN.md 20.1): the people's own material and the
     /// ember shards picked up, the old iron the gear would break down to, and the rulers' Marks.</summary>
     public int Material, Shards, Iron, Marks;
@@ -126,6 +128,8 @@ public static class MapSim
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
         b.Hooks = BattleHooks.Following(zh);
+        // MAP_LEDGE=0: the ledge-kill rule off (what it changes, measured against the same seeds).
+        if (Environment.GetEnvironmentVariable("MAP_LEDGE") == "0") b.LedgeKills = false;
         // (dungeon-fights) As the game wires it (Game.cs HookBattle): a kill teaches her first, then the zone sees it. Dungeons only: the old map numbers stay.
         if (spec.Dungeon != "") b.Hooks.OnKill = (e, byPlayer) => { j.Killed(e, byPlayer); zh.OnKill?.Invoke(e, byPlayer); };
         int gear = 0, iron = 0, marks = 0;
@@ -324,6 +328,7 @@ public static class MapSim
         r.Minutes = (clearedAt >= 0 ? clearedAt : t) / 60;
         r.Falls = zone.Falls;
         r.Kills = zone.Kills;
+        r.AllKills = b.KillCount; r.LedgeKills = b.LedgeKillCount;
         r.PacksCleared = zone.PacksCleared;
         r.BossTtk = zone.Result?.BossTtk;
         r.BossPhase = zone.BossScript?.PhaseIx ?? -1;

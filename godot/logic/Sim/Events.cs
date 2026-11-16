@@ -68,7 +68,21 @@ public static class Ev
     public sealed class Kill : CombatEvent
     {
         public double X, Z; public int Enemy; public string Def = ""; public Family Family; public School School;
-        public bool Elite, Boss, ByPlayer, Burst, Launch, ByFlare, Mass; public double Dx, Dz, Scale = 1;
+        public bool Elite, Boss, ByPlayer, Burst, Launch, ByFlare, Mass, Fell; public double Dx, Dz, Scale = 1;
+    }
+
+    /// <summary>A normal foe went over the ground's end (a forced move; Battle.FallOver): where its centre crossed (X, Z), the way it
+    /// was going (Dx, Dz), the ledge where its loot lies (LedgeX, LedgeZ). The view drops it out of sight; sound hook "ledge_fall".</summary>
+    public sealed class Fell : CombatEvent
+    {
+        public double X, Z, Dx, Dz, LedgeX, LedgeZ; public int Enemy; public string Def = ""; public double Scale = 1;
+    }
+
+    /// <summary>An elite or a boss was carried to the ground's end and stopped there (alive): where it stands (X, Z) and the edge's
+    /// way (Dx, Dz, out over the drop). The view staggers it at the brink; sound hook "ledge_brink".</summary>
+    public sealed class Brink : CombatEvent
+    {
+        public double X, Z, Dx, Dz; public int Enemy; public bool Boss;
     }
 
     public sealed class PlayerHit : CombatEvent
