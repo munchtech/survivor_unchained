@@ -192,16 +192,17 @@ float crowd_edge(float rim) {
 // in the same blocks, warm (the pack's hue); a narrow cold BACK on the torso (the model's own normal past DEN_BOSS_BACK.w,
 // DEN_TORSO), the one cold figure in the den, and the blood-red MANE over the neck and shoulders, tufted (DEN_MANE*). Regions
 // in the model's space: +Z its head, +Y up, feet at 0, a wolf about 0.95 high (Vat.BakeBeast). Was: the back under the
-// flank (r2 solver 1) and a back cold by the world normal past 0.75, which from the play camera was most of the boss.)
+// flank (r2 solver 1) and a back cold by the world normal past 0.75, which from the play camera was most of the boss. The
+// mane's and accent's paint L sits under its screen target: on the top, in the key, they read about 0.1 paler.)
 #define DEN_BELLY vec2(-0.2, -0.04)
 #define DEN_BOSS_BACK vec4(0.37, 0.025, 292.0, 0.93)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.43, 0.095, 30.0)
+#define DEN_MANE vec3(0.35, 0.12, 30.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
-#define DEN_ACCENT vec3(0.40, 0.11, 0.3)
+#define DEN_ACCENT vec3(0.36, 0.12, 0.65)
 float vat_den_cut(float c_v, float c_at) {
 	float c_w = fwidth(c_v) * 0.5 + 1e-4;
 	return smoothstep(c_at - c_w, c_at + c_w, c_v);
