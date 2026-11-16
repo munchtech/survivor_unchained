@@ -4,7 +4,76 @@
  "slot": "belt",
  "style": "mesh",
  "params": {
-  "file": "kit_belt.glb"
+  "file": "kit_belt.glb",
+  "rigid_ride": [
+   {
+    "match": "tasset",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_l_up",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_l_lo",
+    "weights": {
+     "thigh_l": 0.7,
+     "pelvis": 0.3
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_r_up",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_r_lo",
+    "weights": {
+     "thigh_r": 0.7,
+     "pelvis": 0.3
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_l_up",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_l_lo",
+    "weights": {
+     "thigh_l": 0.7,
+     "pelvis": 0.3
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_r_up",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_r_lo",
+    "weights": {
+     "thigh_r": 0.7,
+     "pelvis": 0.3
+    },
+    "mix": 1.0
+   }
+  ]
  },
  "covers": [
   "belt",

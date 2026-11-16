@@ -14,7 +14,7 @@
    "kit_belt.belt.steel"
   ],
   "tuck": "armor_tuck/kit_belt.bin",
-  "tuck_count": 110,
+  "tuck_count": 0,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_belt.gltf",
   "tier": 2,
