@@ -35,7 +35,7 @@ uniform float tile = 5.0;
 // gap, cut and keyed hole in the set reads as shade between roots. The old bank painting showed through them as a pale
 // mauve film over the far banks and pale wedges on the side banks (p10c).
 uniform vec4 set_area = vec4(0.0);   // x, z, radius; w: 0 off, 1 within the radius (the prototype room), 2 everywhere
-uniform vec3 set_mass = vec3(0.012, 0.013, 0.019);
+uniform vec3 set_mass = vec3(0.016, 0.013, 0.012);   // (r11: warm dark, the banks' painted shade (36,32,32); cool, it read as a navy shard between the cards)
 uniform float set_glow = 0.008;   // (r10d) the mass under the set lit at least this, cool: it was flat black at the frame corners
 uniform float set_deep = 0.5;    // the old bank painting's share in it, greyed cool: dark roots receding past the set's reach
 
@@ -218,7 +218,7 @@ void fragment() {
 		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(wnrm, 0.0)).xyz, ks));   // (no painted normal under the set)
 	}
 	ALBEDO = col;
-	EMISSION = vec3(0.84, 0.92, 1.2) * set_glow * in_set() * (0.7 + 0.6 * vnoise(wpos.xz * 0.45));
+	EMISSION = vec3(1.0, 0.9, 0.86) * set_glow * in_set() * (0.7 + 0.6 * vnoise(wpos.xz * 0.45));
 	ROUGHNESS = 0.95;
 	CEL_FRAGMENT;
 }

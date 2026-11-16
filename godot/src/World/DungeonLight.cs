@@ -34,7 +34,7 @@ public static class DungeonLight
                 float x = r.X, zz = r.Z;
                 for (int t = 0; t < 10; t++)
                 {
-                    float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = r.R * (0.25f + 0.35f * Hash(i, k + 7 * t, 2));
+                    float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = r.R * (r.Kind == "Boss" ? 0.2f + 0.3f * Hash(i, k + 7 * t, 2) : 0.25f + 0.35f * Hash(i, k + 7 * t, 2));   // (r11: the lair's pools in its middle frame)
                     x = r.X + Mathf.Cos(a) * d; zz = r.Z + Mathf.Sin(a) * d;
                     if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
                 }

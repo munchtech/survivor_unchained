@@ -24,7 +24,10 @@ uniform float open_lift = 1.08;
 uniform float den_sat = 0.65;   // (round 8 judge: the earth 35% less saturated; warmth comes from the shafts and fires)
 uniform float moss_k = 0.35;   // (round 8) the moss tongues' share: 0.8 washed the floor by the banks olive (the targets have no green floor)   // the rooms' open middles, lifted (round 7: <= 10 %)
 uniform float boss_dim = 0.95;
-uniform float boss_damp = 0.9;   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
+uniform float boss_damp = 0.9;
+uniform float boss_sat = 1.0;
+uniform vec3 boss_tint = vec3(1.0);
+uniform float boss_dry = 0.0;   // (r11) the damp tile (F8) kept out of the lair by this share: it read as a dark grey-mauve speckle   // (r11) the lair's damp dark patches' depth (the lair measured median 42 against den_boss.png's 68)
 uniform float pit_decals = 0.0;  // 1: the den's painted pit decals own the holes (DungeonDress.FloorDecals): no ray, no lip here
 // (den round 10) the painted set's floor (tools/look/den_set.py: art/dungeon/den/set/floor.png, 4 m tiles made seamless):
 // F1 packed earth, F2 trodden, F3 damp with moss, F4 thin root runs, laid by the same weights as the layers above
@@ -190,6 +193,8 @@ void fragment() {
 				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
 				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
 				float wdp = max(max(w_dk, w_li * 0.5), set_paths * smoothstep(0.56, 0.7, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
+				float inb = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
+				wdp *= 1.0 - boss_dry * inb;
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
 				float k2 = smoothstep(0.0, 1.0, wtr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5));
 				float k4 = smoothstep(0.0, 1.0, w_rm * 1.6 - 0.3 + 0.6 * (t4.a - 0.5));
@@ -231,7 +236,9 @@ void fragment() {
 		float in_boss = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 		col *= mix(vec3(1.0), open_lift * vec3(1.0, 1.03, 1.12), smoothstep(2.5, 5.5, inside) * (1.0 - in_boss));   // (and a touch less orange: den_room.png's centre (86,62,51) against ours (81,55,38))
 		float bdamp = smoothstep(0.47, 0.62, fbm(wpos.xz * 0.14 + 71.0) + 0.1 * (mid - 0.5)) * in_boss;
-		col = mix(col, col * vec3(0.56, 0.52, 0.52), bdamp * boss_damp);
+		col = mix(col, mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, 0.4) * vec3(0.6, 0.59, 0.6), bdamp * boss_damp);   // (grey shade: den_boss.png's (52,47,43), ours ran (71,52,45))   // (r11: neutral damp; 0.56/0.52/0.52 pushed the lair red, (R-B)/L .48)
+		col = mix(vec3(dot(col, vec3(0.3, 0.55, 0.15))), col, mix(1.0, boss_sat, in_boss));
+		col *= mix(vec3(1.0), boss_tint, in_boss);   // (r11: desaturated it read mauve (131,88,78); den_boss.png lit (147,109,84))   // (r11: den_boss.png's floor is tan-grey, its shade near neutral (52,47,43))
 		col *= mix(1.0, boss_dim, in_boss);
 		// the wall's foot in shade of the overhang
 		col *= mix(mix(1.0, 0.45, rim_dark), 1.0, smoothstep(0.0, 2.2, inside));

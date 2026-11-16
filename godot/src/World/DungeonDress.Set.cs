@@ -49,7 +49,7 @@ public static partial class DungeonDress
         }
         return mat;
     }
-    static Vector3 V3(string flag, Vector3 dflt)
+    internal static Vector3 V3(string flag, Vector3 dflt)
     {
         if (SurvivorUnchained.Args.Get(flag) is string t && t.Split(',') is { Length: 3 } p)
         {
@@ -633,7 +633,8 @@ public static partial class DungeonDress
     /// <summary>(r10d) The rooms' open floor dressed, as den_room.png has things IN the room: bone piles (O3) through it, a
     /// small stone (O1) or a short log (O2) a few metres off the banks; seed-salted (Hash), clear of the room's middle (her
     /// start and the fight), the walls' feet, the pits and hollows, the boulders and each other (the decals' Ok() rule).
-    /// Not in the boss lair (its piles are laid by its own grid).</summary>
+    /// (r11) The boss lair too, as den_boss.png: one hero boulder (about 3 m) first, then kills' bone piles and blood
+    /// through its open floor, a stone or log now and then; all cards, she and the pack walk through them.</summary>
     static void SetOpen(Ctx c, List<(float X, float Z, float R, string Kind)> rooms)
     {
         var hollows = DenHollows(c);
@@ -643,13 +644,15 @@ public static partial class DungeonDress
         foreach (var r in rooms)
         {
             ri++;
-            if (r.Kind == "Boss") continue;
-            int want = Mathf.RoundToInt(SetOpenK * (3f + r.R / 2.5f)), got = 0;   // (r11 1.5 + R/4 -> 3 + R/3: den_room.png has a handful IN the room)
+            bool lair = r.Kind == "Boss";
+            int want = Mathf.RoundToInt(SetOpenK * (lair ? 4f + r.R / 2f : 3f + r.R / 2.5f)), got = 0;   // (r11 1.5 + R/4 -> 3 + R/3: den_room.png has a handful IN the room)
             float a0 = Hash(ri, 21, 990) * Mathf.Tau;
             int rw = 0, rl = 0, rn = 0;
             for (int k = 0; k < 96 && got < want; k++)
             {
-                float rad = 2.8f + Mathf.Max(0.8f * r.R - 2.8f, 0.5f) * Mathf.Sqrt(Hash(ri, k, 991)), ang = a0 + k * 2.39996f;   // (r11: from 2.8 m off her start to 0.8 R: the room's R overreaches its floor)
+                float rad = lair && got == 0 ? 4f + 5f * Hash(ri, k, 991) : 2.8f + Mathf.Max(0.8f * r.R - 2.8f, 0.5f) * Mathf.Sqrt(Hash(ri, k, 991)), ang = a0 + k * 2.39996f;
+                // (the hero stone on the lair's far side, up the frame from the fight: below, it stands behind the HUD)
+                if (lair && got == 0) ang = Mathf.Pi * (1.15f + 0.7f * Hash(ri, k, 989));   // (r11: from 2.8 m off her start to 0.8 R: the room's R overreaches its floor)
                 var p = new Vector2(r.X + Mathf.Cos(ang) * rad, r.Z + Mathf.Sin(ang) * rad);
                 float w = Wall(c, p.X, p.Y);
                 if (w < 1.8f || Hole(c, p.X, p.Y) < 2.2f || p.DistanceTo(new Vector2(r.X, r.Z)) < 2.6f) { rw++; continue; }
@@ -670,28 +673,33 @@ public static partial class DungeonDress
                 foreach (var t in taken) if (t.DistanceTo(p) < 2.6f) near = true;
                 if (near) { rn++; continue; }
                 float u = Hash(ri, k, 992), q = Hash(ri, k, 993);
-                string sheet = u < 0.35f ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
+                string sheet = lair ? (got == 0 ? "O1" : u < 0.12f ? "O1" : u < 0.2f ? "O2" : u < 0.42f ? "B6" : "O3") : u < 0.35f ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
                 if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
                 var sorted = new List<SetPiece>(all);
                 sorted.Sort((a, b) => a.Metres.X.CompareTo(b.Metres.X));
                 // (stones and logs from the sheet's smaller half, a stone at most 1.6 m across: she walks through them)
                 int half = Mathf.Max(1, sorted.Count / 2);
-                var pc = sheet == "O3" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * half) % half];
+                var pc = sheet is "O3" or "B6" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * half) % half];
                 // (r11: a stone up to 2.4 m across, a log 3-4 m: they are cards, she walks through them; the room's
                 // fight was tuned without them, so none has a body)
-                float k2 = sheet == "O1" ? Mathf.Min(1f, (1.6f + 0.8f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
-                PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
+                if (lair && got == 0) pc = sorted[sorted.Count - 1];   // (the lair's hero stone: the sheet's biggest)
+                float k2 = sheet == "B6" ? 0.6f + 0.25f * Hash(ri, k, 994) : lair && got == 0 ? Mathf.Min(1.2f, (2.8f + 0.6f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O1" ? Mathf.Min(1f, (1.6f + 0.8f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
+                // (r11) the lair's roots over its floor, as den_boss.png's: a spill under the hero stone, more through the open
+                if (lair && got == 0 && SetPick("B6", Hash(ri, k, 988)) is SetPiece hs)
+                    PlaceSetObj(c, "B6", hs, p.X, p.Y + 0.4f, 0.85f, 0f, false, 0f);
+                if (sheet == "B6") PlaceSetObj(c, "B6", pc, p.X, p.Y, k2, 0f, false, 0f);
+                else PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
                 taken.Add(p); got++; n++;
                 // (r11) blood (O5) by a kill's bones, and now and then on its own nearby (den_room.png's splashes and drags)
-                if (sheet == "O3" || Hash(ri, k, 995) < 0.35f)
+                if (sheet == "O3" || Hash(ri, k, 995) < (lair ? 0.6f : 0.35f))
                 {
                     float ba = Hash(ri, k, 996) * Mathf.Tau, bd = 0.9f + 0.8f * Hash(ri, k, 997);
                     var bp = p + new Vector2(Mathf.Cos(ba), Mathf.Sin(ba)) * bd;
                     if (Wall(c, bp.X, bp.Y) > 1.0f && Hole(c, bp.X, bp.Y) > 1.5f && SetPick("O5", Hash(ri, k, 998)) is SetPiece bpc)
-                    { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, 0.6f + 0.4f * Hash(ri, k, 999), 0f, false, 0f); c.Tick("set blood"); }
+                    { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, 1.1f + 0.5f * Hash(ri, k, 999), 0f, false, 0f); c.Tick("set blood"); }
                 }
             }
-            if (r.Kind == "Start") GD.Print($"SetOpen start room R {r.R:0.0}: {got}/{want}, off the floor {rw}, in a lane {rl}, crowded {rn}");
+            if (r.Kind is "Start" or "Boss") GD.Print($"SetOpen {r.Kind} room R {r.R:0.0}: {got}/{want}, off the floor {rw}, in a lane {rl}, crowded {rn}");
         }
         c.Count["set open"] = n;
     }
