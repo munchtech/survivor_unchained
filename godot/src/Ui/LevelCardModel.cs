@@ -5,10 +5,11 @@ using SurvivorUnchained.Play;
 namespace SurvivorUnchained.Ui;
 
 /* M4 §4, the level-up card's pure side (no Godot: the tests compile it): what a card says (LevelCardSpec), which kind a
- * campaign level-up makes (LevelCards.ForCampaignLevel; WithCalling when the calling taught a skill at it), its words built once (LevelCards.Header/Line), and its clock
+ * campaign level-up makes (LevelCards.ForCampaignLevel, from data/content/unlock_cards.json's row for it; the calling's skill
+ * waits for a quiet moment, CallingDue), its words built once (LevelCards.Header/Line), and its clock
  * (LevelCardQueue: in 0.18 s, hold 2.2 s or 3 s with a prompt row, out 0.3 s; waiting while held). LevelCard.cs draws it. */
 
-public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance }
+public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance, NewRoad }
 
 /// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
 /// included) stays at least Clear above the status shelf's top in the campaign; the tail is vertical, ending on the top of
@@ -78,6 +79,8 @@ public sealed class LevelCardSpec
     /// <summary>NewStance (bd-ui W4): the stance's id (its glyph when no off-hand item is worn) and the off-hand item's icon key
     /// ("" none: the ring shows the stance's glyph).</summary>
     public string StanceId = "", Icon = "";
+    /// <summary>The header's words after "LEVEL N · " (the unlock row's title); null: the kind's own.</summary>
+    public string? Title;
     /// <summary>NewAuto: a skill taught on an auto slot (slot >= Weapons.MaxKeys): no key cap. NewStance: Skill is the stance's
     /// name and the card's cap is Act.Swap.</summary>
     /// <summary>NewKey / NewSkill / NewAuto / NewStance: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
@@ -104,9 +107,10 @@ public static class LevelCards
     /// follows its level's key card carries no level (Level 0): "A NEW SKILL".</summary>
     public static string Header(LevelCardSpec s) => s.Kind switch
     {
-        LevelCardKind.NewKey => $"LEVEL {s.Level} · A NEW KEY",
-        LevelCardKind.NewAuto => $"LEVEL {s.Level} · AN AUTO SKILL",
-        LevelCardKind.NewStance => $"LEVEL {s.Level} · A SECOND WEAPON",
+        LevelCardKind.NewKey => $"LEVEL {s.Level} · {s.Title ?? "A NEW KEY"}",
+        LevelCardKind.NewAuto => $"LEVEL {s.Level} · {s.Title ?? "AN AUTO SKILL"}",
+        LevelCardKind.NewStance => $"LEVEL {s.Level} · {s.Title ?? "A SECOND WEAPON"}",
+        LevelCardKind.NewRoad => $"LEVEL {s.Level} · {s.Title ?? "YOUR ROAD"}",
         LevelCardKind.LampLit => s.Offer ? $"LEVEL {s.Level} · A LAMP TO LIGHT" : $"LEVEL {s.Level} · A LAMP LIT",
         LevelCardKind.NewSkill => s.Level > 0 ? $"LEVEL {s.Level} · A NEW SKILL" : "A NEW SKILL",
         _ => $"LEVEL {s.Level}",
@@ -120,14 +124,10 @@ public static class LevelCards
     /// <summary>What a skill does in one short line from its description: the first sentence, cut at a colon, then, while
     /// longer than `max` characters, back to its last comma
     /// (never shorter than half of `max`: a longer line widens the card).</summary>
-    /// <summary>(bd-ui W14) The card's function line for a skill or stance id: data/content/card_lines.json's where it has one, else
-    /// the description's first clause (Line).</summary>
-    public static string Line(string id, string description)
-    {
-        var lines = cardLines ??= Core.Json.Parse<Dictionary<string, string>>(Core.Json.ReadContent("card_lines.json"));
-        return lines.TryGetValue(id, out var l) && l != "" ? l : Line(description);
-    }
-    static Dictionary<string, string>? cardLines;
+    /// <summary>(bd-ui W14) The card's function line for a skill id: its row's in data/content/unlock_cards.json where it has
+    /// one, else the description's first clause (Line).</summary>
+    public static string Line(string id, string description) =>
+        Content.UnlockCards.ForSkill(id) is { Line: not "" } row ? row.Line : Line(description);
 
     /// <summary>(bd-ui W14) The key the NewKey card draws for a skill: the seat's own (SeatIcon), drawn as the seat draws it (SeatPicture).</summary>
     public static string PictureKey(string skill) =>
@@ -156,8 +156,9 @@ public static class LevelCards
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
     /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
-    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null)
+    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false)
     {
+        string? calling = ch?.Archetype ?? Content.TaughtBuilds.CallingOf(build);
         var spec = new LevelCardSpec { Level = level, PromptKey = Act.Character, PromptText = PromptFor(traitPicks) };
         foreach (var s in (IEnumerable<Content.TaughtSlot>?)build?.Slots ?? Array.Empty<Content.TaughtSlot>())
         {
@@ -165,17 +166,37 @@ public static class LevelCards
             int slot = slotOf(s.Skill);
             if (slot < 0) continue;
             spec.Kind = slot >= Content.Weapons.MaxKeys ? LevelCardKind.NewAuto : LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
+            if (Content.UnlockCards.Of(calling, s.Skill) is { } row) { spec.Title = row.Title; if (row.Line != "") spec.Line = row.Line; }
             break;
         }
         // (the stance's level: a key or auto taught there keeps the card; else the second weapon's card, before any lamp offer)
         if (spec.Kind == LevelCardKind.Plain && build?.Stance is { } st && st.Level == level && StanceCard(level, build, ch) is { } sc)
         {
             sc.PromptKey = spec.PromptKey; sc.PromptText = spec.PromptText;
+            if (Content.UnlockCards.Of(calling, "stance") is { } row) { sc.Title = row.Title; if (row.Line != "") sc.Line = row.Line; }
             return sc;
         }
+        // (the road's level: a plain level at which Journey raised the road is the road's card, with no prompt row)
+        if (spec.Kind == LevelCardKind.Plain && roadRaised && RoadCard(level, calling) is { } road) return road;
         if (spec.Kind == LevelCardKind.Plain && ch != null && LampOffer(ch, level) is { } offer) return offer;
         return spec;
     }
+
+    /// <summary>Your road's card: its row's words (title, line, glyph), no key cap and no prompt row. Null: the calling has no road row.</summary>
+    public static LevelCardSpec? RoadCard(int level, string? calling) =>
+        Content.UnlockCards.Of(calling, "road") is { } row
+            ? new LevelCardSpec { Kind = LevelCardKind.NewRoad, Level = level, Skill = "Your road", Title = row.Title, Line = row.Line, Icon = row.Icon }
+            : null;
+
+    /// <summary>The cards one campaign level makes (always one: a level that teaches a layer teaches nothing else, and the
+    /// calling's own skill is queued apart, at a quiet moment: CallingDue).</summary>
+    public static List<LevelCardSpec> CardsFor(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false) =>
+        [ForCampaignLevel(level, build, slotOf, traitPicks, ch, roadRaised)];
+
+    /// <summary>The calling's skill waits until nothing else is up: its card is made when no card shows or waits and no foe
+    /// has been near her for QuietFor seconds.</summary>
+    public const double QuietFor = 2.0;
+    public static bool CallingDue(bool cardUp, double quietFor) => !cardUp && quietFor >= QuietFor;
 
     /// <summary>The second-weapon card: the stance she takes up (hers if she chose one the calling offers, else the default),
     /// its name, its short line (the flavor's first clause, else "Swap strike: NAME"), the Swap key's cap. Null: no such stance.</summary>
@@ -237,17 +258,6 @@ public static class LevelCards
     /// (it is on none), the skills screen's prompt. Level 0: no level in its header.</summary>
     public static LevelCardSpec NewSkill(int level, string skill) =>
         new() { Kind = LevelCardKind.NewSkill, Level = level, Skill = skill, PromptKey = Act.Arts, PromptText = SkillPrompt };
-
-    /// <summary>The calling taught `skill` at this card's level. A plain card becomes the new skill's card, keeping its
-    /// level (null back); any other card stays as it is and the new skill's own card, without the level, is returned
-    /// to follow it in the queue.</summary>
-    public static LevelCardSpec? WithCalling(LevelCardSpec card, string skill)
-    {
-        if (card.Kind != LevelCardKind.Plain) return NewSkill(0, skill);
-        card.Kind = LevelCardKind.NewSkill; card.Skill = skill;
-        card.PromptKey = Act.Arts; card.PromptText = SkillPrompt;
-        return null;
-    }
 
     /// <summary>--level-card's spec: slot:SKILL:LEVEL[:SLOT] (SLOT 4+ an auto card) | stance[:ID] (the second weapon's card, level 8) | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL[:BEFORE:AFTER] | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>

@@ -127,7 +127,12 @@ public partial class LevelCard : Control
             if (s.Kind == LevelCardKind.NewKey && Args.Get("level-card") != null) GD.Print($"level-card picture: key {gk} = DgGold gold line glyph {SeatPicture.CardPx} px (card)");
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(s.Skill, wd.Description);
         }
-        else if (body) { name = s.Skill; line = s.Line ?? ""; }
+        else if (body)
+        {
+            name = s.Skill; line = s.Line ?? "";
+            // (the road's card: its row's glyph, as a skill's card draws its own)
+            if (s.Kind == LevelCardKind.NewRoad && s.Icon != "") glyph = Glyphs.Texture(s.Icon, 80, GlyphGold, line: true);
+        }
         if (s.Kind == LevelCardKind.LampLit) { measure = " " + s.Measure; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
             // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
             if (s.Measure is "a blow" or "a cut") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }

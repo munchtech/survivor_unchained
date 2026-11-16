@@ -1315,6 +1315,10 @@ public partial class Game : Node, IZoneHost
                 else Shots.Want($"tell_{kind}_land", 0.15);
             }
             Feel(e, ref crits);
+            // (an unlock's lesson ends when she uses what it taught: a press of its skill, a swap; GameHud.Unlock.cs)
+            if (e is Ev.Cast ucast) hud.UnlockUsed(ucast.Weapon);
+            else if (e is Ev.Channel { On: true } uchan) hud.UnlockUsed(uchan.Weapon);
+            else if (e is Ev.Swap) hud.UnlockUsed("stance");
             switch (e)
             {
                 case Ev.Announce an:
