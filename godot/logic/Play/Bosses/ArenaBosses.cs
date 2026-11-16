@@ -56,8 +56,12 @@ public sealed class PackMother : ArenaBoss
     bool lettingGo;
     double goT;
 
+    /// <summary>Her voice at its moment (the sound layer's voice.packmother.*: sound only, nothing reads it).</summary>
+    void Voice(string moment) => B.Events.Emit(new Ev.Sound { Id = "voice.packmother." + moment, X = E.X, Z = E.Z });
+
     protected override void Enter(int phase)
     {
+        Voice(phase == 0 ? "arrival" : "phase");
         if (phase == 1) howlT = 1.5;
         if (phase == 2) { shakeT = 2; lungeT = 3; }
     }
@@ -88,6 +92,7 @@ public sealed class PackMother : ArenaBoss
                 if (!lastPack && e.Hp < e.MaxHp * 0.15)
                 {
                     lastPack = true;
+                    Voice("call");
                     A.Say("The last of the Pack", null, "danger");
                     Ring("wolf", 12, p.X, p.Z, 14);
                 }
@@ -103,6 +108,7 @@ public sealed class PackMother : ArenaBoss
     void Drive(bool wheel)
     {
         var p = B.Player;
+        Voice("drive");
         if (wheel)
         {
             // The crescent on the far side of the survivor from her, its open side toward her.
@@ -126,6 +132,7 @@ public sealed class PackMother : ArenaBoss
 
     void Hamstring()
     {
+        Voice("hamstring");
         Hold(0.8);
         var b = Cone(4.2, 70, 0.8, 1.5, "Hamstring");
         b.Slow = 0.55; b.SlowFor = 2;
@@ -135,6 +142,7 @@ public sealed class PackMother : ArenaBoss
     /// the light. Damage of 6% of her health, a stagger, or fire cuts it short.</summary>
     void Howl(Enemy e)
     {
+        Voice("moonhowl");
         Channel = "The moon-howl: break it!";
         ChannelProgress = 0;
         howlHp = e.Hp;
