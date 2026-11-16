@@ -15,13 +15,13 @@ public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, Ne
 /// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
 /// included) stays at least Clear above the status shelf's top in the campaign; the tail is vertical, ending on the top of
 /// what opened (a key seat's cap, an auto tile, the front stance disc), so the card shifts sideways until that x lies at
-/// least Spare inside its span, then stays inside 696..1244 (28 px clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
+/// least Spare inside its span, then stays inside 720..1244 (clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
 public static class LevelCardPlace
 {
-    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 548;
+    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 720, MaxX = 1244, MaxW = MaxX - MinX, Land = 2;
 
     /// <summary>The room a card's one line has: the card's width less the name's column (the well) and the right pad. A 72-character
-    /// line at the line font (UI sans 16, about 6.5 px a character at most) fits it on ONE line: 548 is the whole span between the statues.</summary>
+    /// line at the line font (UI sans 16, about 6.5 px a character at most) fits it on ONE line: 524 is the whole span between the statues.</summary>
     public const float NameX = 72, Pad = 18, LineRoom = MaxW - NameX - Pad, PxPerChar = 6.5f, LineChars = 72;
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
@@ -39,6 +39,8 @@ public static class LevelCardPlace
         foreach (var (l, t, r, b) in avoid)
         {
             if (t >= y1 - 0.5f || b <= y0) continue;
+            // (the target itself is never avoided: a rect holding the tail's x whose bottom reaches y1 is what it lands on)
+            if (x >= l && x <= r && b >= y1) continue;
             if (x + halfW <= l - clear || x - halfW >= r + clear) continue;
             cuts.Add((t - clear, b + clear));
         }
@@ -67,7 +69,7 @@ public static class LevelCardPlace
         x = (float)Math.Round(Math.Clamp(x, MinX, Math.Max(MinX, MaxX - w)));
         if (target is not { } tg) return (x, y, w / 2, 0);
         float tx = Math.Clamp(tg.X - x, Spare, Math.Max(Spare, w - Spare));
-        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - (y + h)));
+        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - Land - (y + h)));
     }
 }
 

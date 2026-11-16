@@ -165,22 +165,22 @@ public sealed class LevelCardPlaceTests
 
     [Theory]
     [InlineData(760f)] [InlineData(820f)] [InlineData(960f)] [InlineData(1100f)] [InlineData(1200f)]
-    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_696_to_1244(float tx)
+    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_720_to_1244(float tx)
     {
         var p = LevelCardPlace.Compute(247, 86, 978, 959, (tx, 1010f));
-        Assert.InRange(p.X, 696, 1244 - 247);
+        Assert.InRange(p.X, 720, 1244 - 247);
         Assert.InRange(tx - p.X, p.TailX - 0.6f, p.TailX + 0.6f);
         Assert.InRange(p.TailX, 24, 247 - 24);
-        Assert.Equal(1010.0 - (p.Y + 86), p.Stem, 1);
+        Assert.Equal(1010.0 - LevelCardPlace.Land - (p.Y + 86), p.Stem, 1);
     }
 
     [Fact]
-    public void A_target_by_the_left_statue_pins_the_card_at_696()
+    public void A_target_by_the_left_statue_pins_the_card_at_720()
     {
         var p = LevelCardPlace.Compute(470, 86, 978, 959, (700f, 1010f));
-        Assert.Equal(696, p.X);
+        Assert.Equal(720, p.X);
         Assert.Equal(24, p.TailX);
-        Assert.Equal(548f, LevelCardPlace.MaxW);   // (the whole span between the statues)
+        Assert.Equal(524f, LevelCardPlace.MaxW);   // (the whole span between the statues)
         Assert.Equal(Math.Round(960 - 235f), LevelCardPlace.Compute(470, 86, 978, 959, null).X);
     }
 
@@ -227,6 +227,24 @@ public sealed class LevelCardPlaceTests
         Assert.Single(LevelCardPlace.StemSpans(900, 40, 200, new[] { tile }));
         // the target the tail only reaches is not avoided
         Assert.Equal((40f, 100f), Assert.Single(LevelCardPlace.StemSpans(875, 40, 100, new[] { tile })));
+    }
+
+    [Theory]
+    [InlineData(700f, 1010f)] [InlineData(960f, 969f)] [InlineData(1100f, 960f)] [InlineData(1200f, 1013f)]
+    public void The_stem_ends_2_px_above_its_targets_top_rim_for_every_target_kind(float tx, float ty)
+    {
+        // (road: the coin's arch top; auto: the tile's top; stance: the disc's top. Key cards keep their 10 px stub in LevelCard.)
+        var p = LevelCardPlace.Compute(300, 92, 978, 959, (tx, ty));
+        Assert.InRange(ty - (p.Y + 92 + p.Stem), 0, 3);
+    }
+
+    [Fact]
+    public void The_stem_runs_through_a_rect_it_lands_on_but_breaks_for_one_it_crosses()
+    {
+        // a disc behind the tile whose top is above y1 and whose bottom is below it holds the tail's x: the target, not avoided
+        Assert.Equal((40f, 100f), Assert.Single(LevelCardPlace.StemSpans(875, 40, 100, new[] { (L: 860f, T: 90f, R: 894f, B: 134f) })));
+        // a rect wholly above y1 still cuts it
+        Assert.Equal(2, LevelCardPlace.StemSpans(875, 40, 200, new[] { (L: 860f, T: 100f, R: 894f, B: 134f) }).Count);
     }
 
     [Fact]

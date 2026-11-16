@@ -40,10 +40,13 @@ public partial class GameHud
         if (levelCard == null) return;
         levelCard.Under = () => underBuf;
         underBuf.Clear();
+        levelCard.HerIn = false;
         if (cover == null || b == null || !b.Combat) return;
         var p = b.Player;
         float py = (float)fx.GroundAt(p.X, p.Z);
+        levelCard.Clock = b.Time;
         Grow(cam, new Vector3((float)p.X, py, (float)p.Z), 0.45f, 1.8f);
+        levelCard.HerIn = underBuf.Count > 0;
         spanBuf.Clear();
         fx.TelegraphSpans(spanBuf);
         foreach (var (a, c, r) in spanBuf)
