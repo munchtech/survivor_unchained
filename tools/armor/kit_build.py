@@ -586,9 +586,9 @@ def clearance(ref, part):
 def build(pid):
     d = os.path.join(SRC, pid)
     cfg = json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
-    if cfg.get("module") == "kit_limbs":  # the limbs (boots, vambraces, gloves): their own build in kit_limbs.py
-        import kit_limbs
-        return kit_limbs.build(pid, cfg)
+    if cfg.get("module") in ("kit_limbs", "kit_upper"):  # limbs; pauldrons + helm (multi-material rigid nodes): own build
+        import importlib
+        return importlib.import_module(cfg["module"]).build(pid, cfg)
     mats = json.load(open(MATS, encoding="utf-8"))
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
