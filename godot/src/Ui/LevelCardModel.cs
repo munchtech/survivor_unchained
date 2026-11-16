@@ -1,22 +1,28 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.Ui;
 
 /* M4 §4, the level-up card's pure side (no Godot: the tests compile it): what a card says (LevelCardSpec), which kind a
- * campaign level-up makes (LevelCards.ForCampaignLevel; WithCalling when the calling taught a skill at it), its words built once (LevelCards.Header/Line), and its clock
- * (LevelCardQueue: in 0.18 s, hold 2.2 s or 3 s with a prompt row, out 0.3 s; waiting while held). LevelCard.cs draws it. */
+ * campaign level-up makes (LevelCards.ForCampaignLevel, from data/content/unlock_cards.json's row for it; the calling's skill
+ * waits for a quiet moment, CallingDue), its words built once (LevelCards.Header/Line), and its clock
+ * (LevelCardQueue: in 0.18 s, hold by its words (LevelCards.HoldSecs), out 0.3 s; waiting while held). LevelCard.cs draws it. */
 
-public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance }
+public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance, NewRoad }
 
 /// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
 /// included) stays at least Clear above the status shelf's top in the campaign; the tail is vertical, ending on the top of
 /// what opened (a key seat's cap, an auto tile, the front stance disc), so the card shifts sideways until that x lies at
-/// least Spare inside its span, then stays inside 696..1244 (28 px clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
+/// least Spare inside its span, then stays inside 720..1244 (clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
 public static class LevelCardPlace
 {
-    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 470;
+    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 720, MaxX = 1244, MaxW = MaxX - MinX, Land = 2;
+
+    /// <summary>The room a card's one line has: the card's width less the name's column (the well) and the right pad. A 72-character
+    /// line at the line font (UI sans 16, about 6.5 px a character at most) fits it on ONE line: 524 is the whole span between the statues.</summary>
+    public const float NameX = 72, Pad = 18, LineRoom = MaxW - NameX - Pad, PxPerChar = 6.5f, LineChars = 72;
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
     /// from this too, so card and seat cannot drift).</summary>
@@ -33,6 +39,8 @@ public static class LevelCardPlace
         foreach (var (l, t, r, b) in avoid)
         {
             if (t >= y1 - 0.5f || b <= y0) continue;
+            // (the target itself is never avoided: a rect holding the tail's x whose bottom reaches y1 is what it lands on)
+            if (x >= l && x <= r && b >= y1) continue;
             if (x + halfW <= l - clear || x - halfW >= r + clear) continue;
             cuts.Add((t - clear, b + clear));
         }
@@ -61,7 +69,7 @@ public static class LevelCardPlace
         x = (float)Math.Round(Math.Clamp(x, MinX, Math.Max(MinX, MaxX - w)));
         if (target is not { } tg) return (x, y, w / 2, 0);
         float tx = Math.Clamp(tg.X - x, Spare, Math.Max(Spare, w - Spare));
-        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - (y + h)));
+        return (x, y, (float)Math.Round(tx), Math.Max(0, tg.Y - Land - (y + h)));
     }
 }
 
@@ -78,6 +86,8 @@ public sealed class LevelCardSpec
     /// <summary>NewStance (bd-ui W4): the stance's id (its glyph when no off-hand item is worn) and the off-hand item's icon key
     /// ("" none: the ring shows the stance's glyph).</summary>
     public string StanceId = "", Icon = "";
+    /// <summary>The header's words after "LEVEL N · " (the unlock row's title); null: the kind's own.</summary>
+    public string? Title;
     /// <summary>NewAuto: a skill taught on an auto slot (slot >= Weapons.MaxKeys): no key cap. NewStance: Skill is the stance's
     /// name and the card's cap is Act.Swap.</summary>
     /// <summary>NewKey / NewSkill / NewAuto / NewStance: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
@@ -100,13 +110,21 @@ public static class LevelCards
 {
     public const double In = 0.18, Hold = 2.2, HoldPrompt = 3.0, Out = 0.3;
 
+    /// <summary>How long a card holds, to be read: 1.4 s and 0.25 s a word (its name and its line), 2.8 to 4.5 s, and 0.8 s more
+    /// when it has a prompt row. In and Out stay as they are.</summary>
+    public static double HoldSecs(int words, bool prompt) => Math.Clamp(1.4 + 0.25 * words, 2.8, 4.5) + (prompt ? 0.8 : 0);
+
+    /// <summary>The words in some text (split at spaces; an arrow or a lone sign counts as none).</summary>
+    public static int Words(string text) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Count(w => w.Any(char.IsLetterOrDigit));
+
     /// <summary>"LEVEL 4 · A NEW KEY", "LEVEL 6 · A LAMP LIT", "LEVEL 6 · A NEW SKILL", "LEVEL 5"; a new skill's card that
     /// follows its level's key card carries no level (Level 0): "A NEW SKILL".</summary>
     public static string Header(LevelCardSpec s) => s.Kind switch
     {
-        LevelCardKind.NewKey => $"LEVEL {s.Level} · A NEW KEY",
-        LevelCardKind.NewAuto => $"LEVEL {s.Level} · AN AUTO SKILL",
-        LevelCardKind.NewStance => $"LEVEL {s.Level} · A SECOND WEAPON",
+        LevelCardKind.NewKey => $"LEVEL {s.Level} · {s.Title ?? "A NEW KEY"}",
+        LevelCardKind.NewAuto => $"LEVEL {s.Level} · {s.Title ?? "AN AUTO SKILL"}",
+        LevelCardKind.NewStance => $"LEVEL {s.Level} · {s.Title ?? "A SECOND WEAPON"}",
+        LevelCardKind.NewRoad => $"LEVEL {s.Level} · {s.Title ?? "YOUR ROAD"}",
         LevelCardKind.LampLit => s.Offer ? $"LEVEL {s.Level} · A LAMP TO LIGHT" : $"LEVEL {s.Level} · A LAMP LIT",
         LevelCardKind.NewSkill => s.Level > 0 ? $"LEVEL {s.Level} · A NEW SKILL" : "A NEW SKILL",
         _ => $"LEVEL {s.Level}",
@@ -120,14 +138,10 @@ public static class LevelCards
     /// <summary>What a skill does in one short line from its description: the first sentence, cut at a colon, then, while
     /// longer than `max` characters, back to its last comma
     /// (never shorter than half of `max`: a longer line widens the card).</summary>
-    /// <summary>(bd-ui W14) The card's function line for a skill or stance id: data/content/card_lines.json's where it has one, else
-    /// the description's first clause (Line).</summary>
-    public static string Line(string id, string description)
-    {
-        var lines = cardLines ??= Core.Json.Parse<Dictionary<string, string>>(Core.Json.ReadContent("card_lines.json"));
-        return lines.TryGetValue(id, out var l) && l != "" ? l : Line(description);
-    }
-    static Dictionary<string, string>? cardLines;
+    /// <summary>(bd-ui W14) The card's function line for a skill id: its row's in data/content/unlock_cards.json where it has
+    /// one, else the description's first clause (Line).</summary>
+    public static string Line(string id, string description) =>
+        Content.UnlockCards.ForSkill(id) is { Line: not "" } row ? row.Line : Line(description);
 
     /// <summary>(bd-ui W14) The key the NewKey card draws for a skill: the seat's own (SeatIcon), drawn as the seat draws it (SeatPicture).</summary>
     public static string PictureKey(string skill) =>
@@ -156,8 +170,9 @@ public static class LevelCards
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
     /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
-    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null)
+    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false)
     {
+        string? calling = ch?.Archetype ?? Content.TaughtBuilds.CallingOf(build);
         var spec = new LevelCardSpec { Level = level, PromptKey = Act.Character, PromptText = PromptFor(traitPicks) };
         foreach (var s in (IEnumerable<Content.TaughtSlot>?)build?.Slots ?? Array.Empty<Content.TaughtSlot>())
         {
@@ -165,17 +180,44 @@ public static class LevelCards
             int slot = slotOf(s.Skill);
             if (slot < 0) continue;
             spec.Kind = slot >= Content.Weapons.MaxKeys ? LevelCardKind.NewAuto : LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
+            if (Content.UnlockCards.Of(calling, s.Skill) is { } row) { spec.Title = row.Title; if (row.Line != "") spec.Line = row.Line; }
             break;
         }
         // (the stance's level: a key or auto taught there keeps the card; else the second weapon's card, before any lamp offer)
         if (spec.Kind == LevelCardKind.Plain && build?.Stance is { } st && st.Level == level && StanceCard(level, build, ch) is { } sc)
         {
             sc.PromptKey = spec.PromptKey; sc.PromptText = spec.PromptText;
+            if (Content.UnlockCards.Of(calling, "stance") is { } row) { sc.Title = row.Title; if (row.Line != "") sc.Line = row.Line; }
             return sc;
         }
+        // (the road's level: a plain level at which Journey raised the road is the road's card, with no prompt row)
+        if (spec.Kind == LevelCardKind.Plain && roadRaised && RoadCard(level, calling) is { } road) return road;
         if (spec.Kind == LevelCardKind.Plain && ch != null && LampOffer(ch, level) is { } offer) return offer;
         return spec;
     }
+
+    /// <summary>Your road's card: its row's words (title, line, glyph), no key cap and no prompt row. Null: the calling has no road row.</summary>
+    public static LevelCardSpec? RoadCard(int level, string? calling) =>
+        Content.UnlockCards.Of(calling, "road") is { } row
+            ? new LevelCardSpec { Kind = LevelCardKind.NewRoad, Level = level, Skill = RoadNames(calling), Title = row.Title, Line = row.Line, Icon = row.Icon }
+            : null;
+
+    /// <summary>The calling's roads' names joined with " or " (lamps.json, "Road of the " dropped: "Sunderer or Bulwark"), else "Your road".</summary>
+    public static string RoadNames(string? calling)
+    {
+        var names = calling == null ? [] : Content.Lamps.RoadsOf(calling).Select(r => r.Name.StartsWith("Road of the ", StringComparison.Ordinal) ? r.Name["Road of the ".Length..] : r.Name).ToList();
+        return names.Count > 0 ? string.Join(" or ", names) : "Your road";
+    }
+
+    /// <summary>The cards one campaign level makes (always one: a level that teaches a layer teaches nothing else, and the
+    /// calling's own skill is queued apart, at a quiet moment: CallingDue).</summary>
+    public static List<LevelCardSpec> CardsFor(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false) =>
+        [ForCampaignLevel(level, build, slotOf, traitPicks, ch, roadRaised)];
+
+    /// <summary>The calling's skill waits until nothing else is up: its card is made when no card shows or waits and no foe
+    /// has been near her for QuietFor seconds.</summary>
+    public const double QuietFor = 2.0;
+    public static bool CallingDue(bool cardUp, double quietFor) => !cardUp && quietFor >= QuietFor;
 
     /// <summary>The second-weapon card: the stance she takes up (hers if she chose one the calling offers, else the default),
     /// its name, its short line (the flavor's first clause, else "Swap strike: NAME"), the Swap key's cap. Null: no such stance.</summary>
@@ -237,17 +279,6 @@ public static class LevelCards
     /// (it is on none), the skills screen's prompt. Level 0: no level in its header.</summary>
     public static LevelCardSpec NewSkill(int level, string skill) =>
         new() { Kind = LevelCardKind.NewSkill, Level = level, Skill = skill, PromptKey = Act.Arts, PromptText = SkillPrompt };
-
-    /// <summary>The calling taught `skill` at this card's level. A plain card becomes the new skill's card, keeping its
-    /// level (null back); any other card stays as it is and the new skill's own card, without the level, is returned
-    /// to follow it in the queue.</summary>
-    public static LevelCardSpec? WithCalling(LevelCardSpec card, string skill)
-    {
-        if (card.Kind != LevelCardKind.Plain) return NewSkill(0, skill);
-        card.Kind = LevelCardKind.NewSkill; card.Skill = skill;
-        card.PromptKey = Act.Arts; card.PromptText = SkillPrompt;
-        return null;
-    }
 
     /// <summary>--level-card's spec: slot:SKILL:LEVEL[:SLOT] (SLOT 4+ an auto card) | stance[:ID] (the second weapon's card, level 8) | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL[:BEFORE:AFTER] | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>
@@ -325,7 +356,10 @@ public sealed class LevelCardQueue
 
     public void Add(LevelCardSpec s) => waiting.Enqueue(s);
 
-    public double HoldFor(LevelCardSpec s) => s.HasPrompt ? LevelCards.HoldPrompt : LevelCards.Hold;
+    /// <summary>The showing card's hold set by what it says (LevelCards.HoldSecs); 0: the plain defaults.</summary>
+    public double HoldNow;
+
+    public double HoldFor(LevelCardSpec s) => HoldNow > 0 ? HoldNow : s.HasPrompt ? LevelCards.HoldPrompt : LevelCards.Hold;
 
     /// <summary>The phase's share done (0..1).</summary>
     public double K => Now switch
@@ -343,7 +377,7 @@ public sealed class LevelCardQueue
         if (Current == null)
         {
             if (waiting.Count == 0) return;
-            Current = waiting.Dequeue();
+            Current = waiting.Dequeue(); HoldNow = 0;
             Now = Phase.In; T = 0; Began = true;
             return;
         }
@@ -351,5 +385,37 @@ public sealed class LevelCardQueue
         if (Now == Phase.In && T >= LevelCards.In) { T -= LevelCards.In; Now = Phase.Hold; }
         if (Now == Phase.Hold && T >= HoldFor(Current)) { T -= HoldFor(Current); Now = Phase.Out; Folding = true; }
         if (Now == Phase.Out && T >= LevelCards.Out) { Current = null; Now = Phase.None; T = 0; }
+    }
+}
+
+/// <summary>The card never covers her or a telegraph: when any of their screen rects (left, top, right, bottom) meets the
+/// card's grown 8 px, its alpha eases to 0.25 within 0.12 s (and back to 1 when clear); while it is faded its hold clock
+/// pauses, 3 s in all, and then it leaves anyway. Pure; LevelCard feeds it each frame.</summary>
+public sealed class CardFade
+{
+    public const float Low = 0.25f, Secs = 0.12f, Grow = 8, MaxPause = 3;
+    public float Alpha { get; private set; } = 1;
+    /// <summary>Seconds of hold clock paused so far this card.</summary>
+    public float Paused { get; private set; }
+
+    /// <summary>True when any of `under` meets the card grown by Grow px.</summary>
+    public static bool Blocked((float L, float T, float R, float B) card, IEnumerable<(float L, float T, float R, float B)> under)
+    {
+        foreach (var u in under)
+            if (u.L < card.R + Grow && u.R > card.L - Grow && u.T < card.B + Grow && u.B > card.T - Grow) return true;
+        return false;
+    }
+
+    /// <summary>A card begins: alpha 1, nothing paused.</summary>
+    public void Reset() { Alpha = 1; Paused = 0; }
+
+    /// <summary>One frame: move the alpha toward its goal; true when the hold clock must stand still this frame (faded by a
+    /// block, holding, and the 3 s not yet spent).</summary>
+    public bool Step(bool blocked, bool holding, float dt)
+    {
+        Alpha = Math.Clamp(Alpha + (blocked ? -1 : 1) * (1 - Low) / Secs * dt, Low, 1);
+        if (!blocked || !holding || Paused >= MaxPause) return false;
+        Paused = Math.Min(MaxPause, Paused + dt);
+        return true;
     }
 }

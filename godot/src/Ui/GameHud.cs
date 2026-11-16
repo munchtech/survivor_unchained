@@ -350,6 +350,8 @@ public partial class GameHud : CanvasLayer
         corner = c;
         c.Position = new Vector2(1920 - 31 - 400, 22);
         c.Size = new Vector2(400, 0);
+        // (a name wider than the column grows it leftward: its right margin holds, it never runs off the screen's edge)
+        c.GrowHorizontal = Control.GrowDirection.Begin;
         play.AddChild(c);
         zoneName = Rimmed(Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right));
         c.AddChild(zoneName);
@@ -744,6 +746,7 @@ public partial class GameHud : CanvasLayer
         // M4 §4: the level card (a campaign level-up the HUD sees itself; --level-card's staged one)
         campaignNow = b.Campaign;
         LevelWatch(b, level.Level, ember);
+        UnlockTick(b);
         if (DevSlots.LevelCardDue(b) is { } cardDue) { if ((GetParent() as Game)?.Journey.Ch is { } dch) LevelCards.ResolveDevOffer(cardDue, dch); StagedCard(b, cardDue); }
         if (DevSlots.DawnDue(b) && GetParent() is Game dg)
             dg.DawnCard(Play.DawnCard.Build(["Whirling Ember", "Cinder Ward"], 4), () => { });
@@ -1718,6 +1721,7 @@ public partial class GameHud : CanvasLayer
         if (lv <= 0) return;
         int was = levelSeen;
         levelSeen = lv;
+        if (b.Campaign && !ember && !HudPin.Active) RoadEntrance(b, lv);
         if (was <= 0 || lv <= was || !b.Campaign || ember || HudPin.Active) return;
         LevelsCarded(b, was, lv);
     }
@@ -1729,18 +1733,30 @@ public partial class GameHud : CanvasLayer
         var journey = (GetParent() as Game)?.Journey;
         var ch = journey?.Ch;
         var build = TaughtBuilds.Of(ch?.Archetype);
+        int roadAt = journey?.RoadCarded is > 0 ? journey.RoadCarded!.Value : -1;
         for (int l = was + 1; l <= lv; l++)
         {
-            var card = LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0, ch);
-            LevelCardSpec? second = null;
-            if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught)
+            bool road = roadAt > 0 && l == SurvivorUnchained.Rpg.LampBook.RoadLevel;
+            foreach (var card in LevelCards.CardsFor(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0, ch, road))
             {
-                callingCarded = taught;
-                second = LevelCards.WithCalling(card, taught.Skill);
+                if (card.Kind == LevelCardKind.NewRoad) roadAt = -1;
+                LevelCard(card);
+                if (card.Kind is LevelCardKind.NewKey or LevelCardKind.NewStance && UnlockCards.At(ch?.Archetype, l) is { } row) Lessons()?.Opened(row);
             }
-            LevelCard(card);
-            if (second != null) LevelCard(second);
+            // (the calling's own skill is not on a level's card: it waits for a quiet moment, UnlockTick)
+            if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught) { callingCarded = taught; callingWait = taught; }
         }
+        // (a road raised at a level whose card said something else, or past it: its own card, the level she is at)
+        if (roadAt > 0 && LevelCards.RoadCard(lv, ch?.Archetype) is { } late) { LevelCard(late); roadAt = -1; }
+        if (journey != null && journey.RoadCarded is > 0) journey.RoadCarded = null;
+    }
+
+    /// <summary>The road raised outside a level-up (the first dungeon's entrance, Journey.RaiseRoad): its card, once, at her level.</summary>
+    void RoadEntrance(Battle b, int lv)
+    {
+        if ((GetParent() as Game)?.Journey is not { RoadCarded: 0 } journey) return;
+        journey.RoadCarded = null;
+        if (LevelCards.RoadCard(lv, journey.Ch.Archetype) is { } card) LevelCard(card);
     }
 
     /// <summary>The card's foot: above the beads (the passives' row) and any statuses under its span.</summary>
@@ -1786,12 +1802,15 @@ public partial class GameHud : CanvasLayer
 
     float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(AutoRow.RowTop))).Y : null;
 
+    /// <summary>(judged 15 Nov at 1:1) the stance disc's blue ring is drawn ~3 px outside its rect (4: the 2 px gap kept); the tile's bezel starts 1 px inside its rect: the tail aims at what is drawn.</summary>
+    const float DiscRingOut = 4, TileBezelIn = 1;
+
     /// <summary>bd-ui W6: the card's tail ends on the top of what opened: its key seat's cap, its auto tile, the front stance disc.</summary>
     Vector2? CardTopOf(LevelCardSpec s)
     {
         if (!campaignNow) return null;
-        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y); }
-        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y);
+        if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y - DiscRingOut); }
+        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y + TileBezelIn);
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return null;
         float capTop = AutoRowModel.CapTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);

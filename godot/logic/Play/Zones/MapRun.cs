@@ -210,6 +210,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         press = new PackKit(b);
         G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, IsDungeon ? "A dungeon" : "A Wayfinder's map"));
+        // Her road, if it is due and was never raised (she reached its level where no card could say it): its card shows here, once.
+        if (IsDungeon) G.Journey.RaiseRoad();
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
         // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
         // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)

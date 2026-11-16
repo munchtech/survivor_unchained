@@ -24,6 +24,9 @@ public partial class EdgeMarks : Control
     /// <summary>(M5 r4) The HUD's top-right block (minimap, zone header, tracker: GameHud.Header): the marks keep out of it,
     /// cut as a notch from the border box. The judge, round 3: a clamped skull sat on "Thornhollow, south" and the map's rim.</summary>
     public Rect2? Avoid;
+    /// <summary>The level card's rect: a mark that would sit within 6 px of it is not drawn (as GoalMarks.Cover does for pins).</summary>
+    public Rect2? Cover;
+    bool Covered(Rect2 box) => Cover is Rect2 c && c.Grow(6).Intersects(box);
     /// <summary>A mark's reach round its point (px): the disc and its arrow.</summary>
     const float MarkPad = 34;
 
@@ -68,6 +71,7 @@ public partial class EdgeMarks : Control
             var p = Exit(mid, d, box, Avoid);
             p = Clear(p, box);
             if (Avoid is Rect2 av && av.Grow(MarkPad - 1).HasPoint(p)) p = Exit(mid, d, box, Avoid);
+            if (Covered(new Rect2(p - new Vector2(MarkPad, MarkPad), new Vector2(2 * MarkPad, 2 * MarkPad)).Expand(p + d.Normalized() * 30))) continue;
             var dir = d.Normalized();
             float a = Mathf.Lerp(0.7f, 1f, m.Near);
             var c = m.Color with { A = a };

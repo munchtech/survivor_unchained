@@ -63,6 +63,9 @@ public static class TaughtBuilds
         return d;
     }
 
+    /// <summary>The calling a build belongs to (null when it is none of them).</summary>
+    public static string? CallingOf(TaughtBuild? build) => build == null ? null : All.FirstOrDefault(kv => ReferenceEquals(kv.Value, build)).Key;
+
     public static TaughtBuild? Of(string? calling) => calling != null && All.TryGetValue(calling, out var t) ? t : null;
 
     /// <summary>A build's pressed keys: its keys whose cast is press or channel (the basic attack, a hold, is not counted).</summary>

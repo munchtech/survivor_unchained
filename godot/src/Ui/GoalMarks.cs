@@ -21,6 +21,9 @@ public partial class GoalMarks : Control
     static readonly Color Bronze = new("#8a6a3a"), InkPlate = new("#0b0906");
     /// <summary>A part of the screen the edge arrows keep out of (the corner's words), or none.</summary>
     public Rect2? Avoid;
+    /// <summary>The level-up card's rect while one shows: a pin or arrow overlapping it (grown 6 px) is not drawn, so the card's words are never crossed.</summary>
+    public Rect2? Cover;
+    bool Covered(Rect2 box) => Cover is Rect2 c && c.Grow(6).Intersects(box);
     /// <summary>Where the off-screen arrows sit (the edge marks keep clear of them).</summary>
     public IReadOnlyList<Vector2> ArrowPoints => arrowPoints;
 
@@ -76,6 +79,7 @@ public partial class GoalMarks : Control
         foreach (var m in marks)
         {
             if (!m.OnScreen) continue;
+            if (Covered(new Rect2(m.At.X - 60, m.At.Y - 11 - 2 * DiscR - 14, 120, 2 * DiscR + 14 + 11 + 40))) continue;
             // From the spot up: the ground tick, a 2 px stem, the tail (12 x 11) pointing down, the disc.
             var c = m.Color with { A = 0.9f * m.Alpha };
             var at = m.At;
@@ -92,6 +96,7 @@ public partial class GoalMarks : Control
         float pulse = 1 + 0.08f * (0.5f - 0.5f * Mathf.Cos(t * Mathf.Tau / 1.2f));
         foreach (var e in edges)
         {
+            if (Covered(new Rect2(e.Point - new Vector2(70, 50), new Vector2(140, 100)))) continue;
             var c = e.Mark.Color with { A = 1 };
             var dir = e.Dir;
             var side = new Vector2(-dir.Y, dir.X) * 7;
