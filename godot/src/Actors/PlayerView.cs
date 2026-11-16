@@ -408,6 +408,8 @@ public partial class PlayerView : Node3D
                 person.Skeleton.AddChild(person.Turn);
                 person.Skeleton.MoveChild(person.Turn, person.Pose != null ? person.Pose.GetIndex() : person.Skeleton.GetChildCount() - 1);
             }
+            if (dirChain && SurvivorUnchained.Args.Has("turn-last")) Callable.From(() => { if (person.Turn != null && IsInstanceValid(person.Turn)) person.Skeleton.MoveChild(person.Turn, person.Skeleton.GetChildCount() - 1); }).CallDeferred();
+            if (dirChain && SurvivorUnchained.Args.Has("dirrun")) Callable.From(() => GD.Print("SKELKIDS " + string.Join(",", person.Skeleton.GetChildren().Select(c => c.Name.ToString())))).CallDeferred();
         }
         else
         {
@@ -2546,6 +2548,8 @@ public partial class PlayerView : Node3D
     void FeetCache()
     {
         var sk = person.Skeleton;
+        // (aim-move) BODY2's joints, taken here: after the modifiers (SkeletonUpdated); a FramePreDraw read sees the pose they restored
+        for (int bi = 0; bi < BodyBones.Length; bi++) { int bx = sk.FindBone(BodyBones[bi]); bodyW[bi] = bx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bx).Origin : Vector3.Zero; }
         int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
         if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
         if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
@@ -2584,16 +2588,15 @@ public partial class PlayerView : Node3D
         if (Args.Has("dirrun") || Args.Has("body-log"))
         {
             var sb = new System.Text.StringBuilder("BODY2");
-            foreach (var bn in BodyBones)
+            foreach (var w in bodyW)
             {
-                int bi = sk.FindBone(bn);
-                var w = bi >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bi).Origin : Vector3.Zero;
                 sb.Append(System.FormattableString.Invariant($" {w.X:0.0000} {w.Y:0.0000} {w.Z:0.0000}"));
             }
             sb.Append(System.FormattableString.Invariant($" face {Mathf.RadToDeg(Rotation.Y):0.00}"));
             GD.Print(sb.ToString());
         }
     }
+    readonly Vector3[] bodyW = new Vector3[13];
     static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
     public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
     bool held;
