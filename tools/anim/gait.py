@@ -70,6 +70,13 @@ class Gait:
     # how high (0 = the old spline: kick*0.8 at 0.22, kick at 0.42).
     fold_at: float = 0.0
     fold_kick: float = 0.0
+    # (aim-move, 15 Nov) The arms against the legs. Measured on the built clips (every run, forward and back): with the
+    # arms' phase as it was, each fist came forward WITH its own foot (a pacing swing: at the left foot's landing the left
+    # fist was forward), against the chest, which turns correctly against the hips; so the arm's swing and the shoulder's
+    # turn cancelled on screen (the owner: "the running animation dosn't move anything but her legs") and the trailing
+    # sword arm swung forward as its shoulder went back, into her side (29 mm). contra: each fist forward with the OTHER
+    # foot, swinging with its shoulder. False keeps the old phase (callings not rebuilt yet).
+    contra: bool = False
 
 
 def _spline(points, s):
@@ -223,13 +230,14 @@ def pose_at(g: Gait, rig: Rig, ph):
         "clav_l": g.shoulders, "clav_r": g.shoulders,
         "fingers_l": g.fingers, "fingers_r": g.fingers_r or g.fingers,
     }
+    lead = (0.0 if backpedal else 0.5) if not g.contra else (0.5 if backpedal else 0.0)
     for side, off in (("l", 0.0), ("r", 0.5)):
         s = 1 if side == "l" else -1
         a, fyaw, pitch, toe = foot_dir(g, ph - off, s)
         pose[f"foot_{side}"] = {"pos": (a[0], a[1], a[2]), "rot": (fyaw, -pitch, 0), "toe": toe,
                                 "pole": (s * 0.1, 0, 1)}
         # Arms against the legs: the left fist forward as the right foot lands.
-        k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - (0.0 if backpedal else 0.5)))  # 1: this arm fully forward
+        k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - lead))  # 1: this arm fully forward
         fwd = np.array(g.arm_fwd) * [s * -1, 1, 1]
         back = np.array(g.arm_back) * [s * 1, 1, 1]
         # The fist swings on an arc about the shoulder, the arm's reach
@@ -241,7 +249,7 @@ def pose_at(g: Gait, rig: Rig, ph):
             if side in g.arms:
                 # (aim-move) the carry may read the swing at another phase (a blade lagging the fist): k(ph') =
                 # 0.5 - 0.5 cos(2 pi (ph' - _koff))
-                hand = g.arms[side](ph, k, dict(hand, _koff=off + (0.0 if backpedal else 0.5)))
+                hand = g.arms[side](ph, k, dict(hand, _koff=off + lead))
                 hand.pop("_koff", None)
             pose[f"hand_{side}"] = hand
             pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))

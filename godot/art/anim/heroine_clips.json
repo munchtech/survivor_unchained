@@ -439,21 +439,17 @@
 		"weapon": ""
 	},
 	"idle_warden": {
-		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
-		"layer": "full",
-		"length": 5.03333330154419,
-		"licence": "CC BY 4.0",
+		"changes": "B's body as world turns from rest, legs re-solved onto B's ankles, hands keyed on A",
+		"length": 6.90000009536743,
 		"loop": true,
-		"source": "100STYLE Heavyset_ID frames 1107-1409 (60 fps)",
-		"speed": 0.0,
+		"made_by": "Prowl (P4 idle_fight_a on B, Kimodo take + Marionette fit) carried onto A",
 		"weapon": "sword+shield"
 	},
 	"idle_warden_break": {
 		"layer": "full",
-		"length": 3.33333325386047,
-		"licence": "own work",
+		"length": 3.20000004768372,
 		"loop": false,
-		"source": "keyed (tools/anim)",
+		"made_by": "Prowl's first frames, the blade's point circled (prowl.build_break)",
 		"weapon": "sword+shield"
 	},
 	"idle_warden_town": {
@@ -479,6 +475,16 @@
 		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
 		"layer": "full",
 		"length": 1.10000002384186,
+		"licence": "Mixamo (Adobe)",
+		"loop": false,
+		"note": "Mixamo 'Standing Melee Run Jump Attack' (axe running jump attack), the flight retimed to the art's",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
+		"speed": 0.0
+	},
+	"leap_warden": {
+		"changes": "retargeted to her skeleton, feet locked, retimed, in place, settled into Prowl over 18 frames (prowl.settle)",
+		"layer": "full",
+		"length": 1.70000004768372,
 		"licence": "Mixamo (Adobe)",
 		"loop": false,
 		"note": "Mixamo 'Standing Melee Run Jump Attack' (axe running jump attack), the flight retimed to the art's",
@@ -918,7 +924,7 @@
 	},
 	"stop_warden_l": {
 		"layer": "full",
-		"length": 0.800000011920929,
+		"length": 0.866666674613953,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",
@@ -926,7 +932,7 @@
 	},
 	"stop_warden_r": {
 		"layer": "full",
-		"length": 0.800000011920929,
+		"length": 0.866666674613953,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)",

@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import math
+import os
 
 import numpy as np
 
@@ -145,8 +146,75 @@ def _warden_town_stop(t, f):
 STOP_ARMS = {"warden_town": _warden_town_stop}
 
 
+def _mix(a, b, w):
+    return tuple(float(x) + (float(y) - float(x)) * w for x, y in zip(a, b))
+
+
+def prowl_stop(rig, side):
+    """(aim-move, the owner 15 Nov: the idle out of town is Prowl, so the stops land in it.) Planting the `side` foot out
+    of the run and settling into Prowl's stance: her left foot forward, her right back and turned out 47 degrees, her
+    weight sinking back into the right hip as the hips turn 26 to her right; the arms carry Prowl's (the sword low and
+    trailing, the shield at her left hip) from the landing on, riding the chest through the lean. Planting the left,
+    the right comes in behind her; planting the right, the left steps through and the right draws back a step."""
+    from clips import prowl
+    E = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
+    arms = {k: E[k] for k in ("hand_l", "hand_r", "fingers_l", "fingers_r")}
+    pole = {"l": (0.15, 0, 1.0), "r": (-0.15, 0, 1.0)}
+
+    def foot(s, pos, rot=(0, 0, 0), toe=0, w=0.0):
+        return {"pos": pos, "rot": rot, "toe": toe, "pole": _mix(pole[s], E[f"foot_{s}"]["pole"], w)}
+
+    def body(w, lean, roll=0.0, hy=-0.08, hz=0.04, sx=0.0):
+        # the run's landing (the old stop's hips, spine and head) eased into Prowl's by w
+        hips = {"pos": _mix((sx, hy, hz), E["hips"]["pos"], w), "rot": _mix((sx * 200, lean * 0.4, roll), E["hips"]["rot"], w)}  # (yaw 4 per 2 cm of shift, as the old stop)
+        return {"hips": hips, "spine": _mix((0, lean * 0.6, -roll), E["spine"], w),
+                "neck": _mix((0, 0, 0), E["neck"], w), "head": _mix((0, -lean * 0.5, 0), E["head"], w)}
+
+    L, R = E["foot_l"], E["foot_r"]
+    if side == "l":
+        keys = [
+            # Coming down on the left, the right still behind.
+            (0, {**arms, **body(0.0, 16, hy=-0.08, hz=0.04, sx=0.02), "foot_l": foot("l", (0.09, 0, 0.34), (6, 0, 0)),
+                 "foot_r": foot("r", (-0.15, 0.12, -0.48), (-10, -25, 0), 25)}, "auto"),
+            # Over it and braking, the right coming in behind her.
+            (5, {**arms, **body(0.15, 4, roll=2, hy=-0.13, hz=0.12, sx=0.02), "foot_l": foot("l", (0.10, 0, 0.30), (5, 0, 0)),
+                 "foot_r": foot("r", (-0.14, 0.07, -0.30), (-30, -10, 0), 12, 0.4)}, "auto"),
+            # Down behind her, turned out, the lean thrown back as the weight comes onto it.
+            (9, {**arms, **body(0.45, -7, hy=-0.12, hz=0.10), "foot_l": foot("l", (0.12, 0, 0.25), (3, 0, 0), w=0.5),
+                 "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)}, "auto"),
+            # Sinking back into the right hip.
+            (16, {**arms, **body(0.8, 3), "foot_l": foot("l", (L["pos"][0], 0, 0.20), L["rot"], w=0.9),
+                  "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)}, "auto"),
+            (26, {**arms, **body(1.0, 0), "foot_l": foot("l", L["pos"], L["rot"], w=1.0), "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)},
+             "ease"),
+        ]
+    else:
+        keys = [
+            # Coming down on the right, the left still behind.
+            (0, {**arms, **body(0.0, 16, hy=-0.08, hz=0.04, sx=-0.02), "foot_r": foot("r", (-0.09, 0, 0.34), (-6, 0, 0)),
+                 "foot_l": foot("l", (0.15, 0.12, -0.48), (10, -25, 0), 25)}, "auto"),
+            # Over it and braking, the left coming through.
+            (5, {**arms, **body(0.1, 4, roll=-2, hy=-0.13, hz=0.12, sx=-0.02), "foot_r": foot("r", (-0.10, 0, 0.30), (-5, 0, 0)),
+                 "foot_l": foot("l", (0.13, 0.10, -0.08), (6, -10, 0), 10)}, "auto"),
+            # The left down ahead of her, the lean thrown back.
+            (9, {**arms, **body(0.3, -7, hy=-0.12, hz=0.10), "foot_r": foot("r", (-0.11, 0, 0.24), (-5, 0, 0)),
+                 "foot_l": foot("l", (L["pos"][0], 0, 0.22), L["rot"], 0, 0.6)}, "ease"),  # (eased: the right stops before it lifts)
+            # The right drawn back a step, turning out.
+            (13, {**arms, **body(0.55, 0, hy=-0.10, hz=0.05), "foot_r": foot("r", (-0.13, 0.07, 0.04), (-22, -8, 0), 10, 0.5),
+                  "foot_l": foot("l", (L["pos"][0], 0, 0.20), L["rot"], 0, 0.8)}, "auto"),
+            (18, {**arms, **body(0.85, 3), "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0),
+                  "foot_l": foot("l", (L["pos"][0], 0, 0.185), L["rot"], 0, 0.95)}, "auto"),
+            (26, {**arms, **body(1.0, 0), "foot_l": foot("l", L["pos"], L["rot"], w=1.0), "foot_r": foot("r", R["pos"], R["rot"], 0, 1.0)},
+             "ease"),
+        ]
+    meta = {"layer": "full", "weapon": "sword+shield"}
+    return build(f"stop_warden_{side}", rig, keys, meta=meta)
+
+
 def stop(rig, calling, side):
     """Planting the `side` foot out of the run."""
+    if calling == "warden" and os.environ.get("WARDEN_IDLE", "prowl") == "prowl":
+        return prowl_stop(rig, side)
     if calling == "arcanist":
         idle.base_of(rig, "arcanist")  # (on a restaged stand, idle.ARC_ST, its free hand is read off the base)
     arms = (STOP_ARMS.get(calling) or idle.IDLES[f"idle_{calling}"][1])(0, 0)

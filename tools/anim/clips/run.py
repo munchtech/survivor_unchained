@@ -13,6 +13,7 @@ carried at a run (tools/anim/gait.py).
 from __future__ import annotations
 
 import math
+import json
 import os
 from dataclasses import replace
 
@@ -255,7 +256,8 @@ WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 # the shoulder line turns 10 against the pelvis's 8 (was 6/6), the hips sway and shift more over the plant.
 WARDEN = Gait(frames=18, speed=SPEED, duty=0.30, fold_at=0.15, fold_kick=0.46, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=8, hip_roll=4,
               hip_shift=0.028, chest_yaw=10, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
-              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
+              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)),
+              contra=os.environ.get("WARDEN_CONTRA", "1") == "1")  # (aim-move: each fist forward with the other foot, Gait.contra)
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
@@ -381,7 +383,7 @@ AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
 # blend, not the arm hold, so the axe would slide in her fist through every walk-run change).
 # Measured (solver holdB p3): sword pitch -46..-29, 19-21 out, tip 0.29 m off the floor at the lowest, 61 mm from her
 # thigh (sprint 34); axe -63..-46, 16-22 out, 96 mm (sprint 74); the second axe -55..-42, 23-30 out, never within 140 mm.
-def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0, lag=0.0):
+def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0, lag=0.0, knuckles=None, pole_chest=False):
     """The held piece's line (hand to point or head) forward and down: `pitch` degrees (fist forward, fist back) and
     `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward).
     `grip` (m, Animation 57): her fist that much higher up the haft (the clip's meta carries it as a negative
@@ -391,12 +393,22 @@ def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0, lag=0.
 
     def f(ph, k, hand):
         hand = dict(hand)
+        if pole_chest and hand.get("frame") == "chest" and "pole" in hand:
+            # (aim-move) a swung arm's pole (gait._swung) is the chest's: kept so under the char-space line (keyed
+            # "pole_frame"); without it the sprint's elbow flipped twice a stride
+            hand["pole_frame"] = "chest"
         # (aim-move) lag: the piece's line follows the swing that much of a cycle late (its weight; the wrist gives)
         kl = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - lag - hand["_koff"])) if lag and "_koff" in hand else k
         p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * kl)
         o = math.radians(out[1] + (out[0] - out[1]) * kl)
         b = np.array((sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)))
         hand.update({"blade": tuple(b), "frame": "char"})
+        if knuckles is not None:
+            # (aim-move) the fist's roll about the line held (its knuckles that way, square to the line): with the line
+            # alone the roll was the solver's, and it flipped 90-170 degrees in a frame twice a stride (the sprint)
+            kv = np.array(knuckles, float) * np.array([-sg, 1, 1])   # (given for the right fist; mirrored for the left)
+            kv = kv - float(kv @ b) * b
+            hand["knuckles"] = tuple(kv / np.linalg.norm(kv))
         if grip:
             hand["nudge"] = tuple(-grip * b)
         return hand
@@ -507,7 +519,7 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
 # (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "live")
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "trail")
 REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
@@ -517,7 +529,21 @@ HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
 HIGH_ARM_LIVE = ((24, 28, 74, -18), (-6, 31, 90, -24))
 LIVE_LAG = 0.1
 HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
-WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
+# (aim-move, the owner 15 Nov: "just the idle pose out of town is still so weak ... that locked elbow instead of relaxed
+# casual badass" and "they run with that as well ... its all part of the rigidness") Prowl's carry in the run: the sword
+# trailing low and out behind her right hip as it does standing (Prowl's line: 44 below level, heading -120), the elbow
+# soft (bent 45-55), the upper arm swinging 40 degrees from the shoulder with the stride, the blade's line lagging the
+# fist LIVE_LAG of a cycle (it drags back as the fist drives forward). With the arms against the legs (Gait.contra) the
+# upper arm 30 out both ends (at 22/26 it met her trunk 22-29 mm as it passed her side, motion), the blade's heading
+# swinging 92-136 with the fist (fixed at 108-124 her wrist bent 54-61 to the palm). motion --outfits: skin 0, the warden
+# plate 12 mm (the live high carry's was 14), wrist flex -10 / ext 43.
+TRAIL_ARM = ((22, 30, 128, -10), (-18, 30, 136, -16))
+if os.environ.get("WARDEN_TRAIL_ARM"):  # (exploration: a json pair of (fwd, out, elbow, turn))
+    TRAIL_ARM = tuple(tuple(x) for x in json.loads(os.environ["WARDEN_TRAIL_ARM"]))
+TRAIL_BLADE = json.loads(os.environ.get("WARDEN_TRAIL_BLADE", "[-32, -46, 92, 136]"))  # pitch fwd/back, out fwd/back
+# (the fist's knuckles' way, char space, right fist: low_point squares it to the line; null = the solver's roll)
+TRAIL_KNUCKLES = json.loads(os.environ.get("WARDEN_TRAIL_KNUCKLES", "null"))
+WARDEN_CARRIES = {"trail": (TRAIL_ARM, dict(pitch=tuple(TRAIL_BLADE[:2]), out=tuple(TRAIL_BLADE[2:]), lag=LIVE_LAG, knuckles=TRAIL_KNUCKLES, pole_chest=True)),"low": (LOW_ARM, dict(out=(26, 24))),
                   "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
                   "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
                   "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30))),
@@ -563,7 +589,7 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY == "live" else 0.0)}, "sword+shield"),
+                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY in ("live", "trail") else 0.0)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
     # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
@@ -624,6 +650,12 @@ if WARDEN_CARRY == "high":
 # The shield hand sits back toward her (run 2.5 cm, sprint 2 cm from the first pass) so the
 # elbow stays bent: at most 124 degrees in the run, 119 in the sprint (a judge's bar: 125/120).
 SPRINT_ARMS = {"run_warden": {"l": shield_guard(lift=0.08, fwd=0.0)}}
+if WARDEN_CARRY == "trail":
+    # The sprint's trailing blade swings wider than the run's (its fist comes 70 off her line forward, was 92): leaning 27
+    # deg with the run's line her wrist bent 62 to the palm at the forward drive (motion; 30 at 70, 15 at 58 but her upper
+    # arm then met the warden plate 16 mm, 3 at 70). Pitch f,b, out f,b.
+    _sb = json.loads(os.environ.get("SPRINT_BLADE") or "[-32, -46, 70, 136]")
+    SPRINT_ARMS["run_warden"]["r"] = low_point(pitch=tuple(_sb[:2]), out=tuple(_sb[2:]), lag=LIVE_LAG, knuckles=TRAIL_KNUCKLES, pole_chest=True)
 
 
 def clips(rig, want):

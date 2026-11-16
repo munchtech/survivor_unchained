@@ -238,6 +238,10 @@ public partial class PlayerView : Node3D
     float velX, velZ, lastVelX, lastVelZ;
     // Standing and running, for her breaks and her breath.
     double stillT, runT, ranFor, breakAt = 9;
+    /// <summary>(aim-move, 15 Nov) Her idle's own clock (s): the idle is seeked to it every frame, so a stop that lands on
+    /// the idle's frame 0 sets it to end there (StopSync) and the break (Prowl's own first frames, a wrist's circle laid
+    /// on) starts on the idle's frame 0. Prowl moves 5-8 cm through its 6.9 s loop: unsynced, both faded into it off phase.</summary>
+    double idleAt;
     readonly RandomNumberGenerator rng = new();
 
     public PlayerView(Loadout lo)
@@ -278,6 +282,8 @@ public partial class PlayerView : Node3D
             idleNode = new AnimationNodeAnimation { Animation = idle };
             runNode = new AnimationNodeAnimation { Animation = run };
             mv.AddNode("idle", idleNode, new Vector2(0, 0));
+            mv.AddNode("idleSeek", new AnimationNodeTimeSeek(), new Vector2(200, 0));
+            mv.ConnectNode("idleSeek", 0, "idle");
             mv.AddNode("run", runNode, new Vector2(0, 200));
             sprintNode = new AnimationNodeAnimation { Animation = own.Has(sprint) ? own.Prefix + sprint : run };
             mv.AddNode("sprint", sprintNode, new Vector2(0, 400));
@@ -294,7 +300,7 @@ public partial class PlayerView : Node3D
             mv.ConnectNode("fast", 1, "sprint");
             mv.ConnectNode("walkSeek", 0, "walk");
             mv.ConnectNode("runSeek", 0, "fast");
-            mv.ConnectNode("blendW", 0, "idle");
+            mv.ConnectNode("blendW", 0, "idleSeek");
             mv.ConnectNode("blendW", 1, "walkSeek");
             mv.ConnectNode("blend", 0, "blendW");
             mv.ConnectNode("blend", 1, "runSeek");
@@ -307,6 +313,8 @@ public partial class PlayerView : Node3D
                 aRun = new AnimationNodeAnimation { Animation = run };
                 aSprint = new AnimationNodeAnimation { Animation = sprintNode.Animation };
                 mv.AddNode("aIdle", aIdle, new Vector2(0, 600));
+                mv.AddNode("aIdleSeek", new AnimationNodeTimeSeek(), new Vector2(200, 600));
+                mv.ConnectNode("aIdleSeek", 0, "aIdle");
                 mv.AddNode("aWalk", aWalk, new Vector2(0, 700));
                 mv.AddNode("aRun", aRun, new Vector2(0, 800));
                 mv.AddNode("aSprint", aSprint, new Vector2(0, 900));
@@ -324,7 +332,7 @@ public partial class PlayerView : Node3D
                 mv.ConnectNode("aFast", 1, "aSprint");
                 mv.ConnectNode("aWalkSeek", 0, "aWalk");
                 mv.ConnectNode("aRunSeek", 0, "aFast");
-                mv.ConnectNode("aBlendW", 0, "aIdle");
+                mv.ConnectNode("aBlendW", 0, "aIdleSeek");
                 mv.ConnectNode("aBlendW", 1, "aWalkSeek");
                 mv.ConnectNode("aBlend", 0, "aBlendW");
                 mv.ConnectNode("aBlend", 1, "aRunSeek");
@@ -621,6 +629,7 @@ public partial class PlayerView : Node3D
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         FullBlendIn(mine && fullNative ? full.Animation.ToString()[own.Prefix.Length..] : null);
+        if (mine && fullNative) IdleSyncLater(full.Animation.ToString()[own.Prefix.Length..], speed);
     }
 
     /// <summary>One of her own on the whole of her: soft ones (a fidget, a
@@ -642,6 +651,7 @@ public partial class PlayerView : Node3D
         fullStart = time; fullSpeed = (float)speed;
         full.Animation = own.Prefix + clip;
         fullNative = true;
+        IdleSyncLater(clip, speed);
         fullSoft = soft;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
@@ -1280,7 +1290,9 @@ public partial class PlayerView : Node3D
             bool back = vault && dx * Mathf.Sin(Rotation.Y) + dz * Mathf.Cos(Rotation.Y) < 0;
             if (dx * dx + dz * dz > 0.01f) Rotation = new Vector3(0, back ? Mathf.Atan2(-dx, -dz) : Mathf.Atan2(dx, dz), 0);
             aim = 0;
-            if (!(back && FullHer("vault_back", 1, false)))
+            // (a calling's own leap, landed into its idle: leap_warden ends on Prowl's f0; fitted to the air the same way)
+            if (!vault && FullHer($"leap_{person.Calling}", 1, false)) P7LeapFit(l2.Dur);
+            else if (!(back && FullHer("vault_back", 1, false)))
             {
                 var jump = vault ? "Jump_Start" : "Jump_Full_Short";
                 bool native = own.Owns(People.Clip(person, jump));
@@ -1589,6 +1601,37 @@ public partial class PlayerView : Node3D
         m.SetMeta(CloseMatMeta, true);
     }
 
+    /// <summary>(idleAt) The idle clip's length (s), 0 with none.</summary>
+    double IdleLen()
+    {
+        var n = idleNode?.Animation.ToString();
+        return !string.IsNullOrEmpty(n) && tree.HasAnimation(n) ? tree.GetAnimation(n).Length : 0;
+    }
+
+    /// <summary>(idleAt) A whole-body shot (a stop, a skill) ends on the idle's frame 0: the idle set to come round to it
+    /// as the shot ends. Set 0.1 s in (IdleSyncDue), under the shot, not on its 0.05 s fade in (the idle jumping under
+    /// that would show). A hold (P7's) leaves it early: the fade then lands off phase, as before. The break is the idle's
+    /// own frames from its 0 (the break's gate in Rest): left as it is.</summary>
+    void IdleSyncLater(string clip, double speed)
+    {
+        var n = own.Prefix + clip;
+        syncAt = -1;
+        if (clip.EndsWith("_break") || !tree.HasAnimation(n) || tree.GetAnimation(n).LoopMode != Animation.LoopModeEnum.None) return;
+        syncAt = time + 0.1; syncLeft = tree.GetAnimation(n).Length / System.Math.Max(0.05, speed) - 0.1;
+    }
+
+    double syncAt = -1, syncLeft;
+
+    /// <summary>The shot set to sync runs `total` seconds from now, not its length at one pace (P7's driven leap).</summary>
+    void IdleSyncOver(double total) { if (syncAt >= 0) syncLeft = total - 0.1; }
+
+    void IdleSyncDue(double il)
+    {
+        if (syncAt < 0 || time < syncAt) return;
+        idleAt = ((il - syncLeft) % il + il) % il;
+        syncAt = -1;
+    }
+
     /// <summary>When nothing is near: a breath caught after a long run, and
     /// now and then, standing, her calling's fidget. Either gives way the
     /// moment she moves.</summary>
@@ -1624,7 +1667,8 @@ public partial class PlayerView : Node3D
             return;
         }
         ranFor = 0;
-        if (stillT >= breakAt)
+        // (idleAt) the break begins where the idle's loop does (it is the idle's own first frames, laid over)
+        if (stillT >= breakAt && (move2D || IdleLen() <= 0 || idleAt < 1.5 * dt))
         {
             breakAt = stillT + rng.RandfRange(10, 16);
             var brk = Sheath.Pick(sheath.Sheathed, $"idle_{person.Calling}", "_break", own.Has);
@@ -1731,6 +1775,15 @@ public partial class PlayerView : Node3D
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
             tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
+            // (idleAt) her idle on its own clock
+            double il = IdleLen();
+            if (il > 0)
+            {
+                IdleSyncDue(il);
+                idleAt = ((idleAt + dt) % il + il) % il;
+                tree.Set("parameters/move/idleSeek/seek_request", idleAt);
+                if (layered) tree.Set("parameters/move/aIdleSeek/seek_request", idleAt);
+            }
         }
         if (dirChain) for (int i = 0; i < 6; i++) tree.Set($"parameters/move/dSeek_{DirId[i]}/seek_request", stride * dirLen[i]);
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand

@@ -51,15 +51,46 @@ LAG = 2.5
 # ---------------------------------------------------------------- carriages --
 # Each: (k, frame) -> the hand's spec (keyed.Rig.solve), k the town walk's swing on that side.
 
+def _arc_v(arc):
+    az, el, r = arc
+    a, e = math.radians(az), math.radians(el)
+    return r * np.array([math.sin(a) * math.cos(e), math.sin(e), math.cos(a) * math.cos(e)])
+
+
+# Prowl's hands (prowl.end_keys frame 0, chest frame; set by make() when her idle is Prowl): the walk carries the sword
+# as Prowl holds it, the elbow soft, the arm live: the fist swings PROWL_SWING m with the stride from the shoulder, the
+# point trailing the fist PROWL_LAG deg as it comes through (the owner, 15 Nov: "held rigid not moving at all").
+_PROWL = {}
+PROWL_SWING = 9.0  # deg either way about the shoulder (the reach kept: the elbow stays at Prowl's bend)
+PROWL_LAG = 7.0
+
+
+def _prowl_hand(side, k, f, swing, lag):
+    """Prowl's hand swung `swing` deg about the shoulder's left-right line with the stride (the whole arm and the blade
+    turning with it), the point trailing a further `lag` deg as the fist comes through."""
+    h = {kk: v for kk, v in _PROWL[side].items()}
+    a = swing * (2.0 * k - 1.0)
+    h["arc"] = arc_of(np.array(_pitch(_arc_v(h["arc"]), a)))
+    d = -lag * float(_CTX[side][0][f]) if lag else 0.0
+    for kk in ("blade", "knuckles", "pole"):
+        if kk in h:
+            h[kk] = _pitch(h[kk], a + (d if kk != "pole" else 0.0))
+    return h
+
+
 def sword(k, f):
     """The sword low at her right, as her armed idle holds it (idle.warden: the point 34 deg below level ahead, the
     thumb forward, the elbow swung out over the hilt), the fist swinging a little with the stride."""
+    if "r" in _PROWL:
+        return _prowl_hand("r", k, f, PROWL_SWING, PROWL_LAG)
     return {"arc": arc_of(_at((-0.12, -0.45, 0.04), 0.08, k, 0.01)), "pole": (-0.744, 0.09, -0.662), "frame": "chest",
             "blade": _n((-0.30, -0.52, 0.80)), "knuckles": _n((0.123, -0.828, -0.548)), "twist": 0.5}
 
 
 def shield(k, f):
     """The shield at rest at her left side, off her body (idle.warden's hand_l), braced, riding the step a little."""
+    if "l" in _PROWL:
+        return _prowl_hand("l", k, f, 3.0, 0.0)
     return {"arc": arc_of(_at((0.0817, -0.3796, 0.1299), 0.02, k)), "pole": (0.3281, -0.4168, -0.8477), "frame": "chest",
             "thumb": (-0.1498, 0.7455, 0.6495), "twist": 1.0}
 
@@ -204,6 +235,14 @@ def _solve(rig, name, town, k, push):
 
 def make(rig, name, rounds=6):
     calling, arms, fingers, weapon = WALKS[name]
+    _PROWL.clear()
+    if name == "walk_warden":
+        from clips.sword import prowl_end
+        end = prowl_end(rig)
+        if end is not None:
+            _PROWL.update({s: end[f"hand_{s}"] for s in "lr"})
+            fingers = dict(fingers, l=end["fingers_l"])
+            WALKS[name] = (calling, arms, fingers, weapon)
     if calling not in _TOWN:
         _TOWN[calling] = wt.make_walk(rig, calling)
     town = _TOWN[calling]

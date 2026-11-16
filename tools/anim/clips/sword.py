@@ -126,6 +126,39 @@ def _body(p):
     return {k: v for k, v in p.items() if k != "hand_l"}
 
 
+_PROWL = {}
+
+
+def prowl_end(rig):
+    """(aim-move, the owner 15 Nov: her idle out of town is Prowl, and every skill lands on it.) Prowl's frame 0 as
+    keys (clips/prowl.end_keys: body, feet, both hands in the chest frame, fingers): the swings' recovery ends there,
+    the blade let down to its trail at her right, not raised into the old high guard. None with WARDEN_IDLE=old."""
+    import os
+    if os.environ.get("WARDEN_IDLE", "prowl") != "prowl":
+        return None
+    if id(rig) not in _PROWL:
+        from clips import idle, prowl
+        _PROWL[id(rig)] = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
+    return {k: (dict(v) if isinstance(v, dict) else v) for k, v in _PROWL[id(rig)].items()}
+
+
+def _land(keys, rig, step=None):
+    """The last key (the guard) made Prowl's; `step` = (frame, rise): her right foot lifted that much at that frame on
+    its way from the stance's place to Prowl's (it is 7 cm back and 22 degrees out from the stance's), not slid."""
+    end = prowl_end(rig)
+    if end is None:
+        return keys
+    t, _, e = keys[-1]
+    keys = keys[:-1] + [(t, end, e)]
+    if step:
+        f, rise = step
+        a = np.array(feet()["foot_r"]["pos"], float); b = np.array(end["foot_r"]["pos"], float)
+        mid = (a + b) / 2 + np.array([0, rise, 0])
+        keys.append((f, {"foot_r": {"pos": tuple(mid), "rot": ((-25 + end["foot_r"]["rot"][0]) / 2, 0, 0), "toe": 0}}, "auto"))
+        keys.sort(key=lambda k: k[0])
+    return keys
+
+
 def sword_back(rig):
     keys = [
         # Cocked: the blade drawn back across her to the left, high; hips and
@@ -141,7 +174,11 @@ def sword_back(rig):
         (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.34, 0.51, 0.79), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
         (24, _body(GUARD), "ease"),
     ]
+    if prowl_end(rig) is not None:
+        # (aim-move) Out of the cut at her right the blade drops on down to its trail, not up into the guard and down again.
+        keys[4] = (15, pose(-10, -18, (-0.30, -0.32, 0.16), _n(-0.9, -0.38, 0.2), pole=(-0.3, -0.9, 0.2), left=False, weight=-0.4), "auto")
     keys = with_shield(keys, BACK_L)
+    keys = _land(keys, rig, step=(20, 0.035))
     return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -158,6 +195,7 @@ def sword_fore(rig):
         (24, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, FORE_L)
+    keys = _land(keys, rig, step=(20, 0.035))
     return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -173,6 +211,7 @@ def sword_heavy(rig):
         (30, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, HEAVY_L)
+    keys = _land(keys, rig, step=(25, 0.035))
     return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
 
 

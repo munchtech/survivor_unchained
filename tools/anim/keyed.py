@@ -534,7 +534,10 @@ class Rig:
                 laid[side] = (plant, float(spec.get("ground", 0.0)), float(spec.get("lay", 1.0)))
             s = 1 if side == "l" else -1
             pole = np.array(spec.get("pole", (s * 0.6, -0.3, -1.0)), float)
-            pole = qrot(frame, pole) if spec.get("frame") == "chest" else pole
+            # ("pole_frame": the pole's own space where it differs from the aim's: run.low_point keys a swung arm's
+            # chest-frame pole under a char-space blade; read in char space the sprint's lean threw it across the
+            # shoulder-hand line and the elbow flipped 170 degrees in a frame, aim-move 15 Nov)
+            pole = qrot(chest, pole) if spec.get("pole_frame", spec.get("frame")) == "chest" else pole
             S = gpos[ua].copy()
             if "reach" in spec:
                 # A hand keyed at or past the arm's length ("reach": the most
@@ -1745,10 +1748,10 @@ def _whole_aims(rig: Rig, keys, base=None):
             rig.swivel_force = None
             g, _ = rig.globals(local, pos)
             q = qmul(g[0, rig.I[h]], lq)
-            spec = {kk: v for kk, v in spec.items() if kk != "thumb"}
+            spec = {kk: v for kk, v in spec.items() if kk not in ("thumb", "pole_frame")}
             spec = dict(spec, frame="char", blade=tuple(float(x) for x in qrot(q, [0, 0, 1.0])),
                         knuckles=tuple(float(x) for x in qrot(q, [0, 1.0, 0])))
-            if "pole" in specs[i] and specs[i].get("frame") == "chest":
+            if "pole" in specs[i] and specs[i].get("pole_frame", specs[i].get("frame")) == "chest":
                 # (The pole was in the chest's frame: carry it into hers too.)
                 chest = qmul(g[0, rig.I["spine_03"]], qinv(rig.grest[rig.I["spine_03"]]))
                 spec["pole"] = tuple(float(x) for x in qrot(chest, np.array(specs[i]["pole"], float)))

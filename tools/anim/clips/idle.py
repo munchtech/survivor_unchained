@@ -1317,6 +1317,10 @@ POST = {"idle_warden_town": _warden_grip} if WARDEN_TOWN_ARM == "side" else {}
 
 def build_one(rig, name):
     """One idle (IDLES[name]) built: its arms (IDLE_ARMS over IDLES' own) on its captured base, its meta, its passes."""
+    if name == "idle_warden" and os.environ.get("WARDEN_IDLE", "prowl") == "prowl":
+        # (aim-move, 15 Nov) the owner's pick of 10 Nov, Prowl, as her drawn idle (clips/prowl.py)
+        from clips import prowl
+        return prowl.build(rig, name, fingers_l=warden(0, 0)["fingers_l"])
     style, arms, weapon = IDLES[name]
     arms = IDLE_ARMS.get(name, arms)
     base = base_of(rig, SHARES_BASE.get(name, name[5:]))
