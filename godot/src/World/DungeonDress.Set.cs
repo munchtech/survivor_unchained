@@ -550,7 +550,9 @@ public static partial class DungeonDress
             float ex = (px - x) / rx, ez = (pz - zz) / rz;
             float e = 1f - ex * ex - ez * ez;
             float s = e > 0f && ry > 0f ? y0 + ry * Mathf.Sqrt(e) : -99f;
-            return Mathf.Max(s, SurfBank(c, px, pz));
+            // (r11) never more than 1.5 m under its own foot: over a pit's mouth the cast missed the floor and ran 120 m
+            // down the view (seed 23's lair: a fan of streaks to the vanishing point)
+            return Mathf.Max(Mathf.Max(s, SurfBank(c, px, pz)), y0 - 1.5f);
         };
         if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
         int ob = buf.V.Count;
@@ -699,7 +701,7 @@ public static partial class DungeonDress
                     { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, 1.1f + 0.5f * Hash(ri, k, 999), 0f, false, 0f); c.Tick("set blood"); }
                 }
             }
-            if (r.Kind is "Start" or "Boss") GD.Print($"SetOpen {r.Kind} room R {r.R:0.0}: {got}/{want}, off the floor {rw}, in a lane {rl}, crowded {rn}");
+            GD.Print($"SetOpen {r.Kind} room ({r.X:0.0}, {r.Z:0.0}) R {r.R:0.0}: {got}/{want}, off the floor {rw}, in a lane {rl}, crowded {rn}");
         }
         c.Count["set open"] = n;
     }

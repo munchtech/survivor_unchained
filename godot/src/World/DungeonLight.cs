@@ -13,7 +13,7 @@ public static class DungeonLight
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
     static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
-    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 13f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 4f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
+    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 13f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 7.5f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
 
     public static Node3D? Build(ZoneData z)
     {
@@ -27,7 +27,7 @@ public static class DungeonLight
             i++;
             if (r.Kind == "Bend") continue;
             // One shaft to a room, two in a big one, three in the boss lair; off its centre so the fight is not always in the spot.
-            int count = r.Kind == "Boss" ? 3 : r.R > 11 ? 2 : 1;   // (the lair three: round 6, its open floor read as one empty stretch)
+            int count = SurvivorUnchained.Args.Num("den-shafts", 1f) <= 0f ? 0 : r.Kind == "Boss" ? 3 : r.R > 11 ? 2 : 1;   // (the lair three: round 6, its open floor read as one empty stretch)
             for (int k = 0; k < count; k++)
             {
                 // (clear of the pits and the walls: a shaft down a pit lit its roots bone-white)
@@ -46,6 +46,7 @@ public static class DungeonLight
         // silhouettes (round 7's "black fragments" by the big pit were the resting pack). A fill from the camera's side,
         // high, that reaches the crowd's own layer only (PlayerView.CrowdLayer): the floor, the banks and HER take none of
         // it (her merged skin light is untouched). --den-pack-fill sets its energy (0 off).
+        // (r11) 4 -> 7.5: the Pack-Mother's fur read at 0.4 of the lair floor's value (p25 30 against 75), a dark cut-out; 9 gave 0.68.
         if (PackFill > 0f)
             root.AddChild(new DirectionalLight3D
             {
