@@ -60,6 +60,14 @@ W_EXT = float(os.environ.get("ARM_WRIST_EXT", "45"))
 W_EXT_HIGH = float(os.environ.get("ARM_WRIST_EXT_HIGH", "25"))   # a raised fist (the same ramp as deviation)
 W_FLEX = float(os.environ.get("ARM_WRIST_FLEX", "60"))
 W_PRO = float(os.environ.get("ARM_WRIST_PRO", "80"))
+# (aim-move solver 8b, 15 Nov) A clip may widen these for itself: its meta "wrist_caps" {"pro", "ext", "dev_low",
+# "flex"} (deg; any left out keep the values above; never narrower than them), read by solve_json, so build.pack and
+# staged_json (every check) re-solve that clip alike. Why: the Warden's run carries (run_warden and its headings, the
+# sprint) trail the blade down and back with the forearm turned out and the wrist extended, and at 80 / 45 the worst
+# frames' best in-cap line kept 0.48 of the blade out sideways as seen from behind (the coordinator's "level bar",
+# 15 Nov; solve8b/tools/reach8.py on run_warden as played, the blade 45-54 down: 0.485 in, 0.33 with pro 90 / ext 55,
+# 0.43 the best of the arm's own levers (the upper arm back 8, turned out 60, more bend: worse)). Real forearms turn
+# about 80-90 each way and real wrists extend about 60-70, so a loose carry's 90 / 55 is anatomy, not a wrung hand.
 TURN_CAP = float(os.environ.get("ARM_TURN_CAP", "40"))     # the hand's turn, at most (deg)
 TURN_SIGMA = 1.0                                          # frames: the turn's easing
 # Two hands on one weapon (the wrists this close, m): the hand is not turned (the grip kept; the swivel only).
@@ -157,13 +165,14 @@ def wrist(sk: Skeleton, lo_rot, h_rot, s):
     return _wrap(pro), sgn * v[..., 2], v[..., 0]
 
 
-def _comfort(sk: Skeleton, lo_rot, h_rot, s, dev_lim, ext_lim):
+def _comfort(sk: Skeleton, lo_rot, h_rot, s, dev_lim, ext_lim, pro_lim=None, flex_lim=None):
     """The least turn r (in the hand's own frame: h_rot * r) that brings its bend into the comfortable range.
-    A flexion/extension fix is a turn about the hand's +Z (the shaft: a round shaft reads the same)."""
+    A flexion/extension fix is a turn about the hand's +Z (the shaft: a round shaft reads the same). pro_lim /
+    flex_lim: the clip's own (wrist_caps), else W_PRO / W_FLEX."""
     dh = _hand_dh(sk, lo_rot, h_rot, s)
     tw, sw = _twist_swing(dh)
     pro = np.radians(_wrap(twist_y(tw)))
-    lim = math.radians(W_PRO)
+    lim = math.radians(W_PRO if pro_lim is None else pro_lim)
     pro2 = np.clip(pro, -lim, lim)
     tw2 = np.zeros_like(tw)
     tw2[..., 1], tw2[..., 3] = np.sin(pro2 / 2), np.cos(pro2 / 2)
@@ -173,7 +182,7 @@ def _comfort(sk: Skeleton, lo_rot, h_rot, s, dev_lim, ext_lim):
     v2[..., 1] = 0.0
     dl = np.radians(dev_lim)
     v2[..., 0] = np.clip(v[..., 0], -dl, dl)
-    fl = np.clip(sgn * v[..., 2], -np.radians(ext_lim), math.radians(W_FLEX))
+    fl = np.clip(sgn * v[..., 2], -np.radians(ext_lim), math.radians(W_FLEX if flex_lim is None else flex_lim))
     v2[..., 2] = sgn * fl
     dh2 = qmul(tw2, _qexp(v2))
     return qnorm(qmul(qinv(dh), dh2))
@@ -260,9 +269,14 @@ def _stats(m, frame=None):
     return out
 
 
-def solve_rot(sk: Skeleton, rot, pos, fps, loop, report=None):
+def solve_rot(sk: Skeleton, rot, pos, fps, loop, report=None, caps=None):
     """rot [T, J, 4] local rotations (a changed copy returned), pos [T, J, 3]. report (a dict) gets, per side:
-    before/after maxima, the swivel's max, the hand's turn max and its shaft's tilt max (deg)."""
+    before/after maxima, the swivel's max, the hand's turn max and its shaft's tilt max (deg). caps: the clip's
+    "wrist_caps" (see W_PRO), each at least the default."""
+    caps = caps or {}
+    c_pro, c_ext = max(W_PRO, float(caps.get("pro", W_PRO))), max(W_EXT, float(caps.get("ext", W_EXT)))
+    c_dev, c_flex = max(W_DEV_LOW, float(caps.get("dev_low", W_DEV_LOW))), max(W_FLEX, float(caps.get("flex", W_FLEX)))
+    PRO_OK, FLEX_OK, DEV_OK = max(globals()["PRO_OK"], c_pro), max(globals()["FLEX_OK"], c_ext), max(globals()["DEV_OK"], c_dev)
     I = sk.index
     if "upperarm_l" not in I or "Head" not in I:
         return rot
@@ -379,8 +393,8 @@ def solve_rot(sk: Skeleton, rot, pos, fps, loop, report=None):
         lo, h = I[f"lowerarm_{s}"], I[f"hand_{s}"]
         xa = np.clip((mid[s]["A"] - W_DEV_A[0]) / (W_DEV_A[1] - W_DEV_A[0]), 0, 1)
         ra = xa * xa * (3 - 2 * xa)
-        v = _rotvec(_comfort(sk, rot[:, lo], rot[:, h], s, W_DEV_LOW + (W_DEV - W_DEV_LOW) * ra,
-                             W_EXT + (W_EXT_HIGH - W_EXT) * ra))
+        v = _rotvec(_comfort(sk, rot[:, lo], rot[:, h], s, c_dev + (W_DEV - c_dev) * ra,
+                             c_ext + (W_EXT_HIGH - c_ext) * ra, c_pro, c_flex))
         a = np.linalg.norm(v, axis=-1)
         Hs = gpos[:, h]
         thigh = np.minimum(*(_seg_dist(Hs, gpos[:, I[f"thigh_{k}"]], gpos[:, I[f"calf_{k}"]]) for k in "lr"))
@@ -421,7 +435,8 @@ def solve_json(sk: Skeleton, d, report=None):
     """A clip JSON (rig.Clip.to_json's form) with its arms re-solved (a new dict)."""
     I = sk.index
     rot, pos = arrays(sk, d)
-    new = solve_rot(sk, rot, pos, float(d["fps"]), bool(d.get("loop", False)), report)
+    new = solve_rot(sk, rot, pos, float(d["fps"]), bool(d.get("loop", False)), report,
+                    (d.get("meta") or {}).get("wrist_caps"))
     out = dict(d)
     tracks = [dict(t) for t in d["tracks"]]
     have = {t["bone"]: t for t in tracks if t["type"] == "rot"}

@@ -63,6 +63,17 @@ GRIP_TILT = float(os.environ.get("PROWL_GRIP_TILT", "-35"))
 TRAIL_GRIP = ((-0.5866, -0.8081, -0.0249), (0.7772, -0.5541, -0.2939)) if GRIP_TILT == -35.0 else \
     ((-0.6261, -0.7783, 0.0147), (0.7324, -0.5943, -0.3285))  # (solver 4a's, at tilt 0: knuckles rolled -16 about the blade)
 TRAIL_FOLLOW = float(os.environ.get("PROWL_TRAIL_FOLLOW", "0.35"))
+# (solver 8a, 15 Nov) the IDLE's own sword arm and grip (the walk keeps TRAIL_ARM, and TRAIL_GRIP when PROWL_WRIST is
+# None). From behind, the commonest view, TRAIL_ARM's line (-129..-110 heading, 50-55 below level as played) laid 0.56-0.60
+# of the blade out to her right, a level bar. The upper arm 30 back of hanging, out 12, inside angle 145, turned in 30,
+# and the fist at armroll's reading pro 66, flex -17 (extension), dev -3 (solve8a reach8.py / cand8.py: in the caps with
+# 5+ to spare, so the pack turns nothing back): as played -147..-131 / 62-68 below level, sideways share
+# -sin(heading)cos(down) 0.27-0.35, the tip 0.09-0.12 m off the floor by her right foot, the fist 0.18-0.20 m out of her
+# pelvis, bend 33-38, 19.9 cm off her leg.
+IDLE_ARM = (-30.0, 12.0, 145.0, 30.0)
+IDLE_GRIP = ((-0.3448, -0.9363, -0.0475), (0.7678, -0.2518, -0.5876)) if GRIP_TILT == -35.0 else TRAIL_GRIP
+if os.environ.get("PROWL_IDLE_ARM", "1") == "0":  # the old idle line (TRAIL_ARM / TRAIL_GRIP)
+    IDLE_ARM, IDLE_GRIP = TRAIL_ARM, TRAIL_GRIP
 
 
 def grip_at(blade, knuckles, tilt, frm=None):
@@ -96,7 +107,7 @@ def _trail_frame(sk, ag, gT):
 
 
 def _trail_spec(sk, ag, g, p, sw, ph, C=None):
-    """PROWL_TRAIL's hand_r key on one frame's body (globals g, p): the wrist where TRAIL_ARM's joints put it from the
+    """PROWL_TRAIL's hand_r key on one frame's body (globals g, p): the wrist where IDLE_ARM's joints put it from the
     shoulder (the elbow 3 deg softer or firmer with her weight shift), the elbow's way as the pole, the fist's grip frame
     turned whole with the arm's frame C (_trail_frame; the chest's own turn if None) and by the blade's life
     (BLADE_PITCH with the weight shift, BLADE_YAW with the breath)."""
@@ -105,10 +116,10 @@ def _trail_spec(sk, ag, g, p, sw, ph, C=None):
     ap = sk.rest_globals()[1][0]
     l1, l2 = float(np.linalg.norm(ap[lo] - ap[u])), float(np.linalg.norm(ap[h] - ap[lo]))
     C = qmul(g[c], qinv(ag[c])) if C is None else C
-    th, out, el, turn = TRAIL_ARM
+    th, out, el, turn = IDLE_ARM
     E, H = arm_joints(th, out, el + 3.0 * sw, turn, l1, l2)
     E, H = qrot(C, E * np.array([-1.0, 1, 1])), qrot(C, H * np.array([-1.0, 1, 1]))
-    bc, kc = qrot(C, np.array(TRAIL_GRIP[0])), qrot(C, np.array(TRAIL_GRIP[1]))
+    bc, kc = qrot(C, np.array(IDLE_GRIP[0])), qrot(C, np.array(IDLE_GRIP[1]))
     q = qmul(qaxis([0.0, 1.0, 0.0], BLADE_YAW * math.sin(2 * ph * 2)), qaxis(_norm(np.cross([0.0, 1.0, 0.0], bc)), BLADE_PITCH * sw))
     wrist = p[u] + H + np.array([-HAND_OUT["r"], 0.0, 0.0])
     return {"pos": tuple(wrist), "pole": tuple(_norm(E)), "pole_at": "shoulder", "frame": "char",
