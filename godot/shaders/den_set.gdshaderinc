@@ -35,6 +35,10 @@ uniform float rim_out = 1.45;
 // noise's edges over the painting's own darks inside the lip; COLOR.a < 0.75 marks a lair hole (PlaceSetHole)
 uniform float pit_glow = 0.0;
 uniform vec3 pit_col : source_color = vec3(0.5, 0.9, 0.28);
+uniform float blood_rust = 0.0;   // (den r15 C) share of the blood pulled to a rust hue (O5 only)
+uniform vec3 blood_dir = vec3(1.5, 0.9, 0.45);
+uniform float pit_sat = 0.7;   // (den r15 C) pit glow core saturation (judge r14: C90 .18 against .089)
+uniform float pit_halo = 0.14;   // (den r15 C) the soft halo (was .07)
 uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark: a slow noise mask on the veins
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
@@ -42,6 +46,13 @@ uniform vec3 boss_c = vec3(0.0);
 uniform float boss_gloom = 0.0;
 uniform float hi_roll = 1.0;   // (den r14 corr) the near banks' highlights' scale (1 off)
 uniform float bank_gloom = 0.0;   // (den r13 corr) the corridor banks' depth gloom (--den-set-gloom)
+uniform float dbg_mod = 0.0;   // (den r15 E, diagnosis: --den-set-dbgmod) each bank module a false colour (COLOR.a), rows behind striped
+// (den r15 E, judge r14 item 4) a bank card's cut (COLOR.g's 0.5 contour) wanders at a fine scale and follows the painting's
+// masses: the threshold moved by a world value noise (cut_noise: its share of the ramp) and by the painting's local brightness
+// (cut_lum: lit roots kept further out, dark gaps cut first), so a border ends in root shapes, not a ruled line. 0, 0: off
+uniform float cut_noise = 0.0;
+uniform float cut_lum = 0.0;
+uniform float cut_scale = 2.2;   // the noise's cycles per metre (two octaves)
 uniform vec2 gloom_m = vec2(2.5, 6.5);   // metres into the bank: from, full
 // (den r14 objects, item 3) the lit open-floor boulders (sheet O1r): the painting's facets blurred out (rock_lod), a lit warm top
 // (COLOR.b: the card's v, 0 at the top) mottled by cell noise and mossed, as den_room.png's round stones. 0: off (banks, other sheets)
@@ -106,6 +117,7 @@ void fragment() {
 	vec3 col = c.rgb * tint;
 	float l = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(vec3(l), col, sat);
+	col = mix(col, vec3(l) * blood_dir, blood_rust);
 	// (den r14 lead, lane E note) the painted fungus' cyan held in its band (C .053-.080 under E's grade, .10-.11 before)
 	float cyan = smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
 	col = mix(col, mix(vec3(l), col, fungus_sat), cyan);
@@ -131,7 +143,27 @@ void fragment() {
 			0.6 * smoothstep(-0.03, 0.04, min(hc.g, hc.b) - hc.r * 0.9) * smoothstep(0.07, 0.15, dot(hc, vec3(0.299, 0.587, 0.114))));
 		EMISSION += mush_col * mush_glow * hm * (1.0 - smoothstep(0.05, 0.2, min(c.g, c.b) - c.r));
 	}
-	ALPHA = c.a * show * step(0.5, COLOR.g);
+	float cut_t = 0.5;
+#ifndef SET_SOFT
+	if (cut_noise > 0.0 || cut_lum > 0.0) {
+		vec2 cq = wpos.xz * cut_scale;
+		float fn = 0.62 * pg_vn(cq + 17.3) + 0.38 * pg_vn(cq * 2.7 - 4.1);
+		cut_t = clamp(0.5 + cut_noise * (fn - 0.5) * 2.0 + cut_lum * (0.5 - s), 0.03, 0.97);
+		// the fades (a run's ends, the image's own cut: COLOR.r) gone before the card's geometric end: at COLOR.r 0 the bright
+		// masses still showed, cut by the card's last column (s23 corridor x 1490-1500, a module's end ruled for 260 px)
+		show = step(1.0, 0.8 * s + 1.25 * COLOR.r + 0.5 * cut_noise * (fn - 0.5));
+	}
+#endif
+	ALPHA = c.a * show * step(cut_t, COLOR.g);
+#ifndef SET_SOFT
+	if (dbg_mod > 0.0) {
+		vec3 hc = clamp(abs(fract(fract(COLOR.a * 2.0) + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+		float stripe = COLOR.a >= 0.5 ? step(0.5, fract((FRAGCOORD.x + FRAGCOORD.y) / 14.0)) : 1.0;
+		vec3 dc = hc * (0.2 + 0.8 * clamp(dot(c.rgb, vec3(0.299, 0.587, 0.114)) * 2.5, 0.0, 1.0)) * mix(0.3, 1.0, stripe) * mix(0.5, 1.0, step(0.999, COLOR.r));
+		ALBEDO = dc * 0.1;
+		EMISSION = dc * dbg_mod;
+	}
+#endif
 #ifdef SET_SOFT
 	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
@@ -141,14 +173,15 @@ void fragment() {
 		float r1 = pg_ridge(q * 0.9), r2 = pg_ridge(q * 2.1 + 4.0);
 		// (den r14 objects, item 12) a hairline core, a soft halo, a second finer set of branches on the slow mask
 		float v = 1.0 * smoothstep(0.93, 0.99, r1) + 0.5 * pow(r1, 8.0) + (0.75 * smoothstep(0.945, 0.99, r2) + 0.22 * pow(r2, 8.0)) * (0.4 + 0.6 * m);
-		float inner = 1.0 - smoothstep(0.55, 0.95, 2.0 * COLOR.b);
+		float inner = 1.0 - smoothstep(0.55, 1.1, 2.0 * COLOR.b);
 		// (den r13 rooms) clusters: veins only where the slow cell mask clears its threshold (about pit_dark of the area stays dark)
 		float pm = smoothstep(0.0, 0.06, pg_edge(q * 0.16 + 11.3) - pit_dark * 0.55);
 		inner *= pm;
 		float dark = 1.0 - smoothstep(0.015, 0.09, l);
 		float pulse = 0.85 + 0.15 * sin(TIME * 1.3 + q.x * 0.2);
-		EMISSION += pit_col * pit_glow * v * inner * dark * pulse;
-		EMISSION += pit_col * pit_glow * 0.07 * inner * dark * (0.3 + m);
+		vec3 pc = mix(vec3(dot(pit_col, vec3(0.299, 0.587, 0.114))), pit_col, pit_sat);
+		EMISSION += pc * pit_glow * v * inner * dark * pulse;
+		EMISSION += pc * pit_glow * pit_halo * inner * dark * (0.3 + m);
 	}
 #endif
 #ifndef SET_SOFT
