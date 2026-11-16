@@ -61,7 +61,8 @@ public static class DungeonFloor
                 mat.SetShaderParameter("set_band", Args.Num("den-set-band", 0f));       // (r11 0.3 -> 0: it multiplied a blurred copy of the tile back in, clouds)
                 mat.SetShaderParameter("set_sharp", Args.Num("den-set-sharp", 1f));     // (r11) the two turns switched, not averaged; tiles read sharper
                 mat.SetShaderParameter("set_clouds", Args.Num("den-set-clouds", 0.35f)); // (r11) the slow damp/leaf/value clouds' share under the set
-                mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));     // (r10b) worn ways and damp patches
+                mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));
+                mat.SetShaderParameter("set_damp", Args.Num("den-set-damp", 0.45f));   // (r13) the damp patches in the open (1: the r12 smudge)     // (r10b) worn ways and damp patches
                 mat.SetShaderParameter("set_trod", Args.Num("den-set-trod", 0.5f));     // (r11) the trodden tile's share
                 mat.SetShaderParameter("boss_dim", Args.Num("den-boss-dim", 2.3f));     // (r12, with the gloom and the lair pools x0.45: median 67, 12-35 12 %, cool 18.7 % against 68 / 13 / 18.8)     // (r11) the lair measured median 42 against 68 (1.3: 56)
                 mat.SetShaderParameter("boss_damp", Args.Num("den-boss-damp", 1.0f));

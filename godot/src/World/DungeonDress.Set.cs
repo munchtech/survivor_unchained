@@ -380,6 +380,7 @@ public static partial class DungeonDress
                 }
         }
         if (SetLanes > 0f && SetMode >= 2) SetLaneRings(c, bufs, ref modules, ref runs, ref spills);
+        if (SetAlcoveK > 0f && c.Z.WalkField != null && c.Z.WalkField != c.Z.WallField) SetAlcoves(c);
         setBossC = Vector3.Zero;
         foreach (var rb in c.Z.Rooms) if (rb.Kind == "Boss") setBossC = new Vector3(rb.X, rb.Z, rb.R);
         if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
@@ -563,6 +564,42 @@ public static partial class DungeonDress
         GD.Print($"DenSet lanes: {rings} rings, {lanes} runs, {pools} lane pools");
     }
     static readonly List<Vector2> laneMid = new();
+
+    // (r13) The alcoves: ground the drawn wall line bares outside the walkable edge (DenRagged: the corridors' banks pushed
+    // outward), which she cannot walk on, is never open floor: a root spill (B6), a stone (O1) or a bone pile (O3) on it,
+    // greedy on a 0.6 m lattice where the bared ground is at least 0.3 m deep, 1.4 m apart, the spill most often.
+    static readonly float SetAlcoveK = SurvivorUnchained.Args.Num("den-alcove", 1f);
+    static void SetAlcoves(Ctx c)
+    {
+        float half = c.Z.Half;
+        var taken = new List<Vector2>();
+        int n = 0, sp = 0, st = 0, bo = 0;
+        for (float zz = -half + 1f; zz < half - 1f; zz += 0.6f)
+            for (float x = -half + 1f; x < half - 1f; x += 0.6f)
+            {
+                float walk = Bil(c.Z, c.Z.WalkField!, x, zz), drawn = Wall(c, x, zz);
+                if (walk > -0.3f || drawn < 0.3f || Hole(c, x, zz) < 1.5f) continue;
+                var p = new Vector2(x, zz);
+                bool near = false;
+                foreach (var t in taken) if (t.DistanceTo(p) < 1.4f) { near = true; break; }
+                if (near) continue;
+                taken.Add(p);
+                int hx = Mathf.FloorToInt(x * 3.1f), hz = Mathf.FloorToInt(zz * 3.1f);
+                float u = Hash(hx, hz, 851), q = Hash(hx, hz, 852), k = Hash(hx, hz, 853);
+                string sheet = u < 0.62f ? "B6" : u < 0.88f ? "O1" : "O3";
+                if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
+                var sorted = new List<SetPiece>(all);
+                sorted.Sort((a, b) => a.Metres.X.CompareTo(b.Metres.X));
+                int hf = Mathf.Max(1, sorted.Count / 2);
+                var pc = sheet == "O1" ? sorted[(int)(q * hf) % hf] : sorted[(int)(q * sorted.Count) % sorted.Count];
+                if (sheet == "B6") { PlaceSetObj(c, "B6", pc, x, zz, SetAlcoveK * (0.55f + 0.3f * k), 0f, false, 0f); sp++; }
+                else if (sheet == "O1") { PlaceSetObj(c, "O1", pc, x, zz, Mathf.Min(1f, (0.9f + 0.7f * k) / pc.Metres.X), 0.62f, true); st++; }
+                else { PlaceSetObj(c, "O3", pc, x, zz, 0.8f + 0.3f * k, 0.1f, false); bo++; }
+                n++;
+            }
+        c.Count["set alcoves"] = n;
+        GD.Print($"DenSet alcoves: {n} ({sp} spills, {st} stones, {bo} bones)");
+    }
     static readonly float LanePoolEnergy = SurvivorUnchained.Args.Num("den-lane-pool", 3.2f), LanePoolGap = SurvivorUnchained.Args.Num("den-lane-pool-gap", 6.5f),
         LanePoolRange = SurvivorUnchained.Args.Num("den-lane-pool-range", 6.5f), LanePoolHigh = SurvivorUnchained.Args.Num("den-lane-pool-high", 2.4f);
 

@@ -39,6 +39,7 @@ uniform sampler2DArray set_floor : source_color, filter_linear_mipmap_anisotropi
 uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the den floor's albedo
 uniform float set_gain = 1.0;   // the set floor's albedo scale (--den-set-floor-gain)
 uniform float set_band = 0.6;   // (r10b) the tiles' 3 cm-1 m masses stretched by this (0: as painted)
+uniform float set_damp = 0.45;  // (r13) the damp patches' depth in the open: at 1 a 2-3 m one read as a black smudge on the seed-23 corridor (judge r12)
 uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow fields (0: the walls' vignette only)
 // (r11) the floor read as a soft brown cloud: each tile was read twice at two turns and the two AVERAGED over wide
 // bands (every stone at half strength, ghosted), the band stretch multiplied a blurred copy back in, and the slow
@@ -196,7 +197,7 @@ void fragment() {
 				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
 				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
 				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
-				float wdp = max(max(w_dk, w_li * 0.5), set_paths * smoothstep(0.56, 0.7, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
+				float wdp = max(max(w_dk, w_li * 0.5), set_paths * set_damp * smoothstep(0.52, 0.76, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
 				float inb = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 				wdp *= 1.0 - boss_dry * inb;
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
