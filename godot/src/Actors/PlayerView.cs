@@ -2661,7 +2661,7 @@ public partial class PlayerView : Node3D
             {
                 Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
                 Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
-                GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00}"));
+                GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00} sv {carry.Want:0.00} {carry.Raw:0.00} {carry.Sigma:0} {logWWalk:0.00} {carryStrafe:0.00} c0 {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).X:0.0} {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).Y:0.0}"));
             }
         }
     }
@@ -2677,7 +2677,8 @@ public partial class PlayerView : Node3D
     // (warden-move) The side carry (SideCarry): the sword turned in her fist while her sword side faces the camera. Stepped
     // once her pose is made (SkeletonUpdated, as HairSway is: the modifiers' arm in it), so the grip's acceleration and the
     // tilt's sign are this frame's. --side-carry off: none (the clips' grip, as before); --side-carry-tune
-    // rest,gain,hz,damping,loose,ease,maxrate: its tuning (SideCarry's fields, in that order).
+    // runangle,gain,hz,damping,loose,ease,maxrate,splay,loosefwd,maxaccel,standangle,strafecut,splayaway,splaystrafe,backmax,caproom,side0,side1:
+    // its tuning (SideCarry's fields, in that order).
     readonly SideCarry carry = CarryTuned();
     static readonly bool CarryOn = SurvivorUnchained.Args.Get("side-carry") is not ("off" or "0");
     bool carryHooked;
@@ -2691,8 +2692,10 @@ public partial class PlayerView : Node3D
         {
             var v = t.Split(',');
             float F(int i, float d) => i < v.Length && float.TryParse(v[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : d;
-            c.Rest = F(0, c.Rest); c.Gain = F(1, c.Gain); c.Hz = F(2, c.Hz); c.Damping = F(3, c.Damping);
+            c.RunAngle = F(0, c.RunAngle); c.Gain = F(1, c.Gain); c.Hz = F(2, c.Hz); c.Damping = F(3, c.Damping);
             c.Loose = F(4, c.Loose); c.Ease = F(5, c.Ease); c.MaxRate = F(6, c.MaxRate); c.Splay = F(7, c.Splay); c.LooseFwd = F(8, c.LooseFwd); c.MaxAccel = F(9, c.MaxAccel);
+            c.StandAngle = F(10, c.StandAngle); c.StrafeCut = F(11, c.StrafeCut); c.SplayAway = F(12, c.SplayAway); c.SplayStrafe = F(13, c.SplayStrafe);
+            c.BackMax = F(14, c.BackMax); c.CapRoom = F(15, c.CapRoom); c.Side0 = F(16, c.Side0); c.Side1 = F(17, c.Side1);
         }
         return c;
     }
@@ -2719,12 +2722,45 @@ public partial class PlayerView : Node3D
         }
         carryAt = at;
         carryHist = System.Math.Min(carryHist + 1, 2);
+        // Her travel (level), for the strafe's share of it; eased.
+        var pos = GlobalPosition;
+        if (carryHist > 1 && pos.DistanceTo(carryPos) < 1.5f)
+        {
+            var vel = (pos - carryPos) / d;
+            vel.Y = 0f;
+            float sp = vel.Length(), sw = sp > 0.3f ? Mathf.Abs(vel.Dot(GlobalBasis.X.Normalized())) / sp * Mathf.Clamp((sp - 0.3f) / 0.7f, 0f, 1f) : 0f;
+            carryStrafe += (sw - carryStrafe) * (1f - Mathf.Exp(-d / 0.15f));
+        }
+        carryPos = pos;
         var cam = GetViewport()?.GetCamera3D();
-        var back = cam != null ? cam.GlobalBasis.Z : Vector3.Back;
-        float target = CarryOn && !held && TourList == null ? SideCarry.Target(SideCarry.Side(Rotation.Y, back.X, back.Z)) : 0f;
-        carry.Step(d, target, acc);
-        if (layered) CarrySlide(sk.GlobalTransform * sk.GetBoneGlobalPose(hb));
+        var bone = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
+        bool on = CarryOn && !held && TourList == null && layered && cam != null;
+        var f = default(SideCarry.Frame);
+        if (on)
+        {
+            // The clip's grip first (the layer reads the blade as the clips hold it), then the camera's screen map at its grip.
+            view.Slide("handslot.r", slide, tilt);
+            if (view.HeldBlade("handslot.r", bone) is { } hbd && (hbd.Tip - hbd.Grip).LengthSquared() > 1e-6f)
+            {
+                var g = hbd.Grip;
+                var p0 = cam!.UnprojectPosition(g);
+                const float e = 0.05f;
+                Vector2 dx = (cam.UnprojectPosition(g + Vector3.Right * e) - p0) / e, dy = (cam.UnprojectPosition(g + Vector3.Up * e) - p0) / e,
+                    dz = (cam.UnprojectPosition(g + Vector3.Back * e) - p0) / e;
+                static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+                var lf = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z);
+                var ah = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+                carryB0 = (hbd.Tip - hbd.Grip).Normalized();
+                f = new SideCarry.Frame(N(carryB0), N(lf), N(ah), new(dx.X, dy.X, dz.X), new(dx.Y, dy.Y, dz.Y), N(cam.GlobalBasis.Z),
+                    Mathf.Clamp(logWWalk, 0f, 1f), carryStrafe);
+            }
+            else on = false;
+        }
+        carry.Step(d, on, acc, f);
+        if (layered) CarrySlide(bone);
     }
+    Vector3 carryPos, carryB0;
+    float carryStrafe;
 
     /// <summary>Her right piece gripped as the clips grip it (slide, tilt), then the side carry's turns on it: tip back about
     /// her left (level; + tips the blade behind her), and in toward her body about her facing (level), through the fist.</summary>
