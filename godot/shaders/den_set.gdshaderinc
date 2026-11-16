@@ -42,6 +42,13 @@ uniform float boss_gloom = 0.0;
 uniform float hi_roll = 1.0;   // (den r14 corr) the near banks' highlights' scale (1 off)
 uniform float bank_gloom = 0.0;   // (den r13 corr) the corridor banks' depth gloom (--den-set-gloom)
 uniform vec2 gloom_m = vec2(2.5, 6.5);   // metres into the bank: from, full
+// (den r14 objects, item 3) the lit open-floor boulders (sheet O1r): the painting's facets blurred out (rock_lod), a lit warm top
+// (COLOR.b: the card's v, 0 at the top) mottled by cell noise and mossed, as den_room.png's round stones. 0: off (banks, other sheets)
+uniform float rock_k = 0.0;
+uniform float rock_lod = 2.2;
+uniform vec3 rock_lit = vec3(0.23, 0.155, 0.085);
+uniform vec3 rock_moss = vec3(0.1, 0.13, 0.04);
+uniform float rock_moss_k = 0.6;
 varying vec3 wpos;
 void vertex() { wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
 float lair_gloom(vec3 p) {
@@ -51,6 +58,16 @@ float lair_gloom(vec3 p) {
 }
 vec3 gloom_col(vec3 c, float g) { return mix(c, vec3(dot(c, vec3(0.3, 0.55, 0.15))) * vec3(0.8, 0.95, 1.25), 0.7 * g) * (1.0 - 0.55 * g); }
 vec2 pg_h2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+float pg_vn(vec2 p) {
+	vec2 i = floor(p), f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(pg_h2(i).x, pg_h2(i + vec2(1.0, 0.0)).x, f.x), mix(pg_h2(i + vec2(0.0, 1.0)).x, pg_h2(i + vec2(1.0, 1.0)).x, f.x), f.y);
+}
+// (den r14 objects, item 12) branching cracks: the ridge of a domain-warped noise (thin lit line, soft halo), not cell edges
+float pg_ridge(vec2 p) {
+	vec2 w = vec2(pg_vn(p * 0.7 + 3.1), pg_vn(p * 0.7 - 5.7));
+	return 1.0 - abs(2.0 * pg_vn(p + 2.5 * w) - 1.0);
+}
 float pg_edge(vec2 p) {
 	vec2 i = floor(p), f = fract(p);
 	float d1 = 8.0, d2 = 8.0;
@@ -64,6 +81,24 @@ float pg_edge(vec2 p) {
 
 void fragment() {
 	vec4 c = texture(paint_tex, UV);
+	if (rock_k > 0.0) {
+		vec4 cb = textureLod(paint_tex, UV, rock_lod);
+		float lbm = dot(cb.rgb, vec3(0.299, 0.587, 0.114));
+		vec2 q = UV * 70.0;
+		float m1 = pg_edge(q), m2 = pg_edge(q * 3.1 + 7.0);
+		float mot = clamp(0.55 + 0.9 * (0.6 * pg_vn(q * 0.18 + 1.0) + 0.4 * pg_vn(q * 0.55 + 4.0)), 0.55, 1.4);
+		float top = smoothstep(0.8, 0.12, COLOR.b);
+		float ab = textureLod(paint_tex, UV, 3.0).a;
+		float rim = smoothstep(0.35, 0.95, ab);
+		// form: lit across the top, falling to a dark belly and a darker rim; cracks as thin dark cell edges
+		float form = mix(0.42, 1.2, top) * mix(0.55, 1.0, rim);
+		float crack = 1.0 - 0.12 * pg_ridge(q * 0.3 + 2.0) * pg_ridge(q * 0.3 + 2.0);
+		vec3 stone = rock_lit * mot * form * crack * clamp(0.75 + lbm * 3.0, 0.8, 1.3);
+		float ms = top * rim * smoothstep(0.45, 0.7, 0.7 * pg_vn(q * 0.2 + 9.0) + 0.3 * pg_vn(q * 0.7) + 0.2 * top) * rock_moss_k;
+		stone = mix(stone, rock_moss * mot * (0.6 + 0.6 * form), ms);
+		vec3 rb = mix(cb.rgb * 0.9, stone, rock_k);
+		c = vec4(rb, c.a);
+	}
 	float lb = dot(textureLod(paint_tex, UV, 3.0).rgb, vec3(0.299, 0.587, 0.114));
 	float s = smoothstep(0.1, 0.4, sqrt(max(lb, 0.0)));
 	float show = step(1.0, s + COLOR.r + 0.001);
@@ -98,11 +133,10 @@ void fragment() {
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
 	if (pit_glow > 0.0 && COLOR.a < 0.75) {
 		vec2 q = UV * 13.0;
-		float e = pg_edge(q + 0.35 * vec2(pg_edge(q * 0.5 + 3.1), pg_edge(q * 0.5 - 7.3)));
-		// fissures, not a net: the cell edges lit only where a slow mask says so, the brightest where two meet
 		float m = smoothstep(0.25, 0.65, pg_edge(q * 0.33 + 5.3) * 1.6);
-		// (r12) a lit core in a wide smoky halo (den_boss.png's veins glow, they are not wire)
-		float v = (0.55 * exp(-e * 14.0) + 0.35 * exp(-e * 4.0)) * (0.2 + 0.8 * m) + 0.2 * exp(-pg_edge(q * 2.3 + 1.7) * 12.0) * m;
+		float r1 = pg_ridge(q * 0.9), r2 = pg_ridge(q * 2.1 + 4.0);
+		// (den r14 objects, item 12) a hairline core, a soft halo, a second finer set of branches on the slow mask
+		float v = 1.0 * smoothstep(0.93, 0.99, r1) + 0.5 * pow(r1, 8.0) + (0.75 * smoothstep(0.945, 0.99, r2) + 0.22 * pow(r2, 8.0)) * (0.4 + 0.6 * m);
 		float inner = 1.0 - smoothstep(0.55, 0.95, 2.0 * COLOR.b);
 		// (den r13 rooms) clusters: veins only where the slow cell mask clears its threshold (about pit_dark of the area stays dark)
 		float pm = smoothstep(0.0, 0.06, pg_edge(q * 0.16 + 11.3) - pit_dark * 0.55);

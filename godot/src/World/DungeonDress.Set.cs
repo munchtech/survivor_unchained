@@ -28,6 +28,10 @@ public static partial class DungeonDress
     static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 0.4f);   // (r13 1 -> 0.4 with shade-tint 1,.95,.85: the banks' darks h 233-331 (mauve) -> 7-17, lane E Banks band warm umber)   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
 
     static readonly float SetRockGain = SurvivorUnchained.Args.Num("den-rock-gain", 0.45f);   // (den r13 rooms) the O1 boulders: their brightest 10 % at luminance <= 85
+    static readonly float SetVary = SurvivorUnchained.Args.Num("den-set-vary", 1f);   // (den r14 objects, item 4) caps, mirror and turn on bone piles and logs
+    static readonly float SetRockLit = SurvivorUnchained.Args.Num("den-rock-lit", 1f);   // (den r14 objects, item 3) open-floor boulders: round, lit, mossed (sheet O1r); 0 the r13 stones
+    static readonly float SetRockBig = SurvivorUnchained.Args.Num("den-rock-big", 1.45f);   // their scale
+    static readonly float SetRockGainLit = SurvivorUnchained.Args.Num("den-rock-gain-lit", 1f);
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
@@ -37,7 +41,15 @@ public static partial class DungeonDress
     {
         // (r10d) the hole paintings (H1, H2) lie on the floor blended (their surround fades into it); the rest cut at alpha 0.5
         var mat = new ShaderMaterial { Shader = sheet[0] == 'H' ? setSoftShader : setShader };
-        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + sheet + ".png"));
+        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + (sheet == "O1r" ? "O1" : sheet) + ".png"));
+        if (sheet == "O1r")
+        {
+            mat.SetShaderParameter("rock_k", SurvivorUnchained.Args.Num("den-rock-k", 1f));
+            mat.SetShaderParameter("rock_lod", SurvivorUnchained.Args.Num("den-rock-lod", 2.2f));
+            mat.SetShaderParameter("rock_lit", V3("den-rock-col", new Vector3(0.23f, 0.155f, 0.085f)));
+            mat.SetShaderParameter("rock_moss", V3("den-rock-moss", new Vector3(0.1f, 0.13f, 0.04f)));
+            mat.SetShaderParameter("rock_moss_k", SurvivorUnchained.Args.Num("den-rock-moss-k", 0.6f));
+        }
         mat.SetShaderParameter("gain", gain);
         mat.SetShaderParameter("sat", SetSat);
         mat.SetShaderParameter("shade_k", SetCool);
@@ -55,8 +67,8 @@ public static partial class DungeonDress
         {
             // (r12 judge: the seed-23 room's blood read magenta) the set's half saturation and its grey-violet shade turned the
             // painted blood pink-mauve: blood keeps its own red, a touch darker and browner
-            mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.7f));
-            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(0.66f, 0.6f, 0.5f)));
+            mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.5f));
+            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(1.0f, 1.25f, 0.8f)));
             mat.SetShaderParameter("shade_k", 0f);
         }
         mat.SetShaderParameter("bank_gloom", SetGloom);   // (den r13 corr) COLOR.b's depth gloom (bank modules only: objects carry 0)
@@ -410,7 +422,7 @@ public static partial class DungeonDress
         foreach (var (name, b) in objBufs)
         {
             if (b.I.Count == 0 || (SetOnly != null && System.Array.IndexOf(SetOnly, name) < 0)) continue;
-            c.Root.AddChild(new MeshInstance3D { Name = "SetObj_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain * SetObjGain * (name is "O1" ? SetRockGain : 1f)), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            c.Root.AddChild(new MeshInstance3D { Name = "SetObj_" + name, Mesh = SetMesh(b), MaterialOverride = SetMat(name, SetGain * SetObjGain * (name is "O1" ? SetRockGain : name is "O1r" ? SetRockGainLit : 1f)), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             otris += b.I.Count / 3;
         }
         if (hulls.Count > 0)
@@ -427,6 +439,7 @@ public static partial class DungeonDress
             c.Root.AddChild(new MeshInstance3D { Name = "SetObjShadows", Mesh = SetMesh(hb), CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly });
         }
         c.Count["set modules"] = modules; c.Count["set tris"] = tris; c.Count["set corners"] = corners; c.Count["set spills"] = spills;
+        laidHollows.Clear();
         GD.Print($"DenSet: mode {SetMode}, {rooms.Count} rooms, {runs} runs, {modules} modules, {corners} corners, {spills} spills, {tris} bank tris, {otris} object tris, {bufs.Count + objBufs.Count + (hulls.Count > 0 ? 1 : 0)} draws");
     }
 
@@ -894,7 +907,8 @@ public static partial class DungeonDress
         sorted.Sort((p, q) => q.Metres.X.CompareTo(p.Metres.X));
         var pool = sorted.GetRange(big ? 0 : sorted.Count / 2, Mathf.Max(1, sorted.Count / 2));
         var pc = pool[pick % pool.Count];
-        float rx = PlaceSetObj(c, "O1", pc, x, zz, scale * SetBoulderScale * (big ? 1f : 0.8f), 0.62f, true);
+        bool lit = SetRockLit > 0f;   // (den r14 objects, item 3) the wall groups' stones: bigger, round, lit and mossed
+        float rx = PlaceSetObj(c, "O1", pc, x, zz, scale * SetBoulderScale * (big ? 1f : 0.8f) * (lit ? (big ? 1.05f : SetRockBig) : 1f), 0.62f, true, -1f, lit ? "O1r" : null);
         c.Tick("set boulders");
         c.Boulders.Add((new Vector2(x, zz), rx));
         return rx;
@@ -903,8 +917,34 @@ public static partial class DungeonDress
     /// <summary>(round 10b) A painted object from a sheet (O1 boulders, O2 logs, O3 bone piles) on its half-ellipsoid
     /// proxy: ry is its height as a share of its half width (a boulder 0.62, a log 0.18, bones 0.1); the shadow-only hull
     /// for the tall ones. Returns the proxy's half width.</summary>
-    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f)
+    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f, string? key = null)
     {
+        // (den r14 objects, item 4) the bone piles and logs vary: at most 2 deer skulls and 3 rib cages in a camera footprint
+        // (DenCaps, ~9 m, the decals' kinds), never two of one log within 8 m; each mirrored, the piles turned about the card's middle
+        bool mirror = false; float rot = 0f;
+        if (SetVary > 0f && sheet is "O3" or "O2" && setSheets!.TryGetValue(sheet, out var vall))
+        {
+            var pp = new Vector2(x, zz);
+            int ix = vall.IndexOf(pc);
+            if (sheet == "O3")
+            {
+                string? kind = ix == 3 ? "deer_skull" : ix == 0 ? "ribcage" : null;
+                if (kind != null && !DenCaps.Take(kind, pp, kind == "deer_skull" ? 2 : 3, 9f))
+                {
+                    int[] small = { 1, 2, 4 };
+                    pc = vall[small[(int)(Hash((int)(x * 13f), (int)(zz * 13f), 2201) * 3f) % 3]]; ix = vall.IndexOf(pc);
+                    k *= 1.15f;
+                }
+                float rr = Hash((int)(x * 17f), (int)(zz * 17f), 2202);
+                rot = ix == 3 ? (rr - 0.5f) * 1.4f : ix == 0 ? (rr - 0.5f) * 3.4f : rr * Mathf.Tau;
+            }
+            else
+            {
+                for (int t = 0; t < vall.Count && !DenCaps.Take("log" + ix, pp, 1, 8f); t++) { ix = (ix + 1) % vall.Count; pc = vall[ix]; }
+            }
+            mirror = Hash((int)(x * 19f), (int)(zz * 19f), 2203) < 0.5f;
+            k *= 0.88f + 0.3f * Hash((int)(x * 23f), (int)(zz * 23f), 2204);
+        }
         float W = pc.Metres.X * k, Hr = pc.Metres.Y * k;
         float rx = 0.46f * W, ry = ryk * rx;
         float aa = CamUp.Y * ry, hm = 0.94f * Hr;
@@ -921,20 +961,24 @@ public static partial class DungeonDress
             // down the view (seed 23's lair: a fan of streaks to the vanishing point)
             return Mathf.Max(Mathf.Max(s, SurfBank(c, px, pz)), y0 - 1.5f);
         };
-        if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
+        key ??= sheet;
+        if (!objBufs.TryGetValue(key, out var buf)) objBufs[key] = buf = new SetBuf();
         int ob = buf.V.Count;
         const int nu = 16, nv = 14;
+        float crot = Mathf.Cos(rot), srot = Mathf.Sin(rot), cyc = yFront + (pc.FootV - 0.5f) * Hr;
         float top = y0 + ry + 10f;
         for (int j = 0; j < nv; j++)
             for (int i = 0; i < nu; i++)
             {
                 float u = (float)i / (nu - 1), v = (float)j / (nv - 1);
                 float X = x + (u - 0.5f) * W, Y = yFront + (pc.FootV - v) * Hr;
+                if (rot != 0f) { float ox = X - x, oy = Y - cyc; X = x + ox * crot - oy * srot; Y = cyc + ox * srot + oy * crot; }
                 var q = SetCast(new Vector3(X, 0f, 0f) + CamUp * Y, surf, top);
                 buf.V.Add(q - CamView * (ry > 0f ? 0.04f : 0.03f));
                 buf.N.Add(Vector3.Up);
-                buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
-                buf.C.Add(new Color(1f, 1f, 0f, 1f));
+                float uu = mirror ? 1f - u : u;
+                buf.U.Add(new Vector2(pc.Uv.Position.X + uu * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
+                buf.C.Add(new Color(1f, 1f, key == "O1r" ? v : 0f, 1f));   // (den r14 objects) the lit boulders' shader wants the card's v
             }
         for (int j = 0; j < nv - 1; j++)
             for (int i = 0; i < nu - 1; i++)
@@ -967,6 +1011,20 @@ public static partial class DungeonDress
         if (SetHoles <= 0f || !LoadSet() || !setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) return false;
         var pc = all[pick % all.Count];
         if (pc.Mouth.Z <= 0f) return false;
+        // (den r14 objects, item 11) the cracked-mud hollows were stamps: clear of each other by two diameters, each its own size,
+        // turned, its rim a noise outline (Fourier lobes 2-5)
+        float hrot = 0f;
+        if (sheet == "H1" && co.Length == 1 && SetHollowVary > 0f)
+        {
+            int hx = (int)(ctr.X * 11f), hz = (int)(ctr.Y * 11f);
+            float hr0 = co[0] * (0.75f + 0.4f * Hash(hx, hz, 2401));
+            foreach (var (q, qr) in laidHollows) if (q.DistanceTo(ctr) < 2f * (hr0 + qr) * SetHollowGap) return true;   // too near its neighbour: left out
+            laidHollows.Add((ctr, hr0));
+            var nc = new float[9]; nc[0] = hr0;
+            for (int h = 2; h <= 5; h++) { float am = hr0 * (0.2f / h) * (0.5f + Hash(hx, hz, 2410 + h)); float ph = Hash(hx, hz, 2420 + h) * Mathf.Tau; nc[2 * h - 3] = am * Mathf.Cos(ph); nc[2 * h - 2] = am * Mathf.Sin(ph); }
+            co = nc;
+            hrot = Hash(hx, hz, 2402) * Mathf.Tau;
+        }
         float sn = -CamUp.Z;   // a floor metre north draws this many metres up the camera's plane
         float W = pc.Metres.X, Hr = pc.Metres.Y, ma = pc.Mouth.Z * W, mb = pc.Mouth.W * Hr / sn;
         if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
@@ -994,7 +1052,9 @@ public static partial class DungeonDress
                 float th = Mathf.Atan2(dz, dx), cs = Mathf.Cos(th), si = Mathf.Sin(th);
                 float rp = ma * mb / Mathf.Sqrt(mb * mb * cs * cs + ma * ma * si * si);
                 float g = Mathf.Clamp(FourierAt(co, th) / Mathf.Max(rp, 0.05f), 0.15f, 4f);
-                var w = ctr + new Vector2(dx, dz) * g;
+                var off = new Vector2(dx, dz) * g;
+                if (hrot != 0f) off = new Vector2(off.X * Mathf.Cos(hrot) - off.Y * Mathf.Sin(hrot), off.X * Mathf.Sin(hrot) + off.Y * Mathf.Cos(hrot));
+                var w = ctr + off;
                 buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
@@ -1056,7 +1116,8 @@ public static partial class DungeonDress
                 foreach (var t in taken) if (t.DistanceTo(p) < (lair ? 1.8f : 2.6f)) near = true;
                 if (near) { rn++; continue; }
                 float u = Hash(ri, k, 992), q = Hash(ri, k, 993);
-                string sheet = lair ? (got == 0 ? "O1" : u < 0.09f ? "O1" : u < 0.16f ? "O2" : u < 0.42f ? "B6" : u < 0.56f ? "O4" : "O3") : u < 0.35f ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
+                bool litRock = SetRockLit > 0f;
+                string sheet = lair ? (got == 0 ? "O1" : u < (litRock ? 0.035f : 0.09f) ? "O1" : u < 0.16f ? "O2" : u < 0.42f ? "B6" : u < 0.56f ? "O4" : "O3") : u < (litRock ? 0.13f : 0.35f) ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
                 if (lair && sheet == "B6" && SetLairCrowns > 0 && ++crowns > SetLairCrowns) { sheet = "O3"; crowns--; }   // (den r13 rooms) at most this many root-crowns in a lair, the rest small scatter
                 if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
                 var sorted = new List<SetPiece>(all);
@@ -1067,12 +1128,12 @@ public static partial class DungeonDress
                 // (r11: a stone up to 2.4 m across, a log 3-4 m: they are cards, she walks through them; the room's
                 // fight was tuned without them, so none has a body)
                 if (lair && got == 0) pc = sorted[sorted.Count - 1];   // (the lair's hero stone: the sheet's biggest)
-                float k2 = sheet == "O4" ? 0.55f + 0.25f * Hash(ri, k, 994) : sheet == "B6" ? 0.6f + 0.25f * Hash(ri, k, 994) : lair && got == 0 ? Mathf.Min(1.2f, (2.8f + 0.6f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O1" ? Mathf.Min(1f, (1.6f + 0.8f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
+                float k2 = sheet == "O4" ? 0.55f + 0.25f * Hash(ri, k, 994) : sheet == "B6" ? 0.6f + 0.25f * Hash(ri, k, 994) : lair && got == 0 ? Mathf.Min(litRock ? 1.6f : 1.2f, (2.8f + 0.6f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O1" ? Mathf.Min(litRock ? 1.6f : 1f, (1.6f + 0.8f * Hash(ri, k, 994)) * (litRock ? 1.5f : 1f) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
                 // (r11) the lair's roots over its floor, as den_boss.png's: a spill under the hero stone, more through the open
                 if (lair && got == 0 && SetPick("B6", Hash(ri, k, 988)) is SetPiece hs && ++crowns > 0)
                     PlaceSetObj(c, "B6", hs, p.X, p.Y + 0.4f, 0.85f, 0f, false, 0f);
                 if (sheet is "B6" or "O4") PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O4" ? 0.1f : 0f, false, sheet == "O4" ? 0.3f : 0f);
-                else PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
+                else PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1", -1f, sheet == "O1" && litRock ? "O1r" : null);
                 taken.Add(p); got++; n++;
                 // (r11) blood (O5) by a kill's bones, and now and then on its own nearby (den_room.png's splashes and drags)
                 if (sheet == "O3" || Hash(ri, k, 995) < (lair ? 0.6f : 0.35f))
@@ -1083,9 +1144,62 @@ public static partial class DungeonDress
                     { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, 1.1f + 0.5f * Hash(ri, k, 999), 0f, false, 0f); c.Tick("set blood"); }
                 }
             }
+            if (lair && SetLairFungus > 0f) SetLairDress(c, r, ri, taken);
             GD.Print($"SetOpen {r.Kind} room ({r.X:0.0}, {r.Z:0.0}) R {r.R:0.0}: {got}/{want}{(lair ? $", root-crowns {crowns}" : "")}, off the floor {rw}, in a lane {rl}, crowded {rn}");
         }
         c.Count["set open"] = n;
+    }
+
+    static readonly float SetHollowVary = SurvivorUnchained.Args.Num("den-hollow-vary", 1f);   // (den r14 objects, item 11) hollows: noise outline, size, turn
+    static readonly float SetHollowGap = SurvivorUnchained.Args.Num("den-hollow-gap", 1f);     // (1 = two diameters between centres)
+    static readonly List<(Vector2 P, float R)> laidHollows = new();
+    static readonly float SetLairFungus = SurvivorUnchained.Args.Num("den-lair-fungus", 4f);   // (den r14 objects, item 13) glow-fungus clusters on the lair's pit rims (0 off)
+    static readonly float SetLairRoots = SurvivorUnchained.Args.Num("den-lair-roots", 3f);     // root tendrils (B6) laid between its pits
+
+    /// <summary>(den r14 objects, item 13) The lair's middle had no fungus and its pits stood bare: root tendrils (B6, cards
+    /// that block nothing) laid between the pits and glow-fungus clusters on the pit rims (the Fungus() mushrooms and cool light).</summary>
+    static void SetLairDress(Ctx c, (float X, float Z, float R, string Kind) r, int ri, List<Vector2> taken)
+    {
+        var rc = new Vector2(r.X, r.Z);
+        var pits = new List<(Vector2 P, float R)>();
+        foreach (var (p, rad, _) in DenPits(c)) if (p.DistanceTo(rc) < r.R + 4f) pits.Add((p, rad));
+        int roots = 0, fung = 0;
+        for (int i = 0; i < pits.Count && roots < (int)SetLairRoots; i++)
+            for (int j = i + 1; j < pits.Count && roots < (int)SetLairRoots; j++)
+            {
+                float d = pits[i].P.DistanceTo(pits[j].P);
+                if (d > 30f) continue;
+                var m = pits[i].P.Lerp(pits[j].P, 0.4f + 0.2f * Hash(ri, i, 2315)) + new Vector2(Hash(ri, i * 9 + j, 2301) - 0.5f, Hash(ri, i * 9 + j, 2302) - 0.5f) * 1.5f;
+                if (Wall(c, m.X, m.Y) < 1.8f || Hole(c, m.X, m.Y) < 1.0f || SetPick("B6", Hash(ri, i * 9 + j, 2303)) is not SetPiece bp) continue;
+                PlaceSetObj(c, "B6", bp, m.X, m.Y, 0.5f + 0.2f * Hash(ri, i, 2304), 0f, false, 0f);
+                roots++;
+            }
+        int want = Mathf.RoundToInt(SetLairFungus);
+        for (int k = 0; k < 40 && fung < want && pits.Count > 0; k++)
+        {
+            var (pp, pr) = pits[k % pits.Count];
+            float a = Hash(ri, k, 2305) * Mathf.Tau, dd = pr * (1.2f + 0.3f * Hash(ri, k, 2306)) + 0.6f;
+            var cp = pp + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * dd;
+            if (Wall(c, cp.X, cp.Y) < 1.5f || Hole(c, cp.X, cp.Y) < 0.3f) continue;
+            bool near = false;
+            foreach (var t in taken) if (t.DistanceTo(cp) < 1.5f) near = true;
+            if (near) continue;
+            int mn = 7 + (int)(Hash(ri, k, 2307) * 5);
+            for (int q = 0; q < mn; q++)
+            {
+                float ma = Hash(ri, k * 13 + q, 2308) * Mathf.Tau, md = Mathf.Sqrt(Hash(ri, k * 13 + q, 2309)) * 0.55f;
+                float x = cp.X + Mathf.Cos(ma) * md, zz = cp.Y + Mathf.Sin(ma) * md;
+                if (Wall(c, x, zz) < 0.05f || Hole(c, x, zz) < 0.2f) continue;
+                float sh = 0.25f + 0.4f * Hash(ri, k * 13 + q, 2310), sr = 0.04f + 0.04f * Hash(ri, k * 13 + q, 2311), cr = 0.18f + 0.2f * Hash(ri, k * 13 + q, 2312);
+                var basis = new Basis(Vector3.Right, (Hash(ri, k * 13 + q, 2313) - 0.5f) * 0.4f) * new Basis(Vector3.Forward, (Hash(ri, k * 13 + q, 2314) - 0.5f) * 0.4f);
+                var t = new Transform3D(basis, new Vector3(x, H(c, x, zz), zz));
+                c.Shrooms.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
+                c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr, IsHemisphere = true, RadialSegments = 8, Rings = 4 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
+            }
+            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 1.4f, OmniRange = 2.6f, ShadowEnabled = false, Position = new Vector3(cp.X, H(c, cp.X, cp.Y) + 0.5f, cp.Y) });
+            c.Clusters++; fung++; taken.Add(cp);
+        }
+        GD.Print($"SetLairDress: {pits.Count} pits (dist {(pits.Count > 1 ? pits[0].P.DistanceTo(pits[1].P) : 0f):0.0}), {roots} root tendrils, {fung} fungus clusters");
     }
 
     /// <summary>(round 10b) One piece of a set sheet by a hash, or null.</summary>
