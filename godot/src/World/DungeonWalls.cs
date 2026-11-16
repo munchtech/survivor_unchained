@@ -732,7 +732,14 @@ public static class DungeonWalls
             mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", 0.1f));
             mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", 0.6f));
             mat.SetShaderParameter("set_area", DungeonDress.SetArea(c.Z));   // (den round 10b: the mound is the dark mass behind the set)
-            mat.SetShaderParameter("set_glow", Args.Num("den-set-glow", 0.025f));   // (r11 0.008 -> 0.025: the frame's top-left corner was 59 % near-black)
+            mat.SetShaderParameter("set_glow", Args.Num("den-set-glow", 0.025f));
+            // (r14, B1) under the painted set the mass behind the cards is lit level and draws no ink: its cel facets and its
+            // silhouette ink (the mesh's own crease and cap seams) drew straight lines between the cards
+            if (DungeonDress.SetArea(c.Z).W > 1.5f)
+            {
+                mat.SetShaderParameter("set_flat", Args.Num("den-set-flat", 1f));
+                if (Args.Num("den-wall-ink", 2f) >= 0f) mat.SetShaderParameter("cel_ink", (int)Args.Num("den-wall-ink", 2f));
+            }   // (r11 0.008 -> 0.025: the frame's top-left corner was 59 % near-black)
         }
         return mat;
     }

@@ -215,6 +215,7 @@ public static partial class DungeonDress
     static readonly float SetEdgeWave = SurvivorUnchained.Args.Num("den-set-wave", 0f);   // (r12) metres
     static readonly float SetBends = SurvivorUnchained.Args.Num("den-set-bends", 0f);
     static readonly float SetFootFade = SurvivorUnchained.Args.Num("den-set-footfade", 1f);   // (r12) a bank card's floor-side border fades to its bright masses
+    static readonly float SetRagged = SurvivorUnchained.Args.Num("den-set-ragged", 1f);   // (r14) metres a module's border cut wanders in (0: its straight rectangle)
     static readonly float SetLayerStep = SurvivorUnchained.Args.Num("den-set-layer", 0.04f);   // (r12) metres between modules' depth layers
     static readonly Dictionary<long, float>[] smCache = { new(), new(), new(), new() };
     static readonly float SetProxy = SurvivorUnchained.Args.Num("den-set-proxy", 1f);    // (r12) 0: the bank's own profile (crest and fall); 1: its rise held at the crest, smoothed
@@ -451,6 +452,7 @@ public static partial class DungeonDress
             {
                 if (!SetIn(cx, cz) || Wall(c, cx, cz) < 1.5f || InRoom(cx, cz, 0f)) continue;
                 rings++;
+                if (Wall(c, cx, cz) >= 1.8f && !InRoom(cx, cz, 3f) && Hole(c, cx, cz) > 2.5f) laneMid.Add(new Vector2(cx, cz));
                 for (int k = 0; k < n; k++)
                 {
                     float a = k * Mathf.Tau / n;
@@ -534,8 +536,35 @@ public static partial class DungeonDress
                 }
             }
         }
-        GD.Print($"DenSet lanes: {rings} rings, {lanes} runs");
+        // (r14, F2) warm pools along the lanes: the corridors had no light of their own (the shafts are the rooms'), their
+        // floor a near-black trench (median ~39 against den_room.png's lit floor 79-109). A warm omni over the lane's middle
+        // every LanePoolGap metres (greedy, outside the rooms' circles + 3 m), low and soft, no shadow: light only.
+        int pools = 0;
+        if (LanePoolEnergy > 0f)
+        {
+            var at = new List<Vector2>();
+            foreach (var m in laneMid)
+            {
+                bool far = true;
+                foreach (var q in at) if (q.DistanceTo(m) < LanePoolGap) { far = false; break; }
+                if (!far) continue;
+                at.Add(m);
+                float e = LanePoolEnergy * (0.8f + 0.4f * Hash((int)(m.X * 7f), (int)(m.Y * 7f), 841));
+                c.Root.AddChild(new OmniLight3D
+                {
+                    Name = "lane_pool", Position = new Vector3(m.X, H(c, m.X, m.Y) + LanePoolHigh, m.Y),
+                    LightColor = new Color(SurvivorUnchained.Args.Get("den-lane-pool-colour") ?? "ffc08a"), LightEnergy = e,
+                    OmniRange = LanePoolRange, OmniAttenuation = 1.3f, ShadowEnabled = false, LightSpecular = 0.1f,
+                });
+                pools++;
+            }
+        }
+        laneMid.Clear();
+        GD.Print($"DenSet lanes: {rings} rings, {lanes} runs, {pools} lane pools");
     }
+    static readonly List<Vector2> laneMid = new();
+    static readonly float LanePoolEnergy = SurvivorUnchained.Args.Num("den-lane-pool", 3.2f), LanePoolGap = SurvivorUnchained.Args.Num("den-lane-pool-gap", 6.5f),
+        LanePoolRange = SurvivorUnchained.Args.Num("den-lane-pool-range", 6.5f), LanePoolHigh = SurvivorUnchained.Args.Num("den-lane-pool-high", 2.4f);
 
     // One run of a class: modules end to end along it, each laid in the camera's plane with its foot on the edge and cast
     // onto the bank and floor. Returns the modules laid.
@@ -690,6 +719,18 @@ public static partial class DungeonDress
                 }
                 // (r12) a row behind never reaches the floor's edge (its cut there followed a straight corridor edge: pale slabs)
                 if (bankOnly && SetFootFade > 0f) g = Mathf.Min(g, SetSm(0.8f, 1.6f, -Wall(c, q.X, q.Z)));
+                // (r14, B1-B2) a module's borders cut ragged: its rectangle's edges are straight lines on screen (the camera's
+                // plane), and the fade still shows the brightest masses up to them (the far left's straight-sided cards, the
+                // right foot's ruled edge). The cut wanders 0.3 to 0.3 + SetRagged metres in from every border by a slow world
+                // field, so a module ends in an organic line of roots against the mass behind it.
+                if (SetRagged > 0f)
+                {
+                    // (the deep border only: the floor side's pour is SetFootFade's, and cut it bared the mesh's foot)
+                    float dEdge = alongX ? (b.Kind == "far" ? v : 1f - v) * Hm : (b.Kind == "left" ? u : 1f - u) * Wm;
+                    float dEnd = Mathf.Min(fadeIn ? a - from : 99f, fadeOut ? to - a : 99f);
+                    float nz = 0.5f + 0.3f * Mathf.Sin(q.X * 2.1f + 1.3f * Mathf.Sin(q.Z * 1.7f + 0.4f)) + 0.2f * Mathf.Sin(q.Z * 2.9f - q.X * 1.1f + 0.7f);
+                    g = Mathf.Min(g, SetSm(0.15f, 0.45f, Mathf.Min(dEdge, dEnd) - SetRagged * nz));
+                }
                 if (g <= 0.01f) keep = false;
                 if (!keep) g = 0f;
                 keepv[i * nc + j] = keep;
