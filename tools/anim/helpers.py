@@ -236,6 +236,18 @@ SPEC = {
          "sprint": {"amp": [81.0, 86.0], "range": [30.0, 40.0], "decay": 10.0,
                     "amount": 0.5, "fall_tau": 0.012, "fall_rate": 1200.0, "hz": 19.0, "zeta": 1.0}},
     ],
+    # Hip hinges (armor-D, 16 Nov): one bone per side for ARMOR only (her skin carries no weight on it and her body
+    # file has no such bone: extend() adds it here, HerJoints.AddHinges in the game, pin_shipped.with_hinges in a
+    # piece's bind). A child of `parent` at `pivot` (her rest axes, metres, her left; the right mirrored in x), its
+    # global rest turn none; posed it turns `amount` of the `bone`'s swing (the arc from the thigh's rest line to its
+    # posed line, both read in the pelvis's frame: flexion and spread, never its roll), about the pivot. Why: a hip plate
+    # hung from her belt and riding the thigh swings its top about the hip joint (5 cm under the belt, 2.4 cm behind)
+    # into her belly; riding the pelvis, the raised thigh comes through it (both >= 50 mm in run_warden and leap, the
+    # thigh's flex -62..76); a two-bone blend shrinks a rigid plate. A belt-line pivot turning part of the swing keeps
+    # the plate rigid, on the belt, and over the thigh. Users: a piece's rigid_ride {"thigh_hinge_l": 1.0}.
+    "hinges": [
+        {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.12, 0.0], "amount": 0.5},
+    ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
     # 0.78 mid-arm); five weight nodes down the humerus carry it evenly. All of it only on a side that has `gate`
@@ -469,6 +481,19 @@ def extend(sk: Skeleton, chain=False) -> Skeleton:
         parent.append(p)
         rot.append(np.array(r, float))
         pos.append(np.array(t, float))
+    for hg in SPEC.get("hinges", []):
+        for s in "lr":
+            n = hg["name"].replace("{s}", s)
+            pn_ = hg["parent"].replace("{s}", s)
+            if n in I or pn_ not in I or hg["bone"].replace("{s}", s) not in I:
+                continue
+            p = I[pn_]
+            r, t = hinge_rest(grot[0, p], gpos[0, p], hinge_pivot(hg, s))
+            I[n] = len(names_)
+            names_.append(n)
+            parent.append(p)
+            rot.append(r)
+            pos.append(t)
     out = Skeleton(names=names_, parent=parent, rest_rot=np.array(rot), rest_pos=np.array(pos), path=sk.path)
     out.index = I
     return out
@@ -789,6 +814,58 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
         ax = qrot(qinv(gp), [-1.0, 0, 0])
         rot[j] = qnorm(qmul(qaxis(ax, deg), sk.rest_rot[j]))
     return rot
+
+
+# ------------------------------------------------------------- hip hinges --
+def hinge_pivot(hg, s):
+    """A hip hinge's pivot in her rest axes on side `s` (SPEC "hinges": given for her left, the right mirrored)."""
+    x, y, z = (float(v) for v in hg["pivot"])
+    return np.array([x if s == "l" else -x, y, z])
+
+
+def hinge_rest(gp_rot, gp_pos, pivot):
+    """A hinge's local rest under its parent (global rest rot gp_rot at gp_pos): (rotation, translation), its global
+    rest turn none, at `pivot`."""
+    return np.array(qinv(gp_rot), float), np.array(qrot(qinv(gp_rot), np.asarray(pivot, float) - gp_pos), float)
+
+
+def hinge_turn_q(v0, v, amount):
+    """The hinge's turn in her rest axes carried with the pelvis: `amount` of the arc from the thigh's rest line v0
+    to its posed line v (both in those axes), about the arc's own axis (so none of the thigh's roll)."""
+    a = np.asarray(v0, float) / np.linalg.norm(v0)
+    b = np.asarray(v, float) / np.linalg.norm(v)
+    c = np.cross(a, b)
+    sn, cs = float(np.linalg.norm(c)), float(np.clip(np.dot(a, b), -1.0, 1.0))
+    if sn < 1e-9:
+        return np.array([0, 0, 0, 1.0])
+    return qaxis(c / sn, math.degrees(math.atan2(sn, cs)) * amount)
+
+
+def hinge_line(sk: Skeleton, rot, parent, bone):
+    """The thigh's line (its +Y) in her rest axes carried with `parent` (local rotations `rot`)."""
+    gp = sk.rest_globals()[0][0, parent]
+    return qrot(gp, qrot(_below(sk, rot, parent, bone), [0, 1.0, 0]))
+
+
+def drive_hinges(sk: Skeleton, rot):
+    """The hip hinges turned (local rotations, changed in place), as HerJoints does (Play/HipHinge.cs)."""
+    I = sk.index
+    for hg in SPEC.get("hinges", []):
+        for s in "lr":
+            j = I.get(hg["name"].replace("{s}", s))
+            if j is None:
+                continue
+            p, b = sk.parent[j], I[hg["bone"].replace("{s}", s)]
+            q = hinge_turn_q(hinge_line(sk, sk.rest_rot, p, b), hinge_line(sk, rot, p, b), hg["amount"])
+            rot[j] = qnorm(qmul(sk.rest_rot[j], q))
+    return rot
+
+
+def hinge_angle(sk: Skeleton, rot, name):
+    """Degrees the hinge `name` is turned from its rest (local rotations as drive leaves them)."""
+    j = sk.index[name]
+    d = qmul(qinv(sk.rest_rot[j]), rot[j])
+    return math.degrees(2 * math.atan2(np.linalg.norm(d[:3]), abs(d[3])))
 
 
 # ------------------------------------------------------------ clavicle lift --
@@ -1149,6 +1226,7 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None, panels
                     if shift is not None:
                         shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(deg, hh))
     drive_panels(sk, rot, state if panels else None, dt)
+    drive_hinges(sk, rot)
     return rot
 
 

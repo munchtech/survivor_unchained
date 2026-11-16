@@ -112,13 +112,58 @@ def part_names(Q, sels, objs):
     return {on[int(np.bincount(lab[j]).argmax())]}
 
 
+def _trs(n):
+    """A glTF node's local matrix."""
+    sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
+    from rig import qmatrix
+    M = np.eye(4)
+    M[:3, :3] = qmatrix(n.get("rotation", [0, 0, 0, 1.0])) * np.asarray(n.get("scale", [1.0, 1, 1]), float)
+    M[:3, 3] = n.get("translation", [0, 0, 0])
+    return M
+
+
+def with_hinges(B):
+    """Her body `B` (bf.Body) with her hip hinges (tools/anim/helpers.py SPEC "hinges") as joints of its skin, in
+    memory only (her file is never written): each a node under its parent at its pivot, its world rest turn none, its
+    inverse bind its rest's inverse, no skin of hers on it (a zero column of B.W). So a piece's rigid_ride can name
+    "thigh_hinge_l" and its bind carries the joint, as the game adds it (HerJoints.AddHinges). Safe to call again."""
+    sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
+    import helpers as hp
+    par = {c: i for i, n in enumerate(B.nodes) for c in n.get("children", [])}
+
+    def world(i):
+        return (world(par[i]) if i in par else np.eye(4)) @ _trs(B.nodes[i])
+
+    for hg in hp.SPEC.get("hinges", []):
+        for s in "lr":
+            nm, pn = hg["name"].replace("{s}", s), hg["parent"].replace("{s}", s)
+            if nm in B.names or pn not in B.names or hg["bone"].replace("{s}", s) not in B.names:
+                continue
+            pi = B.joint_nodes[B.names.index(pn)]
+            Hw = np.eye(4)
+            Hw[:3, 3] = hp.hinge_pivot(hg, s)
+            L = np.linalg.inv(world(pi)) @ Hw
+            from rig import qfrom_matrix
+            node = {"name": nm, "translation": [float(x) for x in L[:3, 3]],
+                    "rotation": [float(x) for x in qfrom_matrix(L[:3, :3] / np.linalg.norm(L[:3, :3], axis=0))]}
+            B.nodes.append(node)
+            ni = len(B.nodes) - 1
+            B.nodes[pi].setdefault("children", []).append(ni)
+            par[ni] = pi
+            B.joint_nodes.append(ni)
+            B.names.append(nm)
+            B.ibm = np.vstack([B.ibm, np.linalg.inv(Hw).T.reshape(1, 16)])
+            B.W = np.hstack([B.W, np.zeros((len(B.W), 1))])
+    return B
+
+
 def pin(path, pre, body, B=None, drop=(), ride=(), authored=None):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
     head as she turned it). `authored` (the free mesh file): each rigid shell is also named by its authored object
     (part_names), so a `ride` match can name a part ("cop_l"), not only a material's mesh."""
-    B = B or bf.Body(body)
+    B = with_hinges(B or bf.Body(body))
     G, Gp = _Gl(path), _Gl(pre)
     g = G.g
     pr = prims(G)
@@ -266,7 +311,7 @@ def measure(path, pre, body, authored=None, B=None):
     mesh, LODs too); with the authored file: its points against the full meshes' (both ways), the weights at the
     points of its bending objects against hers at the closest place, and the distinct blends over each `_rigid`
     object's points (1: it never bends); the shoulder shapes carried."""
-    B = B or bf.Body(body)
+    B = with_hinges(B or bf.Body(body))
     G, Gp = _Gl(path), _Gl(pre)
     pre_of = {(m.get("name"), k): p for n, m, k, p in prims(Gp)}
     out = {"move_max_mm": 0.0, "points": 0, "shapes": 0}

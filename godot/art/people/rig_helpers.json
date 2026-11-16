@@ -272,6 +272,19 @@
    }
   }
  ],
+ "hinges": [
+  {
+   "name": "thigh_hinge_{s}",
+   "parent": "pelvis",
+   "bone": "thigh_{s}",
+   "pivot": [
+    0.11,
+    1.12,
+    0.0
+   ],
+   "amount": 0.5
+  }
+ ],
  "twist_chain": {
   "gate": "upperarm_twist_02_{s}",
   "roll_bone": "upperarm_{s}",

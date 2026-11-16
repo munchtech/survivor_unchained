@@ -27,6 +27,10 @@ namespace SurvivorUnchained.View;
 /// - a panel bone (the Reaver's front loincloth) swings forward with her
 ///   leading thigh (Core/PanelSwing.cs), so the thigh lifts it at a
 ///   stride's foot strike instead of showing through it.
+/// - a hip hinge per side (armor only: no skin of hers on it, not in her body
+///   file; added here, AddHinges) turns part of its thigh's swing about a
+///   belt-line pivot (Play/HipHinge.cs), so a belt plate riding it stays on the
+///   belt and over the thigh.
 /// A body without the helpers is left as it is. The numbers are in
 /// art/people/rig_helpers.json, written by helpers.py, so the tools and the
 /// game drive them alike.
@@ -102,6 +106,56 @@ public partial class HerJoints : SkeletonModifier3D
     Skeleton3D? found;
     readonly List<Side> sides = new();
     readonly List<Panel> panels = new();
+
+    /// <summary>A hip hinge (helpers.py SPEC "hinges"): a child of the pelvis turned `Amount` of its thigh's swing.</summary>
+    sealed class Hinge
+    {
+        public int Bone;
+        public Quaternion ParentRest, Rest; // the parent's global rest; the hinge's own local rest
+        public int[] Chain = System.Array.Empty<int>(); // the thigh up to (not with) the parent
+        public Vector3 Rest0;               // the thigh's line at rest, her rest axes
+        public double Amount;
+    }
+    readonly List<Hinge> hinges = new();
+
+    public override void _Notification(int what)
+    {
+        // (the hinges added as soon as this joins her skeleton, before any piece riding them is laid on her)
+        if (what == NotificationParented && GetParent() is Skeleton3D sk) AddHinges(sk);
+    }
+
+    /// <summary>Her hip hinges (rig_helpers.json "hinges") added to `sk` where missing (and where it has the parent
+    /// and the thigh): each a child of its parent at its pivot, its global rest turn none (Play/HipHinge.Rest).
+    /// Returns how many were added. Safe to call again.</summary>
+    public static int AddHinges(Skeleton3D sk)
+    {
+        var s = Spec();
+        if (s == null || !s.ContainsKey("hinges")) return 0;
+        int added = 0;
+        foreach (var hv in s["hinges"].AsGodotArray())
+        {
+            var h = hv.AsGodotDictionary();
+            var pv = h["pivot"].AsGodotArray();
+            var left = new N.Vector3((float)(double)pv[0], (float)(double)pv[1], (float)(double)pv[2]);
+            foreach (var side in new[] { "l", "r" })
+            {
+                string name = ((string)h["name"]).Replace("{s}", side);
+                int parent = sk.FindBone(((string)h["parent"]).Replace("{s}", side));
+                if (sk.FindBone(name) >= 0 || parent < 0 || sk.FindBone(((string)h["bone"]).Replace("{s}", side)) < 0) continue;
+                var gp = sk.GetBoneGlobalRest(parent);
+                var (r, t) = HipHinge.Rest(Nq(gp.Basis.GetRotationQuaternion()), new N.Vector3(gp.Origin.X, gp.Origin.Y, gp.Origin.Z),
+                    HipHinge.Pivot(left, side == "l"));
+                int b = sk.AddBone(name);
+                sk.SetBoneParent(b, parent);
+                var rest = new Transform3D(new Basis(Gq(r)), new Vector3(t.X, t.Y, t.Z));
+                sk.SetBoneRest(b, rest);
+                sk.SetBonePosePosition(b, rest.Origin);
+                sk.SetBonePoseRotation(b, Gq(r));
+                added++;
+            }
+        }
+        return added;
+    }
     // Her meshes come and go (an outfit put on): look for the shapes again.
     bool rescan = true;
 
@@ -242,6 +296,33 @@ public partial class HerJoints : SkeletonModifier3D
                 }
             sides.Add(one);
         }
+        // Hip hinges (helpers.py SPEC "hinges"): added if this skeleton lacks them, then driven.
+        AddHinges(sk);
+        hinges.Clear();
+        if (s.ContainsKey("hinges"))
+            foreach (var hv in s["hinges"].AsGodotArray())
+            {
+                var h = hv.AsGodotDictionary();
+                foreach (var side in new[] { "l", "r" })
+                {
+                    int bone = sk.FindBone(((string)h["name"]).Replace("{s}", side)), thigh = sk.FindBone(((string)h["bone"]).Replace("{s}", side));
+                    if (bone < 0 || thigh < 0) continue;
+                    int parent = sk.GetBoneParent(bone);
+                    var one = new Hinge
+                    {
+                        Bone = bone, Amount = (double)h["amount"],
+                        ParentRest = sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion(),
+                        Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
+                    };
+                    var chain = new List<int>();
+                    for (int j = thigh; j >= 0 && j != parent; j = sk.GetBoneParent(j)) chain.Add(j);
+                    one.Chain = chain.ToArray();
+                    var q = Quaternion.Identity;
+                    foreach (int j in one.Chain) q = sk.GetBoneRest(j).Basis.GetRotationQuaternion() * q;
+                    one.Rest0 = one.ParentRest * (q * Vector3.Up);
+                    hinges.Add(one);
+                }
+            }
         // Panel bones (helpers.py SPEC "panels"): one centred bone each.
         panels.Clear();
         if (s.ContainsKey("panels"))
@@ -432,6 +513,15 @@ public partial class HerJoints : SkeletonModifier3D
                 foreach (var (mi, i) in c.On)
                     if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
+        }
+        // The hip hinges: the thigh's line in the parent's frame (her rest axes carried with it), part of its arc.
+        foreach (var hg in hinges)
+        {
+            var q = Quaternion.Identity;
+            foreach (int j in hg.Chain) q = sk.GetBonePoseRotation(j) * q;
+            var v = hg.ParentRest * (q * Vector3.Up);
+            sk.SetBonePoseRotation(hg.Bone, Gq(HipHinge.Pose(Nq(hg.Rest), new N.Vector3(hg.Rest0.X, hg.Rest0.Y, hg.Rest0.Z),
+                new N.Vector3(v.X, v.Y, v.Z), hg.Amount)));
         }
         // The panels: each thigh's line in the pelvis's frame (her rest axes
         // carried with it), its forward swing and spread from rest, and the
