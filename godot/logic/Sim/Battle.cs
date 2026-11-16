@@ -1167,6 +1167,7 @@ public sealed partial class Battle
             double k = o.Knockback * (heavy ? (cw == 1 ? HW.Knockback : cw + HW.Knockback - 1) : cw) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
+            e.KbBy = by;
         }
 
         // Status payloads ride the hit.
@@ -2051,7 +2052,7 @@ public sealed partial class Battle
         e.Def = def;
         e.Level = lvl;
         e.X = x; e.Z = z; e.Vx = e.Vz = e.Kbx = e.Kbz = 0;
-        e.Edge = e.Fell = e.AtBrink = false;
+        e.Edge = e.Fell = e.AtBrink = false; e.KbBy = null;
         e.Facing = Math.Atan2(Player.Z - z, Player.X - x);
         e.Radius = def.Radius;
         e.Mass = def.Mass ?? 1;
@@ -3546,6 +3547,7 @@ public sealed partial class Battle
                     if (e.Boss) return;
                     double dd = d == 0 ? 1 : d;
                     e.Kbx += (x - e.X) / dd * fx.Strength;
+                    e.KbBy = credit;
                     e.Kbz += (z - e.Z) / dd * fx.Strength;
                 });
                 break;

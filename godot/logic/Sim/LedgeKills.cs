@@ -82,9 +82,10 @@ public sealed partial class Battle
 
     /// <summary>A direct forced move (a shove, a drag) to (nx, nz): a normal foe it carries over an edge falls; any other is
     /// stopped by the walls as it was.</summary>
-    public void ForceTo(Enemy e, double nx, double nz)
+    public void ForceTo(Enemy e, double nx, double nz, string? by = null)
     {
         double dx = nx - e.X, dz = nz - e.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        e.KbBy = by ?? credit;
         if (d > 1e-6 && MayFall(e) && Collision.EdgeAhead(e.X, e.Z, dx, dz, CollisionWorld.WallRadius(e.Radius), out double cx, out double cz))
         {
             e.X = cx; e.Z = cz;
@@ -108,7 +109,17 @@ public sealed partial class Battle
         LedgeKillCount++;
         Events.Emit(new Ev.Fell { X = e.X, Z = e.Z, Dx = ux, Dz = uz, LedgeX = e.LedgeX, LedgeZ = e.LedgeZ, Enemy = e.Id, Def = e.Def.Id, Scale = e.Def.Scale ?? 1 });
         e.LastDx = ux; e.LastDz = uz;
-        KillEnemy(e, true, null);
+        // The kill is the forced move's: the skill (or the Flare, or the trigger) that gave it, for its kill, its on-kill effects
+        // and the life the fall took (the shares of damage and kills stay true).
+        var weapon = WeaponById(e.KbBy);
+        string by = e.KbBy ?? "other";
+        double left = Math.Max(0, e.Hp);
+        DamageBy[by] = DamageBy.GetValueOrDefault(by) + left;
+        if (weapon != null) weapon.DamageDealt += left;
+        var was = credit;
+        credit = e.KbBy ?? credit;
+        KillEnemy(e, true, weapon);
+        credit = was;
     }
 
     /// <summary>The ledge: open ground, back along the way it went from where its centre crossed (0.45 m of clear ground round the

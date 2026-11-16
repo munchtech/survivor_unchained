@@ -104,4 +104,37 @@ public class DungeonTests
         _out.WriteLine($"{id} {seed}: {r.Minutes:0.0} min, packs {r.PacksCleared}/{r.Packs}, items {r.Items}, falls {r.Falls}");
         Assert.True(r.Cleared, $"{id} seed {seed} not cleared (closed {r.Closed}, falls {r.Falls}, packs {r.PacksCleared}/{r.Packs})");
     }
+    /// <summary>(Ledge view, 15 Nov) Where a wall is a drop follows what the play camera sees (data/content/ledge.json "edges"): the
+    /// den's banks rise and stop a foe, only its pits drop; the ravine's back cliff stops it and its near and side edges drop.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(23)]
+    public void A_dungeons_drops_are_where_its_view_falls_away(int seed)
+    {
+        var den = Make("hollow", seed);
+        var walls = den.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
+        Assert.Contains(walls, c => !c.Drop);
+        var holes = den.Dungeon!.Rooms.SelectMany(r => r.Holes).ToList();
+        foreach (var c in walls.Where(c => c.Drop))
+            Assert.True(holes.Any(h => h.Dist(c.X, c.Z) < 1.5 + Math.Max(c.Hw, c.Hd)), $"hollow {seed}: a drop at ({c.X:0},{c.Z:0}) is no pit");
+        var ravine = Make("roost", seed);
+        var rw = ravine.Meta.Colliders.Where(c => c.Tag == "wall").ToList();
+        double dropA = rw.Where(c => c.Drop).Sum(c => c.Hw * c.Hd), riseA = rw.Where(c => !c.Drop).Sum(c => c.Hw * c.Hd);
+        _out.WriteLine($"seed {seed}: hollow drops {walls.Count(c => c.Drop)} of {walls.Count}; roost drop area {dropA * 4:0} m2, cliff {riseA * 4:0} m2");
+        Assert.True(dropA > 0 && riseA > 0, "the ravine has both its drops and its cliff");
+        // The cliff stands at the back: every rising box has walkable ground to its south (toward the lens), none to its north.
+        var walk = ravine.Walkable; int res = (int)Math.Round(Math.Sqrt(walk.Length)), half = res / 2;
+        bool W(double x, double z) { int i = (int)Math.Round(x) + half, j = (int)Math.Round(z) + half; return i >= 0 && j >= 0 && i < res && j < res && walk[j * res + i]; }
+        int faced = 0, total = 0;
+        foreach (var c in rw.Where(c => !c.Drop))
+        {
+            bool south = false, north = false;
+            for (double x = c.X - c.Hw; x <= c.X + c.Hw; x += 1) { south |= W(x, c.Z + c.Hd + 1); north |= W(x, c.Z - c.Hd - 1); }
+            if (south || north) total++;
+            if (south && !north) faced++;
+        }
+        _out.WriteLine($"roost {seed}: cliff boxes on the way {total}, from the back {faced}");
+        Assert.True(faced >= total * 0.6, $"roost {seed}: {faced} of {total} cliff boxes face the lens from the back");
+    }
 }
