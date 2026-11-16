@@ -4,14 +4,15 @@
  "piece": {"id": "kit_pauldrons", "name": "Gilded Gunmetal Pauldrons", "slot": "pauldrons", "covers": ["pauldrons"], "layer": 3,
            "material": "steel", "tint": null, "tier": 2, "tier_name": "gilded", "adorn": []},
  "mat": {"plate": "steel", "trim": "gold", "strap": "darkleather"},
+ "params": {"graft": "leather"},
  "clear_min": 0.0022, "thick": 0.0022,
  "rim": {"w": 0.0095, "h": 0.0034, "sides": 6, "step": 0.005},
- "cop": {"subdiv": 5, "sink": 0.01, "chart_deg": 95, "dilate": 4, "smooth": 30, "clear": 0.016,
+ "cop": {"subdiv": 5, "sink": 0.01, "pole_up": 0.6, "rise": 0.0, "chart_deg": 95, "dilate": 4, "smooth": 30, "clear": 0.016,
          "outline": [[0, 42], [45, 50], [90, 64], [135, 60], [180, 52]],
          "rivets": {"beta": 150, "step": 25, "in_deg": 4.5, "r": 0.0026, "h": 0.0016},
          "ridge": {"beta": 50, "in_deg": 5, "h": 0.012, "lean": 0.5, "thick": 0.0025, "rim_w": 0.006, "rim_h": 0.0025}},
  "lames": {"theta": 95, "cols": 41, "rivet_r": 0.0024, "rivet_h": 0.0015,
-           "rows": [{"s": [0.04, 0.085], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.011, "flare": 0.003},
-                    {"s": [0.075, 0.12], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.008, "flare": 0.003}]},
+           "rows": [{"s": [0.015, 0.065], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.011, "flare": 0.003},
+                    {"s": [0.05, 0.10], "n": 10, "dip": 0.008, "dil": 3, "clear": 0.008, "flare": 0.003}]},
  "strap": {"s": 0.118, "w": 0.018, "clear": 0.0025, "thick": 0.002, "buckle_deg": 100}
 }

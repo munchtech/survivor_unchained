@@ -4,7 +4,8 @@
  "slot": "pauldrons",
  "style": "mesh",
  "params": {
-  "file": "kit_pauldrons.glb"
+  "file": "kit_pauldrons.glb",
+  "graft": "leather"
  },
  "covers": [
   "pauldrons"

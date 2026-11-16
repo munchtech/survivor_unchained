@@ -175,17 +175,24 @@ def pauldrons(cfg, ref):
     gold, steel, leath = cfg["mat"]["trim"], cfg["mat"]["plate"], cfg["mat"]["strap"]
     rim, ck, lk = cfg["rim"], cfg["cop"], cfg["lames"]
     c, a, e, f = arm_frame(ref)
+    # (cop "pole_up" k: the cop's pole tipped from the arm's up-out normal toward world up by k (0..1), and its centre
+    # raised by "rise" m: at k 0 the pole stands square to her A-pose arm, the cop sat low and outboard on the deltoid's
+    # side; the sheet's cop caps the shoulder's top)
+    k_up = ck.get("pole_up", 0.0)
+    ec = U((1 - k_up) * e + k_up * np.array([0.0, 1.0, 0.0]))
+    fc = U(np.cross(a, ec))
+    fc = fc if fc[2] >= 0 else -fc
     near = ref.T[(np.linalg.norm(ref.V[ref.T].mean(1) - c, axis=1) < 0.24)]
     body = [(ref.V, near)]
     # ---- the cop: rays from inside her shoulder round the up-out pole e
     Vs, Fs = icosphere(ck.get("subdiv", 5))
-    O = c - e * ck["sink"]
-    alpha = np.degrees(np.arccos(np.clip(Vs @ e, -1, 1)))
-    beta = np.degrees(np.arctan2(Vs @ f, Vs @ -a))
+    O = c - e * ck["sink"] + np.array([0.0, ck.get("rise", 0.0), 0.0])
+    ce, cf = (ec, fc) if k_up else (e, f)
+    alpha = np.degrees(np.arccos(np.clip(Vs @ ce, -1, 1)))
     keep = alpha < ck["chart_deg"]
     dome = Dome(O, Vs, Fs, keep, body, 0.25, ck["dilate"], ck["smooth"], ck["clear"])
-    al = np.degrees(np.arccos(np.clip(dome.D @ e, -1, 1)))
-    be = np.degrees(np.arctan2(dome.D @ f, dome.D @ -a))
+    al = np.degrees(np.arccos(np.clip(dome.D @ ce, -1, 1)))
+    be = np.degrees(np.arctan2(dome.D @ cf, dome.D @ -a))
     amax = interp_table(ck["outline"], np.abs(be))
     g = amax - al
     V, F, N = dome.cut(g)
@@ -197,8 +204,8 @@ def pauldrons(cfg, ref):
         G["cop_gold"].append(path_bead("cop_rim", gold, L, nref, rim, 0.0, True))
 
     def on_cop(al_, be_, lift):
-        d = U(np.cos(np.radians(al_))[:, None] * e + np.sin(np.radians(al_))[:, None] *
-              (np.cos(np.radians(be_))[:, None] * -a + np.sin(np.radians(be_))[:, None] * f))
+        d = U(np.cos(np.radians(al_))[:, None] * ce + np.sin(np.radians(al_))[:, None] *
+              (np.cos(np.radians(be_))[:, None] * -a + np.sin(np.radians(be_))[:, None] * cf))
         t = cast_union(O, d, [(V + N * th, F)], 0.3)
         ok = np.isfinite(t)
         return O + d[ok] * t[ok, None], d[ok], ok
@@ -451,7 +458,8 @@ def build(pid, cfg=None):
     write_multi(os.path.join(d, f"{pid}.glb"), groups, {"kit_build": {"piece": pid}})
     piece = {k: v for k, v in cfg["piece"].items() if k != "layer"}
     piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
-             "params": {"file": f"{pid}.glb"}, **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
+             "params": {"file": f"{pid}.glb", **cfg.get("params", {})},
+             **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
              "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.BODY, "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
