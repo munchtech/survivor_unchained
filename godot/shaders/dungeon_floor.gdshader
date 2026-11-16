@@ -32,6 +32,13 @@ uniform float set_k = 0.0;   // 0: off (--den-set 0); 1: the set's tiles own the
 uniform float set_gain = 1.0;   // the set floor's albedo scale (--den-set-floor-gain)
 uniform float set_band = 0.6;   // (r10b) the tiles' 3 cm-1 m masses stretched by this (0: as painted)
 uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow fields (0: the walls' vignette only)
+// (r11) the floor read as a soft brown cloud: each tile was read twice at two turns and the two AVERAGED over wide
+// bands (every stone at half strength, ghosted), the band stretch multiplied a blurred copy back in, and the slow
+// damp, leaf and value clouds were laid on top. set_sharp 1: the two turns switch over a narrow seam, the tiles are read
+// a little sharper (mip bias); set_clouds scales the slow clouds under the set (1: as before).
+uniform float set_sharp = 1.0;
+uniform float set_clouds = 0.35;
+uniform float set_trod = 0.5;   // (r11) the trodden tile's share (F7: paw prints, few stones): the open middle was all of it
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -164,16 +171,23 @@ void fragment() {
 		float lr = max(lum(ref), 1e-3);
 		col *= clamp(pow(max(lum(col), 1e-4) / lr, den_grain), 0.3, 2.5);
 			if (set_k > 0.5) {
-				// each tile read twice at two turns, blended by the slow field (no repeat reads); the painting's own grain
+				// each tile read twice at two turns, the two switched by the slow field (no repeat reads); the painting's own grain
 				vec2 s0 = wpos.xz / 4.0, s1 = R1 * wpos.xz / 4.0 + 0.37;
-				vec4 t1 = mix(texture(set_floor, vec3(s0, 0.0)), texture(set_floor, vec3(s1, 0.0)), tw);
-				vec4 t2 = mix(texture(set_floor, vec3(s0 + 0.5, 1.0)), texture(set_floor, vec3(s1 + 0.5, 1.0)), tw);
-				vec4 t3 = mix(texture(set_floor, vec3(s0, 2.0)), texture(set_floor, vec3(s1, 2.0)), tw);
-				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0)), texture(set_floor, vec3(s1 + 0.25, 3.0)), tw);
+				float twf = fbm(wpos.xz * 0.06 + 7.0);
+				float tws = mix(tw, smoothstep(0.47, 0.53, twf), set_sharp);
+				float bi = -0.6 * set_sharp;
+				vec4 t1 = mix(texture(set_floor, vec3(s0, 0.0), bi), texture(set_floor, vec3(s1, 0.0), bi), tws);
+				vec4 t2 = mix(texture(set_floor, vec3(s0 + 0.5, 1.0), bi), texture(set_floor, vec3(s1 + 0.5, 1.0), bi), tws);
+				vec4 t3 = mix(texture(set_floor, vec3(s0, 2.0), bi), texture(set_floor, vec3(s1, 2.0), bi), tws);
+				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0), bi), texture(set_floor, vec3(s1 + 0.25, 3.0), bi), tws);
+				// (r11) a second base earth (F6) in patches 6-12 m across, switched in by its high shapes
+				vec4 t5 = mix(texture(set_floor, vec3(s0 + 0.62, 4.0), bi), texture(set_floor, vec3(s1 + 0.62, 4.0), bi), tws);
+				float k5 = smoothstep(0.0, 1.0, (fbm(wpos.xz * 0.09 + 31.0) - 0.5) * 9.0 + 0.5 + 0.8 * (t5.a - t1.a));
+				t1 = mix(t1, t5, k5);
 				// (r10b) the frame's macro value structure: worn ways wandering through the open (F2, lighter) and damp
 				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
 				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
-				float wtr = clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
+				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
 				float wdp = max(max(w_dk, w_li * 0.5), set_paths * smoothstep(0.56, 0.7, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
 				float k2 = smoothstep(0.0, 1.0, wtr * 1.6 - 0.3 + 0.6 * (t2.a - 0.5));
@@ -191,23 +205,24 @@ void fragment() {
 				vec3 m3 = mix(textureLod(set_floor, vec3(s0, 2.0), 7.0).rgb, textureLod(set_floor, vec3(s1, 2.0), 7.0).rgb, tw);
 				vec3 m4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 7.0).rgb, tw);
 				float ln = lum(mix(mix(mix(n1, n2, k2), n4, k4), n3, k3)), lm = lum(mix(mix(mix(m1, m2, k2), m4, k4), m3, k3));
-				sc *= clamp(pow(max(ln, 1e-4) / max(lm, 1e-4), set_band), 0.45, 2.2);
+				if (set_band > 0.001) sc *= clamp(pow(max(ln, 1e-4) / max(lm, 1e-4), set_band), 0.45, 2.2);
 				col = sc * set_gain;
 			}
 		col *= den_tint;
 		col = mix(vec3(lum(col)), col, den_sat);
 		// slow value masses: damper and drier ground
-		col *= mix(0.86, 1.08, smoothstep(0.3, 0.7, big));
+		float cl = mix(1.0, set_clouds, set_k);   // (r11) the slow clouds' share under the painted set
+		col *= mix(1.0, mix(0.86, 1.08, smoothstep(0.3, 0.7, big)), cl);
 		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:
 		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
 		float m1 = fbm(wpos.xz * 0.075 + 23.0), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);
 		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
-		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85);
+		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85 * cl);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
 		mossm *= smoothstep(0.3, 0.6, fbm(wpos.xz * 0.9 + 3.0));
 		col = mix(col, vec3(0.085, 0.09, 0.05) * (0.8 + 0.5 * lum(cb[0]) / max(lum(ref), 1e-3)), mossm * moss_k * (1.0 - set_k));
 		float leaf = smoothstep(0.58, 0.7, m3) * (1.0 - damp);
-		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
+		col = mix(col, col * vec3(1.08, 0.86, 0.62), leaf * 0.6 * cl * smoothstep(0.4, 0.6, fbm(wpos.xz * 1.7)));
 		// the open floor a step down overall (the boss clearing measured 74 against the target's 58)
 		col *= 0.88;
 		// (round 7) the rooms' open middles lifted (den_room.png's centre reads warm mid-brown; the room measured 33

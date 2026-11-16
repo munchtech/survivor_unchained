@@ -21,6 +21,8 @@ uniform float dark_floor = 0.0;
 // fell to 1/20 of it: flat black between roots the target paints at L 20-40)
 uniform float amb_floor = 0.0;
 uniform float glow_k = 0.7;
+uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
+uniform float rim_out = 1.45;
 
 void fragment() {
 	vec4 c = texture(paint_tex, UV);
@@ -36,6 +38,10 @@ void fragment() {
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
 	EMISSION += c.rgb * glow_k * smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
 	ALPHA = c.a * show * step(0.5, COLOR.g);
+#ifdef SET_SOFT
+	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
+	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
+#endif
 #ifndef SET_SOFT
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 #endif

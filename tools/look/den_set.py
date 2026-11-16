@@ -37,10 +37,16 @@ BANKS = {   # name: kind (far: its face looks at the camera; near: seen from abo
 }
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
     "B6": ("spill", None), "O1": ("boulder", 3.2), "O2": ("log", 6.0), "O3": ("bones", 2.0),
-    "H1": ("hollow", 5.0), "H2": ("pit", 12.0),   # (r10d) the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
+    "H1": ("hollow", 5.0), "H2": ("pit", 12.0),
+    # (r10d) above: the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
+    "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
+    "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
 }
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
-FLOORS = ["F1", "F2", "F3", "F4"]
+# (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
+# cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
+# destreak (an FFT cut, never up) took more of what detail they had. The new tiles are not destreaked.
+FLOORS = ["F5", "F7", "F8", "F9", "F6"]
 BANK_PPM = 80.0      # source px per metre of the camera's plane (the frame's middle draws 76.8 px/m)
 OBJ_PPM = 96.0       # objects resampled to this (crisp from the frame's top, 61 px/m, to its bottom, 93)
 FLOOR_PX, FLOOR_M = 512, 4.0

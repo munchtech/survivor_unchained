@@ -58,8 +58,12 @@ public static class DungeonFloor
                 mat.SetShaderParameter("set_floor", GD.Load<TextureLayered>("res://art/dungeon/den/set/floor.png"));
                 mat.SetShaderParameter("set_k", 1f);
                 mat.SetShaderParameter("set_gain", Args.Num("den-set-floor-gain", 1.05f));
-                mat.SetShaderParameter("set_band", Args.Num("den-set-band", 0.3f));     // (r10b) the tiles' clods and patches stretched (r10c 0.6 -> 0.3: it drew the worn tile's brush strokes as streaks)
+                mat.SetShaderParameter("set_band", Args.Num("den-set-band", 0f));       // (r11 0.3 -> 0: it multiplied a blurred copy of the tile back in, clouds)
+                mat.SetShaderParameter("set_sharp", Args.Num("den-set-sharp", 1f));     // (r11) the two turns switched, not averaged; tiles read sharper
+                mat.SetShaderParameter("set_clouds", Args.Num("den-set-clouds", 0.35f)); // (r11) the slow damp/leaf/value clouds' share under the set
                 mat.SetShaderParameter("set_paths", Args.Num("den-set-paths", 1f));     // (r10b) worn ways and damp patches
+                mat.SetShaderParameter("set_trod", Args.Num("den-set-trod", 0.5f));     // (r11) the trodden tile's share
+                if (Args.Get("den-tint") == null) mat.SetShaderParameter("den_tint", new Vector3(0.93f, 0.92f, 0.96f));   // (r11) the floor's quartiles ran 6-11% too blue against den_room.png
                 mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.68f));   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
             }
         }

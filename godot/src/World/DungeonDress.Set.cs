@@ -37,6 +37,11 @@ public static partial class DungeonDress
         mat.SetShaderParameter("shade_k", SetCool);
         mat.SetShaderParameter("dark_floor", SetDark);
         mat.SetShaderParameter("amb_floor", SetAmb);
+        if (sheet[0] == 'H')
+        {
+            mat.SetShaderParameter("rim_in", SurvivorUnchained.Args.Num("den-hole-rim-in", 1.15f));
+            mat.SetShaderParameter("rim_out", SurvivorUnchained.Args.Num("den-hole-rim-out", 1.45f));
+        }
         return mat;
     }
     const string SetDir = "res://art/dungeon/den/set/";
@@ -69,6 +74,8 @@ public static partial class DungeonDress
     static Shader? setShader, setSoftShader;
     static readonly float SetHoles = SurvivorUnchained.Args.Num("den-set-holes", 1f);   // (r10d) H2 over the pits, H1 over the hollows
     static readonly float SetOpenK = SurvivorUnchained.Args.Num("den-set-open", 1f);    // (r10d) things in the rooms' open floor
+    static readonly float SetDrifts = SurvivorUnchained.Args.Num("den-set-drifts", 1f);   // (r11) bone drifts (O4) at the far banks' feet: their scale (0 off)
+    static readonly float SetBackRow = SurvivorUnchained.Args.Num("den-set-backrow", 2f);  // (r11) a far run's row behind: 0 none, 1 whole, 2 past the run's ends only
     static readonly Dictionary<long, float> surfCache = new();
 
     static bool LoadSet()
@@ -283,6 +290,27 @@ public static partial class DungeonDress
                         { PlaceSetObj(c, "B6", pc, at.X, at.Y, 0.5f + 0.25f * Hash(ri * 31 + i, sc, 816), 0f, false, 0f); spills++; }
                     }
                 }
+            // (r11) bone drifts (O4) along the far banks' feet: every 5-8 m in the boss lair (den_boss.png's ribs and bone
+            // drifts along its far wall), now and then in a room; only on far runs (a card's long axis runs east-west)
+            if (SetDrifts > 0f && setSheets!.ContainsKey("O4"))
+                foreach (var (sc, sp) in ends)
+                {
+                    if (sc != 0) continue;
+                    bool boss = r.Kind == "Boss";
+                    float acc = 0f, next = 1.5f + 3f * Hash(ri, sc, 821);
+                    for (int i = 1; i < sp.Count; i++)
+                    {
+                        acc += sp[i].DistanceTo(sp[i - 1]);
+                        if (acc < next) continue;
+                        next = acc + (boss ? 5f : 12f) + 3f * Hash(ri * 37 + i, sc, 822);
+                        if (!boss && Hash(ri * 37 + i, sc, 823) < 0.5f) continue;
+                        var dir = new Vector2(r.X - sp[i].X, r.Z - sp[i].Z).Normalized();
+                        var at = new Vector2(sp[i].X, sp[i].Z) + dir * (0.9f + 0.6f * Hash(ri * 37 + i, sc, 824));
+                        if (Wall(c, at.X, at.Y) < 0.5f || Hole(c, at.X, at.Y) < 1.5f) continue;
+                        if (SetPick("O4", Hash(ri * 37 + i, sc, 825)) is SetPiece pc)
+                        { PlaceSetObj(c, "O4", pc, at.X, at.Y, SetDrifts * (0.8f + 0.3f * Hash(ri * 37 + i, sc, 826)), 0.1f, false, 0.3f); c.Tick("set drifts"); }
+                    }
+                }
         }
         if (SetOpenK > 0f) SetOpen(c, rooms);
         int tris = 0;
@@ -375,7 +403,7 @@ public static partial class DungeonDress
         }
         // (r10c) a far run's row behind, its foot 4 m up the bank and 7 m past the run's ends, its bank part only (under the
         // front row and the corners): the deep bank beyond the corners was the mound's flat black
-        if (cls == 0 && SetRows >= 2)
+        if (cls == 0 && SetRows >= 2 && SetBackRow > 0f)
         {
             float e2 = 7f, s2 = a0 - e2 - Hash(seed, 66, 0) * 4f;
             for (int k2 = 0; s2 < a1 + e2 && k2 < 40; k2++)
@@ -383,11 +411,23 @@ public static partial class DungeonDress
                 var b = choices[(int)(Hash(seed, 67, k2) * choices.Count) % choices.Count];
                 float L = b.Metres.X * SetScale;
                 float from = Mathf.Max(s2, a0 - e2), to = Mathf.Min(s2 + L, a1 + e2);
-                if (to - from > 0.5f)
+                // (r11) only past the front run's ends (behind the corners): over the run's middle its flat earth middle
+                // drew a hard dark rectangle across the frame's top (c_p13); --den-set-backrow 1 lays the whole row again
+                if (SetBackRow < 1.5f)
                 {
-                    if (!bufs.TryGetValue(b.Name, out var buf)) bufs[b.Name] = buf = new SetBuf();
-                    SetModule(c, buf, b, true, s2, L, from, to, a => FootAt(a) + 4f, true, s2 + L > a1 + e2, -0.01f, top, true);
+                    if (to - from > 0.5f)
+                    {
+                        if (!bufs.TryGetValue(b.Name, out var buf)) bufs[b.Name] = buf = new SetBuf();
+                        SetModule(c, buf, b, true, s2, L, from, to, a => FootAt(a) + 4f, true, s2 + L > a1 + e2, -0.01f, top, true);
+                    }
                 }
+                else
+                    foreach (var (f0, t0) in new[] { (from, Mathf.Min(to, a0 + 1.5f)), (Mathf.Max(from, a1 - 1.5f), to) })
+                        if (t0 - f0 > 0.5f)
+                        {
+                            if (!bufs.TryGetValue(b.Name, out var buf)) bufs[b.Name] = buf = new SetBuf();
+                            SetModule(c, buf, b, true, s2, L, f0, t0, a => FootAt(a) + 4f, true, true, -0.01f, top, true);
+                        }
                 s2 += L - ov;
             }
         }
@@ -551,7 +591,10 @@ public static partial class DungeonDress
                 buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
-                buf.C.Add(new Color(1f, 1f, 0f, 1f));
+                // (r11) COLOR.b: half the painted point's distance from the lip's centre in lip radii (1 at the lip), so
+                // den_set_soft fades the painting's own earth surround out past the rim (it read as a pink stamped ring)
+                float ell = Mathf.Sqrt(dx * dx / Mathf.Max(ma * ma, 1e-4f) + dz * dz / Mathf.Max(mb * mb, 1e-4f));
+                buf.C.Add(new Color(1f, 1f, Mathf.Clamp(0.5f * ell, 0f, 1f), 1f));
             }
         for (int j = 0; j < nv - 1; j++)
             for (int i = 0; i < nu - 1; i++)
@@ -600,6 +643,14 @@ public static partial class DungeonDress
                 float k2 = sheet == "O1" ? Mathf.Min(0.8f, 1.6f / pc.Metres.X) : sheet == "O2" ? 0.7f + 0.2f * Hash(ri, k, 994) : 0.85f + 0.3f * Hash(ri, k, 994);
                 PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
                 taken.Add(p); got++; n++;
+                // (r11) blood (O5) by a kill's bones, and now and then on its own nearby (den_room.png's splashes and drags)
+                if (sheet == "O3" || Hash(ri, k, 995) < 0.35f)
+                {
+                    float ba = Hash(ri, k, 996) * Mathf.Tau, bd = 0.9f + 0.8f * Hash(ri, k, 997);
+                    var bp = p + new Vector2(Mathf.Cos(ba), Mathf.Sin(ba)) * bd;
+                    if (Wall(c, bp.X, bp.Y) > 1.0f && Hole(c, bp.X, bp.Y) > 1.5f && SetPick("O5", Hash(ri, k, 998)) is SetPiece bpc)
+                    { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, 0.6f + 0.4f * Hash(ri, k, 999), 0f, false, 0f); c.Tick("set blood"); }
+                }
             }
         }
         c.Count["set open"] = n;
