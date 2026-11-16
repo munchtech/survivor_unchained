@@ -66,7 +66,7 @@
   "chart_deg": 110,
   "dilate": 4,
   "smooth": 30,
-  "clear": 0.018,
+  "clear": 0.01,
   "outline": [
    [
     0,
@@ -105,7 +105,7 @@
    "rim_w": 0.006,
    "rim_h": 0.0025
   },
-  "flare": 0.014,
+  "flare": 0.01,
   "flare_pow": 2.0
  },
  "lames": {
@@ -149,10 +149,15 @@
   "bone": "delt_l",
   "radius": 0.22,
   "clear": 0.005,
-  "lift_max": 0.014,
+  "lift_max": 0.008,
   "ring": 1,
   "lift_smooth": 8,
-  "trim_smooth": 4,
-  "deg_per_mm": 2.0
+  "trim_smooth": 12,
+  "deg_per_mm": 2.0,
+  "trim": "none",
+  "trim_pad": 2.0,
+  "trim_round": 6.0,
+  "trim_tol": 0.0,
+  "cop_lift_max": 0.008
  }
 }

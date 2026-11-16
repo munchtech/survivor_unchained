@@ -180,7 +180,11 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
     deps = [kb.BODY] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
-    key = hashlib.sha1(json.dumps(["v1", bone, [round(float(v), 5) for v in centre], radius, list(clips), vox,
+    # (`bone`: one bone, or a blend {bone: weight} as a rigid_ride gives (the plate's frame is the blend of their skin
+    # matrices, as Godot's linear blend poses it))
+    ride = {bone: 1.0} if isinstance(bone, str) else {k: float(v) for k, v in sorted(bone.items())}
+    key = hashlib.sha1(json.dumps(["v1", bone if isinstance(bone, str) else sorted(ride.items()),
+                                   [round(float(v), 5) for v in centre], radius, list(clips), vox,
                                    stamp]).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
     if os.path.exists(cache):
@@ -200,7 +204,7 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
         idx, Tl = np.unique(T, return_inverse=True)
         Tl = Tl.reshape(T.shape)
         E_ = np.unique(np.sort(np.r_[Tl[:, [0, 1]], Tl[:, [1, 2]], Tl[:, [2, 0]]], 1), axis=0)
-        b = names.index(bone[:-2] + "_" + side)
+        bw = [(names.index(k[:-2] + "_" + side), w) for k, w in ride.items()]
 
         def samples(P):
             return np.vstack([P, (P[E_[:, 0]] + P[E_[:, 1]]) / 2, P[Tl].mean(1)])
@@ -214,7 +218,7 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
             pts = [acc]
             for G in body.frames(body.clip(cl)):
                 S = body.skin_mats(G)
-                Mi = np.linalg.inv(S[b])
+                Mi = np.linalg.inv(sum(w * S[b] for b, w in bw))
                 pts.append(samples(body.pose(G, idx)) @ Mi[:3, :3].T + Mi[:3, 3])
             acc = reduce(np.vstack(pts))
             if verbose:
@@ -237,6 +241,48 @@ def room_on_dirs(P, O, D, F, ring=1):
     np.maximum.at(R, j, r)
     R = np.where(R > 0, R, np.nan)
     return ring_max(fill_nan(R, F), F, ring) if ring else R
+
+
+def convex_rim(table, al, be, bad, pad, rnd, res=0.25):
+    """The cop's outline trimmed off the swept room as ONE smooth convex rim (no notch where the room bites): in the
+    pole's chart (x, y) = alpha (cos beta, sin beta) (deg) the outline table's region is cut by a half-plane square to
+    each bad point's ray `pad` deg inside it (a straight chord, never a notch), then opened by a disk of `rnd` deg (its
+    corners rounded). Returns g per point (signed distance to the rim in deg, > 0 inside) and the rim's alpha per
+    beta (deg) as a function."""
+    from scipy import ndimage
+    bg = np.arange(-180.0, 180.0, res)
+    lim = interp_table(table, np.abs(bg))
+    if bad.any():
+        ab, bb = al[bad], np.radians(be[bad])
+        for k in range(0, len(ab), 512):
+            cs = np.cos(np.radians(bg)[:, None] - bb[None, k:k + 512])
+            ch = np.where(cs > 0.05, (ab[None, k:k + 512] - pad) / np.maximum(cs, 0.05), np.inf)
+            lim = np.minimum(lim, ch.min(1))
+    lim = np.maximum(lim, 0.0)
+    R = float(np.max(table, axis=0)[1]) + rnd + 4.0
+    n = int(np.ceil(R / res))
+    ax = np.arange(-n, n + 1) * res
+    X, Y = np.meshgrid(ax, ax, indexing="ij")
+    inside = np.hypot(X, Y) < np.interp(np.degrees(np.arctan2(Y, X)), bg, lim, period=360.0)
+    if rnd > 0:
+        er = ndimage.distance_transform_edt(inside) * res > rnd
+        inside = ndimage.distance_transform_edt(~er) * res <= rnd
+    sd = (ndimage.distance_transform_edt(inside) - ndimage.distance_transform_edt(~inside)) * res
+
+    def at(x, y):
+        return ndimage.map_coordinates(sd, [x / res + n, y / res + n], order=1, mode="nearest")
+    g = at(al * np.cos(np.radians(be)), al * np.sin(np.radians(be)))
+    rs = np.arange(0.0, R, 0.1)
+    B = np.radians(bg)
+    S = at((rs[None] * np.cos(B)[:, None]).ravel(), (rs[None] * np.sin(B)[:, None]).ravel()).reshape(len(bg), len(rs))
+    i = np.argmax(S <= 0, axis=1)
+    i = np.where((S <= 0).any(1), np.maximum(i, 1), len(rs) - 1)
+    s0, s1 = S[np.arange(len(bg)), i - 1], S[np.arange(len(bg)), i]
+    rim = rs[i - 1] + 0.1 * s0 / np.maximum(s0 - s1, 1e-9)
+
+    def rim_of(b):
+        return np.interp(np.asarray(b, float), bg, rim, period=360.0)
+    return g, rim_of
 
 
 def arm_frame(ref, side="l"):
@@ -279,18 +325,33 @@ def pauldrons(cfg, ref):
     rho = dome.rho + ck.get("flare", 0.0) * np.clip(al / amax, 0, 1) ** ck.get("flare_pow", 2.0)
     sw = cfg.get("sweep")
     room = None
+    rim_al = None
     if sw:
         # (rigid by the swept room: her skin over the demo clips carried into the ride's rest frame; the cop stands
         # sw.clear outside it, lifted by at most sw.lift_max (smoothed); where it would need more, the outline is
         # trimmed there: her trapezius under the cop's neck side when the arm is raised)
-        room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"])
-        R = room_on_dirs(room, O, dome.D, dome.F, sw.get("ring", 1))
+        # ("cop_ride": the cop's own blend when it does not ride sw.bone as the lames do (its rigid_ride))
+        croom = sweep_room(sw.get("cop_ride", sw["bone"]), np.round(c, 4), sw["radius"])
+        room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"]) if "cop_ride" in sw else croom
+        R = room_on_dirs(croom, O, dome.D, dome.F, sw.get("ring", 1))
         need = np.where(np.isfinite(R), R + sw["clear"], 0.0)
-        lift = np.clip(need - rho, 0.0, sw["lift_max"])
+        lift = np.clip(need - rho, 0.0, sw.get("cop_lift_max", sw["lift_max"]))
         lift = smooth_scalar(ring_max(lift, dome.F, 2), dome.F, sw.get("lift_smooth", 8))
         rho = rho + lift
         h = smooth_scalar(rho - need, dome.F, sw.get("trim_smooth", 4))
-        g = np.minimum(g, h * 1000.0 * sw.get("deg_per_mm", 2.0))
+        if sw.get("trim", "contour") == "convex":
+            # (one smooth convex rim inside every point the room still bites (h < -trim_tol), plus the rolled rim's
+            # half width (trim_pad deg); the contour way below cut a notch along h = 0)
+            bad = (h < -sw.get("trim_tol", 0.0)) & (al < amax + sw.get("trim_pad", 2.0))
+            g, rim_al = convex_rim(ck["outline"], al, be, bad, sw.get("trim_pad", 2.0), sw.get("trim_round", 6.0))
+            ob = np.array([0, 30, 60, 90, 120, 150, 180])
+            print("cop trim: bad", int(bad.sum()), "rim alpha at beta", dict(zip(ob.tolist(), np.round(rim_al(ob), 1)
+                                                                                .tolist())), flush=True)
+        elif sw.get("trim", "contour") == "contour":
+            g = np.minimum(g, h * 1000.0 * sw.get("deg_per_mm", 2.0))
+    if rim_al is None:
+        def rim_al(b):
+            return interp_table(ck["outline"], np.abs(b))
     dome.rho = rho
     dome.P = dome.O + dome.D * rho[:, None]
     V, F, N = dome.cut(g)
@@ -308,17 +369,18 @@ def pauldrons(cfg, ref):
         t = cast_union(O, d, [(V + N * th, F)], 0.3)
         ok = np.isfinite(t)
         return O + d[ok] * t[ok, None], d[ok], ok
-    # rivets along the rim
+    # rivets along the (trimmed) rim; "skip" deg: none within that beta of the neck side (the ridge stands there)
     rv = ck["rivets"]
     bb = np.arange(-rv["beta"], rv["beta"] + 1e-6, rv["step"])
-    pts, d, _ = on_cop(interp_table(ck["outline"], np.abs(bb)) - rv["in_deg"], bb, 0)
+    bb = bb[np.abs(bb) >= rv.get("skip", 0.0)]
+    pts, d, _ = on_cop(rim_al(bb) - rv["in_deg"], bb, 0)
     for p in pts:
         q, n, _ = nref.closest(p[None])
         G["cop_gold"].append(rivet(p, n[0], r=rv["r"], h=rv["h"], name="cop_rivet", material=gold))
-    # the upturned ridge on the neck-side edge
+    # the upturned ridge on the neck-side edge, along the (trimmed) rim
     rd = ck["ridge"]
     bb = np.linspace(-rd["beta"], rd["beta"], 41)
-    base, d, ok = on_cop(interp_table(ck["outline"], np.abs(bb)) - rd["in_deg"], bb, 0)
+    base, d, ok = on_cop(rim_al(bb) - rd["in_deg"], bb, 0)
     bb = bb[ok]
     q, n, _ = nref.closest(base)
     h = rd["h"] * np.sin(np.pi * np.clip((bb + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
