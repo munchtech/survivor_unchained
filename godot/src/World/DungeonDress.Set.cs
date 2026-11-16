@@ -35,7 +35,7 @@ public static partial class DungeonDress
     // (den r15 A, R14 judge item 1: r14's O1r blurred O1 to a mip and painted a procedural top: 24 px blocks, no ink) O1r drawn
     // from its own sheet (tools/look/den_rocks.py: O1's stones at 2x in the target's value band, inked), no blur branch; 0 r14's
     static readonly float SetRockPaint = SurvivorUnchained.Args.Num("den-rock-paint", 1f);
-    static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 1f);   // (den r15 A) plain O1 stones never the flat-topped block (PlaceSetObj); 0 r14's
+    static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
@@ -47,7 +47,7 @@ public static partial class DungeonDress
         var mat = new ShaderMaterial { Shader = sheet[0] == 'H' ? setSoftShader : setShader };
         bool rockPaint = sheet == "O1r" && SetRockPaint > 0f;   // (den r15 A) the round boulders' own painted sheet
         mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + (sheet == "O1r" && !rockPaint ? "O1" : sheet) + ".png"));
-        if (rockPaint) gain *= SurvivorUnchained.Args.Num("den-rock-paint-gain", 1f);
+        if (rockPaint) gain *= SurvivorUnchained.Args.Num("den-rock-paint-gain", 1.5f);   // (a1: the stones Lp90 .25-.40, the target lit .45-.60)
         if (sheet == "O1r" && !rockPaint)
         {
             mat.SetShaderParameter("rock_k", SurvivorUnchained.Args.Num("den-rock-k", 1f));
