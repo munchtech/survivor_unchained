@@ -35,7 +35,7 @@ Everything under the next `##` heading is history (3-4 November). This section i
 
 ### The owner decides (one line each; the default runs if there is no answer)
 - **"Bulwark" names three things** (a road, the level-8 stance, a support gem). Default: the stance is renamed; ask the owner for the name once, with the lead's proposal.
-- **The Friday 20 November tag** does not fit this list (armor alone is longer). Default: the tag moves to the day the five lanes are at the bar; say the new date when lane D's kit picture exists, not before.
+- **The Friday 20 November tag: DECIDED (the owner, 15 Nov evening, offered a cut to make Friday: "Keep full scope").** The full list stands and Friday is not held; the tag moves to the day the five lanes are at the bar. Say the new date when lane D's kit picture exists, not before. Do not re-offer a cut.
 - **Parked, not for the demo:** ledges in the den, the roost and every other dungeon, arena nights, supports and Unions (level 12+), the male hero, `body-p1b`, sieges. Do not start them and do not re-ask.
 
 ### Rules the coordinator keeps (the short form; `docs/team/README.md` and RESUME have the rest)
