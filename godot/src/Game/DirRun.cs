@@ -24,7 +24,27 @@ public static class DirRun
         (0, "away", 0, 1), (1.6, "stand_a", 0, 0), (4.0, "front", 0, -1), (5.6, "stand_f", 0, 0),
         (8.0, "side_x", 1, 0), (9.6, "stand_x", 0, 0), (12.0, "side_mx", -1, 0), (13.6, "stand_mx", 0, 0),
     };
+    /// <summary>--dirrun-set film: the owner's short film (15 Nov) under the ALWAYS facing mode, the cursor leading her as a
+    /// player's would (60 m out along A): idle facing away, a turn in place to the camera and back, run away, stop, turn and run
+    /// toward, stop, a side run, stop (about 17 s).</summary>
+    static readonly bool Film = Args.Get("dirrun-set") == "film";
+    static readonly (double At, string Name, double X, double Z, double AX, double AZ)[] FilmSegs =
+    {
+        (0, "idle_away", 0, 0, 0, 1), (2.5, "turn_f", 0, 0, 0, -1), (3.7, "turn_a", 0, 0, 0, 1), (4.9, "away", 0, 1, 0, 1),
+        (6.5, "stand_a", 0, 0, 0, 1), (8.7, "front", 0, -1, 0, -1), (10.3, "stand_f", 0, 0, 0, -1),
+        (12.5, "side_x", 1, 0, 1, 0), (14.1, "stand_x", 0, 0, 1, 0),
+    };
     static int seg = -1;
+
+    static int FilmSeg(double t)
+    {
+        while (seg + 1 < FilmSegs.Length && t >= FilmSegs[seg + 1].At)
+        {
+            seg++;
+            GD.Print(FormattableString.Invariant($"DIRSEG {FilmSegs[seg].Name} {t:0.00}"));
+        }
+        return Math.Max(seg, 0);
+    }
     static (double X, double Z)? origin;
 
     static (double X, double Z) Dir(double headDeg) { double r = headDeg * Math.PI / 180; return (Math.Sin(r), Math.Cos(r)); }
@@ -34,6 +54,11 @@ public static class DirRun
     {
         if (Start < 0 || time < Start) return null;
         double t = time - Start;
+        if (Film)
+        {
+            var f = FilmSegs[FilmSeg(t)];
+            return (f.X, f.Z);
+        }
         if (Views)
         {
             while (seg + 1 < ViewSegs.Length && t >= ViewSegs[seg + 1].At)
@@ -74,6 +99,11 @@ public static class DirRun
         if (Start < 0 || time < Start) return null;
         origin ??= (px, pz);
         double t = time - Start;
+        if (Film)
+        {
+            var f = FilmSegs[FilmSeg(t)];
+            return (px + 60 * f.AX, pz + 60 * f.AZ);
+        }
         if (t >= 20 && t < 24)
         {
             var d = Dir(90 * (t - 20));

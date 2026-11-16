@@ -222,7 +222,15 @@ def sword_heavy(rig):
         import os
         hold = float(os.environ.get("SWORD_HEAVY_HOLD", "29"))
         keys = sorted(keys + [(hold, prowl_end(rig), "ease")], key=lambda k: k[0])
-    return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
+    meta = {"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"}
+    if prowl_end(rig) is not None:
+        # (aim-move solver 9a) The cut keys her hand 170 deg about the forearm at f4 (past the 95 it turns; the swivel at
+        # its 42 edge), and keyed's twist, taken nearest the last frame's, read f5's -41 as 319: from there every frame
+        # sat a whole turn up, pinned at +95 (f30 keyed 68: the hand 27.6 deg off the idle's, the forearm 11.8). Let go
+        # over 24-29 (keyed meta "twist_unwind"): the end lands 4.0 / 4.7, the twist easing one way 95 -> 72 (f29, its
+        # keys' 68 at f30), the hand's turn f19-30 at most 13.2 deg a frame (was 17.1); f0-24 as before.
+        meta["twist_unwind"] = [24, 29]
+    return build("sword_heavy", rig, keys, lead=STRIKE, meta=meta)
 
 
 def clips(rig, want):

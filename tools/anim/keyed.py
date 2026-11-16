@@ -699,6 +699,18 @@ class Rig:
                 self.twist_last[side] = tw_deg
                 # Within what a forearm and a wrist can do.
                 tw_c = max(-self.TWIST_LIMIT, min(self.TWIST_LIMIT, tw_deg))
+                # (solver 9a, the meta "twist_unwind") Taken nearest the last frame's, a turn keyed past half a turn once
+                # keeps its whole turn after: sword_heavy's f4 keyed 170, f5 -41 read as 319, and every frame on sat a turn
+                # up, pinned at the limit (+95) though its keys came back within reach (its end keyed 68: the hand 26 deg off).
+                # Weighted in (Rig.twist_unwind {side: 0..1}, per frame), the clamped twist eased onto the same turn with the
+                # whole turns let go (taken nearest its own last, the first nearest none).
+                w_un = (getattr(self, "twist_unwind", None) or {}).get(side, 0.0)
+                if w_un > 0:
+                    if not hasattr(self, "twist_free"):
+                        self.twist_free = {}
+                    free = tw_deg - 360.0 * round((tw_deg - self.twist_free.get(side, 0.0)) / 360.0)
+                    self.twist_free[side] = free
+                    tw_c = (1 - w_un) * tw_c + w_un * max(-self.TWIST_LIMIT, min(self.TWIST_LIMIT, free))
                 # The wrist bent toward the wanted hand, the short way round
                 # unless the hand is keyed nearly back along the forearm; then
                 # the way it bent last frame (either way is as near, and
@@ -1840,7 +1852,7 @@ def grip_of(weapon, tilt=0.0, tilt_l=0.0):
 
 
 def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, slide=0.0, tilt=0.0, slide_l=0.0,
-                 tilt_l=0.0):
+                 tilt_l=0.0, unwind=None):
     """_solve_frames, with the clip's grip slide (`slide`, metres; its meta's "grip_slide"; animation 47): the piece in
     her right fist sits `slide` further along its shaft toward the tip (the game moves it so, PersonView.Slide), so
     every frame whose hand_r is aimed by a "blade" has its wrist moved back down the shaft by as much (a "shift" in
@@ -1857,23 +1869,26 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     of a pair), which has no fitted pocket, so no tilt: it sits on the plain mount, whose shaft runs along BladeDirR in
     hand_l's space unmirrored (Arms.MountTransform), and the slide goes along it.
     `tilt_l` (degrees; the meta's "grip_tilt_l", animation 58): the piece in her LEFT fist seated on the left pocket and
-    turned there, the right's tilt's mirror image (grip_of, wrap_of, slide_dir_left, grip_pose_left). 0: as before."""
+    turned there, the right's tilt's mirror image (grip_of, wrap_of, slide_dir_left, grip_pose_left). 0: as before.
+    `unwind` (frames (F0, F1); the meta's "twist_unwind", solver 9a): over F0..F1 (smoothstep) the right hand's turn
+    about its forearm lets go of the whole turns taken nearest the last frame's (Rig.solve). None: as before."""
     d = slide_dir(weapon, tilt) if slide else None
     dl = slide_dir_left(weapon, tilt_l) if slide_l else None
     if d is None and dl is None:
-        return _solve_frames(rig, poses, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
+        return _solve_frames(rig, poses, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l, unwind)
     sides = [(s, dd, sl) for s, dd, sl in (("hand_r", d, slide), ("hand_l", dl, slide_l)) if dd is not None]
     aimed = [{h: isinstance(p.get(h), dict) and "blade" in p[h] for h, _d, _s in sides} for p in poses]
     shifted = poses
     for _ in range(3):
-        rot, pos = _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
+        rot, pos = _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l, unwind)
         g, _p = rig.sk.fk(rot, pos)
         shifted = [dict(p, **{h: dict(p[h], shift=tuple(-sl * qrot(g[fr, rig.I[h]], dd))) for h, dd, sl in sides if aimed[fr][h]})
                    for fr, p in enumerate(poses)]
-    return _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
+    return _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l, unwind)
 
 
-def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, tilt=0.0, tilt_l=0.0):
+def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, tilt=0.0, tilt_l=0.0,
+                  unwind=None):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
@@ -1974,14 +1989,17 @@ def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="",
             out[0] = x[0]
         smooth[s] = out
     rig.twist_last, rig.swing_last, rig.bend_last = {}, {}, {}
+    rig.twist_free = {}
     for fr, pose in enumerate(poses):
         b = None if bases is None else bases[fr]
         force = {s: smooth[s][fr] for s in smooth if not np.isnan(smooth[s][fr, 0])}
         rig.elbow_force = force
         rig.swivel_force = {s: 0.0 for s in force}
         rig.bend_force = bend_force[fr]
+        rig.twist_unwind = None if unwind is None else {"r": smoothstep_((fr - unwind[0]) / max(1e-9, unwind[1] - unwind[0]))}
         rot[fr], pos[fr] = rig.solve(pose, base=b)
     rig.swivel_force = rig.elbow_force = rig.bend_force = None
+    rig.twist_unwind = None
     return rot, pos
 
 
@@ -2012,10 +2030,13 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
                                        for fr in range(frames)]
     # An "elbow_sigma" in the meta (frames; animation 59): how widely each elbow's way is smoothed in time (solve_frames'
     # sigma); a fast cut whose elbows are keyed per beat takes a narrower one. Absent: 2.0, as before.
+    # A "twist_unwind" (frames [F0, F1]; solver 9a): her right hand's whole turns about the forearm, carried from a
+    # cut keyed past its range, let go over F0..F1 (solve_frames, Rig.solve). Absent: as before.
     rot, pos = solve_frames(rig, poses, bases, loop=loop, sigma=float((meta or {}).get("elbow_sigma", 2.0)),
                             weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path,
                             slide=float((meta or {}).get("grip_slide", 0.0)), tilt=float((meta or {}).get("grip_tilt", 0.0)),
-                            slide_l=float((meta or {}).get("grip_slide_l", 0.0)), tilt_l=float((meta or {}).get("grip_tilt_l", 0.0)))
+                            slide_l=float((meta or {}).get("grip_slide_l", 0.0)), tilt_l=float((meta or {}).get("grip_tilt_l", 0.0)),
+                            unwind=(meta or {}).get("twist_unwind"))
     m ={"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)
