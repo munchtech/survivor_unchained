@@ -3407,8 +3407,11 @@ g_ = json.load(open(path, encoding="utf-8"))
 # (the steel's metal map (Metal038, shared with the outfits) drops to non-metal in specks, which lit as white paint
 # spatter on the cups: this piece's steel is metal all over at the map's mean roughness. Wear is the touch-up shader's,
 # never painted here.)
+# (armor-D finish, 16 Nov: only when the piece's main key IS a metal: kit_boots and kit_gloves name darkleather as theirs,
+# and their leather shipped with steel's factors and no roughness map)
+_mkind = json.load(open(os.path.join(ROOT, "godot", "art", "people", "outfit_materials.json"), encoding="utf-8")).get(MKEY, {}).get("kind")
 for m_ in g_.get("materials", []):
-    if m_.get("name") == MKEY:
+    if m_.get("name") == MKEY and _mkind == "metal":
         pb_ = m_.setdefault("pbrMetallicRoughness", {})
         pb_.pop("metallicRoughnessTexture", None)
         pb_["metallicFactor"] = 1.0

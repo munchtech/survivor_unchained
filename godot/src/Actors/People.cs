@@ -1631,7 +1631,9 @@ public static class People
             // (a worn piece's own finish for one metal key, by the wear piece's id: metal_finishes.json "meshes", Warden polish r4:
             // the Forged Cuirass darker gunmetal, the Gilded Plate Top gold. "finish": the finish number; "dye": a metal dye's colour
             // set as the plate's own (dye_amount 1); "params": shader uniforms, a float or a colour [r, g, b])
-            if (kind == 1 && metalFinishes != null && metalFinishes.TryGetValue("meshes", out var mp))
+            // (armor-D, 16 Nov: a leather key too (the kit set's leather dyed brown, its own params); every other worn piece unchanged)
+            if (kind == 0) metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
+            if ((kind is 0 or 1) && metalFinishes != null && metalFinishes.TryGetValue("meshes", out var mp))
             {
                 var nm = mi.Name.ToString();
                 foreach (var (wid, wv) in mp.AsGodotDictionary())
