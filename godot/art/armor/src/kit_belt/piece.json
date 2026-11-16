@@ -16,14 +16,14 @@
    {
     "match": "tasset_lo_l",
     "weights": {
-     "thigh_l": 1.0
+     "pelvis": 1.0
     },
     "mix": 1.0
    },
    {
     "match": "tasset_lo_r",
     "weights": {
-     "thigh_r": 1.0
+     "pelvis": 1.0
     },
     "mix": 1.0
    },
@@ -51,8 +51,7 @@
    {
     "match": "hip_l_lo",
     "weights": {
-     "thigh_l": 0.7,
-     "pelvis": 0.3
+     "thigh_l": 1.0
     },
     "mix": 1.0
    },
@@ -66,8 +65,7 @@
    {
     "match": "hip_r_lo",
     "weights": {
-     "thigh_r": 0.7,
-     "pelvis": 0.3
+     "thigh_r": 1.0
     },
     "mix": 1.0
    },
@@ -81,8 +79,7 @@
    {
     "match": "back_l_lo",
     "weights": {
-     "thigh_l": 0.7,
-     "pelvis": 0.3
+     "thigh_l": 1.0
     },
     "mix": 1.0
    },
@@ -96,8 +93,7 @@
    {
     "match": "back_r_lo",
     "weights": {
-     "thigh_r": 0.7,
-     "pelvis": 0.3
+     "thigh_r": 1.0
     },
     "mix": 1.0
    }
