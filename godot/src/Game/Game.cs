@@ -2312,7 +2312,13 @@ public partial class Game : Node, IZoneHost
             }
         }
         // --no-foes: nothing spawns (a still of her and a prop in a combat zone).
-        if (Battle is { } nf && Args.Has("no-foes")) nf.NoSpawn = true;
+        if (Battle is { } nf && Args.Has("no-foes"))
+        {
+            nf.NoSpawn = true;
+            // (den r14) and the ones already placed (a dungeon's packs are laid before this): released, so a still of a
+            // corridor shows no fight, no charge telegraph, no damage numbers
+            foreach (var e in nf.Enemies.Living().ToList()) nf.Enemies.Release(e);
+        }
         // --lab: no drafts and no dying, so a run of pictures is all the skill in hand.
         if (Args.Has("lab") && Battle is { } lb)
         {

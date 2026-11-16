@@ -24,6 +24,7 @@ uniform float glow_k = 0.7;
 // (r12 judge: den_room.png's mushrooms light the ground beneath them teal) the painted caps' halo: their cyan in a coarse
 // mip, a little below them in the painting (the ground they stand on), as a soft teal emission on the painting round them
 uniform float mush_glow = 0.0;
+uniform float fungus_sat = 1.0;   // (den r14) the painted caps' saturation (DungeonDress.SetMat: --den-fungus-sat)
 uniform float mush_lod = 4.5;
 uniform float mush_drop = 0.012;
 uniform vec3 mush_col : source_color = vec3(0.3, 0.85, 0.78);
@@ -105,6 +106,9 @@ void fragment() {
 	vec3 col = c.rgb * tint;
 	float l = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(vec3(l), col, sat);
+	// (den r14 lead, lane E note) the painted fungus' cyan held in its band (C .053-.080 under E's grade, .10-.11 before)
+	float cyan = smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
+	col = mix(col, mix(vec3(l), col, fungus_sat), cyan);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
 	col = gloom_col(col, lair_gloom(wpos));
 	// (den r14 corr, item 9) the camera-side banks' lit tops rolled off and warmed (hi_roll 1: off; DungeonDress.SetMat)
@@ -118,7 +122,7 @@ void fragment() {
 	ALBEDO =col * gain * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));   // (r11 judge: the nearest banks fall off, as den_room.png's bottom row)
 	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
-	EMISSION += c.rgb * glow_k * smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);
+	EMISSION += mix(vec3(dot(c.rgb, vec3(0.299, 0.587, 0.114))), c.rgb, fungus_sat) * glow_k * cyan;
 	if (mush_glow > 0.0) {
 		vec3 hb = textureLod(paint_tex, UV - vec2(0.0, mush_drop), mush_lod).rgb;
 		vec3 hc = textureLod(paint_tex, UV - vec2(0.0, mush_drop), mush_lod + 1.0).rgb;

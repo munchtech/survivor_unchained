@@ -76,6 +76,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
         mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
+        mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 1f));   // (den r14, lane E) the painted caps' cyan into its band
         if (sheet[0] == 'H')
         {
             mat.SetShaderParameter("pit_glow", SurvivorUnchained.Args.Num("den-pit-glow", 0.8f));
