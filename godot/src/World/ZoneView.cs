@@ -66,6 +66,7 @@ public partial class ZoneView : Node3D
     {
         bool has = Data.Meta.Places.TryGetValue("WATER_Y", out var wly);
         Water.Level = has ? wly.GetSingle() : null;
+        SurvivorUnchained.View.MarkPass.Den = Data.DungeonTheme == "den";   // (the den draws its red marks as a crisp edge on a faint bed)
         RenderingServer.GlobalShaderParameterSet("water_level", has ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
     }
 
