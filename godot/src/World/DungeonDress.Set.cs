@@ -21,7 +21,7 @@ public static partial class DungeonDress
 {
     public static readonly int SetMode = (int)SurvivorUnchained.Args.Num("den-set", 2f);
     static readonly float SetScale = SurvivorUnchained.Args.Num("den-set-scale", 1f);
-    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 0.92f);   // (r11 1.1 -> 1.0: lit tone 156 against 134)   // (r10d 1.25 -> 1.1: the lit root tops measured (166,122,100) against (134,95,73))
+    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 0.85f);   // (r11 1.1 -> 1.0: lit tone 156 against 134)   // (r10d 1.25 -> 1.1: the lit root tops measured (166,122,100) against (134,95,73))
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
     static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 0.5f);   // (r11 0.7 -> 0.5 with shade-hi 0.15: satShade .34 -> .18, cool 15 -> 25 %, as den_room.png)
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
@@ -39,8 +39,8 @@ public static partial class DungeonDress
         mat.SetShaderParameter("amb_floor", SetAmb);
         // (r11) the roots and shade read pink-mauve: the paintings' mids warmed (less blue), the shade's cool narrowed to the
         // deepest darks and turned blue-teal (den_room.png: warm brown in the light, cool only down in the hollows)
-        mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.96f, 0.86f)));
-        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(0.8f, 0.93f, 1.1f)));
+        mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
+        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(0.84f, 0.93f, 1.0f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
         if (sheet[0] == 'H')
         {
@@ -647,12 +647,12 @@ public static partial class DungeonDress
         {
             ri++;
             bool lair = r.Kind == "Boss";
-            int want = Mathf.RoundToInt(SetOpenK * (lair ? 4f + r.R / 2f : 3f + r.R / 2.5f)), got = 0;   // (r11 1.5 + R/4 -> 3 + R/3: den_room.png has a handful IN the room)
+            int want = Mathf.RoundToInt(SetOpenK * (lair ? 14f + r.R : 3f + r.R / 2.5f)), got = 0;   // (r11 judge: the lair ~a third of den_boss.png's dressing)   // (r11 1.5 + R/4 -> 3 + R/3: den_room.png has a handful IN the room)
             float a0 = Hash(ri, 21, 990) * Mathf.Tau;
             int rw = 0, rl = 0, rn = 0;
-            for (int k = 0; k < 96 && got < want; k++)
+            for (int k = 0; k < (lair ? 260 : 96) && got < want; k++)
             {
-                float rad = lair && got == 0 ? 4f + 5f * Hash(ri, k, 991) : 2.8f + Mathf.Max(0.8f * r.R - 2.8f, 0.5f) * Mathf.Sqrt(Hash(ri, k, 991)), ang = a0 + k * 2.39996f;
+                float rad = lair ? (got == 0 ? 4f + 5f * Hash(ri, k, 991) : 3f + 9f * Mathf.Sqrt(Hash(ri, k, 991))) : 2.8f + Mathf.Max(0.8f * r.R - 2.8f, 0.5f) * Mathf.Sqrt(Hash(ri, k, 991)), ang = a0 + k * 2.39996f;
                 // (the hero stone on the lair's far side, up the frame from the fight: below, it stands behind the HUD)
                 if (lair && got == 0) ang = Mathf.Pi * (1.15f + 0.7f * Hash(ri, k, 989));   // (r11: from 2.8 m off her start to 0.8 R: the room's R overreaches its floor)
                 var p = new Vector2(r.X + Mathf.Cos(ang) * rad, r.Z + Mathf.Sin(ang) * rad);
@@ -672,24 +672,24 @@ public static partial class DungeonDress
                 if (lane) { rl++; continue; }
                 bool near = false;
                 foreach (var (hp, hr, _) in hollows) if (hp.DistanceTo(p) < hr + 1.2f) near = true;
-                foreach (var t in taken) if (t.DistanceTo(p) < 2.6f) near = true;
+                foreach (var t in taken) if (t.DistanceTo(p) < (lair ? 1.8f : 2.6f)) near = true;
                 if (near) { rn++; continue; }
                 float u = Hash(ri, k, 992), q = Hash(ri, k, 993);
-                string sheet = lair ? (got == 0 ? "O1" : u < 0.12f ? "O1" : u < 0.2f ? "O2" : u < 0.42f ? "B6" : "O3") : u < 0.35f ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
+                string sheet = lair ? (got == 0 ? "O1" : u < 0.12f ? "O1" : u < 0.2f ? "O2" : u < 0.36f ? "B6" : u < 0.52f ? "O4" : "O3") : u < 0.35f ? "O1" : u < 0.5f ? "O2" : "O3";   // (r11: boulders and logs anywhere in the open, as den_room.png)
                 if (!setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) continue;
                 var sorted = new List<SetPiece>(all);
                 sorted.Sort((a, b) => a.Metres.X.CompareTo(b.Metres.X));
                 // (stones and logs from the sheet's smaller half, a stone at most 1.6 m across: she walks through them)
                 int half = Mathf.Max(1, sorted.Count / 2);
-                var pc = sheet is "O3" or "B6" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * half) % half];
+                var pc = sheet is "O3" or "B6" or "O4" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * half) % half];
                 // (r11: a stone up to 2.4 m across, a log 3-4 m: they are cards, she walks through them; the room's
                 // fight was tuned without them, so none has a body)
                 if (lair && got == 0) pc = sorted[sorted.Count - 1];   // (the lair's hero stone: the sheet's biggest)
-                float k2 = sheet == "B6" ? 0.6f + 0.25f * Hash(ri, k, 994) : lair && got == 0 ? Mathf.Min(1.2f, (2.8f + 0.6f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O1" ? Mathf.Min(1f, (1.6f + 0.8f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
+                float k2 = sheet == "O4" ? 0.55f + 0.25f * Hash(ri, k, 994) : sheet == "B6" ? 0.6f + 0.25f * Hash(ri, k, 994) : lair && got == 0 ? Mathf.Min(1.2f, (2.8f + 0.6f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O1" ? Mathf.Min(1f, (1.6f + 0.8f * Hash(ri, k, 994)) / pc.Metres.X) : sheet == "O2" ? 0.8f + 0.2f * Hash(ri, k, 994) : 0.9f + 0.3f * Hash(ri, k, 994);
                 // (r11) the lair's roots over its floor, as den_boss.png's: a spill under the hero stone, more through the open
                 if (lair && got == 0 && SetPick("B6", Hash(ri, k, 988)) is SetPiece hs)
                     PlaceSetObj(c, "B6", hs, p.X, p.Y + 0.4f, 0.85f, 0f, false, 0f);
-                if (sheet == "B6") PlaceSetObj(c, "B6", pc, p.X, p.Y, k2, 0f, false, 0f);
+                if (sheet is "B6" or "O4") PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O4" ? 0.1f : 0f, false, sheet == "O4" ? 0.3f : 0f);
                 else PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1");
                 taken.Add(p); got++; n++;
                 // (r11) blood (O5) by a kill's bones, and now and then on its own nearby (den_room.png's splashes and drags)

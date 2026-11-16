@@ -3,8 +3,10 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
 
-uniform vec3 tint : source_color = vec3(1.0, 0.86, 0.66);   // (r10d: warm and faint; the cool 0.3 read as grey fog sheets over the far bank)
-uniform float strength = 0.12;   // (lead 6: 0.55 read as hard white cones against the targets' soft pale rays)
+uniform vec3 tint : source_color = vec3(0.86, 0.92, 0.95);   // (r11 judge: cool-white beams as den_room/den_boss, ~(200,215,215); the pools stay warm)
+// was   // (r10d: warm and faint; the cool 0.3 read as grey fog sheets over the far bank)
+uniform float strength = 0.22;   // (r11 judge: the beams did not show in the lairs, faint in rooms)
+// was 0.12;   // (lead 6: 0.55 read as hard white cones against the targets' soft pale rays)
 uniform float height = 15.0;
 
 varying float hf;

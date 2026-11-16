@@ -13,7 +13,7 @@ public static class DungeonLight
     /// <summary>The shafts' slant, from straight down toward -x and +z (the one sun's side).</summary>
     static readonly Vector3 Axis = new Vector3(0.12f, -1f, 0.42f).Normalized();  // (the roof hole north of the pool: from the play camera the shaft climbs up the screen)
     const float Height = 15f;
-    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 13f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 7.5f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
+    static readonly float PoolWide = SurvivorUnchained.Args.Num("den-pool-wide", 1.5f), PoolSoft = SurvivorUnchained.Args.Num("den-pool-soft", 0.7f), PoolEnergy = SurvivorUnchained.Args.Num("den-pool-energy", 13f), PackFill = SurvivorUnchained.Args.Num("den-pack-fill", 4.5f), BossPool = SurvivorUnchained.Args.Num("den-boss-pool", 1.5f);
 
     public static Node3D? Build(ZoneData z)
     {
@@ -34,11 +34,11 @@ public static class DungeonLight
                 float x = r.X, zz = r.Z;
                 for (int t = 0; t < 10; t++)
                 {
-                    float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = r.R * (r.Kind == "Boss" ? 0.2f + 0.3f * Hash(i, k + 7 * t, 2) : 0.25f + 0.35f * Hash(i, k + 7 * t, 2));   // (r11: the lair's pools in its middle frame)
+                    float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = (r.Kind == "Boss" ? 3f + 5f * Hash(i, k + 7 * t, 2) : r.R * ( 0.25f + 0.35f * Hash(i, k + 7 * t, 2)));   // (r11: the lair's pools in its middle frame)
                     x = r.X + Mathf.Cos(a) * d; zz = r.Z + Mathf.Sin(a) * d;
                     if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
                 }
-                float w = 1.1f + 1.0f * Hash(i, k, 3);
+                float w = 1.6f + 1.4f * Hash(i, k, 3);   // (r11 judge: broad beams, 150-250 px; was 1.1 + 1.0)
                 AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? BossPool : PoolWide);
             }
         }
@@ -52,7 +52,7 @@ public static class DungeonLight
             {
                 Name = "pack_fill",
                 Transform = new Transform3D(Basis.LookingAt(new Vector3(0.25f, -0.75f, -0.6f).Normalized(), Vector3.Up), Vector3.Zero),
-                LightColor = new Color("e8d8c8"),
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-pack-fill-colour") ?? "a8b8d8"),   // (r11 judge: her fur read in the floor's own hue at 0.78 of it; cool and lower)
                 LightEnergy = PackFill,
                 LightCullMask = PlayerView.CrowdLayer,
                 ShadowEnabled = false,

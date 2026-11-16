@@ -68,7 +68,8 @@ public static class DungeonFloor
                 mat.SetShaderParameter("boss_dry", Args.Num("den-boss-dry", 0.8f));
                 mat.SetShaderParameter("boss_sat", Args.Num("den-boss-sat", 0.8f));
                 mat.SetShaderParameter("boss_tint", DungeonDress.V3("den-boss-tint", new Vector3(1.0f, 1.1f, 0.94f)));
-                if (Args.Get("den-tint") == null) mat.SetShaderParameter("den_tint", new Vector3(0.88f, 0.86f, 0.84f));   // (r11) the lit floor (150,105,86) against den_room.png (134,95,73): (0.93,0.92,0.96) read pink
+                if (Args.Get("den-tint") == null) mat.SetShaderParameter("den_tint", new Vector3(0.82f, 0.79f, 0.74f));   // (r11 judge: lit (146,104,85) -> (134,95,73))
+                  // (r11) the lit floor (150,105,86) against den_room.png (134,95,73): (0.93,0.92,0.96) read pink
                 mat.SetShaderParameter("den_sat", Args.Num("den-sat", 0.75f));   // (r11 0.68 -> 0.75: 0.55 read pink-grey; the warmth is the lit earth's, den_room.png)   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
             }
         }

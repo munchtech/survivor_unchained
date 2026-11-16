@@ -21,6 +21,7 @@ uniform float dark_floor = 0.0;
 // fell to 1/20 of it: flat black between roots the target paints at L 20-40)
 uniform float amb_floor = 0.0;
 uniform float glow_k = 0.7;
+uniform float fg_dark = 0.65;
 uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
 uniform float rim_out = 1.45;
 
@@ -33,7 +34,7 @@ void fragment() {
 	float l = dot(col, vec3(0.299, 0.587, 0.114));
 	col = mix(vec3(l), col, sat);
 	col = mix(col, vec3(l) * shade_tint, shade_k * (1.0 - smoothstep(shade_lo, shade_hi, l)));
-	ALBEDO = col * gain;
+	ALBEDO = col * gain * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));   // (r11 judge: the nearest banks fall off, as den_room.png's bottom row)
 	EMISSION = col * gain * amb_floor + shade_tint * dark_floor * (1.0 - smoothstep(0.0, 0.05, l));
 	// (r10d) the painted glow caps (pale cyan: G and B well over R) give their own light, whatever reaches them
 	EMISSION += c.rgb * glow_k * smoothstep(0.05, 0.2, min(c.g, c.b) - c.r);

@@ -232,7 +232,7 @@ public static partial class DungeonDress
                 float x = r.X + Mathf.Cos(a) * dd, zz = r.Z + Mathf.Sin(a) * dd;
                 float w = Wall(c, x, zz);
                 if (!Ok(x, zz, 0.5f, 0.8f)) continue;
-                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "drift") : (Hash(q, 9, 959) < 0.3f ? "moss" : Hash(q, 9, 959) < 0.65f ? "drift" : "blood");
+                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "drift") : (Hash(q, 9, 959) < 0.55f ? "drift" : "blood");   // (r11 judge: no moss alone on the open lair floor: it read as stickers)
                 AddDecal(c, b, PickDecal(new() { [kind] = 1f }, Hash(q, 9, 960)), x, zz, Hash(q, 9, 961) * Mathf.Tau, 0.95f + 0.35f * Hash(q, 9, 962));
             }
         }
