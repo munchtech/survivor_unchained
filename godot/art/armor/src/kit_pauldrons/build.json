@@ -27,13 +27,15 @@
    {
     "match": "cop_l",
     "weights": {
-     "delt_l": 1
+     "delt_l": 0.5,
+     "clavicle_l": 0.5
     }
    },
    {
     "match": "cop_r",
     "weights": {
-     "delt_r": 1
+     "delt_r": 0.5,
+     "clavicle_r": 0.5
     }
    },
    {
@@ -66,7 +68,7 @@
   "chart_deg": 110,
   "dilate": 4,
   "smooth": 30,
-  "clear": 0.01,
+  "clear": 0.006,
   "outline": [
    [
     0,
@@ -158,6 +160,6 @@
   "trim_pad": 2.0,
   "trim_round": 6.0,
   "trim_tol": 0.0,
-  "cop_lift_max": 0.008
+  "cop_lift_max": 0.0
  }
 }
