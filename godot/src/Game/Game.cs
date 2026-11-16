@@ -325,6 +325,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         // --veteran L[:G]: the balance harness's survivor of level L in gear of rarity G (Play/DevVeteran.cs: its `--level L`, g2).
         if (Args.Get("veteran") is string vet) GD.Print(DevVeteran.Apply(Journey.Ch, vet, (int)Args.Num("seed", 1)));
+        // (unlock-cards) --xp-after N: that much more after --veteran (a veteran one kill short of her next level: the unlock cards' real level-ups)
+        if (Args.Has("xp-after")) Character.GainXp(Journey.Ch, Args.Num("xp-after", 0));
         // (bd-ui W4: --veteran dresses Head, Body, Amulet and both Rings over what Begin wore for --equip: wear those again)
         if (Args.Has("veteran") && Args.Get("equip") is string eqv) WearItems(eqv);
         // (bd-ui2) --road ID: that road of her calling walked (after --veteran, which walks the first), for pictures of the road page.
@@ -1773,6 +1775,7 @@ public partial class Game : Node, IZoneHost
             LampCheck(fb2.Time);
             Priority();
             hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));
+            hud.CardUnder(Battle, camera, scene.Fx);
             hud.Ground(Overlay == null && !labelsOff && !Args.Has("clean") ? Labels(fb2) : new());
             Perf.End(Perf.Part.Labels);
         }

@@ -130,6 +130,8 @@ public partial class LampPointers : Control
     readonly System.Collections.Generic.Dictionary<int, Slot> slots = new();
 
     public LampPointers() { MouseFilter = MouseFilterEnum.Ignore; }
+    /// <summary>The level card's rect: a pointer within 6 px of it is not drawn (as GoalMarks.Cover does for pins).</summary>
+    public Rect2? Cover;
 
     public void Show(System.Collections.Generic.IEnumerable<Pointer> list)
     {
@@ -166,6 +168,7 @@ public partial class LampPointers : Control
         foreach (var s in slots.Values)
         {
             if (s.A <= 0) continue;
+            if (Cover is Rect2 cv && cv.Grow(6).Intersects(new Rect2(s.At - new Vector2(40, 50), new Vector2(80, 100)).Expand(s.At + s.Dir * 64))) continue;
             var c = Chevron with { A = s.A };
             var d = s.Dir; var side = new Vector2(-d.Y, d.X);
             var tip = s.At + d * 50; // scaled 1.25x with the mark (30 x 40)

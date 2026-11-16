@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
@@ -24,6 +25,56 @@ public partial class GameHud
             ? new UnlockLessons(id => w.Fact("lesson." + id).Truthy, id => w.Facts["lesson." + id] = true)
             : null;
 
+    readonly List<(Vector3 A, Vector3 B, float R)> spanBuf = new();
+    readonly List<Rect2> underBuf = new();
+
+    /// <summary>Each frame: the level card's keep-clear rects (her, feet to 1.8 m up, and every live telegraph mark's ground circle or
+    /// lane, projected to the screen) and its cover for the edge marks (boss and elite skulls, the boss pointer, the lamp pointers, the
+    /// loot names), which hide where the card is, as the goal pins do.</summary>
+    public void CardUnder(Battle? b, Camera3D cam, SurvivorUnchained.View.BattleFx fx)
+    {
+        var cover = LevelCardArea;
+        edges.Cover = cover; ground.Cover = cover;
+        if (bossPointer != null) bossPointer.Cover = cover;
+        if (postPointers != null) postPointers.Cover = cover;
+        if (levelCard == null) return;
+        levelCard.Under = () => underBuf;
+        underBuf.Clear();
+        if (cover == null || b == null || !b.Combat) return;
+        var p = b.Player;
+        float py = (float)fx.GroundAt(p.X, p.Z);
+        Grow(cam, new Vector3((float)p.X, py, (float)p.Z), 0.45f, 1.8f);
+        spanBuf.Clear();
+        fx.TelegraphSpans(spanBuf);
+        foreach (var (a, c, r) in spanBuf)
+        {
+            var box = Bound(cam, a, r);
+            if (box is { } b0) { var b1 = Bound(cam, c, r); underBuf.Add(b1 is { } bb ? b0.Merge(bb) : b0); }
+        }
+    }
+
+    void Grow(Camera3D cam, Vector3 feet, float r, float height)
+    {
+        var f = Bound(cam, feet, r);
+        var h = Bound(cam, feet + new Vector3(0, height, 0), r);
+        if (f is { } fr) underBuf.Add(h is { } hr ? fr.Merge(hr) : fr);
+    }
+
+    /// <summary>The screen box of the horizontal circle round a point (its centre and eight on the rim); null when behind the lens.</summary>
+    static Rect2? Bound(Camera3D cam, Vector3 c, float r)
+    {
+        if (cam.IsPositionBehind(c)) return null;
+        var first = cam.UnprojectPosition(c);
+        var box = new Rect2(first, Vector2.Zero);
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i * Mathf.Pi / 4;
+            var q = c + new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
+            if (!cam.IsPositionBehind(q)) box = box.Expand(cam.UnprojectPosition(q));
+        }
+        return box;
+    }
+
     /// <summary>Each frame of a campaign fight: the calling's skill when it is quiet, the lesson when a fight is next near.</summary>
     void UnlockTick(Battle b)
     {
@@ -43,7 +94,7 @@ public partial class GameHud
         if (Lessons()?.Tick(near && game.CurrentHint == null && !HudPin.Active, dt) is { } row)
         {
             var t = row.Teach;
-            game.SetHint(new Hint("unlock." + row.Id, t.Title, t.Text, t.Key != "" ? [game.KeyLabel(t.Key)] : []));
+            game.SetHint(new Hint("unlock." + row.Id, t.Title, UnlockLessons.TextFor(row, game.KeyLabel), t.Key != "" ? [game.KeyLabel(t.Key)] : []));
             lessonHint = "unlock." + row.Id; lessonUntil = now + LessonLife;
         }
     }

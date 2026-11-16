@@ -102,7 +102,7 @@ public sealed class UnlockCardTests
     public void The_road_card_says_its_row_with_no_key_and_no_prompt_row()
     {
         var road = LevelCards.RoadCard(6, "warden")!;
-        Assert.Equal((LevelCardKind.NewRoad, string.Join(" or ", Lamps.RoadsOf("warden").Select(r => r.Name))), (road.Kind, road.Skill));
+        Assert.Equal((LevelCardKind.NewRoad, string.Join(" or ", Lamps.RoadsOf("warden").Select(r => r.Name.Replace("Road of the ", "")))), (road.Kind, road.Skill));
         Assert.Contains(" or ", road.Skill);
         Assert.Equal("Your road", LevelCards.RoadNames("nobody"));
         Assert.Equal(UnlockCards.Of("warden", "road")!.Line, road.Line);
@@ -163,5 +163,21 @@ public sealed class UnlockCardTests
             Assert.Null(lessons.Tick(true, 5));
         }
         Assert.Empty(done);
+    }
+
+    [Fact]
+    public void A_lesson_names_the_key_and_never_says_the_key()
+    {
+        int shown = 0;
+        foreach (var row in UnlockCards.All.Values.SelectMany(l => l).Where(r => r.Teach.NextFight))
+        {
+            string text = UnlockLessons.TextFor(row, k => "[" + k + "]");
+            Assert.DoesNotContain("{key}", text);
+            Assert.DoesNotContain("the key", text);
+            if (row.Teach.Key != "") Assert.Contains("[" + row.Teach.Key + "]", text);
+            shown++;
+        }
+        Assert.True(shown >= 4);
+        Assert.Equal("Press *[Skill4]* to charge behind your shield: what stands in the way is struck and thrown aside.", UnlockLessons.TextFor(UnlockCards.ForSkill("shield_charge")!, k => "[" + k + "]"));
     }
 }

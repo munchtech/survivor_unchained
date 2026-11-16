@@ -21,6 +21,11 @@ public sealed class UnlockLessons
 
     public UnlockLessons(Func<string, bool> taught, Action<string> mark) { this.taught = taught; this.mark = mark; }
 
+    /// <summary>The hint's text for a row: its teach text with {key} replaced by the bound key's label (keyLabel of the row's key, the
+    /// same label the hint shows). A row with no key leaves no placeholder behind.</summary>
+    public static string TextFor(UnlockCard row, Func<string, string> keyLabel) =>
+        row.Teach.Text.Replace("{key}", row.Teach.Key != "" ? keyLabel(row.Teach.Key) : "its key");
+
     /// <summary>The row waiting for a fight, null none.</summary>
     public UnlockCard? Waiting => waiting;
     /// <summary>The row whose hint is up, null none.</summary>

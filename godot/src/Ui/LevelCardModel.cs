@@ -8,7 +8,7 @@ namespace SurvivorUnchained.Ui;
 /* M4 §4, the level-up card's pure side (no Godot: the tests compile it): what a card says (LevelCardSpec), which kind a
  * campaign level-up makes (LevelCards.ForCampaignLevel, from data/content/unlock_cards.json's row for it; the calling's skill
  * waits for a quiet moment, CallingDue), its words built once (LevelCards.Header/Line), and its clock
- * (LevelCardQueue: in 0.18 s, hold 2.2 s or 3 s with a prompt row, out 0.3 s; waiting while held). LevelCard.cs draws it. */
+ * (LevelCardQueue: in 0.18 s, hold by its words (LevelCards.HoldSecs), out 0.3 s; waiting while held). LevelCard.cs draws it. */
 
 public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance, NewRoad }
 
@@ -18,7 +18,11 @@ public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, Ne
 /// least Spare inside its span, then stays inside 696..1244 (28 px clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
 public static class LevelCardPlace
 {
-    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 470;
+    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 548;
+
+    /// <summary>The room a card's one line has: the card's width less the name's column (the well) and the right pad. A 72-character
+    /// line at the line font (UI sans 16, about 6.5 px a character at most) fits it on ONE line: 548 is the whole span between the statues.</summary>
+    public const float NameX = 72, Pad = 18, LineRoom = MaxW - NameX - Pad, PxPerChar = 6.5f, LineChars = 72;
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
     /// from this too, so card and seat cannot drift).</summary>
@@ -103,6 +107,13 @@ public sealed class LevelCardSpec
 public static class LevelCards
 {
     public const double In = 0.18, Hold = 2.2, HoldPrompt = 3.0, Out = 0.3;
+
+    /// <summary>How long a card holds, to be read: 1.4 s and 0.25 s a word (its name and its line), 2.8 to 4.5 s, and 0.8 s more
+    /// when it has a prompt row. In and Out stay as they are.</summary>
+    public static double HoldSecs(int words, bool prompt) => Math.Clamp(1.4 + 0.25 * words, 2.8, 4.5) + (prompt ? 0.8 : 0);
+
+    /// <summary>The words in some text (split at spaces; an arrow or a lone sign counts as none).</summary>
+    public static int Words(string text) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Count(w => w.Any(char.IsLetterOrDigit));
 
     /// <summary>"LEVEL 4 · A NEW KEY", "LEVEL 6 · A LAMP LIT", "LEVEL 6 · A NEW SKILL", "LEVEL 5"; a new skill's card that
     /// follows its level's key card carries no level (Level 0): "A NEW SKILL".</summary>
@@ -189,10 +200,10 @@ public static class LevelCards
             ? new LevelCardSpec { Kind = LevelCardKind.NewRoad, Level = level, Skill = RoadNames(calling), Title = row.Title, Line = row.Line, Icon = row.Icon }
             : null;
 
-    /// <summary>The calling's roads' names joined with " or " (lamps.json), else "Your road".</summary>
+    /// <summary>The calling's roads' names joined with " or " (lamps.json, "Road of the " dropped: "Sunderer or Bulwark"), else "Your road".</summary>
     public static string RoadNames(string? calling)
     {
-        var names = calling == null ? [] : Content.Lamps.RoadsOf(calling).Select(r => r.Name).ToList();
+        var names = calling == null ? [] : Content.Lamps.RoadsOf(calling).Select(r => r.Name.StartsWith("Road of the ", StringComparison.Ordinal) ? r.Name["Road of the ".Length..] : r.Name).ToList();
         return names.Count > 0 ? string.Join(" or ", names) : "Your road";
     }
 
@@ -343,7 +354,10 @@ public sealed class LevelCardQueue
 
     public void Add(LevelCardSpec s) => waiting.Enqueue(s);
 
-    public double HoldFor(LevelCardSpec s) => s.HasPrompt ? LevelCards.HoldPrompt : LevelCards.Hold;
+    /// <summary>The showing card's hold set by what it says (LevelCards.HoldSecs); 0: the plain defaults.</summary>
+    public double HoldNow;
+
+    public double HoldFor(LevelCardSpec s) => HoldNow > 0 ? HoldNow : s.HasPrompt ? LevelCards.HoldPrompt : LevelCards.Hold;
 
     /// <summary>The phase's share done (0..1).</summary>
     public double K => Now switch
@@ -361,7 +375,7 @@ public sealed class LevelCardQueue
         if (Current == null)
         {
             if (waiting.Count == 0) return;
-            Current = waiting.Dequeue();
+            Current = waiting.Dequeue(); HoldNow = 0;
             Now = Phase.In; T = 0; Began = true;
             return;
         }
@@ -369,5 +383,37 @@ public sealed class LevelCardQueue
         if (Now == Phase.In && T >= LevelCards.In) { T -= LevelCards.In; Now = Phase.Hold; }
         if (Now == Phase.Hold && T >= HoldFor(Current)) { T -= HoldFor(Current); Now = Phase.Out; Folding = true; }
         if (Now == Phase.Out && T >= LevelCards.Out) { Current = null; Now = Phase.None; T = 0; }
+    }
+}
+
+/// <summary>The card never covers her or a telegraph: when any of their screen rects (left, top, right, bottom) meets the
+/// card's grown 8 px, its alpha eases to 0.25 within 0.12 s (and back to 1 when clear); while it is faded its hold clock
+/// pauses, 3 s in all, and then it leaves anyway. Pure; LevelCard feeds it each frame.</summary>
+public sealed class CardFade
+{
+    public const float Low = 0.25f, Secs = 0.12f, Grow = 8, MaxPause = 3;
+    public float Alpha { get; private set; } = 1;
+    /// <summary>Seconds of hold clock paused so far this card.</summary>
+    public float Paused { get; private set; }
+
+    /// <summary>True when any of `under` meets the card grown by Grow px.</summary>
+    public static bool Blocked((float L, float T, float R, float B) card, IEnumerable<(float L, float T, float R, float B)> under)
+    {
+        foreach (var u in under)
+            if (u.L < card.R + Grow && u.R > card.L - Grow && u.T < card.B + Grow && u.B > card.T - Grow) return true;
+        return false;
+    }
+
+    /// <summary>A card begins: alpha 1, nothing paused.</summary>
+    public void Reset() { Alpha = 1; Paused = 0; }
+
+    /// <summary>One frame: move the alpha toward its goal; true when the hold clock must stand still this frame (faded by a
+    /// block, holding, and the 3 s not yet spent).</summary>
+    public bool Step(bool blocked, bool holding, float dt)
+    {
+        Alpha = Math.Clamp(Alpha + (blocked ? -1 : 1) * (1 - Low) / Secs * dt, Low, 1);
+        if (!blocked || !holding || Paused >= MaxPause) return false;
+        Paused = Math.Min(MaxPause, Paused + dt);
+        return true;
     }
 }

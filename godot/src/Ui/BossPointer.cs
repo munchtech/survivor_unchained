@@ -22,6 +22,8 @@ public partial class BossPointer : Control
     Color lastCol = new("#b0222a");
 
     public BossPointer() { MouseFilter = MouseFilterEnum.Ignore; }
+    /// <summary>The level card's rect: a pointer within 6 px of it is not drawn (as GoalMarks.Cover does for pins).</summary>
+    public Rect2? Cover;
 
     public void Hide0() { if (count == 0) return; count = 0; QueueRedraw(); }
 
@@ -99,6 +101,7 @@ public partial class BossPointer : Control
         float s = GetViewportRect().Size.Y / 1080f;
         for (int i = 0; i < count; i++)
         {
+            if (Cover is Rect2 cv && cv.Grow(6).Intersects(new Rect2(at[i] - new Vector2(30, 30) * s, new Vector2(60, 60) * s))) continue;
             if (gap[i]) { Chevron(i, s); continue; }
             float pulse = sig[i] ? 0.55f + 0.45f * (0.5f + 0.5f * Mathf.Sin(time * 9f)) : 0.65f;
             float size = (sig[i] ? 17 + 4 * pulse : 15) * s;

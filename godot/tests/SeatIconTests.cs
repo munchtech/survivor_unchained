@@ -41,7 +41,7 @@ public sealed class SeatIconTests
     [Fact]
     public void The_card_line_is_a_function_line_where_unlock_cards_json_has_one_else_the_description()
     {
-        Assert.Equal("You charge 8 m behind your shield and gain a barrier of 15% of your health.", LevelCards.Line("shield_charge", Weapons.All["shield_charge"].Description));
+        Assert.Equal("Charge 8 m behind your shield; gain a barrier of 15% of your health.", LevelCards.Line("shield_charge", Weapons.All["shield_charge"].Description));
         string vow = LevelCards.Line("iron_vow", Weapons.All["iron_vow"].Description);
         Assert.True(vow.Length < 70, vow);
         Assert.Equal(LevelCards.Line(Weapons.All["cleaver"].Description), LevelCards.Line("cleaver", Weapons.All["cleaver"].Description));

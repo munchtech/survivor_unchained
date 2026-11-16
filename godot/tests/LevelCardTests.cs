@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Ui;
@@ -179,7 +180,7 @@ public sealed class LevelCardPlaceTests
         var p = LevelCardPlace.Compute(470, 86, 978, 959, (700f, 1010f));
         Assert.Equal(696, p.X);
         Assert.Equal(24, p.TailX);
-        Assert.Equal(470f, LevelCardPlace.MaxW);
+        Assert.Equal(548f, LevelCardPlace.MaxW);   // (the whole span between the statues)
         Assert.Equal(Math.Round(960 - 235f), LevelCardPlace.Compute(470, 86, 978, 959, null).X);
     }
 
@@ -230,4 +231,72 @@ public sealed class LevelCardPlaceTests
 
     [Fact]
     public void An_auto_tile_opens_at_1_7_and_10() => Assert.Equal(new[] { 1, 7, 10 }, new[] { AutoRowModel.OpensAt(0), AutoRowModel.OpensAt(1), AutoRowModel.OpensAt(2) });
+
+    [Fact]
+    public void Hold_is_by_the_words_with_the_prompt_row_on_top()
+    {
+        Assert.Equal(2.8, LevelCards.HoldSecs(3, false), 6);          // (a short one holds the floor)
+        Assert.Equal(1.4 + 0.25 * 10, LevelCards.HoldSecs(10, false), 6);
+        Assert.Equal(4.5, LevelCards.HoldSecs(40, false), 6);         // (a long one, the ceiling)
+        Assert.Equal(4.5 + 0.8, LevelCards.HoldSecs(40, true), 6);
+        Assert.Equal(2.8 + 0.8, LevelCards.HoldSecs(1, true), 6);
+        Assert.Equal(6, LevelCards.Words("Heroic Leap  Leap where you → aim"));
+        // the queue honours it, In 0.18 and Out 0.3 unchanged
+        var q = new LevelCardQueue();
+        q.Add(new LevelCardSpec { Level = 2 });
+        q.Tick(1 / 60.0, false);
+        q.HoldNow = 4;
+        for (double x = 0; x < 0.18 + 3.9; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Equal(LevelCardQueue.Phase.Hold, q.Now);
+        for (double x = 0; x < 0.2; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Equal(LevelCardQueue.Phase.Out, q.Now);
+        for (double x = 0; x < 0.35; x += 1 / 60.0) q.Tick(1 / 60.0, false);
+        Assert.Null(q.Current);
+    }
+
+    static readonly (float, float, float, float) Card = (700, 800, 1200, 900);
+
+    [Fact]
+    public void The_card_fades_for_anything_within_8_px_and_not_beyond()
+    {
+        Assert.False(CardFade.Blocked(Card, []));
+        Assert.True(CardFade.Blocked(Card, [(800, 880, 820, 960)]));              // her, across it
+        Assert.True(CardFade.Blocked(Card, [(1200 + 7, 850, 1300, 860)]));        // 7 px off its right edge: grown 8
+        Assert.False(CardFade.Blocked(Card, [(1200 + 9, 850, 1300, 860)]));
+        Assert.False(CardFade.Blocked(Card, [(100, 100, 300, 300), (800, 920, 900, 1000)]));
+    }
+
+    [Fact]
+    public void The_alpha_eases_to_a_quarter_in_012_s_and_back_and_the_hold_waits_3_s_at_most()
+    {
+        var f = new CardFade();
+        float dt = 1 / 60f;
+        for (int i = 0; i < 7; i++) f.Step(true, true, dt);          // 0.117 s
+        Assert.InRange(f.Alpha, 0.25f, 0.28f);
+        for (int i = 0; i < 3; i++) f.Step(true, true, dt);
+        Assert.Equal(0.25, f.Alpha, 4);
+        float waited = 0;
+        for (int i = 0; i < 60 * 5; i++) if (f.Step(true, true, dt)) waited += dt;
+        Assert.InRange(waited + 10 * dt, 2.99f, 3.02f);   // (3 s all told) then it leaves anyway
+        Assert.False(f.Step(true, true, dt));
+        Assert.Equal(0.25, f.Alpha, 4);
+        for (int i = 0; i < 8; i++) f.Step(false, true, dt);
+        Assert.Equal(1.0, f.Alpha, 4);
+        Assert.False(f.Step(false, true, dt));
+        f.Reset();
+        Assert.True(f.Step(true, true, dt));                          // (a new card gets its own 3 s)
+        Assert.False(f.Step(true, false, dt));                        // (not while rising or leaving: only the hold waits)
+    }
+
+    [Fact]
+    public void Every_unlock_line_is_one_line_of_72_characters_or_less_that_fits_the_card()
+    {
+        foreach (var row in SurvivorUnchained.Content.UnlockCards.All.Values.SelectMany(l => l))
+        {
+            Assert.True(row.Line.Length <= LevelCardPlace.LineChars, $"{row.Id}: {row.Line.Length} characters");
+            // (UI sans 16 measured at no more than 6.5 px a character over these rows; the room is the card's width less the well's column)
+            Assert.True(row.Line.Length * LevelCardPlace.PxPerChar <= LevelCardPlace.LineRoom + 10, $"{row.Id} would wrap");
+        }
+        Assert.Equal("Charge 8 m behind your shield; gain a barrier of 15% of your health.", SurvivorUnchained.Content.UnlockCards.ForSkill("shield_charge")!.Line);
+    }
 }

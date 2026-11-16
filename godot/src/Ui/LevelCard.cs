@@ -28,13 +28,8 @@ public partial class LevelCard : Control
     const float CapK = 1f;
     const float MinW = 230, Pad = 18, WellD = 40, NameX = Pad + WellD + 14, CoinR = 43, StemMax = 64;   // (CoinR: the coin arch's top, 43 over its middle: the stem ends on it)
     const int HeadSize = 14, PromptSize = 15;
-    /// <summary>Dev flag `--card-look b` (read once): take B, type on the world (no plate, no rules, a feathered scrim, one open chain link). Default "a": the plate.</summary>
-    static readonly bool CardB = Args.Get("card-look") == "b";
-    static int NameSize => CardB ? 30 : 26;
-    static int LineSize => CardB ? 17 : 16;
-    const float GlyphB = 34, LinkH = 16, LinkW = 10, LinkGap = 50f, OpenFor = 0.18f + 0.25f;
-    static readonly Color Dark = new(0.02f, 0.015f, 0.01f, 0.85f);
-    float nameX = NameX, contentW, openT, bodyW, promptW, headRowW, row1W;
+    const int NameSize = 26, LineSize = 16;
+    float promptW;
     int nameSz = 26;
 
     public readonly LevelCardQueue Queue = new();
@@ -52,6 +47,12 @@ public partial class LevelCard : Control
     public Func<LevelCardSpec, Vector2?> TopOf = _ => null;
     /// <summary>bd-ui W13: the global rects of the auto tiles and the stance discs, which the tail breaks around (3 px clear).</summary>
     public Func<List<Rect2>> Avoid = () => new();
+
+    /// <summary>The global screen rects of what the card must not cover (her, the telegraph marks): GameHud sets it each frame.
+    /// While any meets the card (grown 8 px) it fades to a quarter and its hold clock waits, 3 s at most (CardFade).</summary>
+    public Func<List<Rect2>> Under = () => new();
+    readonly CardFade fade = new();
+    readonly List<(float, float, float, float)> underBuf = new();
 
     /// <summary>Where it rises from (the coin's middle).</summary>
     public Vector2 From = new(960, 1042);
@@ -116,7 +117,6 @@ public partial class LevelCard : Control
     void Begin(LevelCardSpec s, bool again = false)
     {
         shown = s;
-        if (!again) openT = 0;
         header = LevelCards.Header(s);
         // (the level's stinger, once the card shows: Journey's "Level N" banner, which carried it, is gone in the campaign;
         // a new skill's card that follows its level's key card is the same level-up: it does not ring twice)
@@ -146,6 +146,9 @@ public partial class LevelCard : Control
             // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
             if (s.Measure is "a blow" or "a cut") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }
         prompt = s.HasPrompt ? s.PromptText! : "";
+        // (hold long enough to read: by the words of its name and line, plus the prompt row)
+        Queue.HoldNow = LevelCards.HoldSecs(LevelCards.Words(name + " " + line + " " + line2 + (s.Kind == LevelCardKind.LampLit ? " " + before + " " + after + measure : "")), s.HasPrompt);
+        if (!again) fade.Reset();
 
         // the skill's key chip (a new key only), after its name
         float need = MinW;
@@ -166,25 +169,24 @@ public partial class LevelCard : Control
             cap.Refresh();
         }
         else if (cap != null) { cap.QueueFree(); cap = null; }
-        nameSz = NameSize; bodyW = 0; promptW = 0;
+        nameSz = NameSize; promptW = 0;
         float nameW = TextW(Style.Display, name, nameSz);
         float capW = 0;
         if (body)
         {
             capW = cap != null ? cap.ChipBox().Size.X * CapK + 12 : 0;
             // (a long name, the road's two roads joined, shrinks to the card's widest body rather than run off it)
-            float nroom = LevelCardPlace.MaxW - NameX - Pad;
+            float nroom = LevelCardPlace.LineRoom;
             if (nameW + capW > nroom) { nameSz = Math.Max(16, (int)(NameSize * nroom / (nameW + capW))); nameW = TextW(Style.Display, name, nameSz); }
             float lineW = s.Kind == LevelCardKind.LampLit
                 ? TextW(Style.Ui, before + arrow + after + measure, LineSize)
                 : TextW(Style.Ui, line, LineSize);
             // (bd-ui W8: at most 470 wide; a longer body wraps to two lines)
-            float room = LevelCardPlace.MaxW - NameX - Pad;
+            float room = LevelCardPlace.LineRoom;
             if (s.Kind != LevelCardKind.LampLit && lineW > room) { (line, line2) = Balanced(line, room); lineW = Math.Max(TextW(Style.Ui, line, LineSize), line2 == "" ? 0 : TextW(Style.Ui, line2, LineSize)); }
             need = Math.Max(need, NameX + Math.Max(nameW + capW, lineW) + Pad);
-            if (CardB) { need = Math.Max(MinW, 2 * Pad + Math.Max(GlyphB + 10 + nameW + capW, lineW)); row1W = GlyphB + 10 + nameW + capW; bodyW = Math.Max(row1W, lineW); }
         }
-        float headW = TextW(Style.Display, header, HeadSize) + 2 * Pad + (CardB ? LinkW + 8 : 0);
+        float headW = TextW(Style.Display, header, HeadSize) + 2 * Pad;
         if (s.HasPrompt)
         {
             promptCap?.QueueFree();
@@ -206,19 +208,15 @@ public partial class LevelCard : Control
         PivotOffset = Size / 2;
         // the chips, placed in their hosts' (scaled) space: the name's cap on the name's middle, the prompt's on its row
         float k = CapK;
-        headRowW = TextW(Style.Display, header, HeadSize) + (CardB ? LinkW + 8 : 0);
-        contentW = Math.Max(Math.Max(headRowW, bodyW), promptW);
-        // (take B centres its rows; take A keeps the well's column)
-        nameX = CardB ? (w - row1W) / 2 + GlyphB + 10 : NameX;
         if (cap != null)
         {
             float cw = cap.ChipBox().Size.X * k;
-            cap.Place((nameX + nameW + 12 + cw / 2) / k, (bodyTop + 13 - Instrument.TagH * k / 2) / k);
+            cap.Place((NameX + nameW + 12 + cw / 2) / k, (bodyTop + 13 - Instrument.TagH * k / 2) / k);
         }
         if (promptCap != null)
         {
             float pw = promptCap.ChipBox().Size.X * k;
-            promptCap.Place(((CardB ? (w - promptW) / 2 : Pad) + pw / 2) / k, (promptTop + 9 - Instrument.TagH * k / 2) / k);
+            promptCap.Place((Pad + pw / 2) / k, (promptTop + 9 - Instrument.TagH * k / 2) / k);
         }
         float foot = FootFor(w);
         var top = TopOf(s);
@@ -251,9 +249,16 @@ public partial class LevelCard : Control
     public override void _Process(double delta)
     {
         bool held = Held();
-        Queue.Tick(Read && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
-        // (take B: the chain link's gap opens over the In phase plus 0.25 s: redrawn while it does)
-        if (CardB && Visible && openT < OpenFor) { openT += (float)delta; QueueRedraw(); }
+        // (the card never covers her or a telegraph: faded while any is under it, its hold waiting, 3 s at most)
+        bool paused = false;
+        if (Visible && !held)
+        {
+            underBuf.Clear();
+            foreach (var r in Under()) underBuf.Add((r.Position.X, r.Position.Y, r.End.X, r.End.Y));
+            var cr = GetGlobalRect();
+            paused = fade.Step(CardFade.Blocked((cr.Position.X, cr.Position.Y, cr.End.X, cr.End.Y), underBuf), Queue.Now == LevelCardQueue.Phase.Hold, (float)delta);
+        }
+        Queue.Tick((Read || paused) && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
         if (Queue.Began && Queue.Current != null) Begin(Queue.Current);
         if (Queue.Current == null) { if (Visible) Visible = false; return; }
         if (held) { if (Visible) Visible = false; return; }
@@ -268,11 +273,11 @@ public partial class LevelCard : Control
                 float e = 1 - (1 - kk) * (1 - kk);
                 Position = rest + new Vector2(0, 18 * (1 - e));
                 Scale = Vector2.One;
-                Modulate = Colors.White with { A = e };
+                Modulate = Colors.White with { A = e * fade.Alpha };
                 break;
             }
             case LevelCardQueue.Phase.Hold:
-                Position = rest; Scale = Vector2.One; Modulate = Colors.White;
+                Position = rest; Scale = Vector2.One; Modulate = Colors.White with { A = fade.Alpha };
                 break;
             case LevelCardQueue.Phase.Out:
             {
@@ -281,121 +286,16 @@ public partial class LevelCard : Control
                 var mid = rest + Size / 2;
                 Position = rest + (fold - mid) * e;
                 Scale = new Vector2(1 - 0.75f * e, 1 - 0.85f * e);
-                Modulate = Colors.White with { A = 1 - e };
+                Modulate = Colors.White with { A = (1 - e) * fade.Alpha };
                 break;
             }
         }
-    }
-
-    /// <summary>Text with a dark outline: the string offset in 8 directions at r px, then itself.</summary>
-    void Outlined(Font f, Vector2 p, string t, int size, Color c, float r)
-    {
-        for (int i = 0; i < 8; i++)
-            DrawString(f, p + Vector2.FromAngle(i * Mathf.Pi / 4) * r, t, HorizontalAlignment.Left, -1, size, Dark);
-        DrawString(f, p, t, HorizontalAlignment.Left, -1, size, c);
-    }
-
-    /// <summary>Take B: a soft feathered scrim (a vertex-coloured fan, no edge), the header with its one open chain link,
-    /// the glyph bare, the name and line outlined, the 1 px stem fading out.</summary>
-    void DrawB(LevelCardSpec s)
-    {
-        // the scrim: 1.25 x the text block's width, 1.6 x its height, black 0.62 in the middle, smooth to 0 at the rim
-        var mid = new Vector2(w / 2, h / 2);
-        float ra = 0.625f * contentW, rb = 0.8f * (h - 10);
-        const int Seg = 56, Rings = 8;
-        static float Fall(float t) { float u = 1 - t; return u * u * (3 - 2 * u); }   // (smoothstep down: flat in the middle, 0 slope at the rim)
-        for (int r = 0; r < Rings; r++)
-        {
-            float t0 = (float)r / Rings, t1 = (float)(r + 1) / Rings;
-            var c0 = new Color(0, 0, 0, 0.62f * Fall(t0)); var c1 = new Color(0, 0, 0, 0.62f * Fall(t1));
-            for (int i = 0; i < Seg; i++)
-            {
-                float a0 = i * Mathf.Tau / Seg, a1 = (i + 1) * Mathf.Tau / Seg;
-                Vector2 P(float t, float a) => mid + new Vector2(Mathf.Cos(a) * ra * t, Mathf.Sin(a) * rb * t);
-                if (r == 0) DrawPolygon([mid, P(t1, a0), P(t1, a1)], [c0, c1, c1]);
-                else DrawPolygon([P(t0, a0), P(t1, a0), P(t1, a1), P(t0, a1)], [c0, c1, c1, c0]);
-            }
-        }
-        float scrimBottom = mid.Y + rb;
-        // the stem: 1 px gold fading to nothing at its foot, from the scrim's bottom
-        if (stem > 0)
-        {
-            float m = Mathf.Round(tailX), y0 = Math.Min(scrimBottom, h + stem - 6), y1 = h + stem;
-            var gp = GetGlobalTransform().Origin;
-            var avoid = Avoid().Select(r => (r.Position.X - gp.X, r.Position.Y - gp.Y, r.End.X - gp.X, r.End.Y - gp.Y));
-            foreach (var (a0, a1) in LevelCardPlace.StemSpans(m, y0, y1, avoid))
-            {
-                var c0 = RuleGold with { A = 1 - (a0 - y0) / (y1 - y0) }; var c1 = RuleGold with { A = 1 - (a1 - y0) / (y1 - y0) };
-                DrawPolygon([new(m - 0.5f, a0), new(m + 0.5f, a0), new(m + 0.5f, a1), new(m - 0.5f, a1)], [c0, c0, c1, c1]);
-            }
-        }
-        // the header: the open link, then the words
-        float hx = (w - headRowW) / 2;
-        DrawLink(new Vector2(hx + LinkW / 2, 18), LinkGap * Mathf.Clamp(openT / OpenFor, 0f, 1f));
-        DrawString(Style.Display, new Vector2(hx + LinkW + 8, 23), header, HorizontalAlignment.Left, -1, HeadSize, GlyphGold);
-        if (s.Kind != LevelCardKind.Plain)
-        {
-            const float top = 32;
-            float nameBase = top + 24, lineBase = top + 46;
-            float gx = nameX - 10 - GlyphB, gy = nameBase - 11 - GlyphB / 2;
-            if (glyph != null)
-            {
-                var gr = new Rect2(gx, gy, GlyphB, GlyphB);
-                foreach (var o in new[] { new Vector2(1, 1), new Vector2(-1, 1), new Vector2(1, -1), new Vector2(-1, -1) })
-                    DrawTextureRect(glyph, new Rect2(gr.Position + o, gr.Size), false, new Color(0, 0, 0, 0.7f));
-                DrawTextureRect(glyph, gr, false);
-            }
-            Outlined(Style.Display, new Vector2(nameX, nameBase), name, nameSz, Cream, 2);
-            if (s.Kind != LevelCardKind.LampLit)
-            {
-                Outlined(Style.Ui, new Vector2((w - TextW(Style.Ui, line, LineSize)) / 2, lineBase), line, LineSize, Parch, 1.5f);
-                if (line2 != "") Outlined(Style.Ui, new Vector2((w - TextW(Style.Ui, line2, LineSize)) / 2, lineBase + LineSize + 4), line2, LineSize, Parch, 1.5f);
-            }
-            else
-            {
-                float x = (w - TextW(Style.Ui, before + arrow, LineSize) - TextW(Style.UiBold, after, LineSize) - TextW(Style.Ui, measure, LineSize)) / 2;
-                Outlined(Style.Ui, new Vector2(x, lineBase), before + arrow, LineSize, Dim, 1.5f);
-                x += TextW(Style.Ui, before + arrow, LineSize);
-                Outlined(Style.UiBold, new Vector2(x, lineBase), after, LineSize, Cream, 1.5f);
-                x += TextW(Style.UiBold, after, LineSize);
-                Outlined(Style.Ui, new Vector2(x, lineBase), measure, LineSize, Parch, 1.5f);
-            }
-        }
-        if (prompt != "" && promptCap != null)
-        {
-            float promptTop = s.Kind != LevelCardKind.Plain ? 88 + (line2 != "" ? LineSize + 4 : 0) : 36;
-            float px = (w - promptW) / 2 + promptCap.ChipBox().Size.X * CapK + 10;
-            Outlined(Style.Ui, new Vector2(px, promptTop + 14), prompt, PromptSize, Parch, 1.5f);
-        }
-    }
-
-    /// <summary>The one chain motif: an open oval link (16 x 10, 2 px stroke), its right side cut by gapDeg, the cut ends flared outward.</summary>
-    void DrawLink(Vector2 c, float gapDeg)
-    {
-        float a = LinkW / 2 - 1, b = LinkH / 2 - 1, half = Mathf.DegToRad(gapDeg) / 2;
-        var pts = new List<Vector2>();
-        if (half <= 0.001f) half = 0;
-        int n = 36;
-        for (int i = 0; i <= n; i++)
-        {
-            float t = half + (Mathf.Tau - 2 * half) * i / n;
-            pts.Add(c + new Vector2(Mathf.Cos(t) * a, Mathf.Sin(t) * b));
-        }
-        // the flare: each cut end turns a hair outward (away from the gap's axis, and right)
-        float fl = Mathf.Clamp(gapDeg / LinkGap, 0, 1) * 1.8f;
-        if (fl > 0)
-        {
-            pts.Insert(0, pts[0] + new Vector2(fl, fl * 0.9f));
-            pts.Add(pts[^1] + new Vector2(fl, -fl * 0.9f));
-        }
-        DrawPolyline(pts.ToArray(), RuleGold, 2, true);
     }
 
     public override void _Draw()
     {
         if (shown == null) return;
         var s = shown;
-        if (CardB) { DrawB(s); return; }
         // the ground and its two rules (the panel ends cleanly: square, no border, no ornament)
         DrawRect(new Rect2(0, 0, w, h), Ground);
         foreach (float ry in new[] { 0f, h - 2 })

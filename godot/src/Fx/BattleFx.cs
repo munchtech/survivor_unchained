@@ -151,6 +151,18 @@ public partial class BattleFx : Node3D
     /// <summary>The ground's height under a point (as the marks lie on it).</summary>
     public double GroundAt(double x, double z) => heightAt(x, z);
 
+    /// <summary>The ground each live telegraph mark covers, for the level card to keep clear of: a ring is one disc (A = B), a lane a
+    /// capsule from A to B, each of radius R (m). Nothing allocated but the caller's list.</summary>
+    public void TelegraphSpans(List<(Vector3 A, Vector3 B, float R)> into)
+    {
+        foreach (var m in marks)
+        {
+            if (!m.Active || m.FadeLeft > 0) continue;
+            if (m.Length > 0) { var a = m.From; into.Add((a, a + m.Along * m.Length, m.Radius)); }
+            else { var c = m.Decal.GlobalPosition; into.Add((c, c, Mathf.Max(m.Radius, 0.1f))); }
+        }
+    }
+
     public BattleFx(Func<double, double, double> heightAt)
     {
         this.heightAt = heightAt;
