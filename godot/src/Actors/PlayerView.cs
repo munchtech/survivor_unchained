@@ -2609,7 +2609,7 @@ public partial class PlayerView : Node3D
     {
         var sk = person.Skeleton;
         // (aim-move) BODY2's joints, taken here: after the modifiers (SkeletonUpdated); a FramePreDraw read sees the pose they restored
-        for (int bi = 0; bi < BodyBones.Length; bi++) { int bx = sk.FindBone(BodyBones[bi]); bodyW[bi] = bx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bx).Origin : Vector3.Zero; }
+        for (int bi = 0; bi < BodyBones.Length; bi++) { int bx = sk.FindBone(BodyBones[bi]); if (bx < 0 && BodyBones[bi] == "head") bx = sk.FindBone("Head"); bodyW[bi] = bx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bx).Origin : Vector3.Zero; }
         { int hx = sk.FindBone("Head"); if (hx < 0) hx = sk.FindBone("head"); headW = hx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(hx).Origin : Vector3.Zero; }
         int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
         if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
@@ -2705,7 +2705,7 @@ public partial class PlayerView : Node3D
             c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
             c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
             c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
-            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd);
+            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd); c.Cross = F(37, c.Cross ? 1f : 0f) > 0f;
         }
         return c;
     }

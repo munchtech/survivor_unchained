@@ -259,7 +259,11 @@ public class SideCarryTests
             if (!float.IsNaN(pa) && (!turnOnly || i <= 6))
             {
                 float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
-                worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - MathF.Abs(W(a0 - pc)) - c.ScreenRate * Dt);
+                float cap = MathF.Abs(W(a0 - pc)) + c.ScreenRate * Dt;
+                // (lead r9) a crossing of the down band is made whole in one frame: up to twice its edge plus the slack
+                if (c.Cross && (a > 0f) != (pa > 0f) && MathF.Abs(pa) >= c.DownBand - 0.5f && MathF.Abs(a) >= c.DownBand - 0.5f)
+                    cap = MathF.Max(cap, 2f * (c.DownBand + c.CrossMargin) + c.CrossSlack + 1f);
+                worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - cap);
             }
             pa = a; pc = a0;
         }
@@ -327,6 +331,44 @@ public class SideCarryTests
                 Assert.True(MathF.Abs(a) >= MathF.Min(MathF.Abs(a0), c.Hold) - 6f, $"frame {i}: {a:F1} against the clip's {a0:F1}");
             pa = a;
         }
+    }
+
+    // (judge r6, lead r9) A stand pivot (her sword side swung away through her back or front): the drawn blade, once out of the
+    // down band, never lands back inside it while the layer holds weight; it waits at the edge and crosses in one frame.
+    static int BandLandings(bool cross, float to, int turnFrames)
+    {
+        var c = new SideCarry { Cross = cross };
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float pa = float.NaN; int n = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / (float)turnFrames);
+            var f = At(face, 0f);
+            c.Step(Dt, true, 0f, f);
+            float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            if (MathF.Abs(pa) >= c.DownBand && MathF.Abs(a) < c.DownBand - 0.5f && (c.Weight >= c.CrossWeight || MathF.Abs(a0) >= c.DownBand)) n++;
+            pa = a;
+        }
+        return n;
+    }
+
+    [Theory]
+    [InlineData(-90f, 6)]
+    [InlineData(270f, 6)]
+    [InlineData(-90f, 12)]
+    [InlineData(270f, 12)]
+    [InlineData(180f, 8)]
+    [InlineData(0f, 8)]
+    public void AStandPivotNeverDropsTheBladeIntoTheDownBand(float to, int turnFrames) =>
+        Assert.Equal(0, BandLandings(true, to, turnFrames));
+
+    [Fact]
+    public void WithoutTheCrossRuleAPivotDoesLandInTheBand()
+    {
+        int n = 0;
+        foreach (var (to, tf) in new[] { (-90f, 6), (270f, 6), (-90f, 12), (270f, 12), (180f, 8), (0f, 8) }) n += BandLandings(false, to, tf);
+        Assert.True(n > 0, "the pivot cases never touch the band, so the theory above tests nothing");
     }
 
     // (judge r4, solver 18) A calf across the drawn blade's line (strafe_fx_a: the crossing foot behind the blade's middle):

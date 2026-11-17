@@ -94,6 +94,14 @@ public sealed class SideCarry
     /// its target at up to CarryRate deg/s, not only the clip's turn + ScreenRate: a blade left across vertical by a turn
     /// sweeps through in a frame or two instead of hanging there. CarryRate 0: off.</summary>
     public float CarryRate = 300f, TurnEnd = 120f;
+    /// <summary>(judge r6, lead r9) The drawn blade never lands within <see cref="DownBand"/> deg of straight down (the 180 deg
+    /// stand pivots dropped it past her boots): at the band's edge it waits on its side (<see cref="CrossMargin"/> deg outside)
+    /// while the target lies in the band or short of it, and crosses whole in one frame (up to twice the edge plus
+    /// <see cref="CrossSlack"/> deg) once the target is out on the far side. Off where the layer is nearly faded (under
+    /// <see cref="CrossWeight"/>) onto a clip whose own blade is in the band. The calf pass's out-turn is held the same way:
+    /// it never pulls the drawn blade into the band or back across it. Cross false: off.</summary>
+    public bool Cross = true;
+    public float CrossMargin = 0.05f, CrossSlack = 0.3f, CrossWeight = 0.15f;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -268,6 +276,28 @@ public sealed class SideCarry
         }
         if (ClearAtk > 0f) tg = MathF.Max(n0, MathF.Min(tg, OutTurn + ClearAtk * dt));
         OutTurn = MathF.Max(tg, OutTurn - ClearDown * dt);
+        if (Cross)
+        {   // (lead r9) never into the down band, nor back across: else the out-turn on the drawn side nearest this one, clear first
+            float aIn = ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f);
+            if (MathF.Abs(aIn) >= DownBand)
+            {
+                float aX = ScreenAngle(Turned(b, left, Tilt, ahead, Inward - OutTurn), f.Jx, f.Jy, 1f);
+                if (MathF.Abs(aX) < DownBand || (aX > 0f) != (aIn > 0f))
+                {
+                    float want = MathF.Min(Clear, ClearOf(b, f.Length, cur)), top = OutMax * Weight, best = float.NaN;
+                    int bestK = 2; float bestD = float.MaxValue;
+                    for (float p = 0f; p <= top + 0.01f; p += 0.5f)
+                    {
+                        var dp = Turned(b, left, Tilt, ahead, Inward - p);
+                        float ap = ScreenAngle(dp, f.Jx, f.Jy, 1f);
+                        if (MathF.Abs(ap) < DownBand || (ap > 0f) != (aIn > 0f)) continue;
+                        int k = ClearOf(dp, f.Length, cur) >= want ? 0 : 1; float d = MathF.Abs(p - OutTurn);
+                        if (k < bestK || (k == bestK && d < bestD)) { bestK = k; bestD = d; best = p; }
+                    }
+                    if (!float.IsNaN(best)) OutTurn = best;
+                }
+            }
+        }
         Inward -= OutTurn;
     }
 
@@ -370,7 +400,17 @@ public sealed class SideCarry
         }
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
-        float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim);
+        float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = DownBand + CrossMargin;
+        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= DownBand) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
+        {
+            float dside = was > 0f ? 1f : -1f;
+            if ((aT > 0f) != (was > 0f) && MathF.Abs(aT) >= edge)
+            {
+                float full = was - dside * MathF.Min(MathF.Max(lim, 2f * edge + CrossSlack), MathF.Abs(Wrap(aT - was)));
+                aW = MathF.Abs(full) >= edge ? full : dside * edge;
+            }
+            else aW = dside * edge;
+        }
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
         if (MathF.Abs(Wrap(aW - aT)) > 0.05f)
