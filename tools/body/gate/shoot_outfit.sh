@@ -21,6 +21,9 @@ S[play_play_day]="--zone arena --quick $CAL --auto idle --time day --seconds 5"
 AT=${AT:-}
 S[play_run_hold]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 20 --hold ${RUN[$CAL]}@0.25"
 S[play_hit_hold]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 30 --hold ${HIT[$CAL]}"
+# (back views, the judge 17 Nov: her seat at the play camera, run away from the camera and the leap's crouch)
+S[play_run_back]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 200 --hold ${RUN[$CAL]}@0.25"
+S[play_leap_back]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 200 --hold leap@0.4"
 KEYS=${4:-look_look_day close_town_day play_town_day play_play_day play_run_hold play_hit_hold}
 python $TURN take godot "lane G refit: $TAG outfit shots" --wait 900 || { echo "NO TURN"; exit 2; }
 give() { python $TURN give godot "lane G refit: $TAG outfit shots"; }
