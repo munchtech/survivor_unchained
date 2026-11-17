@@ -172,6 +172,7 @@ public partial class GameHud : CanvasLayer
         if (Args.Has("hurt-mul")) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
         // (debug --shot-boss-flash P: a boss's struck flash reaches the view at P on the hit's frame; Battle.BossFlashShot)
         if (Args.Has("shot-boss-flash")) SurvivorUnchained.Sim.Battle.BossFlashShot = Args.Num("shot-boss-flash", 0.4f);
+        if (Args.Has("struck-trace")) SurvivorUnchained.Sim.Battle.HitTrace = s => GD.Print(s);
         BuildTally();
         BuildCorner();
         BuildEdges();

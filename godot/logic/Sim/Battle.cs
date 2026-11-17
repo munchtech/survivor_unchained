@@ -1104,7 +1104,10 @@ public sealed partial class Battle
         e.Overflow += broke;
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
-        e.Flash = e.Boss ? Math.Max(e.Flash, BossFlashShot > 0 ? BossFlashShot + 11.0 / 30 : 0.4) : 1;
+        e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
+        // (lane E lead 7: the decay-order fix, Enemy.FlashAt, is the bosses' only: on the pack the view's first struck flash
+        // going .63 -> 1 changed the judged Sunder frame (l7b_sun vs l6_sun, 7230 px in the pack box against ~1600 noise))
+        if (e.Boss) e.FlashAt = Time;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
         double dx = o.DirX, dz = o.DirZ;
@@ -1146,6 +1149,7 @@ public sealed partial class Battle
         else if (tags.Has(Tag.Melee)) Profile.Melee += dmg;
         else Profile.Area += dmg;
 
+        if (HitTrace != null && (e.Boss || blocked)) HitTrace($"[hit-trace] t={Time:F3} def={e.Def.Id} boss={e.Boss} dmg={dmg:F1} crit={crit} blocked={blocked} takenMul={e.TakenMul:F2} ironRule={Rules.IronSkin:F2} ironDef={e.Def.IronSkin:F2} proj={o.Projectile} guard={(e.Def.Guard != null)} school={school} art={o.Weapon?.Art} dot={o.Dot}");
         Events.Emit(new Ev.Hit
         {
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, TargetSeed = e.Seed, Time = Time, Dot = o.Dot, Blocked = blocked,
@@ -1923,6 +1927,8 @@ public sealed partial class Battle
     /// her weapons (Step: Firing.Tick, then Ai.Update) takes 11/s off it in the hit's own step, so play's 0.4 reaches the view as
     /// about 0.03 at 30 fps, under the den shader's 0.12 knee (vat dn_hit): P is the peak the view sees on the hit's frame.</summary>
     public static double BossFlashShot;
+    /// <summary>(dev, TEMPORARY lane E lead 7: --struck-trace) a line per blow on a boss or a blow marked blocked.</summary>
+    public static Action<string>? HitTrace;
 
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {

@@ -242,6 +242,7 @@ public partial class BattleFx : Node3D
         DiscReady();
         CrowdView.StruckRim = StruckRimOn;
         CrowdView.FlashHeld = WgFlash;
+        CrowdView.BossPulse = BossPulseOn;
         CrowdView.DeathHeld = WgDeathLag;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
@@ -1486,6 +1487,8 @@ public partial class BattleFx : Node3D
                         if (!Flare.HushesHitSparks) Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
+                    // (lane E lead 7: a den boss's struck look, a whole-body steel flash and a small spark on her side: BattleFx.BossStruck)
+                    if (Atmosphere.CrowdDen && b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Boss: true, Alive: true } sb) BossStruck(sb, b);
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
                     // (The Warden's line and heave: the number waits for the view's blow, the tip or the heave.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
@@ -1551,6 +1554,7 @@ public partial class BattleFx : Node3D
                     var at = V(e.X, Y(e.X, e.Z) + 1.2, e.Z);
                     if (e.Dodged || e.Blocked)
                     {
+                        if (BossStruckTrace) GD.Print($"[her-block] f={Engine.GetFramesDrawn()} {(e.Dodged ? "dodged" : "blocked")} source={e.Source} at=({e.X:F2},{e.Z:F2})");
                         Hits.Text(at, e.Dodged ? "dodged" : "blocked", new Color(0.8f, 0.85f, 0.95f), 44);
                         Burst(at, e.Blocked ? School.Holy : School.Physical, 12, 4);
                         break;

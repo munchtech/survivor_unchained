@@ -436,6 +436,11 @@ public partial class CrowdView : Node3D
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
+    /// <summary>(lane E lead 7) A den boss's struck flash this frame, 1 in its pulse (BattleFx.BossStruck: rate-limited, so a boss
+    /// struck many times a second flashes distinctly); it drives the boss's flare and flinch in place of its sim flash.</summary>
+    public static Func<int, float>? BossPulse;
+    /// <summary>(lane E lead 7) A den boss's flinch in its pulse (the old struck boss's sim flash).</summary>
+    const float BossFlinch = 0.4f;
     /// <summary>How far a dying body's death runs behind the sim's (s, by id and seed; 0 none): the Warden's heave kills
     /// stand in their last living pose until the heave lands, then fall, burst and are thrown on DieT minus this.</summary>
     public static Func<int, double, double>? DeathHeld;
@@ -932,7 +937,9 @@ public partial class CrowdView : Node3D
             if (stRole != null && e.State == EnemyState.Active && asset.Clips.ContainsKey(stRole)) { role = stRole; t = stT; }
         }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
+        float bp = e.Boss && Atmosphere.CrowdDen && e.State != EnemyState.Dying ? BossPulse?.Invoke(e.Id) ?? 0 : -1;
         float f = e.State == EnemyState.Dying ? 0 : (FlashHeld?.Invoke(e.Id) ?? (float)e.Flash) * (1 - Still);
+        if (bp >= 0) f = bp * BossFlinch * (1 - Still);
         // Local hit-stop: the pose (and the flash) of the first held frame is held, running at the rate; no walk, no slide.
         double shx = 0, shz = 0;   // (the shake is drawn on the body only: never in the place the walker rule reads)
         if (stopped)
@@ -1057,6 +1064,9 @@ public partial class CrowdView : Node3D
         if (lrim > 0) { hk = new Vector2(WarmFlash, Math.Max(warm ? 0 : hk.Y, lrim)); warm = true; }
         else if (hk.X >= 0) hk.Y *= SurvivorUnchained.View.BattleFx.KillDimNow;
         if (hk.X >= 0) flare = hk.X;
+        // (lane E lead 7: a den boss's struck look is its pulse alone, whole body: vat DEN_BOSS_STRUCK)
+        if (bp >= 0) flare = bp;
+        if (StruckTrace && bp > 0) GD.Print($"[boss-pulse] f={Engine.GetFramesDrawn()} id={e.Id}");
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();

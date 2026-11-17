@@ -264,6 +264,12 @@ uniform float den_head = 0.0;
 // the cap, so no cap), chroma to at least DEN_HIT_BOSS.y at DEN_HIT's hue; its back and mane keep theirs. At the pack's step
 // a struck boss, struck all fight long, read orange-red)
 #define DEN_HIT_BOSS vec2(0.04, 0.05)
+// (lane E lead 7, judge 4 17 Nov: "struck read not enough even at .4: whole boss + .15 L for 2-3 frames, steel core mix .4-.5".
+// A struck den boss (its pulse, BattleFx.BossStruck: c_hit 1 for 2-3 frames, at most every 0.18 s) lifts WHOLE, body, back and
+// mane, L up DEN_BOSS_STRUCK.x over each block's own, its chroma mixed DEN_BOSS_STRUCK.y toward steel (C .z at hue .w: cool
+// neutral, not the cream white-out, not the pack's orange). DEN_HIT_BOSS is no longer drawn: the boss's hit is this.)
+// (on screen the den's warm key multiplies it: paint +.11 L reads about +.15, steel C .03 at 250 reads cool-neutral)
+#define DEN_BOSS_STRUCK vec4(0.11, 0.45, 0.03, 250.0)
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
 // tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
 // DEN_DEAD_TOP x (1 - its darkening)) is its den body capped at L DEN_DEAD.x at its kill, going to the bank umber (L .y,
@@ -342,8 +348,10 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		// elite's ruff to the pack's band, and an elite in a fight is struck in most frames)
 		c_hb = c_h * (1.0 - c_acc);
 	}
-	c_l += c_boss ? c_hb * DEN_HIT_BOSS.x : c_h * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
-	c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), c_boss ? DEN_HIT_BOSS.y : DEN_HIT.y), DEN_HIT.z), c_hb);
+	if (!c_boss) {
+		c_l += c_h * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
+		c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), DEN_HIT.y), DEN_HIT.z), c_hb);
+	}
 	if (c_hit < 0.0) {
 		float c_dk = clamp(-c_hit - 1.0, 0.0, 1.0);
 		c_l = mix(min(c_l, DEN_DEAD.x), DEN_DEAD.y, c_dk);
@@ -351,6 +359,11 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	}
 	c_l = mix(c_l0, c_l, c_pull);
 	c_ab = mix(c_ab0, c_ab, c_pull);
+	// (lane E lead 7: the boss's struck step on the final paint, past the pull toward its own albedo, so all of it lands)
+	if (c_boss) {
+		c_l += c_h * DEN_BOSS_STRUCK.x;
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w), c_h * DEN_BOSS_STRUCK.y);
+	}
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);
 	c_m = c_m * c_m * c_m;
