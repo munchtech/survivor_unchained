@@ -6,8 +6,9 @@
 Per clip and per --clip-tour-shots frame k (t = k * len / N), from the pose ruler's full dump (P1PoseProbe, rows tagged clip/t):
   flex_l/r   elbow flexion (deg, 0 = straight): upper arm line vs forearm line
   clav_l/r   clavicle elevation (deg over horizontal, clavicle head to upper arm head); dclav = minus the body's own rest
-  sh_l/r     shoulder top over the neck base (mm): the highest posed vertex of the shoulder cap (rest vertices within 9 cm of
-             the upper arm head, outside the neck) minus neck_01's height
+  sh_l/r     shoulder top over the ground (mm): the highest posed vertex of the shoulder cap (rest vertices within 9 cm of
+             the upper arm head, outside the neck); dsh = its change from the body's own rest (neck_01 is 126 mm lower on B's rig,
+             so the neck joint is not a shared landmark)
   wr_l/r     wrist (hand joint) height over the ground (mm)
   sw_l/r     upper arm swing in her sagittal plane (deg from straight down, + forward)
   scr_l/r    the upper arm's on-screen angle from the screen vertical (deg, the play camera; + = toward screen right)
@@ -122,7 +123,11 @@ class Body:
                 d = s1 - s0
                 out[f"scr_{s}"] = math.degrees(math.atan2(d[0], -d[1]))
             if V is not None:
-                out[f"sh_{s}"] = (V[self.cap[s], 1].max() - J["neck_01"][1]) * 1000
+                # (neck_01 sits 126 mm lower on B's rig than on A's: the cap's top is measured over the ground instead, and as its
+                # change from the body's own rest, scaled as the game scales her)
+                sc = float(np.linalg.norm(m12(r["skeleton"])[:3, 0]))
+                out[f"sh_{s}"] = (V[self.cap[s], 1].max() - gr) * 1000
+                out[f"dsh_{s}"] = out[f"sh_{s}"] - self.P[self.cap[s], 1].max() * sc * 1000
                 L = np.linalg.norm(V[self.E[:, 0]] - V[self.E[:, 1]], axis=1) / np.maximum(self.rest_len, 1e-6)
                 m = self.reg[s]
                 out[f"fold_{s}"] = int((L[m] > 2.5).sum())
@@ -174,7 +179,7 @@ def crop_strip(root, cam, clip, n, out):
             if cam == "close":
                 box = (hx - 480, 0, hx + 480, 1080)
             else:
-                box = (hx - 230, hy - 420, hx + 230, hy + 120)
+                box = (hx - 130, hy - 170, hx + 130, hy + 110)
             row.append(im.crop(box))
         tiles.append(row)
     w = max((t.width for r in tiles for t in r if t), default=0); h = max((t.height for r in tiles for t in r if t), default=0)
@@ -216,9 +221,9 @@ def main():
         for r in R:
             by.setdefault(r["clip"], []).append(b.measure(r, G.get(r["frame"], 0.0)))
         M[t] = by
-    keys = ["flex_l", "flex_r", "dclav_l", "dclav_r", "clav_l", "clav_r", "sh_l", "sh_r", "wr_l", "wr_r", "sw_l", "sw_r", "scr_l", "scr_r",
+    keys = ["flex_l", "flex_r", "dclav_l", "dclav_r", "clav_l", "clav_r", "dsh_l", "dsh_r", "sh_l", "sh_r", "wr_l", "wr_r", "sw_l", "sw_r", "scr_l", "scr_r",
             "fold_l", "fold_r", "crush_l", "crush_r"]
-    thr = {k: (15 if k[:2] in ("sh", "wr") else 5) for k in keys}
+    thr = {k: (15 if k.split("_")[0] in ("sh", "dsh", "wr") else 5) for k in keys}
     table = {}
     for clip, ra in M["A"].items():
         rb = M["B"].get(clip)
@@ -226,16 +231,18 @@ def main():
             print(f"\n## {clip}: not on B"); continue
         ln = max(x["t"] for x in ra) or 1
         print(f"\n## {clip} ({len(ra)} A rows, {len(rb)} B rows; len ~{ln:.2f} s)")
-        print("k  " + " ".join(f"{k:>14s}" for k in keys[:14]) + "   fold/crush A | B (l,r)")
+        print("k  " + " ".join(f"{k:>14s}" for k in keys[:16]) + "   fold/crush A | B (l,r)")
         for k in range(a.n):
             tk = k * ln / a.n
             x = min(ra, key=lambda q: abs(q["t"] - tk)); y = min(rb, key=lambda q: abs(q["t"] - tk))
-            print(f"{k}  " + " ".join(f"{x[q]:6.0f}|{y[q]:<7.0f}" for q in keys[:14]) +
+            print(f"{k}  " + " ".join(f"{x[q]:6.0f}|{y[q]:<7.0f}" for q in keys[:16]) +
                   f"   {x['fold_l']},{x['fold_r']}/{x['crush_l']},{x['crush_r']} | {y['fold_l']},{y['fold_r']}/{y['crush_l']},{y['crush_r']}")
         worst = {}
         for q in keys:
             best = (0, None, None, None)
             for x in ra:
+                if x["t"] < 0.02:
+                    continue   # (the tour's first-pose frame: the clip's t=0 row can hold the clip before's last pose)
                 y = min(rb, key=lambda z: abs(z["t"] - x["t"]))
                 dlt = y[q] - x[q]
                 if abs(dlt) > abs(best[0]):
