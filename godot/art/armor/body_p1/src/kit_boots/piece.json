@@ -4,7 +4,23 @@
  "slot": "boots",
  "style": "mesh",
  "params": {
-  "file": "kit_boots.glb"
+  "file": "kit_boots.glb",
+  "rigid_ride": [
+   {
+    "match": "kneecop_l",
+    "weights": {
+     "thigh_l": 0.65,
+     "calf_share_l": 0.35
+    }
+   },
+   {
+    "match": "kneecop_r",
+    "weights": {
+     "thigh_r": 0.65,
+     "calf_share_r": 0.35
+    }
+   }
+  ]
  },
  "covers": [
   "boots",

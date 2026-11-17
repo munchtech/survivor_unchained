@@ -286,8 +286,11 @@ def boots(cfg, ref):
         x = tk / k["th"]
         kb_y = k["bot"] + k["bot_rise"] * x ** 2
         kt_y = k["top"] - (k["top"] - k["side_top"]) * np.abs(x) ** k["point"]
+        # ("med_off": more stand-off over her inner knee's wing, rising as (t/th)^2 off the ridge; "med_sign" which way
+        # t runs to her inner side. Absent: none, as before)
         ridge = lambda uu, t: k["off"] + k["ridge"] * np.clip(1 - np.abs(t) / k["ridge_w"], 0, 1) ** 2 + \
-            k["dome"] * (1 - (np.asarray(t) / k["th"]) ** 2)  # noqa: E731
+            k["dome"] * (1 - (np.asarray(t) / k["th"]) ** 2) + \
+            k.get("med_off", 0.0) * np.clip(k.get("med_sign", 1.0) * sx * np.asarray(t) / k["th"], 0, 1) ** 2  # noqa: E731
         Fk = tube.field(envelope(tube.rho, (9, 9), (4.0, 4.0)))
         Pk, Nk = patch(tube, Fk, tk, u_of_y(kb_y), u_of_y(kt_y), 12, ridge)
         cop = kb.slab(f"kneecop_{side}_rigid", M["plate"], Pk[::-1], Nk[::-1], cfg["plate_thick"] + 0.0004)
