@@ -73,6 +73,8 @@ public partial class PlayerView : Node3D
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
     /// <summary>--xray-old: the x-ray as demo-rc2 had it (her own body hides her too), for the before strip.</summary>
     static readonly bool XrayOld = SurvivorUnchained.Args.Has("xray-old");
+    /// <summary>--xray-twins: the x-ray rides FxAfter's depth twins (the after-grade layer) and her den shadow's quad too, as before lane E s3.</summary>
+    static readonly bool XrayTwins = SurvivorUnchained.Args.Has("xray-twins");
     static bool XraySolid(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return false;
@@ -110,14 +112,43 @@ public partial class PlayerView : Node3D
         var cam = GetViewport()?.GetCamera3D();
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
+        if (XrayLog && (xrayLogT -= dt) <= 0) { xrayLogT = 1; XrayDump(); }
         // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
         if ((k > 0 || want > 0) && !XrayOld) XraySet("her_at", GlobalPosition);
         if (k == xrayK) return;
-        if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
+        // (lane E s3, 17 Nov: the movement judge's pale squiggle on her shield) never on FxAfter's depth twins (FxAfterHole, layer
+        // 20, the after-grade camera's): there the x-ray drew a second time, over the graded frame, with no mask on the twins
+        // made after Gather (her shield's, her sword's), so her body's outline showed through her own shield. Nor on her den
+        // shadow's ground quad (HerShadow, 6.4 m square: the overlay ignores its cut, so scenery standing in the square took a
+        // faint fill and the square's straight edge an outline). --xray-twins: both as before.
+        if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g) && (XrayTwins || (g.Layers & SurvivorUnchained.View.FxAfter.RenderLayer) == 0 && g is not HerShadow)) xrayOn.Add(g);
         bool was = xrayK > 0;
         xrayK = k;
         XraySet("strength", k);
         if (was != k > 0 && !ghostly) foreach (var g in xrayOn) if (IsInstanceValid(g)) g.MaterialOverlay = k > 0 ? xray : null;
+    }
+    /// <summary>--xray-log: once a second, every mesh under her: shown, in skin, solid, its overlay (the x-ray's own-body mask audit).</summary>
+    static readonly bool XrayLog = SurvivorUnchained.Args.Has("xray-log");
+    float xrayLogT;
+    void XrayDump()
+    {
+        var all = new List<GeometryInstance3D>();
+        void Walk(Node n) { if (n is GeometryInstance3D g) all.Add(g); foreach (var c in n.GetChildren()) Walk(c); }
+        Walk(this);
+        GD.Print($"xray-log k {xrayK:0.00} skin {skin.Count} on {xrayOn.Count} all {all.Count}");
+        foreach (var g in all)
+        {
+            if (!g.IsVisibleInTree() || (g.Layers & 524288u) != 0) continue;
+            string Chain(Material? m) { var o = ""; for (int i = 0; m != null && i < 8; i++, m = m.NextPass) o += $"{(m is ShaderMaterial sm ? System.IO.Path.GetFileNameWithoutExtension(sm.Shader?.ResourcePath ?? "?") : m.GetType().Name)}/{m.RenderPriority}>"; return o; }
+            string mats = "";
+            if (g is MeshInstance3D mi && mi.Mesh != null)
+                for (int s2 = 0; s2 < mi.Mesh.GetSurfaceCount(); s2++)
+                {
+                    var m = mi.GetActiveMaterial(s2);
+                    mats += $"[{Chain(m)}{(m is BaseMaterial3D bm ? $" tr {bm.Transparency} cull {bm.CullMode} dd {bm.DepthDrawMode}" : "")}]";
+                }
+            GD.Print($"xray-log  {g.Name} skin {skin.Contains(g)} on {xrayOn.Contains(g)} layers {g.Layers} ovl {Chain(g.MaterialOverlay)} ovr {Chain(g.MaterialOverride)} mats {mats}");
+        }
     }
     bool ghostly;
     Content.AbilityKind? rushSeen;

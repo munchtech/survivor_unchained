@@ -8,7 +8,9 @@ namespace SurvivorUnchained.Play;
 /// <summary>--press SPEC[;SPEC...] (pictures only): scripted skill and dash presses for a shooting clip, under --auto idle.
 /// SPEC = slot:t:dx,dz[:hold=S]; slot is 1-4 (Act.Skill1..4), dash or swap (swap:2.0:0,0 swaps weapon sets); t is Journey.Playtime seconds (as --cast); dx,dz are metres
 /// from her position at the press moment (the aim); hold=S keeps the key held S seconds (a channel); move walks her along dx,dz
-/// while it is held (a spin steered through a pack), and turn=DEG swings that walk DEG degrees over the hold (a curve). Game.cs wraps scene.Move,
+/// while it is held (a spin steered through a pack), and turn=DEG swings that walk DEG degrees over the hold (a curve). walk:t:dx,dz:hold=S
+/// is a pure walk (no key pressed, no aim: her own steering, as the stick would): walk:2:3,0:hold=1.5;walk:3.5:-3,0:hold=2 is a
+/// 180 degree pivot while walking (lane E s3's repro of the movement judge's long-pivot frames). Game.cs wraps scene.Move,
 /// Pressed, Held and Pointer through this. Each spec fires once, in time order.</summary>
 public sealed class ScriptedPress
 {
@@ -32,7 +34,8 @@ public sealed class ScriptedPress
         {
             var p = raw.Split(':');
             var s = new Spec();
-            if (p[0] == "dash") { s.Act = Act.Dash; s.Slot = 0; }
+            if (p[0] == "walk") { s.Slot = -1; s.Walk = true; }   // (no key: Take, Held and Pointer skip it)
+            else if (p[0] == "dash") { s.Act = Act.Dash; s.Slot = 0; }
             else if (p[0] == "swap") { s.Act = Act.Swap; s.Slot = 0; }
             else { s.Slot = int.Parse(p[0], inv); s.Act = Controls.Skills[s.Slot - 1]; }
             s.T = double.Parse(p[1], inv);
@@ -64,7 +67,7 @@ public sealed class ScriptedPress
         Update();
         foreach (var s in specs)
         {
-            if (s.Act != a || !s.Fired || s.Consumed) continue;
+            if (s.Slot < 0 || s.Act != a || !s.Fired || s.Consumed) continue;
             s.Consumed = true;
             if (!s.Said && her() is { } h)
             {
@@ -82,7 +85,7 @@ public sealed class ScriptedPress
         Update();
         double t = clock();
         foreach (var s in specs)
-            if (s.Act == a && s.Fired && s.Hold > 0 && t < s.At + s.Hold) return true;
+            if (s.Slot >= 0 && s.Act == a && s.Fired && s.Hold > 0 && t < s.At + s.Hold) return true;
         return false;
     }
 
@@ -91,7 +94,7 @@ public sealed class ScriptedPress
         Update();
         double t = clock();
         foreach (var s in specs)
-            if (s.Fired && t < s.At + Math.Max(AimAfter, s.Hold)) return (s.Ax, s.Az);
+            if (s.Slot >= 0 && s.Fired && t < s.At + Math.Max(AimAfter, s.Hold)) return (s.Ax, s.Az);
         return null;
     }
 
@@ -108,7 +111,7 @@ public sealed class ScriptedPress
                 double ta = s.Turn * Math.Clamp((t - s.At) / s.Hold, 0, 1), c = Math.Cos(ta), sn = Math.Sin(ta);
                 if (lw > 1e-6) return ((s.Dx * c - s.Dz * sn) / lw, (s.Dx * sn + s.Dz * c) / lw);
             }
-            if (s.Act != Act.Dash || !s.Fired || t >= s.At + DashMove) continue;
+            if (s.Slot < 0 || s.Act != Act.Dash || !s.Fired || t >= s.At + DashMove) continue;
             double l = Math.Sqrt(s.Dx * s.Dx + s.Dz * s.Dz);
             if (l > 1e-6) return (s.Dx / l, s.Dz / l);
         }
