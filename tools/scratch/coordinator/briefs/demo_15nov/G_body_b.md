@@ -68,3 +68,9 @@ Read:
 
 ## The owner on the callings (17 Nov 2026, word for word)
 - "hide all 3 besides warden for demo.": on B the demo ships the Warden only; reaver, ranger and arcanist are hidden by data (one switch back). Their refit on B (B's crotch and inner-thigh skin weights in Marionette, then the three units) is post-demo.
+
+## The owner on the Warden top (17 Nov 2026, word for word)
+- On the creator side view: "honestly that armor piece dosn't look great at all.  lets make it better designed"
+- "ok redesign it but make sure marionette can copy and paste any of these armor pieces and for \"dressing\" anyway we want you know?"
+- "actually.  try the quick fix first.  and mark that as something to do first next week.  but still make sure marionette is involved with our new gear.  you still don't seem to be following the pipeline but maybe you are"
+- So: lead 8 spends ONE quick-fix round on the far-cup line (trim re-cut first, then cups lowered 25-30 mm), hard stop, else it ships as a known. The Warden top REDESIGN is first thing next week (after the demo), built through Marionette's gear stage (plan step 1a) as the first piece on the real pipe. A Marionette gear-library lead (separate) registers every armor piece now so Marionette can dress any roster body.
