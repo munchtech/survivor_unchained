@@ -276,7 +276,7 @@
   "trim_round": 6.0,
   "trim_tol": 0.0,
   "cop_lift_max": 0.025,
-  "by_body": {"p1": {"exclude": {"bones": ["Head", "neck"], "w": 0.5}, "cop_exclude": null}}
+  "by_body": {"p1": {"exclude": {"bones": ["Head", "neck", "spine_04"], "w": 0.5}, "cop_exclude": null}}
  },
  "liner": {
   "off": 0.0023,
@@ -287,6 +287,7 @@
   "bodice": "kit_bodice",
   "bodice_back": 0.01,
   "smooth": 6,
-  "inset": 0.022
+  "inset": 0.022,
+  "by_body": {"p1": {"inset": 0.014}}
  }
 }
