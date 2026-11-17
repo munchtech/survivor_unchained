@@ -207,6 +207,7 @@ public sealed class SideCarry
     /// <summary>The layer's own turn of the blade on screen now (deg, screen right +): the drawn blade's angle less the clip's.</summary>
     public float Shift { get; private set; }
     float springV, clipPrev = float.NaN, yawRate, psiPrev = float.NaN;
+    public bool CrossFromWas = true; public float ShortLim = 690f; public bool ShortLimTurn = false;
     public bool FadeFreeze = true;
     public float CrossShort = 60f, CrossShortTo = 0.33f;
     bool crossing;
@@ -554,6 +555,7 @@ public sealed class SideCarry
         bandNow = turnBand ? MathF.Max(DownBand, TurnBand) : DownBand;
         // nearly faded onto a clip whose own blade is inside the wide band: only the down band holds (the layer can't hold more)
         if (bandNow > DownBand && Weight < CrossWeight && MathF.Abs(a0) < bandNow) bandNow = DownBand;
+        if (ShortLim > 0f && !float.IsNaN(lastA) && lastShown <= ShortShown && (aT > 0f) != (was > 0f) && (ShortLimTurn || !turnBand)) lim = MathF.Max(lim, ShortLim * dt);
         float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = bandNow + CrossMargin;
         if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
         {
@@ -570,7 +572,7 @@ public sealed class SideCarry
             crossWaitT = defer ? crossWaitT + dt : 0f;
             if (wants && !defer)
             {
-                float full = was - dside * MathF.Min(MathF.Max(lim, 2f * edge + CrossSlack), MathF.Abs(Wrap(aT - was)));
+                float full = was - dside * MathF.Min(MathF.Max(lim, (CrossFromWas && !float.IsNaN(lastA) && lastShown <= ShortShown ? MathF.Max(MathF.Abs(was), edge) : edge) + edge + CrossSlack), MathF.Abs(Wrap(aT - was)));
                 aW = MathF.Abs(full) >= edgeD ? full : dside * keep;
                 // (B r11) in a turn or a run's start the crossing lands out at the wide band's far edge, not short inside it
                 // (e21 leg 4 +4: landed at -12.6 at shown 0.88, a cane for two frames while the keep eased it out)
@@ -689,7 +691,7 @@ public sealed class SideCarry
                     v += wgt * Cane(MathF.Atan2(sx, sy) * R2D, jn > 1e-6f ? MathF.Sqrt(sx * sx + sy * sy) / jn : 0f, uj, pa);
                 }
             }
-            if (hasLast && PitchRev > 0f)
+            if (hasLast && PitchRev > 0f && falling)
             {
                 float dpo = po - lastPoff;
                 if (dpo * lastDPoff < 0f && MathF.Abs(dpo) >= PitchRev && MathF.Abs(lastDPoff) >= PitchRev) v += 0.02f + 0.005f * MathF.Min(MathF.Abs(dpo), MathF.Abs(lastDPoff));
