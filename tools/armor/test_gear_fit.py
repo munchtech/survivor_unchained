@@ -488,3 +488,27 @@ def test_ornaments_ride_as_one():
     c = comp_of[0]
     assert (c[12:] == -1).all() and len(lead) == 3
     assert lead[c[4]] == c[0] and lead[c[8]] == c[8] and lead[c[0]] == c[0]
+
+
+def test_plates_ride_as_a_rides_them():
+    """ORNAMENT "plates": a metal part over max_mm that A skins with one blend is rigid too and keeps A's blend by joint
+    name (the plain mean only when the body lacks a joint of it); a small one keeps none (the plain mean)."""
+    def quad(c, s):
+        P = np.array([[c[0] - s, c[1] - s, c[2]], [c[0] + s, c[1] - s, c[2]], [c[0] + s, c[1] + s, c[2]], [c[0] - s, c[1] + s, c[2]]])
+        return P, np.array([[0, 1, 2], [0, 2, 3]])
+    parts = [quad((0, 0, 0), 0.018), quad((0, 0.3, 0), 0.06)]
+    X = np.vstack([p for p, _ in parts])
+    T = np.vstack([t + 4 * k for k, (_, t) in enumerate(parts)])
+    J = np.tile([[0, 1]], (8, 1))
+    W = np.tile([[0.25, 0.75]], (8, 1)).astype(float)
+    inv = np.arange(8)
+    assert gf.ornament_mask("boots.steel", X, T, inv, J, W).all()
+    pid, bl = gf.plate_blends("boots.steel", X, T, inv, J, W, ["thigh_l", "calf_l"])
+    assert (pid[:4] == -1).all() and (pid[4:] == 0).all() and bl == [{"thigh_l": 0.25, "calf_l": 0.75}]
+
+    class B:
+        joint_names = ["root", "calf_l", "thigh_l"]
+    Jb, Wb = gf.a_blend(B, bl[0])
+    assert Jb[0] == 1 and abs(Wb[0] - 0.75) < 1e-9 and Jb[1] == 2 and abs(Wb[1] - 0.25) < 1e-9
+    B.joint_names = ["root", "calf_l"]
+    assert gf.a_blend(B, bl[0]) is None

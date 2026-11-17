@@ -72,7 +72,7 @@ PEOPLE = os.path.join(REPO, "godot", "art", "people")
 ARMOR = os.path.join(REPO, "godot", "art", "armor")
 GEAR = os.path.join(REPO, "godot", "art", "gear")
 BIND = os.path.join(GEAR, "bind")
-BIND_VERSION = 1  # bump when the bind step changes what it writes; `stale` then rebinds everything
+BIND_VERSION = 2  # bump when the bind step changes what it writes; `stale` then rebinds everything
 OUT = os.path.join(GEAR, "out")
 BIND_BODY = os.path.join(PEOPLE, "body_p1")
 A_PATH = os.path.join(PEOPLE, "heroine.glb")
@@ -90,7 +90,14 @@ SMALL_SHARE = 0.02
 # on its upper rays and form_support_press / _lift deltas 12 mm apart, and with the top worn (support 1: the shapes on,
 # the springs' tips ~20 mm up) its upper rays stood out of it as a blade (36 mm off rigid at the worn rest; 0.1 mm as
 # one). A smaller part within "ride_mm" of a larger one rides it (the boss's gem); one further from all rides itself.
-ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink")}
+ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink"), "plates": True}
+# A PLATE RIDES AS A RIDES IT (main's call, 17 Nov, Lane G: "plates over 80 mm ride RIGID on B as on A"): a component as
+# above but longer than "max_mm" (the warden boots' shin, knee and instep plates, 105-134 mm; the dome pauldron's steel,
+# 180 mm) is rigid on every body too, placed the same way, and rides A's OWN blend of weights by joint name (A made the
+# shin plate move with the calf alone, {calf: 1}: the plain mean of B's skin under it would mix in thigh and foot and turn
+# it half-way with the knee and ankle). A joint of A's blend that B lacks: the plain mean, as an ornament. Bendy on B
+# before (17 Nov, f19b161e0), each vertex took its own skin point's weights: the 180 mm pauldron steel spread 55 mm of
+# shape deltas over itself and the boots' plates bent at the knee and ankle.
 OUTFIT_KINDS = ("outfit", "outfit_lod")
 SMOOTH = {"rounds": 12, "near_m": 0.004, "far_m": 0.02}
 TIERS = ("close", "play")
@@ -142,7 +149,48 @@ def ornament_mask(node, X, Tu, inv, J, W, nj=None):
         np.minimum.at(mn, lab, X[:, k])
         ext[:, k] = mx - mn
     small = ext.max(1) <= ORNAMENT["max_mm"] / 1000.0
-    return (uni & small)[lab]
+    return (uni & (small | bool(ORNAMENT.get("plates"))))[lab]
+
+
+def plate_blends(node, X, Tu, inv, J, W, names):
+    """Per unique point of an outfit mesh: the index of its plate's A blend in the returned list ({joint name: weight},
+    weights over 1e-4, summing to 1), -1 off the plates (ORNAMENT "plates": rigid components longer than "max_mm")."""
+    pid = np.full(len(X), -1, np.int32)
+    blends = []
+    m = ornament_mask(node, X, Tu, inv, J, W)
+    if not m.any():
+        return pid, blends
+    nc, lab, _ = components(Tu, len(X), X)
+    first = np.full(len(X), -1, np.int64)
+    first[inv[::-1]] = np.arange(len(inv))[::-1]
+    for c in np.unique(lab[m]):
+        own = lab == c
+        ext = (X[own].max(0) - X[own].min(0)).max()
+        if ext <= ORNAMENT["max_mm"] / 1000.0:
+            continue
+        v = int(first[np.nonzero(own)[0][0]])
+        w = W[v] / max(float(W[v].sum()), 1e-12)
+        bl = {}
+        for j, x in zip(J[v], w):
+            if x > 1e-4:
+                bl[names[int(j)]] = bl.get(names[int(j)], 0.0) + float(x)
+        pid[own] = len(blends)
+        blends.append(bl)
+    return pid, blends
+
+
+def a_blend(body, blend):
+    """A plate's A blend ({joint name: weight}) as the body's (J, W) top 8, or None when the body lacks one of its joints."""
+    names = body.joint_names
+    if any(n not in names for n in blend):
+        return None
+    items = sorted(blend.items(), key=lambda kv: -kv[1])[:8]
+    J = np.zeros(8, np.int64)
+    W = np.zeros(8)
+    tot = sum(x for _, x in items)
+    for k, (n, x) in enumerate(items):
+        J[k], W[k] = names.index(n), x / tot
+    return J, W
 
 
 def units():
@@ -374,6 +422,21 @@ def rigid_roles(path=None):
     if path not in _ROLES:
         _ROLES[path] = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"slots": {}}
     return _ROLES[path]
+
+
+def plate_blend_of(bd, ms, own_all):
+    """The A blend of the plate a rigid component (own_all over the tier's uniques) is (ORNAMENT "plates"), or None."""
+    k0 = 0
+    for mm in ms:
+        n = len(bd.z[f"comp{mm['i']}"])
+        key = f"pbl{mm['i']}"
+        if key in bd.z and mm.get("plate_blends"):
+            ids = bd.z[key][own_all[k0:k0 + n]]
+            ids = ids[ids >= 0]
+            if len(ids):
+                return mm["plate_blends"][int(np.bincount(ids).argmax())]
+        k0 += n
+    return None
 
 
 def rigid_blend(body, trs, ws, slot, roles=None):
@@ -736,9 +799,13 @@ def bind_unit(u, car, bodies):
         if h.any():
             Nv = U(h[inv] * U(N) + (1 - h[inv]) * Nv)
         orn = ornament_mask(node, X, Tu, inv, J, W) if u["kind"] in OUTFIT_KINDS and not rg else None
+        pbl, pblends = (np.full(len(X), -1, np.int32), [])
+        if orn is not None and orn.any() and ORNAMENT.get("plates"):
+            sk = g.js["skins"][g.js["nodes"][ni]["skin"]]
+            pbl, pblends = plate_blends(node, X, Tu, inv, J, W, [g.js["nodes"][j].get("name", "") for j in sk["joints"]])
         by_tier.setdefault(tier, []).append(dict(i=i, node=node, rg=rg, X=X, Xb=Xb, Nv=Nv, Mu=M_all[first], N=U(N), inv=inv,
                                                  T=Tu, E=E, nv=len(P), cA=cA, move=np.linalg.norm(Xb - X, axis=1),
-                                                 orn=orn if orn is not None and orn.any() else None))
+                                                 orn=orn if orn is not None and orn.any() else None, pbl=pbl, pblends=pblends))
     aux = None
     if u.get("sockets"):
         aux = socket_points(json.load(open(os.path.join(REPO, u["sockets"]))))
@@ -818,8 +885,11 @@ def bind_tier(u, tier, ms, body, car, rotAB, lead, arrays, metas, rep):
         nloc = np.einsum("nji,nj->ni", F[m["inv"]], Nb)
         arrays.update({f"inv{i}": m["inv"], f"tri{i}": tri, f"bw{i}": bq, f"off{i}": off, f"nrm{i}": snorm16(nloc),
                        f"comp{i}": comp.astype(np.int32)})
+        if m.get("pblends"):
+            arrays[f"pbl{i}"] = m["pbl"]
         metas.append({"i": i, "node": m["node"], "tier": tier, "rigid": bool(m["rg"]), "nv": int(m["nv"]),
-                      "nu": int(len(Xb)), "ornament_uniques": int((comp >= 0).sum()) if not m["rg"] else 0})
+                      "nu": int(len(Xb)), "ornament_uniques": int((comp >= 0).sum()) if not m["rg"] else 0,
+                      "plate_blends": m.get("pblends") or []})
         Xe, _ = eval_points(body, tri, bq, off)
         cB, _ = car.b_clear(Xb)
         cA = m["cA"]
@@ -1261,8 +1331,10 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     # the leader's bound points over all meshes of the tier
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    J[sel], W[sel] = rigid_blend(body, trs, ws, None if (join and int(c) in join["mean"]) or not armor_laws
-                                                 else bd.meta["row"].get("slot"))
+                    ab = None if armor_laws else plate_blend_of(bd, ms, own_all)
+                    ab = None if ab is None else a_blend(body, ab)
+                    J[sel], W[sel] = ab if ab is not None else rigid_blend(
+                        body, trs, ws, None if (join and int(c) in join["mean"]) or not armor_laws else bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)

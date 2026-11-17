@@ -17,10 +17,10 @@ S[look_look_day]="--new --sex female --step 1 --archetype $CAL --zoom 0.45 --tim
 S[close_town_day]="--zone waystation --quick $CAL --close 1 --idle-after 1 --time day --seconds 5"
 S[play_town_day]="--zone waystation --quick $CAL --time day --seconds 5"
 S[play_play_day]="--zone arena --quick $CAL --auto idle --time day --seconds 5"
-# (holds: in the sun, clear of the townsfolk; the town spawn stands in a roof's shadow beside a villager)
-AT=${AT:-19,4.5}
-S[play_run_hold]="--zone waystation --at $AT --quick $CAL --time day --seconds 6 --facing 20 --hold ${RUN[$CAL]}@0.25"
-S[play_hit_hold]="--zone waystation --at $AT --quick $CAL --time day --seconds 6 --facing 30 --hold ${HIT[$CAL]}"
+# (holds: at the town spawn; AT=x,z moves them, but 19,4.5 is a market stall with name labels (refit lead 1, 17 Nov))
+AT=${AT:-}
+S[play_run_hold]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 20 --hold ${RUN[$CAL]}@0.25"
+S[play_hit_hold]="--zone waystation ${AT:+--at $AT} --quick $CAL --time day --seconds 6 --facing 30 --hold ${HIT[$CAL]}"
 KEYS=${4:-look_look_day close_town_day play_town_day play_play_day play_run_hold play_hit_hold}
 python $TURN take godot "lane G refit: $TAG outfit shots" --wait 900 || { echo "NO TURN"; exit 2; }
 give() { python $TURN give godot "lane G refit: $TAG outfit shots"; }
