@@ -466,3 +466,25 @@ def test_import_stale_and_stamp(tmp_path):
     gf.stamp_file(str(g))
     assert gf.gltf_stamp_state(str(g))[0]
     assert "changed since import" in gf.import_stale(str(g), str(godot))[0]
+
+
+def test_ornaments_ride_as_one():
+    """ORNAMENT: an outfit metal part A skins with one blend (and small) is rigid; one A bends is not; a gem touching a
+    boss rides it, a stud far from both rides itself; leather never."""
+    def quad(c, s):
+        P = np.array([[c[0] - s, c[1] - s, c[2]], [c[0] + s, c[1] - s, c[2]], [c[0] + s, c[1] + s, c[2]], [c[0] - s, c[1] + s, c[2]]])
+        return P, np.array([[0, 1, 2], [0, 2, 3]])
+    parts = [quad((0, 0, 0), 0.018), quad((0, 0, 0.001), 0.0175), quad((0.2, 0, 0), 0.003), quad((0, 0.3, 0), 0.06)]
+    X = np.vstack([p for p, _ in parts])
+    T = np.vstack([t + 4 * k for k, (_, t) in enumerate(parts)])
+    J = np.tile([[0, 1]], (16, 1))
+    W = np.tile([[0.6, 0.4]], (16, 1)).astype(float)
+    W[12] = [0.1, 0.9]    # the last part: A bends it
+    inv = np.arange(16)
+    m = gf.ornament_mask("piece.gold", X, T, inv, J, W)
+    assert m[:12].all() and not m[12:].any()
+    assert not gf.ornament_mask("piece.darkleather", X, T, inv, J, W).any()
+    comp_of, lead, _ = gf.rigid_groups([X], [T], [16], [m], reach=gf.ORNAMENT["ride_mm"] / 1000.0)
+    c = comp_of[0]
+    assert (c[12:] == -1).all() and len(lead) == 3
+    assert lead[c[4]] == c[0] and lead[c[8]] == c[8] and lead[c[0]] == c[0]

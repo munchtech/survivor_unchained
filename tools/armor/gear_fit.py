@@ -79,6 +79,19 @@ A_PATH = os.path.join(PEOPLE, "heroine.glb")
 BAND_MM = {0: 1.0, 1: 1.0, 2: 2.0, 3: 3.0}
 BENDY_MATS = ("leather", "thread", "cloth", "satin", "fur", "hide", "linen", "stocking", "glove", "pipe")
 SMALL_SHARE = 0.02
+# AN ORNAMENT RIDES AS ONE (outfit rows; the refit lead, 17 Nov: nothing of B in an outfit may read worse than A): a
+# component of an outfit's metal mesh (not BENDY_MATS, not a shadow or ink) that A's file skins with ONE blend of weights
+# (every joint's weight the same over it within "uniform": A made it to move rigidly) and whose longest side at A's rest
+# is at most "max_mm" (a boss, a gem, a buckle, a clasp, a stud; A's rigid outfit parts measured 7 to 67 mm, its rigid
+# plates 105 mm and up) is a rigid component on every body: placed A -> B by Procrustes, one blend of weights (the plain
+# mean of the body's weights over its own bound points: no slot roles, no worn rest, no stand-off law; those are the
+# armor rows'), its blend shapes as their mean delta. Bendy, each vertex took the weights and shapes of its own bound skin
+# point: the warden top's sternum boss (37 mm, 42 mm off her skin over the cleavage) took breast_tip weights up to 0.58
+# on its upper rays and form_support_press / _lift deltas 12 mm apart, and with the top worn (support 1: the shapes on,
+# the springs' tips ~20 mm up) its upper rays stood out of it as a blade (36 mm off rigid at the worn rest; 0.1 mm as
+# one). A smaller part within "ride_mm" of a larger one rides it (the boss's gem); one further from all rides itself.
+ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink")}
+OUTFIT_KINDS = ("outfit", "outfit_lod")
 SMOOTH = {"rounds": 12, "near_m": 0.004, "far_m": 0.02}
 TIERS = ("close", "play")
 
@@ -102,6 +115,34 @@ def is_rigid_mesh(unit_rigid, node):
         return False
     mat = node.rsplit(".", 1)[-1]
     return not any(k in mat for k in BENDY_MATS)
+
+
+def ornament_mask(node, X, Tu, inv, J, W, nj=None):
+    """Per unique point of an outfit mesh: True on its ornaments (ORNAMENT: small metal components A skins with one
+    blend of weights). X: A's rest points (uniques), Tu: unique triangles, inv: vertex -> unique, J, W: A's weights."""
+    mat = node.rsplit(".", 1)[-1]
+    if any(k in mat for k in BENDY_MATS) or any(k in mat for k in ORNAMENT["not"]):
+        return np.zeros(len(X), bool)
+    nc, lab, _ = components(Tu, len(X), X)
+    nj = int(J.max()) + 1 if nj is None else nj
+    D = np.zeros((len(J), nj))
+    Wn = W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+    np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.ravel()), Wn.ravel())
+    labv = lab[inv]
+    hi = np.full((nc, nj), -np.inf)
+    lo = np.full((nc, nj), np.inf)
+    np.maximum.at(hi, labv, D)
+    np.minimum.at(lo, labv, D)
+    uni = (hi - lo).max(1) <= ORNAMENT["uniform"]
+    ext = np.zeros((nc, 3))
+    for k in range(3):
+        mx = np.full(nc, -np.inf)
+        mn = np.full(nc, np.inf)
+        np.maximum.at(mx, lab, X[:, k])
+        np.minimum.at(mn, lab, X[:, k])
+        ext[:, k] = mx - mn
+    small = ext.max(1) <= ORNAMENT["max_mm"] / 1000.0
+    return (uni & small)[lab]
 
 
 def units():
@@ -584,28 +625,51 @@ def uniques(P):
     return first, inv.reshape(-1).astype(np.int32)
 
 
-def rigid_groups(Xs, Ts, ns, rigid_flags):
+def rigid_groups(Xs, Ts, ns, rigid_flags, reach=None):
     """Over the rigid meshes of one tier: (per mesh: global component id per unique or -1), leader per component,
-    component areas."""
+    component areas. A flag is a mesh's (True: all of it) or a per-unique mask (its components that are rigid: the
+    ornaments). reach (m, the ornaments' rule): a component rides the largest larger one it touches (a point within
+    reach), transitively; None: the armor rows' rule (under SMALL_SHARE of the rigid area rides the nearest big one)."""
     comp_of, areas, base = [], [], 0
     for X, T, n, rg in zip(Xs, Ts, ns, rigid_flags):
-        if not rg:
+        mask = None if isinstance(rg, (bool, np.bool_)) else np.asarray(rg, bool)
+        if (mask is None and not rg) or (mask is not None and not mask.any()):
             comp_of.append(np.full(n, -1, np.int64))
             continue
         nc, lab, area = components(T, n, X)
-        comp_of.append(lab + base)
+        if mask is not None:
+            keep = np.zeros(nc, bool)
+            keep[lab[mask]] = True
+            new = np.full(nc, -1, np.int64)
+            new[keep] = np.arange(int(keep.sum()))
+            lab = new[lab]
+            area, nc = area[keep], int(keep.sum())
+            comp_of.append(np.where(lab >= 0, lab + base, -1))
+        else:
+            comp_of.append(lab + base)
         areas.append(area)
         base += nc
     if not base:
         return comp_of, np.zeros(0, np.int64), np.zeros(0)
     areas = np.concatenate(areas)
+    Pall = np.vstack([X[c >= 0] for X, c in zip(Xs, comp_of) if (c >= 0).any()])
+    Call = np.concatenate([c[c >= 0] for c in comp_of if (c >= 0).any()])
+    from scipy.spatial import cKDTree
+    if reach is not None:
+        # (ornaments: a part rides the largest larger part it touches, and so on down; one touching none rides itself)
+        lead = np.arange(base)
+        tree = cKDTree(Pall)
+        for c in np.argsort(-areas, kind="stable"):
+            hits = tree.query_ball_point(Pall[Call == c], reach)
+            nb = np.unique(Call[np.concatenate([np.asarray(h, np.int64) for h in hits])])
+            nb = nb[areas[nb] > areas[c]]
+            if len(nb):
+                lead[c] = lead[nb[np.argmax(areas[nb])]]
+        return comp_of, lead, areas
     big = areas >= SMALL_SHARE * areas.sum()
     if not big.any():
         big[np.argmax(areas)] = True
     lead = np.arange(base)
-    Pall = np.vstack([X[c >= 0] for X, c in zip(Xs, comp_of) if (c >= 0).any()])
-    Call = np.concatenate([c[c >= 0] for c in comp_of if (c >= 0).any()])
-    from scipy.spatial import cKDTree
     keep = big[Call]
     tree = cKDTree(Pall[keep])
     ccent = np.zeros((base, 3))
@@ -671,15 +735,18 @@ def bind_unit(u, car, bodies):
         Nv = U(np.einsum("nij,nj->ni", M_all, U(N)))
         if h.any():
             Nv = U(h[inv] * U(N) + (1 - h[inv]) * Nv)
+        orn = ornament_mask(node, X, Tu, inv, J, W) if u["kind"] in OUTFIT_KINDS and not rg else None
         by_tier.setdefault(tier, []).append(dict(i=i, node=node, rg=rg, X=X, Xb=Xb, Nv=Nv, Mu=M_all[first], N=U(N), inv=inv,
-                                                 T=Tu, E=E, nv=len(P), cA=cA, move=np.linalg.norm(Xb - X, axis=1)))
+                                                 T=Tu, E=E, nv=len(P), cA=cA, move=np.linalg.norm(Xb - X, axis=1),
+                                                 orn=orn if orn is not None and orn.any() else None))
     aux = None
     if u.get("sockets"):
         aux = socket_points(json.load(open(os.path.join(REPO, u["sockets"]))))
     for tier, ms in by_tier.items():
         body = bodies[tier]
         comp_of, lead, areas = rigid_groups([m["X"] for m in ms], [m["T"] for m in ms], [len(m["X"]) for m in ms],
-                                           [m["rg"] for m in ms])
+                                           [m["orn"] if m["orn"] is not None else m["rg"] for m in ms],
+                                           reach=ORNAMENT["ride_mm"] / 1000.0 if u["kind"] in OUTFIT_KINDS else None)
         X0 = np.vstack([m["X"] for m in ms])
         X1 = np.vstack([m["Xb"] for m in ms])
         comp = np.concatenate(comp_of)
@@ -752,7 +819,7 @@ def bind_tier(u, tier, ms, body, car, rotAB, lead, arrays, metas, rep):
         arrays.update({f"inv{i}": m["inv"], f"tri{i}": tri, f"bw{i}": bq, f"off{i}": off, f"nrm{i}": snorm16(nloc),
                        f"comp{i}": comp.astype(np.int32)})
         metas.append({"i": i, "node": m["node"], "tier": tier, "rigid": bool(m["rg"]), "nv": int(m["nv"]),
-                      "nu": int(len(Xb))})
+                      "nu": int(len(Xb)), "ornament_uniques": int((comp >= 0).sum()) if not m["rg"] else 0})
         Xe, _ = eval_points(body, tri, bq, off)
         cB, _ = car.b_clear(Xb)
         cA = m["cA"]
@@ -1055,9 +1122,11 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             lead = rim_leads(lead, rims)
             rims_tier[tier] = {int(a): v for a, v in rims.items()}
         # (the stand-off law, rigid_roles.json slots "standoff": each plate point's measured need, on every body)
-        flo = standoff_floor(bd, ms, ev, lead=lead)
+        # (an outfit's rigid components are its ornaments, ORNAMENT: the armor rows' slot laws below never act on them)
+        armor_laws = bd.meta.get("kind") not in OUTFIT_KINDS
+        flo = standoff_floor(bd, ms, ev, lead=lead) if armor_laws else None
         # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
-        wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() else None
+        wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() and armor_laws else None
         join, bridges = None, set()
         if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
@@ -1192,7 +1261,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     # the leader's bound points over all meshes of the tier
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    J[sel], W[sel] = rigid_blend(body, trs, ws, None if join and int(c) in join["mean"] else bd.meta["row"].get("slot"))
+                    J[sel], W[sel] = rigid_blend(body, trs, ws, None if (join and int(c) in join["mean"]) or not armor_laws
+                                                 else bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
