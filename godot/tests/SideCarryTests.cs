@@ -569,4 +569,50 @@ public class SideCarryTests
         Assert.True(ShownPumps(new SideCarry { PumpCost = 0f }, face0, rate) > 0, "no pump without the cost, so this tests nothing");
         Assert.Equal(0, ShownPumps(new SideCarry(), face0, rate));
     }
+
+    /// <summary>(r15, judge r14 bar 2) A run's stop facing the camera (weight 0, the clip's own blade): the clip's blade pitch
+    /// (e30 seed 13 leg 8 +36..+50: 70 at the run, -8.2 and -6.6 a frame at the stop, a +2.8 settle wobble) drawn; the worst
+    /// pitch step, the reversals of 1 deg or more each way, the drawn heading's miss off the clip's, and the end's miss.</summary>
+    static (float worst, int revs, float headMiss, float endMiss) StopAtW0(SideCarry c)
+    {
+        float[] p = { 71.7f, 73.2f, 73.5f, 70.0f, 61.8f, 55.2f, 53.9f, 56.7f, 58.3f, 57.4f, 57.2f, 57.2f, 57.1f, 56.9f, 56.8f };
+        float[] mv = { 1f, 1f, 1f, 1f, 1f, 0.69f, 0.21f, 0.02f };
+        var (a, l, _) = Her(0f);
+        var h = Vector3.Normalize(-a - 0.3f * l);
+        float worst = 0f, prev = float.NaN, dPrev = 0f, head = 0f, last = 0f; int revs = 0;
+        for (int i = 0; i < 70; i++)
+        {
+            float pc = p[Math.Min(i, p.Length - 1)] * MathF.PI / 180f;
+            var b = h * MathF.Cos(pc) - Vector3.UnitY * MathF.Sin(pc);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, i < mv.Length ? mv[i] : 0f, 0f));
+            Assert.Equal(0f, c.Weight);
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float pd = MathF.Asin(-d.Y) * 180f / MathF.PI;
+            head = MathF.Max(head, MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(new Vector3(d.X, 0f, d.Z)), h), -1f, 1f)) * 180f / MathF.PI);
+            if (!float.IsNaN(prev))
+            {
+                float dp = pd - prev;
+                worst = MathF.Max(worst, MathF.Abs(dp));
+                if (dp * dPrev < 0f && MathF.Abs(dp) >= 1f && MathF.Abs(dPrev) >= 1f) revs++;
+                dPrev = dp;
+            }
+            prev = pd; last = MathF.Abs(pd - p[^1]);
+        }
+        return (worst, revs, head, last);
+    }
+
+    // (r15) at a stop where the layer is off (weight 0), the drawn blade's pitch steps at most StandRate a frame and never
+    // reverses 1 deg each way, on the clip's own heading, and lets go onto the clip's own blade once it has caught up
+    [Fact]
+    public void AStopAtWeightZeroDrawsNoPitchJumpOrWobble()
+    {
+        var (w0, r0, _, _) = StopAtW0(new SideCarry { StandRate = 0f });
+        Assert.True(w0 > 8f && r0 > 0, $"the clip's own stop jumps {w0} and wobbles {r0}, or this tests nothing");
+        var c = new SideCarry();
+        var (w, r, hm, em) = StopAtW0(c);
+        Assert.True(w <= c.StandRate * Dt + 0.05f, $"stop pitch step {w}");
+        Assert.Equal(0, r);
+        Assert.True(hm < 0.1f, $"heading off the clip's by {hm}");
+        Assert.True(em < 0.05f && c.Tilt == 0f && c.Inward == 0f, $"not handed back: {em}, tilt {c.Tilt}, inward {c.Inward}");
+    }
 }

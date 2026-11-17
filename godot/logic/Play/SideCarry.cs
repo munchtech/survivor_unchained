@@ -227,6 +227,15 @@ public sealed class SideCarry
     /// an 8-deg pitch step at the stop's first frame. false: off.</summary>
     public bool GuardEase = true; public float EaseMax = 0.5f;
     bool guardHeld; float easeT;
+    /// <summary>(r15, judge r14 bar 2, e30 s13 legs 8/9 +40 -8.2, s11 legs 8/9/11 +41 -6.1..-6.4) Where the guard is off (weight
+    /// under <see cref="GuardWeight"/>: the clip's own blade, the layer fading), out of a turn: once the drawn blade's world pitch
+    /// steps over StandRate (deg/s) or reverses by StandRev deg or more each way, it follows the clip's at most StandRate, never
+    /// reversing so; at a stop or standing it lags by up to StandBand deg (the stop clip's settle wobble kept off the blade), the
+    /// lag crept out at StandCreep (deg/s) and the clip's slow drift away from it followed up to StandFollow (deg/s); it lets go
+    /// once caught up. The pitch is drawn on the blade's drawn heading, by the tilt and the inward turn together (a tilt alone
+    /// can't reach it where the blade hangs splayed, and has two roots that flip). StandRate 0: off.</summary>
+    public float StandRate = 170f, StandRev = 0.95f, StandBand = 2f, StandCreep = 3f, StandFollow = 15f;
+    float standP = float.NaN, clipPitchPrev = float.NaN;
     float fallT;
     float movePrev; bool falling;
     float lastPitch = float.NaN, lastDPitch;
@@ -326,7 +335,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; standP = float.NaN; clipPitchPrev = float.NaN; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -424,6 +433,7 @@ public sealed class SideCarry
     {
         if (!(dt > 0f)) return;
         float tPrev = Tilt, iPrev = Inward;
+        float lpo0 = lastPoff, lpi0 = lastPitch, ldp0 = lastDPitch;   // last frame's drawn look, for the guard-off pitch follower
         // her facing's turn rate this frame (deg/s), for the carry rate once a turn has ended
         var ah = new Vector3(f.Ahead.X, 0f, f.Ahead.Z);
         yawStep = aheadPrev.LengthSquared() > 1e-8f && ah.LengthSquared() > 1e-8f
@@ -470,7 +480,7 @@ public sealed class SideCarry
             if (Tilt == 0f && Weight == 0f && Inward == 0f) { Shift = 0f; clipPrev = float.NaN; }
             OutTurn = 0f; calfN = 0; guardHeld = false; easeT = 0f;
             if (b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f
-                || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f) lastA = float.NaN;
+                || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f) { lastA = float.NaN; standP = float.NaN; clipPitchPrev = float.NaN; }
             else
             {
                 var bi = Vector3.Normalize(b);
@@ -478,6 +488,7 @@ public sealed class SideCarry
                 float pp = lastPitch;
                 Look(bi, Vector3.Normalize(f.Left), Vector3.Normalize(f.Ahead), Tilt, Inward, f, out lastA, out lastShown, out _, out lastPoff, out lastPitch);
                 lastDPoff = lastPoff - lp; lastDPitch = float.IsNaN(pp) ? 0f : lastPitch - pp;
+                StandPitch(dt, bi, Vector3.Normalize(f.Left), Vector3.Normalize(f.Ahead), f, moving, lp, pp, ldp0);
             }
             return;
         }
@@ -607,6 +618,68 @@ public sealed class SideCarry
         // The layer's shift as drawn (the calf pass's out-turn included), so next frame's rate limit starts from what was seen.
         Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
         holdMissed = crossWaitT > 0f && HoldMiss > 0f && MathF.Abs(Wrap(a0 + Shift)) < bandNow - HoldMiss;
+        if (StandPitch(dt, b, left, ahead, f, moving, lpo0, lpi0, ldp0)) Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
+    }
+
+    /// <summary>(r15) The turn (`tilt` about the unit `left`, then `inward` about the unit, level, square `ahead`) that takes
+    /// the unit blade `b` to the unit `d`, the one of the two nearest (`t0`, `i0`). False where none does.</summary>
+    public static bool TurnTo(Vector3 b, Vector3 left, Vector3 ahead, Vector3 d, float t0, float i0, out float tilt, out float inward)
+    {
+        tilt = t0; inward = i0;
+        var n = Vector3.Normalize(Vector3.Cross(left, ahead));
+        float bl = Vector3.Dot(b, left), da = Vector3.Dot(d, ahead), r = 1f - bl * bl - da * da;
+        if (r < -1e-4f) return false;
+        float c = MathF.Sqrt(MathF.Max(0f, r)), best = float.MaxValue;
+        for (int sgn = -1; sgn <= 1; sgn += 2)
+        {
+            var u = bl * left + da * ahead + sgn * c * n;
+            float t = Angle(left, b, u), i = Angle(ahead, u, d), m = MathF.Abs(Wrap(t - t0)) + MathF.Abs(Wrap(i - i0));
+            if (m < best) { best = m; tilt = t; inward = i; }
+        }
+        return true;
+    }
+
+    /// <summary>The signed turn (deg, right hand) about the unit `k` from `p` to `q`, in the plane square to it.</summary>
+    static float Angle(Vector3 k, Vector3 p, Vector3 q)
+    {
+        var pp = p - Vector3.Dot(p, k) * k; var qq = q - Vector3.Dot(q, k) * k;
+        return MathF.Atan2(Vector3.Dot(k, Vector3.Cross(pp, qq)), Vector3.Dot(pp, qq)) * R2D;
+    }
+
+    /// <summary>(r15) The guard-off pitch follower (see <see cref="StandRate"/>): Tilt nudged about her left so the drawn pitch
+    /// keeps to it; the last drawn look (last*) is this frame's after. `lpo`, `lpi`: last frame's poff and pitch. True if it turned.</summary>
+    bool StandPitch(float dt, Vector3 b, Vector3 left, Vector3 ahead, in Frame f, float moving, float lpo, float lpi, float dLast)
+    {
+        float cp = MathF.Asin(Math.Clamp(-b.Y, -1f, 1f)) * R2D, dq = float.IsNaN(clipPitchPrev) ? 0f : cp - clipPitchPrev;
+        clipPitchPrev = cp;
+        if (StandRate <= 0f || float.IsNaN(lpi) || float.IsNaN(lastPitch) || Weight >= GuardWeight || (TurnEnd > 0f && yawRate > TurnEnd))
+        { standP = float.NaN; return false; }
+        float pp = lastPitch, lim = StandRate * dt, dc = pp - lpi;
+        bool stand = moving < 0.99f || falling;
+        if (float.IsNaN(standP))
+        {
+            bool bad = MathF.Abs(dc) > lim + 1e-4f || (dc * dLast < 0f && MathF.Abs(dc) >= StandRev && MathF.Abs(dLast) >= StandRev);
+            if (!bad) return false;
+            standP = lpi;
+        }
+        float e = pp - standP, band = stand ? StandBand : 0f;
+        float st = MathF.Abs(e) <= band ? MathF.CopySign(MathF.Min(MathF.Abs(e), StandCreep * dt + (dq * e > 0f ? MathF.Min(MathF.Abs(dq), StandFollow * dt) : 0f)), e) : MathF.CopySign(MathF.Min(MathF.Abs(e) - band, lim), e);
+        if (st * dLast < 0f && MathF.Abs(st) >= StandRev && MathF.Abs(dLast) >= StandRev) st = MathF.CopySign(StandRev - 0.05f, st);
+        standP += st;
+        if (MathF.Abs(pp - standP) < 0.05f) { standP = float.NaN; return false; }
+        // the turn (tilt about her left, then inward about her facing) that draws the blade on its drawn heading at pitch standP
+        // (with the layer off, the clip's own: the drawn one still carries the follower's last turn as the rates ease it out)
+        var dn = Weight == 0f ? b : Turned(b, left, Tilt, ahead, Inward);
+        var hz = new Vector3(dn.X, 0f, dn.Z);
+        if (hz.LengthSquared() < 1e-6f) { standP = float.NaN; return false; }
+        hz = Vector3.Normalize(hz);
+        float sp = standP * D2R;
+        var dw = hz * MathF.Cos(sp) - Vector3.UnitY * MathF.Sin(sp);
+        if (!TurnTo(b, left, ahead, dw, Tilt, Inward, out float tN, out float iN)) { standP = float.NaN; return false; }
+        Tilt = tN; Inward = iN;
+        Look(b, left, ahead, Tilt, Inward, f, out lastA, out lastShown, out _, out lastPoff, out lastPitch);
+        lastDPoff = lastPoff - lpo; lastDPitch = lastPitch - lpi;
+        return true;
     }
 
     /// <summary>(solver r12) This frame's leg bones on screen for <see cref="HiddenOf"/>; false where the frame lacks them.</summary>
