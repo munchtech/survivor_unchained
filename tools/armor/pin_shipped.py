@@ -99,6 +99,86 @@ def ride_weights(mean_w, names, ride, bone_names):
     return mean_w, None
 
 
+def _ray_hits(O, D, X, F, reach, k=96):
+    """Nearest forward hit (0 < t <= reach) of rays O, D [n, 3] on the faces F of points X: t (inf: none), face, bary."""
+    from scipy.spatial import cKDTree as _T
+    C = X[F].mean(1)
+    k = min(k, len(F))
+    _, ci = _T(C).query(O + D * reach * 0.5, k=k)
+    ci = ci.reshape(len(O), -1)
+    V = X[F[ci]]
+    v0, e1, e2 = V[:, :, 0], V[:, :, 1] - V[:, :, 0], V[:, :, 2] - V[:, :, 0]
+    d = np.broadcast_to(D[:, None], e2.shape)
+    p = np.cross(d, e2)
+    det = (e1 * p).sum(2)
+    ok = np.abs(det) > 1e-14
+    inv = np.where(ok, 1.0 / np.where(ok, det, 1), 0)
+    s = O[:, None] - v0
+    u = (s * p).sum(2) * inv
+    q = np.cross(s, e1)
+    v = (d * q).sum(2) * inv
+    t = (e2 * q).sum(2) * inv
+    hit = ok & (u >= -1e-6) & (v >= -1e-6) & (u + v <= 1 + 1e-6) & (t > 0) & (t <= reach)
+    t = np.where(hit, t, np.inf)
+    j = t.argmin(1)
+    r = np.arange(len(O))
+    return t[r, j], ci[r, j], np.c_[1 - u[r, j] - v[r, j], u[r, j], v[r, j]]
+
+
+def over_ride(B, Q, nrm, spec):
+    """params.bend_ride (the brief under the belt, armor-D 16 Nov): a bending garment worn UNDER another piece rides
+    that piece where it covers it, so the two move as one there and the under one never comes out through it (the
+    brief's top under the belt's pelvis-rigid tasset and back plates, its hinge-ridden hip plates and its rings).
+    spec {"over": installed piece id or gltf path, "reach": m (default .06), "ease": m (default .02), "mix": 0-1}:
+    a point is covered when a ray out along her normal `nrm` meets one of the over piece's faces (its LOD 0) within
+    `reach`; it takes that piece's weights at the hit (barycentric, dense over B.names); a point within `ease` of a
+    covered one takes the nearest covered point's, by smoothstep(1 - d / ease), so the ride fades into her skin's own
+    below the plate's edge. Returns (covered [n] bool, the target weights [n, len(B.names)], the share f [n])."""
+    over = spec["over"]
+    if not over.endswith((".gltf", ".glb")):
+        over = os.path.join(ROOT, "godot", "art", "armor", over + ".gltf")
+    G = _Gl(over)
+    Xs, Fs, Ws, o = [], [], [], 0
+    for n, m, k, p in prims(G):
+        if (m.get("extras") or {}).get("lod") or "JOINTS_0" not in p["attributes"] or "skin" not in n:
+            continue
+        a = p["attributes"]
+        X = G.get(a["POSITION"]).astype(float)
+        nm = [G.g["nodes"][j]["name"] for j in G.g["skins"][n["skin"]]["joints"]]
+        idx = np.array([B.names.index(x) if x in B.names else -1 for x in nm])
+        J, W = bf._weights(G, a)
+        Wd = np.zeros((len(X), len(B.names)))
+        for c in range(J.shape[1]):
+            jj = idx[J[:, c]]
+            okc = jj >= 0
+            np.add.at(Wd, (np.nonzero(okc)[0], jj[okc]), W[okc, c])
+        Wd /= np.maximum(Wd.sum(1, keepdims=True), 1e-12)
+        Xs.append(X)
+        Fs.append(_faces(G, p, len(X)) + o)
+        Ws.append(Wd)
+        o += len(X)
+    if not Xs:
+        raise SystemExit("PIN: bend_ride over %r has no skinned mesh" % over)
+    X, F, Wo = np.vstack(Xs), np.vstack(Fs), np.vstack(Ws)
+    t, fi, bc = _ray_hits(Q, nrm, X, F, float(spec.get("reach", 0.06)))
+    cov = np.isfinite(t)
+    T = np.zeros((len(Q), len(B.names)))
+    f = np.zeros(len(Q))
+    if not cov.any():
+        return cov, T, f
+    T[cov] = (Wo[F[fi[cov]]] * bc[cov][:, :, None]).sum(1)
+    f[cov] = 1.0
+    ease = float(spec.get("ease", 0.02))
+    un = np.nonzero(~cov)[0]
+    if ease > 0 and len(un):
+        ic = np.nonzero(cov)[0]
+        dd, jn = cKDTree(Q[ic]).query(Q[un])
+        x = np.clip(1 - dd / ease, 0, 1)
+        f[un] = x * x * (3 - 2 * x)
+        T[un] = T[ic[jn]]
+    return cov, T, f
+
+
 def part_names(Q, sels, objs):
     """The authored object (a node of the free mesh, `_glb_objects`) most of a rigid shell's points `Q[sels]` sit on:
     its name, as a {name} for the shell's rigid_ride match (the installed meshes are named by material only:
@@ -157,7 +237,7 @@ def with_hinges(B):
     return B
 
 
-def pin(path, pre, body, B=None, drop=(), ride=(), authored=None):
+def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
@@ -216,6 +296,14 @@ def pin(path, pre, body, B=None, drop=(), ride=(), authored=None):
         for kk_, sels in groups.items():
             gnames[kk_] |= part_names(Q, sels, objs)
     Wq, sd = her_weights(B, Q)
+    if bend:
+        # (params.bend_ride: the bending points under another piece ride it there, over_ride; rigid shells unchanged)
+        nrm = B.surface(Q)[4]
+        cov_, T_, f_ = over_ride(B, Q, nrm, bend)
+        mx_ = float(bend.get("mix", 1.0)) * f_[:, None]
+        Wq = (1 - mx_) * Wq + mx_ * T_
+        Wq /= np.maximum(Wq.sum(1, keepdims=True), 1e-12)
+        res["bend_ride"] = {"covered": int(cov_.sum()), "eased": int(((f_ > 0) & ~cov_).sum()), "points": len(Q)}
     nb = len(B.names)
     TOP = np.zeros((len(Q), 8), int)
     TW = np.zeros((len(Q), 8))
