@@ -104,14 +104,21 @@ public sealed class SideCarry
     public float CrossMargin = 0.25f, CrossSlack = 0.3f, CrossWeight = 0.15f;
     /// <summary>(judge r9, lead r10) While she turns in place (her facing turning over <see cref="TurnEnd"/> deg/s, moving under
     /// half), the band the drawn blade keeps out of is this wide (deg) instead of <see cref="DownBand"/>: a blade swung near
-    /// vertical in a pivot reads as a cane at 10-15 deg as much as at 0. TurnBand 0: DownBand throughout.</summary>
-    public float TurnBand = 22f;
+    /// vertical in a pivot reads as a cane at 10-15 deg as much as at 0. TurnBand 0: DownBand throughout. (judge r10) 30, the
+    /// stand's own angle: no pivot frame shows the blade steeper than the approved stand. The band holds on through her first
+    /// <see cref="StartHold"/> s of moving after a turn in place (the run's start), and there the blade crosses only on a frame
+    /// it shows at most <see cref="CrossShown"/> of its length on screen (short, so the crossing never reads).</summary>
+    public float TurnBand = 30f, StartHold = 0.23f, CrossShown = 0.5f;
+    /// <summary>A crossing put off for <see cref="CrossShown"/> waits at most this long (s), and only while the layer holds
+    /// at least <see cref="CrossHoldWeight"/>: a fading layer can't hold the blade at the edge, so it crosses while it can.</summary>
+    public float CrossWaitMax = 0.12f, CrossHoldWeight = 0.6f;
+    float holdT, crossWaitT;
     float bandNow = 10f;
     /// <summary>(judge r9 T2, lead r10) While she turns in place with the drawn blade within <see cref="TipBand"/> deg of
     /// straight down on screen, its tip is kept at least <see cref="TipFloor"/> m over the floor (taken as the lower ankle
     /// less <see cref="TipGround"/>, A's ankle height): the inward turn searched as in <see cref="InReach"/>, the screen angle
     /// held. TipFloor 0: off. Body B: TipGround is A's (re-measure).</summary>
-    public float TipFloor = 0.31f, TipBand = 30f, TipGround = 0.03f;
+    public float TipFloor = 0f, TipBand = 30f, TipGround = 0.03f;
     bool pivotNow;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
@@ -224,7 +231,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -412,18 +419,30 @@ public sealed class SideCarry
         }
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
-        bandNow = TurnBand > 0f && TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f ? MathF.Max(DownBand, TurnBand) : DownBand;
         pivotNow = TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f;
+        if (pivotNow) holdT = StartHold; else if (moving >= 0.5f) holdT = MathF.Max(0f, holdT - dt);
+        bool turnBand = TurnBand > 0f && (pivotNow || holdT > 0f);
+        bandNow = turnBand ? MathF.Max(DownBand, TurnBand) : DownBand;
+        // nearly faded onto a clip whose own blade is inside the wide band: only the down band holds (the layer can't hold more)
+        if (bandNow > DownBand && Weight < CrossWeight && MathF.Abs(a0) < bandNow) bandNow = DownBand;
         float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = bandNow + CrossMargin;
-        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= bandNow - 0.01f)
+        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
         {
-            float dside = was > 0f ? 1f : -1f;
-            if ((aT > 0f) != (was > 0f) && MathF.Abs(aT) >= edge)
+            // (lead r11) caught inside the wide band (it widened as a turn began): never nearer straight down than now
+            float dside = was > 0f ? 1f : -1f, keep = MathF.Min(edge, MathF.Abs(was));
+            var dn = Turned(b, left, Tilt, ahead, Inward);
+            float jn = f.Jx.Length(), shown = jn > 1e-6f ? MathF.Sqrt(MathF.Pow(Vector3.Dot(f.Jx, dn), 2) + MathF.Pow(Vector3.Dot(f.Jy, dn), 2)) / jn : 0f;
+            // a target across, out of the down band (it may sit inside the wide one: a layer losing its hold can't keep the blade out there)
+            float edgeD = DownBand + CrossMargin;
+            bool wants = (aT > 0f) != (was > 0f) && MathF.Abs(aT) >= edgeD;
+            bool defer = wants && turnBand && CrossShown > 0f && shown > CrossShown && Weight >= CrossHoldWeight && crossWaitT < CrossWaitMax;
+            crossWaitT = defer ? crossWaitT + dt : 0f;
+            if (wants && !defer)
             {
                 float full = was - dside * MathF.Min(MathF.Max(lim, 2f * edge + CrossSlack), MathF.Abs(Wrap(aT - was)));
-                aW = MathF.Abs(full) >= edge ? full : dside * edge;
+                aW = MathF.Abs(full) >= edgeD ? full : dside * keep;
             }
-            else aW = dside * edge;
+            else aW = (aW > 0f) == (was > 0f) && MathF.Abs(aW) >= keep ? aW : dside * keep;
         }
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;

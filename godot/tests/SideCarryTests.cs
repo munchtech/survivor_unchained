@@ -261,8 +261,9 @@ public class SideCarryTests
                 float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
                 float cap = MathF.Abs(W(a0 - pc)) + c.ScreenRate * Dt;
                 // (lead r9) a crossing of the down band is made whole in one frame: up to twice its edge plus the slack
+                // (lead r11) the band is TurnBand wide while she turns in place and as she starts
                 if (c.Cross && (a > 0f) != (pa > 0f) && MathF.Abs(pa) >= c.DownBand - 0.5f && MathF.Abs(a) >= c.DownBand - 0.5f)
-                    cap = MathF.Max(cap, 2f * (c.DownBand + c.CrossMargin) + c.CrossSlack + 1f);
+                    cap = MathF.Max(cap, 2f * (MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin) + c.CrossSlack + 1f);
                 worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - cap);
             }
             pa = a; pc = a0;
@@ -303,6 +304,9 @@ public class SideCarryTests
             if (!float.IsNaN(pa) && i >= 8)
             {
                 float allow = MathF.Max(MathF.Abs(W(a0 - pc)) + c.ScreenRate * Dt, c.CarryRate * Dt);
+                // (lead r11) a crossing of the band is made whole in one frame (see MaxExcess)
+                if (c.Cross && (a > 0f) != (pa > 0f) && MathF.Abs(pa) >= c.DownBand - 0.5f && MathF.Abs(a) >= c.DownBand - 0.5f)
+                    allow = MathF.Max(allow, 2f * (MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin) + c.CrossSlack);
                 Assert.True(MathF.Abs(W(a - pa)) <= allow + 1f, $"frame {i}: {MathF.Abs(W(a - pa)):F1} deg against {allow:F1}");
             }
             pa = a; pc = a0;
@@ -335,6 +339,30 @@ public class SideCarryTests
 
     // (judge r6, lead r9) A stand pivot (her sword side swung away through her back or front): the drawn blade, once out of the
     // down band, never lands back inside it while the layer holds weight; it waits at the edge and crosses in one frame.
+    // (judge r10, lead r11) While she turns in place and the layer holds (weight >= CrossHoldWeight), no frame shows the
+    // blade steeper than the stand's own angle (TurnBand), the one crossing frame aside.
+    [Theory]
+    [InlineData(-90f, 6)]
+    [InlineData(270f, 10)]   // 270 at the game's 28 deg/frame
+    [InlineData(-90f, 12)]
+    [InlineData(180f, 8)]
+    public void APivotHoldsTheBladeAtTheStandAngleWhileTheLayerHolds(float to, int turnFrames)
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float pa = float.NaN; int n = 0;
+        for (int i = 1; i <= turnFrames; i++)
+        {
+            var f = At(90f + (to - 90f) * i / (float)turnFrames, 0f);
+            c.Step(Dt, true, 0f, f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            bool crossed = !float.IsNaN(pa) && (a > 0f) != (pa > 0f);
+            if (c.Weight >= c.CrossHoldWeight && !crossed && MathF.Abs(a) < c.TurnBand - 0.5f) n++;
+            pa = a;
+        }
+        Assert.Equal(0, n);
+    }
+
     static int BandLandings(bool cross, float to, int turnFrames)
     {
         var c = new SideCarry { Cross = cross };
