@@ -36,6 +36,8 @@ public static partial class DungeonDress
     // from its own sheet (tools/look/den_rocks.py: O1's stones at 2x in the target's value band, inked), no blur branch; 0 r14's
     static readonly float SetRockPaint = SurvivorUnchained.Args.Num("den-rock-paint", 1f);
     static readonly float SetRockDome = SurvivorUnchained.Args.Num("den-rock-dome", 1f);   // (den r15 G) plain O1 stones cast on their own dome over the floor, not the bank surface
+    static readonly float SetRockLanePaint = SurvivorUnchained.Args.Num("den-rock-lanepaint", 1f);   // (den r15 G) the lane/alcove stones drawn from the painted round sheet O1r too
+    static string? LaneRockKey => SetRockLanePaint > 0f && SetRockPaint > 0f && SetRockLit > 0f ? "O1r" : null;
     static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
@@ -122,7 +124,7 @@ public static partial class DungeonDress
     static readonly float CamPitchR = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch);
     static readonly Vector3 CamUp = new(0f, Mathf.Cos(CamPitchR), -Mathf.Sin(CamPitchR)), CamView = new(0f, -Mathf.Sin(CamPitchR), -Mathf.Cos(CamPitchR));
     static readonly float SetRowJit = SurvivorUnchained.Args.Num("den-set-row-jit", 2.5f);   // (r13) metres a row behind's depth varies by module
-    static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 2f);       // (r10c) side walls: rows of modules deeper in the bank
+    static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 3f);       // (r10c) side walls: rows of modules deeper in the bank
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 0f);    // (r10c) B4/B4R_2 where a far run meets a wall's (r11 1 -> 0: the corner's arm drew a straight seam and a dark band across the room's top, c_p13)
     static readonly float SetSpills = SurvivorUnchained.Args.Num("den-set-spills", 1f);      // (r10c) B6 spills on the floor at the banks' feet and pits
     static readonly float SetDark = SurvivorUnchained.Args.Num("den-set-dark", 0.02f); // (r11 0.008 -> 0.02)      // (r10c) the paintings' darks lit at least this (cool)
@@ -637,7 +639,7 @@ public static partial class DungeonDress
                 sorted.Sort((x, y) => x.Metres.X.CompareTo(y.Metres.X));
                 int hf = Mathf.Max(1, sorted.Count / 2);
                 var pc = sheet == "O3" ? sorted[(int)(q * sorted.Count) % sorted.Count] : sorted[(int)(q * hf) % hf];
-                if (sheet == "O1") PlaceSetObj(c, "O1", pc, p.X, p.Y, Mathf.Min(1f, (1.1f + 0.6f * k) / pc.Metres.X), 0.62f, true);
+                if (sheet == "O1") PlaceSetObj(c, "O1", pc, p.X, p.Y, Mathf.Min(1f, (1.1f + 0.6f * k) / pc.Metres.X), 0.62f, true, -1f, LaneRockKey);
                 else if (sheet == "O2") PlaceSetObj(c, "O2", pc, p.X, p.Y, 0.75f + 0.2f * k, 0.18f, false);
                 else PlaceSetObj(c, "O3", pc, p.X, p.Y, 0.9f + 0.3f * k, 0.1f, false);
                 taken.Add(p); dressed++;
@@ -677,7 +679,7 @@ public static partial class DungeonDress
                 int hf = Mathf.Max(1, sorted.Count / 2);
                 var pc = sheet == "O1" ? sorted[(int)(q * hf) % hf] : sorted[(int)(q * sorted.Count) % sorted.Count];
                 if (sheet == "B6") { PlaceSetObj(c, "B6", pc, x, zz, SetAlcoveK * (0.55f + 0.3f * k), 0f, false, 0f); sp++; }
-                else if (sheet == "O1") { PlaceSetObj(c, "O1", pc, x, zz, Mathf.Min(1f, (0.9f + 0.7f * k) / pc.Metres.X), 0.62f, true); st++; }
+                else if (sheet == "O1") { PlaceSetObj(c, "O1", pc, x, zz, Mathf.Min(1f, (0.9f + 0.7f * k) / pc.Metres.X), 0.62f, true, -1f, LaneRockKey); st++; }
                 else { PlaceSetObj(c, "O3", pc, x, zz, 0.8f + 0.3f * k, 0.1f, false); bo++; }
                 n++;
             }
@@ -1010,7 +1012,7 @@ public static partial class DungeonDress
         float rz = bb / -CamUp.Z;
         float y0 = H(c, x, zz);
         float yFront = new Vector3(x, y0, zz + rz).Dot(CamUp);
-        bool domeOnly = SetRockDome > 0f && sheet == "O1" && key == null;
+        bool domeOnly = SetRockDome > 0f && sheet == "O1";
         System.Func<float, float, float> surf = (px, pz) =>
         {
             float ex = (px - x) / rx, ez = (pz - zz) / rz;
