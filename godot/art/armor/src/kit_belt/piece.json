@@ -9,7 +9,7 @@
    {
     "match": "tasset",
     "weights": {
-     "pelvis": 1.0
+     "tasset_hinge": 1.0
     },
     "mix": 1.0
    },
@@ -52,6 +52,20 @@
     "match": "hip_r",
     "weights": {
      "thigh_hinge_r": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "ring_l_rigid",
+    "weights": {
+     "tasset_hinge": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "ring_r_rigid",
+    "weights": {
+     "tasset_hinge": 1.0
     },
     "mix": 1.0
    }

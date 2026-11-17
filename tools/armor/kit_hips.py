@@ -737,6 +737,11 @@ def belt(cfg, ref):
                     ride_out.append({"match": nm + sfx, "weights": side_ride(rd, h) if pl.get("mirror", True) else dict(rd), "mix": 1.0})
             print(nm, "tilt", np.round(tilt.min(), 1), np.round(tilt.max(), 1), "len", np.round(length.max(), 3))
     if hg:  # each lame's ride, into the piece's install params (pin_shipped params.rigid_ride; first match wins)
+        if rg.get("ride"):  # (opt-in: the keeper rings ride one blend of their own ({bone: w}, her left; mirrored),
+            # e.g. {"tasset_hinge": 1}: they swing out with the V over the leading thigh instead of the mean of her
+            # skin under them, which the brief's leg line rises through in the leap)
+            ride_out += [{"match": f"ring_{s}_rigid", "weights": side_ride(rg["ride"], h), "mix": 1.0}
+                         for h, s in ((1, "l"), (-1, "r"))]
         pid = cfg["piece"]["id"]
         cfg["piece"]["params"] = {"file": f"{pid}.glb", **cfg["piece"].get("params", {}), "rigid_ride": ride_out}
     return plate, trim, straps, rigid

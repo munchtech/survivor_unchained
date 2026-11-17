@@ -14,7 +14,10 @@
   "tint": null,
   "tier": 2,
   "tier_name": "gilded",
-  "adorn": []
+  "adorn": [],
+  "params": {
+   "file": "kit_brief.glb"
+  }
  },
  "mat": {
   "plate": "steel",
@@ -52,16 +55,16 @@
   "under_bodice": 0.004,
   "side_w": 0.014,
   "leg_front": {
-   "y0": 0.922,
-   "y1": 1.06,
-   "s1": 0.15,
-   "p": 1.0
+   "y0": 0.905,
+   "y1": 1.1,
+   "s1": 0.14,
+   "p": 0.8
   },
   "leg_back": {
-   "y0": 0.935,
-   "y1": 1.06,
+   "y0": 0.905,
+   "y1": 1.09,
    "s1": 0.15,
-   "p": 1.6
+   "p": 1.0
   },
   "z_mid": -0.03,
   "smooth": 6
