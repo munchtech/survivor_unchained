@@ -119,7 +119,7 @@ FAC_PAINT = 0.12, 4.0 * S               # the painting's blurred value's weight 
 FAC_SHARE = 0.45                        # share of the stone (moss included) on its lit planes
 FAC_MID = 0.6, 0.33                     # the half-turned plane next to the lit one: share of the stone (lit included) and its L
 FAC_KEEP = 0.04                         # lit pieces / shade holes under this share of the stone go
-FAC_SH, FAC_LIT, FAC_ROUND = 0.25, 0.62, 0.10   # stone L in shade, on the lit planes (before belly, ink, cracks); the turn's share
+FAC_SH, FAC_LIT, FAC_ROUND = 0.25, 0.58, 0.10   # stone L in shade, on the lit planes (before belly, ink, cracks); the turn's share
 FAC_DET, FAC_DET_R = 0.6, 3.0 * S       # the painting's strokes: amount of (L - blur) and its radius
 FAC_EDGE = 1.0 * S                      # a plane's border softened by this (no stair edge)
 

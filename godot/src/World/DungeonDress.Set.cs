@@ -78,6 +78,7 @@ public static partial class DungeonDress
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
+        if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 0.35f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
         if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
@@ -152,7 +153,8 @@ public static partial class DungeonDress
     // was cast at 56, the road's, so every painting drew 6% tall on the floor and its raised parts sank)
     static readonly float CamPitchR = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch);
     static readonly Vector3 CamUp = new(0f, Mathf.Cos(CamPitchR), -Mathf.Sin(CamPitchR)), CamView = new(0f, -Mathf.Sin(CamPitchR), -Mathf.Cos(CamPitchR));
-    static readonly float SetRowMirror = SurvivorUnchained.Args.Num("den-set-rowmirror", 1f);   // (den r15 lead, judge item 7) a side wall's odd rows behind lay the other wall's card mirrored; 0: its own card (the s11 corridor's duplicate rock)
+    // (den r16 W) 0 now: the second variants B3b/B3Rb replace the mirror (R15f item 3: its flat clearing showed as a blurred patch)
+    static readonly float SetRowMirror = SurvivorUnchained.Args.Num("den-set-rowmirror", 0f);   // (den r15 lead, judge item 7) a side wall's odd rows behind lay the other wall's card mirrored; 0: its own card (the s11 corridor's duplicate rock)
     static readonly float SetRowJit = SurvivorUnchained.Args.Num("den-set-row-jit", 2.5f);   // (r13) metres a row behind's depth varies by module
     static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 3f);       // (r10c) side walls: rows of modules deeper in the bank
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 0f);    // (r10c) B4/B4R_2 where a far run meets a wall's (r11 1 -> 0: the corner's arm drew a straight seam and a dark band across the room's top, c_p13)
@@ -210,6 +212,7 @@ public static partial class DungeonDress
                 list.Add(new SetPiece(name, new Rect2(rc[0].GetSingle() / aw, rc[1].GetSingle() / ah, rc[2].GetSingle() / aw, rc[3].GetSingle() / ah),
                     new Vector2(m[0].GetSingle(), m[1].GetSingle()), p.GetProperty("foot_v").GetSingle(),
                     p.TryGetProperty("mouth", out var mo) ? new Vector4(mo[0].GetSingle(), mo[1].GetSingle(), mo[2].GetSingle(), mo[3].GetSingle()) : Vector4.Zero));
+                if (p.TryGetProperty("leaf", out _)) setLeaves.Add(list[^1]);   // (den r16 W, R15f item 10) O6's dry leaf drifts, flagged by the build
             }
             setSheets[name] = list;
         }
@@ -466,6 +469,7 @@ public static partial class DungeonDress
         System.Array.Clear(setSpurSeg); System.Array.Clear(setSpurR);   // (den r16 G2) the lair's spurs for its gloom (radius 0: none)
         for (int i = 0; i < c.Z.Spurs.Count && i < setSpurSeg.Length; i++) { setSpurSeg[i] = c.Z.Spurs[i].Seg; setSpurR[i] = c.Z.Spurs[i].R; }
         if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
+        if (SetFurK > 0f) SetFur(c);
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
@@ -685,6 +689,48 @@ public static partial class DungeonDress
         laneMid.Clear();
         GD.Print($"DenSet lanes: {rings} rings, {lanes} runs, {pools} lane pools, {dressed} lane pieces");
     }
+    // (den r16 W, R15f item 10) Fur tufts and dry leaf drifts (O6) on the open floor of rooms, lairs and corridors: about one per
+    // 3.5 m cell in 0.6 (a view's open floor is a third of its frame), seeded; never within 3.6 m of her spawn or the lair's middle (the sticks' rule), the pits, the hollows,
+    // the walls' feet or a boulder. The two leaf drifts are flagged "leaf" in set.json by the build (orange pieces).
+    static readonly float SetFurK = SurvivorUnchained.Args.Num("den-fur", 1f);   // (den r16 W, R15f item 10) 0 = no fur tufts or leaf drifts
+    static readonly float SetFurDens = SurvivorUnchained.Args.Num("den-fur-dens", 0.6f);
+    static readonly HashSet<SetPiece> setLeaves = new();
+    static void SetFur(Ctx c)
+    {
+        if (!LoadSet() || !setSheets!.TryGetValue("O6", out var all) || all.Count == 0) return;
+        float half = c.Z.Half, clr = SurvivorUnchained.Args.Num("den-stick-clear", 3.6f);
+        var leaves = new List<SetPiece>(); var furs = new List<SetPiece>();
+        foreach (var pc in all) (setLeaves.Contains(pc) ? leaves : furs).Add(pc);
+        var hollows = DenHollows(c);
+        var taken = new List<Vector2>();
+        foreach (var (bp, _) in c.Boulders) taken.Add(bp);
+        int n = 0, nl = 0;
+        const float cell = 3.5f;
+        int nc = (int)(2f * half / cell);
+        for (int j = 0; j < nc; j++)
+            for (int i = 0; i < nc; i++)
+            {
+                if (Hash(i, j, 3101) > SetFurDens * SetFurK) continue;
+                var p = new Vector2(-half + (i + 0.15f + 0.7f * Hash(i, j, 3102)) * cell, -half + (j + 0.15f + 0.7f * Hash(i, j, 3103)) * cell);
+                if (Wall(c, p.X, p.Y) < 2.0f || Hole(c, p.X, p.Y) < 2.2f) continue;
+                if (c.Z.Rooms.Count > 0 && p.DistanceTo(new Vector2(c.Z.Rooms[0].X, c.Z.Rooms[0].Z)) < clr) continue;
+                if (setBossC.Z > 0f && p.DistanceTo(new Vector2(setBossC.X, setBossC.Y)) < clr) continue;
+                bool bad = false;
+                foreach (var (hp, hr, _) in hollows) if (hp.DistanceTo(p) < hr + 1.2f) { bad = true; break; }
+                if (!bad) foreach (var t in taken) if (t.DistanceTo(p) < 1.8f) { bad = true; break; }
+                if (bad) continue;
+                bool leaf = leaves.Count > 0 && Hash(i, j, 3104) < 0.12f;
+                var list = leaf ? leaves : furs;
+                if (list.Count == 0) continue;
+                var pick = list[(int)(Hash(i, j, 3105) * list.Count) % list.Count];
+                PlaceSetObj(c, "O6", pick, p.X, p.Y, (leaf ? 0.9f : 0.85f) + 0.3f * Hash(i, j, 3106), 0.1f, false);
+                taken.Add(p); n++; if (leaf) nl++;
+                if (SetLog > 0f) GD.Print($"DenSet fur at {p.X:0.0},{p.Y:0.0} leaf {leaf}");
+            }
+        c.Count["set fur"] = n;
+        GD.Print($"DenSet fur: {n} tufts and drifts ({nl} leaf)");
+    }
+
     static readonly List<Vector2> laneMid = new();
     static readonly float SetLaneDress = SurvivorUnchained.Args.Num("den-lane-dress", 1f);   // (r13) the corridors' floor pieces (0 off)
 
@@ -790,6 +836,8 @@ public static partial class DungeonDress
             // (den r15 R, R15 judge item 7: the same mossy rock twice in the s11 corridor) a run's next card is never one of the last two laid
             for (int t = 1; SetNoRepeat > 0f && k > 0 && choices.Count > 2 && t < 8 && (b == prev1 || b == prev2); t++)
                 b = choices[(int)(Hash(seed, 63 + 7 * t, k) * choices.Count) % choices.Count];
+            // (den r16 W, R15f item 3) a side wall now has two cards (B3/B3b, B3R/B3Rb): with only two, a run's next card is the other one
+            if (SetNoRepeat > 0f && k > 0 && !alongX && choices.Count == 2 && b == prev1) b = choices[0] == b ? choices[1] : choices[0];
             prev2 = prev1; prev1 = b;
             float L = (alongX ? b.Metres.X : b.Metres.Y) * SetScale;
             float from = Mathf.Max(s, a0 - ext), to = Mathf.Min(s + L, a1 + ext);
@@ -805,6 +853,8 @@ public static partial class DungeonDress
                     {
                         var b2 = choices[(int)(Hash(seed + 97 * row, 64, k) * choices.Count) % choices.Count];
                         for (int t = 1; SetNoRepeat > 0f && choices.Count > 2 && t < 8 && b2 == b; t++) b2 = choices[(int)(Hash(seed + 97 * row, 64 + 7 * t, k) * choices.Count) % choices.Count];   // (den r15 R) a row behind is never its own front's card
+                        // (den r16 W, R15f item 3) with two cards a side wall's row behind lays the card its front module does not (the same painting side by side)
+                        if (SetNoRepeat > 0f && choices.Count == 2 && b2 == b) b2 = choices[0] == b ? choices[1] : choices[0];
                         // (den r15 lead, R15 judge item 7: one mossy rock twice, 390 px apart in the s11 corridor) a side wall has one
                         // card each side, and a row behind lies at its front module's along start: the same painting side by side.
                         // An odd row lays the other wall's card mirrored across (a bank facing this way, another painting)

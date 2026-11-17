@@ -32,7 +32,7 @@ OUT = os.path.join(DEN, "set")
 INPUTS = r"C:\Users\munch\Desktop\survivorsunchained_inputs\gpt_den"
 
 BANKS = {   # name: kind (far: its face looks at the camera; near: seen from above and behind; left/right: a wall's side)
-    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3R": "right",
+    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3b": "left", "B3R": "right", "B3Rb": "right",
     "B4": "corner_l", "B4R_2": "corner_r", "B5": "spur",
 }
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
@@ -40,8 +40,10 @@ SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale
     "H1": ("hollow", 5.0), "H2": ("pit", 12.0),
     # (r10d) above: the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
     "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
+    "O6": ("fur", 1.5),     # (den r16 W, R15f item 10) 6 pale fur clumps and 2 dry leaf drifts for the open floor
     "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
 }
+DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this far to its grey (the fur's lilac read pink on screen; target C <= .03)
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -300,6 +302,15 @@ def build():
         for (x0, y0, x1, y1, li) in ps:
             pa = a[y0:y1, x0:x1] * (lab[y0:y1, x0:x1] == li)
             cuts.append((f[y0:y1, x0:x1], pa))
+        leafs = set()
+        if kind == "fur":   # (den r16 W) a dry leaf drift is orange (R well over B), the fur grey-lilac: the fur's colour pulled to its grey
+            for i, (cf, ca) in enumerate(cuts):
+                w_ = ca > 0.5
+                if w_.any() and (cf[..., 0][w_].mean() - cf[..., 2][w_].mean()) > 45:
+                    leafs.add(i)
+                elif name in DESAT:
+                    g = (cf @ np.array([0.299, 0.587, 0.114]))[..., None]
+                    cuts[i] = (cf + (g - cf) * DESAT[name], ca)
         W = max(512, max(c[1].shape[1] for c in cuts) + 16)
         order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].shape[0])
         place, x, y, shelf = {}, 8, 8, 0
@@ -329,6 +340,8 @@ def build():
             pe = {"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)}
             if kind in ("hollow", "pit"):
                 pe["mouth"] = mouth(cf, ca, kind)
+            if i in leafs:
+                pe["leaf"] = True
             sh["pieces"].append(pe)
         h, w = H, W
         meta["sheets"].append(sh)
