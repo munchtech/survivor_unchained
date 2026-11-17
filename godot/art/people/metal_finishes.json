@@ -98,8 +98,8 @@
             0.75,
             0.75
           ],
-          "kit_lit": 0.02,
-          "kit_soft": 0.5,
+          "kit_lit": 0.06,
+          "kit_soft": 1.0,
           "kit_glint": [
             4,
             8,
@@ -136,5 +136,5 @@
       }
     }
   },
-  "_kit": "Demo armor lane D lead 2 S1c (16 Nov, finish r3): the kit set (wear ids kit_*). Steel: warm gunmetal enamel [0.27,0.23,0.21] (close: the sheet's plate value), paint_far [1.75,1.65,1.9] lifts it at the play camera only (heroine_outfit.gdshaderinc kit_far, px/m 120-300). Gold: dye #ffbf50, floor 1.7 close, gold_floor_far 4.5 at the play camera (the trim is ~1 px there; ink costs it ~0.005 L, no skip needed). Leather brown #5e3a28; kit_boots' leather the sheet's dark gunmetal-purple #4a3a3e (its row after kit's, so it wins). Variants and numbers: godot/.shots/demo_armor/s1r3 (V1-V4), final s1r4. Finish r5 (16 Nov): the kit's toon ramp on its paint set (heroine_outfit.gdshaderinc kit_lit .02 lit ceiling, kit_soft .5, kit_glint [4,8,1] in [.66,.48,.40]); enamel warmer [.36,.28,.21] (close plate h 43-49 C .035, was h 18-35 C .02), enamel_env .25, paint_far .75 (den pauldron L50 .28-.29). In the den her plate takes almost nothing from light(): its level is the far albedo under the den's ambient, and its lit top (L .5-.6) is the unpainted px (rims, chips, gold fringe). Shots godot/.shots/demo_armor/fin5r1."
+  "_kit": "Demo armor lane D lead 2 S1c (16 Nov, finish r3): the kit set (wear ids kit_*). Steel: warm gunmetal enamel [0.27,0.23,0.21] (close: the sheet's plate value), paint_far [1.75,1.65,1.9] lifts it at the play camera only (heroine_outfit.gdshaderinc kit_far, px/m 120-300). Gold: dye #ffbf50, floor 1.7 close, gold_floor_far 4.5 at the play camera (the trim is ~1 px there; ink costs it ~0.005 L, no skip needed). Leather brown #5e3a28; kit_boots' leather the sheet's dark gunmetal-purple #4a3a3e (its row after kit's, so it wins). Variants and numbers: godot/.shots/demo_armor/s1r3 (V1-V4), final s1r4. Finish r5 (16 Nov): the kit's toon ramp on its paint set (heroine_outfit.gdshaderinc kit_lit .02 lit ceiling, kit_soft .5, kit_glint [4,8,1] in [.66,.48,.40]); enamel warmer [.36,.28,.21] (close plate h 43-49 C .035, was h 18-35 C .02), enamel_env .25, paint_far .75 (den pauldron L50 .28-.29). In the den her plate takes almost nothing from light(): its level is the far albedo under the den's ambient, and its lit top (L .5-.6) is the unpainted px (rims, chips, gold fringe). Shots godot/.shots/demo_armor/fin5r1. Finish r6 (16 Nov): kit_lit .02 -> .06 and kit_soft .5 -> 1: the close plate was the key's lit side flattened by the .02 ceiling (near-black L .20, bimodal: 7-8% of px between .26 and .38); now a soft form ramp, L50 .29-.32 close/.55/play, 62-69% between. enamel_env has no measurable effect (0 and .6 alike); the den is the hero absolute-tone rig (kit light knobs don't reach it) and its >.40 box share is mostly non-kit px (skin). Open: a flat band L .45-.48 on 16-28% of a cup survives albedo ~0, env 0, cel_rim_k 0 and a whole paint share: its source is not found. Shots godot/.shots/demo_armor/fin6a-c."
 }
