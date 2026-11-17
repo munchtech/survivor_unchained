@@ -212,13 +212,35 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_BACK_SH vec3(0.395, 0.030, 272.0)
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
-#define DEN_BOSS_SPINE_TUFT vec2(20.0, 0.22)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 30.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
+// (lane E lead 7, judge 5 17 Nov: "the mane is a flat red block with straight vertical sides ... its back is a flat blue
+// lozenge. That is not den_boss.png's painted fur": both are now fur LOCKS on her rest pose (c_r), each a pointed cell, its
+// sides concave by DEN_FUR_TIP, its length per lock from a hash (vat_den_hash), no two alike. The BACK's edge: locks hooked
+// back and out (vat_den_tooth) along z, DEN_BOSS_FUR.x a unit (warped), over a base of (1 - DEN_BOSS_FUR.y) of the stripe's
+// width, out to DEN_BOSS_FUR.z at most; its LIT core a chain of clumps, DEN_BOSS_FUR.w a unit, each widest at its root and
+// tapered back to a point, DEN_BOSS_CORE (x the width's share) at most: 45% of the back lit, as before; the taper, its
+// DEN_BOSS_SPINE.xy ends and the paint as before. The MANE in two rows of locks round the neck (DEN_BOSS_MANE_LOCK.x a
+// turn, slanted down .y radians a unit of z behind z .z): the upper row LIT at DEN_MANE, its tips back to
+// DEN_BOSS_MANE_ROW.x, .y long at most; the row under it SHADE at DEN_BOSS_MANE_SH, its tips the mane's hind edge, .z, .w
+// long; a dark DEN_BOSS_MANE_DK, DEN_BOSS_MANE_SHW wide, under the upper row's tips; its fore edge the head's fur over it in
+// back-pointing locks (DEN_BOSS_MANE_FORE: x a turn, z .y at the crest, slanting back .z down the neck, .w deep at most);
+// its lower edge in hanging locks (DEN_BOSS_MANE_LOW: at y .x, .y a unit of z, .z deep at most). Was: the stripe's notches a
+// triangle wave, 20 a unit, 22% deep; the mane z .2-.46 on the animated pose, 9 tufts a turn .05 deep, one flat L .50)
+#define DEN_FUR_TIP 1.6
+#define DEN_BOSS_FUR vec4(8.0, 0.3, 0.040, 6.5)
+#define DEN_BOSS_CORE 0.054
+#define DEN_BOSS_MANE_LOCK vec3(12.0, 2.0, 0.30)
+#define DEN_BOSS_MANE_ROW vec4(0.33, 0.09, 0.235, 0.10)
+#define DEN_BOSS_MANE_FORE vec4(9.0, 0.52, 0.12, 0.10)
+#define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
+#define DEN_BOSS_MANE_SH vec3(0.42, 0.095, 27.0)
+#define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
+#define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
 // (its n.y past -0.2) at L 0.52, C 0.13, ember-gold from the rig's elite tint; its rim DEN_ELITE_RIM (linear), bone-ivory)
 // (lane E elites r4: the whole ruff was 20% of an unstruck elite's px, over the 6-15% asked: the ruff's top only, its n.y past
@@ -331,10 +353,18 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_st = clamp((c_r.z - DEN_BOSS_SPINE.x) / (DEN_BOSS_SPINE.y - DEN_BOSS_SPINE.x), 0.0, 1.0);
 		float c_sw = DEN_BOSS_SPINE.z * pow(max(sin(3.14159265 * pow(c_st, DEN_BOSS_SPINE_P.x)), 0.0), DEN_BOSS_SPINE_P.y);
 		float c_up = vat_den_cut(c_r.w, DEN_BOSS_BACK.w);
-		float c_nt = DEN_BOSS_SPINE_TUFT.y * abs(fract(c_r.z * DEN_BOSS_SPINE_TUFT.x) * 2.0 - 1.0);
-		float c_nt2 = DEN_BOSS_SPINE_TUFT.y * abs(fract(c_r.z * DEN_BOSS_SPINE_TUFT.x + 0.5) * 2.0 - 1.0);
-		float c_back = (1.0 - vat_den_cut(abs(c_r.x), c_sw * (1.0 - c_nt))) * c_up;
-		float c_bl = (1.0 - vat_den_cut(abs(c_r.x), c_sw * DEN_BOSS_SPINE.w * (1.0 - c_nt2))) * c_up;
+		// (lead 7: its edge in hooked locks, its lit core a chain of clumps; DEN_BOSS_FUR)
+		float c_env = pow(max(sin(3.14159265 * c_st), 0.0), 0.35);
+		float c_zb = c_r.z * DEN_BOSS_FUR.x + 0.3 * sin(c_r.z * 9.0 + 1.0);
+		float c_kb = floor(c_zb);
+		float c_edge = c_sw * (1.0 - DEN_BOSS_FUR.y) + DEN_BOSS_FUR.z * c_env * (0.5 + 0.7 * vat_den_hash(c_kb, 2.0))
+			* vat_den_tooth(c_zb - c_kb, 0.15 + 0.2 * vat_den_hash(c_kb, 1.0), vec2(1.7, 1.3));
+		float c_back = (1.0 - vat_den_cut(abs(c_r.x) - c_edge, 0.0)) * c_up * step(DEN_BOSS_SPINE.x, c_r.z) * step(c_r.z, DEN_BOSS_SPINE.y);
+		float c_zc = c_r.z * DEN_BOSS_FUR.w + 0.5 + 0.3 * sin(c_r.z * 6.1 + 2.0);
+		float c_kc = floor(c_zc);
+		float c_core = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_CORE * (0.75 + 0.45 * vat_den_hash(c_kc, 4.0))
+			* (0.25 + 0.75 * vat_den_tooth(c_zc - c_kc, 0.2 + 0.2 * vat_den_hash(c_kc, 3.0), vec2(0.8, 1.5)));
+		float c_bl = (1.0 - vat_den_cut(abs(c_r.x) - c_core, 0.0)) * c_back;
 		// (r3: on the rest pose, c_r: xyz its place, w its normal's y)
 		float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
 		float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
@@ -345,9 +375,24 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
 		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back);
 		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BACK_SH.y, DEN_BOSS_BACK_SH.z), vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_bl), c_back);
-		float c_mane = vat_den_mane(c_p);
-		c_l = mix(c_l, DEN_MANE.x, c_mane);
-		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z), c_mane);
+		// (lead 7: the mane's two rows of locks on the rest pose; DEN_BOSS_MANE_*)
+		float c_a = abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS));
+		float c_u = (c_a - DEN_BOSS_MANE_LOCK.y * (DEN_BOSS_MANE_LOCK.z - c_r.z)) * DEN_BOSS_MANE_LOCK.x / 6.2831853;
+		float c_k1 = floor(c_u), c_k2 = floor(c_u + 0.5);
+		float c_zA = DEN_BOSS_MANE_ROW.x - DEN_BOSS_MANE_ROW.y * (0.45 + 0.8 * vat_den_hash(c_k1, 5.0)) * vat_den_tip(c_u - c_k1);
+		float c_zH = DEN_BOSS_MANE_ROW.z - DEN_BOSS_MANE_ROW.w * (0.45 + 0.8 * vat_den_hash(c_k2, 6.0)) * vat_den_tip(c_u + 0.5 - c_k2);
+		float c_af = c_a * DEN_BOSS_MANE_FORE.x / 6.2831853 + 0.5, c_kf = floor(c_af);
+		float c_zF = DEN_BOSS_MANE_FORE.y - DEN_BOSS_MANE_FORE.z * c_a / 3.14159265
+			- DEN_BOSS_MANE_FORE.w * (0.4 + 0.9 * vat_den_hash(c_kf, 7.0)) * vat_den_tip(c_af - c_kf);
+		float c_zd = c_r.z * DEN_BOSS_MANE_LOW.y + 0.25 * sin(c_r.z * 11.0), c_kd = floor(c_zd);
+		float c_yL = DEN_BOSS_MANE_LOW.x - DEN_BOSS_MANE_LOW.z * (0.4 + 0.9 * vat_den_hash(c_kd, 8.0)) * vat_den_tip(c_zd - c_kd);
+		float c_mane = vat_den_cut(c_r.z - c_zH, 0.0) * (1.0 - vat_den_cut(c_r.z - c_zF, 0.0)) * vat_den_cut(c_r.y - c_yL, 0.0);
+		float c_ra = vat_den_cut(c_r.z - c_zA, 0.0);
+		float c_rd = vat_den_cut(c_r.z - c_zA + DEN_BOSS_MANE_SHW, 0.0) * (1.0 - c_ra);
+		float c_rs = max(1.0 - c_ra - c_rd, 0.0);
+		c_l = mix(c_l, DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs + DEN_BOSS_MANE_DK.x * c_rd, c_mane);
+		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs
+			+ vat_den_ab(DEN_BOSS_MANE_DK.y, DEN_BOSS_MANE_DK.z) * c_rd, c_mane);
 		c_hb = c_h * (1.0 - c_back) * (1.0 - c_mane);
 	}
 	else if (c_cls > 0.5) {
