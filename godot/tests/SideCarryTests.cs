@@ -66,7 +66,7 @@ public class SideCarryTests
     {
         foreach (float face in new[] { 0f, 180f, -90f, -135f })
         {
-            var c = new SideCarry();
+            var c = new SideCarry { FarOn = false };   // (r20) the far side's own layer: TheFarSide... below
             for (int i = 0; i < 60; i++) c.Step(Dt, true, 15f * MathF.Sin(i * 0.4f), At(face));
             Assert.Equal(0f, c.Weight);
             Assert.Equal(0f, c.Tilt);
@@ -280,9 +280,9 @@ public class SideCarryTests
     [InlineData(0f)]       // a quarter turn to face the camera
     public void OutOfASideStandTheBladeTurnsNoFasterThanHerPlusTheRate(float to)
     {
-        float e = MaxExcess(new SideCarry(), to, turnOnly: true);
+        float e = MaxExcess(new SideCarry { FarOn = false }, to, turnOnly: true);
         Assert.True(e <= 1f, $"blade outran her turn by {e:F1} deg in a frame");
-        float off = MaxExcess(new SideCarry { CarryRate = 0f }, to);
+        float off = MaxExcess(new SideCarry { CarryRate = 0f, FarOn = false }, to);
         Assert.True(off <= 1f, $"with CarryRate 0 the blade outran her turn by {off:F1} deg in a frame");
     }
 
@@ -293,7 +293,7 @@ public class SideCarryTests
     [InlineData(180f)]
     public void OnceHerTurnEndsTheBladeEasesOnNoFasterThanTheCarryRate(float to)
     {
-        var c = new SideCarry();
+        var c = new SideCarry { FarOn = false };   // (r20) the screen rate is the near side's; the far side steps FarStep in 3D
         for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
         float pa = float.NaN, pc = float.NaN;
         float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
@@ -672,11 +672,11 @@ public class SideCarryTests
     // direction (FarDir) while the clip's blade swings under it; through her stop and stand it holds (FarStand), its pitch easing
     // to the stand's: at least half the blade shows on every frame, and the drawn direction never steps over FarStep a frame.
     // FarStand false: the weight follows her speed and hands back to the clip's own.
-    static (float off, float least, float step, SideCarry c) FarRun(bool stand)
+    static (float off, float least, float step, SideCarry c, float standOff) FarRun(bool stand)
     {
-        var c = new SideCarry { FarOn = true, FarStand = stand };
+        var c = new SideCarry { FarOn = true, FarStand = stand, FarFloorNow = stand };   // (r20) the whole floor holds an end-on clip blade, so the hand-back takes the ramp
         var (a, l, b0) = Her(-90f);
-        float off = 0f, least = 9f, step = 0f; Vector3 prev = default;
+        float off = 0f, least = 9f, step = 0f, standOff = 0f; Vector3 prev = default;
         for (int k = 0; k < 90; k++)
         {
             var b = SideCarry.Rot(l, 15f * MathF.Max(0f, 1f - MathF.Max(0f, k - 39) / 10f) * MathF.Sin(k * 0.6f), b0);   // the run's swing, stilled over her stop
@@ -688,23 +688,26 @@ public class SideCarryTests
                 off = MathF.Max(off, MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarPitch, c.FarOut)), -1f, 1f)) * 180f / MathF.PI);
             if (k >= 20) least = MathF.Min(least, SideCarry.Shown(d, f));
             if (k >= 1 && c.Weight > 0f) step = MathF.Max(step, MathF.Acos(Math.Clamp(Vector3.Dot(d, prev), -1f, 1f)) * 180f / MathF.PI);
+            if (k == 89) standOff = MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarStandPitch, c.FarStandOut)), -1f, 1f)) * 180f / MathF.PI;
             prev = d;
         }
-        return (off, least, step, c);
+        return (off, least, step, c, standOff);
     }
 
     [Fact]
     public void TheFarSideTrailsHerOwnDirectionHoldsThroughHerStopAndNeverGoesEndOn()
     {
-        var (off, least, step, c) = FarRun(true);
+        var (off, least, step, c, standOff) = FarRun(true);
         Assert.True(off < 1f, $"the run's blade off her trailing direction by {off} deg");
         Assert.True(least >= 0.5f, $"the blade went end-on: shown {least}");
         Assert.True(step <= c.FarStep + 0.05f, $"the drawn direction stepped {step} deg in a frame");
         Assert.True(c.Weight > 0.99f, $"the stand let go: w {c.Weight}");
-        var (_, _, step2, c2) = FarRun(false);
+        // (r20) standing, Prowl's blade held clear: out to her holding side, FarStandPitch under level, not the run's trailing carry
+        Assert.True(standOff < 1f, $"the stand's blade off its Prowl hold by {standOff} deg");
+        var (_, _, step2, c2, _) = FarRun(false);
         Assert.True(step2 <= c2.FarStep + 0.05f, $"the hand-back stepped {step2} deg in a frame");
         Assert.True(c2.Weight == 0f && MathF.Abs(c2.Tilt) < 0.5f && MathF.Abs(c2.Inward) < 0.5f, $"not handed back: w {c2.Weight} tilt {c2.Tilt} inward {c2.Inward}");
-        var off0 = new SideCarry();
+        var off0 = new SideCarry { FarOn = false };
         off0.Step(Dt, true, 0f, At(-90f));
         Assert.Equal(0f, off0.Weight);   // FarOn false: the far side stays the clip's own
     }

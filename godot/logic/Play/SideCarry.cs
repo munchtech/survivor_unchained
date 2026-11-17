@@ -263,13 +263,18 @@ public sealed class SideCarry
     /// screen angle did, e31 legs 6/11/14/15 +34..+37); the weight hands it back to the clip's own. The near side's screen
     /// machinery (the rate on screen, crossings, the edge) is off here: the tilt's and inward's rates and the guard hold it.
     /// FarOn false: off (the far side is the clip's own).</summary>
-    public bool FarOn = false; public float FarPitch = 20f, FarOut = 40f, FarSwing = 1f, FarFade = 0.27f; public bool FarTurnOff = true;
+    public bool FarOn = true; public float FarPitch = 20f, FarOut = 40f, FarSwing = 1f, FarFade = 0.27f; public bool FarTurnOff = true;
     /// <summary>(r19, judge r15 guards 1-4) On the far side: the trailing pitch eases from FarStandPitch standing to FarPitch at a
     /// run with her speed, and the weight holds at a stop and a stand (FarStand; false: it follows her speed, the clip's own at a
     /// stand), faded no faster than FarFade (8 frames) where she turns; the end-on guard turns the wanted direction about the
     /// vertical, away from the view ray, until at least FarShown of the blade's length shows; the drawn direction steps at
     /// most FarStep deg a frame (her own turn carried on); the guard scores its choice by the 3D angle to it.</summary>
-    public float FarStandPitch = 30f, FarShown = 0.55f, FarStep = 6f; public bool FarStand = true;
+    public float FarStandPitch = 15f, FarShown = 0.55f, FarStep = 6f; public bool FarStand = true;
+    /// <summary>(r20, the owner's "Prowl must actually ship", 15 Nov) Standing on the far side she holds Prowl's blade clear of
+    /// her body, forward and low (a guard, not the run's trailing carry held on): the heading eases with her speed from FarOut
+    /// at a run to FarStandOut standing (deg out from straight back to the holding side: 180 is straight ahead), at
+    /// FarStandPitch; and no swing (FarSwing) while she slows. FarStandOut 0: the run's heading throughout.</summary>
+    public float FarStandOut = 100f; public bool FarSlowSwing = false, FarFloorNow = true;
     bool farNow; Vector3 farD, farPrev, farWant;
 
     /// <summary>The unit direction `k` of the way along the shortest arc from unit `p` to unit `q`.</summary>
@@ -594,8 +599,8 @@ public sealed class SideCarry
         {
             // (r18) the far side: the turn to her own trailing direction, this frame's (her frame's, so a fade eases it back
             // onto the clip's own along the same turn, at a stop as in a run)
-            Want = FarStandPitch + (FarPitch - FarStandPitch) * moving - FarSwing * Spring;
-            farD = EndOn(FarDir(left, ahead, Want, FarOut), f, FarShown);
+            Want = FarStandPitch + (FarPitch - FarStandPitch) * moving - (FarSlowSwing || (!falling && moving >= 0.99f) ? FarSwing * Spring : 0f);
+            farD = EndOn(FarDir(left, ahead, Want, FarStandOut > 0f ? FarStandOut + (FarOut - FarStandOut) * moving : FarOut), f, FarShown);
             FarTurn(b, left, ahead, farD, out float tF, out psi);
             Raw = tF; lo = MathF.Min(0f, tF); hi = MathF.Max(0f, tF);
         }
@@ -664,7 +669,8 @@ public sealed class SideCarry
         {   // (r19) the end-on guard on the blend too (toward the clip's own share as the weight goes), then at most FarStep a frame
             float wy = Weight * (1f - Yield), sb = Shown(b, f);
             farW = Slerp(b, farD, wy);
-            if (sb < FarShown) farW = EndOn(farW, f, sb + (FarShown - sb) * MathF.Min(1f, 2f * wy));
+            // (r20) the floor whole from a leg's first frame (a start showed 0.01-0.02 while the weight rose)
+            if (sb < FarShown) farW = EndOn(farW, f, FarFloorNow ? FarShown : sb + (FarShown - sb) * MathF.Min(1f, 2f * wy));
             if (FarStep > 0f && farPrev.LengthSquared() > 0.5f) farW = Toward(Rot(Vector3.UnitY, yawStep, farPrev), farW, FarStep);
             FarTurn(b, left, ahead, farW, out tilt, out inward);
         }
