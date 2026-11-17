@@ -102,6 +102,17 @@ public sealed class SideCarry
     /// it never pulls the drawn blade into the band or back across it. Cross false: off.</summary>
     public bool Cross = true;
     public float CrossMargin = 0.25f, CrossSlack = 0.3f, CrossWeight = 0.15f;
+    /// <summary>(judge r9, lead r10) While she turns in place (her facing turning over <see cref="TurnEnd"/> deg/s, moving under
+    /// half), the band the drawn blade keeps out of is this wide (deg) instead of <see cref="DownBand"/>: a blade swung near
+    /// vertical in a pivot reads as a cane at 10-15 deg as much as at 0. TurnBand 0: DownBand throughout.</summary>
+    public float TurnBand = 22f;
+    float bandNow = 10f;
+    /// <summary>(judge r9 T2, lead r10) While she turns in place with the drawn blade within <see cref="TipBand"/> deg of
+    /// straight down on screen, its tip is kept at least <see cref="TipFloor"/> m over the floor (taken as the lower ankle
+    /// less <see cref="TipGround"/>, A's ankle height): the inward turn searched as in <see cref="InReach"/>, the screen angle
+    /// held. TipFloor 0: off. Body B: TipGround is A's (re-measure).</summary>
+    public float TipFloor = 0.31f, TipBand = 30f, TipGround = 0.03f;
+    bool pivotNow;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -213,7 +224,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -279,7 +290,7 @@ public sealed class SideCarry
         if (Cross)
         {   // (lead r9) never into the down band, nor back across: else the out-turn on the drawn side nearest this one, clear first
             float aIn = ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f);
-            float band = DownBand + CrossMargin;   // the band's edge, as the drawn stage holds it
+            float band = bandNow + CrossMargin;   // the band's edge, as the drawn stage holds it
             if (MathF.Abs(aIn) >= band)
             {
                 float aX = ScreenAngle(Turned(b, left, Tilt, ahead, Inward - OutTurn), f.Jx, f.Jy, 1f);
@@ -401,8 +412,10 @@ public sealed class SideCarry
         }
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
-        float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = DownBand + CrossMargin;
-        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= DownBand) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
+        bandNow = TurnBand > 0f && TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f ? MathF.Max(DownBand, TurnBand) : DownBand;
+        pivotNow = TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f;
+        float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = bandNow + CrossMargin;
+        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= bandNow - 0.01f)
         {
             float dside = was > 0f ? 1f : -1f;
             if ((aT > 0f) != (was > 0f) && MathF.Abs(aT) >= edge)
@@ -414,12 +427,12 @@ public sealed class SideCarry
         }
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
-        if (MathF.Abs(Wrap(aW - aT)) > 0.05f)
+        if (MathF.Abs(Wrap(aW - aT)) > 0.05f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW))
         {
             float tlo = MathF.Min(0f, MathF.Min(lo, hi)), thi = MathF.Max(0f, hi);
             if (InReach > 0f) { tlo = MathF.Max(tlo, Tilt - step); thi = MathF.Min(thi, Tilt + step); }
             tilt = Solve(b, left, ahead, inward, f.Jx, f.Jy, 1f, aW, tlo, thi, Tilt);
-            if (InReach > 0f && MathF.Abs(Wrap(ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f) - aW)) > 0.5f)
+            if (InReach > 0f && (MathF.Abs(Wrap(ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f) - aW)) > 0.5f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW)))
                 (tilt, inward) = Reach(b, left, ahead, f, aW, inward, tlo, thi);
         }
         Tilt += Math.Clamp(tilt - Tilt, -step, step);
@@ -429,6 +442,11 @@ public sealed class SideCarry
         // The layer's shift as drawn (the calf pass's out-turn included), so next frame's rate limit starts from what was seen.
         Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
     }
+
+    /// <summary>Whether the blade along unit `d` would hang its tip under <see cref="TipFloor"/> in a turn in place
+    /// (see there).</summary>
+    bool TipLow(Vector3 d, in Frame f, float aW) => TipFloor > 0f && pivotNow && f.Length > 0.1f && MathF.Abs(aW) < TipBand
+        && f.Grip.Y + d.Y * f.Length < MathF.Min(f.AnkleL.Y, f.AnkleR.Y) - TipGround + TipFloor;
 
     /// <summary>The tilt and inward turn for the drawn screen angle `aW` where the tilt alone can't reach it (see
     /// <see cref="InReach"/>); the tilt kept in `tlo`..`thi`.</summary>
@@ -447,7 +465,7 @@ public sealed class SideCarry
             var dd = Turned(b, left, t, ahead, iw);
             int cb = legs && ClearOf(dd, f.Length, c) < want - 1e-4f ? 1 : 0;
             int mr = (int)MathF.Round(MathF.Abs(Wrap(ScreenAngle(dd, f.Jx, f.Jy, 1f) - aW)) / MathF.Max(MissTol, 1e-3f));
-            int db = down && Vector3.Dot(f.Jy, dd) * f.Length > boot ? 1 : 0;
+            int db = (down && Vector3.Dot(f.Jy, dd) * f.Length > boot ? 1 : 0) + (TipLow(dd, f, aW) ? 2 : 0);
             float ch = MathF.Abs(iw - prev);
             if (cb < bc || (cb == bc && (mr < bm || (mr == bm && (db < bd || (db == bd && ch < bch))))))
             { bc = cb; bm = mr; bd = db; bch = ch; bt = t; bi = iw; }

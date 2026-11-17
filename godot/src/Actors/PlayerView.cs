@@ -2050,11 +2050,12 @@ public partial class PlayerView : Node3D
     float? faceGoal, hipGoal;
 
     /// <summary>One frame of the eased turn toward `want` (radians): at most `max` deg/s, its speed eased at `ease`/s.</summary>
-    void TurnTo(float want, float dt, float max, float ease)
+    void TurnTo(float want, float dt, float max, float ease, int dir = 0)
     {
         if (!turnedLast) yawVel = 0;
         turning = true;
         float err = Mathf.RadToDeg(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+        if (dir != 0 && Mathf.Sign(err) != dir && Mathf.Abs(err) > 45f) err -= Mathf.Sign(err) * 360f;   // (r10) the committed way round
         float goal = Mathf.Clamp(err * TurnK, -max, max);
         yawVel = Mathf.Lerp(yawVel, goal, 1 - Mathf.Exp(-ease * dt));
         float step = yawVel * dt;
@@ -2573,8 +2574,54 @@ public partial class PlayerView : Node3D
         }
         else if (aimHold > 0) goal = aimFace;
         else if (sp > 0.4f) goal = p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01 ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
-        if (goal is float g) TurnTo(g, dt, DirTurnRate, TurnEase);
+        if (goal is float g)
+        {
+            float err = Mathf.RadToDeg(Mathf.Wrap(g - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+            if (Mathf.Abs(err) < PivotDone || (pivotSign != 0 && Mathf.Sign(err) != pivotSign && 360f - Mathf.Abs(err) > PivotFlipMax)) pivotSign = 0;
+            else if (pivotSign == 0 && !PivotAwayOff && Mathf.Abs(err) >= PivotFlipMin && sp < 1f) pivotSign = AwayWay(err);
+            else if (pivotSign == 0 && !PivotAwayOff && Mathf.Abs(err) >= 60f && SurvivorUnchained.Play.DirRun.Start >= 0) GD.Print($"PIVOTSKIP err {err:F1} sp {sp:F2}");
+            TurnTo(g, dt, DirTurnRate, TurnEase, pivotSign);
+        }
+        else pivotSign = 0;
         return true;
+    }
+
+    // (judge r9, lead r10) A turn in place of PivotFlipMin deg or more goes the way round that carries her blade's heading
+    // (level) through the camera's far side, not its near side: swung through the near side, a blade hanging from her fist
+    // points at the camera and reads as a cane under her boots; through the far side it shows short and passes behind her.
+    // The way is chosen once, as the turn starts (pivotSign), and held to its end. --pivot-away-off: the short way, as before.
+    static readonly bool PivotAwayOff = SurvivorUnchained.Args.Has("pivot-away-off");
+    static readonly float PivotFlipMin = SurvivorUnchained.Args.Num("pivot-flip-min", 80f), PivotFlipMax = SurvivorUnchained.Args.Num("pivot-flip-max", 280f), PivotDone = 20f;
+    // (A's rig, measured on e12) the drawn blade's level heading against her right side (deg, + toward ahead): the clips' stand
+    // carry, and the side carry's set where her sword side faces the camera. Body B: re-measure (ana10.py "hd").
+    static readonly float PivotBetaOff = SurvivorUnchained.Args.Num("pivot-beta-off", 25f), PivotBetaOn = SurvivorUnchained.Args.Num("pivot-beta-on", -50f);
+    int pivotSign;
+    float bladeHead = float.NaN;   // the drawn blade's level heading last frame (deg, as Rotation.Y: atan2(x, z)); NaN: none
+
+    /// <summary>The way round (+1 / -1) for a turn of `err` deg: of the short way and the long way (if no more than
+    /// PivotFlipMax deg), the one whose sweep of the blade's level heading (her turn, plus the change of the blade's set in
+    /// her fist from now to the goal: PivotBetaOn where her sword side will face the camera, so the side carry holds it,
+    /// else PivotBetaOff, the clips' own) passes the camera's near side least; the short way on a tie.</summary>
+    int AwayWay(float err)
+    {
+        int shortWay = err >= 0f ? 1 : -1;
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null) return shortWay;
+        var fw = -cam.GlobalBasis.Z;
+        if (fw.X * fw.X + fw.Z * fw.Z < 1e-6f) return shortWay;
+        float far = Mathf.RadToDeg(Mathf.Atan2(fw.X, fw.Z)), near = far + 180f, face = Mathf.RadToDeg(Rotation.Y);
+        float h = float.IsNaN(bladeHead) ? face - 90f + PivotBetaOff : bladeHead;
+        float beta0 = Mathf.Wrap(h - (face - 90f), -180f, 180f);
+        // her sword (right) side at the goal, against the way to the camera (level): toward it, the carry holds the blade
+        float g = Mathf.DegToRad(face + err);
+        bool onAt = -Mathf.Cos(g) * -fw.X + Mathf.Sin(g) * -fw.Z > 0f;
+        float dBeta = Mathf.Wrap((onAt ? PivotBetaOn : PivotBetaOff) - beta0, -180f, 180f);
+        bool Sweeps(float at, float by) { float u = Mathf.Wrap(at - h, -180f, 180f); if (Mathf.Sign(u) != Mathf.Sign(by)) u += Mathf.Sign(by) * 360f; return Mathf.Abs(u) <= Mathf.Abs(by); }
+        float longErr = err - shortWay * 360f;
+        bool nearShort = Sweeps(near, err + dBeta), nearLong = Sweeps(near, longErr + dBeta);
+        int way = nearShort && !nearLong && Mathf.Abs(longErr) <= PivotFlipMax ? -shortWay : shortWay;
+        if (SurvivorUnchained.Play.DirRun.Start >= 0) GD.Print($"PIVOT err {err:F1} h {h:F1} beta0 {beta0:F1} on {onAt} dBeta {dBeta:F1} near {near:F1} short {nearShort} long {nearLong} way {way}");
+        return way;
     }
 
     /// <summary>Her pelvis bone's global yaw in the world (deg; its local +Z, so it reads her facing when the rest pose has it so).</summary>
@@ -2773,6 +2820,17 @@ public partial class PlayerView : Node3D
             else on = false;
         }
         carry.Step(d, on, acc, f);
+        if (on)
+        {
+            var lv = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z); var av = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+            if (lv.LengthSquared() > 1e-8f && av.LengthSquared() > 1e-8f)
+            {
+                lv = lv.Normalized(); av = av.Normalized();
+                var dd = SideCarry.Turned(new(carryB0.X, carryB0.Y, carryB0.Z), new(lv.X, lv.Y, lv.Z), carry.Tilt, new(av.X, av.Y, av.Z), carry.Inward);
+                bladeHead = dd.X * dd.X + dd.Z * dd.Z > 0.01f ? Mathf.RadToDeg(Mathf.Atan2(dd.X, dd.Z)) : float.NaN;
+            }
+        }
+        else bladeHead = float.NaN;
         if (layered) CarrySlide(bone);
     }
     Vector3 carryPos, carryB0;
