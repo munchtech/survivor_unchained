@@ -4,7 +4,8 @@ set_src/PROVENANCE.txt) rebuilt in the target's hand and value band, at twice O1
 normalised rects, so set.json's O1 pieces place it unchanged: DungeonDress.Set.cs loads O1r.png for the "O1r" key).
 
   python tools/look/den_rocks.py build    set_src/O1.png -> art/dungeon/den/set/O1r.png (+ .import, lossless, mipmaps)
-  python tools/look/den_rocks.py facets   the same, its stones lit by facet (den r16 D) -> O1rf.png (--den-rock-facets)
+  python tools/look/den_rocks.py facets   the painting's own facets, value-mapped, moss lit (den r17 B) -> O1rf.png (--den-rock-facets)
+  python tools/look/den_rocks.py facets-s the r16 D / r17 S dome facets (e6cebe99d's O1rf.png)
   python tools/look/den_rocks.py check    O1r's size against set.json's O1, its value/hue ramp, its ink
 
 Why (R14 judge item 1): r14 drew these stones by blurring O1 to a high mip and painting a procedural lit top over it
@@ -131,6 +132,80 @@ FAC_MID = 0.62, 0.42                    # the midtone plane: share of the stone 
 FAC_EDGE_MID = 5.0 * S                  # the mid-to-shade border, soft (a turning form, no ridge there)
 FAC_BOUNCE_H, FAC_BOUNCE_C = 64.0, 0.022  # the shade's warm-grey bounce: hue, least chroma (lit planes keep the ramp)
 FAC_BELLY = 0.10                        # the belly's darkening on the facet stones (BELLY[1] .18 sank the shade to .21)
+# (den r17 B, R16 judge item 3: still camouflage after S's lift) what made them stickers: the dome's lit share drew ONE flat
+# peach fill (FAC_LIT, strokes at .6 of a 6-texel high-pass) cut by a smooth terminator that crossed the painted facets,
+# and the moss took the painting's raw value x .5 (L ~.27), a dark olive cap over the lit crown with peach holes: three flat
+# tones meeting at hard blotchy borders. The 'painted' build (now the facets command; 'facets-s' rebuilds S's sheet)
+# keeps the painting: its own value (facets, ridges, strokes) plus the dome's light as a smooth bias, ranked and mapped to
+# the band by quantile (PNT_Q -> PNT_V), its strokes added back (PNT_DET), its colour variation kept (PNT_COL); the moss
+# keeps its painted strands and is lit like the stone under it (x PNT_MOSS_K), so no tone jump at its fringe.
+PNT_Q = (0.0, 0.10, 0.25, 0.40, 0.55, 0.70, 0.85, 1.0)   # the stone's rank (quantile of its score) ...
+PNT_V = (0.29, 0.345, 0.37, 0.39, 0.43, 0.50, 0.585, 0.64)   # ... to its sheet L (b7a: renders x1.0 in the s11 room, x1.2 in the s11 lair's light)
+PNT_DOME, PNT_BELLY = 1.6, 0.8          # the dome's light (per its std) and the foot's shade added to the painting's value (per its std)
+PNT_DET, PNT_DET_R = 0.6, 3.0 * S       # the painting's strokes added back over the map: amount of (L - blur), radius
+PNT_COL, PNT_COL_R = 0.6, 6.0 * S       # the painting's colour variation (a, b about their blur) kept, radius
+PNT_HUE = (64.0, 66.0, 70.0)            # hue in shade, mid, lit (the shade a warm-grey bounce)
+PNT_C = (0.016, 0.026, 0.038)           # chroma in shade, mid, lit (the render adds ~.02 in light)
+PNT_VK = (0.40, 0.55)                   # shade-to-mid and mid-to-lit values of the hue/chroma ramp
+PNT_MOSS_K, PNT_MOSS_H, PNT_MOSS_C = 0.85, 115.0, (0.012, 0.024)   # moss: x the stone's value, hue, chroma in shade..light (b7a: h 106 C .045 rendered neon h 90 C .116)
+PNT_MOSS_COL = 0.3                      # the painting's colour variation kept on the moss (x PNT_COL)
+PNT_SHARP, PNT_CRACK_K, PNT_CRACK_L = 0.3, 0.55, 0.14   # unsharp amount; the cracks' darkening and its L (S: .7, .75, .11)
+
+
+def painted_value(L, solid, o1):
+    """Stone L by the painting's own value biased by the dome's light, mapped to PNT_V by rank (see PNT_*)."""
+    out = L.copy()
+    lv = np.array(FAC_LIGHT) / np.linalg.norm(FAC_LIGHT)
+    for pe in o1["pieces"]:
+        rx, ry, cw, ch = [v * S for v in pe["rect"]]
+        sl = (slice(ry, ry + ch), slice(rx, rx + cw))
+        m = solid[sl]
+        if m.sum() < 50:
+            continue
+        dt = ndimage.distance_transform_edt(m)
+        hgt = ndimage.gaussian_filter(np.sqrt(dt / dt.max()), 2.0 * S) * dt.max() * FAC_SLOPE
+        gy, gx = np.gradient(hgt)
+        n = np.dstack([-gx, -gy, np.ones_like(gx)])
+        n /= np.linalg.norm(n, axis=2, keepdims=True)
+        lam = np.clip(n @ lv, 0, 1)
+        lp = L[sl]
+        zp = (lp - np.median(lp[m])) / max(np.std(lp[m]), 1e-3)
+        zl = (lam - np.median(lam[m])) / max(np.std(lam[m]), 1e-3)
+        v = (np.arange(ch) / max(ch - 1, 1))[:, None] * np.ones((1, cw))
+        score = zp + PNT_DOME * zl - PNT_BELLY * smooth(0.55, 1.0, v)
+        qs = np.linspace(0.0, 1.0, 201)
+        mapped = np.interp(score, np.percentile(score[m], 100 * qs), np.interp(qs, PNT_Q, PNT_V))
+        det = lp - ndimage.gaussian_filter(lp, PNT_DET_R)
+        out[sl] = np.where(m, mapped + PNT_DET * det, lp)
+    return out
+
+
+def paint_painted(F, A_, o1):
+    L, Aa, Bb = to_oklab(F)
+    C = np.hypot(Aa, Bb)
+    h = np.degrees(np.arctan2(Bb, Aa)) % 360
+    solid = A_ > 0.5
+    moss = ndimage.gaussian_filter(smooth(70, 82, h) * (1 - smooth(140, 155, h)) * smooth(0.025, 0.05, C), 0.7 * S) * solid
+    Lv = painted_value(L, solid, o1) * (1 - moss * (1 - PNT_MOSS_K))
+    Lv = Lv + PNT_SHARP * (Lv - ndimage.gaussian_filter(Lv, SHARP_R))
+    crack = smooth(CRACK_T, 2.5 * CRACK_T, ndimage.gaussian_filter(L, CRACK_R) - L) * solid * (1 - moss)
+    Lv = np.clip(Lv * (1 - PNT_CRACK_K * crack) + PNT_CRACK_L * PNT_CRACK_K * crack, 0.04, 0.85)
+    t1, t2 = smooth(PNT_VK[0] - 0.06, PNT_VK[0] + 0.04, Lv), smooth(PNT_VK[1] - 0.06, PNT_VK[1] + 0.04, Lv)
+    hs = PNT_HUE[0] + (PNT_HUE[1] - PNT_HUE[0]) * t1 + (PNT_HUE[2] - PNT_HUE[1]) * t2
+    cs = PNT_C[0] + (PNT_C[1] - PNT_C[0]) * t1 + (PNT_C[2] - PNT_C[1]) * t2
+    mc = PNT_MOSS_C[0] + (PNT_MOSS_C[1] - PNT_MOSS_C[0]) * smooth(0.33, 0.55, Lv)
+    hr = np.radians(hs * (1 - moss) + PNT_MOSS_H * moss)
+    cc = cs * (1 - moss) + mc * moss
+    kc = PNT_COL * (1 - (1 - PNT_MOSS_COL) * moss) * solid
+    a2 = cc * np.cos(hr) + kc * (Aa - ndimage.gaussian_filter(Aa, PNT_COL_R))
+    b2 = cc * np.sin(hr) + kc * (Bb - ndimage.gaussian_filter(Bb, PNT_COL_R))
+    ink = 1.0 - smooth(INK_W, INK_W + INK_SOFT, ndimage.distance_transform_edt(solid))
+    Lv = Lv * (1 - ink) + INK_L * ink
+    a2 = a2 * (1 - ink) + INK_C * np.cos(np.radians(INK_H)) * ink
+    b2 = b2 * (1 - ink) + INK_C * np.sin(np.radians(INK_H)) * ink
+    out = from_oklab(Lv, a2, b2)
+    out[A_ < 1e-3] = 0.0
+    return out
 
 
 def facet_value(L, Ls, solid, o1):
@@ -231,13 +306,14 @@ def build():
     print(f"O1r: {A_.shape[1]}x{A_.shape[0]} px ({S} x O1's {o1['px']}), {len(o1['pieces'])} stones -> {path}")
 
 
-def build_facets():
+def build_facets(old=False):
+    """O1rf.png: the painted build (den r17 B, PNT_*); old=True ('facets-s'): S's dome facets (e6cebe99d's sheet)."""
     F, A_, o1 = layout()
-    out = paint(F, A_, o1, facets=True)
+    out = paint(F, A_, o1, facets=True) if old else paint_painted(F, A_, o1)
     path = os.path.join(ds.OUT, "O1rf.png")
     ds.save_rgba(path, out, A_)
     ds.write_import(path)
-    print(f"O1rf: {A_.shape[1]}x{A_.shape[0]} px, {len(o1['pieces'])} stones, lit by facet -> {path}")
+    print(f"O1rf: {A_.shape[1]}x{A_.shape[0]} px, {len(o1['pieces'])} stones, {'lit by facet' if old else 'painted'} -> {path}")
 
 
 def check():
@@ -257,4 +333,4 @@ def check():
 
 
 if __name__ == "__main__":
-    {"build": build, "facets": build_facets, "check": check}[sys.argv[1] if len(sys.argv) > 1 else "build"]()
+    {"build": build, "facets": build_facets, "facets-s": lambda: build_facets(old=True), "check": check}[sys.argv[1] if len(sys.argv) > 1 else "build"]()
