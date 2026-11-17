@@ -159,4 +159,40 @@ public class DungeonTests
         _out.WriteLine($"roost {seed}: cliff boxes on the way {total}, from the back {faced}");
         Assert.True(faced >= total * 0.6, $"roost {seed}: {faced} of {total} cliff boxes face the lens from the back");
     }
+
+    /// <summary>(den r17 G, R16 item 1) The den lair's pits in view (DungeonGen.LairPits): in the boss frame (--at boss-mid,
+    /// the camera over the ruler's spot) a lobed main pit 4.5-5.5 m across with its middle in the open band (x 300-1500,
+    /// y 250-750), one or two smaller (2.5-3.5 m), every pit clear of the HUD and 3 m or more from the ruler's spot (where the
+    /// ruler stands up, where she is set down for the frame, the fight's middle), and the ruler's spot still floor.
+    /// The in-view pits are the lair's holes past its plan's: the main's five lobes, then three a small one.</summary>
+    [Theory]
+    [InlineData(11)]
+    [InlineData(23)]
+    public void The_den_lairs_pits_lie_in_the_boss_frame_clear_of_the_fight(int seed)
+    {
+        Assert.True(DungeonGen.LairPits > 0);
+        var m = Make("hollow", seed);
+        var r = m.Dungeon!.Rooms[^1];
+        Assert.Equal("lair", r.Plan.Id);
+        var fresh = r.Holes.Skip(r.Plan.Holes.Length).ToArray();
+        Assert.True(fresh.Length == 8 || fresh.Length == 11, $"seed {seed}: {fresh.Length} lobes in view");
+        var pits = new List<Lobe[]> { fresh[..5] };
+        for (int k = 5; k < fresh.Length; k += 3) pits.Add(fresh[k..(k + 3)]);
+        for (int i = 0; i < pits.Count; i++)
+        {
+            var rim = DungeonGen.Rim(pits[i]).ToList();
+            var px = rim.Select(p => DungeonGen.LairScreen(p.X - r.X, p.Z - r.Z)).ToList();
+            double across = DungeonGen.Across(pits[i]);
+            double cx = (rim.Min(p => p.X) + rim.Max(p => p.X)) / 2, cz = (rim.Min(p => p.Z) + rim.Max(p => p.Z)) / 2;
+            var (sx, sy) = DungeonGen.LairScreen(cx - r.X, cz - r.Z);
+            double near = rim.Min(p => Math.Sqrt((p.X - m.Boss.X) * (p.X - m.Boss.X) + (p.Z - m.Boss.Z) * (p.Z - m.Boss.Z)));
+            _out.WriteLine($"seed {seed} pit {i}: middle ({cx:0.0}, {cz:0.0}) = lair +({cx - r.X:0.0}, {cz - r.Z:0.0}), {across:0.00} m across, "
+                + $"px box {px.Min(p => p.X):0}-{px.Max(p => p.X):0} x {px.Min(p => p.Y):0}-{px.Max(p => p.Y):0}, rim {near:0.0} m from the ruler's spot");
+            Assert.InRange(across, i == 0 ? 4.5 : 2.5, i == 0 ? 5.5 : 3.5);
+            if (i == 0) { Assert.InRange(sx, 300, 1500); Assert.InRange(sy, 250, 750); }
+            Assert.True(px.All(p => DungeonGen.LairScreenClear(p.X, p.Y)), $"seed {seed} pit {i} under the HUD");
+            Assert.True(near >= 3, $"seed {seed} pit {i}: {near:0.0} m from the ruler's spot");
+        }
+        Assert.True(m.CanStand(m.Boss.X, m.Boss.Z), $"seed {seed}: the ruler's spot is not floor");
+    }
 }
