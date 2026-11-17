@@ -78,7 +78,7 @@ public static partial class DungeonDress
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
-        if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 0.35f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream
+        if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 2f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream; (den r17 lead, R16 item 6: 0.35 -> 2) the O6 painting itself is warm grey now (S e6cebe99d), sat 1 keeps it (h 50 C .054)
         if (sheet == "O6") { mat.SetShaderParameter("tint", V3("den-fur-tint", new Vector3(0.96f, 0.96f, 0.96f))); mat.SetShaderParameter("shade_tint", V3("den-fur-shade", new Vector3(1f, 1f, 1f))); }   // (den r16 lead, R15f item 10) the set's warm tint made the fur cream in light (C .05-.09); neutral here
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
@@ -1095,6 +1095,7 @@ public static partial class DungeonDress
     static readonly float SetRockFacets = SurvivorUnchained.Args.Num("den-rock-facets", 1f);
     // (den r16 D, R15f item 8: the logs' lit tops C .061-.077 against den_room's .102, lavender driftwood) the logs' (O2) saturation x this
     static readonly float SetLogSat = SurvivorUnchained.Args.Num("den-log-sat", 1.8f);
+    static readonly float SetLogCap = SurvivorUnchained.Args.Num("den-log-cap", 3f), SetLogR = SurvivorUnchained.Args.Num("den-log-r", 10f);   // (den r17 lead, R16 item 7) 0: r16's repeats
     static readonly Vector3 SetLogTint = V3("den-log-tint", new Vector3(1f, 1f, 1f));   // (den r16 D) the logs' tint over the set's
     static readonly float SetNoRepeat = SurvivorUnchained.Args.Num("den-set-norepeat", 1f);   // (den r15 R) 0: bank runs may lay one card twice in a row
     static readonly float SetRockVary = SurvivorUnchained.Args.Num("den-rock-vary", 1f);   // (den r15 R) 0: stones near each other may repeat one piece
@@ -1127,7 +1128,12 @@ public static partial class DungeonDress
             }
             else
             {
-                for (int t = 0; t < vall.Count && !DenCaps.Take("log" + ix, pp, 1, 8f); t++) { ix = (ix + 1) % vall.Count; pc = vall[ix]; }
+                // (den r17 lead, R16 item 7: seven of one splintered log in the s23 room) at most --den-log-cap logs within --den-log-r m
+                // (a view), and no log where every variant already lies within 8 m (the loop used to fall through and lay a repeat)
+                if (SetLogCap > 0f && !DenCaps.Take("log", pp, (int)SetLogCap, SetLogR)) return 0f;
+                bool free = false;
+                for (int t = 0; t < vall.Count; t++) { if (DenCaps.Take("log" + ix, pp, 1, 8f)) { free = true; break; } ix = (ix + 1) % vall.Count; pc = vall[ix]; }
+                if (!free && SetLogCap > 0f) return 0f;
             }
             mirror = Hash((int)(x * 19f), (int)(zz * 19f), 2203) < 0.5f;
             k *= 0.88f + 0.3f * Hash((int)(x * 23f), (int)(zz * 23f), 2204);

@@ -37,6 +37,8 @@ public sealed record MapResult(Chart Chart, bool Cleared, double Seconds, int Ki
 /// </summary>
 public sealed class MapRun : ZoneRuntime, IBossArena
 {
+    /// <summary>(den r17 lead) true lays the kit's long bones (halloween/bone_*) in the den again; the game sets it from --den-kit-bone.</summary>
+    public static bool DenKitBones;
     public readonly Chart Chart;
     readonly MapBuild map;
     readonly Denizens people;
@@ -221,7 +223,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         // (den r15 helper D) the kit's whole skull (an olive dome over a skull, r13 #14, r14 #6) and its rib cage (a repeat the per-screen
         // caps could not see: a made piece, not a card) are not laid in the den: the painted set's piles carry both, under DenCaps
         if (map.Dungeon != null) foreach (var p in map.Props)
-            if (!(map.DungeonTheme == "den" && p.Id is "halloween/skull" or "halloween/ribcage" or "halloween/skull_candle"))
+            // (den r17 lead, R16 item 5: the yellow femurs at s11 room (1325,595) and s23 lair (1612,872) were these kit long bones,
+            // laid here past Dressing's --den-kit-bone cut) the den's painted litter carries its bones: the kit's are not laid
+            if (!(map.DungeonTheme == "den" && (p.Id is "halloween/skull" or "halloween/ribcage" or "halloween/skull_candle" || p.Id.StartsWith("halloween/bone_") && !DenKitBones)))
             G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale * (map.DungeonTheme == "den" && p.Id.StartsWith("halloween/bone_") ? 0.6 : 1));
         if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();
