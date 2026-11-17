@@ -263,8 +263,14 @@ public sealed class SideCarry
     /// screen angle did, e31 legs 6/11/14/15 +34..+37); the weight hands it back to the clip's own. The near side's screen
     /// machinery (the rate on screen, crossings, the edge) is off here: the tilt's and inward's rates and the guard hold it.
     /// FarOn false: off (the far side is the clip's own).</summary>
-    public bool FarOn = false; public float FarPitch = 20f, FarOut = 40f, FarSwing = 1f, FarFade = 0.5f; public bool FarTurnOff = true;
-    bool farNow; Vector3 farD;
+    public bool FarOn = false; public float FarPitch = 20f, FarOut = 40f, FarSwing = 1f, FarFade = 0.27f; public bool FarTurnOff = true;
+    /// <summary>(r19, judge r15 guards 1-4) On the far side: the trailing pitch eases from FarStandPitch standing to FarPitch at a
+    /// run with her speed, and the weight holds at a stop and a stand (FarStand; false: it follows her speed, the clip's own at a
+    /// stand), faded no faster than FarFade (8 frames) where she turns; the end-on guard turns the wanted direction about the
+    /// vertical, away from the view ray, until at least FarShown of the blade's length shows; the drawn direction steps at
+    /// most FarStep deg a frame (her own turn carried on); the guard scores its choice by the 3D angle to it.</summary>
+    public float FarStandPitch = 30f, FarShown = 0.55f, FarStep = 6f; public bool FarStand = true;
+    bool farNow; Vector3 farD, farPrev, farWant;
 
     /// <summary>The unit direction `k` of the way along the shortest arc from unit `p` to unit `q`.</summary>
     public static Vector3 Slerp(Vector3 p, Vector3 q, float k)
@@ -295,6 +301,32 @@ public sealed class SideCarry
         var u = bl * left + da * ahead + MathF.Sqrt(MathF.Max(0f, 1f - bl * bl - da * da)) * n;
         tilt = Angle(left, b, u); inward = Angle(ahead, u, d);
     }
+    /// <summary>(r19) The share of the unit `d`'s length on screen through the frame's rows.</summary>
+    public static float Shown(Vector3 d, in Frame f)
+    {
+        float n = MathF.Sqrt((f.Jx.LengthSquared() + f.Jy.LengthSquared()) / 2f);
+        return n > 1e-6f ? MathF.Sqrt(MathF.Pow(Vector3.Dot(f.Jx, d), 2f) + MathF.Pow(Vector3.Dot(f.Jy, d), 2f)) / n : 1f;
+    }
+
+    /// <summary>(r19, the end-on guard) The unit `d` turned about the vertical, the least way that takes it off the view ray,
+    /// until at least `need` of its length shows on screen (1-deg steps, at most 180).</summary>
+    public static Vector3 EndOn(Vector3 d, in Frame f, float need)
+    {
+        if (Shown(d, f) >= need) return d;
+        var cb = new Vector3(f.CamBack.X, 0f, f.CamBack.Z);
+        // away from the ray: the side of the vertical plane through the camera's back the blade's heading is on
+        float sg = Vector3.Cross(-cb, new Vector3(d.X, 0f, d.Z)).Y >= 0f ? 1f : -1f;
+        for (int k = 1; k <= 180; k++) { var q = Rot(Vector3.UnitY, sg * k, d); if (Shown(q, f) >= need) return q; }
+        return d;
+    }
+
+    /// <summary>(r19) The unit `p` turned toward the unit `q` by at most `deg`.</summary>
+    public static Vector3 Toward(Vector3 p, Vector3 q, float deg)
+    {
+        float th = MathF.Acos(Math.Clamp(Vector3.Dot(p, q), -1f, 1f)) * R2D;
+        return th <= deg || th < 1e-4f ? q : Slerp(p, q, deg / th);
+    }
+
     // the legs' four bones (far thigh, far shin, near thigh, near shin) as screen px from the grip (x, y) and depth (z, m, + away)
     readonly Vector3[] legS = new Vector3[8];
     bool legsOn;
@@ -387,7 +419,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; crossTo = 0f; crossLand = false; landT = 0f; lastDShown = 0f; standP = float.NaN; clipPitchPrev = float.NaN; farNow = false; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; farPrev = default; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; crossTo = 0f; crossLand = false; landT = 0f; lastDShown = 0f; standP = float.NaN; clipPitchPrev = float.NaN; farNow = false; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -496,7 +528,7 @@ public sealed class SideCarry
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
         bool farSide = FarOn && side < 0f;
         float mv0 = Math.Clamp(float.IsFinite(f.Moving) ? f.Moving : 0f, 0f, 1f);
-        float target = on && float.IsFinite(side) ? (farSide ? (FarTurnOff && TurnEnd > 0f && yawRate > TurnEnd ? 0f : Target(-side) * mv0) : Target(side)) : 0f;
+        float target = on && float.IsFinite(side) ? (farSide ? (FarTurnOff && TurnEnd > 0f && yawRate > TurnEnd ? 0f : Target(-side) * (FarStand ? 1f : mv0)) : Target(side)) : 0f;
         if (target > 0f) farNow = farSide;
         float wPrev = Weight;
         float wn = Ease > 0f ? Weight + (target - Weight) * (1f - MathF.Exp(-dt / Ease)) : target;
@@ -535,6 +567,7 @@ public sealed class SideCarry
             if (Weight == 0f) { float isd = InwardRate > 0f ? InwardRate * dt : float.MaxValue; Inward += Math.Clamp(-Inward, -isd, isd); if (MathF.Abs(Inward) < 1e-3f) Inward = 0f; }
             if (Tilt == 0f && Weight == 0f && Inward == 0f) { Shift = 0f; clipPrev = float.NaN; }
             OutTurn = 0f; calfN = 0; guardHeld = false; easeT = 0f; crossTo = 0f; crossLand = false; landT = 0f;
+            farPrev = b.LengthSquared() > 1e-8f && f.Left.LengthSquared() > 1e-8f && f.Ahead.LengthSquared() > 1e-8f ? Turned(Vector3.Normalize(b), Vector3.Normalize(f.Left), Tilt, Vector3.Normalize(f.Ahead), Inward) : default;
             if (b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f
                 || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f) { lastA = float.NaN; standP = float.NaN; clipPitchPrev = float.NaN; }
             else
@@ -561,8 +594,8 @@ public sealed class SideCarry
         {
             // (r18) the far side: the turn to her own trailing direction, this frame's (her frame's, so a fade eases it back
             // onto the clip's own along the same turn, at a stop as in a run)
-            Want = FarPitch - FarSwing * Spring;
-            farD = FarDir(left, ahead, Want, FarOut);
+            Want = FarStandPitch + (FarPitch - FarStandPitch) * moving - FarSwing * Spring;
+            farD = EndOn(FarDir(left, ahead, Want, FarOut), f, FarShown);
             FarTurn(b, left, ahead, farD, out float tF, out psi);
             Raw = tF; lo = MathF.Min(0f, tF); hi = MathF.Max(0f, tF);
         }
@@ -626,7 +659,15 @@ public sealed class SideCarry
         float tilt = Weight * Raw * (1f - Yield), inward = Weight * psi * (1f - Yield);
         // (r18) the far side's weight eases the blade along the shortest arc from the clip's own to her trailing direction
         // (its turn scaled by the weight would swing a fading blade the long way, up the screen: e30 s13 leg 5's stop)
-        if (farNow) FarTurn(b, left, ahead, Slerp(b, farD, Weight * (1f - Yield)), out tilt, out inward);
+        Vector3 farW = default;
+        if (farNow)
+        {   // (r19) the end-on guard on the blend too (toward the clip's own share as the weight goes), then at most FarStep a frame
+            float wy = Weight * (1f - Yield), sb = Shown(b, f);
+            farW = Slerp(b, farD, wy);
+            if (sb < FarShown) farW = EndOn(farW, f, sb + (FarShown - sb) * MathF.Min(1f, 2f * wy));
+            if (FarStep > 0f && farPrev.LengthSquared() > 0.5f) farW = Toward(Rot(Vector3.UnitY, yawStep, farPrev), farW, FarStep);
+            FarTurn(b, left, ahead, farW, out tilt, out inward);
+        }
         float a0 = ScreenAngle(b, f.Jx, f.Jy, 1f), aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
         if (Hold > 0f && Weight < wPrev && MathF.Abs(aT) < MathF.Min(MathF.Abs(a0), Hold) && (aT == 0f || (aT > 0f) == (a0 > 0f)))
         {
@@ -701,11 +742,13 @@ public sealed class SideCarry
             if (InReach > 0f && (MathF.Abs(Wrap(ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f) - aW)) > 0.5f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW)))
                 (tilt, inward) = Reach(b, left, ahead, f, aW, inward, tlo, thi);
         }
-        Tilt += Math.Clamp(tilt - Tilt, -step, step);
+        Tilt = farNow ? tilt : Tilt + Math.Clamp(tilt - Tilt, -step, step);
         Inward = inward;
         clipPrev = a0;
-        ClearCalves(dt, f, b, left, ahead, moving);
+        if (farNow) { OutTurn = 0f; farWant = farW; } else ClearCalves(dt, f, b, left, ahead, moving);
         Guard(b, left, ahead, f, tPrev, iPrev, dt, moving);
+        farPrev = Turned(b, left, Tilt, ahead, Inward);
+        if (farNow) { Shift = Wrap(ScreenAngle(farPrev, f.Jx, f.Jy, 1f) - a0); holdMissed = false; return; }
         // The layer's shift as drawn (the calf pass's out-turn included), so next frame's rate limit starts from what was seen.
         Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
         holdMissed = crossWaitT > 0f && HoldMiss > 0f && MathF.Abs(Wrap(a0 + Shift)) < bandNow - HoldMiss;
@@ -837,6 +880,9 @@ public sealed class SideCarry
         // clip's own swing, judged right (e24 leg 14: the guard turned a w-0 run blade at the camera, 79 deg off the judged run)
         bool hideOn = legsOn && moving < 0.5f;
         float ts = MaxRate > 0f ? MaxRate * dt : 360f, isd = InwardRate > 0f ? InwardRate * dt : 360f, ps = PitchRate > 0f ? PitchRate * dt : float.MaxValue;
+        // (r19, judge r15 guard 4) on the far side the turn is exact to the wanted direction (no tilt rate: the 3D step holds)
+        Vector3 fp = Rot(Vector3.UnitY, yawStep, farPrev); bool fs = farNow && FarStep > 0f && farPrev.LengthSquared() > 0.5f;
+        if (farNow) { ts = MathF.Max(ts, MathF.Abs(Tilt - tPrev)); isd = MathF.Max(isd, MathF.Abs(Inward - iPrev)); ps = float.MaxValue; }
         float tW = Tilt, iW = Inward;   // the turn the layer wants this frame, before the rates
         float tB = tPrev + Math.Clamp(Tilt - tPrev, -ts, ts), iB = iPrev + Math.Clamp(Inward - iPrev, -isd, isd);
         Look(b, left, ahead, Tilt, Inward, f, out float aD, out _, out _, out _);
@@ -887,6 +933,7 @@ public sealed class SideCarry
             if (tPrev * t < 0f && MathF.Abs(tPrev) >= 4.5f && MathF.Abs(t) >= 4.5f) v += 0.05f;
             float vr = v;
             if (hasLast && ps < float.MaxValue) v += MathF.Max(0f, MathF.Abs(po - lastPoff) - ps) / ps;
+            if (fs) { float st = MathF.Acos(Math.Clamp(Vector3.Dot(Turned(b, left, t, ahead, i), fp), -1f, 1f)) * R2D; v += MathF.Max(0f, st - FarStep - 0.01f) / FarStep; }
             if (stopOn)
             {   // (r13) out of a turn, the drawn blade's own pitch (world) steps at most StopRate and doesn't reverse by StopRev each way
                 float dp = pa - lastPitch;
@@ -926,7 +973,9 @@ public sealed class SideCarry
                     float t = tPrev + ts * gi / GuardSteps, i = iPrev + isd * gj / GuardSteps;
                     float v = Bad(t, i, out float a, out float sh, out float po);
                     if (v > bv + 1e-6f) continue;
-                    float m = MathF.Abs(Wrap(a - aD)) * MathF.Min(1f, sh / MathF.Max(ShownFull, 1e-3f)) + 0.02f * (MathF.Abs(t - tB) + MathF.Abs(i - iB));
+                    float m = farNow ? MathF.Acos(Math.Clamp(Vector3.Dot(Turned(b, left, t, ahead, i), farWant), -1f, 1f)) * R2D
+                        : MathF.Abs(Wrap(a - aD)) * MathF.Min(1f, sh / MathF.Max(ShownFull, 1e-3f)) + 0.02f * (MathF.Abs(t - tB) + MathF.Abs(i - iB));
+                    if (farNow) { if (v < bv - 1e-6f || m < bm) { bv = v; bm = m; bt = t; bi = i; ba = a; bs = sh; bp = po; } continue; }
                     // near the cane's angle, a shorter blade is preferred (the way out where the rates can't hold the angle)
                     if (MathF.Abs(a) < CaneAngle + ShortZone) m += ShortPull * MathF.Max(0f, sh - ShortShown);
                     if (crossing) m += CrossShort * MathF.Max(0f, sh - CrossShortTo);
