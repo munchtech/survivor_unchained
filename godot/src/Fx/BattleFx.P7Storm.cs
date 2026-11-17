@@ -63,6 +63,7 @@ public partial class BattleFx
     int p7VowBlows;
     // the scars drawn (p7ScarList) and each line id's scar (p7Scars: several ids may share one)
     readonly Dictionary<int, P7Scar> p7Scars = new();
+    static Texture2Drd? p7Wd;
     readonly List<P7Scar> p7ScarList = new();
     Node3D? p7Shield;
 
@@ -492,14 +493,17 @@ public partial class BattleFx
         var cam = GetViewport()?.GetCamera3D();
         float vk = 1080f / Math.Max(1f, GetViewport()?.GetVisibleRect().Size.Y ?? 1080f);
         float hwPx = P7D["storm.line.strip_px"], lift = P7D["storm.line.lift"];
-        int K = Math.Max(12, (int)(len / 0.15f));
+        int K = Math.Max(24, (int)(len / 0.06f));
         var pts = new Vector3[K + 1];
         for (int j = 0; j <= K; j++) pts[j] = P7CrackAt(from, dir, side, len * j / K, len, t0, n, across);
         var mesh = new ImmediateMesh();
         mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
-        float apx = 0, lit = 0, vis = -1;
+        // (t1) the start: start[0] px ahead of her feet and clear of her HP plate (start[1] px each side, start[2]..start[3] px
+        // under her feet, at 1080), where a small chipped origin opens; the strip's UV runs from there
+        var st = P7D.All("storm.line.start");
+        float apx = 0, lit = 0, vis = -1, a0 = -1;
         var view = (GetViewport()?.GetVisibleRect().Size ?? new Vector2(1920, 1080)) * vk;
-        Vector2 sp0 = Vector2.Zero;
+        Vector2 sp0 = Vector2.Zero, feet = Vector2.Zero;
         for (int j = 0; j <= K; j++)
         {
             var p = pts[j];
@@ -520,7 +524,9 @@ public partial class BattleFx
                 ds = new Vector2(s3.X, s3.Z) * k;
                 seen = cam == null;
             }
-            if (j > 0) apx += (sp - sp0).Length();
+            if (j > 0) apx += (sp - sp0).Length(); else feet = sp;
+            var rf = sp - feet;
+            if (a0 < 0 && rf.Length() >= st[0] && (Mathf.Abs(rf.X) > st[1] || rf.Y < st[2] || rf.Y > st[3])) a0 = apx;
             sp0 = sp;
             // the visible part: px along to the first point off the screen
             if (!seen && vis < 0) vis = apx;
@@ -528,9 +534,10 @@ public partial class BattleFx
             if (j == K / 2) lit = ds.X + ds.Y >= 0 ? 1 : -1;
             float hw = hwPx / Math.Max(ds.Length(), 1f);
             var q = p + Vector3.Up * lift;
-            mesh.SurfaceSetUV(new Vector2(apx, -hwPx));
+            float ua = apx - Math.Max(a0, 0) - (a0 < 0 ? 1e4f : 0);
+            mesh.SurfaceSetUV(new Vector2(ua, -hwPx));
             mesh.SurfaceAddVertex(q - s3 * hw);
-            mesh.SurfaceSetUV(new Vector2(apx, hwPx));
+            mesh.SurfaceSetUV(new Vector2(ua, hwPx));
             mesh.SurfaceAddVertex(q + s3 * hw);
         }
         mesh.SurfaceEnd();
@@ -538,8 +545,20 @@ public partial class BattleFx
         // off it (r1's 715 px line tapered over its whole length: about 4 px where it left the screen), over at least taper[1]
         // of the visible part; a line wholly on screen tapers over its length
         var tp = P7D.All("storm.line.taper");
+        a0 = Math.Max(a0, 0);
+        if (vis >= 0) vis = Math.Max(vis - a0, 1);
+        apx = Math.Max(apx - a0, 1);
         float tpx = vis < 0 ? apx : Mathf.Clamp(vis - tp[0], tp[1] * vis, apx);
         var m = P7Mat(18);
+        // (t1) a floor mark: drawn under every after-grade effect (the ring's arcs cover it), never over what stands on the floor
+        m.RenderPriority = -8;
+        p7Wd ??= new Texture2Drd();
+        if (FxWorldDepth.Tex.IsValid && p7Wd.TextureRdRid != FxWorldDepth.Tex) p7Wd.TextureRdRid = FxWorldDepth.Tex;
+        m.SetShaderParameter("p7_wdepth", p7Wd);
+        m.SetShaderParameter("p7_wd_on", FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? 1f : 0f);
+        m.SetShaderParameter("p7_floor", P7D["storm.line.floor"]);
+        m.SetShaderParameter("p7_org", P7D["storm.line.origin"]);
+        m.SetShaderParameter("p7_ember", P7Oklch("storm.seam.ember"));
         m.SetShaderParameter("p7_rpx", apx);
         m.SetShaderParameter("p7_tpx", tpx);
         m.SetShaderParameter("p7_lit", lit);
@@ -562,7 +581,7 @@ public partial class BattleFx
         node.GlobalTransform = Transform3D.Identity;
         if (FxAfter.On) FxAfter.Adopt(node);
         if (Args.Has("clip") && cam != null)
-            GD.Print($"p7line fissure {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
+            GD.Print($"p7line fissure {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, start {a0:F0}px ahead (feet {feet:F0}), reach {cam.UnprojectPosition(V(from.X + dir.X * len, Y(from.X + dir.X * len, from.Y + dir.Y * len), from.Y + dir.Y * len)) * vk:F0}, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
         return new P7Scar { N = node, M = m };
     }
 
@@ -591,7 +610,8 @@ public partial class BattleFx
         float open = P7D["storm.line.open"];
         var cool = P7D.All("storm.seam.cool");
         var life = P7D.All("storm.line.life");
-        var pulse = P7D.All("storm.seam.pulse");
+        var pend = P7D.All("storm.seam.pending");
+        if (p7Wd != null && FxWorldDepth.Tex.IsValid && p7Wd.TextureRdRid != FxWorldDepth.Tex) p7Wd.TextureRdRid = FxWorldDepth.Tex;
         // each scar once, however many line ids are mapped onto it
         for (int i = p7ScarList.Count - 1; i >= 0; i--)
         {
@@ -607,6 +627,8 @@ public partial class BattleFx
                 // split: the flare in heat, never in width (white-hot, then a step a stretch: gold, amber, out); the gap
                 // holds, then breaks up where it lies in steps (life[0]..life[1] s)
                 s.M.SetShaderParameter("p7_alpha", 1f);
+                s.M.SetShaderParameter("p7_cool", 0f);
+                s.N.Visible = true;
                 s.M.SetShaderParameter("p7_fade", t < cool[0] ? 0f : t < cool[1] ? 1 / 3f : t < cool[2] ? 2 / 3f : 1f);
                 s.M.SetShaderParameter("p7_erode", P7Stepped(t, life[0], life[1]));
                 gone = t > life[1];
@@ -623,8 +645,15 @@ public partial class BattleFx
             {
                 // pending: white-hot for a sample as it tears open (and as each line lands on it), then gold over amber,
                 // breathing (pulse: base, swing, Hz); a lost event's scar goes 12 s after its last line
-                s.M.SetShaderParameter("p7_fade", s.Hot < P7Sample ? 0f : 1 / 3f);
-                s.M.SetShaderParameter("p7_alpha", s.Hot < P7Sample ? 1f : pulse[0] + pulse[1] * Mathf.Sin((float)(s.Age * Mathf.Tau * pulse[2])));
+                // (t1, judge 5) per scar since its last line: white-hot to pend[0] s, full heat to pend[1], cooling in steps to
+                // the ember (storm.seam.ember) at pend[2], out at pend[3]; the dark crack whole to pend[4], broken up where it
+                // lies by pend[5] and hidden (kept for the split while its lines pend); a line joining it refreshes it all
+                float h = s.Hot;
+                s.M.SetShaderParameter("p7_fade", h < pend[0] ? 0f : h < pend[1] ? 1 / 3f : h < pend[3] ? 2 / 3f : 1f);
+                s.M.SetShaderParameter("p7_cool", h < pend[1] ? 0f : P7Stepped(h, pend[1], pend[2]));
+                s.M.SetShaderParameter("p7_alpha", 1f);
+                s.M.SetShaderParameter("p7_erode", P7Stepped(h, pend[4], pend[5]));
+                s.N.Visible = h <= pend[5];
                 gone = s.Hot > 12;
             }
             if (!gone) continue;

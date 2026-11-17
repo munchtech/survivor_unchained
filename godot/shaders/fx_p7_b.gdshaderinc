@@ -71,6 +71,24 @@ uniform vec3 p7_lipc = vec3(0.3, 0.22, 0.14);
 uniform float p7_lit = 1.0;
 uniform float p7_open = 1.0;
 uniform float p7_erode = 0.0;
+// (t1) the floor mask: the play frame's depth (FxWorldDepth.Tex); hidden where the world's surface at the px stands more
+// than p7_floor m over the strip (a log, a prop, a bank, a body); p7_cool 0..1 the seam's heat toward p7_ember; p7_org the
+// chipped origin's radius (px)
+uniform sampler2D p7_wdepth : filter_nearest, repeat_disable;
+uniform float p7_wd_on = 0.0;
+uniform float p7_floor = 0.1;
+uniform float p7_cool = 0.0;
+uniform vec3 p7_ember = vec3(0.2, 0.08, 0.03);
+uniform float p7_org = 6.0;
+float p7_onfloor() {
+	if (p7_wd_on < 0.5 || p7_clip.w <= 0.0) return 1.0;
+	vec2 su = p7_clip.xy / p7_clip.w * 0.5 + 0.5;
+	float d = texture(p7_wdepth, su).r;
+	if (d <= 1e-7) return 1.0;
+	float vz = (p7_pr.y - d * p7_pr.w) / (d * p7_pr.z - p7_pr.x);
+	float h = (p7_cy - p7_wy) * (1.0 - vz / min(p7_vz, -1e-3));
+	return h < p7_floor ? 1.0 : 0.0;
+}
 
 float p7_kh(float i, float k) { return fx_hash(vec2(i * 1.731 + k * 17.17, k * 3.11 + p7_seed * 5.71)); }
 float p7_kpos(float i, float S, float J, float k) { return (i + J * (p7_kh(i, k) - 0.5)) * S; }
@@ -127,6 +145,11 @@ vec4 p7_fissure(vec2 uv) {
 	float left = C - 0.5 * W * (1.0 + p7_jag.w * el), right = C + 0.5 * W * (1.0 + p7_jag.w * er);
 	float dl = x - left, dr = right - x;
 	float gcov = p7_cov(min(dl, dr), aa);
+	// (t1) the chipped origin: a small jagged divot the gap leaves from (7 corners, 0.7-1.15 of p7_org)
+	vec2 qo = vec2(a - 0.9 * p7_org, x - p7_kc(0.0));
+	float ang = (atan(qo.y, qo.x) + 3.14159265) / 6.2831853 * 7.0, ai = floor(ang);
+	float Ro = p7_org * mix(0.7 + 0.45 * p7_kh(mod(ai, 7.0), 21.0), 0.7 + 0.45 * p7_kh(mod(ai + 1.0, 7.0), 21.0), ang - ai);
+	gcov = max(gcov, p7_cov(Ro - length(qo), aa));
 	// the lit wall: a flat lighter dark along the lit side's inside
 	float dlit = p7_lit > 0.0 ? dr : dl;
 	float wall = W >= 3.0 ? p7_cov(p7_lip.z * W - dlit, aa) : 0.0;
@@ -175,6 +198,7 @@ vec4 p7_fissure(vec2 uv) {
 			float r = dm / max(hs, 1e-3);
 			if (lf < 0.5) sc = mix(mix(fx_edge, fx_mid, p7_cov((0.78 - r) * hs, aa)), fx_core, p7_cov((0.42 - r) * hs, aa));
 			else if (lf < 1.5) sc = mix(fx_edge, fx_mid, p7_cov((0.6 - r) * hs, aa));
+			sc = mix(sc, p7_ember, clamp(p7_cool, 0.0, 1.0));
 		}
 	}
 	// one painted layer: the lip, the dark over it, the seam in the dark
@@ -187,7 +211,7 @@ vec4 p7_fissure(vec2 uv) {
 		float v = 0.72 * (0.5 + 0.5 * fx_gnoise(vec2(a / 9.0, x / 5.0) + vec2(p7_seed * 3.7, 1.3))) + 0.28 * (1.0 - t);
 		al *= clamp((v - p7_erode) / max(fwidth(v), 1e-3) + 0.5, 0.0, 1.0) * step(p7_erode, 0.999);
 	}
-	return vec4(col, al);
+	return vec4(col, al * p7_onfloor());
 }
 
 // the dome's rim: px in from its outline (the silhouette's facing term over its own slope; the ground line's height over

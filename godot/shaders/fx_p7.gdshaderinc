@@ -46,11 +46,21 @@ uniform float p7_streaks = 7.0; // star: the thin streaks between the spikes
 varying float p7_wy;
 // (fight-ring, 13 Nov) the dome: how far this point stands on the camera's side of its centre, -1 the far side .. 1 the near
 varying float p7_near;
+// (lane E lead 7 t1) the fissure's floor mask: its view z, clip position, the camera's height and the projection's depth terms
+varying float p7_vz;
+varying vec4 p7_clip;
+varying flat vec4 p7_pr;
+varying flat float p7_cy;
 
 void vertex() {
 	// the pulse lies on her own surface: pushed out a little along it so her depth twin does not fight it
 	if (p7_mode == 11) VERTEX += NORMAL * 0.014;
 	p7_wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+	if (p7_mode == 18) {
+		vec4 vv = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+		p7_vz = vv.z; p7_clip = PROJECTION_MATRIX * vv; p7_cy = INV_VIEW_MATRIX[3].y;
+		p7_pr = vec4(PROJECTION_MATRIX[2][2], PROJECTION_MATRIX[3][2], PROJECTION_MATRIX[2][3], PROJECTION_MATRIX[3][3]);
+	}
 	if (p7_mode == 8) {
 		vec3 rel = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz - MODEL_MATRIX[3].xyz;
 		vec3 fwd = -INV_VIEW_MATRIX[2].xyz;

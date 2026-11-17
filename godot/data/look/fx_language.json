@@ -1009,12 +1009,17 @@
      0.86,
      0.14,
      1.6
-    ]
+    ],
+    "pending": [0.1, 0.3, 1.0, 1.15, 1.25, 2.0],
+    "ember": [0.4, 0.065, 50]
    },
    "line": {
     "what": "(lane E lead 7, 17 Nov; BattleFx.P7Storm.cs P7Fissure, shaders/fx_p7_b.gdshaderinc p7_fissure, mode 18) the storm's thrown Sunder line as a painted ground fissure. It replaces the long-cut crack decals tinted sunder_mark.crack_tint and their seam strip, which the den judge (17 Nov) read as 'a soft dark smear + 1 px orange hairline from her feet south to the skull pin': at the dungeon camera the decal's stretched albedo fell off over 10-15 px and the seam sat off its gap. Now one strip on the crack's path (P7CrackAt; strip_px each side, lift m over the ground), its UV in px at the play camera, every edge hard (one pixel's antialias, no halo): a jagged gap, knots about every jag[0] px (jittered jag[1]), its centre swinging jag[2] of its width, each edge chipped jag[3]; gap[0] px wide at her end tapering (power gap[2]) to gap[1] at the far end, then a point over gap[3] px, each knot 0.75-1.25 of that. Two flat darks of the line row (deep, and the wall along the lit side, the across facing the screen's lower right, over lip[2] of the width where it is 3 px or more), a broken lit lip lip[0] px outside that edge on lip[1] of its knots (lip_lch), hairline branches at branch[0] of the knots, branch[1] px long, branch[2] px at the root. Colors Oklab L, C, h, drawn after the grade. Laid from her end over `open` s; split: holds until life[0] s, breaks up where it lies in steps, gone at life[1]; faded: breaks up over life[2] s. r2 (17 Nov): the taper by screen px: when the line runs off the screen the gap reaches gap[1] taper[0] px inside the edge (at least taper[1] of the visible part), a hairline on from there (r1's 715 px line tapered over its whole length, about 4 px where it left the screen); wholly on screen it tapers over its length. One fissure a path: a line thrown on a pending scar's path (her end within stack[0] m, its way within stack[1] degrees, its length within stack[2] m: she stood still, the storm throws one every heavy tick, each seeded apart, and r1 braided two or three fissures and seams on one path) draws none, its id joins the scar (a fresh white-hot sample on its seam), kept until every line mapped onto it has split or faded",
     "strip_px": 26,
     "lift": 0.05,
+    "floor": 0.1,
+    "origin": 6.5,
+    "start": [24, 58, 12, 60],
     "open": 0.1,
     "taper": [
      120,
