@@ -235,10 +235,16 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_FUR vec4(8.0, 0.3, 0.040, 6.5)
 #define DEN_BOSS_CORE 0.054
 #define DEN_BOSS_MANE_LOCK vec3(12.0, 2.0, 0.30)
-#define DEN_BOSS_MANE_ROW vec4(0.33, 0.09, 0.235, 0.10)
-#define DEN_BOSS_MANE_FORE vec4(9.0, 0.52, 0.12, 0.10)
+// (lane E lead 8 solver, judge 5's straight fore edge, 17 Nov: the mane's fore edge is on the ruff's fur CARDS (surface 4,
+// alpha-cut rings round the neck), and in her idle the side-on camera sees only the neck's upper flank, angle 0-70 deg round
+// DEN_MANE_AXIS: at 9 locks a turn (40 deg each) that is 1-2 locks, one smooth arc down the neck, read as a straight line
+// (l7g1_st_02 x 1029-1045 over y 372-404). Now 26 a turn, each hooked down-and-back DEN_BOSS_MANE_FORE_H radians a unit of z
+// behind the crest, .085 deep at most; the shade row paler (.42 -> .46) and the lit row's tips further back (.33 -> .30))
+#define DEN_BOSS_MANE_ROW vec4(0.30, 0.09, 0.235, 0.08)
+#define DEN_BOSS_MANE_FORE vec4(26.0, 0.53, 0.10, 0.085)
+#define DEN_BOSS_MANE_FORE_H 1.2
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
-#define DEN_BOSS_MANE_SH vec3(0.42, 0.095, 27.0)
+#define DEN_BOSS_MANE_SH vec3(0.46, 0.095, 27.0)
 #define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
 #define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
@@ -389,9 +395,9 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_k1 = floor(c_u), c_k2 = floor(c_u + 0.5);
 		float c_zA = DEN_BOSS_MANE_ROW.x - DEN_BOSS_MANE_ROW.y * (0.45 + 0.8 * vat_den_hash(c_k1, 5.0)) * vat_den_tip(c_u - c_k1);
 		float c_zH = DEN_BOSS_MANE_ROW.z - DEN_BOSS_MANE_ROW.w * (0.45 + 0.8 * vat_den_hash(c_k2, 6.0)) * vat_den_tip(c_u + 0.5 - c_k2);
-		float c_af = c_a * DEN_BOSS_MANE_FORE.x / 6.2831853 + 0.5, c_kf = floor(c_af);
+		float c_af = (c_a + DEN_BOSS_MANE_FORE_H * (DEN_BOSS_MANE_FORE.y - c_r.z)) * DEN_BOSS_MANE_FORE.x / 6.2831853 + 0.5, c_kf = floor(c_af);
 		float c_zF = DEN_BOSS_MANE_FORE.y - DEN_BOSS_MANE_FORE.z * c_a / 3.14159265
-			- DEN_BOSS_MANE_FORE.w * (0.4 + 0.9 * vat_den_hash(c_kf, 7.0)) * vat_den_tip(c_af - c_kf);
+			- DEN_BOSS_MANE_FORE.w * (0.45 + 0.8 * vat_den_hash(c_kf, 7.0)) * vat_den_tip(c_af - c_kf);
 		float c_zd = c_r.z * DEN_BOSS_MANE_LOW.y + 0.25 * sin(c_r.z * 11.0), c_kd = floor(c_zd);
 		float c_yL = DEN_BOSS_MANE_LOW.x - DEN_BOSS_MANE_LOW.z * (0.4 + 0.9 * vat_den_hash(c_kd, 8.0)) * vat_den_tip(c_zd - c_kd);
 		float c_mane = vat_den_cut(c_r.z - c_zH, 0.0) * (1.0 - vat_den_cut(c_r.z - c_zF, 0.0)) * vat_den_cut(c_r.y - c_yL, 0.0);
