@@ -221,6 +221,8 @@ public partial class PlayerView : Node3D
     static readonly bool CarryLog = Args.Has("carry-log"); int carryLogT = -1;
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
+    /// <summary>The full shot is a soft one that gave way to her moving and is only fading out (it holds nothing).</summary>
+    bool fullGaveWay;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
     // A1 lead 19: her 2D move node (BlendSpace2D) when her library has the directional walks, and, with it, the facing that
     // holds her aim (aimFace) while aimHold runs, the legs walking her velocity in her facing's frame (move2dPos: x right, y forward).
@@ -625,7 +627,7 @@ public partial class PlayerView : Node3D
         fullStart = time; fullSpeed = (float)speed;
         full.Animation = People.Clip(person, clip);
         fullNative = full.Animation.ToString().StartsWith(own.Prefix);
-        fullSoft = false;
+        fullSoft = fullGaveWay = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         FullBlendIn(mine && fullNative ? full.Animation.ToString()[own.Prefix.Length..] : null);
@@ -652,7 +654,7 @@ public partial class PlayerView : Node3D
         full.Animation = own.Prefix + clip;
         fullNative = true;
         IdleSyncLater(clip, speed);
-        fullSoft = soft;
+        fullSoft = soft; fullGaveWay = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
@@ -1641,7 +1643,7 @@ public partial class PlayerView : Node3D
         if (fullSoft && sp > 0.6 && (bool)tree.Get("parameters/fullShot/active"))
         {
             tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
-            fullSoft = false;
+            fullSoft = false; fullGaveWay = true;
         }
         if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
         if (sp > 0.3 || (pivot && PivotHeld(p.StickX, p.StickZ))) { stillT = 0; return; }   // (a 180's reversal is not a stop)
@@ -2559,7 +2561,9 @@ public partial class PlayerView : Node3D
     /// At most DirTurnRate deg/s. False (the old chain decides) in a leap, a dash or a full-body clip.</summary>
     bool DirFace(PlayerState p, float dt, float x, float z, float sp)
     {
-        if (!p.Alive || p.Leap != null || p.DashT > 0 || (bool)tree.Get("parameters/fullShot/active")) return false;
+        // (judge r5) a soft full shot (a stop, a fidget: it gives way the moment she moves) does not hold her facing: under
+        // one the old chain faced her travel, so a backpedal or strafe began turned to the run and pivoted to the cursor ~7 f in.
+        if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get("parameters/fullShot/active") && !fullSoft && !fullGaveWay)) return false;
         float? goal = null;
         var ptr = Pointer?.Invoke();
         if (Facing.Current == FacingMode.Always && ptr is { } c)
@@ -2701,7 +2705,7 @@ public partial class PlayerView : Node3D
             c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
             c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
             c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
-            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold);
+            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd);
         }
         return c;
     }

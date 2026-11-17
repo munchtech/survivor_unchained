@@ -90,6 +90,10 @@ public sealed class SideCarry
     /// just enough to keep it at the lesser of the clip's angle and Hold (the hang after a turn, where the layer's reach
     /// collapses as she faces away). Hold 0: off.</summary>
     public float Hold = 25f;
+    /// <summary>(judge r5) Once her turn has ended (her facing turning under TurnEnd deg/s), the drawn blade may ease on toward
+    /// its target at up to CarryRate deg/s, not only the clip's turn + ScreenRate: a blade left across vertical by a turn
+    /// sweeps through in a frame or two instead of hanging there. CarryRate 0: off.</summary>
+    public float CarryRate = 300f, TurnEnd = 120f;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -110,7 +114,8 @@ public sealed class SideCarry
     public float Sigma { get; private set; } = -1f;
     /// <summary>The layer's own turn of the blade on screen now (deg, screen right +): the drawn blade's angle less the clip's.</summary>
     public float Shift { get; private set; }
-    float springV, clipPrev = float.NaN;
+    float springV, clipPrev = float.NaN, yawRate;
+    Vector3 aheadPrev;
 
     /// <summary>One drawn pose, in the world (y up): the clip's blade (grip to tip, before the layer), her left and her
     /// facing (level), the camera's screen map at the grip (rows: screen x and screen y, y down, per metre), the camera's
@@ -200,7 +205,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -274,6 +279,11 @@ public sealed class SideCarry
     public void Step(float dt, bool on, float accel, in Frame f)
     {
         if (!(dt > 0f)) return;
+        // her facing's turn rate this frame (deg/s), for the carry rate once a turn has ended
+        var ah = new Vector3(f.Ahead.X, 0f, f.Ahead.Z);
+        yawRate = aheadPrev.LengthSquared() > 1e-8f && ah.LengthSquared() > 1e-8f
+            ? MathF.Abs(MathF.Atan2(Vector3.Cross(aheadPrev, ah).Y, Vector3.Dot(aheadPrev, ah))) * R2D / dt : 0f;
+        aheadPrev = ah.LengthSquared() > 1e-8f ? Vector3.Normalize(ah) : aheadPrev;
         var cb = new Vector3(f.CamBack.X, 0f, f.CamBack.Z);
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
         float target = on && float.IsFinite(side) ? Target(side) : 0f;
@@ -359,6 +369,7 @@ public sealed class SideCarry
             aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
         }
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
+        if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
         float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim);
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;

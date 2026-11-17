@@ -244,7 +244,8 @@ public class SideCarryTests
 
     // (judge r4 fix 2, lead r5) Out of a sword-side stand into a fast turn (the start flick): the drawn blade turns on
     // screen no faster than the clip's own turn plus ScreenRate, the tip turning in or out where the tilt can't reach.
-    static float MaxExcess(SideCarry c, float to)
+    // (judge r5) the blade's turn beyond her turn + ScreenRate, over the frames of her turn (all 30 with turnOnly false)
+    static float MaxExcess(SideCarry c, float to, bool turnOnly = false)
     {
         for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
         float worst = float.MinValue, pa = float.NaN, pc = float.NaN;
@@ -255,7 +256,7 @@ public class SideCarryTests
             c.Step(Dt, true, 0f, f);
             float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
             float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
-            if (!float.IsNaN(pa))
+            if (!float.IsNaN(pa) && (!turnOnly || i <= 6))
             {
                 float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
                 worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - MathF.Abs(W(a0 - pc)) - c.ScreenRate * Dt);
@@ -271,8 +272,37 @@ public class SideCarryTests
     [InlineData(0f)]       // a quarter turn to face the camera
     public void OutOfASideStandTheBladeTurnsNoFasterThanHerPlusTheRate(float to)
     {
-        float e = MaxExcess(new SideCarry(), to);
+        float e = MaxExcess(new SideCarry(), to, turnOnly: true);
         Assert.True(e <= 1f, $"blade outran her turn by {e:F1} deg in a frame");
+        float off = MaxExcess(new SideCarry { CarryRate = 0f }, to);
+        Assert.True(off <= 1f, $"with CarryRate 0 the blade outran her turn by {off:F1} deg in a frame");
+    }
+
+    // (judge r5) Once her turn has ended the blade may ease on at the carry rate, never faster; while she turns it may not.
+    [Theory]
+    [InlineData(-90f)]
+    [InlineData(270f)]
+    [InlineData(180f)]
+    public void OnceHerTurnEndsTheBladeEasesOnNoFasterThanTheCarryRate(float to)
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float pa = float.NaN, pc = float.NaN;
+        float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
+        for (int i = 0; i < 30; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / 6f);
+            var f = At(face, MathF.Min(1f, i / 3f));
+            c.Step(Dt, true, 0f, f);
+            float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            if (!float.IsNaN(pa) && i >= 8)
+            {
+                float allow = MathF.Max(MathF.Abs(W(a0 - pc)) + c.ScreenRate * Dt, c.CarryRate * Dt);
+                Assert.True(MathF.Abs(W(a - pa)) <= allow + 1f, $"frame {i}: {MathF.Abs(W(a - pa)):F1} deg against {allow:F1}");
+            }
+            pa = a; pc = a0;
+        }
     }
 
     // (judge r5) While the weight falls, the layer never leaves the blade nearer straight down than the clip's own (to Hold).
