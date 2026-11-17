@@ -58,6 +58,18 @@ public static class HipHinge
         return max * Math.Tanh(x / max);
     }
 
+    /// <summary>Degrees a ONE-thigh tasset (hiptasset_hinge_{l,r}; helpers.tasset_follow) rolls about her forward axis WITH
+    /// its thigh's spread, both ways: max*tanh(-side*k*sp/max), positive = the bottom toward her right (so her left plate's
+    /// bottom goes out with her left thigh spreading out). sp: the thigh's spread from rest; side +1 her left, -1 her right;
+    /// k (SPEC `roll` on a one-thigh bone) 0 = none.</summary>
+    public static double TassetFollow(double sp, int side, double k, double max) =>
+        k == 0 ? 0 : max * Math.Tanh(-side * k * sp / max);
+
+    /// <summary>A tasset hinge's roll from its thighs' spreads (helpers.tasset_pose): two thighs, the V away from a crossing
+    /// one (TassetRoll); one thigh, the plate with its thigh's spread (TassetFollow).</summary>
+    public static double TassetRollFor(double[] sp, int[] sides, double k, double from, double soft, double max) =>
+        sp.Length == 2 ? TassetRoll(sp[0], sp[1], k, from, soft, max) : TassetFollow(sp[0], sides[0], k, max);
+
     /// <summary>The tasset hinge's local pose: its rest (Rest: global rest turn none, at its pivot), then `deg` about her
     /// lateral axis, the bottom forward (about -X: her -Y toward +Z), then `roll` degrees about her forward axis, the
     /// bottom toward her right (about -Z, in the pelvis axes; helpers.drive_tassets: rest x roll x pitch).</summary>

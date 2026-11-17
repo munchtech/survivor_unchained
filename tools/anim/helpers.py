@@ -277,18 +277,25 @@ SPEC = {
          # gives 9.6 deg (the V's tip, 18 cm under the pivot, 30 mm farther from it); run 2.3 deg, leap 7 deg.
          "roll": 1.3, "at": "pelvis", "at_rest": [2.28729882256751e-12, 1.0722957482471516, -3.8052937667565345e-07]},
         # Hip tassets (armor-D, 16 Nov; retargeted 17 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same
-        # law on that thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 1.2 * softrelu(swing - 3, 12);
-        # no twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x), at the
+        # law on that thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 1.5 * softrelu(swing - 3, 12);
+        # no twist; rolled with that thigh's spread (below). The pivot is given per side (x signed; the right is the left mirrored in x), at the
         # belt (0.115, 1.115, 0.067), her rest axes; "at" the thigh with "at_rest" its head on A, so B's pivot moves with B's
         # thigh head. Why (17 Nov, armor-on-b r1): a plate hung from the hip joint cannot reach V length, and a lower lame hung
         # under a top lame fails because her belly rises above the top lame's inner face at y 1.07-1.00; one rigid plate
         # pivoting at its own top on the belt clears at amount 1.2: th 44-56 needs 8-46 mm to y .94; amounts .9/1.0 leave
         # 70-97/48-67 mm. (Old: pivot at the hip joint, amount 0.8; hipv-2 r4: at the belt the run's thigh swung through the
         # plates' room, so a front plate built 12-36 mm.) Users: a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
+        # Spread (armor-D, 17 Nov, armor-on-b r6): the plate also rolls about her forward axis WITH its thigh's spread, both
+        # ways (tasset_follow): `roll` 0.8 degrees per degree of spread, soft-clamped at `roll_max` 25; and `amount` 1.5 (was
+        # 1.2). Why: pitching only, B's leap f0 (left thigh 28 deg out) and run f13-14 set the left front plate's room at its
+        # bottom (y .975-1.00, th 42-64 off the plate) to 34-70 mm over her rest skin (idle 13-22, sword_heavy 5-25), so it
+        # stood 38-77 mm off her. With spread 0.8 and amount 1.5: idle <= 2, run 7-15, leap -5..11, sword_heavy -3..27 (the
+        # 27 only at th 42-46 at f25, her left thigh near rest); the right side <= 15. (amount 1.2 + roll 0.8: run 21-34,
+        # leap 33-38; amount 1.8: run 11, no better.)
         {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.115, 1.115, 0.067],
-         "amount": 1.2, "soft": 12.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
+         "amount": 1.5, "soft": 12.0, "roll": 0.8, "roll_max": 25.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
         {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.115, 1.115, 0.067],
-         "amount": 1.2, "soft": 12.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
+         "amount": 1.5, "soft": 12.0, "roll": 0.8, "roll_max": 25.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -957,6 +964,19 @@ def tasset_roll(tg, al, ar):
     return mx * math.tanh(x / mx)
 
 
+def tasset_follow(tg, sp, side):
+    """Degrees a ONE-thigh tasset (hiptasset_hinge_{l,r}) rolls about her forward axis with its thigh's spread (SPEC
+    "tassets" optional `roll` on a one-thigh bone: degrees per degree of that thigh's spread, both ways, out and across;
+    soft-clamped at `roll_max` (default 20) by roll_max*tanh(x/roll_max); 0 = none, the plate pitching only). sp: the
+    thigh's spread out from rest (negative = crossing); side +1 her left, -1 her right. Positive result = the bottom
+    toward her right (tasset_q), so her left plate's bottom goes out (+x) with her left thigh spreading out."""
+    k = tg.get("roll", 0.0)
+    if not k:
+        return 0.0
+    mx = tg.get("roll_max", 20.0)
+    return mx * math.tanh(-side * k * sp / mx)
+
+
 def tasset_q(deg, roll=0.0):
     """The tasset hinge's turn in her rest axes carried with the pelvis: `deg` about her lateral axis, the bottom
     forward (about -X: her -Y toward +Z); then (if `roll`) `roll` degrees about her forward axis, the bottom toward
@@ -983,8 +1003,11 @@ def tasset_angles(sk: Skeleton, rot, tg):
 
 
 def tasset_pose(tg, sw, sp):
-    """(pitch, roll) degrees for a tasset hinge from its thighs' swings and spreads."""
-    return tasset_turn(tg, *sw), (tasset_roll(tg, *sp) if len(sw) == 2 else 0.0)
+    """(pitch, roll) degrees for a tasset hinge from its thighs' swings and spreads: two thighs, the V rolled away from
+    a crossing one (tasset_roll); one thigh, the plate rolled with its thigh's spread (tasset_follow)."""
+    if len(sw) == 2:
+        return tasset_turn(tg, *sw), tasset_roll(tg, *sp)
+    return tasset_turn(tg, *sw), tasset_follow(tg, sp[0], 1 if tg["thighs"][0].endswith("_l") else -1)
 
 
 def drive_tassets(sk: Skeleton, rot):

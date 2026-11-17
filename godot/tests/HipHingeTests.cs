@@ -100,8 +100,9 @@ public class HipHingeTests
                     sp[i] = b;
                 }
                 double turn = nt == 2 ? HipHinge.TassetTurn(sw[0], sw[1], amount, soft) : HipHinge.TassetTurnOne(sw[0], amount, soft);
-                double roll = nt == 2 ? HipHinge.TassetRoll(sp[0], sp[1], s.GetProperty("roll").GetDouble(), s.GetProperty("roll_from").GetDouble(),
-                    s.GetProperty("roll_soft").GetDouble(), s.GetProperty("roll_max").GetDouble()) : 0;
+                var sides = s.GetProperty("sides").EnumerateArray().Select(e => e.GetInt32()).ToArray();
+                double roll = HipHinge.TassetRollFor(sp, sides, s.GetProperty("roll").GetDouble(), s.GetProperty("roll_from").GetDouble(),
+                    s.GetProperty("roll_soft").GetDouble(), s.GetProperty("roll_max").GetDouble());
                 Assert.True(Math.Abs(roll - f.GetProperty("roll_deg").GetDouble()) < 1e-3, "roll degrees");
                 if (s.GetProperty("roll").GetDouble() > 0 && roll > 3) rolled++;
                 var got = HipHinge.TassetPose(r, turn, roll);

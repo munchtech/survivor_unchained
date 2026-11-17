@@ -23,7 +23,8 @@ public static class P1Hinges
 
     /// <summary>A tasset hinge's local pose (HerJoints' drive): from the chain rotations (at rest, now) of the thigh(s) it
     /// reads (`sides`: +1 her left, -1 her right, from each thigh's name). Two thighs: the V turned with the leading one and
-    /// rolled away from one crossing the midline (HipHinge.TassetRoll); one thigh (a hip tasset): its own swing, no roll.</summary>
+    /// rolled away from one crossing the midline (HipHinge.TassetRoll); one thigh (a hip tasset): its own swing, rolled with its
+    /// spread (HipHinge.TassetFollow).</summary>
     public static Quaternion TassetPose(Quaternion rest, Quaternion parentRest, Quaternion[] chainRest, Quaternion[] chainNow, int[] sides,
         double amount, double soft, double roll = 0, double rollFrom = 2, double rollSoft = 6, double rollMax = 20)
     {
@@ -37,7 +38,7 @@ public static class P1Hinges
             (sw[i], sp[i]) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, sides[i]);
         }
         double turn = n == 2 ? HipHinge.TassetTurn(sw[0], sw[1], amount, soft) : HipHinge.TassetTurnOne(sw[0], amount, soft);
-        double r = n == 2 ? HipHinge.TassetRoll(sp[0], sp[1], roll, rollFrom, rollSoft, rollMax) : 0;
+        double r = HipHinge.TassetRollFor(sp, sides, roll, rollFrom, rollSoft, rollMax);
         return HipHinge.TassetPose(rest, turn, r);
     }
 }

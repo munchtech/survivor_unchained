@@ -595,7 +595,8 @@ public partial class HerJoints : SkeletonModifier3D
                 new N.Vector3(v.X, v.Y, v.Z), hg.Amount)));
         }
         // The tasset hinges: each thigh's forward swing (and spread) in the pelvis's frame, the V turned with the leading one
-        // (a one-thigh bone with its own), and rolled away from a thigh crossing the midline (roll > 0).
+        // (a one-thigh bone with its own), and rolled away from a thigh crossing the midline (roll > 0; a one-thigh bone:
+        // rolled with its thigh's spread).
         foreach (var tg in tassets)
         {
             int n = tg.Chains.Length;
@@ -610,7 +611,7 @@ public partial class HerJoints : SkeletonModifier3D
                 (sw[i], sp[i]) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, tg.Sides[i]);
             }
             double turn = n == 2 ? HipHinge.TassetTurn(sw[0], sw[1], tg.Amount, tg.Soft) : HipHinge.TassetTurnOne(sw[0], tg.Amount, tg.Soft);
-            double roll = n == 2 ? HipHinge.TassetRoll(sp[0], sp[1], tg.Roll, tg.RollFrom, tg.RollSoft, tg.RollMax) : 0;
+            double roll = HipHinge.TassetRollFor(sp, tg.Sides, tg.Roll, tg.RollFrom, tg.RollSoft, tg.RollMax);
             sk.SetBonePoseRotation(tg.Bone, Gq(HipHinge.TassetPose(Nq(tg.Rest), turn, roll)));
         }
         // The panels: each thigh's line in the pelvis's frame (her rest axes
