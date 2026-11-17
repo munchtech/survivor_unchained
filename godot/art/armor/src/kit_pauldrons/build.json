@@ -260,6 +260,7 @@
   "margin": 0.0,
   "bodice": "kit_bodice",
   "bodice_back": 0.01,
-  "smooth": 6
+  "smooth": 6,
+  "inset": 0.022
  }
 }

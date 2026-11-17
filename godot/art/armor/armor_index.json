@@ -149,7 +149,7 @@
    "kit_pauldrons.pauldrons.steel"
   ],
   "tuck": "armor_tuck/kit_pauldrons.bin",
-  "tuck_count": 1522,
+  "tuck_count": 1154,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_pauldrons.gltf",
   "tier": 2,
