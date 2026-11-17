@@ -27,15 +27,15 @@
    {
     "match": "cop_l",
     "weights": {
-     "delt_l": 0.5,
-     "clavicle_l": 0.5
+     "delt_l": 0.35,
+     "clavicle_l": 0.65
     }
    },
    {
     "match": "cop_r",
     "weights": {
-     "delt_r": 0.5,
-     "clavicle_r": 0.5
+     "delt_r": 0.35,
+     "clavicle_r": 0.65
     }
    },
    {
@@ -99,7 +99,8 @@
    "h": 0.0016
   },
   "ridge": {
-   "beta": 50,
+   "beta": 40,
+   "be0": -40,
    "in_deg": 5,
    "h": 0.012,
    "lean": 0.5,
@@ -113,7 +114,63 @@
    "clip": "idle_warden",
    "frame": 0
   },
-  "env_margin": 8
+  "env_margin": 8,
+  "outline_signed": [
+   [
+    -180,
+    64
+   ],
+   [
+    -135,
+    72
+   ],
+   [
+    -90,
+    74
+   ],
+   [
+    -50,
+    44
+   ],
+   [
+    -25,
+    40
+   ],
+   [
+    0,
+    76
+   ],
+   [
+    30,
+    96
+   ],
+   [
+    60,
+    96
+   ],
+   [
+    90,
+    88
+   ],
+   [
+    120,
+    78
+   ],
+   [
+    150,
+    70
+   ],
+   [
+    180,
+    64
+   ]
+  ],
+  "crown": {
+   "h": 0.01,
+   "al": 35,
+   "be": 30,
+   "r": 70
+  }
  },
  "lames": {
   "theta": 112,
@@ -165,10 +222,10 @@
   "trim_pad": 2.0,
   "trim_round": 6.0,
   "trim_tol": 0.0,
-  "cop_lift_max": 0.012,
+  "cop_lift_max": 0.025,
   "cop_ride": {
-   "delt_l": 0.5,
-   "clavicle_l": 0.5
+   "delt_l": 0.35,
+   "clavicle_l": 0.65
   }
  }
 }

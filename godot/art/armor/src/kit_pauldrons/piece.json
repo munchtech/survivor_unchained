@@ -11,15 +11,15 @@
    {
     "match": "cop_l",
     "weights": {
-     "delt_l": 0.5,
-     "clavicle_l": 0.5
+     "delt_l": 0.35,
+     "clavicle_l": 0.65
     }
    },
    {
     "match": "cop_r",
     "weights": {
-     "delt_r": 0.5,
-     "clavicle_r": 0.5
+     "delt_r": 0.35,
+     "clavicle_r": 0.65
     }
    },
    {
