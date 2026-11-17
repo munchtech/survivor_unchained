@@ -47,7 +47,10 @@ DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this f
 # (den r17 S, R16 judge item 6: the tufts rendered two-toned, blue h 238-251 or cream h 77-85, never the target's warm grey)
 # the fur graded in OKLab to one warm-grey albedo: its value strokes kept (L re-centred on L50, spread kept), hue FUR_H,
 # chroma FUR_C (rising from the darks), so the sheet carries the colour and the material's sat can stay near 1. Replaces DESAT.
-FUR_GRADE = {"O6": {"h": 54.0, "c": 0.045, "l50": 0.68, "spread": 0.85}}
+# (den r17 D3, R16 item: the tufts rendered L .73-.79 C .085-.09 at --den-fur-sat 2, bright confetti; den_room's fur sits
+# into the floor, warm grey with a darker underside) l50 and c down, the spread up (its strands), and "under": L taken
+# off toward each piece's lower edge (its ground side), up to this much at the foot. Was h 54, c .045, l50 .68, spread .85 (graded on the painting, so the sat 2 material doubles its C).
+FUR_GRADE = {"O6": {"h": 52.0, "c": 0.028, "l50": 0.66, "spread": 1.0, "under": 0.1}}
 # (den r17 S, R16 judge item 7: the s23 corridor log's lit top rendered L50 .755, C .120, glowing orange under the shaft, against
 # den_room's .678 / .101) a sheet's lit values rolled off in OKLab: above L knee, the rise kept at this share, and its chroma
 # scaled toward this (at the top), the darks and strokes untouched.
@@ -335,6 +338,7 @@ def build():
                     g_ = FUR_GRADE[name]
                     L_, A_, B_ = dr.to_oklab(cf)
                     L_ = np.clip(g_["l50"] + (L_ - np.median(L_[w_])) * g_["spread"], 0.05, 0.92)
+                    L_ = L_ - g_.get("under", 0.0) * dr.smooth(0.35, 1.0, np.linspace(0.0, 1.0, L_.shape[0]))[:, None]
                     C_ = g_["c"] * dr.smooth(0.25, 0.5, L_)
                     hr = np.radians(g_["h"])
                     cuts[i] = (dr.from_oklab(L_, C_ * np.cos(hr), C_ * np.sin(hr)), ca)

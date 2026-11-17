@@ -16,6 +16,12 @@ public static partial class DungeonDress
     sealed record Decal(string Kind, Rect2 Uv, Vector2 Metres, float Weight);
 
     static List<Decal>? decals;
+    // (den r17 D3, R16 item: the lit decal bones rendered cream-yellow, L .82 C .10, den_room's L .69-.75 C .06-.07) the cause:
+    // dungeon_decal.gdshader's bone_k branch gates on luminance .3-.6 and saturation under .25-.5 measured on the LINEAR
+    // atlas (a source_color sampler), where the bones' body sits at L .17, sat .42: it fired on about a tenth of their
+    // pixels, so --den-bone / --den-bone-sat did nothing visible. Now the bone kinds are marked per vertex (COLOR.r) and
+    // graded in Oklab there: x the L scale, y the chroma scale, z a hue turn (degrees), w on (0 = the old branch alone).
+    static readonly Vector4 BoneGrade = new(SurvivorUnchained.Args.Num("den-bone-l", 0.95f), SurvivorUnchained.Args.Num("den-bone-c", 0.38f), SurvivorUnchained.Args.Num("den-bone-h", -12f), SurvivorUnchained.Args.Num("den-bone-grade", 1f));
     static Vector2 decalLight = new(-0.45f, -0.89f);
 
     static List<Decal> Decals()
@@ -73,6 +79,7 @@ public static partial class DungeonDress
         public readonly List<Vector3> V = new();
         public readonly List<Vector2> U = new();
         public readonly List<int> I = new();
+        public readonly List<Color> K = new();   // (den r17 D3) per vertex: r 1 on the pale bone kinds (dungeon_decal.gdshader's bone grade); empty = none
         public int Count;
         public readonly Dictionary<string, int> Kinds = new();
     }
@@ -274,6 +281,7 @@ public static partial class DungeonDress
         arr[(int)Mesh.ArrayType.Normal] = nrm;
         arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
         arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
+        if (b.K.Count == b.V.Count && b.K.Count > 0) arr[(int)Mesh.ArrayType.Color] = b.K.ToArray();
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_decal.gdshader") };
@@ -284,6 +292,8 @@ public static partial class DungeonDress
         mat.SetShaderParameter("res", (float)z.Res);
         mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.3f));   // (den r17 D2, lead item 1) the decal bones down to den_room's lit bone value (.62 = d7e)
         mat.SetShaderParameter("bone_sat", SurvivorUnchained.Args.Num("den-bone-sat", 0.7f));
+        mat.SetShaderParameter("bone_grade", BoneGrade);
+        mat.SetShaderParameter("bone_knee", new Vector2(SurvivorUnchained.Args.Num("den-bone-knee", 0.55f), SurvivorUnchained.Args.Num("den-bone-share", 0.3f)));   // (den r17 D3) the bones' highlights rolled off above Oklab L .55 to 30 % of their rise (1 = none)
         if (SurvivorUnchained.Args.Num("den-bone-patch", 0f) > 0f) { var sh = (Shader)mat.Shader.Duplicate(); sh.Code = sh.Code.Replace("uniform float bone_k = 0.62;", "uniform float bone_k = 0.62; uniform float bone_sat = 1.0;").Replace("col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));", "col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat))); col = mix(col, mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, bone_sat), smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));"); mat.Shader = sh; GD.Print("TESTPATCH bone_sat " + sh.Code.Contains("bone_sat")); }
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
@@ -322,6 +332,7 @@ public static partial class DungeonDress
                 float s = (float)p / (nx - 1), t = (float)q / (ny - 1);  // (t 0 = the cell's top, the lit side)
                 var w = new Vector2(x, zz) + ax * ((s - 0.5f) * W) + up * ((0.5f - t) * Hh);
                 b.V.Add(new Vector3(w.X, H(c, w.X, w.Y) + lift, w.Y));
+                if (BoneGrade.W > 0f) b.K.Add(new Color(d.Kind is "bone" or "arctusk" or "ribcage" or "wolf_skull" or "deer_skull" ? 1f : 0f, 0f, 0f, 1f));
                 b.U.Add(new Vector2(d.Uv.Position.X + s * d.Uv.Size.X, d.Uv.Position.Y + t * d.Uv.Size.Y));
             }
         // (winding by the mirror, so every decal faces up)
