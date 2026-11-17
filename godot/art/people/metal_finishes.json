@@ -86,7 +86,7 @@
             0.26,
             0.28
           ],
-          "enamel_chip": 0.15,
+          "enamel_chip": 0.0,
           "enamel_metal": 0.3,
           "enamel_rough": 0.55,
           "enamel_spec_cap": 0.05,
@@ -98,30 +98,97 @@
             1.3,
             1.3
           ],
-          "kit_lit": 0.06,
+          "kit_lit": 0.0,
           "kit_soft": 1.0,
           "kit_glint": [
-            2.0,
-            4.0,
+            2.5,
+            5.0,
             0.75
           ],
           "kit_glint_color": [
-            1.0,
-            0.85,
-            0.75
+            0.55,
+            0.5,
+            0.55
           ],
-          "kit_lit_far": 0.15
+          "kit_lit_far": 0.15,
+          "kit_plate": [
+            0.45,
+            1.3,
+            0.15
+          ],
+          "kit_steps": [
+            0.05,
+            0.5,
+            0.04
+          ],
+          "kit_tone_dark": [
+            0.15,
+            0.084,
+            0.078
+          ],
+          "kit_tone_mid": [
+            0.294,
+            0.218,
+            0.21
+          ],
+          "kit_tone_lit": [
+            0.445,
+            0.368,
+            0.36
+          ],
+          "kit_tone_refl": [
+            0.625,
+            0.554,
+            0.547
+          ],
+          "kit_refl": [
+            -0.35,
+            0.94,
+            0.5
+          ],
+          "kit_refl_band": [
+            0.45,
+            0.18,
+            0.05
+          ],
+          "kit_refl_k": 1.0,
+          "kit_floor": [
+            3.0,
+            1.0,
+            0.0
+          ]
         }
       },
       "gold": {
         "dye": "#ffbf50",
         "params": {
           "metal_grime": 0.1,
-          "gold_floor": 1.7,
+          "gold_floor": 0.15,
           "gold_gloss": 1.0,
           "gold_rough": 0.3,
           "metal_spec_cap": 1.6,
-          "gold_floor_far": 4.5
+          "gold_floor_far": 0.3,
+          "kit_gold": [
+            0.45,
+            1.6,
+            0.35
+          ],
+          "kit_gold_dark": [
+            0.673,
+            0.45,
+            0.101
+          ],
+          "kit_gold_lit": [
+            0.941,
+            0.693,
+            0.277
+          ],
+          "kit_gold_glint": 3.0,
+          "kit_floor": [
+            3.0,
+            1.0,
+            0.0
+          ]
         }
       },
       "darkleather": {
