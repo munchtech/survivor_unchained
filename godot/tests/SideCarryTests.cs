@@ -668,4 +668,38 @@ public class SideCarryTests
         Assert.True(hm < 0.1f, $"heading off the clip's by {hm}");
         Assert.True(em < 0.05f && c.Tilt == 0f && c.Inward == 0f, $"not handed back: {em}, tilt {c.Tilt}, inward {c.Inward}");
     }
+    // (r18, judge e31 bar 4) the far side's carry: at a run, the drawn blade sits on her own trailing direction (FarDir) while
+    // the clip's blade swings under it; at her stop it hands back to the clip's own along the shortest arc, never sliding
+    // end-on (its shown length drops at most 0.2 a frame and never under the lesser of 0.35 and the clip's own, less 0.05:
+    // here the clip's own far blade is itself near end-on, least 0.227, and the hand-back's arc passes 0.193)
+    [Fact]
+    public void TheFarSideTrailsHerOwnDirectionAndHandsBackWithoutGoingEndOn()
+    {
+        var c = new SideCarry { FarOn = true };
+        var (a, l, b0) = Her(-90f);
+        float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f);
+        float Sh(Vector3 d) => MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2f) + MathF.Pow(Vector3.Dot(Jy, d), 2f)) / n;
+        float off = 0f, drop = 0f, least = 9f, clipLeast = 9f, prev = float.NaN;
+        for (int k = 0; k < 90; k++)
+        {
+            var b = SideCarry.Rot(l, 15f * MathF.Max(0f, 1f - MathF.Max(0f, k - 39) / 10f) * MathF.Sin(k * 0.6f), b0);   // the run's swing, stilled over her stop
+            float mv = k < 40 ? 1f : MathF.Max(0f, 1f - (k - 39) * 0.3f);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, mv, 0f));
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            if (k >= 20 && k < 40)
+                off = MathF.Max(off, MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarPitch, c.FarOut)), -1f, 1f)) * 180f / MathF.PI);
+            if (k >= 40)
+            {
+                drop = MathF.Max(drop, prev - Sh(d)); least = MathF.Min(least, Sh(d)); clipLeast = MathF.Min(clipLeast, Sh(b));
+            }
+            prev = Sh(d);
+        }
+        Assert.True(off < 1f, $"the run's blade off her trailing direction by {off} deg");
+        Assert.True(drop <= 0.2f, $"the stop's blade shortened {drop} in a frame");
+        Assert.True(least >= MathF.Min(0.35f, clipLeast) - 0.05f, $"the stop's blade went end-on: shown {least} (the clip's own {clipLeast})");
+        Assert.True(c.Weight == 0f && MathF.Abs(c.Tilt) < 1e-3f && MathF.Abs(c.Inward) < 1e-3f, $"not handed back: w {c.Weight} tilt {c.Tilt} inward {c.Inward}");
+        var off0 = new SideCarry();
+        off0.Step(Dt, true, 0f, At(-90f));
+        Assert.Equal(0f, off0.Weight);   // FarOn false: the far side stays the clip's own
+    }
 }

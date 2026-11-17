@@ -253,16 +253,48 @@ public sealed class SideCarry
     /// <summary>(r16) The guard never takes a shown-length step of PumpStep or more back the other way from last frame's
     /// (the judge's pump, looked back on rather than ahead: a crossing's one-frame dip 0.46/0.24/0.47). false: off.</summary>
     public bool BackPump = true; float lastDShown;
-    /// <summary>(r17, judge e31: s11 legs 3/11/15 and s13 leg 3, the far side's blade end-on behind her legs, hidden 4-8 frames)
-    /// The far-side carry: with the piece on her far side (`side` at or under -Side0) the layer takes it too, its weight the
-    /// near side's ramp mirrored times how much she moves (a stand keeps the clip's own), eased and faded as the near side's,
-    /// through the same rates and guard. It trails the blade back across the screen, out past her silhouette: the wanted angle
-    /// FarAngle (screen deg toward her screen-back, with the swing; the near side's 41 would hang it behind her rear leg), the
-    /// tip turned out FarOut (deg about her facing: up the screen, off her legs), the blade's own tip-back held in FarBackMin..FarBackMax (scaled
-    /// with the weight: a screen angle alone lets the tilt slide along the view ray to end-on again), inside
-    /// FarEdge. Across the screen it never reads as a cane. FarOn false: off (the far side is the clip's own).</summary>
-    public bool FarOn = false; public float FarAngle = 95f, FarOut = 12f, FarBackMin = 50f, FarBackMax = 70f, FarEdge = 110f;
-    bool farNow;
+    /// <summary>(r18, judge e31: s11 legs 3/11/15 and s13 leg 3, the far side's blade end-on behind her legs, hidden 4-8 frames)
+    /// The far-side carry: with the piece on her far side (`side` under 0) the layer takes it too, its weight the near side's
+    /// ramp mirrored times how much she moves (a stand keeps the clip's own), eased as the near side's and faded no faster
+    /// than FarFade. It turns the blade to a fixed direction in her own frame (the turn of <see cref="FarTurn"/>: a tilt about
+    /// her left, then a turn about her facing, as <see cref="TurnTo"/>): trailing back behind her hip, its heading FarOut deg
+    /// out from straight back to the holding side (clear of her legs and body on every far facing: across, toward and away),
+    /// FarPitch deg under level (less the swing's tip-back times FarSwing). Her own direction, not a screen angle: nothing in it follows the view ray, so her stop can't slide it end-on (r17's
+    /// screen angle did, e31 legs 6/11/14/15 +34..+37); the weight hands it back to the clip's own. The near side's screen
+    /// machinery (the rate on screen, crossings, the edge) is off here: the tilt's and inward's rates and the guard hold it.
+    /// FarOn false: off (the far side is the clip's own).</summary>
+    public bool FarOn = false; public float FarPitch = 20f, FarOut = 40f, FarSwing = 1f, FarFade = 0.5f; public bool FarTurnOff = true;
+    bool farNow; Vector3 farD;
+
+    /// <summary>The unit direction `k` of the way along the shortest arc from unit `p` to unit `q`.</summary>
+    public static Vector3 Slerp(Vector3 p, Vector3 q, float k)
+    {
+        float c = Math.Clamp(Vector3.Dot(p, q), -1f, 1f), th = MathF.Acos(c);
+        if (th < 1e-4f) return q;
+        float sn = MathF.Sin(th);
+        if (sn < 1e-4f) return Vector3.Normalize(p + (q - p) * k);
+        return Vector3.Normalize(p * (MathF.Sin((1f - k) * th) / sn) + q * (MathF.Sin(k * th) / sn));
+    }
+
+    /// <summary>The far side's carry direction (unit) in her frame: its heading turned `outward` deg (level) from straight
+    /// back (-`ahead`) toward her holding side (her right, -`left`), `pitch` deg under level.</summary>
+    public static Vector3 FarDir(Vector3 left, Vector3 ahead, float pitch, float outward)
+    {
+        float p = pitch * D2R, o = outward * D2R;
+        var d = (-ahead * MathF.Cos(o) - left * MathF.Sin(o)) * MathF.Cos(p) - Vector3.UnitY * MathF.Sin(p);
+        return Vector3.Normalize(d);
+    }
+
+    /// <summary>The turn (`tilt` about the unit `left`, then `inward` about the unit, level, square `ahead`) taking the unit
+    /// blade `b` to the unit `d` (as <see cref="TurnTo"/>), the tilted blade kept pointing down (a carry, never over the top);
+    /// where no turn reaches `d` (the blade too far out to her side), the one nearest it.</summary>
+    public static void FarTurn(Vector3 b, Vector3 left, Vector3 ahead, Vector3 d, out float tilt, out float inward)
+    {
+        var n = Vector3.Normalize(Vector3.Cross(left, ahead));   // down, square to both
+        float bl = Vector3.Dot(b, left), m = MathF.Sqrt(MathF.Max(0f, 1f - bl * bl)), da = Math.Clamp(Vector3.Dot(d, ahead), -m, m);
+        var u = bl * left + da * ahead + MathF.Sqrt(MathF.Max(0f, 1f - bl * bl - da * da)) * n;
+        tilt = Angle(left, b, u); inward = Angle(ahead, u, d);
+    }
     // the legs' four bones (far thigh, far shin, near thigh, near shin) as screen px from the grip (x, y) and depth (z, m, + away)
     readonly Vector3[] legS = new Vector3[8];
     bool legsOn;
@@ -464,11 +496,12 @@ public sealed class SideCarry
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
         bool farSide = FarOn && side < 0f;
         float mv0 = Math.Clamp(float.IsFinite(f.Moving) ? f.Moving : 0f, 0f, 1f);
-        float target = on && float.IsFinite(side) ? (farSide ? Target(-side) * mv0 : Target(side)) : 0f;
+        float target = on && float.IsFinite(side) ? (farSide ? (FarTurnOff && TurnEnd > 0f && yawRate > TurnEnd ? 0f : Target(-side) * mv0) : Target(side)) : 0f;
         if (target > 0f) farNow = farSide;
         float wPrev = Weight;
         float wn = Ease > 0f ? Weight + (target - Weight) * (1f - MathF.Exp(-dt / Ease)) : target;
-        if (wn < Weight && FadeOut > 0f) wn = MathF.Max(wn, Weight - dt / FadeOut);
+        float fo = farNow && FarFade > 0f ? FarFade : FadeOut;
+        if (wn < Weight && fo > 0f) wn = MathF.Max(wn, Weight - dt / fo);
         Weight = wn < 1e-4f && target == 0f ? 0f : wn;
         float moving = Math.Clamp(float.IsFinite(f.Moving) ? f.Moving : 0f, 0f, 1f);
         bool fell = moving < 0.99f && moving < movePrev - 1e-4f;
@@ -523,19 +556,32 @@ public sealed class SideCarry
         if (MathF.Abs(fx) > 1e-4f * (f.Jx.Length() + 1e-6f)) Sigma = fx > 0f ? -1f : 1f;
         float away = cb.LengthSquared() > 1e-8f ? Math.Clamp(-Vector3.Dot(ahead, Vector3.Normalize(cb)), 0f, 1f) : 0f;
         float strafe = Math.Clamp(f.Strafe, 0f, 1f);
-        float psi = farNow ? -FarOut : Splay + SplayAway * away - SplayStrafe * strafe;
+        float psi, lo, hi;
+        if (farNow)
+        {
+            // (r18) the far side: the turn to her own trailing direction, this frame's (her frame's, so a fade eases it back
+            // onto the clip's own along the same turn, at a stop as in a run)
+            Want = FarPitch - FarSwing * Spring;
+            farD = FarDir(left, ahead, Want, FarOut);
+            FarTurn(b, left, ahead, farD, out float tF, out psi);
+            Raw = tF; lo = MathF.Min(0f, tF); hi = MathF.Max(0f, tF);
+        }
+        else
+        {
+        psi = Splay + SplayAway * away - SplayStrafe * strafe;
         // The out-splay cap: the clip's own (tip out to her holding side, + ) less the turn in stays under SplayOutMax.
         float own = MathF.Asin(Math.Clamp(-Vector3.Dot(b, left), -1f, 1f)) * R2D;
-        if (!farNow && own - psi > SplayOutMax) psi = own - SplayOutMax;
-        float back = BackOf(b, ahead), lo = (farNow ? FarBackMin : BackMin) - back, hi = (farNow ? FarBackMax : BackMax) - back;
-        float aim = farNow ? FarAngle : StandAngle + (RunAngle - StandAngle) * moving - StrafeCut * strafe;
+        if (own - psi > SplayOutMax) psi = own - SplayOutMax;
+        float back = BackOf(b, ahead);
+        lo = BackMin - back; hi = BackMax - back;
+        float aim = StandAngle + (RunAngle - StandAngle) * moving - StrafeCut * strafe;
         // The room under the clamp is for the run's back swing: none standing (no swing), so the stand reaches its angle.
-        float room = CapRoom * moving, sg = Sigma;
+        float room = CapRoom * moving, sg = Sigma, hc = hi;
         Vector3 jx = f.Jx, jy = f.Jy, bc = b;
-        float CapAt(float p) => ScreenAngle(Turned(bc, left, hi, ahead, p), jx, jy, sg);
+        float CapAt(float p) => ScreenAngle(Turned(bc, left, hc, ahead, p), jx, jy, sg);
         float cap = CapAt(psi) - room;
         // Standing, where the aim is past the clamp's reach: the tip turned in just enough more (up to InMax) to reach it.
-        float im = farNow ? 0f : InMax * (1f - moving);
+        float im = InMax * (1f - moving);
         if (im > 0f && cap > -90f && cap < aim)
         {
             if (CapAt(psi + im) - room >= aim)
@@ -552,6 +598,7 @@ public sealed class SideCarry
         bool fading = FadeFreeze && target == 0f && Weight < wPrev && wPrev > 0f && !float.IsNaN(psiPrev);
         if (fading) psi = psiPrev;
         else Raw = Weight > 0f ? Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw) : Raw;
+        }
         psiPrev = psi;
         // The drawn blade on screen (deg, screen right +): toward the weighted tilt's, turning at most ScreenRate faster than
         // the clip's own blade turns (holding still is always allowed), inside the Edge.
@@ -577,6 +624,9 @@ public sealed class SideCarry
             Yield = Math.Clamp(Yield + Math.Clamp((yw ? 1f : 0f) - Yield, -ys, ys), 0f, 1f);
         }
         float tilt = Weight * Raw * (1f - Yield), inward = Weight * psi * (1f - Yield);
+        // (r18) the far side's weight eases the blade along the shortest arc from the clip's own to her trailing direction
+        // (its turn scaled by the weight would swing a fading blade the long way, up the screen: e30 s13 leg 5's stop)
+        if (farNow) FarTurn(b, left, ahead, Slerp(b, farD, Weight * (1f - Yield)), out tilt, out inward);
         float a0 = ScreenAngle(b, f.Jx, f.Jy, 1f), aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
         if (Hold > 0f && Weight < wPrev && MathF.Abs(aT) < MathF.Min(MathF.Abs(a0), Hold) && (aT == 0f || (aT > 0f) == (a0 > 0f)))
         {
@@ -589,7 +639,7 @@ public sealed class SideCarry
             tilt *= k0; inward *= k0;
             aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
         }
-        crossing = CrossShort > 0f && !float.IsNaN(lastA) && MathF.Abs(lastA) < 90f && (aT > 0f) != (lastA > 0f) && MathF.Abs(aT) >= CaneAngle;
+        crossing = !farNow && CrossShort > 0f && !float.IsNaN(lastA) && MathF.Abs(lastA) < 90f && (aT > 0f) != (lastA > 0f) && MathF.Abs(aT) >= CaneAngle;
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
         pivotNow = TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f;
@@ -600,7 +650,9 @@ public sealed class SideCarry
         if (bandNow > DownBand && Weight < CrossWeight && MathF.Abs(a0) < bandNow) bandNow = DownBand;
         if (ShortLim > 0f && !float.IsNaN(lastA) && lastShown <= ShortShown && (aT > 0f) != (was > 0f) && (ShortLimTurn || !turnBand)) lim = MathF.Max(lim, ShortLim * dt);
         float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim), edge = bandNow + CrossMargin;
-        if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
+        // (r18) the far side's own direction is never a screen angle: no crossing, no rate on screen, no edge, no re-solve
+        if (farNow) { crossTo = 0f; crossLand = false; landT = 0f; crossWaitT = 0f; }
+        if (!farNow && Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
         {
             // (lead r11) caught inside the wide band (it widened as a turn began): never nearer straight down than now
             float dside = was > 0f ? 1f : -1f, keep = MathF.Min(edge, MathF.Abs(was) + (turnBand ? lim : 0f));
@@ -639,13 +691,11 @@ public sealed class SideCarry
                 if (!float.IsNaN(lastA) && lastShown > ShortShown && (lastA > 0f) == (crossTo > 0f)) { float sb = MathF.Min(StepMax, MaxRate * dt); aW = lastA + Math.Clamp(Wrap(goal - lastA), -sb, sb); }
             }
         }
-        float edgeA = farNow ? FarEdge : Edge;
-        if (MathF.Abs(a0) <= edgeA) aW = Math.Clamp(aW, -edgeA, edgeA);
+        if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
-        if (MathF.Abs(Wrap(aW - aT)) > 0.05f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW))
+        if (!farNow && (MathF.Abs(Wrap(aW - aT)) > 0.05f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW)))
         {
             float tlo = MathF.Min(0f, MathF.Min(lo, hi)), thi = MathF.Max(0f, hi);
-            if (farNow) { tlo = Weight * MathF.Min(lo, hi); thi = Weight * MathF.Max(lo, hi); }
             if (InReach > 0f) { tlo = MathF.Max(tlo, Tilt - step); thi = MathF.Min(thi, Tilt + step); }
             tilt = Solve(b, left, ahead, inward, f.Jx, f.Jy, 1f, aW, tlo, thi, Tilt);
             if (InReach > 0f && (MathF.Abs(Wrap(ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f) - aW)) > 0.5f || TipLow(Turned(b, left, tilt, ahead, inward), f, aW)))
