@@ -1620,6 +1620,9 @@ public partial class BattleFx : Node3D
                 case Ev.Explosion { Art: "moonfall" }:
                     break;
                 case Ev.Explosion { Art: "heroic_leap_heave" or "shield_charge_slam" } when !P7Off: break;
+                // (lane B lead 2, f1) the leap's landing strike: P7LeapLand draws its mark; the generic Strike's Land drew a
+                // soft gold halo ring outside the painted ring and a light pool under her ("the halo", v1a to f1)
+                case Ev.Strike { Art: "heroic_leap" } when !P7Off: break;
                 case Ev.Leap e: P7Leap(e); break;
                 case Ev.Charge e: P7Charge(e, b); break;
                 case Ev.Spin e: P7Spin(e); break;
