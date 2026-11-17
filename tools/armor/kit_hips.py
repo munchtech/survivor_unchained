@@ -744,7 +744,28 @@ def belt(cfg, ref):
                          for h, s in ((1, "l"), (-1, "r"))]
         pid = cfg["piece"]["id"]
         cfg["piece"]["params"] = {"file": f"{pid}.glb", **cfg["piece"].get("params", {}), "rigid_ride": ride_out}
+    unweld_rigid(rigid)
     return plate, trim, straps, rigid
+
+
+def unweld_rigid(parts, tol=2e-6, step=5e-5):
+    """No two rigid nodes share a point (armor-D hipv-2, 16 Nov): pin_shipped welds every point to the micron and a
+    rigid shell is a welded component of ONE weight set, so the hip plate's top corner on the front hip plate's
+    (y 1.1335, th ~68) merged both into one two-set component: neither was rigid, both steels bent with her skin
+    (exact.json rigid_blends 284-615) while their gold rode the hinge. A later node's shared points move `step` in."""
+    from scipy.spatial import cKDTree
+    seen, moved = [], 0
+    for pt in parts:
+        for nm_, P_ in seen:
+            if nm_ == pt.name or not len(P_) or not len(pt.P):
+                continue
+            d, _ = cKDTree(P_).query(pt.P, distance_upper_bound=tol)
+            hit = np.isfinite(d)
+            if hit.any():
+                pt.P[hit] -= pt.N[hit] * step
+                moved += int(hit.sum())
+        seen.append((pt.name, pt.P.copy()))
+    print(f"unweld_rigid: {moved} shared points moved {step * 1000:.2f} mm")
 
 
 def side_ride(ride, h):
