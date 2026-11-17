@@ -27,7 +27,7 @@ cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangl
 without the tuck (the baseline).
 
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin] [--no-cap] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
+                                    [--out <dir>] [--no-skin] [--no-cap] [--no-lift] [--lift-mm 10] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 
@@ -409,6 +409,21 @@ class SkinPts:
         return disp, t
 
 
+SEATED_MM = 15.0   # a piece point this near her skin at rest is "seated" (lift)
+
+
+def seated_mask(skin_mm, seated_mm=SEATED_MM):
+    """Which of a piece's points sit on her skin at rest (distance <= seated_mm)."""
+    return np.asarray(skin_mm) <= seated_mm
+
+
+def lift_of(P_posed, skin_posed_kd, rest_mm):
+    """Lift of seated points, mm: posed distance to her posed skin minus the rest distance (a plate that peels off her
+    reads positive; one that rides along, ~0)."""
+    d, _ = skin_posed_kd.query(P_posed)
+    return d * 1000 - np.asarray(rest_mm)
+
+
 def hold_key(*rows):
     top = next((r for r in rows if r["slot"] == "top"), None)
     h = (top or {}).get("hold") or DEFAULT_HOLD
@@ -426,6 +441,8 @@ def main(argv):
     step = int(opt("--step", "2"))
     grid = float(opt("--grid", "2.5")) / 1000
     same = "--same" in argv
+    lift_on = "--no-lift" not in argv
+    lift_mm = float(opt("--lift-mm", "10"))
     gt = "--garment-tuck" in argv
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
@@ -614,6 +631,17 @@ def main(argv):
     t_rest = time.time() - t_start
     print(f"wearcheck: {len(rows)} pieces, {len(tests)} tests with a footprint ({t_rest:.0f} s at rest)")
 
+    # Lift: each piece's seated points (<= SEATED_MM from her skin at rest), per mesh part.
+    lift = {}
+    if lift_on:
+        for rid, c_ in pc.items():
+            m_ = seated_mask(c_["skin_mm"])
+            if m_.any():
+                sm_ = c_["samples"][m_]
+                lift[rid] = {"pts": sm_, "rest": c_["skin_mm"][m_], "part": np.array([str(body.piece[i]) for i in sm_]),
+                             "hold": hold_key(byid[rid]), "max": np.full(len(sm_), -np.inf), "n": np.zeros(len(sm_), bool),
+                             "worst": (-np.inf, None, None, 0)}
+
     # Each test's points into the posed set.
     for x in tests:
         fp = x["fp"]
@@ -660,10 +688,11 @@ def main(argv):
         x["per_clip"] = {}
         x["seen"] = 0
 
-    holds = sorted({x["hold"] for x in tests})
+    holds = sorted({x["hold"] for x in tests} | {v_["hold"] for v_ in lift.values()})
     for h in holds:
         group = [x for x in tests if x["hold"] == h]
-        need = np.unique(np.concatenate([ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group] +
+        lg = [v_ for v_ in lift.values() if v_["hold"] == h]
+        need = np.unique(np.concatenate([ish] + [v_["pts"] for v_ in lg] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group] +
                                         [pc[B]["caps"].ids for B in {x["B"] for x in group} if pc[B]["caps"] is not None]))
         at = np.full(len(P0), -1)
         at[need] = np.arange(len(need))
@@ -679,6 +708,15 @@ def main(argv):
                 Np = np.zeros_like(Pp)
                 Np[sh_local] = skin._normals(Pp[sh_local], TS)
                 kd_frame = {}
+                if lg:
+                    kd_pose = cKDTree(Pp[sh_local])
+                    for v_ in lg:
+                        L = lift_of(Pp[at[v_["pts"]]], kd_pose, v_["rest"])
+                        v_["max"] = np.maximum(v_["max"], L)
+                        v_["n"] |= L > lift_mm
+                        k_ = int(L.argmax())
+                        if L[k_] > v_["worst"][0]:
+                            v_["worst"] = (float(L[k_]), c, f, int(v_["pts"][k_]))
                 for x in group:
                     O = Pp[at[x["pts"]]]
                     D = Np[at[x["dir"]]]
@@ -814,6 +852,22 @@ def main(argv):
             e["B_skin_mm_median"] = round(float(np.median(pc[A]["skin_mm"][fi] + x["fp"]["gap"] * 1000)), 2)
             e["A_skin_mm_at_worst"] = round(float(pc[A]["skin_mm"][fi][wi]), 2)
         out.append(e)
+    lift_rows = []
+    for rid, v_ in lift.items():
+        parts = sorted(set(v_["part"])) if len(set(v_["part"])) > 1 else []
+        for part in [None] + parts:
+            sel = np.ones(len(v_["pts"]), bool) if part is None else v_["part"] == part
+            mx = v_["max"][sel]
+            if part is None:
+                w = v_["worst"]
+            else:
+                k_ = int(np.nonzero(sel)[0][mx.argmax()])
+                w = (float(v_["max"][k_]), None, None, int(v_["pts"][k_]))
+            lift_rows.append({"piece": rid, "part": part, "seated": int(sel.sum()), "worst_lift_mm": round(float(mx.max()), 1),
+                              "n_over": int((mx > lift_mm).sum()), "clip": w[1], "frame": w[2],
+                              "bone": str(np.array(body.sk.names)[body.J[w[3], int(body.W[w[3]].argmax())]]),
+                              "worst_pt_rest_mm": round(float(v_["rest"][np.nonzero(sel)[0][mx.argmax()]]), 1)})
+    lift_rows.sort(key=lambda e: -e["worst_lift_mm"])
     out.sort(key=lambda e: (-e["out_n_over_2"], -(e["worst_mm"] if e["worst_mm"] is not None else -99)))
     took = time.time() - t_start
     meta = {"garment_tuck": gt and not gt_off, "tuck_r_mm": gt_r * 1000, "order": order, "clips": clips, "step": step, "grid_mm": grid * 1000, "reach_mm": REACH * 1000, "K": K, "seconds": round(took),
@@ -821,7 +875,8 @@ def main(argv):
             "the least clearance); n_*: A samples (grid voxels) ever past by more than 0.5 / 2 mm; rest_n_over_2 at rest; "
             "per_clip: [worst mm, samples past 2 mm]; out_*: the same past B's OUTER face (what shows; inside B's shell "
             "is hidden); table sorted by out_n_over_2 then worst_mm"}
-    json.dump({"meta": meta, "pairs": out}, open(os.path.join(out_dir, "matrix.json"), "w"), indent=1)
+    meta["lift_mm"] = lift_mm
+    json.dump({"meta": meta, "pairs": out, "lift": lift_rows}, open(os.path.join(out_dir, "matrix.json"), "w"), indent=1)
     if dump:
         for x in tests:
             if x["A"] == "skin":
@@ -839,6 +894,15 @@ def main(argv):
                      f"{e.get('B_skin_mm_median', 0):5.1f} {e['B_shell_mm_median']:4.1f} {e['out_worst_mm'] or 0:5.1f} {e['out_n_over_2']:5d} "
                      f"{e['rest_out_n_over_2']:6d} {e['worst_clip']}@{e['worst_frame']} {e['worst_bone']}"
                      f"{' REVERSED' if e['reversed'] else ''}{' RIGID-INNER' if e.get('rigid_lay') else ''}\n")
+    if lift_on:
+        with open(os.path.join(out_dir, "lift.txt"), "w") as fh:
+            fh.write(f"LIFT: seated points (<= {SEATED_MM:g} mm from her skin at rest); lift = posed distance - rest distance\n")
+            fh.write(f"{'piece':16} {'part':24} {'seated':>6} {'worst':>6} {'n>' + format(lift_mm, 'g'):>6} {'rest':>5} worst_clip@frame bone\n")
+            for e in lift_rows:
+                at_ = f"{e['clip']}@{e['frame']}" if e['clip'] else "-"
+                fh.write(f"{e['piece']:16} {e['part'] or '(all)':24} {e['seated']:6d} {e['worst_lift_mm']:6.1f} {e['n_over']:6d} "
+                         f"{e['worst_pt_rest_mm']:5.1f} {at_} {e['bone']}\n")
+        print(open(os.path.join(out_dir, "lift.txt")).read())
     with open(os.path.join(out_dir, "table_area.txt"), "w") as fh:
         fh.write(f"{'A':22} {'B':24} {'foot':>7} {'>2':>7} {'OUT>2':>7} {'afoot':>8} {'a>2':>8} {'aOUT>2':>8}\n")
         for e in sorted(out, key=lambda e: -e["area_out_n_over_2"]):
