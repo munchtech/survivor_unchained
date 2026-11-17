@@ -4,6 +4,7 @@ set_src/PROVENANCE.txt) rebuilt in the target's hand and value band, at twice O1
 normalised rects, so set.json's O1 pieces place it unchanged: DungeonDress.Set.cs loads O1r.png for the "O1r" key).
 
   python tools/look/den_rocks.py build    set_src/O1.png -> art/dungeon/den/set/O1r.png (+ .import, lossless, mipmaps)
+  python tools/look/den_rocks.py facets   the same, its stones lit by facet (den r16 D) -> O1rf.png (--den-rock-facets)
   python tools/look/den_rocks.py check    O1r's size against set.json's O1, its value/hue ramp, its ink
 
 Why (R14 judge item 1): r14 drew these stones by blurring O1 to a high mip and painting a procedural lit top over it
@@ -106,7 +107,62 @@ def layout():
     return F, A_, o1
 
 
-def paint(F, A_, o1):
+# (den r16 D, R15f judge item 5: the lit planes read as scattered pale islands, camo, not planes turned to the light) the
+# 'facets' build (O1rf.png, DungeonDress --den-rock-facets): one or two lit planes per stone, on the light's side. A dome
+# from the silhouette (distance transform, sqrt) gives each texel a turn to one light from the upper left; the painting's
+# own blurred value (its planes) moves the border so it follows painted facets; the stone's FAC_SHARE most-turned texels
+# are lit, its pieces under FAC_KEEP of the stone dropped (no islands) and its shade holes under it filled. Value: shade
+# FAC_SH, lit FAC_LIT (+ FAC_ROUND of the turn), the painting's strokes kept as detail (FAC_DET) over both.
+FAC_LIGHT = (-0.62, -0.62, 0.48)        # to the light in image x (right), y (down), z (out of the sheet)
+FAC_SLOPE = 0.8                         # the dome's slope scale (1: a half sphere)
+FAC_PAINT = 0.12, 4.0 * S               # the painting's blurred value's weight on the turn (per its std) and the blur
+FAC_SHARE = 0.45                        # share of the stone (moss included) on its lit planes
+FAC_MID = 0.6, 0.33                     # the half-turned plane next to the lit one: share of the stone (lit included) and its L
+FAC_KEEP = 0.04                         # lit pieces / shade holes under this share of the stone go
+FAC_SH, FAC_LIT, FAC_ROUND = 0.25, 0.62, 0.10   # stone L in shade, on the lit planes (before belly, ink, cracks); the turn's share
+FAC_DET, FAC_DET_R = 0.6, 3.0 * S       # the painting's strokes: amount of (L - blur) and its radius
+FAC_EDGE = 1.0 * S                      # a plane's border softened by this (no stair edge)
+
+
+def facet_value(L, Ls, solid, o1):
+    """Stone L by facet turn (see FAC_*): returns the new stone value over the sheet."""
+    out = Ls.copy()
+    lv = np.array(FAC_LIGHT) / np.linalg.norm(FAC_LIGHT)
+    for pe in o1["pieces"]:
+        rx, ry, cw, ch = [v * S for v in pe["rect"]]
+        sl = (slice(ry, ry + ch), slice(rx, rx + cw))
+        m = solid[sl]
+        if m.sum() < 50:
+            continue
+        dt = ndimage.distance_transform_edt(m)
+        hgt = ndimage.gaussian_filter(np.sqrt(dt / dt.max()), 2.0 * S) * dt.max() * FAC_SLOPE
+        gy, gx = np.gradient(hgt)
+        n = np.dstack([-gx, -gy, np.ones_like(gx)])
+        n /= np.linalg.norm(n, axis=2, keepdims=True)
+        lam = np.clip(n @ lv, 0, 1)
+        pb = ndimage.gaussian_filter(Ls[sl], FAC_PAINT[1])
+        score = lam + FAC_PAINT[0] * (pb - np.median(pb[m])) / max(np.std(pb[m]), 1e-3)
+        def plane(share):
+            lit = m & (score > np.percentile(score[m], 100 * (1 - share)))
+            lab, k = ndimage.label(lit)
+            if k:
+                area = ndimage.sum(np.ones_like(lam), lab, np.arange(1, k + 1))
+                lit = np.isin(lab, 1 + np.nonzero(area >= FAC_KEEP * m.sum())[0])
+            lab, k = ndimage.label(m & ~lit)
+            if k:
+                area = ndimage.sum(np.ones_like(lam), lab, np.arange(1, k + 1))
+                lit = lit | (m & np.isin(lab, 1 + np.nonzero(area < FAC_KEEP * m.sum())[0]))
+            return lit
+        lit, mid = plane(FAC_SHARE), plane(FAC_MID[0])
+        soft, softm = ndimage.gaussian_filter(lit.astype(float), FAC_EDGE), ndimage.gaussian_filter((mid | lit).astype(float), FAC_EDGE)
+        litmean = lam[lit].mean() if lit.any() else 0.5
+        base = FAC_SH + (FAC_MID[1] - FAC_SH) * softm + (FAC_LIT - FAC_MID[1]) * soft + FAC_ROUND * (lam - litmean) * soft
+        det = Ls[sl] - ndimage.gaussian_filter(Ls[sl], FAC_DET_R)
+        out[sl] = np.where(m, base + FAC_DET * det, Ls[sl])
+    return out
+
+
+def paint(F, A_, o1, facets=False):
     L, Aa, Bb = to_oklab(F)
     C = np.hypot(Aa, Bb)
     h = np.degrees(np.arctan2(Bb, Aa)) % 360
@@ -117,6 +173,8 @@ def paint(F, A_, o1):
     lo, hi = np.percentile(L[stone], [2, 98])
     t = np.clip((L - lo) / (hi - lo), 0, 1) ** RAMP_L[2]
     Ls = RAMP_L[0] + (RAMP_L[1] - RAMP_L[0]) * t
+    if facets:
+        Ls = facet_value(L, Ls, solid, o1)
     # the lower part of each piece in its own shadow
     belly = np.ones_like(L)
     for pe in o1["pieces"]:
@@ -126,7 +184,8 @@ def paint(F, A_, o1):
     # the moss: a darker, cooler olive, its strokes kept
     Lm = MOSS_LK * L + MOSS_L0
     Lv = (Ls * (1 - moss) + Lm * moss) * belly
-    Lv = Lv * (1 + LIT_LIFT * smooth(LIT_FROM, LIT_TO, Lv))
+    if not facets:
+        Lv = Lv * (1 + LIT_LIFT * smooth(LIT_FROM, LIT_TO, Lv))
     Lv = np.where(Lv > LIT_CAP[0], LIT_CAP[0] + (Lv - LIT_CAP[0]) * LIT_CAP[1], Lv)   # the top of the lit planes rolled off: in a shaft's light the L1 boulder's lit plane drew L .8
     # the facets: unsharp mask on the value
     Lv = Lv + SHARP_K * (Lv - ndimage.gaussian_filter(Lv, SHARP_R))
@@ -159,6 +218,15 @@ def build():
     print(f"O1r: {A_.shape[1]}x{A_.shape[0]} px ({S} x O1's {o1['px']}), {len(o1['pieces'])} stones -> {path}")
 
 
+def build_facets():
+    F, A_, o1 = layout()
+    out = paint(F, A_, o1, facets=True)
+    path = os.path.join(ds.OUT, "O1rf.png")
+    ds.save_rgba(path, out, A_)
+    ds.write_import(path)
+    print(f"O1rf: {A_.shape[1]}x{A_.shape[0]} px, {len(o1['pieces'])} stones, lit by facet -> {path}")
+
+
 def check():
     meta = json.load(open(os.path.join(ds.OUT, "set.json"), encoding="utf-8"))
     o1 = next(s for s in meta["sheets"] if s["name"] == "O1")
@@ -176,4 +244,4 @@ def check():
 
 
 if __name__ == "__main__":
-    {"build": build, "check": check}[sys.argv[1] if len(sys.argv) > 1 else "build"]()
+    {"build": build, "facets": build_facets, "check": check}[sys.argv[1] if len(sys.argv) > 1 else "build"]()

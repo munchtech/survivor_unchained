@@ -617,6 +617,7 @@ public static partial class DungeonDress
                 }
             }
         }
+        // (den r16 D, R15f item 4) energy 3.2 -> 8.5, ffc08a -> ffcc88: the corridor floor L50 .34 -> .40-.42 at h 45-48, the room pool's (the banks take half of it: --den-bank-pt)
         // (r14, F2) warm pools along the lanes: the corridors had no light of their own (the shafts are the rooms'), their
         // floor a near-black trench (median ~39 against den_room.png's lit floor 79-109). A warm omni over the lane's middle
         // every LanePoolGap metres (greedy, outside the rooms' circles + 3 m), low and soft, no shadow: light only.
@@ -634,7 +635,7 @@ public static partial class DungeonDress
                 c.Root.AddChild(new OmniLight3D
                 {
                     Name = "lane_pool", Position = new Vector3(m.X, H(c, m.X, m.Y) + LanePoolHigh, m.Y),
-                    LightColor = new Color(SurvivorUnchained.Args.Get("den-lane-pool-colour") ?? "ffc08a"), LightEnergy = e,
+                    LightColor = new Color(SurvivorUnchained.Args.Get("den-lane-pool-colour") ?? "ffcc88"), LightEnergy = e,
                     OmniRange = LanePoolRange, OmniAttenuation = 1.3f, ShadowEnabled = false, LightSpecular = 0.1f,
                 });
                 pools++;
@@ -712,7 +713,7 @@ public static partial class DungeonDress
         c.Count["set alcoves"] = n;
         GD.Print($"DenSet alcoves: {n} ({sp} spills, {st} stones, {bo} bones)");
     }
-    static readonly float LanePoolEnergy = SurvivorUnchained.Args.Num("den-lane-pool", 3.2f), LanePoolGap = SurvivorUnchained.Args.Num("den-lane-pool-gap", 6.5f),
+    static readonly float LanePoolEnergy = SurvivorUnchained.Args.Num("den-lane-pool", 8.5f), LanePoolGap = SurvivorUnchained.Args.Num("den-lane-pool-gap", 6.5f),
         LanePoolRange = SurvivorUnchained.Args.Num("den-lane-pool-range", 6.5f), LanePoolHigh = SurvivorUnchained.Args.Num("den-lane-pool-high", 2.4f);
 
     // One run of a class: modules end to end along it, each laid in the camera's plane with its foot on the edge and cast
@@ -1016,9 +1017,9 @@ public static partial class DungeonDress
     // (den r16 D, R15f item 4: the corridors flat in value, floor .34 against banks .28-.31, bank L90 .50 against den_room's .33-.39)
     // every bank card's lit tops x SetBankTop (albedo, den_set.gdshaderinc top_k) and its take of the pools' and shafts' light
     // x SetBankPt (pt_take): the lane pools then lift the corridor floor without the banks. 1, 1: the old banks
-    static readonly float SetBankTop = SurvivorUnchained.Args.Num("den-bank-top", 1f), SetBankPt = SurvivorUnchained.Args.Num("den-bank-pt", 1f);
+    static readonly float SetBankTop = SurvivorUnchained.Args.Num("den-bank-top", 0.6f), SetBankPt = SurvivorUnchained.Args.Num("den-bank-pt", 0.5f);   // (d2: s11 corr bank L90 .50 -> .35, rooms .46-.53 -> .37-.40)
     // (den r16 D, R15f item 5) the round boulders' lit planes as one or two facets on the light's side (den_rocks.py facets: O1rf.png); 0: O1r
-    static readonly float SetBankCorr = SurvivorUnchained.Args.Num("den-bank-corr", 1f);   // (den r16 D) corridor banks' albedo x this (DenRagged.Corridor's weight; 1 off)
+    static readonly float SetBankCorr = SurvivorUnchained.Args.Num("den-bank-corr", 0.7f);   // (den r16 D) corridor banks' albedo x this (DenRagged.Corridor's weight; 1 off)
     static ImageTexture? corrTex; static ZoneData? corrZone;
     static ImageTexture? CorrTex(Ctx c)
     {
@@ -1031,7 +1032,7 @@ public static partial class DungeonDress
     }
     static readonly float SetRockFacets = SurvivorUnchained.Args.Num("den-rock-facets", 1f);
     // (den r16 D, R15f item 8: the logs' lit tops C .061-.077 against den_room's .102, lavender driftwood) the logs' (O2) saturation x this
-    static readonly float SetLogSat = SurvivorUnchained.Args.Num("den-log-sat", 1f);
+    static readonly float SetLogSat = SurvivorUnchained.Args.Num("den-log-sat", 1.8f);
     static readonly Vector3 SetBoneTint = V3("den-bone-tint", new Vector3(0.9f, 1f, 2.7f));   // (den r16 E, R15f item 6) the lone bones (O3 card) read yellow on screen (OKLab h 74-83, C .09-.13; target h 55-63, C .04-.07): blue up, red down; 1,1,1 = as r15
     static readonly Vector3 SetLogTint = V3("den-log-tint", new Vector3(1f, 1f, 1f));   // (den r16 D) the logs' tint over the set's
     static readonly float SetNoRepeat = SurvivorUnchained.Args.Num("den-set-norepeat", 1f);   // (den r15 R) 0: bank runs may lay one card twice in a row

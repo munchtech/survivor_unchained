@@ -47,6 +47,11 @@ uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark:
 uniform vec3 boss_c = vec3(0.0);
 uniform float boss_gloom = 0.0;
 uniform float hi_roll = 1.0;   // (den r14 corr) the near banks' highlights' scale (1 off)
+uniform float top_k = 1.0;   // (den r16 D, R15f item 4) every bank card's lit tops (the painting's light masses) scaled by this (1 off)
+uniform float corr_k = 1.0;   // (den r16 D, R15f item 4) a bank card's albedo x this in the corridors (corr_tex: DenRagged's corridor weight; 1 off)
+uniform sampler2D corr_tex : filter_linear, repeat_disable;
+uniform vec3 corr_map = vec3(0.0);   // x, z of the texture's corner, 1 / its size in metres
+uniform float pt_take = 1.0;   // (den r16 D, R15f item 4) share of a spot's or omni's light a bank card takes (1 off; the key and ambient whole)
 uniform float bank_gloom = 0.0;   // (den r13 corr) the corridor banks' depth gloom (--den-set-gloom)
 uniform float dbg_mod = 0.0;   // (den r15 E, diagnosis: --den-set-dbgmod) each bank module a false colour (COLOR.a), rows behind striped
 // (den r15 E, judge r14 item 4) a bank card's cut (COLOR.g's 0.5 contour) wanders at a fine scale and follows the painting's
@@ -155,6 +160,8 @@ void fragment() {
 	col = gloom_col(col, lair_gloom(wpos));
 	// (den r14 corr, item 9) the camera-side banks' lit tops rolled off and warmed (hi_roll 1: off; DungeonDress.SetMat)
 	col = mix(col, col * hi_roll * vec3(1.0, 0.93, 0.84), smoothstep(0.05, 0.22, l) * step(hi_roll, 0.999));
+	col *= mix(1.0, top_k, smoothstep(0.04, 0.2, l));
+	if (corr_k != 1.0 && corr_map.z > 0.0) col *= mix(1.0, corr_k, texture(corr_tex, (wpos.xz - corr_map.xy) * corr_map.z).r);   // (den r16 D)   // (den r16 D) the banks' lit tops down (DungeonDress --den-bank-top)
 #ifndef SET_SOFT
 	// (den r13 corr) a corridor bank's roots go dark warm umber as they lie deeper in the bank (COLOR.b: metres in / 10,
 	// 0 outside the corridors and on objects): the deep rows' borders and the mound behind them meet in the gloom
@@ -229,7 +236,7 @@ void fragment() {
 }
 
 void light() {
-	float w = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(1.0, max(dot(NORMAL, LIGHT), 0.0), local_turn);
+	float w = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(1.0, max(dot(NORMAL, LIGHT), 0.0), local_turn) * pt_take;   // (den r16 D: pt_take)
 	vec3 lc = LIGHT_COLOR;
 	float ll = dot(lc, vec3(0.299, 0.587, 0.114));
 	lc = LIGHT_IS_DIRECTIONAL || lc.r >= lc.g ? lc : vec3(ll) * cold_take;
