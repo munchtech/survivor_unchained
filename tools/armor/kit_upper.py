@@ -482,32 +482,56 @@ def pauldrons(cfg, ref):
     # ---- the lames: a cylinder chart round the arm's axis
     C = lk["cols"]
     from scipy.ndimage import grey_dilation
-    if room is not None:
-        Qr = room - c
-        sp_ = Qr @ a
-        rp_ = np.linalg.norm(Qr - sp_[:, None] * a, axis=1)
-        tp_ = np.degrees(np.arctan2(Qr @ f, Qr @ e))
+    # (lames "pose" {"clip", "frame"} (16 Nov, pauldron-2): each row designed on her in that frame (the cop's), in its
+    # own ride's rest frame (row "ride", default sweep.bone), so the idle shows them as built round her idle arm; a
+    # row "tuck" m tucks it that far under the plates above it (the cop, the rows before it) where they cover it, as
+    # the sheet's lames sit under the cop and each other with no skin between; the rows' rides step from the cop's
+    # toward the arm so they slide over each other as the arm lifts)
+    lpose = lk.get("pose")
+    cop_ride = next(r["weights"] for r in cfg["params"]["rigid_ride"] if r["match"] == "cop_l")
+    if lpose:
+        Pc_ = pose_frame(cop_ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0))[0]
+    above = [(V, F)]   # plates above the next row, in the cop's ride frame: inner surfaces
 
-    def lame_row(lm, lo, hi):
-        """One row over theta lo..hi (deg): its cells' axis points Oa, directions Dd, radius r (her rest envelope
-        dilated, smoothed, + clear + flare; with the swept room: at least sw.clear outside it), the room's lift."""
+    def row_frame(ride):
+        """A row's design frame: joint, arm axis, up-out, front, her skin there, and the affine maps cop frame <->
+        row frame (the same skin points in both: exact for linear blends)."""
+        if not lpose:
+            return c, a, e, f, body, None, None
+        P_, T_, c_, a_, up_ = pose_frame(ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0))
+        e_ = U(up_ - (up_ @ a_) * a_)
+        f_ = U(np.cross(a_, e_))
+        f_ = f_ if f_[2] >= 0 else -f_
+        to_row = np.linalg.lstsq(np.c_[Pc_, np.ones(len(Pc_))], P_, rcond=None)[0]
+        to_cop = np.linalg.lstsq(np.c_[P_, np.ones(len(P_))], Pc_, rcond=None)[0]
+        return c_, a_, e_, f_, [(P_, T_)], to_row, to_cop
+
+    def lame_row(lm, lo, hi, fr, rroom, over):
+        """One row over theta lo..hi (deg): its cells' axis points Oa, directions Dd, radius r (her envelope
+        dilated, smoothed, + clear + flare; with the swept room: at least sw.clear outside it; tucked under `over`),
+        the room's lift."""
+        c_, a_, e_, f_, body_ = fr[:5]
         Rn = lm["n"]
         s0, s1 = lm["s"]
         thd = np.linspace(lo, hi, C)
         thr = np.radians(thd)
-        rad = np.cos(thr)[:, None] * e + np.sin(thr)[:, None] * f
+        rad = np.cos(thr)[:, None] * e_ + np.sin(thr)[:, None] * f_
         dip = lm["dip"] * np.cos(np.radians(thd) * 90.0 / lk["theta"])
         S = np.linspace(0, 1, Rn)[:, None] * (s1 + dip - s0)[None, :] + s0
-        Oa = c[None, None] + S[..., None] * a
+        Oa = c_[None, None] + S[..., None] * a_
         Dd = np.broadcast_to(rad[None], (Rn, C, 3)).copy()
-        t = cast_union(Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), body, 0.2).reshape(Rn, C)
+        t = cast_union(Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), body_, 0.2).reshape(Rn, C)
         t = kb.fill_rows(t)
         r = grey_dilation(t, size=(lm["dil"], lm["dil"]))
         r = kb.gsmooth(r, (1.5, 2.0), False)
         r = np.maximum(r, t) + lm["clear"] + lm["flare"] * np.linspace(0, 1, Rn)[:, None] ** 2
         lift = np.zeros(C)
-        if room is not None:
+        if rroom is not None:
             # (the row's cells (s, theta) over the swept room, its farthest radius per cell)
+            Qr = rroom - c_
+            sp_ = Qr @ a_
+            rp_ = np.linalg.norm(Qr - sp_[:, None] * a_, axis=1)
+            tp_ = np.degrees(np.arctan2(Qr @ f_, Qr @ e_))
             j = np.round((tp_ - lo) / (hi - lo) * (C - 1)).astype(int)
             okj = (j >= 0) & (j < C)
             j = np.clip(j, 0, C - 1)
@@ -520,32 +544,57 @@ def pauldrons(cfg, ref):
             lift = (need - r).max(0)
             r = np.maximum(r, kb.gsmooth(np.maximum(r, need), (1.0, 1.0), False))
             r = np.maximum(r, need)
-        return Rn, thd, Oa, Dd, r, lift
+        ntuck = 0
+        if over and lm.get("tuck"):
+            # (under the plates above: their nearest inner surface along the cell's ray, less the tuck gap; never
+            # nearer her skin than tuck_min)
+            tov = np.full(Rn * C, np.inf)
+            for Vo, Fo in over:
+                to_, _ = raycast(Vo, Fo, Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), 0.25, chunk=48)
+                tov = np.fmin(tov, np.where(np.isfinite(to_), to_, np.inf))
+            tov = tov.reshape(Rn, C) - lm["tuck"]
+            hit = np.isfinite(tov) & (tov < r)
+            ntuck = int(hit.sum())
+            r = np.where(hit, tov, r)
+            r = np.where(np.isfinite(tov), np.minimum(kb.gsmooth(r, (1.0, 1.0), False), np.maximum(tov, r)), r)
+            r = np.maximum(r, t + lm.get("tuck_min", 0.006))
+        return Rn, thd, Oa, Dd, r, lift, ntuck
 
+    rows_out = []
     for k, lm in enumerate(lk["rows"]):
+        ride_k = lm.get("ride", {sw["bone"] if sw else "delt_l": 1.0})
+        fr = row_frame(ride_k)
+        rroom = (sweep_room(ride_k, np.round(c, 4), sw["radius"]) if sw else None)
+        lmax = lm.get("lift_max", sw["lift_max"] if sw else 1.0)
+        over = [(np.c_[Vo, np.ones(len(Vo))] @ fr[5], Fo) for Vo, Fo in above] if fr[5] is not None else []
         lo, hi = -lk["theta"], lk["theta"]
-        Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
-        if room is not None and (lift > sw["lift_max"]).any():
+        Rn, thd, Oa, Dd, r, lift, ntuck = lame_row(lm, lo, hi, fr, rroom, over)
+        if rroom is not None and (lift > lmax).any():
             # (trimmed: each end moves in to the last column (from the middle) the room lifts by at most lift_max)
             m = C // 2
-            bad = lift > sw["lift_max"]
+            bad = lift > lmax
             jl = max([j for j in range(m) if bad[j]], default=-1) + 1
             jh = min([j for j in range(m, C) if bad[j]], default=C) - 1
             lo, hi = thd[jl], thd[jh]
-            Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
-        print(f"lame{k} theta {lo:.0f}..{hi:.0f} r {r.min():.3f}..{r.max():.3f} lift max {lift.max() * 1000:.1f} mm",
-              flush=True)
+            Rn, thd, Oa, Dd, r, lift, ntuck = lame_row(lm, lo, hi, fr, rroom, over)
+        print(f"lame{k} theta {lo:.0f}..{hi:.0f} r {r.min():.3f}..{r.max():.3f} lift max {lift.max() * 1000:.1f} mm"
+              f" tucked {ntuck} ride {ride_k}", flush=True)
         Pin = Oa + Dd * r[..., None]
+        if fr[6] is not None:
+            above.append((np.c_[Pin.reshape(-1, 3), np.ones(Rn * C)] @ fr[6], grid_tris(Rn, C)))
         lame = kb.slab(f"lame{k}", steel, Pin, Dd.copy(), th)
-        G["lames"].append(lame)
+        gk = [lame]
         Pout = Pin + Dd * (th * 0.5)
         E = np.vstack([Pout[::-1, 0], Pout[-1, 1:], Pout[-2::-1, -1]])
-        G["lames_gold"].append(path_bead(f"lame{k}_rim", gold, E, kh.Normals(Pout.reshape(-1, 3), Dd.reshape(-1, 3)),
-                                         rim, 0.0, False))
+        gk.append(path_bead(f"lame{k}_rim", gold, E, kh.Normals(Pout.reshape(-1, 3), Dd.reshape(-1, 3)), rim, 0.0,
+                            False))
         for j in (2, C - 3):
             p = Pin[Rn // 2, j] + Dd[Rn // 2, j] * (th + 0.0003)
-            G["lames_gold"].append(rivet(p, Dd[Rn // 2, j], r=lk["rivet_r"], h=lk["rivet_h"], name="lame_rivet",
-                                         material=gold))
+            gk.append(rivet(p, Dd[Rn // 2, j], r=lk["rivet_r"], h=lk["rivet_h"], name="lame_rivet", material=gold))
+        rows_out.append((k, gk, Pin, Dd, fr))
+        if not lk.get("split"):
+            G["lames"].append(lame)
+            G["lames_gold"] += gk[1:]
     # ---- the strap round the upper arm (leather on her skin) and its buckle
     sk = cfg["strap"]
     Cs = 72
@@ -560,10 +609,16 @@ def pauldrons(cfg, ref):
     G["strap"].append(kb.slab("strap", leath, Pin, Dd, sk["thick"], closed_c=True))
     jb = int(round(sk["buckle_deg"] / 360 * Cs)) % Cs
     pb = Pin[2, jb] + Dd[2, jb] * sk["thick"]
-    G["lames_gold"].append(buckle(pb, Dd[2, jb], a, w=sk["w"] * 1.25, h=sk["w"] * 1.0, bar=0.0024, name="strap_buckle",
-                                  material=gold))
-    nodes = {"pauldron_cop_l_rigid": G["cop"] + G["cop_gold"], "pauldron_lames_l_rigid": G["lames"] + G["lames_gold"],
-             "pauldron_strap_l": G["strap"]}
+    bk = buckle(pb, Dd[2, jb], a, w=sk["w"] * 1.25, h=sk["w"] * 1.0, bar=0.0024, name="strap_buckle", material=gold)
+    nodes = {"pauldron_cop_l_rigid": G["cop"] + G["cop_gold"]}
+    if lk.get("split"):
+        # (one rigid node a row: "pauldron_lame<k>_l_rigid", its own ride (params.rigid_ride match "lame<k>_l"); the
+        # strap's buckle rides with the strap's row (the last))
+        for k, gk, _, _, _ in rows_out:
+            nodes[f"pauldron_lame{k}_l_rigid"] = gk + ([bk] if k == len(rows_out) - 1 else [])
+    else:
+        nodes["pauldron_lames_l_rigid"] = G["lames"] + G["lames_gold"] + [bk]
+    nodes["pauldron_strap_l"] = G["strap"]
     out = {}
     for nm, ps in nodes.items():
         by = {}

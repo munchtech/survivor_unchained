@@ -23,15 +23,27 @@
     }
    },
    {
-    "match": "lames_l",
+    "match": "lame0_l",
     "weights": {
-     "delt_l": 1
+     "delt_l": 1.0
     }
    },
    {
-    "match": "lames_r",
+    "match": "lame1_l",
     "weights": {
-     "delt_r": 1
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "lame0_r",
+    "weights": {
+     "delt_r": 1.0
+    }
+   },
+   {
+    "match": "lame1_r",
+    "weights": {
+     "delt_r": 1.0
     }
    }
   ]
