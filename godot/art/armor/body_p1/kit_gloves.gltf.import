@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://cp810mwhhffnm"
+path="res://.godot/imported/kit_gloves.gltf-7985ef70bd6bc4824836651fc83fdc57.scn"
 
 [deps]
 
+source_file="res://art/armor/body_p1/kit_gloves.gltf"
+dest_files=["res://.godot/imported/kit_gloves.gltf-7985ef70bd6bc4824836651fc83fdc57.scn"]
 
 [params]
 

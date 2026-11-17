@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://dmf86gd6xh3h8"
+path="res://.godot/imported/kit_helm.gltf-d36fa696cca82db98c73539055667f1b.scn"
 
 [deps]
 
+source_file="res://art/armor/body_p1/kit_helm.gltf"
+dest_files=["res://.godot/imported/kit_helm.gltf-d36fa696cca82db98c73539055667f1b.scn"]
 
 [params]
 

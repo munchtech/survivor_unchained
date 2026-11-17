@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://crs3p2rfxwhso"
+path="res://.godot/imported/kit_belt.gltf-b9a29d39d4c8077f1cf8b41fb71da723.scn"
 
 [deps]
 
+source_file="res://art/armor/body_p1/kit_belt.gltf"
+dest_files=["res://.godot/imported/kit_belt.gltf-b9a29d39d4c8077f1cf8b41fb71da723.scn"]
 
 [params]
 

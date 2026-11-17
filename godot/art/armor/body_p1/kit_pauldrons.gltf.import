@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://c3vfv1ghmvdde"
+path="res://.godot/imported/kit_pauldrons.gltf-a9aee32b6a38eb29d6230de53c503ccf.scn"
 
 [deps]
 
+source_file="res://art/armor/body_p1/kit_pauldrons.gltf"
+dest_files=["res://.godot/imported/kit_pauldrons.gltf-a9aee32b6a38eb29d6230de53c503ccf.scn"]
 
 [params]
 

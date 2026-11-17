@@ -3,9 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
+uid="uid://nei88cyv41h"
+path="res://.godot/imported/kit_bodice.gltf-24d945cd0ba7c0f77377e4ec81a2fed6.scn"
 
 [deps]
 
+source_file="res://art/armor/body_p1/kit_bodice.gltf"
+dest_files=["res://.godot/imported/kit_bodice.gltf-24d945cd0ba7c0f77377e4ec81a2fed6.scn"]
 
 [params]
 
