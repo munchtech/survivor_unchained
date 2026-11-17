@@ -9,46 +9,54 @@ namespace SurvivorUnchained.View;
  * crowd shader lifts its body, back and mane (vat_den_body, DEN_BOSS_STRUCK) for BossPulseFor of the FX clock (3 frames at
  * 60 fps, 2 at 30), and a small steel spark lights on its flank toward her (the hit's own burst is at its centre, inside the
  * big body). A boss is struck many times a second (the Bladestorm's ticks): a new flash at most every BossPulseGap, so it
- * reads as distinct flashes, never a glow. */
+ * reads as distinct flashes, never a glow.
+ * (round 3, judge 5 17 Nov: "_03 = _04, no peak/decay"; the spark "20x18 px, two thin strokes, core blue h 260, inside the
+ * torso") The pulse peaks then halves by time, the same read at 30 and 60 fps: 1 for BossPulsePeak (frame 1 at 30 fps, frames
+ * 1-2 at 60), BossPulseHalf until BossPulseFor (frame 2 at 30, 3-4 at 60), then 0. The spark is the P7 cel star in the
+ * physical school's bands (cream core #fbf1d8, gold, amber: fx rule 2), centred on its silhouette's edge toward her, full on
+ * frame 1, 60% and its core stepped out on frame 2. */
 public partial class BattleFx
 {
-    const double BossPulseGap = 0.18, BossPulseFor = 0.045;
+    const double BossPulseGap = 0.18, BossPulsePeak = 0.025, BossPulseFor = 0.058;
+    const float BossPulseHalf = 0.62f;
     readonly System.Collections.Generic.Dictionary<int, double> bossPulseAt = new();
-    static readonly Color BossSparkHead = Hdr("#f4f7ff", 1.7f), BossSparkTail = Hdr("#c8d4e6", 1.1f);
-    // (round 2: at 1.6 m and its radius x .9 toward her it drew below the belly, between the legs, l7c3_st: from the play camera
-    // (56 deg, 23 m) a metre toward her drops 64 px and a metre up lifts 43. At its torso's middle, 2.35 m, and half its radius out,
-    // it lands on the flank toward her at about mid-body height, inside the silhouette (sparks draw over the body, no depth test):
-    // at 1.95 m it sat on the belly's edge, l7d_st.)
-    const float BossSparkY = 2.35f, BossSparkIn = 0.45f, BossSparkSize = 0.5f;
+    // (r3: at 2.35 m and half its radius toward her it drew inside the torso, about 30 px above the belly's edge (l7d2_st_03,
+    // (960, 399) against the edge at (960, 430)); from the play camera a metre up lifts 43 px: 0.72 m lower puts its centre on
+    // the edge. px across the quad: the star's long spike reaches the quad's edge and the rest 0.5-0.85 of it, so about 0.85 x
+    // that across, 37 px; its spikes' roots 6 px, about 4.3 px drawn after the stroke's shape)
+    const float BossSparkY = 1.63f, BossSparkIn = 0.45f, BossSparkPx = 44f, BossSparkRootPx = 6f, BossSparkLate = 0.6f;
 
-    /// <summary>A den boss's struck flash this frame (CrowdView.BossPulse): 1 in its pulse, else 0.</summary>
-    float BossPulseOn(int id) => bossPulseAt.TryGetValue(id, out var at) && time >= at && time - at < BossPulseFor ? 1f : 0f;
+    /// <summary>A den boss's struck flash this frame (CrowdView.BossPulse): 1 at its peak, BossPulseHalf after, else 0.</summary>
+    float BossPulseOn(int id)
+    {
+        if (!bossPulseAt.TryGetValue(id, out var at) || time < at) return 0f;
+        double a = time - at;
+        return a < BossPulsePeak ? 1f : a < BossPulseFor ? BossPulseHalf : 0f;
+    }
 
     void BossStruck(Enemy boss, Battle b)
     {
         if (bossPulseAt.TryGetValue(boss.Id, out var was) && time >= was && time - was < BossPulseGap) return;
         bossPulseAt[boss.Id] = time;
-        if (Flare.HushesHitSparks) return;
-        // On its flank toward her, mid-body (BossSparkY up, half its radius out: drawn over its side, not below its belly): a 4-point glint and two short streaks, steel-white, 2-3 frames.
+        if (Flare.HushesHitSparks || P7Off) return;
         double dx = b.Player.X - boss.X, dz = b.Player.Z - boss.Z, dl = Math.Sqrt(dx * dx + dz * dz);
         if (dl < 1e-6) { dx = -boss.LastDx; dz = -boss.LastDz; dl = Math.Max(1e-6, Math.Sqrt(dx * dx + dz * dz)); }
         var toHer = new Vector3((float)(dx / dl), 0, (float)(dz / dl));
         var at = new Vector3((float)boss.X, Y(boss.X, boss.Z) + BossSparkY, (float)boss.Z) + toHer * (float)boss.Radius * BossSparkIn;
-        Sparks.Spawn(new Sparks.P
+        // The P7 star, camera-facing over everything (its top shader), 4-6 spikes; stepped by its own age from the frame it first
+        // draws (StepP7 runs after the hit's frame has begun, so its first Age is that frame's dt).
+        var s = P7StarPx(at, BossSparkPx, 4 + (int)(R() * 2.99f), BossSparkRootPx, 0, 2, 2, true);
+        float half = s.N.Scale.X, first = -1;
+        s.Life = 0.15f;
+        s.Step = q =>
         {
-            At = at, Life = 0.045f, Size = BossSparkSize, SizeEnd = BossSparkSize * 0.6f, Color = BossSparkHead, ColorEnd = BossSparkTail * 0.5f,
-            Alpha = 1, Sprite = Star4, Spin = 0.2f + R() * 0.4f, SpinV = 0.001f,
-        });
-        var side = new Vector3(-toHer.Z, 0, toHer.X);
-        for (int i = 0; i < 2; i++)
-        {
-            var dir = (toHer + side * (i == 0 ? 0.6f : -0.6f) + Vector3.Up * (0.3f + R() * 0.3f)).Normalized();
-            float speed = 8 + R() * 3, len = 0.32f;
-            Sparks.Spawn(new Sparks.P
-            {
-                At = at, V = dir * speed, Life = 0.06f, Size = 0.06f, SizeEnd = 0.045f, Color = BossSparkHead, ColorEnd = BossSparkTail,
-                Gravity = 4, Drag = 5, Alpha = 1, Sprite = -1, Stretch = len / speed,
-            });
-        }
+            if (first < 0) first = q.Age;
+            float age = q.Age - first;
+            q.N.Visible = age < BossPulseFor;
+            bool late = age >= BossPulsePeak;
+            q.N.Scale = Vector3.One * half * (late ? BossSparkLate : 1f);
+            q.M.SetShaderParameter("p7_t", age);
+            q.M.SetShaderParameter("p7_fade", late ? 0.34f : 0f);
+        };
     }
 }

@@ -276,7 +276,12 @@ uniform float den_head = 0.0;
 // a steel that reads near-neutral is C .004 in paint, and each block's own colour, mixed .45 toward it, is kept only as a
 // residual capped at paint C DEN_BOSS_STRUCK_RES: the mane's red (.10) at any plain mix under ~.95 read pink or orange, the
 // blocks' value bands (dark back, flank, mane) carry the wolf instead, L order kept as the lift is the same on each.)
-#define DEN_BOSS_STRUCK vec4(0.115, 0.45, 0.004, 240.0)
+// (round 3, judge 5 17 Nov: the near-neutral step, L50 .318 -> .453, landed on the ground's value beside it (.453) and grey
+// on warm umber read as a stone or frost blink, not light. The step is now toward the steel core's WARM CREAM (#fbf1d8,
+// fx_language physical core): L up .32 (l7e1 at .30: whole .70, mane/head .77, belly .61; ground beside .45),
+// tint to C .010 at h 92 in paint (screen ~3x and ~13 deg warmer: at C .013 h 88 it read C .040 h 75); frame 2's half step (pulse .62) keeps the tint
+// whole (DEN_BOSS_STRUCK_TINT x the pulse, capped at 1) while its L is the pulse's share.)
+#define DEN_BOSS_STRUCK vec4(0.32, 0.45, 0.010, 92.0)
 #define DEN_BOSS_STRUCK_RES 0.002
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
 // tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
@@ -300,6 +305,7 @@ float vat_den_mane(vec3 c_p) {
 	float c_ang = atan(c_p.x, c_p.y - DEN_MANE_AXIS);
 	float c_tuft = DEN_MANE_TUFT.y * abs(fract(c_ang * DEN_MANE_TUFT.x / 6.2831853) * 2.0 - 1.0);
 	return vat_den_cut(c_p.z, DEN_MANE_Z.x + c_tuft) * (1.0 - vat_den_cut(c_p.z, DEN_MANE_Z.y - c_tuft)) * vat_den_cut(c_p.y, DEN_MANE_LOW);
+#define DEN_BOSS_STRUCK_TINT 2.0
 }
 vec2 vat_den_ab(float c_c, float c_hd) { return c_c * vec2(cos(radians(c_hd)), sin(radians(c_hd))); }
 vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit, vec4 c_r) {
@@ -373,7 +379,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		vec2 c_steel = vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w);
 		vec2 c_res = (c_ab - c_steel) * (1.0 - DEN_BOSS_STRUCK.y);
 		c_res *= min(1.0, DEN_BOSS_STRUCK_RES / max(length(c_res), 1e-5));
-		c_ab = mix(c_ab, c_steel + c_res, c_h);
+		c_ab = mix(c_ab, c_steel + c_res, min(1.0, c_h * DEN_BOSS_STRUCK_TINT));
 	}
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);

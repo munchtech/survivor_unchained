@@ -1065,7 +1065,9 @@ public partial class CrowdView : Node3D
         else if (hk.X >= 0) hk.Y *= SurvivorUnchained.View.BattleFx.KillDimNow;
         if (hk.X >= 0) flare = hk.X;
         // (lane E lead 7: a den boss's struck look is its pulse alone, whole body: vat DEN_BOSS_STRUCK)
-        if (bp >= 0) flare = bp;
+        // (round 3: the pulse steps 1, then .62, then 0; the shader reads it as dn_hit, which is 2 x the flash on a hit-kit
+        // struck body (its rim bit) and pow((flash - .12) / .88, 1.5) otherwise: so the flash is encoded to land the pulse as is)
+        if (bp >= 0) flare = bp <= 0 ? 0 : hk.X >= 0 ? 0.5f * bp : 0.12f + 0.88f * MathF.Pow(bp, 2f / 3f);
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();
