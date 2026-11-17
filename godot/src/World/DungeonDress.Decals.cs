@@ -44,7 +44,7 @@ public static partial class DungeonDress
     static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 0.5f, ["wolf_skull"] = 0.35f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
     static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 0.5f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 0.45f };
     static readonly Dictionary<string, float> AtFoot = new() { ["root"] = 2.0f, ["twigs"] = 1.2f, ["pebbles"] = 1.0f, ["leaves"] = 1.0f, ["fur"] = 0.4f, ["moss"] = 0.5f };
-    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.6f, ["root"] = 2.4f, ["fur"] = 0.2f, ["blood"] = SurvivorUnchained.Args.Num("den-open-blood", 0f), ["bone"] = 0.6f };   // (den r15 S: no lone floor blood: a puddle with no kill read as paint)   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
+    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.6f, ["root"] = 2.4f, ["fur"] = 0.2f, ["blood"] = SurvivorUnchained.Args.Num("den-open-blood", 0f), ["bone"] = SurvivorUnchained.Args.Num("den-open-bone", 0f) };   // (den r17 D2, lead item 1: bones only inside the clusters, none alone in the open; .6 = d7e)   // (den r15 S: no lone floor blood: a puddle with no kill read as paint)   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
     static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = SurvivorUnchained.Args.Num("den-drift", 0f) };   // (den r15 Q, judge r15 item 4: still the orange bean clumps at 0.08, now cut)   // (den r15 D: the leaf drifts read as orange bean clumps at the camera; kept rare)
 
     static readonly float OpenLitter = SurvivorUnchained.Args.Num("den-open-litter", 6f);   // (den r15 D) the open floor's litter density, x
@@ -282,7 +282,9 @@ public static partial class DungeonDress
         mat.SetShaderParameter("half_size", z.Half);
         mat.SetShaderParameter("step", z.Step);
         mat.SetShaderParameter("res", (float)z.Res);
-        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
+        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.3f));   // (den r17 D2, lead item 1) the decal bones down to den_room's lit bone value (.62 = d7e)
+        mat.SetShaderParameter("bone_sat", SurvivorUnchained.Args.Num("den-bone-sat", 0.7f));
+        if (SurvivorUnchained.Args.Num("den-bone-patch", 1f) > 0f) { var sh = (Shader)mat.Shader.Duplicate(); sh.Code = sh.Code.Replace("uniform float bone_k = 0.62;", "uniform float bone_k = 0.62; uniform float bone_sat = 1.0;").Replace("col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));", "col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat))); col = mix(col, mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, bone_sat), smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));"); mat.Shader = sh; GD.Print("TESTPATCH bone_sat " + sh.Code.Contains("bone_sat")); }
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
     }

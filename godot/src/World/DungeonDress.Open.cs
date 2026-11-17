@@ -14,16 +14,21 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static partial class DungeonDress
 {
-    static readonly float OpenRun = SurvivorUnchained.Args.Num("den-open-run", 1f);          // (den r17 D, R16 item 4) root runners: x their density (0 off)
+    static readonly float OpenRun = SurvivorUnchained.Args.Num("den-open-run", 0f);          // (den r17 D, R16 item 4) root runners: x their density (0 off; den r17 D2, lead item 3: B6 is painted root crowns, many-fingered and raised, that read as crowns stamped one way, not half-buried runners: cut; 1 = d7e)
     static readonly float OpenRunGap = SurvivorUnchained.Args.Num("den-open-run-gap", 9f);  // one runner within this many m
     static readonly float OpenRunK = SurvivorUnchained.Args.Num("den-open-run-k", 0.3f);     // B6 card scale (piece ~10 m wide: 0.3 = 3 m, ~220 px)
-    static readonly float OpenClump = SurvivorUnchained.Args.Num("den-open-clump", 1f);      // (den r17 D, R16 item 4) debris clusters: keep chance x (0 off)
-    static readonly float OpenClumpGap = SurvivorUnchained.Args.Num("den-open-clump-gap", 2.7f);   // their lattice, m
-    static readonly float OpenBetween = SurvivorUnchained.Args.Num("den-open-between", 0.6f);      // the old even open sprinkle away from a cluster x this (1 = as r16)
+    static readonly float OpenClump = SurvivorUnchained.Args.Num("den-open-clump", 1f);      // (den r17 D, R16 item 4) debris clusters: keep chance x (0 off; den r17 D2: fewer, richer groups on a wider lattice, 1 = d7e)
+    static readonly float OpenClumpGap = SurvivorUnchained.Args.Num("den-open-clump-gap", 2.8f);   // their lattice, m (2.7 = d7e)
+    static readonly float OpenBetween = SurvivorUnchained.Args.Num("den-open-between", 0.35f);      // the old even open sprinkle away from a cluster x this (1 = as r16, .6 = d7e; den r17 D2: bare earth between groups)
     static readonly float OpenClear = SurvivorUnchained.Args.Num("den-open-clear", 1.8f);   // m clear of her spawn (150 px)
     static readonly float OpenLairClear = SurvivorUnchained.Args.Num("den-open-lair-clear", 3.2f);   // m clear of the lair's middle (its fight)
     static readonly float OpenArc = SurvivorUnchained.Args.Num("den-open-arc", 1f);          // (den r17 D, R16 item 4) the lair's rib arc (0 off)
     static readonly float OpenArcR = SurvivorUnchained.Args.Num("den-open-arc-r", 7.5f);     // its radius from the lair's middle, m (pulled in to a bank's foot)
+    static readonly float OpenClumpBone = SurvivorUnchained.Args.Num("den-open-clump-bone", 0.5f);   // (den r17 D2, lead item 1) a cluster's chance of one bone, never a second (d7e: every cluster one, 30% a second: the bone confetti; -1 = d7e)
+    static readonly float OpenClumpR = SurvivorUnchained.Args.Num("den-open-clump-r", 0.24f);   // (den r17 D2, lead item 2) a cluster's spread past its 0.1 m core, m (.32 = d7e): tighter, one place
+    static readonly float OpenArcBone = SurvivorUnchained.Args.Num("den-open-arc-bone", 0.15f);   // (den r17 D2, lead item 1) the arc's chance of a loose bone inside a slot (.35 = d7e)
+    static readonly float OpenLeafK = SurvivorUnchained.Args.Num("den-open-leaf-k", 1.5f);   // (den r17 D2, lead item 2) a room group's leaves x this size (1 = d7e: specks that never read as a drift)
+    static readonly float OpenArcIn = SurvivorUnchained.Args.Num("den-open-arc-in", 0.7f);   // (den r17 D2, lead item 4) a blocked arc slot steps in this many m (0 = d7e: skipped)
     static readonly float StickYaw = SurvivorUnchained.Args.Num("den-stick-yaw", 30f);      // (den r17 D, R16 item 8) a root decal lies within this many degrees of the screen's level (0 = any way: the standing rods)
 
     static readonly List<Vector2> openClumps = new();
@@ -63,6 +68,7 @@ public static partial class DungeonDress
         var dec = Decals();
         var bones = dec.FindAll(d => d.Kind == "bone");
         var leafDec = dec.FindAll(d => d.Kind == "leaves");
+        var twigDec = dec.FindAll(d => d.Kind == "twigs");
         int nRun = 0, nClump = 0, nPiece = 0, nArc = 0, nCarc = 0;
 
         // ---- root runners: the set's painted roots (B6, the long low pieces 1 and 2), small and flat on the open ground ----
@@ -109,16 +115,39 @@ public static partial class DungeonDress
             const int m = 15;
             float span = 2.2f, a0 = -Mathf.Pi / 2f + (Hash(boss, 1, 4201) - 0.5f) * 0.5f;
             int carcAt = 2 + (int)(Hash(boss, 2, 4202) * 3f), carc2 = m - 3 - (int)(Hash(boss, 3, 4203) * 3f);
-            for (int q = 0; q < m && rib.Count > 0 && tusk.Count > 0; q++)
+            // (den r17 D2, lead item 4: s11's arc lay behind a root crown and a boulder) a slot blocked at its radius steps in
+            // (--den-open-arc-in m a step, 3 steps), and the arc's middle turns (within +-0.6 rad of up the frame) to where most slots land
+            Vector2? Slot(float a0x, int q)
             {
-                float a = a0 + (q / (m - 1f) - 0.5f) * span + (Hash(boss, q, 4204) - 0.5f) * 0.08f;
+                float a = a0x + (q / (m - 1f) - 0.5f) * span + (Hash(boss, q, 4204) - 0.5f) * 0.08f;
                 var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
                 // (pulled in to a bank's foot when one stands inside the arc's radius)
                 float r = OpenArcR;
                 for (float t = 4.5f; t < OpenArcR + 0.01f; t += 0.5f) if (Wall(c, lairM.X + dir.X * t, lairM.Y + dir.Y * t) < 1.6f) { r = t - 0.6f; break; }
                 r += (Hash(boss, q, 4205) - 0.5f) * 0.5f;
-                var p = lairM + dir * r;
-                if (r < 4.2f || !ok(p.X, p.Y, 0.5f, 1.2f) || !Free(p, 0.5f)) continue;
+                for (int st = 0; st <= (OpenArcIn > 0f ? 3 : 0); st++, r -= OpenArcIn)
+                {
+                    var pp = lairM + dir * r;
+                    if (r >= 4.2f && ok(pp.X, pp.Y, 0.5f, 1.2f) && Free(pp, 0.5f)) return pp;
+                }
+                return null;
+            }
+            if (OpenArcIn > 0f)
+            {
+                int best = -1; float bestA = a0;
+                for (float d = -0.6f; d <= 0.61f; d += 0.2f)
+                {
+                    int got = 0;
+                    for (int q = 0; q < m; q++) if (Slot(-Mathf.Pi / 2f + d, q) != null) got++;
+                    if (got > best + 1 || (got >= best && Mathf.Abs(d) < Mathf.Abs(bestA + Mathf.Pi / 2f))) { best = got; bestA = -Mathf.Pi / 2f + d; }
+                }
+                a0 = bestA;
+            }
+            for (int q = 0; q < m && rib.Count > 0 && tusk.Count > 0; q++)
+            {
+                float a = a0 + (q / (m - 1f) - 0.5f) * span + (Hash(boss, q, 4204) - 0.5f) * 0.08f;
+                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                if (Slot(a0, q) is not Vector2 p) continue;
                 bool isCarc = (q == carcAt || q == carc2) && hide.Count > 0;
                 float yaw = a + (Hash(boss, q, 4206) - 0.5f) * 0.5f;   // (radial: the ribs and tusks point at the fight)
                 if (isCarc)
@@ -135,7 +164,7 @@ public static partial class DungeonDress
                     if (q == m / 2 && !ribRow && setSheets.TryGetValue("O3", out var o3) && o3.Count > 0 && PlaceSetObj(c, "O3", o3[0], p.X, p.Y, 0.75f, 0.1f, false) > 0f) { openTaken.Add((p, 1.2f)); nArc++; continue; }
                     var d = ribRow ? rib[(q / 3) % rib.Count] : tusk[q % tusk.Count];
                     AddDecal(c, b, d, p.X, p.Y, yaw, (d.Kind == "arcrib" ? 1.9f : 1.9f) + 0.2f * Hash(boss, q, 4209));
-                    if (Hash(boss, q, 4210) < 0.35f && bones.Count > 0)   // (now and then a loose bone just inside it)
+                    if (Hash(boss, q, 4210) < OpenArcBone && bones.Count > 0)   // (now and then a loose bone just inside it)
                     {
                         var lp = p - dir * (0.5f + 0.3f * Hash(boss, q, 4211));
                         if (ok(lp.X, lp.Y, 0.5f, 1.2f)) AddDecal(c, b, bones[(int)(Hash(boss, q, 4212) * bones.Count) % bones.Count], lp.X, lp.Y, Hash(boss, q, 4213) * Mathf.Tau, 0.9f, true);
@@ -169,11 +198,16 @@ public static partial class DungeonDress
                     { PlaceSetObj(c, "O5", bp, p.X, p.Y, 0.4f + 0.15f * Hash(i, j, 4308), 0f, false, 0f); nPiece++; }
                     for (int k = 0; k < pieces; k++)
                     {
-                        float a = a0 + k * 2.39996f, rr = 0.1f + 0.32f * Mathf.Sqrt(Hash(i * 7 + k, j, 4309));
+                        float a = a0 + k * 2.39996f, rr = 0.1f + OpenClumpR * Mathf.Sqrt(Hash(i * 7 + k, j, 4309));
                         float x = p.X + Mathf.Cos(a) * rr, zz = p.Y + Mathf.Sin(a) * rr;
                         if (!ok(x, zz, 0.8f, 1.0f)) continue;
                         // (the first a bone, then a fur tuft, then leaves; a second bone now and then)
                         int role = k == 0 ? 0 : k == 1 ? 1 : Hash(i * 7 + k, j, 4310) < 0.3f ? 0 : 2;
+                        // (den r17 D2, lead item 1) one bone in about half the groups, none a second: the rest leaves and fur
+                        if (OpenClumpBone >= 0f) role = k == 0 ? (Hash(i, j, 4314) < OpenClumpBone ? 0 : 3) : k == 1 ? 1 : k == 3 ? 3 : 2;
+                        if (role == 3 && twigDec.Count > 0)   // (den r17 D2, lead item 2) a twig in the group where d7e laid a second bone: richer, not brighter
+                        { AddDecal(c, b, twigDec[(int)(Hash(i * 7 + k, j, 4311) * twigDec.Count) % twigDec.Count], x, zz, StickYawFold(Hash(i * 7 + k, j, 4312) * Mathf.Tau), 0.9f + 0.2f * Hash(i * 7 + k, j, 4313)); nPiece++; continue; }
+                        if (role == 3) role = 2;
                         float u = Hash(i * 7 + k, j, 4311);
                         if (role == 0 && bones.Count > 0)
                             AddDecal(c, b, bones[(int)(u * bones.Count) % bones.Count], x, zz, Hash(i * 7 + k, j, 4312) * Mathf.Tau, 0.85f + 0.3f * Hash(i * 7 + k, j, 4313), true);
@@ -182,7 +216,7 @@ public static partial class DungeonDress
                         else if (lair && leafs.Count > 0)
                             PlaceSetObj(c, "O6", leafs[(int)(u * leafs.Count) % leafs.Count], x, zz, 0.5f + 0.15f * Hash(i * 7 + k, j, 4313), 0.1f, false, 0f);
                         else if (!lair && leafDec.Count > 0)
-                            AddDecal(c, b, leafDec[(int)(u * leafDec.Count) % leafDec.Count], x, zz, Hash(i * 7 + k, j, 4312) * Mathf.Tau, 0.9f + 0.2f * Hash(i * 7 + k, j, 4313));
+                            AddDecal(c, b, leafDec[(int)(u * leafDec.Count) % leafDec.Count], x, zz, Hash(i * 7 + k, j, 4312) * Mathf.Tau, (0.9f + 0.2f * Hash(i * 7 + k, j, 4313)) * OpenLeafK);
                         else continue;
                         nPiece++;
                     }
