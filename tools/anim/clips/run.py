@@ -13,6 +13,7 @@ carried at a run (tools/anim/gait.py).
 from __future__ import annotations
 
 import math
+import json
 import os
 from dataclasses import replace
 
@@ -92,7 +93,7 @@ def _swivel(h, phi):
     return tuple(20.0 * (math.cos(a) * ref + math.sin(a) * np.cross(d, ref)))
 
 
-def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, fwd=0.0):
+def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, fwd=0.0, pump=0.0):
     """The shield up across the body, riding the step a little. It rides the
     forearm's hinge (its face is the plane of shoulder, elbow and wrist), so
     the guard is set by where the hand goes and how the elbow swings, never
@@ -101,7 +102,10 @@ def shield_guard(side="l", hand_at=(-0.02, -0.20, 0.38), swivel=-20, lift=0.0, f
     elbow near square it reached over the shoulder, through the pauldron.)
     The hand rides the forearm, the wrist straight in the grip."""
     def f(ph, k, hand):
-        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph), hand_at[2] + fwd)
+        # (aim-move, the owner: "the running animation dosn't move anything but her legs") pump: the guard rides the
+        # stride fore and aft (m each way, k 1 forward), against the sword arm.
+        h = (hand_at[0], hand_at[1] + lift + 0.015 * math.cos(4 * math.pi * ph) + 0.25 * pump * (k - 0.5),
+             hand_at[2] + fwd + pump * (2 * k - 1))
         return {"arc": arc_of(h), "pole": _swivel(h, swivel), "frame": "chest"}
     return f
 
@@ -246,9 +250,14 @@ WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 # carried the ankle 0.80 m behind the pelvis, out of the leg's reach, so the knee locked straight (bend 3.6) for 2 stance
 # and 3 swing frames, thigh 28-45 back, then popped to 54 in one frame. At 0.26 (contact 0.18 s, a 5 m/s run's) the knee
 # never locks (toe-off bend ~22) and folds straight on through; thigh back at most ~25.
-WARDEN = Gait(frames=21, speed=SPEED, duty=0.26, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
-              hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
-              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
+# (aim-move) frames 21 -> 18 and duty 0.26 -> 0.30: the flight was 5 frames a step (the brief's bar: 4); the stance carries
+# the ankle as far back as before (0.54 m: the knee never locks). The recovery leg (judge r1 fix 3): the heel folded up
+# toward the glute by 15 % of the swing (2 frames after toe-off), fold_kick high. The torso works (the owner, 15 Nov):
+# the shoulder line turns 10 against the pelvis's 8 (was 6/6), the hips sway and shift more over the plant.
+WARDEN = Gait(frames=18, speed=SPEED, duty=0.30, fold_at=0.15, fold_kick=0.46, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=8, hip_roll=4,
+              hip_shift=0.028, chest_yaw=10, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
+              fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)),
+              contra=os.environ.get("WARDEN_CONTRA", "1") == "1")  # (aim-move: each fist forward with the other foot, Gait.contra)
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
@@ -374,7 +383,7 @@ AXE_TRAIL_ARM = ((10, 24, 132, -50), (-22, 22, 132, -55))
 # blend, not the arm hold, so the axe would slide in her fist through every walk-run change).
 # Measured (solver holdB p3): sword pitch -46..-29, 19-21 out, tip 0.29 m off the floor at the lowest, 61 mm from her
 # thigh (sprint 34); axe -63..-46, 16-22 out, 96 mm (sprint 74); the second axe -55..-42, 23-30 out, never within 140 mm.
-def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
+def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0, lag=0.0, knuckles=None, pole_chest=False):
     """The held piece's line (hand to point or head) forward and down: `pitch` degrees (fist forward, fist back) and
     `out` degrees out to that side, in her character's frame, eased between with the arm's swing (k 1 forward).
     `grip` (m, Animation 57): her fist that much higher up the haft (the clip's meta carries it as a negative
@@ -384,10 +393,22 @@ def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
 
     def f(ph, k, hand):
         hand = dict(hand)
-        p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * k)
-        o = math.radians(out[1] + (out[0] - out[1]) * k)
+        if pole_chest and hand.get("frame") == "chest" and "pole" in hand:
+            # (aim-move) a swung arm's pole (gait._swung) is the chest's: kept so under the char-space line (keyed
+            # "pole_frame"); without it the sprint's elbow flipped twice a stride
+            hand["pole_frame"] = "chest"
+        # (aim-move) lag: the piece's line follows the swing that much of a cycle late (its weight; the wrist gives)
+        kl = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - lag - hand["_koff"])) if lag and "_koff" in hand else k
+        p = math.radians(pitch[1] + (pitch[0] - pitch[1]) * kl)
+        o = math.radians(out[1] + (out[0] - out[1]) * kl)
         b = np.array((sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)))
         hand.update({"blade": tuple(b), "frame": "char"})
+        if knuckles is not None:
+            # (aim-move) the fist's roll about the line held (its knuckles that way, square to the line): with the line
+            # alone the roll was the solver's, and it flipped 90-170 degrees in a frame twice a stride (the sprint)
+            kv = np.array(knuckles, float) * np.array([-sg, 1, 1])   # (given for the right fist; mirrored for the left)
+            kv = kv - float(kv @ b) * b
+            hand["knuckles"] = tuple(kv / np.linalg.norm(kv))
         if grip:
             hand["nudge"] = tuple(-grip * b)
         return hand
@@ -498,15 +519,91 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
 # (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high57")
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "wrist")  # wrist (solvers 3b-5b, below) | trail (the fallback) | low | belt | high | high57 | live
 REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
+# (aim-move, the owner 15 Nov: "her holding sword arm ... while running its held rigid not moving at all") the high carry
+# alive: the upper arm swings 30 degrees with the stride (was 10), the elbow folds on the back swing and opens forward,
+# and the blade's line lags the fist by LIVE_LAG of a cycle (tips back as the fist drives forward), the wrist giving.
+HIGH_ARM_LIVE = ((24, 28, 74, -18), (-6, 31, 90, -24))
+LIVE_LAG = 0.1
 HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
-WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
+# (aim-move, the owner 15 Nov: "just the idle pose out of town is still so weak ... that locked elbow instead of relaxed
+# casual badass" and "they run with that as well ... its all part of the rigidness") Prowl's carry in the run: the sword
+# trailing low and out behind her right hip as it does standing (Prowl's line: 44 below level, heading -120), the elbow
+# soft (bent 45-55), the upper arm swinging 40 degrees from the shoulder with the stride, the blade's line lagging the
+# fist LIVE_LAG of a cycle (it drags back as the fist drives forward). With the arms against the legs (Gait.contra) the
+# upper arm 30 out both ends (at 22/26 it met her trunk 22-29 mm as it passed her side, motion), the blade's heading
+# swinging 92-136 with the fist (fixed at 108-124 her wrist bent 54-61 to the palm). motion --outfits: skin 0, the warden
+# plate 12 mm (the live high carry's was 14), wrist flex -10 / ext 43.
+TRAIL_ARM = ((22, 30, 128, -10), (-18, 30, 136, -16))
+if os.environ.get("WARDEN_TRAIL_ARM"):  # (exploration: a json pair of (fwd, out, elbow, turn))
+    TRAIL_ARM = tuple(tuple(x) for x in json.loads(os.environ["WARDEN_TRAIL_ARM"]))
+TRAIL_BLADE = json.loads(os.environ.get("WARDEN_TRAIL_BLADE", "[-32, -46, 92, 136]"))  # pitch fwd/back, out fwd/back
+# (the fist's knuckles' way, char space, right fist: low_point squares it to the line; null = the solver's roll)
+TRAIL_KNUCKLES = json.loads(os.environ.get("WARDEN_TRAIL_KNUCKLES", "null"))
+WARDEN_CARRIES = {"trail": (TRAIL_ARM, dict(pitch=tuple(TRAIL_BLADE[:2]), out=tuple(TRAIL_BLADE[2:]), lag=LIVE_LAG, knuckles=TRAIL_KNUCKLES, pole_chest=True)),"low": (LOW_ARM, dict(out=(26, 24))),
                   "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
                   "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
-                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30)))}
+                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30))),
+                  "live": (HIGH_ARM_LIVE, dict(pitch=(94, 70), out=(27, 33), lag=LIVE_LAG))}
+# (aim-move solver 3b, 15 Nov; WARDEN_CARRY "wrist", the default; "trail" is the carry above) The defect as played: the
+# trail's char-space line needed the wrist past armroll's caps (ulnar 39-54 raw, pronation past 80), the pack turned the
+# fist back and the blade played out to her right as a stiff bar (heading -99..-63, 0-27 below level, the tip 1.1-1.4 m
+# out). Here the arm swings on TRAIL's own joints (contra, the elbow soft) and the fist is set on its forearm by the wrist
+# inside the caps (run_grip.wrist_carry: forearm turned out, wrist extended, a little ulnar), the reading eased with the
+# swing LIVE_LAG late, so the blade lies back and down behind her hip and trails the fist. (pro, flex, dev) fist forward,
+# fist back (armroll.wrist's reading before keyed's forearm share).
+# (solver 4b, 15 Nov) TRAIL_ARM's forearm swung 1..58 deg forward of plumb and its hinge rolled with the swing, so no
+# in-cap wrist reached a back-and-down line at any frame (best 32-70 deg off -130/40). Here the forearm holds its world
+# line (the elbow folds 30 -> 55 as the upper arm swings back, th + bend about constant: forearm 0-20 fwd) on the upper
+# arm turned out 40 (its roll carries the blade back), 10 out (8: plate 11-13 mm, 12: 4-8 but the line wider). As
+# played: run -115..-107 / 15-32 down (was -101..-38 / 6-13), jump 3.5 deg a frame (was 11.4), plate 8, sprint 10.
+# Still short of the band (-115..-145, 30-50): pronation and extension sit at armroll's caps on every frame.
+# (solver 5b, 15 Nov) The grip tilt: WRIST_TILT -35 lets the blade hang toward her fingers in a loose fist (keyed.grip_of:
+# its lean 70, was 35; the meta's grip_tilt, RUN_GRIPS; the game blends it by the run's weight, PlayerView). Swept on 4b's
+# arm, the worst frame's in-cap miss of the band: tilt +30 43 deg, 0 13, -25 5.6, -35 3.8, -45 7.7 (+ turns the blade
+# away from the fingers, toward a square grip). The upper arm turned out 50 (40: the line short of -125 at the back end),
+# the elbow 30 -> 45. Its "out" stays 10: at 8 the warden plate took 11 mm, at 5 16-18 (motion --outfits), so the hand
+# rides 0.35-0.40 m out, not 0.24-0.32. Readings by solve5b/tools/opt5.py on this arm (band, tip, jump, caps, lag).
+WRIST_ARM = ((12, 10, 130, -50), (-12, 10, 120, -50))
+# (solver 13, 16 Nov; max judge r2: toward the den camera, pitch 62, the back-swing peak read as a wing-flap, the fist at
+# her shoulder line and the forearm out level) the upper arm no further back than hanging in the chest's frame (the
+# chest leans ~23, so -12 put the elbow 35 behind plumb and the camera turns backward travel into on-screen height,
+# 0.88/m), turned out less at the back (-35: the forearm points down toward the camera, not out) and the elbow kept
+# bent (opening it to 138 raised the fist on screen, 0.114 vs 0.135); the swing moved forward (20, out 14: at out 10 the
+# forward end met the warden plate 12-16 mm, at 14 9 mm). On screen facing the camera the fist's peak is 0.178 m under
+# her shoulder (was 0.057; the lower ribs 0.139, the waist 0.152), the hand's travel 0.26 m. solve13/tools/m13.py.
+WRIST_ARM = ((20, 14, 130, -50), (0, 10, 124, -35))
+# The sprint keeps the arm its own readings (SPRINT_WRIST below) were made on: on solver 13's arm the sprint's plate took
+# 13 mm and the sprint is off the den path (sprint_stop.sprint reads this before its own wider swing).
+SPRINT_SWING_R = {"run_warden": ((12, 10, 130, -50), (-12, 10, 120, -50))}
+# (solver 6b, 15 Nov) The follow-through: the wrist counters most of the arm's swing of the line (on a still wrist the
+# line swings 28-60 down) a little EARLY (lag -0.026 of a cycle, a lead), so what is left of the blade's swing comes
+# 1-2.6 frames behind the fist (as played: heading 1 frame, down 2.6, m5 lag +1; was 0). Readings by solve6b/tools/opt6.py.
+# (solver 8b, 15 Nov) readings on the run carries' own caps (WRIST_CAPS below: pronation 90, extension 55), so that seen
+# from behind at most ~0.40 of the blade lies out sideways (as played -153..-146 / 43-53 down, share 0.35, was 0.55);
+# solve8b/tools/opt8.py. The 80 / 45 caps' readings were [[71.2, -31.9, 9.5], [84.7, -16.8, -10.7]] lag -0.026.
+# (solver 13) readings on that arm by solve13/tools/opt13.py at the den camera (pitch 62): the blade 71-74 down, so it
+# reads 46+ deg below level facing the camera and 45+ over +-45 (were 15.7 and -63.5), its sideways share from behind
+# 0.31 (was 0.33), at psi -90 47 below level (was 20: the tip no longer rises by her far shoulder). Was
+# [[83.3, -46.3, -9.7], [95.0, -40.4, -24.3]] lag [0.056, -0.09, -0.053]. The wrist sits at the extension cap (60) on
+# every frame, so the side view's swing stays ~21 deg, in phase with the fist (the judge asked 25-30, 2-3 f behind).
+WRIST_GRIP = json.loads(os.environ.get("WARDEN_WRIST", "[[82.2, -45.3, -15.4], [93.6, -45.8, -24.1]]"))
+WRIST_LAG = json.loads(os.environ.get("WARDEN_WRIST_LAG") or "[0.109, 0.4, -0.051]")  # a cycle fraction, or [pro, flex, dev] (run_grip)
+WRIST_TILT = float(os.environ.get("WARDEN_WRIST_TILT", "-35"))
+if os.environ.get("WARDEN_WRIST_ARM"):  # (exploration: a json pair of (fwd, out, elbow, turn))
+    WRIST_ARM = tuple(tuple(x) for x in json.loads(os.environ["WARDEN_WRIST_ARM"]))
+WARDEN_CARRIES["wrist"] = (WRIST_ARM, dict(fwd=tuple(WRIST_GRIP[0]), back=tuple(WRIST_GRIP[1]), lag=WRIST_LAG, tilt=WRIST_TILT))
+
+
+def _warden_carry():
+    from clips.run_grip import wrist_carry
+    kw = WARDEN_CARRIES[WARDEN_CARRY][1]
+    if WARDEN_CARRY == "wrist":
+        return wrist_carry(**kw)
+    return (haft_carry if WARDEN_CARRY == "high" else low_point)(**kw)
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -548,7 +645,7 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+                   {"r": _warden_carry(), "l": shield_guard(lift=0.04, fwd=-0.005, pump=0.045 if WARDEN_CARRY in ("live", "trail", "wrist") else 0.0)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
     # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
@@ -604,11 +701,52 @@ if REAVER_CARRY == "high":
                                           "grip_tilt": GRIP_TILT, "grip_tilt_l": GRIP_TILT}})
 if WARDEN_CARRY == "high":
     RUN_GRIPS["run_warden"] = {"grip_tilt": GRIP_TILT}
+if WARDEN_CARRY == "wrist" and WRIST_TILT:  # (solver 5b) run_dir and sprint_stop take it from here too
+    RUN_GRIPS["run_warden"] = {"grip_tilt": WRIST_TILT}
+# (solver 8b, 15 Nov) The run carries' own wrist caps (armroll W_PRO: the meta "wrist_caps", re-solved alike at pack
+# and in every check): seen from behind the blade must trail down and back by her leg, at most ~0.40 of it out
+# sideways, and at armroll's 80 / 45 no wrist reached that on the fist-forward frames (0.48 at best). Pronation 90 (the
+# forearm turned out, life's 80-90), extension 55 (life's 60-70): only these two, the deviation and flexion as ever.
+# (solver 11b/11d, 16 Nov) ext 60 and dev_low 25: at the play camera (56 pitch) the blade must read 30+ deg below level
+# facing the camera, i.e. 61+ deg down on every frame; at the back of the swing that needs extension ~58 and ulnar ~22
+# (life reaches 60-70 and 30-35). Readings by solve11d/tools/opt11d.py, one lag per reading (pro, flex, dev): the
+# forearm's turn and the deviation counter the arm's swing of the down, the flexion its heading, each early, so the
+# blade trails the fist ~1 frame in both (as played run 1.14 / 1.35, back 1.14 / 0.95; one shared lag led, -0.56).
+WRIST_CAPS = json.loads(os.environ.get("WARDEN_WRIST_CAPS") or '{"pro": 90, "ext": 60, "dev_low": 25}')
+if WARDEN_CARRY == "wrist" and WRIST_CAPS:
+    RUN_GRIPS.setdefault("run_warden", {})["wrist_caps"] = WRIST_CAPS
 
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
 # The shield hand sits back toward her (run 2.5 cm, sprint 2 cm from the first pass) so the
 # elbow stays bent: at most 124 degrees in the run, 119 in the sprint (a judge's bar: 125/120).
 SPRINT_ARMS = {"run_warden": {"l": shield_guard(lift=0.08, fwd=0.0)}}
+if WARDEN_CARRY == "trail":
+    # The sprint's trailing blade swings wider than the run's (its fist comes 70 off her line forward, was 92): leaning 27
+    # deg with the run's line her wrist bent 62 to the palm at the forward drive (motion; 30 at 70, 15 at 58 but her upper
+    # arm then met the warden plate 16 mm, 3 at 70). Pitch f,b, out f,b.
+    _sb = json.loads(os.environ.get("SPRINT_BLADE") or "[-32, -46, 70, 136]")
+    SPRINT_ARMS["run_warden"]["r"] = low_point(pitch=tuple(_sb[:2]), out=tuple(_sb[2:]), lag=LIVE_LAG, knuckles=TRAIL_KNUCKLES, pole_chest=True)
+if WARDEN_CARRY == "wrist":
+    # (solver 3b) the sprint's fist by the wrist too, on the sprint's wider swing (sprint_stop.sprint: SPRINT_SWING)
+    from clips.run_grip import wrist_carry as _wc
+    # (solver 8b) its own readings on the carries' caps: share 0.37 from behind (was 0.59), the tip 0.75 m out (was 0.95)
+    _sw = json.loads(os.environ.get("SPRINT_WRIST") or "[[80.1, -42.1, 4.2], [95.0, -26.6, -15.2]]")
+    SPRINT_ARMS["run_warden"]["r"] = _wc(fwd=tuple(_sw[0]), back=tuple(_sw[1]), lag=json.loads(os.environ.get("SPRINT_WRIST_LAG") or "-0.027"), tilt=WRIST_TILT)
+# (solver 6b, 15 Nov) The backpedals' own sword arm and fist (run_dir applies them at headings past 90). On the run's
+# they lay steep and short of back (-128..-115 / 51-53 down): her chest leans 7 there, 23 in the run, and no in-cap
+# wrist made it up (opt6: pronation, extension and deviation at the caps). The upper arm 14 further back both ends (8:
+# still -122 at the front), the run's out 10, elbow and turn; its readings by opt6 on that arm, a lead as the run's.
+# (solver 13) the run's change on the backpedal's arm (its chest leans ~7, so -16 is the run's 0 in the world): the fist's
+# peak 0.19 m under her shoulder facing the camera (was 0.061), plate 3 mm. Was [[2, 10, 130, -50], [-30, 10, 120, -50]].
+BACK_ARM = tuple(tuple(x) for x in json.loads(os.environ.get("WARDEN_BACK_ARM") or "[[4, 14, 130, -50], [-16, 10, 124, -35]]"))
+# (solver 8b) on the carries' caps: share 0.33 from behind (was 0.53); the 80 / 45 readings were
+# [[68.8, -32.1, 6.3], [86.0, -20.1, -5.7]] lag -0.040.
+# (solver 13) opt13 on that arm (PH0 0.5): front 46, +-45 45 (were 16 / -54), share 0.27 (was 0.34). Was
+# [[81.1, -47.5, -14.0], [95.0, -36.7, -23.3]] lag [0.007, -0.061, -0.084].
+BACK_WRIST = json.loads(os.environ.get("WARDEN_BACK_WRIST") or "[[84.5, -46.3, -21.6], [91.9, -45.3, -22.4]]")
+BACK_ARMS = {}
+if WARDEN_CARRY == "wrist":
+    BACK_ARMS["run_warden"] = {"r": _wc(fwd=tuple(BACK_WRIST[0]), back=tuple(BACK_WRIST[1]), lag=json.loads(os.environ.get("WARDEN_BACK_WRIST_LAG") or "[0.01, -0.029, -0.281]"), tilt=WRIST_TILT)}
 
 
 def clips(rig, want):

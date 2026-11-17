@@ -116,6 +116,7 @@ public partial class PlayerView
         {
             double k = anim.Length / (air2 + 0.12);
             P7Drive((0, 0), (anim.Length / k, anim.Length));
+            IdleSyncOver(anim.Length / k);
             p7State = P7State.None;
             if (SurvivorUnchained.Args.Has("clip")) GD.Print($"p7 leap fit: no apex in the pelvis ({apex:0.00} s), the clip at {k:0.00}x over the air {air:0.00} s");
             return true;
@@ -123,6 +124,7 @@ public partial class PlayerView
         if (tr < 0) return false;
         double t0 = System.Math.Clamp(apex - 0.21, 0.02, anim.Length), t1 = System.Math.Min(anim.Length, apex + 0.21);
         P7Drive((0, 0), (0.06, t0), (System.Math.Max(0.1, air), t1), (System.Math.Max(0.1, air) + (anim.Length - t1), anim.Length));
+        IdleSyncOver(System.Math.Max(0.1, air) + (anim.Length - t1));
         p7State = P7State.None;
         if (SurvivorUnchained.Args.Has("clip")) GD.Print($"p7 leap fit: apex {apex:0.00} s, flight {t0:0.00}-{t1:0.00} over the air {air:0.00} s, clip {anim.Length:0.00} s");
         return true;

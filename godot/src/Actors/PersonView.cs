@@ -225,6 +225,38 @@ public partial class PersonView : Node3D, INpcView
         }
     }
 
+    /// <summary>(warden-move, the side carry: SideCarry) As Slide, then the piece turned on through its grip point (the fist's
+    /// fitted pocket, else its own origin): `back` degrees about `backAxis`, then `inward` about `inAxis` (world axes, taken
+    /// into the mount's space by `bone`, the hand bone's drawn pose in the world, else the mount's attachment as it stands).
+    /// No turn leaves Slide's as it is.</summary>
+    public void Slide(string slot, float metres, float tilt, Vector3 backAxis, float back, Vector3 inAxis, float inward, Transform3D? bone = null)
+    {
+        Slide(slot, metres, tilt);
+        if (back == 0f && inward == 0f) return;
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return;
+        if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece || !seats.TryGetValue(slot, out var s) || s.piece != piece) return;
+        if (bone == null && mount.GetParent() is not Node3D) return;
+        var inv = ((bone ?? ((Node3D)mount.GetParent()).GlobalTransform) * mount.Transform).Basis.Inverse();
+        Quaternion Q(Vector3 axis, float deg) => axis.LengthSquared() < 1e-8f || deg == 0f ? Quaternion.Identity : new Quaternion((inv * axis).Normalized(), Mathf.DegToRad(deg));
+        var q = Q(inAxis, inward) * Q(backAxis, back);
+        var pivot = s.pivot ?? piece.Transform.Origin;
+        var t = piece.Transform;
+        piece.Transform = new Transform3D(new Basis(q) * t.Basis, pivot + q * (t.Origin - pivot));
+    }
+
+    /// <summary>(warden-move, the side carry: SideCarry) A held piece's grip point (the fist's fitted pocket, else its own
+    /// origin) and tip in the world as it sits in its mount now, the mount taken from `bone` (the hand bone's drawn pose in
+    /// the world) else its attachment as it stands; null if the slot holds no piece with a tip.</summary>
+    public (Vector3 Grip, Vector3 Tip)? HeldBlade(string slot, Transform3D? bone = null)
+    {
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount)) return null;
+        if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece || !piece.HasMeta("tip")) return null;
+        if (bone == null && mount.GetParent() is not Node3D) return null;
+        var m = (bone ?? ((Node3D)mount.GetParent()).GlobalTransform) * mount.Transform;
+        var pv = seats.TryGetValue(slot, out var s) && s.piece == piece ? s.pivot ?? piece.Transform.Origin : piece.Transform.Origin;
+        return (m * pv, m * (piece.Transform * new Vector3(0, (float)piece.GetMeta("tip"), 0)));
+    }
+
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
     // figure in town), eased as PlayerView eases it.
     float ownSlide, ownTilt, ownSlideL, ownTiltL, ownPocketL;
@@ -467,6 +499,17 @@ public partial class PersonView : Node3D, INpcView
         foreach (var c in m.GetChildren())
             if (c is Node3D w && w.HasMeta("tip")) return w.GlobalTransform * new Vector3(0, (float)w.GetMeta("tip"), 0);
         return null;
+    }
+
+    /// <summary>(aim-move, log only: BLADE) A held piece's grip point (the fist's fitted pocket its tilt turns about, else
+    /// the piece's own origin), its tip and the tilt's axis (the palm's normal), in the world; null if the slot holds none
+    /// or the piece has no tip.</summary>
+    public (Vector3 Grip, Vector3 Tip, Vector3 Axis)? BladeOf(string slot)
+    {
+        if (!held.TryGetValue(slot, out var m) || !IsInstanceValid(m) || !m.IsInsideTree() || TipOf(slot) is not Vector3 tip) return null;
+        var g = m.GlobalTransform;
+        if (!seats.TryGetValue(slot, out var s) || !IsInstanceValid(s.piece)) return (g.Origin, tip, g.Basis.X.Normalized());
+        return (g * (s.pivot ?? s.piece.Transform.Origin), tip, (g.Basis * s.axis).Normalized());
     }
 
     /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).

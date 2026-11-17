@@ -368,6 +368,15 @@ def bull_rush(rig):
         # sword clips' (their guard_l rests its rim on her breastplate).
         (30, {**GUARD, "hand_r": guard_r, "hand_l": _shield_home()}, "ease"),
     ]
+    # (aim-move, the owner 15 Nov: every skill lands on Prowl, her drawn idle) From the guard at f22 the blade lets down
+    # to its trail and she settles back into Prowl by f30, her right foot stepped (not slid) to Prowl's place.
+    from clips.sword import prowl_end
+    end = prowl_end(rig)
+    if end is not None:
+        a = np.array((-0.17, 0.0, -0.13)); b = np.array(end["foot_r"]["pos"], float)
+        keys[-1] = (30, end, "ease")
+        keys.insert(-1, (26, {"foot_r": {"pos": tuple((a + b) / 2 + np.array([0, 0.035, 0])),
+                                         "rot": ((-25 + end["foot_r"]["rot"][0]) / 2, 0, 0), "toe": 0}}, "auto"))
     guard = {**GUARD, "hand_l": _shield_home()}
     meta = {"layer": "full", "weapon": "sword+shield", "note": "keyed: 0.4 s shield charge, then the plant and shove"}
     # The sword hand's turn from the plant into the guard (SWING), spread
@@ -379,7 +388,7 @@ def bull_rush(rig):
     s0 = SWING[0] - TURN_LEAD
     ride = build("bull_rush", rig, keys, post=_then(_head_held(HEAD_FROM, HEAD_SETTLE, guard), way, _riding(s0, OVER_END)), meta=meta)
     turn = _turn_forearm(rig, ride, *SWING, TURN_LEAD, (_n(*SWORD_CARRY_BLADE), _n(*SWORD_CARRY_KNUCKLES)), SWORD_BACK_TURN,
-                         (GUARD["hand_r"]["blade"], _n(*SWORD_GUARD_KNUCKLES)))
+                         (GUARD["hand_r"]["blade"], _n(*SWORD_GUARD_KNUCKLES)), follow=end is not None)
     return build("bull_rush", rig, keys, post=_then(_head_held(HEAD_FROM, HEAD_SETTLE, guard), way, turn), meta=meta)
 
 
@@ -394,7 +403,7 @@ def _riding(a, b, side="r"):
     return post
 
 
-def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r"):
+def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r", follow=False):
     """The sword hand's turn kept on its forearm from frame a - lead to OVER_END: its roll about the forearm
     and the wrist's flexion and deviation (the rig's own split, Rig._strain) carried from the charge's at
     a - lead (`start`: blade and knuckles, chest frame) to the plant's at a (`plant`: roll, flex, dev; eased
@@ -450,7 +459,11 @@ def _turn_forearm(rig, ride, a, b, lead, start, plant, guard, side="r"):
                 if fr < end:
                     t[i] = ta[i] + (tb[i] - ta[i]) * cum[fr - a]
                 else:
-                    at_guard = split(fr, hand(fr, guard)) if at_guard is None else at_guard
+                    # (follow: past the guard the keys go on (to Prowl): the follow-through is laid on the keyed hand,
+                    # so the hand is the keys' own when it lets go at OVER_END)
+                    hk = pose.get(f"hand_{side}", {})
+                    to = (hk["blade"], hk["knuckles"]) if follow and fr > b and "blade" in hk and "knuckles" in hk else guard
+                    at_guard = split(fr, hand(fr, to)) if at_guard is None else at_guard
                     t[i] = at_guard[i] + (tb[i] - ta[i]) * _over(fr, end)
         q = qmul(qinv(chest(fr)), qmul(make(fr, t), lq))
         pose = dict(pose)

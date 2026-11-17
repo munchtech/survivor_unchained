@@ -221,6 +221,8 @@ public partial class PlayerView : Node3D
     static readonly bool CarryLog = Args.Has("carry-log"); int carryLogT = -1;
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
+    /// <summary>The full shot is a soft one that gave way to her moving and is only fading out (it holds nothing).</summary>
+    bool fullGaveWay;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
     // A1 lead 19: her 2D move node (BlendSpace2D) when her library has the directional walks, and, with it, the facing that
     // holds her aim (aimFace) while aimHold runs, the legs walking her velocity in her facing's frame (move2dPos: x right, y forward).
@@ -238,6 +240,10 @@ public partial class PlayerView : Node3D
     float velX, velZ, lastVelX, lastVelZ;
     // Standing and running, for her breaks and her breath.
     double stillT, runT, ranFor, breakAt = 9;
+    /// <summary>(aim-move, 15 Nov) Her idle's own clock (s): the idle is seeked to it every frame, so a stop that lands on
+    /// the idle's frame 0 sets it to end there (StopSync) and the break (Prowl's own first frames, a wrist's circle laid
+    /// on) starts on the idle's frame 0. Prowl moves 5-8 cm through its 6.9 s loop: unsynced, both faded into it off phase.</summary>
+    double idleAt;
     readonly RandomNumberGenerator rng = new();
 
     public PlayerView(Loadout lo)
@@ -278,6 +284,8 @@ public partial class PlayerView : Node3D
             idleNode = new AnimationNodeAnimation { Animation = idle };
             runNode = new AnimationNodeAnimation { Animation = run };
             mv.AddNode("idle", idleNode, new Vector2(0, 0));
+            mv.AddNode("idleSeek", new AnimationNodeTimeSeek(), new Vector2(200, 0));
+            mv.ConnectNode("idleSeek", 0, "idle");
             mv.AddNode("run", runNode, new Vector2(0, 200));
             sprintNode = new AnimationNodeAnimation { Animation = own.Has(sprint) ? own.Prefix + sprint : run };
             mv.AddNode("sprint", sprintNode, new Vector2(0, 400));
@@ -294,7 +302,7 @@ public partial class PlayerView : Node3D
             mv.ConnectNode("fast", 1, "sprint");
             mv.ConnectNode("walkSeek", 0, "walk");
             mv.ConnectNode("runSeek", 0, "fast");
-            mv.ConnectNode("blendW", 0, "idle");
+            mv.ConnectNode("blendW", 0, "idleSeek");
             mv.ConnectNode("blendW", 1, "walkSeek");
             mv.ConnectNode("blend", 0, "blendW");
             mv.ConnectNode("blend", 1, "runSeek");
@@ -307,6 +315,8 @@ public partial class PlayerView : Node3D
                 aRun = new AnimationNodeAnimation { Animation = run };
                 aSprint = new AnimationNodeAnimation { Animation = sprintNode.Animation };
                 mv.AddNode("aIdle", aIdle, new Vector2(0, 600));
+                mv.AddNode("aIdleSeek", new AnimationNodeTimeSeek(), new Vector2(200, 600));
+                mv.ConnectNode("aIdleSeek", 0, "aIdle");
                 mv.AddNode("aWalk", aWalk, new Vector2(0, 700));
                 mv.AddNode("aRun", aRun, new Vector2(0, 800));
                 mv.AddNode("aSprint", aSprint, new Vector2(0, 900));
@@ -324,7 +334,7 @@ public partial class PlayerView : Node3D
                 mv.ConnectNode("aFast", 1, "aSprint");
                 mv.ConnectNode("aWalkSeek", 0, "aWalk");
                 mv.ConnectNode("aRunSeek", 0, "aFast");
-                mv.ConnectNode("aBlendW", 0, "aIdle");
+                mv.ConnectNode("aBlendW", 0, "aIdleSeek");
                 mv.ConnectNode("aBlendW", 1, "aWalkSeek");
                 mv.ConnectNode("aBlend", 0, "aBlendW");
                 mv.ConnectNode("aBlend", 1, "aRunSeek");
@@ -383,6 +393,7 @@ public partial class PlayerView : Node3D
             }
             skip2D:
             GaitClips(People.Clip(person, "Jog_Fwd_Loop"));
+            if (!AimLegs && !DirLegsOff && run.StartsWith(own.Prefix)) BuildDir(mv, run, layered ? "arms" : "blend");
             carriage = new HerCarriage();
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
@@ -399,6 +410,16 @@ public partial class PlayerView : Node3D
             stanceCarry = new StanceCarry();
             person.Skeleton.AddChild(stanceCarry);
             person.Skeleton.MoveChild(stanceCarry, armMod != null ? 1 : 0);
+            // (aim-move) A has no lower-body turn (B's is People.Her's): hers sits right before HerPose, after the carriage and the
+            // layers above, so every reader of her pose (HerPose, Gestures, the shapes) sees the turned legs and the untouched chest.
+            if (dirChain && person.Turn == null)
+            {
+                person.Turn = new LowerTurnModifier { Frame = person.Root };
+                person.Skeleton.AddChild(person.Turn);
+                person.Skeleton.MoveChild(person.Turn, person.Pose != null ? person.Pose.GetIndex() : person.Skeleton.GetChildCount() - 1);
+            }
+            if (dirChain && SurvivorUnchained.Args.Has("turn-last")) Callable.From(() => { if (person.Turn != null && IsInstanceValid(person.Turn)) person.Skeleton.MoveChild(person.Turn, person.Skeleton.GetChildCount() - 1); }).CallDeferred();
+            if (dirChain && SurvivorUnchained.Args.Has("dirrun")) Callable.From(() => GD.Print("SKELKIDS " + string.Join(",", person.Skeleton.GetChildren().Select(c => c.Name.ToString())))).CallDeferred();
         }
         else
         {
@@ -606,10 +627,11 @@ public partial class PlayerView : Node3D
         fullStart = time; fullSpeed = (float)speed;
         full.Animation = People.Clip(person, clip);
         fullNative = full.Animation.ToString().StartsWith(own.Prefix);
-        fullSoft = false;
+        fullSoft = fullGaveWay = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         FullBlendIn(mine && fullNative ? full.Animation.ToString()[own.Prefix.Length..] : null);
+        if (mine && fullNative) IdleSyncLater(full.Animation.ToString()[own.Prefix.Length..], speed);
     }
 
     /// <summary>One of her own on the whole of her: soft ones (a fidget, a
@@ -631,7 +653,8 @@ public partial class PlayerView : Node3D
         fullStart = time; fullSpeed = (float)speed;
         full.Animation = own.Prefix + clip;
         fullNative = true;
-        fullSoft = soft;
+        IdleSyncLater(clip, speed);
+        fullSoft = soft; fullGaveWay = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
@@ -1016,6 +1039,8 @@ public partial class PlayerView : Node3D
         float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
         // (the 2D node: she faces the aim at any speed, her legs walking by the node; aimHold keeps it, Update)
         aimFace = face;
+        // (aim-move) Her facing is Update's (DirFace: the cursor, or this blow's side while aimHold lasts); no flip, no waist, no hips.
+        if (mine && DirOn) { faceGoal = hipGoal = null; aim = 0; aimHold = 0.45f; return; }
         // (warden-turn, the owner 10 Nov "movement looked weird especially turning"; A1 leads 20-21 ported) Hers: never a
         // one-frame flip. Standing or slow, her whole body turns to the blow on the eased turn (faceGoal, Update). Running,
         // her waist takes up to 75 deg of it off her travel, eased (Carry); past 100 her hips join (hipGoal). Either way the
@@ -1196,6 +1221,7 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
+        if (mine && DirOn) { pivot = backpedal = false; hipGoal = faceGoal = null; }
         aimFacingNow = AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0;
         if (time < flareFaceUntil)
         {
@@ -1210,6 +1236,7 @@ public partial class PlayerView : Node3D
         // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
+        else if (mine && DirOn && DirFace(p, (float)dt, (float)x, (float)z, sp)) { }
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
         // (warden-turn) A blow struck standing or slow: her whole body to it on the eased turn, held while it lasts unless
         // she is off at a run; a blow behind her running: her hips toward it (hipGoal) while it lasts.
@@ -1265,7 +1292,9 @@ public partial class PlayerView : Node3D
             bool back = vault && dx * Mathf.Sin(Rotation.Y) + dz * Mathf.Cos(Rotation.Y) < 0;
             if (dx * dx + dz * dz > 0.01f) Rotation = new Vector3(0, back ? Mathf.Atan2(-dx, -dz) : Mathf.Atan2(dx, dz), 0);
             aim = 0;
-            if (!(back && FullHer("vault_back", 1, false)))
+            // (a calling's own leap, landed into its idle: leap_warden ends on Prowl's f0; fitted to the air the same way)
+            if (!vault && FullHer($"leap_{person.Calling}", 1, false)) P7LeapFit(l2.Dur);
+            else if (!(back && FullHer("vault_back", 1, false)))
             {
                 var jump = vault ? "Jump_Start" : "Jump_Full_Short";
                 bool native = own.Owns(People.Clip(person, jump));
@@ -1357,7 +1386,7 @@ public partial class PlayerView : Node3D
         if (mine && HeldLogOn) view?.HeldLog(GetViewport()?.GetCamera3D());
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
-        if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, SurvivorUnchained.Play.TurnRun.Start));
+        if (mine && (SurvivorUnchained.Play.TurnRun.Start >= 0 || SurvivorUnchained.Play.DirRun.Start >= 0 || TurnLog)) TurnLog2(b.Time - System.Math.Max(0, System.Math.Max(SurvivorUnchained.Play.TurnRun.Start, SurvivorUnchained.Play.DirRun.Start)));
         else tree.Set(BlendPosition, speed);
         carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
@@ -1574,6 +1603,37 @@ public partial class PlayerView : Node3D
         m.SetMeta(CloseMatMeta, true);
     }
 
+    /// <summary>(idleAt) The idle clip's length (s), 0 with none.</summary>
+    double IdleLen()
+    {
+        var n = idleNode?.Animation.ToString();
+        return !string.IsNullOrEmpty(n) && tree.HasAnimation(n) ? tree.GetAnimation(n).Length : 0;
+    }
+
+    /// <summary>(idleAt) A whole-body shot (a stop, a skill) ends on the idle's frame 0: the idle set to come round to it
+    /// as the shot ends. Set 0.1 s in (IdleSyncDue), under the shot, not on its 0.05 s fade in (the idle jumping under
+    /// that would show). A hold (P7's) leaves it early: the fade then lands off phase, as before. The break is the idle's
+    /// own frames from its 0 (the break's gate in Rest): left as it is.</summary>
+    void IdleSyncLater(string clip, double speed)
+    {
+        var n = own.Prefix + clip;
+        syncAt = -1;
+        if (clip.EndsWith("_break") || !tree.HasAnimation(n) || tree.GetAnimation(n).LoopMode != Animation.LoopModeEnum.None) return;
+        syncAt = time + 0.1; syncLeft = tree.GetAnimation(n).Length / System.Math.Max(0.05, speed) - 0.1;
+    }
+
+    double syncAt = -1, syncLeft;
+
+    /// <summary>The shot set to sync runs `total` seconds from now, not its length at one pace (P7's driven leap).</summary>
+    void IdleSyncOver(double total) { if (syncAt >= 0) syncLeft = total - 0.1; }
+
+    void IdleSyncDue(double il)
+    {
+        if (syncAt < 0 || time < syncAt) return;
+        idleAt = ((il - syncLeft) % il + il) % il;
+        syncAt = -1;
+    }
+
     /// <summary>When nothing is near: a breath caught after a long run, and
     /// now and then, standing, her calling's fidget. Either gives way the
     /// moment she moves.</summary>
@@ -1583,7 +1643,7 @@ public partial class PlayerView : Node3D
         if (fullSoft && sp > 0.6 && (bool)tree.Get("parameters/fullShot/active"))
         {
             tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
-            fullSoft = false;
+            fullSoft = false; fullGaveWay = true;
         }
         if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
         if (sp > 0.3 || (pivot && PivotHeld(p.StickX, p.StickZ))) { stillT = 0; return; }   // (a 180's reversal is not a stop)
@@ -1609,7 +1669,8 @@ public partial class PlayerView : Node3D
             return;
         }
         ranFor = 0;
-        if (stillT >= breakAt)
+        // (idleAt) the break begins where the idle's loop does (it is the idle's own first frames, laid over)
+        if (stillT >= breakAt && (move2D || IdleLen() <= 0 || idleAt < 1.5 * dt))
         {
             breakAt = stillT + rng.RandfRange(10, 16);
             var brk = Sheath.Pick(sheath.Sheathed, $"idle_{person.Calling}", "_break", own.Has);
@@ -1676,6 +1737,8 @@ public partial class PlayerView : Node3D
         // (round 4: judge r3 "a scurry, ~7.5 steps/s, 25-35% skate") the run mixed in at BackMix lengthens her backward step
         w = Mathf.Lerp(w, BackMix, backW);
         logW = w; logWWalk = wWalk; logSpd = spd;
+        // (aim-move) The directional legs: the six weights, her pelvis's turn, and how much of her run the set takes over.
+        if (dirChain) DirFrame(dt, w);
         if (!move2D)
         {
         tree.Set("parameters/move/blendW/blend_amount", wWalk);
@@ -1691,6 +1754,13 @@ public partial class PlayerView : Node3D
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w0, hasWalk);
         if (backW > 0.001f) period = Mathf.Lerp(period, ((1 - BackMix) * walkLen * walkSpeed + BackMix * runLen * runSpeed) / Mathf.Max(spd, 0.5f), backW);
+        // (aim-move) With the set carrying weight, the stride's period is the set's: its clips' lengths by weight, at the run's own speed.
+        if (dirChain && dirBlend > 0.001f)
+        {
+            float sum = 0, per = 0;
+            for (int i = 0; i < 6; i++) { sum += dirW[i]; per += dirW[i] * dirLen[i]; }
+            if (sum > 0.01f) period = Mathf.Lerp(period, per / sum * runSpeed / Mathf.Max(spd, 0.5f), dirBlend);
+        }
         // (warden-turn) With her hips turned onto a blow behind her, the stride runs at her travel's part along her facing
         // (past 90 deg off it a backpedal), so the planted foot keeps more of its ground.
         float strideK = 1;
@@ -1707,7 +1777,17 @@ public partial class PlayerView : Node3D
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
             tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
+            // (idleAt) her idle on its own clock
+            double il = IdleLen();
+            if (il > 0)
+            {
+                IdleSyncDue(il);
+                idleAt = ((idleAt + dt) % il + il) % il;
+                tree.Set("parameters/move/idleSeek/seek_request", idleAt);
+                if (layered) tree.Set("parameters/move/aIdleSeek/seek_request", idleAt);
+            }
         }
+        if (dirChain) for (int i = 0; i < 6; i++) tree.Set($"parameters/move/dSeek_{DirId[i]}/seek_request", stride * dirLen[i]);
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
         // On P1's B there is no arm-hold layer at all (ArmHold.Layered: no HerArmHold, no arms' copy; the owner, 5 Nov):
@@ -1748,7 +1828,10 @@ public partial class PlayerView : Node3D
                 own.GripTilt(idleNode.Animation), own.GripTilt((walkNode ?? idleNode).Animation), own.GripTilt(runNode.Animation));
             slide = GripSlide.Ease(slide, to, dt);
             tilt = GripSlide.Ease(tilt, toT, dt);
-            view?.Slide("handslot.r", slide, tilt);
+            // (warden-move) the side carry's tilt on top (SideCarry), stepped on her drawn pose (CarryPosed); none at no weight
+            CarrySlide(null);
+            carryDt += dt;
+            if (!carryHooked && person.Skeleton is { } csk && view != null) { carryHooked = true; csk.SkeletonUpdated += CarryPosed; }
             float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), wWalk, w,
                 own.GripSlideL(idleNode.Animation), own.GripSlideL((walkNode ?? idleNode).Animation), own.GripSlideL(runNode.Animation));
             slideL = GripSlide.Ease(slideL, toL, dt);
@@ -1976,11 +2059,12 @@ public partial class PlayerView : Node3D
     float? faceGoal, hipGoal;
 
     /// <summary>One frame of the eased turn toward `want` (radians): at most `max` deg/s, its speed eased at `ease`/s.</summary>
-    void TurnTo(float want, float dt, float max, float ease)
+    void TurnTo(float want, float dt, float max, float ease, int dir = 0)
     {
         if (!turnedLast) yawVel = 0;
         turning = true;
         float err = Mathf.RadToDeg(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+        if (dir != 0 && Mathf.Sign(err) != dir && Mathf.Abs(err) > 45f) err -= Mathf.Sign(err) * 360f;   // (r10) the committed way round
         float goal = Mathf.Clamp(err * TurnK, -max, max);
         yawVel = Mathf.Lerp(yawVel, goal, 1 - Mathf.Exp(-ease * dt));
         float step = yawVel * dt;
@@ -2419,6 +2503,148 @@ public partial class PlayerView : Node3D
         else { tree.Set(sc, coilRate); coilCatchOn = false; }
     }
 
+    // ---- (aim-move) the directional legs and the two facing modes ----
+    static readonly bool DirLegsOff = SurvivorUnchained.Args.Get("dir-legs") == "off";
+    static readonly string[] DirId = { "f", "fl", "fr", "b", "bl", "br" };
+    static readonly float DirTurnRate = SurvivorUnchained.Args.Num("dir-turn-rate", 840f);
+    /// <summary>Her six run clips (f, fl, fr, b, bl, br) are in the graph (her library has them all).</summary>
+    bool dirChain, dirBack;
+    bool DirOn => dirChain && !DirLegsOff;
+    readonly float[] dirW = new float[6], dirLen = new float[6];
+    float dirBackW, dirDelta, dirBlend, dirAlpha;
+    /// <summary>The cursor's ground point (WorldScene wires it each frame; null on a pad, for bots, off the window).</summary>
+    public System.Func<(double X, double Z)?>? Pointer;
+
+    /// <summary>Six run clips, each through its own seek, mixed by pairs into "dirSet", then laid over what fed the output ("dir").</summary>
+    void BuildDir(AnimationNodeBlendTree mv, string run, string feeder)
+    {
+        string[] n = { run, run + "_fl", run + "_fr", run + "_b", run + "_bl", run + "_br" };
+        for (int i = 1; i < 6; i++) if (!person.Anim.HasAnimation(n[i])) return;
+        for (int i = 0; i < 6; i++)
+        {
+            dirLen[i] = (float)person.Anim.GetAnimation(n[i]).Length;
+            mv.AddNode("d_" + DirId[i], new AnimationNodeAnimation { Animation = n[i] }, new Vector2(1000, 1000 + 100 * i));
+            mv.AddNode("dSeek_" + DirId[i], new AnimationNodeTimeSeek(), new Vector2(1200, 1000 + 100 * i));
+            mv.ConnectNode("dSeek_" + DirId[i], 0, "d_" + DirId[i]);
+        }
+        foreach (var nm in new[] { "dFA", "dFB", "dBA", "dBB", "dirSet", "dir" }) mv.AddNode(nm, new AnimationNodeBlend2 { Sync = true }, new Vector2(1500, 1000));
+        mv.ConnectNode("dFA", 0, "dSeek_fr"); mv.ConnectNode("dFA", 1, "dSeek_f");
+        mv.ConnectNode("dFB", 0, "dFA"); mv.ConnectNode("dFB", 1, "dSeek_fl");
+        mv.ConnectNode("dBA", 0, "dSeek_br"); mv.ConnectNode("dBA", 1, "dSeek_b");
+        mv.ConnectNode("dBB", 0, "dBA"); mv.ConnectNode("dBB", 1, "dSeek_bl");
+        mv.ConnectNode("dirSet", 0, "dFB"); mv.ConnectNode("dirSet", 1, "dBB");
+        // (a node's output feeds one input only: free the feeder from the output first)
+        mv.DisconnectNode("output", 0);
+        mv.ConnectNode("dir", 0, feeder); mv.ConnectNode("dir", 1, "dirSet");
+        mv.ConnectNode("output", 0, "dir");
+        dirW[0] = 1;
+        dirChain = true;
+    }
+
+    /// <summary>One frame of the directional legs (Carry): alpha (her travel's heading off her facing), the mode and the six weights
+    /// (eased 0.06 s, the back/forward split 0.08 s), the pelvis's turn Delta (0.08 s) into the lower-turn modifier, and the set's blend.</summary>
+    void DirFrame(float dt, float w)
+    {
+        float gs = Mathf.Sqrt(velX * velX + velZ * velZ);
+        double alpha = gs > 0.01f ? SurvivorUnchained.Play.LowerTurn.Wrap(Mathf.RadToDeg(Mathf.Atan2(velX, velZ)) - Mathf.RadToDeg(Rotation.Y)) : 0;
+        dirAlpha = (float)alpha;
+        var r = SurvivorUnchained.Play.DirLegs.Solve(alpha, gs, dirBack);
+        dirBack = r.Back;
+        float kw = 1 - Mathf.Exp(-dt / 0.06f);
+        for (int i = 0; i < 6; i++) dirW[i] += ((float)r.W[i] - dirW[i]) * kw;
+        dirBackW = (float)SurvivorUnchained.Play.DirLegs.Ease(dirBackW, r.Back ? 1 : 0, dt, 0.08);
+        dirDelta = (float)SurvivorUnchained.Play.DirLegs.Ease(dirDelta, r.Delta, dt, 0.08);
+        if (person.Turn != null) person.Turn.Delta = DirOn ? dirDelta : 0;
+        float Mix(float a, float b) => a + b > 1e-4f ? b / (a + b) : 0;
+        float sf = dirW[0] + dirW[1] + dirW[2], sb = dirW[3] + dirW[4] + dirW[5];
+        tree.Set("parameters/move/dFA/blend_amount", Mix(dirW[2], dirW[0]));
+        tree.Set("parameters/move/dFB/blend_amount", sf > 1e-4f ? dirW[1] / sf : 0f);
+        tree.Set("parameters/move/dBA/blend_amount", Mix(dirW[5], dirW[3]));
+        tree.Set("parameters/move/dBB/blend_amount", sb > 1e-4f ? dirW[4] / sb : 0f);
+        tree.Set("parameters/move/dirSet/blend_amount", dirBackW);
+        dirBlend = DirOn ? w : 0;
+        tree.Set("parameters/move/dir/blend_amount", dirBlend);
+    }
+
+    /// <summary>(aim-move) Her facing under the directional legs. Always (a cursor): the cursor, standing or moving. Skill, or no
+    /// cursor: the strike's side while aimHold lasts, else her travel (the stick if held, else her velocity), standing keeps.
+    /// At most DirTurnRate deg/s. False (the old chain decides) in a leap, a dash or a full-body clip.</summary>
+    bool DirFace(PlayerState p, float dt, float x, float z, float sp)
+    {
+        // (judge r5) a soft full shot (a stop, a fidget: it gives way the moment she moves) does not hold her facing: under
+        // one the old chain faced her travel, so a backpedal or strafe began turned to the run and pivoted to the cursor ~7 f in.
+        if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get("parameters/fullShot/active") && !fullSoft && !fullGaveWay)) return false;
+        float? goal = null;
+        var ptr = Pointer?.Invoke();
+        if (Facing.Current == FacingMode.Always && ptr is { } c)
+        {
+            float dx = (float)c.X - x, dz = (float)c.Z - z;
+            if (dx * dx + dz * dz > 0.01f) goal = Mathf.Atan2(dx, dz);
+        }
+        else if (aimHold > 0) goal = aimFace;
+        else if (sp > 0.4f) goal = p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01 ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
+        if (goal is float g)
+        {
+            float err = Mathf.RadToDeg(Mathf.Wrap(g - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+            if (Mathf.Abs(err) < PivotDone || (pivotSign != 0 && Mathf.Sign(err) != pivotSign && 360f - Mathf.Abs(err) > PivotFlipMax)) pivotSign = 0;
+            else if (pivotSign == 0 && !PivotAwayOff && Mathf.Abs(err) >= PivotFlipMin && sp < 1f) pivotSign = AwayWay(err);
+            else if (pivotSign == 0 && !PivotAwayOff && Mathf.Abs(err) >= 60f && SurvivorUnchained.Play.DirRun.Start >= 0) GD.Print($"PIVOTSKIP err {err:F1} sp {sp:F2}");
+            TurnTo(g, dt, DirTurnRate, TurnEase, pivotSign);
+        }
+        else pivotSign = 0;
+        return true;
+    }
+
+    // (judge r9, lead r10) A turn in place of PivotFlipMin deg or more goes the way round that carries her blade's heading
+    // (level) through the camera's far side, not its near side: swung through the near side, a blade hanging from her fist
+    // points at the camera and reads as a cane under her boots; through the far side it shows short and passes behind her.
+    // The way is chosen once, as the turn starts (pivotSign), and held to its end. --pivot-away-off: the short way, as before.
+    // (judge r10) Only near-half turns (165-195: the long way costs at most 30 deg more): a quarter turn taken the long way
+    // reads as a spin against the input and lands 4-6 frames late.
+    static readonly bool PivotAwayOff = SurvivorUnchained.Args.Has("pivot-away-off");
+    static readonly float PivotFlipMin = SurvivorUnchained.Args.Num("pivot-flip-min", 165f), PivotFlipMax = SurvivorUnchained.Args.Num("pivot-flip-max", 195f), PivotDone = 20f;
+    // (A's rig, measured on e12) the drawn blade's level heading against her right side (deg, + toward ahead): the clips' stand
+    // carry, and the side carry's set where her sword side faces the camera. Body B: re-measure (ana10.py "hd").
+    static readonly float PivotBetaOff = SurvivorUnchained.Args.Num("pivot-beta-off", 25f), PivotBetaOn = SurvivorUnchained.Args.Num("pivot-beta-on", -50f);
+    int pivotSign;
+    float bladeHead = float.NaN;   // the drawn blade's level heading last frame (deg, as Rotation.Y: atan2(x, z)); NaN: none
+
+    /// <summary>The way round (+1 / -1) for a turn of `err` deg: of the short way and the long way (if no more than
+    /// PivotFlipMax deg), the one whose sweep of the blade's level heading (her turn, plus the change of the blade's set in
+    /// her fist from now to the goal: PivotBetaOn where her sword side will face the camera, so the side carry holds it,
+    /// else PivotBetaOff, the clips' own) passes the camera's near side least; the short way on a tie.</summary>
+    int AwayWay(float err)
+    {
+        int shortWay = err >= 0f ? 1 : -1;
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null) return shortWay;
+        var fw = -cam.GlobalBasis.Z;
+        if (fw.X * fw.X + fw.Z * fw.Z < 1e-6f) return shortWay;
+        float far = Mathf.RadToDeg(Mathf.Atan2(fw.X, fw.Z)), near = far + 180f, face = Mathf.RadToDeg(Rotation.Y);
+        float h = float.IsNaN(bladeHead) ? face - 90f + PivotBetaOff : bladeHead;
+        float beta0 = Mathf.Wrap(h - (face - 90f), -180f, 180f);
+        // her sword (right) side at the goal, against the way to the camera (level): toward it, the carry holds the blade
+        float g = Mathf.DegToRad(face + err);
+        bool onAt = -Mathf.Cos(g) * -fw.X + Mathf.Sin(g) * -fw.Z > 0f;
+        float dBeta = Mathf.Wrap((onAt ? PivotBetaOn : PivotBetaOff) - beta0, -180f, 180f);
+        bool Sweeps(float at, float by) { float u = Mathf.Wrap(at - h, -180f, 180f); if (Mathf.Sign(u) != Mathf.Sign(by)) u += Mathf.Sign(by) * 360f; return Mathf.Abs(u) <= Mathf.Abs(by); }
+        float longErr = err - shortWay * 360f;
+        bool nearShort = Sweeps(near, err + dBeta), nearLong = Sweeps(near, longErr + dBeta);
+        int way = nearShort && !nearLong && Mathf.Abs(longErr) <= PivotFlipMax ? -shortWay : shortWay;
+        if (SurvivorUnchained.Play.DirRun.Start >= 0) GD.Print($"PIVOT err {err:F1} h {h:F1} beta0 {beta0:F1} on {onAt} dBeta {dBeta:F1} near {near:F1} short {nearShort} long {nearLong} way {way}");
+        return way;
+    }
+
+    /// <summary>Her pelvis bone's global yaw in the world (deg; its local +Z, so it reads her facing when the rest pose has it so).</summary>
+    float PelYaw()
+    {
+        var sk = person.Skeleton;
+        int i = sk.FindBone("pelvis");
+        if (i < 0) return 0;
+        var z = (sk.GlobalTransform.Basis * sk.GetBoneGlobalPose(i).Basis).Z;
+        return Mathf.RadToDeg(Mathf.Atan2(z.X, z.Z));
+    }
+
     /// <summary>(warden-turn) One frame's turn measures (TURN2, --fig8 or --turn-log): body yaw, the waist, her chest's and
     /// pelvis's yaw from the bones, her pelvis on screen, the shots playing.</summary>
     void TurnLog2(double t)
@@ -2431,7 +2657,7 @@ public partial class PlayerView : Node3D
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
         if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; RenderingServer.FramePreDraw += Scr2; }
-        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0}"));
+        GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0} dl {dirDelta:0.0} dw {dirW[0]:0.00} {dirW[1]:0.00} {dirW[2]:0.00} {dirW[3]:0.00} {dirW[4]:0.00} {dirW[5]:0.00} dir {dirBlend:0.00} al {dirAlpha:0.0} pel {PelYaw():0.0}"));
         smoothCalls = 0;
     }
     // (turning measure) her balls of the feet in the world where the skeleton has run its modifiers (see MeasCache's note)
@@ -2440,6 +2666,9 @@ public partial class PlayerView : Node3D
     void FeetCache()
     {
         var sk = person.Skeleton;
+        // (aim-move) BODY2's joints, taken here: after the modifiers (SkeletonUpdated); a FramePreDraw read sees the pose they restored
+        for (int bi = 0; bi < BodyBones.Length; bi++) { int bx = sk.FindBone(BodyBones[bi]); if (bx < 0 && BodyBones[bi] == "head") bx = sk.FindBone("Head"); bodyW[bi] = bx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(bx).Origin : Vector3.Zero; }
+        { int hx = sk.FindBone("Head"); if (hx < 0) hx = sk.FindBone("head"); headW = hx >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(hx).Origin : Vector3.Zero; }
         int l = sk.FindBone("ball_l"), r = sk.FindBone("ball_r");
         if (l >= 0) feetW[0] = sk.GlobalTransform * sk.GetBoneGlobalPose(l).Origin;
         if (r >= 0) feetW[1] = sk.GlobalTransform * sk.GetBoneGlobalPose(r).Origin;
@@ -2453,12 +2682,15 @@ public partial class PlayerView : Node3D
             int a = sk.FindBone("thigh" + x), b = sk.FindBone("calf" + x), c = sk.FindBone("foot" + x);
             if (a < 0 || b < 0 || c < 0) continue;
             Vector3 H = sk.GetBoneGlobalPose(a).Origin, K = sk.GetBoneGlobalPose(b).Origin, F = sk.GetBoneGlobalPose(c).Origin;
+            kneeW[s] = sk.GlobalTransform * K;   // (warden-move, BLADE: the blade's clearance from her legs)
             legBend[s] = Mathf.RadToDeg((K - H).AngleTo(F - K));
             var u = sk.GlobalTransform.Basis * (K - H);
             legThigh[s] = Mathf.RadToDeg(Mathf.Atan2(-u.Dot(fwd), -u.Y));
         }
     }
     readonly float[] legBend = new float[2], legThigh = new float[2];
+    readonly Vector3[] kneeW = new Vector3[2];
+    Vector3 headW;
     Vector3 pelvW;
     /// <summary>(warden-move, judge r4: the sheets' crops sat 15-23 px ahead of her body) Her pelvis on screen as the frame is
     /// drawn (SCR2 x y, one line a drawn frame): the final camera and pose, which TURN2's scr (taken in her _Process, before
@@ -2472,8 +2704,158 @@ public partial class PlayerView : Node3D
         var s = cam.UnprojectPosition(sk.GlobalTransform * sk.GetBoneGlobalPose(pb).Origin);
         var c = cam.GlobalPosition;   // (warden-move item 3: the camera's world place, for its catch-up after a 180)
         GD.Print(System.FormattableString.Invariant($"SCR2 {s.X:0.0} {s.Y:0.0} cam {c.X:0.000} {c.Y:0.000} {c.Z:0.000}"));
+        // (aim-move) BODY2: the drawn pose's joints in the world (x y z each), for the rows' measures (aim_move\tools\rows.py):
+        // the hips' line (thigh_l, thigh_r), the ankles, the balls, the shoulders' line (upperarm_l, upperarm_r), the hands,
+        // spine_03 and the head; then her facing (deg).
+        if (Args.Has("dirrun") || Args.Has("body-log"))
+        {
+            var sb = new System.Text.StringBuilder("BODY2");
+            foreach (var w in bodyW)
+            {
+                sb.Append(System.FormattableString.Invariant($" {w.X:0.0000} {w.Y:0.0000} {w.Z:0.0000}"));
+            }
+            sb.Append(System.FormattableString.Invariant($" face {Mathf.RadToDeg(Rotation.Y):0.00}"));
+            GD.Print(sb.ToString());
+            // (warden-move, side carry) BLADE: the right piece as drawn, on screen (px): its grip point, its tip, then the right
+            // fist, the head and both feet and balls (BODY2's joints); then the grip and tip in the world, the tilt axis (the
+            // palm's normal), and the side carry's weight and added tilt (deg). View-only log.
+            if (view?.BladeOf("handslot.r") is { } bd)
+            {
+                Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
+                Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
+                GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00} sv {carry.Want:0.00} {carry.Raw:0.00} {carry.Sigma:0} {logWWalk:0.00} {carryStrafe:0.00} c0 {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).X:0.0} {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).Y:0.0}"));
+            }
+        }
     }
-    public override void _ExitTree() { if (feetHooked) RenderingServer.FramePreDraw -= Scr2; base._ExitTree(); }
+    readonly Vector3[] bodyW = new Vector3[13];
+    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
+    public override void _ExitTree()
+    {
+        if (feetHooked) RenderingServer.FramePreDraw -= Scr2;
+        if (carryHooked && person?.Skeleton is { } sk && IsInstanceValid(sk)) sk.SkeletonUpdated -= CarryPosed;
+        base._ExitTree();
+    }
+
+    // (warden-move) The side carry (SideCarry): the sword turned in her fist while her sword side faces the camera. Stepped
+    // once her pose is made (SkeletonUpdated, as HairSway is: the modifiers' arm in it), so the grip's acceleration and the
+    // tilt's sign are this frame's. --side-carry off: none (the clips' grip, as before); --side-carry-tune
+    // runangle,gain,hz,damping,loose,ease,maxrate,splay,loosefwd,maxaccel,standangle,strafecut,splayaway,splaystrafe,backmax,caproom,side0,side1,
+    // fadeout,screenrate,edge,splayoutmax,standsettle,floor,inmax,clear,outmax,clearrate,clearatk,cleardown,clearlook:
+    // its tuning (SideCarry's fields, in that order).
+    readonly SideCarry carry = CarryTuned();
+    static readonly bool CarryOn = SurvivorUnchained.Args.Get("side-carry") is not ("off" or "0");
+    bool carryHooked;
+    float carryDt;
+    Vector3 carryAt, carryV;
+    int carryHist;
+    static SideCarry CarryTuned()
+    {
+        var c = new SideCarry();
+        if (SurvivorUnchained.Args.Get("side-carry-tune") is { } t)
+        {
+            var v = t.Split(',');
+            float F(int i, float d) => i < v.Length && float.TryParse(v[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : d;
+            c.RunAngle = F(0, c.RunAngle); c.Gain = F(1, c.Gain); c.Hz = F(2, c.Hz); c.Damping = F(3, c.Damping);
+            c.Loose = F(4, c.Loose); c.Ease = F(5, c.Ease); c.MaxRate = F(6, c.MaxRate); c.Splay = F(7, c.Splay); c.LooseFwd = F(8, c.LooseFwd); c.MaxAccel = F(9, c.MaxAccel);
+            c.StandAngle = F(10, c.StandAngle); c.StrafeCut = F(11, c.StrafeCut); c.SplayAway = F(12, c.SplayAway); c.SplayStrafe = F(13, c.SplayStrafe);
+            c.BackMax = F(14, c.BackMax); c.CapRoom = F(15, c.CapRoom); c.Side0 = F(16, c.Side0); c.Side1 = F(17, c.Side1);
+            c.FadeOut = F(18, c.FadeOut); c.ScreenRate = F(19, c.ScreenRate); c.Edge = F(20, c.Edge); c.SplayOutMax = F(21, c.SplayOutMax);
+            c.StandSettle = F(22, c.StandSettle); c.Floor = F(23, c.Floor); c.InMax = F(24, c.InMax);
+            c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
+            c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
+            c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd); c.Cross = F(37, c.Cross ? 1f : 0f) > 0f;
+        }
+        return c;
+    }
+
+    void CarryPosed()
+    {
+        if (!IsInstanceValid(this) || !IsInsideTree() || view == null || person?.Skeleton is not { } sk) return;
+        float d = carryDt;
+        carryDt = 0f;
+        if (!(d > 0f)) return;
+        int hb = sk.FindBone("hand_r");
+        if (hb < 0) return;
+        // The fist's acceleration along her travel (level), from its last two drawn places; a jump (a cut, a teleport) restarts it.
+        var at = sk.GlobalTransform * sk.GetBoneGlobalPose(hb).Origin;
+        var fwd = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+        fwd = fwd.LengthSquared() > 1e-8f ? fwd.Normalized() : Vector3.Back;
+        float acc = 0f;
+        if (carryHist > 0 && at.DistanceTo(carryAt) > 1.5f) carryHist = 0;
+        if (carryHist >= 1)
+        {
+            var v = (at - carryAt) / d;
+            if (carryHist >= 2) acc = (v - carryV).Dot(fwd) / d;
+            carryV = v;
+        }
+        carryAt = at;
+        carryHist = System.Math.Min(carryHist + 1, 2);
+        // Her travel (level), for the strafe's share of it; eased.
+        var pos = GlobalPosition;
+        if (carryHist > 1 && pos.DistanceTo(carryPos) < 1.5f)
+        {
+            var vel = (pos - carryPos) / d;
+            vel.Y = 0f;
+            float sp = vel.Length(), sw = sp > 0.3f ? Mathf.Abs(vel.Dot(GlobalBasis.X.Normalized())) / sp * Mathf.Clamp((sp - 0.3f) / 0.7f, 0f, 1f) : 0f;
+            carryStrafe += (sw - carryStrafe) * (1f - Mathf.Exp(-d / 0.15f));
+            // (judge r4, solver 17) How much she moves, from her own speed (none under 0.3 m/s, full from 4.3): prompt at a
+            // stop, where the walk weight (logWWalk) holds full ~5 frames after she has stopped (the stand's angle came late).
+            carryMove = Mathf.Clamp((sp - 0.3f) / 4f, 0f, 1f);
+        }
+        carryPos = pos;
+        var cam = GetViewport()?.GetCamera3D();
+        var bone = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
+        bool on = CarryOn && !held && TourList == null && layered && cam != null;
+        var f = default(SideCarry.Frame);
+        if (on)
+        {
+            // The clip's grip first (the layer reads the blade as the clips hold it), then the camera's screen map at its grip.
+            view.Slide("handslot.r", slide, tilt);
+            if (view.HeldBlade("handslot.r", bone) is { } hbd && (hbd.Tip - hbd.Grip).LengthSquared() > 1e-6f)
+            {
+                var g = hbd.Grip;
+                var p0 = cam!.UnprojectPosition(g);
+                const float e = 0.05f;
+                Vector2 dx = (cam.UnprojectPosition(g + Vector3.Right * e) - p0) / e, dy = (cam.UnprojectPosition(g + Vector3.Up * e) - p0) / e,
+                    dz = (cam.UnprojectPosition(g + Vector3.Back * e) - p0) / e;
+                static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+                var lf = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z);
+                var ah = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+                carryB0 = (hbd.Tip - hbd.Grip).Normalized();
+                // (judge r4, solver 18) her calves (knee: the calf bone's head; ankle: the foot's), for the blade's clearance
+                Vector3 J(string n) { int x = sk.FindBone(n); return x >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(x).Origin : g; }
+                f = new SideCarry.Frame(N(carryB0), N(lf), N(ah), new(dx.X, dy.X, dz.X), new(dx.Y, dy.Y, dz.Y), N(cam.GlobalBasis.Z),
+                    Mathf.Min(Mathf.Clamp(logWWalk, 0f, 1f), carryMove), carryStrafe, N(g), (hbd.Tip - hbd.Grip).Length(),
+                    N(J("calf_l")), N(J("foot_l")), N(J("calf_r")), N(J("foot_r")));
+            }
+            else on = false;
+        }
+        carry.Step(d, on, acc, f);
+        if (on)
+        {
+            var lv = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z); var av = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+            if (lv.LengthSquared() > 1e-8f && av.LengthSquared() > 1e-8f)
+            {
+                lv = lv.Normalized(); av = av.Normalized();
+                var dd = SideCarry.Turned(new(carryB0.X, carryB0.Y, carryB0.Z), new(lv.X, lv.Y, lv.Z), carry.Tilt, new(av.X, av.Y, av.Z), carry.Inward);
+                bladeHead = dd.X * dd.X + dd.Z * dd.Z > 0.01f ? Mathf.RadToDeg(Mathf.Atan2(dd.X, dd.Z)) : float.NaN;
+            }
+        }
+        else bladeHead = float.NaN;
+        if (layered) CarrySlide(bone);
+    }
+    Vector3 carryPos, carryB0;
+    float carryStrafe, carryMove;
+
+    /// <summary>Her right piece gripped as the clips grip it (slide, tilt), then the side carry's turns on it: tip back about
+    /// her left (level; + tips the blade behind her), and in toward her body about her facing (level), through the fist.</summary>
+    void CarrySlide(Transform3D? bone)
+    {
+        var left = new Vector3(GlobalBasis.X.X, 0f, GlobalBasis.X.Z);
+        var ahead = new Vector3(GlobalBasis.Z.X, 0f, GlobalBasis.Z.Z);
+        if (left.LengthSquared() < 1e-8f || ahead.LengthSquared() < 1e-8f) { view?.Slide("handslot.r", slide, tilt); return; }
+        view?.Slide("handslot.r", slide, tilt, left.Normalized(), carry.Tilt, ahead.Normalized(), carry.Inward, bone);
+    }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
