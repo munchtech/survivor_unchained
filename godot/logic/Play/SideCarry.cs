@@ -119,6 +119,9 @@ public sealed class SideCarry
     /// less <see cref="TipGround"/>, A's ankle height): the inward turn searched as in <see cref="InReach"/>, the screen angle
     /// held. TipFloor 0: off. Body B: TipGround is A's (re-measure).</summary>
     public float TipFloor = 0f, TipBand = 30f, TipGround = 0.03f;
+    /// <summary>(B r11) The share of the blade's length on screen from which its angle counts in full in <see cref="Reach"/>'s
+    /// search (under it the angle miss is weighed down in proportion: a short blade's angle can't be seen).</summary>
+    public float ShownFull = 0.5f;
     bool pivotNow;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
@@ -429,7 +432,7 @@ public sealed class SideCarry
         if (Cross && Weight > 0f && (Weight >= CrossWeight || MathF.Abs(a0) >= bandNow) && MathF.Abs(aW) < edge && MathF.Abs(was) >= DownBand - 0.01f)
         {
             // (lead r11) caught inside the wide band (it widened as a turn began): never nearer straight down than now
-            float dside = was > 0f ? 1f : -1f, keep = MathF.Min(edge, MathF.Abs(was));
+            float dside = was > 0f ? 1f : -1f, keep = MathF.Min(edge, MathF.Abs(was) + (turnBand ? lim : 0f));   // (B r11: and on out to the band's edge at the carry rate)
             var dn = Turned(b, left, Tilt, ahead, Inward);
             float jn = f.Jx.Length(), shown = jn > 1e-6f ? MathF.Sqrt(MathF.Pow(Vector3.Dot(f.Jx, dn), 2) + MathF.Pow(Vector3.Dot(f.Jy, dn), 2)) / jn : 0f;
             // a target across, out of the down band (it may sit inside the wide one: a layer losing its hold can't keep the blade out there)
@@ -478,12 +481,16 @@ public sealed class SideCarry
         bool down = f.Length > 0.1f && MathF.Abs(aW) < DownBand;
         float bt = 0f, bi = inward, bch = float.MaxValue; int bc = int.MaxValue, bm = int.MaxValue, bd = int.MaxValue;
         int n = (int)MathF.Round(2f * InReach / MathF.Max(InStep, 1e-3f));
+        float jn = f.Jx.Length();
         for (int i = 0; i <= n; i++)
         {
             float iw = inward - InReach + i * InStep, t = Solve(b, left, ahead, iw, f.Jx, f.Jy, 1f, aW, tlo, thi, Tilt);
             var dd = Turned(b, left, t, ahead, iw);
             int cb = legs && ClearOf(dd, f.Length, c) < want - 1e-4f ? 1 : 0;
-            int mr = (int)MathF.Round(MathF.Abs(Wrap(ScreenAngle(dd, f.Jx, f.Jy, 1f) - aW)) / MathF.Max(MissTol, 1e-3f));
+            // (B r11) the miss weighed by how much of the blade shows: a foreshortened blade's angle can't be seen, so it is
+            // not chased (e19 leg 3 +4: a blade showing 0.03 of its length turned in 27 deg for one frame to hit its angle, and showed 0.55)
+            float sh = jn > 1e-6f ? MathF.Min(1f, MathF.Sqrt(MathF.Pow(Vector3.Dot(f.Jx, dd), 2) + MathF.Pow(Vector3.Dot(f.Jy, dd), 2)) / jn / ShownFull) : 1f;
+            int mr = (int)MathF.Round(MathF.Abs(Wrap(ScreenAngle(dd, f.Jx, f.Jy, 1f) - aW)) * sh / MathF.Max(MissTol, 1e-3f));
             int db = (down && Vector3.Dot(f.Jy, dd) * f.Length > boot ? 1 : 0) + (TipLow(dd, f, aW) ? 2 : 0);
             float ch = MathF.Abs(iw - prev);
             if (cb < bc || (cb == bc && (mr < bm || (mr == bm && (db < bd || (db == bd && ch < bch))))))
