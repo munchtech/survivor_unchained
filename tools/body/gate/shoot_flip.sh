@@ -39,6 +39,8 @@ S[look_side90_t55]="${LK/--seconds 5/--seconds 5.5} --zoom 0.45 --fig-turn 90 --
 S[look_side90_t45]="${LK/--seconds 5/--seconds 4.5} --zoom 0.45 --fig-turn 90 --hair ponytail"
 S[look_q45]="$LK --zoom 0.45 --fig-turn 45 --hair ponytail"
 S[look_side270]="$LK --zoom 0.45 --fig-turn 270 --hair ponytail"
+# (lead 8, 17 Nov: the demo kit: the dev veteran's padded jerkin or chain shirt wears ranger.top; on B the Warden top shows (her_body.json outfits_hidden_on_b), on A the jerkin)
+S[demo_veteran]="--zone waystation --quick warden --veteran 3 --time day --seconds 5 --hair braid"
 S[hidden_reaver]="--zone waystation --quick reaver --time day --seconds 5 --hair braid"
 KEYS=${3:-look_look_day close_town_day play_town_day play_play_day play_run_hold play_hit_hold play_run_back play_leap_back play_den look_ponytail look_pixie close_ponytail close_pixie hidden_reaver}
 python $TURN take godot "lane G flip gate: $TAG" --wait 900 || { echo "NO TURN"; exit 2; }
