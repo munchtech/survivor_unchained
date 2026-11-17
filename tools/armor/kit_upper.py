@@ -653,10 +653,15 @@ def pauldrons(cfg, ref):
         over = [(np.c_[Vo, np.ones(len(Vo))] @ fr[5], Fo) for Vo, Fo in above] if fr[5] is not None else []
         lo, hi = -lk["theta"], lk["theta"]
         Rn, thd, Oa, Dd, r, lift, ntuck, bite = lame_row(lm, lo, hi, fr, rroom, over)
-        if rroom is not None and (lift > lmax).any():
+        # (row "lift_max_front": the front end's (theta > 0) own limit, 16 Nov pauldron-2 r3: row 0 trimmed at 50 deg
+        # left the front of her shoulder to the liner)
+        lim = np.where(thd > 0, lm.get("lift_max_front", lmax), lmax)
+        print(f"lame{k} lift mm by theta: " + " ".join(f"{t_:.0f}:{l_ * 1000:.0f}" for t_, l_ in zip(thd[::3], lift[::3])),
+              flush=True)
+        if rroom is not None and (lift > lim).any():
             # (trimmed: each end moves in to the last column (from the middle) the room lifts by at most lift_max)
             m = C // 2
-            bad = lift > lmax
+            bad = lift > lim
             jl = max([j for j in range(m) if bad[j]], default=-1) + 1
             jh = min([j for j in range(m, C) if bad[j]], default=C) - 1
             lo, hi = thd[jl], thd[jh]

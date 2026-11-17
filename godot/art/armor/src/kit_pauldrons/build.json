@@ -23,6 +23,9 @@
  "params": {
   "graft": "leather",
   "shoulder_shapes": false,
+  "shoulder_shapes_meshes": [
+   "darkleather"
+  ],
   "rigid_ride": [
    {
     "match": "cop_l",
