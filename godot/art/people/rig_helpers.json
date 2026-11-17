@@ -283,6 +283,17 @@
     -0.03
    ],
    "amount": 0.4
+  },
+  {
+   "name": "pauldron_hinge_{s}",
+   "parent": "clavicle_{s}",
+   "bone": "upperarm_{s}",
+   "pivot": [
+    0.1914,
+    1.4786,
+    -0.0307
+   ],
+   "amount": 0.5
   }
  ],
  "tassets": [

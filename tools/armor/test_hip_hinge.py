@@ -140,3 +140,31 @@ def test_the_piece_bind_carries_the_tasset_hinge(sk):
 def test_the_games_spec_carries_the_tasset_hinge():
     game = json.loads(open(hp.SPEC_FILE, encoding="utf-8").read())
     assert game["tassets"] == hp.SPEC["tassets"]
+
+
+def test_pauldron_hinge_turns_half_the_arms_swing_none_of_its_roll(sk):
+    """pauldron_hinge_{s} (armor-D 16 Nov): at rest it equals its rest; a pure 90 deg arm raise turns it 45; a pure
+    roll leaves it unturned; the sides mirror."""
+    hg = next(h for h in hp.SPEC["hinges"] if h["name"].startswith("pauldron_hinge"))
+    assert hg["parent"] == "clavicle_{s}" and hg["bone"] == "upperarm_{s}" and hg["amount"] == 0.5
+    grot, gpos = sk.rest_globals()
+    turns = {}
+    for s in "lr":
+        j = sk.index[hg["name"].replace("{s}", s)]
+        assert sk.names[sk.parent[j]] == "clavicle_" + s
+        assert _deg(grot[0, j]) < 1e-6
+        assert np.abs(gpos[0, j] - hp.hinge_pivot(hg, s)).max() < 1e-6
+        u = sk.index["upperarm_" + s]
+
+        def posed(turn):
+            rot = sk.rest_rot.copy()
+            gpar = grot[0, sk.parent[u]]
+            rot[u] = qmul(qinv(gpar), qmul(turn, grot[0, u]))
+            hp.drive_hinges(sk, rot)
+            return rot[j]
+        assert _deg(qmul(qinv(sk.rest_rot[j]), posed(np.array([0, 0, 0, 1.0])))) < 1e-6
+        line = qrot(grot[0, u], [0, 1.0, 0])
+        turns[s] = _deg(qmul(qinv(sk.rest_rot[j]), posed(qaxis(np.cross(line, [0, 0, 1.0]), -90))))
+        assert abs(turns[s] - 45) < 1e-4
+        assert _deg(qmul(qinv(sk.rest_rot[j]), posed(qaxis(line, 60)))) < 1e-6
+    assert abs(turns["l"] - turns["r"]) < 1e-4

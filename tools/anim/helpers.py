@@ -247,6 +247,10 @@ SPEC = {
     # the plate rigid, on the belt, and over the thigh. Users: a piece's rigid_ride {"thigh_hinge_l": 1.0}.
     "hinges": [
         {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4},
+        # Pauldron hinge (armor-D, 16 Nov): the same law at the shoulder. A child of the clavicle at her left shoulder joint
+        # (the right mirrored), turned `amount` of the upper arm's swing (rest line to posed line, both read in the
+        # clavicle's frame: lift and spread, never the arm's roll). Users: a piece's rigid_ride {"pauldron_hinge_l": 1.0}.
+        {"name": "pauldron_hinge_{s}", "parent": "clavicle_{s}", "bone": "upperarm_{s}", "pivot": [0.1914, 1.4786, -0.0307], "amount": 0.5},
     ],
     # Tasset hinge (armor-D, 16 Nov): one centred bone for ARMOR only (no skin of hers on it, not in her body file:
     # extend() adds it, HerJoints.AddHinges in the game, pin_shipped.with_hinges in a piece's bind), for the belt's
