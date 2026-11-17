@@ -407,6 +407,10 @@ public sealed class NpcActor
 public abstract class ZoneRuntime
 {
     public abstract string Id { get; }
+    /// <summary>The place's name for the sound layer (its bed.&lt;id&gt;, its music): the zone's Id, but a den is "den".</summary>
+    public virtual string SoundZone => Id;
+    /// <summary>A dungeon's hole field for the sound layer's placed loops (the den's pits): cells of Step metres from -Half, Res by Res; null: none.</summary>
+    public virtual (float[] Field, int Res, double Half, double Step)? SoundHoles => null;
     public abstract string Name { get; }
     public virtual string? Region => null;
     public abstract bool Combat { get; }

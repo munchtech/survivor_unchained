@@ -32,29 +32,52 @@ public static class Recordings
         var counts = Core.Json.Parse<Dictionary<string, int>>(FileAccess.GetFileAsString("res://art/sound/sounds.json"));
         foreach (var (name, n) in counts)
         {
-            var takes = new List<Take>();
-            for (int i = 0; i < n; i++)
-                if (GD.Load<AudioStreamWav>($"res://art/sound/{name}_{i}.wav") is { Format: AudioStreamWav.FormatEnum.Format16Bits } w)
+            counted[name] = n;
+            // A score is minutes of stereo: read when it is wanted (Lazy), not with every sound at the start.
+            if (name.StartsWith("music_")) continue;
+            if (Read(name, n, false) is { } takes) families[name] = takes;
+        }
+    }
+
+    static readonly Dictionary<string, int> counted = new();
+
+    /// <summary>Read one family's takes; `wide`: keep only the two channels (no mono mix, a third of the memory).</summary>
+    static Take[]? Read(string name, int n, bool wide)
+    {
+        var takes = new List<Take>();
+        for (int i = 0; i < n; i++)
+            if (GD.Load<AudioStreamWav>($"res://art/sound/{name}_{i}.wav") is { Format: AudioStreamWav.FormatEnum.Format16Bits } w)
+            {
+                var bytes = w.Data;
+                int channels = w.Stereo ? 2 : 1, frames = bytes.Length / 2 / channels;
+                bool keepMono = !(wide && w.Stereo);
+                var data = keepMono ? new float[frames] : null;
+                float[]? left = w.Stereo ? new float[frames] : null, right = w.Stereo ? new float[frames] : null;
+                for (int f = 0; f < frames; f++)
                 {
-                    var bytes = w.Data;
-                    int channels = w.Stereo ? 2 : 1, frames = bytes.Length / 2 / channels;
-                    var data = new float[frames];
-                    float[]? left = w.Stereo ? new float[frames] : null, right = w.Stereo ? new float[frames] : null;
-                    for (int f = 0; f < frames; f++)
+                    if (data != null)
                     {
                         float s = 0;
                         for (int c = 0; c < channels; c++) s += BitConverter.ToInt16(bytes, (f * channels + c) * 2) / 32768f;
                         data[f] = s / channels;
-                        if (left != null && right != null)
-                        {
-                            left[f] = BitConverter.ToInt16(bytes, f * 4) / 32768f;
-                            right[f] = BitConverter.ToInt16(bytes, f * 4 + 2) / 32768f;
-                        }
                     }
-                    takes.Add(new Take(data, w.MixRate, left, right));
+                    if (left != null && right != null)
+                    {
+                        left[f] = BitConverter.ToInt16(bytes, f * 4) / 32768f;
+                        right[f] = BitConverter.ToInt16(bytes, f * 4 + 2) / 32768f;
+                    }
                 }
-            if (takes.Count > 0) families[name] = takes.ToArray();
-        }
+                takes.Add(new Take(data ?? left!, w.MixRate, left, right));
+            }
+        return takes.Count > 0 ? takes.ToArray() : null;
+    }
+
+    /// <summary>A score's take (music_*), read the first time it is asked for and kept; null if there is none.</summary>
+    public static Take? Lazy(string family)
+    {
+        Load();
+        if (!families.ContainsKey(family) && counted.TryGetValue(family, out var n) && Read(family, n, true) is { } takes) families[family] = takes;
+        return Pick(family);
     }
 
     /// <summary>A take of a family, not the one played last; null if there is none.</summary>

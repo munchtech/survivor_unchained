@@ -1790,8 +1790,9 @@ public partial class Game : Node, IZoneHost
             var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
             Perf.Begin(Perf.Part.Sound);
             Haptics.Update(dt, Settings.Current.Rumble, controls.UsingPad);
-            sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
-                zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
+            sound.Update(dt, new SoundState(Mode, zone?.SoundZone, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
+                zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null,
+                zone?.SoundHoles is { } sh ? new DenHoles(sh.Field, sh.Res, sh.Half, sh.Step) : null));
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;

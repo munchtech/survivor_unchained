@@ -2121,6 +2121,7 @@ public sealed partial class Battle
         e.Cast = CastKind.None; e.ChainLeft = e.Summoned = 0;
         e.Wake = o.Wake;
         e.Roused = false;
+        e.Noticed = false;
         e.DrainedAt = -99;
         e.SummonedBy = null;
         Events.Emit(new Ev.Spawn { Enemy = e.Id, X = x, Z = z, Def = defId, Style = o.Style ?? SpawnStyle.Walk });

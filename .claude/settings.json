@@ -1,5 +1,11 @@
 {
   "autoCompactWindow": 250000,
+  "permissions": {
+    "allow": [
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File C:/Users/munch/Desktop/survivorsunchained/tools/scratch/coordinator/to_bin.ps1 *)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File C:/Users/munch/Desktop/survivorsunchained/tools/scratch/coordinator/to_bin.ps1 *)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
