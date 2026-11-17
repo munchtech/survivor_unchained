@@ -21,16 +21,23 @@ public static class P1Hinges
     public static Quaternion Pose(Quaternion rest, Quaternion parentRest, Quaternion chainRest, Quaternion chainNow, double amount) =>
         HipHinge.Pose(rest, Line(parentRest, chainRest), Line(parentRest, chainNow), amount);
 
-    /// <summary>The tasset hinge's local pose from both thighs' (left, right) chain rotations at rest and now.</summary>
-    public static Quaternion TassetPose(Quaternion rest, Quaternion parentRest, Quaternion[] chainRest, Quaternion[] chainNow, double amount, double soft)
+    /// <summary>A tasset hinge's local pose (HerJoints' drive): from the chain rotations (at rest, now) of the thigh(s) it
+    /// reads (`sides`: +1 her left, -1 her right, from each thigh's name). Two thighs: the V turned with the leading one and
+    /// rolled away from one crossing the midline (HipHinge.TassetRoll); one thigh (a hip tasset): its own swing, no roll.</summary>
+    public static Quaternion TassetPose(Quaternion rest, Quaternion parentRest, Quaternion[] chainRest, Quaternion[] chainNow, int[] sides,
+        double amount, double soft, double roll = 0, double rollFrom = 2, double rollSoft = 6, double rollMax = 20)
     {
-        var sw = new double[2];
-        for (int i = 0; i < 2; i++)
+        int n = chainRest.Length;
+        var sw = new double[n];
+        var sp = new double[n];
+        for (int i = 0; i < n; i++)
         {
             var v0 = Line(parentRest, chainRest[i]);
             var v = Line(parentRest, chainNow[i]);
-            sw[i] = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, i == 0 ? 1 : -1).Swing;
+            (sw[i], sp[i]) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, sides[i]);
         }
-        return HipHinge.TassetPose(rest, HipHinge.TassetTurn(sw[0], sw[1], amount, soft));
+        double turn = n == 2 ? HipHinge.TassetTurn(sw[0], sw[1], amount, soft) : HipHinge.TassetTurnOne(sw[0], amount, soft);
+        double r = n == 2 ? HipHinge.TassetRoll(sp[0], sp[1], roll, rollFrom, rollSoft, rollMax) : 0;
+        return HipHinge.TassetPose(rest, turn, r);
     }
 }

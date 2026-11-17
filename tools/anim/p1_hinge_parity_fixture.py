@@ -25,6 +25,8 @@ CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")
 
 def a_clips():
     import os
+    if os.environ.get("A_CLIPS"):
+        return Path(os.environ["A_CLIPS"])
     for root in (os.environ.get("ANIM_OUT"), REPO / "tools" / "anim" / "out", REPO.parents[2] / "tools" / "anim" / "out"):
         if root and (Path(root) / "clips" / "run_warden.json").exists():
             return Path(root) / "clips"
@@ -62,7 +64,7 @@ def main():
     clip_poses = {cl: poses(cl) for cl in CLIPS}
     out = {"source": f"clips {folder}" if real else "synthetic: 40 frames per clip name, thigh +-70 deg random axes, seed 1+index",
            "body": "p1", "spec": hp.SPEC["hinges"], "sides": []}
-    angles = {}
+    # Every hinge entry (thigh hinge, pauldron hinge: whatever parent and bone the spec gives), both sides.
     for hg in hp.SPEC["hinges"]:
         for s in "lr":
             j = sk.index[hg["name"].replace("{s}", s)]
@@ -75,27 +77,34 @@ def main():
                 for f, rot0 in enumerate(clip_poses[cl]):
                     rot = rot0.copy()
                     hp.drive_hinges(sk, rot)
-                    angles[(sk.names[j], cl, f)] = hp.hinge_angle(sk, rot, sk.names[j])
                     side["frames"].append({"clip": cl, "f": f, "chain": hp._below(sk, rot, p, b).tolist(), "hinge": rot[j].tolist()})
             out["sides"].append(side)
+    # Every tasset entry (the centred V on both thighs, with its roll; a hip tasset on one thigh), then the centred V again
+    # with roll 1.3 / a harder 3.0 past the clamp (as hinge_parity_fixture.py), so the roll law is checked in either case.
     out["tasset_spec"] = hp.SPEC.get("tassets", [])
     out["tassets"] = []
-    for tg in out["tasset_spec"]:
+    variants = [(tg, tg) for tg in out["tasset_spec"]]
+    base = next(t for t in out["tasset_spec"] if len(t["thighs"]) == 2)
+    variants += [(base, {**base, "roll": r, "roll_from": f, "roll_soft": 6.0, "roll_max": m})
+                 for r, f, m in ((1.3, 2.0, 20.0), (3.0, 0.0, 8.0))]
+    for tg0, tg in variants:
         j = sk.index[tg["name"]]
         p = sk.parent[j]
         th = [sk.index[n] for n in tg["thighs"]]
         one = {"name": tg["name"], "amount": tg["amount"], "soft": tg["soft"],
-               "parent_rot": grot[0, p].tolist(), "parent_pos": gpos[0, p].tolist(),
-               "pivot": hp.tasset_pivot(tg, sk).tolist(),
+               "roll": tg.get("roll", 0.0), "roll_from": tg.get("roll_from", 2.0), "roll_soft": tg.get("roll_soft", 6.0),
+               "roll_max": tg.get("roll_max", 20.0), "sides": [1 if n.endswith("_l") else -1 for n in tg["thighs"]],
+               "parent_rot": grot[0, p].tolist(), "parent_pos": gpos[0, p].tolist(), "pivot": hp.tasset_pivot(tg0, sk).tolist(),
                "rest_rot": sk.rest_rot[j].tolist(), "rest_pos": sk.rest_pos[j].tolist(),
                "chain_rest": [hp._below(sk, sk.rest_rot, p, b).tolist() for b in th], "frames": []}
         for cl in CLIPS:
             for f, rot0 in enumerate(clip_poses[cl]):
                 rot = rot0.copy()
-                hp.drive_tassets(sk, rot)
-                angles[(sk.names[j], cl, f)] = hp.hinge_angle(sk, rot, sk.names[j])
+                sw, sp = hp.tasset_angles(sk, rot, tg)
+                pitch, roll = hp.tasset_pose(tg, sw, sp)
+                rot[j] = hp.qnorm(hp.qmul(sk.rest_rot[j], hp.tasset_q(pitch, roll)))
                 one["frames"].append({"clip": cl, "f": f, "chains": [hp._below(sk, rot, p, b).tolist() for b in th],
-                                      "tasset": rot[j].tolist()})
+                                      "tasset": rot[j].tolist(), "roll_deg": roll})
         out["tassets"].append(one)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":")) + "\n")
@@ -103,22 +112,30 @@ def main():
     ad = a_clips()
     if ad is not None and real:
         import skin
-        ska = hp.extend(Skeleton.load())
-        worst = {}
+        ska = hp.extend(Skeleton.load(), chain=True)
+
+        def angs(skx, cl_rots):
+            res = {}
+            for cl, rots in cl_rots.items():
+                for f, r0 in enumerate(rots):
+                    rot = r0.copy()
+                    hp.drive_hinges(skx, rot)
+                    hp.drive_tassets(skx, rot)
+                    for n in [h["name"].replace("{s}", s_) for h in hp.SPEC["hinges"] for s_ in "lr"] + [t["name"] for t in hp.SPEC["tassets"]]:
+                        res.setdefault(n, {})[(cl, f)] = hp.hinge_angle(skx, rot, n)
+            return res
+
+        arots = {}
         for cl in CLIPS:
-            c = skin.Body.clip(types.SimpleNamespace(label="her", sk=ska), cl, ad)
-            for f in range(min(c.rot.shape[0], len(clip_poses[cl]))):
-                rot = c.rot[f].copy()
-                hp.drive_hinges(ska, rot)
-                hp.drive_tassets(ska, rot)
-                for n in {k[0] for k in angles}:
-                    d = abs(hp.hinge_angle(ska, rot, n) - angles[(n, cl, f)])
-                    worst[n] = max(worst.get(n, 0.0), d)
-        for n, d in sorted(worst.items()):
-            print(f"A vs B max |hinge angle diff| {n}: {d:.3f} deg")
+            if (ad / f"{cl}.json").exists():
+                c = skin.Body.clip(types.SimpleNamespace(label="her", sk=ska), cl, ad)
+                arots[cl] = [c.rot[f].copy() for f in range(c.rot.shape[0])]
+        A, B = angs(ska, arots), angs(sk, {k: v for k, v in clip_poses.items() if k in arots})
+        for n in A:
+            d = np.array([abs(A[n][k] - B[n][k]) for k in A[n] if k in B[n]])
+            print(f"A vs B |hinge angle diff| {n}: max {d.max():.3f} mean {d.mean():.3f} deg over {len(d)} shared frames ({', '.join(arots)})")
     else:
         print("A-vs-B angle report skipped (needs both B clips and A's built clips)")
-
 
 if __name__ == "__main__":
     main()

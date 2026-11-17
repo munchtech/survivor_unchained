@@ -60,22 +60,30 @@ public class P1HingeTests
     {
         var fx = Load("tests", "fixtures", "p1_hinge_parity.json");
         double worst = 0;
-        int n = 0;
+        int n = 0, rolled = 0;
+        int one = 0;
         foreach (var s in fx.GetProperty("tassets").EnumerateArray())
         {
             var gp = Q(s.GetProperty("parent_rot"));
             var (r, t) = P1Hinges.Rest(gp, V(s.GetProperty("parent_pos")), V(s.GetProperty("pivot")), true);
             Assert.True((t - V(s.GetProperty("rest_pos"))).Length() < 1e-6f, "rest place");
             var cr = s.GetProperty("chain_rest").EnumerateArray().Select(Q).ToArray();
+            if (cr.Length == 1) one++;
             double amount = s.GetProperty("amount").GetDouble(), soft = s.GetProperty("soft").GetDouble();
+            var sides = s.GetProperty("sides").EnumerateArray().Select(e => e.GetInt32()).ToArray();
+            double roll = s.GetProperty("roll").GetDouble(), from = s.GetProperty("roll_from").GetDouble();
+            double rsoft = s.GetProperty("roll_soft").GetDouble(), rmax = s.GetProperty("roll_max").GetDouble();
             foreach (var f in s.GetProperty("frames").EnumerateArray())
             {
                 var now = f.GetProperty("chains").EnumerateArray().Select(Q).ToArray();
-                worst = Math.Max(worst, Deg(P1Hinges.TassetPose(r, gp, cr, now, amount, soft), Q(f.GetProperty("tasset"))));
+                worst = Math.Max(worst, Deg(P1Hinges.TassetPose(r, gp, cr, now, sides, amount, soft, roll, from, rsoft, rmax), Q(f.GetProperty("tasset"))));
+                if (roll != 0 && sides.Length == 2 && Math.Abs(f.GetProperty("roll_deg").GetDouble()) > 0.5) rolled++;
                 n++;
             }
         }
-        Assert.True(n >= 160, $"frames {n}");
+        Assert.True(n >= 160 * 3, $"frames {n}");
+        Assert.True(one >= 2, "the one-thigh hip tassets");
+        Assert.True(rolled > 0, "the roll law was never exercised");
         Assert.True(worst < 1e-5, $"worst {worst:E2} rad");
     }
 
@@ -85,16 +93,18 @@ public class P1HingeTests
         var fx = Load("tests", "fixtures", "p1_hinge_parity.json");
         var game = Load("art", "people", "body_p1", "rig_helpers.json");
         Assert.Equal("p1", game.GetProperty("body").GetString());
+        // (hinges: the thigh hinge and the pauldron hinge, each side's own pivot)
         var fh = fx.GetProperty("sides").EnumerateArray().Where(s => s.GetProperty("left").GetBoolean()).ToArray();
         var gh = game.GetProperty("hinges");
         Assert.Equal(fh.Length, gh.GetArrayLength());
+        Assert.Contains(fh, h => h.GetProperty("name").GetString() == "pauldron_hinge_l");
         for (int i = 0; i < fh.Length; i++)
             for (int k = 0; k < 3; k++)
                 Assert.Equal(fh[i].GetProperty("pivot")[k].GetDouble(), gh[i].GetProperty("pivot")[k].GetDouble(), 6);
         var ft = fx.GetProperty("tassets");
         var gt = game.GetProperty("tassets");
-        Assert.Equal(ft.GetArrayLength(), gt.GetArrayLength());
-        for (int i = 0; i < ft.GetArrayLength(); i++)
+        Assert.True(ft.GetArrayLength() >= gt.GetArrayLength());   // (the fixture adds roll variants of the centred V after the spec's)
+        for (int i = 0; i < gt.GetArrayLength(); i++)
             for (int k = 0; k < 3; k++)
                 Assert.Equal(ft[i].GetProperty("pivot")[k].GetDouble(), gt[i].GetProperty("pivot")[k].GetDouble(), 6);
     }

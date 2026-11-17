@@ -467,6 +467,8 @@ public partial class P1Laws : SkeletonModifier3D
         public int[][] Chains = System.Array.Empty<int[]>();       // each thigh up to (not with) the parent
         public System.Numerics.Quaternion[] ChainRest = System.Array.Empty<System.Numerics.Quaternion>();
         public bool Tasset;
+        public int[] Sides = System.Array.Empty<int>();
+        public double Roll, RollFrom = 2, RollSoft = 6, RollMax = 20;
     }
     readonly List<HingeRig> hingeRigs = new();
     bool hingesAdded;
@@ -529,11 +531,26 @@ public partial class P1Laws : SkeletonModifier3D
                 var t = tv.AsGodotDictionary();
                 int parent = sk.FindBone((string)t["parent"]);
                 var ths = t["thighs"].AsGodotArray();
-                if (parent < 0 || ths.Count != 2 || sk.FindBone((string)ths[0]) < 0 || sk.FindBone((string)ths[1]) < 0) continue;
+                bool ok = parent >= 0 && ths.Count is 1 or 2;
+                for (int i = 0; ok && i < ths.Count; i++) ok = sk.FindBone((string)ths[i]) >= 0;
+                if (!ok) continue;
                 int b = Make((string)t["name"], parent, Piv(t["pivot"].AsGodotArray()), true, out var rest);
-                var chains = new[] { Up(sk.FindBone((string)ths[0]), parent), Up(sk.FindBone((string)ths[1]), parent) };
-                hingeRigs.Add(new HingeRig { Bone = b, Tasset = true, Amount = (double)t["amount"], Soft = (double)t["soft"], Rest = rest, Chains = chains,
-                    ChainRest = new[] { Rest(chains[0]), Rest(chains[1]) }, ParentRest = Nq(sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion()) });
+                var chains = new int[ths.Count][];
+                var cr = new System.Numerics.Quaternion[ths.Count];
+                var sides = new int[ths.Count];
+                for (int i = 0; i < ths.Count; i++)
+                {
+                    chains[i] = Up(sk.FindBone((string)ths[i]), parent);
+                    cr[i] = Rest(chains[i]);
+                    sides[i] = ((string)ths[i]).EndsWith("_l") ? 1 : -1;
+                }
+                var hr = new HingeRig { Bone = b, Tasset = true, Amount = (double)t["amount"], Soft = (double)t["soft"], Rest = rest, Chains = chains,
+                    ChainRest = cr, Sides = sides, ParentRest = Nq(sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion()) };
+                if (t.ContainsKey("roll")) hr.Roll = (double)t["roll"];
+                if (t.ContainsKey("roll_from")) hr.RollFrom = (double)t["roll_from"];
+                if (t.ContainsKey("roll_soft")) hr.RollSoft = (double)t["roll_soft"];
+                if (t.ContainsKey("roll_max")) hr.RollMax = (double)t["roll_max"];
+                hingeRigs.Add(hr);
             }
     }
 
@@ -549,7 +566,7 @@ public partial class P1Laws : SkeletonModifier3D
         }
         foreach (var h in hingeRigs)
             sk.SetBonePoseRotation(h.Bone, Gq(h.Tasset
-                ? P1Hinges.TassetPose(h.Rest, h.ParentRest, h.ChainRest, new[] { Now(h.Chains[0]), Now(h.Chains[1]) }, h.Amount, h.Soft)
+                ? P1Hinges.TassetPose(h.Rest, h.ParentRest, h.ChainRest, h.Chains.Select(Now).ToArray(), h.Sides, h.Amount, h.Soft, h.Roll, h.RollFrom, h.RollSoft, h.RollMax)
                 : P1Hinges.Pose(h.Rest, h.ParentRest, h.ChainRest[0], Now(h.Chains[0]), h.Amount)));
     }
 
@@ -560,6 +577,7 @@ public partial class P1Laws : SkeletonModifier3D
         sk.ChildEnteredTree += OnChild;
         rig = P1Body.RigOf(sk);   // (first: the rig's bones are the skeleton's own, before the hinges are added)
         AddHinges();
+        if (Args.Has("p1-probe")) GD.Print($"p1: hinge bones {hingeRigs.Count} ({string.Join(", ", hingeRigs.Select(h => sk.GetBoneName(h.Bone)))})");
         int n = rig.Names.Length;
         var o = new List<int>(); var seen = new bool[n];
         void Visit(int j) { if (seen[j]) return; if (rig.Parent[j] >= 0) Visit(rig.Parent[j]); seen[j] = true; o.Add(j); }
