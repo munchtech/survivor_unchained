@@ -24,6 +24,14 @@ S[look_ponytail]="--new --sex female --step 1 --archetype warden --zoom 0.45 --t
 S[look_pixie]="--new --sex female --step 1 --archetype warden --zoom 0.45 --time day --seconds 5 --hair pixie"
 S[close_ponytail]="--zone waystation --quick warden --close 1 --idle-after 1 --time day --seconds 5 --hair ponytail"
 S[close_pixie]="--zone waystation --quick warden --close 1 --idle-after 1 --time day --seconds 5 --hair pixie"
+# (the gate judge, round 1: the back of her head on B for each style, the ponytail's profile, and her full length)
+LK="--new --sex female --step 1 --archetype warden --time day --seconds 5"
+S[look_back_braid]="$LK --zoom 0.45 --fig-turn 180 --hair braid"
+S[look_back_ponytail]="$LK --zoom 0.45 --fig-turn 180 --hair ponytail"
+S[look_back_pixie]="$LK --zoom 0.45 --fig-turn 180 --hair pixie"
+S[look_side_ponytail]="$LK --zoom 0.45 --fig-turn 90 --hair ponytail"
+S[look_full_front]="$LK --zoom 1 --hair braid"
+S[look_full_back]="$LK --zoom 1 --fig-turn 180 --hair braid"
 S[hidden_reaver]="--zone waystation --quick reaver --time day --seconds 5 --hair braid"
 KEYS=${3:-look_look_day close_town_day play_town_day play_play_day play_run_hold play_hit_hold play_run_back play_leap_back play_den look_ponytail look_pixie close_ponytail close_pixie hidden_reaver}
 python $TURN take godot "lane G flip gate: $TAG" --wait 900 || { echo "NO TURN"; exit 2; }
