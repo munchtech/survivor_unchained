@@ -90,6 +90,13 @@ uniform float kit_gold_glint = 3.0;
 // blown pink crown and brown plate); z that light's share of the bands, reflection and glint (0: a dark-to-mid fill, its own
 // hue off). Defaults off)
 uniform vec3 kit_floor = vec3(0.0);
+// (finish-2 round 3: kit_floor_den the floor under the den's rig (HeroDen sets cel_her_den), kit_floor.x everywhere else: the
+// town's sun holds its own dark band, the den's roots need more; 0: kit_floor.x everywhere. kit_close: a point or spot light at
+// the close camera (the close rig's key, GameCloseUp.cs; the play camera keeps kit_floor's rule): x its share of the bands,
+// reflection, glint and hue, y its soft cap (0 none), z its gain; z 0: kit_floor's rule at every distance)
+uniform float kit_floor_den = 0.0;
+uniform vec3 kit_close = vec3(0.0);
+global uniform vec4 cel_her_den;
 varying float v_kgold;
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
@@ -566,7 +573,8 @@ void fragment() {
 		if (kfull > 0.0) {
 			nrm = mix(nrm, vec3(0.5, 0.5, 1.0), kfull); metal = mix(metal, 1.0, kfull); RADIANCE = mix(RADIANCE, vec4(0.0, 0.0, 0.0, 1.0), kfull);
 			look_emit += (kit_tone_dark * kpaint * mix(kit_plate.x, kit_plate.x * kit_plate.y, kit_far)
-				+ kit_gold_dark * v_kgold * mix(kit_gold.x, kit_gold.x * kit_gold.y, kit_far)) * kit_floor.x;
+				+ kit_gold_dark * v_kgold * mix(kit_gold.x, kit_gold.x * kit_gold.y, kit_far))
+				* ((kit_floor_den > 0.0 && any(notEqual(cel_her_den, vec4(0.0)))) ? kit_floor_den : kit_floor.x);
 		}
 		v_metal = metal;
 		v_paint = paint;
@@ -787,8 +795,13 @@ void light() {
 		float klum = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
 		float ksh = LIGHT_IS_DIRECTIONAL ? cel_shadow(ATTENUATION, true) : 1.0;
 		float kl = klum * (LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION) / PI;
-		float kom = LIGHT_IS_DIRECTIONAL ? 1.0 : kit_floor.z;   // (a point light's share of bands, reflection, glint, hue)
-		if (!LIGHT_IS_DIRECTIONAL && kit_floor.y > 0.0) kl = kit_floor.y * (1.0 - exp(-kl / kit_floor.y));
+		float kcl = kit_close.z > 0.0 ? 1.0 - v_kit_far : 0.0;   // (finish-2 r3: the close rig's key at the close camera, see kit_close)
+		float kom = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(kit_floor.z, kit_close.x, kcl);   // (a point light's share of bands, reflection, glint, hue)
+		if (!LIGHT_IS_DIRECTIONAL) {
+			float kfar = kit_floor.y > 0.0 ? kit_floor.y * (1.0 - exp(-kl / kit_floor.y)) : kl;
+			float kcg = kl * kit_close.z, kcls = kit_close.y > 0.0 ? kit_close.y * (1.0 - exp(-kcg / kit_close.y)) : kcg;
+			kl = mix(kfar, kcls, kcl);
+		}
 		vec3 khue = mix(vec3(1.0), LIGHT_COLOR / max(klum, 1e-4), kit_plate.z * kom);
 		float kt = dot(NORMAL, LIGHT);
 		float kan = degrees(acos(clamp(dot(NORMAL, H), -1.0, 1.0)));
