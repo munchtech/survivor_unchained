@@ -201,7 +201,18 @@ float crowd_edge(float rim) {
 // (lane E boss r2: back .41/.014/292 read .31-.32/.011/h 326-338; body .034 left boss-mid 65% at C <= .035; mane h 32 read 33-34)
 // (lane E boss r3: back C .030 read .026-.030 with 2 px over C .040 in h 300-15: .028)
 #define DEN_BOSS_BODY vec2(0.029, 50.0)
-#define DEN_BOSS_BACK vec4(0.46, 0.028, 288.0, 0.6)
+// (lane E lead 5, judge 3: "one flat tone cut as a rectangle, a blue blanket": the back is now a dorsal stripe on her REST pose
+// (c_r), round the spine: its half-width DEN_BOSS_SPINE.z at its widest, tapered to nothing at both ends (DEN_BOSS_SPINE.xy in
+// z, a sine's DEN_BOSS_SPINE_P power, its widest toward the shoulders), its edges fur-notched (DEN_BOSS_SPINE_TUFT: notches per
+// unit of z, their depth's share of the width), in two steps: the core (DEN_BOSS_SPINE.w of the width) LIT at DEN_BOSS_BACK.xyz,
+// the rest SHADE at DEN_BOSS_BACK_SH; on faces past DEN_BOSS_BACK.w of the rest normal's up. Screen targets lit .39/.025/292,
+// shade .31/.020/292; r3's flat paint .46/.028/288 read .40/.025/298 in the lair. Was: |x| under a width in three straight
+// steps on the animated pose, its ends cut square)
+#define DEN_BOSS_BACK vec4(0.45, 0.028, 282.0, 0.15)
+#define DEN_BOSS_BACK_SH vec3(0.355, 0.022, 282.0)
+#define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
+#define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
+#define DEN_BOSS_SPINE_TUFT vec2(16.0, 0.18)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 30.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
@@ -214,6 +225,7 @@ float crowd_edge(float rim) {
 // 0.5 (17% at 0.25); the rim paler, bone not gold: it read C .13 h 80 on screen)
 #define DEN_ACCENT vec3(0.52, 0.13, 0.5)
 #define DEN_ELITE_RIM vec3(1.0, 0.88, 0.70)
+#define DEN_ELITE_BAND vec2(0.35, 1.5)
 // (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
 #define DEN_BOSS_STEP 1.5
 // (lane E boss r1: her back a stepped SADDLE on the spine, not the straight n.y cut stripe: the model's |x| under a width that
@@ -227,7 +239,6 @@ float crowd_edge(float rim) {
 // block. In the rest pose: eyes at z .75-.77, nose .84, ear tips y .94 at z .70-.73, the forepaws reach z .93 under y .4.
 // The head past DEN_BOSS_HEAD.x in z over DEN_BOSS_HEAD2.x in y; the muzzle past DEN_BOSS_HEAD.y in z, the ear tips over
 // DEN_BOSS_HEAD.z in y past DEN_BOSS_HEAD2.y in z; the brow by the rest normal's y. Was .47/.68/.84/.22 on vat_local)
-#define DEN_BOSS_SPINE vec3(0.035, 0.075, 3.0)
 #define DEN_BOSS_HEAD vec4(0.47, 0.775, 0.875, 0.28)
 #define DEN_BOSS_HEAD2 vec2(0.58, 0.64)
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
@@ -288,10 +299,14 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	vec2 c_ab = c_boss ? DEN_BOSS_BODY.x * normalize(c_btab + vec2(1e-5, 0.0)) : vat_den_ab(crowd_den.z + DEN_TOP_C * c_top, crowd_den.w);
 	float c_hb = c_hit;   // (the hit's share: the boss's body only)
 	if (c_boss) {
-		float c_sz = clamp((c_p.z - DEN_TORSO.x) / (DEN_TORSO.y - DEN_TORSO.x), 0.0, 0.999);
-		float c_sw = mix(DEN_BOSS_SPINE.x, DEN_BOSS_SPINE.y, floor(c_sz * DEN_BOSS_SPINE.z) / max(DEN_BOSS_SPINE.z - 1.0, 1.0));
-		float c_back = (1.0 - vat_den_cut(abs(c_p.x), c_sw)) * vat_den_cut(c_n.y, DEN_BOSS_BACK.w)
-			* vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
+		// (lead 5: the dorsal stripe, two steps; c_bl the lit core's share, c_back the whole stripe's)
+		float c_st = clamp((c_r.z - DEN_BOSS_SPINE.x) / (DEN_BOSS_SPINE.y - DEN_BOSS_SPINE.x), 0.0, 1.0);
+		float c_sw = DEN_BOSS_SPINE.z * pow(max(sin(3.14159265 * pow(c_st, DEN_BOSS_SPINE_P.x)), 0.0), DEN_BOSS_SPINE_P.y);
+		float c_up = vat_den_cut(c_r.w, DEN_BOSS_BACK.w);
+		float c_nt = DEN_BOSS_SPINE_TUFT.y * abs(fract(c_r.z * DEN_BOSS_SPINE_TUFT.x) * 2.0 - 1.0);
+		float c_nt2 = DEN_BOSS_SPINE_TUFT.y * abs(fract(c_r.z * DEN_BOSS_SPINE_TUFT.x + 0.5) * 2.0 - 1.0);
+		float c_back = (1.0 - vat_den_cut(abs(c_r.x), c_sw * (1.0 - c_nt))) * c_up;
+		float c_bl = (1.0 - vat_den_cut(abs(c_r.x), c_sw * DEN_BOSS_SPINE.w * (1.0 - c_nt2))) * c_up;
 		// (r3: on the rest pose, c_r: xyz its place, w its normal's y)
 		float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
 		float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
@@ -300,8 +315,8 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		vec3 c_hp = vat_den_head(c_r);
 		float c_hd = (c_hp.x + c_hp.y + c_hp.z) * step(0.5, den_head);
 		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
-		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
-		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_back);
+		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back);
+		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BACK_SH.y, DEN_BOSS_BACK_SH.z), vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_bl), c_back);
 		float c_mane = vat_den_mane(c_p);
 		c_l = mix(c_l, DEN_MANE.x, c_mane);
 		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z), c_mane);
@@ -796,6 +811,15 @@ void fragment() {
 		// runs the whole back; no busy fade (it cut the stroke into dashes on a 60 px wolf) and no turn toward her. An elite or the
 		// boss takes a FULL rim, all round, at crowd_den_elite.w at least.)
 		float dn_band = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z) * (1.0 - dn_line);
+		// (lane E lead 5, judge 3: an elite's rim broke into 45 bits, a glittering stick: its band's inner edge is the px test's
+		// own (NdotV over its fwidth, noisy per 2x2 quad on a thin leaping body), so the 2 px band came and went. An elite's band
+		// fills, inside a wider px reach (DEN_ELITE_BAND.y px past the band), every face under DEN_ELITE_BAND.x of NdotV: the
+		// inner edge is then the smooth NdotV, one unbroken stroke)
+		if (dn_cls > 0.5 && dn_cls < 1.5) {
+			float dn_nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+			dn_band = max(dn_band, (1.0 - smoothstep(DEN_ELITE_BAND.x - 0.05, DEN_ELITE_BAND.x + 0.05, dn_nv))
+				* vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z + DEN_ELITE_BAND.y) * (1.0 - dn_line));
+		}
 		vec3 dn_kv = (VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz;
 		vec2 dn_ks = normalize(mix(normalize(dn_kv.xy + vec2(0.0, 1e-4)), vec2(0.0, 1.0), crowd_den_edge.w) + vec2(0.0, 1e-4));
 		float dn_side = vat_den_cut(dot(normalize(NORMAL.xy + vec2(0.0, 1e-4)), dn_ks), DEN_RIM_CUT);
