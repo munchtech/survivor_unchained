@@ -54,28 +54,9 @@ DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha":
            # C1 there (the taut core meets its ring with the ring's slope, no rim): bend x sum (median area / area_i)
            # |(L x)_i - d_i|^2 on the clamped cotangent L, d_i = c_i R_i (L P0)_i + (1 - c_i) (L X)_i ("blend": the rest
            # curvature turned on the crumple, the posed one off it), or (1 - c_i) (L X)_i ("zero"), or R_i (L P0)_i ("rest")
-           "bend": None, "bend_to": "blend",
-           # cap (attempt 7): the cap-band curvature rule (CAP's keys; None = off, bit for bit). Needs the caller's `rigid`
-           # (fair(..., rigid=(R, w)): R [nraw, 3, 3] a bone's rigid turn rest -> pose, w [nraw] that bone chain's skin share)
-           "cap": None}
-# the cap rule's keys: band lo < w < hi; fires where the rest is a cap (smoothed mean curvature > h_min, 1/m) and the posed
-# surface is clearly flatter (H < flat x H0) or creased (rim: H < -h_min); the fired set grown `grow` rows is the cap
-# (share 1), a smoothstep to 0 over `soft` more. There the target edges are the rest edges turned by polar((1 - turn)
-# R_posed + turn R_rigid) (R_posed: the posed rotations after `passes` averaging passes): the rest curvature carried
-# rigidly by the bone; the posed points are only soft targets (pull `alpha` x median weight) and the cap's volume is held.
-# "bone" / "chain": the caller's (her_hook: the rigid bone and the chain whose skin share is w), unused here.
-# ceil (attempt 8; None = the flattening test above): fire instead where the surface P5 makes (the fair without the cap)
-# curves over the ceiling, H_P5 > ceil x max(H0, H_A) + add and H_P5 > h_min (H_A: the posed surface's own): P5 over-curving
-# a rim, the "lid" (flat/rim unused then). target "rest": the cap's edges are the rest edges turned as above; "posed": the
-# posed surface's own edges (its curvature kept, the cap pulled back from P5's rim).
-CAP = {"lo": 0.05, "hi": 0.95, "h_min": 8.0, "flat": 0.5, "rim": True, "rings": 2, "grow": 2, "soft": 3, "turn": 1.0,
-       "alpha": 0.05, "passes": 4, "bone": None, "chain": [], "ceil": None, "add": 0.0, "target": "rest",
-       "spare": False, "mode": "edges", "clip": 1.0, "reps": 1}
-# mode "lap" (attempt 8): no edge targets; after the fair without the cap (Vf), the cap (kc > 0) is re-solved by Laplacian
-# coordinates (Fair._cap_lap), `reps` times, pulled `alpha` to Vf, all else held. target "clip" there: Vf's own Laplacian
-# with its normal part cut by `clip` x (H - ceil x max(H0, H_A) - add)+, the curvature ceiling itself. Attempt 8: H falls
-# (iron_vow@72:l cap p50 27.5 -> 18-23 per m, A 14.2) with 0 flips, but the cap core's >45 edges rise (+1..+25) and
-# T22's band edge does not move (a stretch ratio along the armpit map band): NOT LIVE. fair_a.md attempt 8.   # spare: the crumple (from the non-cap seeds) keeps its own target
+           "bend": None, "bend_to": "blend"}
+# the cap rule (attempts 7-8: a curvature band / ceiling on the deltoid cap; keyword "cap", Fair.cap_share,
+# Fair._cap_lap, rigid_of) lost and is removed (attempt 9); fair_a.md keeps its tables.
 
 
 def _unit(v):
@@ -118,11 +99,6 @@ class Fair:
         if bad:
             raise ValueError(f"fair_a: unknown params {sorted(bad)}")
         self.prm = prm = {**DEFAULT, **params}
-        if prm["cap"] is not None:
-            bad = set(prm["cap"]) - set(CAP)
-            if bad:
-                raise ValueError(f"fair_a: unknown cap params {sorted(bad)}")
-            prm["cap"] = {**CAP, **prm["cap"]}
         V0, T = np.asarray(V0, float), np.asarray(T, np.int64)
         _, first, grp = np.unique(np.round(V0 / prm["weld"]).astype(np.int64), axis=0, return_index=True, return_inverse=True)
         self.grp, self.first, self.nraw = np.asarray(grp).ravel(), first, len(V0)
@@ -170,10 +146,10 @@ class Fair:
         deg = np.asarray(self.adj.sum(1)).ravel()
         self._avg = sp.diags(1.0 / np.maximum(deg, 1)) @ self.adj
         self.n0 = _unit(self._VT @ self.E0[:, :, 2])            # rest vertex normals
-        self.tag = hashlib.sha1(np.ascontiguousarray(V0).tobytes() + np.ascontiguousarray(T).tobytes()   # (cap None: the old key)
-                                + json.dumps({k: v for k, v in prm.items() if not ((k == "cap" or k == "bend") and v is None)
-                                              and not (k == "bend_to" and prm["bend"] is None)}, sort_keys=True).encode()).hexdigest()[:16]
-        self._L, self._cap = None, None
+        off = {"bend", "bend_to"} if prm["bend"] is None else set()     # (bend off: the old key, bit for bit)
+        self.tag = hashlib.sha1(np.ascontiguousarray(V0).tobytes() + np.ascontiguousarray(T).tobytes()
+                                + json.dumps({k: v for k, v in prm.items() if k not in off}, sort_keys=True).encode()).hexdigest()[:16]
+        self._L = None
 
     # ------------------------------------------------------------------------------------------------ measures --
     def dihedral(self, X):
@@ -193,7 +169,7 @@ class Fair:
 
     def curv(self, X, rings=2):
         """[n] the mean curvature (1/m; + convex, against the outward normals) by the clamped cotangent Laplacian, area-
-        weighted over `rings` (I + adjacency) passes: the cap rule's measure. Rotation free: a rest cap carried rigidly by
+        weighted over `rings` (I + adjacency) passes (attempts 8-9's H/H0 measure). Rotation free: rest carried rigidly by
         any bone keeps curv(P0)."""
         self._lap()
         if getattr(self, "_inc", None) is None:
@@ -205,27 +181,6 @@ class Fair:
         for _ in range(int(rings)):
             a, b = a + self.adj @ a, b + self.adj @ b
         return a / np.maximum(2.0 * b, 1e-30)
-
-    def cap_share(self, X, rigid, wh=None, Xf=None):
-        """The cap rule (CAP): ([n] the cap share, 1 on the fired set grown `grow` rows, a smoothstep to 0 over `soft`; or
-        None when nothing fires, [n] the fired set). rigid = (R, w) per raw vertex; wh [n] limits the band."""
-        cp = self.prm["cap"]
-        w = np.asarray(rigid[1], float)[self.first]
-        band = (w > cp["lo"]) & (w < cp["hi"])
-        if wh is not None:
-            band &= wh
-        if getattr(self, "_h0", None) is None or self._h0[0] != cp["rings"]:
-            self._h0 = (cp["rings"], self.curv(self.P0, cp["rings"]))
-        h0, hx = self._h0[1], self.curv(X, cp["rings"])
-        if cp["ceil"] is not None:                              # the ceiling: P5's surface Xf over-curving the posed one
-            hf = self.curv(Xf, cp["rings"])
-            fire = band & (hf > cp["h_min"]) & (hf > cp["ceil"] * np.maximum(h0, hx) + cp["add"])
-        else:
-            fire = band & (h0 > cp["h_min"]) & ((hx < cp["flat"] * h0) | (bool(cp["rim"]) & (hx < -cp["h_min"])))
-        if not fire.any():
-            return None, fire
-        t = np.clip((rows_from(self.adj, fire) - cp["grow"]) / max(cp["soft"], 1e-9), 0.0, 1.0)
-        return 1.0 - t * t * (3 - 2 * t), fire
 
     def rotations(self, X, passes=0, fixed=None):
         """[n, 3, 3] per welded vertex: the polar of the area-weighted triangle deformation gradients (rest -> X), after
@@ -287,9 +242,6 @@ class Fair:
         c = self._crumple()                                     # [n] 1 on the crumple, 0 off it (edges "blend")
         if prm["alpha_mid"] is not None:                        # off the crumple the patch is pulled to the posed points
             al = np.maximum(al, (prm["alpha_mid"] * (1 - c[p]) + prm["alpha_core"] * c[p]) * np.median(wu))
-        if self._cap is not None:                               # the cap: the posed points only soft targets
-            kc = self._cap[0][p] * ((1 - c[p]) if prm["cap"]["spare"] else 1.0)
-            al = (1 - kc) * al + kc * prm["cap"]["alpha"] * np.median(wu)
         K, self._bend = Lpp + sp.diags(al), None
         if prm["bend"] is not None:                             # the C1 solve: the bending rows are the patch and its ring
             rows = np.nonzero(patch | ring)[0]
@@ -343,8 +295,7 @@ class Fair:
         prm = self.prm
         if prm["edges"] != "blend":
             return np.zeros(self.n)
-        d = self._cdist if getattr(self, "_cdist", None) is not None else self._dist
-        t = np.clip((d - prm["c_core"]) / max(prm["c_soft"], 1e-9), 0.0, 1.0)
+        t = np.clip((self._dist - prm["c_core"]) / max(prm["c_soft"], 1e-9), 0.0, 1.0)
         return 1.0 - t * t * (3 - 2 * t)
 
     def _finish(self, X, patch, p, Eu, wu, d0, Xb, al, cols, R, c=None, Fe=None):
@@ -353,21 +304,12 @@ class Fair:
         ce = 0.5 * (c[Eu[:, 0]] + c[Eu[:, 1]])[:, None] if blend else None
         Xd = X[Eu[:, 0]] - X[Eu[:, 1]]
         va = self.varea[p] * (c[p] if blend else 1.0)            # blend: the volume is the crumple's
-        if self._cap is not None:                               # the cap: the rest edges turned by the rigid-blend rotations
-            kc, Rc = self._cap
-            ke = 0.5 * (kc[Eu[:, 0]] + kc[Eu[:, 1]])[:, None]
-            if prm["cap"]["spare"] and blend:
-                ke = ke * (1 - ce)
-            vc = Xd if prm["cap"]["target"] == "posed" else np.einsum("eij,ej->ei", 0.5 * (Rc[Eu[:, 0]] + Rc[Eu[:, 1]]), d0)
-            va = np.maximum(va, self.varea[p] * kc[p])           # and its volume held
 
         def poisson(R, Fe=None):
             G = R if Fe is None else Fe
             v = np.einsum("eij,ej->ei", 0.5 * (G[Eu[:, 0]] + G[Eu[:, 1]]), d0)
             if blend:                                           # the posed edges off the crumple
                 v = ce * v + (1 - ce) * Xd
-            if self._cap is not None:
-                v = ke * vc + (1 - ke) * v
             v = wu[:, None] * v
             Bv = np.zeros((self.n, 3))
             np.add.at(Bv, Eu[:, 0], v)
@@ -417,10 +359,10 @@ class Fair:
             Y = Z[p]
         return Y, info
 
-    def fair(self, V, where=None, extra=None, rigid=None):
+    def fair(self, V, where=None, extra=None):
         """(V', info). V [nraw, 3] posed; where [nraw] bool (None: everywhere) limits the seeds; extra [nraw] bool (None:
         none): points that are seeds whatever the measures say (a caller's own count, e.g. strip_rest's turned map
-        triangles' A points). rigid (R, w): the cap rule's input (CAP; ignored when params "cap" is None). No seed: V itself."""
+        triangles' A points). No seed: V itself."""
         V = np.asarray(V, float)
         prm = self.prm
         X = V[self.first]
@@ -438,29 +380,6 @@ class Fair:
         info = {"seed_edges": int(eb.sum()), "seed_flips": int(fl.sum()), "rounds": 0}
         if extra is not None:
             info["seed_extra"] = int(ex.sum())
-        self._cap, self._cdist, capx = None, None, None
-        if prm["cap"] is not None and rigid is not None:        # the cap rule: its share and the rigid-blend rotations
-            Xf = None
-            if prm["cap"]["ceil"] is not None:                  # the ceiling reads the fair without the cap
-                self.prm = {**prm, "cap": None}
-                try:
-                    Vf, inf0 = self.fair(V, where, extra)
-                finally:
-                    self.prm = prm
-                Xf = Vf[self.first]
-            kc, fire = self.cap_share(X, rigid, wh, Xf)
-            info["cap_fire"] = int(fire.sum())
-            if kc is None and Xf is not None:                   # nothing over the ceiling: the fair without the cap
-                return Vf, {**inf0, "cap_fire": 0}
-            if kc is not None and prm["cap"]["mode"] == "lap":  # the cap re-solved on P5's surface by Laplacian coordinates
-                return self._cap_lap(V, Vf, X, kc, {**inf0, "cap_fire": int(fire.sum())})
-            if kc is not None:
-                cp = prm["cap"]
-                Rr = np.broadcast_to(np.asarray(rigid[0], float), (self.nraw, 3, 3))[self.first]
-                self._cap = (kc, polar((1 - cp["turn"]) * self.rotations(X, cp["passes"]) + cp["turn"] * Rr))
-                if cp["spare"]:                                 # the cap's own seeds are not crumple
-                    capx = (kc > 0) & ~(self._seed_mask(eb, fl) | ex)
-                ex = ex | (kc > 0)
         if not eb.any() and not fl.any() and not ex.any():
             return V, info
         seed = self._seed_mask(eb, fl) | ex
@@ -473,8 +392,6 @@ class Fair:
                     break
                 seed = seed | add
             self._dist = rows_from(self.adj, seed)
-            if capx is not None:
-                self._cdist = rows_from(self.adj, seed & ~capx)
             patch = self._dist <= prm["rings"] + self._extra
             ring = self._dist == prm["rings"] + self._extra + 1
             Y, inf = self._solve(X, patch, ring)
@@ -507,66 +424,16 @@ class Fair:
         info["raw"] = raw
         return out, info
 
-    def _cap_lap(self, V, Vf, X, kc, info):
-        """The cap's "lap" mode: on the fair without the cap (Vf) the cap (kc > 0) is solved so its Laplacian coordinates
-        (cotangent L) are kc x the target's (target "rest": the rest ones turned by Vf's rotations after `passes`; "posed":
-        the posed surface's own) + (1 - kc) x Vf's, in least squares with a pull `alpha` x median(diag L^T L) to Vf; every
-        other point held. A biharmonic-like solve: the cap meets the held surface with its slope (no crisp rim)."""
-        cp = self.prm["cap"]
-        Xf = Vf[self.first]
-        if self._L is None:
-            self.curv(Xf, 0)
-        L = self._L
-        U = kc > 0
-        X5 = Xf
-        for _rep in range(int(cp["reps"])):
-            if cp["target"] == "posed":
-                dt = L @ X
-            elif cp["target"] == "clip":                            # a true ceiling: Vf's own, its normal part cut to the cap
-                T = self.T
-                fn = np.cross(Xf[T[:, 1]] - Xf[T[:, 0]], Xf[T[:, 2]] - Xf[T[:, 0]])
-                nv = _unit(self._inc @ fn)
-                b = self._inc @ (np.linalg.norm(fn, axis=1) / 6.0)
-                hf = self.curv(Xf, cp["rings"])
-                top = cp["ceil"] * np.maximum(self._h0[1], self.curv(X, cp["rings"])) + cp["add"]
-                dt = L @ Xf - (2.0 * b * np.maximum(hf - top, 0.0) * cp["clip"])[:, None] * nv
-            else:
-                R = self.rotations(Xf, cp["passes"])
-                dt = np.einsum("nij,nj->ni", R, L @ self.P0)
-            d = kc[:, None] * dt + (1 - kc[:, None]) * (L @ Xf)
-            rows = (np.asarray(abs(L)[:, U].sum(1)).ravel() > 0) | U
-            A = L[rows][:, U].tocsc()
-            b = d[rows] - L[rows][:, ~U] @ Xf[~U]
-            M = (A.T @ A).tocsc()
-            a = float(cp["alpha"]) * np.median(M.diagonal())
-            solve = factorized((M + a * sp.eye(M.shape[0])).tocsc())
-            rhs = A.T @ b + a * X5[U]
-            Y = Xf.copy()
-            Y[U] = np.stack([solve(np.ascontiguousarray(rhs[:, j])) for j in range(3)], 1)
-            Xf = Y
-        out = np.asarray(V, float).copy()
-        old = np.zeros(self.n, bool)
-        old[self.grp[np.asarray(info.get("raw", np.zeros(0, np.int64)), np.int64)]] = True
-        self.patch = getattr(self, "patch", old) | U | old
-        raw = np.nonzero(self.patch[self.grp])[0]
-        out[raw] = Y[self.grp[raw]]
-        info = {**info, "patch": int(self.patch.sum()), "raw": raw}
-        return out, info
-
-    def cached(self, V, where=None, folder=None, extra=None, rigid=None):
+    def cached(self, V, where=None, folder=None, extra=None):
         """fair(V, where, extra), the patch kept in folder / <key>.npz (key: the posed bytes, where, extra, the mesh and
         params)."""
         V = np.asarray(V, float)
-        if self.prm["cap"] is None:
-            rigid = None                                        # (the old key, bit for bit)
         if folder is None:
-            return self.fair(V, where, extra, rigid)
+            return self.fair(V, where, extra)
         h = hashlib.sha1(np.ascontiguousarray(V).tobytes())
         h.update(b"-" if where is None else np.packbits(np.asarray(where, bool)).tobytes())
         if extra is not None:
             h.update(b"x" + np.packbits(np.asarray(extra, bool)).tobytes())
-        if rigid is not None:
-            h.update(b"r" + np.ascontiguousarray(rigid[0], float).tobytes() + np.ascontiguousarray(rigid[1], float).tobytes())
         f = Path(folder) / f"{self.tag}_{h.hexdigest()[:24]}.npz"
         if f.exists():
             c = np.load(f, allow_pickle=False)
@@ -577,33 +444,14 @@ class Fair:
             out[c["raw"]] = c["X"]
             info["raw"] = c["raw"]
             return out, info
-        out, info = self.fair(V, where, extra, rigid)
+        out, info = self.fair(V, where, extra)
         raw = info.get("raw", np.zeros(0, np.int64))
         f.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(f, raw=np.asarray(raw, np.int32), X=out[raw], info=json.dumps({k: v for k, v in info.items() if k != "raw"}))
         return out, info
 
 
-def rigid_of(h, Ga, sides):
-    """The cap rule's rigid input from HER's "fair_a" params "cap" (bone, chain: names with {s}) and A's posed globals Ga:
-    (R [nA, 3, 3] the side's bone turn rest -> pose, w [nA] the side's chain skin share; per A vertex the side whose
-    chain carries more). None when the rule is off or Ga is not given."""
-    cp = ((h.cfg.get("fair_a") or {}).get("params") or {}).get("cap")
-    if not cp or Ga is None:
-        return None
-    Ab, I = h.Ab, h.Ab.p.index
-    n = len(Ab.V0)
-    R, w = np.tile(np.eye(3), (n, 1, 1)), np.full(n, -1.0)
-    for s in sides:
-        b = I[cp["bone"].replace("{s}", s)]
-        M = Ga[b] @ np.linalg.inv(Ab.G0[b])
-        ws = sum((Ab.W * (Ab.J == I[x.replace("{s}", s)])).sum(1) for x in cp["chain"])
-        m = ws > w
-        R[m], w[m] = M[:3, :3], ws[m]
-    return R, w
-
-
-def her_hook(h, rg, Va, Ga=None):
+def her_hook(h, rg, Va):
     """carried_target.Her.part's hook (config "fair_a" = {"regions": [...], "params": {...}}): the region's A posed surface
     Va faired before any carry, seeds limited to the A vertices its carrier reads; cached in out/fair_a. h.fair_on False,
     or a region not listed: Va as it is."""
@@ -616,12 +464,12 @@ def her_hook(h, rg, Va, Ga=None):
         F = h._fair_a = Fair(h.Ab.V0, h.Ab.T, **c.get("params", {}))
     used = np.zeros(len(Va), bool)
     used[np.concatenate([x.tri.ravel() for x in getattr(rg.carrier, "parts", [rg.carrier])])] = True
-    out, info = F.cached(Va, used, HERE / "out" / "fair_a", rigid=rigid_of(h, Ga, [rg.side]))
+    out, info = F.cached(Va, used, HERE / "out" / "fair_a")
     h._fair_info = {**getattr(h, "_fair_info", {}), rg.name: info}
     return out
 
 
-def ref_hook(h, Va, Ga=None):
+def ref_hook(h, Va):
     """strip_rest's hook on the whole pose's A surface (Her.pose_ref): the same rule as her_hook, seeds limited to the A
     vertices every listed region's carrier reads (both girdles). Key absent or h.fair_on False: Va as it is."""
     c = h.cfg.get("fair_a")
@@ -636,6 +484,6 @@ def ref_hook(h, Va, Ga=None):
         if n in h.regions:
             car = h.regions[n].carrier
             used[np.concatenate([x.tri.ravel() for x in getattr(car, "parts", [car])])] = True
-    out, info = F.cached(Va, used, HERE / "out" / "fair_a", rigid=rigid_of(h, Ga, sorted({n[-1] for n in names})))
+    out, info = F.cached(Va, used, HERE / "out" / "fair_a")
     h._fair_info = {**getattr(h, "_fair_info", {}), "pose_ref": info}
     return out

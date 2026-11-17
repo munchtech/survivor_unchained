@@ -877,7 +877,7 @@ def pose_a(h, G):
     Va, Ga = h.pose_ref(G)
     if getattr(h, "cfg", {}).get("fair_a"):
         import fair_a
-        Va = fair_a.ref_hook(h, Va, Ga)
+        Va = fair_a.ref_hook(h, Va)
     return Va, Ga
 
 class HerStrip:
