@@ -88,6 +88,7 @@ public partial class Game : Node, IZoneHost
         // (den r17 P, R16 item 1) --den-lair-pits 1: a lobed main pit and a smaller one in the lair (DungeonGen.LairPits); 0: the r16 holes
         SurvivorUnchained.Maps.DungeonGen.LairPits = Args.Num("den-lair-pits", 1);
         SurvivorUnchained.Maps.DungeonGen.LairPitPx = Args.Num("den-lair-pit-px", 1);   // (den r17 P3) the main pit sized by its width in the boss frame; 0: G's metres
+        SurvivorUnchained.Play.Zones.MapRun.RulerHold = Args.Num("den-ruler-hold", 0);   // (den r18 lead, R17 item 8) pictures: the lair clear of the Pack-Mother for N s
         // (den r17 lead, R16 item 5) --den-kit-bone 1: the kit's long bones in the den again (MapRun); 0: cut, the painted litter carries the bones
         SurvivorUnchained.Play.Zones.MapRun.DenKitBones = Args.Num("den-kit-bone", 0) > 0;
         // The Lamps v2 board is the default; --lampsv1 (or SU_LAMPS_V2=0) plays v1's for one release (LAMPS_V2_RULES.md "The flag").

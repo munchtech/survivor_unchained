@@ -353,7 +353,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         if (lit != null) Event();
         Press(dt);
         // The ruler, in its clearing.
-        if (!bossUp && !cleared && !returning && boss == null && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
+        if (!bossUp && !cleared && !returning && boss == null && Seconds >= RulerHold && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
     }
 
     /* ------------------------------------------- the packs' kit (M3 round 4) -- */
@@ -529,6 +529,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     }
 
     /* ---------------------------------------------------------- the ruler -- */
+
+    /// <summary>(den r18 lead, R17 item 8; pictures only) seconds into the run before the ruler may rise (--den-ruler-hold): the lair shot clear of the boss. 0: as before.</summary>
+    public static double RulerHold;
 
     void Ruler(bool again)
     {
