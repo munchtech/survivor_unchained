@@ -1,0 +1,5 @@
+{
+  "about": "Her default body (lane G flip, the owner 16-17 Nov). default: p1 = body B, a = the shipped body A (the fallback: set a, or pass --body a). hidden_on_b: callings not offered on B, and a character of one of them loads on A (the owner 17 Nov: 'hide all 3 besides warden for demo'); empty the list to bring them back.",
+  "default": "p1",
+  "hidden_on_b": ["reaver", "arcanist", "stalker"]
+}

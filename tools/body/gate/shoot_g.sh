@@ -16,7 +16,7 @@ python $TURN take godot "lane G: bare-shape shots" --wait 90 || { echo "NO TURN"
 cd $WT/godot && dotnet build -v q -nologo > $O/build.log 2>&1 || { echo "BUILD FAILED"; python $TURN give godot "lane G: bare-shape shots"; exit 3; }
 for BODY in A B; do
   mkdir -p $O/$BODY
-  X=""; [ $BODY = B ] && X="--body p1 --p1-probe"
+  X="--body a"; [ $BODY = B ] && X="--body p1 --p1-probe"
   for k in look_look_day close_town_day play_town_day play_play_day; do
     timeout 400 "$G" --path . --fixed-fps 60 --resolution 1920x1080 -- --shot ${k} ${S[$k]} $C0 $X > $O/$BODY/$k.log 2>&1
     echo "== $BODY $k exit $?"; grep -E "saved|ERROR|Exception" $O/$BODY/$k.log | head -3

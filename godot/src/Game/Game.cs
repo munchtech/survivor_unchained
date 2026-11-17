@@ -520,6 +520,7 @@ public partial class Game : Node, IZoneHost
 
     void Hook()
     {
+        P1Body.Calling = Journey.Ch.Archetype;   // (B's default hides some callings on B: her_body.json)
         Journey.OnToast = Toast;
         Journey.OnAnnounce = Announce;
         Journey.OnTouch = () => screens.Current?.Refresh();

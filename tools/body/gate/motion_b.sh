@@ -18,7 +18,7 @@ python $TURN take godot "lane G: motion probe A|B" --wait 900 || { echo "NO TURN
 cd $WT/godot
 for BODY in $BODIES; do for K in $CAMS; do
   D=$O/$BODY/$K; mkdir -p $D
-  X=""; [ $BODY = B ] && X="--body p1"
+  X="--body a"; [ $BODY = B ] && X="--body p1"
   timeout 900 "$G" --path . --fixed-fps 60 --resolution 1920x1080 -- --shot mb_${BODY}_${K} --seconds 999 --count 0 ${CAM[$K]} $C0 $X \
     --clip-tour $CLIPS --clip-tour-shots $N --clip-tour-wait ${WAIT:-420} --pose-probe $(cygpath -w $D/pose.jsonl) --pose-probe-full $(cygpath -w $D/full.jsonl) \
     --pose-probe-every 2 </dev/null > $D/run.log 2>&1
