@@ -144,8 +144,8 @@ def _fill(keys):
     return out
 
 
-def _build(name, rig, keys, meta):
-    return build(name, rig, _fill(keys), lead=STRIKE, meta=meta)
+def _build(name, rig, keys, meta, pin_first=0, pin_path=None):
+    return build(name, rig, _fill(keys), lead=STRIKE, meta=meta, pin_first=pin_first, pin_path=pin_path)
 
 
 def _body(p):
@@ -207,7 +207,10 @@ def sword_back(rig):
         keys[4] = (15, pose(-10, -18, (-0.30, -0.32, 0.16), _n(-0.9, -0.38, 0.2), pole=(-0.3, -0.9, 0.2), left=False, weight=-0.4), "auto")
     keys = with_shield(keys, BACK_L)
     keys = _land(keys, rig, step=(20, 0.035))
-    return _build("sword_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    # (body-b-skill-clips) pin_first: frame 0's right elbow is the cocked key's own (the pole's), eased into the
+    # smoothed path over two frames; smoothed, the cut's later elbows drew it in and the arm sat 19 mm into her trunk (A).
+    return _build("sword_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"},
+                  pin_first={"r": 2})
 
 
 def sword_fore(rig):

@@ -62,23 +62,75 @@ TABLE = {
 }
 
 
-def warp(src, segments):
-    """The take resampled so each (from, to) stretch lasts its given time."""
-    times = []
+# (body-b-skill-clips, 17 Nov) The warden's leap is the shared take's timing (still landing at frame 13, Arts.Leap's
+# 0.42 s) resampled with aa: at 2.2x each frame took the take at one instant and skipped the 1.2 source frames between
+# (aliasing), so its fast beats came out as one-frame snaps and reversals (27 pops): the spring's knees 79-88 deg in a
+# frame (calf_l, calf_r, foot_l at f2), the left fingers' regrip 31-37 deg at f11, the arms at f9-13, and the speed
+# halving in one frame at f13. Each frame now averages the take over the stretch it stands for (a tent 2.5 of its
+# frames wide each side), and the speed eases across the join. The other callings' leap keeps TABLE's (no aa).
+LEAP_WARDEN_AA = 2.5
+
+
+def warp(src, segments, aa=False):
+    """The take resampled so each (from, to) stretch lasts its given time. `aa` (a width, in output frames): a frame
+    that stands for more than one source frame (a stretch sped up) is the take averaged under a tent that many of its
+    frames wide each side, not the one instant (the fast beats' snaps between frames: aliasing), and the speed eased
+    across the joins. 0/False: as before."""
+    times, rate = [], []
     for a, b, d in segments:
         n = max(2, int(round(d * 30)))
         for k in range(n):
             times.append(a + (b - a) * k / n)
+            rate.append((b - a) * 30.0 / n)
     times.append(segments[-1][1])
-    t = np.clip(np.array(times) * 30.0, 0, src.rot.shape[0] - 1)
-    lo = np.floor(t).astype(int)
-    hi = np.minimum(lo + 1, src.rot.shape[0] - 1)
-    f = (t - lo)[:, None]
-    pos = src.pos[lo] * (1 - f[..., None]) + src.pos[hi] * f[..., None]
-    rot = np.empty((len(t),) + src.rot.shape[1:])
-    for i in range(len(t)):
-        for j in range(src.rot.shape[1]):
-            rot[i, j] = qslerp(src.rot[lo[i], j], src.rot[hi[i], j], f[i, 0])
+    rate.append(rate[-1])
+    if aa and len(segments) > 1:
+        # The speed eased from one stretch's to the next's (a cubic through the same joins: the stretches' ends land on
+        # the same frames), not changed in one frame (the arms' snap at a join).
+        ns = [max(2, int(round(d * 30))) for _, _, d in segments]
+        kf = np.concatenate([[0], np.cumsum(ns)]).astype(float)
+        kt = np.array([segments[0][0]] + [b for _, b, _ in segments]) * 30.0
+        sec = np.diff(kt) / np.diff(kf)
+        m = np.concatenate([[sec[0]], (sec[:-1] + sec[1:]) / 2, [sec[-1]]])
+        times, rate = [], []
+        for i in range(len(segments)):
+            h = kf[i + 1] - kf[i]
+            for k in range(int(ns[i]) + (1 if i == len(segments) - 1 else 0)):
+                u = k / h
+                h00, h10, h01, h11 = 2*u**3 - 3*u**2 + 1, u**3 - 2*u**2 + u, -2*u**3 + 3*u**2, u**3 - u**2
+                d00, d10, d01, d11 = 6*u**2 - 6*u, 3*u**2 - 4*u + 1, -6*u**2 + 6*u, 3*u**2 - 2*u
+                times.append((h00 * kt[i] + h10 * h * m[i] + h01 * kt[i + 1] + h11 * h * m[i + 1]) / 30.0)
+                rate.append((d00 * kt[i] + d01 * kt[i + 1]) / h + d10 * m[i] + d11 * m[i + 1])
+    last = src.rot.shape[0] - 1
+
+    def at(t):
+        t = np.clip(t, 0, last)
+        lo = np.floor(t).astype(int)
+        hi = np.minimum(lo + 1, last)
+        f = t - lo
+        pos = src.pos[lo] * (1 - f[:, None, None]) + src.pos[hi] * f[:, None, None]
+        rot = np.empty((len(t),) + src.rot.shape[1:])
+        for i in range(len(t)):
+            for j in range(src.rot.shape[1]):
+                rot[i, j] = qslerp(src.rot[lo[i], j], src.rot[hi[i], j], f[i])
+        return rot, pos
+
+    t = np.array(times) * 30.0
+    rot, pos = at(t)
+    if aa:
+        for i, r in enumerate(rate):
+            if r <= 1.0:
+                continue
+            h = r * float(aa)
+            d = np.linspace(-h, h, 2 * int(np.ceil(h)) + 3)
+            w = 1.0 - np.abs(d) / h
+            w /= w.sum()
+            qs, ps = at(t[i] + d)
+            sgn = np.sign(np.einsum("kjc,jc->kj", qs, rot[i]))
+            sgn[sgn == 0] = 1.0
+            q = np.einsum("k,kjc->jc", w, qs * sgn[..., None])
+            rot[i] = q / np.linalg.norm(q, axis=-1, keepdims=True)
+            pos[i] = np.einsum("k,kjc->jc", w, ps)
     src.rot, src.pos = rot, pos
 
 
@@ -96,7 +148,8 @@ def pin(sk, pos, sigma=6):
     return p
 
 
-def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=False, layer="full", note="", span=None, cycle=None):
+def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=False, layer="full", note="", span=None, cycle=None,
+         aa=False):
     path = MOCAP / source / file
     if not path.exists():
         return None
@@ -105,7 +158,7 @@ def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=F
     if ground:
         src.profile = dict(src.profile, ground=ground)
     if warp_:
-        warp(src, warp_)
+        warp(src, warp_, aa)
     local, pos, info = retarget(rig.sk, src)
     local, pos = face_forward(rig.sk, local, pos)
     local = lean_neck(rig, local)
@@ -153,6 +206,7 @@ def clips(rig, want):
     if os.environ.get("WARDEN_IDLE", "prowl") == "prowl" and (not want or any(w in "leap_warden" and len(w) > 4 or "leap_warden" in w for w in want)):
         from clips import prowl, idle
         row = dict(TABLE["leap"]); row["warp_"] = row.pop("warp", None)
+        row["aa"] = LEAP_WARDEN_AA
         c = make(rig, "leap", **row)
         if c is not None:
             c = prowl.settle(rig, c, n=18, fingers_l=idle.warden(0, 0)["fingers_l"])
