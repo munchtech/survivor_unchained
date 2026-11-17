@@ -32,6 +32,13 @@ S[look_back_pixie]="$LK --zoom 0.45 --fig-turn 180 --hair pixie"
 S[look_side_ponytail]="$LK --zoom 0.45 --fig-turn 90 --hair ponytail"
 S[look_full_front]="$LK --zoom 1 --hair braid"
 S[look_full_back]="$LK --zoom 1 --fig-turn 180 --hair braid"
+# (lead 7, 17 Nov: the creator turns over the idle; the far cup's top edge comes into view near 85-105)
+S[look_side85]="$LK --zoom 0.45 --fig-turn 85 --hair ponytail"
+S[look_side100]="$LK --zoom 0.45 --fig-turn 100 --hair ponytail"
+S[look_side90_t55]="${LK/--seconds 5/--seconds 5.5} --zoom 0.45 --fig-turn 90 --hair ponytail"
+S[look_side90_t45]="${LK/--seconds 5/--seconds 4.5} --zoom 0.45 --fig-turn 90 --hair ponytail"
+S[look_q45]="$LK --zoom 0.45 --fig-turn 45 --hair ponytail"
+S[look_side270]="$LK --zoom 0.45 --fig-turn 270 --hair ponytail"
 S[hidden_reaver]="--zone waystation --quick reaver --time day --seconds 5 --hair braid"
 KEYS=${3:-look_look_day close_town_day play_town_day play_play_day play_run_hold play_hit_hold play_run_back play_leap_back play_den look_ponytail look_pixie close_ponytail close_pixie hidden_reaver}
 python $TURN take godot "lane G flip gate: $TAG" --wait 900 || { echo "NO TURN"; exit 2; }
