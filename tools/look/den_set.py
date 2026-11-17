@@ -42,7 +42,12 @@ SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale
     "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
     "O6": ("fur", 1.5),     # (den r16 W, R15f item 10) 6 pale fur clumps and 2 dry leaf drifts for the open floor
     "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
+    # (den r18 D4, R17 items 2, 7) Batch 6: shaped bones for the litter (3 long bones, 2 ribs, a jaw, 2 skull fragments, 2 shard
+    # scatters: the decal dumbbells' place), the lair's arc of standing tusks on earth mounds, flayed hides and gnawed haunches
+    "O7": ("bones", 1.25), "O8": ("arc", 1.9), "O9": ("carcass", 2.3),
 }
+JOIN = {"O7": 30, "O9": 30}   # (den r18 D4) source px within which parts are one piece (a shard scatter is one; default 20)
+MIRROR = {"O7", "O8", "O9"}   # (den r18 D4, R17 item 2) each piece followed by its mirror image (piece i + n): the litter's mirroring (light kept from the upper side)
 DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this far to its grey (the fur's lilac read pink on screen; target C <= .03)
 # (den r17 S, R16 judge item 6: the tufts rendered two-toned, blue h 238-251 or cream h 77-85, never the target's warm grey)
 # the fur graded in OKLab to one warm-grey albedo: its value strokes kept (L re-centred on L50, spread kept), hue FUR_H,
@@ -54,7 +59,9 @@ FUR_GRADE = {"O6": {"h": 52.0, "c": 0.028, "l50": 0.66, "spread": 1.0, "under": 
 # (den r17 S, R16 judge item 7: the s23 corridor log's lit top rendered L50 .755, C .120, glowing orange under the shaft, against
 # den_room's .678 / .101) a sheet's lit values rolled off in OKLab: above L knee, the rise kept at this share, and its chroma
 # scaled toward this (at the top), the darks and strokes untouched.
-LIT_KNEE = {"O2": {"knee": 0.58, "share": 0.4, "c": 0.85}}
+LIT_KNEE = {"O2": {"knee": 0.58, "share": 0.4, "c": 0.85},
+            # (den r18 D4, R17 item 2: bone band h 47-60, C .04-.06, lit L50 <= .70; O8 painted tan) the new bones' lights rolled off
+            "O7": {"knee": 0.62, "share": 0.45, "c": 0.85}, "O8": {"knee": 0.58, "share": 0.4, "c": 0.72}}
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -321,7 +328,7 @@ def build():
         k = 1.0 if widest is None else OBJ_PPM / src_ppm
         f, a = resample(f, a, k)
         ppm = src_ppm * k
-        ps, lab = pieces(a, join=max(4, round(20 * k)))
+        ps, lab = pieces(a, join=max(4, round(JOIN.get(name, 20) * k)))
         # each piece cut out by its own label (a neighbour's reach is keyed out) and shelf-packed with 8 px gutters
         cuts = []
         for (x0, y0, x1, y1, li) in ps:
@@ -353,6 +360,8 @@ def build():
                 over = np.maximum(L_ - kn["knee"], 0.0)
                 ck = 1.0 + (kn["c"] - 1.0) * dr.smooth(kn["knee"], kn["knee"] + 0.15, L_)
                 cuts[i] = (dr.from_oklab(L_ - over * (1.0 - kn["share"]), A_ * ck, B_ * ck), ca)
+        if name in MIRROR:
+            cuts += [(cf[:, ::-1].copy(), ca[:, ::-1].copy()) for cf, ca in cuts]
         W = max(512, max(c[1].shape[1] for c in cuts) + 16)
         order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].shape[0])
         place, x, y, shelf = {}, 8, 8, 0
