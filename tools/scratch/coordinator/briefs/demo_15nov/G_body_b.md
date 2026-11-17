@@ -65,3 +65,6 @@ Read:
 - "also comit b to the demo": B goes IN the demo (20 Nov). My picks 2-5 stand: retire the 10 old plate sets; refit reaver, ranger and arcanist on one judged sheet before the flip; first generated proof the vambrace pair, then a pauldron; TRELLIS.2 local first, Meshy per piece only with the owner's yes (the generated route is after the demo).
 - Fallback until the flip gate passes: A stays one setting away and every build takes the body as an input, so a failed gate ships the demo whole on A, never half-moved.
 - "the generator will eventually be meshy first (or rodan or tripo) once its buttery smooth working well.  they are usually better than trellis.  but for learning it could be costly": TRELLIS.2 (free, local) while the route is being learned; once it runs smooth, the paid generators (Meshy, Rodin, Tripo) become the production default.
+
+## The owner on the callings (17 Nov 2026, word for word)
+- "hide all 3 besides warden for demo.": on B the demo ships the Warden only; reaver, ranger and arcanist are hidden by data (one switch back). Their refit on B (B's crotch and inner-thigh skin weights in Marionette, then the three units) is post-demo.
