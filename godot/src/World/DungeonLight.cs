@@ -165,11 +165,11 @@ public static class DungeonLight
         mat.SetShaderParameter("ray_n", n);
         // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
         mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? "d6dce2"));
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.07f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
         mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0.12f));
         mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
         mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? "eeeae2"));
-        mat.SetShaderParameter("gap_gain", SurvivorUnchained.Args.Num("den-shaft-gap-k", 1.6f));
+        mat.SetShaderParameter("gap_gain", SurvivorUnchained.Args.Num("den-shaft-gap-k", 0.8f));
         mat.SetShaderParameter("gap_ext", SurvivorUnchained.Args.Num("den-shaft-gap-ext", 0.2f));
         var hl = new Vector4[8]; int hn = 0;
         foreach (var h in Hollows) if (hn < 8 && h.p.DistanceTo(new Vector2(foot.X, foot.Z)) < h.r + 16f) hl[hn++] = new Vector4(h.p.X, h.p.Y, h.r, 0f);

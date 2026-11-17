@@ -79,6 +79,7 @@ public static partial class DungeonDress
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
         if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 0.35f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream
+        if (sheet == "O6") { mat.SetShaderParameter("tint", V3("den-fur-tint", new Vector3(0.96f, 0.96f, 0.96f))); mat.SetShaderParameter("shade_tint", V3("den-fur-shade", new Vector3(1f, 1f, 1f))); }   // (den r16 lead, R15f item 10) the set's warm tint made the fur cream in light (C .05-.09); neutral here
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
         if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
@@ -126,9 +127,9 @@ public static partial class DungeonDress
             // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
             mat.SetShaderParameter("pit_cells", SetPitCells);
             mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
-            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.13f, 0.55f)));
-            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.17f, 0.28f, 0.12f)));
-            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.08f, 0.17f, 0.06f)));
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.14f, 0.3f)));
+            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.18f, 0.27f, 0.14f)));
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.09f, 0.15f, 0.07f)));
             mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.065f, 0.066f, 0.058f)));
             mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.08f, 0.12f, 0.4f)));
             mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.7f, 1.3f)));
