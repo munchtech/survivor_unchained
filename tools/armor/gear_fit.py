@@ -2171,7 +2171,7 @@ def bindings(only=None):
 # (an ornament on the belt's face is not cloth through it) or a test that reads A's own layering before it ships.
 HANG = {"skirt": "belt"}
 HANG_LAW = {"reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "fade_mm": 15.0,
-            "cover_mm": 0.0, "ahead_mm": 30.0, "cover_share": 0.5}
+            "cover_mm": 1.5, "ahead_mm": 30.0, "cover_share": 0.5}
 
 
 def hang_rule(ev, host_ev, body, law=HANG_LAW):
