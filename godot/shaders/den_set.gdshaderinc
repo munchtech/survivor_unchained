@@ -68,6 +68,16 @@ uniform float pit_cast_min = 0.16;   // (den r17 P, R16 item 1) the near lip's s
 // 0: as r16 / r17 P
 uniform float pit_bowl = 0.0;
 uniform vec3 pit_bw = vec3(0.35, 0.55, 0.5);
+// (den r18 P4, R17 item 1: tiles, card seams, a terraced wall, wires) pit_v2 1: the floor one continuous surface (no per-plate
+// shade, no plate top edges), its veins the cells' borders warped hard (pit_vein.z cells) with a width (x m, half) and light
+// varying along them, a finer branch layer (w) and a broad bleed (y m); the far wall one gradient (pit_wg: lip, foot, power),
+// no strata, no brink band; the floor shaded under the near lip (pit_near: factor at the lip, reach m); the wall radius taken
+// from the drawn lip (no per-vertex steps); the shader's thin root lines off (the painted B6 roots lie over the lips)
+uniform float pit_v2 = 0.0;
+uniform vec4 pit_vein = vec4(0.06, 0.15, 0.55, 0.35);
+uniform vec3 pit_wg = vec3(1.4, 0.45, 0.8);
+uniform vec2 pit_near = vec2(0.7, 0.9);
+uniform vec2 pit_self = vec2(1.0, 0.0);   // the bowl's albedo share kept under the room's light, and its own light (x albedo)
 varying float pit_pt;
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
@@ -299,6 +309,7 @@ void fragment() {
 		// the view ray: where it meets the wall (tau < 1) or the floor (tau >= 1), the lip a circle of R0 round this bearing
 		vec3 vd = normalize(wpos - CAMERA_POSITION_WORLD);
 		vec2 sv = vd.xz / max(-vd.y, 0.2) * dep;
+		R0 = mix(R0, rr / max(en, 1e-3), pit_v2 * smoothstep(0.3, 0.55, en));   // (den r18 P4) the wall at the drawn lip, not the vertices' radius
 		float qa = max(dot(sv, sv), 1e-6), qb = 2.0 * dot(off, sv), qc = dot(off, off) - R0 * R0;
 		float tau = qc >= 0.0 ? 0.0 : (-qb + sqrt(max(qb * qb - 4.0 * qa * qc, 0.0))) / (2.0 * qa);
 		float wall = 1.0 - smoothstep(1.0 - max(fwidth(tau), 1e-3), 1.0, tau);
@@ -313,8 +324,26 @@ void fragment() {
 		x += 0.32 * (vec2(pg_vn(x * 0.9 + 1.7), pg_vn(x * 0.9 - 6.3)) - 0.5) + 0.07 * (vec2(pg_vn(x * 4.1 + 2.9), pg_vn(x * 4.1 - 8.2)) - 0.5);
 		float aa = 0.75 * length(fwidth(x)), ch, bot, cwc = pit_cw.x / pit_cell_m;
 		vec4 nt = pc_net(x, cwc, pit_cw.y / pit_cell_m, aa, pit_cw.z, ch, bot);
+		float lit2 = 1.0;
+		if (pit_v2 > 0.0) {
+			// (den r18 P4) the veins: the borders' distance (no plate's own shade or lit edge), warped hard so no border runs straight;
+			// each vein fat or thin along its run and lit or dying out (the branches end), warped ridges between, the bleed broad
+			vec2 y = pf / pit_cell_m;
+			y += pit_vein.z * (vec2(pg_vn(y * 0.6 + 1.7), pg_vn(y * 0.6 - 6.3)) - 0.5) + 0.35 * pit_vein.z * (vec2(pg_vn(y * 2.1 + 2.9), pg_vn(y * 2.1 - 8.2)) - 0.5);
+			float h2, b2;
+			vec4 n2 = pc_net(y, 0.0, 1.0, 0.0, 1.0, h2, b2);
+			float d = n2.x * pit_cell_m;
+			float wv = pg_vn(pf * 1.1 + sd * 23.0), lv = pg_vn(pf * 0.45 + sd * 37.0);
+			float hw0 = pit_vein.x * mix(0.3, 1.5, wv);
+			lit2 = smoothstep(0.18, 0.5, 0.65 * lv + 0.35 * wv);
+			float core = (1.0 - smoothstep(0.45 * hw0, hw0 + 0.01, d)) * lit2;
+			float halo = exp(-max(d - 0.45 * hw0, 0.0) / pit_vein.y) * mix(0.2, 1.0, lit2);
+			float sub = smoothstep(0.93, 0.99, pg_ridge(pf * 1.7 + sd * 11.0)) * pit_vein.w * (1.0 - smoothstep(0.0, 0.5, core)) * smoothstep(0.08, 0.3, d);
+			nt = vec4(d / pit_cell_m, min(core + sub, 1.3), min(halo + 0.6 * sub, 1.6), 0.0);
+			ch = 0.5 + 0.35 * (pg_vn(pf * 0.8 + 4.0) - 0.5);
+		}
 		float grain = 1.0 + 0.22 * (pg_vn(pf * 9.0) - 0.5) + 0.12 * (pg_vn(pf * 23.0) - 0.5);
-		float fine = 1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.08, pg_edge(x * 3.3 + 9.1)));   // hairline cracks across a plate
+		float fine = 1.0 - mix(0.3, 0.12, pit_v2) * (1.0 - smoothstep(0.0, 0.08, pg_edge(x * 3.3 + 9.1)));   // hairline cracks across a plate
 		vec3 alb = pit_plate_c * (0.6 + 0.8 * ch) * grain * fine * (1.0 + 2.0 * pit_lipw.z * nt.w);
 		alb *= mix(0.25, 1.0, smoothstep(cwc * 0.4, cwc + aa, nt.x));   // the crack a dark groove where it does not glow
 		float ff = mix(0.3, 1.0, aof) * mix(pit_cast_min, 1.0, cast) * mix(0.25, 1.0, smoothstep(0.0, pit_lipw.x, u));
@@ -322,22 +351,27 @@ void fragment() {
 		// toward the far wall overall; nothing round the near rim
 		float tf = max(-ob + sqrt(max(ob * ob - dot(of, of) + R0 * R0, 0.0)), 0.0);
 		ff = mix(ff, mix(pit_bw.y, 1.0, smoothstep(0.0, pit_bw.z, tf)) * mix(0.82, 1.0, clamp(tf / (1.6 * R0), 0.0, 1.0)), pit_bowl);
+		ff *= mix(1.0, mix(pit_near.x, 1.0, smoothstep(0.0, pit_near.y, tb)), pit_v2);   // (den r18 P4) the near lip's overhang shade
 		alb *= mix(1.0, pit_deep.z, mid) * ff;
 		float pulse = 0.9 + 0.1 * sin(TIME * 1.3 + pf.x * 0.7);
 		float rm = smoothstep(0.15, 0.75, 0.7 * pg_vn(pf * 0.3 + sd * 80.0) + 0.3 * pg_vn(pf * 0.85 + 3.3));
-		vec3 em = (pit_core_c * nt.y + pit_halo_c * nt.z) * pit_glow * mix(0.15, 1.0, rm) * mix(0.4, 1.0, smoothstep(0.95, 0.3, ef)) * pulse;
+		vec3 em = (pit_core_c * nt.y + pit_halo_c * nt.z) * pit_glow * mix(mix(0.15, 0.45, pit_v2), 1.0, rm) * mix(0.4, 1.0, smoothstep(0.95, 0.3, ef)) * pulse;
 		// the wall's earth face: strata and streaks, lit at the brink, dark at its foot, a little green off the floor's glow
 		vec2 hw = xz + sv * clamp(tau, 0.0, 1.0);
 		float zw = dep * clamp(tau, 0.0, 1.0), zr = zw / max(dep, 1e-3), aw = hw.x + 0.6 * hw.y;
 		float wn = 0.5 * pg_vn(vec2(aw * 2.2, zw * 8.0) + sd * 50.0) + 0.3 * pg_vn(vec2(aw * 7.0, zw * 2.5) + 7.7) + 0.2 * pg_vn(vec2(aw * 1.1, zw * 30.0) - 3.1);
 		vec3 wcol = pit_wall_c * (0.55 + 0.9 * wn) * mix(1.0, 0.28, smoothstep(0.05, 1.0, zr)) * (1.0 + 1.4 * (1.0 - smoothstep(0.0, 0.035, zw)));
 		wcol = mix(wcol, pit_wall_c * (0.7 + 0.6 * wn) * mix(1.0, pit_bw.x, smoothstep(0.0, 1.0, zr)) * (1.0 + 0.5 * (1.0 - smoothstep(0.0, 0.03, zw))), pit_bowl);   // (den r17 P2) lit at the brink
+		// (den r18 P4) one gradient from the lip down, streaked down the face (no strata: the stepped rings), no brink band
+		float ws = 0.6 * pg_vn(vec2(aw * 2.6, zw * 0.9) + sd * 50.0) + 0.4 * pg_vn(vec2(aw * 8.0, zw * 1.6) + 7.7);
+		wcol = mix(wcol, pit_wall_c * (0.82 + 0.36 * ws) * mix(pit_wg.x, pit_wg.y, pow(clamp(zr, 0.0, 1.0), pit_wg.z)), pit_v2);
 		vec3 wem = pit_halo_c * pit_glow * 0.45 * smoothstep(0.4, 1.0, zr) * mix(0.15, 1.0, rm);
 		alb = mix(alb, wcol, wall);
 		em = mix(em, wem, wall);
 		// root ends over the lip (tapering to a tip inside, lit on their upper side) and crumbs of earth
 		float th = atan(off.y, off.x), rootm = 0.0, rooth = 0.0;
 		for (int k = 0; k < 7; k++) {
+			if (pit_v2 > 0.0) break;   // (den r18 P4, R17 item 5: the black wires) the painted B6 roots lie over the lips
 			vec2 hk = pg_h2(sd * 53.0 + float(k) * 7.9);
 			if (hk.y < 0.3) continue;
 			float tk = 6.2832 * ((float(k) + 0.25 + 0.5 * hk.x) / 7.0 + sd.y);
@@ -377,8 +411,8 @@ void fragment() {
 		alb = mix(alb, vec3(0.055, 0.036, 0.024) * mix(1.0, 2.4, rooth), rootm);
 		alb = mix(alb, vec3(0.16, 0.108, 0.068) * mix(0.5, 1.25, smoothstep(-0.15, 0.15, kr.y)) * mix(0.5, 1.0, out_), crumb);
 		alb = gloom_col(alb, lair_gloom(wpos));
-		ALBEDO = alb * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));
-		EMISSION = (em * inside + (pit_core_c * rc + pit_halo_c * rh) * pit_glow * pulse * out_ * 0.85 / max(ra, mix(0.05, 0.3, pit_bowl)) * step(0.001, ra)) * (1.0 - max(rootm, crumb));
+		ALBEDO = alb * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y)) * mix(1.0, pit_self.x, inside);
+		EMISSION = alb * pit_self.y * inside + (em * inside + (pit_core_c * rc + pit_halo_c * rh) * pit_glow * pulse * out_ * 0.85 / max(ra, mix(0.05, 0.3, pit_bowl)) * step(0.001, ra)) * (1.0 - max(rootm, crumb));
 		ALPHA = max(inside, max(ra, max(rootm, crumb)));
 		pit_pt = 1.0 - inside * pit_bowl;   // (den r17 P2) no spot or omni light inside the bowl (light())
 	} else
