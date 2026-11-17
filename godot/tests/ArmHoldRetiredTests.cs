@@ -12,7 +12,7 @@ public class ArmHoldRetiredTests
         Assert.True(ArmHold.Layered(isB: false));
     }
 
-    // PlayerView builds the filtered "arms" copy, adds HerArmHold and eases the grip only behind the layered flag,
+    // PlayerView builds the filtered "arms" copy and adds HerArmHold only behind the layered flag,
     // which is ArmHold.Layered(isB), isB = P1Body.IsB(...).
     [Fact]
     public void PlayerViewGatesEveryPieceOfTheLayer()
@@ -28,7 +28,10 @@ public class ArmHoldRetiredTests
         Assert.True(src.IndexOf("FilterEnabled = true", gate, System.StringComparison.Ordinal) > gate);
         int mod = src.IndexOf("armMod = new HerArmHold();", System.StringComparison.Ordinal);
         Assert.True(mod > 0 && src.LastIndexOf("if (layered)", mod, System.StringComparison.Ordinal) > mod - 80, "HerArmHold only when layered");
-        Assert.Contains("if (layered && idleNode != null && runNode != null)", src);   // the grip ease
+        // The grip ease (slide, tilt) and the side carry on it run on any body (round 11, warden-move: they turn the held
+        // piece, not her bones, so B's bone bake does not carry them; gated off, B's stand blade lay at 30 deg pitch, not 63).
+        Assert.Contains("const bool grips = true;", src);
+        Assert.Contains("if (grips && idleNode != null && runNode != null)", src);
     }
 }
 

@@ -195,6 +195,10 @@ public partial class PlayerView : Node3D
     bool armOn;
     // The arm-hold layer (the arms copy, HerArmHold, the grip ease): A only (ArmHold.Layered).
     bool layered = true, isB;
+    // The clips' grips (slide, tilt: animations 47, 48, 58) and the side carry (SideCarry) on them: any body. They turn the
+    // held piece in its fist, not her bones, so B's bake (bones only) does not carry them (round 11: off on B, the warden's
+    // stand blade lay at the pocket's 30 deg pitch, not the clip's 63: a cane). PersonView.Slide tilts about B's own pocket.
+    const bool grips = true;
 
     /// <summary>A gait clip's ground speed: on B a P4 clip's own (P4Overlay.Speed), else heroine_clips.json's.</summary>
     float Spd(string clip)
@@ -1125,7 +1129,7 @@ public partial class PlayerView : Node3D
         {
             tree.Active = false;
             if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed")); } // (--sheathed: her pieces at their sockets, as in a safe place)
-            if (layered)
+            if (grips)
             {
                 slide = own.GripSlide(hold[0]); // the clip's grip, straight (no easing)
                 tilt = own.GripTilt(hold[0]);
@@ -1820,7 +1824,7 @@ public partial class PlayerView : Node3D
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.
-        if (layered && idleNode != null && runNode != null)
+        if (grips && idleNode != null && runNode != null)
         {
             float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), wWalk, w,
                 own.GripSlide(idleNode.Animation), own.GripSlide((walkNode ?? idleNode).Animation), own.GripSlide(runNode.Animation));
@@ -1978,7 +1982,7 @@ public partial class PlayerView : Node3D
         }
         string clip = list[tourAt];
         view?.Sheathe(clip.EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed"));
-        if (layered)
+        if (grips)
         {
             slide = own.GripSlide(clip); tilt = own.GripTilt(clip);
             view?.Slide("handslot.r", slide, tilt);
@@ -2796,7 +2800,7 @@ public partial class PlayerView : Node3D
         carryPos = pos;
         var cam = GetViewport()?.GetCamera3D();
         var bone = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
-        bool on = CarryOn && !held && TourList == null && layered && cam != null;
+        bool on = CarryOn && !held && TourList == null && grips && cam != null;
         var f = default(SideCarry.Frame);
         if (on)
         {
@@ -2833,7 +2837,7 @@ public partial class PlayerView : Node3D
             }
         }
         else bladeHead = float.NaN;
-        if (layered) CarrySlide(bone);
+        if (grips) CarrySlide(bone);
     }
     Vector3 carryPos, carryB0;
     float carryStrafe, carryMove;
