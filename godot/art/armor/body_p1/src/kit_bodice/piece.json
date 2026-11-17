@@ -1,0 +1,23 @@
+{
+ "id": "kit_bodice",
+ "name": "Gilded Gunmetal Bodice",
+ "slot": "top",
+ "style": "mesh",
+ "params": {
+  "file": "kit_bodice.glb"
+ },
+ "covers": [
+  "top"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ },
+ "adorn": [],
+ "layer": 1,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}

@@ -1,0 +1,23 @@
+{
+ "id": "kit_helm",
+ "slot": "head",
+ "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+ "space": "glTF / Godot: Y up, metres, her bind pose",
+ "sockets": {},
+ "rims": {},
+ "fixings": [],
+ "adorn": [],
+ "uv_surface": {
+  "mesh": "kit_helm.head.steel",
+  "layer": "UVMap (TEXCOORD_0)",
+  "units": "metres x the material's repeats (outfit_materials.json), one projection along the cup's facing"
+ },
+ "trim_uv": {
+  "layer": "trim (TEXCOORD_2)",
+  "atlas": "res://art/armor/trim_strip.png",
+  "on": [],
+  "band": "rolled_edge"
+ },
+ "body_glb": "e37f5a0c",
+ "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+}

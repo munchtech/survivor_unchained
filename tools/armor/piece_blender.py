@@ -2660,42 +2660,46 @@ TUCK_P = 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb])
 # her points, and the records and hash made from them, are the game's.
 # (her breast weights eased into her body's groups, as the full build does first: chest_smooth and the helpers'
 # split read them)
-_, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
-changed = np.abs(W - G["W_AUTHORED"]).sum(1) > 1e-4
-groups = {vg.name: vg for vg in body.vertex_groups}
-n_eased = 0
-for v in me.vertices:
-    j = jw[v.index]
-    if not changed[j]:
-        continue
-    for e in list(v.groups):
-        body.vertex_groups[e.group].remove([v.index])
-    row_ = W[j]
-    top_ = np.argsort(-row_)[:4]
-    tot_ = row_[top_].sum() or 1.0
-    for b_ in top_:
-        if row_[b_] > 0.003:
-            vg = groups.get(BONES[b_]) or body.vertex_groups.new(name=BONES[b_])
-            groups[BONES[b_]] = vg
-            vg.add([v.index], float(row_[b_] / tot_), "REPLACE")
-    n_eased += 1
-print("BODY breast weights eased at", n_eased, "of her vertices")
-if os.environ.get("CHEST_SMOOTH", "1") == "1":
-    from heroine_chest import chest_smooth
-    chest_smooth(body, G["mend_folds"])
-if os.environ.get("AREOLA_OUT", "1") == "1":
-    import heroine_areola
-    heroine_areola.apply(body, [G["NIPPLE"]["l"], G["NIPPLE"]["r"]])
-G["mend_folds"](me, body)
-G["rig_helpers"].apply(arm, [body])
+# (Body B (SU_ARMOR_BODY=p1) already IS the game's body, published as built: its joints, names, weights and points
+# are what the base is made from. These are body A's full-build steps; skipped on B.)
+B_BODY = os.environ.get("SU_ARMOR_BODY", "a") == "p1"
 keep = None
-if G["HAND_PIVOTS"] and G["FINGER_FIX"]:
-    keep = [np.empty(len(me.vertices) * 3)]
-    me.vertices.foreach_get("co", keep[0])
-    for kb in (me.shape_keys.key_blocks if me.shape_keys else []):
-        keep.append(np.empty(len(kb.data) * 3))
-        kb.data.foreach_get("co", keep[-1])
-    G["finger_flattened"](body)
+if not B_BODY:
+    _, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+    changed = np.abs(W - G["W_AUTHORED"]).sum(1) > 1e-4
+    groups = {vg.name: vg for vg in body.vertex_groups}
+    n_eased = 0
+    for v in me.vertices:
+        j = jw[v.index]
+        if not changed[j]:
+            continue
+        for e in list(v.groups):
+            body.vertex_groups[e.group].remove([v.index])
+        row_ = W[j]
+        top_ = np.argsort(-row_)[:4]
+        tot_ = row_[top_].sum() or 1.0
+        for b_ in top_:
+            if row_[b_] > 0.003:
+                vg = groups.get(BONES[b_]) or body.vertex_groups.new(name=BONES[b_])
+                groups[BONES[b_]] = vg
+                vg.add([v.index], float(row_[b_] / tot_), "REPLACE")
+        n_eased += 1
+    print("BODY breast weights eased at", n_eased, "of her vertices")
+    if os.environ.get("CHEST_SMOOTH", "1") == "1":
+        from heroine_chest import chest_smooth
+        chest_smooth(body, G["mend_folds"])
+    if os.environ.get("AREOLA_OUT", "1") == "1":
+        import heroine_areola
+        heroine_areola.apply(body, [G["NIPPLE"]["l"], G["NIPPLE"]["r"]])
+    G["mend_folds"](me, body)
+    G["rig_helpers"].apply(arm, [body])
+    if G["HAND_PIVOTS"] and G["FINGER_FIX"]:
+        keep = [np.empty(len(me.vertices) * 3)]
+        me.vertices.foreach_get("co", keep[0])
+        for kb in (me.shape_keys.key_blocks if me.shape_keys else []):
+            keep.append(np.empty(len(kb.data) * 3))
+            kb.data.foreach_get("co", keep[-1])
+        G["finger_flattened"](body)
 def mesh_world(objs):
     vs, fs, owner = [], [], []
     for o in objs:

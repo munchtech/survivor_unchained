@@ -1,0 +1,24 @@
+[
+ {
+  "id": "kit_helm",
+  "outfit": null,
+  "slot": "head",
+  "layer": 3,
+  "covers": [
+   "head"
+  ],
+  "meshes": [
+   "kit_helm.head.gold",
+   "kit_helm.head.steel"
+  ],
+  "tuck": "armor_tuck/kit_helm.bin",
+  "tuck_count": 0,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_helm.gltf",
+  "tier": 2,
+  "rigid": true,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ }
+]

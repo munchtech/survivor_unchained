@@ -1,0 +1,19 @@
+{
+ "id": "kit_gloves",
+ "name": "Gilded Fingerless Gloves",
+ "slot": "gloves",
+ "style": "mesh",
+ "params": {
+  "file": "kit_gloves.glb"
+ },
+ "covers": [
+  "gloves"
+ ],
+ "material": "darkleather",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "adorn": [],
+ "layer": 1,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}

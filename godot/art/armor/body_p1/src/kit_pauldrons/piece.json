@@ -1,0 +1,62 @@
+{
+ "id": "kit_pauldrons",
+ "name": "Gilded Gunmetal Pauldrons",
+ "slot": "pauldrons",
+ "style": "mesh",
+ "params": {
+  "file": "kit_pauldrons.glb",
+  "graft": "leather",
+  "shoulder_shapes": false,
+  "shoulder_shapes_meshes": [
+   "darkleather"
+  ],
+  "rigid_ride": [
+   {
+    "match": "cop_l",
+    "weights": {
+     "pauldron_hinge_l": 1.0
+    }
+   },
+   {
+    "match": "lame0_l",
+    "weights": {
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "lame1_l",
+    "weights": {
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "cop_r",
+    "weights": {
+     "pauldron_hinge_r": 1.0
+    }
+   },
+   {
+    "match": "lame0_r",
+    "weights": {
+     "delt_r": 1.0
+    }
+   },
+   {
+    "match": "lame1_r",
+    "weights": {
+     "delt_r": 1.0
+    }
+   }
+  ]
+ },
+ "covers": [
+  "pauldrons"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "adorn": [],
+ "layer": 3,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}

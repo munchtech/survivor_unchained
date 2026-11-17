@@ -1,0 +1,20 @@
+{
+ "id": "kit_boots",
+ "name": "Gilded Lace-Up Boots",
+ "slot": "boots",
+ "style": "mesh",
+ "params": {
+  "file": "kit_boots.glb"
+ },
+ "covers": [
+  "boots",
+  "greaves"
+ ],
+ "material": "darkleather",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "adorn": [],
+ "layer": 2,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}
