@@ -375,7 +375,10 @@ public partial class BattleFx
                 {
                     on.Ids.Add(e.Id);
                     on.Live.Add(e.Id);
-                    on.Hot = 0;
+                    // (lead 8, judge 5: "seam never cooled": the storm throws a line every heavy tick, 0.6 s, and each joining
+                    // line set its seam white-hot again, so it never reached the ember) a joining line keeps the scar's clock;
+                    // only a scar whose crack has gone (storm.seam.pending[5]) tears open again from her end
+                    if (on.Hot > P7D.All("storm.seam.pending")[5]) { on.Hot = 0; on.Age = 0; }
                     on.FadeAge = -1;
                     p7Scars[e.Id] = on;
                     if (Args.Has("clip")) GD.Print($"p7line joins scar of {on.Ids[0]} ({on.Ids.Count} ids) frame {Engine.GetFramesDrawn()}");
@@ -564,7 +567,6 @@ public partial class BattleFx
         m.SetShaderParameter("p7_lit", lit);
         m.SetShaderParameter("p7_gap", P7V4("storm.line.gap"));
         m.SetShaderParameter("p7_jag", P7V4("storm.line.jag"));
-        m.SetShaderParameter("p7_brn", P7V4("storm.line.branch"));
         m.SetShaderParameter("p7_lip", P7V4("storm.line.lip"));
         var sm = P7D.All("storm.seam.shape");
         m.SetShaderParameter("p7_seam", new Vector4(P7D["storm.seam.px"], sm[0], sm[1], sm[2]));
@@ -572,6 +574,14 @@ public partial class BattleFx
         m.SetShaderParameter("p7_deep", P7Oklch("storm.line.deep"));
         m.SetShaderParameter("p7_wall", P7Oklch("storm.line.wall"));
         m.SetShaderParameter("p7_lipc", P7Oklch("storm.line.lip_lch"));
+        // (lane E lead 8, judge 5) its forks and broken chunks along the run on screen (logic/Look/FissureMarks.cs)
+        var fk = P7D.All("storm.line.fork");
+        var (forks, chunks) = SurvivorUnchained.Look.FissureMarks.Pick(vis < 0 ? apx : vis, tpx, fk, P7D.All("storm.line.chunk"), P7D.All("storm.line.gap"), R);
+        for (int k = 0; k < 4; k++)
+            m.SetShaderParameter("p7_fk" + k, k < forks.Length ? new Vector4(forks[k].At, forks[k].Long, forks[k].Turn, forks[k].Root) : Vector4.Zero);
+        for (int k = 0; k < 3; k++)
+            m.SetShaderParameter("p7_ck" + k, k < chunks.Length ? new Vector4(chunks[k].At, chunks[k].Wide, chunks[k].Long, chunks[k].Salt) : Vector4.Zero);
+        m.SetShaderParameter("p7_ftip", fk[5]);
         m.SetShaderParameter("p7_open", 0f);
         m.SetShaderParameter("p7_erode", 0f);
         m.SetShaderParameter("p7_fade", 0f);
@@ -580,6 +590,12 @@ public partial class BattleFx
         AddChild(node);
         node.GlobalTransform = Transform3D.Identity;
         if (FxAfter.On) FxAfter.Adopt(node);
+        if (Args.Has("clip") && cam != null)
+        {
+            var fs = string.Join(" ", Array.ConvertAll(forks, f => $"{f.At:F0}/{f.Long:F0}"));
+            var cs = string.Join(" ", Array.ConvertAll(chunks, c => $"{c.At:F0}/{c.Wide:F1}x{c.Long:F0}"));
+            GD.Print($"p7line marks: forks at/long px {fs}; chunks at/wide x long px {cs}; floor mask {(FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? "on" : "off")}");
+        }
         if (Args.Has("clip") && cam != null)
             GD.Print($"p7line fissure {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, start {a0:F0}px ahead (feet {feet:F0}), reach {cam.UnprojectPosition(V(from.X + dir.X * len, Y(from.X + dir.X * len, from.Y + dir.Y * len), from.Y + dir.Y * len)) * vk:F0}, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
         return new P7Scar { N = node, M = m };
@@ -612,6 +628,8 @@ public partial class BattleFx
         var life = P7D.All("storm.line.life");
         var pend = P7D.All("storm.seam.pending");
         if (p7Wd != null && FxWorldDepth.Tex.IsValid && p7Wd.TextureRdRid != FxWorldDepth.Tex) p7Wd.TextureRdRid = FxWorldDepth.Tex;
+        // (lead 8) the floor mask on as soon as the play frame's depth is there (a scar laid before it never got it)
+        float wdOn = FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? 1f : 0f;
         // each scar once, however many line ids are mapped onto it
         for (int i = p7ScarList.Count - 1; i >= 0; i--)
         {
@@ -620,6 +638,7 @@ public partial class BattleFx
             s.Age += dt;
             s.Hot += dt;
             s.M.SetShaderParameter("p7_open", Mathf.Clamp(s.Age / Mathf.Max(open, 1e-3f), 0, 1));
+            s.M.SetShaderParameter("p7_wd_on", wdOn);
             if (s.SplitAge >= 0)
             {
                 s.SplitAge += dt;

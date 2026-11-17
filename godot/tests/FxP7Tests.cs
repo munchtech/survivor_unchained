@@ -276,6 +276,49 @@ public class FxP7Tests
 
     /// <summary>(take 8, F0) Every literal p7 grip key the held cut's view reads is in the data (a renamed key threw once
     /// a run, and the warm-up after it never ran).</summary>
+    /// <summary>(lane E lead 8, 17 Nov; judge 5: "2-4 forks 8-25 px x 1-2 px + 2-3 broken chunks 6-10 px") The storm
+    /// fissure's forks and chunks (logic/Look/FissureMarks.cs): on any run long enough, 2-4 forks of 8-25 px, 2 px at the root
+    /// to 1, and 2-3 chunks 6-10 px wide, each at least 1.5 x the gap where it lies, all on the run and spread along it,
+    /// no chunk on a fork's root; a short run gets fewer, never squeezed; the seam's clock is the judge's.</summary>
+    [Fact]
+    public void TheFissureHasForksAndBrokenChunks()
+    {
+        var p = Real();
+        float[] fk = p.All("storm.line.fork"), ck = p.All("storm.line.chunk"), gap = p.All("storm.line.gap");
+        Assert.True(p["storm.line.strip_px"] >= fk[3] * 0.87f + gap[0], "a fork (out at 30-60 deg off the gap) must fit across the strip");
+        var rng = new Random(7);
+        foreach (float run in new[] { 300f, 390f, 639f, 900f })
+            for (int t = 0; t < 200; t++)
+            {
+                var (forks, chunks) = FissureMarks.Pick(run, run, fk, ck, gap, () => (float)rng.NextDouble());
+                Assert.InRange(forks.Length, 2, 4);
+                Assert.InRange(chunks.Length, 2, 3);
+                for (int i = 0; i < forks.Length; i++)
+                {
+                    Assert.InRange(forks[i].Long, 8, 25);
+                    Assert.InRange(forks[i].At, 0.05f * run, 0.85f * run);
+                    Assert.Equal(2, forks[i].Root);
+                    if (i > 0) Assert.True(forks[i].At - forks[i - 1].At > 20, "forks spread along the run");
+                }
+                foreach (var c in chunks)
+                {
+                    Assert.InRange(c.Wide, 6, 10);
+                    Assert.InRange(c.At, 0.3f * run, 0.9f * run);
+                    Assert.True(c.Wide >= Math.Min(10, 1.5f * FissureMarks.GapAt(c.At, run, gap)) - 1e-3, "a chunk stands out of the gap");
+                }
+            }
+        Assert.Equal(1f, fk[5]);
+        var shortRun = FissureMarks.Pick(40, 40, fk, ck, gap, () => 0.99f);
+        Assert.True(shortRun.Forks.Length <= 1 && shortRun.Chunks.Length <= 1);
+        var pend = p.All("storm.seam.pending");
+        Assert.InRange(pend[1], 0.25, 0.35);
+        Assert.InRange(pend[2], 0.9, 1.05);
+        Assert.InRange(pend[5], 1.8, 2.2);
+        var em = p.All("storm.seam.ember");
+        Assert.InRange(em[0], 0.35, 0.45);
+        Assert.InRange(em[1], 0.05, 0.08);
+    }
+
     [Fact]
     public void EveryGripKeyTheViewReadsIsThere()
     {
