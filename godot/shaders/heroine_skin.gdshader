@@ -22,7 +22,9 @@ render_mode sss_mode_skin, cull_disabled;
 #define CEL_OWN_LIGHT
 #define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
-global uniform vec4 cel_her_den;   // (demo-look r2 her: z her ember's steps in the den, View/HeroDen.cs; zero: as before)
+global uniform vec4 cel_her_den;   // (demo-look r2 her: z her ember's steps in the den, w the lit step's chroma, View/HeroDen.cs; zero: as before)
+global uniform vec4 cel_her_den3;   // (demo-look lead 3, row 1: y her rim light's tag (SPECULAR_AMOUNT) while it is on, View/HeroDen.cs; 0 off)
+global uniform vec4 cel_her_den2;   // (demo-look r2 her: x how far her steps turn to the den key's direction (cel_key), y the steps' n.l, z the lit step's level, w the shade step's warmth; zero: as before)
 // (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)
 uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
 // (both sides drawn for her head alone (mouth_in), and only inside her mouth (mouth_c): its inside, seen through her
@@ -1066,12 +1068,25 @@ void light() {
 		vec4 c_fmid = mix(cel_mid, vec4(face_mid, cel_mid.a), face_mid_w * mix(1.0, 1.0 - soft_w, face_mid_mask));
 		cb_lv = LIGHT_IS_DIRECTIONAL ? cel_level_mid(cb_t, c_fmid)
 			: mix(vec3(1.0), c_fmid.rgb, c_fmid.a * (1.0 - smoothstep(0.0, CEL_SOFT_TURN, cb_t))) * clamp(cb_t, 0.0, 1.0);
-		// (demo-look r2 her: the den's steps, cel_her_den.z = hero_den value 17, 0 off) her ember models her in three flat
-		// steps, not Lambert's gradient: lit (Lambert's level at n.l 0.7) from n.l 0.42, the terminator at z of it from 0.08,
-		// the shade (no ember) below; each edge 0.02 of n.l wide, so a step reads as one px of change at the play camera
-		if (cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL) {
-			float c_up = smoothstep(0.40, 0.44, cb_t), c_in = smoothstep(0.06, 0.10, cb_t);
-			cb_lv = mix(vec3(1.0), c_fmid.rgb, c_fmid.a * (1.0 - c_up)) * (0.7 * mix(cel_her_den.z, 1.0, c_up) * c_in);
+		// (demo-look r2 her: the den's steps, cel_her_den.z = hero_den value 17, 0 off) her ember models her in flat steps, not
+		// Lambert's gradient: lit (Lambert's level at n.l 0.7, or cel_her_den2.z) from n.l 0.42 (or cel_her_den2.y), each edge 0.02
+		// of n.l wide so a step reads as one px of change at the play camera. Round 1: the terminator at z of the lit from 0.08,
+		// the shade (no ember) below. Round 2 (the D judge: "pasty"; the ember is over her, so every plane the camera sees was
+		// lit): the steps' direction is PAINTED, turned toward the den key's (cel_key: from the screen's upper left) by cel_her_den2.x, and
+		// the shade step (z of the lit, in the half-tone's tint, warmed by cel_her_den2.w of the light's own hue) runs to n.l -0.3,
+		// so her far planes read as one warm shade, not the fill's grey; the lit step's light at cel_her_den.w of its chroma.
+		// (lead 3, row 1) her rim light (tagged cel_her_den3.y) keeps its own direction and the half-tone: from behind her it
+		// lights her far planes and her edge, where the painted steps would have spread it over her front as a fill
+		if (cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL && !(cel_her_den3.y > 0.0 && abs(SPECULAR_AMOUNT - cel_her_den3.y) < 0.005)) {
+			bool c_pd = cel_her_den2.x > 0.0;
+			vec3 c_ld = c_pd ? normalize(mix(LIGHT, normalize(mat3(VIEW_MATRIX) * cel_key.xyz), cel_her_den2.x)) : LIGHT;
+			float c_tp = dot(cb_n, c_ld), c_at = cel_her_den2.y > 0.0 ? cel_her_den2.y : 0.42;
+			float c_up = smoothstep(c_at - 0.02, c_at + 0.02, c_tp), c_in = c_pd ? smoothstep(-0.32, -0.28, c_tp) : smoothstep(0.06, 0.10, c_tp);
+			float c_ll = max(dot(lc, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+			vec3 c_hue = max(lc, vec3(1e-4)) / c_ll;
+			vec3 c_lt = cel_her_den.w > 0.0 ? mix(1.0 / c_hue, vec3(1.0), cel_her_den.w) : vec3(1.0);
+			vec3 c_st = mix(vec3(1.0), c_fmid.rgb, c_fmid.a) * mix(vec3(1.0), c_hue, cel_her_den2.w);
+			cb_lv = mix(c_st, c_lt, c_up) * ((cel_her_den2.z > 0.0 ? cel_her_den2.z : 0.7) * mix(cel_her_den.z, 1.0, c_up) * c_in);
 		}
 		cb_d = mix(cb_d, cb_lv * (cb_sh / PI), cel_on);
 		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);

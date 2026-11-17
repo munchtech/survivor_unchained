@@ -1,5 +1,5 @@
 {
- "what": "lane E demo-look: class boxes on the five den frames (godot/.shots), keyed by PNG name; python tools/style/demo_look_check.py frame <the five> --masks tools/style/demo_look_masks.json. Boxes fit the 16 Nov f2/f4 shots (her at about 960,540; boss body 740-1140 x 485-565); re-fit when a frame is re-shot. her_skin [944,506,974,527] (face, shoulders, chest) and her_hair [951,493,969,507] (the head only, inside her line) are her px only: no ground in the box (16 Nov, h3). her_shadow has no key on purpose: it measures the ground right under her feet, which must sit in the shadow band (a keyed dark box picks her boots).",
+ "what": "lane E demo-look: class boxes on the five den frames (godot/.shots), keyed by PNG name; python tools/style/demo_look_check.py frame <the five> --masks tools/style/demo_look_masks.json. Boxes fit the 16 Nov f2/f4 shots (her at about 960,540; boss body 740-1140 x 485-565); re-fit when a frame is re-shot. her_skin [944,506,974,527] (face, shoulders, chest) and her_hair [951,493,969,507] (the head only, inside her line) are her px only: no ground in the box (16 Nov, h3). her_shadow has no key on purpose: it measures the ground right under her feet, which must sit in the shadow band (a keyed dark box picks her boots). e3f_* (16 Nov, lead 3's dry-run shoot): copies of the f2_*/f4_boss entries, but boss_body/boss_back/boss_mane re-boxed on the probe mask (foe_den[15]=1, --env-off glow; mb2.py's split: back = h 240-340, C > .01, L > .25; mane = C > .05, h 345-60; body = the rest) as boxes inside each part (fitted at >= 93% of the keyed px in the part). bc1_a_02.png: the boss-clear frame (her clear of the Pack-Mother mid-lunge), the same three classes fitted the same way, plus the whole-frame rot_glow and fungus; its ground_lit and blood are not boxed.",
  "f2_her.png": {
   "her_skin": [
    {
@@ -652,6 +652,918 @@
      "L": [
       0.15,
       0.6
+     ]
+    }
+   }
+  ]
+ },
+ "e3f_her.png": {
+  "her_skin": [
+   {
+    "img": "x",
+    "box": [
+     944,
+     506,
+     974,
+     527
+    ],
+    "key": {
+     "L": [
+      0.6,
+      1.0
+     ],
+     "C": [
+      0.03,
+      0.2
+     ],
+     "h": [
+      30,
+      90
+     ]
+    }
+   }
+  ],
+  "her_plate": [
+   {
+    "img": "x",
+    "box": [
+     920,
+     510,
+     990,
+     600
+    ],
+    "key": {
+     "L": [
+      0,
+      0.34
+     ]
+    }
+   }
+  ],
+  "ground_lit": [
+   {
+    "img": "x",
+    "box": [
+     560,
+     400,
+     860,
+     560
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     1000,
+     600,
+     1300,
+     720
+    ]
+   }
+  ],
+  "ground_shade": [
+   {
+    "img": "x",
+    "box": [
+     330,
+     640,
+     520,
+     760
+    ]
+   }
+  ],
+  "bank": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "L": [
+      0.12,
+      0.3
+     ]
+    }
+   }
+  ],
+  "her_hair": [
+   {
+    "img": "x",
+    "box": [
+     951,
+     493,
+     969,
+     507
+    ],
+    "key": {
+     "L": [
+      0.3,
+      0.85
+     ],
+     "C": [
+      0.09,
+      0.4
+     ],
+     "h": [
+      20,
+      62
+     ]
+    }
+   }
+  ],
+  "her_shadow": [
+   {
+    "img": "x",
+    "box": [
+     925,
+     580,
+     1000,
+     600
+    ]
+   }
+  ],
+  "ground_by_her": [
+   {
+    "img": "x",
+    "box": [
+     860,
+     520,
+     915,
+     640
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     1010,
+     520,
+     1065,
+     640
+    ]
+   }
+  ],
+  "fungus": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      170,
+      230
+     ],
+     "C": [
+      0.05,
+      1
+     ],
+     "L": [
+      0.55,
+      1
+     ]
+    }
+   }
+  ]
+ },
+ "e3f_loot.png": {
+  "her_skin": [
+   {
+    "img": "x",
+    "box": [
+     944,
+     506,
+     974,
+     527
+    ],
+    "key": {
+     "L": [
+      0.6,
+      1.0
+     ],
+     "C": [
+      0.03,
+      0.2
+     ],
+     "h": [
+      30,
+      90
+     ]
+    }
+   }
+  ],
+  "her_plate": [
+   {
+    "img": "x",
+    "box": [
+     920,
+     510,
+     990,
+     600
+    ],
+    "key": {
+     "L": [
+      0,
+      0.34
+     ]
+    }
+   }
+  ],
+  "ground_lit": [
+   {
+    "img": "x",
+    "box": [
+     560,
+     400,
+     860,
+     560
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     1000,
+     600,
+     1300,
+     720
+    ]
+   }
+  ],
+  "ground_shade": [
+   {
+    "img": "x",
+    "box": [
+     330,
+     640,
+     520,
+     760
+    ]
+   }
+  ],
+  "bank": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "L": [
+      0.12,
+      0.3
+     ]
+    }
+   }
+  ],
+  "her_hair": [
+   {
+    "img": "x",
+    "box": [
+     951,
+     493,
+     969,
+     507
+    ],
+    "key": {
+     "L": [
+      0.3,
+      0.85
+     ],
+     "C": [
+      0.09,
+      0.4
+     ],
+     "h": [
+      20,
+      62
+     ]
+    }
+   }
+  ],
+  "her_shadow": [
+   {
+    "img": "x",
+    "box": [
+     925,
+     580,
+     1000,
+     600
+    ]
+   }
+  ],
+  "ground_by_her": [
+   {
+    "img": "x",
+    "box": [
+     860,
+     520,
+     915,
+     640
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     1010,
+     520,
+     1065,
+     640
+    ]
+   }
+  ],
+  "fungus": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      170,
+      230
+     ],
+     "C": [
+      0.05,
+      1
+     ],
+     "L": [
+      0.55,
+      1
+     ]
+    }
+   }
+  ]
+ },
+ "e3f_sun.png": {
+  "pack": [
+   {
+    "img": "x",
+    "box": [
+     960,
+     420,
+     1060,
+     640
+    ],
+    "key": {
+     "L": [
+      0,
+      1
+     ]
+    },
+    "not": [
+     {
+      "L": [
+       0.0,
+       1.0
+      ],
+      "C": [
+       0.035,
+       1
+      ],
+      "h": [
+       10,
+       70
+      ]
+     }
+    ]
+   }
+  ],
+  "her_hair": [
+   {
+    "img": "x",
+    "box": [
+     951,
+     493,
+     969,
+     507
+    ],
+    "key": {
+     "L": [
+      0.3,
+      0.85
+     ],
+     "C": [
+      0.09,
+      0.4
+     ],
+     "h": [
+      20,
+      62
+     ]
+    }
+   }
+  ]
+ },
+ "e3f_storm.png": {
+  "pack": [
+   {
+    "img": "x",
+    "box": [
+     960,
+     420,
+     1060,
+     640
+    ],
+    "key": {
+     "L": [
+      0,
+      1
+     ]
+    },
+    "not": [
+     {
+      "L": [
+       0.0,
+       1.0
+      ],
+      "C": [
+       0.035,
+       1
+      ],
+      "h": [
+       10,
+       70
+      ]
+     }
+    ]
+   }
+  ],
+  "her_hair": [
+   {
+    "img": "x",
+    "box": [
+     951,
+     493,
+     969,
+     507
+    ],
+    "key": {
+     "L": [
+      0.3,
+      0.85
+     ],
+     "C": [
+      0.09,
+      0.4
+     ],
+     "h": [
+      20,
+      62
+     ]
+    }
+   }
+  ]
+ },
+ "e3f_boss.png": {
+  "ground_lit": [
+   {
+    "img": "x",
+    "box": [
+     400,
+     300,
+     700,
+     420
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     700,
+     800,
+     1000,
+     900
+    ]
+   }
+  ],
+  "rot_glow": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      110,
+      160
+     ],
+     "C": [
+      0.08,
+      1
+     ],
+     "L": [
+      0.35,
+      1
+     ]
+    }
+   }
+  ],
+  "fungus": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      170,
+      230
+     ],
+     "C": [
+      0.05,
+      1
+     ],
+     "L": [
+      0.55,
+      1
+     ]
+    }
+   }
+  ],
+  "boss_body": [
+   {
+    "img": "x",
+    "box": [
+     1063,
+     496,
+     1118,
+     571
+    ],
+    "key": {
+     "C": [
+      0,
+      0.05
+     ]
+    },
+    "not": [
+     {
+      "h": [
+       240,
+       340
+      ],
+      "C": [
+       0.01,
+       1
+      ],
+      "L": [
+       0.25,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     833,
+     496,
+     908,
+     526
+    ],
+    "key": {
+     "C": [
+      0,
+      0.05
+     ]
+    },
+    "not": [
+     {
+      "h": [
+       240,
+       340
+      ],
+      "C": [
+       0.01,
+       1
+      ],
+      "L": [
+       0.25,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     983,
+     526,
+     1018,
+     571
+    ],
+    "key": {
+     "C": [
+      0,
+      0.05
+     ]
+    },
+    "not": [
+     {
+      "h": [
+       240,
+       340
+      ],
+      "C": [
+       0.01,
+       1
+      ],
+      "L": [
+       0.25,
+       1
+      ]
+     }
+    ]
+   }
+  ],
+  "boss_mane": [
+   {
+    "img": "x",
+    "box": [
+     1002,
+     491,
+     1082,
+     561
+    ],
+    "key": {
+     "C": [
+      0.05,
+      1
+     ],
+     "h": [
+      345,
+      60
+     ]
+    }
+   }
+  ],
+  "boss_back": [
+   {
+    "img": "x",
+    "box": [
+     884,
+     504,
+     1009,
+     514
+    ],
+    "key": {
+     "h": [
+      240,
+      340
+     ],
+     "C": [
+      0.01,
+      1
+     ],
+     "L": [
+      0.25,
+      1
+     ]
+    }
+   }
+  ],
+  "blood": [
+   {
+    "img": "x",
+    "box": [
+     720,
+     460,
+     860,
+     510
+    ],
+    "key": {
+     "h": [
+      0,
+      40
+     ],
+     "C": [
+      0.07,
+      1
+     ],
+     "L": [
+      0.15,
+      0.6
+     ]
+    }
+   },
+   {
+    "img": "x",
+    "box": [
+     640,
+     730,
+     700,
+     770
+    ],
+    "key": {
+     "h": [
+      0,
+      40
+     ],
+     "C": [
+      0.07,
+      1
+     ],
+     "L": [
+      0.15,
+      0.6
+     ]
+    }
+   }
+  ]
+ },
+ "bc1_a_02.png": {
+  "rot_glow": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      110,
+      160
+     ],
+     "C": [
+      0.08,
+      1
+     ],
+     "L": [
+      0.35,
+      1
+     ]
+    }
+   }
+  ],
+  "fungus": [
+   {
+    "img": "x",
+    "box": [
+     0,
+     0,
+     1920,
+     1080
+    ],
+    "key": {
+     "h": [
+      170,
+      230
+     ],
+     "C": [
+      0.05,
+      1
+     ],
+     "L": [
+      0.55,
+      1
+     ]
+    }
+   }
+  ],
+  "boss_body": [
+   {
+    "img": "x",
+    "box": [
+     826,
+     378,
+     1071,
+     438
+    ],
+    "key": {
+     "C": [
+      0,
+      0.05
+     ]
+    },
+    "not": [
+     {
+      "h": [
+       240,
+       340
+      ],
+      "C": [
+       0.01,
+       1
+      ],
+      "L": [
+       0.25,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "img": "x",
+    "box": [
+     996,
+     433,
+     1106,
+     553
+    ],
+    "key": {
+     "C": [
+      0,
+      0.05
+     ]
+    },
+    "not": [
+     {
+      "h": [
+       240,
+       340
+      ],
+      "C": [
+       0.01,
+       1
+      ],
+      "L": [
+       0.25,
+       1
+      ]
+     }
+    ]
+   }
+  ],
+  "boss_back": [
+   {
+    "img": "x",
+    "box": [
+     860,
+     369,
+     925,
+     414
+    ],
+    "key": {
+     "h": [
+      240,
+      340
+     ],
+     "C": [
+      0.01,
+      1
+     ],
+     "L": [
+      0.25,
+      1
+     ]
+    }
+   },
+   {
+    "img": "x",
+    "box": [
+     940,
+     369,
+     975,
+     424
+    ],
+    "key": {
+     "h": [
+      240,
+      340
+     ],
+     "C": [
+      0.01,
+      1
+     ],
+     "L": [
+      0.25,
+      1
+     ]
+    }
+   }
+  ],
+  "boss_mane": [
+   {
+    "img": "x",
+    "box": [
+     963,
+     417,
+     1038,
+     492
+    ],
+    "key": {
+     "C": [
+      0.05,
+      1
+     ],
+     "h": [
+      345,
+      60
      ]
     }
    }

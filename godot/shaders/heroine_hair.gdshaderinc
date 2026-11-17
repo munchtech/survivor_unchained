@@ -28,7 +28,9 @@ uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight 
 
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
-global uniform vec4 cel_her_den;   // (demo-look r2 her: x the den's copper chroma gain, y its value gain, View/HeroDen.cs; zero: as before)
+global uniform vec4 cel_her_den;   // (demo-look r2 her: x the den's copper chroma gain, y its value gain, z her steps on, View/HeroDen.cs; zero: as before)
+global uniform vec4 cel_her_den2;   // (demo-look r2 her: x how far her ember's band turns to the den key's direction (cel_key), y the steps' n.l)
+global uniform vec4 cel_her_den3;   // (demo-look r2 her: x her hair's shade step under her ember, share of the lit, in the dye's hue)
 uniform float roots = 0.4;
 uniform float variation = 0.35;
 uniform vec3 shine_colour : source_color = vec3(1.0, 0.93, 0.86);
@@ -436,7 +438,14 @@ float along_strand(vec3 t, vec3 h, float width) {
 }
 
 void light() {
-	float cb_t = (dot(cel_nb(NORMAL), LIGHT) + wrap) / (1.0 + wrap);
+	// (demo-look r2 her: in the den her ember's band on the PAINTED direction, turned toward the den key's (cel_key) by cel_her_den2.x,
+	// as her skin's steps (heroine_skin.gdshader): the ember is over her, so every lock the camera sees was lit)
+	// (lead 3, row 1) her rim light (tagged cel_her_den3.y): its own direction, out of the painted steps, and no glow through
+	// her hair (from behind her that lit every lock the camera sees: a fill, not an edge)
+	bool c_rimt = cel_her_den3.y > 0.0 && abs(SPECULAR_AMOUNT - cel_her_den3.y) < 0.005;
+	bool c_hd = cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL && !c_rimt;
+	vec3 c_hl = c_hd && cel_her_den2.x > 0.0 ? normalize(mix(LIGHT, normalize(mat3(VIEW_MATRIX) * cel_key.xyz), cel_her_den2.x)) : LIGHT;
+	float cb_t = (dot(cel_nb(NORMAL), c_hl) + wrap) / (1.0 + wrap);
 	vec3 cb_dbg = vec3(0.0);
 	if (cel_dbg_light(cel_nb(NORMAL), cb_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; } else {
 	vec3 lc = LIGHT_COLOR * ATTENUATION / PI;
@@ -451,7 +460,15 @@ void light() {
 		vec3 hue = mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 1e-3), shade_hue);
 		vec3 lb = LIGHT_COLOR * (cb_sh / PI);
 		vec3 d_b = lb * cel_level_mid(cb_t, vec4(cel_mid.rgb * hue, cel_mid.a)) + cel_fill_add(LIGHT_COLOR, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * hue;
-		vec3 t_b = lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+		// (demo-look r2 her: the den's two steps on the painted direction, as her skin's: lit, flat, from the steps' n.l
+		// (cel_her_den2.y, 0.42), and the shade step, cel_her_den3.x of the light in the dye's hue: a warm shade, not the fill's
+		// grey; without the painted direction the shade step alone, where the band isn't)
+		if (c_hd && cel_her_den2.x > 0.0) {
+			float c_at = cel_her_den2.y > 0.0 ? cel_her_den2.y : 0.42;
+			d_b = lb * mix(hue * cel_her_den3.x, vec3(1.0), smoothstep(c_at - 0.02, c_at + 0.02, dot(cel_nb(NORMAL), c_hl)));
+		}
+		else if (c_hd) d_b += lb * hue * ((1.0 - cel_lit(cb_t)) * cel_her_den3.x);
+		vec3 t_b = c_rimt ? vec3(0.0) : lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
 		d_a = mix(d_a, d_b, cel_on);
 		t_a = mix(t_a, t_b, cel_on);
 	}

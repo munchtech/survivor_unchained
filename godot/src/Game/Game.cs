@@ -887,6 +887,7 @@ public partial class Game : Node, IZoneHost
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
+        if (Graphics.DenNow != SurvivorUnchained.View.Atmosphere.CrowdDen) ApplySettings();   // (the den's SMAA comes and goes with the zone)
         air.Air(scene!.Data.Place?.Air, scene!.Data.Place?.Id ?? "", scene!.Data.Place?.Mood ?? "");
         scene.View.SetNight(time == TimeOfDay.Night);
         scene.Fx.Flare.Night = time == TimeOfDay.Night;

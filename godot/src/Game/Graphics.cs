@@ -91,6 +91,7 @@ public static class Graphics
         // temporal pass keeps her detail while she moves where TAA left a 50-60 px trail
         // behind her (judged 10 October 2026, cycles 10-13: detail 9.6 to 11.7 running).
         // TAA and MSAA would only blur it twice. Sharpening off: it ringed her edges.
+        // In the den at native scale: SMAA (FSR 2's history left 2-3 frame outline ghosts on fast turns, 16 Nov 2026).
         float scale = ScaleOf(s.Scale);
         vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Fsr2;
         vp.Scaling3DScale = scale;
@@ -122,6 +123,15 @@ public static class Graphics
             vp.UseTaa = true;
             vp.Msaa3D = t.Msaa == Viewport.Msaa.Disabled ? Viewport.Msaa.Msaa4X : t.Msaa;
         }
+        DenNow = Atmosphere.CrowdDen;
+        if (DenSmaa(Aa, DenNow, scale, AtLook))
+        {
+            vp.Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear;
+            vp.Scaling3DScale = 1f;
+            vp.UseTaa = false;
+            vp.Msaa3D = Viewport.Msaa.Disabled;
+            vp.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Smaa;
+        }
         HairDraw.Msaa(vp.Msaa3D != Viewport.Msaa.Disabled);
 
         Sparks.Density = t.Effects;
@@ -149,6 +159,12 @@ public static class Graphics
 
     /// <summary>At the Look (creation): its own smoothing (Apply). Set by GameFront.</summary>
     public static bool AtLook;
+
+    /// <summary>Whether the last Apply saw the den (Game re-applies when a zone change flips it).</summary>
+    public static bool DenNow;
+
+    /// <summary>SMAA instead of FSR 2: no developer --aa, in the den, at native scale, not at the Look.</summary>
+    public static bool DenSmaa(string? aa, bool den, float scale, bool atLook) => aa == null && den && scale >= 0.999f && !atLook;
 
     /// <summary>FSR 2's sharpening (--fsr-sharpness), to compare; null: Godot's own.</summary>
     public static float? FsrSharpness = Args.Has("fsr-sharpness") ? (float)Args.Num("fsr-sharpness", 0.2f) : null;
