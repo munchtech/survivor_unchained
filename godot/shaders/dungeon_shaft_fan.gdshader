@@ -25,6 +25,11 @@ uniform float pool_ext = 0.15;
 uniform float soft_depth = 1.2;   // the rays fade where they meet what is behind them (m)
 uniform sampler2D hole_tex : hint_default_white, filter_linear, repeat_disable;   // HoleField as (f+4)/8 (DungeonLight)
 uniform vec3 hole_map = vec3(0.0, 0.0, 0.0);   // x origin, z origin, 1/size (0: no field)
+// (den r16 B2) the lair's painted hollows are no holes (DungeonDress.DenHollows): masked by circle, x, z, radius (m)
+uniform vec4 holl[8];
+uniform int holl_n = 0;
+uniform float haze = 0.3;     // (den r16 B2) the fan's soft glow between its rays, against a ray's core
+uniform vec3 gap_tint : source_color = vec3(0.93, 0.92, 0.89);   // (den r16 B2) the gap near-white, not the rays' cool
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 
 varying vec3 wpos;
@@ -62,26 +67,34 @@ void fragment() {
 	float vis = smoothstep(0.0, soft_depth, (-sview.z) - (-VERTEX.z));   // 0 where the scene is in front of the shaft
 	float pit = 1.0;
 	if (hole_map.z > 0.0) pit = smoothstep(-0.2, 2.0, texture(hole_tex, (sw.xz - hole_map.xy) * hole_map.z).r * 8.0 - 4.0);
+	for (int k = 0; k < 8; k++) { if (k >= holl_n) break; pit *= smoothstep(holl[k].z + 0.2, holl[k].z + 1.2, distance(sw.xz, holl[k].xy)); }
 	// 1. the rays: bars across the fan, soft-edged, each breathing a little along its length; the fan widens to the floor
 	float vn = v / src_h;
 	float wv = mix(w_foot, w_src, clamp(vn, 0.0, 1.0));
 	float un = u / wv + 0.5;
+	// (den r16 B2: B's flat bars read as ruled stripes) each ray a soft bell whose edge and width wander along it, its light
+	// broken by dust; a faint haze fills the fan between the rays, and fine filaments run down the whole fan
 	float fan = 0.0;
 	for (int k = 0; k < 5; k++) {
 		if (k >= ray_n) break;
 		vec4 r = rays[k];
-		float prof = 1.0 - smoothstep(r.y * 0.45, r.y, abs(un - r.x));
-		float n = 0.72 + 0.28 * vnoise(vec2(r.w * 17.0 + v * 0.45, r.w * 3.0 + TIME * 0.05));
-		fan = max(fan, prof * r.z * n);
+		float hw = r.y * (0.75 + 0.5 * vnoise(vec2(r.w * 13.0 + 4.0, v * 0.55)));
+		float d = (un - r.x - (vnoise(vec2(r.w * 31.0, v * 0.8)) - 0.5) * 0.5 * r.y) / hw;
+		float n = 0.45 + 0.55 * vnoise(vec2(r.w * 17.0 + v * 0.7, r.w * 3.0 + TIME * 0.05));
+		fan += exp(-2.2 * d * d) * r.z * n;
 	}
+	float env = smoothstep(-0.02, 0.2, un) * (1.0 - smoothstep(0.8, 1.02, un));
+	float fil = 0.7 + 0.3 * vnoise(vec2(un * 26.0, v * 0.18 + 5.0));
+	fan = env * fil * (haze + (1.0 - haze) * min(fan, 1.1));
 	// brightest by the gap, half as bright midway, gone over the last stretch to the floor (the pool takes it there)
 	float along = smoothstep(0.04, 0.5, vn) * mix(0.45, 1.0, smoothstep(0.25, 0.95, vn)) * (1.0 - smoothstep(0.96, 1.01, vn));
 	float motes = 0.85 + 0.15 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
 	float ray_a = fan * along * motes * vis * pit;
 	// 2. the gap: a bright ragged slit where the rays start
-	vec2 gq = vec2(u / (w_src * 0.62), (v - src_h) / 0.4);
-	float ge = length(gq) * (0.82 + 0.36 * vnoise(vec2(atan(gq.y, gq.x) * 1.6 + 5.0, 2.0)));
-	float gap = (1.0 - smoothstep(0.2, 1.0, ge)) * vis;
+	// (den r16 B2: a round cyan blob) a long soft slit across the fan's top, ragged, broken by the roots' dark
+	vec2 gq = vec2(u / (w_src * 0.85), (v - src_h) / 0.22);
+	float ge = length(gq) * (0.8 + 0.4 * vnoise(vec2(u * 6.0 + 5.0, v * 3.0)));
+	float gap = (1.0 - smoothstep(0.15, 1.0, ge)) * vis * pit * (0.55 + 0.45 * vnoise(vec2(u * 9.0, 7.0)));
 	gap *= gap;
 	// 3. the pool: on the ground at the foot (not on her, not on a log: only what lies at the foot's own height)
 	vec2 q = sw.xz - foot.xz;
@@ -90,6 +103,6 @@ void fragment() {
 	float pd = length(vec2(pa, pb)) * (0.88 + 0.24 * vnoise(sw.xz * 1.6 + 7.0));
 	float pool = (1.0 - smoothstep(0.25, 1.0, pd)) * (1.0 - smoothstep(0.3, 0.7, abs(sw.y - foot.y))) * pit;
 	pool *= pool;
-	ALBEDO = tint * strength * (ray_a + gap_gain * gap) + pool_tint * pool_strength * pool;
+	ALBEDO = tint * strength * ray_a + gap_tint * strength * gap_gain * gap + pool_tint * pool_strength * pool;
 	ALPHA = clamp(ext * ray_a + gap_ext * gap + pool_ext * pool, 0.0, 1.0);
 }

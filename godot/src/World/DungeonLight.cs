@@ -30,6 +30,8 @@ public static class DungeonLight
             HoleMap = new Vector3(-z.Half - 0.5f * z.Step, -z.Half - 0.5f * z.Step, 1f / (z.Res * z.Step));
         }
         int i = 0; fanN = 0;
+        // (den r16 B2, R15f item 2) the lair's painted hollows are no holes: the fans keep off them and mask them (--den-shaft-hollows 0: not)
+        Hollows = Fan > 0f && SurvivorUnchained.Args.Num("den-shaft-hollows", 1f) > 0f ? DungeonDress.HollowsFor(z) : new();
         var feet = new System.Collections.Generic.List<Vector2>();   // (den r16 B) every shaft's foot: the corridors' spacing, the log
         foreach (var r in z.Rooms)
         {
@@ -45,7 +47,7 @@ public static class DungeonLight
                 {
                     float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = (r.Kind == "Boss" ? 3f + 5f * Hash(i, k + 7 * t, 2) : r.R * ( 0.25f + 0.35f * Hash(i, k + 7 * t, 2)));   // (r11: the lair's pools in its middle frame)
                     x = r.X + Mathf.Cos(a) * d; zz = r.Z + Mathf.Sin(a) * d;
-                    if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
+                    if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f) && !NearHollow(x, zz, 1.8f)) break;
                 }
                 float w = 1.6f + 1.4f * Hash(i, k, 3);   // (r11 judge: broad beams, 150-250 px; was 1.1 + 1.0)
                 if (k == 0 && r.Kind != "Boss") AddWash(root, r.X, z.HeightAt(r.X, r.Z), r.Z, r.R, i);
@@ -133,6 +135,8 @@ public static class DungeonLight
     static readonly float Fan = SurvivorUnchained.Args.Num("den-shaft-fan", 1f);
     static ArrayMesh? fanMesh;
     static int fanN;
+    static System.Collections.Generic.List<(Vector2 p, float r, int v)> Hollows = new();
+    static bool NearHollow(float x, float zz, float m) { foreach (var h in Hollows) if (h.p.DistanceTo(new Vector2(x, zz)) < h.r + m) return true; return false; }
     static void AddFan(Node3D root, Vector3 foot, bool lair)
     {
         if (fanMesh == null)
@@ -150,7 +154,7 @@ public static class DungeonLight
         for (int k = 0; k < n; k++) { w[k] = 1f + 0.8f * Hash(s, k, 23); g[k] = k < n - 1 ? 1f + 0.5f * Hash(s, k, 24) : 0f; sum += w[k] + g[k]; }
         float unit = 0.92f / sum, at = 0.04f;
         var rays = new Vector4[5];
-        for (int k = 0; k < n; k++) { rays[k] = new Vector4(at + 0.5f * w[k] * unit, 0.5f * w[k] * unit / 0.72f, 0.7f + 0.3f * Hash(s, k, 25), Hash(s, k, 26)); at += (w[k] + g[k]) * unit; }
+        for (int k = 0; k < n; k++) { rays[k] = new Vector4(at + 0.5f * w[k] * unit, 0.5f * w[k] * unit / 0.72f, 0.45f + 0.55f * Hash(s, k, 25), Hash(s, k, 26)); at += (w[k] + g[k]) * unit; }   // (den r16 B2: gains .7-1 -> .45-1, uneven)
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_shaft_fan.gdshader") };
         mat.SetShaderParameter("axis_up", -Axis);
         mat.SetShaderParameter("src_h", SurvivorUnchained.Args.Num("den-shaft-gap-h", 8.5f));
@@ -159,9 +163,17 @@ public static class DungeonLight
         mat.SetShaderParameter("pool_r", SurvivorUnchained.Args.Num("den-shaft-pool-r", 1.0f));
         mat.SetShaderParameter("rays", rays);
         mat.SetShaderParameter("ray_n", n);
-        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? "c6dce6"));
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.3f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
-        mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0.3f));
+        // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
+        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? "d6dce2"));
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.07f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
+        mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0.12f));
+        mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
+        mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? "eeeae2"));
+        mat.SetShaderParameter("gap_gain", SurvivorUnchained.Args.Num("den-shaft-gap-k", 1.6f));
+        mat.SetShaderParameter("gap_ext", SurvivorUnchained.Args.Num("den-shaft-gap-ext", 0.2f));
+        var hl = new Vector4[8]; int hn = 0;
+        foreach (var h in Hollows) if (hn < 8 && h.p.DistanceTo(new Vector2(foot.X, foot.Z)) < h.r + 16f) hl[hn++] = new Vector4(h.p.X, h.p.Y, h.r, 0f);
+        mat.SetShaderParameter("holl", hl); mat.SetShaderParameter("holl_n", hn);
         mat.SetShaderParameter("pool_strength", SurvivorUnchained.Args.Num("den-shaft-pool-k", 0.16f));
         mat.SetShaderParameter("pool_ext", SurvivorUnchained.Args.Num("den-shaft-pool-ext", 0.15f));
         if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
