@@ -50,11 +50,49 @@ What stays in the game: bake_clips.sh (Godot), the gate shoots, P1Body and P1Law
 - **Cost:** 2 su-worker rounds (move, path rewire) ~0.4M, a runner (rebuild ~1 h, checks) ~0.05M, lead ~0.15M. **~0.6M, 0 judges, 0 credits. Risk medium** (cross-repo paths: the 16 Nov sweep broke the build once by deleting scratch it read; 1.7 GB out dir).
 - **Order: after the flip.** It changes no pixel, so it never blocks a gate, and the flip's source does not move under it. It can run alongside 2.
 
+### Step 1c. Marionette's rig and animation stage (added 16 Nov on the owner's word)
+**The owner, 16 Nov 2026, word for word:** "marionette is supposed to handle animations as well.  its a one stop shop for generation and rigging and animating".
+
+**What Marionette has today:**
+- **Motion core** (`Marionette/tools/motion`: soma, rig, retarget, footlock, clip, cli). It reads SOMA motion (Kimodo or MotionBricks BVH) and retargets it onto B's skeleton as P4 clips. The game's `tools/anim/p4.py` imports it, and B's skeleton and the SOMA map live there as data (`tools/body/rig/b_skeleton.json`, `soma_to_b.json`). This is the stage's seed, and it already targets B.
+- **NPC rigging:** the base-fit rig for people; UniRig and SkinTokens for creatures (local, MIT).
+- **R&D rig and cloth work:** rebind, springsim, the X14 rig rounds.
+- **The 1 Nov retarget fix:** the character's own neck and spine kept, the hands kept out of the hips (NPC clips).
+- **Not there yet:** keyed-clip authoring (her game clips are procedural keys on A's rig, `tools/anim/clips/*.py`, `keyed.py`, `gait.py`) and any Godot pack step.
+
+**What moves in, in order:**
+- **R1. B's rig as stage data, inside the body stage (with 1b).**
+  - What moves: `tools/body/rig`, `rig_map.py`, `weights.py`, `weights_topo.py`, `correctives.py`/`correctives.json`, `rig_drive.py`, `p1_rig_fixture.py`.
+  - What it covers: the ~124 bones, the weights in body.glb/play.glb, and the correctives and girdle law in rig.json/play_rig.json.
+  - What stays in the game: the runtime laws (P1Rig, P1Laws), as the readers of rig.json.
+  - Acceptance: 1b's sha1-same rebuild of rig.json, play_rig.json and both glbs, and p1_rig_fixture parity with P1Rig.
+  - **Cost:** ~0.3M on top of 1b, 0 judges. **Risk low-medium.**
+- **R2. The runtime helpers as rig-stage data.** A's helper SPEC (`tools/anim/helpers.py`, rig_helpers.json) and lane D's armor hinges, with each body's pivots derived by the stage, not hand numbers.
+  - Acceptance: the hinge parity fixtures on A and on B.
+  - **Cost:** ~0.2M, 0 judges. **Risk low.**
+  - **When:** after demo-armor merges, because it holds lane D's spec.
+- **R3a. The clip bridge as a stage tool.**
+  - What it is: `P1Retarget.Map` (A's clip onto B per frame) and the blend base ported to Python in Marionette, writing B's clip keys. A thin Godot pack step writes clips.res and her_clips.res, as `p4_pack.sh` does today.
+  - What it retires: `bake_clips.sh` and `P1BakeRun.cs`.
+  - Acceptance: on every clip in `p1_clips.json`, per frame, every bone within 0.01 deg and 0.01 mm of the script's bake; `clipcheck.py` green.
+  - **Cost:** one su-lead-high solver + a worker + a runner, ~0.6-0.8M, 0 judges (by number). **Risk medium:** Godot's sampling and interpolation, track paths, and the her_clips meta all need parity.
+- **R3b. Her clips authored on B's rig directly.** The keyed generators write B's bones (the role map for the spine). The bridge and A's loaded skeleton retire, and P4 becomes the stage's other input.
+  - A1 designs it (PIPELINE P4).
+  - **Cost:** ~1.5-2.5M + 2-3 motion judges against the owner's words: "run = whole body, live sword arm" and "Prowl must actually ship, no locked elbow". **Risk high:** every gait is retuned.
+  - **When:** after the flip and after R3a.
+
+**Can step 4's rebake (after aim-move merges) run through the stage?** Only if R3a has passed its parity by then.
+- The script route costs ~0.05M (one runner).
+- The stage route costs R3a's ~0.6-0.8M first, then ~0.05M per rebake after that.
+- aim-move is due to merge within days, very likely before R3a exists. My call: run this rebake by the script. If R3a is ready by then, run both and diff them: the aim-move rebake becomes R3a's acceptance test, with no extra cost. Every rebake after R3a runs through the stage.
+- **Order:** R1 with 1b (after the flip); R2 after demo-armor merges; R3a after the flip, alongside 1a; R3b after R3a.
+- **Step 1c total:** ~1.1-1.3M with 0 judges (R1, R2, R3a), plus R3b ~1.5-2.5M + 2-3 judges.
+
 ### Step 2. The generated-piece route: Meshy or a local generator, fitted onto B through Marionette, no hand fitting
 The route (✓ exists, ✗ missing):
 1. Concept: ChatGPT route or Krea, free. Then a max concept judge. ✓
 2. Generate: TRELLIS.2, local in ComfyUI, free, first. Meshy only on main's word, on a judged concept (`tools/meshy/cli.cjs gen --kind prop --no-texture`, 20 credits; retex 10). ✓
-3. Clean: forge `prop_bake.py` (reduce and rebake), smartmesh remesh, HoloPart split into parts, delight; drop body fragments the generator baked in. ✓ (built for props and NPCs, not yet run on armor)
+3. Clean: forge `prop_bake.py` (reduce and rebake), smartmesh remesh, HoloPart split into parts, delight; drop body fragments the generator baked in. ✓ (built for props and NPCs, not yet run on armor; HoloPart's install was binned 16 Nov, so reinstall it with `tools/forge/holopart_setup.sh`, or ask the owner first)
 4. **Place: ✗, the core gap.** A generated piece floats in its own space and scale, and `author --kind fitted` needs it standing on `--base` at rest. A new `attach.py place <piece> --slot forearm_l --base body_p1/body.glb`:
    - landmark registration onto the slot's region (base_landmarks.json), then a similarity fit;
    - a non-rigid wrap of the piece's inner surface onto B's skin shell at the slot's clearance;
@@ -143,6 +181,7 @@ Later, onto the female roster: F2 (not started) wears the same pieces through th
 | 0 | the body as an input (kit_build/piece_ship `--body`, bone-relative pivots, hinges in P1Laws) | P1Laws port now; flags at D's quiet point or after D merges | ~0.3M | 0 | 0 | low |
 | 1a | gear stage: bake-off gear_fit vs fitted on B, the winner moves to Marionette | after the demo | ~0.9M | 1 | 0 | medium |
 | 1b | body stage: tools/body moved, sha1-same rebuild | after the flip | ~0.6M | 0 | 0 | medium |
+| 1c | rig and animation stage: R1 B's rig (with 1b), R2 helpers as data, R3a clip bridge in Python (parity), R3b clips keyed on B | R1/R3a after the flip; R2 after D merges; R3b after R3a | ~1.1-1.3M + R3b ~1.5-2.5M | 0 + R3b 2-3 | 0 | low-medium; R3b high |
 | 2 | generated route: place tool + glue, proof 1 vambraces, proof 2 pauldron | after 0 and 1a | ~1.5M | 3-4 | 0 (TRELLIS.2); 30/piece only with main's yes | high |
 | 3 | starter outfits on B: Warden; other callings; plate sets if kept | Warden now behind the flag | ~0.9-1.15M | 2-3 | 0 | medium |
 | 4 | clips on B: rebake after aim-move, motion judge | probe now; once after A merges | ~0.3-0.75M | 1-2 | 0 | medium |
@@ -150,7 +189,7 @@ Later, onto the female roster: F2 (not started) wears the same pieces through th
 | 6 | the default flip + whole-frame gate | after the demo | ~0.3M | 1 + owner | 0 | medium |
 | 7 | lane D's kit re-shipped on B | after D merges | ~0.55-1.15M | 1-2 | 0 | medium-high |
 | | **To the flip (0, 3 Warden, 4, 5a, 6, 7)** | | **~2.05-3.1M** | **4-6** | 0 | |
-| | **The pipe (1a, 1b, 2, 3 rest, 5b)** | | **~3.65-3.9M** | **5-7** | 0-60 | |
+| | **The pipe (1a, 1b, 1c, 2, 3 rest, 5b)** | | **~4.75-5.2M + R3b ~1.5-2.5M** | **5-7 + R3b 2-3** | 0-60 | |
 
 ## Timings
 
