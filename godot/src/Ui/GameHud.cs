@@ -170,6 +170,8 @@ public partial class GameHud : CanvasLayer
         play.MoveChild(her.Edge, 0);
         // (debug --hurt-mul X: every blow on her times X, a shot of her life truly falling)
         if (Args.Has("hurt-mul")) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
+        // (debug --shot-boss-flash P: a boss's struck flash reaches the view at P on the hit's frame; Battle.BossFlashShot)
+        if (Args.Has("shot-boss-flash")) SurvivorUnchained.Sim.Battle.BossFlashShot = Args.Num("shot-boss-flash", 0.4f);
         BuildTally();
         BuildCorner();
         BuildEdges();

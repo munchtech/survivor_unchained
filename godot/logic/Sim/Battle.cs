@@ -1104,7 +1104,7 @@ public sealed partial class Battle
         e.Overflow += broke;
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
-        e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
+        e.Flash = e.Boss ? Math.Max(e.Flash, BossFlashShot > 0 ? BossFlashShot + 11.0 / 30 : 0.4) : 1;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
         double dx = o.DirX, dz = o.DirZ;
@@ -1919,6 +1919,10 @@ public sealed partial class Battle
 
     /// <summary>Debug (--hurt-mul X, a shot of her life truly falling): every blow on her times X. 1 in play.</summary>
     public static double HurtMul = 1;
+    /// <summary>(shots only, --shot-boss-flash P; 0 = off, play) A boss's struck flash as rendered: the AI step that runs after
+    /// her weapons (Step: Firing.Tick, then Ai.Update) takes 11/s off it in the hit's own step, so play's 0.4 reaches the view as
+    /// about 0.03 at 30 fps, under the den shader's 0.12 knee (vat dn_hit): P is the peak the view sees on the hit's frame.</summary>
+    public static double BossFlashShot;
 
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {
