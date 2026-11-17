@@ -25,11 +25,18 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class BattleFx
 {
+    /// <summary>A storm line's fissure. (lane E lead 7 r2, 17 Nov) One per path: a line thrown on a pending scar's path joins
+    /// it (P7Line, P7ScarOn) and the scar holds every line id mapped onto it, kept while any of them is pending (Live).</summary>
     sealed class P7Scar
     {
         public required MeshInstance3D N;
         public required ShaderMaterial M;
-        public float Age, SplitAge = -1, FadeAge = -1;
+        public Vector2 From, Dir;
+        public float Len;
+        public readonly List<int> Ids = new();
+        public readonly HashSet<int> Live = new();
+        // Hot: since the last line thrown onto it (its white-hot sample, the pending clock)
+        public float Age, Hot, SplitAge = -1, FadeAge = -1;
     }
 
     /// <summary>A blade smear: a strip swept behind the blade's tip, rebuilt each frame while the storm is on.</summary>
@@ -54,7 +61,9 @@ public partial class BattleFx
     double p7VowAt = -9, p7VowStart = -9, p7StoreAt = -9;
     float p7VowLevel;
     int p7VowBlows;
+    // the scars drawn (p7ScarList) and each line id's scar (p7Scars: several ids may share one)
     readonly Dictionary<int, P7Scar> p7Scars = new();
+    readonly List<P7Scar> p7ScarList = new();
     Node3D? p7Shield;
 
     /// <summary>The storm's hits and the vow's burst are drawn here (P7Owns).</summary>
@@ -357,11 +366,30 @@ public partial class BattleFx
             case SpinLinePhase.Thrown:
             {
                 P7Ev("line_thrown");
+                if (p7Scars.Remove(e.Id, out var old)) P7ScarDrop(old, e.Id);
+                // (r2) a line thrown on a pending scar's path (she stood still: the storm throws one every heavy tick, each with
+                // its own seed; r1's frames braided two or three fissures and seams on one path) draws no second fissure: its
+                // id joins that scar, whose seam goes white-hot a sample again
+                if (P7ScarOn(from, dir, len) is { } on)
+                {
+                    on.Ids.Add(e.Id);
+                    on.Live.Add(e.Id);
+                    on.Hot = 0;
+                    on.FadeAge = -1;
+                    p7Scars[e.Id] = on;
+                    if (Args.Has("clip")) GD.Print($"p7line joins scar of {on.Ids[0]} ({on.Ids.Count} ids) frame {Engine.GetFramesDrawn()}");
+                    break;
+                }
                 // (lane E lead 7, 17 Nov) the fissure: one painted strip on the crack's path (P7Fissure, mode 18), not the
                 // crack decals (a soft dark smear at the den camera) and their 1 px seam
                 var sc = P7Fissure(from, dir, side, len, t0, n, across);
-                if (p7Scars.Remove(e.Id, out var old)) P7ScarGone(old);
+                sc.From = from;
+                sc.Dir = dir;
+                sc.Len = len;
+                sc.Ids.Add(e.Id);
+                sc.Live.Add(e.Id);
                 p7Scars[e.Id] = sc;
+                p7ScarList.Add(sc);
                 // a little dust where it tears open, in two or three clusters
                 int cl = 2 + (int)(R() * 1.99f);
                 for (int c = 0; c < cl; c++)
@@ -376,7 +404,16 @@ public partial class BattleFx
             {
                 P7Ev("line_split");
                 if (!p7Scars.TryGetValue(e.Id, out var sc)) break;
+                sc.Live.Remove(e.Id);
+                // one burst a drawn fissure: the lines mapped onto it split in the same break; on the path it was laid on
+                if (sc.SplitAge >= 0) break;
                 sc.SplitAge = 0;
+                sc.FadeAge = -1;
+                from = sc.From;
+                dir = sc.Dir;
+                len = sc.Len;
+                side = new Vector2(-dir.Y, dir.X);
+                n = Math.Clamp((int)Mathf.Round(len / 1.0f), 4, 8);
                 // the burst along the whole line within 0.1 s: clustered jets (lit over dark), chunks off the lips
                 int m = 4 + (int)(len / 2f);
                 for (int c = 0; c < m; c++)
@@ -403,9 +440,33 @@ public partial class BattleFx
                 break;
             }
             case SpinLinePhase.Faded:
-                if (p7Scars.TryGetValue(e.Id, out var sf) && sf.SplitAge < 0 && sf.FadeAge < 0) sf.FadeAge = 0;
+                // kept while any line mapped onto it is pending
+                if (p7Scars.TryGetValue(e.Id, out var sf) && sf.Live.Remove(e.Id) && sf.Live.Count == 0 && sf.SplitAge < 0 && sf.FadeAge < 0) sf.FadeAge = 0;
                 break;
         }
+    }
+
+    /// <summary>(r2) The pending scar a line thrown from `from` along `dir` lands on: her end within stack[0] m, its way within
+    /// stack[1] degrees, its length within stack[2] m (p7.storm.line.stack). A scar whose last line faded in this same batch
+    /// (the sim fades its oldest line as it throws one past MaxLines) is still pending.</summary>
+    P7Scar? P7ScarOn(Vector2 from, Vector2 dir, float len)
+    {
+        var k = P7D.All("storm.line.stack");
+        float cos = Mathf.Cos(Mathf.DegToRad(k[1]));
+        foreach (var s in p7ScarList)
+            if (s.SplitAge < 0 && s.FadeAge <= 0 && IsInstanceValid(s.N) && s.From.DistanceTo(from) <= k[0] && s.Dir.Dot(dir) >= cos && Mathf.Abs(s.Len - len) <= k[2])
+                return s;
+        return null;
+    }
+
+    /// <summary>A line id leaves its scar (a reused id): the scar goes when no line is mapped onto it.</summary>
+    void P7ScarDrop(P7Scar s, int id)
+    {
+        s.Ids.Remove(id);
+        s.Live.Remove(id);
+        if (s.Ids.Count > 0) return;
+        P7ScarGone(s);
+        p7ScarList.Remove(s);
     }
 
     /// <summary>The crack strip's gap centre at `along` (m), as the decals draw it (WgCrackPoint's offset taken the
@@ -436,7 +497,8 @@ public partial class BattleFx
         for (int j = 0; j <= K; j++) pts[j] = P7CrackAt(from, dir, side, len * j / K, len, t0, n, across);
         var mesh = new ImmediateMesh();
         mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
-        float apx = 0, lit = 0;
+        float apx = 0, lit = 0, vis = -1;
+        var view = (GetViewport()?.GetVisibleRect().Size ?? new Vector2(1920, 1080)) * vk;
         Vector2 sp0 = Vector2.Zero;
         for (int j = 0; j <= K; j++)
         {
@@ -444,19 +506,24 @@ public partial class BattleFx
             var tg = pts[Math.Min(K, j + 1)] - pts[Math.Max(0, j - 1)];
             var s3 = new Vector3(-tg.Z, 0, tg.X).Normalized();
             Vector2 sp, ds;
+            bool seen = true;
             if (cam != null && !cam.IsPositionBehind(p))
             {
                 sp = cam.UnprojectPosition(p) * vk;
                 ds = (cam.UnprojectPosition(p + s3 * 0.25f) * vk - sp) / 0.25f;
+                seen = sp.X >= 0 && sp.Y >= 0 && sp.X <= view.X && sp.Y <= view.Y;
             }
             else
             {
                 float k = 1f / P7Px(p);
                 sp = new Vector2(p.X, p.Z) * k;
                 ds = new Vector2(s3.X, s3.Z) * k;
+                seen = cam == null;
             }
             if (j > 0) apx += (sp - sp0).Length();
             sp0 = sp;
+            // the visible part: px along to the first point off the screen
+            if (!seen && vis < 0) vis = apx;
             // the lit side: the across that faces the screen's lower right (the painted key from the upper left)
             if (j == K / 2) lit = ds.X + ds.Y >= 0 ? 1 : -1;
             float hw = hwPx / Math.Max(ds.Length(), 1f);
@@ -467,8 +534,14 @@ public partial class BattleFx
             mesh.SurfaceAddVertex(q + s3 * hw);
         }
         mesh.SurfaceEnd();
+        // (r2) the taper by screen px: the gap reaches its end width taper[0] px inside the screen's edge when the line runs
+        // off it (r1's 715 px line tapered over its whole length: about 4 px where it left the screen), over at least taper[1]
+        // of the visible part; a line wholly on screen tapers over its length
+        var tp = P7D.All("storm.line.taper");
+        float tpx = vis < 0 ? apx : Mathf.Clamp(vis - tp[0], tp[1] * vis, apx);
         var m = P7Mat(18);
         m.SetShaderParameter("p7_rpx", apx);
+        m.SetShaderParameter("p7_tpx", tpx);
         m.SetShaderParameter("p7_lit", lit);
         m.SetShaderParameter("p7_gap", P7V4("storm.line.gap"));
         m.SetShaderParameter("p7_jag", P7V4("storm.line.jag"));
@@ -476,6 +549,7 @@ public partial class BattleFx
         m.SetShaderParameter("p7_lip", P7V4("storm.line.lip"));
         var sm = P7D.All("storm.seam.shape");
         m.SetShaderParameter("p7_seam", new Vector4(P7D["storm.seam.px"], sm[0], sm[1], sm[2]));
+        m.SetShaderParameter("p7_sbrk", P7V4("storm.seam.breaks"));
         m.SetShaderParameter("p7_deep", P7Oklch("storm.line.deep"));
         m.SetShaderParameter("p7_wall", P7Oklch("storm.line.wall"));
         m.SetShaderParameter("p7_lipc", P7Oklch("storm.line.lip_lch"));
@@ -488,7 +562,7 @@ public partial class BattleFx
         node.GlobalTransform = Transform3D.Identity;
         if (FxAfter.On) FxAfter.Adopt(node);
         if (Args.Has("clip") && cam != null)
-            GD.Print($"p7line fissure {apx:F0}px long, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
+            GD.Print($"p7line fissure {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
         return new P7Scar { N = node, M = m };
     }
 
@@ -514,14 +588,17 @@ public partial class BattleFx
 
     void P7StepScars(float dt)
     {
-        List<int>? gone = null;
         float open = P7D["storm.line.open"];
         var cool = P7D.All("storm.seam.cool");
         var life = P7D.All("storm.line.life");
         var pulse = P7D.All("storm.seam.pulse");
-        foreach (var (id, s) in p7Scars)
+        // each scar once, however many line ids are mapped onto it
+        for (int i = p7ScarList.Count - 1; i >= 0; i--)
         {
+            var s = p7ScarList[i];
+            bool gone;
             s.Age += dt;
+            s.Hot += dt;
             s.M.SetShaderParameter("p7_open", Mathf.Clamp(s.Age / Mathf.Max(open, 1e-3f), 0, 1));
             if (s.SplitAge >= 0)
             {
@@ -532,7 +609,7 @@ public partial class BattleFx
                 s.M.SetShaderParameter("p7_alpha", 1f);
                 s.M.SetShaderParameter("p7_fade", t < cool[0] ? 0f : t < cool[1] ? 1 / 3f : t < cool[2] ? 2 / 3f : 1f);
                 s.M.SetShaderParameter("p7_erode", P7Stepped(t, life[0], life[1]));
-                if (t > life[1]) (gone ??= new()).Add(id);
+                gone = t > life[1];
             }
             else if (s.FadeAge >= 0)
             {
@@ -540,17 +617,21 @@ public partial class BattleFx
                 s.FadeAge += dt;
                 s.M.SetShaderParameter("p7_fade", s.FadeAge < P7Sample ? 2 / 3f : 1f);
                 s.M.SetShaderParameter("p7_erode", P7Stepped(s.FadeAge, 0, life[2]));
-                if (s.FadeAge > life[2]) (gone ??= new()).Add(id);
+                gone = s.FadeAge > life[2];
             }
             else
             {
-                // pending: white-hot for a sample as it tears open, then gold over amber, breathing (pulse: base, swing, Hz)
-                s.M.SetShaderParameter("p7_fade", s.Age < P7Sample ? 0f : 1 / 3f);
-                s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 1f : pulse[0] + pulse[1] * Mathf.Sin((float)(s.Age * Mathf.Tau * pulse[2])));
-                if (s.Age > 12) (gone ??= new()).Add(id);
+                // pending: white-hot for a sample as it tears open (and as each line lands on it), then gold over amber,
+                // breathing (pulse: base, swing, Hz); a lost event's scar goes 12 s after its last line
+                s.M.SetShaderParameter("p7_fade", s.Hot < P7Sample ? 0f : 1 / 3f);
+                s.M.SetShaderParameter("p7_alpha", s.Hot < P7Sample ? 1f : pulse[0] + pulse[1] * Mathf.Sin((float)(s.Age * Mathf.Tau * pulse[2])));
+                gone = s.Hot > 12;
             }
+            if (!gone) continue;
+            P7ScarGone(s);
+            foreach (var id in s.Ids) if (p7Scars.TryGetValue(id, out var m) && m == s) p7Scars.Remove(id);
+            p7ScarList.RemoveAt(i);
         }
-        if (gone != null) foreach (var id in gone) { var s = p7Scars[id]; if (IsInstanceValid(s.N)) s.N.QueueFree(); p7Scars.Remove(id); }
     }
 
     /* ------------------------------------------------------------ vow -- */

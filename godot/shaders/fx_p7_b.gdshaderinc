@@ -43,21 +43,26 @@ vec4 p7_scar(vec2 uv) {
 // (one pixel's antialias), nothing feathers outside it:
 //   gap     jagged: knots about every p7_jag.x px (jittered p7_jag.y), the centre swinging p7_jag.z of the gap's width
 //           (a zigzag, a few runs on one side), each edge chipped on its own finer knots (p7_jag.w of the width); its
-//           width p7_gap.x px at her end tapering (power p7_gap.z) to p7_gap.y at the far end, then to a point over the
+//           width p7_gap.x px at her end tapering (power p7_gap.z) to p7_gap.y at p7_tpx px (r2: by screen px, inside the
+//           visible part; the caller's), a hairline on from there, then to a point over the
 //           last p7_gap.w px, each knot 0.75-1.25 of that (uneven). Two flat warm darks (the line row): p7_deep, and the
 //           lit wall p7_wall along the lit side (p7_lit: the across sign facing the screen's lower right) over p7_lip.z
 //           of the width where the gap is 3 px or more.
 //   lip     a broken lit lip p7_lip.x px outside the lit edge (p7_lipc) on p7_lip.y of its knots, pointed at both ends.
 //   branch  hairline cracks off the gap's edges at p7_brn.x of the knots (half that at the far end), p7_brn.y px long,
 //           p7_brn.z px at the root tapering to a point, one kink.
-//   seam    in the gap's middle: p7_seam.x px at her end to p7_seam.y at p7_seam.z of the length (then out), never wider
-//           than the gap less a dark margin each side; broken on its own knots (unbroken at her end .. p7_seam.w of them
-//           off at its end). The school's bands by heat p7_fade: 0 white-hot (core, gold, amber), 1/3 gold over amber,
+//   seam    in the gap's middle: p7_seam.x px at her end to p7_seam.y at p7_seam.z of the taper (then out), never wider
+//           than the gap less a dark margin each side (0.3 of it, at least 0.8 px); glimpsed in pieces (r2: r1's read as one
+//           gold line): its own knots about p7_sbrk.y x p7_jag.x px, p7_sbrk.x of them off near her end rising to p7_seam.w
+//           at its end (none over her first p7_sbrk.w px), each piece pointed over p7_sbrk.z px at a break.
+//           The school's bands by heat p7_fade: 0 white-hot (core, gold, amber), 1/3 gold over amber,
 //           2/3 amber at 0.7 of the width, 1 out; p7_alpha its pulse.
 //   life    p7_open the share laid from her end; p7_erode 0..1 breaks it into pieces where it lies, the far end first.
 uniform vec4 p7_gap = vec4(10.0, 1.5, 1.0, 6.0);
 uniform vec4 p7_jag = vec4(14.0, 0.6, 0.35, 0.3);
-uniform vec4 p7_seam = vec4(3.5, 0.8, 0.86, 0.3);
+uniform vec4 p7_seam = vec4(3.0, 0.8, 0.86, 0.5);
+uniform vec4 p7_sbrk = vec4(0.3, 0.9, 4.0, 18.0);
+uniform float p7_tpx = 400.0;
 uniform vec4 p7_brn = vec4(0.35, 14.0, 1.6, 0.0);
 uniform vec4 p7_lip = vec4(1.5, 0.55, 0.38, 0.0);
 uniform vec3 p7_deep = vec3(0.012, 0.008, 0.005);
@@ -77,7 +82,16 @@ float p7_kseg(float a, float S, float J, float k, out float q0, out float q1) {
 	else if (a >= q1) { i = i0 + 1.0; q0 = q1; q1 = p7_kpos(i + 1.0, S, J, k); }
 	return i;
 }
-float p7_gapw(float a) { return mix(p7_gap.y, p7_gap.x, pow(clamp(1.0 - a / max(p7_rpx, 1.0), 0.0, 1.0), p7_gap.z)); }
+float p7_tap() { return clamp(p7_tpx, 1.0, max(p7_rpx, 1.0)); }
+float p7_gapw(float a) { return mix(p7_gap.y, p7_gap.x, pow(clamp(1.0 - a / p7_tap(), 0.0, 1.0), p7_gap.z)); }
+// a seam knot's share off (by where it starts): p7_sbrk.x near her end rising to p7_seam.w at the seam's end, none in her
+// first p7_sbrk.w px; on or off for the whole knot
+float p7_soff(float j, float S2) {
+	float pj = p7_kpos(j, S2, 0.7, 13.0);
+	if (pj < p7_sbrk.w) return 0.0;
+	return mix(p7_sbrk.x, p7_seam.w, smoothstep(0.0, 0.8, pj / max(p7_seam.z * p7_tap(), 1.0)));
+}
+bool p7_son(float j, float S2) { return p7_kh(j, 18.0) >= p7_soff(j, S2); }
 // a main knot's width and centre (px)
 float p7_kw(float i) { return p7_gapw(p7_kpos(i, p7_jag.x, p7_jag.y, 1.0)) * (0.75 + 0.5 * p7_kh(i, 4.0)); }
 float p7_kc(float i) {
@@ -127,7 +141,7 @@ vec4 p7_fissure(vec2 uv) {
 	float bcov = 0.0;
 	for (int d = -2; d <= 1; d++) {
 		float j = i + float(d);
-		float pj = p7_kpos(j, S, J, 1.0), tj = clamp(pj / L, 0.0, 1.0);
+		float pj = p7_kpos(j, S, J, 1.0), tj = clamp(pj / p7_tap(), 0.0, 1.0);
 		if (p7_kh(j, 8.0) >= p7_brn.x * mix(1.0, 0.5, tj) || pj < 4.0 || pj > L - 8.0 || pj > p7_open * L) continue;
 		float Wj = p7_kw(j), kw = clamp(Wj / max(p7_gap.x, 1.0), 0.0, 1.0);
 		float sb = p7_kh(j, 9.0) < 0.5 ? -1.0 : 1.0;
@@ -142,21 +156,20 @@ vec4 p7_fissure(vec2 uv) {
 		float hb = 0.5 * p7_brn.z * mix(0.6, 1.0, kw) * (1.0 - ub) + 0.2;
 		bcov = max(bcov, p7_cov(hb - min(d1, d2), aa));
 	}
-	// the seam: hot in the gap's middle, broken toward its end, the school's bands by heat
+	// the seam: hot in the gap's middle, glimpsed in pieces, the school's bands by heat
 	float scov = 0.0;
 	vec3 sc = fx_edge;
 	float lf = floor(clamp(p7_fade, 0.0, 1.0) * 3.0 + 1e-4);
-	if (lf < 3.0 && t < p7_seam.z) {
-		float ts = t / max(p7_seam.z, 1e-3);
+	float Ls = p7_seam.z * p7_tap();
+	if (lf < 3.0 && a < Ls) {
+		float ts = a / max(Ls, 1e-3);
 		float sw = mix(p7_seam.y, p7_seam.x, pow(1.0 - ts, p7_gap.z)) * clamp((1.0 - ts) / 0.07, 0.0, 1.0);
-		sw = min(sw, W - 2.0 * max(0.8, 0.25 * W)) * (lf > 1.5 ? 0.7 : 1.0);
-		float sq0, sq1;
-		float js = p7_kseg(a, 1.7 * S, 0.6, 13.0, sq0, sq1);
-		float off = p7_seam.w * smoothstep(0.15, 1.0, ts);
-		bool on = p7_kh(js, 18.0) >= off;
-		if (on && sw > 0.3) {
-			if (p7_kh(js - 1.0, 18.0) < off) sw *= clamp((a - sq0) / 3.0, 0.0, 1.0);
-			if (p7_kh(js + 1.0, 18.0) < off) sw *= clamp((sq1 - a) / 3.0, 0.0, 1.0);
+		sw = min(sw, W - 2.0 * max(0.8, 0.3 * W)) * (lf > 1.5 ? 0.7 : 1.0);
+		float S2 = p7_sbrk.y * S, sq0, sq1;
+		float js = p7_kseg(a, S2, 0.7, 13.0, sq0, sq1);
+		if (p7_son(js, S2) && sw > 0.3) {
+			if (!p7_son(js - 1.0, S2)) sw *= clamp((a - sq0) / max(p7_sbrk.z, 0.5), 0.0, 1.0);
+			if (!p7_son(js + 1.0, S2)) sw *= clamp((sq1 - a) / max(p7_sbrk.z, 0.5), 0.0, 1.0);
 			float m = 0.5 * (left + right), hs = 0.5 * sw, dm = abs(x - m);
 			scov = p7_cov(hs - dm, aa) * p7_alpha;
 			float r = dm / max(hs, 1e-3);
