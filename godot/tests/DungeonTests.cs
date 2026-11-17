@@ -188,7 +188,11 @@ public class DungeonTests
             double near = rim.Min(p => Math.Sqrt((p.X - m.Boss.X) * (p.X - m.Boss.X) + (p.Z - m.Boss.Z) * (p.Z - m.Boss.Z)));
             _out.WriteLine($"seed {seed} pit {i}: middle ({cx:0.0}, {cz:0.0}) = lair +({cx - r.X:0.0}, {cz - r.Z:0.0}), {across:0.00} m across, "
                 + $"px box {px.Min(p => p.X):0}-{px.Max(p => p.X):0} x {px.Min(p => p.Y):0}-{px.Max(p => p.Y):0}, rim {near:0.0} m from the ruler's spot");
-            Assert.InRange(across, i == 0 ? 4.5 : 2.5, i == 0 ? 5.5 : 3.5);
+            // (den r17 P3) sized by the frame (DungeonGen.LairPitPx): the main's rim 435-485 px across (drawn about 0.88 of that;
+            // den_boss's about 420), the smaller 240-310; 0.9x steps down where none fits
+            double wide = px.Max(p => p.X) - px.Min(p => p.X);
+            if (DungeonGen.LairPitPx > 0) Assert.InRange(wide, i == 0 ? 385 : 190, i == 0 ? 490 : 315);
+            else Assert.InRange(across, i == 0 ? 4.5 : 2.5, i == 0 ? 5.5 : 3.5);
             if (i == 0) { Assert.InRange(sx, 300, 1500); Assert.InRange(sy, 250, 750); }
             Assert.True(px.All(p => DungeonGen.LairScreenClear(p.X, p.Y)), $"seed {seed} pit {i} under the HUD");
             Assert.True(near >= 3, $"seed {seed} pit {i}: {near:0.0} m from the ruler's spot");

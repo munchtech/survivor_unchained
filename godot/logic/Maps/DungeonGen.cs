@@ -135,6 +135,12 @@ public static class DungeonGen
     /// the way out). No rng drawn: the layout is unchanged. 1 (the default) = these as well as the plan's two; 0 = the plan's two.
     /// Set by the Godot layer from --den-lair-pits before a map is made.</summary>
     public static double LairPits = 1;
+    /// <summary>(den r17 P3, R16 item 1) The lair's pits sized by the frame, not in metres: G's 4.8-5.3 m main drew about 300 px
+    /// across in the boss frame (its lobes' rim projected 342 px; the stamped outline, a 6-harmonic fit, draws about 0.88 of
+    /// that), den_boss.png's about 420. 1 (the default): the main's rim spans 435-485 px across the frame (drawn about 385-425),
+    /// the smaller 240-310 (about 210-270), the size found at each spot tried (the lens shrinks a pit up the frame); where none
+    /// fits, 0.9x steps down to G's. 0: G's sizes in metres. Set by the Godot layer from --den-lair-pit-px.</summary>
+    public static double LairPitPx = 1;
     /// <summary>The boss frame's camera over the lair's middle (--at boss-mid, play's fixed view): pitch 62, 24.3 m off,
     /// aimed 0.8 m up her, fov 34 (vertical), 1920x1080, looking north (-Z up the frame).</summary>
     public static (double X, double Y) LairScreen(double dx, double dz)
@@ -150,6 +156,9 @@ public static class DungeonGen
         x > 20 && x < 1900 && y < 850 && y > 20 && !(y < 90 && x > 500 && x < 1420) && !(x > 1340 && y < 470);
     // The pits' shapes, unit-ish, laid turned and scaled: the main five lobes (a broad core and four bays), the small three.
     static readonly Lobe[] PitMain = [new(-0.95, -0.15, 0.85, 0.2, 1.35), Lobe.O(-0.35, 1.05, 1.0), Lobe.O(0.55, -1.0, 0.95), Lobe.O(1.75, 0.55, 0.75), Lobe.O(-1.9, -0.75, 0.7)];
+    // (den r17 P3) LairPitPx's main: the five lobes laid broad (about 1.6:1), laid within 20 degrees of the frame's across: a
+    // round 400 px pit stands 3 m deep into the floor and cannot clear her spot, the lanes and the spurs in the frame's band
+    static readonly Lobe[] PitMainWide = [new(-1.2, 0, 1.2, 0.1, 1.15), Lobe.O(-0.2, 0.95, 0.8), Lobe.O(0.6, -0.85, 0.8), Lobe.O(2.05, 0.35, 0.7), Lobe.O(-2.1, -0.45, 0.65)];
     static readonly Lobe[] PitSmall = [new(-0.5, 0, 0.45, 0.15, 0.95), Lobe.O(0.2, 0.75, 0.6), Lobe.O(-0.75, -0.45, 0.55)];
     /// <summary>A pit's widest span across, in metres.</summary>
     public static double Across(IReadOnlyList<Lobe> pit)
@@ -224,6 +233,15 @@ public static class DungeonGen
         }
         // The main: its middle in the frame's open band, as near the fight as it may (about 6 m), low in the frame as den_boss's.
         double rot0 = rng.Range(0, Math.PI * 2), side = rng.Chance(0.5) ? -1 : 1, acrossM = rng.Range(4.8, 5.3);
+        // (den r17 P3) LairPitPx: the across that spans this many px of the frame at this spot and turn (two linear steps)
+        double PxWide(Lobe[] pit) { var px = Rim(pit).Select(p => LairScreen(p.X - r.X, p.Z - r.Z).X).ToArray(); return px.Max() - px.Min(); }
+        Lobe[] LayPx(Lobe[] shape, double px, double rot, double x, double z)
+        {
+            double a = 5;
+            for (int it = 0; it < 2; it++) a *= px / PxWide(Lay(shape, a, rot, x, z));
+            return Lay(shape, a, rot, x, z);
+        }
+        double mainPx = 435 + (acrossM - 4.8) / 0.5 * 50;
         // The floor the fight's paths can use (half-metre cells): 2 m in from the rim, 1.5 m off the spurs, 2 m off every pit (its
         // carved lip and the rim's dressing, then her width), flooded from the middle; a pit is laid only if the way in, the way
         // out and all the floor reached before are still reached (no pocket cut off, no way pinched shut).
@@ -279,28 +297,35 @@ public static class DungeonGen
             var after = Flood(all);
             return (after.Ways || !before.Ways) && after.Count >= before.Count - lost - 8;
         }
+        Lobe[]? best = null;
+        for (double shrink = 1; best == null && shrink > 0.7; shrink -= 0.1)
+        {
         var mains = new List<(double S, Lobe[] Pit)>();
-        for (int k = 0; k < 6; k++)
-            for (double dx = -11; dx <= 11; dx += 0.5)
+        for (int k = 0; k < (LairPitPx > 0 ? 12 : 6); k++)
+            for (double dx = -13; dx <= 13; dx += 0.5)
                 for (double dz = -9; dz <= 7; dz += 0.5)
                 {
                     var (sx, sy) = LairScreen(dx, dz);
-                    if (sx < 380 || sx > 1420 || sy < 300 || sy > 700) continue;
+                    if (LairPitPx > 0 ? sx < 300 || sx > 1620 || sy < 280 || sy > 720 : sx < 380 || sx > 1420 || sy < 300 || sy > 700) continue;   // (den r17 P3) the bigger main needs the band's ends: 3.5 m off her spot its middle stands 7 m out
                     double d = Math.Sqrt(dx * dx + dz * dz), sc = Math.Abs(d - 6) + Math.Abs(sy - 600) / 150 + (Math.Sign(dx) == side ? 0 : 0.6) + k * 0.05;
-                    var pit = Lay(PitMain, acrossM, rot0 + k * Math.PI / 3, r.X + dx, r.Z + dz);
+                    var pit = LairPitPx > 0 ? LayPx(PitMainWide, mainPx * shrink, (rot0 > Math.PI ? Math.PI : 0) + (k % 2 == 0 ? 1 : -1) * (k / 2) * 0.07, r.X + dx, r.Z + dz) : Lay(PitMain, acrossM, rot0 + k * Math.PI / 3, r.X + dx, r.Z + dz);
                     // big in the frame as den_boss's (350-450 px): low enough in it that the lens does not shrink it
-                    var px = Rim(pit).Select(p => LairScreen(p.X - r.X, p.Z - r.Z).X).ToArray();
-                    if (px.Max() - px.Min() < 330) continue;
+                    if (LairPitPx <= 0 && PxWide(pit) < 330) continue;
                     if (Fits(pit)) mains.Add((sc, pit));
                 }
-        var best = mains.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+        best = mains.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+        if (LairPitPx <= 0) break;
+        }
         if (best == null) return r;
         laid.Add(best);
         // One or two smaller elsewhere in the frame, spread from the main and each other.
         int want = rng.Chance(0.65) ? 2 : 1;
         for (int n = 0; n < want; n++)
         {
-            double across = rng.Range(2.6, 3.4), rot = rng.Range(0, Math.PI * 2);
+            double across = rng.Range(2.6, 3.4), rot = rng.Range(0, Math.PI * 2), smallPx = 240 + (across - 2.6) / 0.8 * 70;
+            Lobe[]? pick = null;
+            for (double shrink = 1; pick == null && shrink > 0.7; shrink -= 0.1)
+            {
             var smalls = new List<(double S, Lobe[] Pit)>();
             for (double dx = -13; dx <= 13; dx += 0.5)
                 for (double dz = -9; dz <= 7; dz += 0.5)
@@ -309,10 +334,12 @@ public static class DungeonGen
                     if (sx < 150 || sx > 1770 || sy < 150 || sy > 800) continue;
                     double spread = laid.Min(p => { var (px, py) = LairScreen(p.Average(o => o.X0) - r.X, p.Average(o => o.Z0) - r.Z); return MathX.Dist(sx, sy, px, py); });
                     double d = Math.Sqrt(dx * dx + dz * dz), sc = -Math.Min(spread, 900) / 200 + Math.Abs(d - 7.5) * 0.4;
-                    var pit = Lay(PitSmall, across, rot, r.X + dx, r.Z + dz);
+                    var pit = LairPitPx > 0 ? LayPx(PitSmall, smallPx * shrink, rot, r.X + dx, r.Z + dz) : Lay(PitSmall, across, rot, r.X + dx, r.Z + dz);
                     if (Fits(pit)) smalls.Add((sc, pit));
                 }
-            var pick = smalls.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+            pick = smalls.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+            if (LairPitPx <= 0) break;
+            }
             if (pick != null) laid.Add(pick);
         }
         return r with { Holes = [.. r.Holes, .. laid.SelectMany(p => p)] };
