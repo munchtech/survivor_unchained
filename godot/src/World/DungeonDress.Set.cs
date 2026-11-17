@@ -1198,7 +1198,7 @@ public static partial class DungeonDress
                 else PlaceSetObj(c, sheet, pc, p.X, p.Y, k2, sheet == "O1" ? 0.62f : sheet == "O2" ? 0.18f : 0.1f, sheet == "O1", -1f, sheet == "O1" && litRock ? "O1r" : null);
                 taken.Add(p); got++; n++;
                 // (r11) blood (O5) by a kill's bones, and now and then on its own nearby (den_room.png's splashes and drags)
-                if (sheet == "O3" || Hash(ri, k, 995) < (lair ? 0.6f : 0.35f))
+                if (lair ? Hash(ri, k, 995) < SetLairBlood : sheet == "O3" || Hash(ri, k, 995) < 0.35f)
                 {
                     float ba = Hash(ri, k, 996) * Mathf.Tau, bd = 0.9f + 0.8f * Hash(ri, k, 997);
                     var bp = p + new Vector2(Mathf.Cos(ba), Mathf.Sin(ba)) * bd;
@@ -1215,6 +1215,7 @@ public static partial class DungeonDress
     static readonly float SetHollowVary = SurvivorUnchained.Args.Num("den-hollow-vary", 1f);   // (den r14 objects, item 11) hollows: noise outline, size, turn
     static readonly float SetHollowGap = SurvivorUnchained.Args.Num("den-hollow-gap", 1f);     // (1 = two diameters between centres)
     static readonly List<(Vector2 P, float R)> laidHollows = new();
+    static readonly float SetLairBlood = SurvivorUnchained.Args.Num("den-lair-blood", 0.3f);   // (den r15 lead) a lair pick's chance of a blood splash (was: every bone pile plus 0.6 of the rest: red smears all over the s23 lair)
     static readonly float SetLairFungus = SurvivorUnchained.Args.Num("den-lair-fungus", 4f);   // (den r14 objects, item 13) glow-fungus clusters on the lair's pit rims (0 off)
     static readonly float SetLairRoots = SurvivorUnchained.Args.Num("den-lair-roots", 3f);     // root tendrils (B6) laid between its pits
 
