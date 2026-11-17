@@ -187,7 +187,14 @@ class Body:
             return st
         pj = os.path.join(body_dir, "publish.json")
         if os.path.exists(pj):
-            return os.path.join(REPO, json.load(open(pj))["source"], "stage")
+            src = json.load(open(pj))["source"]
+            st = os.path.join(REPO, src, "stage")
+            # (the refit lead, 16 Nov: the build round sits in git-ignored tools/body/out and a sweep can lose it; the two
+            # arrays this engine reads are frozen in tools/body/base/stage/<round>/ (close.npz, play.npz, freeze.json))
+            fz = os.path.join(REPO, "tools", "body", "base", "stage", os.path.basename(os.path.normpath(src)))
+            if not os.path.exists(os.path.join(st, "close.npz")) and os.path.exists(os.path.join(fz, "close.npz")):
+                return fz
+            return st
         raise SystemExit(f"gear_fit: no stage for {body_dir} (no stage/ and no publish.json source)")
 
     @classmethod
