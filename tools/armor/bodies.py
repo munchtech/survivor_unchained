@@ -47,7 +47,7 @@ BODIES = {
     "a": Body("a", os.path.join(PEOPLE, "heroine.glb"), os.path.join(DATA, "heroine_skeleton.json"), None,
               os.path.join(ARMOR, "src"), ARMOR, "", "body A"),
     "p1": Body("p1", os.path.join(PEOPLE, "body_p1", "body.glb"), os.path.join(DATA, "body_p1_skeleton.json"),
-               os.path.join(PEOPLE, "body_p1", "p4"), os.path.join(ARMOR, "body_p1", "src"),
+               os.path.join(DATA, "body_p1", "clips"), os.path.join(ARMOR, "body_p1", "src"),
                os.path.join(ARMOR, "body_p1"), "body_p1", "lane G ports it"),
 }
 
