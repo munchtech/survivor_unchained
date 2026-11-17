@@ -60,6 +60,15 @@ uniform vec3 pit_ray = vec3(1.0, 0.75, 1.35);   // the past-rim cracks on, their
 uniform vec3 pit_deep = vec3(0.0, 1.6, 0.55);
 uniform vec3 pit_wall_c = vec3(0.06, 0.042, 0.028);
 uniform float pit_cast_min = 0.16;   // (den r17 P, R16 item 1) the near lip's shadow's floor (r16 .16: a .13-.19 band inside the near rim)
+// (den r17 P2, R16 item 1: still a dome) pit_bowl 1: the pit a bowl, as den_boss.png's. Its inside (floor and wall) takes no spot
+// or omni light (pit_pt, read in light(): the PitGlow and the shafts lit its middle as the floor's), only the key and the ambient,
+// so its floor is flat; the far wall an earth band lit at the brink, falling to pit_bw.x of that at its foot; the floor dark at
+// the far wall's foot (pit_bw.y within pit_bw.z metres: the far rim's shade), no all-round vignette, no band inside the near rim;
+// the lip a smooth noise (no per-chunk steps: the r16 notches), no square crumbs, the past-rim glow's fringe not boosted (the seam).
+// 0: as r16 / r17 P
+uniform float pit_bowl = 0.0;
+uniform vec3 pit_bw = vec3(0.35, 0.55, 0.5);
+varying float pit_pt;
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
 uniform vec3 boss_c = vec3(0.0);
@@ -190,6 +199,7 @@ vec4 pc_net(vec2 x, float cw, float hw, float aa, float share, out float cell_h,
 
 void fragment() {
 	if (occ_cut(VIEW_MATRIX, PROJECTION_MATRIX, VERTEX, wpos, FRAGCOORD, VIEWPORT_SIZE)) discard;   // (den r15 F)
+	pit_pt = 1.0;
 	vec4 c = texture(paint_tex, UV);
 	if (rock_k > 0.0) {
 		vec4 cb = textureLod(paint_tex, UV, rock_lod);
@@ -283,7 +293,7 @@ void fragment() {
 			if (d < k1) { k1 = d; kid = kn + g; kr = r; }
 		}
 		vec2 kh = pg_h2(kid + 5.1);
-		float en = ell + pit_lipw.y * ((kh.x - 0.5) + 0.7 * (pg_vn(xz * 2.3 + sd * 60.0) - 0.5) + 1.1 * (pg_vn(xz * 0.75 + sd * 31.0) - 0.5));
+		float en = ell + pit_lipw.y * (mix(kh.x - 0.5, 0.8 * (pg_vn(xz * 5.5 + sd * 17.0) - 0.5), pit_bowl) + 0.7 * (pg_vn(xz * 2.3 + sd * 60.0) - 0.5) + 1.1 * (pg_vn(xz * 0.75 + sd * 31.0) - 0.5));
 		float ea = max(fwidth(en), 1e-4);
 		float inside = 1.0 - smoothstep(1.0 - ea, 1.0 + ea, en), u = max(1.0 - en, 0.0);
 		// the view ray: where it meets the wall (tau < 1) or the floor (tau >= 1), the lip a circle of R0 round this bearing
@@ -307,7 +317,12 @@ void fragment() {
 		float fine = 1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.08, pg_edge(x * 3.3 + 9.1)));   // hairline cracks across a plate
 		vec3 alb = pit_plate_c * (0.6 + 0.8 * ch) * grain * fine * (1.0 + 2.0 * pit_lipw.z * nt.w);
 		alb *= mix(0.25, 1.0, smoothstep(cwc * 0.4, cwc + aa, nt.x));   // the crack a dark groove where it does not glow
-		alb *= mix(1.0, pit_deep.z, mid) * mix(0.3, 1.0, aof) * mix(pit_cast_min, 1.0, cast) * mix(0.25, 1.0, smoothstep(0.0, pit_lipw.x, u));
+		float ff = mix(0.3, 1.0, aof) * mix(pit_cast_min, 1.0, cast) * mix(0.25, 1.0, smoothstep(0.0, pit_lipw.x, u));
+		// (den r17 P2) the bowl's floor: dark at the far wall's foot (tf: metres on to the far wall along the view), a little darker
+		// toward the far wall overall; nothing round the near rim
+		float tf = max(-ob + sqrt(max(ob * ob - dot(of, of) + R0 * R0, 0.0)), 0.0);
+		ff = mix(ff, mix(pit_bw.y, 1.0, smoothstep(0.0, pit_bw.z, tf)) * mix(0.82, 1.0, clamp(tf / (1.6 * R0), 0.0, 1.0)), pit_bowl);
+		alb *= mix(1.0, pit_deep.z, mid) * ff;
 		float pulse = 0.9 + 0.1 * sin(TIME * 1.3 + pf.x * 0.7);
 		float rm = smoothstep(0.15, 0.75, 0.7 * pg_vn(pf * 0.3 + sd * 80.0) + 0.3 * pg_vn(pf * 0.85 + 3.3));
 		vec3 em = (pit_core_c * nt.y + pit_halo_c * nt.z) * pit_glow * mix(0.15, 1.0, rm) * mix(0.4, 1.0, smoothstep(0.95, 0.3, ef)) * pulse;
@@ -316,6 +331,7 @@ void fragment() {
 		float zw = dep * clamp(tau, 0.0, 1.0), zr = zw / max(dep, 1e-3), aw = hw.x + 0.6 * hw.y;
 		float wn = 0.5 * pg_vn(vec2(aw * 2.2, zw * 8.0) + sd * 50.0) + 0.3 * pg_vn(vec2(aw * 7.0, zw * 2.5) + 7.7) + 0.2 * pg_vn(vec2(aw * 1.1, zw * 30.0) - 3.1);
 		vec3 wcol = pit_wall_c * (0.55 + 0.9 * wn) * mix(1.0, 0.28, smoothstep(0.05, 1.0, zr)) * (1.0 + 1.4 * (1.0 - smoothstep(0.0, 0.035, zw)));
+		wcol = mix(wcol, pit_wall_c * (0.7 + 0.6 * wn) * mix(1.0, pit_bw.x, smoothstep(0.0, 1.0, zr)) * (1.0 + 0.5 * (1.0 - smoothstep(0.0, 0.03, zw))), pit_bowl);   // (den r17 P2) lit at the brink
 		vec3 wem = pit_halo_c * pit_glow * 0.45 * smoothstep(0.4, 1.0, zr) * mix(0.15, 1.0, rm);
 		alb = mix(alb, wcol, wall);
 		em = mix(em, wem, wall);
@@ -335,6 +351,7 @@ void fragment() {
 			rooth = max(rooth, onr * smoothstep(0.1, 0.6, lat * sign(-cos(th) + 1e-3) / max(wr, 1e-3)));
 		}
 		float crad = mix(0.2, 0.38, kh.x), crumb = step(0.8 + 0.5 * max(en - 1.0, 0.0), kh.y) * step(0.96, en) * step(en, 1.3) * (1.0 - smoothstep(crad - 0.06, crad + 0.04, sqrt(k1)));
+		crumb *= 1.0 - pit_bowl;   // (den r17 P2) the square crumbs off (the rim's notches)
 		// 2-3 cracks run out past the rim on the floor: a jagged dark groove, tapering, a glowing core fading along it
 		float rc = 0.0, rh = 0.0, rg = 0.0, past = (en - 1.0) * R0, am = max(fwidth(rr), 1e-4);
 		if (pit_ray.x > 0.0 && rr > 0.01) {
@@ -361,8 +378,9 @@ void fragment() {
 		alb = mix(alb, vec3(0.16, 0.108, 0.068) * mix(0.5, 1.25, smoothstep(-0.15, 0.15, kr.y)) * mix(0.5, 1.0, out_), crumb);
 		alb = gloom_col(alb, lair_gloom(wpos));
 		ALBEDO = alb * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));
-		EMISSION = (em * inside + (pit_core_c * rc + pit_halo_c * rh) * pit_glow * pulse * out_ * 0.85 / max(ra, 0.05) * step(0.001, ra)) * (1.0 - max(rootm, crumb));
+		EMISSION = (em * inside + (pit_core_c * rc + pit_halo_c * rh) * pit_glow * pulse * out_ * 0.85 / max(ra, mix(0.05, 0.3, pit_bowl)) * step(0.001, ra)) * (1.0 - max(rootm, crumb));
 		ALPHA = max(inside, max(ra, max(rootm, crumb)));
+		pit_pt = 1.0 - inside * pit_bowl;   // (den r17 P2) no spot or omni light inside the bowl (light())
 	} else
 	if (pit_glow > 0.0 && COLOR.a < 0.75) {
 		vec2 q = UV * 13.0;
@@ -396,7 +414,7 @@ void fragment() {
 }
 
 void light() {
-	float w = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(1.0, max(dot(NORMAL, LIGHT), 0.0), local_turn) * pt_take;   // (den r16 D: pt_take)
+	float w = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(1.0, max(dot(NORMAL, LIGHT), 0.0), local_turn) * pt_take * pit_pt;   // (den r16 D: pt_take; r17 P2: pit_pt)
 	vec3 lc = LIGHT_COLOR;
 	float ll = dot(lc, vec3(0.299, 0.587, 0.114));
 	lc = LIGHT_IS_DIRECTIONAL || lc.r >= lc.g ? lc : vec3(ll) * cold_take;
