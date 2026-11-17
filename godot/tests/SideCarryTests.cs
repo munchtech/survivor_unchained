@@ -275,6 +275,30 @@ public class SideCarryTests
         Assert.True(e <= 1f, $"blade outran her turn by {e:F1} deg in a frame");
     }
 
+    // (judge r5) While the weight falls, the layer never leaves the blade nearer straight down than the clip's own (to Hold).
+    [Theory]
+    [InlineData(-90f)]
+    [InlineData(270f)]
+    [InlineData(180f)]
+    public void FadingNeverHangsTheBladeNearerDownThanTheClip(float to)
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float pa = float.NaN;
+        for (int i = 0; i < 30; i++)
+        {
+            float w = c.Weight, face = 90f + (to - 90f) * MathF.Min(1f, i / 6f);
+            var f = At(face, MathF.Min(1f, i / 3f));
+            c.Step(Dt, true, 0f, f);
+            float a0 = SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f);
+            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
+            // where the blade was already on the clip's side, out of the band (a crossing from the other side is rate-limited)
+            if (c.Weight < w && MathF.Abs(a0) >= 15f && (pa > 0f) == (a0 > 0f) && MathF.Abs(pa) >= MathF.Min(MathF.Abs(a0), c.Hold) - 1f)
+                Assert.True(MathF.Abs(a) >= MathF.Min(MathF.Abs(a0), c.Hold) - 6f, $"frame {i}: {a:F1} against the clip's {a0:F1}");
+            pa = a;
+        }
+    }
+
     // (judge r4, solver 18) A calf across the drawn blade's line (strafe_fx_a: the crossing foot behind the blade's middle):
     // the tip turns out by the least that keeps the blade Clear off it, no more than OutMax; with the calf away, none.
     [Fact]

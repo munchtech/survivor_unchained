@@ -55,6 +55,9 @@ public static class DirRun
         var l = EightLegs[i];
         bool run = t - 2.0 * i < 1.2;
         var r = run ? l : ("stand_" + l.Name, 0.0, 0.0, l.AX, l.AZ);
+        // (judge r5) the next leg's aim is held for the stand's last 0.25 s, so each leg starts with the aim already set
+        // before its key press (as a player aims, then moves), not changed on the same frame.
+        if (!run && t - 2.0 * i >= 1.75 && i + 1 < EightLegs.Length) r = (r.Item1, 0.0, 0.0, EightLegs[i + 1].AX, EightLegs[i + 1].AZ);
         int k = 2 * i + (run ? 0 : 1);
         if (k > seg)
         {

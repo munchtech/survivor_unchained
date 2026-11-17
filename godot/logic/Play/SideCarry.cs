@@ -85,6 +85,11 @@ public sealed class SideCarry
     /// angle (to <see cref="MissTol"/> deg), then, within <see cref="DownBand"/> deg of straight down, the tip above her boots
     /// on screen (<see cref="BootPx"/> px under the lower ankle), then least change from the last frame's turn. InReach 0: off.</summary>
     public float InReach = 30f, InStep = 0.5f, ClearReach = 0.08f, MissTol = 1f, DownBand = 10f, BootPx = 4f;
+    /// <summary>(judge r5) Never weaker than the clip: while the weight falls, where the layer would put the blade nearer straight
+    /// down on screen than the clip's own blade (and nearer than Hold deg), the layer is scaled back toward the clip's pose
+    /// just enough to keep it at the lesser of the clip's angle and Hold (the hang after a turn, where the layer's reach
+    /// collapses as she faces away). Hold 0: off.</summary>
+    public float Hold = 25f;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -272,6 +277,7 @@ public sealed class SideCarry
         var cb = new Vector3(f.CamBack.X, 0f, f.CamBack.Z);
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
         float target = on && float.IsFinite(side) ? Target(side) : 0f;
+        float wPrev = Weight;
         float wn = Ease > 0f ? Weight + (target - Weight) * (1f - MathF.Exp(-dt / Ease)) : target;
         if (wn < Weight && FadeOut > 0f) wn = MathF.Max(wn, Weight - dt / FadeOut);
         Weight = wn < 1e-4f && target == 0f ? 0f : wn;
@@ -341,6 +347,17 @@ public sealed class SideCarry
         // the clip's own blade turns (holding still is always allowed), inside the Edge.
         float tilt = Weight * Raw, inward = Weight * psi;
         float a0 = ScreenAngle(b, f.Jx, f.Jy, 1f), aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
+        if (Hold > 0f && Weight < wPrev && MathF.Abs(aT) < MathF.Min(MathF.Abs(a0), Hold) && (aT == 0f || (aT > 0f) == (a0 > 0f)))
+        {
+            float need = MathF.Min(MathF.Abs(a0), Hold), k0 = 0f, k1 = 1f;
+            for (int i = 0; i < 12; i++)
+            {
+                float km = 0.5f * (k0 + k1), am = ScreenAngle(Turned(b, left, km * tilt, ahead, km * inward), f.Jx, f.Jy, 1f);
+                if (MathF.Abs(am) >= need && (am > 0f) == (a0 > 0f)) k0 = km; else k1 = km;
+            }
+            tilt *= k0; inward *= k0;
+            aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
+        }
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         float aW = was + Math.Clamp(Wrap(aT - was), -lim, lim);
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
