@@ -206,13 +206,18 @@ float crowd_edge(float rim) {
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
-#define DEN_ACCENT vec3(0.36, 0.12, 0.80)
+// (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
+// (its n.y past -0.2) at L 0.52, C 0.13, ember-gold from the rig's elite tint; its rim DEN_ELITE_RIM (linear), bone-ivory)
+#define DEN_ACCENT vec3(0.52, 0.13, -0.2)
+#define DEN_ELITE_RIM vec3(1.0, 0.80, 0.52)
+// (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
+#define DEN_BOSS_STEP 1.0
 // (lead 3 foes: the MID band, the fur's three bands: flank, mid past DEN_MID_CUT of the world normal's y, top past
 // crowd_den_top.x; the mid's L step over the flank is crowd_den_rim.w (rigs foe_den [8]), the top's crowd_den_top.y)
 #define DEN_MID_CUT 0.3
 // (lead 3 polish: the pack's TOP band's chroma step over the flank's crowd_den.z, the boss not: the key on the top greys it,
 // screen C .014 h 36 at a paint .028 in the lair)
-#define DEN_TOP_C 0.02
+#define DEN_TOP_C 0.006
 #define DEN_FLASH_L 0.36
 // (lead 3 foes: a den foe's hit is a step in its own paint, never a lift toward white: L up by at most DEN_HIT.x and never
 // past DEN_FLASH_L (a block already paler keeps its L), its chroma to at least DEN_HIT.y at hue DEN_HIT.z, warm)
@@ -241,7 +246,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	float c_pull = c_boss ? crowd_den_top.w : crowd_den.y;
 	float c_top = vat_den_cut(c_ny, crowd_den_top.x), c_belly = 1.0 - vat_den_cut(c_ny, DEN_BELLY.x);
 	float c_mid = vat_den_cut(c_ny, DEN_MID_CUT) * (1.0 - c_top);
-	float c_l = (c_boss ? crowd_den_boss.w : crowd_den.x) + (crowd_den_top.y * c_top + crowd_den_rim.w * c_mid) * (c_boss ? 0.5 : 1.0)
+	float c_l = (c_boss ? crowd_den_boss.w : crowd_den.x) + (crowd_den_top.y * c_top + crowd_den_rim.w * c_mid) * (c_boss ? DEN_BOSS_STEP : 1.0)
 		+ DEN_BELLY.y * c_belly;
 	// (lead 3: the boss body's hue from the rig's boss tint, crowd_den_boss.rgb (foe_den [21-23]), its chroma DEN_BOSS_BODY.x)
 	vec3 c_bt = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
@@ -731,6 +736,9 @@ void fragment() {
 	// it at crowd_den_edge.w of the level; none on the dead. Her lamp does not light the pack here (PlayerView.CrowdOmni).
 	if (den_on) {
 		float dn_alive = dn_live;
+		// (lead 3 foes r3, judge 2: no gloss on a den foe: the engine's smooth specular was the boss's violet back hotspot
+		// (L .77 C .146 h 294) and the pack heads' soft round gloss; its read is the stepped bands)
+		SPECULAR = 0.0;
 		float dn_line = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x);
 		// (r2 foes, solver 2: the rim one unbroken stroke on the lit edge. Its side is the screen's: the silhouette's outward
 		// normal (view NORMAL.xy) toward the key's screen direction leaned to screen-up by crowd_den_edge.w, past DEN_RIM_CUT, so it
@@ -741,7 +749,7 @@ void fragment() {
 		vec2 dn_ks = normalize(mix(normalize(dn_kv.xy + vec2(0.0, 1e-4)), vec2(0.0, 1.0), crowd_den_edge.w) + vec2(0.0, 1e-4));
 		float dn_side = vat_den_cut(dot(normalize(NORMAL.xy + vec2(0.0, 1e-4)), dn_ks), DEN_RIM_CUT);
 		float dn_full = step(0.5, dn_cls);
-		e += crowd_den_rim.rgb * (dn_band * dn_alive * mix(dn_side, max(crowd_den_elite.w, dn_side), dn_full));
+		e += (dn_cls > 0.5 && dn_cls < 1.5 ? DEN_ELITE_RIM : crowd_den_rim.rgb) * (dn_band * dn_alive * mix(dn_side, max(crowd_den_elite.w, dn_side), dn_full));
 		// (lead 3: the dead keep the flat share too, so the rig's cool fill does not light them blue-lavender in shade)
 		e += ALBEDO * DEN_FLAT;
 		ALBEDO *= (1.0 - DEN_FLAT) * mix(1.0, crowd_den_edge.y, dn_line);
