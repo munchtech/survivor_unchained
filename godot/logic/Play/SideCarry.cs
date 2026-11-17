@@ -243,6 +243,16 @@ public sealed class SideCarry
     float lastA = float.NaN, lastShown, lastPoff, lastDPoff;   // the last drawn blade on screen (deg, screen right +), its shown share, the pitch added
     /// <summary>(solver r12) How far the layer has yielded to the clip's own pose (0..1, see <see cref="HideFrac"/>).</summary>
     public float Yield { get; private set; }
+    /// <summary>(r16, judge: e30 legs 4/10 +3..+9, a stub between her boots) A crossing, once begun (the cross above commits
+    /// to the far side), finishes: each frame after, until the drawn blade is out past the band (or the cane's angle) on the
+    /// far side, the drawn angle wanted is the layer's own there, not a crawl at the screen rate through the band; the guard
+    /// keeps it short as it goes (T3's short-both-ends exemption). Landed, for at most LandMax s, the guard's shown pull is
+    /// toward the layer's wanted turn's shown length (LandPull times as strong) instead of last frame's, so it grows back to
+    /// the run's blade instead of hanging short and steep. CrossOn false: off.</summary>
+    public bool CrossOn = true; public float LandMax = 0.3f, LandPull = 6f; float crossTo, landT; bool crossLand;
+    /// <summary>(r16) The guard never takes a shown-length step of PumpStep or more back the other way from last frame's
+    /// (the judge's pump, looked back on rather than ahead: a crossing's one-frame dip 0.46/0.24/0.47). false: off.</summary>
+    public bool BackPump = true; float lastDShown;
     // the legs' four bones (far thigh, far shin, near thigh, near shin) as screen px from the grip (x, y) and depth (z, m, + away)
     readonly Vector3[] legS = new Vector3[8];
     bool legsOn;
@@ -335,7 +345,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; standP = float.NaN; clipPitchPrev = float.NaN; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; crossTo = 0f; crossLand = false; landT = 0f; lastDShown = 0f; standP = float.NaN; clipPitchPrev = float.NaN; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -478,7 +488,7 @@ public sealed class SideCarry
             // (judge r11 fix 3) the inward turn eases out at its rate too, never snaps
             if (Weight == 0f) { float isd = InwardRate > 0f ? InwardRate * dt : float.MaxValue; Inward += Math.Clamp(-Inward, -isd, isd); if (MathF.Abs(Inward) < 1e-3f) Inward = 0f; }
             if (Tilt == 0f && Weight == 0f && Inward == 0f) { Shift = 0f; clipPrev = float.NaN; }
-            OutTurn = 0f; calfN = 0; guardHeld = false; easeT = 0f;
+            OutTurn = 0f; calfN = 0; guardHeld = false; easeT = 0f; crossTo = 0f; crossLand = false; landT = 0f;
             if (b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f
                 || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f) { lastA = float.NaN; standP = float.NaN; clipPitchPrev = float.NaN; }
             else
@@ -597,8 +607,18 @@ public sealed class SideCarry
                 // (B r11) in a turn or a run's start the crossing lands out at the wide band's far edge, not short inside it
                 // (e21 leg 4 +4: landed at -12.6 at shown 0.88, a cane for two frames while the keep eased it out)
                 if (turnBand && MathF.Abs(full) >= edgeD && MathF.Abs(full) < edge && (full > 0f) != (was > 0f)) aW = -dside * edge;
+                if (CrossOn && (aW > 0f) != (was > 0f)) crossTo = -dside;
             }
             else aW = (aW > 0f) == (was > 0f) && MathF.Abs(aW) >= keep ? aW : dside * keep;
+        }
+        if (CrossOn && crossTo != 0f)
+        {
+            float eD = DownBand + CrossMargin, goal = MathF.Abs(aT) >= edge ? aT : crossTo * edge;
+            bool far = (aT > 0f) == (crossTo > 0f) && MathF.Abs(aT) >= eD;
+            bool there = !float.IsNaN(lastA) && (lastA > 0f) == (crossTo > 0f) && MathF.Abs(lastA) >= MathF.Min(MathF.Abs(goal), MathF.Max(edge, CaneAngle)) - CrossSlack;
+            if (there && far && Weight >= GuardWeight) crossLand = true;
+            if (!far || there || Weight < GuardWeight) crossTo = 0f;
+            else aW = goal;
         }
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;
@@ -786,6 +806,11 @@ public sealed class SideCarry
                 float dpo = po - lastPoff;
                 if (dpo * lastDPoff < 0f && MathF.Abs(dpo) >= PitchRev && MathF.Abs(lastDPoff) >= PitchRev) v += 0.02f + 0.005f * MathF.Min(MathF.Abs(dpo), MathF.Abs(lastDPoff));
             }
+            if (BackPump && hasLast && PumpCost > 0f)
+            {
+                float e1 = sh - lastShown;
+                if (e1 * lastDShown < 0f && MathF.Abs(e1) >= PumpStep && MathF.Abs(lastDShown) >= PumpStep) v += 0.02f + PumpCost * MathF.Min(MathF.Abs(e1), MathF.Abs(lastDShown));
+            }
             if (hideOn) { float hd = HiddenOf(Turned(b, left, t, ahead, i), fc); if (hd >= HideFrac) v += 0.02f + HideCost * (hd - HideFrac); }
             // (solver r12) the tilt never flips sign in a frame from a turn either way (the judge's TILTFLIP: both 5 deg or more)
             if (tPrev * t < 0f && MathF.Abs(tPrev) >= 4.5f && MathF.Abs(t) >= 4.5f) v += 0.05f;
@@ -815,6 +840,8 @@ public sealed class SideCarry
                 v += 0.05f + MathF.Min((CaneAngle - MathF.Abs(a)) / CaneAngle, MathF.Min((sh - CaneShown) / 0.2f, (un - CanePx) / 20f));
             return v;
         }
+        float sW = 0f;
+        if (crossLand) { Look(b, left, ahead, tW, iW, f, out _, out sW, out _, out _); landT += dt; }
         float bv = Bad(tB, iB, out float ba, out float bs, out float bp), bt = tB, bi = iB;
         // only the pitch's rates (the run's PitchRate, a stop's StopRate) found the wanted turn bad
         bool rateOnly = rateBad > 0f && bv - rateBad < 1e-6f;
@@ -834,15 +861,17 @@ public sealed class SideCarry
                     if (crossing) m += CrossShort * MathF.Max(0f, sh - CrossShortTo);
                     // (lead r12, e26 leg 12 +38..+48) and the blade's shown length kept from frame to frame: two near-equal turns
                     // picked by turns flickered it 0.52/0.75/0.84/0.36 (inward 10/23/14/23/34/43)
-                    if (hasLast) m += ShownPull * MathF.Abs(sh - lastShown) + PitchPull * MathF.Abs(po - lastPoff);
+                    if (hasLast) m += ShownPull * (crossLand ? LandPull : 1f) * MathF.Abs(sh - (crossLand ? sW : lastShown)) + PitchPull * MathF.Abs(po - lastPoff);
                     if (v < bv - 1e-6f || m < bm) { bv = v; bm = m; bt = t; bi = i; ba = a; bs = sh; bp = po; }
                 }
         }
+        if (crossLand && (bs >= sW - 0.05f || landT >= LandMax || Weight < GuardWeight)) { crossLand = false; landT = 0f; }
         guardHeld = rateOnly && (bt != tB || bi != iB);
         // (held at most EaseMax s in a row: never parked off the layer's turn while the run goes on)
         easeT = guardHeld && easeOn ? easeT + dt : 0f;
         Tilt = bt; Inward = bi;
         lastDPoff = hasLast ? bp - lastPoff : 0f;
+        lastDShown = hasLast ? bs - lastShown : 0f;
         lastA = ba; lastShown = bs; lastPoff = bp;
         float pw = bp + MathF.Asin(Math.Clamp(-b.Y, -1f, 1f)) * R2D;
         lastDPitch = float.IsNaN(lastPitch) ? 0f : pw - lastPitch; lastPitch = pw;

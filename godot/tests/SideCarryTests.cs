@@ -382,6 +382,50 @@ public class SideCarryTests
     public void AStandPivotNeverDropsTheBladeIntoTheDownBand(float to, int turnFrames) =>
         Assert.Equal("", BandStays(to, turnFrames));
 
+    // (r16, judge: e30 s11/s13 leg 10 +3..+9) A crossing, once begun, finishes: a pivot then a run's start crosses the cane's
+    // band (drawn |a| under CaneAngle, showing 0.2 or more of its length) in at most 2 frames, never a crawl through it, and the
+    // blade grows back out of its short crossing (no shown-length pump). Without the rule (CrossOn false) it crawls.
+    static (int band, int pumps) CrossFrames(bool on, float to, int turnFrames)
+    {
+        var c = new SideCarry { CrossOn = on };
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        int band = 0, pumps = 0; float s0 = float.NaN, s1 = float.NaN;
+        float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f);
+        for (int i = 0; i < 45; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / (float)turnFrames);
+            var f = At(face, Math.Clamp((i - turnFrames) / 4f, 0f, 1f));
+            c.Step(Dt, true, 0f, f);
+            var d = SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward);
+            float a = SideCarry.ScreenAngle(d, Jx, Jy, 1f), sh = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2) + MathF.Pow(Vector3.Dot(Jy, d), 2)) / n;
+            if (c.Weight > 0f && MathF.Abs(a) < c.CaneAngle && sh >= 0.2f) band++;
+            if (!float.IsNaN(s0) && (s1 - s0) * (sh - s1) < 0f && MathF.Abs(s1 - s0) >= 0.1f && MathF.Abs(sh - s1) >= 0.1f) pumps++;
+            s0 = s1; s1 = sh;
+        }
+        return (band, pumps);
+    }
+
+    [Theory]
+    [InlineData(-90f, 6)]
+    [InlineData(270f, 10)]
+    [InlineData(180f, 8)]
+    [InlineData(0f, 8)]
+    public void ACrossingOnceBegunFinishesInTwoFrames(float to, int turnFrames)
+    {
+        var (band, pumps) = CrossFrames(true, to, turnFrames);
+        Assert.True(band <= 2, $"{band} frames in the band");
+        Assert.Equal(0, pumps);
+    }
+
+    [Fact]
+    public void WithoutTheFinishRuleACrossingCrawls()
+    {
+        int worse = 0;
+        foreach (var (to, tf) in new[] { (-90f, 6), (270f, 10), (180f, 8), (0f, 8) })
+            if (CrossFrames(false, to, tf).band > 2) worse++;
+        Assert.True(worse > 0, "no crawl without the rule, so the rule's test tests nothing");
+    }
+
     // (judge r11 fix 3, lead r12: 12 deg a frame, not the judge's 8, which held the pivots' 20-28 deg/frame turns out of reach)
     [Theory]
     [InlineData(270f, 6)]
