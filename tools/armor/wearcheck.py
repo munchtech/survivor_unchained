@@ -431,6 +431,45 @@ def hold_key(*rows):
 
 
 # ---------------------------------------------------------------------- main --
+def worn_shapes_of(rows):
+    """Her support shapes {name: weight} while the checked pieces are worn: the max over the rows whose own build.json
+    says "worn_rest" (armor-D, 17 Nov), each as kit_build.worn_shapes reads it (worn_rest.law: the row's hold -> support ->
+    form_support_lift / _press / _fill, the build's own function). {} when no piece is built on her worn rest (all of A's)."""
+    import kit_build
+    out = {}
+    for r in rows:
+        f = os.path.join(kit_build.SRC, r["id"], "build.json")
+        if not os.path.isfile(f):
+            continue
+        cfg = kit_build.by_body(json.load(open(f, encoding="utf-8")))
+        if cfg.get("worn_rest"):
+            for k, w in kit_build.worn_shapes(cfg).items():
+                out[k] = max(out.get(k, 0.0), float(w))
+    return out
+
+
+def shape_delta(path, shapes, n):
+    """Her skin's rest points moved by the named morph targets (weight x delta), per vertex of skin.Body's order (her
+    "Heroine" meshes come first in its files); a shape the body lacks is skipped (A has no support shapes). [n, 3]."""
+    D = np.zeros((n, 3))
+    g = skin.Gltf(path)
+    base = 0
+    for nd in g.js["nodes"]:
+        if "mesh" not in nd or "skin" not in nd or nd["name"] != "Heroine":
+            continue
+        mesh = g.js["meshes"][nd["mesh"]]
+        names_t = mesh.get("extras", {}).get("targetNames", [])
+        for pr in mesh["primitives"]:
+            m = len(g.accessor(pr["attributes"]["POSITION"]))
+            for nm, w in shapes.items():
+                k = names_t.index(nm) if nm in names_t else -1
+                tg = pr.get("targets", [])
+                if w and 0 <= k < len(tg) and "POSITION" in tg[k]:
+                    D[base:base + m] += w * g.accessor(tg[k]["POSITION"]).astype(float)
+            base += m
+    return D
+
+
 def main(argv):
     import bodies
     bodies.take(argv)
@@ -477,6 +516,14 @@ def main(argv):
         files.append((skin.Path(path), lambda n, s=frozenset(names): n in s, "garment"))
     body = skin.Body(sk, files, skin.Jiggle(sk, 1, 1), label="her", helpers=True)
     pid = np.array([owner.get(p, "") for p in body.piece])
+    # (her skin at her worn rest when a piece being checked is built on it, as in game under a hold-0.55 top: the shapes the
+    # build used, in her rest points before every clip's skinning; --bare: her bare skin, as before)
+    worn = {} if "--bare" in argv else worn_shapes_of(rows)
+    if worn:
+        shaped = shape_delta(bodies.glb_for(skin), worn, len(body.P))
+        body.P = body.P + shaped
+        print("wearcheck: her skin at the worn rest", {k: round(v, 3) for k, v in worn.items()},
+              f"(moves {int((np.abs(shaped).max(1) > 1e-7).sum())} points, up to {np.abs(shaped).max() * 1000:.1f} mm)")
     P0 = body.P
     isk = np.nonzero(body.kind == "skin")[0]
     ish = np.nonzero(body.kind != "garment")[0]                      # her skin and head: her surface's normals
