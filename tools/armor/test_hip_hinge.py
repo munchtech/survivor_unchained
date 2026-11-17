@@ -224,8 +224,7 @@ def test_hip_tasset_turns_with_its_own_forward_swing_only(sk):
 
 
 def test_tasset_roll_zero_is_the_old_v_and_roll_turns_it_away_from_the_crossing_thigh(sk):
-    tg0 = _tasset("tasset_hinge")
-    assert tg0["roll"] == 0.0
+    tg0 = {**_tasset("tasset_hinge"), "roll": 0.0}  # (the SPEC ships roll 1.3 since hipv-2 r3: 0 here is the old V)
     base = {k: v for k, v in tg0.items() if k != "roll"}  # the spec before the field existed
     for kw in ({"l": 40, "r": 10, "al": -12, "ar": 3}, {"l": 5, "al": -15}, {"r": 30, "ar": -9}):
         assert np.abs(_driven(sk, tg0, **kw) - _driven(sk, base, **kw)).max() == 0

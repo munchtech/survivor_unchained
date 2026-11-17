@@ -273,7 +273,7 @@ SPEC = {
          # `roll` degrees per degree of that thigh's adduction past `roll_from` (2; knee `roll_soft` 6), soft-clamped at
          # `roll_max` (20). 0 = off (the V as before). Measured sword_heavy: left thigh 13.1 deg across at f8; roll 1.3
          # gives 9.6 deg (the V's tip, 18 cm under the pivot, 30 mm farther from it); run 2.3 deg, leap 7 deg.
-         "roll": 0.0},
+         "roll": 1.3},
         # Hip tassets (armor-D, 16 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same law on that
         # thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 0.8 * softrelu(swing - 3, 12); no
         # twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x). Users:

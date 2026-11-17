@@ -338,6 +338,7 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
             xh.update(k_.encode() + np.round(np.asarray(P_, float), 5).tobytes() + json.dumps(sorted(w_.items())).encode())
     key = hashlib.sha1(json.dumps(["v2 no arms", sorted((k, sorted(v.items())) for k, v in rides.items()), list(under_ids), list(clips),
                                    y0, y1, dy, dth, z0, stamp, hp_.SPEC.get("hinges"), xh.hexdigest() if extra else None]
+                                  + ([hp_.SPEC.get("tassets")] if hp_.SPEC.get("tassets") else [])
                                   ).encode()).hexdigest()[:14]
     cache = os.path.join(kb.REPO, ".shots", "armor2", "kit_hips_sweep", key + ".npz")
     if os.path.exists(cache):
