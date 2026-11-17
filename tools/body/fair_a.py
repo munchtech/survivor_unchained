@@ -54,7 +54,13 @@ DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha":
            # C1 there (the taut core meets its ring with the ring's slope, no rim): bend x sum (median area / area_i)
            # |(L x)_i - d_i|^2 on the clamped cotangent L, d_i = c_i R_i (L P0)_i + (1 - c_i) (L X)_i ("blend": the rest
            # curvature turned on the crumple, the posed one off it), or (1 - c_i) (L X)_i ("zero"), or R_i (L P0)_i ("rest")
-           "bend": None, "bend_to": "blend"}
+           "bend": None, "bend_to": "blend",
+           # lift (attempt 10; None = off, bit for bit): a normal-only C1 correction of the kept patch (Fair._lift; LIFT's
+           # keys): the tangential layout kept, each patch point moved along the smoothed normals by a scalar thin plate h
+           # (h = 0 and the ring's slope at the held ring), so a bend packed into a few edges spreads over the patch
+           "lift": None}
+LIFT = {"mu": 0.01, "passes": 8, "rows": 1, "volume": True, "steps": [1.0, 0.75, 0.5, 0.25], "guard": True, "zone": None,
+        "iters": 1, "hold": 0, "hold_grow": 1}
 # the cap rule (attempts 7-8: a curvature band / ceiling on the deltoid cap; keyword "cap", Fair.cap_share,
 # Fair._cap_lap, rigid_of) lost and is removed (attempt 9); fair_a.md keeps its tables.
 
@@ -147,6 +153,10 @@ class Fair:
         self._avg = sp.diags(1.0 / np.maximum(deg, 1)) @ self.adj
         self.n0 = _unit(self._VT @ self.E0[:, :, 2])            # rest vertex normals
         off = {"bend", "bend_to"} if prm["bend"] is None else set()     # (bend off: the old key, bit for bit)
+        if prm["lift"] is None:                                 # (lift off: the old key, bit for bit)
+            off.add("lift")
+        elif set(prm["lift"]) - set(LIFT):
+            raise ValueError(f"fair_a: unknown lift keys {sorted(set(prm['lift']) - set(LIFT))}")
         self.tag = hashlib.sha1(np.ascontiguousarray(V0).tobytes() + np.ascontiguousarray(T).tobytes()
                                 + json.dumps({k: v for k, v in prm.items() if k not in off}, sort_keys=True).encode()).hexdigest()[:16]
         self._L = None
@@ -359,6 +369,91 @@ class Fair:
             Y = Z[p]
         return Y, info
 
+    def _lift(self, X, Xf, patch):
+        """Attempt 10 (`lift`, keys LIFT): the normal-only C1 correction of the kept patch. Xf's tangential layout is kept;
+        each zone point moves along the current surface's vertex normal (area-weighted, `passes` Jacobi passes over the zone
+        and its `rows` rings, the rest held) by h, the scalar thin plate
+            argmin_h  sum_rows (median area / area_i) (n_i . (L (Z + h n))_i)^2 + mu x (median diagonal) x sum_zone h^2
+        (L the clamped rest cotangent Laplacian), h = 0 off the zone. The rows are the zone and `rows` rings past it, so the
+        lifted surface meets the held points with h = 0 and their slope (C1): the bend the ring fixes is spread over the zone
+        instead of packed into a few edges. zone: None = the patch; [ceil, h_min, grow] = the patch points where the fair's
+        smoothed curvature (curv) passes ceil x max(rest's, posed A's) and h_min (1/m), grown `grow` rows, in the patch.
+        volume: the area-weighted mean of h held 0 (a Lagrange step). `iters` passes, each re-read on the lifted surface. The
+        guard (per pass): the largest of `steps` x h whose flipped triangles on the patch and beyond-rest folds on the patch
+        and its ring both stay at or under Xf's is kept; none: the pass stops. -> (Xf', info)."""
+        q = {**LIFT, **self.prm["lift"]}
+        L, T = self._lap(), self.T
+        if getattr(self, "_inc", None) is None:
+            self._inc = sp.csr_matrix((np.ones(3 * len(T)), (T.ravel(), np.repeat(np.arange(len(T)), 3))), (self.n, len(T)))
+        zone = patch
+        if q["zone"] is not None:
+            ceil, hmin, grow = q["zone"]
+            if getattr(self, "_h0", None) is None:
+                self._h0 = self.curv(self.P0)
+            hf = self.curv(Xf)
+            over = patch & (hf > float(ceil) * np.maximum(self._h0, self.curv(X))) & (hf > float(hmin))
+            zone = patch & (rows_from(self.adj, over) <= int(grow))
+        dp = rows_from(self.adj, patch)
+        tri, ed = patch[T].any(1), (dp <= 1)[self.E[self.ie]].any(1)
+        sc = lambda Z: (lambda e: (int(e[1][tri].sum()), int(e[0][ed].sum())))(self.bad(Z))
+        s0 = sc(Xf)
+        info = {"zone": int(zone.sum()), "h_max_mm": 0.0, "steps": [], "flips": s0[0], "beyond": s0[1]}
+        if not zone.any():
+            return Xf, info
+        e0, f0, _ = self.bad(Xf)
+        m_all = self.varea
+        held = np.zeros(self.n, bool)
+        Z = Xf
+        for it in range(int(q["iters"])):
+            for hr in range(int(q["hold"]) + 1):                # hold: the points of a new flip or fold held at h = 0, re-solved
+                free = zone & ~held
+                if not free.any():
+                    break
+                near = rows_from(self.adj, free) <= int(q["rows"])
+                p, r = np.nonzero(free)[0], np.nonzero(near)[0]
+                Lr = L[r]
+                C = Lr[:, p].tocoo()
+                D = sp.diags(np.median(m_all[r]) / m_all[r])
+                nv = self._inc @ np.cross(Z[T[:, 1]] - Z[T[:, 0]], Z[T[:, 2]] - Z[T[:, 0]])
+                for _ in range(int(q["passes"])):
+                    nn = self._avg @ nv
+                    nv[near] = nn[near]
+                n = _unit(nv)
+                b = ((Lr @ Z) * n[r]).sum(1)                    # the normal part of the rows' Laplacian now
+                A = sp.csr_matrix((C.data * (n[p[C.col]] * n[r[C.row]]).sum(1), (C.row, C.col)), (len(r), len(p)))
+                M = (A.T @ D @ A).tocsr()
+                K = (M + float(q["mu"]) * np.median(M.diagonal()) * sp.eye(len(p))).tocsc()
+                solve = factorized(K)
+                h = solve(np.ascontiguousarray(-(A.T @ (D @ b))))
+                if q["volume"]:
+                    a = self.varea[p]
+                    U = solve(np.ascontiguousarray(a))
+                    h = h - (a @ h) / (a @ U) * U
+                if hr == int(q["hold"]):
+                    break
+                Zt = Z.copy()
+                Zt[p] = Z[p] + h[:, None] * n[p]
+                e1, f1, _ = self.bad(Zt)
+                new = self._seed_mask(e1 & ~e0 & ed, f1 & ~f0 & tri) & zone
+                if not new.any():
+                    break
+                held |= rows_from(self.adj, new) <= int(q["hold_grow"])
+            if not free.any():
+                break
+            info["h_max_mm"] = max(info["h_max_mm"], round(float(np.abs(h).max()) * 1e3, 3))
+            for st in q["steps"]:
+                Zn = Z.copy()
+                Zn[p] = Z[p] + float(st) * h[:, None] * n[p]
+                s = sc(Zn)
+                if not q["guard"] or (s[0] <= s0[0] and s[1] <= s0[1]):
+                    break
+            else:
+                break
+            Z = Zn
+            info["steps"].append(float(st))
+            info.update(flips=s[0], beyond=s[1], held=int((held & zone).sum()))
+        return Z, info
+
     def fair(self, V, where=None, extra=None):
         """(V', info). V [nraw, 3] posed; where [nraw] bool (None: everywhere) limits the seeds; extra [nraw] bool (None:
         none): points that are seeds whatever the measures say (a caller's own count, e.g. strip_rest's turned map
@@ -417,6 +512,8 @@ class Fair:
             self._extra += prm["grow"]
         if keep is not None:
             _, Xf, patch, info = keep
+        if prm["lift"] is not None:                             # attempt 10: the normal-only C1 correction (off: as before)
+            Xf, info["lift"] = self._lift(X, Xf, patch)
         self.patch = patch
         out = V.copy()
         raw = np.nonzero(patch[self.grp])[0]
