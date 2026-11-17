@@ -1554,8 +1554,10 @@ public partial class BattleFx : Node3D
                     var at = V(e.X, Y(e.X, e.Z) + 1.2, e.Z);
                     if (e.Dodged || e.Blocked)
                     {
-                        if (BossStruckTrace) GD.Print($"[her-block] f={Engine.GetFramesDrawn()} {(e.Dodged ? "dodged" : "blocked")} source={e.Source} at=({e.X:F2},{e.Z:F2})");
-                        Hits.Text(at, e.Dodged ? "dodged" : "blocked", new Color(0.8f, 0.85f, 0.95f), 44);
+                        // (lane E lead 7: the word over her head, never at her chest, where a foe she stands against reads as wearing it;
+                        // 2.9 m, so its box clears her body's and Hits.BesideHer does not shove it sideways onto that foe: at 2.1 it
+                        // overlapped her head by a few px and went 106 px aside, onto the Pack-Mother's back, l7c_bk)
+                        Hits.Text(V(e.X, Y(e.X, e.Z) + 2.9, e.Z), e.Dodged ? "dodged" : "blocked", new Color(0.8f, 0.85f, 0.95f), 44);
                         Burst(at, e.Blocked ? School.Holy : School.Physical, 12, 4);
                         break;
                     }

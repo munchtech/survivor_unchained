@@ -56,6 +56,8 @@ public static class Ai
         if (e.WardT > 0) e.WardT -= dt;
         // A reflection stands where it was left, until it breaks.
         if (e.Decoy) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
+        // (shots only, --hold-boss: Battle.HoldBoss)
+        if (e.Boss && Battle.HoldBoss) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
 
         // Knockback slides, then settles (a normal foe it carries over the ground's end falls: Battle.SlideStep).
         if (e.Kbx != 0 || e.Kbz != 0)

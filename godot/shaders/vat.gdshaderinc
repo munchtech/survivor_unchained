@@ -268,8 +268,10 @@ uniform float den_head = 0.0;
 // A struck den boss (its pulse, BattleFx.BossStruck: c_hit 1 for 2-3 frames, at most every 0.18 s) lifts WHOLE, body, back and
 // mane, L up DEN_BOSS_STRUCK.x over each block's own, its chroma mixed DEN_BOSS_STRUCK.y toward steel (C .z at hue .w: cool
 // neutral, not the cream white-out, not the pack's orange). DEN_HIT_BOSS is no longer drawn: the boss's hit is this.)
-// (on screen the den's warm key multiplies it: paint +.11 L reads about +.15, steel C .03 at 250 reads cool-neutral)
-#define DEN_BOSS_STRUCK vec4(0.11, 0.45, 0.03, 250.0)
+// (on screen the lift multiplies each block's kept colour about 3x and the den's warm key adds its own: at mix .45 toward
+// C .03 h 250 the red mane read pink (l7c_st, h 30 -> 14, C .089); at .5 toward C .09 h 215 the mane read grey but the back and
+// flank teal, C .10 (l7c2_st). A whole-boss steel needs the blocks' own colour mostly gone: mix .7 toward C .04 at 228.)
+#define DEN_BOSS_STRUCK vec4(0.115, 0.7, 0.04, 228.0)
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
 // tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
 // DEN_DEAD_TOP x (1 - its darkening)) is its den body capped at L DEN_DEAD.x at its kill, going to the bank umber (L .y,

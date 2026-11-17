@@ -1149,7 +1149,6 @@ public sealed partial class Battle
         else if (tags.Has(Tag.Melee)) Profile.Melee += dmg;
         else Profile.Area += dmg;
 
-        if (HitTrace != null && (e.Boss || blocked)) HitTrace($"[hit-trace] t={Time:F3} def={e.Def.Id} boss={e.Boss} dmg={dmg:F1} crit={crit} blocked={blocked} takenMul={e.TakenMul:F2} ironRule={Rules.IronSkin:F2} ironDef={e.Def.IronSkin:F2} proj={o.Projectile} guard={(e.Def.Guard != null)} school={school} art={o.Weapon?.Art} dot={o.Dot}");
         Events.Emit(new Ev.Hit
         {
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, TargetSeed = e.Seed, Time = Time, Dot = o.Dot, Blocked = blocked,
@@ -1923,12 +1922,9 @@ public sealed partial class Battle
 
     /// <summary>Debug (--hurt-mul X, a shot of her life truly falling): every blow on her times X. 1 in play.</summary>
     public static double HurtMul = 1;
-    /// <summary>(shots only, --shot-boss-flash P; 0 = off, play) A boss's struck flash as rendered: the AI step that runs after
-    /// her weapons (Step: Firing.Tick, then Ai.Update) takes 11/s off it in the hit's own step, so play's 0.4 reaches the view as
-    /// about 0.03 at 30 fps, under the den shader's 0.12 knee (vat dn_hit): P is the peak the view sees on the hit's frame.</summary>
-    public static double BossFlashShot;
-    /// <summary>(dev, TEMPORARY lane E lead 7: --struck-trace) a line per blow on a boss or a blow marked blocked.</summary>
-    public static Action<string>? HitTrace;
+    /// <summary>(shots only, --hold-boss; false in play) A living boss stands where it is and as it faces, and never strikes
+    /// (Ai.Update): a picture of her struck blows on its flank, which a boss in play always turns to face.</summary>
+    public static bool HoldBoss;
 
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {

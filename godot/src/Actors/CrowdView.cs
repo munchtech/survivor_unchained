@@ -1066,7 +1066,6 @@ public partial class CrowdView : Node3D
         if (hk.X >= 0) flare = hk.X;
         // (lane E lead 7: a den boss's struck look is its pulse alone, whole body: vat DEN_BOSS_STRUCK)
         if (bp >= 0) flare = bp;
-        if (StruckTrace && bp > 0) GD.Print($"[boss-pulse] f={Engine.GetFramesDrawn()} id={e.Id}");
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();
