@@ -1225,6 +1225,68 @@ def a_leads(lead, B, X, comp, tol=A_BLEND["tol"]):
     return lead, moved
 
 
+# A CALLING ROW'S CUPS RIDE A's OWN WEIGHTS (lane G round 15, 17 Nov). An outfit's bendy points ride her skin's weights;
+# on B the warden top's steel cup took B's (breast_tip_r .41, spine_04 .39; A's file: spine_03 .50, breast_r .39), so
+# in her idles it pivoted up at its tip (posed B - A height: +0.3 mm by the band, +3.5 at 30-60 mm, +12 at 60-100, +23
+# beyond) and opened the band's end at her right cup's outer edge (a knot of ring, trim and skin at the look camera).
+# A slot whose rule has "a_points" {"mats", "ride_mm", "ride_share"} gives an outfit row's bendy pieces (connected over
+# A's uniques) of those materials (the node's last name part), and every piece with at least ride_share of its points
+# within ride_mm of them at A's rest (their rims, rivets, stitches, the leather riding them), A's own weights per point
+# by joint name; a point naming a joint the body lacks keeps the body's. The band, straps and the rest keep her skin's.
+_A_PTS = {}
+
+
+def a_points_on(bd, ms, slot):
+    """Per mesh of a tier (ms order): a bool mask over its uniques of the points that ride A's own weights ("a_points"),
+    with (A's dense weights per unique per mesh, A's joint names); None when the slot has no such rule."""
+    rule = (rigid_roles().get("slots", {}).get(slot) or {}).get("a_points") if slot else None
+    if not rule or bd.meta.get("kind") not in OUTFIT_KINDS:
+        return None
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_PTS:
+        Du, names = a_unique_blends(bd, ms)
+        g = gltf_cached(bd.meta["src"])
+        pcs = []
+        for k, m in enumerate(ms):
+            _, _, P, _, T, _, _ = read_prim(g, m["node"])
+            inv = bd.z[f"inv{m['i']}"]
+            first = np.zeros(len(Du[k]), np.int64)
+            first[inv] = np.arange(len(inv))
+            X = P[first]
+            _, lab, _ = components(inv[T], len(X), X)
+            pcs.append((X, lab))
+        mats = tuple(rule.get("mats", ()))
+        host = [m["node"].rsplit(".", 1)[-1] in mats for m in ms]
+        masks = [np.array(h, bool).repeat(len(X)) for h, (X, _) in zip(host, pcs)]
+        Xh = [X for h, (X, _) in zip(host, pcs) if h]
+        if Xh:
+            from scipy.spatial import cKDTree
+            kt = cKDTree(np.vstack(Xh))
+            for k, (X, lab) in enumerate(pcs):
+                if host[k]:
+                    continue
+                near = kt.query(X, distance_upper_bound=rule.get("ride_mm", 4.0) / 1000.0)[0] < np.inf
+                share = np.bincount(lab, weights=near.astype(float)) / np.maximum(np.bincount(lab), 1)
+                masks[k] = share[lab] >= rule.get("ride_share", 0.5)
+        _A_PTS[key] = (masks, Du, names)
+    return _A_PTS[key]
+
+
+def a_weights(body, D, names, sel, J, W):
+    """J, W with the selected points' rows taken from A's dense weights D (A's joint names) by joint name, top 8; a point
+    naming a joint the body lacks keeps the body's row."""
+    J, W = J.copy(), W.copy()
+    bi = np.array([body.joint_names.index(n) if n in body.joint_names else -1 for n in names])
+    for v in np.nonzero(sel)[0]:
+        nz = np.nonzero(D[v] > 1e-4)[0]
+        if not len(nz) or (bi[nz] < 0).any():
+            continue
+        o = nz[np.argsort(-D[v][nz])][:J.shape[1]]
+        J[v], W[v] = 0, 0.0
+        J[v, :len(o)], W[v, :len(o)] = bi[o], D[v][o] / D[v][o].sum()
+    return J, W
+
+
 # THE STACK (rigid_roles.json slots.<slot>."stack"; lane G solver round 7, 17 Nov): a plate hung under another (a
 # pauldron's lames under its cop) is not fit alone. Fitted alone to the stand-off law, B's warden lames moved ~20 mm out
 # (A's lames sit up to 10.5 mm inside her untucked arm, under the tuck; the rest floor clears them by translation) and the
@@ -1643,6 +1705,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             for k, m in enumerate(ms):
                 ev[m["i"]]["X"] = np.where(bend_all[cut[k]:cut[k + 1], None], Xall[cut[k]:cut[k + 1]], ev[m["i"]]["X"])
         riders = plate_riders(bd, ms, ev, comp, lead, rots) if armor_laws and wr is None else {}
+        # (a calling row's cups ride A's own weights per point, "a_points")
+        apt = a_points_on(bd, ms, bd.meta["row"].get("slot"))
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -1693,6 +1757,12 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
+            if apt is not None:
+                k = ms.index(m)
+                sel = apt[0][k] & (comp_i < 0)
+                if sel.any():
+                    J, W = a_weights(body, apt[1][k], apt[2], sel, J, W)
+                    fit.setdefault("a_points", {}).setdefault(tier, {})[m["node"]] = int(sel.sum())
             Tv = body.T[e["tri"]]
             shapes = {}
             for nm, dP in body.shapes.items():
