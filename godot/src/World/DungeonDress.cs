@@ -495,7 +495,7 @@ public static partial class DungeonDress
                 float x = cx + Mathf.Cos(a) * d, zz = cz + Mathf.Sin(a) * d;
                 if (Wall(c, x, zz) < 0.05f || Hole(c, x, zz) < 0.3f) continue;
                 float sh = 0.12f + 0.24f * Hash(s, 26 + q, k), sr = 0.025f + 0.025f * Hash(s, 27 + q, k), cr = (0.07f + 0.11f * Hash(s, 28 + q, k)) * FungCap;
-                var basis = new Basis(Vector3.Right, (Hash(s, 29 + q, k) - 0.5f) * 0.4f) * new Basis(Vector3.Forward, (Hash(s, 30 + q, k) - 0.5f) * 0.4f);
+                var basis = Basis.Identity;   // (den r15 Q) upright
                 var t = new Transform3D(basis, new Vector3(x, H(c, x, zz), zz));
                 c.Shrooms.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
                 c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr * (0.8f + 0.5f * Hash(s, 31 + q, k)), IsHemisphere = true, RadialSegments = 16, Rings = 6 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
