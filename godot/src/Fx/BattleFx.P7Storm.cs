@@ -29,7 +29,6 @@ public partial class BattleFx
     {
         public required MeshInstance3D N;
         public required ShaderMaterial M;
-        public readonly List<WgDecal> Cracks = new();
         public float Age, SplitAge = -1, FadeAge = -1;
     }
 
@@ -336,13 +335,10 @@ public partial class BattleFx
         Cam?.JoltPx(Vector3.Up, 9f + 3 * k);
     }
 
-    /// <summary>A Sunder line the storm threw: a ground fissure. Thrown: the crack strip laid along it (over 0.1 s,
-    /// from her end) with its seam pulsing at half; split: the seam flares, dust and chunks along the whole line within
-    /// 0.1 s, the seam cools in steps and the crack fades; faded: it steps out, nothing dealt.</summary>
-    /// <summary>(bladestorm-spin r2) The storm's Sunder lines' crack tint: Sunder's own (p7.sunder_mark.crack_tint: the line
-    /// row, warm, never black). WgLineTint (x0.45, neutral) read near black at the den camera (c2a: L .05-.08, C .02).</summary>
-    static Color P7SunderTint() { var t = P7D.All("sunder_mark.crack_tint"); return new Color(t[0], t[1], t[2]); }
-
+    /// <summary>A Sunder line the storm threw: a painted ground fissure (P7Fissure). Thrown: laid from her end over
+    /// storm.line.open s, its seam white-hot a sample then gold over amber, breathing; split: the seam flares white-hot, dust
+    /// and chunks along the whole line within 0.1 s, the seam cools in steps (storm.seam.cool) and the gap breaks up where
+    /// it lies (storm.line.life); faded: the seam steps out and the gap breaks up, nothing dealt.</summary>
     void P7Line(Ev.SpinLine e)
     {
         if (P7Off) return;
@@ -353,7 +349,6 @@ public partial class BattleFx
         if (len < 0.3f) return;
         var dir = (to - from) / len;
         var side = new Vector2(-dir.Y, dir.X);
-        float theta = Mathf.Atan2(-dir.Y, dir.X);
         int n = Math.Clamp((int)Mathf.Round(len / 1.0f), 4, 8);
         const int t0 = 2;
         const float across = 0.7f;
@@ -362,51 +357,11 @@ public partial class BattleFx
             case SpinLinePhase.Thrown:
             {
                 P7Ev("line_thrown");
-                // the seam: a strip on the crack's own centre, following the ground
-                var mesh = new ImmediateMesh();
-                int K = Math.Max(10, (int)(len / 0.2f));
-                // the seam: the data's px across (at most 4), inside the crack's gap
-                float hwMax = 0.5f * P7D["storm.seam.px"] * P7Px(V(from.X, Y(from.X, from.Y), from.Y));
-                var s3 = new Vector3(side.X, 0, side.Y);
-                mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
-                for (int j = 0; j <= K; j++)
-                {
-                    float al = len * j / K;
-                    var p = P7CrackAt(from, dir, side, al, len, t0, n, across) + Vector3.Up * 0.04f;
-                    mesh.SurfaceSetUV(new Vector2((float)j / K, 0));
-                    mesh.SurfaceAddVertex(p - s3 * hwMax);
-                    mesh.SurfaceSetUV(new Vector2((float)j / K, 1));
-                    mesh.SurfaceAddVertex(p + s3 * hwMax);
-                }
-                mesh.SurfaceEnd();
-                var m = P7Mat(7);
-                P7Brush(m, P7D["storm.seam.px"]);
-                m.SetShaderParameter("p7_alpha", 0.5f);
-                m.SetShaderParameter("p7_fade", 0.67f);
-                var node = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
-                AddChild(node);
-                node.GlobalTransform = Transform3D.Identity;
-                if (FxAfter.On) FxAfter.Adopt(node);
-                var sc = new P7Scar { N = node, M = m };
+                // (lane E lead 7, 17 Nov) the fissure: one painted strip on the crack's path (P7Fissure, mode 18), not the
+                // crack decals (a soft dark smear at the den camera) and their 1 px seam
+                var sc = P7Fissure(from, dir, side, len, t0, n, across);
                 if (p7Scars.Remove(e.Id, out var old)) P7ScarGone(old);
                 p7Scars[e.Id] = sc;
-                // the matter: the crack strip in tiles, opening from her end over 0.1 s, its gap tapering to the far end
-                if (wgAlb is { } alb && wgNrm is { } nrm)
-                {
-                    float seg = len / n;
-                    for (int i = 0; i < n; i++)
-                    {
-                        int tile = Math.Clamp(t0 + i, 0, 11);
-                        var cc = from + dir * (seg * (i + 0.5f));
-                        var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
-                        WgLater(0.1f * i / n, () =>
-                        {
-                            if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.5f, WgBand * across), alb[tile], nrm[tile], null, 14f, 1f, 0, 0, 0, P7SunderTint()) is not { } d) return;
-                            sc.Cracks.Add(d);
-                            if (sc.SplitAge >= 0 || sc.FadeAge >= 0) { d.FadeFrom = d.Age + 0.6f; d.Life = d.Age + 1.2f; }
-                        });
-                    }
-                }
                 // a little dust where it tears open, in two or three clusters
                 int cl = 2 + (int)(R() * 1.99f);
                 for (int c = 0; c < cl; c++)
@@ -422,7 +377,6 @@ public partial class BattleFx
                 P7Ev("line_split");
                 if (!p7Scars.TryGetValue(e.Id, out var sc)) break;
                 sc.SplitAge = 0;
-                foreach (var d in sc.Cracks) { d.FadeFrom = d.Age + 0.9f; d.Life = d.Age + 1.8f; }
                 // the burst along the whole line within 0.1 s: clustered jets (lit over dark), chunks off the lips
                 int m = 4 + (int)(len / 2f);
                 for (int c = 0; c < m; c++)
@@ -449,11 +403,7 @@ public partial class BattleFx
                 break;
             }
             case SpinLinePhase.Faded:
-                if (p7Scars.TryGetValue(e.Id, out var sf) && sf.SplitAge < 0)
-                {
-                    sf.FadeAge = 0;
-                    foreach (var d in sf.Cracks) { d.FadeFrom = d.Age; d.Life = d.Age + 0.5f; }
-                }
+                if (p7Scars.TryGetValue(e.Id, out var sf) && sf.SplitAge < 0 && sf.FadeAge < 0) sf.FadeAge = 0;
                 break;
         }
     }
@@ -471,36 +421,132 @@ public partial class BattleFx
     void P7ScarGone(P7Scar s)
     {
         if (IsInstanceValid(s.N)) s.N.QueueFree();
-        foreach (var d in s.Cracks) if (d.Life > d.Age + 0.5f) { d.FadeFrom = d.Age; d.Life = d.Age + 0.5f; }
     }
+
+    /// <summary>(lane E lead 7, 17 Nov) A storm line's fissure (fx_p7_b mode 18; p7.storm.line, p7.storm.seam): one strip on
+    /// the crack's path (P7CrackAt), lying on the ground, its UV in px at the play camera (x along from her end, y across)
+    /// so the shader draws a hard-edged jagged gap, lit wall and lip, branches and the hot seam to the px.</summary>
+    P7Scar P7Fissure(Vector2 from, Vector2 dir, Vector2 side, float len, int t0, int n, float across)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        float vk = 1080f / Math.Max(1f, GetViewport()?.GetVisibleRect().Size.Y ?? 1080f);
+        float hwPx = P7D["storm.line.strip_px"], lift = P7D["storm.line.lift"];
+        int K = Math.Max(12, (int)(len / 0.15f));
+        var pts = new Vector3[K + 1];
+        for (int j = 0; j <= K; j++) pts[j] = P7CrackAt(from, dir, side, len * j / K, len, t0, n, across);
+        var mesh = new ImmediateMesh();
+        mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
+        float apx = 0, lit = 0;
+        Vector2 sp0 = Vector2.Zero;
+        for (int j = 0; j <= K; j++)
+        {
+            var p = pts[j];
+            var tg = pts[Math.Min(K, j + 1)] - pts[Math.Max(0, j - 1)];
+            var s3 = new Vector3(-tg.Z, 0, tg.X).Normalized();
+            Vector2 sp, ds;
+            if (cam != null && !cam.IsPositionBehind(p))
+            {
+                sp = cam.UnprojectPosition(p) * vk;
+                ds = (cam.UnprojectPosition(p + s3 * 0.25f) * vk - sp) / 0.25f;
+            }
+            else
+            {
+                float k = 1f / P7Px(p);
+                sp = new Vector2(p.X, p.Z) * k;
+                ds = new Vector2(s3.X, s3.Z) * k;
+            }
+            if (j > 0) apx += (sp - sp0).Length();
+            sp0 = sp;
+            // the lit side: the across that faces the screen's lower right (the painted key from the upper left)
+            if (j == K / 2) lit = ds.X + ds.Y >= 0 ? 1 : -1;
+            float hw = hwPx / Math.Max(ds.Length(), 1f);
+            var q = p + Vector3.Up * lift;
+            mesh.SurfaceSetUV(new Vector2(apx, -hwPx));
+            mesh.SurfaceAddVertex(q - s3 * hw);
+            mesh.SurfaceSetUV(new Vector2(apx, hwPx));
+            mesh.SurfaceAddVertex(q + s3 * hw);
+        }
+        mesh.SurfaceEnd();
+        var m = P7Mat(18);
+        m.SetShaderParameter("p7_rpx", apx);
+        m.SetShaderParameter("p7_lit", lit);
+        m.SetShaderParameter("p7_gap", P7V4("storm.line.gap"));
+        m.SetShaderParameter("p7_jag", P7V4("storm.line.jag"));
+        m.SetShaderParameter("p7_brn", P7V4("storm.line.branch"));
+        m.SetShaderParameter("p7_lip", P7V4("storm.line.lip"));
+        var sm = P7D.All("storm.seam.shape");
+        m.SetShaderParameter("p7_seam", new Vector4(P7D["storm.seam.px"], sm[0], sm[1], sm[2]));
+        m.SetShaderParameter("p7_deep", P7Oklch("storm.line.deep"));
+        m.SetShaderParameter("p7_wall", P7Oklch("storm.line.wall"));
+        m.SetShaderParameter("p7_lipc", P7Oklch("storm.line.lip_lch"));
+        m.SetShaderParameter("p7_open", 0f);
+        m.SetShaderParameter("p7_erode", 0f);
+        m.SetShaderParameter("p7_fade", 0f);
+        m.SetShaderParameter("p7_alpha", 1f);
+        var node = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        AddChild(node);
+        node.GlobalTransform = Transform3D.Identity;
+        if (FxAfter.On) FxAfter.Adopt(node);
+        if (Args.Has("clip") && cam != null)
+            GD.Print($"p7line fissure {apx:F0}px long, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
+        return new P7Scar { N = node, M = m };
+    }
+
+    static Vector4 P7V4(string key) { var a = P7D.All(key); return new Vector4(a[0], a.Length > 1 ? a[1] : 0, a.Length > 2 ? a[2] : 0, a.Length > 3 ? a[3] : 0); }
+
+    /// <summary>An Oklab L, C, h (degrees) from the data as a linear color (drawn after the grade: its displayed color).</summary>
+    static Vector3 P7Oklch(string key)
+    {
+        var a = P7D.All(key);
+        float L = a[0], C = a[1], h = Mathf.DegToRad(a[2]);
+        float A = C * Mathf.Cos(h), B = C * Mathf.Sin(h);
+        float l = L + 0.3963377774f * A + 0.2158037573f * B, mm = L - 0.1055613458f * A - 0.0638541728f * B, s = L - 0.0894841775f * A - 1.2914855480f * B;
+        l = l * l * l; mm = mm * mm * mm; s = s * s * s;
+        return new Vector3(
+            Mathf.Clamp(4.0767416621f * l - 3.3077115913f * mm + 0.2309699292f * s, 0, 1),
+            Mathf.Clamp(-1.2684380046f * l + 2.6097574011f * mm - 0.3413193965f * s, 0, 1),
+            Mathf.Clamp(-0.0041960863f * l - 0.7034186147f * mm + 1.7076147010f * s, 0, 1));
+    }
+
+    /// <summary>A stepped share: 0 before `from` s, then a step every sample to 1 at `to` s.</summary>
+    static float P7Stepped(float t, float from, float to) =>
+        t < from ? 0 : Mathf.Clamp((Mathf.Floor((t - from) / P7Sample) + 1) * P7Sample / Mathf.Max(to - from, P7Sample), 0, 1);
 
     void P7StepScars(float dt)
     {
         List<int>? gone = null;
+        float open = P7D["storm.line.open"];
+        var cool = P7D.All("storm.seam.cool");
+        var life = P7D.All("storm.line.life");
+        var pulse = P7D.All("storm.seam.pulse");
         foreach (var (id, s) in p7Scars)
         {
             s.Age += dt;
+            s.M.SetShaderParameter("p7_open", Mathf.Clamp(s.Age / Mathf.Max(open, 1e-3f), 0, 1));
             if (s.SplitAge >= 0)
             {
                 s.SplitAge += dt;
                 float t = s.SplitAge;
-                // the flare in heat, never in width: 0.1 s with the core in it, then a step a stretch: gold, amber, gone
+                // split: the flare in heat, never in width (white-hot, then a step a stretch: gold, amber, out); the gap
+                // holds, then breaks up where it lies in steps (life[0]..life[1] s)
                 s.M.SetShaderParameter("p7_alpha", 1f);
-                s.M.SetShaderParameter("p7_fade", t < 0.1f ? 0f : t < 0.3f ? 0.34f : t < 0.55f ? 0.67f : 1f);
-                if (t > 0.6f) (gone ??= new()).Add(id);
+                s.M.SetShaderParameter("p7_fade", t < cool[0] ? 0f : t < cool[1] ? 1 / 3f : t < cool[2] ? 2 / 3f : 1f);
+                s.M.SetShaderParameter("p7_erode", P7Stepped(t, life[0], life[1]));
+                if (t > life[1]) (gone ??= new()).Add(id);
             }
             else if (s.FadeAge >= 0)
             {
+                // faded (nothing dealt): the seam steps down to amber, then out; the gap breaks up over life[2] s
                 s.FadeAge += dt;
-                s.M.SetShaderParameter("p7_fade", Mathf.Min(1, 0.34f + Mathf.Floor(s.FadeAge / P7Sample) * 0.34f));
-                if (s.FadeAge > 3 * P7Sample) (gone ??= new()).Add(id);
+                s.M.SetShaderParameter("p7_fade", s.FadeAge < P7Sample ? 2 / 3f : 1f);
+                s.M.SetShaderParameter("p7_erode", P7Stepped(s.FadeAge, 0, life[2]));
+                if (s.FadeAge > life[2]) (gone ??= new()).Add(id);
             }
             else
             {
-                // pending: a sample at full as it opens, then the seam pulses about half
-                float pulse = 0.5f + 0.13f * Mathf.Sin((float)(s.Age * Mathf.Tau * 1.6));
-                s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 0.85f : pulse);
-                s.M.SetShaderParameter("p7_fade", 0.67f);
+                // pending: white-hot for a sample as it tears open, then gold over amber, breathing (pulse: base, swing, Hz)
+                s.M.SetShaderParameter("p7_fade", s.Age < P7Sample ? 0f : 1 / 3f);
+                s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 1f : pulse[0] + pulse[1] * Mathf.Sin((float)(s.Age * Mathf.Tau * pulse[2])));
                 if (s.Age > 12) (gone ??= new()).Add(id);
             }
         }

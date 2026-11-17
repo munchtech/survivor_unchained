@@ -186,6 +186,7 @@ void p7_frag(vec2 uv, vec3 n, vec3 v, out vec3 albedo, out float alpha) {
 	else if (p7_mode == 9) c = p7_store(p);
 	else if (p7_mode == 11) c = p7_pulse(n, v);
 	else if (p7_mode == 12) c = p7_crescent(p);
+	else if (p7_mode == 18) c = p7_fissure(uv);
 	else c = p7_nick(p);
 	c.a *= p7_dim;
 	if (c.a < 0.004) discard;

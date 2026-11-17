@@ -987,7 +987,71 @@
     "knots_k": 1.3
    },
    "seam": {
-    "px": 4
+    "what": "(lane E lead 7, 17 Nov) the line's hot seam in its fissure's gap (storm.line): px wide at her end (was 4 px across a strip that drew a 1 px orange hairline beside the gap), tapering to shape[0] px at shape[1] of the line, then out; broken on its own knots, unbroken at her end to shape[2] of them off at its end; never wider than the gap less a dark margin each side. The school's bands by heat: pending white-hot one sample as it tears open, then gold over amber breathing (pulse: base, swing, Hz on its coverage); split white-hot until cool[0] s, gold until cool[1], amber (0.7 wide) until cool[2], then out",
+    "px": 3.5,
+    "shape": [
+     0.8,
+     0.86,
+     0.3
+    ],
+    "cool": [
+     0.1,
+     0.3,
+     0.55
+    ],
+    "pulse": [
+     0.86,
+     0.14,
+     1.6
+    ]
+   },
+   "line": {
+    "what": "(lane E lead 7, 17 Nov; BattleFx.P7Storm.cs P7Fissure, shaders/fx_p7_b.gdshaderinc p7_fissure, mode 18) the storm's thrown Sunder line as a painted ground fissure. It replaces the long-cut crack decals tinted sunder_mark.crack_tint and their seam strip, which the den judge (17 Nov) read as 'a soft dark smear + 1 px orange hairline from her feet south to the skull pin': at the dungeon camera the decal's stretched albedo fell off over 10-15 px and the seam sat off its gap. Now one strip on the crack's path (P7CrackAt; strip_px each side, lift m over the ground), its UV in px at the play camera, every edge hard (one pixel's antialias, no halo): a jagged gap, knots about every jag[0] px (jittered jag[1]), its centre swinging jag[2] of its width, each edge chipped jag[3]; gap[0] px wide at her end tapering (power gap[2]) to gap[1] at the far end, then a point over gap[3] px, each knot 0.75-1.25 of that. Two flat darks of the line row (deep, and the wall along the lit side, the across facing the screen's lower right, over lip[2] of the width where it is 3 px or more), a broken lit lip lip[0] px outside that edge on lip[1] of its knots (lip_lch), hairline branches at branch[0] of the knots, branch[1] px long, branch[2] px at the root. Colors Oklab L, C, h, drawn after the grade. Laid from her end over `open` s; split: holds until life[0] s, breaks up where it lies in steps, gone at life[1]; faded: breaks up over life[2] s",
+    "strip_px": 26,
+    "lift": 0.05,
+    "open": 0.1,
+    "gap": [
+     10,
+     1.5,
+     1.0,
+     6
+    ],
+    "jag": [
+     14,
+     0.6,
+     0.35,
+     0.3
+    ],
+    "branch": [
+     0.35,
+     14,
+     1.6
+    ],
+    "lip": [
+     1.5,
+     0.55,
+     0.38
+    ],
+    "deep": [
+     0.13,
+     0.024,
+     48
+    ],
+    "wall": [
+     0.2,
+     0.03,
+     52
+    ],
+    "lip_lch": [
+     0.62,
+     0.06,
+     62
+    ],
+    "life": [
+     0.9,
+     1.8,
+     0.5
+    ]
    },
    "ring": {
     "lead_px": 12,
