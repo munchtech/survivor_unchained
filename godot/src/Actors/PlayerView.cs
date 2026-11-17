@@ -2748,7 +2748,8 @@ public partial class PlayerView : Node3D
                 c = new Camera3D { Current = true, CullMask = cull };
                 vp.AddChild(c); AddChild(vp); return vp;
             }
-            maskFull = Mk(MaskOld | HerLayers | MaskTwin, out maskCamF);   // (lead r13, e28: the den's roots and overhangs hid the blade 15 f in a run: T4 is her body hiding it, so only she occludes) maskSolo = Mk(MaskTwin, out maskCamS);
+            maskFull = Mk(MaskOld | HerLayers | MaskTwin, out maskCamF);   // (lead r13, e28: the den's roots and overhangs hid the blade 15 f in a run: T4 is her body hiding it, so only she occludes)
+            maskSolo = Mk(MaskTwin, out maskCamS);   // (r14: this statement had slipped into the comment above in a4ffa6f32: SOLO null, no BMASK lines in e29/e30)
             if (!maskHooked) { maskHooked = true; RenderingServer.FramePostDraw += BladeMaskCount; }
         }
         if (maskMount != mount)
