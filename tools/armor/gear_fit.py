@@ -2157,8 +2157,21 @@ def bindings(only=None):
 # it (a belt point whose foot on her skin lies within "reach_mm" of the skirt point's foot) is held "inside_mm" inside the
 # belt's inner face there (the least clearance of those belt points), never nearer her than "floor_mm"; the push fades to
 # nothing over "fade_mm" beyond the belt's footprint, so the skirt hangs on without a step. Any outfit, any body.
+# THE HANG ENDS AT THE BELT'S EDGE (lane G solver round 10, 17 Nov): an ornament of the hanging piece (a rigid component,
+# ORNAMENT) that the belt does not cover from outside (under "cover_share" of its points have a belt point ahead of them on
+# her outward normal, within "cover_mm" of that ray and "ahead_mm" of the point) sits where its fit puts it, as on A: the
+# hang never pulls it. A's warden skirt carries 17 gold studs (5 mm) on its band at the belt's lower edge, in front of the
+# belt there (A's look frame: on the dark band above the gold edge line); their feet lie within reach of the belt's, so
+# the hang held every one 1 mm inside the belt's inner face (pushed 6.5-9.2 mm) and B showed none. The bendy band keeps the
+# hang and its fade: with no fade the under region (the footprint widened by "reach_mm") would end in a step 4 mm below the
+# belt's edge, in sight. Belt-covered studs (her sides, already inside it) still hang.
+# PARKED ("cover_mm": 0 switches it off; 1.5 switches it on): measured on B (5 clips), it kept 15 of the 17 studs, and
+# gear_wear's control skirt->belt went 0 -> 87.5 mm^2 OUT>2 (worst 6.08 mm): the kept studs stand in front of the belt's
+# outer face over its footprint, as A's do, and the pair test counts them as skirt through belt. Needs the lead's call
+# (an ornament on the belt's face is not cloth through it) or a test that reads A's own layering before it ships.
 HANG = {"skirt": "belt"}
-HANG_LAW = {"reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "fade_mm": 15.0}
+HANG_LAW = {"reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "fade_mm": 15.0,
+            "cover_mm": 0.0, "ahead_mm": 30.0, "cover_share": 0.5}
 
 
 def hang_rule(ev, host_ev, body, law=HANG_LAW):
@@ -2170,6 +2183,7 @@ def hang_rule(ev, host_ev, body, law=HANG_LAW):
     Xb = np.vstack([v["Xu"] for v in hb])
     cb, nb = gear_field.signed_clear(body, Xb, k=16)
     kb = cKDTree(Xb - cb[:, None] * nb)
+    kx = cKDTree(Xb)
     r, ins, flo, fade = (law[k] / 1000.0 for k in ("reach_mm", "inside_mm", "floor_mm", "fade_mm"))
     st = {"moved": 0, "max_mm": 0.0}
     for k, v in ev.items():
@@ -2188,6 +2202,22 @@ def hang_rule(ev, host_ev, body, law=HANG_LAW):
             ok = np.isfinite(d)
             eu = np.where(ok, e[under][np.minimum(j, under.sum() - 1)] * np.clip(1 - d / fade, 0, 1), 0.0)
             e[~under] = eu.max(1)
+        comp = v.get("comp")
+        if comp is not None and (comp >= 0).any() and law.get("cover_mm"):
+            for c in np.unique(comp[comp >= 0]):
+                a = np.nonzero(comp == c)[0]
+                if not (e[a] > 1e-6).any():
+                    continue
+                cov = 0
+                for i, idx in zip(a, kx.query_ball_point(X[a], law["ahead_mm"] / 1000.0)):
+                    if idx:
+                        w = Xb[idx] - X[i]
+                        t = w @ ns[i]
+                        lat = np.linalg.norm(w - t[:, None] * ns[i], axis=1)
+                        cov += bool(((t > 0) & (lat < law["cover_mm"] / 1000.0)).any())
+                if cov < law["cover_share"] * len(a):
+                    e[a] = 0.0
+                    st["ornaments_kept"] = st.get("ornaments_kept", 0) + 1
         mv = e > 1e-6
         X[mv] -= e[mv, None] * ns[mv]
         st["moved"] += int(mv.sum())
