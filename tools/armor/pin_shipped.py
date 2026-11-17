@@ -217,7 +217,8 @@ def with_hinges(B):
     """Her body `B` (bf.Body) with her hip hinges (tools/anim/helpers.py SPEC "hinges") as joints of its skin, in
     memory only (her file is never written): each a node under its parent at its pivot, its world rest turn none, its
     inverse bind its rest's inverse, no skin of hers on it (a zero column of B.W). So a piece's rigid_ride can name
-    "thigh_hinge_l" and its bind carries the joint, as the game adds it (HerJoints.AddHinges). Safe to call again."""
+    "thigh_hinge_l" (or the tasset hinge, SPEC "tassets": "tasset_hinge") and its bind carries the joint, as the game
+    adds it (HerJoints.AddHinges). Safe to call again."""
     sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
     import helpers as hp
     par = {c: i for i, n in enumerate(B.nodes) for c in n.get("children", [])}
@@ -225,26 +226,28 @@ def with_hinges(B):
     def world(i):
         return (world(par[i]) if i in par else np.eye(4)) @ _trs(B.nodes[i])
 
-    for hg in hp.SPEC.get("hinges", []):
-        for s in "lr":
-            nm, pn = hg["name"].replace("{s}", s), hg["parent"].replace("{s}", s)
-            if nm in B.names or pn not in B.names or hg["bone"].replace("{s}", s) not in B.names:
-                continue
-            pi = B.joint_nodes[B.names.index(pn)]
-            Hw = np.eye(4)
-            Hw[:3, 3] = hp.hinge_pivot(hg, s)
-            L = np.linalg.inv(world(pi)) @ Hw
-            from rig import qfrom_matrix
-            node = {"name": nm, "translation": [float(x) for x in L[:3, 3]],
-                    "rotation": [float(x) for x in qfrom_matrix(L[:3, :3] / np.linalg.norm(L[:3, :3], axis=0))]}
-            B.nodes.append(node)
-            ni = len(B.nodes) - 1
-            B.nodes[pi].setdefault("children", []).append(ni)
-            par[ni] = pi
-            B.joint_nodes.append(ni)
-            B.names.append(nm)
-            B.ibm = np.vstack([B.ibm, np.linalg.inv(Hw).T.reshape(1, 16)])
-            B.W = np.hstack([B.W, np.zeros((len(B.W), 1))])
+    # (the hip hinges per side, then the centred tasset hinge (SPEC "tassets"): name, parent, the bones it reads, pivot)
+    items = [(hg["name"].replace("{s}", s), hg["parent"].replace("{s}", s), [hg["bone"].replace("{s}", s)], hp.hinge_pivot(hg, s))
+             for hg in hp.SPEC.get("hinges", []) for s in "lr"]
+    items += [(tg["name"], tg["parent"], list(tg["thighs"]), np.asarray(tg["pivot"], float)) for tg in hp.SPEC.get("tassets", [])]
+    for nm, pn, reads, pivot in items:
+        if nm in B.names or pn not in B.names or any(r not in B.names for r in reads):
+            continue
+        pi = B.joint_nodes[B.names.index(pn)]
+        Hw = np.eye(4)
+        Hw[:3, 3] = pivot
+        L = np.linalg.inv(world(pi)) @ Hw
+        from rig import qfrom_matrix
+        node = {"name": nm, "translation": [float(x) for x in L[:3, 3]],
+                "rotation": [float(x) for x in qfrom_matrix(L[:3, :3] / np.linalg.norm(L[:3, :3], axis=0))]}
+        B.nodes.append(node)
+        ni = len(B.nodes) - 1
+        B.nodes[pi].setdefault("children", []).append(ni)
+        par[ni] = pi
+        B.joint_nodes.append(ni)
+        B.names.append(nm)
+        B.ibm = np.vstack([B.ibm, np.linalg.inv(Hw).T.reshape(1, 16)])
+        B.W = np.hstack([B.W, np.zeros((len(B.W), 1))])
     return B
 
 

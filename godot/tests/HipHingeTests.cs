@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>Her hip hinges (Play/HipHinge.cs, HerJoints' math) against their Python twin, helpers.drive_hinges, on
 /// every frame of the four demo clips (tools/anim/hinge_parity_fixture.py): the local rest within 1e-5 (rotation)
 /// and 0.01 mm, every posed turn within 0.05 degrees; the game's rig_helpers.json carrying the same numbers; none of
-/// the thigh's roll taken.</summary>
+/// the thigh's roll taken. The tasset hinge (TassetTurn/TassetPose, helpers.drive_tassets) likewise.</summary>
 public class HipHingeTests
 {
     static string Root()
@@ -70,6 +70,74 @@ public class HipHingeTests
             for (int k = 0; k < 3; k++)
                 Assert.Equal(fx[i].GetProperty("pivot")[k].GetDouble(), game[i].GetProperty("pivot")[k].GetDouble(), 9);
         }
+    }
+
+    [Fact]
+    public void The_tasset_hinge_matches_the_python_law_on_every_demo_frame()
+    {
+        var fx = Load("tests", "fixtures", "hinge_parity.json");
+        double worst = 0, place = 0;
+        int n = 0;
+        foreach (var s in fx.GetProperty("tassets").EnumerateArray())
+        {
+            var gp = Q(s.GetProperty("parent_rot"));
+            var (r, t) = HipHinge.Rest(gp, V(s.GetProperty("parent_pos")), V(s.GetProperty("pivot")));
+            Assert.True(Deg(r, Q(s.GetProperty("rest_rot"))) < 1e-3, "rest turn");
+            Assert.True((t - V(s.GetProperty("rest_pos"))).Length() < 1e-5f, "rest place");
+            var cr = s.GetProperty("chain_rest");
+            var v0 = new[] { 0, 1 }.Select(i => Vector3.Transform(Vector3.Transform(Vector3.UnitY, Q(cr[i])), gp)).ToArray();
+            double amount = s.GetProperty("amount").GetDouble(), soft = s.GetProperty("soft").GetDouble();
+            foreach (var f in s.GetProperty("frames").EnumerateArray())
+            {
+                var sw = new double[2];
+                for (int i = 0; i < 2; i++)
+                {
+                    var v = Vector3.Transform(Vector3.Transform(Vector3.UnitY, Q(f.GetProperty("chains")[i])), gp);
+                    sw[i] = SurvivorUnchained.Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0[i].X, v0[i].Y, v0[i].Z, i == 0 ? 1 : -1).Swing;
+                }
+                var got = HipHinge.TassetPose(r, HipHinge.TassetTurn(sw[0], sw[1], amount, soft));
+                var want = Q(f.GetProperty("tasset"));
+                worst = Math.Max(worst, Deg(got, want));
+                // (a V tip 18 cm down the fall from the pivot, placed by each turn: mm apart)
+                var tip = new Vector3(0, -0.18f, 0);
+                place = Math.Max(place, (Vector3.Transform(tip, got) - Vector3.Transform(tip, want)).Length() * 1000);
+                n++;
+            }
+        }
+        Assert.True(n > 200, $"frames {n}");
+        Assert.True(worst < 0.05, $"worst {worst:F4} deg");
+        Assert.True(place < 0.5, $"tip {place:F3} mm");
+    }
+
+    [Fact]
+    public void The_games_spec_carries_the_tasset_hinge()
+    {
+        var fx = Load("tests", "fixtures", "hinge_parity.json").GetProperty("tasset_spec");
+        var game = Load("art", "people", "rig_helpers.json").GetProperty("tassets");
+        Assert.Equal(fx.GetArrayLength(), game.GetArrayLength());
+        Assert.True(game.GetArrayLength() > 0);
+        for (int i = 0; i < fx.GetArrayLength(); i++)
+        {
+            Assert.Equal(fx[i].GetProperty("name").GetString(), game[i].GetProperty("name").GetString());
+            Assert.Equal(fx[i].GetProperty("amount").GetDouble(), game[i].GetProperty("amount").GetDouble(), 9);
+            Assert.Equal(fx[i].GetProperty("soft").GetDouble(), game[i].GetProperty("soft").GetDouble(), 9);
+            for (int k = 0; k < 3; k++)
+                Assert.Equal(fx[i].GetProperty("pivot")[k].GetDouble(), game[i].GetProperty("pivot")[k].GetDouble(), 9);
+        }
+    }
+
+    [Fact]
+    public void The_tasset_turns_with_the_leading_thigh_never_back()
+    {
+        // equal thighs give their own swing (the smooth max less soft/4), past the softrelu's knee
+        Assert.Equal(0.6 * (40 - 6), HipHinge.TassetTurn(40, 40, 0.6, 12), 9);
+        // the leading thigh leads; a trailing one adds nothing
+        Assert.Equal(0.6 * (50 - 3 - 6), HipHinge.TassetTurn(50, -30, 0.6, 12), 9);
+        // never turned back (both thighs behind)
+        Assert.Equal(0, HipHinge.TassetTurn(-20, -10, 0.6, 12));
+        // the bottom forward: her -Y toward +Z
+        var tip = Vector3.Transform(-Vector3.UnitY, HipHinge.TassetPose(Quaternion.Identity, 30));
+        Assert.True(tip.Z > 0.49f && tip.Y < -0.86f, $"tip {tip}");
     }
 
     [Fact]

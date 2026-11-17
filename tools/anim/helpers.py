@@ -248,6 +248,24 @@ SPEC = {
     "hinges": [
         {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4},
     ],
+    # Tasset hinge (armor-D, 16 Nov): one centred bone for ARMOR only (no skin of hers on it, not in her body file:
+    # extend() adds it, HerJoints.AddHinges in the game, pin_shipped.with_hinges in a piece's bind), for the belt's
+    # front V. A child of `parent` at `pivot` (her rest axes, metres: the V's top, front centre at the belt), its
+    # global rest turn none; posed it turns about her lateral axis, the V's bottom forward and up, by
+    # amount * softrelu(smooth max of the thighs' forward swing) (panel_turn's lead: polynomial smooth max `soft`
+    # degrees wide less soft/4, softrelu never turning it back), no twist, no spread. Why: riding the pelvis a full-
+    # length V meets the leading thigh (it clears 90 mm at its centre, 10 mm at 16 deg off it); riding panel_front
+    # (pivot 4 cm under the V's top, 6 cm in front of the pelvis bone) the lift swings the V's top into her belly
+    # (clear only under 10 cm). Pivoting at the V's top lifts the V off the thigh and its top stays on the belt.
+    # Measured (16 Nov, the r5 V stretched to 180 mm rigid on it, plate-in-body over idle/run/sword_heavy/leap, folds
+    # of her skin left out): riding the pelvis it clears 77 mm (run 9, sword_heavy 29, leap 20 mm in); here at amount
+    # 0.8 it clears 152 mm (run 0, leap 0; sword_heavy 10 mm at the tip: her left thigh 37 deg forward but 13 deg
+    # across her). 0.4/0.6 cleared 89/127-138 mm; a pivot 1.5 cm higher moved the tip 1.5 mm.
+    # Users: a piece's rigid_ride {"tasset_hinge": 1.0}.
+    "tassets": [
+        {"name": "tasset_hinge", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 1.125, 0.12],
+         "amount": 0.8, "soft": 12.0},
+    ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
     # 0.78 mid-arm); five weight nodes down the humerus carry it evenly. All of it only on a side that has `gate`
@@ -494,6 +512,17 @@ def extend(sk: Skeleton, chain=False) -> Skeleton:
             parent.append(p)
             rot.append(r)
             pos.append(t)
+    for tg in SPEC.get("tassets", []):
+        n = tg["name"]
+        if n in I or tg["parent"] not in I or any(t_ not in I for t_ in tg["thighs"]):
+            continue
+        p = I[tg["parent"]]
+        r, t = hinge_rest(grot[0, p], gpos[0, p], np.asarray(tg["pivot"], float))
+        I[n] = len(names_)
+        names_.append(n)
+        parent.append(p)
+        rot.append(r)
+        pos.append(t)
     out = Skeleton(names=names_, parent=parent, rest_rot=np.array(rot), rest_pos=np.array(pos), path=sk.path)
     out.index = I
     return out
@@ -858,6 +887,31 @@ def drive_hinges(sk: Skeleton, rot):
             p, b = sk.parent[j], I[hg["bone"].replace("{s}", s)]
             q = hinge_turn_q(hinge_line(sk, sk.rest_rot, p, b), hinge_line(sk, rot, p, b), hg["amount"])
             rot[j] = qnorm(qmul(sk.rest_rot[j], q))
+    return rot
+
+
+def tasset_turn(tg, fl, fr):
+    """Degrees the tasset hinge turns (SPEC "tassets"): its V's bottom forward and up by `amount` of the leading
+    thigh's forward swing (fl, fr: degrees from rest), smoothly: amount * softrelu(smax(fl, fr) - soft/4)."""
+    k = tg["soft"]
+    return tg["amount"] * _softrelu(_smax(fl, fr, k) - k / 4, k)
+
+
+def tasset_q(deg):
+    """The tasset hinge's turn in her rest axes carried with the pelvis: `deg` about her lateral axis, the bottom
+    forward (about -X: her -Y toward +Z)."""
+    return qaxis([-1.0, 0, 0], deg)
+
+
+def drive_tassets(sk: Skeleton, rot):
+    """The tasset hinges turned (local rotations, changed in place), as HerJoints does (Play/HipHinge.cs)."""
+    I = sk.index
+    for tg in SPEC.get("tassets", []):
+        j = I.get(tg["name"])
+        if j is None:
+            continue
+        fl, fr, _, _ = panel_angles(sk, rot, tg)
+        rot[j] = qnorm(qmul(sk.rest_rot[j], tasset_q(tasset_turn(tg, fl, fr))))
     return rot
 
 
@@ -1227,6 +1281,7 @@ def drive(sk: Skeleton, rot, scale=None, shift=None, state=None, dt=None, panels
                         shift[j] = (q * hh.get("squeeze_x", 0.0), 0.0, (1.0 - k) * hs.get("pivot", 0.0) - point_push(deg, hh))
     drive_panels(sk, rot, state if panels else None, dt)
     drive_hinges(sk, rot)
+    drive_tassets(sk, rot)
     return rot
 
 

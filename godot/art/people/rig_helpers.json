@@ -285,6 +285,23 @@
    "amount": 0.4
   }
  ],
+ "tassets": [
+  {
+   "name": "tasset_hinge",
+   "parent": "pelvis",
+   "thighs": [
+    "thigh_l",
+    "thigh_r"
+   ],
+   "pivot": [
+    0.0,
+    1.125,
+    0.12
+   ],
+   "amount": 0.8,
+   "soft": 12.0
+  }
+ ],
  "twist_chain": {
   "gate": "upperarm_twist_02_{s}",
   "roll_bone": "upperarm_{s}",

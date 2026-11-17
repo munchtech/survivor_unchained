@@ -1,4 +1,5 @@
-"""The fixture for godot/tests/HipHingeTests.cs: her hip hinges (helpers SPEC "hinges", drive_hinges) on every frame of
+"""The fixture for godot/tests/HipHingeTests.cs: her hip hinges (helpers SPEC "hinges", drive_hinges) and her tasset
+hinge (SPEC "tassets", drive_tassets) on every frame of
 the four demo clips (idle_warden, run_warden, sword_heavy, leap), so Play/HipHinge.cs (HerJoints' copy) is checked
 against it.
 
@@ -50,9 +51,30 @@ def main():
                     hp.drive_hinges(sk, rot)
                     side["frames"].append({"clip": cl, "f": f, "chain": hp._below(sk, rot, p, b).tolist(), "hinge": rot[j].tolist()})
             out["sides"].append(side)
+    # The tasset hinge (SPEC "tassets", drive_tassets): the parent's global rest, pivot, local rest, each thigh's rest
+    # turn in the parent; per frame both thighs' posed turns and the expected local rotation.
+    out["tasset_spec"] = hp.SPEC.get("tassets", [])
+    out["tassets"] = []
+    for tg in out["tasset_spec"]:
+        j = sk.index[tg["name"]]
+        p = sk.parent[j]
+        th = [sk.index[n] for n in tg["thighs"]]
+        one = {"name": tg["name"], "amount": tg["amount"], "soft": tg["soft"],
+               "parent_rot": grot[0, p].tolist(), "parent_pos": gpos[0, p].tolist(), "pivot": list(tg["pivot"]),
+               "rest_rot": sk.rest_rot[j].tolist(), "rest_pos": sk.rest_pos[j].tolist(),
+               "chain_rest": [hp._below(sk, sk.rest_rot, p, b).tolist() for b in th], "frames": []}
+        for cl in CLIPS:
+            c = skin.Body.clip(types.SimpleNamespace(label="her", sk=sk), cl, folder)
+            for f in range(c.rot.shape[0]):
+                rot = c.rot[f].copy()
+                hp.drive_tassets(sk, rot)
+                one["frames"].append({"clip": cl, "f": f, "chains": [hp._below(sk, rot, p, b).tolist() for b in th],
+                                      "tasset": rot[j].tolist()})
+        out["tassets"].append(one)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":")) + "\n")
-    print(OUT, sum(len(x["frames"]) for x in out["sides"]), "frames")
+    print(OUT, sum(len(x["frames"]) for x in out["sides"]), "hinge frames", sum(len(x["frames"]) for x in out["tassets"]),
+          "tasset frames")
 
 
 if __name__ == "__main__":
