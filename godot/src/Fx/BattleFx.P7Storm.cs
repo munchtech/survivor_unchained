@@ -44,9 +44,11 @@ public partial class BattleFx
     }
 
     readonly List<P7Smear> p7Smears = new();
-    OmniLight3D? p7StormLight, p7VowLight;
+    OmniLight3D? p7StormLight;
     double p7StormOff = -9;
     float p7StormR, p7StormOn = -1, p7SpinPrev = float.NaN, p7SpinDir = -1, p7Swirl, p7SpinAngle, p7TiltPhi;
+    // (bladestorm-spin r2) the storm's count: a ring's arcs turn with their own storm only (P7StormRing)
+    int p7StormGen;
     // the frame's storm work (P7Pre): a tick or start in this batch; a break in it; how many tick kits drawn
     bool p7TickNow, p7BreakNow;
     int p7TickKits;
@@ -54,9 +56,7 @@ public partial class BattleFx
     float p7VowLevel;
     int p7VowBlows;
     readonly Dictionary<int, P7Scar> p7Scars = new();
-    P7Shape? p7Dome, p7Glow;
     Node3D? p7Shield;
-    static SphereMesh? p7DomeMesh;
 
     /// <summary>The storm's hits and the vow's burst are drawn here (P7Owns).</summary>
     bool P7OwnsStorm(Ev.Hit e)
@@ -134,15 +134,22 @@ public partial class BattleFx
                 var rad0 = new Vector3(tip.X - feet0.X, 0, tip.Z - feet0.Z);
                 P7Press(tip, feet0, rad0.LengthSquared() > 1e-4f ? new Vector3(-rad0.Z, 0, rad0.X).Normalized() : Vector3.Zero);
                 p7TiltPhi = Mathf.Atan2(tip.Z - PlayerPos.Z, tip.X - PlayerPos.X) + Mathf.Pi * 0.5f;
+                p7SpinAngle = p7TiltPhi - Mathf.Pi * 0.5f;
                 // ONE smear: the blade's own path at its reach (round 3: the wake smear parked beside her is gone)
                 p7Smears.Add(P7NewSmear(Mathf.DegToRad(P7D["storm.smear.arc_deg"]), 1f, 1f, 0, 0, 12, P7D["storm.smear.alpha"], 0f));
-                if (p7StormLight == null)
+                // (bladestorm-spin r2, E rule 5: a full ring) the storm's ring, painted (round 1's stroke arcs retired)
+                P7StormRing();
+                // (r2) its light only if the data asks (storm.light 0: the painted ring is the read, no light, no glow)
+                if (P7D["storm.light"] > 0)
                 {
-                    p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
-                    AddChild(p7StormLight);
+                    if (p7StormLight == null)
+                    {
+                        p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
+                        AddChild(p7StormLight);
+                    }
+                    p7StormLight.OmniRange = Mathf.Min(p7StormR * 1.2f, 4.2f);
+                    p7StormLight.Visible = true;
                 }
-                p7StormLight.OmniRange = Mathf.Min(p7StormR * 1.2f, 4.2f);
-                p7StormLight.Visible = true;
                 break;
             }
             case SpinPhase.End:
@@ -170,6 +177,81 @@ public partial class BattleFx
         m.SetShaderParameter("p7_alpha", alpha);
         m.SetShaderParameter("p7_fade", life0);
         return new P7Smear { N = n, Mesh = mesh, M = m, Arc = arc, RadK = radK, HwK = hwK, Lag = lag, Dy = dy, Tilt = tilt, Alpha = alpha, Life0 = life0 };
+    }
+
+    /// <summary>(bladestorm-spin r2, 16 Nov: E rule 5) The storm's ring: `n` painted arcs (PaintedRing's brush, RingPaint and
+    /// shaders/fx_sunder_ring.gdshader, by the numbers under p7.storm.ring_paint) evenly round her on the ground at the
+    /// storm's real hit radius (Ev.Spin Radius, x rad_k), held while she spins and turning with the blade: arc i's head
+    /// trails the blade's angle round her by lag_deg + i/n of the turn, its tail arc_deg back against the spin (shorter
+    /// as the spin winds up, as the smear's). Its head is white-hot (the lip, over head_hot of the arc), then the steel
+    /// bands, cooling (cut_along) and drying out (fade_along) toward the tail (the shader's ring_along); a fresh brush each
+    /// relay_turns turns (one of `brushes`); it grows from `from` x the radius in `run` s and erodes away where it stands in
+    /// `out` s once its storm ends or breaks. Anchored on her (PlayerPos) and the blade's angle round her (P7BladeAt). No
+    /// light, no sound of its own (storm_start is its birth).</summary>
+    void P7StormRing()
+    {
+        const string key = "storm.ring_paint";
+        int gen = ++p7StormGen, n = Math.Max(1, (int)P7D[key + ".n"]);
+        var rk = P7D.All(key + ".rad_k");
+        var cut = P7D.All(key + ".cut_along");
+        var fade = P7D.All(key + ".fade_along");
+        float arc = Mathf.DegToRad(Mathf.Min(P7D[key + ".arc_deg"], P7D[key + ".open_deg"])), lag = Mathf.DegToRad(P7D[key + ".lag_deg"]);
+        float from = P7D[key + ".from"], run = Mathf.Max(P7D[key + ".run"], 1 / 60f), outS = Mathf.Max(P7D[key + ".out"], 1 / 60f);
+        float lift = P7D[key + ".lift"], relay = Mathf.Tau * Mathf.Max(P7D[key + ".relay_turns"], 0.1f), r = p7StormR;
+        var tex = PaintedRingTex(key);
+        int t0 = (int)(R() * 0.999f * tex.Length);
+        var shader = GD.Load<Shader>(SunderRingShader);
+        p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
+        if (GripSay) GD.Print($"storm ring frame {Engine.GetFramesDrawn()} r {r:0.00} m = {r / P7Px(PlayerPos):0} px arcs {n} x {Mathf.RadToDeg(arc):0} deg");
+        for (int i = 0; i < n; i++)
+        {
+            var m = new ShaderMaterial { Shader = shader };
+            FxCel.Apply(m, School.Physical, FxAfter.On);
+            int ti = (t0 + i) % tex.Length;
+            m.SetShaderParameter("ring_tex", tex[ti]);
+            m.SetShaderParameter("ring_r0", SunderR0);
+            m.SetShaderParameter("ring_hot", 0f);
+            m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+            m.SetShaderParameter("ring_along", 1f);
+            m.SetShaderParameter("along_hot", P7D[key + ".head_hot"]);
+            m.SetShaderParameter("along_cut", new Vector2(cut[0], cut[1]));
+            m.SetShaderParameter("along_fade", new Vector3(fade[0], fade[1], fade[2]));
+            var node = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "StormRing" };
+            AddChild(node);
+            if (FxAfter.On) FxAfter.Adopt(node);
+            float lagI = lag + Mathf.Tau * i / n, radK = rk[i % rk.Length], down = -1, turned = 0, prev = float.NaN;
+            var s = new P7Shape
+            {
+                N = node, M = m, Life = 1e6f,
+                Step = q =>
+                {
+                    bool on = p7StormOn >= 0 && p7StormGen == gen;
+                    if (!on && down < 0) down = q.Age;
+                    if (on)
+                    {
+                        // a fresh brush each relay of the blade's turning round her
+                        if (!float.IsNaN(prev)) turned += Mathf.Abs(Mathf.Wrap(p7SpinAngle - prev, -Mathf.Pi, Mathf.Pi));
+                        prev = p7SpinAngle;
+                        if (turned >= relay) { turned -= relay; ti = (ti + 1) % tex.Length; q.M.SetShaderParameter("ring_tex", tex[ti]); }
+                        float span = arc * Mathf.Clamp(q.Age / 0.15f, 0.25f, 1f), dir = p7SpinDir < 0 ? -1f : 1f;
+                        float head = p7SpinAngle - dir * lagI;
+                        var her = PlayerPos;
+                        her.Y = Y(her.X, her.Z) + lift;
+                        q.N.GlobalPosition = her;
+                        // local +X at the arc's middle; u runs with the spin, so the head is at u 1
+                        q.N.Rotation = new Vector3(0, -(head - dir * span / 2), 0);
+                        q.M.SetShaderParameter("ring_range", span);
+                        q.M.SetShaderParameter("ring_flip", dir);
+                    }
+                    float t = Mathf.Clamp(q.Age / run, 0, 1), e = 1 - (1 - t) * (1 - t);
+                    q.N.Scale = Vector3.One * r * radK * (from + (1 - from) * e);
+                    q.M.SetShaderParameter("ring_fade", down < 0 ? 0f : 1.02f * Mathf.Clamp((q.Age - down) / outS, 0, 1));
+                    if (down >= 0 && q.Age - down >= outS) q.Life = q.Age;
+                },
+            };
+            s.Step(s);
+            p7Shapes.Add(s);
+        }
     }
 
     /// <summary>The smear's strip this frame: a stroke on the blade's own path at its reach (the tip's radius round her),
@@ -257,6 +339,10 @@ public partial class BattleFx
     /// <summary>A Sunder line the storm threw: a ground fissure. Thrown: the crack strip laid along it (over 0.1 s,
     /// from her end) with its seam pulsing at half; split: the seam flares, dust and chunks along the whole line within
     /// 0.1 s, the seam cools in steps and the crack fades; faded: it steps out, nothing dealt.</summary>
+    /// <summary>(bladestorm-spin r2) The storm's Sunder lines' crack tint: Sunder's own (p7.sunder_mark.crack_tint: the line
+    /// row, warm, never black). WgLineTint (x0.45, neutral) read near black at the den camera (c2a: L .05-.08, C .02).</summary>
+    static Color P7SunderTint() { var t = P7D.All("sunder_mark.crack_tint"); return new Color(t[0], t[1], t[2]); }
+
     void P7Line(Ev.SpinLine e)
     {
         if (P7Off) return;
@@ -315,7 +401,7 @@ public partial class BattleFx
                         var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
                         WgLater(0.1f * i / n, () =>
                         {
-                            if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.5f, WgBand * across), alb[tile], nrm[tile], null, 14f, 1f, 0, 0, 0, WgLineTint) is not { } d) return;
+                            if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.5f, WgBand * across), alb[tile], nrm[tile], null, 14f, 1f, 0, 0, 0, P7SunderTint()) is not { } d) return;
                             sc.Cracks.Add(d);
                             if (sc.SplitAge >= 0 || sc.FadeAge >= 0) { d.FadeFrom = d.Age + 0.6f; d.Life = d.Age + 1.2f; }
                         });
@@ -434,59 +520,15 @@ public partial class BattleFx
                 P7Ev("vow_start");
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
                 p7VowStart = time;
-                // the shield slams down: one glint the data's px on it (3 frames), a pop of light, dust pressed out from
-                // under her feet all round, two values
+                // (leap-vow-marks, 16 Nov: coordinator #15) the plant: one faint steel glint on her shield (3 frames; the shield
+                // piece's own node, P7ShieldAt) and dust pressed out from under her feet all round, two values; nothing else
+                // through the brace. The even gold circle (the dome's rim), the gold dot (the store glow: a flat disc on her
+                // chest at the play camera, not the shield's own metal), the cream glowing dome and the gold ground light are
+                // gone (b0, the lead's look: a sticker and a white-out tube)
                 P7Glint(P7ShieldAt(), P7D["vow.plant.flash_px"]);
-                P7LightOn(P7ShieldAt(), 3f, Flare.Night ? 1.6f : 2.4f);
                 P7Kick(feet, Vector3.Zero, P7D.Count("vow.plant.puffs", R()), P7D["kick.life"] * 1.3f);
                 p7VowLevel = 0; p7VowBlows = 0; p7StoreAt = -9;
-                P7VowShapesGone(0);
-                p7DomeMesh ??= new SphereMesh { Radius = 1.2f, Height = 1.2f, IsHemisphere = true, RadialSegments = 64, Rings = 20 };
-                // the dome: interior clear, a rim the data's px in from its outline (and where it meets the ground), its
-                // core out; on each blow taken it flares to the flare px with the core in it for the flare's time
-                float rim = P7D["vow.dome.rim_px"], flare = P7D["vow.dome.flare_px"], flareS = P7D["vow.dome.flare_s"];
-                p7Dome = P7Brushed(rim, P7OnMesh(8, p7DomeMesh, feet, new Vector3(1, 1.55f, 1), 9999, step: s =>
-                {
-                    float gy = Y(PlayerPos.X, PlayerPos.Z);
-                    s.N.GlobalPosition = new Vector3(PlayerPos.X, gy, PlayerPos.Z);
-                    s.M.SetShaderParameter("p7_y0", gy + 0.02f);
-                    s.M.SetShaderParameter("p7_t", s.Age);
-                    bool hit = (float)(time - p7StoreAt) < flareS;
-                    s.M.SetShaderParameter("p7_lvl", hit ? 0f : 0.34f);
-                    s.M.SetShaderParameter("p7_width", hit ? flare : rim);
-                    s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 0.6f : 0.95f);
-                }));
-                // the store: a round glow on the shield's face growing over the brace (the data's px), the ground light with it
-                // (fight-ring, 13 Nov: px 20-60 -> 10-26, the boss heating, not a disc: at 60 px it covered the 77 px shield and
-                // read at the play camera as a flat orange UI disc on her chest; the wood rim now stays seen round it)
-                var spx = P7D.All("vow.store.px");
-                float grow = P7D["vow.store.grow"];
-                p7Glow = P7Quad(9, P7ShieldAt(), 0.1f, 9999, bill: true, top: true, step: s =>
-                {
-                    var at = P7ShieldAt();
-                    s.N.GlobalPosition = at;
-                    // (F1) the glow belongs to the shield: no shield held on the forearm (twin blades, mace), no glow
-                    s.N.Visible = P7ShieldHeld();
-                    float t = (float)(time - p7VowStart), since = (float)(time - p7StoreAt);
-                    float u = Mathf.Clamp(Mathf.Floor(t / P7Sample) * P7Sample / grow, 0, 1);
-                    float px = Mathf.Lerp(spx[0], spx[1], u);
-                    s.N.Scale = Vector3.One * 0.5f * px * P7Px(at);
-                    s.M.SetShaderParameter("p7_lvl", since < P7Sample ? 0f : u < 0.5f ? 0.34f : 0f);
-                    s.M.SetShaderParameter("p7_alpha", 0.92f);
-                    if (p7VowLight != null)
-                    {
-                        p7VowLight.GlobalPosition = new Vector3(PlayerPos.X, Y(PlayerPos.X, PlayerPos.Z) + 0.55f, PlayerPos.Z);
-                        p7VowLight.OmniRange = 2.2f + 1.2f * u;
-                        p7VowLight.LightEnergy = (Flare.Night ? 0.45f : 0.75f) * (1 + 2 * u);
-                    }
-                });
-                P7Brush(p7Glow.M, spx[0]);
-                if (p7VowLight == null)
-                {
-                    p7VowLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.3f, LightColor = P7Band(1) };
-                    AddChild(p7VowLight);
-                }
-                p7VowLight.Visible = true;
+                if (GripSayAll) GD.Print($"vow start frame {Engine.GetFramesDrawn()}");
                 break;
             }
             case BracePhase.Store:
@@ -519,38 +561,26 @@ public partial class BattleFx
                 P7Ev("vow_burst");
                 p7VowAt = time;
                 float k = P7StoreLevel(e.Stored);
-                P7VowShapesGone(P7Sample);
                 float r = (float)e.Radius;
                 var c = V(e.X, Y(e.X, e.Z), e.Z);
-                // one star off the shield (3 frames, sized by the store), one wavefront to the radius, then dust there; its
-                // light a gold pop of 2 frames at the data's share (never the crowd bleached cream)
-                int bf = (int)P7D["vow.burst.frames"];
-                P7StarPx(P7ShieldAt(), P7D["vow.burst.px"] * (0.85f + 0.3f * k), P7D.Count("vow.burst.spikes", R()), P7D["vow.burst.root_px"], 0, 1, Math.Max(1, (bf - 1) / 2), true);
-                float run = P7D["vow.burst.run"];
-                P7Wave(c + Vector3.Up * 0.06f, r, run, P7D["vow.burst.lead_px"], P7D["vow.burst.trail_px"]);
+                // (leap-vow-marks, 16 Nov: coordinator #15) Sunder's painted ring, closed, out to the burst's real radius
+                // (PaintedRing, p7.vow.mark: white-hot, then the steel bands, gone ~0.4 s), then dust there and round her
+                // feet. The star off the shield, the old even wavefront and the light's pop are gone (stickers, a wash)
+                PaintedRing("vow.mark", c + Vector3.Up * 0.06f, r, Mathf.Tau, R() * Mathf.Tau);
+                p7MarkHold = time + P7D["vow.mark.life"];
+                if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
+                {
+                    var sp = cam.UnprojectPosition(c) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
+                    GD.Print($"vow mark frame {Engine.GetFramesDrawn()} at {sp.X:0},{sp.Y:0} reach {r:0.00} m = {r / P7Px(c):0} px store {k:0.00}");
+                }
+                float run = P7D["vow.mark.run"];
                 var dpx = P7D.All("leap.dust.px");
-                WgLater(run - 0.04f, () => P7Dust(c, r * 1.05f, 12 + (int)(6 * k), dpx[0] * 0.8f, dpx[1] * 0.8f, 0.3f, r * 0.9f));
-                P7LightOn(c + Vector3.Up * 1.3f, r * 1.3f, (Flare.Night ? 3f : 4.2f) * (0.8f + 0.5f * k) * P7D["vow.burst.light_k"], P7D["vow.burst.light_frames"] / 60f, 2 / 60f);
+                WgLater(Mathf.Max(0, run - 0.04f), () => P7Dust(c, r * 1.05f, 12 + (int)(6 * k), dpx[0] * 0.8f, dpx[1] * 0.8f, 0.3f, r * 0.9f));
                 P7Dust(c, r * 0.5f, 10 + (int)(4 * k), dpx[0] * 0.7f, dpx[1] * 0.7f, 0.3f, 0.3f);
                 Cam?.JoltPx(Vector3.Up, 6f + 4f * k);
                 break;
             }
         }
-    }
-
-    /// <summary>The dome and the glow: a sample at full, then gone (`after` s); the ground light down with them.</summary>
-    void P7VowShapesGone(float after)
-    {
-        foreach (var sh in new[] { p7Dome, p7Glow })
-        {
-            if (sh == null) continue;
-            if (after <= 0) { if (IsInstanceValid(sh.N)) sh.N.QueueFree(); p7Shapes.Remove(sh); continue; }
-            float at = sh.Age; sh.Life = at + after;
-            var st = sh.Step;
-            sh.Step = s => { st?.Invoke(s); s.M.SetShaderParameter("p7_lvl", 0f); };
-        }
-        p7Dome = p7Glow = null;
-        if (p7VowLight != null) p7VowLight.Visible = false;
     }
 
     /// <summary>A dust puff's lit top: held a third brighter (by night the tan sank under her pool's lit ground; by day,
@@ -617,11 +647,13 @@ public partial class BattleFx
             p7SpinPrev = a; p7SpinAngle = a;
         }
         P7StepSmears(dt);
-        if (p7StormLight == null) return;
         if (p7StormOn >= 0)
         {
-            p7StormLight.GlobalPosition = PlayerPos + Vector3.Up * 1.3f;
-            p7StormLight.LightEnergy = Mathf.Min(1, p7StormOn / 0.15f) * (Flare.Night ? 1.3f : 2.0f);
+            if (p7StormLight is { Visible: true })
+            {
+                p7StormLight.GlobalPosition = PlayerPos + Vector3.Up * 1.3f;
+                p7StormLight.LightEnergy = Mathf.Min(1, p7StormOn / 0.15f) * (Flare.Night ? 1.3f : 2.0f) * P7D["storm.light"];
+            }
             // the swirl: clusters of low puffs at her feet thrown round her way behind the blade, varied in size, a lit
             // top over a darker skirt
             p7Swirl -= dt;
@@ -644,7 +676,7 @@ public partial class BattleFx
                 }
             }
         }
-        else if (p7StormLight.Visible)
+        else if (p7StormLight is { Visible: true })
         {
             p7StormLight.LightEnergy -= dt * 8;
             if (p7StormLight.LightEnergy <= 0) p7StormLight.Visible = false;

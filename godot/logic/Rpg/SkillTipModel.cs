@@ -31,6 +31,8 @@ public static class SkillTipModel
     public static string Plain(double v) => Math.Round(v, 2).ToString("0.##", Inv);
     /// <summary>Seconds: one place, no trailing zeros ("7.8", "0.5", "8").</summary>
     public static string Seconds(double v) => Math.Round(v, 1).ToString("0.#", Inv);
+    /// <summary>Metres: one place, no trailing zeros ("5.3", "4"), as the Lamps board's Reach and Size rows print them.</summary>
+    public static string Metres(double v) => Math.Round(v, 1).ToString("0.#", Inv);
     static string Percent(double v) => Math.Round(v * 100, 1).ToString("0.#", Inv) + "%";
 
     /// <summary>The card for a skill. With a battle: the fight's own weapon (so its numbers are the fight's); without, the
@@ -79,6 +81,10 @@ public static class SkillTipModel
             bool secs = string.CompareOrdinal(t, m.Index + m.Length, " s", 0, 2) == 0
                 && (m.Index + m.Length + 2 == t.Length || !char.IsLetter(t[m.Index + m.Length + 2]));
             if (secs && m.Groups[1].Value != "every" && double.TryParse(s, NumberStyles.Float, Inv, out double sv)) return Seconds(sv);
+            // a value read as metres (the hole followed by " m") prints 0.# too (a lit Crater read "5.34 m")
+            bool metres = string.CompareOrdinal(t, m.Index + m.Length, " m", 0, 2) == 0
+                && (m.Index + m.Length + 2 == t.Length || !char.IsLetter(t[m.Index + m.Length + 2]));
+            if (metres && double.TryParse(s, NumberStyles.Float, Inv, out double mv)) return Metres(mv);
             return s;
         });
 

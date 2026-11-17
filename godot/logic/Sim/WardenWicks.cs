@@ -310,7 +310,7 @@ public sealed partial class Battle
             var inside = new HashSet<Lifetime>();
             foreach (var e in HostilesInRadius(x, z, r)) if (!e.Elite && !e.Boss) inside.Add(Lifetime.Of(e));
             henge = (x, z, r, Time + Wn("heroic_leap.henge", "seconds", 4), inside);
-            Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = School.Physical, Duration = Wn("heroic_leap.henge", "seconds", 4), Rings = 1 });
+            Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = School.Physical, Duration = Wn("heroic_leap.henge", "seconds", 4), Rings = 1, Art = "heroic_leap_henge" });
         }
         int kills = 0;
         foreach (var e in ring) if (!e.Alive || e.State == EnemyState.Dying) kills++;

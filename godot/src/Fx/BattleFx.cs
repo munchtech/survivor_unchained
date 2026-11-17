@@ -1276,6 +1276,9 @@ public partial class BattleFx : Node3D
 
 
     int levelHeld;
+    /// <summary>Until when a leap's landing or a vow's burst holds the frame (its painted ring's life): a level's light waits.</summary>
+    double p7MarkHold = -9;
+    bool P7MarkHolds => time < p7MarkHold;
 
     /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
     /// <summary>Her ember's own burst for a level (PlayerView.LevelFlare), with the pillar: it waits for a Flare's frame too
@@ -1284,6 +1287,7 @@ public partial class BattleFx : Node3D
 
     void LevelLight()
     {
+        if (GripSay) GD.Print($"level light frame {Engine.GetFramesDrawn()}");
         OnLevelLight();
         var p = PlayerPos;
         if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
@@ -1581,6 +1585,11 @@ public partial class BattleFx : Node3D
                 case Ev.PlayerHeal e:
                     if (e.Amount >= 3) Hits.Text(PlayerPos + Vector3.Up * 1.6f, $"+{(int)Math.Round(e.Amount)}", new Color(0.5f, 1.8f, 0.6f), 50);
                     break;
+                // (leap-vow-marks r3, 16 Nov) Heroic Leap's Henge Turn: its standing stones round the landing (P7Henge), not
+                // the generic nova's soft ring and gold light (the halo outside the landing ring, the pool round her feet)
+                case Ev.Nova { Art: "heroic_leap_henge" } e when !P7Off:
+                    P7Henge(e);
+                    break;
                 case Ev.Nova e when e.Art != null && Pulse(e):
                     break;
                 case Ev.Nova e:
@@ -1611,6 +1620,9 @@ public partial class BattleFx : Node3D
                 case Ev.Explosion { Art: "moonfall" }:
                     break;
                 case Ev.Explosion { Art: "heroic_leap_heave" or "shield_charge_slam" } when !P7Off: break;
+                // (lane B lead 2, f1) the leap's landing strike: P7LeapLand draws its mark; the generic Strike's Land drew a
+                // soft gold halo ring outside the painted ring and a light pool under her ("the halo", v1a to f1)
+                case Ev.Strike { Art: "heroic_leap" } when !P7Off: break;
                 case Ev.Leap e: P7Leap(e); break;
                 case Ev.Charge e: P7Charge(e, b); break;
                 case Ev.Spin e: P7Spin(e); break;
@@ -1663,6 +1675,11 @@ public partial class BattleFx : Node3D
                     if (e.School == School.Storm) Flash(V(p[^2], y + 1, p[^1]), pal.Light, 6, 0.2f, 8);
                     break;
                 }
+                // (leap-vow-marks r3, 16 Nov) Iron Vow's Full Measure wave: the painted ring laid straight along its real
+                // line (P7VowWave), not the generic beam's glowing band and light (the cream tube)
+                case Ev.Beam { Art: "iron_vow_wave" } e when !P7Off:
+                    P7VowWave(e);
+                    break;
                 case Ev.Beam e when Lance(e):
                     break;
                 case Ev.Beam e:
@@ -1872,8 +1889,10 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(PlayerPos + Vector3.Up, new Vector3(0, 1, 0), 0.3f, 0.25f, e.Kind == PickupKind.Gold ? new Color(2f, 1.5f, 0.5f) : new Color(2.2f, 1f, 0.35f), sizeEnd: 0.05f, alpha: 0.6f);
                     break;
                 case Ev.LevelUp:
-                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame).
-                    if (Flare.HoldsFrame) levelHeld++; else LevelLight();
+                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame); so they do
+                    // while a leap's or a vow's painted ring is on the ground (P7MarkHolds; leap-vow-marks r2: a burst that felled
+                    // the pack levelled her, and the level's cream pillar stood over the mark, v1a_vow_24).
+                    if (Flare.HoldsFrame || P7MarkHolds) levelHeld++; else LevelLight();
                     break;
                 case Ev.Victory v:
                 {
@@ -2315,7 +2334,7 @@ public partial class BattleFx : Node3D
         Projectiles(b, fdt, now);
         Pickups(b, now);
         LampPool(b, fdt);
-        if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
+        if (levelHeld > 0 && !Flare.HoldsFrame && !P7MarkHolds) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         StepWardenHoly(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }

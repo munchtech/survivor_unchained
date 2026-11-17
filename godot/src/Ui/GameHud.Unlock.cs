@@ -101,6 +101,12 @@ public partial class GameHud
             game.SetHint(new Hint("unlock." + row.Id, t.Title, UnlockLessons.TextFor(row, game.KeyLabel), t.Key != "" ? [game.KeyLabel(t.Key)] : []));
             lessonHint = "unlock." + row.Id; lessonUntil = now + LessonLife;
         }
+        // (the one prompt that the Lamps tree exists: the first held point, once per save; never over a card, a choice, another hint)
+        else if (game.CurrentHint == null && !LevelCardUp && !HudPin.Active && LampsTeach.Take(game.Journey.Ch, game.Journey.World, choice != null))
+        {
+            game.SetHint(new Hint("unlock." + LampsTeach.Id, LampsTeach.Title, LampsTeach.TextFor(game.KeyLabel, SurvivorUnchained.Rpg.LampBook.Spare(game.Journey.Ch, game.Journey.World)), [game.KeyLabel(LampsTeach.Key)]));
+            lessonHint = "unlock." + LampsTeach.Id; lessonUntil = now + LessonLife;
+        }
     }
 
     void TakeLessonDown(Game game, bool expired)

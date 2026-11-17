@@ -14,7 +14,7 @@
     { "level": 7, "kind": "auto", "id": "iron_vow", "lands": "auto 2", "title": "AN AUTO SKILL", "line": "For 2 s every blow on you lands at half, then bursts back in a ring.", "icon": "",
       "teach": { "when": "first_fire", "title": "", "text": "", "key": "" } },
     { "level": 8, "kind": "stance", "id": "stance", "lands": "swap", "title": "A SECOND WEAPON", "line": "Swap to a second weapon: every swap lands a strike.", "icon": "",
-      "teach": { "when": "next_fight", "title": "Bulwark", "text": "Press *{key}* to swap to Bulwark: every swap lands a strike.", "key": "Swap" } },
+      "teach": { "when": "next_fight", "title": "Shieldwall", "text": "Press *{key}* to swap to Shieldwall: every swap lands a strike.", "key": "Swap" } },
     { "level": 9, "kind": "key", "id": "shield_charge", "lands": "key 4", "title": "A NEW KEY", "line": "Charge 8 m behind your shield; gain a barrier of 15% of your health.", "icon": "",
       "teach": { "when": "next_fight", "title": "Shield Charge", "text": "Press *{key}* to charge behind your shield: what stands in the way is struck and thrown aside.", "key": "Skill4" } },
     { "level": 10, "kind": "auto", "id": "watch_bell", "lands": "auto 3", "title": "AN AUTO SKILL", "line": "A bell draws everything near to face you and gives you a barrier.", "icon": "",
