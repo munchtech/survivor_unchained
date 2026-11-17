@@ -197,8 +197,8 @@ def test_hip_tassets_are_one_thigh_hinges_at_their_pivots(sk):
     grot, gpos = sk.rest_globals()
     for s in "lr":
         tg = _tasset("hiptasset_hinge_" + s)
-        assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 1.5 and tg["soft"] == 12.0
-        assert tg["roll"] == 0.8 and tg["roll_max"] == 25.0
+        assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 1.4 and tg["soft"] == 16.0
+        assert tg["roll"] == 0.95 and tg["roll_max"] == 25.0
         j = sk.index[tg["name"]]
         assert sk.names[sk.parent[j]] == "pelvis" and _deg(grot[0, j]) < 1e-6
         assert np.abs(gpos[0, j] - np.asarray(tg["pivot"], float)).max() < 1e-9
@@ -212,15 +212,15 @@ def test_hip_tasset_turns_with_its_own_forward_swing_and_spread(sk):
     for s in "lr":
         tg = _tasset("hiptasset_hinge_" + s)
         o = "r" if s == "l" else "l"
-        want = 1.5 * (45 - 3 - 6)
+        want = 1.4 * (45 - 4 - 8)
         assert abs(_deg(_driven(sk, tg, **{s: 45})) - want) < 1e-3
         assert _deg(_driven(sk, tg, **{o: 45})) < 1e-6  # the other thigh leaves it be
         assert _deg(_driven(sk, tg, **{o: 45, "a" + o: 25})) < 1e-6
         sg = 1 if s == "l" else -1
         tip = lambda q: qrot(q, [0, -1.0, 0])
-        for a in (25, -25):  # spread out / crossing: the bottom goes with the thigh, 25 tanh(0.8 a / 25)
+        for a in (25, -25):  # spread out / crossing: the bottom goes with the thigh, 25 tanh(0.95 a / 25)
             q = _driven(sk, tg, **{"a" + s: a})
-            assert abs(_deg(q) - 25 * math.tanh(0.8 * abs(a) / 25)) < 1e-3
+            assert abs(_deg(q) - 25 * math.tanh(0.95 * abs(a) / 25)) < 1e-3
             assert tip(q)[0] * sg * a > 0.1 * abs(a) / 25
         assert _deg(_driven(sk, {**tg, "roll": 0.0}, **{"a" + s: 25})) < 1e-6  # roll 0: pitch only, as before
         rot = sk.rest_rot.copy()  # a twist about the thigh's own line

@@ -292,10 +292,17 @@ SPEC = {
         # stood 38-77 mm off her. With spread 0.8 and amount 1.5: idle <= 2, run 7-15, leap -5..11, sword_heavy -3..27 (the
         # 27 only at th 42-46 at f25, her left thigh near rest); the right side <= 15. (amount 1.2 + roll 0.8: run 21-34,
         # leap 33-38; amount 1.8: run 11, no better.)
+        # Retuned (armor-D, 17 Nov, armor-on-b r6): amount 1.4, soft 16, roll 0.95 (was 1.5 / 12 / 0.8). Measured on B as a
+        # plate built over the most room any clip needs (+5 mm), its bottom band's stand-off from her THIGH (bins whose
+        # outermost point is >= half thigh-weighted, her thigh down to y .78: the earlier y > .93 window missed the thigh
+        # under a pitched plate). Per-frame median, per clip, left/right: idle 11/10, run 16/16, sword_heavy 19/39, leap
+        # 11/23 (was 15/14, 23/23, 19/29, 20/29). A grid of amount 1.3-2.1, soft 6-28, roll .5-1.4 finds no law under
+        # ~14 mm in run; a twist term was not needed (sword_heavy sets only the inner 2-3 columns; without it idle/run
+        # are unchanged).
         {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.115, 1.115, 0.067],
-         "amount": 1.5, "soft": 12.0, "roll": 0.8, "roll_max": 25.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
+         "amount": 1.4, "soft": 16.0, "roll": 0.95, "roll_max": 25.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
         {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.115, 1.115, 0.067],
-         "amount": 1.5, "soft": 12.0, "roll": 0.8, "roll_max": 25.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
+         "amount": 1.4, "soft": 16.0, "roll": 0.95, "roll_max": 25.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
