@@ -278,6 +278,10 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_HEAD vec4(0.47, 0.775, 0.875, 0.28)
 #define DEN_BOSS_HEAD2 vec2(0.58, 0.64)
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
+// (lead 8 r3: the muzzle's lock edge, x its axis's y, y locks a turn, z their depth, w its tilt in z a .1 of y under the axis;
+// the back's strokes, see c_stk)
+#define DEN_BOSS_MUZ vec4(0.70, 11.0, 0.035, 0.03)
+#define DEN_BOSS_STROKE vec4(0.011, 0.075, 0.05, 0.55)
 // (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
 // body's world-normal bands ran over the head's curves as a ramp): LIT (the rest normal's y past DEN_HEAD_LIT.y: crown, brow,
 // the muzzle's bridge) at L DEN_HEAD_LIT.x, SHADE (sides, cheeks, jaw) at DEN_HEAD_SHADE, DARK (the muzzle past DEN_BOSS_HEAD.y,
@@ -386,15 +390,28 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_core = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_CORE * (0.75 + 0.45 * vat_den_hash(c_kc, 4.0))
 			* (0.25 + 0.75 * vat_den_tooth(c_zc - c_kc, 0.2 + 0.2 * vat_den_hash(c_kc, 3.0), vec2(0.8, 1.5)));
 		float c_bl = (1.0 - vat_den_cut(abs(c_r.x) - c_core, 0.0)) * c_back;
+		// (lead 8 r3: the back's third tone, short strokes along z (DEN_BOSS_STROKE: x a column's width, y a stroke's length,
+		// z its tone step, w the share of cells drawn), each widest at its root (fore) and tapered back to a point: darker in the
+		// lit core, paler in the shade, so the slate reads as fur clumps following the spine, not a flat lozenge)
+		float c_sx = c_r.x / DEN_BOSS_STROKE.x, c_ks = floor(c_sx);
+		float c_zs = c_r.z / (DEN_BOSS_STROKE.y * (0.7 + 0.6 * vat_den_hash(c_ks, 9.0))) + vat_den_hash(c_ks, 10.0), c_kz = floor(c_zs);
+		float c_stk = step(abs(fract(c_sx) - 0.5), 0.48 * pow(fract(c_zs), 0.7)) * step(1.0 - DEN_BOSS_STROKE.w, vat_den_hash(c_ks * 7.0 + c_kz, 11.0)) * c_back;
 		// (r3: on the rest pose, c_r: xyz its place, w its normal's y)
 		float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
-		float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
+		// (lead 8 r3: the muzzle's edge in locks round its axis, tilted with the face (the jaw's further back), not the z plane)
+		float c_am = atan(c_r.x, c_r.y - DEN_BOSS_MUZ.x) * DEN_BOSS_MUZ.y / 6.2831853, c_km = floor(c_am);
+		float c_zm = DEN_BOSS_HEAD.y - DEN_BOSS_MUZ.z * (0.5 + 0.8 * vat_den_hash(c_km, 12.0)) * vat_den_tip(c_am - c_km) - DEN_BOSS_MUZ.w * (DEN_BOSS_MUZ.x - c_r.y) / 0.1;
+		float c_dark = c_head * max(vat_den_cut(c_r.z - c_zm, 0.0), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
+#ifdef VAT_CUT
+		// (r3: a card is never an ear tip: the crest ring's strands rooted over y .875 read as a dark dash ladder, l8g2)
+		c_dark = c_head * vat_den_cut(c_r.z - c_zm, 0.0);
+#endif
 		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
 		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark);
 		vec3 c_hp = vat_den_head(c_r);
 		float c_hd = (c_hp.x + c_hp.y + c_hp.z) * step(0.5, den_head);
 		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
-		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back);
+		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back) + c_stk * DEN_BOSS_STROKE.z * (1.0 - 2.0 * c_bl);
 		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BACK_SH.y, DEN_BOSS_BACK_SH.z), vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_bl), c_back);
 		// (lead 7: the mane's two rows of locks on the rest pose; DEN_BOSS_MANE_*)
 		float c_a = abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS));
