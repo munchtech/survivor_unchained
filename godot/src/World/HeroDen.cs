@@ -7,7 +7,7 @@ namespace SurvivorUnchained.View;
 /// (hero_line.gdshader through Atmosphere.HeroLinePx), her hair's chroma and her skin and hair steps (cel_her_den), and her
 /// held steel (Actors/HerSteel.cs, shaders/hero_steel.gdshader), her steps' painted direction (toward the den key, cel_key)
 /// and levels (cel_her_den2, cel_her_den3), her ember's height over her feet (PlayerView reads EmberH) and its own energy on
-/// the ground (PoolK). A rig
+/// the ground (PoolK), her rim (hero_ink.gdshader through cel_hero_rim, cel_hero_rim2). A rig
 /// without the row: every global zero, nothing drawn, her look as before.</summary>
 public static class HeroDen
 {
@@ -24,6 +24,7 @@ public static class HeroDen
     public static float PoolK;
 
     static double V(double[] d, int i, double or) => d.Length > i ? d[i] : or;
+    static readonly bool RimDebug = SurvivorUnchained.Args.Dev && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_RIM_DEBUG"));
 
     /// <summary>After Atmosphere's hero rows: d the rig's hero_den (null under a camera rig or another rig); heroPool true when
     /// the hero_pool row already draws her line.</summary>
@@ -52,6 +53,14 @@ public static class HeroDen
         // 0.7), the shade step's warmth (36: the light's own hue again, share) and her hair's shade step (37, share of the lit)
         RenderingServer.GlobalShaderParameterSet("cel_her_den2", d != null ? new Vector4((float)V(d, 31, 0), (float)V(d, 34, 0), (float)V(d, 35, 0), (float)V(d, 36, 0)) : Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("cel_her_den3", d != null ? new Vector4((float)V(d, 37, 0), 0, 0, 0) : Vector4.Zero);
+        // (demo-look lead 3, row 1: "she nearly vanishes under the roots") her rim in her line's ink pass (hero_ink.gdshader):
+        // values 39-46: its width (px at 1080p; 0 or absent: off), its tone R, G, B (sRGB 0-255) and level, the ground's
+        // cube-root luminance where it is full and where it is gone, and its share on edges facing screen-down (her feet).
+        // SU_HERO_RIM_DEBUG (dev): the edge it finds painted magenta at full strength, the ground's gate off.
+        bool rimOn = d != null && V(d, 39, 0) > 0 && d.Length >= 47;
+        var rc = rimOn ? new Color((float)d![40] / 255f, (float)d[41] / 255f, (float)d[42] / 255f).SrgbToLinear() * (float)d[43] : new Color(0, 0, 0);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_rim", new Vector4(rc.R, rc.G, rc.B, rimOn ? (float)d![39] : 0));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_rim2", rimOn ? new Vector4((float)d![44], (float)d[45], (float)d[46], RimDebug ? 1 : 0) : Vector4.Zero);
         EmberH = d != null ? (float)V(d, 33, 0) : 0;
         PoolK = d != null ? (float)V(d, 38, 0) : 0;   // her pool's own energy (38)
         // her held steel (values 18-30: its level, lit R, G, B, shade R, G, B, glint R, G, B (sRGB 0-255), the glint's place

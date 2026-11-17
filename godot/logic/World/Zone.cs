@@ -251,7 +251,10 @@ public sealed record AtmospherePreset(
     /// --ember-h, 1.7), the steps' n.l (0: 0.42), the lit step's level (0: 0.7), the shade step's warmth (the light's own hue
     /// again, share), her hair's shade step (share of the lit, in the dye's hue); (lane E polish) her pool's own energy on the
     /// ground (share of her ember's; 0 or absent: 1; her folk light and her lamp on the crowd are given it back, so only the
-    /// ground's pool moves)]. Null: none of it (every rig but the den).</summary>
+    /// ground's pool moves); (lead 3, row 1: "she nearly vanishes under the roots") her rim, a warm lit edge just inside her
+    /// line where the ground past it is dark (hero_ink.gdshader): its width (px at 1080p; 0 or absent: off), its tone R, G, B
+    /// (sRGB 0-255) and level, the ground's cube-root luminance (the scene's, before the grade) where it is full and where it
+    /// is gone, its share on edges facing screen-down]. Null: none of it (every rig but the den).</summary>
     public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
