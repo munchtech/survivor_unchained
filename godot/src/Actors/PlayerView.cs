@@ -2725,14 +2725,79 @@ public partial class PlayerView : Node3D
                 Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
                 Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
                 GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00} sv {carry.Want:0.00} {carry.Raw:0.00} {carry.Sigma:0} {logWWalk:0.00} {carryStrafe:0.00} c0 {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).X:0.0} {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).Y:0.0}"));
+            if (Args.Has("blade-mask")) BladeMaskPrep(cam);
             }
         }
     }
-    readonly Vector3[] bodyW = new Vector3[13];
-    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
+    // (aim-move r13, --blade-mask, log only) T4 by pixels: the held blade's meshes move to layer 19 (the main camera still draws
+    // them), each gets a flat magenta twin on layer 20 that the main camera skips. Two half-size SubViewports on the same world, each
+    // with a camera copying the main one: FULL draws all but layer 19 (scene + magenta, depth-tested), SOLO draws layer 20 only.
+    // After the frame is drawn BMASK vis tot: magenta pixels in FULL, blade pixels in SOLO (same frame as that frame's BLADE line).
+    const uint MaskReal = 1u << 5, MaskTwin = 1u << 6, MaskOld = 2;   // (free bits; the blade came on layer 2, the people's)
+    SubViewport? maskFull, maskSolo; Camera3D? maskCamF, maskCamS;
+    readonly List<(MeshInstance3D real, MeshInstance3D twin)> maskPairs = new();
+    Node3D? maskMount; bool maskPending, maskHooked;
+    void BladeMaskPrep(Camera3D cam)
+    {
+        if (view?.HeldIn("handslot.r") is not { } mount) return;
+        if (maskFull == null)
+        {
+            SubViewport Mk(uint cull, out Camera3D c)
+            {
+                var vp = new SubViewport { Size = new Vector2I(960, 540), TransparentBg = true, Msaa3D = Viewport.Msaa.Disabled, UseTaa = false, ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled, Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear, RenderTargetUpdateMode = SubViewport.UpdateMode.Always, HandleInputLocally = false };
+                c = new Camera3D { Current = true, CullMask = cull };
+                vp.AddChild(c); AddChild(vp); return vp;
+            }
+            maskFull = Mk(0xFFFFFu & ~MaskReal, out maskCamF); maskSolo = Mk(MaskTwin, out maskCamS);
+            if (!maskHooked) { maskHooked = true; RenderingServer.FramePostDraw += BladeMaskCount; }
+        }
+        if (maskMount != mount)
+        {
+            maskMount = mount; maskPairs.Clear();
+            var mat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(1, 0, 1), DisableFog = true };
+            var stack = new Stack<Node>(); stack.Push(mount);
+            while (stack.Count > 0)
+                foreach (var ch in stack.Pop().GetChildren())
+                {
+                    stack.Push(ch);
+                    if (ch is not MeshInstance3D mi || mi.Mesh == null || mi.Layers != MaskOld) continue;
+                    var twin = new MeshInstance3D { Mesh = mi.Mesh, Transform = mi.Transform, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = MaskTwin, Visible = mi.IsVisibleInTree() };
+                    mi.GetParent().AddChild(twin); mi.Layers = MaskReal; maskPairs.Add((mi, twin));
+                }
+        }
+        foreach (var (real, twin) in maskPairs)
+            if (IsInstanceValid(real) && IsInstanceValid(twin)) { twin.Transform = real.Transform; twin.Visible = real.Visible; }
+        cam.CullMask &= ~MaskTwin;
+        // the blade left layer 2, so every light and decal that took layer 2 takes its new one too: lit and shadowed as before
+        foreach (var n in GetTree().Root.FindChildren("*", "Node3D", true, false))
+            if (n is Light3D lt) { if ((lt.LightCullMask & MaskOld) != 0) lt.LightCullMask |= MaskReal; }
+            else if (n is Decal dc) { if ((dc.CullMask & MaskOld) != 0) dc.CullMask |= MaskReal; }
+        foreach (var c in new[] { maskCamF!, maskCamS! })
+        {
+            c.GlobalTransform = cam.GlobalTransform; c.Projection = cam.Projection; c.Fov = cam.Fov; c.Size = cam.Size; c.KeepAspect = cam.KeepAspect;
+            c.Near = cam.Near; c.Far = cam.Far; c.Environment = cam.Environment; c.Attributes = cam.Attributes;
+        }
+        maskPending = true;
+    }
+    void BladeMaskCount()
+    {
+        if (!maskPending || maskFull == null || maskSolo == null) return;
+        maskPending = false;
+        int vis = 0, tot = 0;
+        var a = maskFull.GetTexture().GetImage(); var b = maskSolo.GetTexture().GetImage();
+        if (a != null && a.GetFormat() != Image.Format.Rgba8) a.Convert(Image.Format.Rgba8);
+        if (b != null && b.GetFormat() != Image.Format.Rgba8) b.Convert(Image.Format.Rgba8);
+        if (a != null) { var d = a.GetData(); for (int i = 0; i + 3 < d.Length; i += 4) if (d[i] > 178 && d[i + 2] > 178 && d[i + 1] < 77) vis++; }
+        // (the camp fire shows on layer 20 too: alpha alone counts it, so the colour is tested as well)
+        if (b != null) { var d = b.GetData(); for (int i = 0; i + 3 < d.Length; i += 4) if (d[i + 3] > 127 && d[i] > 178 && d[i + 2] > 178 && d[i + 1] < 77) tot++; }
+        GD.Print($"BMASK {vis} {tot}");
+    }
+    readonly Vector3[] bodyW = new Vector3[15];
+    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis", "lowerarm_r", "lowerarm_l" };
     public override void _ExitTree()
     {
         if (feetHooked) RenderingServer.FramePreDraw -= Scr2;
+        if (maskHooked) RenderingServer.FramePostDraw -= BladeMaskCount;
         if (carryHooked && person?.Skeleton is { } sk && IsInstanceValid(sk)) sk.SkeletonUpdated -= CarryPosed;
         base._ExitTree();
     }
