@@ -243,6 +243,13 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_MANE_ROW vec4(0.30, 0.09, 0.235, 0.08)
 #define DEN_BOSS_MANE_FORE vec4(26.0, 0.53, 0.10, 0.085)
 #define DEN_BOSS_MANE_FORE_H 1.2
+// (lane E lead 8 r2: the boss's fur CARDS (vat_cut, the ruff's shingled rings) cut by their strand's ROOT, not per pixel: a
+// ring's strand is all head or all mane, so the fore edge is the head rings' own strands over the red, not a z cut across a
+// ring (a straight vertical line, l8g1). The root is the pixel's rest place less (v - DEN_BOSS_CARD.w) of the card's rest
+// dP/dv (screen derivatives, its length capped at .z); mane under z DEN_BOSS_CARD.y there (the head rings' roots .62-.66, the
+// shoulder ring's .48-.61). The cards' alpha mirrored past v DEN_BOSS_CARD.x, so each ring ends at the rear in its painted
+// strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
+#define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
 #define DEN_BOSS_MANE_SH vec3(0.46, 0.095, 27.0)
 #define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
@@ -400,6 +407,9 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 			- DEN_BOSS_MANE_FORE.w * (0.45 + 0.8 * vat_den_hash(c_kf, 7.0)) * vat_den_tip(c_af - c_kf);
 		float c_zd = c_r.z * DEN_BOSS_MANE_LOW.y + 0.25 * sin(c_r.z * 11.0), c_kd = floor(c_zd);
 		float c_yL = DEN_BOSS_MANE_LOW.x - DEN_BOSS_MANE_LOW.z * (0.4 + 0.9 * vat_den_hash(c_kd, 8.0)) * vat_den_tip(c_zd - c_kd);
+#ifdef VAT_CUT
+		c_zF = DEN_BOSS_CARD.y;
+#endif
 		float c_mane = vat_den_cut(c_r.z - c_zH, 0.0) * (1.0 - vat_den_cut(c_r.z - c_zF, 0.0)) * vat_den_cut(c_r.y - c_yL, 0.0);
 		float c_ra = vat_den_cut(c_r.z - c_zA, 0.0);
 		float c_rd = vat_den_cut(c_r.z - c_zA + DEN_BOSS_MANE_SHW, 0.0) * (1.0 - c_ra);
@@ -567,6 +577,9 @@ void fragment() {
 	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
 	c *= tex.rgb;
 #ifdef VAT_CUT
+	// (lane E lead 8 r2: the den boss's cards, alpha mirrored past v DEN_BOSS_CARD.x: strand tips at both ends)
+	bool dn_bc = crowd_den.y > 0.0 && cel_on > 0.0 && floor(COLOR.a / 128.0) > 1.5;
+	if (dn_bc && use_tex && UV.y > DEN_BOSS_CARD.x) tex.a = texture(albedo_tex, vec2(UV.x, 2.0 * DEN_BOSS_CARD.x - UV.y), tex_bias * vat_pace).a;
 	// Fur and hair cards: cut where the paint is clear.
 	ALPHA = tex.a * albedo.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
@@ -612,7 +625,16 @@ void fragment() {
 	float dn_hit = den_on ? clamp(max(2.0 * fx.x * fx_aa * (1.0 - fx_aa * fx_crit), pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5) * (1.0 - fx_aa)), 0.0, 1.0) * dn_live : 0.0;
 	bool dn_dead = den_on && dn_live < 0.5 && dn_cls < 1.5;
 	float dn_dk = clamp(1.0 - dot(abs(COLOR.rgb), vec3(0.333)) / DEN_DEAD_TOP, 0.0, 1.0);
-	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_dead ? -1.0 - dn_dk : dn_hit, vat_rest);
+	vec4 dn_r = vat_rest;
+#ifdef VAT_CUT
+	// (lead 8 r2: a boss card's regions on its strand's root; DEN_BOSS_CARD)
+	vec2 dn_ux = dFdx(UV), dn_uy = dFdy(UV);
+	float dn_det = dn_ux.x * dn_uy.y - dn_uy.x * dn_ux.y;
+	vec3 dn_pv = (dFdy(vat_rest.xyz) * dn_ux.x - dFdx(vat_rest.xyz) * dn_uy.x) / (abs(dn_det) > 1e-9 ? dn_det : 1e-9);
+	dn_pv *= min(1.0, DEN_BOSS_CARD.z / max(length(dn_pv), 1e-5));
+	if (dn_cls > 1.5) dn_r.xyz -= (UV.y - DEN_BOSS_CARD.w) * dn_pv;
+#endif
+	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_dead ? -1.0 - dn_dk : dn_hit, dn_r);
 	vec3 dn_c0 = c;   // (r2 foes: the den body before any flash, for the flash's cap below)
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
