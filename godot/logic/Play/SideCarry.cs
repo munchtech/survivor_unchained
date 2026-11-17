@@ -101,7 +101,7 @@ public sealed class SideCarry
     /// <see cref="CrossWeight"/>) onto a clip whose own blade is in the band. The calf pass's out-turn is held the same way:
     /// it never pulls the drawn blade into the band or back across it. Cross false: off.</summary>
     public bool Cross = true;
-    public float CrossMargin = 0.05f, CrossSlack = 0.3f, CrossWeight = 0.15f;
+    public float CrossMargin = 0.25f, CrossSlack = 0.3f, CrossWeight = 0.15f;
     /// <summary>The out-turn for the calf's clearance now (deg; taken off <see cref="Inward"/>).</summary>
     public float OutTurn { get; private set; }
     readonly Vector3[] calfHist = new Vector3[12];   // the last three frames' knee L, ankle L, knee R, ankle R (from the grip)
@@ -279,10 +279,11 @@ public sealed class SideCarry
         if (Cross)
         {   // (lead r9) never into the down band, nor back across: else the out-turn on the drawn side nearest this one, clear first
             float aIn = ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f);
-            if (MathF.Abs(aIn) >= DownBand)
+            float band = DownBand + CrossMargin;   // the band's edge, as the drawn stage holds it
+            if (MathF.Abs(aIn) >= band)
             {
                 float aX = ScreenAngle(Turned(b, left, Tilt, ahead, Inward - OutTurn), f.Jx, f.Jy, 1f);
-                if (MathF.Abs(aX) < DownBand || (aX > 0f) != (aIn > 0f))
+                if (MathF.Abs(aX) < band || (aX > 0f) != (aIn > 0f))
                 {
                     float want = MathF.Min(Clear, ClearOf(b, f.Length, cur)), top = OutMax * Weight, best = float.NaN;
                     int bestK = 2; float bestD = float.MaxValue;
@@ -290,7 +291,7 @@ public sealed class SideCarry
                     {
                         var dp = Turned(b, left, Tilt, ahead, Inward - p);
                         float ap = ScreenAngle(dp, f.Jx, f.Jy, 1f);
-                        if (MathF.Abs(ap) < DownBand || (ap > 0f) != (aIn > 0f)) continue;
+                        if (MathF.Abs(ap) < band || (ap > 0f) != (aIn > 0f)) continue;
                         int k = ClearOf(dp, f.Length, cur) >= want ? 0 : 1; float d = MathF.Abs(p - OutTurn);
                         if (k < bestK || (k == bestK && d < bestD)) { bestK = k; bestD = d; best = p; }
                     }
