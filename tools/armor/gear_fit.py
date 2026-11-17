@@ -1887,16 +1887,76 @@ def bindings(only=None):
     return [b for b in out if not only or b.id in only]
 
 
+# A SKIRT HANGS UNDER ITS BELT (lane G solver, 17 Nov; the engine's HerWear hangs a skirt from its own outfit's belt,
+# gear_wear HANGS): every bind carries each piece by its own skin points, so on B the warden skirt's top stood up to 6.3 mm
+# out past the belt's outer face at rest (490 mm^2, round the waist). After the belt is evaluated, each skirt point under
+# it (a belt point whose foot on her skin lies within "reach_mm" of the skirt point's foot) is held "inside_mm" inside the
+# belt's inner face there (the least clearance of those belt points), never nearer her than "floor_mm"; the push fades to
+# nothing over "fade_mm" beyond the belt's footprint, so the skirt hangs on without a step. Any outfit, any body.
+HANG = {"skirt": "belt"}
+HANG_LAW = {"reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "fade_mm": 15.0}
+
+
+def hang_rule(ev, host_ev, body, law=HANG_LAW):
+    """Moves the close-tier uniques of ev (a skirt's eval_unit output) inside host_ev's (its belt's); returns stats."""
+    from scipy.spatial import cKDTree
+    hb = [v for k, v in host_ev.items() if not k.startswith("__") and v["tier"] == "close"]
+    if not hb:
+        return {}
+    Xb = np.vstack([v["Xu"] for v in hb])
+    cb, nb = gear_field.signed_clear(body, Xb, k=16)
+    kb = cKDTree(Xb - cb[:, None] * nb)
+    r, ins, flo, fade = (law[k] / 1000.0 for k in ("reach_mm", "inside_mm", "floor_mm", "fade_mm"))
+    st = {"moved": 0, "max_mm": 0.0}
+    for k, v in ev.items():
+        if k.startswith("__") or v["tier"] != "close":
+            continue
+        X = v["Xu"]
+        cs, ns = gear_field.signed_clear(body, X, k=16)
+        hits = kb.query_ball_point(X - cs[:, None] * ns, r)
+        under = np.array([len(h) > 0 for h in hits])
+        e = np.zeros(len(X))
+        for i in np.nonzero(under)[0]:
+            e[i] = max(0.0, cs[i] - max(float(cb[hits[i]].min()) - ins, flo))
+        if under.any() and (~under).any():
+            ku = cKDTree(X[under])
+            d, j = ku.query(X[~under], k=8, distance_upper_bound=fade)
+            ok = np.isfinite(d)
+            eu = np.where(ok, e[under][np.minimum(j, under.sum() - 1)] * np.clip(1 - d / fade, 0, 1), 0.0)
+            e[~under] = eu.max(1)
+        mv = e > 1e-6
+        X[mv] -= e[mv, None] * ns[mv]
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(e.max(initial=0.0)) * 1000), 2)
+    return st
+
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
     index, evs = [], {}
     bds = bindings(only)
+    # (HANG: a hanging piece is built after its host, which is evaluated here when the build leaves it out)
+    hosts = {}
+    for bd in bds:
+        h = HANG.get(bd.meta["row"].get("slot"))
+        if h and bd.meta["row"].get("outfit"):
+            hid = f"{bd.meta['row']['outfit']}.{h}"
+            if hid not in [b.id for b in bds] and os.path.exists(os.path.join(BIND, f"{hid}.npz")):
+                hosts[hid] = Binding(os.path.join(BIND, f"{hid}.npz"))
+    bds = sorted(bds, key=lambda b: b.meta["row"].get("slot") in HANG)
     for bd in bds:
         same = is_bind_body(bodies, bd)
         if not same and bind_bodies is None:
             bind_bodies = load_bodies(os.path.join(REPO, bd.meta["bind_body"]))
         ev = eval_unit(bd, bodies, None if same else bind_bodies)
+        h = HANG.get(bd.meta["row"].get("slot"))
+        if h and bd.meta["row"].get("outfit"):
+            hid = f"{bd.meta['row']['outfit']}.{h}"
+            hev = evs.get(hid) or (eval_unit(hosts[hid], bodies, None if is_bind_body(bodies, hosts[hid]) else bind_bodies)
+                                   if hid in hosts else None)
+            if hev is not None:
+                print(f"{bd.id}: hangs under {hid}: {hang_rule(ev, hev, bodies['close'])}", flush=True)
         evs[bd.id] = ev
         for line in rim_lines(bd, ev):
             print(line, flush=True)
