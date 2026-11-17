@@ -160,6 +160,9 @@ public static partial class DungeonDress
             {
                 string log = Logs[(int)(Hash(s, 8, 0) * Logs.Length)];
                 float yaw = sp.Yaw + Mathf.Pi / 2;
+                // (den r16 G2, R15f item 11) the lair's scanned trunk: its wall spot moved onto a root spur, in frame, where it drew
+                // as a hard black bar (s23 lair); the painted set lays the lair's logs. --den-lair-trunk 1: as before
+                if (log.StartsWith("res:") && r.Kind == "Boss" && SurvivorUnchained.Maps.DungeonGen.LairSpurs > 0 && SurvivorUnchained.Args.Num("den-lair-trunk", 0f) <= 0f) continue;
                 if (log.StartsWith("res:")) PlaceScene(c, log, sp.X, sp.Z, yaw, 0.7f, 0.1f, "logs");   // (at 1 the trunks lay as long dark bars across a room)
                 else PlaceProp(c, log, sp.X, sp.Z, yaw, 1f);
             }

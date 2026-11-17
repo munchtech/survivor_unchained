@@ -44,7 +44,9 @@ public static partial class DungeonDress
     static readonly float SetPitCells = SurvivorUnchained.Args.Num("den-pit-cells", 1f);   // (den r16 A, R15f item 1) the lair pits as glowing cracks in a dark pit (SetMat); 0: the r15 strokes
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
     internal static readonly float SetBossGloom = SurvivorUnchained.Args.Num("den-boss-gloom", 1.2f);
-    static readonly float SetSpurGloomR = SurvivorUnchained.Args.Num("den-spur-gloomr", 1.35f);   // (den r16 G, R15f item 11) the set's lair gloom radius x this (1: as the floor's)
+    static readonly float SetSpurLift = SurvivorUnchained.Args.Num("den-spur-lift", 1f);   // (den r16 G2, R15f item 11) the lair gloom taken off the set by its root spurs (DungeonGen.LairSpurs): spur banks as the rooms' banks (0: gloomed as the rim)
+    static readonly Vector4[] setSpurSeg = new Vector4[16];
+    static readonly float[] setSpurR = new float[16];
 
     static ShaderMaterial SetMat(string sheet, float gain)
     {
@@ -99,9 +101,12 @@ public static partial class DungeonDress
         mat.SetShaderParameter("occ_a", SurvivorUnchained.Args.Num("den-occlude-a", 0.2f));
         mat.SetShaderParameter("bank_gloom", SetGloom);   // (den r13 corr) COLOR.b's depth gloom (bank modules only: objects carry 0)
         mat.SetShaderParameter("gloom_m", SetGloomM);
-        // (den r16 G, R15f item 11) the set's lair gloom starts further out (radius x SetSpurGloomR): the root spurs run in
-        // to 9-10 m (DungeonGen.LairSpurs) and read black under the floor's radial gloom; the rim banks keep their dark. 1: the floor's
-        mat.SetShaderParameter("boss_c", new Vector3(setBossC.X, setBossC.Y, setBossC.Z * SetSpurGloomR));   // (r12) the lair's gloom, as the floor's
+        mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
+        // (den r16 G2, R15f item 11) the root spurs run in to 9-14 m and read black (L50 .17) under the radial gloom:
+        // the gloom comes off within 1-4 m of a spur, so its banks read as a room's (.25-.29); the rim banks keep their dark
+        mat.SetShaderParameter("spur_seg", setSpurSeg);
+        mat.SetShaderParameter("spur_r", setSpurR);
+        mat.SetShaderParameter("spur_lift", SetSpurLift);
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
         mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
         mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 0.4f));   // (den r14, lane E) the painted caps' cyan into its band
@@ -127,6 +132,10 @@ public static partial class DungeonDress
             mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.052f, 0.046f)));
             mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.14f, 0.05f, 0.6f)));
             mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.75f, 1.35f)));
+            // (den r16 A2, R15f item 1: a raised turtle shell) the pit sunken: depth (m; 0 flat), the near lip's shadow reach, the
+            // plates' brightness at the middle; H1 (the lair's walkable hollows) shallower than H2 (holes); the wall's earth face
+            mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.55f)) : V3("den-pit-deep", new Vector3(0.8f, 1.6f, 0.55f)));
+            mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.06f, 0.042f, 0.028f)));
         }
         return mat;
     }
@@ -455,6 +464,8 @@ public static partial class DungeonDress
         if (SetAlcoveK > 0f && c.Z.WalkField != null && c.Z.WalkField != c.Z.WallField) SetAlcoves(c);
         setBossC = Vector3.Zero; lairPits = 0;
         foreach (var rb in c.Z.Rooms) if (rb.Kind == "Boss") setBossC = new Vector3(rb.X, rb.Z, rb.R);
+        System.Array.Clear(setSpurSeg); System.Array.Clear(setSpurR);   // (den r16 G2) the lair's spurs for its gloom (radius 0: none)
+        for (int i = 0; i < c.Z.Spurs.Count && i < setSpurSeg.Length; i++) { setSpurSeg[i] = c.Z.Spurs[i].Seg; setSpurR[i] = c.Z.Spurs[i].R; }
         if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
         int tris = 0;
         foreach (var (name, b) in bufs)
@@ -1040,6 +1051,9 @@ public static partial class DungeonDress
     static readonly float SetRootK = SurvivorUnchained.Args.Num("den-root-k", 0.8f);   // (den r15 R, judge item 9) the 3D root tendrils (B6) read salmon: albedo L and C x this (linear scale this^3)
     static readonly int BigBoneCap = (int)SurvivorUnchained.Args.Num("den-bigbone-cap", 1f), SkullCap = (int)SurvivorUnchained.Args.Num("den-skull-cap", 1f);   // (den r15 Q) per camera footprint
     static readonly float BigBoneR = SurvivorUnchained.Args.Num("den-bigbone-r", 22f);   // (den r16 E, R15f item 7) was 11: the camera shows more than 11 m, two large pieces slipped through; 11 = as r15
+    // (den r16 E2, R15f item 7) an antlered skull takes the large-piece budget too (0 = as r15: skulls only by the skull cap), and the skull cap counts within --den-skull-r m (r15: 15 for the set, 9 for decals)
+    static readonly bool BigSkull = SurvivorUnchained.Args.Num("den-bigbone-skull", 1f) > 0f;
+    static readonly float SkullR = SurvivorUnchained.Args.Num("den-skull-r", 22f);
     static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f, string? key = null)
     {
         // (den r14 objects, item 4) the bone piles and logs vary: at most 2 deer skulls and 3 rib cages in a camera footprint
@@ -1056,8 +1070,8 @@ public static partial class DungeonDress
                 // (den r15 helper D) every pile card is a skeleton: skull (ix 3) 2, rib cages (0, 2) 3, heaps (1, 4) 3 within a camera
                 // footprint (DenCaps, shared with the decals' kinds); the rest is not laid here (flat litter takes its place)
                 string? kind = ix == 3 ? "deer_skull" : ix is 0 or 2 ? "ribcage" : "pile";
-                if (kind != "deer_skull" && !DenCaps.Take("bigbone", pp, BigBoneCap, BigBoneR)) return 0f;   // (den r15 Q) the large pieces share one budget
-                if (!DenCaps.Take(kind == "deer_skull" ? "skull" : kind, pp, kind == "deer_skull" ? SkullCap : kind == "pile" ? 2 : 3, kind == "pile" ? 8f : 15f)) return 0f;
+                if ((kind != "deer_skull" || BigSkull) && !DenCaps.Take("bigbone", pp, BigBoneCap, BigBoneR)) return 0f;   // (den r15 Q) the large pieces share one budget (den r16 E2: the antlered skull too)
+                if (!DenCaps.Take(kind == "deer_skull" ? "skull" : kind, pp, kind == "deer_skull" ? SkullCap : kind == "pile" ? 2 : 3, kind == "pile" ? 8f : kind == "deer_skull" ? SkullR : 15f)) return 0f;
                 float rr = Hash((int)(x * 17f), (int)(zz * 17f), 2202);
                 rot = ix == 3 ? (rr - 0.5f) * 1.4f : ix == 0 ? (rr - 0.5f) * 3.4f : rr * Mathf.Tau;
             }
@@ -1205,7 +1219,9 @@ public static partial class DungeonDress
                 // (r11) COLOR.b: half the painted point's distance from the lip's centre in lip radii (1 at the lip), so
                 // den_set_soft fades the painting's own earth surround out past the rim (it read as a pink stamped ring)
                 float ell = Mathf.Sqrt(dx * dx / Mathf.Max(ma * ma, 1e-4f) + dz * dz / Mathf.Max(mb * mb, 1e-4f));
-                buf.C.Add(new Color(1f, 1f, Mathf.Clamp(0.5f * ell, 0f, 1f), lairHole && !pitEmpty ? 0.5f : 1f));
+                // (den r16 A2, R15f item 1) a cell pit's COLOR.g: its lip's radius on this bearing / 8 (metres; the sunken pit's wall)
+                float cg = lairHole && !pitEmpty && SetPitCells > 0f && SurvivorUnchained.Args.Num("den-pit-glow", 0.8f) > 0f ? Mathf.Clamp(rp * g / 8f, 0f, 1f) : 1f;
+                buf.C.Add(new Color(1f, cg, Mathf.Clamp(0.5f * ell, 0f, 1f), lairHole && !pitEmpty ? 0.5f : 1f));
             }
         for (int j = 0; j < nv - 1; j++)
             for (int i = 0; i < nu - 1; i++)
