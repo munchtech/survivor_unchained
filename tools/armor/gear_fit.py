@@ -90,7 +90,8 @@ SMALL_SHARE = 0.02
 # on its upper rays and form_support_press / _lift deltas 12 mm apart, and with the top worn (support 1: the shapes on,
 # the springs' tips ~20 mm up) its upper rays stood out of it as a blade (36 mm off rigid at the worn rest; 0.1 mm as
 # one). A smaller part within "ride_mm" of a larger one rides it (the boss's gem); one further from all rides itself.
-ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink"), "plates": True}
+ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink"), "plates": True,
+            "plate_blend": "mean"}
 # A PLATE RIDES AS A RIDES IT (main's call, 17 Nov, Lane G: "plates over 80 mm ride RIGID on B as on A"): a component as
 # above but longer than "max_mm" (the warden boots' shin, knee and instep plates, 105-134 mm; the dome pauldron's steel,
 # 180 mm) is rigid on every body too, placed the same way, and rides A's OWN blend of weights by joint name (A made the
@@ -98,6 +99,10 @@ ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "
 # it half-way with the knee and ankle). A joint of A's blend that B lacks: the plain mean, as an ornament. Bendy on B
 # before (17 Nov, f19b161e0), each vertex took its own skin point's weights: the 180 mm pauldron steel spread 55 mm of
 # shape deltas over itself and the boots' plates bent at the knee and ankle.
+# "plate_blend" (lead 4, 17 Nov, measured on B's warden boots over idle_warden(_town), run_warden, sword_heavy, leap,
+# gear_wear skin under warden.boots, mm^2 / run's worst mm): "a" (A's own blend: the heel cups, 135 mm tall, ride foot 1)
+# 1526 / 11 mm, her lower calf over the cup's top as the foot points; "mean" (the ornaments' plain mean of B's skin
+# weights under the plate: foot with some calf) 647 / 8 mm; bendy (before) 0. "mean" ships; "a" stays switchable.
 OUTFIT_KINDS = ("outfit", "outfit_lod")
 SMOOTH = {"rounds": 12, "near_m": 0.004, "far_m": 0.02}
 TIERS = ("close", "play")
