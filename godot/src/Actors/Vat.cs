@@ -99,7 +99,7 @@ public static class Vat
 {
     const int MaxFrames = 48;
     static readonly Dictionary<string, VatAsset> cache = new();
-    static Shader? shader, cutShader;
+    static Shader? shader, cutShader, eliteMask, eliteRim;
 
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
     static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
@@ -876,6 +876,21 @@ public static class Vat
                 m.SetShaderParameter("dye_s", s.DyeS);
                 m.SetShaderParameter("dye_v", s.DyeV);
                 m.SetShaderParameter("dye_lum", s.DyeLum);
+            }
+            // (lane E lead 5, 17 Nov) A den elite's outline on its solid surfaces: a stencil mask of its own body, then its outer
+            // silhouette's stroke outside it (shaders/vat_elite_mask, vat_elite_rim: every other instance folds away in them)
+            if (s.Cut < 0)
+            {
+                eliteMask ??= GD.Load<Shader>("res://shaders/vat_elite_mask.gdshader");
+                eliteRim ??= GD.Load<Shader>("res://shaders/vat_elite_rim.gdshader");
+                var rimM = new ShaderMaterial { Shader = eliteRim, RenderPriority = -2 };
+                var maskM = new ShaderMaterial { Shader = eliteMask, RenderPriority = -3, NextPass = rimM };
+                foreach (var pm in new[] { maskM, rimM })
+                {
+                    pm.SetShaderParameter("vat_pos", posTex); pm.SetShaderParameter("vat_nor", norTex);
+                    pm.SetShaderParameter("vat_width", b.Width); pm.SetShaderParameter("vat_rows", b.Rows); pm.SetShaderParameter("vat_offset", s.Offset);
+                }
+                m.NextPass = maskM;
             }
             mesh.SurfaceSetMaterial(mesh.GetSurfaceCount() - 1, m);
         }

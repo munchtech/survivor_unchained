@@ -206,13 +206,13 @@ float crowd_edge(float rim) {
 // z, a sine's DEN_BOSS_SPINE_P power, its widest toward the shoulders), its edges fur-notched (DEN_BOSS_SPINE_TUFT: notches per
 // unit of z, their depth's share of the width), in two steps: the core (DEN_BOSS_SPINE.w of the width) LIT at DEN_BOSS_BACK.xyz,
 // the rest SHADE at DEN_BOSS_BACK_SH; on faces past DEN_BOSS_BACK.w of the rest normal's up. Screen targets lit .39/.025/292,
-// shade .31/.020/292; r3's flat paint .46/.028/288 read .40/.025/298 in the lair. Was: |x| under a width in three straight
+// shade .31/.020/292; r3's flat paint .46/.028/288 read .40/.025/298 in the lair; lead 5 r1: lit .45/.028/282 read .387/.024/293, shade .355/.022/282 read .27/.012/325 (the flank under less key: raised; .40/.034/280 read .325/.025/295: C eased; .395/.028/280 read .317/.018/302: hue 272, C .030) Was: |x| under a width in three straight
 // steps on the animated pose, its ends cut square)
 #define DEN_BOSS_BACK vec4(0.45, 0.028, 282.0, 0.15)
-#define DEN_BOSS_BACK_SH vec3(0.355, 0.022, 282.0)
+#define DEN_BOSS_BACK_SH vec3(0.395, 0.030, 272.0)
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
-#define DEN_BOSS_SPINE_TUFT vec2(16.0, 0.18)
+#define DEN_BOSS_SPINE_TUFT vec2(20.0, 0.22)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 30.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
@@ -224,8 +224,9 @@ float crowd_edge(float rim) {
 // (lane E elites r4: the whole ruff was 20% of an unstruck elite's px, over the 6-15% asked: the ruff's top only, its n.y past
 // 0.5 (17% at 0.25); the rim paler, bone not gold: it read C .13 h 80 on screen)
 #define DEN_ACCENT vec3(0.52, 0.13, 0.5)
-#define DEN_ELITE_RIM vec3(1.0, 0.88, 0.70)
-#define DEN_ELITE_BAND vec2(0.35, 1.5)
+// (lane E lead 5, 17 Nov: an elite's rim is no band here any more: every n.v band lit each leg's, fur card's and fold's own
+// grazing edge, an ivory squiggle per interior contour (28-40 bits an elite). Its rim is its OUTER silhouette's, a pass of its
+// own outside the body (vat_elite_mask/vat_elite_rim.gdshader, chained by Vat.Build); here an elite keeps the dark line only)
 // (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
 #define DEN_BOSS_STEP 1.5
 // (lane E boss r1: her back a stepped SADDLE on the spine, not the straight n.y cut stripe: the model's |x| under a width that
@@ -664,7 +665,8 @@ void fragment() {
 	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
 	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
-	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8
+		* (den_on && dn_live > 0.5 && dn_cls > 0.5 && dn_cls < 1.5 ? 0.0 : 1.0);   // (lane E lead 5: an elite's struck look is its outline's, vat_elite_rim.gdshader)
 	// (F1 r5) The ember look: a launched mass-kill body (strength 1, its flight's first frames) and a struck survivor
 	// after the pool (0.45): ember light through the whole body and a hot band at its edge, in light, not paint (a pale
 	// blend over a blue wolf by night read as an ice ghost), so the kill out-shouts the frame and keeps its shape.
@@ -811,20 +813,14 @@ void fragment() {
 		// runs the whole back; no busy fade (it cut the stroke into dashes on a 60 px wolf) and no turn toward her. An elite or the
 		// boss takes a FULL rim, all round, at crowd_den_elite.w at least.)
 		float dn_band = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z) * (1.0 - dn_line);
-		// (lane E lead 5, judge 3: an elite's rim broke into 45 bits, a glittering stick: its band's inner edge is the px test's
-		// own (NdotV over its fwidth, noisy per 2x2 quad on a thin leaping body), so the 2 px band came and went. An elite's band
-		// fills, inside a wider px reach (DEN_ELITE_BAND.y px past the band), every face under DEN_ELITE_BAND.x of NdotV: the
-		// inner edge is then the smooth NdotV, one unbroken stroke)
-		if (dn_cls > 0.5 && dn_cls < 1.5) {
-			float dn_nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-			dn_band = max(dn_band, (1.0 - smoothstep(DEN_ELITE_BAND.x - 0.05, DEN_ELITE_BAND.x + 0.05, dn_nv))
-				* vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z + DEN_ELITE_BAND.y) * (1.0 - dn_line));
-		}
+		// (lane E lead 5, 17 Nov: an elite's rim is its outer silhouette's, vat_elite_rim.gdshader, outside the body: no band in it)
+		bool dn_el = dn_cls > 0.5 && dn_cls < 1.5;
+		if (dn_el) dn_band = 0.0;
 		vec3 dn_kv = (VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz;
 		vec2 dn_ks = normalize(mix(normalize(dn_kv.xy + vec2(0.0, 1e-4)), vec2(0.0, 1.0), crowd_den_edge.w) + vec2(0.0, 1e-4));
 		float dn_side = vat_den_cut(dot(normalize(NORMAL.xy + vec2(0.0, 1e-4)), dn_ks), DEN_RIM_CUT);
 		float dn_full = step(0.5, dn_cls);
-		e += (dn_cls > 0.5 && dn_cls < 1.5 ? DEN_ELITE_RIM : crowd_den_rim.rgb) * (dn_band * dn_alive * mix(dn_side, max(crowd_den_elite.w, dn_side), dn_full));
+		e += crowd_den_rim.rgb * (dn_band * dn_alive * mix(dn_side, max(crowd_den_elite.w, dn_side), dn_full));
 		// (lead 3: the dead keep the flat share too, so the rig's cool fill does not light them blue-lavender in shade)
 		e += ALBEDO * DEN_FLAT;
 		ALBEDO *= (1.0 - DEN_FLAT) * mix(1.0, crowd_den_edge.y, dn_line);
