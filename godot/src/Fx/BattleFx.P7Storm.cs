@@ -339,6 +339,10 @@ public partial class BattleFx
     /// <summary>A Sunder line the storm threw: a ground fissure. Thrown: the crack strip laid along it (over 0.1 s,
     /// from her end) with its seam pulsing at half; split: the seam flares, dust and chunks along the whole line within
     /// 0.1 s, the seam cools in steps and the crack fades; faded: it steps out, nothing dealt.</summary>
+    /// <summary>(bladestorm-spin r2) The storm's Sunder lines' crack tint: Sunder's own (p7.sunder_mark.crack_tint: the line
+    /// row, warm, never black). WgLineTint (x0.45, neutral) read near black at the den camera (c2a: L .05-.08, C .02).</summary>
+    static Color P7SunderTint() { var t = P7D.All("sunder_mark.crack_tint"); return new Color(t[0], t[1], t[2]); }
+
     void P7Line(Ev.SpinLine e)
     {
         if (P7Off) return;
@@ -397,7 +401,7 @@ public partial class BattleFx
                         var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
                         WgLater(0.1f * i / n, () =>
                         {
-                            if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.5f, WgBand * across), alb[tile], nrm[tile], null, 14f, 1f, 0, 0, 0, WgLineTint) is not { } d) return;
+                            if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.5f, WgBand * across), alb[tile], nrm[tile], null, 14f, 1f, 0, 0, 0, P7SunderTint()) is not { } d) return;
                             sc.Cracks.Add(d);
                             if (sc.SplitAge >= 0 || sc.FadeAge >= 0) { d.FadeFrom = d.Age + 0.6f; d.Life = d.Age + 1.2f; }
                         });
