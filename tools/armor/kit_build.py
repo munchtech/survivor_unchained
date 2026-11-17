@@ -32,10 +32,45 @@ SRC = os.path.join(REPO, "godot", "art", "armor", "src")
 MATS = os.path.join(REPO, "godot", "art", "people", "outfit_materials.json")
 
 
-def her_a(path=BODY):
+def body_glb():
+    """The body glb the route builds on: heroine.glb (body A) unless --body p1 / SU_ARMOR_BODY (bodies.py)."""
+    import bodies
+    b = bodies.cur()
+    return BODY if b.name == "a" else b.need(b.glb, "body.glb")
+
+
+def require_body_inputs(clips=()):
+    """Body A: nothing (its skeleton and clips are found as before). Another body: its skeleton dump and each clip must
+    exist (bodies.py), else stop naming the first one missing."""
+    import bodies
+    b = bodies.cur()
+    if b.name == "a":
+        return
+    bodies.skeleton_path()
+    b.need(b.clips, "clip library dir (<clip>.json per clip)")
+    for c in clips:
+        b.need(os.path.join(b.clips, f"{c}.json"), f"clip {c}")
+
+
+def out_root():
+    import bodies
+    b = bodies.cur()
+    return SRC if b.name == "a" else b.src
+
+
+def out_dir(pid):
+    """Where a piece's build outputs go: SRC/<pid> for body A, bodies.p1's body-keyed src for another body."""
+    import bodies
+    b = bodies.cur()
+    d = os.path.join(SRC, pid) if b.name == "a" else os.path.join(b.src, pid)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def her_a(path=None):
     """Body A (the shipped heroine.glb) at rest: Ref over its welded skin, joints from its inverse binds."""
     import body_follow_post as bf
-    B = bf.Body(path)
+    B = bf.Body(path or body_glb())
     joints = {}
     for n, m in zip(B.names, B.ibm):
         M = np.linalg.inv(m.reshape(4, 4).T)
@@ -584,8 +619,8 @@ def clearance(ref, part):
 
 
 def build(pid):
-    d = os.path.join(SRC, pid)
-    cfg = json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
+    cfg = json.load(open(os.path.join(SRC, pid, "build.json"), encoding="utf-8"))
+    d = out_dir(pid)
     if cfg.get("module") in ("kit_limbs", "kit_upper", "kit_helm"):  # limbs; pauldrons, helm (multi-material rigid nodes): own build
         import importlib
         return importlib.import_module(cfg["module"]).build(pid, cfg)
@@ -624,7 +659,7 @@ def build(pid):
     piece = {k: v for k, v in cfg["piece"].items() if k != "layer"}
     piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
              "params": {"file": f"{pid}.glb"}, **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
-             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(BODY, "rb").read()).hexdigest()}
+             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(body_glb(), "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
         f.write("\n")
@@ -640,4 +675,6 @@ def build(pid):
 
 
 if __name__ == "__main__":
+    import bodies
+    bodies.take(sys.argv)
     build(sys.argv[1])

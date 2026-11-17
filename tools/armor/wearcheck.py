@@ -316,6 +316,8 @@ def hold_key(*rows):
 
 # ---------------------------------------------------------------------- main --
 def main(argv):
+    import bodies
+    bodies.take(argv)
     def opt(name, default):
         return argv[argv.index(name) + 1] if name in argv else default
     only = set(opt("--pieces", "").split(",")) - {""} or None
@@ -335,6 +337,7 @@ def main(argv):
     os.makedirs(out_dir, exist_ok=True)
     t_start = time.time()
 
+    bodies.use_for_check(sys.modules[__name__], clips)
     rows = catalogue(only)
     byid = {r["id"]: r for r in rows}
     # (--file id=<gltf> / --tuck-file id=<bin>: a candidate in place of the installed piece or its tuck record)
@@ -343,9 +346,9 @@ def main(argv):
             if a_ == flag and "=" in argv[i_ + 1]:
                 k_, v_ = argv[i_ + 1].split("=", 1)
                 byid[k_][fld] = v_
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    files = [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin"),
-             (skin.PEOPLE / "heroine.glb", lambda n: n == "HeroineHead", "head")]
+    sk = skin.Skeleton.load(bodies.skeleton_for(skin))
+    files = [(bodies.glb_for(skin), lambda n: n == "Heroine", "skin"),
+             (bodies.glb_for(skin), lambda n: n == "HeroineHead", "head")]
     owner = {}
     for path in sorted({r["path"] for r in rows}):
         names = {m: r["id"] for r in rows if r["path"] == path for m in r["meshes"]}

@@ -219,6 +219,10 @@ def with_hinges(B):
     inverse bind its rest's inverse, no skin of hers on it (a zero column of B.W). So a piece's rigid_ride can name
     "thigh_hinge_l" (or the tasset hinge, SPEC "tassets": "tasset_hinge") and its bind carries the joint, as the game
     adds it (HerJoints.AddHinges). Safe to call again."""
+    import bodies
+    if bodies.cur().name != "a":      # (the hinge pivots below are body A's SPEC: another body needs its own)
+        bodies.cur().need(os.path.join(bodies.PEOPLE, "body_p1", "rig_helpers.json"),
+                          "hip/tasset hinge spec (rig_helpers.json) for the body: tools/anim/helpers.py SPEC is A's")
     sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
     import helpers as hp
     par = {c: i for i, n in enumerate(B.nodes) for c in n.get("children", [])}

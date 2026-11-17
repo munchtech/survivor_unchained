@@ -188,7 +188,8 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
-    deps = [kb.BODY] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
+    kb.require_body_inputs(clips)
+    deps = [kb.body_glb()] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     # (`bone`: one bone, or a blend {bone: weight} as a rigid_ride gives (the plate's frame is the blend of their skin
     # matrices, as Godot's linear blend poses it))
@@ -199,8 +200,8 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
     if os.path.exists(cache):
         return np.load(cache)["P"]
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    body = skin.Body(sk, [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
                      label="her", helpers=True)
     names = list(body.sk.names)
     hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
@@ -254,7 +255,8 @@ def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
-    deps = [kb.BODY, str(skin.OUT / "clips" / f"{clip}.json")]
+    kb.require_body_inputs([clip])
+    deps = [kb.body_glb(), str(skin.OUT / "clips" / f"{clip}.json")]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     key = hashlib.sha1(json.dumps(["pf1", sorted((k, round(float(v), 5)) for k, v in ride.items()),
                                    [round(float(v), 5) for v in centre], radius, clip, frame, stamp]
@@ -266,8 +268,8 @@ def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
             return z["P"], z["T"], z["c"], z["a"], z["up"]
         if "P0" in z:
             return z["P"], z["T"], z["c"], z["a"], z["up"], z["P0"]
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    body = skin.Body(sk, [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
                      label="her", helpers=True)
     names = list(body.sk.names)
     hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
@@ -396,7 +398,7 @@ def liner(ln, ref, cop_ride, c, lpose, above, mat):
             deep |= h_ & (dist_to(~h_) > ins)
         g = np.minimum(g, np.where(deep, -dist_to(~deep), dist_to(deep)))
         print(f"liner inset {ins * 1000:.0f} mm: {int(deep.sum())} deep skin pts dropped", flush=True)
-    bp = os.path.join(kb.SRC, ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
+    bp = os.path.join(kb.out_root(), ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
     if os.path.exists(bp):
         G = kb_gl(bp)
         g = np.minimum(g, cKDTree(G).query(R0)[0] - ln.get("bodice_back", 0.010))
@@ -896,8 +898,8 @@ def write_multi(path, groups, extras):
 
 
 def build(pid, cfg=None):
-    d = os.path.join(kb.SRC, pid)
-    cfg = cfg or json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
+    cfg = cfg or json.load(open(os.path.join(kb.SRC, pid, "build.json"), encoding="utf-8"))
+    d = kb.out_dir(pid)
     mats = json.load(open(kb.MATS, encoding="utf-8"))
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
@@ -932,7 +934,7 @@ def build(pid, cfg=None):
     piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
              "params": {"file": f"{pid}.glb", **cfg.get("params", {})},
              **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
-             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.BODY, "rb").read()).hexdigest()}
+             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.body_glb(), "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
         f.write("\n")
@@ -945,4 +947,6 @@ def build(pid, cfg=None):
 
 
 if __name__ == "__main__":
+    import bodies
+    bodies.take(sys.argv)
     build(sys.argv[1])

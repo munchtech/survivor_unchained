@@ -336,7 +336,25 @@ def exact_verdict(code, ratio, m, max_mm=None):
     return None
 
 
+def use_body(argv):
+    """`--body a|p1` (bodies.py; a path after --body is still the body glb to follow onto). For p1: ART, SHIP and BODY
+    point at its body-keyed places, and --src (the body blend the pieces are built on, a body-B twin of
+    heroine_built_armroot.blend) must be named, else stop: there is none yet."""
+    global ART, SHIP, BODY
+    import bodies
+    b = bodies.take(argv)
+    if b.name == "a":
+        return
+    ART, BODY = b.art, b.need(b.glb, "body.glb")
+    SHIP = os.path.join(ROOT, ".shots", "armor2", "ship", b.ship_sub)
+    if "--src" not in argv:
+        raise bodies.Missing("BODY p1: missing input: --src, the body-B build blend (heroine_built_armroot.blend's twin with "
+                             "body_p1's body: piece_blender builds on it, and its ARMOR_BODY_HASH stamps the piece) "
+                             "(lane G / body pipeline owes it)")
+
+
 def main(argv):
+    use_body(argv)
     if "--check" in argv:
         sys.exit(1 if check() else 0)
     import build as bd

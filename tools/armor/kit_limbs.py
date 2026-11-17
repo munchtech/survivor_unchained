@@ -555,8 +555,8 @@ RECIPES = {"boots": boots, "vambraces": vambraces, "gloves": gloves}
 # ---------------------------------------------------------------- build
 
 def build(pid, cfg=None):
-    d = os.path.join(kb.SRC, pid)
-    cfg = cfg or json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
+    cfg = cfg or json.load(open(os.path.join(kb.SRC, pid, "build.json"), encoding="utf-8"))
+    d = kb.out_dir(pid)
     mats = json.load(open(kb.MATS, encoding="utf-8"))
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
@@ -589,7 +589,7 @@ def build(pid, cfg=None):
              # (build.json "params": e.g. tuck_under, her skin sunk under named parts as piece_blender reads it)
              "params": {"file": f"{pid}.glb", **cfg.get("params", {})},
              **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
-             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.BODY, "rb").read()).hexdigest()}
+             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.body_glb(), "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
         f.write("\n")
@@ -601,4 +601,6 @@ def build(pid, cfg=None):
 
 
 if __name__ == "__main__":
+    import bodies
+    bodies.take(sys.argv)
     build(sys.argv[1])
