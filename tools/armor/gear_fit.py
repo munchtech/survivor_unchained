@@ -2612,7 +2612,7 @@ SUPPORT_FOLLOW = {"host_mat": "steel", "host_n": 2000, "big_n": 1000, "rim_mm": 
                   "near_mm": 40.0, "fade_mm": 100.0, "k": 8}
 
 
-def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close"):
+def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close", body=None):
     """Gives the bands of ev (a piece's eval_unit output) near its cups their cup's support shape deltas
     (SUPPORT_FOLLOW); returns stats. wr: the tier body's worn rest (worn_rest.worn); nothing runs without it."""
     from scipy.spatial import cKDTree
@@ -2678,6 +2678,40 @@ def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close"):
     st["bands"] = len(bands)
     if not bands:
         return st
+    floor = law.get("floor_mm")
+    if floor is not None and body is not None:
+        # (the FLOOR, round 14: a band point's share is cut back, by bisection on its fraction t, until it lies floor_mm
+        # off her worn skin (her support shapes on, her springs' worn rest); one at its own deltas already nearer keeps them)
+        Db = sum(wr.weights[nm] * body.shapes[nm] for nm in wr.weights if nm in body.shapes)
+
+        def skin(X, J, W, D):
+            Mx = np.einsum("nk,nkij->nij", W, wr.S[J][:, :, :3, :])
+            return np.einsum("nij,nj->ni", Mx[:, :, :3], X + D) + Mx[:, :, 3]
+        import copy as _copy
+        B2 = _copy.copy(body)
+        B2.V = skin(body.V, body.J, body.W, Db)
+        B2._surf = None
+        B2.N = vertex_normals(B2.V, B2.T, body.wid)
+        for k in bands:
+            nd, a = parts[k]
+            v = ev[nd]
+            f = fs[nd][a]
+            J, W, own, s1 = v["J"][f].astype(np.int64), v["W"][f].astype(float), S(k), new[k]
+
+            def clr(t):
+                s = own + t[:, None, None] * (s1 - own)
+                D = sum(wr.weights[nm] * s[:, q] for q, nm in enumerate(names) if nm in wr.weights)
+                return gear_field.signed_clear(B2, skin(P(k), J, W, D), k=16)[0] * 1000.0
+            bad = clr(np.ones(len(a))) < floor
+            if not bad.any():
+                continue
+            lo, hi = np.zeros(len(a)), np.ones(len(a))
+            for _ in range(law.get("floor_steps", 6)):
+                mid = 0.5 * (lo + hi)
+                ok = clr(np.where(bad, mid, 1.0)) >= floor
+                lo, hi = np.where(bad & ok, mid, lo), np.where(bad & ~ok, mid, hi)
+            new[k] = own + np.where(bad, lo, 1.0)[:, None, None] * (s1 - own)
+            st["floored"] = st.get("floored", 0) + int(bad.sum())
     kb = cKDTree(np.vstack([P(k) for k in bands + list(cup)]))
     own_b = np.concatenate([np.full(len(parts[k][1]), k) for k in bands + list(cup)])
     for k, (nd, a) in enumerate(parts):
@@ -2685,6 +2719,14 @@ def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close"):
             continue
         _, j = kb.query(P(k))
         if np.isin(own_b[j], bands).mean() <= 0.5:
+            continue
+        if floor is not None and body is not None:
+            # (with the floor, a rider takes its band's own change at its nearest band points: one delta, floored as the band)
+            jb = j[np.isin(own_b[j], bands)]
+            dS = np.vstack([new[kk] - S(kk) for kk in bands])[jb]
+            if np.abs(dS).max() > 0:
+                new[k] = np.broadcast_to(S(k) + dS.mean(0), S(k).shape)
+                st["riders"] += 1
             continue
         s, ws = follow(P(k), S(k))
         if ws.max() > 0:
@@ -2750,7 +2792,8 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
         if sf and bd.meta["row"].get("outfit"):
             law = dict(SUPPORT_FOLLOW, **sf) if isinstance(sf, dict) else SUPPORT_FOLLOW
             for tier in TIERS:
-                st = support_follow_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier)
+                st = support_follow_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier,
+                                         bodies[tier])
                 if st:
                     print(f"{bd.id}: {tier} band ends take their cups' support: {st}", flush=True)
         evs[bd.id] = ev
