@@ -2592,6 +2592,121 @@ def band_end_rule(bd, ev, wr=None, law=BAND_END, tier="close"):
     return st
 
 
+# A BAND'S END TAKES ITS CUP'S SUPPORT (lane G builder round 13 of item body-b-warden-outfit, 17 Nov; lead 6's measured
+# cause): on B the warden top's knot at the look camera (her right cup's outer edge: back band leather, its gold trim,
+# its ring) is the SUPPORT shapes, not the rest fit: support 0 removes it. At support 1 the gear's form_support_lift /
+# _press / _fill move the right cup about (+11.8 in, +11.3 up, +3.3 fwd) mm while the band end's deltas fade with its
+# distance from the cup (0-10 mm ~12/11/2.6, 20-40 ~7.4/7.4, 40-60 ~4.3/4.5, 60-100 ~1.1/1.4): the band end that lay
+# behind the cup's outer rim is uncovered and sheared as the cup moves in and up. A slot whose rule in rigid_roles.json
+# has "support_follow" (true, or a law over SUPPORT_FOLLOW) gives a band's points near a cup the cup's own support
+# deltas: per cup, a share w full within "near_mm" of the cup (or its rim) at rest, a cosine fade to none at "fade_mm";
+# each support shape becomes own + sum_c w_c (cup_c - own) / max(1, sum_c w_c) (cup_c: the mean of the cup's "k"
+# nearest points; two cups mix, no seam). A band is a big part reaching "meets" cups within "fade_mm" (a shoulder strap
+# ends on one cup and keeps its deltas); a small part whose points lie nearest a band (the ring, the laces) takes ONE
+# delta, the mean of its points' (no shearing inside it). Cups, rims and the rivets on them are untouched; so are the
+# body, the positions (support 0 is as before) and every other shape. Runs only where the body has a worn rest.
+# PARKED (no slot has it): at 40 / 100 the look knot's black spot and most of its leather went, a trim sliver stayed,
+# and the band bent up at close_town_day along its last 40-100 mm (and 149 leather points sat up to 3.7 mm inside her
+# worn skin); at 30 / 70 the knot came back. See rigid_roles.json "_support_follow".
+SUPPORT_FOLLOW = {"host_mat": "steel", "host_n": 2000, "big_n": 1000, "rim_mm": 3.0, "rim_share": 0.9, "meets": 2,
+                  "near_mm": 40.0, "fade_mm": 100.0, "k": 8}
+
+
+def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close"):
+    """Gives the bands of ev (a piece's eval_unit output) near its cups their cup's support shape deltas
+    (SUPPORT_FOLLOW); returns stats. wr: the tier body's worn rest (worn_rest.worn); nothing runs without it."""
+    from scipy.spatial import cKDTree
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
+    if wr is None or not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    names = [nm for nm in worn_rest.SHAPES if all(nm in ev[m["node"]]["shapes"] for m in ms)]
+    if not names:
+        return {}
+    parts, Xs, Ss, fs = [], {}, {}, {}
+    for m in ms:
+        v = ev[m["node"]]
+        n = len(v["Xu"])
+        f = np.zeros(n, np.int64)
+        f[v["inv"]] = np.arange(len(v["inv"]))
+        fs[m["node"]], Xs[m["node"]] = f, v["Xu"]
+        Ss[m["node"]] = np.stack([v["shapes"][nm][f] for nm in names], 1)  # (n, shapes, 3)
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        nc, lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)
+        for c in range(nc):
+            parts.append((m["node"], np.nonzero(lab == c)[0]))
+    P = lambda k: Xs[parts[k][0]][parts[k][1]]  # noqa: E731
+    S = lambda k: Ss[parts[k][0]][parts[k][1]]  # noqa: E731
+    host = [k for k, (nd, a) in enumerate(parts) if law["host_mat"] in nd.split(".")[-1] and len(a) >= law["host_n"]]
+    if len(host) < law["meets"]:
+        return {}
+    cup = {k: q for q, k in enumerate(host)}
+    kh = cKDTree(np.vstack([P(k) for k in host]))
+    lab_h = np.concatenate([np.full(len(parts[k][1]), q) for q, k in enumerate(host)])
+    # (a rim: a big part lying on a cup; a small part lying on a cup or a rim, its rivets: both join their cup)
+    for k, (nd, a) in enumerate(parts):
+        if k in cup:
+            continue
+        d, j = kh.query(P(k))
+        if (d <= law["rim_mm"] / 1000.0).mean() >= law["rim_share"]:
+            cup[k] = int(np.bincount(lab_h[j]).argmax())
+    trees = []
+    for q in range(len(host)):
+        ks = [k for k, c in cup.items() if c == q]
+        trees.append((cKDTree(np.vstack([P(k) for k in ks])), np.vstack([S(k) for k in ks])))
+    near, fade = law["near_mm"] / 1000.0, law["fade_mm"] / 1000.0
+
+    def follow(X, own):
+        num, ws = np.zeros_like(own), np.zeros(len(X))
+        for tr, Sc in trees:
+            d, j = tr.query(X, k=law["k"])
+            w = 0.5 * (1.0 + np.cos(np.pi * np.clip((d[:, 0] - near) / max(fade - near, 1e-9), 0.0, 1.0)))
+            num += w[:, None, None] * (Sc[j].mean(1) - own)
+            ws += w
+        return own + num / np.maximum(1.0, ws)[:, None, None], ws
+
+    st = {"cups": len(host), "bands": 0, "riders": 0, "moved": 0, "max_mm": 0.0}
+    new, bands = {}, []
+    for k, (nd, a) in enumerate(parts):
+        if k in cup or len(a) < law["big_n"]:
+            continue
+        reach = sum(tr.query(P(k))[0].min() <= fade for tr, _ in trees)
+        if reach >= law["meets"]:
+            new[k] = follow(P(k), S(k))[0]
+            bands.append(k)
+    st["bands"] = len(bands)
+    if not bands:
+        return st
+    kb = cKDTree(np.vstack([P(k) for k in bands + list(cup)]))
+    own_b = np.concatenate([np.full(len(parts[k][1]), k) for k in bands + list(cup)])
+    for k, (nd, a) in enumerate(parts):
+        if k in cup or k in new or len(a) >= law["big_n"]:
+            continue
+        _, j = kb.query(P(k))
+        if np.isin(own_b[j], bands).mean() <= 0.5:
+            continue
+        s, ws = follow(P(k), S(k))
+        if ws.max() > 0:
+            new[k] = np.broadcast_to(s.mean(0), s.shape)
+            st["riders"] += 1
+    for k, s in new.items():
+        nd, a = parts[k]
+        dd = np.linalg.norm(s - S(k), axis=2).max(1)
+        mv = dd > 1e-6
+        if not mv.any():
+            continue
+        v = ev[nd]
+        hit = np.isin(v["inv"], a[mv])
+        loc = np.full(len(v["Xu"]), -1)
+        loc[a] = np.arange(len(a))
+        for q, nm in enumerate(names):
+            v["shapes"][nm][hit] = s[loc[v["inv"][hit]], q]
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(dd.max()) * 1000), 2)
+    return st
+
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
@@ -2630,6 +2745,14 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
                 st = band_end_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier)
                 if st:
                     print(f"{bd.id}: {tier} band ends follow their cups: {st}", flush=True)
+        # (SUPPORT_FOLLOW: a slot's "support_follow" rule in rigid_roles.json gives its bands' ends their cups' support)
+        sf = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("support_follow")
+        if sf and bd.meta["row"].get("outfit"):
+            law = dict(SUPPORT_FOLLOW, **sf) if isinstance(sf, dict) else SUPPORT_FOLLOW
+            for tier in TIERS:
+                st = support_follow_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} band ends take their cups' support: {st}", flush=True)
         evs[bd.id] = ev
         for line in rim_lines(bd, ev):
             print(line, flush=True)
