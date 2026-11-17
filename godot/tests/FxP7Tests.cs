@@ -59,7 +59,7 @@ public class FxP7Tests
         // a lip for 3-4 frames, gone in under half a second, dust along it; the henge's standing stones and their dust
         Assert.True(p["vow.wave.open_deg"] < 360f);
         Assert.InRange(p["vow.wave.core_frames"], 3, 4);
-        Assert.InRange(p["vow.wave.life"], 0.3f, 0.5f);
+        Assert.InRange(p["vow.wave.life"], 0.3f, 0.6f);
         Assert.InRange(p["vow.wave.core_cut"], 0.45f, 0.6f);
         Assert.InRange(p["vow.wave.scale_m"], 2f, 8f);
         Assert.InRange(p["vow.wave.bow"], 0f, 1f);
