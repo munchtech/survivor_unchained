@@ -176,6 +176,11 @@ class Body:
         where nothing keys the clavicle (the rig's girdle names it; a ROM pose, d None, keys nothing; a clip by `unkeyed`)
         the girdle law drives it, as the game does at runtime. Else (and with "frozen") the rig as written."""
         gd = self.rig.get("girdle", {}) if self.kind == "lbs" else {}
+        if gd.get("clavicle_by") == "law":
+            # (lane G, 16 Nov: the A1 rebase's rig, "clavicle_by": "law": the game's P1Rig runs the girdle law on every
+            # pose, keyed or not, so "law" is the rig as written; "frozen" holds the clavicle as the clip leaves it,
+            # the "shrug" rig's offline reading)
+            return self.rig if self.clavicle == "law" else {**self.rig, "girdle": {**gd, "clavicle_by": "shrug"}}
         if self.clavicle != "law" or "clavicle_by" not in gd:
             return self.rig
         if d is not None and not unkeyed(d, [gd["clavicle"].replace("{s}", s) for s in "lr"], self.p, self.rl):

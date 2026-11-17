@@ -103,7 +103,10 @@ def test_clavicle_law_and_frozen():
     try:
         b.clavicle = "law"
         assert turn(clip(still)) > 3.0
-        assert turn(clip(keyed)) == pytest.approx(5.0, abs=1e-3)
+        if gd.get("clavicle_by") == "law":   # (the A1 rebase: the game's law lifts a keyed clavicle too)
+            assert turn(clip(keyed)) > 5.0 + 1.0
+        else:
+            assert turn(clip(keyed)) == pytest.approx(5.0, abs=1e-3)
         assert deg(da.rom_pose(b, row)[1]) > 3.0
         b.clavicle = "frozen"
         assert turn(clip(still)) < 1e-3
