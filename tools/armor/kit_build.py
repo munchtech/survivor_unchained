@@ -384,12 +384,16 @@ def bodice(cfg, ref):
     shell_f = wrap.field(shell)
     TT = np.broadcast_to(TH[None, :], Y.shape)
     rl = co["relief"]
+    rt = co.get("relief_top")  # (off unless named: the top edge's relief, e.g. under her arm's back in a leap)
 
     def rho_at(Yq, Aq):
         """The plate's inner face; its bottom edge relieved: the last few cm stand a little further off her (room
-        for her hip and belly in a stride)."""
+        for her hip and belly in a stride); its top edge too where "relief_top" names it (theta knots th/k)."""
         a = (np.asarray(Aq, float) + 180.0) % 360.0 - 180.0
         lift = rl["mm"] * (1 - smooth01((np.asarray(Yq, float) - bot(a)) / rl["h"])) * np.interp(np.abs(a), rl["th"], rl["k"])
+        if rt:
+            lift = lift + rt["mm"] * (1 - smooth01((top(a) - np.asarray(Yq, float)) / rt["h"])) * \
+                np.interp(np.abs(a), rt["th"], rt["k"], left=0.0, right=0.0)
         return shell_f(Yq, a) + lift
 
     rho_in = rho_at(Y, TT)

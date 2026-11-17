@@ -14,7 +14,7 @@
     "small": 0.035,
     "inset": 0.0008
    },
-   "data": "383e4d518228cbf0eb2b020335c851a9",
+   "data": "f07ca7e62ff2b4c1c8d8183af6fb70fe",
    "exact_install": {
     "body": "a7c899fd",
     "rigid_shells": 1
@@ -43,7 +43,7 @@
   {
    "name": "Scene",
    "nodes": [
-    127
+    126
    ]
   }
  ],
@@ -1860,25 +1860,6 @@
    ]
   },
   {
-   "name": "panel_front",
-   "rotation": [
-    1.5609344927725033e-08,
-    0.9230690598487854,
-    -0.3846342861652374,
-    4.034863110291553e-08
-   ],
-   "scale": [
-    1,
-    0.9999999403953552,
-    0.9999999403953552
-   ],
-   "translation": [
-    3.5611267268365054e-09,
-    -0.04260524734854698,
-    -0.04224675893783569
-   ]
-  },
-  {
    "children": [
     95,
     106,
@@ -1886,8 +1867,7 @@
     118,
     119,
     120,
-    121,
-    122
+    121
    ],
    "name": "pelvis",
    "translation": [
@@ -1904,7 +1884,7 @@
   },
   {
    "children": [
-    123
+    122
    ],
    "name": "root"
   },
@@ -1920,12 +1900,12 @@
   },
   {
    "children": [
-    125,
-    126,
     124,
+    125,
+    123,
+    127,
     128,
-    129,
-    130
+    129
    ],
    "name": "Armature"
   },
@@ -2190,8 +2170,8 @@
   {
    "inverseBindMatrices": 50,
    "joints": [
-    124,
     123,
+    122,
     95,
     94,
     93,
@@ -2313,8 +2293,7 @@
     118,
     119,
     120,
-    121,
-    122
+    121
    ],
    "name": "Armature"
   }
@@ -2398,7 +2377,7 @@
   },
   {
    "componentType": 5126,
-   "count": 125,
+   "count": 124,
    "type": "MAT4"
   },
   {
@@ -2700,7 +2679,7 @@
   {
    "bufferView": 39,
    "componentType": 5126,
-   "count": 125,
+   "count": 124,
    "type": "MAT4"
   },
   {
@@ -3052,56 +3031,56 @@
   {
    "buffer": 0,
    "byteOffset": 4809408,
-   "byteLength": 8000
+   "byteLength": 7936
   },
   {
    "buffer": 0,
-   "byteOffset": 4817408,
+   "byteOffset": 4817344,
    "byteLength": 68596
   },
   {
    "buffer": 0,
-   "byteOffset": 4886004,
+   "byteOffset": 4885940,
    "byteLength": 274384
   },
   {
    "buffer": 0,
-   "byteOffset": 5160388,
+   "byteOffset": 5160324,
    "byteLength": 114864
   },
   {
    "buffer": 0,
-   "byteOffset": 5275252,
+   "byteOffset": 5275188,
    "byteLength": 459456
   },
   {
    "buffer": 0,
-   "byteOffset": 5734708,
+   "byteOffset": 5734644,
    "byteLength": 20176
   },
   {
    "buffer": 0,
-   "byteOffset": 5754884,
+   "byteOffset": 5754820,
    "byteLength": 80704
   },
   {
    "buffer": 0,
-   "byteOffset": 5835588,
+   "byteOffset": 5835524,
    "byteLength": 30316
   },
   {
    "buffer": 0,
-   "byteOffset": 5865904,
+   "byteOffset": 5865840,
    "byteLength": 121264
   },
   {
    "buffer": 0,
-   "byteOffset": 5987168,
+   "byteOffset": 5987104,
    "byteLength": 24024
   },
   {
    "buffer": 0,
-   "byteOffset": 6011192,
+   "byteOffset": 6011128,
    "byteLength": 48048
   }
  ],
@@ -3113,7 +3092,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 6059240,
+   "byteLength": 6059176,
    "uri": "kit_helm.bin"
   }
  ]
