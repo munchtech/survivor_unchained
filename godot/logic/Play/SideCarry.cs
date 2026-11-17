@@ -213,6 +213,10 @@ public sealed class SideCarry
     bool crossing;
     float yawStep;
     public int LookFrames = 2; public float LookYaw = 4f, LookCost = 0.5f;
+    /// <summary>(r14, e29 s11 leg 4 +57) In a turn, a turn whose shown length steps PumpStep or more from last frame's and
+    /// the look's next frame (her yaw carried on) steps it back as far pays 0.02 + PumpCost per unit: the fading layer's
+    /// 12-deg tilt drop was a 0.39/0.51/0.40 blip (the judge's pump, |dshown| >= 0.1 both ways). PumpCost 0: off.</summary>
+    public float PumpStep = 0.08f, PumpCost = 0.5f;
     /// <summary>(r13 WIP) At a stop (her speed falling, held StopHold s after it last fell) and out of a turn, the drawn blade's
     /// world pitch steps at most StopRate (deg/s; 180 is 6 a frame) and never reverses by StopRev deg or more each way (judge
     /// r12 bar 2: the stop's pump). The swing's spring itself turns at most SpringRate (deg/s): the run's end swings the
@@ -694,7 +698,14 @@ public sealed class SideCarry
                     var dj = Rot(Vector3.UnitY, j * yawStep, d0);
                     float sx = Vector3.Dot(fc.Jx, dj), sy = Vector3.Dot(fc.Jy, dj);
                     float uj = fc.Length > 0.1f ? sy * fc.Length - MathF.Max(Vector3.Dot(fc.Jy, fc.AnkleL - fc.Grip), Vector3.Dot(fc.Jy, fc.AnkleR - fc.Grip)) : float.NegativeInfinity;
-                    v += wgt * Cane(MathF.Atan2(sx, sy) * R2D, jn > 1e-6f ? MathF.Sqrt(sx * sx + sy * sy) / jn : 0f, uj, pa);
+                    float shj = jn > 1e-6f ? MathF.Sqrt(sx * sx + sy * sy) / jn : 0f;
+                    v += wgt * Cane(MathF.Atan2(sx, sy) * R2D, shj, uj, pa);
+                    // (r14, e29 s11 leg 4 +57) nor a shown-length blip the turn carries straight back: a step the next frame undoes
+                    if (j == 1 && PumpCost > 0f && hasLast)
+                    {
+                        float e0 = sh - lastShown, e1 = shj - sh;
+                        if (e0 * e1 < 0f && MathF.Abs(e0) >= PumpStep && MathF.Abs(e1) >= PumpStep) v += 0.02f + PumpCost * MathF.Min(MathF.Abs(e0), MathF.Abs(e1));
+                    }
                 }
             }
             if (hasLast && PitchRev > 0f && falling)

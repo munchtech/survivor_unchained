@@ -535,4 +535,38 @@ public class SideCarryTests
         Assert.True(worst <= c.StopRate * Dt + 0.5f, $"stop pitch step {worst}");
         Assert.Equal(0, pumps);
     }
+
+    /// <summary>A stand that turns in place (held 20 frames, then `rate` deg a frame): the frames at w > 0 whose drawn blade's
+    /// shown length steps 0.1 or more and straight back as far (the judge's pump).</summary>
+    static int ShownPumps(SideCarry c, float face0, float rate)
+    {
+        float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f), prev = float.NaN, d0 = 0f, w0 = 0f; int pumps = 0;
+        for (int i = 0; i < 60; i++)
+        {
+            float face = face0 + rate * MathF.Max(0f, i - 20);
+            var (a, l, b) = Her(face);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, 0f, 0f));
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float s = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2f) + MathF.Pow(Vector3.Dot(Jy, d), 2f)) / n;
+            if (!float.IsNaN(prev))
+            {
+                float d1 = s - prev;
+                if (w0 > 0f && d0 * d1 < 0f && MathF.Abs(d0) >= 0.1f && MathF.Abs(d1) >= 0.1f) pumps++;
+                d0 = d1;
+            }
+            prev = s; w0 = c.Weight;
+        }
+        return pumps;
+    }
+
+    // (r14, e29 s11 leg 4 +57) in a turn, the guard won't draw a shown-length step the turn carries straight back next frame
+    [Theory]
+    [InlineData(30f, 27f)]
+    [InlineData(-60f, 27f)]
+    [InlineData(120f, 27f)]
+    public void ATurnDrawsNoShownBlipItCarriesBack(float face0, float rate)
+    {
+        Assert.True(ShownPumps(new SideCarry { PumpCost = 0f }, face0, rate) > 0, "no pump without the cost, so this tests nothing");
+        Assert.Equal(0, ShownPumps(new SideCarry(), face0, rate));
+    }
 }
