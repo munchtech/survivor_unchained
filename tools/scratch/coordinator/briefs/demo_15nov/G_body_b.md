@@ -59,3 +59,8 @@ Read:
 
 ## The owner's gate (16 Nov 2026, word for word)
 - "Yes to B" (on the A|B bare-shape sheet `survivorsunchained_inputs\body_b_lane_g\BARE_sheet_half.jpg`). Item 3 passed; item 4, the costed plan, starts.
+
+## The owner on the plan (16 Nov 2026, word for word)
+- "marionette is supposed to handle animations as well.  its a one stop shop for generation and rigging and animating" (the plan gains step 1c: Marionette's rig and animation stage).
+- "also comit b to the demo": B goes IN the demo (20 Nov). My picks 2-5 stand: retire the 10 old plate sets; refit reaver, ranger and arcanist on one judged sheet before the flip; first generated proof the vambrace pair, then a pauldron; TRELLIS.2 local first, Meshy per piece only with the owner's yes (the generated route is after the demo).
+- Fallback until the flip gate passes: A stays one setting away and every build takes the body as an input, so a failed gate ships the demo whole on A, never half-moved.
