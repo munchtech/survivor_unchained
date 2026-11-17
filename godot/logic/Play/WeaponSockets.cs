@@ -236,16 +236,20 @@ public static class WeaponSockets
         isB && bone == "hand_r" && PocketR(kind) is { } p && p.At == BladeAtR ? (BladeAtRB, BladeDirRB) : Pocket(kind, bone);
 
     /// <summary>The sheathed one-handed blade's socket point (skeleton space at rest: +Y up, +Z her front, +X her left; the
-    /// piece's sheath point, its shaft along HipBladeShaft): A's, and B's own. On B the hilt hangs 15 cm lower (MOTION_BIBLE
-    /// s11, the Warden's town idle: her pommel arm rests long), its pommel at B's hip bone (HipBoneYB), and 2 cm further
-    /// out, so the scabbard's axis clears B's wider hip and thigh by 3.4 cm at rest (B's mesh, A1 round 3).</summary>
+    /// piece's sheath point, its shaft along HipBladeShaft): A's, and B's own. B plays A's town idle rebaked on B's rig
+    /// (tools/body/bake_clips.sh), so B's hilt sits where B's left palm lands in idle_warden_town with A's palm-to-pommel
+    /// relation (measured on the bake's dumps: the hand 0-2 mm off the hilt's top over the clip, A's 1-3): the sheath point
+    /// at B's hip bone (HipBoneYB), 1 cm in and 1 cm forward of A's (B's rebaked left hand lands 1.4 cm in and 1.9 cm
+    /// forward of A's). (Lane A r14, 17 Nov: it hung 15 cm lower for A1 P4's own B idle, whose arm reached long; that clip
+    /// never shipped, so on the rebake her hand hung open 15 cm over the hilt.)</summary>
     public static readonly Vector3 HipBladeAtA = new(0.21f, 1.20f, 0.10f);
-    public static readonly Vector3 HipBladeAtB = new(0.23f, 1.067f, 0.10f);
+    public static readonly Vector3 HipBladeAtB = new(0.203f, 1.201f, 0.108f);
     public static readonly Vector3 HipBladeShaft = new(0.08f, -0.87f, -0.50f);
-    /// <summary>B's scabbard axis (sheath point toward the tip): a belt carry 38.6 deg off vertical, the hilt forward and up
-    /// (A's hangs 30 deg off), so the pommel sits 10.5 cm forward of the sheath point at her hip bone's height and her
-    /// pommel arm reaches it with the upper arm hanging and the forearm forward (A1 round 4, the lead's ruling).</summary>
-    public static readonly Vector3 HipBladeShaftB = new(0.08f, -0.78f, -0.62f);
+    /// <summary>B's scabbard axis (sheath point toward the tip): a belt carry 39.4 deg off vertical, the hilt forward and up
+    /// (A's hangs 30 deg off), its tip 9 deg out from her side (A's 4.6), so the pommel stays under her palm while the
+    /// scabbard clears B's wider hip and thigh: 17-40 mm of skin over the warden town clips (the outfit's push included),
+    /// her left hand 7-9 mm off it in run and sprint town as A's 7-11 (lane A r14).</summary>
+    public static readonly Vector3 HipBladeShaftB = new(0.16f, -0.78f, -0.62f);
     /// <summary>The pommel's distance up the hilt from the sheath point (the chevalier sword), m.</summary>
     public const float HiltToPommel = 0.17f;
     /// <summary>B's hip bone (iliac crest) height at rest: where B's waist (11.7 cm half-width at 1.25 m) starts to flare to
