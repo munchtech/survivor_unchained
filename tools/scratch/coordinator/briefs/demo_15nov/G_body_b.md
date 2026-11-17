@@ -56,3 +56,6 @@ Read:
 ## Report
 - To coordinator #15 (the main session) at: item 1 (one line), item 2's verdict, item 3's sheet, and item 4's plan.
 - State file: the top block of `docs/handoff/body.md` in your worktree. Keep it current from the start.
+
+## The owner's gate (16 Nov 2026, word for word)
+- "Yes to B" (on the A|B bare-shape sheet `survivorsunchained_inputs\body_b_lane_g\BARE_sheet_half.jpg`). Item 3 passed; item 4, the costed plan, starts.
