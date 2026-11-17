@@ -286,6 +286,9 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_acc = vat_den_mane(c_p) * vat_den_cut(c_n.y, DEN_ACCENT.z);
 		c_l = mix(c_l, DEN_ACCENT.x, c_acc);
 		c_ab = mix(c_ab, DEN_ACCENT.y * normalize(c_eab + vec2(1e-5, 0.0)), c_acc);
+		// (lane E elites r4: its hit is its body's only, as the boss's: the hit's hue (DEN_HIT.z, the pack's) turned the struck
+		// elite's ruff to the pack's band, and an elite in a fight is struck in most frames)
+		c_hb = c_hit * (1.0 - c_acc);
 	}
 	c_l += c_boss ? c_hb * DEN_HIT_BOSS.x : c_hit * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
 	c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), c_boss ? DEN_HIT_BOSS.y : DEN_HIT.y), DEN_HIT.z), c_hb);
@@ -775,7 +778,7 @@ void fragment() {
 			ALBEDO = vec3(0.0);
 			vec3 dn_pz = clamp(abs(mod(clamp(floor((vat_local.z + 0.6) / 0.1) / 12.0, 0.0, 1.0) * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 			e = crowd_den_top.z < 1.5 ? (dn_cls > 1.5 ? vec3(3.0, 0.0, 3.0) : dn_cls > 0.5 ? vec3(0.0, 0.0, 3.0) : vec3(0.0, 3.0, 0.0))
-				: crowd_den_top.z > 2.5 ? 3.0 * vec3(dn_hit, dn_live, vat_den_mane(vat_local) * vat_den_cut(normalize(vat_nloc).y, DEN_ACCENT.z))
+				: crowd_den_top.z > 2.5 ? 3.0 * vec3(dn_hit, 0.0, vat_den_mane(vat_local) * vat_den_cut(normalize(vat_nloc).y, DEN_ACCENT.z))
 				: dn_pz * (fract(vat_local.y / 0.1) < 0.12 ? 0.15 : 1.0);
 		}
 	}
