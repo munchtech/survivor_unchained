@@ -218,6 +218,11 @@ public sealed class SideCarry
     /// r12 bar 2: the stop's pump). The swing's spring itself turns at most SpringRate (deg/s): the run's end swings the
     /// tip forward ~20 deg in 3 frames, the pitch step at +34. 0: off.</summary>
     public float StopRate = 180f, StopRev = 0.9f, StopRevCost = 0.01f, StopHold = 0.6f, SpringRate = 150f;
+    /// <summary>(r14, e28 s11 legs 4/13 +33..+34) Running out of a turn, a frame after the guard held the blade off the layer's
+    /// wanted turn (its pitch step over PitchRate), the way back is eased at StopRate too: the hold then a 12-deg release was
+    /// an 8-deg pitch step at the stop's first frame. false: off.</summary>
+    public bool GuardEase = true; public float EaseMax = 0.5f;
+    bool guardHeld; float easeT;
     float fallT;
     float movePrev; bool falling;
     float lastPitch = float.NaN, lastDPitch;
@@ -317,7 +322,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; guardHeld = false; easeT = 0f; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -459,7 +464,7 @@ public sealed class SideCarry
             // (judge r11 fix 3) the inward turn eases out at its rate too, never snaps
             if (Weight == 0f) { float isd = InwardRate > 0f ? InwardRate * dt : float.MaxValue; Inward += Math.Clamp(-Inward, -isd, isd); if (MathF.Abs(Inward) < 1e-3f) Inward = 0f; }
             if (Tilt == 0f && Weight == 0f && Inward == 0f) { Shift = 0f; clipPrev = float.NaN; }
-            OutTurn = 0f; calfN = 0;
+            OutTurn = 0f; calfN = 0; guardHeld = false; easeT = 0f;
             if (b.LengthSquared() < 1e-8f || f.Left.LengthSquared() < 1e-8f || f.Ahead.LengthSquared() < 1e-8f
                 || f.Jx.LengthSquared() < 1e-12f || f.Jy.LengthSquared() < 1e-12f) lastA = float.NaN;
             else
@@ -671,8 +676,9 @@ public sealed class SideCarry
         var fc = f;
         bool look = LookFrames > 0 && MathF.Abs(yawStep) >= LookYaw;
         float jn = MathF.Sqrt((f.Jx.LengthSquared() + f.Jy.LengthSquared()) / 2f);
-        float sps = StopRate * dt;
-        bool stopOn = StopRate > 0f && hasLast && !float.IsNaN(lastPitch) && yawRate <= TurnEnd && falling;
+        float sps = StopRate * dt, rateBad = 0f;
+        bool easeOn = GuardEase && guardHeld && moving >= 0.99f && holdT <= 0f && !falling && easeT < EaseMax;
+        bool stopOn = StopRate > 0f && hasLast && !float.IsNaN(lastPitch) && yawRate <= TurnEnd && (falling || easeOn);
         float Bad(float t, float i, out float a, out float sh, out float po)
         {
             Look(b, left, ahead, t, i, fc, out a, out sh, out float un, out po, out float pa);
@@ -699,6 +705,7 @@ public sealed class SideCarry
             if (hideOn) { float hd = HiddenOf(Turned(b, left, t, ahead, i), fc); if (hd >= HideFrac) v += 0.02f + HideCost * (hd - HideFrac); }
             // (solver r12) the tilt never flips sign in a frame from a turn either way (the judge's TILTFLIP: both 5 deg or more)
             if (tPrev * t < 0f && MathF.Abs(tPrev) >= 4.5f && MathF.Abs(t) >= 4.5f) v += 0.05f;
+            float vr = v;
             if (hasLast && ps < float.MaxValue) v += MathF.Max(0f, MathF.Abs(po - lastPoff) - ps) / ps;
             if (stopOn)
             {   // (r13) out of a turn, the drawn blade's own pitch (world) steps at most StopRate and doesn't reverse by StopRev each way
@@ -706,6 +713,7 @@ public sealed class SideCarry
                 if (MathF.Abs(dp) > sps) v += 0.02f + (MathF.Abs(dp) - sps) / sps;
                 if (dp * lastDPitch < 0f && MathF.Abs(dp) >= StopRev && MathF.Abs(lastDPitch) >= StopRev) v += StopRevCost * (1f + MathF.Min(MathF.Abs(dp), MathF.Abs(lastDPitch)));
             }
+            rateBad = v - vr;
             if (hasLast)
             {
                 float da = MathF.Abs(Wrap(a - lastA));
@@ -724,6 +732,8 @@ public sealed class SideCarry
             return v;
         }
         float bv = Bad(tB, iB, out float ba, out float bs, out float bp), bt = tB, bi = iB;
+        // only the pitch's rates (the run's PitchRate, a stop's StopRate) found the wanted turn bad
+        bool rateOnly = rateBad > 0f && bv - rateBad < 1e-6f;
         // nor does the guard turn a layer that is off (the clip's own pose stays the clip's own)
         if (GuardSteps > 0 && bv > 0f && Weight >= GuardWeight)
         {
@@ -744,6 +754,9 @@ public sealed class SideCarry
                     if (v < bv - 1e-6f || m < bm) { bv = v; bm = m; bt = t; bi = i; ba = a; bs = sh; bp = po; }
                 }
         }
+        guardHeld = rateOnly && (bt != tB || bi != iB);
+        // (held at most EaseMax s in a row: never parked off the layer's turn while the run goes on)
+        easeT = guardHeld && easeOn ? easeT + dt : 0f;
         Tilt = bt; Inward = bi;
         lastDPoff = hasLast ? bp - lastPoff : 0f;
         lastA = ba; lastShown = bs; lastPoff = bp;
