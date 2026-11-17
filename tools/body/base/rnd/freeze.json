@@ -1,5 +1,5 @@
 {
- "date": "2026-11-16 17:20",
+ "date": "2026-11-16 17:30",
  "sources": {
   "top": {
    "path": "C:/Users/munch/Desktop/Marionette/generated/rnd/x14/r22/p1_top.glb",
@@ -15,9 +15,19 @@
    "path": "C:/Users/munch/Desktop/Marionette/generated/rnd/x14/r11/p1_top_dw_strike_f.glb",
    "bytes": 107270900,
    "sha1": "e11ab21e365986ab1487abe203b37b8e1ca76c0f"
+  },
+  "top_cloth": {
+   "path": "C:/Users/munch/Desktop/Marionette/generated/rnd/x14/r22/p1_top.glb",
+   "bytes": 107115760,
+   "sha1": "c9d527e96f20d40c64253fb454e0ed91043cc522"
+  },
+  "skirt_cloth": {
+   "path": "C:/Users/munch/Desktop/Marionette/generated/rnd/x14/r22/p1_skirt.glb",
+   "bytes": 112390848,
+   "sha1": "8bcc8caeb745c02768026d6999e464702b216bca"
   }
  },
  "top_node": "piece_warden_top",
  "top_points": 14141,
- "why": "the body build read these from Marionette's git-ignored R&D scratch; r19/p1_top_rest.glb was swept by 16 Nov (her_b failed: KeyError strap_l). r19 is gone, so the top is r22's copy of the same piece."
+ "why": "the body build read these from Marionette's git-ignored R&D scratch; r19/p1_top_rest.glb was swept by 16 Nov (her_b failed: KeyError strap_l). r19 is gone, so the top is r22's copy of the same piece. clothes.npz: fold_frames read r19/p1_top_rest.glb and p1_skirt_rest.glb (swept); frozen from r22's p1_top.glb and p1_skirt.glb."
 }

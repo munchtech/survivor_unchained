@@ -44,32 +44,54 @@ def write_obj(path, V, T, UV=None, TUV=None):
             np.savetxt(f, T + 1, fmt="f %d %d %d")
 
 
-def load_clothes(p):
-    """name -> dict(P, T, J, W, ibm_by_poser_bone) for each clothing piece that carries a skin with our bone names."""
+FROZEN_CLOTHES = HERE / "base/rnd/clothes.npz"
+CLOTH_KEYS = ("P", "J", "W", "ibm", "rest", "T", "first", "names")
+
+
+def cloth_arrays(path):
+    """What fold_frames needs from a clothing glb (None if it has no skinned piece_ mesh). rnd_freeze.py freezes these."""
+    g = Glb(str(path))
+    if not g.js.get("skins"):
+        print(f"  ({Path(path).name} has no skin: clothing skipped)")
+        return None
+    sk = g.skeleton(0)
+    m = next(m for m in g.meshes if m.node.startswith("piece_"))
+    if m.J is None:
+        print(f"  ({Path(path).name} piece is not skinned: skipped)")
+        return None
+    Wn = m.W / np.maximum(m.W.sum(1, keepdims=True), 1e-12)
+    rep = weld(m.P.astype(float), 1e-6)
+    T = rep[m.T]
+    T = T[(T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 0] != T[:, 2])]
+    first = np.full(int(rep.max()) + 1, -1)
+    first[rep[::-1]] = np.arange(len(rep))[::-1]
+    return dict(P=m.P, J=m.J, W=Wn, ibm=sk.ibm, rest=sk.rest, T=T, first=first, names=np.array(sk.names))
+
+
+def load_clothes(p, frozen=True, paths=None):
+    """name -> dict(P, T, J, W, ibm_by_poser_bone) for each clothing piece that carries a skin with our bone names.
+    Reads tools/body/base/rnd/clothes.npz (frozen by rnd_freeze.py) when present, else the glbs in CLOTHES."""
     out = {}
-    for tag, path in CLOTHES.items():
-        if not path.exists():
-            print(f"  (no {path.name}: {tag} skipped)")
-            continue
-        g = Glb(str(path))
-        if not g.js.get("skins"):
-            print(f"  ({path.name} has no skin: clothing skipped)")
-            continue
-        sk = g.skeleton(0)
-        m = next(m for m in g.meshes if m.node.startswith("piece_"))
-        if m.J is None:
-            print(f"  ({path.name} piece is not skinned: skipped)")
-            continue
-        miss = [n for n in sk.names if n not in p.index]
-        k = np.array([p.index.get(n, -1) for n in sk.names])
-        Wn = m.W / np.maximum(m.W.sum(1, keepdims=True), 1e-12)
-        rep = weld(m.P.astype(float), 1e-6)
-        T = rep[m.T]
-        T = T[(T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 0] != T[:, 2])]
-        first = np.full(int(rep.max()) + 1, -1)
-        first[rep[::-1]] = np.arange(len(rep))[::-1]
-        out[tag] = dict(P=m.P.astype(float), J=m.J, W=Wn, ibm=sk.ibm, rest=sk.rest, map=k, T=T, first=first, miss=miss)
-        print(f"  {tag}: {len(m.P)} pts, {len(sk.names)} joints, {len(miss)} not on the body skeleton")
+    z = np.load(FROZEN_CLOTHES) if (frozen and FROZEN_CLOTHES.exists()) else None
+    for tag, path in (paths or CLOTHES).items():
+        if z is not None:
+            if f"{tag}_P" not in z.files:
+                print(f"  (no frozen {tag}: skipped)")
+                continue
+            a = {k: z[f"{tag}_{k}"] for k in CLOTH_KEYS}
+        else:
+            if not Path(path).exists():
+                print(f"  (no {Path(path).name}: {tag} skipped)")
+                continue
+            a = cloth_arrays(path)
+            if a is None:
+                continue
+        names = [str(n) for n in a["names"]]
+        miss = [n for n in names if n not in p.index]
+        k = np.array([p.index.get(n, -1) for n in names])
+        out[tag] = dict(P=a["P"].astype(float), J=a["J"], W=a["W"], ibm=a["ibm"], rest=a["rest"], map=k, T=a["T"],
+                        first=a["first"], miss=miss)
+        print(f"  {tag}: {len(a['P'])} pts, {len(names)} joints, {len(miss)} not on the body skeleton")
     return out
 
 
