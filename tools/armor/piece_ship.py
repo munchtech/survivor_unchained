@@ -205,6 +205,9 @@ def follow_env(piece):
     env = dict(os.environ)
     if piece and piece.get("params", {}).get("shoulder_shapes", True) is False:
         env["BF_PAUL_SHAPES"] = "0"
+        # (params.shoulder_shapes_meshes [material, ..]: those meshes still carry them, the leather under the plates)
+        if piece["params"].get("shoulder_shapes_meshes"):
+            env["BF_PAUL_SHAPES_MESHES"] = ",".join(piece["params"]["shoulder_shapes_meshes"])
     return env
 
 
