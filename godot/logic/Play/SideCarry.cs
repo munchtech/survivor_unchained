@@ -206,7 +206,20 @@ public sealed class SideCarry
     public float Sigma { get; private set; } = -1f;
     /// <summary>The layer's own turn of the blade on screen now (deg, screen right +): the drawn blade's angle less the clip's.</summary>
     public float Shift { get; private set; }
-    float springV, clipPrev = float.NaN, yawRate;
+    float springV, clipPrev = float.NaN, yawRate, psiPrev = float.NaN;
+    public bool FadeFreeze = true;
+    public float CrossShort = 60f, CrossShortTo = 0.33f;
+    bool crossing;
+    float yawStep;
+    public int LookFrames = 2; public float LookYaw = 4f, LookCost = 0.5f;
+    /// <summary>(r13 WIP) At a stop (her speed falling, held StopHold s after it last fell) and out of a turn, the drawn blade's
+    /// world pitch steps at most StopRate (deg/s; 180 is 6 a frame) and never reverses by StopRev deg or more each way (judge
+    /// r12 bar 2: the stop's pump). The swing's spring itself turns at most SpringRate (deg/s): the run's end swings the
+    /// tip forward ~20 deg in 3 frames, the pitch step at +34. 0: off.</summary>
+    public float StopRate = 180f, StopRev = 0.9f, StopRevCost = 0.01f, StopHold = 0.6f, SpringRate = 150f;
+    float fallT;
+    float movePrev; bool falling;
+    float lastPitch = float.NaN, lastDPitch;
     Vector3 aheadPrev;
     float lastA = float.NaN, lastShown, lastPoff, lastDPoff;   // the last drawn blade on screen (deg, screen right +), its shown share, the pitch added
     /// <summary>(solver r12) How far the layer has yielded to the clip's own pose (0..1, see <see cref="HideFrac"/>).</summary>
@@ -303,7 +316,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; lastPitch = float.NaN; lastDPitch = 0f; psiPrev = float.NaN; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -403,8 +416,9 @@ public sealed class SideCarry
         float tPrev = Tilt, iPrev = Inward;
         // her facing's turn rate this frame (deg/s), for the carry rate once a turn has ended
         var ah = new Vector3(f.Ahead.X, 0f, f.Ahead.Z);
-        yawRate = aheadPrev.LengthSquared() > 1e-8f && ah.LengthSquared() > 1e-8f
-            ? MathF.Abs(MathF.Atan2(Vector3.Cross(aheadPrev, ah).Y, Vector3.Dot(aheadPrev, ah))) * R2D / dt : 0f;
+        yawStep = aheadPrev.LengthSquared() > 1e-8f && ah.LengthSquared() > 1e-8f
+            ? MathF.Atan2(Vector3.Cross(aheadPrev, ah).Y, Vector3.Dot(aheadPrev, ah)) * R2D : 0f;
+        yawRate = MathF.Abs(yawStep) / dt;
         aheadPrev = ah.LengthSquared() > 1e-8f ? Vector3.Normalize(ah) : aheadPrev;
         var cb = new Vector3(f.CamBack.X, 0f, f.CamBack.Z);
         float side = cb.LengthSquared() > 1e-8f ? Vector3.Dot(-f.Left, Vector3.Normalize(cb)) : 0f;
@@ -414,9 +428,14 @@ public sealed class SideCarry
         if (wn < Weight && FadeOut > 0f) wn = MathF.Max(wn, Weight - dt / FadeOut);
         Weight = wn < 1e-4f && target == 0f ? 0f : wn;
         float moving = Math.Clamp(float.IsFinite(f.Moving) ? f.Moving : 0f, 0f, 1f);
+        bool fell = moving < 0.99f && moving < movePrev - 1e-4f;
+        fallT = fell ? StopHold : moving > movePrev + 1e-4f ? 0f : MathF.Max(0f, fallT - dt);
+        falling = moving < 0.99f && (fell || fallT > 0f);
+        movePrev = moving;
         // The swing: a damped spring toward 0, pushed tip-back by a forward pull while she moves (fixed sub-steps).
         float k = MathF.Pow(2f * MathF.PI * Hz, 2f), cd = 2f * Damping * 2f * MathF.PI * Hz;
         int n = Math.Max(1, (int)MathF.Ceiling(dt / (1f / 240f)));
+        float spr0 = Spring;
         float h = dt / n, drive = moving * k * Gain * Math.Clamp(float.IsFinite(accel) ? accel : 0f, -MaxAccel, MaxAccel);
         for (int i = 0; i < n; i++)
         {
@@ -427,6 +446,7 @@ public sealed class SideCarry
             if (Spring < -LooseFwd) { Spring = -LooseFwd; if (springV < 0f) springV = 0f; }
         }
         if (moving < 1f && StandSettle > 0f) { float g = MathF.Exp(-dt * (1f - moving) / StandSettle); Spring *= g; springV *= g; }
+        if (SpringRate > 0f && MathF.Abs(Spring - spr0) > SpringRate * dt) { Spring = spr0 + MathF.CopySign(SpringRate * dt, Spring - spr0); }
         float step = MaxRate * dt;
         var b = f.Blade;
         bool idle = Weight == 0f && Tilt == 0f && MathF.Abs(Shift) < 1e-3f;
@@ -445,8 +465,9 @@ public sealed class SideCarry
             {
                 var bi = Vector3.Normalize(b);
                 float lp = lastPoff;
-                Look(bi, Vector3.Normalize(f.Left), Vector3.Normalize(f.Ahead), Tilt, Inward, f, out lastA, out lastShown, out _, out lastPoff);
-                lastDPoff = lastPoff - lp;
+                float pp = lastPitch;
+                Look(bi, Vector3.Normalize(f.Left), Vector3.Normalize(f.Ahead), Tilt, Inward, f, out lastA, out lastShown, out _, out lastPoff, out lastPitch);
+                lastDPoff = lastPoff - lp; lastDPitch = float.IsNaN(pp) ? 0f : lastPitch - pp;
             }
             return;
         }
@@ -484,7 +505,10 @@ public sealed class SideCarry
         }
         if (cap > -90f && cap < aim) aim = cap;
         Want = MathF.Max(aim + Spring, MathF.Min(Floor, cap + room));
-        Raw = Weight > 0f ? Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw) : Raw;
+        bool fading = FadeFreeze && target == 0f && Weight < wPrev && wPrev > 0f && !float.IsNaN(psiPrev);
+        if (fading) psi = psiPrev;
+        else Raw = Weight > 0f ? Solve(b, left, ahead, psi, f.Jx, f.Jy, Sigma, Want, lo, hi, Raw) : Raw;
+        psiPrev = psi;
         // The drawn blade on screen (deg, screen right +): toward the weighted tilt's, turning at most ScreenRate faster than
         // the clip's own blade turns (holding still is always allowed), inside the Edge.
         legsOn = Legs(f, left, ahead, moving);
@@ -521,6 +545,7 @@ public sealed class SideCarry
             tilt *= k0; inward *= k0;
             aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
         }
+        crossing = CrossShort > 0f && !float.IsNaN(lastA) && MathF.Abs(lastA) < 90f && (aT > 0f) != (lastA > 0f) && MathF.Abs(aT) >= CaneAngle;
         float c0 = float.IsNaN(clipPrev) ? a0 : clipPrev, lim = ScreenRate * dt + MathF.Abs(Wrap(a0 - c0)), was = c0 + Shift;
         if (CarryRate > 0f && TurnEnd > 0f) lim = MathF.Max(lim, MathF.Max(0f, 1f - yawRate / TurnEnd) * CarryRate * dt);
         pivotNow = TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f;
@@ -642,13 +667,28 @@ public sealed class SideCarry
         Look(b, left, ahead, Tilt, Inward, f, out float aD, out _, out _, out _);
         bool hasLast = !float.IsNaN(lastA);
         var fc = f;
+        bool look = LookFrames > 0 && MathF.Abs(yawStep) >= LookYaw;
+        float jn = MathF.Sqrt((f.Jx.LengthSquared() + f.Jy.LengthSquared()) / 2f);
+        float sps = StopRate * dt;
+        bool stopOn = StopRate > 0f && hasLast && !float.IsNaN(lastPitch) && yawRate <= TurnEnd && falling;
         float Bad(float t, float i, out float a, out float sh, out float po)
         {
             Look(b, left, ahead, t, i, fc, out a, out sh, out float un, out po, out float pa);
             float v = 0f, rch = GuardReach * Weight;
             if (GuardReach > 0f) v += ReachCost * (MathF.Max(0f, MathF.Abs(t - tW) - rch) + MathF.Max(0f, MathF.Abs(i - iW) - rch));
-            if (pa >= VertPitch && MathF.Abs(a) < CaneAngle && sh >= VertShown && un > VertPx)
-                v += 0.05f + MathF.Min((pa - VertPitch) / 10f, MathF.Min((sh - VertShown) / 0.2f, (CaneAngle - MathF.Abs(a)) / CaneAngle));
+            v += Cane(a, sh, un, pa);
+            if (look)
+            {   // (r13) in a turn, the same turn carried on by her yaw for LookFrames frames: a pose the turn sweeps into a cane next is paid now
+                var d0 = Turned(b, left, t, ahead, i); float wgt = 1f;
+                for (int j = 1; j <= LookFrames; j++)
+                {
+                    wgt *= LookCost;
+                    var dj = Rot(Vector3.UnitY, j * yawStep, d0);
+                    float sx = Vector3.Dot(fc.Jx, dj), sy = Vector3.Dot(fc.Jy, dj);
+                    float uj = fc.Length > 0.1f ? sy * fc.Length - MathF.Max(Vector3.Dot(fc.Jy, fc.AnkleL - fc.Grip), Vector3.Dot(fc.Jy, fc.AnkleR - fc.Grip)) : float.NegativeInfinity;
+                    v += wgt * Cane(MathF.Atan2(sx, sy) * R2D, jn > 1e-6f ? MathF.Sqrt(sx * sx + sy * sy) / jn : 0f, uj, pa);
+                }
+            }
             if (hasLast && PitchRev > 0f)
             {
                 float dpo = po - lastPoff;
@@ -658,14 +698,27 @@ public sealed class SideCarry
             // (solver r12) the tilt never flips sign in a frame from a turn either way (the judge's TILTFLIP: both 5 deg or more)
             if (tPrev * t < 0f && MathF.Abs(tPrev) >= 4.5f && MathF.Abs(t) >= 4.5f) v += 0.05f;
             if (hasLast && ps < float.MaxValue) v += MathF.Max(0f, MathF.Abs(po - lastPoff) - ps) / ps;
-            if (MathF.Abs(a) < CaneAngle && sh >= CaneShown && un > CanePx)
-                v += 0.05f + MathF.Min((CaneAngle - MathF.Abs(a)) / CaneAngle, MathF.Min((sh - CaneShown) / 0.2f, (un - CanePx) / 20f));
+            if (stopOn)
+            {   // (r13) out of a turn, the drawn blade's own pitch (world) steps at most StopRate and doesn't reverse by StopRev each way
+                float dp = pa - lastPitch;
+                if (MathF.Abs(dp) > sps) v += 0.02f + (MathF.Abs(dp) - sps) / sps;
+                if (dp * lastDPitch < 0f && MathF.Abs(dp) >= StopRev && MathF.Abs(lastDPitch) >= StopRev) v += StopRevCost * (1f + MathF.Min(MathF.Abs(dp), MathF.Abs(lastDPitch)));
+            }
             if (hasLast)
             {
                 float da = MathF.Abs(Wrap(a - lastA));
                 if (da > StepMax && !(sh <= ShortShown && lastShown <= ShortShown))
                     v += 0.05f + (lastShown <= ShortShown ? MathF.Min((da - StepMax) / StepMax, (sh - ShortShown) / 0.2f) : (da - StepMax) / StepMax);
             }
+            return v;
+        }
+        float Cane(float a, float sh, float un, float pa)
+        {
+            float v = 0f;
+            if (pa >= VertPitch && MathF.Abs(a) < CaneAngle && sh >= VertShown && un > VertPx)
+                v += 0.05f + MathF.Min((pa - VertPitch) / 10f, MathF.Min((sh - VertShown) / 0.2f, (CaneAngle - MathF.Abs(a)) / CaneAngle));
+            if (MathF.Abs(a) < CaneAngle && sh >= CaneShown && un > CanePx)
+                v += 0.05f + MathF.Min((CaneAngle - MathF.Abs(a)) / CaneAngle, MathF.Min((sh - CaneShown) / 0.2f, (un - CanePx) / 20f));
             return v;
         }
         float bv = Bad(tB, iB, out float ba, out float bs, out float bp), bt = tB, bi = iB;
@@ -682,6 +735,7 @@ public sealed class SideCarry
                     float m = MathF.Abs(Wrap(a - aD)) * MathF.Min(1f, sh / MathF.Max(ShownFull, 1e-3f)) + 0.02f * (MathF.Abs(t - tB) + MathF.Abs(i - iB));
                     // near the cane's angle, a shorter blade is preferred (the way out where the rates can't hold the angle)
                     if (MathF.Abs(a) < CaneAngle + ShortZone) m += ShortPull * MathF.Max(0f, sh - ShortShown);
+                    if (crossing) m += CrossShort * MathF.Max(0f, sh - CrossShortTo);
                     // (lead r12, e26 leg 12 +38..+48) and the blade's shown length kept from frame to frame: two near-equal turns
                     // picked by turns flickered it 0.52/0.75/0.84/0.36 (inward 10/23/14/23/34/43)
                     if (hasLast) m += ShownPull * MathF.Abs(sh - lastShown) + PitchPull * MathF.Abs(po - lastPoff);
@@ -691,6 +745,8 @@ public sealed class SideCarry
         Tilt = bt; Inward = bi;
         lastDPoff = hasLast ? bp - lastPoff : 0f;
         lastA = ba; lastShown = bs; lastPoff = bp;
+        float pw = bp + MathF.Asin(Math.Clamp(-b.Y, -1f, 1f)) * R2D;
+        lastDPitch = float.IsNaN(lastPitch) ? 0f : pw - lastPitch; lastPitch = pw;
     }
 
     /// <summary>Whether the blade along unit `d` would hang its tip under <see cref="TipFloor"/> in a turn in place

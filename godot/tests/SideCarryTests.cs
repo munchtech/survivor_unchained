@@ -493,4 +493,46 @@ public class SideCarryTests
         c.Step(Dt, true, 0f, F(Far, Far + new Vector3(0f, -0.4f, 0f)));
         Near(MathF.Max(0f, was - c.ClearDown * Dt), c.OutTurn, 0.6f);
     }
+
+    // (r13) The swing's spring turns at most SpringRate: the run's end (a hard deceleration) can't swing the tip ~7 deg a frame.
+    [Fact]
+    public void SpringTurnsAtMostItsRate()
+    {
+        var c = new SideCarry();
+        float prev = 0f, worst = 0f;
+        for (int k = 0; k < 60; k++)
+        {
+            c.Step(Dt, true, k < 30 ? 18f : -24f, At(90f));
+            if (k > 0) worst = MathF.Max(worst, MathF.Abs(c.Spring - prev));
+            prev = c.Spring;
+        }
+        Assert.True(worst <= c.SpringRate * Dt + 1e-3f, $"spring step {worst}");
+        Assert.True(c.Spring < 0f, "the stop's swing still goes tip forward");
+    }
+
+    // (r13, judge r12 bar 2) At a stop (her speed falling), the drawn blade's world pitch steps at most StopRate a frame
+    // and doesn't pump (reverse by StopRev or more each way).
+    [Fact]
+    public void StopPitchStepsAndNeverPumps()
+    {
+        var c = new SideCarry();
+        var (a, l, b) = Her(90f);
+        float pPrev = float.NaN, dPrev = 0f, worst = 0f; int pumps = 0;
+        for (int k = 0; k < 70; k++)
+        {
+            float mv = k < 40 ? 1f : MathF.Max(0f, 1f - (k - 39) * 0.3f);
+            c.Step(Dt, true, k < 36 ? 15f : -40f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, mv, 0f));
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float p = MathF.Asin(Math.Clamp(-d.Y, -1f, 1f)) * 180f / MathF.PI;
+            if (k > 40 && c.Weight > 0f)
+            {
+                float dp = p - pPrev; worst = MathF.Max(worst, MathF.Abs(dp));
+                if (dp * dPrev < 0f && MathF.Abs(dp) >= 1f && MathF.Abs(dPrev) >= 1f) pumps++;
+            }
+            if (!float.IsNaN(pPrev)) dPrev = p - pPrev;
+            pPrev = p;
+        }
+        Assert.True(worst <= c.StopRate * Dt + 0.5f, $"stop pitch step {worst}");
+        Assert.Equal(0, pumps);
+    }
 }
