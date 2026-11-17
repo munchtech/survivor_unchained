@@ -127,16 +127,17 @@ public static partial class DungeonDress
             // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
             mat.SetShaderParameter("pit_cells", SetPitCells);
             mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
-            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.14f, 0.3f)));
-            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.18f, 0.27f, 0.14f)));
-            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.09f, 0.15f, 0.07f)));
-            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.065f, 0.066f, 0.058f)));
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.14f, 0.6f))   /* (den r17 P) z now the share lit (r16 .3 lit 70 %) */);
+            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.195f, 0.263f, 0.165f))   /* (den r17 P, R16 item 1) C x.75, luminance kept (r16 .18,.27,.14) */);
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.1f, 0.145f, 0.085f)));
+            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.05f, 0.045f)));
             mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.08f, 0.12f, 0.4f)));
             mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.7f, 1.3f)));
             // (den r16 A2, R15f item 1: a raised turtle shell) the pit sunken: depth (m; 0 flat), the near lip's shadow reach, the
             // plates' brightness at the middle; H1 (the lair's walkable hollows) shallower than H2 (holes); the wall's earth face
-            mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.65f)) : V3("den-pit-deep", new Vector3(0.8f, 1.6f, 0.65f)));
-            mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.06f, 0.042f, 0.028f)));
+            mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.65f)) : V3("den-pit-deep", new Vector3(1.1f, 1.6f, 0.9f)));
+            mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.12f, 0.085f, 0.055f)));   // (den r17 P) the far wall a lit earth band (r16 .06,.042,.028)
+            mat.SetShaderParameter("pit_cast_min", SurvivorUnchained.Args.Num("den-pit-cast", 0.5f));
         }
         return mat;
     }
@@ -1238,6 +1239,9 @@ public static partial class DungeonDress
         // (r12) a hole in the boss lair glows green (den_boss.png): COLOR.a 0.5 marks it, and a green light low in it
         bool lairHole = false;
         foreach (var rr in c.Z.Rooms) if (rr.Kind == "Boss" && new Vector2(rr.X, rr.Z).DistanceTo(ctr) < rr.R + 4f) lairHole = true;
+        // (den r17 P, R16 item 1) the lair's walkable hollows (H1) are not dressed as glowing pits: the judged lair "pits" were
+        // these (the real holes lay off the frame); the holes (H2) now sit in view (DungeonGen.LairPitPlan). 0: as r16
+        if (sheet == "H1" && SurvivorUnchained.Args.Num("den-hollow-plain", 0f) > 0f) lairHole = false;   // (WIP: on only with the pits in view)
         // (den r13 rooms) one or two pits of the lair dark and empty (no glow, no light): the first, and the third on a seed-salted coin
         bool pitEmpty = false;
         if (lairHole && SurvivorUnchained.Args.Num("den-pit-empty", 0f) > 0f)
@@ -1247,7 +1251,7 @@ public static partial class DungeonDress
             GD.Print($"[den-lair] pit {pn} at {ctr.X:0.0},{ctr.Y:0.0} empty={pitEmpty}");
         }
         if (lairHole && !pitEmpty && SurvivorUnchained.Args.Num("den-pit-glow", 0.8f) > 0f)
-            c.Root.AddChild(new OmniLight3D { Name = "PitGlow", Position = new Vector3(ctr.X, FloorY(c, ctr.X, ctr.Y) + 0.6f, ctr.Y),
+            c.Root.AddChild(new OmniLight3D { Name = "PitGlow", Position = new Vector3(ctr.X, FloorY(c, ctr.X, ctr.Y) + SurvivorUnchained.Args.Num("den-pit-light-y", -1.6f), ctr.Y),   // (den r17 P, R16 item 1) was +0.6: it lit the card's middle 14x its rim (the dome's hot centre)
                 LightColor = new Color(0.62f, 0.95f, 0.5f), LightEnergy = SurvivorUnchained.Args.Num("den-pit-light", 0.7f), OmniRange = 4.5f, OmniAttenuation = 1.6f, ShadowEnabled = false });
         int nu = Mathf.Clamp(Mathf.CeilToInt(W / 0.3f) + 1, 8, 48), nv = Mathf.Clamp(Mathf.CeilToInt(Hr / 0.3f) + 1, 8, 48);
         for (int j = 0; j < nv; j++)

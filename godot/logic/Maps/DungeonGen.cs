@@ -127,6 +127,17 @@ public static class DungeonGen
     public static double LairSpurs = 2;
     // Each spur a broad root at the rim and a narrower tongue in: E and W level with the middle (between the
     // pits and the way out), NE and NW either side of the way out; the S side (the way in, the pits) kept open.
+    /// <summary>(den r17 P, R16 item 1) The den lair's pits in the fixed camera's frame, as den_boss.png's: the old two (2.6 m,
+    /// 14.4 m out) lay off the frame, so the lit "pits" judged were the walkable hollows. A big lobed pit and a smaller one either
+    /// side of the way in (-Z), 5-7 m off the middle: 3.5 m or more clear of the ruler's spot, the way in between them open.
+    /// 1 (the default) = these; 0 = the old two. Set by the Godot layer from --den-lair-pits; read when the plans are built.</summary>
+    public static double LairPits = 0;   // (den r17 P) WIP: 1 shot p7a put the pits at the frame bottom (plan -Z), glow .08-.12 %; off until placed by screen
+    static readonly Lobe[] LairPitPlan =
+    [
+        new(-6.6, -5.0, -4.6, -6.6, 2.2), Lobe.O(-5.0, -4.3, 1.7), Lobe.O(-7.3, -6.9, 1.5),
+        Lobe.O(6.8, -4.6, 1.9), Lobe.O(7.7, -3.2, 1.3),
+    ];
+    static readonly Lobe[] LairPitsOld = [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)];
     static readonly Lobe[] LairSpurPlan =
     [
         new(25, 0, 15, 1.5, 4.2), new(15, 1.5, 11.6, 2.4, 2.4),
@@ -192,7 +203,7 @@ public static class DungeonGen
         Bowl with { Dress = "bones" }, Twin, Gully, Ring with { Dress = "bones" }, Crook, Clover with { Dress = "bones" }, Pillars, Spine,
         Event,
         Nook with { Dress = "bones" }, Alcove with { Dress = "bones" }, Hoard with { Dress = "bones" },
-        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)], [], exit: (0, 27), dress: "bones", spurs: LairSpurPlan),
+        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], LairPitPlan, [], exit: (0, 27), dress: "bones", spurs: LairSpurPlan),
         R("throat", RoomRole.Boss, [new(-7, -2, 7, -2, 17), new(0, 14, 0, 24, 5)], null, [], exit: (0, 25), dress: "bones"),
     ]);
 
@@ -443,7 +454,7 @@ public static class DungeonGen
     {
         var tmp = new DungeonRoom(area, plan, c.Item1, c.Item2, parent, onRoute, x, z, rot, mirror, scale, [], []);
         (double, double) F((double X, double Z) p) => Xf(tmp, p);
-        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = plan.Holes.Select(l => l.Moved(F, scale)).ToArray(),
+        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = (plan.Holes == LairPitPlan && LairPits <= 0 ? LairPitsOld : plan.Holes).Select(l => l.Moved(F, scale)).ToArray(),
             Spurs = plan.Spurs != null && LairSpurs > 0 ? plan.Spurs.Select(l => l.Moved(F, scale)).ToArray() : null };
     }
 

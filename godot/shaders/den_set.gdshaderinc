@@ -59,6 +59,7 @@ uniform vec3 pit_ray = vec3(1.0, 0.75, 1.35);   // the past-rim cracks on, their
 // plates' brightness at the middle (x); pit_wall_c the wall's earth face (linear albedo). COLOR.g: the lip's radius / 8
 uniform vec3 pit_deep = vec3(0.0, 1.6, 0.55);
 uniform vec3 pit_wall_c = vec3(0.06, 0.042, 0.028);
+uniform float pit_cast_min = 0.16;   // (den r17 P, R16 item 1) the near lip's shadow's floor (r16 .16: a .13-.19 band inside the near rim)
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
 uniform vec3 boss_c = vec3(0.0);
@@ -177,7 +178,7 @@ vec4 pc_net(vec2 x, float cw, float hw, float aa, float share, out float cell_h,
 		if (d > 0.7) continue;
 		md = min(md, d);
 		vec2 eh = pg_h2(cid + n + g + 3.7);
-		float s = smoothstep(share - 0.12, share + 0.12, 1.0 - eh.x) * (0.5 + 0.5 * eh.y);
+		float s = smoothstep(-0.12, 0.12, share - eh.x) * (0.5 + 0.5 * eh.y);   // (den r17 P, R16 item 1) share = the share lit (r16: 1 - share was)
 		core += s * (1.0 - smoothstep(cw - aa, cw + aa, d));
 		halo += s * exp(-max(d - cw, 0.0) / hw);
 		float up = clamp(-nr.y, 0.0, 1.0);
@@ -306,7 +307,7 @@ void fragment() {
 		float fine = 1.0 - 0.3 * (1.0 - smoothstep(0.0, 0.08, pg_edge(x * 3.3 + 9.1)));   // hairline cracks across a plate
 		vec3 alb = pit_plate_c * (0.6 + 0.8 * ch) * grain * fine * (1.0 + 2.0 * pit_lipw.z * nt.w);
 		alb *= mix(0.25, 1.0, smoothstep(cwc * 0.4, cwc + aa, nt.x));   // the crack a dark groove where it does not glow
-		alb *= mix(1.0, pit_deep.z, mid) * mix(0.3, 1.0, aof) * mix(0.16, 1.0, cast) * mix(0.25, 1.0, smoothstep(0.0, pit_lipw.x, u));
+		alb *= mix(1.0, pit_deep.z, mid) * mix(0.3, 1.0, aof) * mix(pit_cast_min, 1.0, cast) * mix(0.25, 1.0, smoothstep(0.0, pit_lipw.x, u));
 		float pulse = 0.9 + 0.1 * sin(TIME * 1.3 + pf.x * 0.7);
 		float rm = smoothstep(0.15, 0.75, 0.7 * pg_vn(pf * 0.3 + sd * 80.0) + 0.3 * pg_vn(pf * 0.85 + 3.3));
 		vec3 em = (pit_core_c * nt.y + pit_halo_c * nt.z) * pit_glow * mix(0.15, 1.0, rm) * mix(0.4, 1.0, smoothstep(0.95, 0.3, ef)) * pulse;
