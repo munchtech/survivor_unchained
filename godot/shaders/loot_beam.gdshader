@@ -31,7 +31,7 @@ uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 // epic's pool h 331-342 at C .19, the rare's h 10). There the rare's, the epic's and the set's pools cover more of the
 // ground they lie on (DEN_COVER of it), so what is seen there is their light and not the ground's red lent to it.
 uniform float den = 0.0;
-const float DEN_COVER = 0.3;
+const float DEN_COVER = 0.5;
 
 varying vec3 tint;
 varying vec2 at;
@@ -105,20 +105,22 @@ void fragment() {
 	// colour, the glow and the pool round it deeper still (a pale glow by day reads as haze).
 	float top = max(max(tint.r, tint.g), max(tint.b, 1e-3));
 	vec3 deep = tint * tint / top;
+	// (the den: the pools lit in their colour itself, not deepened: a deep cool pool over the warm ground went magenta)
+	vec3 pdeep = mix(deep, tint, den);
 	vec3 light = vec3(0.0);
 	float veil = 0.0;
 
 	if (kind < 1.5) {
 		// Rare: a low glow, a fine bright line in it, its light pooled at its foot.
 		float fade = rise * pow(1.0 - u, 1.5);
-		light = (mix(tint, deep, 0.35) * g(x, 0.026) * 1.1 + deep * g(x, 0.13) * 0.5) * fade * shimmer + deep * pool(half_w * 0.6) * 0.34;
+		light = (mix(tint, deep, 0.35) * g(x, 0.026) * 1.1 + deep * g(x, 0.13) * 0.5) * fade * shimmer + pdeep * pool(half_w * 0.6) * 0.34;
 		veil = (g(x, 0.05) * 0.45 + g(x, 0.16) * 0.2) * fade + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
 	} else if (kind < 2.5) {
 		// Epic: thinner and taller, a line of light in a narrow glow, a mote climbing it now and then.
 		float fade = rise * pow(1.0 - u, 1.25);
 		float up = motes(0.1, 1.1, 0.7) * fade;
 		light = (tint * (g(x, 0.022) * 1.1 + up * 0.8) + deep * (g(x, 0.1) * 0.42 + g(x, 0.34) * 0.1)) * fade * shimmer
-			+ deep * pool(half_w * 0.6) * 0.34;
+			+ pdeep * pool(half_w * 0.6) * 0.34;
 		veil = (g(x, 0.045) * 0.45 + g(x, 0.14) * 0.2) * fade + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
 	} else if (kind < 3.5) {
 		// Set: two strands twisting about each other, the one in front the brighter (that is what
@@ -131,7 +133,7 @@ void fragment() {
 		float w1 = 0.45 + 0.55 * front, w2 = 0.45 - 0.55 * front;
 		float lines = g(x - s1, 0.02) * max(w1, 0.08) + g(x + s1, 0.02) * max(w2, 0.08);
 		float halo = g(x - s1, 0.07) * max(w1, 0.15) + g(x + s1, 0.07) * max(w2, 0.15);
-		light = (mix(tint, deep, 0.3) * lines * 1.2 + deep * (halo * 0.36 + g(x, 0.26) * 0.1)) * fade + deep * pool(half_w * 0.6) * 0.32;
+		light = (mix(tint, deep, 0.3) * lines * 1.2 + deep * (halo * 0.36 + g(x, 0.26) * 0.1)) * fade + pdeep * pool(half_w * 0.6) * 0.32;
 		veil = (g(x - s1, 0.045) + g(x + s1, 0.045)) * fade * 0.26 + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
 	} else if (kind < 4.5) {
 		// The pillar: a hot core, a glow round it and a wide soft halo, rising past the top of the

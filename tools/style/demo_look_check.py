@@ -6,7 +6,7 @@
     python tools/style/demo_look_check.py frame PNG [PNG...] [--masks MANIFEST.json] [--full]
         -> each frame's whole-frame numbers (palette.py's, over the play crop y 8-80% unless --full) against
            "frame_bands", plus the classes the manifest names for that frame (same box + key format as the targets,
-           keyed by the PNG's file name) against "bands". Exit 1 when any number is outside its band.
+           or "boxes": a shape as the boxes inside it, no key; keyed by the PNG's file name) against "bands". Exit 1 when any number is outside its band.
 
 A class passes when its medians (L50, C50, chroma-weighted h) are inside the band. Numbers are self-checks before a
 judge, never a substitute for one (LOOK_BIBLE rule set, "A number is a self-check")."""
@@ -47,8 +47,9 @@ def measure(items, resolve, overlay=None):
     for it in items:
         path = resolve(it["img"])
         x, L, a, b, C, H = lab(path)
-        x0, y0, x1, y1 = it["box"]
-        m = np.zeros(L.shape, bool); m[y0:y1, x0:x1] = True
+        # a box, or a shape as boxes laid inside it ("boxes": no colour key needed, so a class can fail on its colour)
+        m = np.zeros(L.shape, bool)
+        for x0, y0, x1, y1 in it.get("boxes", [it.get("box")]): m[y0:y1, x0:x1] = True
         m &= key(it.get("key", {}), L, C, H)
         for ex in it.get("not", []): m &= ~key(ex, L, C, H)
         Ls.append(L[m]); As.append(a[m]); Bs.append(b[m]); Cs.append(C[m])
