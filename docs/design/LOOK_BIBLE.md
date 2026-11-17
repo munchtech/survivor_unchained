@@ -80,7 +80,7 @@
 5. **Bladestorm is a full ring.** Steel arcs go all the way round her, with at least 3 visible in any frame, at C 0.14-0.19.
 6. **Boss telegraphs** (E and B; whoever builds them): a hostile-red edge (`ui_language` 0.565 / 0.192 / 30) and a fill at 15% opacity or less. No flat hatched slab: the 16 Nov lair frame had one covering about 9% of the play area.
 7. **Check before the judge.**
-   - Shoot at the play camera. E's Sunder frame: `--auto idle --horde 10:wolf --horde-hp 40 --horde-arc 0:120:2.5:2.5:6 --no-spawn --slots sunder --press 1:6.3:3,0:hold=0.6`. For Bladestorm, use `--horde-arc 0:360:2.5:3:9 --grant-union bladestorm --resolve-at 0.5:100 --press 1:2:0,0:hold=6`.
+   - Shoot at the play camera. E's Sunder frame: `--auto idle --horde 10:wolf --horde-hp 40 --horde-arc 0:120:2.5:2.5:6 --no-spawn --slots sunder --press 1:6.3:3,0:hold=0.6`. For Bladestorm, use `--horde-arc 0:360:2.5:3:9 --grant-union bladestorm --resolve-at 0.5:95 --press 2:2:0,0:hold=6`.
    - Add an `fx_steel` box (and a `blood` box where blood shows) to a masks manifest. Use the format of `tools/style/demo_look_masks.json`.
    - Run `python tools/style/demo_look_check.py frame PNG --masks M.json`.
 
