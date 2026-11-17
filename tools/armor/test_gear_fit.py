@@ -512,3 +512,15 @@ def test_plates_ride_as_a_rides_them():
     assert Jb[0] == 1 and abs(Wb[0] - 0.75) < 1e-9 and Jb[1] == 2 and abs(Wb[1] - 0.25) < 1e-9
     B.joint_names = ["root", "calf_l"]
     assert gf.a_blend(B, bl[0]) is None
+
+
+def test_a_leads_gives_a_trim_to_the_plate_A_skins_it_with():
+    # plates 0 and 1 (own leaders), trim 2 led by plate 1 but skinned on A with plate 0's blend: it moves to 0;
+    # trim 3 led by plate 1 with plate 1's blend stays; trim 4 with a blend no plate has keeps its leader
+    import numpy as np
+    import gear_fit as gf
+    B = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0], [0.5, 0, 0.5]], float)
+    X = np.array([[0, 0, 0], [1, 0, 0], [0.9, 0, 0], [1, 0.1, 0], [1, 0, 0.1]], float)
+    comp = np.arange(5)
+    lead, moved = gf.a_leads(np.array([0, 1, 1, 1, 1]), B, X, comp)
+    assert list(lead) == [0, 1, 0, 1, 1] and moved == {2: (1, 0)}

@@ -17,7 +17,7 @@
              "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
  "slots": {
   "top": {"ride": {"spine": 1}, "one_bone": true, "worn_rest": "top", "joins": true},
-  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true, "rims": false,
+  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true, "rims": false, "a_blend": true,
                 "standoff": {"cap_mm": 6, "seat_cap_mm": 4, "rest_min_mm": 1, "margin_mm": 1,
                              "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,
                              "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}},
@@ -28,6 +28,7 @@
                            "tuck_full_mm": 18, "tuck_zero_mm": 22, "tuck_step": 1.0,
                            "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}}
  },
+ "_a_blend": "slots.<slot>.a_blend true (gear_fit A_BLEND; main's call 17 Nov, lane G): an armor row's plates ride A's own blend of each plate by joint name on every body (the slot's ride rule only for a joint the body lacks), and a small part whose A blend is not its leader's rides the nearest plate with its own. plate_pauldrons_warden on B: the one-bone rule rode the right cop on upperarm_twist_02_r alone (A: clavicle_r .70, delt_r .16, upperarm_share_r .10), so it faced 66-76 deg from up in her idles against A's 50-57: darker, flatter.",
  "_rim_of": "plate_pauldrons_warden on B (solver U, 17 Nov; slots.pauldrons rims stay false for the retired plain): each plate's rolled rim (close leaders 13, 15, 23 her right; 14, 18, 19 her left) rode its own fit and bone (the cop on upperarm_twist_02, its rim on upperarm_share; lame 2's rim 16.5 mm off its plate at rest), so in her idles the rims crossed their plates (cop dented, lames' lower edge frayed). A skins each plate and its rim with one blend: they ride as one.",
  "rim_of": {"plate_pauldrons_warden": {"close/13": 11, "close/15": 6, "close/23": 10, "close/14": 8, "close/18": 9, "close/19": 7}},
  "_ride_plate": "gear_fit plate_riders: an armor row's bendy part that A skins with its plate's one blend rides that plate (its fit, blend and mean shapes); value = near_mm. plate_pauldrons_warden's darkleather buckle strap: A's cop blend on A (clavicle .74), B's skin on B (67 blends), so it stood off the cop's side (solver U, 17 Nov).",

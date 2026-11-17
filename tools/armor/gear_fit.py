@@ -1153,6 +1153,78 @@ def plate_riders(bd, ms, ev, comp, lead, rots):
     return out
 
 
+# A PLATE RIDES A's OWN BLEND (main's call, 17 Nov, lane G: B's pauldron cop must lean on the clavicle as A's does). A
+# skins each plate of an armor piece with one blend of weights, and its small parts (trims, rivets) with their plate's.
+# A slot whose rule in rigid_roles.json has "a_blend": true takes that from A's file, by joint name, on every body:
+#   the blend: each rigid group rides its leader plate's A blend (a joint the body lacks: the slot's "ride" rule);
+#   the leads: a small component whose A blend is not its leader's (beyond A_BLEND["tol"], the largest joint difference)
+#     rides the nearest plate whose A blend is its own (the bind's nearest-big-component rule put plate_pauldrons_warden's
+#     gold trims on the next plate: close lame 1's on lame 2, and 4 play components); none alike: it keeps its leader.
+# Measured on B (lead 5's solver, 17 Nov): the slot rule rode each plate on one upper-arm bone (the right cop on
+# upperarm_twist_02_r alone; A's: clavicle_r .70, delt_r .16, upperarm_share_r .10, scap_r .02), so in her idles the right
+# cop faced 66-76 deg from straight up against A's 50-57 (turned from the key light: darker, flatter); on A's blend 52-55.
+A_BLEND = {"tol": 1e-3}
+_A_UNIQ = {}
+
+
+def a_unique_blends(bd, ms):
+    """Per mesh of a tier (ms order): A's weights per unique, dense over the joints of A's file, and those joint names."""
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_UNIQ:
+        g = gltf_cached(bd.meta["src"])
+        out, names = [], None
+        for m in ms:
+            ni, _, _, _, _, J, W = read_prim(g, m["node"])
+            sk = g.js["skins"][g.js["nodes"][ni]["skin"]]
+            nm = [g.js["nodes"][j].get("name", "") for j in sk["joints"]]
+            names = names or nm
+            assert nm == names, f"{m['node']}: one skin per piece expected"
+            inv = bd.z[f"inv{m['i']}"]
+            Wn = W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+            D = np.zeros((len(J), len(nm)))
+            np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.ravel()), Wn.ravel())
+            Du = np.zeros((int(inv.max()) + 1, len(nm)))
+            Du[inv] = D
+            out.append(Du)
+        _A_UNIQ[key] = (out, names)
+    return _A_UNIQ[key]
+
+
+def a_blend_on(bd, ms, slot):
+    """(per-component A blend rows, joint names) of a tier when the slot rides A's own blends ("a_blend"), else None."""
+    rule = (rigid_roles().get("slots", {}).get(slot) or {}) if slot else {}
+    if not rule.get("a_blend") or bd.meta.get("kind") in OUTFIT_KINDS + ("native",):
+        return None
+    Du, names = a_unique_blends(bd, ms)
+    comp = np.concatenate([bd.z[f"comp{m['i']}"] for m in ms])
+    D = np.vstack(Du)
+    nc = int(comp.max()) + 1 if (comp >= 0).any() else 0
+    B = np.zeros((nc, len(names)))
+    np.add.at(B, comp[comp >= 0], D[comp >= 0])
+    B /= np.maximum(B.sum(1, keepdims=True), 1e-12)
+    return B, names
+
+
+def a_leads(lead, B, X, comp, tol=A_BLEND["tol"]):
+    """The leaders with each small component whose A blend is not its leader's given to the nearest plate with its own
+    blend (A_BLEND); returns (lead, {component: (old leader, new leader)})."""
+    lead = np.array(lead)
+    cen = np.zeros((len(B), 3))
+    np.add.at(cen, comp[comp >= 0], X[comp >= 0])
+    cen /= np.maximum(np.bincount(comp[comp >= 0], minlength=len(B)), 1)[:, None]
+    plates = np.nonzero(lead == np.arange(len(lead)))[0]
+    moved = {}
+    for c in np.nonzero(lead != np.arange(len(lead)))[0]:
+        if np.abs(B[c] - B[lead[c]]).max() <= tol:
+            continue
+        alike = plates[np.abs(B[plates] - B[c]).max(1) <= tol]
+        if len(alike):
+            k = int(alike[np.argmin(np.linalg.norm(cen[alike] - cen[c], axis=1))])
+            moved[int(c)] = (int(lead[c]), k)
+            lead[c] = k
+    return lead, moved
+
+
 def standoff_floor(bd, ms, ev, path=None, lead=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
@@ -1234,6 +1306,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 ev[i].update(c0=c0, n0=n0, beta=bt, G=G, Gk=fld.gradient(Xbind), Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
+        # (A_BLEND: a slot riding A's own blends; a small part rides the plate A skins it with)
+        abl = a_blend_on(bd, ms, bd.meta["row"].get("slot")) if (comp >= 0).any() else None
+        if abl is not None:
+            lead, moved = a_leads(lead, abl[0], np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp)
+            if moved:
+                fit.setdefault("a_leads", {})[tier] = moved
+                print(f"{bd.id}: {tier}: rides the plate A skins it with (component: old -> new leader) {moved}", flush=True)
         # (a rim rides its plate, RIMS: its components join its plate's group for the fit, the weights and the bands)
         rims = rim_hosts(bd, ms, np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp, lead) if (comp >= 0).any() else {}
         if rims:
@@ -1391,6 +1470,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
                     ab = None if armor_laws else plate_blend_of(bd, ms, own_all)
+                    if abl is not None:
+                        ab = {n: float(x) for n, x in zip(abl[1], abl[0][int(c)]) if x > 1e-4}
                     ab = None if ab is None else a_blend(body, ab)
                     J[sel], W[sel] = ab if ab is not None else rigid_blend(
                         body, trs, ws, None if (join and int(c) in join["mean"]) or not armor_laws else bd.meta["row"].get("slot"))
@@ -1414,7 +1495,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     sel, own_all = ride & (host == c), comp_all == c
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    J[sel], W[sel] = rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
+                    ab = None if abl is None else a_blend(body, {n: float(x) for n, x in zip(abl[1], abl[0][int(c)]) if x > 1e-4})
+                    J[sel], W[sel] = ab if ab is not None else rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
