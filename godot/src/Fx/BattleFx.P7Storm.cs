@@ -41,6 +41,8 @@ public partial class BattleFx
         public required ShaderMaterial M;
         public float Arc, RadK = 1, HwK = 1, Lag, Dy, Tilt, Alpha = 1, Life0;
         public float DownAge = -1;
+        /// <summary>(lane B 16 Nov, E rule 5) one of the ring's arcs: laid at the storm's real radius (p7StormR), not the tip's.</summary>
+        public bool AtStorm;
     }
 
     readonly List<P7Smear> p7Smears = new();
@@ -136,6 +138,17 @@ public partial class BattleFx
                 p7TiltPhi = Mathf.Atan2(tip.Z - PlayerPos.Z, tip.X - PlayerPos.X) + Mathf.Pi * 0.5f;
                 // ONE smear: the blade's own path at its reach (round 3: the wake smear parked beside her is gone)
                 p7Smears.Add(P7NewSmear(Mathf.DegToRad(P7D["storm.smear.arc_deg"]), 1f, 1f, 0, 0, 12, P7D["storm.smear.alpha"], 0f));
+                // (lane B 16 Nov, E rule 5: a full ring) the storm's own arcs, evenly round her at its real radius, each a
+                // tapering stroke trailing the blade by its share of the turn, uneven in reach, width and height
+                int n = (int)P7D["storm.ring_arcs.n"];
+                var rk = P7D.All("storm.ring_arcs.rad_k"); var hk = P7D.All("storm.ring_arcs.hw_k"); var dy = P7D.All("storm.ring_arcs.dy");
+                for (int i = 0; i < n; i++)
+                {
+                    var arc = P7NewSmear(Mathf.DegToRad(P7D["storm.ring_arcs.arc_deg"]), rk[i % rk.Length], hk[i % hk.Length] * P7D["storm.ring_arcs.head_px"] / P7D["storm.smear.head_px"],
+                        Mathf.Tau * i / n, dy[i % dy.Length], P7D["storm.ring_arcs.tilt_deg"], P7D["storm.ring_arcs.alpha"], 0f);
+                    arc.AtStorm = true;
+                    p7Smears.Add(arc);
+                }
                 if (p7StormLight == null)
                 {
                     p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
@@ -182,7 +195,7 @@ public partial class BattleFx
         var tip = P7BladeAt(1);
         float a = Mathf.Atan2(tip.Z - her.Z, tip.X - her.X);
         float rt = new Vector2(tip.X - her.X, tip.Z - her.Z).Length();
-        float rc = Mathf.Clamp(rt, 0.9f, 1.6f) * s.RadK, hw = 0.5f * P7D["storm.smear.head_px"] * P7Px(her) * s.HwK / 0.72f;
+        float rc = (s.AtStorm ? p7StormR : Mathf.Clamp(rt, 0.9f, 1.6f)) * s.RadK, hw = 0.5f * P7D["storm.smear.head_px"] * P7Px(her) * s.HwK / 0.72f;
         float h = Mathf.Clamp(tip.Y - her.Y, 0.45f, 1.5f) + s.Dy;
         float k = Mathf.Tan(Mathf.DegToRad(s.Tilt));
         float a0 = a - p7SpinDir * s.Lag, arc = s.Arc * wind;

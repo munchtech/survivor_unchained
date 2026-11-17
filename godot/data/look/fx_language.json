@@ -987,6 +987,17 @@
     "core_share": 0.25,
     "alpha": 0.8
    },
+   "ring_arcs": {
+    "what": "lane B 16 Nov (E rule 5): the storm's ring, n tapering arcs evenly round her at the storm's real radius (Ev.Spin Radius), trailing the blade by i/n of the turn",
+    "n": 3,
+    "arc_deg": 82,
+    "head_px": 14,
+    "alpha": 0.9,
+    "tilt_deg": 5,
+    "rad_k": [1.0, 0.93, 0.97],
+    "hw_k": [1.0, 0.8, 0.9],
+    "dy": [0.0, -0.12, 0.06]
+   },
    "seam": {
     "px": 4
    },
