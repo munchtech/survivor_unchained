@@ -958,7 +958,7 @@
    },
    "light": 0,
    "ring_paint": {
-    "what": "(bladestorm-spin r2, 16 Nov: E rule 5; BattleFx.P7Storm.cs P7StormRing, BattleFx.Grip.cs RingPaint, shaders/fx_sunder_ring.gdshader ring_along) the storm's ring, painted with Sunder's brush (round 1's stroke arcs, storm.ring_arcs, retired): n open arcs evenly round her on the ground (lift m up) at the storm's real hit radius (Ev.Spin Radius x rad_k), held while she spins and turning with the blade, arc i's head lag_deg + i/n of the turn behind the blade's angle round her, its tail arc_deg back (shorter as the spin winds up); the brush widest at `head` of the arc (a short round nose ahead, a long tail), band/lip/dry/wobble/gaps/streaks/knots_k as p7.sunder_mark's, `brushes` of them, a fresh one each relay_turns turns; the lip white-hot over the head's first head_hot of the arc (heat over core_cut, thinning to the lip), then the steel bands, the gold/amber cut rising cut_along[0] at the head to [1] at the tail, the grain eroding from fade_along[0] at the head to [1] at the tail from [2] of the way back (dry tail); r2 c2b (c2a judged by the solver: band .1 = 42 px read heavy and flat at the 3.5 m ring, about 420 px; the white a long blade): band .06, lip .2, head_hot .1, core_cut .6, cut .5-.9, dry .3-.9, wobble .45, gaps 2-3; grows from `from` x the radius in `run` s; erodes away where it stands in `out` s once the storm ends or breaks. storm.light: the storm's old gold OmniLight over her, x it (0: none, the painted ring is the read: no light, no glow)",
+    "what": "(bladestorm-spin r2, 16 Nov: E rule 5; BattleFx.P7Storm.cs P7StormRing, BattleFx.Grip.cs RingPaint, shaders/fx_sunder_ring.gdshader ring_along) the storm's ring, painted with Sunder's brush (round 1's stroke arcs, storm.ring_arcs, retired): n open arcs evenly round her on the ground (lift m up) at the storm's real hit radius (Ev.Spin Radius x rad_k), held while she spins and turning with the blade, arc i's head lag_deg + i/n of the turn behind the blade's angle round her, its tail arc_deg back (shorter as the spin winds up); the brush widest at `head` of the arc (a short round nose ahead, a long tail), band/lip/dry/wobble/gaps/streaks/knots_k as p7.sunder_mark's, `brushes` of them, a fresh one each relay_turns turns; the lip white-hot over the head's first head_hot of the arc (heat over core_cut, thinning to the lip), then the steel bands, the gold/amber cut rising cut_along[0] at the head to [1] at the tail, the grain eroding from fade_along[0] at the head to [1] at the tail from [2] of the way back (dry tail); r2 c2b (c2a judged by the solver: band .1 = 42 px read heavy and flat at the 3.5 m ring, about 420 px; the white a long blade): band .06, lip .2, head_hot .1, core_cut .6, cut .5-.9, dry .3-.9, wobble .45, gaps 2-3; c2c: band .08 (c2b .06 read a thin line in its body); grows from `from` x the radius in `run` s; erodes away where it stands in `out` s once the storm ends or breaks. storm.light: the storm's old gold OmniLight over her, x it (0: none, the painted ring is the read: no light, no glow)",
     "n": 3,
     "arc_deg": 116,
     "open_deg": 130,
@@ -975,7 +975,7 @@
     "core_cut": 0.6,
     "cut_along": [0.5, 0.9],
     "fade_along": [0.0, 1.0, 0.3],
-    "band": 0.06,
+    "band": 0.08,
     "wobble": 0.45,
     "lip": 0.2,
     "dry_from": 0.3,
