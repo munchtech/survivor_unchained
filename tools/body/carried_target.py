@@ -710,6 +710,41 @@ def follow_field(pose, V0, pivot, bone, deg=0.5):
     return np.clip(num / np.maximum(den, 1e-30), 0.0, 1.0)
 
 
+def harmonic_field(V0, T, F, one, rows=0, eps=1e-4):
+    """A far anchor's registration field [nv] re-solved as a HARMONIC function on the reference's welded surface: 1 on
+    `one` (the far anchor's own rigid points), 0 off the measured field's support (F > eps) grown `rows`, harmonic in
+    between (edge weight mean rest length / rest length); a component nothing holds keeps F. Why: the measured field
+    (follow_field: the skin's chain weight) ramps where the skin bends, and register() spreads the anchors' misfit by it;
+    a steep ramp under a large misfit folds the reference (idle_warden_town@122: the Head's placement sits 63 mm off the
+    root's, and the throat rolled where A's neck_01 weight ramps; body_facts/neck_edges.md, S4). Harmonic, the misfit
+    spreads as evenly as the support allows, from the anchor's rigid points to the root's."""
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse.linalg import spsolve
+    grp, first = weld_points(V0)
+    n = len(first)
+    e = np.unique(np.sort(grp[np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])], 1), axis=0)
+    e = e[e[:, 0] != e[:, 1]]
+    l0 = np.maximum(np.linalg.norm(V0[first[e[:, 0]]] - V0[first[e[:, 1]]], axis=1), 1e-12)
+    A = _adjacency(n, e, l0.mean() / l0)
+    f, hi = np.asarray(F, float)[first].copy(), np.zeros(n, bool)
+    hi[grp[np.asarray(one, bool)]] = True
+    near = f > eps
+    for _ in range(int(rows)):
+        near |= (A @ near.astype(float)) > 0
+    free = near & ~hi
+    fi = np.nonzero(free)[0]
+    App = A[fi][:, fi]
+    nc, lab = connected_components(App, directed=False)
+    held = np.zeros(nc, bool)
+    held[lab[np.asarray(A[fi][:, ~free].sum(1)).ravel() > 0]] = True
+    fi = fi[held[lab]]
+    f[hi], f[~near] = 1.0, 0.0
+    fx = np.setdiff1d(np.arange(n), fi)
+    L = (sp.diags(np.asarray(A.sum(1)).ravel()) - A).tocsr()
+    f[fi] = spsolve(L[fi][:, fi].tocsc(), -(L[fi][:, fx] @ f[fx]))
+    return np.clip(f, 0.0, 1.0)[grp]
+
+
 def register(Va, Ms, F):
     """The reference's posed vertices registered rigidly at each anchor (Ms: 4x4 per anchor, the root first) and blended
     by the far anchors' fields F [nv, anchors - 1] (the root takes the rest: the fields sum to at most 1)."""
@@ -797,7 +832,12 @@ HER = {
                  # adds up to 0.1 to a carried edge (iron_vow@75:r: carried 2.47, composed 2.51)
                  # fold trigger off 10 Nov (lead 23's solver): the upper-chest notch it stood in for is cured at the source
                  # (her_b weights chain_relax, body_facts/notch.md 5)
-                 "relax": {"ratio": 2.4, "rows": 2}},
+                 "relax": {"ratio": 2.4, "rows": 2},
+                 # field_harmonic (harmonic_field; body_facts/neck_edges.md, S4 16 Nov): the Head anchor's registration field
+                 # re-solved harmonic on A (1 on A's Head-rigid points, 0 off the measured field's support grown `rows`), so
+                 # the Head's misfit against the root (63 mm at idle_warden_town) spreads over the neck instead of folding
+                 # A's throat where its neck_01 weight ramps (Gate T round 1: the roll under the chin). No key: the measured field
+                 "field_harmonic": {"rows": 0, "eps": 1e-4}},
     },
     # the bones the source's driver places (never read from a pose): her rig's helpers but the "unroll" kind, and the scapula
     "driven": [b + "_{s}" for b in (
@@ -917,8 +957,12 @@ class Her:
                     while self.ref_names[Ab.p.parent[top]] in ref:
                         top = Ab.p.parent[top]
                     field[:, k] = follow_field(lambda t: Ab.pose_turns(t)[0], Ab.V0, Ab.G0[top][:3, 3], self.ref_names[top])
+                follow, hf = field.copy(), rc.get("field_harmonic")
+                for k, (_, rf) in enumerate(anchors[1:] if hf else []):   # the registration's field, harmonic (harmonic_field)
+                    own = follow_field(lambda t: Ab.pose_turns(t)[0], Ab.V0, Ab.G0[rf][:3, 3], self.ref_names[rf])
+                    field[:, k] = harmonic_field(Ab.V0, Ab.T, follow[:, k], own >= rc["rigid"], hf.get("rows", 0), hf.get("eps", 1e-4))
                 rg = Region(nm(key), side=s, bones={I[nm(x)] for x in rc["bones"]}, ref_map=ref, order=order, anchors=anchors,
-                            field=field)
+                            field=field, follow=follow)
                 if rc["provider"] == "explicit":            # today's shoulder: region_target.Model's points, seam and pocket
                     ids = md.S[s]["ids"]
                     A = sp.triu(md.adj[ids][:, ids], 1).tocoo()
@@ -1584,7 +1628,7 @@ def cmd_test(h):
 
     # T12: the neck alone. Published outside the region, on head-rigid points and on the outer row; inside, A's edges.
     nk = next(r for r in h.regions.values() if not r.side)
-    ta = Ab.T[(nk.field[:, 0] > 0.02)[Ab.T].all(1)]                     # A's own neck: its triangles that follow the chain
+    ta = Ab.T[(getattr(nk, "follow", nk.field)[:, 0] > 0.02)[Ab.T].all(1)]   # A's own neck: its triangles that follow the chain
     ae = (np.concatenate([ta[:, 0], ta[:, 1], ta[:, 2]]), np.concatenate([ta[:, 1], ta[:, 2], ta[:, 0]]))
     nloc = -np.ones(len(bd.V0), np.int64)
     nloc[nk.spread[0]] = nk.spread[1]
