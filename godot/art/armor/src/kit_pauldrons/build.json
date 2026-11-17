@@ -134,11 +134,15 @@
    ],
    [
     -25,
-    40
+    36
    ],
    [
     0,
-    76
+    48
+   ],
+   [
+    15,
+    66
    ],
    [
     30,
@@ -215,7 +219,7 @@
   "clear": 0.005,
   "lift_max": 0.008,
   "ring": 1,
-  "lift_smooth": 8,
+  "lift_smooth": 24,
   "trim_smooth": 12,
   "deg_per_mm": 2.0,
   "trim": "none",
