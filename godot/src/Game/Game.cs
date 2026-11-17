@@ -1967,6 +1967,12 @@ public partial class Game : Node, IZoneHost
     /// <summary>(M5 r2) An untaken Legendary's edge pointer shows within this of her (m).</summary>
     const double LegendReach = 40;
 
+    /// <summary>The den's names (lane E r4, judge 2: none over C .14 as seen, none at C .04+ in h 290-25, the set's the
+    /// loudest at C .12-.135, h <= 175; drawn as they are): the epic's violet (h 308) goes indigo with its light, the
+    /// rare's blue held under the cap, the set's verdigris. Env LOOT_DEN_LABELS "rare,epic,set" overrides for a shot.</summary>
+    static readonly Color[] DenLabel = (System.Environment.GetEnvironmentVariable("LOOT_DEN_LABELS") ?? "#61a9f6,#9493ec,#56d8b1")
+        .Split(',').Select(h => new Color(h)).ToArray();
+
     /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
     /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>
     List<Ui.GroundLabel> Labels(Battle b)
@@ -1996,10 +2002,13 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
-            // (the den: the set's verdigris is the loudest; lane E r3, judge 2: no label over C .14 as seen, the set's at C .12+ and h <= 175)
-            if (SurvivorUnchained.View.MarkPass.Den && tier is LootTier.Rare or LootTier.Epic) col = SurvivorUnchained.View.Palette.CapChroma(col);
-            if (SurvivorUnchained.View.MarkPass.Den && tier == LootTier.Uncommon) col = SurvivorUnchained.View.Palette.CapChroma(col, 0.125f);
-            if (SurvivorUnchained.View.MarkPass.Den && tier == LootTier.Set) col = new Color("#2cdcaf");
+            // (the den: the set's verdigris is the loudest, DenLabel; the magic's green capped .125)
+            if (SurvivorUnchained.View.MarkPass.Den)
+                col = tier switch
+                {
+                    LootTier.Rare => DenLabel[0], LootTier.Epic => DenLabel[1], LootTier.Set => DenLabel[2],
+                    LootTier.Uncommon => SurvivorUnchained.View.Palette.CapChroma(col, 0.125f), _ => col,
+                };
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).

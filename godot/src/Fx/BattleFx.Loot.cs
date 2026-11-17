@@ -64,7 +64,7 @@ public partial class BattleFx
     void EnsureLoot()
     {
         if (lootLight != null) return;
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/loot_beam.gdshader") };
+        var mat = lootMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/loot_beam.gdshader") };
         lootLight = Add(new Batch(new QuadMesh { Size = Vector2.One }, 300, mat));
         for (int i = 0; i < lootLamps.Length; i++)
         {
@@ -75,7 +75,14 @@ public partial class BattleFx
         }
     }
 
-    void BeginLoot() { EnsureLoot(); lootLight!.Begin(); lampsLit = 0; }
+    void BeginLoot()
+    {
+        EnsureLoot();
+        // (the den's pools cover more of its warm ground: loot_beam's den)
+        if (lootDen != InDen) { lootDen = InDen; lootMat!.SetShaderParameter("den", InDen ? 1f : 0f); }
+        lootLight!.Begin();
+        lampsLit = 0;
+    }
 
     void EndLoot()
     {
@@ -105,9 +112,22 @@ public partial class BattleFx
 
     readonly HashSet<int> gemLanded = new();
 
-    /// <summary>In the den Rare and Epic light is held to chroma 0.14 (the set's verdigris is the loudest drop).</summary>
-    /// (lane E r3, judge 2: capped at .14 going in, the light added over the den's ground still read C .19-.21 as seen: its input held lower)
-    static Color DenCap(Color c, float cmax = 0.14f) => SurvivorUnchained.View.MarkPass.Den ? Palette.CapChroma(c, cmax) : c;
+    /// <summary>The den's tier lights, each "#rrggbb:strength" (lane E r4, judge 2: no loot over C .14 as seen, nothing at
+    /// C .04+ in h 290-25; the set's verdigris the loudest drop). A violet or blue light ADDED over the den's warm ground
+    /// read magenta (the epic's ring h 331-342 at C .19, the rare's h 10) however low its chroma went in (r3: capped at
+    /// .085-.09): their hues go in short of the tier's (the epic toward indigo, the rare toward a cold blue) so what is SEEN
+    /// sits at the tier's hue, and their pools cover more of the ground (loot_beam's den). The set's verdigris paler and
+    /// stronger. Env LOOT_DEN_RARE / LOOT_DEN_EPIC / LOOT_DEN_SET override one for a shot.</summary>
+    static (Color C, float S) DenLit(string env, string def)
+    {
+        var v = (System.Environment.GetEnvironmentVariable(env) ?? def).Split(':');
+        return (new Color(v[0]), v.Length > 1 ? float.Parse(v[1], System.Globalization.CultureInfo.InvariantCulture) : 1f);
+    }
+    static readonly (Color C, float S) DenRare = DenLit("LOOT_DEN_RARE", "#50a3cb:0.7"), DenEpic = DenLit("LOOT_DEN_EPIC", "#8394d6:0.7"),
+        DenSet = DenLit("LOOT_DEN_SET", "#6beac7:1.2");
+    static bool InDen => SurvivorUnchained.View.MarkPass.Den;
+    ShaderMaterial? lootMat;
+    bool? lootDen;
 
     void LootLight(Pickup p, float gy, double now, Color fallback)
     {
@@ -125,17 +145,17 @@ public partial class BattleFx
         switch (tier)
         {
             case LootTier.Rare:
-                Light(p.X, gy, p.Z, Lit.Rare, 0, 0.6f, 1.4f * grow, DenCap(Palette.Rarity[2], 0.09f), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.9f) * flare);
+                Light(p.X, gy, p.Z, Lit.Rare, 0, 0.6f, 1.4f * grow, InDen ? DenRare.C : Palette.Rarity[2], (InDen ? DenRare.S : 0.9f) * flare);
                 break;
             case LootTier.Epic:
             {
                 // Breathing, slowly: the one in a field of blues that is not still.
                 float breath = 0.72f + 0.28f * (0.5f + 0.5f * Mathf.Sin(t * 2.0f + p.Id));
-                Light(p.X, gy, p.Z, Lit.Epic, 0, 0.7f, 2.3f * grow, DenCap(Palette.Rarity[3], 0.085f), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.95f) * breath * flare);
+                Light(p.X, gy, p.Z, Lit.Epic, 0, 0.7f, 2.3f * grow, InDen ? DenEpic.C : Palette.Rarity[3], (InDen ? DenEpic.S : 0.95f) * breath * flare);
                 break;
             }
             case LootTier.Set:
-                Light(p.X, gy, p.Z, Lit.Set, 0, 0.6f, 2.8f * grow, Verdigris, 0.95f * flare);
+                Light(p.X, gy, p.Z, Lit.Set, 0, 0.6f, 2.8f * grow, InDen ? DenSet.C : Verdigris, (InDen ? DenSet.S : 0.95f) * flare);
                 break;
             case LootTier.Legendary or LootTier.Storied:
                 if (tier == LootTier.Legendary && GiftSchool(p) is { } gs) GiftLook(p, gy, t, age, gs);
@@ -303,9 +323,9 @@ public partial class BattleFx
         var ground = V(d.X, Y(d.X, d.Z), d.Z);
         var c = (LootTier)d.Tier switch
         {
-            LootTier.Rare => DenCap(Palette.Rarity[2], 0.09f),
-            LootTier.Epic => DenCap(Palette.Rarity[3], 0.085f),
-            LootTier.Set => Verdigris,
+            LootTier.Rare => InDen ? DenRare.C : Palette.Rarity[2],
+            LootTier.Epic => InDen ? DenEpic.C : Palette.Rarity[3],
+            LootTier.Set => InDen ? DenSet.C : Verdigris,
             _ => (Color?)null,
         };
         if (c is { } glint)

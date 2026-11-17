@@ -79,7 +79,10 @@ public partial class MarkPass : CompositorEffect
 
     /// <summary>The den: a red mark is a crisp 3 px edge on a bed of at most 15% (lane E r2; the arena keeps its look).</summary>
     public static bool Den;
-    /// <summary>The den's red: its edge reads Oklab .565 / .192 / 30 (ui_language.json hostile): the bed's value k, the green and blue shares.</summary>
+    /// <summary>The den's bed only (env DEN_K / DEN_TG / DEN_TB): its value k, and the green and blue shares of the bed and of
+    /// the light run over it (the cast line; tg/hg and tb/hb alike). The den's edge is not set here: it is laid in main at the
+    /// hostile red as seen (denEdge: #cf3626, Oklab .565 / .192 / 30, ui_language.json accents.hostile, the frame's grade
+    /// inverted), whatever these are (lane E r3).</summary>
     public static float DenK = float.Parse(System.Environment.GetEnvironmentVariable("DEN_K") ?? "1.4", CultureInfo.InvariantCulture), DenTg = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TG") ?? "0.05", CultureInfo.InvariantCulture), DenTb = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TB") ?? "0.02", CultureInfo.InvariantCulture);
 
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
