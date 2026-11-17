@@ -86,6 +86,8 @@ public static partial class DungeonDress
             mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-rock-sat", 1f));
             mat.SetShaderParameter("tint", V3("den-rock-tint", new Vector3(1f, 1f, 1f)));
         }
+        mat.SetShaderParameter("occ_k", SetOcclude);   // (den r15 F, lane A judge) the occlusion cut-out round her: roots and banks nearer the camera fade to 20 % over her
+        mat.SetShaderParameter("occ_a", SurvivorUnchained.Args.Num("den-occlude-a", 0.2f));
         mat.SetShaderParameter("bank_gloom", SetGloom);   // (den r13 corr) COLOR.b's depth gloom (bank modules only: objects carry 0)
         mat.SetShaderParameter("gloom_m", SetGloomM);
         mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
@@ -692,6 +694,7 @@ public static partial class DungeonDress
     // (den r15 E, judge r14 item 4: ruled card seams) the cut's fine wander and root-following in the shader (den_set cut_noise,
     // cut_lum, cut_scale), over a wider ramp (SetCutW metres: the ragged border's g from 0 to 1; 0.3 was a 24 px step), and
     // the ragged field unsharpened (SetRagSharp 0: its smoothstep held the cut at 0 or 1 over a fifth of a border, straight)
+    static readonly float SetOcclude = SurvivorUnchained.Args.Num("den-occlude", 0f);   // (den r15 F) default 0 until a den_set card is proven over her (the roots that cover her in the film are kit scenes, other shaders); 1 on: set pieces between the camera and her fade round her (den_set.gdshaderinc occ_cut); 0 off
     static readonly float SetCutNoise = SurvivorUnchained.Args.Num("den-set-cut-noise", 0.4f);
     static readonly float SetCutLum = SurvivorUnchained.Args.Num("den-set-cut-lum", 0.5f);
     static readonly float SetCutScale = SurvivorUnchained.Args.Num("den-set-cut-scale", 2.2f);

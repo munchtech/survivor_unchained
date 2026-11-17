@@ -62,6 +62,33 @@ uniform vec3 rock_lit = vec3(0.23, 0.155, 0.085);
 uniform vec3 rock_moss = vec3(0.1, 0.13, 0.04);
 uniform float rock_moss_k = 0.6;
 varying vec3 wpos;
+// (den r15 F, lane A judge: the den's roots drew over her) the occlusion cut-out: a fragment of the set nearer the camera than
+// her chest and above her knees, inside a screen-space disc round her, is dithered out to occ_a of itself (soft edge, as
+// dungeon_wall's cutaway). occ_k 0 off (--den-occlude). Her chest is the global 'survivor' (WorldScene), w 1 in the world.
+global uniform vec4 survivor;
+uniform float occ_k = 0.0;
+uniform float occ_a = 0.2;        // the share kept in the middle
+uniform vec2 occ_r = vec2(0.085, 0.15);   // full cut inside / none outside, in viewport heights from her
+float occ_bayer(ivec2 p) {
+	int x = p.x & 7;
+	int y = p.y & 7;
+	int v = 0;
+	for (int i = 2; i >= 0; i--) {
+		v = (v << 2) | ((((x >> i) & 1) ^ ((y >> i) & 1)) << 1) | ((y >> i) & 1);
+	}
+	return (float(v) + 0.5) / 64.0;
+}
+bool occ_cut(mat4 vm, mat4 pm, vec3 vtx, vec3 wp, vec4 frag, vec2 vp) {
+	if (occ_k <= 0.0 || survivor.w <= 0.0 || wp.y < survivor.y - 0.2) return false;
+	vec3 her_v = (vm * vec4(survivor.xyz, 1.0)).xyz;
+	if (-vtx.z >= -her_v.z - 0.4) return false;
+	vec4 hp = pm * vec4(her_v, 1.0);
+	vec2 ndc = hp.xy / hp.w;
+	vec2 her_px = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5) * vp;
+	float d = length(frag.xy - her_px) / vp.y;
+	float hole = (1.0 - occ_a) * occ_k * (1.0 - smoothstep(occ_r.x, occ_r.y, d));
+	return occ_bayer(ivec2(frag.xy)) < hole;
+}
 void vertex() { wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
 float lair_gloom(vec3 p) {
 	if (boss_c.z <= 0.0 || boss_gloom <= 0.0) return 0.0;
@@ -92,6 +119,7 @@ float pg_edge(vec2 p) {
 }
 
 void fragment() {
+	if (occ_cut(VIEW_MATRIX, PROJECTION_MATRIX, VERTEX, wpos, FRAGCOORD, VIEWPORT_SIZE)) discard;   // (den r15 F)
 	vec4 c = texture(paint_tex, UV);
 	if (rock_k > 0.0) {
 		vec4 cb = textureLod(paint_tex, UV, rock_lod);
