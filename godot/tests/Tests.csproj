@@ -19,6 +19,7 @@
     <Compile Include="../src/Audio/SoundBankData.cs" LinkBase="src" />
     <Compile Include="../src/Audio/LeadRule.cs" LinkBase="src" />
     <Compile Include="../src/Audio/DenSound.cs" LinkBase="src" />
+    <Compile Include="../src/Audio/EquipCue.cs" LinkBase="src" />
     <Compile Include="../src/Fx/HitStopClassifier.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampBoardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampNav.cs" LinkBase="src" />

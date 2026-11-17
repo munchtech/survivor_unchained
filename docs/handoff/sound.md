@@ -1,3 +1,6 @@
+# Sound lane F2 (the owner's second batch): TOP BLOCK
+Branch `demo-sound-2` (on integration `3ef5f4a02`): 16 sounds banked by `demo_ingest.py`, events by `demo_events.py`, wired (SoundBridge Ev.Cast/Ev.Spin, Sfx.Equip(slot) via EquipCue, tree and ui cues), `set.complete` banked with no hook, suite green. Not run: den Godot smoke (no import cache). Details: docs/team/den_sound_events.md "Second batch".
+
 # Sound (lane F, the den's sound from the owner's files): handoff
 
 ## TOP BLOCK (state file; keep current)

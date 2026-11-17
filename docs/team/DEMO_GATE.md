@@ -115,6 +115,7 @@ Every open later list in the handoffs and RESUME's top section was sorted (138 i
 - **The Ford-Warden (boss tier, after the demo by scope):** the whole `warden_boss.md` list (beard, lamp fist, capelet, cape cloth, hood, silt, gauntlets, concept judge, Meshy, the six frames).
 - **Story / voice:** Act 2 and Act 3 data; the narrator's placeholder take and the stale C04 take; the voice route one character at a time.
 - **Owner:** the Burns Twice sound is unheard.
+- **Tools (the owner, 16 Nov 2026: "Yes, after demo"):** Blender 4.5.14 to 5 as one small lane: install 5 beside 4.5; one BLENDER setting in place of the 104 hard-coded `Toolslender-4.5.14-windows-x64` paths; run each build (body, armor, look, uiforge, assets) on both and compare outputs; switch when they match. Check whether 5 fixes the glTF COLOR_0 export fault (`warden_boss.md`). Not before the demo: lane G's body-B rebuild is matched against the published body.
 
 ## Phase 2, by area (rough)
 

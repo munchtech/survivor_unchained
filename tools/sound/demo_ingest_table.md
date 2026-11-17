@@ -1,6 +1,6 @@
 # Den sound ingest (tools/sound/demo_ingest.py)
 
-Source: `survivorsunchained_inputs/sounds_demo/` (ElevenLabs, made by the owner, 15-16 Nov 2026, no attribution needed).
+Source: `survivorsunchained_inputs/sounds_demo/` (ElevenLabs, made by the owner, 15-16 Nov 2026, no attribution needed; the last 16 files written 16 Nov 13:01-13:42).
 Format: 16-bit PCM, 44100 Hz; mono for takes the bank places in the world, stereo for loops, music, the Pack-Mother's calls.
 Level: each family takes the mean LUFS of its nearest banked neighbour (column `neighbour`); music = the title bed +2 LU;
 `limited` = the take would have passed -1 dBFS, so its gain was capped there.
@@ -66,6 +66,22 @@ Level: each family takes the mean LUFS of its nearest banked neighbour (column `
 | her_heartbeat_1 | low-health-heartbeat#1.wav | 0.95 | shot | 1 | -23.8 | -22.7 | -22.7 | -1.5 |  | hurt_her |
 | her_heartbeat_2 | low-health-heartbeat#2.wav | 0.95 | shot | 1 | -23.8 | -22.8 | -22.7 | -1.0 | yes | hurt_her |
 | her_heartbeat_3 | low-health-heartbeat#3.wav | 0.95 | shot | 1 | -23.6 | -22.7 | -22.7 | -1.3 |  | hurt_her |
+| skill_sunder_0 | sunder.wav | 1.76 | shot | 1 | -21.6 | -18.2 | -18.2 | -1.2 |  | sunder_impact |
+| skill_groundbreaker_0 | groundbreaker.wav | 2.08 | shot | 1 | -24.2 | -20.9 | -20.9 | -3.0 |  | quake_crack |
+| skill_bladestorm_0 | Bladestorm.wav | 6.00 | sting | 2 | -34.6 | -27.7 | -14.8 | -1.0 | yes | storm_whir |
+| tree_open_0 | skill tree open.wav | 3.00 | sting | 2 | -37.1 | -22.1 | -22.1 | -5.8 |  | ui_open |
+| tree_close_0 | skill tree close.wav | 2.94 | sting | 2 | -36.7 | -23.2 | -23.2 | -6.5 |  | ui_close |
+| tree_focus_0 | skill tree focus.wav | 0.42 | shot | 1 | -25.4 | -27.4 | -27.4 | -11.4 |  | ui_card |
+| tree_path_0 | skill tree path click.wav | 0.61 | shot | 1 | -32.3 | -24.2 | -22.8 | -1.0 | yes | ui_pick |
+| tree_denied_0 | skill tree denied.wav | 0.19 | shot | 1 | -29.1 | -24.5 | -22.4 | -1.0 | yes | ui_deny |
+| ui_hover_0 | hover.wav | 0.31 | shot | 1 | -36.6 | -27.4 | -27.4 | -13.1 |  | ui_card |
+| ui_click_0 | click.wav | 0.12 | shot | 1 | -24.2 | -23.0 | -22.8 | -1.0 | yes | ui_pick |
+| ui_equip_0 | equip ui.wav | 0.25 | shot | 1 | -42.3 | -22.8 | -22.8 | -3.9 |  | ui_pick |
+| loot_generic_0 | Generic loot pickup.wav | 0.88 | shot | 2 | -25.0 | -22.1 | -22.1 | -2.8 |  | gold_pickup |
+| loot_rare_0 | Rare loot pickup.wav | 1.35 | sting | 2 | -19.8 | -20.3 | -17.6 | -1.0 | yes | drop_rare |
+| equip_plate_0 | Equip plate armor.wav | 0.89 | shot | 1 | -25.9 | -24.2 | -24.2 | -5.7 |  | impactPlate_medium |
+| equip_helmboots_0 | Equp helm or boots.wav | 0.55 | shot | 1 | -29.1 | -24.2 | -24.2 | -3.9 |  | impactPlate_medium |
+| set_complete_0 | set complete.wav | 3.11 | sting | 2 | -25.1 | -18.7 | -18.7 | -3.2 |  | drop_set |
 
 ## Loops: the seam, by measurement
 

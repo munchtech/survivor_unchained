@@ -91,3 +91,13 @@ ui.deny  Sfx.Deny
 ui.chainslide  Sfx.ChainSlide
 # anything, by id, from the game's code with no recipe behind it
 <any event id>  SoundHooks.Play / Sfx.Cue
+# the owner's second batch (16 Nov 2026, tools/sound/demo_events.py; hooks in SoundBridge and Sfx)
+skill.sunder.heavy  Sfx.Cue (SoundBridge, Ev.Cast Weapon sunder, Heavy: every fourth cut)
+skill.groundbreaker.crack  Sfx.Cue (SoundBridge, Ev.Cast Weapon groundbreaker)
+skill.bladestorm.spin  Sfx.Cue (SoundBridge, Ev.Spin Start; the chained art.bladestorm.whir waits out its 6 s)
+lamps.open|close|focus_small|focus_notable|focus_blue|path_tick|denied  Sfx.Lamps (the cues named in Sfx.Lamps.cs)
+ui.hover|ui.click|ui.equip  Sfx.Hover, Sfx.Click, Sfx.Equip (generic; ui.equip is also the chain's last link)
+loot  loot.rare  Sfx.Loot (rare: a toast at rarity 2 and up, a relic, a tome, a quench)
+equip.plate  Sfx.Equip(slot) (EquipCue: EquipSlot.Body)
+equip.helm_boots  Sfx.Equip(slot) (EquipCue: Head, Feet)
+set.complete  BANKED, NO HOOK: Sfx.Cue("set.complete") when a set's last bonus lights (lanes B and D)
