@@ -823,7 +823,7 @@ public static class Vat
         ShineAa = SurvivorUnchained.Args.Num("vat-shine-aa", 1f);
     /// <summary>(demo-look lane E s2) --den-head 1: the den boss's head in stepped planes (vat.gdshaderinc den_head); 0 (for now
     /// the default, not yet measured): as r3 painted it.</summary>
-    static readonly float DenHead = SurvivorUnchained.Args.Num("den-head", 0f);   // (off until measured)
+    static readonly float DenHead = SurvivorUnchained.Args.Num("den-head", 1f);   // (lead 4: on; l4a_bch_02 vs bc_02 at 2x: crown/brow, cheek and muzzle read as planes)
 
     static VatAsset Build(Baked b)
     {
