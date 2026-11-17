@@ -670,6 +670,10 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
         HeroLine(hp, toFoot != Vector2.Zero, anchor);   // (L1 lead 20, HER5) her line: values 8, 9
         HeroDen.Apply(CelRigs && cam == null ? (Tune != null && Tune.TryGetValue("hden", out var hdt) ? hdt.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : p.HeroDen) : null, hp != null && toFoot != Vector2.Zero);   // (demo-look r2 her: her shadow, line, hair and steps in the den)
+        // (armor-D harness) under a held camera rig (the close-up) HeroDen got no row, so cel_her_den was 0 in the den's close shots and the
+        // kit's den-close knobs never applied: keep that one global at its den value while the rig is held (play camera unchanged: cam == null)
+        if (CelRigs && cam != null && p.HeroDen is { Length: >= 18 } cd)
+            RenderingServer.GlobalShaderParameterSet("cel_her_den", new Vector4((float)cd[15], (float)cd[16], (float)cd[17], cd.Length > 32 ? (float)cd[32] : 0f));
         // (L1 lead 19, HER3; CEL_HERO_ARM) her held pieces as bodies: row values 10-19 = the body's level, r, g, b, its side edge, the
         // warm light's level, r, g, b, the least screen width in px. A shorter row: both zero, her shield and blade as they were.
         var ha = hp is { Length: >= 20 } ? hp : null;

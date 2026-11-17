@@ -176,7 +176,7 @@
           "kit_close_wrap": 0.2,
           "kit_close_den": [
             1.0,
-            1.0,
+            0.9,
             1.0
           ],
           "kit_floor_close": [
