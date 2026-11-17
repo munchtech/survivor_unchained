@@ -46,7 +46,7 @@ def faces(ref, test):
 
 
 class Tube:
-    def __init__(self, ref, F, ctrl, front, step=0.004, dth=3.0, cap=0, cap_max=80.0, tmax=0.25):
+    def __init__(self, ref, F, ctrl, front, step=0.004, dth=3.0, cap=0, cap_max=80.0, tmax=0.25, far=None):
         A = kb.resample(kb.catmull(ctrl, 60 * (len(ctrl) - 1)), step, False)
         t = U(np.gradient(A, axis=0))
         e = U(np.asarray(front, float) - t[0] * (t[0] @ front))
@@ -72,6 +72,15 @@ class Tube:
         UU, TH = np.meshgrid(self.rows, self.ths, indexing="ij")
         O, D = self.frame(UU.ravel(), TH.ravel())
         self.rho = castf(ref, F, O, D, tmax).reshape(UU.shape)
+        if far:  # (rows whose axis point lies past far["from_z"]: her OUTERMOST surface along each ray, cast back in from
+            # far["reach"] out; where her toes part, the first hit is the near toe's side and the boot came short of her
+            # other toes: armor-D 17 Nov, body B's separate toes through the toe cap)
+            m = self.O[UU.ravel().astype(int), 2] >= far["from_z"]
+            L = far["reach"]
+            tb = castf(ref, F, O[m] + L * D[m], -D[m], L)
+            r = self.rho.ravel().copy()
+            r[m] = np.fmax(r[m], L - tb)
+            self.rho = r.reshape(UU.shape)
 
     def frame(self, u, th):
         u = np.clip(np.asarray(u, float), 0, self.rows[-1])
@@ -219,7 +228,7 @@ def boots(cfg, ref):
         F = faces(ref, lambda c: (c[:, 0] * sx > 0.008) & (c[:, 1] < cfg["faces_y"]))
         ctrl = [[J[f"calf_{side}"][0] + sx * a[0], a[1], a[2]] for a in cfg["axis"]]
         tube = Tube(ref, F, np.array(ctrl), [0, 0, 1.0], step=cfg["step"], dth=cfg["dth"], cap=cfg["cap"],
-                    cap_max=cfg["cap_max"])
+                    cap_max=cfg["cap_max"], far=cfg["toe"].get("far"))
         nA = tube.n_axis
         yax = tube.O[:nA, 1]
         bend = int(np.argmax(yax < cfg["y_bend"]))
