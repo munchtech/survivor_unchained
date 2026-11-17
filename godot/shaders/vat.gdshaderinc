@@ -199,8 +199,9 @@ float crowd_edge(float rim) {
 // 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
 // they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
 // (lane E boss r2: back .41/.014/292 read .31-.32/.011/h 326-338; body .034 left boss-mid 65% at C <= .035; mane h 32 read 33-34)
+// (lane E boss r3: back C .030 read .026-.030 with 2 px over C .040 in h 300-15: .028)
 #define DEN_BOSS_BODY vec2(0.029, 50.0)
-#define DEN_BOSS_BACK vec4(0.46, 0.030, 288.0, 0.6)
+#define DEN_BOSS_BACK vec4(0.46, 0.028, 288.0, 0.6)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 30.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
@@ -220,8 +221,15 @@ float crowd_edge(float rim) {
 // DEN_BOSS_BACK.w of the model's up. Her HEAD reads at 1:1: a darker muzzle past DEN_BOSS_HEAD.y in z and ear tips over
 // DEN_BOSS_HEAD.z in y (L DEN_BOSS_HEAD.w), a lighter brow and cheek band between the mane and the muzzle on faces past
 // DEN_BOSS_BROW.y of up (L DEN_BOSS_BROW.x); all in her warm body hue and chroma)
+// (lane E boss r3: the head's regions are cut on her REST pose (vat_rest: the mesh's own vertex and normal, the bake's first
+// frame, the gallop's stretch; Vat.Write), not the animated one: cut on vat_local, the whole head crossed z 0.68 mid-leap and
+// went one near-black blot (screen L .05-.11), and in the gallop z 0.68 sat behind the ears, so the head read one dark
+// block. In the rest pose: eyes at z .75-.77, nose .84, ear tips y .94 at z .70-.73, the forepaws reach z .93 under y .4.
+// The head past DEN_BOSS_HEAD.x in z over DEN_BOSS_HEAD2.x in y; the muzzle past DEN_BOSS_HEAD.y in z, the ear tips over
+// DEN_BOSS_HEAD.z in y past DEN_BOSS_HEAD2.y in z; the brow by the rest normal's y. Was .47/.68/.84/.22 on vat_local)
 #define DEN_BOSS_SPINE vec3(0.035, 0.075, 3.0)
-#define DEN_BOSS_HEAD vec4(0.47, 0.68, 0.84, 0.22)
+#define DEN_BOSS_HEAD vec4(0.47, 0.775, 0.875, 0.28)
+#define DEN_BOSS_HEAD2 vec2(0.58, 0.64)
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
 // (lead 3 foes: the MID band, the fur's three bands: flank, mid past DEN_MID_CUT of the world normal's y, top past
 // crowd_den_top.x; the mid's L step over the flank is crowd_den_rim.w (rigs foe_den [8]), the top's crowd_den_top.y)
@@ -248,7 +256,7 @@ float vat_den_mane(vec3 c_p) {
 	return vat_den_cut(c_p.z, DEN_MANE_Z.x + c_tuft) * (1.0 - vat_den_cut(c_p.z, DEN_MANE_Z.y - c_tuft)) * vat_den_cut(c_p.y, DEN_MANE_LOW);
 }
 vec2 vat_den_ab(float c_c, float c_hd) { return c_c * vec2(cos(radians(c_hd)), sin(radians(c_hd))); }
-vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit) {
+vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit, vec4 c_r) {
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	float c_l0 = dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
@@ -270,9 +278,10 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_sw = mix(DEN_BOSS_SPINE.x, DEN_BOSS_SPINE.y, floor(c_sz * DEN_BOSS_SPINE.z) / max(DEN_BOSS_SPINE.z - 1.0, 1.0));
 		float c_back = (1.0 - vat_den_cut(abs(c_p.x), c_sw)) * vat_den_cut(c_n.y, DEN_BOSS_BACK.w)
 			* vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
-		float c_head = vat_den_cut(c_p.z, DEN_BOSS_HEAD.x);
-		float c_dark = max(vat_den_cut(c_p.z, DEN_BOSS_HEAD.y), c_head * vat_den_cut(c_p.y, DEN_BOSS_HEAD.z));
-		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_n.y, DEN_BOSS_BROW.y);
+		// (r3: on the rest pose, c_r: xyz its place, w its normal's y)
+		float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
+		float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
+		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
 		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark);
 		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_back);
@@ -343,6 +352,9 @@ varying flat float fx_aa;
 varying vec3 vat_local;
 // (demo-look r2 foes: the body's own normal, model space (+Z its head, +Y up), for the den's regions: the boss's back and mane)
 varying vec3 vat_nloc;
+// (lane E boss r3: the REST pose, model space: xyz the mesh's own vertex, w its own normal's y; the bake's first frame
+// (Vat.Write), for the boss's head regions, so they stay on her head through a leap)
+varying vec4 vat_rest;
 // (the body's own place in the world, for the Long Cut's burn from the line outward)
 varying flat vec3 vat_org;
 // How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
@@ -373,6 +385,7 @@ void vertex() {
 	vec3 p1 = texelFetch(vat_pos, vat_coord(f1, vid), 0).xyz;
 	vec3 n0 = texelFetch(vat_nor, vat_coord(f0, vid), 0).xyz * 2.0 - 1.0;
 	vec3 n1 = texelFetch(vat_nor, vat_coord(f1, vid), 0).xyz * 2.0 - 1.0;
+	vat_rest = vec4(VERTEX, NORMAL.y);
 	VERTEX = mix(p0, p1, k);
 	NORMAL = normalize(mix(n0, n1, k));
 	vat_local = VERTEX;
@@ -463,7 +476,7 @@ void fragment() {
 	float dn_live = den_on ? step(dn_cls > 1.5 ? 0.3 : 0.6, dot(abs(COLOR.rgb), vec3(0.333))) : 0.0;
 	// (lead 3: a den foe's hit is its paint's own step (vat_den_body, DEN_HIT): the hit kit's blend (0-0.5) or a struck's)
 	float dn_hit = den_on ? clamp(max(2.0 * fx.x * fx_aa * (1.0 - fx_aa * fx_crit), pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5) * (1.0 - fx_aa)), 0.0, 1.0) * dn_live : 0.0;
-	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_hit);
+	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_hit, vat_rest);
 	vec3 dn_c0 = c;   // (r2 foes: the den body before any flash, for the flash's cap below)
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
