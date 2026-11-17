@@ -1996,7 +1996,10 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
-            if (SurvivorUnchained.View.MarkPass.Den && tier is LootTier.Rare or LootTier.Epic) col = SurvivorUnchained.View.Palette.CapChroma(col);   // (the den: the set's verdigris is the loudest)
+            // (the den: the set's verdigris is the loudest; lane E r3, judge 2: no label over C .14 as seen, the set's at C .12+ and h <= 175)
+            if (SurvivorUnchained.View.MarkPass.Den && tier is LootTier.Rare or LootTier.Epic) col = SurvivorUnchained.View.Palette.CapChroma(col);
+            if (SurvivorUnchained.View.MarkPass.Den && tier == LootTier.Uncommon) col = SurvivorUnchained.View.Palette.CapChroma(col, 0.125f);
+            if (SurvivorUnchained.View.MarkPass.Den && tier == LootTier.Set) col = new Color("#2cdcaf");
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).

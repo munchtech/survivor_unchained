@@ -106,7 +106,8 @@ public partial class BattleFx
     readonly HashSet<int> gemLanded = new();
 
     /// <summary>In the den Rare and Epic light is held to chroma 0.14 (the set's verdigris is the loudest drop).</summary>
-    static Color DenCap(Color c) => SurvivorUnchained.View.MarkPass.Den ? Palette.CapChroma(c) : c;
+    /// (lane E r3, judge 2: capped at .14 going in, the light added over the den's ground still read C .19-.21 as seen: its input held lower)
+    static Color DenCap(Color c, float cmax = 0.14f) => SurvivorUnchained.View.MarkPass.Den ? Palette.CapChroma(c, cmax) : c;
 
     void LootLight(Pickup p, float gy, double now, Color fallback)
     {
@@ -124,13 +125,13 @@ public partial class BattleFx
         switch (tier)
         {
             case LootTier.Rare:
-                Light(p.X, gy, p.Z, Lit.Rare, 0, 0.6f, 1.4f * grow, DenCap(Palette.Rarity[2]), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.9f) * flare);
+                Light(p.X, gy, p.Z, Lit.Rare, 0, 0.6f, 1.4f * grow, DenCap(Palette.Rarity[2], 0.09f), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.9f) * flare);
                 break;
             case LootTier.Epic:
             {
                 // Breathing, slowly: the one in a field of blues that is not still.
                 float breath = 0.72f + 0.28f * (0.5f + 0.5f * Mathf.Sin(t * 2.0f + p.Id));
-                Light(p.X, gy, p.Z, Lit.Epic, 0, 0.7f, 2.3f * grow, DenCap(Palette.Rarity[3]), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.95f) * breath * flare);
+                Light(p.X, gy, p.Z, Lit.Epic, 0, 0.7f, 2.3f * grow, DenCap(Palette.Rarity[3], 0.085f), (SurvivorUnchained.View.MarkPass.Den ? 0.7f : 0.95f) * breath * flare);
                 break;
             }
             case LootTier.Set:
@@ -302,8 +303,8 @@ public partial class BattleFx
         var ground = V(d.X, Y(d.X, d.Z), d.Z);
         var c = (LootTier)d.Tier switch
         {
-            LootTier.Rare => DenCap(Palette.Rarity[2]),
-            LootTier.Epic => DenCap(Palette.Rarity[3]),
+            LootTier.Rare => DenCap(Palette.Rarity[2], 0.09f),
+            LootTier.Epic => DenCap(Palette.Rarity[3], 0.085f),
             LootTier.Set => Verdigris,
             _ => (Color?)null,
         };
