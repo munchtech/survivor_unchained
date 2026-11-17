@@ -426,6 +426,8 @@ def rigid_roles(path=None):
 
 def plate_blend_of(bd, ms, own_all):
     """The A blend of the plate a rigid component (own_all over the tier's uniques) is (ORNAMENT "plates"), or None."""
+    if ORNAMENT.get("plate_blend", "a") != "a":
+        return None
     k0 = 0
     for mm in ms:
         n = len(bd.z[f"comp{mm['i']}"])
