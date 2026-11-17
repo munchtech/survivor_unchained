@@ -275,7 +275,8 @@
   "trim_pad": 2.0,
   "trim_round": 6.0,
   "trim_tol": 0.0,
-  "cop_lift_max": 0.025
+  "cop_lift_max": 0.025,
+  "by_body": {"p1": {"exclude": {"bones": ["Head", "neck"], "w": 0.5}, "cop_exclude": null}}
  },
  "liner": {
   "off": 0.0023,
