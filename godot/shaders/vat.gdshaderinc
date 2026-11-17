@@ -231,6 +231,13 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_HEAD vec4(0.47, 0.775, 0.875, 0.28)
 #define DEN_BOSS_HEAD2 vec2(0.58, 0.64)
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
+// (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
+// body's world-normal bands ran over the head's curves as a ramp): LIT (the rest normal's y past DEN_HEAD_LIT.y: crown, brow,
+// the muzzle's bridge) at L DEN_HEAD_LIT.x, SHADE (sides, cheeks, jaw) at DEN_HEAD_SHADE, DARK (the muzzle past DEN_BOSS_HEAD.y,
+// the ear tips) at DEN_BOSS_HEAD.w. den_head (Vat.cs --den-head): 1 these planes, 0 r3's head. Not yet measured: off by default.)
+uniform float den_head = 0.0;
+#define DEN_HEAD_LIT vec2(0.48, 0.30)
+#define DEN_HEAD_SHADE 0.34
 // (lead 3 foes: the MID band, the fur's three bands: flank, mid past DEN_MID_CUT of the world normal's y, top past
 // crowd_den_top.x; the mid's L step over the flank is crowd_den_rim.w (rigs foe_den [8]), the top's crowd_den_top.y)
 #define DEN_MID_CUT 0.3
@@ -248,6 +255,13 @@ float crowd_edge(float rim) {
 float vat_den_cut(float c_v, float c_at) {
 	float c_w = fwidth(c_v) * 0.5 + 1e-4;
 	return smoothstep(c_at - c_w, c_at + c_w, c_v);
+}
+// (lane E s2: the boss's head planes on her rest pose c_r: x lit, y shade, z dark; their sum the head's share)
+vec3 vat_den_head(vec4 c_r) {
+	float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
+	float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
+	float c_lit = (c_head - c_dark) * vat_den_cut(c_r.w, DEN_HEAD_LIT.y);
+	return vec3(c_lit, c_head - c_dark - c_lit, c_dark);
 }
 // (the mane's or ruff's mask: the neck and shoulders over DEN_MANE_LOW, its fore and hind edges in tufts round the neck)
 float vat_den_mane(vec3 c_p) {
@@ -283,6 +297,9 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
 		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
 		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark);
+		vec3 c_hp = vat_den_head(c_r);
+		float c_hd = (c_hp.x + c_hp.y + c_hp.z) * step(0.5, den_head);
+		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
 		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_back);
 		float c_mane = vat_den_mane(c_p);
@@ -794,6 +811,7 @@ void fragment() {
 			ALBEDO = vec3(0.0);
 			vec3 dn_pz = clamp(abs(mod(clamp(floor((vat_local.z + 0.6) / 0.1) / 12.0, 0.0, 1.0) * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 			e = crowd_den_top.z < 1.5 ? (dn_cls > 1.5 ? vec3(3.0, 0.0, 3.0) : dn_cls > 0.5 ? vec3(0.0, 0.0, 3.0) : vec3(0.0, 3.0, 0.0))
+				: crowd_den_top.z > 3.5 ? (dn_cls > 1.5 ? 3.0 * vat_den_head(vat_rest) : vec3(0.0))   // (s2: 4 the head planes, lit r shade g dark b)
 				: crowd_den_top.z > 2.5 ? 3.0 * vec3(dn_hit, 0.0, vat_den_mane(vat_local) * vat_den_cut(normalize(vat_nloc).y, DEN_ACCENT.z))
 				: dn_pz * (fract(vat_local.y / 0.1) < 0.12 ? 0.15 : 1.0);
 		}

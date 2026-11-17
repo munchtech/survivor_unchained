@@ -1065,7 +1065,7 @@ public partial class CrowdView : Node3D
         var xf = new Transform3D(basis, at);
         crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, warm || (e.LastCrit && !e.LastDot && hk.X < 0),hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
             // (M5 r3) a champion's affix rim (Content/Champions.Look): its body reads at night and in shade
-            e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1, e.Boss ? 2 : e.Elite ? 1 : 0);
+            e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1, e.Boss ? 2 : e.Elite ? 1 : 0, (float)heightAt(at.X, at.Z));   // (lane E s2: its dark on the ground under it, Vat.Push)
         // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)
         if (e.Def.CarriedLight != null && asset.GlassAt(role, t) is Vector3 gl) GlassOn[e.Id] = (xf * gl, e.Seed, Engine.GetProcessFrames());
         living++;
@@ -1214,7 +1214,7 @@ public partial class CrowdView : Node3D
             censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
             float brim = FlareBandRim?.Invoke(st.Id) ?? 0, lift = FlareStatueLift?.Invoke(st.Id) ?? 0;
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1, floor: (float)heightAt(st.X, st.Z));
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
@@ -1335,10 +1335,10 @@ public partial class CrowdView : Node3D
             {
                 var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
                 censusBurn++;
-                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow, floor: (float)heightAt(c.X, c.Z));
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0, floor: (float)heightAt(c.X, c.Z));
         }
     }
 
