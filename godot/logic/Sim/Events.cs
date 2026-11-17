@@ -280,6 +280,11 @@ public static class Ev
     /// <summary>A boss's phase broken: the damage past its mark, shown as one number.</summary>
     public sealed class Break : CombatEvent { public double X, Z, Amount; public int Enemy; }
     public sealed class Sound : CombatEvent { public string Id = ""; public double? X, Z, Volume; }
+
+    /// <summary>A creature's own voice at one of its moments (the sound layer's voice.&lt;kind&gt;.&lt;moment&gt;): Def is its def id,
+    /// Moment is "notice" (it first turns on her), "bite" (its blow lands in reach) or "lunge" (its charge or lunge is
+    /// marked and begins). Hurt and death come from Ev.Hit and Ev.Kill. Nothing in the sim reads it (no dice drawn).</summary>
+    public sealed class Voice : CombatEvent { public string Def = "", Moment = ""; public double X, Z; public int Enemy; }
 }
 
 /// <summary>What a calling's Hand did (Sim/Hands.cs), for the view to show: a heavy blow landed, a Stone laid,
