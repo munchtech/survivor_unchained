@@ -68,6 +68,20 @@ public sealed class SideCarry
     /// rates can't hold the angle (a fast pivot), the tip swings away from the camera instead of planting past her boots.</summary>
     public float ShortZone = 12f, ShortPull = 30f;
     public int GuardSteps = 8;
+    /// <summary>(judge r12 fix 1, T1v) No world-vertical blade: a drawn blade pitched <see cref="VertPitch"/> deg or more below
+    /// level, within <see cref="CaneAngle"/> deg of straight down on screen, showing <see cref="VertShown"/> or more of its length
+    /// with its tip more than <see cref="VertPx"/> px under her lower ankle reads as a cane at 1:1 even foreshortened (a vertical
+    /// blade shows ~0.5 at pitch 60). A crossing of straight down goes with the tip raised or short along the view ray. The
+    /// judge's bar is pitch 75, 28 deg, 0.4, 0 px. VertPitch 90+: off.</summary>
+    public float VertPitch = 72f, VertShown = 0.37f, VertPx = -3f;
+    /// <summary>(judge r12 fix 2) The pitch the layer adds never reverses frame to frame by <see cref="PitchRev"/> deg or more
+    /// each way (the stop's pump: inward toggled +-10 deg a frame, s11 leg 12 +36..+46), and is kept from last frame's by
+    /// <see cref="PitchPull"/> deg of screen miss per deg. PitchRev 0: off.</summary>
+    public float PitchRev = 1.5f, PitchPull = 0.5f;
+    /// <summary>(lead r13) The guard's turn stays within <see cref="GuardReach"/> deg (times the layer's weight) of the turn the
+    /// layer wants, each way, or pays <see cref="ReachCost"/> per deg past it: a fading layer hands the blade back to the clip
+    /// (e27 seed 13 leg 4 +52..+59: the guard walked the inward turn to 101 deg while the weight fell, the blade at the camera).</summary>
+    public float GuardReach = 35f, ReachCost = 0.003f;
     /// <summary>(judge r11 fix 5, solver r12) T4, the blade hidden behind her legs, by the judge's own test (tools/anim/fit/
     /// hidden.py): of 20 points along the blade, the share within <see cref="HidePx"/> px on screen of a leg's bones (hip to knee
     /// to ankle) and not <see cref="HideTol"/> m nearer the camera than the leg there. A drawn turn that hides <see cref="HideFrac"/>
@@ -194,7 +208,7 @@ public sealed class SideCarry
     public float Shift { get; private set; }
     float springV, clipPrev = float.NaN, yawRate;
     Vector3 aheadPrev;
-    float lastA = float.NaN, lastShown, lastPoff;   // the last drawn blade on screen (deg, screen right +), its shown share, the pitch added
+    float lastA = float.NaN, lastShown, lastPoff, lastDPoff;   // the last drawn blade on screen (deg, screen right +), its shown share, the pitch added
     /// <summary>(solver r12) How far the layer has yielded to the clip's own pose (0..1, see <see cref="HideFrac"/>).</summary>
     public float Yield { get; private set; }
     // the legs' four bones (far thigh, far shin, near thigh, near shin) as screen px from the grip (x, y) and depth (z, m, + away)
@@ -289,7 +303,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; Yield = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; lastA = float.NaN; lastShown = 0f; lastPoff = 0f; lastDPoff = 0f; Yield = 0f; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -430,7 +444,9 @@ public sealed class SideCarry
             else
             {
                 var bi = Vector3.Normalize(b);
+                float lp = lastPoff;
                 Look(bi, Vector3.Normalize(f.Left), Vector3.Normalize(f.Ahead), Tilt, Inward, f, out lastA, out lastShown, out _, out lastPoff);
+                lastDPoff = lastPoff - lp;
             }
             return;
         }
@@ -600,13 +616,16 @@ public sealed class SideCarry
     /// <summary>The blade `b` turned `t` about her left and `i` about her facing, as drawn: its screen angle (deg, screen right
     /// +), the share of its length on screen, its tip's px under her lower ankle, the pitch the turn adds (deg).</summary>
     static void Look(Vector3 b, Vector3 left, Vector3 ahead, float t, float i, in Frame f, out float a, out float shown, out float under, out float poff)
+        => Look(b, left, ahead, t, i, f, out a, out shown, out under, out poff, out _);
+    static void Look(Vector3 b, Vector3 left, Vector3 ahead, float t, float i, in Frame f, out float a, out float shown, out float under, out float poff, out float pitch)
     {
         var d = Turned(b, left, t, ahead, i);
         float sx = Vector3.Dot(f.Jx, d), sy = Vector3.Dot(f.Jy, d), n = MathF.Sqrt((f.Jx.LengthSquared() + f.Jy.LengthSquared()) / 2f);
         a = MathF.Atan2(sx, sy) * R2D;
         shown = n > 1e-6f ? MathF.Sqrt(sx * sx + sy * sy) / n : 0f;
         under = f.Length > 0.1f ? sy * f.Length - MathF.Max(Vector3.Dot(f.Jy, f.AnkleL - f.Grip), Vector3.Dot(f.Jy, f.AnkleR - f.Grip)) : float.NegativeInfinity;
-        poff = (MathF.Asin(Math.Clamp(-d.Y, -1f, 1f)) - MathF.Asin(Math.Clamp(-b.Y, -1f, 1f))) * R2D;
+        pitch = MathF.Asin(Math.Clamp(-d.Y, -1f, 1f)) * R2D;
+        poff = pitch - MathF.Asin(Math.Clamp(-b.Y, -1f, 1f)) * R2D;
     }
 
     /// <summary>(judge r11 fixes 3, 4) The drawn turn held to the rates and the guard (see <see cref="CaneShown"/>): the turn
@@ -618,14 +637,23 @@ public sealed class SideCarry
         // clip's own swing, judged right (e24 leg 14: the guard turned a w-0 run blade at the camera, 79 deg off the judged run)
         bool hideOn = legsOn && moving < 0.5f;
         float ts = MaxRate > 0f ? MaxRate * dt : 360f, isd = InwardRate > 0f ? InwardRate * dt : 360f, ps = PitchRate > 0f ? PitchRate * dt : float.MaxValue;
+        float tW = Tilt, iW = Inward;   // the turn the layer wants this frame, before the rates
         float tB = tPrev + Math.Clamp(Tilt - tPrev, -ts, ts), iB = iPrev + Math.Clamp(Inward - iPrev, -isd, isd);
         Look(b, left, ahead, Tilt, Inward, f, out float aD, out _, out _, out _);
         bool hasLast = !float.IsNaN(lastA);
         var fc = f;
         float Bad(float t, float i, out float a, out float sh, out float po)
         {
-            Look(b, left, ahead, t, i, fc, out a, out sh, out float un, out po);
-            float v = 0f;
+            Look(b, left, ahead, t, i, fc, out a, out sh, out float un, out po, out float pa);
+            float v = 0f, rch = GuardReach * Weight;
+            if (GuardReach > 0f) v += ReachCost * (MathF.Max(0f, MathF.Abs(t - tW) - rch) + MathF.Max(0f, MathF.Abs(i - iW) - rch));
+            if (pa >= VertPitch && MathF.Abs(a) < CaneAngle && sh >= VertShown && un > VertPx)
+                v += 0.05f + MathF.Min((pa - VertPitch) / 10f, MathF.Min((sh - VertShown) / 0.2f, (CaneAngle - MathF.Abs(a)) / CaneAngle));
+            if (hasLast && PitchRev > 0f)
+            {
+                float dpo = po - lastPoff;
+                if (dpo * lastDPoff < 0f && MathF.Abs(dpo) >= PitchRev && MathF.Abs(lastDPoff) >= PitchRev) v += 0.02f + 0.005f * MathF.Min(MathF.Abs(dpo), MathF.Abs(lastDPoff));
+            }
             if (hideOn) { float hd = HiddenOf(Turned(b, left, t, ahead, i), fc); if (hd >= HideFrac) v += 0.02f + HideCost * (hd - HideFrac); }
             // (solver r12) the tilt never flips sign in a frame from a turn either way (the judge's TILTFLIP: both 5 deg or more)
             if (tPrev * t < 0f && MathF.Abs(tPrev) >= 4.5f && MathF.Abs(t) >= 4.5f) v += 0.05f;
@@ -656,11 +684,12 @@ public sealed class SideCarry
                     if (MathF.Abs(a) < CaneAngle + ShortZone) m += ShortPull * MathF.Max(0f, sh - ShortShown);
                     // (lead r12, e26 leg 12 +38..+48) and the blade's shown length kept from frame to frame: two near-equal turns
                     // picked by turns flickered it 0.52/0.75/0.84/0.36 (inward 10/23/14/23/34/43)
-                    if (hasLast) m += ShownPull * MathF.Abs(sh - lastShown);
+                    if (hasLast) m += ShownPull * MathF.Abs(sh - lastShown) + PitchPull * MathF.Abs(po - lastPoff);
                     if (v < bv - 1e-6f || m < bm) { bv = v; bm = m; bt = t; bi = i; ba = a; bs = sh; bp = po; }
                 }
         }
         Tilt = bt; Inward = bi;
+        lastDPoff = hasLast ? bp - lastPoff : 0f;
         lastA = ba; lastShown = bs; lastPoff = bp;
     }
 
