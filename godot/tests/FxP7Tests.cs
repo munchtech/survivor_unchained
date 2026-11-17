@@ -70,6 +70,32 @@ public class FxP7Tests
         Assert.InRange(p["leap.henge.pitch"], 0.6f, 2f);
     }
 
+    /// <summary>(bladestorm-spin r2, 16 Nov: E rule 5) The storm's ring is Sunder's painted brush, held and turning with the
+    /// blade (BattleFx.P7Storm.cs P7StormRing): its numbers are there; at least three open arcs that together go all the
+    /// way round her (a gap of at most 12 degrees after each); a short nose ahead of a long tail, white only at the head;
+    /// no light; round 1's stroke arcs (storm.ring_arcs) are retired.</summary>
+    [Fact]
+    public void TheStormsRingIsPainted()
+    {
+        var p = Real();
+        const string key = "storm.ring_paint";
+        foreach (var k in new[] { "n", "arc_deg", "open_deg", "lag_deg", "rad_k", "lift", "from", "run", "out", "relay_turns", "brushes", "head", "head_hot",
+            "core_cut", "cut_along", "fade_along", "band", "wobble", "lip", "dry_from", "dry", "gaps", "gap_w", "streaks", "streak_len", "knots_k" })
+            Assert.True(p.Has(key + "." + k), "fx_language.json p7 lacks " + key + "." + k);
+        int n = (int)p[key + ".n"];
+        Assert.InRange(n, 3, 6);
+        Assert.True(p[key + ".open_deg"] < 360f && p[key + ".arc_deg"] <= p[key + ".open_deg"]);
+        Assert.InRange(360f / n - p[key + ".arc_deg"], 0f, 12f);
+        Assert.InRange(p[key + ".head"], 0.75f, 0.95f);
+        Assert.InRange(p[key + ".head_hot"], 0.05f, 0.3f);
+        Assert.InRange(p[key + ".band"], 0.05f, 0.14f);
+        Assert.Equal(2, p.All(key + ".cut_along").Length);
+        Assert.Equal(3, p.All(key + ".fade_along").Length);
+        Assert.InRange(p[key + ".out"], 0.05f, 0.4f);
+        Assert.Equal(0f, p["storm.light"]);
+        Assert.False(p.Has("storm.ring_arcs.n"));
+    }
+
     [Fact]
     public void TheJudgesFloorsHold()
     {

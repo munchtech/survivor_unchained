@@ -30,6 +30,14 @@ uniform float strip_half = 1.0;
 uniform float strip_front = 1.0;
 uniform float strip_span = 2.0;
 uniform float strip_bow = 0.0;
+// (bladestorm-spin r2) 1: one of the storm's held arcs (BattleFx.P7Storm.cs P7StormRing), its head at u = 1: its lip
+// white-hot over the head's first along_hot of the arc (the white thinning to the lip), then the steel bands, their cut
+// rising from along_cut.x at the head to along_cut.y at the tail, and the brush drying out toward the tail (the grain
+// eroding from along_fade.x at the head to along_fade.y at the tail, from along_fade.z of the way back)
+uniform float ring_along = 0.0;
+uniform float along_hot = 0.12;
+uniform vec2 along_cut = vec2(0.45, 0.8);
+uniform vec3 along_fade = vec3(0.0, 0.85, 0.4);
 
 varying vec2 lp;
 
@@ -60,10 +68,21 @@ void fragment() {
 	if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
 	vec3 t = textureGrad(ring_tex, vec2(u, v), gx, gy).rgb;
 	float heat = t.r, grain = t.b;
+	float cut = ring_cut, fade = ring_fade, core = ring_core;
+	bool hot = ring_hot > 0.5;
+	if (ring_along > 0.5) {
+		float hu = 1.0 - u;
+		hot = hot || hu < along_hot;
+		core = mix(ring_core, 0.98, clamp(hu / max(along_hot, 1e-3), 0.0, 1.0));
+		cut = mix(along_cut.x, along_cut.y, hu);
+		fade = max(ring_fade, mix(along_fade.x, along_fade.y, smoothstep(along_fade.z, 1.0, hu)));
+	}
 	float aa = max(fwidth(grain) * 0.75, 0.01);
-	float a = t.g * smoothstep(ring_fade - aa, ring_fade + aa, grain);
+	float a = t.g * smoothstep(fade - aa, fade + aa, grain);
 	if (a < 0.004) discard;
-	vec3 c = ring_hot > 0.5 ? mix(fx_mid, fx_core, fx_step(ring_core, heat)) : mix(fx_edge, fx_mid, fx_step(ring_cut, heat));
+	// both bands' steps taken outside the choice (their slopes need every pixel of the quad)
+	vec3 ch = mix(fx_mid, fx_core, fx_step(core, heat)), cs = mix(fx_edge, fx_mid, fx_step(cut, heat));
+	vec3 c = hot ? ch : cs;
 	ALBEDO = fx_out(c, a);
 	ALPHA = a;
 }

@@ -41,14 +41,14 @@ public partial class BattleFx
         public required ShaderMaterial M;
         public float Arc, RadK = 1, HwK = 1, Lag, Dy, Tilt, Alpha = 1, Life0;
         public float DownAge = -1;
-        /// <summary>(lane B 16 Nov, E rule 5) one of the ring's arcs: laid at the storm's real radius (p7StormR), not the tip's.</summary>
-        public bool AtStorm;
     }
 
     readonly List<P7Smear> p7Smears = new();
     OmniLight3D? p7StormLight;
     double p7StormOff = -9;
     float p7StormR, p7StormOn = -1, p7SpinPrev = float.NaN, p7SpinDir = -1, p7Swirl, p7SpinAngle, p7TiltPhi;
+    // (bladestorm-spin r2) the storm's count: a ring's arcs turn with their own storm only (P7StormRing)
+    int p7StormGen;
     // the frame's storm work (P7Pre): a tick or start in this batch; a break in it; how many tick kits drawn
     bool p7TickNow, p7BreakNow;
     int p7TickKits;
@@ -134,26 +134,22 @@ public partial class BattleFx
                 var rad0 = new Vector3(tip.X - feet0.X, 0, tip.Z - feet0.Z);
                 P7Press(tip, feet0, rad0.LengthSquared() > 1e-4f ? new Vector3(-rad0.Z, 0, rad0.X).Normalized() : Vector3.Zero);
                 p7TiltPhi = Mathf.Atan2(tip.Z - PlayerPos.Z, tip.X - PlayerPos.X) + Mathf.Pi * 0.5f;
+                p7SpinAngle = p7TiltPhi - Mathf.Pi * 0.5f;
                 // ONE smear: the blade's own path at its reach (round 3: the wake smear parked beside her is gone)
                 p7Smears.Add(P7NewSmear(Mathf.DegToRad(P7D["storm.smear.arc_deg"]), 1f, 1f, 0, 0, 12, P7D["storm.smear.alpha"], 0f));
-                // (lane B 16 Nov, E rule 5: a full ring) the storm's own arcs, evenly round her at its real radius, each a
-                // tapering stroke trailing the blade by its share of the turn, uneven in reach, width and height
-                int n = (int)P7D["storm.ring_arcs.n"];
-                var rk = P7D.All("storm.ring_arcs.rad_k"); var hk = P7D.All("storm.ring_arcs.hw_k"); var dy = P7D.All("storm.ring_arcs.dy");
-                for (int i = 0; i < n; i++)
+                // (bladestorm-spin r2, E rule 5: a full ring) the storm's ring, painted (round 1's stroke arcs retired)
+                P7StormRing();
+                // (r2) its light only if the data asks (storm.light 0: the painted ring is the read, no light, no glow)
+                if (P7D["storm.light"] > 0)
                 {
-                    var arc = P7NewSmear(Mathf.DegToRad(P7D["storm.ring_arcs.arc_deg"]), rk[i % rk.Length], hk[i % hk.Length] * P7D["storm.ring_arcs.head_px"] / P7D["storm.smear.head_px"],
-                        Mathf.Tau * i / n, dy[i % dy.Length], P7D["storm.ring_arcs.tilt_deg"], P7D["storm.ring_arcs.alpha"], 0f);
-                    arc.AtStorm = true;
-                    p7Smears.Add(arc);
+                    if (p7StormLight == null)
+                    {
+                        p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
+                        AddChild(p7StormLight);
+                    }
+                    p7StormLight.OmniRange = Mathf.Min(p7StormR * 1.2f, 4.2f);
+                    p7StormLight.Visible = true;
                 }
-                if (p7StormLight == null)
-                {
-                    p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
-                    AddChild(p7StormLight);
-                }
-                p7StormLight.OmniRange = Mathf.Min(p7StormR * 1.2f, 4.2f);
-                p7StormLight.Visible = true;
                 break;
             }
             case SpinPhase.End:
@@ -183,6 +179,81 @@ public partial class BattleFx
         return new P7Smear { N = n, Mesh = mesh, M = m, Arc = arc, RadK = radK, HwK = hwK, Lag = lag, Dy = dy, Tilt = tilt, Alpha = alpha, Life0 = life0 };
     }
 
+    /// <summary>(bladestorm-spin r2, 16 Nov: E rule 5) The storm's ring: `n` painted arcs (PaintedRing's brush, RingPaint and
+    /// shaders/fx_sunder_ring.gdshader, by the numbers under p7.storm.ring_paint) evenly round her on the ground at the
+    /// storm's real hit radius (Ev.Spin Radius, x rad_k), held while she spins and turning with the blade: arc i's head
+    /// trails the blade's angle round her by lag_deg + i/n of the turn, its tail arc_deg back against the spin (shorter
+    /// as the spin winds up, as the smear's). Its head is white-hot (the lip, over head_hot of the arc), then the steel
+    /// bands, cooling (cut_along) and drying out (fade_along) toward the tail (the shader's ring_along); a fresh brush each
+    /// relay_turns turns (one of `brushes`); it grows from `from` x the radius in `run` s and erodes away where it stands in
+    /// `out` s once its storm ends or breaks. Anchored on her (PlayerPos) and the blade's angle round her (P7BladeAt). No
+    /// light, no sound of its own (storm_start is its birth).</summary>
+    void P7StormRing()
+    {
+        const string key = "storm.ring_paint";
+        int gen = ++p7StormGen, n = Math.Max(1, (int)P7D[key + ".n"]);
+        var rk = P7D.All(key + ".rad_k");
+        var cut = P7D.All(key + ".cut_along");
+        var fade = P7D.All(key + ".fade_along");
+        float arc = Mathf.DegToRad(Mathf.Min(P7D[key + ".arc_deg"], P7D[key + ".open_deg"])), lag = Mathf.DegToRad(P7D[key + ".lag_deg"]);
+        float from = P7D[key + ".from"], run = Mathf.Max(P7D[key + ".run"], 1 / 60f), outS = Mathf.Max(P7D[key + ".out"], 1 / 60f);
+        float lift = P7D[key + ".lift"], relay = Mathf.Tau * Mathf.Max(P7D[key + ".relay_turns"], 0.1f), r = p7StormR;
+        var tex = PaintedRingTex(key);
+        int t0 = (int)(R() * 0.999f * tex.Length);
+        var shader = GD.Load<Shader>(SunderRingShader);
+        p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
+        if (GripSay) GD.Print($"storm ring frame {Engine.GetFramesDrawn()} r {r:0.00} m = {r / P7Px(PlayerPos):0} px arcs {n} x {Mathf.RadToDeg(arc):0} deg");
+        for (int i = 0; i < n; i++)
+        {
+            var m = new ShaderMaterial { Shader = shader };
+            FxCel.Apply(m, School.Physical, FxAfter.On);
+            int ti = (t0 + i) % tex.Length;
+            m.SetShaderParameter("ring_tex", tex[ti]);
+            m.SetShaderParameter("ring_r0", SunderR0);
+            m.SetShaderParameter("ring_hot", 0f);
+            m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+            m.SetShaderParameter("ring_along", 1f);
+            m.SetShaderParameter("along_hot", P7D[key + ".head_hot"]);
+            m.SetShaderParameter("along_cut", new Vector2(cut[0], cut[1]));
+            m.SetShaderParameter("along_fade", new Vector3(fade[0], fade[1], fade[2]));
+            var node = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "StormRing" };
+            AddChild(node);
+            if (FxAfter.On) FxAfter.Adopt(node);
+            float lagI = lag + Mathf.Tau * i / n, radK = rk[i % rk.Length], down = -1, turned = 0, prev = float.NaN;
+            var s = new P7Shape
+            {
+                N = node, M = m, Life = 1e6f,
+                Step = q =>
+                {
+                    bool on = p7StormOn >= 0 && p7StormGen == gen;
+                    if (!on && down < 0) down = q.Age;
+                    if (on)
+                    {
+                        // a fresh brush each relay of the blade's turning round her
+                        if (!float.IsNaN(prev)) turned += Mathf.Abs(Mathf.Wrap(p7SpinAngle - prev, -Mathf.Pi, Mathf.Pi));
+                        prev = p7SpinAngle;
+                        if (turned >= relay) { turned -= relay; ti = (ti + 1) % tex.Length; q.M.SetShaderParameter("ring_tex", tex[ti]); }
+                        float span = arc * Mathf.Clamp(q.Age / 0.15f, 0.25f, 1f), dir = p7SpinDir < 0 ? -1f : 1f;
+                        float head = p7SpinAngle - dir * lagI;
+                        var her = PlayerPos;
+                        her.Y = Y(her.X, her.Z) + lift;
+                        q.N.GlobalPosition = her;
+                        // local +X at the arc's middle; u runs with the spin, so the head is at u 1
+                        q.N.Rotation = new Vector3(0, -(head - dir * span / 2), 0);
+                        q.M.SetShaderParameter("ring_range", span);
+                        q.M.SetShaderParameter("ring_flip", dir);
+                    }
+                    float t = Mathf.Clamp(q.Age / run, 0, 1), e = 1 - (1 - t) * (1 - t);
+                    q.N.Scale = Vector3.One * r * radK * (from + (1 - from) * e);
+                    q.M.SetShaderParameter("ring_fade", down < 0 ? 0f : 1.02f * Mathf.Clamp((q.Age - down) / outS, 0, 1));
+                    if (down >= 0 && q.Age - down >= outS) q.Life = q.Age;
+                },
+            };
+            s.Step(s);
+            p7Shapes.Add(s);
+        }
+    }
+
     /// <summary>The smear's strip this frame: a stroke on the blade's own path at its reach (the tip's radius round her),
     /// the data's px across at its head (at the blade) and tapering to a point over its arc, swept back round her on a
     /// plane leaning `Tilt` degrees; the stroke's round cap is its nose.</summary>
@@ -193,7 +264,7 @@ public partial class BattleFx
         var tip = P7BladeAt(1);
         float a = Mathf.Atan2(tip.Z - her.Z, tip.X - her.X);
         float rt = new Vector2(tip.X - her.X, tip.Z - her.Z).Length();
-        float rc = (s.AtStorm ? p7StormR : Mathf.Clamp(rt, 0.9f, 1.6f)) * s.RadK, hw = 0.5f * P7D["storm.smear.head_px"] * P7Px(her) * s.HwK / 0.72f;
+        float rc = Mathf.Clamp(rt, 0.9f, 1.6f) * s.RadK, hw = 0.5f * P7D["storm.smear.head_px"] * P7Px(her) * s.HwK / 0.72f;
         float h = Mathf.Clamp(tip.Y - her.Y, 0.45f, 1.5f) + s.Dy;
         float k = Mathf.Tan(Mathf.DegToRad(s.Tilt));
         float a0 = a - p7SpinDir * s.Lag, arc = s.Arc * wind;
@@ -572,11 +643,13 @@ public partial class BattleFx
             p7SpinPrev = a; p7SpinAngle = a;
         }
         P7StepSmears(dt);
-        if (p7StormLight == null) return;
         if (p7StormOn >= 0)
         {
-            p7StormLight.GlobalPosition = PlayerPos + Vector3.Up * 1.3f;
-            p7StormLight.LightEnergy = Mathf.Min(1, p7StormOn / 0.15f) * (Flare.Night ? 1.3f : 2.0f);
+            if (p7StormLight is { Visible: true })
+            {
+                p7StormLight.GlobalPosition = PlayerPos + Vector3.Up * 1.3f;
+                p7StormLight.LightEnergy = Mathf.Min(1, p7StormOn / 0.15f) * (Flare.Night ? 1.3f : 2.0f) * P7D["storm.light"];
+            }
             // the swirl: clusters of low puffs at her feet thrown round her way behind the blade, varied in size, a lit
             // top over a darker skirt
             p7Swirl -= dt;
@@ -599,7 +672,7 @@ public partial class BattleFx
                 }
             }
         }
-        else if (p7StormLight.Visible)
+        else if (p7StormLight is { Visible: true })
         {
             p7StormLight.LightEnergy -= dt * 8;
             if (p7StormLight.LightEnergy <= 0) p7StormLight.Visible = false;

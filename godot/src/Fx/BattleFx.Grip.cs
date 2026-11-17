@@ -359,8 +359,9 @@ public partial class BattleFx
         // include's fx_stroke_shape / fx_bristle are not its uniforms, and the dead key read here (grip.dry) threw before
         // the warm-up was ever asked for: the first cut paid the first use
         gripWarm = 3;
-        // (the painted rings' brushes painted now, not on her first cut, leap or vow: Sunder's, the leap's, the vow's, its wave's)
-        foreach (var k in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave" }) PaintedRingTex(k);
+        // (the painted rings' brushes painted now, not on her first cut, leap, vow or storm: Sunder's, the leap's, the vow's, its
+        // wave's, the storm's arcs')
+        foreach (var k in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave", "storm.ring_paint" }) PaintedRingTex(k);
     }
 
     (MeshInstance3D, ImmediateMesh, ShaderMaterial) GripNewNode(string name, int mode)
@@ -422,7 +423,7 @@ public partial class BattleFx
     const string SunderRingShader = "res://shaders/fx_sunder_ring.gdshader";
     /// <summary>The ring texture's inner radius (a share of the ring's radius): its trailing streaks reach in to here.</summary>
     const float SunderR0 = 0.6f;
-    /// <summary>The painted rings' brushes by data key (sunder_mark, leap.mark, vow.mark, vow.wave).</summary>
+    /// <summary>The painted rings' brushes by data key (sunder_mark, leap.mark, vow.mark, vow.wave, storm.ring_paint).</summary>
     static readonly Dictionary<string, ImageTexture[]> paintedRings = new();
 
     /// <summary>(lane B fx s3, 16 Nov: E rule 4; coordinator #15) Sunder's ground mark: ONE painted shockwave ring on the
@@ -538,13 +539,17 @@ public partial class BattleFx
         p7Shapes.Add(s);
     }
 
-    /// <summary>A painted ring's brushes, painted once a session (when she first takes the blade, GripNode): two a key, each
-    /// mirrored at random by its use; closed (seamless round her) when the key's open_deg is 360.</summary>
+    /// <summary>A painted ring's brushes, painted once a session (when she first takes the blade, GripNode): two a key (or
+    /// the key's `brushes`, at most six), each mirrored at random by its use; closed (seamless round her) when the key's
+    /// open_deg is 360.</summary>
     static ImageTexture[] PaintedRingTex(string key)
     {
         if (paintedRings.TryGetValue(key, out var t)) return t;
         bool closed = P7D[key + ".open_deg"] >= 359.9f;
-        return paintedRings[key] = new[] { RingPaint(key, closed, 7), RingPaint(key, closed, 23) };
+        int[] seeds = { 7, 23, 41, 59, 73, 97 };
+        var all = new ImageTexture[Math.Clamp((int)P7D[key + ".brushes", 2f], 2, seeds.Length)];
+        for (int i = 0; i < all.Length; i++) all[i] = RingPaint(key, closed, seeds[i]);
+        return paintedRings[key] = all;
     }
 
     /// <summary>One painted shockwave in polar form (x: round the ring's arc, 0..1; y: SunderR0..1 of the radius), by the
@@ -554,7 +559,9 @@ public partial class BattleFx
     /// `dry_from` of the band out, its bristles broken more toward the front, up to `dry` of them); `gaps` real gaps (gap_w
     /// of the arc wide, ragged by bristle; an open arc's never across its middle); `streaks` thin trailing streaks from the
     /// lip in toward the centre (streak_len of the radius), dry, gone first. R heat, G coverage, B the order it erodes in
-    /// (shaders/fx_sunder_ring.gdshader). Sunder's (open) brush is the s3 one, draw for draw.</summary>
+    /// (shaders/fx_sunder_ring.gdshader). Sunder's (open) brush is the s3 one, draw for draw. (bladestorm-spin r2) An open
+    /// brush is widest at `head` of its arc (0.5 when the key has none: Sunder's, the vow wave's), so the storm's arcs have
+    /// a short round nose at u 1 and a long tail; its gaps never within 0.08 of it.</summary>
     static ImageTexture RingPaint(string key, bool closed, int seed)
     {
         const int H = 128, Lanes = 14;
@@ -562,7 +569,7 @@ public partial class BattleFx
         float kk = P7D[key + ".knots_k", 1f];
         var rng = new RandomNumberGenerator { Seed = (ulong)seed };
         float w0 = P7D[key + ".band"], lip = P7D[key + ".lip"], dryFrom = P7D[key + ".dry_from"], dry = P7D[key + ".dry"];
-        float wob = P7D[key + ".wobble"];
+        float wob = P7D[key + ".wobble"], hd = Mathf.Clamp(P7D[key + ".head", 0.5f], 0.05f, 0.95f);
         var gw = P7D.All(key + ".gap_w");
         var sl = P7D.All(key + ".streak_len");
         float[] Knots(int n) { var k = new float[(int)(n * kk) + 2]; for (int i = 0; i < k.Length; i++) k[i] = rng.Randf(); return k; }
@@ -596,7 +603,7 @@ public partial class BattleFx
         for (int g = 0, guard = 0; g < ng && guard < 50; guard++)
         {
             float gu = closed ? rng.Randf() : 0.14f + 0.72f * rng.Randf(), gwi = Mathf.Lerp(gw[0], gw[1], rng.Randf());
-            if (!closed && Mathf.Abs(gu - 0.5f) < 0.08f) continue;   // never across the cut's line
+            if (!closed && Mathf.Abs(gu - hd) < 0.08f) continue;   // never across the cut's line (the storm's: its head)
             bool near = false;
             foreach (var o in gaps) near |= Du(o.U, gu) < apart;
             if (near) continue;
@@ -611,8 +618,8 @@ public partial class BattleFx
         float texel = (1 - SunderR0) / H;
         for (int x = 0; x < W; x++)
         {
-            float u = (x + 0.5f) / W, s = 2 * u - 1;
-            float taper = closed ? 1f : Mathf.Pow(Mathf.Max(0, 1 - Mathf.Pow(Mathf.Abs(s), 2.4f)), 0.75f);
+            float u = (x + 0.5f) / W, s = hd == 0.5f ? Mathf.Abs(2 * u - 1) : u >= hd ? (u - hd) / (1 - hd) : (hd - u) / hd;
+            float taper = closed ? 1f : Mathf.Pow(Mathf.Max(0, 1 - Mathf.Pow(s, 2.4f)), 0.75f);
             float w = w0 * taper * (1 + wob * (2 * Vn(thick, u) - 1));
             float rOut = 1 - 0.015f * Vn(front, u), rIn = rOut - w;
             for (int y = 0; y < H; y++)
