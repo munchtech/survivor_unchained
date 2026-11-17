@@ -52,3 +52,9 @@ Columns: A's own = the reference as the carry reads it (A posed by the neck's pa
 | Jog_Fwd@11:r | 5.72 | 2.34 | 5 | 0 | 2.06 |
 
 Head-rigid points (Head weight >= 0.999, 16574) and the girdle regions outside the neck: moved by the rule 0.0 m on all 7 poses. Full test: 83 PASS (61 + T22 x15 + T23 x7), ALL PASS.
+
+## Throat roll at idle_warden_town@122 (lane G S4, 16 Nov; Gate T round 1)
+**Cause:** the Head anchor's registration, not A's crease, the share rows or the relax. A's own posed throat is smooth; A registered (`Her.part` Va) has the double groove. The Head's placement sits 63 mm off the root's (pure translation, 0 deg) at @122:l / @126:r, and `register` spreads it by A's measured neck_01 follow field, which ramps over y 1500-1580 on the front (slope x 63 mm about 1): the throat folds.
+**Rule:** config neck `field_harmonic {rows 0, eps 1e-4}` (`harmonic_field`): the field re-solved harmonic on A (1 on A's Head-rigid points, 0 off the measured support). No key: the measured field. T12 reads the measured field (`Region.follow`).
+**Dev numbers (relief at 10 mm on the front box |x|<50, y 1440-1585; pub | base | new | A):** @122:l concave points 110 | 51 | 30 | 26, bulge 0.90 | 1.42 | 0.73 | 0.95 mm; @126:r 104 | 48 | 31 | 25, bulge 0.89 | 1.48 | 0.79 | 0.96. warden_look@150, stalker_look@134: unchanged. Neck set edge max (new): @122 1.81, @126 1.93, shield_charge@0:r 2.38 (was 2.18), iron_vow@75:r min 0.44 (was 0.62). Scripts: tools/body/out/s4/.
+**Pending:** full run, `test`, T11/T18 rebaseline if moved, `edges --provider carried`, sheet11.
