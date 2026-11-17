@@ -164,6 +164,16 @@ SWEEP_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")   # the demo'
 HAND_PARTS = ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
 
 
+def _hinge_key(ride):
+    """The helper hinges' spec when a ride names a hinge bone (its amount moves that frame: pauldron-2 r4, 16 Nov, a
+    pauldron_hinge .5 -> .8 change kept the stale rooms), else [] (every other cache keeps its key)."""
+    if not any("hinge" in b for b in ride):
+        return []
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    import helpers as hp
+    return [hp.SPEC.get("hinges")]
+
+
 def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True):
     """The room a rigid plate riding `bone` (left side) needs: her skin within `radius` of `centre` (rest), over her rest
     and every frame of the demo clips, carried back into that bone's rest frame; the right side's (mirrored onto the
@@ -185,7 +195,7 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     ride = {bone: 1.0} if isinstance(bone, str) else {k: float(v) for k, v in sorted(bone.items())}
     key = hashlib.sha1(json.dumps(["v1", bone if isinstance(bone, str) else sorted(ride.items()),
                                    [round(float(v), 5) for v in centre], radius, list(clips), vox,
-                                   stamp]).encode()).hexdigest()[:14]
+                                   stamp] + _hinge_key(ride)).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
     if os.path.exists(cache):
         return np.load(cache)["P"]
@@ -247,8 +257,8 @@ def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
     deps = [kb.BODY, str(skin.OUT / "clips" / f"{clip}.json")]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     key = hashlib.sha1(json.dumps(["pf1", sorted((k, round(float(v), 5)) for k, v in ride.items()),
-                                   [round(float(v), 5) for v in centre], radius, clip, frame, stamp]).encode()
-                       ).hexdigest()[:14]
+                                   [round(float(v), 5) for v in centre], radius, clip, frame, stamp]
+                                  + _hinge_key(ride)).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_pose_{key}.npz")
     if os.path.exists(cache):
         z = np.load(cache)
@@ -364,10 +374,11 @@ def liner(ln, ref, cop_ride, c, lpose, above, mat):
     if (vertex_normals(R0, T) * n0).sum(1).mean() < 0:
         T = T[:, ::-1]
     Np = vertex_normals(Rp, T)
-    hit = np.zeros(len(Rp), bool)
+    hits = []
     for Vo, Fo in above:
         t_, _ = raycast(Vo, Fo, Rp + Np * 0.0005, Np.copy(), ln.get("reach", 0.05), chunk=48)
-        hit |= np.isfinite(t_)
+        hits.append(np.isfinite(t_))
+    hit = np.any(hits, 0)
 
     def dist_to(m):
         return cKDTree(R0[m]).query(R0)[0] if m.any() else np.full(len(R0), np.inf)
@@ -375,6 +386,16 @@ def liner(ln, ref, cop_ride, c, lpose, above, mat):
     grown = dist_to(hit) <= dc
     closed = dist_to(~grown) > dc
     g = np.where(closed, dist_to(~closed), -dist_to(closed)) + ln.get("margin", 0.0)
+    ins = ln.get("inset")
+    if ins:
+        # (liner "inset" m, pauldron-2 r4: the openings only: none deeper than inset inside any one plate's shadow (her
+        # skin whose normal meets that plate), where the steel always covers her; r3's whole liner came out through
+        # the steel there in the leap (58.9 mm), where her skin is the tuck's to hide)
+        deep = np.zeros(len(R0), bool)
+        for h_ in hits:
+            deep |= h_ & (dist_to(~h_) > ins)
+        g = np.minimum(g, np.where(deep, -dist_to(~deep), dist_to(deep)))
+        print(f"liner inset {ins * 1000:.0f} mm: {int(deep.sum())} deep skin pts dropped", flush=True)
     bp = os.path.join(kb.SRC, ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
     if os.path.exists(bp):
         G = kb_gl(bp)
@@ -386,8 +407,9 @@ def liner(ln, ref, cop_ride, c, lpose, above, mat):
     from scipy.sparse.csgraph import connected_components
     E = np.r_[F[:, [0, 1]], F[:, [1, 2]]]
     _, lab = connected_components(coo_matrix((np.ones(len(E)), (E[:, 0], E[:, 1])), shape=(len(V),) * 2), False)
-    big = np.bincount(lab[F[:, 0]]).argmax()
-    F = F[lab[F[:, 0]] == big]
+    cnt = np.bincount(lab[F[:, 0]])
+    # (with an inset the openings' liner is a ring and strips: every piece of it over min_tris; else the biggest)
+    F = F[cnt[lab[F[:, 0]]] >= ln.get("min_tris", 40)] if ins else F[lab[F[:, 0]] == cnt.argmax()]
     _, nn, _ = ref.closest(V)
     Vin = V + nn * ln.get("off", 0.0023)
     N = vertex_normals(Vin, F)
@@ -547,6 +569,19 @@ def pauldrons(cfg, ref):
     h = rd["h"] * np.sin(np.pi * np.clip((bb - b0 + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
     lean = U(n + (-ca) * rd["lean"])
     top = base + lean * h[:, None]
+    if ck.get("pose"):
+        # (the design check at the neck side: the ridge and the rim's gap to her idle skin, mm (r3's 1:1 chest: gold and
+        # skin interleaved there))
+        from native_build import Ref
+        hr = Ref(cbody[0][0], cbody[0][1])
+        Lr = np.vstack(loops_ordered(V + N * (th * 0.5), F))
+        br = np.degrees(np.arctan2((Lr - O) @ cf, (Lr - O) @ -ca))
+        for nm_, X_, b_ in (("ridge top", top, bb), ("ridge base", base, bb), ("rim", Lr, br)):
+            sel_ = (b_ > -100) & (b_ < 10)
+            q_, n_, _ = hr.closest(X_[sel_])
+            gp = ((X_[sel_] - q_) * n_).sum(1) * 1000
+            print(f"cop {nm_} gap to her idle skin (beta -100..10) mm: min {gp.min():.1f} at beta {b_[sel_][gp.argmin()]:.0f}"
+                  f", n<3mm {int((gp < 3).sum())} of {len(gp)}", flush=True)
     tg = U(np.gradient(base, axis=0))
     side = U(np.cross(tg, lean))
     R = 2
@@ -714,7 +749,7 @@ def pauldrons(cfg, ref):
         nodes["pauldron_liner_l"] = [liner(lnr, ref, cop_ride, c, lpose, above, leath)]
     if lpose:
         os.makedirs(kb.CACHE, exist_ok=True)
-        np.savez_compressed(os.path.join(kb.CACHE, "paul_design.npz"), cop_V=V, cop_F=F, cop_N=N, thick=th,
+        np.savez_compressed(os.path.join(kb.CACHE, "paul_design.npz"), cop_V=V, cop_F=F, cop_N=N, thick=th, cop_O=O,
                             cop_ride=json.dumps(cop_ride), **{f"row{k}_{nm}": d[nm] for k, d in enumerate(design)
                                                              for nm in ("Pin", "Dd", "ride")})
     out = {}
