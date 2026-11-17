@@ -13,8 +13,9 @@ uniform float soft_depth = 2.5;  // (r14: fades where it meets floor or pit, met
 uniform float veil_cut = 0.4;     // (r15: the veil's alpha x this; the judge asked -60 %)
 uniform float floor_fade = 1.0;   // (r15: veil 0 at the floor, full this many metres above the surface behind it, x2)
 uniform float pit_fade = 1.0;     // (r15: 1 = the veil is masked off over the pits)
-uniform float streak_k = 1.4;     // (r15: streaks round the column, ~4 on its visible half)
+uniform float streak_k = 2.2;     // (r15: streaks round the column, ~4 on its visible half)
 uniform sampler2D hole_tex : hint_default_white, filter_linear, repeat_disable;   // (r15: HoleField as (f+4)/8, bit-exact to the zone)
+uniform float streak_gain = 3.0;   // (r15b: the streaks carry the light; the gaps carry none)
 uniform vec3 hole_map = vec3(0.0, 0.0, 1.0);   // (x origin, z origin, 1/size of the field in metres)
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 
@@ -46,8 +47,12 @@ void fragment() {
 	a *= smoothstep(0.0, 0.12, hf) * (1.0 - smoothstep(0.35, 0.95, hf));
 	float motes = 0.75 + 0.25 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
 	// 3-5 soft streaks along it (by the angle round it, slowly varying with height)
-	float ang = atan(wpos.x - MODEL_MATRIX[3].x, wpos.z - MODEL_MATRIX[3].z);
-	float rays = 0.1 + 1.9 * smoothstep(0.5, 0.78, vnoise(vec2(ang * streak_k + 3.0, hf * 0.5)));
+	// (r15b: by the lateral metre across the shaft as seen, so the streaks run parallel up it: the angle round it made a pinwheel at the top)
+	vec3 cen = (VIEW_MATRIX * vec4(MODEL_MATRIX[3].xyz, 1.0)).xyz;
+	vec3 lat = normalize(cross(ax, normalize(VERTEX)) + 1e-5);
+	float ang = dot(VERTEX - cen, lat);
+	// (r15b: thin hard-ish streaks, 8-25 px, nothing between them: rays 0 outside)
+	float rays = (0.05 + smoothstep(0.56, 0.76, vnoise(vec2(ang * streak_k + 3.0, hf * 0.3)))) * streak_gain;
 	// where the scene is just behind the shaft (floor, pit, bank) it fades out instead of cutting a line
 	float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 sv = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);

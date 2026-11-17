@@ -92,7 +92,7 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffd68a" : "ffd8a0")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
+            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffdc8a" : "ffdea0")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
             LightEnergy = PoolEnergy * (lair ? SurvivorUnchained.Args.Num("den-lair-pool", 0.73f) : 1f),   // (r12) the lair's pools against its floor (lit/median 109/68 in den_boss.png)   // (round 8: --den-pool-energy) (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
@@ -106,11 +106,12 @@ public static class DungeonLight
         var mesh = new CylinderMesh { TopRadius = w * 0.55f, BottomRadius = w, Height = Height, RadialSegments = 20, Rings = 1, CapTop = false, CapBottom = false };
         var mat = new ShaderMaterial { Shader = shader };
         mat.SetShaderParameter("height", Height);
+        if (lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-lair-veil") ?? "bcdcf0"));   // (r15b: cool additive streaks)
         mat.SetShaderParameter("veil_cut", SurvivorUnchained.Args.Num("den-veil-cut", 0.75f));
         mat.SetShaderParameter("floor_fade", SurvivorUnchained.Args.Num("den-veil-floor", 1.0f));
         if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
-        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "fff0c8"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.18f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.8f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
+        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "b4ecff"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.5f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.6f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
         var mid = foot - Axis * (Height * 0.5f);
         // CylinderMesh stands along +y: turn +y to the shaft's upward axis (-Axis).
         var up = -Axis;
