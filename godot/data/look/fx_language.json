@@ -708,43 +708,10 @@
    "life": 0.3
   },
   "leap": {
-   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7.cs P7LeapLand, BattleFx.Grip.cs PaintedRing / RingPaint) Heroic Leap's landing mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed (open_deg 360) round her at the leap's real hit radius (Ev.Leap Radius); knots_k x the bristle detail round its longer length; crack_tint the landing cracks' rgb multiplier (the line row, never black; their lit seams gone). Replaces, for the leap only: leap.ring (target), leap.ribbon head_px/life/blade (air ribbon), leap.star and the landing light (the charge's slam, P7Slam, still reads leap.star / leap.crack)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.3, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.12, 0.4], "band": 0.12, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.8, "gaps": [4, 6], "gap_w": [0.0035, 0.007], "streaks": [8, 11], "streak_len": [0.1, 0.2], "knots_k": 2.0, "crack_tint": [0.85, 0.6, 0.4]},
-   "ring": {
-    "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
-    "lead_px": 8,
-    "trail_px": 6,
-    "arcs": 3,
-    "cover": [
-     [
-      0.0,
-      0.0
-     ],
-     [
-      0.1,
-      0.4
-     ],
-     [
-      0.25,
-      0.7
-     ],
-     [
-      0.4,
-      1.0
-     ]
-    ],
-    "alpha": [
-     0.6,
-     1.0
-    ],
-    "flash_frames": 2,
-    "flash_k": 1.5
-   },
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7.cs P7LeapLand, BattleFx.Grip.cs PaintedRing / RingPaint) Heroic Leap's landing mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed (open_deg 360) round her at the leap's real hit radius (Ev.Leap Radius); knots_k x the bristle detail round its longer length; crack_tint the landing cracks' rgb multiplier (the line row, never black; their lit seams gone). Replaced, for the leap only: the target ring and the air ribbon (their keys, leap.ring and leap.ribbon head_px/life/blade, pruned in r2), leap.star and the landing light (the charge's slam, P7Slam, still reads leap.star / leap.crack). r2 (v1a judged): band .08, dry .9, fade .08-.36 s, gaps 6-8 (the gold read heavy at 380 px); core_cut .5 (the white-hot frames a lip, not a whole white ring)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.5, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.08, 0.36], "band": 0.08, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.9, "gaps": [6, 8], "gap_w": [0.0035, 0.007], "streaks": [8, 11], "streak_len": [0.1, 0.2], "knots_k": 2.0, "crack_tint": [0.85, 0.6, 0.4]},
    "ribbon": {
-    "what": "the blade's path through the air, splined; blade: the share of the blade's own swing over her chest's arc",
-    "head_px": 10,
-    "life": 0.2,
-    "turn_deg": 30,
-    "blade": 0.35
+    "what":"(leap-vow-marks r2: the leap's own air ribbon is gone; its head_px, life and blade pruned) turn_deg: the most a joint of any P7 ribbon turns at the play camera once eased (BattleFx.P7.cs P7BuildTrail / P7Ease: the charge's and the dash's ribbons)",
+    "turn_deg": 30
    },
    "star": {
     "spikes": [
@@ -1018,44 +985,13 @@
    }
   },
   "vow": {
-   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7Storm.cs P7Vow Burst, BattleFx.Grip.cs PaintedRing / RingPaint) Iron Vow's burst mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed round her at the burst's real radius (Ev.Brace Radius). The brace draws only the plant glint (plant.flash_px) and dust; vow.dome, vow.store and vow.burst's star, wave and light keys are no longer read", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.3, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.12, 0.4], "band": 0.09, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.8, "gaps": [5, 7], "gap_w": [0.003, 0.006], "streaks": [10, 14], "streak_len": [0.08, 0.15], "knots_k": 2.9},
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7Storm.cs P7Vow Burst, BattleFx.Grip.cs PaintedRing / RingPaint) Iron Vow's burst mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed round her at the burst's real radius (Ev.Brace Radius). The brace draws only the plant glint (plant.flash_px) and dust; vow.dome, vow.store, vow.burst (star, wave, light) and plant.frames/px are pruned (r2). r2 (v1a judged): band .07, dry .9, fade .08-.36 s, gaps 7-9 (heavy at 420 px); core_cut .5 (the white a lip, not a whole ring)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.5, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.08, 0.36], "band": 0.07, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.9, "gaps": [7, 9], "gap_w": [0.003, 0.006], "streaks": [10, 14], "streak_len": [0.08, 0.15], "knots_k": 2.9},
    "plant": {
     "flash_px": 30,
-    "frames": 3,
     "puffs": [
      12,
      16
-    ],
-    "px": [
-     20,
-     40
     ]
-   },
-   "dome": {
-    "rim_px": 7,
-    "flare_px": 12,
-    "flare_s": 0.1
-   },
-   "store": {
-    "px": [
-     10,
-     26
-    ],
-    "grow": 2.0
-   },
-   "burst": {
-    "spikes": [
-     6,
-     8
-    ],
-    "px": 130,
-    "root_px": 18,
-    "frames": 3,
-    "lead_px": 10,
-    "trail_px": 16,
-    "run": 0.3,
-    "light_k": 0.4,
-    "light_frames": 2
    }
   }
  }

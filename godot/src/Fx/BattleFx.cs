@@ -1276,6 +1276,9 @@ public partial class BattleFx : Node3D
 
 
     int levelHeld;
+    /// <summary>Until when a leap's landing or a vow's burst holds the frame (its painted ring's life): a level's light waits.</summary>
+    double p7MarkHold = -9;
+    bool P7MarkHolds => time < p7MarkHold;
 
     /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
     /// <summary>Her ember's own burst for a level (PlayerView.LevelFlare), with the pillar: it waits for a Flare's frame too
@@ -1284,6 +1287,7 @@ public partial class BattleFx : Node3D
 
     void LevelLight()
     {
+        if (GripSay) GD.Print($"level light frame {Engine.GetFramesDrawn()}");
         OnLevelLight();
         var p = PlayerPos;
         if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
@@ -1872,8 +1876,10 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(PlayerPos + Vector3.Up, new Vector3(0, 1, 0), 0.3f, 0.25f, e.Kind == PickupKind.Gold ? new Color(2f, 1.5f, 0.5f) : new Color(2.2f, 1f, 0.35f), sizeEnd: 0.05f, alpha: 0.6f);
                     break;
                 case Ev.LevelUp:
-                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame).
-                    if (Flare.HoldsFrame) levelHeld++; else LevelLight();
+                    // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame); so they do
+                    // while a leap's or a vow's painted ring is on the ground (P7MarkHolds; leap-vow-marks r2: a burst that felled
+                    // the pack levelled her, and the level's cream pillar stood over the mark, v1a_vow_24).
+                    if (Flare.HoldsFrame || P7MarkHolds) levelHeld++; else LevelLight();
                     break;
                 case Ev.Victory v:
                 {
@@ -2315,7 +2321,7 @@ public partial class BattleFx : Node3D
         Projectiles(b, fdt, now);
         Pickups(b, now);
         LampPool(b, fdt);
-        if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
+        if (levelHeld > 0 && !Flare.HoldsFrame && !P7MarkHolds) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         StepWardenHoly(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }

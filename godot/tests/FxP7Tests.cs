@@ -20,8 +20,8 @@ public class FxP7Tests
     public void EveryPathTheViewsReadIsThere()
     {
         var p = Real();
-        foreach (var k in new[] { "glint.px", "glint.frames", "kick.puffs", "kick.px", "kick.life", "leap.ring.lead_px", "leap.ring.trail_px", "leap.ring.arcs",
-            "leap.ring.cover", "leap.ring.alpha", "leap.ring.flash_frames", "leap.ring.flash_k", "leap.ribbon.head_px", "leap.ribbon.life", "leap.ribbon.turn_deg",
+        foreach (var k in new[] { "glint.px", "glint.frames", "kick.puffs", "kick.px", "kick.life",
+            "leap.ribbon.turn_deg",
             "leap.star.spikes", "leap.star.streaks", "leap.star.root_px", "leap.star.reach", "leap.star.hold_frames", "leap.star.step_frames",
             "leap.crack.root_px", "leap.crack.tip_px", "leap.crack.gap", "leap.crack.seam_px", "leap.crack.cool", "leap.dust.puffs", "leap.dust.px", "leap.dust.run", "leap.chunks",
             "charge.crescent.px", "charge.crescent.frames", "charge.ribbon.head_px", "charge.ribbon.life", "charge.star.spikes", "charge.star.px", "charge.star.root_px",
@@ -29,14 +29,15 @@ public class FxP7Tests
             "charge.stop.run", "charge.stop.reach", "charge.ghost.gap", "charge.ghost.life", "charge.plow.gap", "charge.plow.px", "dash.ribbon.head_px", "dash.ribbon.life",
             "dash.shove.lead_px", "dash.shove.trail_px", "dash.shove.run", "dash.shove.puffs", "dash.shove.px", "storm.smear.head_px", "storm.smear.arc_deg", "storm.smear.alpha",
             "storm.seam.px", "storm.ring.lead_px", "storm.ring.trail_px", "storm.ring.run", "storm.star.spikes", "storm.star.px", "storm.star.root_px", "storm.nick.px",
-            "storm.nick.frames", "vow.plant.flash_px", "vow.plant.puffs", "vow.dome.rim_px", "vow.dome.flare_px", "vow.dome.flare_s", "vow.store.px", "vow.store.grow",
-            "vow.burst.spikes", "vow.burst.px", "vow.burst.root_px", "vow.burst.frames", "vow.burst.lead_px", "vow.burst.trail_px", "vow.burst.run", "vow.burst.light_k", "vow.burst.light_frames", "wave.arc_px", "wave.dust_px", "wave.shed", "wave.open_deg" })
+            "storm.nick.frames", "vow.plant.flash_px", "vow.plant.puffs", 
+            "wave.arc_px", "wave.dust_px", "wave.shed", "wave.open_deg" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
     }
 
     /// <summary>(leap-vow-marks, 16 Nov: coordinator #15) Sunder's painted ring is drawn by three skills, each with its own
     /// numbers (BattleFx.Grip.cs PaintedRing / RingPaint): every number it reads is there; the leap's and the vow's are
-    /// closed rings (360) white-hot 3-4 frames and gone in about 0.4 s.</summary>
+    /// closed rings (360) white-hot 3-4 frames (a lip: core_cut about .5) and gone in about 0.4 s. The keys they replaced (leap.ring,
+    /// leap.ribbon head_px/life/blade, vow.dome, vow.store, vow.burst) are pruned (r2).</summary>
     [Fact]
     public void ThePaintedRingsHaveTheirNumbers()
     {
@@ -49,6 +50,9 @@ public class FxP7Tests
             Assert.Equal(360f, p[key + ".open_deg"]);
             Assert.InRange(p[key + ".core_frames"], 3, 4);
             Assert.InRange(p[key + ".life"], 0.3f, 0.5f);
+            // (r2, v1a judged) the white-hot frames a lip, not a whole white ring; a thin band (heavy at 380-420 px)
+            Assert.InRange(p[key + ".core_cut"], 0.45f, 0.6f);
+            Assert.InRange(p[key + ".band"], 0.05f, 0.09f);
         }
         Assert.Equal(3, p.All("leap.mark.crack_tint").Length);
     }
@@ -62,10 +66,6 @@ public class FxP7Tests
         Assert.InRange(p.All("leap.star.spikes")[1], 3, 7);
         Assert.InRange(p["leap.star.root_px"], 1, 25);
         Assert.InRange(p["storm.seam.px"], 1, 4);
-        Assert.InRange(p["vow.dome.rim_px"], 6, 8);
-        Assert.InRange(p["vow.burst.light_k"], 0, 0.4f);
-        Assert.Equal(1.0, (double)p.Curve("leap.ring.cover", 0.4f), 3);
-        Assert.Equal(0.55, (double)p.Curve("leap.ring.cover", 0.175f), 3);
         Assert.InRange(p.Count("kick.puffs", 0.999f), 8, 12);
         // (r3 fix 2) a ring is 3-9 painted arcs; its shed dust two-value puffs of 20-60 px; the charge stop an open arc
         Assert.InRange(p["wave.arc_px"], 300, 700);

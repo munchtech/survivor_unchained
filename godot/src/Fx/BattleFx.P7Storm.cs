@@ -492,6 +492,7 @@ public partial class BattleFx
                 // (PaintedRing, p7.vow.mark: white-hot, then the steel bands, gone ~0.4 s), then dust there and round her
                 // feet. The star off the shield, the old even wavefront and the light's pop are gone (stickers, a wash)
                 PaintedRing("vow.mark", c + Vector3.Up * 0.06f, r, Mathf.Tau, R() * Mathf.Tau);
+                p7MarkHold = time + P7D["vow.mark.life"];
                 if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
                 {
                     var sp = cam.UnprojectPosition(c) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));

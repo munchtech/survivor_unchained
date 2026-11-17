@@ -295,6 +295,7 @@ public partial class BattleFx
         var c = V(x, Y(x, z), z);
         float pxm = P7Px(c);
         PaintedRing("leap.mark", c + Vector3.Up * 0.06f, r, Mathf.Tau, R() * Mathf.Tau);
+        p7MarkHold = time + P7D["leap.mark.life"];
         if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
         {
             var sp = cam.UnprojectPosition(c) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
