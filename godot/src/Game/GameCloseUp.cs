@@ -46,6 +46,8 @@ public partial class Game
         cam.Room = (a, b) =>
         {
             if (Battle?.Collision is not { } col) return 1;
+            // (--close-hold: no wall pulls the lens in, so --close-hold 0.55 frames her head to boots wherever she stands; --close-room 1 gives the wall back)
+            if (CloseHold != null && Args.Num("close-room", 0) == 0) return 1;
             float dx = b.X - a.X, dz = b.Z - a.Z, len = Mathf.Sqrt(dx * dx + dz * dz);
             if (len < 0.01f) return 1;
             // (a wall's face with a hand's room before it; a post seen past, a cart passed over: CameraRoom)
@@ -167,6 +169,10 @@ public partial class Game
         foreach (var n in v.GetChildren())
             if (n is Node3D n3 && names.Contains((string)n.Name)) n3.Visible = false;
         if (names.Contains("her") && scene.Player != null) scene.Player.Visible = false;
+        // "folk" = every townsperson and walker (not her): the town stands empty behind her
+        if (names.Contains("folk"))
+            foreach (var n in scene.GetChildren())
+                if (n is Node3D f3 && n != scene.Player && (n is INpcView || n is SurvivorUnchained.View.PersonView)) f3.Visible = false;
     }
 
     /// <summary>--close-hold (pictures): the meadow's tufts within 4 m of her are bare (the grass shader's own bare_at slot, the first
