@@ -2281,6 +2281,128 @@ def hang_rule(ev, host_ev, body, law=HANG_LAW):
     return st
 
 
+
+# A BAND ENDS UNDER ITS CUP (lane G builder round 12, 17 Nov; the lead's design: HANG with the cup as the host): on B the
+# warden top's back band (with its gold trim, ring and laces) shows between her right cup's rim and her arm at the look
+# camera as a dark knot (A's arm hides the same spot). Per slot ("CUP": slot -> the host's material), the piece's welded
+# parts are sorted: a host is a part of that material with at least "host_n" uniques (a cup), its rim any big part
+# ("big_n") with "rim_share" of its points within "rim_mm" of a host; a band is any other big part with under "out_share"
+# of its points under a host (its foot on her skin within "reach_mm" of a host point's foot) and some under at "meets"
+# cups or more (a band runs round her from cup to cup; a shoulder strap ends on one cup's top, where A lays it on the
+# cup's face, and keeps its fit). Each band point under a host is held "inside_mm" inside its inner face (never nearer
+# her than "floor_mm"); past the host the band may rise off her no faster than "rise" (mm per mm along it), never under
+# "lie_mm", its own fit wherever that is lower (no step); both faces move together ("thick_mm"); a small part rides the
+# big part it lies nearest (a ring, a lace: the band's one mean move; none on a cup or its rim). Worked in worn-rest
+# space, carried back through each point's own blend. Both sides, any body.
+# PARKED (CUP empty; {"top": "steel"} switches it on). Measured on B, idle_warden_look f150, offline raster: the knot is
+# not the band's end under the cup but the band itself on her flank 30-60 mm round from the cup's edge, 8-19 mm off her
+# skin (7 mm further back), which shows past the cup's silhouette at yaw 8 and 14 wherever it lies. Band pixels past the
+# rim (purple/pink/red, yaw 8 / 14): before 146/196/7, 473/328/18; fade 25 mm 160/126/15, 511/260/18; rise 0.25
+# 195/72/15, 515/120/18; rise 0.1 + lie 4 mm 181/47/16, 585/87/20 (the moved band hides and the band further round
+# shows instead), with back-face specks at yaw 14 (the band pressed thin). Needs the band laid snug round her side over
+# its whole visible run, or the arm's cover, not a cup-local hold.
+CUP = {}
+CUP_LAW = {"host_n": 2000, "big_n": 1000, "rim_mm": 3.0, "rim_share": 0.9, "out_share": 0.5,
+           "reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "rise": 0.1, "lie_mm": 4.0, "thick_mm": 3.0, "meets": 2}
+
+
+def cup_rule(bd, ev, body, wr=None, mat="steel", law=CUP_LAW, tier="close"):
+    """Holds the bands of ev (a piece's eval_unit output) inside its cups (CUP); returns stats. body: the tier's body,
+    wr: its worn rest (worn_rest.worn) or None."""
+    from scipy.spatial import cKDTree
+    parts, Ys, Lis = [], {}, {}
+    for m in bd.meta["meshes"]:
+        v = ev.get(m["node"])
+        if v is None or m["tier"] != tier:
+            continue
+        X, n = v["Xu"], len(v["Xu"])
+        if wr is None:
+            Ys[m["node"]], Lis[m["node"]] = X.copy(), np.broadcast_to(np.eye(3), (n, 3, 3))
+        else:
+            f = np.zeros(n, np.int64)
+            f[v["inv"]] = np.arange(len(v["inv"]))
+            M = np.einsum("nk,nkij->nij", np.asarray(v["W"][f], np.float64),
+                          wr.S[np.asarray(v["J"][f], np.int64)][:, :, :3, :])
+            X0 = X.copy()
+            for nm, d in v["shapes"].items():
+                X0 = X0 + wr.weights.get(nm, 0.0) * d[f]
+            Ys[m["node"]] = np.einsum("nij,nj->ni", M[:, :, :3], X0) + M[:, :, 3]
+            Lis[m["node"]] = np.linalg.inv(M[:, :, :3])
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        nc, lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)
+        for c in range(nc):
+            parts.append((m["node"], np.nonzero(lab == c)[0]))
+    wb = body if wr is None else wr.body
+    host = [k for k, (nd, a) in enumerate(parts) if mat in nd.split(".")[-1] and len(a) >= law["host_n"]]
+    if not host:
+        return {}
+    Xh = np.vstack([Ys[parts[k][0]][parts[k][1]] for k in host])
+    cup = np.concatenate([np.full(len(parts[k][1]), q) for q, k in enumerate(host)])
+    kh = cKDTree(Xh)
+    big = [k for k, (nd, a) in enumerate(parts) if len(a) >= law["big_n"] and k not in host]
+    rims = []
+    for k in big:
+        nd, a = parts[k]
+        d, j = kh.query(Ys[nd][a])
+        if (d <= law["rim_mm"] / 1000.0).mean() >= law["rim_share"]:
+            rims.append((k, np.bincount(cup[j]).argmax()))
+    big = [k for k in big if k not in [k_ for k_, _ in rims]]
+    cup = np.concatenate([cup] + [np.full(len(parts[k][1]), q) for k, q in rims])
+    host += [k for k, _ in rims]
+    Xh = np.vstack([Ys[parts[k][0]][parts[k][1]] for k in host])
+    cb, nb = gear_field.signed_clear(wb, Xh, k=16)
+    kb = cKDTree(Xh - cb[:, None] * nb)
+    r, ins, flo = (law[k] / 1000.0 for k in ("reach_mm", "inside_mm", "floor_mm"))
+    D = {}
+    st = {"hosts": len(host), "bands": 0, "moved": 0, "max_mm": 0.0, "riders": 0}
+    for k in big:
+        nd, a = parts[k]
+        Y = Ys[nd][a]
+        cs, ns = gear_field.signed_clear(wb, Y, k=16)
+        hits = kb.query_ball_point(Y - cs[:, None] * ns, r)
+        under = np.array([len(h) > 0 for h in hits])
+        if not under.any() or under.mean() >= law["out_share"]:
+            continue
+        if len(np.unique(cup[np.concatenate([hits[i] for i in np.nonzero(under)[0]]).astype(np.int64)])) < law["meets"]:
+            continue
+        tgt = np.full(len(a), np.inf)
+        for i in np.nonzero(under)[0]:
+            tgt[i] = max(float(cb[hits[i]].min()) - ins, flo)
+        dd, j = cKDTree(Y[under]).query(Y[~under])
+        tgt[~under] = np.maximum(tgt[under][j] + law["rise"] * dd, law["lie_mm"] / 1000.0)
+        e = np.maximum(cs - tgt, 0.0)
+        if not (e > 1e-6).any():
+            continue
+        # (both faces of the band go together: each point takes the most any point within "thick_mm" of it needs)
+        e = np.array([e[q].max() for q in cKDTree(Y).query_ball_point(Y, law["thick_mm"] / 1000.0)])
+        D[k] = -e[:, None] * ns
+        st["bands"] += 1
+    if not D:
+        return st
+    kbig = cKDTree(np.vstack([Ys[parts[k][0]][parts[k][1]] for k in big + host]))
+    own = np.concatenate([np.full(len(parts[k][1]), k) for k in big + host])
+    row = np.concatenate([np.arange(len(parts[k][1])) for k in big + host])
+    for k, (nd, a) in enumerate(parts):
+        if len(a) >= law["big_n"] or k in host:
+            continue
+        _, j = kbig.query(Ys[nd][a])
+        if not np.isin(own[j], list(D)).all():
+            # (on a cup, its rim or a band the rule leaves: it stays; across a band and another part: the band's move)
+            j = j[np.isin(own[j], list(D))]
+            if not len(j) or len(j) < len(a) // 2:
+                continue
+        D[k] = np.broadcast_to(np.mean([D[own[q]][row[q]] for q in j], axis=0), (len(a), 3))
+        st["riders"] += 1
+    for k, d in D.items():
+        nd, a = parts[k]
+        mv = np.linalg.norm(d, axis=1) > 1e-6
+        ev[nd]["Xu"][a[mv]] += np.einsum("nij,nj->ni", Lis[nd][a[mv]], d[mv])
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(np.linalg.norm(d, axis=1).max(initial=0.0)) * 1000), 2)
+    return st
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
@@ -2307,6 +2429,10 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
                                    if hid in hosts else None)
             if hev is not None:
                 print(f"{bd.id}: hangs under {hid}: {hang_rule(ev, hev, bodies['close'])}", flush=True)
+        if CUP.get(bd.meta["row"].get("slot")):
+            print(f"{bd.id}: its bands end under its cups: "
+                  f"{cup_rule(bd, ev, bodies['close'], worn_rest.worn(bodies['close'], bd.meta['row'], rigid_roles()), CUP[bd.meta['row']['slot']])}",
+                  flush=True)
         evs[bd.id] = ev
         for line in rim_lines(bd, ev):
             print(line, flush=True)
