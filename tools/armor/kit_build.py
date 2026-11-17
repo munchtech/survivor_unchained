@@ -562,7 +562,7 @@ def bodice(cfg, ref):
         G = q[None, :, :] + across[:, None, None] * bn[None, :, :]
         qq, nn, _ = ref.closest(G.reshape(-1, 3))
         nn = U(nn).reshape(G.shape)
-        Ps = qq.reshape(G.shape) + nn * cl
+        Ps = qq.reshape(G.shape) + nn * sh.get("clear", cl)  # (shoulder.clear: the strap's own stand-off; default the piece's)
         plate.append(slab("strap_" + nm[-1], M["plate"], Ps, nn, th_))
         for e in (0, -1):
             trim.append(bead(ref, f"trim_strap_{nm[-1]}{e}", M["trim"], Ps[e], rim, edge_off, False, relax_it=1))

@@ -17,6 +17,8 @@ spec (piece params "bend_fit"):
     lam_mm  the ridge: a weight change of 1.0 costs as much as this rms error in mm (default 3)
     smooth  the change's gaussian over the plate, metres (default 0.008)
     clips   default: every clip of hers the body has (bodies.clip_source); step: frame step (default 1)
+    shapes, hold   her worn-rest shapes {name: w} and springs [amount, squash], as wearcheck poses her for the piece:
+            set by the ship path from the piece (pose_for); offline, pass them in the spec
 
     python tools/armor/bend_fit.py <in.gltf> <out.gltf> '<spec json>'   (offline: a copy refitted, for wearcheck --file)
 """
@@ -36,14 +38,19 @@ sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
 DEF_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")
 
 
-def her_motion(clips=None, step=1):
-    """Her skin (helpers on, no springs): the Body, her skin's rest points, tris, and per frame (globals, posed points,
-    posed normals)."""
+def her_motion(clips=None, step=1, shapes=None, hold=None):
+    """Her skin (helpers on): the Body, her skin's rest points, tris, and per frame (globals, posed points, posed
+    normals). As wearcheck poses her for the piece (l7, 17 Nov): `shapes` {name: w} her worn-rest shapes in her rest
+    points (kit_build.worn_shapes of a worn_rest piece); `hold` [amount, squash] her springs (None: no springs)."""
     import bodies
     import skin
     bodies.clip_source(skin)
     sk = skin.Skeleton.load(bodies.skeleton_for(skin))
-    body = skin.Body(sk, [(bodies.glb_for(skin), lambda n: n == "Heroine", "skin")], None, label="her", helpers=True)
+    jig = skin.Jiggle(sk, amount=float(hold[0]), squash=float(hold[1])) if hold is not None else None
+    body = skin.Body(sk, [(bodies.glb_for(skin), lambda n: n == "Heroine", "skin")], jig, label="her", helpers=True)
+    if shapes:
+        import wearcheck
+        body.P = body.P + wearcheck.shape_delta(bodies.glb_for(skin), shapes, len(body.P))
     T = body.T
     have = [c for c in (clips or DEF_CLIPS) if (skin.OUT / "clips" / f"{c}.json").exists()]
     frames = []
@@ -68,7 +75,7 @@ def fit(Q, W0, names, spec, motion=None):
     rep = {"fitted": int(sel.sum()), "points": len(Q)}
     if not sel.any():
         return W0.copy(), rep
-    body, frames, have = motion or her_motion(spec.get("clips"), int(spec.get("step", 1)))
+    body, frames, have = motion or her_motion(spec.get("clips"), int(spec.get("step", 1)), spec.get("shapes"), spec.get("hold"))
     rep["clips"], rep["frames"] = have, len(frames)
     sk = body.sk
     P0 = body.P
@@ -160,7 +167,9 @@ def fit(Q, W0, names, spec, motion=None):
     ws = w0s
     g0, _ = gaps(posed())
     ws = ws0
-    worse = ((g1 < np.minimum(g0, need[None]) - 2e-4)).any(0)
+    # (veto_mm: the floor a change may not take a point under; default its need. 0: only a change that puts it inside her)
+    vfl = need[None] if spec.get("veto_mm") is None else float(spec["veto_mm"]) * 1e-3
+    worse = ((g1 < np.minimum(g0, vfl) - 2e-4)).any(0) & bool(spec.get("veto", True))
     rep["vetoed"] = int(worse.sum())
     for r in np.nonzero(worse)[0]:
         ws[r] = w0s[r]

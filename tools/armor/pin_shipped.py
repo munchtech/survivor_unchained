@@ -255,7 +255,7 @@ def with_hinges(B):
     return B
 
 
-def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None):
+def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None, fit=None):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
@@ -342,6 +342,18 @@ def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None):
         t, w = _top(mw[None], 4)
         TOP[sel, :4], TW[sel, :4] = t[0], w[0]
     bend = rigid < 0
+    if fit and bend.any():
+        # (params.bend_fit, set per body (l7, 17 Nov): the bending points' weights refit one-sided against her posed
+        # skin through her clips, correctives, worn rest and springs as wearcheck poses her (bend_fit.fit))
+        import bend_fit
+        # (passes: the fit run again from its own result, her motion posed once; each pass's veto is against the last)
+        mo_ = bend_fit.her_motion(fit.get("clips"), int(fit.get("step", 1)), fit.get("shapes"), fit.get("hold"))
+        Wb = Wq[bend]
+        for _ in range(int(fit.get("passes", 1))):
+            Wb, rep_ = bend_fit.fit(Q[bend], Wb, list(B.names), fit, mo_)
+        Wq = Wq.copy()
+        Wq[bend] = Wb
+        res["bend_fit"] = rep_
     if bend.any():
         TOP[bend], TW[bend] = _top(Wq[bend], 8)
     dense = np.zeros((len(Q), nb))

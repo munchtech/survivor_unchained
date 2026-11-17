@@ -16,7 +16,39 @@
    "amount": 0.55,
    "squash": 0
   },
-  "adorn": []
+  "adorn": [],
+  "by_body": {
+   "p1": {
+    "params": {
+     "file": "kit_bodice.glb",
+     "bend_fit": {
+      "bones": [
+       "clavicle_",
+       "upperarm_",
+       "scap_",
+       "lat_",
+       "pec_",
+       "trap_",
+       "delt_",
+       "breast_"
+      ],
+      "offer": [
+       "spine_04",
+       "spine_05",
+       "clavicle_{s}",
+       "pec_{s}",
+       "trap_{s}",
+       "scap_{s}",
+       "delt_{s}",
+       "neck_01"
+      ],
+      "clear_mm": 3.0,
+      "veto_mm": 0.3,
+      "passes": 3
+     }
+    }
+   }
+  }
  },
  "mat": {
   "plate": "steel",
@@ -199,6 +231,11 @@
    0.118,
    1.572
   ],
-  "w": 0.03
+  "w": 0.03,
+  "by_body": {
+   "p1": {
+    "clear": 0.0055
+   }
+  }
  }
 }

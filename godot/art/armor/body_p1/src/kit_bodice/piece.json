@@ -4,7 +4,32 @@
  "slot": "top",
  "style": "mesh",
  "params": {
-  "file": "kit_bodice.glb"
+  "file": "kit_bodice.glb",
+  "bend_fit": {
+   "bones": [
+    "clavicle_",
+    "upperarm_",
+    "scap_",
+    "lat_",
+    "pec_",
+    "trap_",
+    "delt_",
+    "breast_"
+   ],
+   "offer": [
+    "spine_04",
+    "spine_05",
+    "clavicle_{s}",
+    "pec_{s}",
+    "trap_{s}",
+    "scap_{s}",
+    "delt_{s}",
+    "neck_01"
+   ],
+   "clear_mm": 3.0,
+   "veto_mm": 0.3,
+   "passes": 3
+  }
  },
  "covers": [
   "top"

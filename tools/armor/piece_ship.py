@@ -297,6 +297,23 @@ def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRA
     return True
 
 
+def _bend_fit_spec(pid, piece):
+    """params.bend_fit (by_body in build.json), with her pose as wearcheck reads the piece: the worn-rest shapes its
+    build used (kit_build.worn_shapes) and its springs (a top's hold, else amount 1 squash 1). None when not set."""
+    spec = piece.get("params", {}).get("bend_fit")
+    if not spec:
+        return None
+    import kit_build
+    spec = dict(spec)
+    f = os.path.join(kit_build.SRC, pid, "build.json")
+    cfg = kit_build.by_body(json.load(open(f, encoding="utf-8"))) if os.path.isfile(f) else {}
+    if cfg.get("worn_rest"):
+        spec.setdefault("shapes", kit_build.worn_shapes(cfg))
+    h = (piece.get("hold") if piece.get("slot") == "top" else None) or {"amount": 1, "squash": 1}
+    spec.setdefault("hold", [float(h["amount"]), float(h["squash"])])
+    return spec
+
+
 def _ship_exact(pid, piece, stage, sa, body, r, text):
     """The free mesh's exact install (the module doc): after the blend -> body follow (tuck, helpers) in `stage`."""
     import pin_shipped as pn
@@ -310,7 +327,7 @@ def _ship_exact(pid, piece, stage, sa, body, r, text):
     res = pn.pin(gp, pre, body, B, drop=tuple(piece.get("params", {}).get("rigid_drop") or ()),
                  ride=tuple(piece.get("params", {}).get("rigid_ride") or ()),
                  authored=src0 if src0.endswith((".glb", ".gltf")) and os.path.exists(src0) else None,
-                 bend=piece.get("params", {}).get("bend_ride"))
+                 bend=piece.get("params", {}).get("bend_ride"), fit=_bend_fit_spec(pid, piece))
     say(f"{pid}: exact pin: {json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in res.items()})}")
     ps_ = os.path.join(stage, "pre", pid + ".sockets.json")
     if os.path.exists(ps_):
