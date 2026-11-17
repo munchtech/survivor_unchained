@@ -1109,7 +1109,7 @@ public static partial class DungeonDress
     // (den r16 E2, R15f item 7) an antlered skull takes the large-piece budget too (0 = as r15: skulls only by the skull cap), and the skull cap counts within --den-skull-r m (r15: 15 for the set, 9 for decals)
     static readonly bool BigSkull = SurvivorUnchained.Args.Num("den-bigbone-skull", 1f) > 0f;
     static readonly float SkullR = SurvivorUnchained.Args.Num("den-skull-r", 22f);
-    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f, string? key = null)
+    static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f, string? key = null, bool level = false)
     {
         // (den r14 objects, item 4) the bone piles and logs vary: at most 2 deer skulls and 3 rib cages in a camera footprint
         // (DenCaps, ~9 m, the decals' kinds), never two of one log within 8 m; each mirrored, the piles turned about the card's middle
@@ -1175,6 +1175,7 @@ public static partial class DungeonDress
             float s = e > 0f && ry > 0f ? y0 + ry * Mathf.Sqrt(e) : -99f;
             // (r11) never more than 1.5 m under its own foot: over a pit's mouth the cast missed the floor and ran 120 m
             // down the view (seed 23's lair: a fan of streaks to the vanishing point)
+            if (level) return Mathf.Max(SurfBank(c, px, pz), FloorY(c, px, pz) + 0.04f);   // (den r17 P3) a root over a pit's lip lies level over the mouth (the pit card's floor), not down the hole under it
             if (domeOnly) return Mathf.Max(Mathf.Max(s, H(c, px, pz)), y0 - 1.5f);   // (den r15 G) plain O1 stones: their own dome over the floor, never the rising bank (the pale cube)
             return Mathf.Max(Mathf.Max(s, SurfBank(c, px, pz)), y0 - 1.5f);
         };
@@ -1368,7 +1369,7 @@ public static partial class DungeonDress
                     { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, SetBloodK * (1.1f + 0.5f * Hash(ri, k, 999)), 0f, false, 0f); c.Tick("set blood"); }
                 }
             }
-            if (lair && SetLairFungus > 0f) SetLairDress(c, r, ri, taken);
+            if (lair && (SetLairFungus > 0f || SetPitRoots > 0f)) SetLairDress(c, r, ri, taken);   // (den r17 P3, R16 item 1) the roots run without the fungus (--den-pit-roots 0: as before)
             GD.Print($"SetOpen {r.Kind} room ({r.X:0.0}, {r.Z:0.0}) R {r.R:0.0}: {got}/{want}{(lair ? $", root-crowns {crowns}" : "")}, off the floor {rw}, in a lane {rl}, crowded {rn}");
         }
         c.Count["set open"] = n;
@@ -1381,6 +1382,7 @@ public static partial class DungeonDress
     static readonly float SetBloodK = SurvivorUnchained.Args.Num("den-blood-k", 0.7f);   // (den r15 S) splash size x: smaller cores, not flat puddles
     static readonly float SetLairBlood = SurvivorUnchained.Args.Num("den-lair-blood", 0.12f);   // (den r15 lead) a lair pick's chance of a blood splash (was: every bone pile plus 0.6 of the rest: red smears all over the s23 lair)
     static readonly float SetLairFungus = SurvivorUnchained.Args.Num("den-lair-fungus", 0f);   // (den r15 Q, judge r15 item 1) off: the 3D clusters read as toppled teal pills; the root crowns carry painted glow caps.    // (den r14 objects, item 13) glow-fungus clusters on the lair's pit rims (0 off)
+    static readonly float SetPitRoots = SurvivorUnchained.Args.Num("den-pit-roots", 2f);   // (den r17 P3, R16 item 1) B6 root ends laid over each in-view lair pit's lip (den_boss.png's roots over the rims): this many on the main, one on each smaller; 0 off
     static readonly float SetLairRoots = SurvivorUnchained.Args.Num("den-lair-roots", 3f);     // root tendrils (B6) laid between its pits
 
     /// <summary>(den r14 objects, item 13) The lair's middle had no fungus and its pits stood bare: root tendrils (B6, cards
@@ -1401,6 +1403,36 @@ public static partial class DungeonDress
                 PlaceSetObj(c, "B6", bp, m.X, m.Y, 0.5f + 0.2f * Hash(ri, i, 2304), 0f, false, 0f);
                 roots++;
             }
+        // (den r17 P3) root ends over the lips: a B6 crown beside the pit (across the frame, or above it), its far tendrils
+        // crossing the lip by --den-pit-root-in m; the card cast level over the mouth (PlaceSetObj level), not down the hole
+        int lipRoots = 0;
+        if (SetPitRoots > 0f)
+        {
+            float big = 0f;
+            var rc0 = new Vector2(r.X, r.Z);
+            foreach (var (pp0, pr) in pits) if (pp0.DistanceTo(rc0) < 11f) big = Mathf.Max(big, pr);
+            float rin = SurvivorUnchained.Args.Num("den-pit-root-in", 0.6f);
+            for (int i = 0; i < pits.Count; i++)
+            {
+                var (pp, pr) = pits[i];
+                if (pp.DistanceTo(rc0) >= 11f) continue;   // the plan's far holes (14 m out, off the frame)
+                int nr = pr >= big ? (int)SetPitRoots : 1;
+                for (int q = 0; q < nr; q++)
+                {
+                    if (SetPick("B6", Hash(ri, i * 7 + q, 2331)) is not SetPiece bp) continue;
+                    float k2 = 0.55f + 0.15f * Hash(ri, i * 7 + q, 2332);
+                    // q 0: across the frame (the side nearer the lair's middle), q 1: above it (its tendrils hang down over the far lip)
+                    var dir = q % 2 == 0 ? new Vector2(pp.X > r.X ? -1f : 1f, 0f) : new Vector2(0f, -1f);
+                    float t = 0.2f;
+                    while (t < 12f && Hole(c, pp.X + dir.X * t, pp.Y + dir.Y * t) < 0f) t += 0.1f;
+                    float half = dir.Y == 0f ? 0.5f * bp.Metres.X * k2 : 0.35f * bp.Metres.Y * k2 / -CamUp.Z;
+                    var m = pp + dir * (t + half - rin) + new Vector2(0f, (Hash(ri, i * 7 + q, 2333) - 0.5f) * pr * (dir.Y == 0f ? 0.6f : 0f));
+                    if (Wall(c, m.X, m.Y) < 1.0f) continue;
+                    PlaceSetObj(c, "B6", bp, m.X, m.Y, k2, 0f, false, 0f, null, true);
+                    lipRoots++;
+                }
+            }
+        }
         int want = Mathf.RoundToInt(SetLairFungus);
         for (int k = 0; k < 40 && fung < want && pits.Count > 0; k++)
         {
@@ -1426,7 +1458,7 @@ public static partial class DungeonDress
             c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = FungLightCol, LightEnergy = FungLightE, OmniRange = 2.6f, ShadowEnabled = false, Position = new Vector3(cp.X, H(c, cp.X, cp.Y) + 0.5f, cp.Y) });
             c.Clusters++; fung++; taken.Add(cp);
         }
-        GD.Print($"SetLairDress: {pits.Count} pits (dist {(pits.Count > 1 ? pits[0].P.DistanceTo(pits[1].P) : 0f):0.0}), {roots} root tendrils, {fung} fungus clusters");
+        GD.Print($"SetLairDress: {pits.Count} pits (dist {(pits.Count > 1 ? pits[0].P.DistanceTo(pits[1].P) : 0f):0.0}), {roots} root tendrils, {lipRoots} over the lips, {fung} fungus clusters");
     }
 
     // (den r15 lead, R15 judge item 5: the s23 room's flat opaque puddles) O5's blood by a kill is its splatters only (pieces
