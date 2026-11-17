@@ -417,37 +417,96 @@ public partial class BattleFx
         if (gripNode != null && IsInstanceValid(gripNode)) gripNode.Visible = false;
     }
 
-    /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade
-    /// and at the drawn tail; `age` s since the contact (under 0: not yet); the spikes (GripPaint.Spikes), the first
-    /// `tines` of them the splay's.</summary>
-    /// <summary>(lane B fx, 16 Nov: E rule 4) Sunder's ground mark: a steel shock ring (p7_wave, the physical school's bands)
-    /// STANDING at the cut's real reach over the cut's own arc in front of her, so what shows is what it hits. It runs out
-    /// from `from` x the reach (never under her body or her HP plate) in `run` s, holds whole `hold` s, then its steel
-    /// fades over `fade` s (fx_language.json authored.sunder_mark).</summary>
+    /// <summary>(lane B fx s2, 16 Nov: E rule 4) Sunder's ground mark, a SHOCKWAVE that travels (p7_wave, the physical
+    /// school's bands): born at `from` x the cut's real reach in front of her at the contact, racing out to the reach in `run`
+    /// s (fast first), its lip white-hot for `core_frames` frames, gold to `gold_until` s, then amber; thinning as it goes
+    /// (p7_fall `fall_reach` at the reach) and breaking up after, gone at `life` s. `arcs` painted arcs over the cut's arc (at
+    /// most open_deg), `cover` of their sectors (real gaps), widest and longest across the cut's line: at its ends `taper`
+    /// [width, length] and `lag` leads behind (a bow, never an even C). Its crack: SunderCrack. fx_language.json
+    /// p7.sunder_mark.</summary>
     void SunderMark(Ev.Slash e, float reach)
     {
         if (P7Off || reach < 0.5f) return;
         P7WarmUp();
-        float from = P7D["sunder_mark.from"], run = Mathf.Max(P7D["sunder_mark.run"], 1 / 60f), hold = P7D["sunder_mark.hold"];
-        float fade = Mathf.Max(P7D["sunder_mark.fade"], 1 / 60f), lead = P7D["sunder_mark.lead_px"];
+        float from = P7D["sunder_mark.from"], run = Mathf.Max(P7D["sunder_mark.run"], 1 / 60f);
+        float life = Mathf.Max(P7D["sunder_mark.life"], run + 2 / 60f), fr = P7D["sunder_mark.fall_reach"];
+        float core = P7D["sunder_mark.core_frames"] / 60f, gold = P7D["sunder_mark.gold_until"], lead = P7D["sunder_mark.lead_px"];
         var c = V(e.X, Y(e.X, e.Z) + 0.06, e.Z);
-        float span = Mathf.Min((float)e.Arc, Mathf.DegToRad(P7D["sunder_mark.open_deg"]));
-        var s = P7Quad(5, c, reach, run + hold + fade, step: q =>
+        float span = Mathf.Min((float)e.Arc, Mathf.DegToRad(P7D["sunder_mark.open_deg"])), mid = (float)e.Angle;
+        var s = P7Quad(5, c, reach, life + 1 / 60f, step: q =>
         {
-            float t = Mathf.Clamp(q.Age / run, 0, 1);
-            q.M.SetShaderParameter("p7_prog", from + (1 - from) * (1 - (1 - t) * (1 - t)));
-            q.M.SetShaderParameter("p7_fall", Mathf.Clamp((q.Age - run - hold) / fade, 0, 1));
+            float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
+            q.M.SetShaderParameter("p7_prog", from + (1 - from) * u);
+            q.M.SetShaderParameter("p7_fall", q.Age < run ? fr * u : fr + (1 - fr) * Mathf.Clamp((q.Age - run) / (life - run), 0, 1));
+            q.M.SetShaderParameter("p7_fade", q.Age < core ? 0f : q.Age < gold ? 0.34f : 0.67f);
         });
         float rpx = reach / P7Px(c);
         s.M.SetShaderParameter("p7_lead", lead / rpx);
         s.M.SetShaderParameter("p7_trw", P7D["sunder_mark.trail_px"] / rpx);
         s.M.SetShaderParameter("p7_prog", from);
-        int n = Math.Clamp((int)MathF.Round(span * rpx / P7D["wave.arc_px"]), 3, 9);
-        P7Arcs(s.M, (float)e.Angle - span / 2, span, n, 0, 0.85f, 1.25f, 0.35f);
+        var cov = P7D.All("sunder_mark.cover");
+        var tp = P7D.All("sunder_mark.taper");
+        float lag = P7D["sunder_mark.lag"];
+        var arcs = P7Arcs(s.M, mid - span / 2, span, P7D.Count("sunder_mark.arcs", R()), 0, cov[0], cov[1], 0.35f);
+        // the bow: an arc's weight k is 1 on the cut's line, 0 at the span's ends (|w| its width: fx_p7_stroke p7_wave)
+        var a = new Vector4[12];
+        for (int i = 0; i < arcs.Length; i++)
+        {
+            var q = arcs[i];
+            float k = Mathf.Clamp(1 - Mathf.Abs(q.X - mid) / (0.5f * span), 0, 1);
+            float wk = Mathf.Lerp(tp[0], 1.1f, Mathf.Pow(k, 0.8f)) * (0.85f + 0.3f * R());
+            a[i] = new Vector4(q.X, q.Y * Mathf.Lerp(tp[1], 1, k), q.Z - lag * (1 - k), (q.W < 0 ? -1 : 1) * wk);
+        }
+        s.M.SetShaderParameter("p7_arc", a);
         P7BrushWave(s.M, rpx, lead);
-        if (GripSayAll) GD.Print($"sunder mark frame {Engine.GetFramesDrawn()} reach {reach:0.00} m = {rpx:0} px arc {Mathf.RadToDeg(span):0} deg arcs {n}");
+        if (GripSayAll) GD.Print($"sunder mark frame {Engine.GetFramesDrawn()} reach {reach:0.00} m = {rpx:0} px arc {Mathf.RadToDeg(span):0} deg arcs {arcs.Length} born {from * rpx:0} px");
+        SunderCrack(e, reach, from, run);
     }
 
+    /// <summary>(lane B fx s2, 16 Nov: E rules 4a, 4d) Sunder's crack: `cracks` jagged radial cracks fanned over the cut's cone
+    /// (cone_deg at most), each from crack_span[0-1] x the reach out to crack_span[2-3] x it (shorter toward the cone's edges),
+    /// the long-cut strip's last tiles (its gap tapering to the point at the far end) about crack_seg m each, crack_across
+    /// its width, tinted crack_tint (a deeper tone of the ground: the line row, never black), each tile laid as the wave's
+    /// front passes it; whole crack_hold s, gone at crack_life s. Ground decals (WgDecalOn), the strip 0.4 m tall.</summary>
+    void SunderCrack(Ev.Slash e, float reach, float from, float run)
+    {
+        if (wgAlb is not { } alb || wgNrm is not { } nrm) return;
+        int m = P7D.Count("sunder_mark.cracks", R());
+        var sp = P7D.All("sunder_mark.crack_span");
+        float cone = Mathf.Min((float)e.Arc, Mathf.DegToRad(P7D["sunder_mark.cone_deg"]));
+        float across = P7D["sunder_mark.crack_across"], hold = P7D["sunder_mark.crack_hold"], life = P7D["sunder_mark.crack_life"];
+        float segM = P7D["sunder_mark.crack_seg"];
+        var tint = new Color(1, 1, 1) * P7D["sunder_mark.crack_tint"];
+        var o = new Vector2((float)e.X, (float)e.Z);
+        for (int j = 0; j < m; j++)
+        {
+            float w = ((j + 0.5f + (R() - 0.5f) * 0.6f) / m - 0.5f) * 2;   // -1..1 across the cone
+            float ang = (float)e.Angle + 0.5f * w * cone;
+            var dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+            float a0 = reach * Mathf.Lerp(sp[0], sp[1], R()), a1 = reach * Mathf.Lerp(sp[2], sp[3], R()) * (1 - 0.15f * Mathf.Abs(w));
+            float len = a1 - a0;
+            if (len < 0.4f) continue;
+            int n = Math.Clamp((int)Mathf.Round(len / segM), 3, 6), t0 = 12 - n;
+            float seg = len / n, theta = Mathf.Atan2(-dir.Y, dir.X);
+            for (int i = 0; i < n; i++)
+            {
+                int tile = t0 + i;
+                var cc = o + dir * (a0 + seg * (i + 0.5f));
+                var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
+                // laid as the front passes the tile's near end (the wave's prog: from + (1 - from)(1 - (1 - t)^2))
+                float qq = Mathf.Clamp(((a0 + seg * i) / reach - from) / (1 - from), 0, 1);
+                WgLater(run * (1 - Mathf.Sqrt(1 - qq)), () =>
+                {
+                    if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.4f, WgBand * across), alb[tile], nrm[tile], null, life, 1f, 0, 0, 0, tint) is { } d)
+                        d.FadeFrom = hold;
+                });
+            }
+        }
+    }
+
+    /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade
+    /// and at the drawn tail; `age` s since the contact (under 0: not yet); the spikes (GripPaint.Spikes), the first
+    /// `tines` of them the splay's.</summary>
     void GripSet(GripLook look, float total, float tailU, float blade, float age, float seed, Vector3 her, float[]? spikes, int tines, int since = -1, Vector4 stamp = default)
     {
         var m = gripMat!;
