@@ -589,7 +589,7 @@
    "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
    "tuck": "armor_tuck/reaver.skirt.bin",
    "tuck_count": 0,
-   "cover_count": 73
+   "cover_count": 72
   },
   {
    "id": "reaver.top",
@@ -661,8 +661,8 @@
    "fit": "ok",
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.boots.bin",
-   "tuck_count": 4066,
-   "cover_count": 2668
+   "tuck_count": 4053,
+   "cover_count": 2656
   },
   {
    "id": "warden.bottom",
@@ -774,8 +774,8 @@
    "fit": "ok",
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.pauldrons.bin",
-   "tuck_count": 181,
-   "cover_count": 1283
+   "tuck_count": 114,
+   "cover_count": 1285
   },
   {
    "id": "warden.skirt",
@@ -799,7 +799,7 @@
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.skirt.bin",
    "tuck_count": 0,
-   "cover_count": 2387
+   "cover_count": 2379
   },
   {
    "id": "warden.top",
@@ -827,8 +827,40 @@
    "fit": "ok",
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.top.bin",
-   "tuck_count": 1275,
+   "tuck_count": 1299,
    "cover_count": 1110
+  },
+  {
+   "id": "plate_pauldrons_warden",
+   "outfit": null,
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "plate_pauldrons_warden.pauldrons.darkleather",
+    "plate_pauldrons_warden.pauldrons.gold",
+    "plate_pauldrons_warden.pauldrons.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/gear/out/body_p1/plate_pauldrons_warden.gltf",
+   "tier": 1,
+   "cover_grow": [
+    0.02,
+    0.025
+   ],
+   "base": "plate_pauldrons_plain",
+   "replaces": "warden.pauldrons",
+   "a_file": "res://art/armor/plate_pauldrons_warden.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/plate_pauldrons_warden.npz",
+   "fit": "ok",
+   "sockets": "res://art/gear/out/body_p1/plate_pauldrons_warden.sockets.json",
+   "tuck": "armor_tuck/plate_pauldrons_warden.bin",
+   "tuck_count": 203,
+   "tuck_depth_mm": 18.0,
+   "cover_count": 1399
   }
  ]
 }
