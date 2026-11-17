@@ -78,7 +78,6 @@ public static partial class DungeonDress
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
-        if (sheet == "O3" && SetBoneTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetBoneTint);   // (den r16 E, R15f item 6)
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
         if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
@@ -1044,7 +1043,6 @@ public static partial class DungeonDress
     static readonly float SetRockFacets = SurvivorUnchained.Args.Num("den-rock-facets", 1f);
     // (den r16 D, R15f item 8: the logs' lit tops C .061-.077 against den_room's .102, lavender driftwood) the logs' (O2) saturation x this
     static readonly float SetLogSat = SurvivorUnchained.Args.Num("den-log-sat", 1.8f);
-    static readonly Vector3 SetBoneTint = V3("den-bone-tint", new Vector3(0.9f, 1f, 2.7f));   // (den r16 E, R15f item 6) the lone bones (O3 card) read yellow on screen (OKLab h 74-83, C .09-.13; target h 55-63, C .04-.07): blue up, red down; 1,1,1 = as r15
     static readonly Vector3 SetLogTint = V3("den-log-tint", new Vector3(1f, 1f, 1f));   // (den r16 D) the logs' tint over the set's
     static readonly float SetNoRepeat = SurvivorUnchained.Args.Num("den-set-norepeat", 1f);   // (den r15 R) 0: bank runs may lay one card twice in a row
     static readonly float SetRockVary = SurvivorUnchained.Args.Num("den-rock-vary", 1f);   // (den r15 R) 0: stones near each other may repeat one piece

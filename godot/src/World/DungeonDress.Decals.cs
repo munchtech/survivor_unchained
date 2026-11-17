@@ -279,9 +279,6 @@ public static partial class DungeonDress
         mat.SetShaderParameter("step", z.Step);
         mat.SetShaderParameter("res", (float)z.Res);
         mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
-        mat.SetShaderParameter("bone_neutral", SurvivorUnchained.Args.Num("den-bone-neutral", 1f));   // (den r16 E, R15f item 6) 0 = the warm tints on bones as r15
-        mat.SetShaderParameter("bone_comp", V3("den-bone-comp", new Vector3(0.9f, 1.0f, 2.7f)));   // (den r16 E, R15f item 6) 1,1,1 = none
-        mat.SetShaderParameter("bone_cap", SurvivorUnchained.Args.Num("den-bone-cap", 0f));
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
     }
@@ -296,7 +293,8 @@ public static partial class DungeonDress
         if (d.Kind == "leaves") { if (!DenCaps.Take("leaf", new Vector2(x, zz), 3, 1.5f)) return; scale *= 1.25f; }
         // (den r14 floor, judge r13 item 4) per camera footprint at most 2 deer skulls and 3 rib cages (DenCaps, radius 9 m);
         // a refused one is small litter instead (a single bone, a leaf, a fur tuft), scaled .8-1.2 and turned by its hash
-        if (d.Kind is "deer_skull" or "ribcage" && !((d.Kind == "deer_skull" || DenCaps.Take("bigbone", new Vector2(x, zz), BigBoneCap, BigBoneR)) && DenCaps.Take(d.Kind == "deer_skull" ? "skull" : d.Kind, new Vector2(x, zz), d.Kind == "deer_skull" ? SkullCap : 3, 9f)))
+        // (den r16 E2, R15f item 7) an antlered skull is a large piece too (BigSkull) and the skull cap counts within SkullR, not 9 m
+        if (d.Kind is "deer_skull" or "ribcage" && !((d.Kind == "deer_skull" && !BigSkull || DenCaps.Take("bigbone", new Vector2(x, zz), BigBoneCap, BigBoneR)) && DenCaps.Take(d.Kind == "deer_skull" ? "skull" : d.Kind, new Vector2(x, zz), d.Kind == "deer_skull" ? SkullCap : 3, d.Kind == "deer_skull" ? SkullR : 9f)))
         {
             float hu = Hash((int)(x * 10), (int)(zz * 10), 977);
             d = PickDecal(new() { ["bone"] = 1f, ["leaves"] = 1.2f, ["fur"] = 0.3f, ["pebbles"] = 0.3f }, hu);
