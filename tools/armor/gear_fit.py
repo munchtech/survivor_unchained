@@ -1119,6 +1119,40 @@ def rim_leads(lead, rims):
     return lead
 
 
+def plate_riders(bd, ms, ev, comp, lead, rots):
+    """{mesh i: (mask over its uniques, host leader per unique)}: an armor row's bendy parts that A skins with their
+    plate's one blend ride that plate on every body (rigid_roles.json "ride_plate": {"<piece id>": {"<node suffix>":
+    near_mm}}; solver U, 17 Nov: plate_pauldrons_warden's buckle strap is A's cop blend on A, B's skin on B, and stood
+    off the cop's side in her idles). Each connected piece of the mesh takes the fit and the blend of the rigid group
+    most of its points lie nearest at the bind (within near_mm; a piece farther off stays bendy)."""
+    named = (rigid_roles().get("ride_plate") or {}).get(bd.id) or {}
+    if not named or not rots or not (comp >= 0).any():
+        return {}
+    from scipy.spatial import cKDTree
+    rg = comp >= 0
+    kd = cKDTree(np.vstack([ev[m["i"]]["Xbind"] for m in ms])[rg])
+    host_of = np.asarray(lead)[comp[rg]]
+    out = {}
+    for m in ms:
+        near = named.get(m["node"].rsplit(".", 1)[-1])
+        e = ev[m["i"]]
+        if near is None or (e["comp"] >= 0).any():
+            continue
+        d, j = kd.query(e["Xbind"])
+        h = host_of[j]
+        T = bd_tris(bd, m["i"])
+        n = len(e["Xbind"])
+        _, piece = connected_components(sparse.coo_matrix((np.ones(3 * len(T)), (T.ravel(), np.roll(T, 1, 1).ravel())),
+                                                          shape=(n, n)), directed=False)
+        ok, hh = np.zeros(n, bool), np.full(n, -1)
+        for p in np.unique(piece):
+            s = (piece == p) & (d <= near / 1000.0) & np.isin(h, list(rots))
+            if s.sum() * 2 > (piece == p).sum():
+                ok[piece == p], hh[piece == p] = True, np.bincount(h[s]).argmax()
+        out[m["i"]] = (ok, hh)
+    return out
+
+
 def standoff_floor(bd, ms, ev, path=None, lead=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
@@ -1173,6 +1207,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         body = bodies[tier]
         bbody = None if bind_bodies is None else bind_bodies[tier]
         lead = z[f"lead_{tier}"]
+        # (rigid_roles.json "lead_of" {"<piece id>": {"<tier>/<component>": <leader>}}: a small component rides the plate
+        # A skins it with, where the nearest-big-component rule picked another; solver U, 17 Nov: the warden pauldron's
+        # lame-1 gold trims rode lame 2)
+        for k, v in ((rigid_roles().get("lead_of") or {}).get(bd.id) or {}).items():
+            if k.split("/")[0] == tier:
+                lead = np.array(lead)
+                lead[int(k.split("/")[1])] = int(v)
         rots = {}
         ev = {}
         for m in ms:
@@ -1291,6 +1332,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 stats[tier] = dict(sst)
             for k, m in enumerate(ms):
                 ev[m["i"]]["X"] = np.where(bend_all[cut[k]:cut[k + 1], None], Xall[cut[k]:cut[k + 1]], ev[m["i"]]["X"])
+        riders = plate_riders(bd, ms, ev, comp, lead, rots) if armor_laws and wr is None else {}
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -1322,8 +1364,19 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
                     X += join["lift"][0][k0:k0 + len(X)]
                     N = np.einsum("nij,nj->ni", join["lift"][1][k0:k0 + len(X)][inv], N)
+            ride, host = riders.get(i, (None, None))
+            if ride is not None and ride.any():
+                # (a part riding its plate, plate_riders: the plate's fit, its normals turned with it)
+                Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
+                for c in np.unique(host[ride]):
+                    M, ca, cb = rots[int(c)]
+                    sel = ride & (host == c)
+                    X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
+                    sv = sel[inv]
+                    N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
+            J, W = gear_lower.a_weights(sys.modules[__name__], bd, m["node"], body, J, W)   # (gear_lower: A's own, by slot)
             Tv = body.T[e["tri"]]
             shapes = {}
             for nm, dP in body.shapes.items():
@@ -1355,6 +1408,21 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                         k0 = int(np.nonzero(sel)[0][0])
                         sv = sel[inv]
                         X[sel], N[sv] = wr.unpose(X[sel], N[sv], J[k0], W[k0], {nm: shapes[nm][k0] for nm in wr.weights if nm in shapes})
+            if ride is not None and ride.any():
+                # (and its plate's one blend and mean shape deltas, as the plate's own points take them above)
+                comp_all = np.concatenate([ev[mm["i"]]["comp"] for mm in ms])
+                for c in np.unique(host[ride]):
+                    sel, own_all = ride & (host == c), comp_all == c
+                    trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
+                    ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
+                    J[sel], W[sel] = rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
+                    Tvs = body.T[trs]
+                    for nm, dP in body.shapes.items():
+                        mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
+                        if nm in shapes:
+                            shapes[nm][sel] = mean
+                        elif np.abs(mean).max() > 1e-5:
+                            shapes[nm] = np.where(sel[:, None], mean, (e["w"][:, :, None] * dP[Tv]).sum(1))
             if join is not None and (comp_i < 0).any():
                 # (the join field, worn_rest JOIN: a bendy vertex at a fitted plate takes the plate's move and its
                 # blend of weights and shape deltas, fading to her skin's own; stored so the engine lands it there)

@@ -27,5 +27,11 @@
               "standoff": {"cap_mm": 6, "rest_min_mm": 1, "margin_mm": 1,
                            "tuck_full_mm": 18, "tuck_zero_mm": 22, "tuck_step": 1.0,
                            "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}}
- }
+ },
+ "_rim_of": "plate_pauldrons_warden on B (solver U, 17 Nov; slots.pauldrons rims stay false for the retired plain): each plate's rolled rim (close leaders 13, 15, 23 her right; 14, 18, 19 her left) rode its own fit and bone (the cop on upperarm_twist_02, its rim on upperarm_share; lame 2's rim 16.5 mm off its plate at rest), so in her idles the rims crossed their plates (cop dented, lames' lower edge frayed). A skins each plate and its rim with one blend: they ride as one.",
+ "rim_of": {"plate_pauldrons_warden": {"close/13": 11, "close/15": 6, "close/23": 10, "close/14": 8, "close/18": 9, "close/19": 7}},
+ "_ride_plate": "gear_fit plate_riders: an armor row's bendy part that A skins with its plate's one blend rides that plate (its fit, blend and mean shapes); value = near_mm. plate_pauldrons_warden's darkleather buckle strap: A's cop blend on A (clavicle .74), B's skin on B (67 blends), so it stood off the cop's side (solver U, 17 Nov).",
+ "ride_plate": {"plate_pauldrons_warden": {"darkleather": 10}},
+ "_lead_of": "a small component rides the plate A skins it with (A's blend identical), where the bind's nearest-big-component rule picked another: plate_pauldrons_warden's lame-1 gold trims (close 1 her right, 2 her left) rode lame 2 and stood 4-12 mm off lame 1 (solver U, 17 Nov).",
+ "lead_of": {"plate_pauldrons_warden": {"close/1": 11, "close/2": 7}}
 }
