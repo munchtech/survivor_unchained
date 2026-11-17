@@ -271,7 +271,13 @@ uniform float den_head = 0.0;
 // (on screen the lift multiplies each block's kept colour about 3x and the den's warm key adds its own: at mix .45 toward
 // C .03 h 250 the red mane read pink (l7c_st, h 30 -> 14, C .089); at .5 toward C .09 h 215 the mane read grey but the back and
 // flank teal, C .10 (l7c2_st). A whole-boss steel needs the blocks' own colour mostly gone: mix .7 toward C .04 at 228.)
-#define DEN_BOSS_STRUCK vec4(0.115, 0.7, 0.04, 228.0)
+// (round 2, judge 17 Nov: at .7 toward C .04 h 228 the struck boss read as a blue-teal body, back C .065 h 238 on screen: a
+// colour swap that reads as a frost status, not a hit. The lift multiplies the struck paint's chroma about 2.2x on screen, so
+// a steel that reads near-neutral is C .004 in paint, and each block's own colour, mixed .45 toward it, is kept only as a
+// residual capped at paint C DEN_BOSS_STRUCK_RES: the mane's red (.10) at any plain mix under ~.95 read pink or orange, the
+// blocks' value bands (dark back, flank, mane) carry the wolf instead, L order kept as the lift is the same on each.)
+#define DEN_BOSS_STRUCK vec4(0.115, 0.45, 0.004, 240.0)
+#define DEN_BOSS_STRUCK_RES 0.002
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
 // tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
 // DEN_DEAD_TOP x (1 - its darkening)) is its den body capped at L DEN_DEAD.x at its kill, going to the bank umber (L .y,
@@ -364,7 +370,10 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	// (lane E lead 7: the boss's struck step on the final paint, past the pull toward its own albedo, so all of it lands)
 	if (c_boss) {
 		c_l += c_h * DEN_BOSS_STRUCK.x;
-		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w), c_h * DEN_BOSS_STRUCK.y);
+		vec2 c_steel = vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w);
+		vec2 c_res = (c_ab - c_steel) * (1.0 - DEN_BOSS_STRUCK.y);
+		c_res *= min(1.0, DEN_BOSS_STRUCK_RES / max(length(c_res), 1e-5));
+		c_ab = mix(c_ab, c_steel + c_res, c_h);
 	}
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);

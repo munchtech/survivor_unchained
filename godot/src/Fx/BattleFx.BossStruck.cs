@@ -15,7 +15,11 @@ public partial class BattleFx
     const double BossPulseGap = 0.18, BossPulseFor = 0.045;
     readonly System.Collections.Generic.Dictionary<int, double> bossPulseAt = new();
     static readonly Color BossSparkHead = Hdr("#f4f7ff", 1.7f), BossSparkTail = Hdr("#c8d4e6", 1.1f);
-    const float BossSparkY = 1.6f, BossSparkIn = 0.9f, BossSparkSize = 0.5f;
+    // (round 2: at 1.6 m and its radius x .9 toward her it drew below the belly, between the legs, l7c3_st: from the play camera
+    // (56 deg, 23 m) a metre toward her drops 64 px and a metre up lifts 43. At its torso's middle, 2.35 m, and half its radius out,
+    // it lands on the flank toward her at about mid-body height, inside the silhouette (sparks draw over the body, no depth test):
+    // at 1.95 m it sat on the belly's edge, l7d_st.)
+    const float BossSparkY = 2.35f, BossSparkIn = 0.45f, BossSparkSize = 0.5f;
 
     /// <summary>A den boss's struck flash this frame (CrowdView.BossPulse): 1 in its pulse, else 0.</summary>
     float BossPulseOn(int id) => bossPulseAt.TryGetValue(id, out var at) && time >= at && time - at < BossPulseFor ? 1f : 0f;
@@ -25,7 +29,7 @@ public partial class BattleFx
         if (bossPulseAt.TryGetValue(boss.Id, out var was) && time >= was && time - was < BossPulseGap) return;
         bossPulseAt[boss.Id] = time;
         if (Flare.HushesHitSparks) return;
-        // On its flank toward her, at its chest (1.6 m up, out at its radius: drawn over its side, not on the ground below it): a 4-point glint and two short streaks, steel-white, 2-3 frames.
+        // On its flank toward her, mid-body (BossSparkY up, half its radius out: drawn over its side, not below its belly): a 4-point glint and two short streaks, steel-white, 2-3 frames.
         double dx = b.Player.X - boss.X, dz = b.Player.Z - boss.Z, dl = Math.Sqrt(dx * dx + dz * dz);
         if (dl < 1e-6) { dx = -boss.LastDx; dz = -boss.LastDz; dl = Math.Max(1e-6, Math.Sqrt(dx * dx + dz * dz)); }
         var toHer = new Vector3((float)(dx / dl), 0, (float)(dz / dl));
