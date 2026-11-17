@@ -202,6 +202,10 @@ def main():
         bv['byteOffset'] = len(out); bv['byteLength'] = len(data); out += data
     g['buffers'][0]['byteLength'] = len(out)
     open(binp, 'wb').write(bytes(out))
+    # the .bin's sha1 in asset.extras.build, so the .gltf changes whenever the .bin does (Godot reimports on the .gltf's md5 only)
+    import sys; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gear_fit
+    gear_fit.stamp_build(g, bytes(out))
     with open(a.gltf, 'w') as fh: json.dump(g, fh, indent=1)
     print('written', a.gltf, binp)
 

@@ -419,6 +419,16 @@ def test_rim_rides_its_plate(tmp_path, monkeypatch):
     assert gf.rim_hosts(_Native, ms, X, comp, lead, T=T) == {}
 
 
+def test_built_outputs_stamped():
+    """Every built gear .gltf carries its .bin's sha1 (asset.extras.build). Godot reimports a .gltf only when the .gltf's
+    own bytes change, so a .bin rewritten without the stamp leaves a stale imported scene on screen (lane G lead 6, 17 Nov)."""
+    root = Path(__file__).resolve().parents[2] / "godot" / "art" / "gear" / "out"
+    paths = [p for p in root.rglob("*.gltf") if p.with_suffix(".bin").exists()]
+    assert paths, root
+    bad = {str(p.relative_to(root)): r for p in paths for ok, r in [gf.gltf_stamp_state(str(p))] if not ok}
+    assert not bad, bad
+
+
 def test_import_stale_and_stamp(tmp_path):
     import hashlib
     import json
