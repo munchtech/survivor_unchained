@@ -235,6 +235,10 @@ def closest_on_tri(p, A, B, C):
     return Q
 
 
+EXTRA_REST = 0.012  # an extra face reads only if it lay within this of the sample at rest (m)
+LEGACY = False     # --legacy-depth: confirm_gap reads only the rest-footprint faces and one face's normal (the old reading)
+
+
 def confirm_gap(O, F, inner, thick):
     """(--confirm, armor 10 c2) A ray-cast gap checked by the nearest face: O [m, 3] samples, F [m, k, 3, 3] B's posed
     faces near each, inner [m, k] (the face looked at the sample at rest: B's inner face there), thick B's shell (m).
@@ -245,12 +249,31 @@ def confirm_gap(O, F, inner, thick):
     A, B, C = F[:, :, 0], F[:, :, 1], F[:, :, 2]
     Q = closest_on_tri(O[:, None], A, B, C)
     d = np.linalg.norm(Q - O[:, None], axis=2)
+    d = np.where(np.isnan(d), np.inf, d)      # (nan faces: not used)
     k = d.argmin(1)
     rows = np.arange(len(O))
-    n = np.cross(B - A, C - A)[rows, k]
-    n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
+    if LEGACY:
+        n = np.cross(B - A, C - A)[rows, k]
+        n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
+    else:
+        # (the sign from the pseudo-normal: every face as near as the nearest adds its unit normal, so a point nearest a
+        # shared edge or corner, or a 1 mm rim seen edge-on, reads the side of the surface and not of one face)
+        nf = np.cross(B - A, C - A)
+        nf /= np.linalg.norm(nf, axis=2)[:, :, None] + 1e-30
+        n = np.where((d <= d[rows, k][:, None] + 1e-7)[:, :, None], np.nan_to_num(nf), 0.0).sum(1)
+        nn = np.linalg.norm(n, axis=1)
+        n /= nn[:, None] + 1e-30
+        # (the faces nearest cancel (antiparallel inner and outer walls meeting at an open rim): the point is nearest an
+        # opening's edge, past the end of the piece, not inside it: no sign to read; it is clear by its distance)
+        rim = nn < 0.5
     side = ((O - Q[rows, k]) * n).sum(1)
     dk, ik = d[rows, k], inner[rows, k]
+    if not LEGACY:
+        # (nearest an edge or corner, more than the shell away and not square to the surface (cos under 0.8): that is the
+        # piece's rim beside the point, and a sign off a shell's edge is not reliable; clear by distance, as the rule below)
+        rim = rim | ((np.abs(side) < 0.8 * np.maximum(dk, 1e-9)) & (dk > thick))
+        side = np.where(rim, np.maximum(side, 1e-9), side)
+        ik = ik | rim
     # (in front of a face that faced away at rest counts as through only square to it: a nearest point on its edge
     # (cos under 0.8) is B's rim beside her, her skin past the plate's end, not out through it)
     cs = np.abs(side) / np.maximum(dk, 1e-9)
@@ -407,7 +430,8 @@ def main(argv):
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
     gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
-    global CAP
+    global CAP, LEGACY
+    LEGACY = "--legacy-depth" in argv   # (skin tests: --confirm reads the old depth, a ray hit distance's nearest face among the rest footprint's only)
     CAP = "--no-cap" not in argv        # (openings of a piece capped for the inside test, Caps; --no-cap: the old reading)
     conf = "--confirm" in argv          # (skin tests: each gap past B checked by the nearest face, confirm_gap)
     dump = "--dump" in argv             # (per sample of each skin test: its least gap and where: <out>/skin_<B>.npz)
@@ -621,6 +645,7 @@ def main(argv):
             x["inner0"] = (n0 * (O0[:, None] - F0.mean(2))).sum(2) > 0
             x["thick"] = float(np.median(fp["out"] - fp["gap"]))
             x["raw_min"] = np.full(n, np.inf)
+            x["O0"] = O0
             rr0 = np.nonzero(fp["gap"] < -0.0005)[0]
             if len(rr0):
                 g0, go0 = confirm_gap(O0[rr0], F0[rr0], x["inner0"][rr0], x["thick"])
@@ -705,7 +730,26 @@ def main(argv):
                         x["raw_min"] = np.minimum(x["raw_min"], np.where(np.isfinite(g), g, np.inf))
                         rc = np.nonzero(g < -0.0005)[0]
                         if len(rc):
-                            g[rc], go[rc] = confirm_gap(O[rc], Pp[at[x["candv"][rc]]], x["inner0"][rc], x["thick"])
+                            Fc, ic = Pp[at[x["candv"][rc]]], x["inner0"][rc]
+                            if not LEGACY:
+                                # (the nearest faces of all of B, not only the rest footprint's: a sample whose footprint
+                                # faces are far read a far wall as its depth; the rest flag of each extra face from rest)
+                                if x["B"] not in kd_frame:
+                                    kd_frame[x["B"]] = cKDTree(Pp[at[SvB[x["B"]]]].mean(1))
+                                Sv = SvB[x["B"]]
+                                _, ii = kd_frame[x["B"]].query(O[rc], k=min(24, len(Sv)))
+                                ii = ii.reshape(len(rc), -1)
+                                F0x = P0[Sv[ii]]
+                                n0x = np.cross(F0x[:, :, 1] - F0x[:, :, 0], F0x[:, :, 2] - F0x[:, :, 0])
+                                ix = (n0x * (x["O0"][rc][:, None] - F0x.mean(2))).sum(2) > 0
+                                # (only faces that were near her at rest count: the rest flag says nothing of a face far off)
+                                q0 = closest_on_tri(x["O0"][rc][:, None], F0x[:, :, 0], F0x[:, :, 1], F0x[:, :, 2])
+                                far0 = np.linalg.norm(q0 - x["O0"][rc][:, None], axis=2) > EXTRA_REST
+                                F0x = np.where(far0[:, :, None, None], np.nan, F0x)
+                                Fx = np.where(far0[:, :, None, None], np.nan, Pp[at[Sv[ii]]])
+                                Fc = np.concatenate([Fc, Fx], 1)
+                                ic = np.concatenate([ic, ix], 1)
+                            g[rc], go[rc] = confirm_gap(O[rc], Fc, ic, x["thick"])
                     x["min_out"] = np.minimum(x["min_out"], np.where(np.isfinite(go), go, np.inf))
                     # (WC_PROBE=<clip>:<frame>,..: that frame's skin samples, rays, gaps and B's posed faces written to
                     # <out>/probe_<B>_<clip>_<frame>.npz, for a check by other means; nothing else changes)
