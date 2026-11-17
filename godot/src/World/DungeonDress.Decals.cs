@@ -213,6 +213,10 @@ public static partial class DungeonDress
                 {
                     var rp = new Vector2(x, zz);
                     float clr = SurvivorUnchained.Args.Num("den-stick-clear", 3.6f);
+                    // (den r16 E, R15f item 9) a stick longer than --den-stick-max m (as laid: x its scale) is cut, and the clear radius counts from its nearest end (a long stick began 3.6 m out and reached her); 0 = as r15
+                    float stickMax = SurvivorUnchained.Args.Num("den-stick-max", 2.4f);
+                    float stickLen = d.Metres.X * (0.9f + 0.25f * Hash(i, j, 907) + (w > 3f ? 0.35f : 0f));
+                    if (stickMax > 0f) { if (stickLen > stickMax) continue; clr += stickLen * 0.5f; }
                     if (z.Rooms.Count > 0 && rp.DistanceTo(new Vector2(z.Rooms[0].X, z.Rooms[0].Z)) < clr) continue;
                     if (boss >= 0 && rp.DistanceTo(new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z)) < clr) continue;
                     if (!DenCaps.Take("openroot", rp, 1, SurvivorUnchained.Args.Num("den-stick-gap", 7f))) continue;
@@ -275,6 +279,9 @@ public static partial class DungeonDress
         mat.SetShaderParameter("step", z.Step);
         mat.SetShaderParameter("res", (float)z.Res);
         mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
+        mat.SetShaderParameter("bone_neutral", SurvivorUnchained.Args.Num("den-bone-neutral", 1f));   // (den r16 E, R15f item 6) 0 = the warm tints on bones as r15
+        mat.SetShaderParameter("bone_comp", V3("den-bone-comp", new Vector3(0.9f, 1.0f, 2.7f)));   // (den r16 E, R15f item 6) 1,1,1 = none
+        mat.SetShaderParameter("bone_cap", SurvivorUnchained.Args.Num("den-bone-cap", 0f));
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
     }

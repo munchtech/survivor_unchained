@@ -41,15 +41,17 @@ public static partial class DungeonDress
     static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
+    static readonly float SetPitCells = SurvivorUnchained.Args.Num("den-pit-cells", 1f);   // (den r16 A, R15f item 1) the lair pits as glowing cracks in a dark pit (SetMat); 0: the r15 strokes
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
     internal static readonly float SetBossGloom = SurvivorUnchained.Args.Num("den-boss-gloom", 1.2f);
+    static readonly float SetSpurGloomR = SurvivorUnchained.Args.Num("den-spur-gloomr", 1.35f);   // (den r16 G, R15f item 11) the set's lair gloom radius x this (1: as the floor's)
 
     static ShaderMaterial SetMat(string sheet, float gain)
     {
         // (r10d) the hole paintings (H1, H2) lie on the floor blended (their surround fades into it); the rest cut at alpha 0.5
         var mat = new ShaderMaterial { Shader = sheet[0] == 'H' ? setSoftShader : setShader };
         bool rockPaint = sheet == "O1r" && SetRockPaint > 0f;   // (den r15 A) the round boulders' own painted sheet
-        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + (sheet == "O1r" && !rockPaint ? "O1" : sheet) + ".png"));
+        mat.SetShaderParameter("paint_tex", GD.Load<Texture2D>(SetDir + (sheet == "O1r" && !rockPaint ? "O1" : sheet == "O1r" && SetRockFacets > 0f ? "O1rf" : sheet) + ".png"));   // (den r16 D: O1rf)
         if (rockPaint) gain *= SurvivorUnchained.Args.Num("den-rock-paint-gain", 1.5f);   // (a1: the stones Lp90 .25-.40, the target lit .45-.60)
         if (sheet == "O1r" && !rockPaint)
         {
@@ -74,6 +76,9 @@ public static partial class DungeonDress
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
+        if (sheet == "O3" && SetBoneTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetBoneTint);   // (den r16 E, R15f item 6)
+        if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
+        if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
         if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
         if (sheet == "O5")
         {
@@ -94,7 +99,9 @@ public static partial class DungeonDress
         mat.SetShaderParameter("occ_a", SurvivorUnchained.Args.Num("den-occlude-a", 0.2f));
         mat.SetShaderParameter("bank_gloom", SetGloom);   // (den r13 corr) COLOR.b's depth gloom (bank modules only: objects carry 0)
         mat.SetShaderParameter("gloom_m", SetGloomM);
-        mat.SetShaderParameter("boss_c", setBossC);   // (r12) the lair's gloom, as the floor's
+        // (den r16 G, R15f item 11) the set's lair gloom starts further out (radius x SetSpurGloomR): the root spurs run in
+        // to 9-10 m (DungeonGen.LairSpurs) and read black under the floor's radial gloom; the rim banks keep their dark. 1: the floor's
+        mat.SetShaderParameter("boss_c", new Vector3(setBossC.X, setBossC.Y, setBossC.Z * SetSpurGloomR));   // (r12) the lair's gloom, as the floor's
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
         mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
         mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 0.4f));   // (den r14, lane E) the painted caps' cyan into its band
@@ -109,6 +116,17 @@ public static partial class DungeonDress
             mat.SetShaderParameter("pit_halo", SurvivorUnchained.Args.Num("den-pit-halo", 0.14f));
             mat.SetShaderParameter("rim_in", SurvivorUnchained.Args.Num("den-hole-rim-in", 1.15f));
             mat.SetShaderParameter("rim_out", SurvivorUnchained.Args.Num("den-hole-rim-out", 1.45f));
+            // (den r16 A, R15f item 1: hairy nests of green scribble) a lair pit as glowing cracks in a dark pit: a closed cell network of
+            // dark plates (lit top edges), a thin lime core in a soft halo, a hard broken lip with an inner shadow, 2-3 cracks past the
+            // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
+            mat.SetShaderParameter("pit_cells", SetPitCells);
+            mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.1f, 0.55f)));
+            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.2f, 0.33f, 0.1f)));
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.05f, 0.16f, 0.02f)));
+            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.052f, 0.046f)));
+            mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.14f, 0.05f, 0.6f)));
+            mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.75f, 1.35f)));
         }
         return mat;
     }
@@ -143,6 +161,7 @@ public static partial class DungeonDress
     {
         public readonly List<Vector3> V = new(), N = new();
         public readonly List<Vector2> U = new();
+        public readonly List<Vector2> U2 = new();   // (den r16 A) the hole cards' floor offset from the pit's centre (UV2; empty elsewhere)
         public readonly List<Color> C = new();
         public readonly List<int> I = new();
     }
@@ -443,6 +462,9 @@ public static partial class DungeonDress
             if (b.I.Count == 0 || (SetOnly != null && System.Array.IndexOf(SetOnly, name) < 0)) continue;
             var bm = SetMat(name, SetGain);
             if (SetDbgMod > 0f) bm.SetShaderParameter("dbg_mod", SetDbgMod);   // (den r15 E, diagnosis)
+            if (name[0] == 'B') { bm.SetShaderParameter("top_k", SetBankTop); bm.SetShaderParameter("pt_take", SetBankPt); }
+            if (name[0] == 'B' && SetBankCorr != 1f && CorrTex(c) is ImageTexture ct)   // (den r16 D) the corridor banks darker than the rooms'
+            { bm.SetShaderParameter("corr_k", SetBankCorr); bm.SetShaderParameter("corr_tex", ct); bm.SetShaderParameter("corr_map", new Vector3(-c.Z.Half - 0.5f * c.Z.Step, -c.Z.Half - 0.5f * c.Z.Step, 1f / (c.Z.Res * c.Z.Step))); }   // (den r16 D, R15f item 4) every bank card: lit tops and pool light down
             if (SetCutNoise > 0f || SetCutLum > 0f)   // (den r15 E, judge r14 item 4) the bank cards' cut wanders finely and follows the roots
             { bm.SetShaderParameter("cut_noise", SetCutNoise); bm.SetShaderParameter("cut_lum", SetCutLum); bm.SetShaderParameter("cut_scale", SetCutScale); }
             c.Root.AddChild(new MeshInstance3D { Name = "Set_" + name, Mesh = SetMesh(b), MaterialOverride = bm, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
@@ -991,11 +1013,32 @@ public static partial class DungeonDress
     /// <summary>(round 10b) A painted object from a sheet (O1 boulders, O2 logs, O3 bone piles) on its half-ellipsoid
     /// proxy: ry is its height as a share of its half width (a boulder 0.62, a log 0.18, bones 0.1); the shadow-only hull
     /// for the tall ones. Returns the proxy's half width.</summary>
+    // (den r16 D, R15f item 4: the corridors flat in value, floor .34 against banks .28-.31, bank L90 .50 against den_room's .33-.39)
+    // every bank card's lit tops x SetBankTop (albedo, den_set.gdshaderinc top_k) and its take of the pools' and shafts' light
+    // x SetBankPt (pt_take): the lane pools then lift the corridor floor without the banks. 1, 1: the old banks
+    static readonly float SetBankTop = SurvivorUnchained.Args.Num("den-bank-top", 1f), SetBankPt = SurvivorUnchained.Args.Num("den-bank-pt", 1f);
+    // (den r16 D, R15f item 5) the round boulders' lit planes as one or two facets on the light's side (den_rocks.py facets: O1rf.png); 0: O1r
+    static readonly float SetBankCorr = SurvivorUnchained.Args.Num("den-bank-corr", 1f);   // (den r16 D) corridor banks' albedo x this (DenRagged.Corridor's weight; 1 off)
+    static ImageTexture? corrTex; static ZoneData? corrZone;
+    static ImageTexture? CorrTex(Ctx c)
+    {
+        if (corrZone == c.Z) return corrTex;
+        int n = c.Z.Res; var px = new byte[n * n];
+        for (int j = 0; j < n; j++) for (int i = 0; i < n; i++)
+            px[j * n + i] = (byte)Mathf.Clamp(Mathf.Round(255f * DenRagged.Corridor(-c.Z.Half + i * c.Z.Step, -c.Z.Half + j * c.Z.Step, c.Z.Rooms)), 0f, 255f);
+        corrZone = c.Z; corrTex = ImageTexture.CreateFromImage(Image.CreateFromData(n, n, false, Image.Format.R8, px));
+        return corrTex;
+    }
+    static readonly float SetRockFacets = SurvivorUnchained.Args.Num("den-rock-facets", 1f);
+    // (den r16 D, R15f item 8: the logs' lit tops C .061-.077 against den_room's .102, lavender driftwood) the logs' (O2) saturation x this
+    static readonly float SetLogSat = SurvivorUnchained.Args.Num("den-log-sat", 1f);
+    static readonly Vector3 SetBoneTint = V3("den-bone-tint", new Vector3(0.9f, 1f, 2.7f));   // (den r16 E, R15f item 6) the lone bones (O3 card) read yellow on screen (OKLab h 74-83, C .09-.13; target h 55-63, C .04-.07): blue up, red down; 1,1,1 = as r15
+    static readonly Vector3 SetLogTint = V3("den-log-tint", new Vector3(1f, 1f, 1f));   // (den r16 D) the logs' tint over the set's
     static readonly float SetNoRepeat = SurvivorUnchained.Args.Num("den-set-norepeat", 1f);   // (den r15 R) 0: bank runs may lay one card twice in a row
     static readonly float SetRockVary = SurvivorUnchained.Args.Num("den-rock-vary", 1f);   // (den r15 R) 0: stones near each other may repeat one piece
     static readonly float SetRootK = SurvivorUnchained.Args.Num("den-root-k", 0.8f);   // (den r15 R, judge item 9) the 3D root tendrils (B6) read salmon: albedo L and C x this (linear scale this^3)
     static readonly int BigBoneCap = (int)SurvivorUnchained.Args.Num("den-bigbone-cap", 1f), SkullCap = (int)SurvivorUnchained.Args.Num("den-skull-cap", 1f);   // (den r15 Q) per camera footprint
-    static readonly float BigBoneR = SurvivorUnchained.Args.Num("den-bigbone-r", 11f);
+    static readonly float BigBoneR = SurvivorUnchained.Args.Num("den-bigbone-r", 22f);   // (den r16 E, R15f item 7) was 11: the camera shows more than 11 m, two large pieces slipped through; 11 = as r15
     static float PlaceSetObj(Ctx c, string sheet, SetPiece pc, float x, float zz, float k, float ryk, bool hull, float contact = -1f, string? key = null)
     {
         // (den r14 objects, item 4) the bone piles and logs vary: at most 2 deer skulls and 3 rib cages in a camera footprint
@@ -1154,6 +1197,7 @@ public static partial class DungeonDress
                 var off = new Vector2(dx, dz) * g;
                 if (hrot != 0f) off = new Vector2(off.X * Mathf.Cos(hrot) - off.Y * Mathf.Sin(hrot), off.X * Mathf.Sin(hrot) + off.Y * Mathf.Cos(hrot));
                 var w = ctr + off;
+                if (lairHole && SetPitCells > 0f) { while (buf.U2.Count < buf.V.Count) buf.U2.Add(Vector2.Zero); buf.U2.Add(off); }   // (den r16 A) the pit-local offset
                 buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
                 buf.N.Add(Vector3.Up);
                 buf.U.Add(new Vector2(pc.Uv.Position.X + u * pc.Uv.Size.X, pc.Uv.Position.Y + v * pc.Uv.Size.Y));
@@ -1348,6 +1392,7 @@ public static partial class DungeonDress
         arr[(int)Mesh.ArrayType.Vertex] = b.V.ToArray();
         arr[(int)Mesh.ArrayType.Normal] = b.N.ToArray();
         arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
+        if (b.U2.Count > 0) { while (b.U2.Count < b.V.Count) b.U2.Add(Vector2.Zero); arr[(int)Mesh.ArrayType.TexUV2] = b.U2.ToArray(); }   // (den r16 A)
         arr[(int)Mesh.ArrayType.Color] = b.C.ToArray();
         arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
         var mesh = new ArrayMesh();
