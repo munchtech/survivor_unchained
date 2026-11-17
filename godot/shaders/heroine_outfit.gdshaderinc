@@ -60,6 +60,7 @@ uniform vec2 far_px = vec2(120.0, 300.0);
 // white card of 1 or more) of kit_glint.x degrees close, .y at the play camera (far_px), .z its soft edge.
 // Defaults off: every other gear bit for bit; set only from metal_finishes.json meshes.kit)
 uniform float kit_lit = 0.0;
+uniform float kit_lit_far = 0.0;               // (armor-D finish r7: kit_lit at the play camera (v_kit_far); 0: kit_lit at every distance)
 uniform float kit_soft = 0.0;
 uniform vec3 kit_glint = vec3(5.0, 8.0, 1.0);
 uniform vec3 kit_glint_color = vec3(0.0);
@@ -734,7 +735,7 @@ void light() {
 		float klit = cel_lit(ob_t) * ob_sh;
 		vec3 kd = LIGHT_COLOR * mix(cel_level(ob_t), vec3(smoothstep(-0.05, 0.8, ob_t)), kit_soft) * (ob_sh / PI);
 		float ky = dot(ALBEDO * kd, klw) * (1.0 - v_metal);
-		float kk = 0.5 * kit_lit;
+		float kk = 0.5 * mix(kit_lit, kit_lit_far > 0.0 ? kit_lit_far : kit_lit, v_kit_far);
 		if (ky > kk) kd *= (kk + kk * (1.0 - exp(-(ky - kk) / kk))) / ky;
 		dm = mix(dm, kd + cel_fill_add(LIGHT_COLOR, klit, LIGHT_IS_DIRECTIONAL), kp);
 		float krad = mix(kit_glint.x, kit_glint.y, v_kit_far);
