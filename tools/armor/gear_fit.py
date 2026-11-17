@@ -1300,7 +1300,47 @@ def stack_hinge(body, Y, zone, tgt, ok, law=STACK):
     return R, p0, info
 
 
-def standoff_floor(bd, ms, ev, path=None, lead=None):
+_SKINS = {}
+
+
+def stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest):
+    """THE STACK AS TUCKED (lane G solver round 9, 17 Nov): per point of the tier, how deep (m) her skin under it is
+    tucked when every child hangs as A hangs it (its parent's fit over A's arrangement, no hinge) and the fitted plates
+    sit where they are. The plates' footprint is taken SEATED (each point at least `rest` off her untucked skin), so the
+    tuck is the cover's own (gear_tuck.tuck_of on the tier's body: full under the plates, ramped in from the footprint's
+    border), never one a plate earns by standing through her: at the plates' outer edges it is ~0 and THE REST FLOOR
+    holds there; well inside them it is the law's whole depth. (B's warden lames sit up to 10.5 mm inside her untucked
+    arm as A's do; A hides that skin with the tuck, so the floor is measured against her skin as tucked.)"""
+    import gear_tuck
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    X = np.vstack([ev[m["i"]]["X"] for m in ms]).copy()
+    for c, (M, ca, cb) in rots.items():
+        grp = g == c
+        X[grp] = (Xa[grp] - ca) @ M.T + cb
+    R = dict(rots)
+    dep = lambda c: 0 if c not in parents else 1 + dep(parents[c])  # noqa: E731
+    for c in sorted(parents, key=lambda c: (dep(c), c)):
+        p = parents[c]
+        ownp, own, grp = comp == p, comp == c, g == c
+        Rk, cak, cbk = kabsch(Ar[ownp], Xa[ownp])
+        Mp, cap, cbp = R.get(p, (np.eye(3), np.zeros(3), np.zeros(3)))
+        X[grp] = ((Ar[grp] - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp
+        Rc, cac, cbc = kabsch(Ar[own], Xa[own])
+        R[c] = (Mp @ Rk @ Rc.T, cbc, ((cac - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp)
+    cl, fn = gear_field.signed_clear(body, X, k=16)
+    Xs = X + fn * np.maximum(rest - cl, 0.0)[:, None] * (comp >= 0)[:, None]
+    cut = np.cumsum([0] + [len(ev[m["i"]]["X"]) for m in ms])
+    T = np.vstack([bd_tris(bd, m["i"]) + cut[k] for k, m in enumerate(ms)])
+    rg = (comp[T] >= 0).all(1)
+    if body.glb not in _SKINS:
+        _SKINS[body.glb] = gear_tuck.Skin(body.glb)
+    sk = _SKINS[body.glb]
+    t = gear_tuck.tuck_of(sk, Xs, T, rg, bd.meta["row"].get("slot"))[0]
+    mm = gear_tuck.depth_of(rg, bd.meta["row"].get("slot")) * np.where(t >= 0.973, 1.0, t)
+    return mm[sk.kd.query(X)[1]] * (comp >= 0)
+
+
+def standoff_floor(bd, ms, ev, path=None, lead=None, tucked=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
     by tools/armor/gear_standoff.py from her skin's excursion under the plate over the clips: per node, [unique vertex,
@@ -1310,7 +1350,8 @@ def standoff_floor(bd, ms, ev, path=None, lead=None):
     it may stand off to "cap_mm". "rest_min_mm" (optional) is THE REST FLOOR: every rigid point, measured need or not,
     stands at least this far off her untucked skin at rest (a point the clips never drove through has no target, and
     sat under her skin where the form the plate was made on was smaller than she is). `lead`: the tier's leaders with
-    the rims given to their plates (rim_leads; None = the binding's own)."""
+    the rims given to their plates (rim_leads; None = the binding's own). `tucked` (per point of the tier, m; THE STACK
+    AS TUCKED, stack_tucked): the rest floor stands that much lower, off her skin as tucked."""
     law = standoff_law(bd.meta["row"].get("slot"))
     fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
     if not law or not os.path.isfile(fp):
@@ -1327,14 +1368,16 @@ def standoff_floor(bd, ms, ev, path=None, lead=None):
                          bd.z[f"lead_{ms[0]['tier']}"] if lead is None else lead)
         seat = np.where(top, min(cap, float(law["seat_cap_mm"]) / 1000.0), cap)
         caps = np.split(seat, np.cumsum([len(c) for c in caps])[:-1])
-    out = []
+    out, k0 = [], 0
     for m in ms:
         f = np.full(len(ev[m["i"]]["X"]), np.nan)
         for u, c in tg.get(m["node"], []):
             if 0 <= int(u) < len(f):
                 f[int(u)] = min(float(c), caps[len(out)][int(u)])
         if rest > 0:
-            f = np.where(np.isfinite(f), np.maximum(f, rest), rest)
+            r_ = rest if tucked is None else rest - tucked[k0:k0 + len(f)]
+            f = np.where(np.isfinite(f), np.maximum(f, r_), r_)
+        k0 += len(f)
         f[ev[m["i"]]["comp"] < 0] = np.nan
         out.append(f)
     out = np.concatenate(out) if out else np.zeros(0)
@@ -1429,6 +1472,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 order = sorted(order, key=lambda c: (depth(int(c)), int(c)))
             else:
                 stk, parents = None, {}
+            tk, flt = None, None
             for c in order:
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
@@ -1438,6 +1482,18 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 if stk is not None and int(c) in parents:
                     # (the child over A's arrangement: its parent's bind and fit, then the least hinge to the law)
                     p = parents[int(c)]
+                    if tk is None:
+                        # (THE STACK AS TUCKED: a child's floor is measured off her skin as the plates' cover tucks it,
+                        # once every plate above is fit; stack_tucked)
+                        rest_m = float((standoff_law(bd.meta["row"].get("slot")) or {}).get("rest_min_mm", 0.0)) / 1000.0
+                        tk = stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest_m)
+                        flt = standoff_floor(bd, ms, ev, lead=lead, tucked=tk) if armor_laws else None
+                        ch = np.isin(np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1), list(parents))
+                        fit["rigid"][f"{tier}/as_tucked"] = {
+                            "children_pts": int(ch.sum()), "full": int((tk[ch] >= 0.0175).sum()),
+                            "zero": int((tk[ch] <= 1e-4).sum()), "median_mm": round(float(np.median(tk[ch])) * 1000, 2)}
+                        print(f"{bd.id}: {tier}: THE STACK AS TUCKED {fit['rigid'][f'{tier}/as_tucked']}", flush=True)
+                    fg = None if flt is None else flt[grp]
                     ownp = comp == p
                     Rk, cak, cbk = kabsch(Ar[ownp], Xa[ownp])
                     Mp, cap, cbp = rots.get(p, (np.eye(3), np.zeros(3), np.zeros(3)))
@@ -1445,10 +1501,21 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     from scipy.spatial import cKDTree
                     zone = cKDTree(Ar[ownp]).query(Ar[grp])[0] < stk["reach_mm"] / 1000.0
                     creq = c0s[grp]
-                    tgt, okq = np.minimum(creq, gear_field.RIGID["clear_m"]), creq >= 0
+                    tgt, okq = np.minimum(creq, gear_field.RIGID["clear_m"]) - tk[grp], creq >= 0
                     if fg is not None:
                         has = np.isfinite(fg)
                         tgt, okq = np.where(has, np.maximum(tgt, np.nan_to_num(fg)), tgt), okq | has
+                    if stk.get("fit") == "clear":
+                        # (MADE TO MEASURE FROM A's ARRANGEMENT: the child's similarity onto its place under the parent,
+                        # then the lone fit's least translation and per-axis scales to the targets, off her as tucked)
+                        M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Y[own[grp]],
+                                                                     Xa[grp], np.full(int(grp.sum()), -1.0),
+                                                                     np.where(okq, tgt, np.nan))
+                        rots[int(c)] = (M, ca, cb)
+                        info.update(parent=p, zone=int(zone.sum()), stack="clear")
+                        fit["rigid"][f"{tier}/{int(c)}"] = info
+                        print(f"{bd.id}: {tier}: {int(c)} hangs from {p} (THE STACK, made to measure): {info}", flush=True)
+                        continue
                     Rh, p0, info = stack_hinge(body if wr is None else wr.body, Y, zone, tgt, okq, stk)
                     Rc, cac, cbc = kabsch(Ar[own], Xa[own])
                     rots[int(c)] = (Rh @ Mp @ Rk @ Rc.T, cbc,
