@@ -27,7 +27,7 @@ cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangl
 without the tuck (the baseline).
 
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
+                                    [--out <dir>] [--no-skin] [--no-cap] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 
@@ -127,6 +127,84 @@ def signed_gap(t, facing, reach):
     # (B's outer face is never nearer than its inner one: overlapping shells read as their inner face)
     gout = np.where(np.isfinite(g), np.where(np.isfinite(gout), np.maximum(gout, g), g), np.nan)
     return g, j, gout
+
+
+class Caps:
+    """A piece's openings, for the inside/outside decision only (--no-cap switches it off). The piece's open boundary
+    loops (edges used by one triangle, after welding coincident positions) each capped by a fan from the loop's centroid,
+    wound as the continuation of the piece's own faces (an inner wall's loop is capped facing into the cavity, so a ray
+    leaving the cavity through it meets an entry face). Distances never measure to a cap: see cap_fix."""
+
+    def __init__(self, P, T):
+        from scipy.sparse import coo_matrix
+        from scipy.sparse.csgraph import connected_components
+        u = np.unique(T)
+        q = np.round(P[u] * 1e5).astype(np.int64)
+        _, inv = np.unique(q, axis=0, return_inverse=True)
+        inv = inv.ravel()
+        wid = np.zeros(len(P), np.int64)
+        wid[u] = inv
+        rep = np.zeros(inv.max() + 1, np.int64)
+        rep[inv[::-1]] = u[::-1]
+        ea, eb = T[:, [0, 1, 2]].ravel(), T[:, [1, 2, 0]].ravel()
+        wa, wb = wid[ea], wid[eb]
+        ok = wa != wb
+        ea, eb, wa, wb = ea[ok], eb[ok], wa[ok], wb[ok]
+        key = np.minimum(wa, wb) * (inv.max() + 1) + np.maximum(wa, wb)
+        _, k2, cnt = np.unique(key, return_inverse=True, return_counts=True)
+        bd = cnt[k2.ravel()] == 1
+        wa, wb = wa[bd], wb[bd]
+        self.n = int(len(wa))
+        if not self.n:
+            self.ids = np.zeros(0, np.int64)
+            return
+        nw = inv.max() + 1
+        _, lab = connected_components(coo_matrix((np.ones(len(wa)), (wa, wb)), shape=(nw, nw)), directed=False)
+        self.A, self.B = rep[wa], rep[wb]
+        self.comp = lab[wa]
+        cu = np.unique(np.r_[wa, wb])
+        self.cv, self.cc = rep[cu], lab[cu]
+        _, self.cc = np.unique(self.cc, return_inverse=True)
+        self.comp = np.unique(lab[wa], return_inverse=True)[1].ravel()
+        self.cc = self.cc.ravel()
+        self.ncomp = int(self.cc.max()) + 1
+        self.ids = np.unique(np.r_[self.A, self.B, self.cv])
+
+    def tris(self, getp):
+        """The cap triangles [m, 3, 3] with positions from getp(vertex ids): (b, a, centroid) per boundary edge a->b."""
+        if not self.n:
+            return np.zeros((0, 3, 3))
+        pv = getp(self.cv)
+        cen = np.stack([np.bincount(self.cc, pv[:, k], self.ncomp) for k in range(3)], 1) /             np.bincount(self.cc, minlength=self.ncomp)[:, None]
+        return np.stack((getp(self.B), getp(self.A), cen[self.comp]), 1)
+
+
+CAP = True
+
+
+def cap_fix(O, D, g, go, t, capT):
+    """A ray that leaves through an opening of the piece counts as crossing it. Rays read past the piece (g < 0) whose
+    nearest forward hit, real faces (t: cast against them, unfiltered) and caps (capT [m, 3, 3]) together, is an entry
+    face of a cap are inside it: their gap is the distance to the real face they were read against, made positive
+    (clearance); the cap only decides. Returns g, go."""
+    if capT is None or not len(capT) or not len(O):
+        return g, go
+    sel = np.nonzero(g < 0)[0]
+    if not len(sel):
+        return g, go
+    real = np.where(t[sel] >= 0, t[sel], np.inf).min(1)
+    inside = np.zeros(len(sel), bool)
+    for a in range(0, len(sel), 128):
+        ii = sel[a:a + 128]
+        V = np.broadcast_to(capT[None], (len(ii),) + capT.shape)
+        tc, fc, _, _ = cast(O[ii], D[ii], V)
+        tc = np.where((tc >= 0) & (fc < 0), tc, np.inf).min(1)
+        inside[a:a + 128] = tc < real[a:a + 128]
+    sel = sel[inside]
+    g, go = g.copy(), go.copy()
+    g[sel] = np.abs(g[sel])
+    go[sel] = np.where(np.isfinite(go[sel]), np.maximum(go[sel], g[sel]), g[sel])
+    return g, go
 
 
 def closest_on_tri(p, A, B, C):
@@ -329,6 +407,8 @@ def main(argv):
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
     gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
+    global CAP
+    CAP = "--no-cap" not in argv        # (openings of a piece capped for the inside test, Caps; --no-cap: the old reading)
     conf = "--confirm" in argv          # (skin tests: each gap past B checked by the nearest face, confirm_gap)
     dump = "--dump" in argv             # (per sample of each skin test: its least gap and where: <out>/skin_<B>.npz)
     order = opt("--order", "").split(",") if "--order" in argv else \
@@ -379,8 +459,14 @@ def main(argv):
         dist, near = kd_sh.query(P0[smp])
         T = body.T[tri_piece == r["id"]]
         pc[r["id"]] = {"samples": smp, "near": ish[near], "skin_mm": dist * 1000, "T": T,
-                       "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v])}
+                       "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v]),
+                       "caps": Caps(P0, T) if CAP else None}
 
+    if os.environ.get("WC_CAPS"):
+        for k_, v_ in pc.items():
+            if v_["caps"] is not None:
+                c_ = v_["caps"]
+                print(f"wearcheck: caps {k_}: {c_.n} boundary edges, {getattr(c_, 'ncomp', 0)} loops")
     # (each sample's area in GRID^2 units, g4: her skin is tested at every vertex, so its counts grew with her mesh's
     # density (the arm-root graft: 2.5 v/cm2 -> 5.9 on her arms) though no more of her came through; the area columns
     # (aOUT>2 etc.: a skin vertex its third of its triangles' area, a voxel-thinned sample at least one voxel) do not)
@@ -425,6 +511,8 @@ def main(argv):
             ci = ci.reshape(len(ii), -1)
             t, fa, u, v = cast(O[ii], D[ii], P0[B["T"][ci]])
             g, j, go = signed_gap(t, fa, REACH)
+            if B["caps"] is not None:
+                g, go = cap_fix(O[ii], D[ii], g, go, t, B["caps"].tris(lambda i: P0[i]))
             ok = np.isfinite(g)
             if not ok.any():
                 continue
@@ -550,7 +638,8 @@ def main(argv):
     holds = sorted({x["hold"] for x in tests})
     for h in holds:
         group = [x for x in tests if x["hold"] == h]
-        need = np.unique(np.concatenate([ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group]))
+        need = np.unique(np.concatenate([ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group] +
+                                        [pc[B]["caps"].ids for B in {x["B"] for x in group} if pc[B]["caps"] is not None]))
         at = np.full(len(P0), -1)
         at[need] = np.arange(len(need))
         sh_local = at[ish]
@@ -595,6 +684,8 @@ def main(argv):
                     if len(r):
                         t, fa, _, _ = cast(O[r], D[r], Pp[at[x["candv"][r]]])
                         gr, _, gor = signed_gap(t, fa, REACH_POSED)
+                        if pc[x["B"]]["caps"] is not None:
+                            gr, gor = cap_fix(O[r], D[r], gr, gor, t, pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]))
                         lost = np.nonzero(~np.isfinite(gr))[0]
                         if len(lost):
                             # (B slid off its rest hit: B's faces over every footprint of B, nearest the sample)
@@ -604,6 +695,9 @@ def main(argv):
                             _, ii = kd_frame[x["B"]].query(O[r[lost]], k=min(K0, len(Sv)))
                             t, fa, _, _ = cast(O[r[lost]], D[r[lost]], Pp[at[Sv[ii.reshape(len(lost), -1)]]])
                             gl, _, gol = signed_gap(t, fa, REACH_POSED)
+                            if pc[x["B"]]["caps"] is not None:
+                                gl, gol = cap_fix(O[r[lost]], D[r[lost]], gl, gol, t,
+                                                  pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]))
                             gr[lost], gor[lost] = gl, gol
                             x["lost"] += int((~np.isfinite(gl)).sum())
                         g[r], go[r] = gr, gor
@@ -617,7 +711,7 @@ def main(argv):
                     # <out>/probe_<B>_<clip>_<frame>.npz, for a check by other means; nothing else changes)
                     if x["A"] == "skin" and f"{c}:{f}" in os.environ.get("WC_PROBE", "").split(","):
                         np.savez(os.path.join(out_dir, f"probe_{x['B']}_{c}_{f}.npz"), O=O, D=D, g=g, go=go, pts=x["pts"],
-                                 T=Pp[at[SvB[x["B"]]]])
+                                 T=Pp[at[SvB[x["B"]]]], CAP=pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]) if pc[x["B"]]["caps"] else np.zeros((0, 3, 3)))
                     x["seen"] += len(g)
                     gg = np.where(np.isfinite(g), g, np.inf)
                     if dump:
