@@ -953,6 +953,9 @@ public partial class PlayerView : Node3D
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? Spd(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
         GaitClips(run, sheathed);
+        // (warden-move) The directional set's forward clip is the run just mounted (her town run sheathed, the armed run
+        // drawn): the set took the whole run over at speed, so the den run played in town with the hilt hand off the hilt.
+        if (dirF != null && person.Anim.HasAnimation(run)) { dirF.Animation = run; dirLen[0] = (float)person.Anim.GetAnimation(run).Length; }
         if (sprintNode == null) return;
         // The sprint follows: her town sprint if she has one, else the town run itself; the armed sprint on the draw.
         var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
@@ -2513,6 +2516,8 @@ public partial class PlayerView : Node3D
     bool DirOn => dirChain && !DirLegsOff;
     readonly float[] dirW = new float[6], dirLen = new float[6];
     float dirBackW, dirDelta, dirBlend, dirAlpha;
+    /// <summary>The set's forward clip (Mount swaps it: the town run sheathed, the armed run drawn).</summary>
+    AnimationNodeAnimation? dirF;
     /// <summary>The cursor's ground point (WorldScene wires it each frame; null on a pad, for bots, off the window).</summary>
     public System.Func<(double X, double Z)?>? Pointer;
 
@@ -2524,7 +2529,9 @@ public partial class PlayerView : Node3D
         for (int i = 0; i < 6; i++)
         {
             dirLen[i] = (float)person.Anim.GetAnimation(n[i]).Length;
-            mv.AddNode("d_" + DirId[i], new AnimationNodeAnimation { Animation = n[i] }, new Vector2(1000, 1000 + 100 * i));
+            var dn = new AnimationNodeAnimation { Animation = n[i] };
+            if (i == 0) dirF = dn;
+            mv.AddNode("d_" + DirId[i], dn, new Vector2(1000, 1000 + 100 * i));
             mv.AddNode("dSeek_" + DirId[i], new AnimationNodeTimeSeek(), new Vector2(1200, 1000 + 100 * i));
             mv.ConnectNode("dSeek_" + DirId[i], 0, "d_" + DirId[i]);
         }
@@ -2577,7 +2584,9 @@ public partial class PlayerView : Node3D
         if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get("parameters/fullShot/active") && !fullSoft && !fullGaveWay)) return false;
         float? goal = null;
         var ptr = Pointer?.Invoke();
-        if (Facing.Current == FacingMode.Always && ptr is { } c)
+        // (warden-move) Sheathed in town there is nothing to aim at: she faces her travel, so her town run (the set's forward
+        // clip) carries her and the armed side and back runs only pass through a turn.
+        if (Facing.Current == FacingMode.Always && ptr is { } c && !sheath.Sheathed)
         {
             float dx = (float)c.X - x, dz = (float)c.Z - z;
             if (dx * dx + dz * dz > 0.01f) goal = Mathf.Atan2(dx, dz);
