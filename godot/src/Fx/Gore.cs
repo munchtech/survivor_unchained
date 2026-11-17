@@ -25,7 +25,10 @@ public partial class Gore : Node3D
 {
     public sealed record Blood(Color Spray, Color Pool);
 
-    static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#5e0a07"));
+    /// <summary>(lane B fx, 16 Nov: E rule 3, the den's blood row L 0.36-0.52, C 0.072-0.110, h 25-42) droplets #7c3e30
+    /// (0.44 / 0.090 / 34, drawn as they are; #8e0c0c measured C 0.164); pools #622410 (0.35 / 0.095 / 38: lit and dried
+    /// they read about 6 degrees lower, #5e0a07 measured h 21-24).</summary>
+    static readonly Blood Red = new(new Color("#7c3e30"), new Color("#622410"));
     /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
     /// sent as it was drew as (196, 61, 61), coral-pink droplets (round 3's judge).</summary>
     static Color Lin(Color c) => c.SrgbToLinear();

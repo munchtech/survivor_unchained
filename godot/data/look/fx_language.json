@@ -683,6 +683,16 @@
  },
  "p7": {
   "what": "P7 round 3 (9 Nov): the skills lead's shapes in numbers, FROM judge r2 (survivorsunchained_inputs/skills_p7/judge_r2/verdict.md). px are at the play camera (1080 lines, the view converts with BattleFx.P7Px); s seconds; frames at 60 fps; [lo, hi] a range; a curve is [t, v] pairs. Colors stay the physical school's (L1). Read by logic/Look/FxP7.cs.",
+  "sunder_mark": {
+   "what": "(lane B fx, 16 Nov: E rule 4) Sunder's ground mark: a p7_wave shock ring STANDING at the cut's real reach (Ev.Slash.Reach) over the cut's own arc (at most open_deg) in front of her; it runs out from `from` x the reach (never under her body or HP plate) in `run` s, holds whole `hold` s (the core L 0.90+), then its steel fades over `fade` s (p7_fall); lead_px / trail_px its lip and trailing band at the play camera",
+   "from": 0.45,
+   "run": 0.07,
+   "hold": 0.07,
+   "fade": 0.3,
+   "open_deg": 220,
+   "lead_px": 10,
+   "trail_px": 16
+  },
   "wave": {
    "what": "r3 fix 2: every ring's wavefront (p7_wave): painted arcs about arc_px long at the reach (3-9 a ring), dust shed off them as the front passes each share of its reach (shed), dust_px the puffs at the play camera; open_deg the charge stop's forward arc",
    "arc_px": 480,
@@ -912,8 +922,9 @@
     "_doc": "(take 7, iii) THE BODY IS BRUSHED. lanes = bristle lanes across the width (uneven); (take 8) share = a lane's share of its length [at the stroke's white, up to the second value; the rest the third] (each lane changes value in streaks along the sweep, hard ends); values_day / values_night = the second and the third value as the white x [r, g, b, r, g, b] in sRGB: FAR ENOUGH APART TO READ at 1:1 (take 7's 0.93 / 0.85 in linear could not be seen); gold = the inner edge's band [its share of the width (take 10: the innermost lane only, a fifth of the width at most), the light gold's green and blue x the gold's (take 10: 1.25, the kit's WARM gold; 1.9 was lemon), the next lane's share in gold (the band's border steps in and out)]; press = THE PRESS IS MORE PAINT [the values' shares shift toward the deeper ones by this at the contact's size 1, a streak's half splits in two finer lanes from this press (+0.3 x the lane's own number)] (take 10: asked at each half streak's CENTRE from the stamp's place and reaches, so a pressed patch ends in the streaks' own slanted ends: per pixel it drew block borders); groove = (take 10) THE BRISTLES' GROOVES on the lanes' borders [a groove's width (px), the share of a border's length grooved, a dry gap's width (px), the groove's color (0 the deepest value, 1 the light gold)]: hair lines that make the white read as brushed, and the places the dry gaps open (grip.dry_tail); streak = a value streak's length [m least, most]; tine = [a lane's own threshold on the rib's whiteness (+-), its slant across the lane]: the white's, the gold's and the amber's ends are tines along the sweep, never a line across; cut = the whiteness at which [amber turns gold, gold turns white]; comb = a lane starts at its own whiteness up to this (the tail's comb tines; the lane on the tip's path whole: the comma's point); dry = a dry gap's cell along a lane [m least, most]. All anchored to the laid path's metres: nothing swims.",
     "lanes": 9,
     "share": [0.55, 0.85],
-    "values_day": [0.96, 0.91, 0.8, 0.92, 0.8, 0.58],
-    "values_night": [0.96, 0.93, 0.86, 0.88, 0.8, 0.66],
+    "_doc_values_den": "(lane B fx, 16 Nov: E rule 1) the second value is the physical school's mid band (#f9b214, 0.81 / 0.165 / 79) and the third its edge band (#ca6e06, 0.63 / 0.149 / 58), as shares of the white: the stroke is white core, gold body, amber lanes (C 0.14-0.19 on warm earth; the old cream 0.913 / 0.064 vanished there)",
+    "values_day": [0.976, 0.72, 0.089, 0.792, 0.444, 0.027],
+    "values_night": [0.976, 0.72, 0.089, 0.792, 0.444, 0.027],
     "gold": [0.12, 1.25, 0.3],
     "press": [0.15, 0.12],
     "groove": [1.3, 0.5, 2.4, 0.45],

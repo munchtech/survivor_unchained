@@ -312,6 +312,8 @@ public partial class BattleFx
         else if (gripLive is { Contact: < 0 } armed) { tr = armed; how = "armed"; }
         else { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
         if (GripSayAll) GD.Print($"grip arc frame {Engine.GetFramesDrawn()} {how} struck {e.Struck} fresh {e.Fresh} laid {tr.Laid.Count}");
+        // (lane B fx, 16 Nov: E rule 4) Sunder's ground mark at its real reach, once a cut (not once an arc)
+        if (!oath && !again) SunderMark(e, reach);
         int struck0 = again && tr.FlashOwed ? tr.Struck : 0, killed0 = again && tr.FlashOwed ? tr.Killed : 0;
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side; tr.Reach = reach;
         if (tr.Side == 0) tr.Side = e.Side;   // (take 8) before this frame's stroke is drawn, not after it
@@ -418,6 +420,34 @@ public partial class BattleFx
     /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade
     /// and at the drawn tail; `age` s since the contact (under 0: not yet); the spikes (GripPaint.Spikes), the first
     /// `tines` of them the splay's.</summary>
+    /// <summary>(lane B fx, 16 Nov: E rule 4) Sunder's ground mark: a steel shock ring (p7_wave, the physical school's bands)
+    /// STANDING at the cut's real reach over the cut's own arc in front of her, so what shows is what it hits. It runs out
+    /// from `from` x the reach (never under her body or her HP plate) in `run` s, holds whole `hold` s, then its steel
+    /// fades over `fade` s (fx_language.json authored.sunder_mark).</summary>
+    void SunderMark(Ev.Slash e, float reach)
+    {
+        if (P7Off || reach < 0.5f) return;
+        P7WarmUp();
+        float from = P7D["sunder_mark.from"], run = Mathf.Max(P7D["sunder_mark.run"], 1 / 60f), hold = P7D["sunder_mark.hold"];
+        float fade = Mathf.Max(P7D["sunder_mark.fade"], 1 / 60f), lead = P7D["sunder_mark.lead_px"];
+        var c = V(e.X, Y(e.X, e.Z) + 0.06, e.Z);
+        float span = Mathf.Min((float)e.Arc, Mathf.DegToRad(P7D["sunder_mark.open_deg"]));
+        var s = P7Quad(5, c, reach, run + hold + fade, step: q =>
+        {
+            float t = Mathf.Clamp(q.Age / run, 0, 1);
+            q.M.SetShaderParameter("p7_prog", from + (1 - from) * (1 - (1 - t) * (1 - t)));
+            q.M.SetShaderParameter("p7_fall", Mathf.Clamp((q.Age - run - hold) / fade, 0, 1));
+        });
+        float rpx = reach / P7Px(c);
+        s.M.SetShaderParameter("p7_lead", lead / rpx);
+        s.M.SetShaderParameter("p7_trw", P7D["sunder_mark.trail_px"] / rpx);
+        s.M.SetShaderParameter("p7_prog", from);
+        int n = Math.Clamp((int)MathF.Round(span * rpx / P7D["wave.arc_px"]), 3, 9);
+        P7Arcs(s.M, (float)e.Angle - span / 2, span, n, 0, 0.85f, 1.25f, 0.35f);
+        P7BrushWave(s.M, rpx, lead);
+        if (GripSayAll) GD.Print($"sunder mark frame {Engine.GetFramesDrawn()} reach {reach:0.00} m = {rpx:0} px arc {Mathf.RadToDeg(span):0} deg arcs {n}");
+    }
+
     void GripSet(GripLook look, float total, float tailU, float blade, float age, float seed, Vector3 her, float[]? spikes, int tines, int since = -1, Vector4 stamp = default)
     {
         var m = gripMat!;
