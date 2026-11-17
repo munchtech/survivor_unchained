@@ -117,6 +117,32 @@ public static class Wear
         return full.Count == look.Count && full.All(kv => look.TryGetValue(kv.Key, out var v) && v == kv.Value);
     }
 
+    /// <summary>The outfits whose pieces are not drawn on body B (data/body/her_body.json "outfits_hidden_on_b"; the owner
+    /// 17 Nov: "hide all 3 besides warden for demo"). Empty when the file or key is missing.</summary>
+    public static IReadOnlyCollection<string> OutfitsHiddenOnB => hiddenOnB ??= ReadHiddenOnB();
+    static HashSet<string>? hiddenOnB;
+    static HashSet<string> ReadHiddenOnB()
+    {
+        var r = new HashSet<string>();
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(SurvivorUnchained.Core.DataFiles.Text("body/her_body.json"));
+            if (doc.RootElement.TryGetProperty("outfits_hidden_on_b", out var h))
+                foreach (var e in h.EnumerateArray()) if (e.GetString() is { Length: > 0 } o) r.Add(o);
+        }
+        catch (System.IO.IOException) { }
+        return r;
+    }
+
+    /// <summary>`worn` without the pieces of the given outfits (by their index row's outfit, else the id's prefix): on B the
+    /// slot they held is filled by her calling's own piece (Look), as if nothing were equipped there.</summary>
+    public static Dictionary<string, string> Without(IReadOnlyDictionary<string, string> worn, ArmorIndex ix, IReadOnlyCollection<string> outfits)
+    {
+        if (outfits.Count == 0) return new Dictionary<string, string>(worn);
+        string OutfitOf(string id) => ix.Find(id)?.Outfit ?? id[..Math.Max(0, id.IndexOf('.'))];
+        return worn.Where(kv => !outfits.Contains(OutfitOf(kv.Value))).ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
     /// <summary>Visual slot -> piece id, from what is equipped. Pieces outside their item slot's group are ignored.</summary>
     public static Dictionary<string, string> Of(Equipment eq, System.Func<string, ItemDef?>? find = null)
     {
