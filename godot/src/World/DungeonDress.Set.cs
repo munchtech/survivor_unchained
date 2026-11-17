@@ -127,10 +127,10 @@ public static partial class DungeonDress
             // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
             mat.SetShaderParameter("pit_cells", SetPitCells);
             mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
-            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.04f, 0.17f, 0.7f))   /* (den r17 P) z now the share lit (r16 .3 lit 70 %); (r17 P2, R16 item 1) .03,.14,.6 -> .04,.17,.7: glow runs 2/6 px against den_boss 7/22 */);
-            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.195f, 0.263f, 0.165f))   /* (den r17 P, R16 item 1) C x.75, luminance kept (r16 .18,.27,.14) */);
-            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.125f, 0.165f, 0.105f))   /* (den r17 P2) was .1,.145,.085: wider, less saturated (q7c at .2,.3,.17: 11 % of the pit, C .097) */);
-            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.05f, 0.045f)));
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.045f, 0.18f, 0.75f))   /* (den r17 lead, p3a) .04,.17,.7 -> .045,.18,.75 */   /* (den r17 P) z now the share lit (r16 .3 lit 70 %); (r17 P2, R16 item 1) .03,.14,.6 -> .04,.17,.7: glow runs 2/6 px against den_boss 7/22 */);
+            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.2f, 0.25f, 0.18f))   /* (den r17 lead, p3a) core desaturated */   /* (den r17 P, R16 item 1) C x.75, luminance kept (r16 .18,.27,.14) */);
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.15f, 0.2f, 0.125f))   /* (den r17 lead, p3a) */   /* (den r17 P2) was .1,.145,.085: wider, less saturated (q7c at .2,.3,.17: 11 % of the pit, C .097) */);
+            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.04f, 0.04f, 0.036f))   /* (den r17 lead, p3a: P2 plates .03 high) .05 -> .04 */);
             mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.08f, 0.12f, 0.4f)));
             mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.7f, 1.3f)));
             // (den r16 A2, R15f item 1: a raised turtle shell) the pit sunken: depth (m; 0 flat), the near lip's shadow reach, the
