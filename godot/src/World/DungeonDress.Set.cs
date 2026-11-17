@@ -126,6 +126,7 @@ public static partial class DungeonDress
     // was cast at 56, the road's, so every painting drew 6% tall on the floor and its raised parts sank)
     static readonly float CamPitchR = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch);
     static readonly Vector3 CamUp = new(0f, Mathf.Cos(CamPitchR), -Mathf.Sin(CamPitchR)), CamView = new(0f, -Mathf.Sin(CamPitchR), -Mathf.Cos(CamPitchR));
+    static readonly float SetRowMirror = SurvivorUnchained.Args.Num("den-set-rowmirror", 1f);   // (den r15 lead, judge item 7) a side wall's odd rows behind lay the other wall's card mirrored; 0: its own card (the s11 corridor's duplicate rock)
     static readonly float SetRowJit = SurvivorUnchained.Args.Num("den-set-row-jit", 2.5f);   // (r13) metres a row behind's depth varies by module
     static readonly int SetRows = (int)SurvivorUnchained.Args.Num("den-set-rows", 3f);       // (r10c) side walls: rows of modules deeper in the bank
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 0f);    // (r10c) B4/B4R_2 where a far run meets a wall's (r11 1 -> 0: the corner's arm drew a straight seam and a dark band across the room's top, c_p13)
@@ -136,7 +137,7 @@ public static partial class DungeonDress
     static readonly Dictionary<string, SetBuf> objBufs = new();
     static readonly List<Transform3D> hulls = new();
 
-    sealed record SetBank(string Name, string Kind, Vector2 Metres, float FootV, float FootU);
+    sealed record SetBank(string Name, string Kind, Vector2 Metres, float FootV, float FootU, bool Mirror = false);
     sealed record SetPiece(string Sheet, Rect2 Uv, Vector2 Metres, float FootV, Vector4 Mouth);
     sealed class SetBuf
     {
@@ -771,7 +772,13 @@ public static partial class DungeonDress
                     {
                         var b2 = choices[(int)(Hash(seed + 97 * row, 64, k) * choices.Count) % choices.Count];
                         for (int t = 1; SetNoRepeat > 0f && choices.Count > 2 && t < 8 && b2 == b; t++) b2 = choices[(int)(Hash(seed + 97 * row, 64 + 7 * t, k) * choices.Count) % choices.Count];   // (den r15 R) a row behind is never its own front's card
-                        float deep = row * Mathf.Max(1.5f, (cls == 3 ? b2.FootU : 1f - b2.FootU) * b2.Metres.X * SetScale - 1f);
+                        // (den r15 lead, R15 judge item 7: one mossy rock twice, 390 px apart in the s11 corridor) a side wall has one
+                        // card each side, and a row behind lies at its front module's along start: the same painting side by side.
+                        // An odd row lays the other wall's card mirrored across (a bank facing this way, another painting)
+                        if (SetRowMirror > 0f && row % 2 == 1 && setBanks!.Find(o => o.Kind == (kind == "left" ? "right" : "left") && !o.Mirror) is SetBank ob)
+                            b2 = ob with { Kind = kind, FootU = 1f - ob.FootU, Mirror = true };
+                        var bd = b2.Mirror ? b : b2;   // (a mirrored row sits where its front's bank part ends: its own foot left a dark trench)
+                        float deep = row * Mathf.Max(1.5f, (cls == 3 ? bd.FootU : 1f - bd.FootU) * bd.Metres.X * SetScale - 1f);
                         // (r13) each module's row behind its own depth: at one depth the cards' far border ran parallel to the
                         // corridor down the whole frame (the seed-11 vertical at x ~200)
                         deep += SetRowJit * (Hash(seed + 97 * row, 68, k) - 0.35f);
@@ -936,7 +943,7 @@ public static partial class DungeonDress
                 float bl = SetBankLift > 0f ? SetBankLift * SetSm(0.3f, 1.5f, -Wall(c, q.X, q.Z)) : 0f;
                 buf.V.Add(q - CamView * (lift + lay + SetLiftAdd + bl));
                 buf.N.Add(Vector3.Up);
-                buf.U.Add(new Vector2(Mathf.Clamp(u, 0f, 1f), Mathf.Clamp(v, 0f, 1f)));
+                buf.U.Add(new Vector2(Mathf.Clamp(b.Mirror ? 1f - u : u, 0f, 1f), Mathf.Clamp(v, 0f, 1f)));   // (den r15 lead) a mirrored bank: the other wall's card, its texture flipped across
                 // (den r13 corr) COLOR.b: metres into the drawn bank / 10, in the corridors only (DenRagged's weight): the
                 // shader's bank gloom takes the roots dark as they go deeper, so the deep rows' borders and the mass behind
                 // meet in the dark (the seed-11 far left's ruled vertical where the cards ended against the mound)
@@ -1232,7 +1239,7 @@ public static partial class DungeonDress
                 {
                     float ba = Hash(ri, k, 996) * Mathf.Tau, bd = 0.9f + 0.8f * Hash(ri, k, 997);
                     var bp = p + new Vector2(Mathf.Cos(ba), Mathf.Sin(ba)) * bd;
-                    if (Wall(c, bp.X, bp.Y) > 1.0f && Hole(c, bp.X, bp.Y) > 1.5f && SetPick("O5", Hash(ri, k, 998)) is SetPiece bpc)
+                    if (Wall(c, bp.X, bp.Y) > 1.0f && Hole(c, bp.X, bp.Y) > 1.5f && SetPickBlood(Hash(ri, k, 998)) is SetPiece bpc)
                     { PlaceSetObj(c, "O5", bpc, bp.X, bp.Y, SetBloodK * (1.1f + 0.5f * Hash(ri, k, 999)), 0f, false, 0f); c.Tick("set blood"); }
                 }
             }
@@ -1297,6 +1304,16 @@ public static partial class DungeonDress
         GD.Print($"SetLairDress: {pits.Count} pits (dist {(pits.Count > 1 ? pits[0].P.DistanceTo(pits[1].P) : 0f):0.0}), {roots} root tendrils, {fung} fungus clusters");
     }
 
+    // (den r15 lead, R15 judge item 5: the s23 room's flat opaque puddles) O5's blood by a kill is its splatters only (pieces
+    // 1 and 4: a core and droplets); the puddle (0) and the two drags (2, 3) read as paint. --den-blood-pieces 0,1,2,3,4: all
+    static readonly string BloodPieces = SurvivorUnchained.Args.Get("den-blood-pieces") ?? "1,4";
+    static SetPiece? SetPickBlood(float u)
+    {
+        if (!LoadSet() || !setSheets!.TryGetValue("O5", out var all) || all.Count == 0) return null;
+        var ok = new List<SetPiece>();
+        foreach (var w in BloodPieces.Split(',')) if (int.TryParse(w, out int i) && i >= 0 && i < all.Count) ok.Add(all[i]);
+        return ok.Count == 0 ? null : ok[(int)(u * ok.Count) % ok.Count];
+    }
     /// <summary>(round 10b) One piece of a set sheet by a hash, or null.</summary>
     static SetPiece? SetPick(string sheet, float u)
     {

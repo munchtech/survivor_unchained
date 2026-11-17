@@ -106,12 +106,13 @@ public static class DungeonLight
         var mesh = new CylinderMesh { TopRadius = w * 0.55f, BottomRadius = w, Height = Height, RadialSegments = 20, Rings = 1, CapTop = false, CapBottom = false };
         var mat = new ShaderMaterial { Shader = shader };
         mat.SetShaderParameter("height", Height);
-        if (lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-lair-veil") ?? "bcdcf0"));   // (r15b: cool additive streaks)
+        if (lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-lair-veil") ?? "c8dcf0"));   // (r15b: cool additive streaks)
         mat.SetShaderParameter("veil_cut", SurvivorUnchained.Args.Num("den-veil-cut", 0.75f));
         mat.SetShaderParameter("floor_fade", SurvivorUnchained.Args.Num("den-veil-floor", 1.0f));
         if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
-        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "b4ecff"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.5f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.6f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
+        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "c8dcf0"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
+        // (den r15 lead: at .5 / x1.6 and b4ecff the streak cores were cyan lasers, +.24-.34 L at C .07-.09; now +.09-.15, C .03, h 216-245)
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.26f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
         var mid = foot - Axis * (Height * 0.5f);
         // CylinderMesh stands along +y: turn +y to the shaft's upward axis (-Axis).
         var up = -Axis;
