@@ -126,7 +126,8 @@ uniform vec3 kit_refl_band_close = vec3(0.0);
 // a point light, at kit_close's gain 2.5 uncapped: kit_close.y, its soft cap, holds it (cap .9: lit side .50-.58 h 15-28)
 // (fin9q/r: cap .6 torso p90 .37, 1 .55, 1.8 .77, 3 .84), but a point light reaches her town close by day too (front L50 .50-.56 -> .47-.52 at .9): not set; a den gate is still owed)
 global uniform vec4 cel_her_den;
-vec3 kit_dark_at(float far) { return kit_tone_dark * (any(notEqual(cel_her_den, vec4(0.0))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
+global uniform float kit_her_den_close;   // (armor-D harness) 1 under the close rig in a den: the kit's den gate only; skin and hair read cel_her_den
+vec3 kit_dark_at(float far) { return kit_tone_dark * ((kit_her_den_close > 0.0 || any(notEqual(cel_her_den, vec4(0.0)))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
 varying float v_kgold;
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
@@ -602,7 +603,7 @@ void fragment() {
 		float kfull = max(kpaint, v_kgold);
 		if (kfull > 0.0) {
 			nrm = mix(nrm, vec3(0.5, 0.5, 1.0), kfull); metal = mix(metal, 1.0, kfull); RADIANCE = mix(RADIANCE, vec4(0.0, 0.0, 0.0, 1.0), kfull);
-			bool kden = any(notEqual(cel_her_den, vec4(0.0)));
+			bool kden = (kit_her_den_close > 0.0 || any(notEqual(cel_her_den, vec4(0.0))));
 			float kff = (kit_floor_den > 0.0 && kden) ? kit_floor_den : kit_floor.x;   // (the play camera's floor)
 			float kfc = kden ? kit_floor_close.y : kit_floor_close.x;                  // (finish-2 r6, see kit_floor_close)
 			look_emit += (kit_dark_at(kit_far) * kpaint * mix(kit_plate.x, kit_plate.x * kit_plate.y, kit_far)
@@ -828,7 +829,7 @@ void light() {
 		float klum = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
 		float ksh = LIGHT_IS_DIRECTIONAL ? cel_shadow(ATTENUATION, true) : 1.0;
 		float kl = klum * (LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION) / PI;
-		vec3 kcv = (kit_close_den.z > 0.0 && any(notEqual(cel_her_den, vec4(0.0)))) ? kit_close_den : kit_close;   // (finish-2 r5, see kit_close_den)
+		vec3 kcv = (kit_close_den.z > 0.0 && (kit_her_den_close > 0.0 || any(notEqual(cel_her_den, vec4(0.0))))) ? kit_close_den : kit_close;   // (finish-2 r5, see kit_close_den)
 		float kcl = kcv.z > 0.0 ? 1.0 - v_kit_far : 0.0;   // (finish-2 r3: the close rig's key at the close camera, see kit_close)
 		float kom = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(kit_floor.z, kcv.x, kcl);   // (a point light's share of bands, reflection, glint, hue)
 		if (!LIGHT_IS_DIRECTIONAL) {
