@@ -174,12 +174,16 @@ def _hinge_key(ride):
     return [hp.SPEC.get("hinges")]
 
 
-def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True):
+def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True, exclude=None):
     """The room a rigid plate riding `bone` (left side) needs: her skin within `radius` of `centre` (rest), over her rest
     and every frame of the demo clips, carried back into that bone's rest frame; the right side's (mirrored onto the
     left) joined in, so one mirrored design clears both arms. Hands and forearms left out (they swing past). Every
     triangle sampled at its corners, edge middles and centre, reduced to the outermost point per `vox` cell. Cached by
-    its inputs (git-ignored .shots). Returns points [n, 3] at her rest, left side."""
+    its inputs (git-ignored .shots). Returns points [n, 3] at her rest, left side.
+    `exclude` (sweep "exclude", armor-D r7 17 Nov, body B): {"bones": [name prefixes], "w": weight} leaves out her skin
+    whose weight on those bones (side-free prefixes, e.g. "breast", "spine_") is at least w: B's bust sits inside the
+    sweep radius, and carried into the arm's frame over the clips it filled the room in front of the shoulder (cop bite
+    144 mm, lame0 needing 120-134 mm lift at the front); unset = every skin point (A, unchanged)."""
     sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
     main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))   # (as wearcheck: the main checkout's built clips)
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
@@ -197,7 +201,9 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     ride = {bone: 1.0} if isinstance(bone, str) else {k: float(v) for k, v in sorted(bone.items())}
     key = hashlib.sha1(json.dumps(["v1", bone if isinstance(bone, str) else sorted(ride.items()),
                                    [round(float(v), 5) for v in centre], radius, list(clips), vox,
-                                   stamp] + _hinge_key(ride)).encode()).hexdigest()[:14]
+                                   stamp] + _hinge_key(ride)
+                                  + ([["ex", sorted(exclude["bones"]), float(exclude.get("w", 0.5))]] if exclude else [])
+                                  ).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
     if os.path.exists(cache):
         return np.load(cache)["P"]
@@ -207,6 +213,9 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     names = list(body.sk.names)
     hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
     hw = (body.W * hand[np.minimum(body.Jv, len(hand) - 1)]).sum(1)
+    if exclude:
+        exb = np.array([str(n).startswith(tuple(exclude["bones"])) for n in names] + [False] * 64)
+        hw = np.where((body.W * exb[np.minimum(body.Jv, len(exb) - 1)]).sum(1) >= float(exclude.get("w", 0.5)), 1.0, hw)
     out = []
     for side, sgn in (("l", 1.0), ("r", -1.0)):
         c = np.asarray(centre, float) * [sgn, 1, 1]
@@ -459,6 +468,15 @@ def pauldrons(cfg, ref):
         Pp, Tp, cc, ca, cup = pose_frame(ride, np.round(c, 4), 0.24, ck["pose"]["clip"], ck["pose"].get("frame", 0))
         # ("with_rest": her rest skin joined in, the outer of the two: the cop clears her A-pose too)
         cbody = [(Pp, Tp)] + (body if ck["pose"].get("with_rest") else [])
+    if ck.get("chart_ref"):
+        # (cop "chart_ref" {"a": [x, y, z], "up": [x, y, z]}: the arm direction and up the cop's chart (pole, beta 0, the
+        # outline's front) is set from, in its ride's rest frame, in place of her design pose's own (armor-D r7 17 Nov,
+        # body B). Her idle arm hangs near up, so the up-out pole is the small part of up across the arm and turns with
+        # which way the arm leans: A's idle arm leans back, B's forward, which turned B's chart about 90 deg (beta 90
+        # onto her chest: the cop spread over her bust to x -0.06, its two sides welded at her middle and bent with her
+        # skin). A's idle axes here put A's outline on the same parts of B's shoulder; the envelope is still her own
+        # design-pose skin. Unset = the pose's (A, unchanged))
+        ca, cup = U(np.asarray(ck["chart_ref"]["a"], float)), U(np.asarray(ck["chart_ref"]["up"], float))
     e0 = U(cup - (cup @ ca) * ca)
     f0 = U(np.cross(ca, e0))
     f0 = f0 if f0[2] >= 0 else -f0
@@ -510,8 +528,10 @@ def pauldrons(cfg, ref):
         # sw.clear outside it, lifted by at most sw.lift_max (smoothed); where it would need more, the outline is
         # trimmed there: her trapezius under the cop's neck side when the arm is raised)
         # ("cop_ride": the cop's own blend when it does not ride sw.bone as the lames do (its rigid_ride))
-        croom = sweep_room(sw.get("cop_ride") or ride_of("cop_l") or sw["bone"], np.round(c, 4), sw["radius"])
-        room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"]) if "cop_ride" in sw else croom
+        # (sweep "exclude" leaves her torso's skin out of the rows' rooms; "cop_exclude" (default: the same) the cop's)
+        croom = sweep_room(sw.get("cop_ride") or ride_of("cop_l") or sw["bone"], np.round(c, 4), sw["radius"],
+                           exclude=sw.get("cop_exclude", sw.get("exclude")))
+        room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"], exclude=sw.get("exclude")) if "cop_ride" in sw             else croom
         R = room_on_dirs(croom, O, dome.D, dome.F, sw.get("ring", 1))
         need = np.where(np.isfinite(R), R + sw["clear"], 0.0)
         lift = np.clip(need - rho, 0.0, sw.get("cop_lift_max", sw["lift_max"]))
@@ -614,6 +634,9 @@ def pauldrons(cfg, ref):
         if not lpose:
             return c, a, e, f, body, None, None
         P_, T_, c_, a_, up_ = pose_frame(ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0))
+        # (lames "up_ref" [x, y, z]: as the cop's, the rows' up in their ride's rest frame (theta 0 = up-out); unset =
+        # world up carried from the design pose)
+        up_ = U(np.asarray(lk["up_ref"], float)) if lk.get("up_ref") else up_
         e_ = U(up_ - (up_ @ a_) * a_)
         f_ = U(np.cross(a_, e_))
         f_ = f_ if f_[2] >= 0 else -f_
@@ -687,7 +710,7 @@ def pauldrons(cfg, ref):
     for k, lm in enumerate(lk["rows"]):
         ride_k = lm.get("ride") or ride_of(f"lame{k}_l") or {sw["bone"] if sw else "delt_l": 1.0}
         fr = row_frame(ride_k)
-        rroom = (sweep_room(ride_k, np.round(c, 4), sw["radius"]) if sw else None)
+        rroom = (sweep_room(ride_k, np.round(c, 4), sw["radius"], exclude=sw.get("exclude")) if sw else None)
         lmax = lm.get("lift_max", sw["lift_max"] if sw else 1.0)
         over = [(np.c_[Vo, np.ones(len(Vo))] @ fr[5], Fo) for Vo, Fo in above] if fr[5] is not None else []
         lo, hi = -lk["theta"], lk["theta"]
