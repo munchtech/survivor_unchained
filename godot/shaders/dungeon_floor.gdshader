@@ -61,6 +61,7 @@ uniform float sp_edge = 0.3;
 uniform vec3 sp_tint = vec3(1.0, 1.0, 0.84);
 uniform float sp_grain = 0.0;   // the grain's value contrast in the light: albedo times (lum / sp_ref)^(sp_grain) inside (light shows texture)
 uniform float sp_ref = 0.15;
+uniform float sp_lair = 1.0;   // (den r17 L2) a lair pool's strength (its seed + 1000): the lair's floor is lit brighter than the rooms'
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -286,6 +287,7 @@ void fragment() {
 				float rr = sp[k].z * (0.82 + 0.36 * fbm(wpos.xz * 1.1 + sp[k].w));
 				float m = 1.0 - smoothstep(rr - sp_edge, rr + 0.25 * sp_edge, length(vec2(pa, pb)));
 				m *= 0.8 + 0.2 * smoothstep(0.3, 0.7, fbm(wpos.xz * 2.3 - sp[k].w));
+				if (sp[k].w >= 1000.0) m *= sp_lair;
 				spm = max(spm, m);
 			}
 			col *= mix(vec3(1.0), sp_gain * sp_tint, spm) * pow(clamp(lum(col) / sp_ref, 0.05, 4.0), sp_grain * spm);
