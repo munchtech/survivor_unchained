@@ -23,6 +23,7 @@ render_mode sss_mode_skin, cull_disabled;
 #define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
 global uniform vec4 cel_her_den;   // (demo-look r2 her: z her ember's steps in the den, w the lit step's chroma, View/HeroDen.cs; zero: as before)
+global uniform vec4 cel_her_den3;   // (demo-look lead 3, row 1: y her rim light's tag (SPECULAR_AMOUNT) while it is on, View/HeroDen.cs; 0 off)
 global uniform vec4 cel_her_den2;   // (demo-look r2 her: x how far her steps turn to the den key's direction (cel_key), y the steps' n.l, z the lit step's level, w the shade step's warmth; zero: as before)
 // (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)
 uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
@@ -1074,7 +1075,9 @@ void light() {
 		// lit): the steps' direction is PAINTED, turned toward the den key's (cel_key: from the screen's upper left) by cel_her_den2.x, and
 		// the shade step (z of the lit, in the half-tone's tint, warmed by cel_her_den2.w of the light's own hue) runs to n.l -0.3,
 		// so her far planes read as one warm shade, not the fill's grey; the lit step's light at cel_her_den.w of its chroma.
-		if (cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL) {
+		// (lead 3, row 1) her rim light (tagged cel_her_den3.y) keeps its own direction and the half-tone: from behind her it
+		// lights her far planes and her edge, where the painted steps would have spread it over her front as a fill
+		if (cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL && !(cel_her_den3.y > 0.0 && abs(SPECULAR_AMOUNT - cel_her_den3.y) < 0.005)) {
 			bool c_pd = cel_her_den2.x > 0.0;
 			vec3 c_ld = c_pd ? normalize(mix(LIGHT, normalize(mat3(VIEW_MATRIX) * cel_key.xyz), cel_her_den2.x)) : LIGHT;
 			float c_tp = dot(cb_n, c_ld), c_at = cel_her_den2.y > 0.0 ? cel_her_den2.y : 0.42;

@@ -43,6 +43,12 @@ public partial class PlayerView : Node3D
     /// light was twelve times the ground's on her crown and shoulders and clipped her copper hair cream-white; from higher up
     /// she takes about a third of it and the dead and the foes in her pool about what the pool gave them.</summary>
     public readonly OmniLight3D FolkLight;
+    /// <summary>(lane E lead 3, row 1, 16 Nov: "she nearly vanishes under the roots ... needs a rim or fill from her carried
+    /// light") Her rim light in the den: her carried light's edge on her alone (HerLayers; her meshes take HerLayer beside
+    /// people's while it is on, RimStep), no shadow, low behind her on the side away from the camera, so her far planes and
+    /// her silhouette's upper edge catch it; its energy grows as the den's own light at her feet falls (DenLightAt), none in
+    /// the open. Hers only (null on other views); off without the den rig's values 47-56 (HeroDen.RimEnergy).</summary>
+    public readonly OmniLight3D? RimLight;
     /// <summary>The survivor in glass: reflections and echoes left behind.</summary>
     public readonly Reflections Reflections;
     readonly List<GeometryInstance3D> skin = new();
@@ -483,6 +489,7 @@ public partial class PlayerView : Node3D
         AddChild(Light);
         FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
         AddChild(FolkLight);
+        if (mine) { RimLight = new OmniLight3D { Name = "HerRim", LightEnergy = 0, ShadowEnabled = false, LightCullMask = HerLayers, LightSpecular = HeroDen.RimTag, Visible = false }; AddChild(RimLight); }
         // (L1 lead 19, SH2) Her own short shadow under her fire (FireCast: one quad; placed every frame below).
         if (mine) { herCast = FireCast.Make("HerCast", 1); AddChild(herCast); }
         if (mine) { herShadow = new HerShadow(); AddChild(herShadow); }   // (demo-look r2 her: her cast shadow in the den)
@@ -509,6 +516,7 @@ public partial class PlayerView : Node3D
         Light.OmniRange = old.Light.OmniRange;
         FolkLight.LightEnergy = old.FolkLight.LightEnergy;
         FolkLight.OmniRange = old.FolkLight.OmniRange;
+        if (RimLight != null && old.RimLight != null) { RimLight.LightEnergy = old.RimLight.LightEnergy; RimLight.Position = old.RimLight.Position; rimGate = old.rimGate; rimSeen = old.rimSeen; }
         time = old.time;
         flare = old.flare;
         tree.Advance(0);
@@ -1389,6 +1397,8 @@ public partial class PlayerView : Node3D
         FolkLight.LightEnergy = Light.LightEnergy / PoolDen * FolkK * FolkScale;   // (the den's pool energy is the ground's only)
         FolkLight.OmniRange = Light.OmniRange * FolkRange;
         FolkLight.OmniAttenuation = FolkAtt;
+        // (before the relayering below: in the close view her meshes leave people's layer, and the rim's HerLayer goes first)
+        if (mine) RimStep((float)dt, (float)((LightBase * (0.7 + 0.3 * hp) + flicker) / LightBase));
         // Her weapon and shield are the world's (layer 1), so the pool lit them: at the pool's hip height her shield's face
         // went white. Off the pool and onto people's layer while the folk light lights her (looked over twice a second, a new
         // weapon or a sheathed one included); back on the world's for the close view's own relayering (Relayer).
@@ -1469,6 +1479,100 @@ public partial class PlayerView : Node3D
 
     readonly List<GeometryInstance3D> offPool = new();
     double offPoolT;
+
+    // (lane E lead 3, row 1) her rim light in the den (RimLight)
+    readonly List<GeometryInstance3D> rimTagged = new();
+    readonly List<SpotLight3D> denSpots = new();
+    double rimTagT, denSpotsT, rimLogT;
+    float rimGate;
+    bool rimSeen;
+    /// <summary>--her-rim-log: the den's light at her feet, the rim's gate and energy, once a second.</summary>
+    static readonly bool RimLog = Args.Has("her-rim-log");
+    /// <summary>The gate's smoothing, s (exponential): a stride in or out of a shaft's pool eases the rim, no pop.</summary>
+    const float RimTau = 0.3f;
+
+    /// <summary>Her rim light each frame (RimLight): k her ember's own flicker and health (1 steady at full health). Off (and
+    /// her meshes back on people's layer alone) out of the den, in the close view (OwnLayer), with her lamp off her or hidden.
+    /// Its energy: the row's (value 47) times the gate, 1 where the den's own light at her feet (DenLightAt) is at or under
+    /// value 54 and 0 at or over value 55 (smoothstep between), eased over RimTau, times k and her lamp's share.</summary>
+    void RimStep(float dt, float k)
+    {
+        if (RimLight == null) return;
+        bool on = HeroDen.RimEnergy > 0 && !OwnLayer && !LampOffHer && Visible;
+        if (!on)
+        {
+            RimLight.Visible = false;
+            foreach (var g in rimTagged) if (IsInstanceValid(g)) g.Layers &= ~HerLayer;
+            rimTagged.Clear();
+            rimSeen = false;
+            return;
+        }
+        // her meshes on HerLayer beside people's, so the rim lights her and no one else (four times a second: her level of
+        // detail and her wear make meshes of their own on people's layer)
+        if ((rimTagT -= dt) <= 0) { rimTagT = 0.25; RimTagWalk(this); }
+        float e = DenLightAt(GlobalPosition);
+        float want = HeroDen.RimHi > HeroDen.RimLo ? 1 - Mathf.SmoothStep(HeroDen.RimLo, HeroDen.RimHi, e) : e <= HeroDen.RimLo ? 1 : 0;
+        rimGate = rimSeen ? Mathf.Lerp(rimGate, want, 1 - Mathf.Exp(-dt / RimTau)) : want;
+        rimSeen = true;
+        float energy = HeroDen.RimEnergy * rimGate * k * lamp;
+        RimLight.LightEnergy = energy;
+        RimLight.Visible = energy > 1e-4f;
+        RimLight.LightColor = HeroDen.RimColor;
+        RimLight.OmniRange = HeroDen.RimRange;
+        RimLight.OmniAttenuation = HeroDen.RimAtt;
+        // low behind her, away from the camera along the ground (screen-up), whatever her heading
+        var right = GetViewport()?.GetCamera3D() is { } vc ? vc.GlobalBasis.X : Vector3.Right;
+        right = new Vector3(right.X, 0, right.Z);
+        right = right.LengthSquared() > 1e-6f ? right.Normalized() : Vector3.Right;
+        var toCam = right.Cross(Vector3.Up);
+        var own = GlobalBasis.Inverse() * (-toCam * HeroDen.RimBack);
+        RimLight.Position = new Vector3(own.X, HeroDen.RimH, own.Z);
+        if (RimLog && (rimLogT -= dt) <= 0)
+        {
+            rimLogT = 1;
+            GD.Print($"her rim: den light at her feet {e:0.000} ({denSpots.Count} spots), gate {want:0.00} eased {rimGate:0.00}, energy {energy:0.00}, {rimTagged.Count} meshes on HerLayer");
+        }
+    }
+
+    void RimTagWalk(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c == Reflections || c == herShadow || c == herCast) continue;
+            if (c is GeometryInstance3D g && (g.Layers & 2u) != 0 && (g.Layers & HerLayers) == 0) { g.Layers |= HerLayer; rimTagged.Add(g); }
+            RimTagWalk(c);
+        }
+    }
+
+    /// <summary>The den's own light on the floor at p: the irradiance of View/DungeonLight's spots (the shafts and the room
+    /// washes), by Godot's own spot falloff on a floor facing up, times their colour's luminance. The key and the fill are the
+    /// same everywhere in the den and are left out, so this is what tells a room's lit middle from its dark edges, the bends
+    /// and the ground under the banks' roots (0 where no spot reaches). The spots are looked up once, again every 2 s while none.</summary>
+    float DenLightAt(Vector3 p)
+    {
+        denSpots.RemoveAll(s => !IsInstanceValid(s));
+        if (denSpots.Count == 0 && (denSpotsT -= GetProcessDeltaTime()) <= 0)
+        {
+            denSpotsT = 2;
+            if (GetTree()?.Root.FindChild("DungeonLight", true, false) is { } dl)
+                foreach (var c in dl.GetChildren()) if (c is SpotLight3D s) denSpots.Add(s);
+        }
+        float e = 0;
+        foreach (var s in denSpots)
+        {
+            if (!s.IsVisibleInTree()) continue;
+            var rel = s.GlobalPosition - p;
+            float d = rel.Length();
+            if (d < 1e-3f || d >= s.SpotRange) continue;
+            float nd = d / s.SpotRange; nd *= nd; nd *= nd; nd = Mathf.Max(1 - nd, 0); nd *= nd;
+            float cc = Mathf.Cos(Mathf.DegToRad(s.SpotAngle));
+            float sc = Mathf.Max((-rel / d).Dot((-s.GlobalBasis.Z).Normalized()), cc);
+            float cone = 1 - Mathf.Pow(Mathf.Max(1e-4f, (1 - sc) / Mathf.Max(1 - cc, 1e-4f)), s.SpotAngleAttenuation);
+            var c = s.LightColor;
+            e += s.LightEnergy * nd * Mathf.Pow(Mathf.Max(d, 1e-4f), -s.SpotAttenuation) * Mathf.Max(cone, 0) * Mathf.Max(0, rel.Y / d) * (0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B);
+        }
+        return e;
+    }
 
     /// <summary>Her meshes on the world's layer alone (her weapon, her shield) moved to people's, off her ember's pool light.</summary>
     static void OffPool(Node n, List<GeometryInstance3D> moved, Node skip)

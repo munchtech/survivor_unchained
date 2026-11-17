@@ -440,7 +440,10 @@ float along_strand(vec3 t, vec3 h, float width) {
 void light() {
 	// (demo-look r2 her: in the den her ember's band on the PAINTED direction, turned toward the den key's (cel_key) by cel_her_den2.x,
 	// as her skin's steps (heroine_skin.gdshader): the ember is over her, so every lock the camera sees was lit)
-	bool c_hd = cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL;
+	// (lead 3, row 1) her rim light (tagged cel_her_den3.y): its own direction, out of the painted steps, and no glow through
+	// her hair (from behind her that lit every lock the camera sees: a fill, not an edge)
+	bool c_rimt = cel_her_den3.y > 0.0 && abs(SPECULAR_AMOUNT - cel_her_den3.y) < 0.005;
+	bool c_hd = cel_her_den.z > 0.0 && !LIGHT_IS_DIRECTIONAL && !c_rimt;
 	vec3 c_hl = c_hd && cel_her_den2.x > 0.0 ? normalize(mix(LIGHT, normalize(mat3(VIEW_MATRIX) * cel_key.xyz), cel_her_den2.x)) : LIGHT;
 	float cb_t = (dot(cel_nb(NORMAL), c_hl) + wrap) / (1.0 + wrap);
 	vec3 cb_dbg = vec3(0.0);
@@ -465,7 +468,7 @@ void light() {
 			d_b = lb * mix(hue * cel_her_den3.x, vec3(1.0), smoothstep(c_at - 0.02, c_at + 0.02, dot(cel_nb(NORMAL), c_hl)));
 		}
 		else if (c_hd) d_b += lb * hue * ((1.0 - cel_lit(cb_t)) * cel_her_den3.x);
-		vec3 t_b = lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+		vec3 t_b = c_rimt ? vec3(0.0) : lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
 		d_a = mix(d_a, d_b, cel_on);
 		t_a = mix(t_a, t_b, cel_on);
 	}

@@ -22,6 +22,15 @@ public static class HeroDen
     /// ground's pool only. Her folk light, which follows the pool's energy, and her lamp on the crowd are given it back
     /// (PlayerView.PoolDen), so her skin, her hair and the foes stay as they were while the ground by her darkens.</summary>
     public static float PoolK;
+    /// <summary>(lead 3, row 1: "she nearly vanishes under the roots") Her rim light (PlayerView.RimLight, RimStep), values
+    /// 47-56: its energy where it is full (0 or absent: off), its colour R, G, B (sRGB 0-255), its height over her feet and its
+    /// offset behind her (m, away from the camera along the ground), its range (m), the den's own light at her feet
+    /// (PlayerView.DenLightAt) at or under which it is full and at or over which it is gone, its fall (OmniAttenuation).</summary>
+    public static float RimEnergy, RimH, RimBack, RimRange, RimLo, RimHi, RimAtt;
+    public static Color RimColor = new("#ffd4a8");
+    /// <summary>The rim light's tag, its light_specular: her skin's and hair's light() know it by SPECULAR_AMOUNT (twice this,
+    /// cel_her_den3.y while the rim is on) and keep it out of the den's painted steps, which would spread it over her as a fill.</summary>
+    public const float RimTag = 0.17f;
 
     static double V(double[] d, int i, double or) => d.Length > i ? d[i] : or;
     static readonly bool RimDebug = SurvivorUnchained.Args.Dev && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_RIM_DEBUG"));
@@ -52,7 +61,15 @@ public static class HeroDen
         // from her ember's own (heroine_skin, heroine_hair light()); the steps' n.l (34, 0: 0.42), the lit step's level (35, 0:
         // 0.7), the shade step's warmth (36: the light's own hue again, share) and her hair's shade step (37, share of the lit)
         RenderingServer.GlobalShaderParameterSet("cel_her_den2", d != null ? new Vector4((float)V(d, 31, 0), (float)V(d, 34, 0), (float)V(d, 35, 0), (float)V(d, 36, 0)) : Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("cel_her_den3", d != null ? new Vector4((float)V(d, 37, 0), 0, 0, 0) : Vector4.Zero);
+        RimEnergy = d != null ? (float)V(d, 47, 0) : 0;
+        if (RimEnergy > 0)
+        {
+            RimColor = new Color((float)V(d!, 48, 255) / 255f, (float)V(d!, 49, 212) / 255f, (float)V(d!, 50, 168) / 255f);
+            RimH = (float)V(d!, 51, 0.9); RimBack = (float)V(d!, 52, 0.6); RimRange = (float)V(d!, 53, 2.5);
+            RimLo = (float)V(d!, 54, 0); RimHi = (float)V(d!, 55, 1); RimAtt = (float)V(d!, 56, 1);
+        }
+        // (x her hair's shade step (37); y the rim light's tag as SPECULAR_AMOUNT while it is on, 0 off)
+        RenderingServer.GlobalShaderParameterSet("cel_her_den3", d != null ? new Vector4((float)V(d, 37, 0), RimEnergy > 0 ? 2 * RimTag : 0, 0, 0) : Vector4.Zero);
         // (demo-look lead 3, row 1: "she nearly vanishes under the roots") her rim in her line's ink pass (hero_ink.gdshader):
         // values 39-46: its width (px at 1080p; 0 or absent: off), its tone R, G, B (sRGB 0-255) and level, the ground's
         // cube-root luminance where it is full and where it is gone, and its share on edges facing screen-down (her feet).
