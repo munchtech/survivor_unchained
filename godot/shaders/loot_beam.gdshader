@@ -34,9 +34,9 @@ uniform float den = 0.0;
 const float DEN_COVER = 0.5;
 // The den's ceilings (lane E loot2): the epic's light knees at DEN_EPIC_KNEE and never passes DEN_EPIC_CAP (its brightest
 // channel); the set's strands are flat bodies DEN_SET_W wide (the one in front) at DEN_SET_PEAK of its colour.
-const float DEN_EPIC_KNEE = 0.27;
-const float DEN_EPIC_CAP = 0.39;
-const float DEN_SET_W = 0.05;
+const float DEN_EPIC_KNEE = 0.25;
+const float DEN_EPIC_CAP = 0.36;
+const float DEN_SET_W = 0.07;
 const float DEN_SET_PEAK = 0.385;
 
 varying vec3 tint;
@@ -155,8 +155,8 @@ void fragment() {
 			// under it covered so its warmth doesn't grey it: brightness goes into breadth, not depth.
 			float hold = rise * smoothstep(1.02, 0.6, u);
 			float wf = 0.5 + 0.5 * front;
-			float q = g(x - s1, mix(0.024, DEN_SET_W, wf)) + g(x + s1, mix(0.024, DEN_SET_W, 1.0 - wf));
-			float body = 1.0 - exp(-4.0 * (q * hold + pool(half_w * 0.4) * 0.45));
+			float q = g(x - s1, mix(0.035, DEN_SET_W, wf)) + g(x + s1, mix(0.035, DEN_SET_W, 1.0 - wf));
+			float body = 1.0 - exp(-4.0 * (q * hold + pool(half_w * 0.35) * 0.3));
 			light = mix(tint, deep, 0.5) * body * DEN_SET_PEAK + deep * g(x, 0.26) * 0.03 * hold;
 			veil = body * 0.45;
 		}
