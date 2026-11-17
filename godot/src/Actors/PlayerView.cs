@@ -195,6 +195,9 @@ public partial class PlayerView : Node3D
     bool armOn;
     // The arm-hold layer (the arms copy, HerArmHold, the grip ease): A only (ArmHold.Layered).
     bool layered = true, isB;
+    /// <summary>(lead r12) B's run weight on the way down (eased over StopEase s; up it follows at once).</summary>
+    float wDown;
+    const float StopEase = 0.06f;
     // The clips' grips (slide, tilt: animations 47, 48, 58) and the side carry (SideCarry) on them: any body. They turn the
     // held piece in its fist, not her bones, so B's bake (bones only) does not carry them (round 11: off on B, the warden's
     // stand blade lay at the pocket's 30 deg pitch, not the clip's 63: a cane). PersonView.Slide tilts about B's own pocket.
@@ -1740,6 +1743,9 @@ public partial class PlayerView : Node3D
         backW = Mathf.Lerp(backW, backNow ? 1f : 0f, 1 - Mathf.Exp(-BackBlend * dt));
         // (round 4: judge r3 "a scurry, ~7.5 steps/s, 25-35% skate") the run mixed in at BackMix lengthens her backward step
         w = Mathf.Lerp(w, BackMix, backW);
+        // (lead r12, judge r11) B has no arms' copy (the owner, 5 Nov: B's holds are clip data), so her arms follow the run weight
+        // itself: as it falls into the walk/idle (a stop) it eases down over ~4 frames instead of one (r11: a 23 deg blade snap)
+        if (!layered) { wDown = w >= wDown ? w : Mathf.Lerp(wDown, w, 1f - Mathf.Exp(-dt / StopEase)); w = wDown; }
         logW = w; logWWalk = wWalk; logSpd = spd;
         // (aim-move) The directional legs: the six weights, her pelvis's turn, and how much of her run the set takes over.
         if (dirChain) DirFrame(dt, w);
