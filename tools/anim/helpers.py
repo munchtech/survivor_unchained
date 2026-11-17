@@ -248,6 +248,11 @@ SPEC = {
     "hinges": [
         {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4,
          "at": "thigh_{s}", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
+        # Pauldron hinge (armor-D, 16 Nov): the same law at the shoulder. A child of the clavicle at her left shoulder joint
+        # (the right mirrored), turned `amount` of the upper arm's swing (rest line to posed line, both read in the
+        # clavicle's frame: lift and spread, never the arm's roll). Users: a piece's rigid_ride {"pauldron_hinge_l": 1.0}.
+        {"name": "pauldron_hinge_{s}", "parent": "clavicle_{s}", "bone": "upperarm_{s}", "pivot": [0.1914, 1.4786, -0.0307], "amount": 0.5,
+         "at": "upperarm_{s}", "at_rest": [0.1913649315592871, 1.4786342697317407, -0.030652040099240947]},
     ],
     # Tasset hinge (armor-D, 16 Nov): one centred bone for ARMOR only (no skin of hers on it, not in her body file:
     # extend() adds it, HerJoints.AddHinges in the game, pin_shipped.with_hinges in a piece's bind), for the belt's
@@ -266,7 +271,22 @@ SPEC = {
     "tassets": [
         {"name": "tasset_hinge", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 1.125, 0.12],
          "amount": 0.8, "soft": 12.0,
-         "at": "pelvis", "at_rest": [2.28729882256751e-12, 1.0722957482471516, -3.8052937667565345e-07]},
+         # roll (armor-D, 16 Nov): the V also rolls sideways about her forward axis, away from a thigh crossing the midline:
+         # `roll` degrees per degree of that thigh's adduction past `roll_from` (2; knee `roll_soft` 6), soft-clamped at
+         # `roll_max` (20). 0 = off (the V as before). Measured sword_heavy: left thigh 13.1 deg across at f8; roll 1.3
+         # gives 9.6 deg (the V's tip, 18 cm under the pivot, 30 mm farther from it); run 2.3 deg, leap 7 deg.
+         "roll": 1.3, "at": "pelvis", "at_rest": [2.28729882256751e-12, 1.0722957482471516, -3.8052937667565345e-07]},
+        # Hip tassets (armor-D, 16 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same law on that
+        # thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 0.8 * softrelu(swing - 3, 12); no
+        # twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x): her
+        # hip joint, thigh_{s}'s rest head in heroine_skeleton.json (read by bone name; test_hip_hinge holds them
+        # together). Why (hipv-2 r4, 16 Nov): at the belt (+-0.115, 1.125, 0.075, 13 cm off the joint) the run's
+        # thigh swung through the plates' room (mid-thigh 17 cm out in that frame), so a front plate built 12-36 mm.
+        # Users: a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
+        {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.073486, 1.048726, -0.02377],
+         "amount": 0.8, "soft": 12.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
+        {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.073486, 1.048726, -0.02377],
+         "amount": 0.8, "soft": 12.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -913,17 +933,56 @@ def drive_hinges(sk: Skeleton, rot):
     return rot
 
 
-def tasset_turn(tg, fl, fr):
+def tasset_turn(tg, fl, fr=None):
     """Degrees the tasset hinge turns (SPEC "tassets"): its V's bottom forward and up by `amount` of the leading
-    thigh's forward swing (fl, fr: degrees from rest), smoothly: amount * softrelu(smax(fl, fr) - soft/4)."""
+    thigh's forward swing (fl, fr: degrees from rest), smoothly: amount * softrelu(smax(fl, fr) - soft/4). A bone read
+    by one thigh (fr None) uses that thigh's own swing: amount * softrelu(fl - soft/4)."""
     k = tg["soft"]
-    return tg["amount"] * _softrelu(_smax(fl, fr, k) - k / 4, k)
+    lead = fl if fr is None else _smax(fl, fr, k)
+    return tg["amount"] * _softrelu(lead - k / 4, k)
 
 
-def tasset_q(deg):
+def tasset_roll(tg, al, ar):
+    """Degrees the tasset V rolls sideways about the pelvis's forward axis, AWAY from a thigh crossing the midline
+    (SPEC "tassets" optional `roll`, degrees per degree of adduction past `roll_from` (default 2), knee `roll_soft`
+    (default 6), soft-clamped at `roll_max` (default 20) by roll_max*tanh(x/roll_max); 0 = none, today's behavior).
+    al, ar: each thigh's spread out from rest (negative = crossing). Positive result = the V's tip toward her right."""
+    k = tg.get("roll", 0.0)
+    if not k or len(tg["thighs"]) != 2:
+        return 0.0
+    fr_, ks, mx = tg.get("roll_from", 2.0), tg.get("roll_soft", 6.0), tg.get("roll_max", 20.0)
+    x = k * (_softrelu(-al - fr_, ks) - _softrelu(-ar - fr_, ks))
+    return mx * math.tanh(x / mx)
+
+
+def tasset_q(deg, roll=0.0):
     """The tasset hinge's turn in her rest axes carried with the pelvis: `deg` about her lateral axis, the bottom
-    forward (about -X: her -Y toward +Z)."""
-    return qaxis([-1.0, 0, 0], deg)
+    forward (about -X: her -Y toward +Z); then (if `roll`) `roll` degrees about her forward axis, the bottom toward
+    her right (about -Z), in the pelvis axes."""
+    q = qaxis([-1.0, 0, 0], deg)
+    return qmul(qaxis([0, 0, -1.0], roll), q) if roll else q
+
+
+def tasset_angles(sk: Skeleton, rot, tg):
+    """([forward swing], [spread]) of each thigh `tg` reads, degrees from rest, in the pelvis's frame; a thigh's side
+    from its name (_l her left, _r her right)."""
+    I = sk.index
+    p = I[tg["parent"]]
+    gp = sk.rest_globals()[0][0, p]
+    sw, sp = [], []
+    for name in tg["thighs"]:
+        t = I[name]
+        v = qrot(gp, qrot(_below(sk, rot, p, t), [0, 1.0, 0]))
+        v0 = qrot(gp, qrot(_below(sk, sk.rest_rot, p, t), [0, 1.0, 0]))
+        a, b = _swing_spread(v, v0, 1 if name.endswith("_l") else -1)
+        sw.append(a)
+        sp.append(b)
+    return sw, sp
+
+
+def tasset_pose(tg, sw, sp):
+    """(pitch, roll) degrees for a tasset hinge from its thighs' swings and spreads."""
+    return tasset_turn(tg, *sw), (tasset_roll(tg, *sp) if len(sw) == 2 else 0.0)
 
 
 def drive_tassets(sk: Skeleton, rot):
@@ -933,8 +992,8 @@ def drive_tassets(sk: Skeleton, rot):
         j = I.get(tg["name"])
         if j is None:
             continue
-        fl, fr, _, _ = panel_angles(sk, rot, tg)
-        rot[j] = qnorm(qmul(sk.rest_rot[j], tasset_q(tasset_turn(tg, fl, fr))))
+        sw, sp = tasset_angles(sk, rot, tg)
+        rot[j] = qnorm(qmul(sk.rest_rot[j], tasset_q(*tasset_pose(tg, sw, sp))))
     return rot
 
 

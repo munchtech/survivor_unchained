@@ -164,6 +164,16 @@ SWEEP_CLIPS = ("idle_warden", "run_warden", "sword_heavy", "leap")   # the demo'
 HAND_PARTS = ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
 
 
+def _hinge_key(ride):
+    """The helper hinges' spec when a ride names a hinge bone (its amount moves that frame: pauldron-2 r4, 16 Nov, a
+    pauldron_hinge .5 -> .8 change kept the stale rooms), else [] (every other cache keeps its key)."""
+    if not any("hinge" in b for b in ride):
+        return []
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    import helpers as hp
+    return [hp.SPEC.get("hinges")]
+
+
 def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True):
     """The room a rigid plate riding `bone` (left side) needs: her skin within `radius` of `centre` (rest), over her rest
     and every frame of the demo clips, carried back into that bone's rest frame; the right side's (mirrored onto the
@@ -178,19 +188,20 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
-    deps = [kb.BODY] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
+    kb.require_body_inputs(clips)
+    deps = [kb.body_glb()] + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     # (`bone`: one bone, or a blend {bone: weight} as a rigid_ride gives (the plate's frame is the blend of their skin
     # matrices, as Godot's linear blend poses it))
     ride = {bone: 1.0} if isinstance(bone, str) else {k: float(v) for k, v in sorted(bone.items())}
     key = hashlib.sha1(json.dumps(["v1", bone if isinstance(bone, str) else sorted(ride.items()),
                                    [round(float(v), 5) for v in centre], radius, list(clips), vox,
-                                   stamp]).encode()).hexdigest()[:14]
+                                   stamp] + _hinge_key(ride)).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_sweep_{key}.npz")
     if os.path.exists(cache):
         return np.load(cache)["P"]
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    body = skin.Body(sk, [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
                      label="her", helpers=True)
     names = list(body.sk.names)
     hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
@@ -230,11 +241,12 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     return P
 
 
-def pose_frame(ride, centre, radius, clip, frame=0):
+def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
     """Her skin within `radius` of `centre` (rest, left side, no hands) in one frame of a clip, carried into the rest
     frame of a rigid plate riding the blend `ride` ({bone: weight}, as its rigid_ride), with her upper arm's joint, its
     direction and world up in that frame: a plate built round these fits her in that pose (and rides from there).
-    Cached by its inputs (git-ignored .shots). Returns P [n, 3], T [m, 3], joint, arm direction, up."""
+    Cached by its inputs (git-ignored .shots). Returns P [n, 3], T [m, 3], joint, arm direction, up (and with `rest`
+    the same points at her rest, P0 [n, 3]: the liner's skin)."""
     sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
     main = os.path.abspath(os.path.join(kb.REPO, "..", "..", ".."))
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
@@ -243,17 +255,21 @@ def pose_frame(ride, centre, radius, clip, frame=0):
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
-    deps = [kb.BODY, str(skin.OUT / "clips" / f"{clip}.json")]
+    kb.require_body_inputs([clip])
+    deps = [kb.body_glb(), str(skin.OUT / "clips" / f"{clip}.json")]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     key = hashlib.sha1(json.dumps(["pf1", sorted((k, round(float(v), 5)) for k, v in ride.items()),
-                                   [round(float(v), 5) for v in centre], radius, clip, frame, stamp]).encode()
-                       ).hexdigest()[:14]
+                                   [round(float(v), 5) for v in centre], radius, clip, frame, stamp]
+                                  + _hinge_key(ride)).encode()).hexdigest()[:14]
     cache = os.path.join(kb.CACHE, f"paul_pose_{key}.npz")
     if os.path.exists(cache):
         z = np.load(cache)
-        return z["P"], z["T"], z["c"], z["a"], z["up"]
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    body = skin.Body(sk, [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+        if not rest:
+            return z["P"], z["T"], z["c"], z["a"], z["up"]
+        if "P0" in z:
+            return z["P"], z["T"], z["c"], z["a"], z["up"], z["P0"]
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    body = skin.Body(sk, [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
                      label="her", helpers=True)
     names = list(body.sk.names)
     hand = np.array([str(n).startswith(HAND_PARTS) for n in names] + [False] * 64)
@@ -272,9 +288,10 @@ def pose_frame(ride, centre, radius, clip, frame=0):
     c = joint("upperarm_l")
     a = U(joint("lowerarm_l") - c)
     up = U(Mi[:3, :3] @ np.array([0.0, 1.0, 0.0]))
+    P0 = np.asarray(body.P[idx], float)
     os.makedirs(os.path.dirname(cache), exist_ok=True)
-    np.savez_compressed(cache, P=P, T=T, c=c, a=a, up=up)
-    return P, T, c, a, up
+    np.savez_compressed(cache, P=P, T=T, c=c, a=a, up=up, P0=P0)
+    return (P, T, c, a, up, P0) if rest else (P, T, c, a, up)
 
 
 def room_on_dirs(P, O, D, F, ring=1):
@@ -343,10 +360,88 @@ def arm_frame(ref, side="l"):
     return c, a, e, f
 
 
+def liner(ln, ref, cop_ride, c, lpose, above, mat):
+    """The pauldron's liner (16 Nov, pauldron-2 r2): dark leather on her skin under the plates, so any opening between
+    them shows leather, never skin. Her idle skin (the plates' design pose) in the cop's ride frame is under a plate
+    where its normal meets one within ln.reach; that footprint closed over gaps narrower than 2 ln.close, kept
+    ln.bodice_back off the kit bodice (its rest mesh), cut on a smooth edge, laid ln.off out from her rest skin, ln.thick
+    deep. It bends with her (the install's follow gives it her own weights); mirrored by the caller."""
+    from scipy.spatial import cKDTree
+    Pi, Ti, _, _, _, P0 = pose_frame(cop_ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0), rest=True)
+    _, first, inv = np.unique(np.round(P0 / 1e-6).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    T = inv.ravel()[Ti]
+    T = T[(T[:, 0] != T[:, 1]) & (T[:, 1] != T[:, 2]) & (T[:, 2] != T[:, 0])]
+    R0, Rp = P0[first], Pi[first]
+    _, n0, _ = ref.closest(R0)
+    if (vertex_normals(R0, T) * n0).sum(1).mean() < 0:
+        T = T[:, ::-1]
+    Np = vertex_normals(Rp, T)
+    hits = []
+    for Vo, Fo in above:
+        t_, _ = raycast(Vo, Fo, Rp + Np * 0.0005, Np.copy(), ln.get("reach", 0.05), chunk=48)
+        hits.append(np.isfinite(t_))
+    hit = np.any(hits, 0)
+
+    def dist_to(m):
+        return cKDTree(R0[m]).query(R0)[0] if m.any() else np.full(len(R0), np.inf)
+    dc = ln.get("close", 0.012)
+    grown = dist_to(hit) <= dc
+    closed = dist_to(~grown) > dc
+    g = np.where(closed, dist_to(~closed), -dist_to(closed)) + ln.get("margin", 0.0)
+    ins = ln.get("inset")
+    if ins:
+        # (liner "inset" m, pauldron-2 r4: the openings only: none deeper than inset inside any one plate's shadow (her
+        # skin whose normal meets that plate), where the steel always covers her; r3's whole liner came out through
+        # the steel there in the leap (58.9 mm), where her skin is the tuck's to hide)
+        deep = np.zeros(len(R0), bool)
+        for h_ in hits:
+            deep |= h_ & (dist_to(~h_) > ins)
+        g = np.minimum(g, np.where(deep, -dist_to(~deep), dist_to(deep)))
+        print(f"liner inset {ins * 1000:.0f} mm: {int(deep.sum())} deep skin pts dropped", flush=True)
+    bp = os.path.join(kb.out_root(), ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
+    if os.path.exists(bp):
+        G = kb_gl(bp)
+        g = np.minimum(g, cKDTree(G).query(R0)[0] - ln.get("bodice_back", 0.010))
+    g = smooth_scalar(g, T, ln.get("smooth", 6))
+    V, F = kh.clip(R0, T, g)
+    V, F = kh.weld(V, F)
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    E = np.r_[F[:, [0, 1]], F[:, [1, 2]]]
+    _, lab = connected_components(coo_matrix((np.ones(len(E)), (E[:, 0], E[:, 1])), shape=(len(V),) * 2), False)
+    cnt = np.bincount(lab[F[:, 0]])
+    # (with an inset the openings' liner is a ring and strips: every piece of it over min_tris; else the biggest)
+    F = F[cnt[lab[F[:, 0]]] >= ln.get("min_tris", 40)] if ins else F[lab[F[:, 0]] == cnt.argmax()]
+    _, nn, _ = ref.closest(V)
+    Vin = V + nn * ln.get("off", 0.0023)
+    N = vertex_normals(Vin, F)
+    N = U(np.where(((N * nn).sum(1) < 0)[:, None], -N, N))
+    print(f"liner footprint {int(hit.sum())} of {len(R0)} skin pts, {len(F)} tris", flush=True)
+    return kh.shell("liner", mat, Vin, F, N, ln.get("thick", 0.0012))
+
+
+def kb_gl(path):
+    """Every vertex and triangle centre of a src glb (rest), [n, 3]."""
+    from heroine_neck import _Gl
+    G = _Gl(path)
+    out = []
+    for nd in G.g["nodes"]:
+        if "mesh" in nd:
+            for p in G.g["meshes"][nd["mesh"]]["primitives"]:
+                X = G.get(p["attributes"]["POSITION"]).astype(float)
+                out += [X, X[G.get(p["indices"]).reshape(-1, 3).astype(int)].mean(1)]
+    return np.vstack(out)
+
+
 def pauldrons(cfg, ref):
     gold, steel, leath = cfg["mat"]["trim"], cfg["mat"]["plate"], cfg["mat"]["strap"]
     rim, ck, lk = cfg["rim"], cfg["cop"], cfg["lames"]
     c, a, e, f = arm_frame(ref)
+
+    def ride_of(part):
+        # (a rigid group's ride, from params.rigid_ride (match "<part>"): the one place the rides are set, 16 Nov r2:
+        # the cop on pauldron_hinge_l (its own helper: clavicle + half the arm's swing), lame0 halfway, lame1 the arm)
+        return next((r["weights"] for r in cfg.get("params", {}).get("rigid_ride", []) if r["match"] == part), None)
     # (cop "pole_up" k: the cop's pole tipped from the arm's up-out normal toward world up by k (0..1), and its centre
     # raised by "rise" m: at k 0 the pole stands square to her A-pose arm, the cop sat low and outboard on the deltoid's
     # side; the sheet's cop caps the shoulder's top)
@@ -358,7 +453,7 @@ def pauldrons(cfg, ref):
     # tipped its back and neck side up off her shoulder in the idle (16 Nov, lead 3's 1:1 look: a fin by her jaw))
     ca, cup, cbody, cc = a, np.array([0.0, 1.0, 0.0]), body, c
     if ck.get("pose"):
-        ride = next(r["weights"] for r in cfg["params"]["rigid_ride"] if r["match"] == "cop_l")
+        ride = ride_of("cop_l")
         Pp, Tp, cc, ca, cup = pose_frame(ride, np.round(c, 4), 0.24, ck["pose"]["clip"], ck["pose"].get("frame", 0))
         # ("with_rest": her rest skin joined in, the outer of the two: the cop clears her A-pose too)
         cbody = [(Pp, Tp)] + (body if ck["pose"].get("with_rest") else [])
@@ -413,7 +508,7 @@ def pauldrons(cfg, ref):
         # sw.clear outside it, lifted by at most sw.lift_max (smoothed); where it would need more, the outline is
         # trimmed there: her trapezius under the cop's neck side when the arm is raised)
         # ("cop_ride": the cop's own blend when it does not ride sw.bone as the lames do (its rigid_ride))
-        croom = sweep_room(sw.get("cop_ride", sw["bone"]), np.round(c, 4), sw["radius"])
+        croom = sweep_room(sw.get("cop_ride") or ride_of("cop_l") or sw["bone"], np.round(c, 4), sw["radius"])
         room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"]) if "cop_ride" in sw else croom
         R = room_on_dirs(croom, O, dome.D, dome.F, sw.get("ring", 1))
         need = np.where(np.isfinite(R), R + sw["clear"], 0.0)
@@ -431,6 +526,11 @@ def pauldrons(cfg, ref):
                                                                                 .tolist())), flush=True)
         elif sw.get("trim", "contour") == "contour":
             g = np.minimum(g, h * 1000.0 * sw.get("deg_per_mm", 2.0))
+        # (the design check: the swept room past the cop's inner face inside its outline, mm: her skin through it)
+        R0_ = room_on_dirs(croom, O, dome.D, dome.F, 0)
+        bite = np.where(np.isfinite(R0_) & (g > 0), R0_ - rho, -np.inf) * 1000
+        print(f"cop room bite max {bite.max():.1f} mm, dirs >2 mm {int((bite > 2).sum())} >0 {int((bite > 0).sum())}",
+              flush=True)
     if rim_al is None:
         def rim_al(b):
             return outline_at(b)
@@ -471,6 +571,19 @@ def pauldrons(cfg, ref):
     h = rd["h"] * np.sin(np.pi * np.clip((bb - b0 + rd["beta"]) / (2 * rd["beta"]), 0, 1)) ** 0.6
     lean = U(n + (-ca) * rd["lean"])
     top = base + lean * h[:, None]
+    if ck.get("pose"):
+        # (the design check at the neck side: the ridge and the rim's gap to her idle skin, mm (r3's 1:1 chest: gold and
+        # skin interleaved there))
+        from native_build import Ref
+        hr = Ref(cbody[0][0], cbody[0][1])
+        Lr = np.vstack(loops_ordered(V + N * (th * 0.5), F))
+        br = np.degrees(np.arctan2((Lr - O) @ cf, (Lr - O) @ -ca))
+        for nm_, X_, b_ in (("ridge top", top, bb), ("ridge base", base, bb), ("rim", Lr, br)):
+            sel_ = (b_ > -100) & (b_ < 10)
+            q_, n_, _ = hr.closest(X_[sel_])
+            gp = ((X_[sel_] - q_) * n_).sum(1) * 1000
+            print(f"cop {nm_} gap to her idle skin (beta -100..10) mm: min {gp.min():.1f} at beta {b_[sel_][gp.argmin()]:.0f}"
+                  f", n<3mm {int((gp < 3).sum())} of {len(gp)}", flush=True)
     tg = U(np.gradient(base, axis=0))
     side = U(np.cross(tg, lean))
     R = 2
@@ -482,32 +595,56 @@ def pauldrons(cfg, ref):
     # ---- the lames: a cylinder chart round the arm's axis
     C = lk["cols"]
     from scipy.ndimage import grey_dilation
-    if room is not None:
-        Qr = room - c
-        sp_ = Qr @ a
-        rp_ = np.linalg.norm(Qr - sp_[:, None] * a, axis=1)
-        tp_ = np.degrees(np.arctan2(Qr @ f, Qr @ e))
+    # (lames "pose" {"clip", "frame"} (16 Nov, pauldron-2): each row designed on her in that frame (the cop's), in its
+    # own ride's rest frame (row "ride", default sweep.bone), so the idle shows them as built round her idle arm; a
+    # row "tuck" m tucks it that far under the plates above it (the cop, the rows before it) where they cover it, as
+    # the sheet's lames sit under the cop and each other with no skin between; the rows' rides step from the cop's
+    # toward the arm so they slide over each other as the arm lifts)
+    lpose = lk.get("pose")
+    cop_ride = next(r["weights"] for r in cfg["params"]["rigid_ride"] if r["match"] == "cop_l")
+    if lpose:
+        Pc_ = pose_frame(cop_ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0))[0]
+    above = [(V, F)]   # plates above the next row, in the cop's ride frame: inner surfaces
 
-    def lame_row(lm, lo, hi):
-        """One row over theta lo..hi (deg): its cells' axis points Oa, directions Dd, radius r (her rest envelope
-        dilated, smoothed, + clear + flare; with the swept room: at least sw.clear outside it), the room's lift."""
+    def row_frame(ride):
+        """A row's design frame: joint, arm axis, up-out, front, her skin there, and the affine maps cop frame <->
+        row frame (the same skin points in both: exact for linear blends)."""
+        if not lpose:
+            return c, a, e, f, body, None, None
+        P_, T_, c_, a_, up_ = pose_frame(ride, np.round(c, 4), 0.24, lpose["clip"], lpose.get("frame", 0))
+        e_ = U(up_ - (up_ @ a_) * a_)
+        f_ = U(np.cross(a_, e_))
+        f_ = f_ if f_[2] >= 0 else -f_
+        to_row = np.linalg.lstsq(np.c_[Pc_, np.ones(len(Pc_))], P_, rcond=None)[0]
+        to_cop = np.linalg.lstsq(np.c_[P_, np.ones(len(P_))], Pc_, rcond=None)[0]
+        return c_, a_, e_, f_, [(P_, T_)], to_row, to_cop
+
+    def lame_row(lm, lo, hi, fr, rroom, over):
+        """One row over theta lo..hi (deg): its cells' axis points Oa, directions Dd, radius r (her envelope
+        dilated, smoothed, + clear + flare; with the swept room: at least sw.clear outside it; tucked under `over`),
+        the room's lift."""
+        c_, a_, e_, f_, body_ = fr[:5]
         Rn = lm["n"]
         s0, s1 = lm["s"]
         thd = np.linspace(lo, hi, C)
         thr = np.radians(thd)
-        rad = np.cos(thr)[:, None] * e + np.sin(thr)[:, None] * f
+        rad = np.cos(thr)[:, None] * e_ + np.sin(thr)[:, None] * f_
         dip = lm["dip"] * np.cos(np.radians(thd) * 90.0 / lk["theta"])
         S = np.linspace(0, 1, Rn)[:, None] * (s1 + dip - s0)[None, :] + s0
-        Oa = c[None, None] + S[..., None] * a
+        Oa = c_[None, None] + S[..., None] * a_
         Dd = np.broadcast_to(rad[None], (Rn, C, 3)).copy()
-        t = cast_union(Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), body, 0.2).reshape(Rn, C)
+        t = cast_union(Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), body_, 0.2).reshape(Rn, C)
         t = kb.fill_rows(t)
         r = grey_dilation(t, size=(lm["dil"], lm["dil"]))
         r = kb.gsmooth(r, (1.5, 2.0), False)
         r = np.maximum(r, t) + lm["clear"] + lm["flare"] * np.linspace(0, 1, Rn)[:, None] ** 2
         lift = np.zeros(C)
-        if room is not None:
+        if rroom is not None:
             # (the row's cells (s, theta) over the swept room, its farthest radius per cell)
+            Qr = rroom - c_
+            sp_ = Qr @ a_
+            rp_ = np.linalg.norm(Qr - sp_[:, None] * a_, axis=1)
+            tp_ = np.degrees(np.arctan2(Qr @ f_, Qr @ e_))
             j = np.round((tp_ - lo) / (hi - lo) * (C - 1)).astype(int)
             okj = (j >= 0) & (j < C)
             j = np.clip(j, 0, C - 1)
@@ -520,32 +657,71 @@ def pauldrons(cfg, ref):
             lift = (need - r).max(0)
             r = np.maximum(r, kb.gsmooth(np.maximum(r, need), (1.0, 1.0), False))
             r = np.maximum(r, need)
-        return Rn, thd, Oa, Dd, r, lift
+        ntuck = 0
+        if over and lm.get("tuck"):
+            # (under the plates above: their nearest inner surface along the cell's ray, less the tuck gap; never
+            # nearer her skin than tuck_min)
+            tov = np.full(Rn * C, np.inf)
+            for Vo, Fo in over:
+                to_, _ = raycast(Vo, Fo, Oa.reshape(-1, 3), Dd.reshape(-1, 3).copy(), 0.25, chunk=48)
+                tov = np.fmin(tov, np.where(np.isfinite(to_), to_, np.inf))
+            tov = tov.reshape(Rn, C) - lm["tuck"]
+            hit = np.isfinite(tov) & (tov < r)
+            ntuck = int(hit.sum())
+            r = np.where(hit, tov, r)
+            r = np.where(np.isfinite(tov), np.minimum(kb.gsmooth(r, (1.0, 1.0), False), np.maximum(tov, r)), r)
+            r = np.maximum(r, t + lm.get("tuck_min", 0.006))
+        bite = -np.inf
+        if rroom is not None:
+            # (the design check: the swept room past the row's inner face (cells it reaches, undilated), m)
+            Rm0 = np.full(Rn * C, -1.0)
+            np.maximum.at(Rm0, i[ok] * C + j[ok], rp_[ok])
+            Rm0 = Rm0.reshape(Rn, C)
+            bite = float(np.where(Rm0 > 0, Rm0 - r, -np.inf).max())
+        return Rn, thd, Oa, Dd, r, lift, ntuck, bite
 
+    rows_out = []
+    design = []     # (the rows' inner grids in their rides' rest frames: kit_cache/paul_design.npz, for overlap checks)
     for k, lm in enumerate(lk["rows"]):
+        ride_k = lm.get("ride") or ride_of(f"lame{k}_l") or {sw["bone"] if sw else "delt_l": 1.0}
+        fr = row_frame(ride_k)
+        rroom = (sweep_room(ride_k, np.round(c, 4), sw["radius"]) if sw else None)
+        lmax = lm.get("lift_max", sw["lift_max"] if sw else 1.0)
+        over = [(np.c_[Vo, np.ones(len(Vo))] @ fr[5], Fo) for Vo, Fo in above] if fr[5] is not None else []
         lo, hi = -lk["theta"], lk["theta"]
-        Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
-        if room is not None and (lift > sw["lift_max"]).any():
+        Rn, thd, Oa, Dd, r, lift, ntuck, bite = lame_row(lm, lo, hi, fr, rroom, over)
+        # (row "lift_max_front": the front end's (theta > 0) own limit, 16 Nov pauldron-2 r3: row 0 trimmed at 50 deg
+        # left the front of her shoulder to the liner)
+        lim = np.where(thd > 0, lm.get("lift_max_front", lmax), lmax)
+        print(f"lame{k} lift mm by theta: " + " ".join(f"{t_:.0f}:{l_ * 1000:.0f}" for t_, l_ in zip(thd[::3], lift[::3])),
+              flush=True)
+        if rroom is not None and (lift > lim).any():
             # (trimmed: each end moves in to the last column (from the middle) the room lifts by at most lift_max)
             m = C // 2
-            bad = lift > sw["lift_max"]
+            bad = lift > lim
             jl = max([j for j in range(m) if bad[j]], default=-1) + 1
             jh = min([j for j in range(m, C) if bad[j]], default=C) - 1
             lo, hi = thd[jl], thd[jh]
-            Rn, thd, Oa, Dd, r, lift = lame_row(lm, lo, hi)
-        print(f"lame{k} theta {lo:.0f}..{hi:.0f} r {r.min():.3f}..{r.max():.3f} lift max {lift.max() * 1000:.1f} mm",
-              flush=True)
+            Rn, thd, Oa, Dd, r, lift, ntuck, bite = lame_row(lm, lo, hi, fr, rroom, over)
+        print(f"lame{k} theta {lo:.0f}..{hi:.0f} r {r.min():.3f}..{r.max():.3f} lift max {lift.max() * 1000:.1f} mm"
+              f" tucked {ntuck} room bite max {bite * 1000:.1f} mm ride {ride_k}", flush=True)
         Pin = Oa + Dd * r[..., None]
+        design.append({"Pin": Pin, "Dd": Dd, "ride": json.dumps(ride_k)})
+        if fr[6] is not None:
+            above.append((np.c_[Pin.reshape(-1, 3), np.ones(Rn * C)] @ fr[6], grid_tris(Rn, C)))
         lame = kb.slab(f"lame{k}", steel, Pin, Dd.copy(), th)
-        G["lames"].append(lame)
+        gk = [lame]
         Pout = Pin + Dd * (th * 0.5)
         E = np.vstack([Pout[::-1, 0], Pout[-1, 1:], Pout[-2::-1, -1]])
-        G["lames_gold"].append(path_bead(f"lame{k}_rim", gold, E, kh.Normals(Pout.reshape(-1, 3), Dd.reshape(-1, 3)),
-                                         rim, 0.0, False))
+        gk.append(path_bead(f"lame{k}_rim", gold, E, kh.Normals(Pout.reshape(-1, 3), Dd.reshape(-1, 3)), rim, 0.0,
+                            False))
         for j in (2, C - 3):
             p = Pin[Rn // 2, j] + Dd[Rn // 2, j] * (th + 0.0003)
-            G["lames_gold"].append(rivet(p, Dd[Rn // 2, j], r=lk["rivet_r"], h=lk["rivet_h"], name="lame_rivet",
-                                         material=gold))
+            gk.append(rivet(p, Dd[Rn // 2, j], r=lk["rivet_r"], h=lk["rivet_h"], name="lame_rivet", material=gold))
+        rows_out.append((k, gk, Pin, Dd, fr))
+        if not lk.get("split"):
+            G["lames"].append(lame)
+            G["lames_gold"] += gk[1:]
     # ---- the strap round the upper arm (leather on her skin) and its buckle
     sk = cfg["strap"]
     Cs = 72
@@ -560,10 +736,24 @@ def pauldrons(cfg, ref):
     G["strap"].append(kb.slab("strap", leath, Pin, Dd, sk["thick"], closed_c=True))
     jb = int(round(sk["buckle_deg"] / 360 * Cs)) % Cs
     pb = Pin[2, jb] + Dd[2, jb] * sk["thick"]
-    G["lames_gold"].append(buckle(pb, Dd[2, jb], a, w=sk["w"] * 1.25, h=sk["w"] * 1.0, bar=0.0024, name="strap_buckle",
-                                  material=gold))
-    nodes = {"pauldron_cop_l_rigid": G["cop"] + G["cop_gold"], "pauldron_lames_l_rigid": G["lames"] + G["lames_gold"],
-             "pauldron_strap_l": G["strap"]}
+    bk = buckle(pb, Dd[2, jb], a, w=sk["w"] * 1.25, h=sk["w"] * 1.0, bar=0.0024, name="strap_buckle", material=gold)
+    nodes = {"pauldron_cop_l_rigid": G["cop"] + G["cop_gold"]}
+    if lk.get("split"):
+        # (one rigid node a row: "pauldron_lame<k>_l_rigid", its own ride (params.rigid_ride match "lame<k>_l"); the
+        # strap's buckle rides with the strap's row (the last))
+        for k, gk, _, _, _ in rows_out:
+            nodes[f"pauldron_lame{k}_l_rigid"] = gk + ([bk] if k == len(rows_out) - 1 else [])
+    else:
+        nodes["pauldron_lames_l_rigid"] = G["lames"] + G["lames_gold"] + [bk]
+    nodes["pauldron_strap_l"] = G["strap"]
+    lnr = cfg.get("liner")
+    if lnr and lpose:
+        nodes["pauldron_liner_l"] = [liner(lnr, ref, cop_ride, c, lpose, above, leath)]
+    if lpose:
+        os.makedirs(kb.CACHE, exist_ok=True)
+        np.savez_compressed(os.path.join(kb.CACHE, "paul_design.npz"), cop_V=V, cop_F=F, cop_N=N, thick=th, cop_O=O,
+                            cop_ride=json.dumps(cop_ride), **{f"row{k}_{nm}": d[nm] for k, d in enumerate(design)
+                                                             for nm in ("Pin", "Dd", "ride")})
     out = {}
     for nm, ps in nodes.items():
         by = {}
@@ -708,8 +898,8 @@ def write_multi(path, groups, extras):
 
 
 def build(pid, cfg=None):
-    d = os.path.join(kb.SRC, pid)
-    cfg = cfg or json.load(open(os.path.join(d, "build.json"), encoding="utf-8"))
+    cfg = cfg or json.load(open(os.path.join(kb.SRC, pid, "build.json"), encoding="utf-8"))
+    d = kb.out_dir(pid)
     mats = json.load(open(kb.MATS, encoding="utf-8"))
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
@@ -744,7 +934,7 @@ def build(pid, cfg=None):
     piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
              "params": {"file": f"{pid}.glb", **cfg.get("params", {})},
              **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
-             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.BODY, "rb").read()).hexdigest()}
+             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(kb.body_glb(), "rb").read()).hexdigest()}
     with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(piece, f, indent=1)
         f.write("\n")
@@ -757,4 +947,6 @@ def build(pid, cfg=None):
 
 
 if __name__ == "__main__":
+    import bodies
+    bodies.take(sys.argv)
     build(sys.argv[1])

@@ -36,8 +36,9 @@ HIDDEN = 1.0
 
 def skin_body(rows):
     """Her body (skin), its normals, and the pieces of `rows` on her skeleton, as wearcheck loads them."""
-    sk = wc.skin.Skeleton.load(wc.skin.SKELETONS / "heroine_skeleton.json")
-    files = [(wc.skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")]
+    import bodies
+    sk = wc.skin.Skeleton.load(bodies.skeleton_for(wc.skin))
+    files = [(bodies.glb_for(wc.skin), lambda n: n == "Heroine", "skin")]
     owner = {}
     for path in sorted({r["path"] for r in rows}):
         names = {m: r["id"] for r in rows if r["path"] == path for m in r["meshes"]}
@@ -134,6 +135,9 @@ def cover_path(r):
 
 
 def main(argv):
+    import bodies
+    bodies.take(argv)
+    bodies.use_for_check(wc, [])
     def opt(name, default):
         return argv[argv.index(name) + 1] if name in argv else default
     only = set(opt("--pieces", "").split(",")) - {""} or None

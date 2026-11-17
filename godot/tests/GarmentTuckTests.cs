@@ -62,6 +62,18 @@ public class GarmentTuckTests
         Assert.False(GarmentTuck.Over(ink, skirt));
     }
 
+    [Fact]
+    public void Kit_pieces_fitted_together_never_tuck_each_other()
+    {
+        ArmorPiece K(string id, string slot, string? built) => new() { Id = id, Slot = slot, BuiltOn = built };
+        var bodice = K("kit_bodice", "top", "abc");
+        var pauldrons = K("kit_pauldrons", "pauldrons", "abc");
+        Assert.False(GarmentTuck.Over(pauldrons, bodice));
+        Assert.True(GarmentTuck.Over(K("kit_pauldrons", "pauldrons", "def"), bodice));   // other build
+        Assert.True(GarmentTuck.Over(pauldrons, K("soft_top", "top", null)));            // not a kit piece
+        Assert.True(GarmentTuck.Over(K("x", "pauldrons", null), K("y", "top", null)));   // null never matches null
+    }
+
     /// <summary>The rigid-piece rule (armor 9): a row's "rigid" flag is read, and a rigid inner piece is never laid by
     /// the garment tuck (a plate is never bent); a rigid piece over a soft one still lays that one.</summary>
     [Fact]

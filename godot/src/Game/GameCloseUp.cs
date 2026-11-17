@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play.Zones;
 
@@ -17,6 +18,7 @@ public partial class Game
     /// <summary>--close-hold [C] (pictures): the close view held at level C every frame, in any zone, moving or fighting, over the wheel,
     /// the idle view and `held`; C is the flag's value, else --close's, else 1. Her back stays to the lens (no idle turn, no drift).</summary>
     static readonly float? CloseHold = Args.Has("close-hold") ? Args.Num("close-hold", Args.Num("close", 1)) : null;
+    /// <summary>--close-aim DY (with --close-hold, pictures): the lens's aim lifted DY metres off the framing's own (at 1: aimed 1.6 m up her; -1.35 looks at her boots).</summary>
     static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
@@ -44,6 +46,8 @@ public partial class Game
         cam.Room = (a, b) =>
         {
             if (Battle?.Collision is not { } col) return 1;
+            // (--close-hold: no wall pulls the lens in, so --close-hold 0.55 frames her head to boots wherever she stands; --close-room 1 gives the wall back)
+            if (CloseHold != null && Args.Num("close-room", 0) == 0) return 1;
             float dx = b.X - a.X, dz = b.Z - a.Z, len = Mathf.Sqrt(dx * dx + dz * dz);
             if (len < 0.01f) return 1;
             // (a wall's face with a hand's room before it; a post seen past, a cart passed over: CameraRoom)
@@ -137,7 +141,7 @@ public partial class Game
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
         if (spotClose is float tc) { target = tc; taken = true; }
-        if (CloseHold is float ch) target = ch;
+        if (CloseHold is float ch) { target = ch; if (p != null) BareGrassRound(p.X, p.Z); if (Args.Get("hide-view") is string hv) HideViewParts(hv); if (Args.Has("close-aim")) cam.AimLift = (float)Args.Num("close-aim", 0); }
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
@@ -153,6 +157,41 @@ public partial class Game
         if (!held && near > 0.3f && p != null)
             zone.KeepClear = (p.X, p.Z, -Mathf.Sin(cam.Yaw), -Mathf.Cos(cam.Yaw));
         else zone.KeepClear = null;
+    }
+
+    /// <summary>--hide-view A,B (with --close-hold, pictures; bisecting): hides the zone view's children named A,B (logged once), "her" = the heroine, "list" logs only.</summary>
+    bool hideLogged;
+    void HideViewParts(string what)
+    {
+        if (scene?.View is not { } v) return;
+        var names = what.Split(',');
+        if (!hideLogged) { hideLogged = true; GD.Print("hide-view children: " + string.Join(",", v.GetChildren().Select(c => c.Name + ":" + c.GetType().Name))); }
+        foreach (var n in v.GetChildren())
+            if (n is Node3D n3 && names.Contains((string)n.Name)) n3.Visible = false;
+        if (names.Contains("her") && scene.Player != null) scene.Player.Visible = false;
+        // "folk" = every townsperson and walker (not her): the town stands empty behind her
+        if (names.Contains("folk"))
+            foreach (var n in scene.GetChildren())
+                if (n is Node3D f3 && n != scene.Player && (n is INpcView || n is SurvivorUnchained.View.PersonView)) f3.Visible = false;
+    }
+
+    /// <summary>--close-hold (pictures): the meadow's tufts within 4 m of her are bare (the grass shader's own bare_at slot, the first
+    /// unused one, else the last), so no blade stands on her helm or between her and the lens.</summary>
+    void BareGrassRound(double x, double z)
+    {
+        if (Args.Num("close-bare", 1) == 0) return;
+        if (scene?.View is not { } v) return;
+        foreach (var n in v.GetChildren())
+        {
+            if (n is not MultiMeshInstance3D { Multimesh.Mesh: { } m } || m.SurfaceGetMaterial(0) is not ShaderMaterial gm) continue;
+            var cur = gm.GetShaderParameter("bare_at").AsVector4Array();
+            var arr = new Vector4[4];
+            for (int i = 0; i < 4; i++) arr[i] = i < cur.Length ? cur[i] : default;
+            int slot = 3;
+            for (int i = 0; i < 4; i++) if (arr[i].Z <= 0 || Mathf.Abs(arr[i].X - (float)x) < 0.01f && Mathf.Abs(arr[i].Y - (float)z) < 0.01f) { slot = i; break; }
+            arr[slot] = new Vector4((float)x, (float)z, 4f, 0);
+            gm.SetShaderParameter("bare_at", arr);
+        }
     }
 
     /// <summary>In the idle view she turns to it, her head to the lens (never for the wheel alone: the owner,
@@ -182,13 +221,15 @@ public partial class Game
             return;
         }
         float near = cam.CloseShown;
-        bool turn = !held && CloseHold == null && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
+        // (--close-hold with --close-turn R: she is turned R from the lens every frame, so a held view shows her back (3.14) or three-quarters (0.6))
+        bool holdTurn = !held && CloseHold != null && Args.Has("close-turn");
+        bool turn = holdTurn || !held && CloseHold == null && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
             // (--close-turn R: pictures only, her turn from the lens in radians; -0.6 the mirror, her left side to it)
             pv.Turned = cam.Yaw + CloseTurn;
-            pv.Watch = cam.Camera;
+            pv.Watch = holdTurn && Mathf.Abs(Mathf.Wrap(CloseTurn, -Mathf.Pi, Mathf.Pi)) > 1.6f ? null : cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }
         // (--spots holds the close view where play would not: lit as play lights it there.)

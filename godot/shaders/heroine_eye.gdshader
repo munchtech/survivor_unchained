@@ -6,7 +6,7 @@
 // under the upper lid and toward the corners, where the lids close over them.
 // The clear cornea's own patch of the paint is empty: cut away.
 shader_type spatial;
-render_mode depth_draw_opaque;
+render_mode depth_draw_opaque, shadows_disabled;
 // The cel model (cel.gdshaderinc; L1 B1b): ink 2 (no line); her eyes keep their own look and light() (by the
 // roughness fragment() wrote, before the ink tag).
 #define CEL_INK 2

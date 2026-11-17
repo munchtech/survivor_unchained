@@ -23,31 +23,44 @@
  "params": {
   "graft": "leather",
   "shoulder_shapes": false,
+  "shoulder_shapes_meshes": [
+   "darkleather"
+  ],
   "rigid_ride": [
    {
     "match": "cop_l",
     "weights": {
-     "delt_l": 0.35,
-     "clavicle_l": 0.65
+     "pauldron_hinge_l": 1.0
+    }
+   },
+   {
+    "match": "lame0_l",
+    "weights": {
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "lame1_l",
+    "weights": {
+     "delt_l": 1.0
     }
    },
    {
     "match": "cop_r",
     "weights": {
-     "delt_r": 0.35,
-     "clavicle_r": 0.65
+     "pauldron_hinge_r": 1.0
     }
    },
    {
-    "match": "lames_l",
+    "match": "lame0_r",
     "weights": {
-     "delt_l": 1
+     "delt_r": 1.0
     }
    },
    {
-    "match": "lames_r",
+    "match": "lame1_r",
     "weights": {
-     "delt_r": 1
+     "delt_r": 1.0
     }
    }
   ]
@@ -184,32 +197,43 @@
   "rows": [
    {
     "s": [
-     0.035,
-     0.095
+     0.02,
+     0.08
     ],
     "n": 12,
     "dip": 0.012,
     "dil": 3,
     "clear": 0.022,
-    "flare": 0.01
+    "flare": 0.01,
+    "tuck": 0.003,
+    "tuck_min": 0.006,
+    "lift_max": 0.02
    },
    {
     "s": [
-     0.08,
-     0.145
+     0.055,
+     0.135
     ],
     "n": 12,
     "dip": 0.012,
     "dil": 3,
     "clear": 0.026,
-    "flare": 0.012
+    "flare": 0.012,
+    "tuck": 0.003,
+    "tuck_min": 0.006,
+    "lift_max": 0.014
    }
-  ]
+  ],
+  "pose": {
+   "clip": "idle_warden",
+   "frame": 0
+  },
+  "split": true
  },
  "strap": {
   "s": 0.112,
   "w": 0.018,
-  "clear": 0.0025,
+  "clear": 0.0038,
   "thick": 0.002,
   "buckle_deg": 140
  },
@@ -226,10 +250,17 @@
   "trim_pad": 2.0,
   "trim_round": 6.0,
   "trim_tol": 0.0,
-  "cop_lift_max": 0.025,
-  "cop_ride": {
-   "delt_l": 0.35,
-   "clavicle_l": 0.65
-  }
+  "cop_lift_max": 0.025
+ },
+ "liner": {
+  "off": 0.0023,
+  "thick": 0.0012,
+  "reach": 0.05,
+  "close": 0.012,
+  "margin": 0.0,
+  "bodice": "kit_bodice",
+  "bodice_back": 0.01,
+  "smooth": 6,
+  "inset": 0.022
  }
 }

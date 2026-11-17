@@ -65,6 +65,69 @@ uniform float kit_soft = 0.0;
 uniform vec3 kit_glint = vec3(5.0, 8.0, 1.0);
 uniform vec3 kit_glint_color = vec3(0.0);
 varying float v_kit_far;
+// (armor-D finish-2, 16 Nov, judge round 2: flat violet felt, lemon gold, blotches. The kit's painted metal from light() alone:
+// its normal map flat, its env and ambient off (metal 1, RADIANCE 0), each light's luminance times designed tones, so the hue
+// holds in sun, shade and the den. Plate: three bands by n.l (kit_steps: dark->mid, mid->lit, soft) and the key's shadow, a
+// reflection band from the view-space normal (kit_refl xy its axis, z its share toward the light; kit_refl_band centre, half
+// width, soft; kit_refl_k its strength), one glint disc (kit_glint, kit_glint_color) on the smooth normal. kit_plate: gain,
+// its factor at the play camera, the light's own hue kept. Gold: two bands (kit_gold: gain, far factor, n.l step) and a glint
+// of kit_gold_glint degrees. Defaults off: every other gear bit for bit)
+uniform vec3 kit_plate = vec3(0.0);
+uniform vec3 kit_steps = vec3(0.05, 0.5, 0.04);
+uniform vec3 kit_tone_dark : source_color = vec3(0.0);
+uniform vec3 kit_tone_mid : source_color = vec3(0.0);
+uniform vec3 kit_tone_lit : source_color = vec3(0.0);
+uniform vec3 kit_tone_refl : source_color = vec3(0.0);
+uniform vec3 kit_refl = vec3(-0.35, 0.94, 0.5);
+uniform vec3 kit_refl_band = vec3(0.45, 0.18, 0.05);
+uniform float kit_refl_k = 0.0;
+uniform vec3 kit_gold = vec3(0.0);
+uniform vec3 kit_gold_dark : source_color = vec3(0.0);
+uniform vec3 kit_gold_lit : source_color = vec3(0.0);
+uniform float kit_gold_glint = 3.0;
+// (finish-2 round 2: x the plate's and gold's floor, an emission of their dark tones times x, so her legs and hips hold under
+// the den's roots (lane E: near-black, she vanished); y a soft cap on a point light's level (the den's ember over her read a
+// blown pink crown and brown plate); z that light's share of the bands, reflection and glint (0: a dark-to-mid fill, its own
+// hue off). Defaults off)
+uniform vec3 kit_floor = vec3(0.0);
+// (finish-2 round 3: kit_floor_den the floor under the den's rig (HeroDen sets cel_her_den), kit_floor.x everywhere else: the
+// town's sun holds its own dark band, the den's roots need more; 0: kit_floor.x everywhere. kit_close: a point or spot light at
+// the close camera (the close rig's key, GameCloseUp.cs; the play camera keeps kit_floor's rule): x its share of the bands,
+// reflection, glint and hue, y its soft cap (0 none), z its gain; z 0: kit_floor's rule at every distance)
+uniform float kit_floor_den = 0.0;
+uniform vec3 kit_close = vec3(0.0);
+// (finish-2 r4: the dark tone's tint by view, in linear RGB: kit_tint_close at the close camera (its grade's shade pushed the
+// plate's dark band violet, chest h 331-341), kit_tint_den_far in the den at the play camera; kit_close_wrap a point or spot
+// light's n.l wrapped at the close camera, (n.l + w) / (1 + w), so the close rig's side key lays mid and lit bands over her front)
+uniform vec3 kit_tint_close = vec3(1.0);
+uniform vec3 kit_tint_den_far = vec3(1.0);
+uniform float kit_close_wrap = 0.0;
+// (finish-2 r5: under the den's rig (cel_her_den set) the close camera takes kit_tint_den_close, not kit_tint_close (the den's
+// close grade held the plate at h 2-7 untinted, and the town's warm tint browned it), and kit_close_den, not kit_close, when its
+// z > 0: the den's fire and ember are point lights too, and the town's close gain lifted her plate white there)
+uniform vec3 kit_tint_den_close = vec3(1.0);
+uniform vec3 kit_close_den = vec3(0.0);
+// (finish-2 r6: the floor at the close camera, x in town, y under the den's rig; below 0 the play camera's (kit_floor.x, or
+// kit_floor_den in the den): kit_floor_den 16 at the den's close camera blew her plate white, L50 .98; defaults = r5)
+uniform vec3 kit_floor_close = vec3(-1.0);
+// (finish-2 r6: kit_steps.y, the mid->lit n.l step, at the close camera: the sun's lit band held 80% of her cups flat at L .56-.58,
+// neither the close key's gain nor the floor moved it; 0: kit_steps.y at every distance)
+uniform float kit_lit_step_close = 0.0;
+// (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
+// and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
+// Defaults: every gear bit for bit as r6. Tried and dropped: a directional gain at the den's close camera (0.3 and 0.5 left the
+// den close frame as it was) and the close rig's fill re-hued on the boots' leather (shafts more violet, h 326 and 303))
+uniform vec3 kit_tones_close = vec3(0.0);
+uniform vec3 kit_refl_band_close = vec3(0.0);
+// (finish-2 r9: at every close camera GameCloseUp holds a camera rig (close_day, close_night; Atmosphere.HoldCameraRig), and under
+// it Atmosphere gives HeroDen no row, so cel_her_den is zero there, the den's close too: kit_close_den, kit_tint_den_close and
+// kit_floor_close.y never apply at the close camera (fin8q: kit_close_den's gain .25, share 0 and cap .2 each left the den close
+// as it was). The den close takes kit_close, and its white lit side (torso L50/90 .40/.87, left pauldron .86/.90) was her ember,
+// a point light, at kit_close's gain 2.5 uncapped: kit_close.y, its soft cap, holds it (cap .9: lit side .50-.58 h 15-28)
+// (fin9q/r: cap .6 torso p90 .37, 1 .55, 1.8 .77, 3 .84), but a point light reaches her town close by day too (front L50 .50-.56 -> .47-.52 at .9): not set; a den gate is still owed)
+global uniform vec4 cel_her_den;
+vec3 kit_dark_at(float far) { return kit_tone_dark * (any(notEqual(cel_her_den, vec4(0.0))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
+varying float v_kgold;
 // (the Look's portrait rig, by its campfire at night: polished steel read as blue enamel with clipped white highlights and
 // leather as wet vinyl there, judge s29 wd; under the rig only (People.HerLookRig sets look_rig), a floor on their roughness)
 uniform float look_rig = 0.0;
@@ -301,7 +364,7 @@ void fragment() {
 	float dbg_paint = -1.0;                         // (debug_view 14: finish 2's paint, green; its bare steel red)
 	float gold = 0.0;                               // (1 on a gold metal, from its own mean colour below)
 	float kit_far = 0.0;                             // (armor-D S1c: 1 at the play camera, 0 close; only when a far rule is set)
-	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0)))) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
+	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0))) || kit_plate.x > 0.0 || kit_gold.x > 0.0) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
 		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
 	v_kit_far = kit_far;
 	float bulge = smoothstep(0.55, 0.85, conv);
@@ -533,6 +596,19 @@ void fragment() {
 				* look_metal_env * look_rig * mix(0.3, 1.0, sky);
 		}
 		RADIANCE = vec4(ground / max(1.0 - keep, 1e-3), 1.0 - keep);
+		// (armor-D finish-2: the kit's plate and gold from light() alone, see kit_plate)
+		v_kgold = (kit_gold.x > 0.0 && cel_on > 0.0) ? gold : 0.0;
+		float kpaint = (kit_plate.x > 0.0 && cel_on > 0.0) ? paint : 0.0;
+		float kfull = max(kpaint, v_kgold);
+		if (kfull > 0.0) {
+			nrm = mix(nrm, vec3(0.5, 0.5, 1.0), kfull); metal = mix(metal, 1.0, kfull); RADIANCE = mix(RADIANCE, vec4(0.0, 0.0, 0.0, 1.0), kfull);
+			bool kden = any(notEqual(cel_her_den, vec4(0.0)));
+			float kff = (kit_floor_den > 0.0 && kden) ? kit_floor_den : kit_floor.x;   // (the play camera's floor)
+			float kfc = kden ? kit_floor_close.y : kit_floor_close.x;                  // (finish-2 r6, see kit_floor_close)
+			look_emit += (kit_dark_at(kit_far) * kpaint * mix(kit_plate.x, kit_plate.x * kit_plate.y, kit_far)
+				+ kit_gold_dark * v_kgold * mix(kit_gold.x, kit_gold.x * kit_gold.y, kit_far))
+				* mix(kfc >= 0.0 ? kfc : kff, kff, kit_far);
+		}
 		v_metal = metal;
 		v_paint = paint;
 		v_spec_mute = max(p_mute, look_metal_mute * look_rig * (1.0 - gold)) * (1.0 - bare);
@@ -743,6 +819,49 @@ void light() {
 		float kdisc = 1.0 - smoothstep(krad - kit_glint.z, krad + max(kit_glint.z, 1e-3), kang);
 		kg = kit_glint_color * (kdisc * klit * min(dot(LIGHT_COLOR, klw) * ATTENUATION / PI, 1.0) * SPECULAR_AMOUNT * kp);
 	}
+	// (armor-D finish-2: the kit's plate and gold, see kit_plate; NORMAL is the smooth normal there, its map flat)
+	float kpl = (kit_plate.x > 0.0 && cel_on > 0.0) ? clamp(v_paint, 0.0, 1.0) : 0.0;
+	float kgl = (kit_gold.x > 0.0 && cel_on > 0.0) ? clamp(v_kgold, 0.0, 1.0) : 0.0;
+	float kall = max(kpl, kgl);
+	vec3 kout = vec3(0.0);
+	if (kall > 0.0) {
+		float klum = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
+		float ksh = LIGHT_IS_DIRECTIONAL ? cel_shadow(ATTENUATION, true) : 1.0;
+		float kl = klum * (LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION) / PI;
+		vec3 kcv = (kit_close_den.z > 0.0 && any(notEqual(cel_her_den, vec4(0.0)))) ? kit_close_den : kit_close;   // (finish-2 r5, see kit_close_den)
+		float kcl = kcv.z > 0.0 ? 1.0 - v_kit_far : 0.0;   // (finish-2 r3: the close rig's key at the close camera, see kit_close)
+		float kom = LIGHT_IS_DIRECTIONAL ? 1.0 : mix(kit_floor.z, kcv.x, kcl);   // (a point light's share of bands, reflection, glint, hue)
+		if (!LIGHT_IS_DIRECTIONAL) {
+			float kfar = kit_floor.y > 0.0 ? kit_floor.y * (1.0 - exp(-kl / kit_floor.y)) : kl;
+			float kcg = kl * kcv.z, kcls = kcv.y > 0.0 ? kcv.y * (1.0 - exp(-kcg / kcv.y)) : kcg;
+			kl = mix(kfar, kcls, kcl);
+		}
+		vec3 khue = mix(vec3(1.0), LIGHT_COLOR / max(klum, 1e-4), kit_plate.z * kom);
+		float kt = dot(NORMAL, LIGHT);
+		float ktw = LIGHT_IS_DIRECTIONAL ? kt : mix(kt, (kt + kit_close_wrap) / (1.0 + kit_close_wrap), kcl);
+		float kan = degrees(acos(clamp(dot(NORMAL, H), -1.0, 1.0)));
+		float ksw = max(kit_steps.z, 1e-3);
+		float ka1 = smoothstep(kit_steps.x - ksw, kit_steps.x + ksw, ktw) * ksh;
+		float ksy = kit_lit_step_close > 0.0 ? mix(kit_lit_step_close, kit_steps.y, v_kit_far) : kit_steps.y;   // (finish-2 r6)
+		float ka2 = smoothstep(ksy - ksw, ksy + ksw, ktw) * ksh * kom;
+		vec3 ktc = kit_tones_close.x > 0.0 ? mix(kit_tones_close, vec3(1.0), v_kit_far) : vec3(1.0);   // (finish-2 r7, see kit_tones_close)
+		vec3 ktone = mix(mix(kit_dark_at(v_kit_far), kit_tone_mid * ktc.x, ka1), kit_tone_lit * ktc.y, ka2);
+		vec2 kbd = normalize(mix(normalize(kit_refl.xy), normalize(LIGHT.xy + vec2(1e-4)), kit_refl.z));
+		vec3 krb = kit_refl_band_close.x > 0.0 ? mix(kit_refl_band_close, kit_refl_band, v_kit_far) : kit_refl_band;   // (finish-2 r7)
+		float kbs = dot(NORMAL.xy, kbd), kbw = max(krb.z, 1e-3);
+		float kband = smoothstep(krb.x - krb.y - kbw, krb.x - krb.y + kbw, kbs)
+			* (1.0 - smoothstep(krb.x + krb.y - kbw, krb.x + krb.y + kbw, kbs));
+		ktone = mix(ktone, kit_tone_refl * ktc.z, kband * kit_refl_k * mix(0.4, 1.0, ksh) * kom);
+		float krad2 = mix(kit_glint.x, kit_glint.y, v_kit_far);
+		float klit2 = ksh * step(0.0, kt) * kom;
+		vec3 kpc = (ktone + kit_glint_color * ktc.z * ((1.0 - smoothstep(krad2 - kit_glint.z, krad2 + max(kit_glint.z, 1e-3), kan)) * klit2))
+			* mix(kit_plate.x, kit_plate.x * kit_plate.y, v_kit_far);
+		float kg2 = smoothstep(kit_gold.z - ksw, kit_gold.z + ksw, ktw) * ksh * kom;
+		vec3 kgc = (mix(kit_gold_dark, kit_gold_lit, kg2) + vec3(0.9, 0.8, 0.55) * ((1.0 - smoothstep(kit_gold_glint - 1.0, kit_gold_glint + 1.0, kan)) * klit2))
+			* mix(kit_gold.x, kit_gold.x * kit_gold.y, v_kit_far);
+		kout = (kpc * kpl + kgc * kgl) * khue * kl;
+		dm *= 1.0 - kall;
+	}
 	DIFFUSE_LIGHT += dm;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 	float cap = mix(metal_spec_cap, mix(enamel_gloss_cap, enamel_spec_cap, smoothstep(0.38, 0.52, r)), v_paint) * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
@@ -756,6 +875,7 @@ void light() {
 	s = mix(s, vec3(dot(s, lw)) * spec_mute_tint, v_spec_mute);
 	if (finish == 3) s *= mix(1.0, dyed_sheen, smoothstep(0.36, 0.5, r));   // (dyed metal's brushed plate: the sun's broad lobe muted (an edge-on pauldron at full read as a pale glassy cap); the polished cups keep theirs)
 	s = s * (1.0 - kp) + kg;   // (armor-D finish r4: the kit's paint, its glint past the enamel's cap in place of metal's two bands)
+	s = s * (1.0 - kall) + kout;   // (armor-D finish-2: the kit's own tones in place of its light)
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}

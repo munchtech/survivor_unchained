@@ -358,6 +358,8 @@ public partial class Game : Node, IZoneHost
         {
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
+            // --at x,z,yaw: her facing at the spot in radians (as Arrival.Facing; --facing DEG still wins)
+            if (p.Length > 2) at = at.Value with { Facing = double.Parse(p[2], System.Globalization.CultureInfo.InvariantCulture) };
         }
         // --zone arena [--offer 0|1|2 --people ID --oaths A,B --tier T]: straight into one of the
         // Wayfinder's arenas (and back to the table after).

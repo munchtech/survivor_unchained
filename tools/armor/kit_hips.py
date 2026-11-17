@@ -327,10 +327,11 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
     ys = np.arange(y0, y1 + dy / 2, dy)
     ths = np.arange(-180.0, 180.0, dth)
-    art = os.path.join(kb.REPO, "godot", "art", "armor")
+    art = __import__("bodies").cur().art
     idx_rows = {r["id"]: r for r in json.load(open(os.path.join(art, "armor_index.json"))) if isinstance(r, dict)}
     paths = [os.path.join(art, f"{g}.gltf") for g in under_ids]
-    deps = [kb.BODY] + paths + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
+    kb.require_body_inputs(clips)
+    deps = [kb.body_glb()] + paths + [str(skin.OUT / "clips" / f"{c}.json") for c in clips]
     stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
     xh = hashlib.sha1()
     for k_ in sorted(extra or {}):
@@ -338,13 +339,14 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
             xh.update(k_.encode() + np.round(np.asarray(P_, float), 5).tobytes() + json.dumps(sorted(w_.items())).encode())
     key = hashlib.sha1(json.dumps(["v2 no arms", sorted((k, sorted(v.items())) for k, v in rides.items()), list(under_ids), list(clips),
                                    y0, y1, dy, dth, z0, stamp, hp_.SPEC.get("hinges"), xh.hexdigest() if extra else None]
+                                  + ([hp_.SPEC.get("tassets")] if hp_.SPEC.get("tassets") else [])
                                   ).encode()).hexdigest()[:14]
     cache = os.path.join(kb.REPO, ".shots", "armor2", "kit_hips_sweep", key + ".npz")
     if os.path.exists(cache):
         z = np.load(cache)
         return {k: z[k] for k in rides}, ys, ths
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    files = [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")]
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    files = [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")]
     for g, p in zip(under_ids, paths):
         files.append((skin.Path(p), lambda n, s=frozenset(idx_rows[g]["meshes"]): n in s, "garment"))
     body = skin.Body(sk, files, skin.Jiggle(sk, 1, 1), label="her", helpers=True)
@@ -473,6 +475,8 @@ def hug_col(room, skin_rho, th, y_top, s0, r0, s1, a_in, smax, floor=None, ds=0.
         if floor is not None:
             t = np.fmax(t, floor(S))
         ok = np.isfinite(t)
+        if ok[0]:  # (the top row follows the room too: never under it, hipv-2 r5; was the belt radius alone)
+            r0 = max(r0, float(t[0]))
         ok[0] = False
         H = upper_hull(np.r_[s0, S[ok]], np.r_[r0, t[ok]])
         r = np.interp(S, H[:, 0], H[:, 1])
@@ -573,7 +577,7 @@ def interlace(G, Nn, j0, j1, v0, v1, wl, name, mat, ref_n, beads):
 
 def belt(cfg, ref):
     M, bl, z0 = cfg["mat"], cfg["belt"], cfg["axis_z"]
-    under = [os.path.join(kb.SRC, f, f + ".glb") for f in cfg["under"]]
+    under = [os.path.join(kb.out_root(), f, f + ".glb") for f in cfg["under"]]
     UV, UF, nsk = under_mesh(ref, under)
     wrap = kb.Wrap(ref, z0, 0.90, 1.16)
     plate, trim, straps, rigid = [], [], [], []
@@ -744,7 +748,28 @@ def belt(cfg, ref):
                          for h, s in ((1, "l"), (-1, "r"))]
         pid = cfg["piece"]["id"]
         cfg["piece"]["params"] = {"file": f"{pid}.glb", **cfg["piece"].get("params", {}), "rigid_ride": ride_out}
+    unweld_rigid(rigid)
     return plate, trim, straps, rigid
+
+
+def unweld_rigid(parts, tol=2e-6, step=5e-5):
+    """No two rigid nodes share a point (armor-D hipv-2, 16 Nov): pin_shipped welds every point to the micron and a
+    rigid shell is a welded component of ONE weight set, so the hip plate's top corner on the front hip plate's
+    (y 1.1335, th ~68) merged both into one two-set component: neither was rigid, both steels bent with her skin
+    (exact.json rigid_blends 284-615) while their gold rode the hinge. A later node's shared points move `step` in."""
+    from scipy.spatial import cKDTree
+    seen, moved = [], 0
+    for pt in parts:
+        for nm_, P_ in seen:
+            if nm_ == pt.name or not len(P_) or not len(pt.P):
+                continue
+            d, _ = cKDTree(P_).query(pt.P, distance_upper_bound=tol)
+            hit = np.isfinite(d)
+            if hit.any():
+                pt.P[hit] -= pt.N[hit] * step
+                moved += int(hit.sum())
+        seen.append((pt.name, pt.P.copy()))
+    print(f"unweld_rigid: {moved} shared points moved {step * 1000:.2f} mm")
 
 
 def side_ride(ride, h):
@@ -823,6 +848,15 @@ def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M
         Lk = np.array(lm["len"])
         s1 = interp1d(np.linspace(0, 1, len(Lk)), Lk, kind="quadratic" if len(Lk) > 2 else "linear")(np.clip(u, 0, 1))
         room = rooms[ride_key(lm["ride"], h)]
+        if prev is not None and ride_key(lm["ride"], h) != prev[4]:
+            # (a lame on another ride than the one above it (hipv-2 r5: the front plate's lower lame on hiptasset_hinge
+            # under a top lame on thigh_hinge): its room also clears that lame's outer face and rim, posed through the
+            # demo clips into this lame's ride frame (sweep extra), as lap_rooms does for plates[].over)
+            kx = f"{ride_key(lm['ride'], h)}|{h}|{nm}{k}"
+            Ex, ys_, ths_ = sweep({kx: side_ride(lm["ride"], h)}, [], z0,
+                                  extra={kx: [(dense(prev[3][0] + prev[3][1] * (pt_th + rim["h"])), prev[3][2])]})
+            fx = room_fn(dilate(Ex[kx], ys_, ths_, cfg.get("hug", {}).get("lap_gap", 0.0015)), ys_, ths_)
+            room = (lambda y, th, a=room, b=fx: np.fmax(a(y, th), b(y, th)))
         if prev is None:
             r0, floors = r_top, None
             s1 = s1 + 0.0
@@ -868,7 +902,19 @@ def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M
               f"bottom y {np.round((y_top - Sg[-1]).min(), 3)}-{np.round((y_top - Sg[-1]).max(), 3)}, stand-off off her "
               f"skin mm: top {np.round(st[1].min() * 1000)}-{np.round(st[1].max() * 1000)}, bottom "
               f"{np.round(st[-1].min() * 1000)}-{np.round(st[-1].max() * 1000)}, max {np.round(st.max() * 1000)}")
-        prev = (Sg, Rg, fns)
+        if prev is not None and ride_key(lm["ride"], h) != prev[4]:
+            # (the lap through the clips: the lame above's bottom edge posed into this lame's frame, its highest per
+            # column vs this lame's top: > 0 = they overlap in every frame of the demo clips)
+            kx = f"{ride_key(lm['ride'], h)}|{h}|{nm}{k}edge"
+            Ee, ys_, ths_ = sweep({kx: side_ride(lm["ride"], h)}, [], z0, extra={kx: [(prev[3][0][-1], prev[3][2])]}, verbose=False)
+            it_ = np.round((ths + 180.0) / (ths_[1] - ths_[0])).astype(int) % len(ths_)
+            fin = np.isfinite(Ee[kx][:, it_])
+            ytop = np.where(fin.any(0), ys_[np.where(fin, np.arange(len(ys_))[:, None], 0).max(0)], np.nan)
+            olap = (y_top - Sg[0]) - ytop
+            print(f"{node} lap: overlap with the lame above through the demo clips, mm: min {np.round(np.nanmin(olap) * 1000, 1)} "
+                  f"(rest {np.round((prev[0][-1] - Sg[0]).min() * 1000, 1)}), per column {np.round(olap * 1000).tolist()}")
+        prev = (Sg, Rg, fns, (G, Nl, side_ride(lm["ride"], h) if pl.get("mirror", True) else dict(lm["ride"])),
+                ride_key(lm["ride"], h))
 
 
 RECIPES = {"brief": brief, "belt": belt}

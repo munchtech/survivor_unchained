@@ -198,3 +198,20 @@ def test_follow_env_shoulder_shapes_switch():
     assert ps.follow_env({"params": {"shoulder_shapes": False}})["BF_PAUL_SHAPES"] == "0"
     assert ps.follow_env({"params": {}}).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")
     assert ps.follow_env(None).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")
+
+
+def test_follow_env_shoulder_shapes_meshes_switch():
+    # (16 Nov pauldron-2 r3: the plates carry no shoulder shapes, the leather under them (its material's mesh) does)
+    import piece_ship as ps
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets"))
+    import body_follow_post as bf
+    env = ps.follow_env({"params": {"shoulder_shapes": False, "shoulder_shapes_meshes": ["darkleather"]}})
+    assert env["BF_PAUL_SHAPES"] == "0" and env["BF_PAUL_SHAPES_MESHES"] == "darkleather"
+    assert ps.follow_env({"params": {"shoulder_shapes": False}}).get("BF_PAUL_SHAPES_MESHES") ==         os.environ.get("BF_PAUL_SHAPES_MESHES")
+    on = ("darkleather",)
+    assert bf.paul_carries("kit_pauldrons.pauldrons.darkleather", False, on)
+    assert bf.paul_carries("kit_pauldrons.lod1.darkleather", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.steel", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.gold", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.darkleather", False, ())
+    assert bf.paul_carries("kit_pauldrons.pauldrons.steel", True, ())
