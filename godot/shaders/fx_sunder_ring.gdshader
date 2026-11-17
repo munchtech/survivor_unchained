@@ -21,6 +21,15 @@ uniform float ring_cut = 0.45;
 uniform float ring_core = 0.3;
 // grain under it has eroded away (0 whole, 1 gone)
 uniform float ring_fade = 0.0;
+// (leap-vow-marks r3) 1: the ring laid straight (BattleFx.Grip.cs PaintedFront: the vow's Full Measure wave). The plane
+// is the line's: local +X along it, its back edge at her (strip_half m to the middle), +Z across its width; u runs
+// across the width, v back from the front (strip_front m from her, its middle strip_bow m ahead of its sides) over
+// strip_span m behind it, so the band and the streaks keep their metres as the front runs
+uniform float ring_straight = 0.0;
+uniform float strip_half = 1.0;
+uniform float strip_front = 1.0;
+uniform float strip_span = 2.0;
+uniform float strip_bow = 0.0;
 
 varying vec2 lp;
 
@@ -29,15 +38,26 @@ void vertex() {
 }
 
 void fragment() {
-	float r2 = max(dot(lp, lp), 1e-8), rho = sqrt(r2);
-	float u = ring_flip * atan(lp.y, lp.x) / ring_range + 0.5;
-	float v = (rho - ring_r0) / (1.0 - ring_r0);
-	if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
-	// (leap-vow-marks) the texture's footprint from the plane's own coordinates, never from u: atan's jump behind a
-	// closed ring would pick the smallest mip along it (a line of noise)
 	vec2 ex = dFdx(lp), ey = dFdy(lp);
-	vec2 gx = vec2(ring_flip * (lp.x * ex.y - lp.y * ex.x) / (r2 * ring_range), dot(lp, ex) / (rho * (1.0 - ring_r0)));
-	vec2 gy = vec2(ring_flip * (lp.x * ey.y - lp.y * ey.x) / (r2 * ring_range), dot(lp, ey) / (rho * (1.0 - ring_r0)));
+	float u, v;
+	vec2 gx, gy;
+	if (ring_straight > 0.5) {
+		// s across the width (-1..1), x metres from her along the line; the footprint from the plane's own coordinates
+		float s = lp.y, x = (lp.x + 1.0) * strip_half, dvs = 2.0 * strip_bow * s;
+		u = ring_flip * s * 0.5 + 0.5;
+		v = 1.0 - (strip_front - strip_bow * s * s - x) / strip_span;
+		gx = vec2(ring_flip * 0.5 * ex.y, (strip_half * ex.x + dvs * ex.y) / strip_span);
+		gy = vec2(ring_flip * 0.5 * ey.y, (strip_half * ey.x + dvs * ey.y) / strip_span);
+	} else {
+		float r2 = max(dot(lp, lp), 1e-8), rho = sqrt(r2);
+		u = ring_flip * atan(lp.y, lp.x) / ring_range + 0.5;
+		v = (rho - ring_r0) / (1.0 - ring_r0);
+		// (leap-vow-marks) the texture's footprint from the plane's own coordinates, never from u: atan's jump behind a
+		// closed ring would pick the smallest mip along it (a line of noise)
+		gx = vec2(ring_flip * (lp.x * ex.y - lp.y * ex.x) / (r2 * ring_range), dot(lp, ex) / (rho * (1.0 - ring_r0)));
+		gy = vec2(ring_flip * (lp.x * ey.y - lp.y * ey.x) / (r2 * ring_range), dot(lp, ey) / (rho * (1.0 - ring_r0)));
+	}
+	if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
 	vec3 t = textureGrad(ring_tex, vec2(u, v), gx, gy).rgb;
 	float heat = t.r, grain = t.b;
 	float aa = max(fwidth(grain) * 0.75, 0.01);

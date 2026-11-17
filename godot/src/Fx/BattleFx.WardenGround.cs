@@ -872,13 +872,15 @@ public partial class BattleFx
     }
 
     /// <summary>A plate of ground stood up at (x, z), its top leaning out along `a` (`tilt` from the ground), `len` m
-    /// long, a third of it buried; up in 0.09 s, held 0.4 s, sunk over 0.5 s.</summary>
-    void WgSlab(double x, double z, float a, float len, float tilt, float delay, float wide = 1.3f)
+    /// long, a third of it buried; up in 0.09 s, held `hold` s (0.4), sunk over 0.5 s. (leap-vow-marks r3) `most`: its
+    /// largest side (WgSlabMax but for the henge's standing stones, a barrier); `thick` x its thickness (a stone, not a
+    /// plate). False when none was stood up.</summary>
+    bool WgSlab(double x, double z, float a, float len, float tilt, float delay, float wide = 1.3f, float hold = 0.4f, float most = WgSlabMax, float thick = 1f)
     {
         var rk = WgRockNext();
-        if (rk == null || wgSlabs == null) return;
+        if (rk == null || wgSlabs == null) return false;
         // (F1 lead 24: the largest side of a slab, widening included, never passes WgSlabMax, so they stay smaller than a wolf)
-        len = Mathf.Min(len, WgSlabMax / Mathf.Max(1f, wide));
+        len = Mathf.Min(len, most / Mathf.Max(1f, wide));
         int m = (int)(R() * wgSlabs.Length * 0.999f);
         rk.N.Mesh = wgSlabs[m];
         var outw = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
@@ -891,12 +893,13 @@ public partial class BattleFx
         float sc = len / Mathf.Max(0.05f, wgSlabLen![m]);
         var basis = xLong ? new Godot.Basis(u, nrm, third) : new Godot.Basis(-third, nrm, u);
         basis = basis * new Godot.Basis(Vector3.Up, (R() - 0.5f) * 0.3f);
-        rk.On = true; rk.Slab = true; rk.Age = -delay; rk.Life = 0.09f + 0.4f + 0.5f;
+        rk.On = true; rk.Slab = true; rk.Age = -delay; rk.Life = 0.09f + hold + 0.5f; rk.Hold = hold;
         rk.B = basis; rk.Scale = sc; rk.U = u; rk.L = len;
         // (1.3x wider than the piece's own across its face)
-        rk.Local = xLong ? new Vector3(1, 1, wide) : new Vector3(wide, 1, 1);
+        rk.Local = xLong ? new Vector3(1, thick, wide) : new Vector3(wide, thick, 1);
         rk.Base = V(x, Y(x, z), z) + u * len * 0.2f;
         rk.N.Visible = false;
+        return true;
     }
 
     void WgThrow(Vector3 p, Vector3 v, float scale, float life, int minIdx = 0)
@@ -940,7 +943,7 @@ public partial class BattleFx
                 // Up (an overshoot of 6%), held, then sunk back along itself and a little more.
                 float up = Mathf.Min(1, c.Age / 0.09f);
                 float rise = up < 1 ? 1 - (1 - up) * (1 - up) * (1 - up) : 1 + 0.06f * Mathf.Sin(Mathf.Min(1, (c.Age - 0.09f) / 0.12f) * Mathf.Pi);
-                float sink = Mathf.Clamp((c.Age - 0.49f) / 0.5f, 0, 1);
+                float sink = Mathf.Clamp((c.Age - 0.09f - c.Hold) / 0.5f, 0, 1);
                 sink *= sink;
                 var at = c.Base - c.U * c.L * 0.85f * (1 - rise) - c.U * c.L * 0.9f * sink - Vector3.Up * 0.1f * sink;
                 c.N.Visible = true;

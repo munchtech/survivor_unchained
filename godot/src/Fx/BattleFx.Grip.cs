@@ -359,8 +359,8 @@ public partial class BattleFx
         // include's fx_stroke_shape / fx_bristle are not its uniforms, and the dead key read here (grip.dry) threw before
         // the warm-up was ever asked for: the first cut paid the first use
         gripWarm = 3;
-        // (the painted rings' brushes painted now, not on her first cut, leap or vow: Sunder's, the leap's, the vow's)
-        foreach (var k in new[] { "sunder_mark", "leap.mark", "vow.mark" }) PaintedRingTex(k);
+        // (the painted rings' brushes painted now, not on her first cut, leap or vow: Sunder's, the leap's, the vow's, its wave's)
+        foreach (var k in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave" }) PaintedRingTex(k);
     }
 
     (MeshInstance3D, ImmediateMesh, ShaderMaterial) GripNewNode(string name, int mode)
@@ -422,7 +422,7 @@ public partial class BattleFx
     const string SunderRingShader = "res://shaders/fx_sunder_ring.gdshader";
     /// <summary>The ring texture's inner radius (a share of the ring's radius): its trailing streaks reach in to here.</summary>
     const float SunderR0 = 0.6f;
-    /// <summary>The painted rings' brushes by data key (sunder_mark, leap.mark, vow.mark).</summary>
+    /// <summary>The painted rings' brushes by data key (sunder_mark, leap.mark, vow.mark, vow.wave).</summary>
     static readonly Dictionary<string, ImageTexture[]> paintedRings = new();
 
     /// <summary>(lane B fx s3, 16 Nov: E rule 4; coordinator #15) Sunder's ground mark: ONE painted shockwave ring on the
@@ -488,6 +488,56 @@ public partial class BattleFx
         return span;
     }
 
+    /// <summary>(leap-vow-marks r3, 16 Nov: coordinator #15) The painted ring laid straight (the vow's Full Measure wave): ONE
+    /// front across a line on the ground, `half` m each side of it (its real width), running from `a` toward `b` (its real
+    /// line, both on the ground; the plane leans with the ground between them) from `from` x its length to its end in `run`
+    /// s (ease-out), its middle bowed `bow` m ahead; the brush (RingPaint, open: it tapers at the front's two sides) and the
+    /// steel bands of PaintedRing, by the numbers under `key`, its band, lip, streaks and gaps as on a ring `scale_m` m round
+    /// so they keep their metres as it runs (shaders/fx_sunder_ring.gdshader ring_straight); white-hot for `core_frames`
+    /// frames, then it cools and erodes as the ring does, gone at `life` s.</summary>
+    void PaintedFront(string key, Vector3 a, Vector3 b, float half)
+    {
+        float from = P7D[key + ".from"], run = Mathf.Max(P7D[key + ".run"], 1 / 60f);
+        float life = Mathf.Max(P7D[key + ".life"], run + 2 / 60f), hot = (P7D[key + ".core_frames"] - 0.5f) / 60f;
+        var cool = P7D.All(key + ".cool");
+        var fade = P7D.All(key + ".fade");
+        var along = b - a;
+        float len = along.Length();
+        if (len < 0.5f || half < 0.05f) return;
+        var x = along / len;
+        var z = new Vector3(-x.Z, 0, x.X).Normalized();
+        var y = z.Cross(x).Normalized();
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>(SunderRingShader) };
+        FxCel.Apply(m, School.Physical, FxAfter.On);
+        var tex = PaintedRingTex(key);
+        m.SetShaderParameter("ring_tex", tex[(int)(R() * 0.999f * tex.Length)]);
+        m.SetShaderParameter("ring_straight", 1f);
+        m.SetShaderParameter("strip_half", len / 2);
+        m.SetShaderParameter("strip_span", (1 - SunderR0) * P7D[key + ".scale_m"]);
+        m.SetShaderParameter("strip_bow", P7D[key + ".bow"]);
+        m.SetShaderParameter("ring_flip", R() < 0.5f ? -1f : 1f);
+        m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+        p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
+        var n = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "PaintedFront" };
+        AddChild(n);
+        n.GlobalTransform = new Transform3D(new Godot.Basis(x * (len / 2), y, z * half), (a + b) / 2);
+        if (FxAfter.On) FxAfter.Adopt(n);
+        var s = new P7Shape
+        {
+            N = n, M = m, Life = life + 1 / 60f,
+            Step = q =>
+            {
+                float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
+                q.M.SetShaderParameter("strip_front", len * (from + (1 - from) * u));
+                q.M.SetShaderParameter("ring_hot", q.Age < hot ? 1f : 0f);
+                q.M.SetShaderParameter("ring_cut", Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
+                q.M.SetShaderParameter("ring_fade", 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
+            },
+        };
+        s.Step(s);
+        p7Shapes.Add(s);
+    }
+
     /// <summary>A painted ring's brushes, painted once a session (when she first takes the blade, GripNode): two a key, each
     /// mirrored at random by its use; closed (seamless round her) when the key's open_deg is 360.</summary>
     static ImageTexture[] PaintedRingTex(string key)
@@ -499,8 +549,8 @@ public partial class BattleFx
 
     /// <summary>One painted shockwave in polar form (x: round the ring's arc, 0..1; y: SunderR0..1 of the radius), by the
     /// numbers under `key`: a band `band` of the radius, uneven along it (+-`wobble`), tapering to points at the arc's ends
-    /// (open) or whole round her (`closed`: no ends, its noise wrapping so the seam behind never shows; `knots_k` x the
-    /// bristle detail for its length); a hot inner lip (`lip` of the band, solid) and a dry-brush outer front (from
+    /// (open) or whole round her (`closed`: no ends, its noise wrapping so the seam behind never shows; `knots_k`, open
+    /// or closed, x the bristle detail for its length); a hot inner lip (`lip` of the band, solid) and a dry-brush outer front (from
     /// `dry_from` of the band out, its bristles broken more toward the front, up to `dry` of them); `gaps` real gaps (gap_w
     /// of the arc wide, ragged by bristle; an open arc's never across its middle); `streaks` thin trailing streaks from the
     /// lip in toward the centre (streak_len of the radius), dry, gone first. R heat, G coverage, B the order it erodes in
@@ -509,7 +559,7 @@ public partial class BattleFx
     {
         const int H = 128, Lanes = 14;
         int W = closed ? 2048 : 1024;
-        float kk = closed ? P7D[key + ".knots_k", 1f] : 1f;
+        float kk = P7D[key + ".knots_k", 1f];
         var rng = new RandomNumberGenerator { Seed = (ulong)seed };
         float w0 = P7D[key + ".band"], lip = P7D[key + ".lip"], dryFrom = P7D[key + ".dry_from"], dry = P7D[key + ".dry"];
         float wob = P7D[key + ".wobble"];

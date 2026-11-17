@@ -42,7 +42,7 @@ public class FxP7Tests
     public void ThePaintedRingsHaveTheirNumbers()
     {
         var p = Real();
-        foreach (var key in new[] { "sunder_mark", "leap.mark", "vow.mark" })
+        foreach (var key in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave" })
             foreach (var k in new[] { "from", "run", "life", "core_frames", "core_cut", "open_deg", "cool", "fade", "band", "wobble", "lip", "dry_from", "dry", "gaps", "gap_w", "streaks", "streak_len" })
                 Assert.True(p.Has(key + "." + k), "fx_language.json p7 lacks " + key + "." + k);
         foreach (var key in new[] { "leap.mark", "vow.mark" })
@@ -55,6 +55,19 @@ public class FxP7Tests
             Assert.InRange(p[key + ".band"], 0.05f, 0.09f);
         }
         Assert.Equal(3, p.All("leap.mark.crack_tint").Length);
+        // (r3) the vow's wave: the ring laid straight (open: it tapers at its two sides), its brush's metres and bow, its white
+        // a lip for 3-4 frames, gone in under half a second, dust along it; the henge's standing stones and their dust
+        Assert.True(p["vow.wave.open_deg"] < 360f);
+        Assert.InRange(p["vow.wave.core_frames"], 3, 4);
+        Assert.InRange(p["vow.wave.life"], 0.3f, 0.5f);
+        Assert.InRange(p["vow.wave.core_cut"], 0.45f, 0.6f);
+        Assert.InRange(p["vow.wave.scale_m"], 2f, 8f);
+        Assert.InRange(p["vow.wave.bow"], 0f, 1f);
+        Assert.InRange(p["vow.wave.dust_m"], 0.8f, 3f);
+        foreach (var k in new[] { "knots_k", "dust_k" }) Assert.True(p.Has("vow.wave." + k), "fx_language.json p7 lacks vow.wave." + k);
+        foreach (var k in new[] { "len", "tilt_deg", "wide", "dust_px" }) Assert.Equal(2, p.All("leap.henge." + k).Length);
+        foreach (var k in new[] { "pitch", "thick", "max", "stagger" }) Assert.True(p.Has("leap.henge." + k), "fx_language.json p7 lacks leap.henge." + k);
+        Assert.InRange(p["leap.henge.pitch"], 0.6f, 2f);
     }
 
     [Fact]

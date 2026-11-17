@@ -1585,6 +1585,11 @@ public partial class BattleFx : Node3D
                 case Ev.PlayerHeal e:
                     if (e.Amount >= 3) Hits.Text(PlayerPos + Vector3.Up * 1.6f, $"+{(int)Math.Round(e.Amount)}", new Color(0.5f, 1.8f, 0.6f), 50);
                     break;
+                // (leap-vow-marks r3, 16 Nov) Heroic Leap's Henge Turn: its standing stones round the landing (P7Henge), not
+                // the generic nova's soft ring and gold light (the halo outside the landing ring, the pool round her feet)
+                case Ev.Nova { Art: "heroic_leap_henge" } e when !P7Off:
+                    P7Henge(e);
+                    break;
                 case Ev.Nova e when e.Art != null && Pulse(e):
                     break;
                 case Ev.Nova e:
@@ -1667,6 +1672,11 @@ public partial class BattleFx : Node3D
                     if (e.School == School.Storm) Flash(V(p[^2], y + 1, p[^1]), pal.Light, 6, 0.2f, 8);
                     break;
                 }
+                // (leap-vow-marks r3, 16 Nov) Iron Vow's Full Measure wave: the painted ring laid straight along its real
+                // line (P7VowWave), not the generic beam's glowing band and light (the cream tube)
+                case Ev.Beam { Art: "iron_vow_wave" } e when !P7Off:
+                    P7VowWave(e);
+                    break;
                 case Ev.Beam e when Lance(e):
                     break;
                 case Ev.Beam e:
