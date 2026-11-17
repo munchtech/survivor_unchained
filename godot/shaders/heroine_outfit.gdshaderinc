@@ -119,6 +119,12 @@ uniform float kit_lit_step_close = 0.0;
 // den close frame as it was) and the close rig's fill re-hued on the boots' leather (shafts more violet, h 326 and 303))
 uniform vec3 kit_tones_close = vec3(0.0);
 uniform vec3 kit_refl_band_close = vec3(0.0);
+// (finish-2 r9: at every close camera GameCloseUp holds a camera rig (close_day, close_night; Atmosphere.HoldCameraRig), and under
+// it Atmosphere gives HeroDen no row, so cel_her_den is zero there, the den's close too: kit_close_den, kit_tint_den_close and
+// kit_floor_close.y never apply at the close camera (fin8q: kit_close_den's gain .25, share 0 and cap .2 each left the den close
+// as it was). The den close takes kit_close, and its white lit side (torso L50/90 .40/.87, left pauldron .86/.90) was her ember,
+// a point light, at kit_close's gain 2.5 uncapped: kit_close.y, its soft cap, holds it (cap .9: lit side .50-.58 h 15-28)
+// (fin9q/r: cap .6 torso p90 .37, 1 .55, 1.8 .77, 3 .84), but a point light reaches her town close by day too (front L50 .50-.56 -> .47-.52 at .9): not set; a den gate is still owed)
 global uniform vec4 cel_her_den;
 vec3 kit_dark_at(float far) { return kit_tone_dark * (any(notEqual(cel_her_den, vec4(0.0))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
 varying float v_kgold;
