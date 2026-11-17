@@ -20,14 +20,14 @@ uniform float dark_floor = 0.0;
 // (r10c) and the painting shows at least amb_floor of its own painted value where little light reaches (the frame's edges
 // fell to 1/20 of it: flat black between roots the target paints at L 20-40)
 uniform float amb_floor = 0.0;
-uniform float glow_k = 0.7;
+uniform float glow_k = 0.95;
 // (r12 judge: den_room.png's mushrooms light the ground beneath them teal) the painted caps' halo: their cyan in a coarse
 // mip, a little below them in the painting (the ground they stand on), as a soft teal emission on the painting round them
 uniform float mush_glow = 0.0;
 uniform float fungus_sat = 1.0;   // (den r14) the painted caps' saturation (DungeonDress.SetMat: --den-fungus-sat)
-uniform float mush_lod = 4.5;
+uniform float mush_lod = 3.6;
 uniform float mush_drop = 0.012;
-uniform vec3 mush_col : source_color = vec3(0.42, 0.68, 0.64);   // (den r15 C) was .3,.85,.78: the glow pool under the caps over the band
+uniform vec3 mush_col : source_color = vec3(0.55, 0.72, 0.69);   // (den r15 C) was .3,.85,.78: the glow pool under the caps over the band
 uniform float fg_dark = 0.65;
 uniform float rim_in = 1.15;    // (r11, the hole paintings) the surround shown to this many lip radii, gone by rim_out
 uniform float rim_out = 1.45;

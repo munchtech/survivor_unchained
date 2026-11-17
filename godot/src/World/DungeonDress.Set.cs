@@ -35,6 +35,7 @@ public static partial class DungeonDress
     // (den r15 A, R14 judge item 1: r14's O1r blurred O1 to a mip and painted a procedural top: 24 px blocks, no ink) O1r drawn
     // from its own sheet (tools/look/den_rocks.py: O1's stones at 2x in the target's value band, inked), no blur branch; 0 r14's
     static readonly float SetRockPaint = SurvivorUnchained.Args.Num("den-rock-paint", 1f);
+    static readonly float SetRockDome = SurvivorUnchained.Args.Num("den-rock-dome", 1f);   // (den r15 G) plain O1 stones cast on their own dome over the floor, not the bank surface
     static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
@@ -76,8 +77,8 @@ public static partial class DungeonDress
             // (r12 judge: the seed-23 room's blood read magenta) the set's half saturation and its grey-violet shade turned the
             // painted blood pink-mauve: blood keeps its own red, a touch darker and browner
             mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-blood-sat", 0.6f));
-            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(1.35f, 1.2f, 1.0f)));
-            mat.SetShaderParameter("blood_rust", SurvivorUnchained.Args.Num("den-blood-rust", 0.55f));   // (den r15 C) crimson h 15-22 into rust 33-37
+            mat.SetShaderParameter("tint", V3("den-blood-tint", new Vector3(1.45f, 1.3f, 1.1f)));
+            mat.SetShaderParameter("blood_rust", SurvivorUnchained.Args.Num("den-blood-rust", 0.45f));   // (den r15 C) crimson h 15-22 into rust 33-37
             mat.SetShaderParameter("blood_dir", V3("den-blood-dir", new Vector3(1.5f, 0.9f, 0.45f)));
             mat.SetShaderParameter("shade_k", 0f);
         }
@@ -1009,6 +1010,7 @@ public static partial class DungeonDress
         float rz = bb / -CamUp.Z;
         float y0 = H(c, x, zz);
         float yFront = new Vector3(x, y0, zz + rz).Dot(CamUp);
+        bool domeOnly = SetRockDome > 0f && sheet == "O1" && key == null;
         System.Func<float, float, float> surf = (px, pz) =>
         {
             float ex = (px - x) / rx, ez = (pz - zz) / rz;
@@ -1016,6 +1018,7 @@ public static partial class DungeonDress
             float s = e > 0f && ry > 0f ? y0 + ry * Mathf.Sqrt(e) : -99f;
             // (r11) never more than 1.5 m under its own foot: over a pit's mouth the cast missed the floor and ran 120 m
             // down the view (seed 23's lair: a fan of streaks to the vanishing point)
+            if (domeOnly) return Mathf.Max(Mathf.Max(s, H(c, px, pz)), y0 - 1.5f);   // (den r15 G) plain O1 stones: their own dome over the floor, never the rising bank (the pale cube)
             return Mathf.Max(Mathf.Max(s, SurfBank(c, px, pz)), y0 - 1.5f);
         };
         key ??= sheet;

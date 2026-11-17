@@ -299,6 +299,7 @@ public static partial class DungeonDress
         n.Position = new Vector3(x, H(c, x, zz) - (b.Position.Y + sink * b.Size.Y) * scale, zz);
         n.Rotation = new Vector3(0, yaw, 0);
         c.Root.AddChild(n);
+        if (c.Z.DungeonTheme == "den") DenOcclude.Register(c.Root, n);   // (den r15 I: fades while between the camera and her)
         c.Tick(tag);
     }
 
@@ -469,8 +470,8 @@ public static partial class DungeonDress
     static StandardMaterial3D FungMat()
     {
         float N(string k, float d) => SurvivorUnchained.Args.Num(k, d);
-        var m = new StandardMaterial3D { AlbedoColor = new Color(N("den-fung-r", 0.38f), N("den-fung-g", 0.52f), N("den-fung-b", 0.49f)), Roughness = 0.7f, EmissionEnabled = true,
-            Emission = new Color(N("den-fung-er", 0.36f), N("den-fung-eg", 0.58f), N("den-fung-eb", 0.54f)), EmissionEnergyMultiplier = N("den-fung-em", 0.5f) };
+        var m = new StandardMaterial3D { AlbedoColor = new Color(N("den-fung-r", 0.45f), N("den-fung-g", 0.53f), N("den-fung-b", 0.51f)), Roughness = 0.7f, EmissionEnabled = true,
+            Emission = new Color(N("den-fung-er", 0.42f), N("den-fung-eg", 0.56f), N("den-fung-eb", 0.54f)), EmissionEnergyMultiplier = N("den-fung-em", 0.5f) };
         return m;
     }
     static readonly float FungCap = SurvivorUnchained.Args.Num("den-fung-cap", 0.85f);
