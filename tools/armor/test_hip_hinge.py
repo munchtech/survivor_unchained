@@ -199,7 +199,9 @@ def test_hip_tassets_are_one_thigh_hinges_at_their_pivots(sk):
         assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 0.8 and tg["soft"] == 12.0
         j = sk.index[tg["name"]]
         assert sk.names[sk.parent[j]] == "pelvis" and _deg(grot[0, j]) < 1e-6
-        assert np.abs(gpos[0, j] - np.array([0.115 if s == "l" else -0.115, 1.125, 0.075])).max() < 1e-9
+        assert np.abs(gpos[0, j] - np.asarray(tg["pivot"], float)).max() < 1e-9
+        # its pivot is her hip joint (hipv-2 r4): thigh_{s}'s rest head, read by bone name
+        assert np.abs(gpos[0, j] - gpos[0, sk.index["thigh_" + s]]).max() < 1e-5
         assert _deg(_driven(sk, tg)) < 1e-6
 
 

@@ -276,11 +276,14 @@ SPEC = {
          "roll": 1.3},
         # Hip tassets (armor-D, 16 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same law on that
         # thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 0.8 * softrelu(swing - 3, 12); no
-        # twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x). Users:
-        # a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
-        {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.115, 1.125, 0.075],
+        # twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x): her
+        # hip joint, thigh_{s}'s rest head in heroine_skeleton.json (read by bone name; test_hip_hinge holds them
+        # together). Why (hipv-2 r4, 16 Nov): at the belt (+-0.115, 1.125, 0.075, 13 cm off the joint) the run's
+        # thigh swung through the plates' room (mid-thigh 17 cm out in that frame), so a front plate built 12-36 mm.
+        # Users: a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
+        {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.073486, 1.048726, -0.02377],
          "amount": 0.8, "soft": 12.0},
-        {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.115, 1.125, 0.075],
+        {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.073486, 1.048726, -0.02377],
          "amount": 0.8, "soft": 12.0},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
