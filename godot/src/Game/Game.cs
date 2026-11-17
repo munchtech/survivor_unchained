@@ -83,6 +83,8 @@ public partial class Game : Node, IZoneHost
         Core.DevOverrides.On = Args.Dev;
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
+        // (den r16 G, R15f item 11) --den-lair-spurs 0: the den lair as the old open bowl, no root-wall spurs from its rim.
+        SurvivorUnchained.Maps.DungeonGen.LairSpurs = Args.Num("den-lair-spurs", 1);
         // The Lamps v2 board is the default; --lampsv1 (or SU_LAMPS_V2=0) plays v1's for one release (LAMPS_V2_RULES.md "The flag").
         if (Args.Has("lampsv1")) Content.Lamps.UseV2(false);
         else if (Args.Has("lampsv2")) Content.Lamps.UseV2(true);
