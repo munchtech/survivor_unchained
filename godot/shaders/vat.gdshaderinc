@@ -305,6 +305,7 @@ uniform float den_head = 0.0;
 // whole (DEN_BOSS_STRUCK_TINT x the pulse, capped at 1) while its L is the pulse's share.)
 #define DEN_BOSS_STRUCK vec4(0.32, 0.45, 0.010, 92.0)
 #define DEN_BOSS_STRUCK_RES 0.002
+#define DEN_BOSS_STRUCK_TINT 2.0
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
 // tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
 // DEN_DEAD_TOP x (1 - its darkening)) is its den body capped at L DEN_DEAD.x at its kill, going to the bank umber (L .y,
@@ -327,8 +328,15 @@ float vat_den_mane(vec3 c_p) {
 	float c_ang = atan(c_p.x, c_p.y - DEN_MANE_AXIS);
 	float c_tuft = DEN_MANE_TUFT.y * abs(fract(c_ang * DEN_MANE_TUFT.x / 6.2831853) * 2.0 - 1.0);
 	return vat_den_cut(c_p.z, DEN_MANE_Z.x + c_tuft) * (1.0 - vat_den_cut(c_p.z, DEN_MANE_Z.y - c_tuft)) * vat_den_cut(c_p.y, DEN_MANE_LOW);
-#define DEN_BOSS_STRUCK_TINT 2.0
 }
+// (lane E lead 7: the boss's fur locks. A lock's hash, 0-1 for its cell c_k (c_s the seed); a hooked lock's edge across its
+// cell (c_t 0-1): 0 at both ends, 1 at its tip c_tp, its sides concave by c_pp (x toward the cell's top, y its foot); a
+// pointed lock's, its tip mid-cell (c_q 0-1))
+float vat_den_hash(float c_k, float c_s) { return fract(sin(c_k * 12.9898 + c_s * 78.233) * 43758.5453); }
+float vat_den_tooth(float c_t, float c_tp, vec2 c_pp) {
+	return c_t > c_tp ? pow(clamp((1.0 - c_t) / (1.0 - c_tp), 0.0, 1.0), c_pp.x) : pow(clamp(c_t / c_tp, 0.0, 1.0), c_pp.y);
+}
+float vat_den_tip(float c_q) { return pow(max(1.0 - abs(2.0 * c_q - 1.0), 0.0), DEN_FUR_TIP); }
 vec2 vat_den_ab(float c_c, float c_hd) { return c_c * vec2(cos(radians(c_hd)), sin(radians(c_hd))); }
 vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit, vec4 c_r) {
 	float c_h = max(c_hit, 0.0);   // (lane E lead 6: c_hit < 0 a dead foe, -1 - its darkening; DEN_DEAD)
