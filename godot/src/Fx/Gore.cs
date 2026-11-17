@@ -136,7 +136,7 @@ public partial class Gore : Node3D
                 // Darker and deeper at the middle, thinner at the rim.
                 float wet = Mathf.Lerp(0.75f, 1.15f, Mathf.SmoothStep(0.05f, 0.4f, rr)) * (0.85f + 0.15f * noise.GetNoise2D(x * 3, y * 3));
                 img.SetPixel(x, y, new Color(Mathf.Min(1, wet), Mathf.Min(1, wet), Mathf.Min(1, wet), a));
-                orm.SetPixel(x, y, new Color(1, 0.3f, 0, a));
+                orm.SetPixel(x, y, new Color(1, 0.8f, 0, a));
             }
         img.GenerateMipmaps();
         orm.GenerateMipmaps();
