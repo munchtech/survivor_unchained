@@ -101,11 +101,11 @@ public class FxP7Tests
         Assert.True(GripPaint.CapFront(1, cap, 1) < GripPaint.CapFront(1, cap) - 0.5f);
         var rag = p.All("grip.cap_rag");
         Assert.True(rag.Length == 3 && rag[0] >= 3 && rag[0] <= 8 && rag[1] >= 0.015f && rag[1] <= 0.06f, "grip.cap_rag: bristle tips, a few px of variation");
-        // the fill: 2-3 close values, the colors' ends tines along the sweep, dry gaps over the last three frames
+        // the fill: 2-3 close values (lane B 16 Nov, lane E rule 1: the second and third are the steel mid and edge bands, so the third may sit at 0.44 of the white), the colors' ends tines along the sweep, dry gaps over the last three frames
         foreach (var vk in new[] { "grip.fill.values_day", "grip.fill.values_night" })
         {
             var v = p.All(vk);
-            Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.7f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
+            Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.4f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
         }
         Assert.InRange(p["grip.fill.lanes"], 6f, 12f);
         Assert.InRange(p.All("grip.fill.gold")[0], 0.08f, 0.2f);   // (take 10: a fifth of the width at most)
