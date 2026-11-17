@@ -90,10 +90,18 @@ What stays in the game: bake_clips.sh (Godot), the gate shoots, P1Body and P1Law
 - **Order:** R1 with 1b (after the flip); R2 after demo-armor merges; R3a after the flip, alongside 1a; R3b after R3a.
 - **Step 1c total:** ~1.1-1.3M with 0 judges (R1, R2, R3a), plus R3b ~1.5-2.5M + 2-3 judges.
 
+### Marionette stage list (the owner, 16 Nov: "remember to always keep marionette looped in for anything were building in modeling rigging animating so we can reproduce it")
+
+Every build stage for her on B, rerunnable from source, with the body as an input. A hand fix is allowed only when it lands in the source Marionette rebuilds from (the owner, 16 Nov: "well it can be fixed by hand if the fix ends up in the body in marionette.  you know?  specific stuff on per npc basis obv is different").
+
+- **Lane A (movement and animation):** `tools/anim/clips/prowl.py`, `tools/anim/clips/run.py`, `tools/anim/clips/sprint_stop.py`; `tools/body/bake_clips.sh`; `tools/anim/fit/fr.py`, `tools/anim/fit/carry_read.py`, `calf_radii.py` (path to confirm), `tools/anim/fit/ana10.py`, `tools/anim/fit/t10.py`, `tools/anim/fit/runsame.py`; `godot/logic/Play/SideCarry.cs` with `tools/anim/fit/carry_targets.json` ("runtime_body_constants").
+- **Lane D (armor):** `kit_build` (path to confirm); `tools/armor/piece_ship.py`, `tools/armor/piece_blender.py`, `pin_shipped` (path to confirm), run with B's blend `body_p1_built.blend` (path to confirm) and `AREOLA_OUT=0`; `tools/armor/cover.py`; `tools/armor/wearcheck.py --confirm`; runtime hinges (A: `godot/src/Actors/HerJoints.cs`; B: `P1Laws` (path to confirm; referenced from `godot/src/Actors/HerWear.cs`, `HerLod.cs`) via `godot/art/people/rig_helpers.json`); `GarmentTuck.Over` by built_on (`godot/logic/Rpg/GarmentTuck.cs`).
+- **Lane G (her body):** `b_clip_json.py` (path to confirm), `b_build_blend.py` (path to confirm), `tools/anim/helpers.py --body p1`, `p1_hinge_parity_fixture.py` (path to confirm); the gear refit recipe rules in `tools/armor/rigid_roles.json`: hang_rule + studs, a_blend/a_leads, close-view standoff, tuck depth, group fit. Parked, off by data: STACK, stack_tucked, cup_rule, band_end, a_points.
+
 ### Step 2. The generated-piece route: Meshy or a local generator, fitted onto B through Marionette, no hand fitting
 The route (✓ exists, ✗ missing):
 1. Concept: ChatGPT route or Krea, free. Then a max concept judge. ✓
-2. Generate: TRELLIS.2, local in ComfyUI, free, first. Meshy only on main's word, on a judged concept (`tools/meshy/cli.cjs gen --kind prop --no-texture`, 20 credits; retex 10). ✓
+2. Generate: TRELLIS.2, local in ComfyUI, free, while we learn the route. Once the route is smooth, Meshy/Rodin/Tripo first, each spend needing a yes (the owner, 16 Nov). Meshy only on main's word, on a judged concept (`tools/meshy/cli.cjs gen --kind prop --no-texture`, 20 credits; retex 10). ✓
 3. Clean: forge `prop_bake.py` (reduce and rebake), smartmesh remesh, HoloPart split into parts, delight; drop body fragments the generator baked in. ✓ (built for props and NPCs, not yet run on armor; HoloPart's install was binned 16 Nov, so reinstall it with `tools/forge/holopart_setup.sh`, or ask the owner first)
 4. **Place: ✗, the core gap.** A generated piece floats in its own space and scale, and `author --kind fitted` needs it standing on `--base` at rest. A new `attach.py place <piece> --slot forearm_l --base body_p1/body.glb`:
    - landmark registration onto the slot's region (base_landmarks.json), then a similarity fit;
@@ -214,7 +222,7 @@ Later, onto the female roster: F2 (not started) wears the same pieces through th
 2. **The old plate sets** (10 pieces, judged CLOSE; P2's lead: "takes a new kit, not a revision"): retire them now that lane D's kit is the new kit, or refit them on B (~0.25M + 1 judge)?
 3. **The other three callings** (reaver, ranger, arcanist): the flip makes B every calling's body. Build all four by command and judge them on one sheet now (~0.4M + 1 judge), or hold them out of play until their slices?
 4. **The first generated proof piece:** the vambrace pair from lane D's concept (my pick: like-for-like with a hand-built piece), with a pauldron as the real test; or a torso piece first?
-5. **The generator:** TRELLIS.2 locally first (free). Meshy (30 credits a piece) only if it fails a piece, each spend by main's word. Is that the route the owner wants?
+5. **The generator:** ANSWERED (16 Nov): TRELLIS.2 while learning the route; once the route is smooth, Meshy/Rodin/Tripo first, each spend needing a yes. (Old question: TRELLIS.2 locally first, Meshy only if it fails a piece.)
 
 ## For main (not the owner)
 - Lane G needs a Marionette worktree and branch of its own for 1a, 1b, 2 and 5b. The checkout is on `rnd-1` with 4 uncommitted edits that are not ours.
