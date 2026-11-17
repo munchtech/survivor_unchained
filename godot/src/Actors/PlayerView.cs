@@ -2726,8 +2726,22 @@ public partial class PlayerView : Node3D
                 Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
                 GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00} sv {carry.Want:0.00} {carry.Raw:0.00} {carry.Sigma:0} {logWWalk:0.00} {carryStrafe:0.00} c0 {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).X:0.0} {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).Y:0.0}"));
             if (Args.Has("blade-mask")) BladeMaskPrep(cam);
+            if (Args.Has("hide-blade")) HideBlade();
             }
         }
+    }
+    // (warden-move, --hide-blade, shoot only) the blade's own pixels vanish, its shadow stays: every mesh under the right-hand mount
+    // casts shadows only. A twin shoot of the same run, diffed against the normal one offline (tools/anim/fit/blade_contrast.py).
+    void HideBlade()
+    {
+        if (view?.HeldIn("handslot.r") is not { } mount) return;
+        var stack = new Stack<Node>(); stack.Push(mount);
+        while (stack.Count > 0)
+            foreach (var ch in stack.Pop().GetChildren())
+            {
+                stack.Push(ch);
+                if (ch is MeshInstance3D mi) mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            }
     }
     // (aim-move r13, --blade-mask, log only) T4 by pixels: the held blade's meshes move to layer 19 (the main camera still draws
     // them), each gets a flat magenta twin on layer 20 that the main camera skips. Two half-size SubViewports on the same world, each

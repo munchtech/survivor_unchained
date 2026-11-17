@@ -19,6 +19,7 @@ A body is held to the targets in carry_targets.json. They are written as data, n
 | scan.py | shoot dir, number of legs | the judge scan: T3, dshown, SPIKE shown/tilt/pitch, cane, STOP window, TILTFLIP per frame, plus a counts line |
 | hidden.py | shoot dir, number of legs (optional LEG LO HI) | T4: per leg, runs of frames where the blade is hidden behind her legs (fails on a run > 3) |
 | hidden_mask.py | shoot dir (run with `--blade-mask`), number of legs (optional LEG LO HI) | T4 by pixels: per leg the runs where the blade is under 40% visible (BMASK vis/tot; tot < 30 px is not hidden), fails on a run > 3 |
+| blade_contrast.py | full shoot dir, its `--hide-blade` twin dir, legs (`--thr 25 --px 40 --dip 3`) | blade readability by pixels: checks the two TURN2 logs match, then per leg the frames where hiding the blade changes under 40 px (luminance > 25), runs, zero-diff frames; FAIL on a run > 3; ends `BC legs_fail=.. worst_run=..` |
 | elbow.py | shoot dir, number of legs | the right elbow's inside angle from BODY2 (upperarm_r, hand_r, lowerarm_r): per leg the max and mean over the stand, frames > 150 flagged |
 | runsame.py | shots dir, two shoot tags, legs, frame range | largest frame-for-frame blade-trace difference between two shoots (T5) |
 | simlog.py, m14.py | views.log | log parsing and screen projection, used by the tools above |
