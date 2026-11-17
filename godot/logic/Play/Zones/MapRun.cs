@@ -559,7 +559,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         B.Events.Emit(new Ev.Focus { X = bc.X, Z = bc.Z, Duration = 1.6 });
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
         G.Announce(new Announcement(people.BossName, script != null ? $"{people.BossTitle} · Weakness: {script.WeaknessText}" : people.BossTitle, "danger", 3.4,
-            again ? "It comes again" : "The map's ruler"));
+            again ? "It comes again" : "The map's ruler") { YieldsToFight = true });
         Objectives();
     }
 

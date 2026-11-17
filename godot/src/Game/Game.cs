@@ -1320,6 +1320,8 @@ public partial class Game : Node, IZoneHost
                 else Shots.Want($"tell_{kind}_land", 0.15);
             }
             Feel(e, ref crits);
+            // (lane E lead 7) a boss's intro card gives way to the fight's first blow, dealt or taken
+            if (e is Ev.Hit or Ev.PlayerHit) hud.FightStruck();
             // (an unlock's lesson ends when she uses what it taught: a press of its skill, a swap; GameHud.Unlock.cs)
             if (e is Ev.Cast ucast) hud.UnlockUsed(ucast.Weapon);
             else if (e is Ev.Channel { On: true } uchan) hud.UnlockUsed(uchan.Weapon);

@@ -73,6 +73,11 @@ public partial class GameHud : CanvasLayer
     TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
     double sayT, annT, annLife;
+    /// <summary>The card up gives way to the fight's first blow (Announcement.YieldsToFight); annQuit: the seconds left of its
+    /// quick fade once a blow came (-1: none).</summary>
+    bool annYields;
+    double annQuit = -1;
+    const double AnnQuitFade = 0.25;
     ColorRect fade = null!, pull = null!;
     ShaderMaterial pullMat = null!;
     Label fadeCaption = null!, fadeSub = null!;
@@ -1480,6 +1485,25 @@ public partial class GameHud : CanvasLayer
         announce.Position = new Vector2(place == "lower-left" ? -150 : 360, 1080 * (place is "lower" or "lower-left" ? 0.66f : a.Kind == "zone" ? 0.16f : 0.2f));
         annT = 0;
         annLife = a.Seconds;
+        annYields = a.YieldsToFight;
+        annQuit = -1;
+        // (lane E lead 7) A boss's intro card stands just under the damage numbers' sheet, in play: a number struck under its
+        // line reads over it (a boss's "159" on "Fire" garbled both, 17 Nov). Every other card keeps the HUD's root, over all
+        // of play and shown while play is hidden (a film's titles).
+        var host = a.YieldsToFight ? play : root;
+        if (announce.GetParent() != host)
+        {
+            announce.Reparent(host, false);
+            if (host == play) play.MoveChild(announce, numberHost.GetIndex());
+        }
+    }
+
+    /// <summary>A blow landed in the fight, dealt or taken (Game): a boss's intro card up fades out within 0.25 s.</summary>
+    public void FightStruck()
+    {
+        if (!annYields || annT >= annLife) return;
+        annYields = false;
+        annQuit = AnnQuitFade;
     }
 
     string bossMarks = "";
@@ -2046,7 +2070,7 @@ public partial class GameHud : CanvasLayer
     public void SayClear() { sayT = 0; subtitle.Modulate = Colors.Transparent; }
     public bool BannerUp => annT < annLife;
     /// <summary>A play banner still up when a film starts goes at once (it never reads over a shot).</summary>
-    public void ClearBanner() { annT = annLife; announce.Modulate = Colors.Transparent; }
+    public void ClearBanner() { annT = annLife; annQuit = -1; announce.Modulate = Colors.Transparent; }
     public bool PromptUp => promptBox.Visible;
     public bool TipUp => tipLine != null && IsInstanceValid(tipLine) && !tipLine.Held;
     /// <summary>A callout is up: a tip waits under it.</summary>
@@ -2162,6 +2186,12 @@ public partial class GameHud : CanvasLayer
         {
             annT += delta;
             float a = (float)Math.Clamp(Math.Min(annT / (annLife * 0.1), (annLife - annT) / (annLife * 0.2)), 0, 1);
+            if (annQuit >= 0)
+            {
+                annQuit -= delta;
+                a *= (float)Math.Clamp(annQuit / AnnQuitFade, 0, 1);
+                if (annQuit <= 0) { annT = annLife; annQuit = -1; a = 0; }
+            }
             announce.Modulate = Colors.White with { A = a };
         }
         else announce.Modulate = Colors.Transparent;

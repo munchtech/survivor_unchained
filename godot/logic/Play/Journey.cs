@@ -23,7 +23,12 @@ public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, stri
 
 /// <summary>A heading for the interface: a new level, a place.</summary>
 /// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
-public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
+public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false)
+{
+    /// <summary>(lane E lead 7) A boss's intro card: it gives way (a 0.25 s fade) to the fight's first blow, dealt or taken,
+    /// while it shows; with no blow it keeps its time. The first damage number printed under its line garbled both.</summary>
+    public bool YieldsToFight { get; init; }
+}
 
 /// <summary>A piece fell that grants a skill her calling can get no other way (Drops.GiftOf): the biggest drop in the game. Its own
 /// event, beside the Legendary's sound and beam it borrows until bd-ui gives it a voice and a look.</summary>
