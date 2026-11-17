@@ -272,6 +272,7 @@ public static partial class DungeonDress
         n.Position = new Vector3(x, y, zz);
         n.Rotation = new Vector3(0, yaw, 0);
         c.Root.AddChild(n);
+        if (c.Z.DungeonTheme == "den") DenOcclude.Register(c.Root, n);   // (den r15 I)
         c.Tick("props");
     }
 
