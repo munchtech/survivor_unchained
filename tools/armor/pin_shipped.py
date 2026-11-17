@@ -162,6 +162,17 @@ def over_ride(B, Q, nrm, spec):
     X, F, Wo = np.vstack(Xs), np.vstack(Fs), np.vstack(Ws)
     t, fi, bc = _ray_hits(Q, nrm, X, F, float(spec.get("reach", 0.06)))
     cov = np.isfinite(t)
+    # spec "only" {bone: min share} (optional, armor-D r7): only the over piece's faces carrying at least that share
+    # of each named bone are ridden (e.g. {"pelvis": .9}: the belt's pelvis-rigid back plates and V, not its rings,
+    # strap or thigh-hinged hip plates), so the under piece keeps following her own skin everywhere else
+    only = spec.get("only") or {}
+    if only and cov.any():
+        ic_ = np.nonzero(cov)[0]
+        Wf = Wo[F[fi[ic_]]].mean(1)
+        keep = np.ones(len(ic_), bool)
+        for bn, mn in only.items():
+            keep &= (Wf[:, B.names.index(bn)] if bn in B.names else np.zeros(len(ic_))) >= float(mn)
+        cov[ic_[~keep]] = False
     T = np.zeros((len(Q), len(B.names)))
     f = np.zeros(len(Q))
     if not cov.any():
