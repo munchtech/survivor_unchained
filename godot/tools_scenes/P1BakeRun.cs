@@ -162,7 +162,7 @@ public partial class P1BakeRun : Node
                 if (src.Length - (frames - 1) / Fps > 1e-4) frames++;   // (the clip's last instant keyed too)
                 double sumL = 0, sumR = 0, mapL = 0, mapR = 0;
                 // the keys dump (tools/body/clipcheck.py): the clips with a p1_clips.json entry, A's and B's globals per frame
-                var dump = clean != null ? new StringBuilder() : null;
+                var dump = clean != null || only != "" ? new StringBuilder() : null;   // (--p1-bake-only dumps every clip it bakes, as the summary says: tools/anim/fit/carry_read.py)
                 dump?.Append($"{{\"name\": \"{nm}\", \"fps\": {F(Fps)}, \"length\": {F(src.Length)}, \"loop\": {(src.LoopMode != Animation.LoopModeEnum.None ? "true" : "false")}, \"frames\": {frames},\n" +
                     $"\"b_names\": [{string.Join(", ", rig.Names.Select(x => $"\"{x}\""))}],\n\"b_parent\": [{string.Join(", ", rig.Parent)}],\n\"b_rest\": {Mats(rig.Rest)},\n" +
                     $"\"keyed\": [{string.Join(", ", keyed.Select(j => $"\"{rig.Names[j]}\""))}],\n\"a_names\": [{string.Join(", ", aNames.Select(x => $"\"{x}\""))}],\n\"a_parent\": [{string.Join(", ", aParent)}],\n\"a_rest\": {Mats(aRest)},\n\"A\": [");
