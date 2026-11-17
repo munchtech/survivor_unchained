@@ -208,8 +208,10 @@ float crowd_edge(float rim) {
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
 // (its n.y past -0.2) at L 0.52, C 0.13, ember-gold from the rig's elite tint; its rim DEN_ELITE_RIM (linear), bone-ivory)
-#define DEN_ACCENT vec3(0.52, 0.13, -0.2)
-#define DEN_ELITE_RIM vec3(1.0, 0.80, 0.52)
+// (lane E elites r4: the whole ruff was 20% of an unstruck elite's px, over the 6-15% asked: the ruff's top only, its n.y past
+// 0.5 (17% at 0.25); the rim paler, bone not gold: it read C .13 h 80 on screen)
+#define DEN_ACCENT vec3(0.52, 0.13, 0.5)
+#define DEN_ELITE_RIM vec3(1.0, 0.88, 0.70)
 // (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
 #define DEN_BOSS_STEP 1.5
 // (lane E boss r1: her back a stepped SADDLE on the spine, not the straight n.y cut stripe: the model's |x| under a width that

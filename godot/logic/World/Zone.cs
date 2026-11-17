@@ -234,8 +234,8 @@ public sealed record AtmospherePreset(
     /// up), [8] the MID band's L step over the flank (the fur's three bands: flank, mid past the shader's DEN_MID_CUT 0.3 of the world normal's y, top past [13]), [9] the rim's level (0: no rim at all), [10-12] its R, G, B (sRGB 0-255);
     /// [13] the top band's cut in the world normal's y, [14] its L step over the flank (the boss takes half; the pack's top also a chroma step, the shader's DEN_TOP_C), [15] the probe
     /// (0 in play, always the committed value; 1 each class flat in its own colour for masks: pack green, elite blue, boss
-    /// magenta; 2 the model's space), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
-    /// C are the shader's DEN_ACCENT, on its whole ruff), [20] the full rim's level on an elite or the boss (an elite's rim in the shader's DEN_ELITE_RIM, bone-ivory; the boss's bands at DEN_BOSS_STEP of the pack's; no gloss on a den foe); [21-23] the boss body's tint R, G, B (its hue only,
+    /// magenta; 2 the model's space; 3 the hit red and an elite accent's mask blue), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
+    /// C are the shader's DEN_ACCENT, on its ruff's top: n.y past DEN_ACCENT.z; a struck elite's hit spares it), [20] the full rim's level on an elite or the boss (an elite's rim in the shader's DEN_ELITE_RIM, bone-ivory; the boss's bands at DEN_BOSS_STEP of the pack's; no gloss on a den foe); [21-23] the boss body's tint R, G, B (its hue only,
     /// at the shader's DEN_BOSS_BODY.x chroma; the back, the mane and the belly are DEN_BOSS_BACK, DEN_MANE, DEN_BELLY), [24] the
     /// boss's body L. A living den foe's hit is a step in its own paint (DEN_HIT: L +0.08 never past DEN_FLASH_L 0.36, C to
     /// 0.075 at h 40), the boss's half of it on its body only (DEN_HIT_BOSS: L +0.04, C to 0.05); no struck light on them.</summary>
