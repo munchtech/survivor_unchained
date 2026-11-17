@@ -199,7 +199,7 @@ float crowd_edge(float rim) {
 // 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
 // they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
 #define DEN_BOSS_BODY vec2(0.034, 50.0)
-#define DEN_BOSS_BACK vec4(0.41, 0.014, 292.0, 0.93)
+#define DEN_BOSS_BACK vec4(0.41, 0.014, 292.0, 0.6)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 32.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)
@@ -211,7 +211,15 @@ float crowd_edge(float rim) {
 #define DEN_ACCENT vec3(0.52, 0.13, -0.2)
 #define DEN_ELITE_RIM vec3(1.0, 0.80, 0.52)
 // (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
-#define DEN_BOSS_STEP 1.0
+#define DEN_BOSS_STEP 1.5
+// (lane E boss r1: her back a stepped SADDLE on the spine, not the straight n.y cut stripe: the model's |x| under a width that
+// widens from the hips to the shoulders in DEN_BOSS_SPINE.z steps (x at the hips, y at the shoulders), on faces past
+// DEN_BOSS_BACK.w of the model's up. Her HEAD reads at 1:1: a darker muzzle past DEN_BOSS_HEAD.y in z and ear tips over
+// DEN_BOSS_HEAD.z in y (L DEN_BOSS_HEAD.w), a lighter brow and cheek band between the mane and the muzzle on faces past
+// DEN_BOSS_BROW.y of up (L DEN_BOSS_BROW.x); all in her warm body hue and chroma)
+#define DEN_BOSS_SPINE vec3(0.035, 0.075, 3.0)
+#define DEN_BOSS_HEAD vec4(0.47, 0.68, 0.84, 0.22)
+#define DEN_BOSS_BROW vec2(0.40, 0.25)
 // (lead 3 foes: the MID band, the fur's three bands: flank, mid past DEN_MID_CUT of the world normal's y, top past
 // crowd_den_top.x; the mid's L step over the flank is crowd_den_rim.w (rigs foe_den [8]), the top's crowd_den_top.y)
 #define DEN_MID_CUT 0.3
@@ -255,7 +263,14 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	vec2 c_ab = c_boss ? DEN_BOSS_BODY.x * normalize(c_btab + vec2(1e-5, 0.0)) : vat_den_ab(crowd_den.z + DEN_TOP_C * c_top, crowd_den.w);
 	float c_hb = c_hit;   // (the hit's share: the boss's body only)
 	if (c_boss) {
-		float c_back = vat_den_cut(c_n.y, DEN_BOSS_BACK.w) * vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
+		float c_sz = clamp((c_p.z - DEN_TORSO.x) / (DEN_TORSO.y - DEN_TORSO.x), 0.0, 0.999);
+		float c_sw = mix(DEN_BOSS_SPINE.x, DEN_BOSS_SPINE.y, floor(c_sz * DEN_BOSS_SPINE.z) / max(DEN_BOSS_SPINE.z - 1.0, 1.0));
+		float c_back = (1.0 - vat_den_cut(abs(c_p.x), c_sw)) * vat_den_cut(c_n.y, DEN_BOSS_BACK.w)
+			* vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
+		float c_head = vat_den_cut(c_p.z, DEN_BOSS_HEAD.x);
+		float c_dark = max(vat_den_cut(c_p.z, DEN_BOSS_HEAD.y), c_head * vat_den_cut(c_p.y, DEN_BOSS_HEAD.z));
+		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_n.y, DEN_BOSS_BROW.y);
+		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark);
 		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_back);
 		float c_mane = vat_den_mane(c_p);
@@ -760,6 +775,7 @@ void fragment() {
 			ALBEDO = vec3(0.0);
 			vec3 dn_pz = clamp(abs(mod(clamp(floor((vat_local.z + 0.6) / 0.1) / 12.0, 0.0, 1.0) * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 			e = crowd_den_top.z < 1.5 ? (dn_cls > 1.5 ? vec3(3.0, 0.0, 3.0) : dn_cls > 0.5 ? vec3(0.0, 0.0, 3.0) : vec3(0.0, 3.0, 0.0))
+				: crowd_den_top.z > 2.5 ? 3.0 * vec3(dn_hit, dn_live, vat_den_mane(vat_local) * vat_den_cut(normalize(vat_nloc).y, DEN_ACCENT.z))
 				: dn_pz * (fract(vat_local.y / 0.1) < 0.12 ? 0.15 : 1.0);
 		}
 	}

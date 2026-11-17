@@ -39,6 +39,10 @@ public partial class BattleFx
                 {
                     LightColor = new Color(def.Color), OmniRange = (float)def.Range, OmniAttenuation = (float)def.Decay,
                     LightEnergy = 0, ShadowEnabled = false, LightSpecular = 0.4f,
+                    // (demo-look lane E, boss r1: in the den her carried light lights the floor round her, not her: on her own
+                    // back it was a glossy blue-white hotspot (L .84, C to .17) over her painted bands; the den pack's paint is
+                    // its own light, vat.gdshaderinc vat_den_body)
+                    LightCullMask = Atmosphere.CrowdDen ? 0xFFFFFu & ~PlayerView.CrowdLayer : 0xFFFFFu,
                 },
             };
             AddChild(a.Light);
@@ -46,7 +50,8 @@ public partial class BattleFx
         }
         if (def.Pool > 0 && a.Pool == null)
         {
-            a.Pool = new OmniLight3D { LightColor = new Color(def.Color), OmniAttenuation = 1.2f, LightEnergy = 0, ShadowEnabled = false, LightSpecular = 0.1f };
+            a.Pool = new OmniLight3D { LightColor = new Color(def.Color), OmniAttenuation = 1.2f, LightEnergy = 0, ShadowEnabled = false, LightSpecular = 0.1f,
+                LightCullMask = Atmosphere.CrowdDen ? 0xFFFFFu & ~PlayerView.CrowdLayer : 0xFFFFFu };
             AddChild(a.Pool);
         }
         if (def.Halo > 0 && a.Halo == null)
