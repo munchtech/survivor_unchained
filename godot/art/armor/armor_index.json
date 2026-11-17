@@ -84,7 +84,7 @@
    "kit_brief.bottom.steel"
   ],
   "tuck": "armor_tuck/kit_brief.bin",
-  "tuck_count": 846,
+  "tuck_count": 1024,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "file": "res://art/armor/kit_brief.gltf",
   "tier": 2,
