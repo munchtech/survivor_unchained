@@ -67,10 +67,17 @@ def out_dir(pid):
     return d
 
 
-def her_a(path=None):
-    """Body A (the shipped heroine.glb) at rest: Ref over its welded skin, joints from its inverse binds."""
+def her_a(path=None, shapes=None):
+    """Body A (the shipped heroine.glb) at rest: Ref over its welded skin, joints from its inverse binds.
+    shapes {name: weight}: her skin with those shapes applied at bind (worn_shapes: what a piece's hold sets on her);
+    a shape the body lacks is skipped (body A has no support shapes: A reads exactly what it read before)."""
     import body_follow_post as bf
     B = bf.Body(path or body_glb())
+    used = {nm: float(w) for nm, w in (shapes or {}).items() if w and nm in B.tn}
+    for nm, w in used.items():
+        B.U = B.U + w * B.shape(nm)
+    if used:
+        B.N = bf._vn(B.U, B.F)
     joints = {}
     for n, m in zip(B.names, B.ibm):
         M = np.linalg.inv(m.reshape(4, 4).T)
@@ -79,7 +86,20 @@ def her_a(path=None):
     r.B = B
     c = B.U[B.F].mean(1)
     r.torso = B.F[(c[:, 1] > 0.85) & (c[:, 1] < 1.75) & (np.abs(c[:, 0]) < 0.30)]
+    r.shapes_key = json.dumps(sorted(used.items())).encode() if used else b""  # (cast's cache key: a shaped skin is another skin)
     return r
+
+
+def worn_shapes(cfg):
+    """The shapes a piece's hold sets on her while it is worn (worn_rest: the row's hold -> support -> her
+    form_support_lift / _press / _fill; rigid_roles.json's slot switch "worn_rest"), {} if none. On B a top with
+    hold 0.55 is a push-up (support 1): her breasts rest lifted, pressed in and filled under it, so a cup made for her
+    bare bind has her skin through its top edge (13 mm, buried rim) in game. A kit piece is built on her skin as worn;
+    its own bone blend (her breasts' springs at the support) moves it with her."""
+    import worn_rest
+    import gear_fit
+    lw = worn_rest.law({"slot": cfg["piece"]["slot"], "hold": cfg["piece"].get("hold")}, gear_fit.rigid_roles())
+    return {} if lw is None else {nm: w for nm, w in zip(worn_rest.SHAPES, lw[0][1]) if w}
 
 
 CACHE = os.path.join(REPO, "godot", ".shots", "demo_armor", "kit_cache")
@@ -89,7 +109,8 @@ def cast(ref, O, D, tmax=0.5):
     """First hits on her torso; cached by the rays (git-ignored .shots), so a re-tune of an outline is quick."""
     import hashlib
     O, D = np.asarray(O, float), U(D)
-    key = hashlib.sha1(O.round(7).tobytes() + D.round(7).tobytes() + str(tmax).encode() + ref.V[:50].tobytes()).hexdigest()
+    key = hashlib.sha1(O.round(7).tobytes() + D.round(7).tobytes() + str(tmax).encode() + ref.V[:50].tobytes() +
+                       getattr(ref, "shapes_key", b"")).hexdigest()
     f = os.path.join(CACHE, key + ".npz")
     if os.path.exists(f):
         z = np.load(f)
@@ -646,7 +667,7 @@ def build(pid):
     mats = json.load(open(MATS, encoding="utf-8"))
     for m in cfg["mat"].values():
         assert m in mats, f"material {m} not in outfit_materials.json"
-    ref = her_a()
+    ref = her_a(shapes=worn_shapes(cfg) if cfg.get("worn_rest") else None)
     if cfg["recipe"] not in RECIPES:  # (a recipe in another module: build.json "module", e.g. kit_hips)
         import importlib
         RECIPES.update(importlib.import_module(cfg["module"]).RECIPES)

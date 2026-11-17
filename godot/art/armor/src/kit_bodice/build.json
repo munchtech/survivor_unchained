@@ -33,6 +33,7 @@
   "step": 0.007
  },
  "axis_z": 0.02,
+ "worn_rest": true,
  "cup": {
   "apex": [
    0.091,
