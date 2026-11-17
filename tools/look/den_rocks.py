@@ -122,6 +122,15 @@ FAC_KEEP = 0.04                         # lit pieces / shade holes under this sh
 FAC_SH, FAC_LIT, FAC_ROUND = 0.25, 0.58, 0.10   # stone L in shade, on the lit planes (before belly, ink, cracks); the turn's share
 FAC_DET, FAC_DET_R = 0.6, 3.0 * S       # the painting's strokes: amount of (L - blur) and its radius
 FAC_EDGE = 1.0 * S                      # a plane's border softened by this (no stair edge)
+# (den r17 S, R16 judge item 3: the shade side rendered L50 .21-.27 against the targets' .31-.35, the lit planes flat
+# peach stickers on near-black) the shade lifted to a warm-grey bounce, a midtone plane between it and the lit facet, the
+# mid-to-shade border soft (only the lit ridge and the silhouette keep a hard edge). Old: FAC_SH .25, FAC_MID (.6, .33),
+# FAC_EDGE for both borders, the shade's hue by the ramp (h 55, C ~.01), the full belly.
+FAC_SH = 0.355                          # the shade side's L (the belly and cracks take it to ~.32-.34)
+FAC_MID = 0.62, 0.42                    # the midtone plane: share of the stone (lit included) and its L
+FAC_EDGE_MID = 5.0 * S                  # the mid-to-shade border, soft (a turning form, no ridge there)
+FAC_BOUNCE_H, FAC_BOUNCE_C = 64.0, 0.022  # the shade's warm-grey bounce: hue, least chroma (lit planes keep the ramp)
+FAC_BELLY = 0.10                        # the belly's darkening on the facet stones (BELLY[1] .18 sank the shade to .21)
 
 
 def facet_value(L, Ls, solid, o1):
@@ -154,7 +163,7 @@ def facet_value(L, Ls, solid, o1):
                 lit = lit | (m & np.isin(lab, 1 + np.nonzero(area < FAC_KEEP * m.sum())[0]))
             return lit
         lit, mid = plane(FAC_SHARE), plane(FAC_MID[0])
-        soft, softm = ndimage.gaussian_filter(lit.astype(float), FAC_EDGE), ndimage.gaussian_filter((mid | lit).astype(float), FAC_EDGE)
+        soft, softm = ndimage.gaussian_filter(lit.astype(float), FAC_EDGE), ndimage.gaussian_filter((mid | lit).astype(float), FAC_EDGE_MID)
         litmean = lam[lit].mean() if lit.any() else 0.5
         base = FAC_SH + (FAC_MID[1] - FAC_SH) * softm + (FAC_LIT - FAC_MID[1]) * soft + FAC_ROUND * (lam - litmean) * soft
         det = Ls[sl] - ndimage.gaussian_filter(Ls[sl], FAC_DET_R)
@@ -180,7 +189,7 @@ def paint(F, A_, o1, facets=False):
     for pe in o1["pieces"]:
         rx, ry, cw, ch = [v * S for v in pe["rect"]]
         v = (np.arange(ch) / max(ch - 1, 1))[:, None]
-        belly[ry:ry + ch, rx:rx + cw] = 1.0 - BELLY[1] * smooth(BELLY[0], 1.0, v)
+        belly[ry:ry + ch, rx:rx + cw] = 1.0 - (FAC_BELLY if facets else BELLY[1]) * smooth(BELLY[0], 1.0, v)
     # the moss: a darker, cooler olive, its strokes kept
     Lm = MOSS_LK * L + MOSS_L0
     Lv = (Ls * (1 - moss) + Lm * moss) * belly
@@ -195,6 +204,10 @@ def paint(F, A_, o1, facets=False):
     Lv = np.clip(Lv, 0.04, 0.85)
     Cs = np.clip((Lv - RAMP_C0) * RAMP_CK, 0, RAMP_CMAX) + SHADE_C
     hs = RAMP_H_SHADE + (RAMP_H_LIT - RAMP_H_SHADE) * smooth(RAMP_C0 - 0.05, RAMP_C0 + 0.12, Lv)
+    if facets:   # (den r17 S) the shade's warm-grey bounce
+        bw = 1.0 - smooth(0.40, 0.52, Lv)
+        hs = hs * (1 - bw) + FAC_BOUNCE_H * bw
+        Cs = np.maximum(Cs, FAC_BOUNCE_C * bw * smooth(0.18, 0.28, Lv))
     hh = hs * (1 - moss) + MOSS_H * moss
     Cc = Cs * (1 - moss) + MOSS_C * smooth(0.12, 0.4, Lv) * moss
     # the ink round the silhouette

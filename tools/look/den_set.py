@@ -44,6 +44,14 @@ SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale
     "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
 }
 DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this far to its grey (the fur's lilac read pink on screen; target C <= .03)
+# (den r17 S, R16 judge item 6: the tufts rendered two-toned, blue h 238-251 or cream h 77-85, never the target's warm grey)
+# the fur graded in OKLab to one warm-grey albedo: its value strokes kept (L re-centred on L50, spread kept), hue FUR_H,
+# chroma FUR_C (rising from the darks), so the sheet carries the colour and the material's sat can stay near 1. Replaces DESAT.
+FUR_GRADE = {"O6": {"h": 54.0, "c": 0.045, "l50": 0.68, "spread": 0.85}}
+# (den r17 S, R16 judge item 7: the s23 corridor log's lit top rendered L50 .755, C .120, glowing orange under the shaft, against
+# den_room's .678 / .101) a sheet's lit values rolled off in OKLab: above L knee, the rise kept at this share, and its chroma
+# scaled toward this (at the top), the darks and strokes untouched.
+LIT_KNEE = {"O2": {"knee": 0.58, "share": 0.4, "c": 0.85}}
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -78,9 +86,13 @@ BANK_FIXES = {"B3R": [(660, 552), (667, 520), (685, 487), (710, 462), (740, 440)
                      (885, 455), (865, 500), (860, 530), (840, 560), (805, 585), (765, 597), (725, 610), (695, 620), (660, 615),
                      (644, 600), (644, 555)]}
 DIRT = (112.0, 74.0, 56.0)
+# (den r17 S, R16 judge item 9: the cleared block drew a smooth dirt oval at the s11 room's right edge, grad .0079, edge share
+# .033, no ink) the cleared area filled from the card's own painting at this offset (source px: B3R's inked roots over dirt
+# below the block), its colour matched to the ring round the hole, over the inpaint. None: the r15 inpaint and grain only.
+BANK_DONOR = {"B3R": (-100, 400)}
 
 
-def clear_block(img, poly):
+def clear_block(img, poly, donor=None):
     import cv2
     im8 = img.round().clip(0, 255).astype(np.uint8)
     mask = np.zeros(im8.shape[:2], np.uint8)
@@ -93,13 +105,23 @@ def clear_block(img, poly):
     n = sum(cv2.GaussianBlur(rng.standard_normal((h, w)).astype(np.float32), (0, 0), sg) * am for sg, am in ((1.2, 14), (3, 22), (9, 40)))
     inp = inp * (1 + n[..., None] / 160) + n[..., None] * 0.5
     soft = cv2.GaussianBlur(mask.astype(np.float32) / 255, (0, 0), 5)[..., None]
+    if donor is not None:
+        dx, dy = donor
+        don = np.roll(img, (-dy, -dx), axis=(0, 1)).astype(np.float32)
+        hole = mask > 0
+        ring = (cv2.dilate(mask, np.ones((41, 41), np.uint8)) > 0) & ~hole
+        for ch in range(3):   # the donor's mean and spread to the ring's
+            dm, ds = don[..., ch][hole].mean(), don[..., ch][hole].std() + 1e-3
+            rm, rs = img[..., ch][ring].mean(), img[..., ch][ring].std()
+            don[..., ch] = (don[..., ch] - dm) * min(1.0, rs / ds) + rm
+        inp = don
     return np.clip(img * (1 - soft) + inp * soft, 0, 255)
 
 
 def load(name):
     img = np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
     if name in BANK_FIXES:
-        img = clear_block(img, BANK_FIXES[name])
+        img = clear_block(img, BANK_FIXES[name], BANK_DONOR.get(name))
     return img
 
 
@@ -308,9 +330,25 @@ def build():
                 w_ = ca > 0.5
                 if w_.any() and (cf[..., 0][w_].mean() - cf[..., 2][w_].mean()) > 45:
                     leafs.add(i)
+                elif name in FUR_GRADE:
+                    import den_rocks as dr
+                    g_ = FUR_GRADE[name]
+                    L_, A_, B_ = dr.to_oklab(cf)
+                    L_ = np.clip(g_["l50"] + (L_ - np.median(L_[w_])) * g_["spread"], 0.05, 0.92)
+                    C_ = g_["c"] * dr.smooth(0.25, 0.5, L_)
+                    hr = np.radians(g_["h"])
+                    cuts[i] = (dr.from_oklab(L_, C_ * np.cos(hr), C_ * np.sin(hr)), ca)
                 elif name in DESAT:
                     g = (cf @ np.array([0.299, 0.587, 0.114]))[..., None]
                     cuts[i] = (cf + (g - cf) * DESAT[name], ca)
+        if name in LIT_KNEE:
+            import den_rocks as dr
+            kn = LIT_KNEE[name]
+            for i, (cf, ca) in enumerate(cuts):
+                L_, A_, B_ = dr.to_oklab(cf)
+                over = np.maximum(L_ - kn["knee"], 0.0)
+                ck = 1.0 + (kn["c"] - 1.0) * dr.smooth(kn["knee"], kn["knee"] + 0.15, L_)
+                cuts[i] = (dr.from_oklab(L_ - over * (1.0 - kn["share"]), A_ * ck, B_ * ck), ca)
         W = max(512, max(c[1].shape[1] for c in cuts) + 16)
         order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].shape[0])
         place, x, y, shelf = {}, 8, 8, 0
