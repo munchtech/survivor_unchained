@@ -257,7 +257,7 @@ varying float v_metal;
 varying float v_paint;                             // (finish 2's paint here, for light())
 varying float v_spec_mute;                         // (armor 16 N4: piece_spec_mute here, for light())
 global uniform vec4 ground_bounce;                   // (Atmosphere: the key's light off the ground, linear; metal reflects it below the horizon)
-uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone; 6 the c5 bare rim's mask)
+uniform int debug_view = 0;                        // (15 the kit's class masks, see the end of fragment; 1 edge distance, 2 convexity, 3 sky seen: to check what was baked; 4 gold flat magenta, a mask for measuring it; 5 its shape alone; 6 the c5 bare rim's mask)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
 varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
@@ -714,6 +714,10 @@ void fragment() {
 	if (debug_view == 14) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = dbg_paint < 0.0 ? vec3(0.0) : vec3(1.0 - dbg_paint, dbg_paint, 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }
 	if (debug_view == 12) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = (NORMAL * 0.5 + 0.5) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 17 N5: its interpolated vertex normal, view space, as colour)
 	if (debug_view == 13) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = vec3(fract(UV * 8.0), 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (and its UV, as colour)
+	// (armor-D finish-2 r17: debug_view 15, the kit's classes as flat masks for measuring a frame: painted plate red, gold green,
+	// bare metal dim blue, leather and cloth blue; the kit's own light off)
+	if (debug_view == 15) { EMISSION = (kind == 1 ? vec3(clamp(v_paint, 0.0, 1.0) * (1.0 - v_kgold), v_kgold, 0.12) : vec3(0.0, 0.0, 1.0)) * 0.5;
+		ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; RIM = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); v_paint = 0.0; v_kgold = 0.0; }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, roughness before the tag, the tag, debug).
 	CEL_FRAGMENT;

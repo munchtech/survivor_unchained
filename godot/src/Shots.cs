@@ -293,6 +293,7 @@ public partial class Shots : Node
         GetViewport().GetTexture().GetImage().SavePng(file);
         View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(file));   // (--cel-audit, L1 B2)
         if (Args.Has("lamp-dump")) LampDump();
+        if (Args.Has("sun-log")) SunLog();
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         CamLines();
@@ -305,6 +306,66 @@ public partial class Shots : Node
         taken++;
         if (ViewerFile != null) { ViewerTaken?.Invoke(file, time, Engine.GetFramesDrawn()); return; }
         if (taken >= count && until <= 0) QuitPath.Request(GetTree());
+    }
+
+    /// <summary>(armor-D harness) --sun-log: her sun visibility at the picture: rays from her feet, hips, chest and head (0.2, 0.9,
+    /// 1.3, 1.65 m over where she is drawn) toward the brightest lit shadowed DirectionalLight3D, against the triangles of every
+    /// visible shadow-casting mesh and multimesh that is not skinned (people move; her own body and wear are skinned): "sun 4/4"
+    /// in full sun, "sun 0/4 (Name 3.2 m)" in a shadow, with the light's elevation, energy and cull mask.</summary>
+    void SunLog()
+    {
+        if (FindGame(GetTree().Root)?.Scene is not { } sc) { GD.Print("sun: no scene"); return; }
+        DirectionalLight3D? sun = null;
+        foreach (var l in Lamps(GetTree().Root))
+            if (l is DirectionalLight3D d && d.IsVisibleInTree() && d.LightEnergy > 0 && d.ShadowEnabled && (sun == null || d.LightEnergy > sun.LightEnergy)) sun = d;
+        if (sun == null) { GD.Print("sun: no lit shadowed directional light"); return; }
+        var dir = sun.GlobalTransform.Basis.Z.Normalized();
+        var hs = new[] { 0.2f, 0.9f, 1.3f, 1.65f };
+        var near = new float[hs.Length]; var who = new string[hs.Length];
+        for (int k = 0; k < hs.Length; k++) near[k] = float.MaxValue;
+        static bool OnPerson(Node n) { for (var p = n.GetParent(); p != null; p = p.GetParent()) if (p is Skeleton3D) return true; return false; }
+        void Test(Mesh m, Transform3D xf, Node node, string name)
+        {
+            var box = xf * m.GetAabb();
+            var inv = xf.AffineInverse();
+            Vector3[]? f = null;
+            for (int k = 0; k < hs.Length; k++)
+            {
+                var from = sc.HerDrawn + Vector3.Up * hs[k];
+                if (!box.IntersectsSegment(from, from + dir * 200f)) continue;
+                if (f == null && OnPerson(node)) return;
+                f ??= m.GetFaces();
+                var o = inv * from; var v = inv.Basis * dir;
+                for (int i = 0; i + 2 < f.Length; i += 3)
+                {
+                    // (Moller-Trumbore, both faces)
+                    var e1 = f[i + 1] - f[i]; var e2 = f[i + 2] - f[i]; var p = v.Cross(e2); float det = e1.Dot(p);
+                    if (Mathf.Abs(det) < 1e-9f) continue;
+                    var s = o - f[i]; float u = s.Dot(p) / det; if (u < 0 || u > 1) continue;
+                    var q = s.Cross(e1); float w = v.Dot(q) / det; if (w < 0 || u + w > 1) continue;
+                    float t = e2.Dot(q) / det; if (t <= 1e-3f) continue;
+                    float dist = (xf * (o + v * t) - from).Length();
+                    if (dist < near[k]) { near[k] = dist; who[k] = name; }
+                }
+            }
+        }
+        var stack = new Stack<Node>(); stack.Push(GetTree().Root);
+        while (stack.Count > 0)
+        {
+            var n = stack.Pop();
+            foreach (var c in n.GetChildren()) stack.Push(c);
+            if (n is not GeometryInstance3D g || !g.IsVisibleInTree() || g.CastShadow == GeometryInstance3D.ShadowCastingSetting.Off) continue;
+            if (g is MeshInstance3D mi && mi.Mesh != null && mi.Skin == null) Test(mi.Mesh, mi.GlobalTransform, mi, mi.Name);
+            else if (g is MultiMeshInstance3D mm && mm.Multimesh?.Mesh is { } mmesh)
+            {
+                int cnt = mm.Multimesh.VisibleInstanceCount >= 0 ? mm.Multimesh.VisibleInstanceCount : mm.Multimesh.InstanceCount;
+                for (int i = 0; i < cnt; i++) Test(mmesh, mm.GlobalTransform * mm.Multimesh.GetInstanceTransform(i), mm, $"{mm.Name}[{i}]");
+            }
+        }
+        int lit = 0; string firstHit = "";
+        for (int k = 0; k < hs.Length; k++) if (near[k] == float.MaxValue) lit++; else if (firstHit == "") firstHit = $" ({who[k]} {near[k]:0.0} m, from {hs[k]:0.##} m)";
+        var e = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(dir.Y, -1f, 1f)));
+        GD.Print($"sun {lit}/{hs.Length}{firstHit} her ({sc.HerDrawn.X:0.00},{sc.HerDrawn.Y:0.00},{sc.HerDrawn.Z:0.00}) light {sun.Name} elev {e:0} e {sun.LightEnergy:0.###} mask {sun.LightCullMask}");
     }
 
     /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
