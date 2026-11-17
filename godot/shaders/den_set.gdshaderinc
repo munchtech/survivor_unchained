@@ -39,6 +39,8 @@ uniform float blood_rust = 0.0;   // (den r15 C) share of the blood pulled to a 
 uniform vec3 blood_dir = vec3(1.5, 0.9, 0.45);
 uniform float pit_sat = 0.3;   // (den r15 C) pit glow core saturation (judge r14: C90 .18 against .089)
 uniform float pit_halo = 0.14;   // (den r15 C) the soft halo (was .07)
+uniform float pit_net = 0.6;   // (den r15 P) the thin crack network's strength (0 off)
+uniform float pit_floor = 0.3;   // (den r15 P) how far the pit floor takes veins whatever the painting's brightness
 uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark: a slow noise mask on the veins
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
@@ -203,13 +205,20 @@ void fragment() {
 		float v = 1.0 * smoothstep(0.93, 0.99, r1) + 0.5 * pow(r1, 8.0) + (0.75 * smoothstep(0.945, 0.99, r2) + 0.22 * pow(r2, 8.0)) * (0.4 + 0.6 * m);
 		float inner = 1.0 - smoothstep(0.55, 1.1, 2.0 * COLOR.b);
 		// (den r13 rooms) clusters: veins only where the slow cell mask clears its threshold (about pit_dark of the area stays dark)
-		float pm = smoothstep(0.0, 0.06, pg_edge(q * 0.16 + 11.3) - pit_dark * 0.55);
-		inner *= pm;
-		float dark = 1.0 - smoothstep(0.015, 0.09, l);
+		// (den r15 P) the mask feathered wide (no edge) and a pit's interior never wholly dark of veins; the painting's own
+		// brightness no longer switches a whole pit off (s23's lit pit had none): the floor of the pit takes the veins by radius
+		float pm = smoothstep(0.0, 0.3, pg_edge(q * 0.16 + 11.3) - pit_dark * 0.55);
+		inner *= mix(0.35, 1.0, pm);
+		float dark = max(1.0 - smoothstep(0.015, 0.09, l), pit_floor * (1.0 - smoothstep(0.35, 0.85, 2.0 * COLOR.b)));
+		// thin crack network (2-4 px) over most of the floor and a few running out past the rim
+		float r3 = pg_ridge(q * 1.3 + 9.0), r4 = pg_ridge(q * 0.6 + 21.0);
+		float net = smoothstep(0.955, 0.985, r3) + smoothstep(0.965, 0.99, r4);
 		float pulse = 0.85 + 0.15 * sin(TIME * 1.3 + q.x * 0.2);
 		vec3 pc = mix(vec3(dot(pit_col, vec3(0.299, 0.587, 0.114))), pit_col, pit_sat);
 		EMISSION += pc * pit_glow * v * inner * dark * pulse;
 		EMISSION += pc * pit_glow * pit_halo * inner * dark * (0.3 + m);
+		// the net: lit regardless of the painting's brightness, out to the rim and a little past (feathered)
+		EMISSION += pc * pit_glow * pit_net * net * (1.0 - smoothstep(0.9, 1.3, 2.0 * COLOR.b)) * pulse;
 	}
 #endif
 #ifndef SET_SOFT
