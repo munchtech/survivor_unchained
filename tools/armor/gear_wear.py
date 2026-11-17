@@ -1006,6 +1006,8 @@ class Check:
                 cand[r_[on], c_[on]] = False
         dd = np.where(cand, dist, np.inf)
         depth = dd.min(1)
+        x["_sw_face"] = np.full(len(O), -1)
+        x["_sw_face"][rows] = cs[np.arange(len(rows)), dd.argmin(1)]   # (the face it stood out past: gear_standoff's target)
         hit = np.nonzero(np.isfinite(depth) & (depth > SWEEP_MIN))[0]
         if len(hit):
             # (a face of the piece ahead of her point on her normal hides it: the faces near four stations of the ray)
@@ -1080,6 +1082,14 @@ class Check:
             g = np.r_[g, np.full(len(Oa) - nf, np.nan)]
             go = np.r_[go, np.full(len(Oa) - nf, np.nan)]
             go = np.where(np.isfinite(sw), np.where(np.isfinite(go), np.minimum(go, sw), sw), go)
+            # (per swept point: the piece's face it stood out past at its deepest, as sweepT vertices; gear_standoff
+            # targets them: skin swept in from beside a plate sets a stand-off need like the skin under it)
+            sb = x.setdefault("sw_best", np.full(len(Oa) - nf, np.inf))
+            new = np.isfinite(sw[nf:]) & (sw[nf:] < sb)
+            if new.any():
+                sv = x.setdefault("sw_hitv", np.full((len(Oa) - nf, 3), -1))
+                sv[new] = x["sweepT"][x["_sw_face"][nf:][new]]
+                sb[new] = sw[nf:][new]
         gg = np.where(np.isfinite(g), g, np.inf)
         go_ = np.where(np.isfinite(go), go, np.inf)
         x["min"] = np.minimum(x["min"], gg)
