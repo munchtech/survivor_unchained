@@ -30,6 +30,9 @@ uniform vec4 holl[8];
 uniform int holl_n = 0;
 uniform float haze = 0.3;     // (den r16 B2) the fan's soft glow between its rays, against a ray's core
 uniform vec3 gap_tint : source_color = vec3(0.93, 0.92, 0.89);   // (den r16 B2) the gap near-white, not the rays' cool
+// (den r17 L, R16 item 2) 1: the rays run down to the foot and end in its pool (DungeonLight --den-shaft-foot); 0: r16, gone
+// over the lower half (each pool sat ~250 px below its shaft's end)
+uniform float foot_k = 0.0;
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 
 varying vec3 wpos;
@@ -88,6 +91,8 @@ void fragment() {
 	fan = env * fil * (haze + (1.0 - haze) * min(fan, 1.1));
 	// brightest by the gap, half as bright midway, gone over the last stretch to the floor (the pool takes it there)
 	float along = smoothstep(0.04, 0.5, vn) * mix(0.45, 1.0, smoothstep(0.25, 0.95, vn)) * (1.0 - smoothstep(0.96, 1.01, vn));
+	float along_f = smoothstep(-0.01, 0.06, vn) * mix(0.6, 1.0, smoothstep(0.15, 0.95, vn)) * (1.0 - smoothstep(0.96, 1.01, vn));
+	along = mix(along, along_f, foot_k);
 	float motes = 0.85 + 0.15 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
 	float ray_a = fan * along * motes * vis * pit;
 	// 2. the gap: a bright ragged slit where the rays start

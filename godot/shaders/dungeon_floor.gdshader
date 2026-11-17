@@ -51,6 +51,16 @@ uniform float set_paths = 1.0;  // (r10b) worn ways and damp patches by the slow
 uniform float set_sharp = 1.0;
 uniform float set_clouds = 0.35;
 uniform float set_trod = 0.5;   // (r11) the trodden tile's share (F7: paw prints, few stones): the open middle was all of it
+// (den r17 L, R16 item 2) the shafts' pools as light landing on this floor's albedo (DungeonLight.FloorPools): per pool
+// x, z, radius (m), noise seed; the albedo times sp_gain * sp_tint inside, a ragged soft edge sp_edge (m) wide. sp_n 0: none.
+uniform vec4 sp[64];
+uniform int sp_n = 0;
+uniform vec2 sp_lean = vec2(-0.58, -0.81);   // toward the shafts' tops on the ground: the pools a little longer that way
+uniform float sp_gain = 1.5;
+uniform float sp_edge = 0.3;
+uniform vec3 sp_tint = vec3(1.0, 1.0, 0.84);
+uniform float sp_grain = 0.0;   // the grain's value contrast in the light: albedo times (lum / sp_ref)^(sp_grain) inside (light shows texture)
+uniform float sp_ref = 0.15;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -264,6 +274,21 @@ void fragment() {
 			float cs = (cmx - cmn) / max(cmx, 1e-4), cl0 = lum(col);
 			float ck = min(1.0, den_chroma / max(cs, 1e-4)) ;
 			col = mix(col, vec3(cl0) + (col - vec3(cl0)) * ck, 1.0 - smoothstep(den_chroma_lo, den_chroma_hi, cl0));
+		}
+		// (den r17 L, R16 item 2) sunlight landing on the earth at each shaft's foot: the albedo lifted and warmed, its grain kept
+		if (sp_n > 0) {
+			float spm = 0.0;
+			for (int k = 0; k < 64; k++) {
+				if (k >= sp_n) break;
+				vec2 q = wpos.xz - sp[k].xy;
+				if (dot(q, q) > 9.0 * sp[k].z * sp[k].z) continue;
+				float pa = dot(q, sp_lean) / 1.25, pb = dot(q, vec2(-sp_lean.y, sp_lean.x));
+				float rr = sp[k].z * (0.82 + 0.36 * fbm(wpos.xz * 1.1 + sp[k].w));
+				float m = 1.0 - smoothstep(rr - sp_edge, rr + 0.25 * sp_edge, length(vec2(pa, pb)));
+				m *= 0.8 + 0.2 * smoothstep(0.3, 0.7, fbm(wpos.xz * 2.3 - sp[k].w));
+				spm = max(spm, m);
+			}
+			col *= mix(vec3(1.0), sp_gain * sp_tint, spm) * pow(clamp(lum(col) / sp_ref, 0.05, 4.0), sp_grain * spm);
 		}
 		// the pits: the depths go black
 		// (a pit reads as a hole only when its throat is black from the lip down: no lit inner face)
