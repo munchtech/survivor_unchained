@@ -182,6 +182,7 @@ public static class GarmentTuck
     {
         int o = OrderOf(outer.Slot), i = OrderOf(inner.Slot);
         if (o < 0 || i < 0 || o <= i || outer.Id == inner.Id || inner.Rigid) return false;
+        if (outer.BuiltOn != null && outer.BuiltOn == inner.BuiltOn) return false;   // kit pieces fitted together
         return !(outer.Outfit != null && outer.Outfit == inner.Outfit);
     }
 
