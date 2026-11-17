@@ -463,10 +463,10 @@ def upper_hull(s, r):
     return np.array(h)
 
 
-def hug_col(room, skin_rho, th, y_top, s0, r0, s1, a_in, smax, floor=None, ds=0.002):
+def hug_col(room, skin_rho, th, y_top, s0, r0, s1, a_in, smax, floor=None, ds=0.002, min_len=0.012):
     """One column of a hugging lame: its radius r(s) at drops s (below y_top) from (s0, r0) to s1, the least concave
     (outward-bowing) curve over the room (and `floor`), never leaning in faster than a_in deg; cut short where it would
-    stand over smax off her rest skin. Returns (S, r)."""
+    stand over smax off her rest skin, never shorter than min_len (a V's corner columns: a few mm). Returns (S, r)."""
     for _ in range(3):
         S = np.linspace(s0, max(s1, s0 + 2 * ds), max(int(round((s1 - s0) / ds)) + 1, 3))
         t = room(y_top - S, np.full(len(S), th))
@@ -483,11 +483,11 @@ def hug_col(room, skin_rho, th, y_top, s0, r0, s1, a_in, smax, floor=None, ds=0.
         bad = np.nonzero(st[1:] > smax)[0]
         if not len(bad):
             return S, r
-        s1 = max(S[bad[0]], s0 + 0.012)
+        s1 = max(S[bad[0]], s0 + min_len)
     return S, r
 
 
-def hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, rows, a_in, smax, floors=None, sig=1.0):
+def hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, rows, a_in, smax, floors=None, sig=1.0, min_len=0.012):
     """A hugging lame: a column per theta (hug_col), resampled to `rows` evenly down each, the radii raised to their
     smoothing across the columns (never lowered). Returns (S (rows, cols) drops, Rg radii, per-column functions r(s))."""
     from scipy.ndimage import gaussian_filter1d
@@ -495,7 +495,7 @@ def hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, rows, a_in, smax, floors=No
     Sg, Rg, fns = np.zeros((rows, C)), np.zeros((rows, C)), []
     for j in range(C):
         S, r = hug_col(room, skin_rho, ths[j], y_top[j], s0[j], r0[j], s1[j], a_in, smax,
-                       None if floors is None else floors[j])
+                       None if floors is None else floors[j], min_len=min_len)
         Sg[:, j] = np.linspace(S[0], S[-1], rows)
         Rg[:, j] = np.interp(Sg[:, j], S, r)
     # (the lengths: a column cut short shortens its neighbours a little, so the edge runs smooth)
@@ -829,7 +829,7 @@ def hug_plate(pl, h, cfg, bl, belt_pt, wrap, rooms, skin_rho, rigid, ride_out, M
             floors = [lambda s, f=prev[2][j], e=prev[0][-1, j]: np.where(s <= e + 0.002, f(s) + lap, np.nan)
                       for j in range(len(ths))]
         Sg, Rg, fns = hug_lame(room, skin_rho, ths, y_top, s0, r0, s1, lm.get("rows", 8), lm.get("a_in", 6.0),
-                               lm.get("smax", 0.03), floors, sig=lm.get("sig", 1.0))
+                               lm.get("smax", 0.03), floors, sig=lm.get("sig", 1.0), min_len=lm.get("min_len", 0.012))
         G = wrap.pt(y_top[None] - Sg, ths[None], Rg)
         du, dv = np.gradient(G, axis=1), np.gradient(G, axis=0)
         Nl = U(np.cross(dv, du))
