@@ -127,16 +127,16 @@ public static partial class DungeonDress
             // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
             mat.SetShaderParameter("pit_cells", SetPitCells);
             mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
-            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.14f, 0.6f))   /* (den r17 P) z now the share lit (r16 .3 lit 70 %) */);
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.04f, 0.17f, 0.7f))   /* (den r17 P) z now the share lit (r16 .3 lit 70 %); (r17 P2, R16 item 1) .03,.14,.6 -> .04,.17,.7: glow runs 2/6 px against den_boss 7/22 */);
             mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.195f, 0.263f, 0.165f))   /* (den r17 P, R16 item 1) C x.75, luminance kept (r16 .18,.27,.14) */);
-            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.1f, 0.145f, 0.085f)));
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.125f, 0.165f, 0.105f))   /* (den r17 P2) was .1,.145,.085: wider, less saturated (q7c at .2,.3,.17: 11 % of the pit, C .097) */);
             mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.05f, 0.045f)));
             mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.08f, 0.12f, 0.4f)));
             mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.7f, 1.3f)));
             // (den r16 A2, R15f item 1: a raised turtle shell) the pit sunken: depth (m; 0 flat), the near lip's shadow reach, the
             // plates' brightness at the middle; H1 (the lair's walkable hollows) shallower than H2 (holes); the wall's earth face
             mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.65f)) : V3("den-pit-deep", new Vector3(1.1f, 1.6f, 0.9f)));
-            mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.12f, 0.085f, 0.055f)));   // (den r17 P) the far wall a lit earth band (r16 .06,.042,.028)
+            mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.17f, 0.12f, 0.078f)));   // (den r17 P) the far wall a lit earth band (r16 .06,.042,.028); (r17 P2) .12,.085,.055 -> .17,.12,.078 (q7c: brink .34 on floor .42, den_boss .39 on .47)
             mat.SetShaderParameter("pit_cast_min", SurvivorUnchained.Args.Num("den-pit-cast", 0.5f));
             // (den r17 P2, R16 item 1: still a dome) the pit a bowl: no spot/omni light inside, the far wall lit at the brink to
             // --den-pit-bw x at its foot, the floor y at the far foot within z metres; smooth lip, no crumbs (den_set pit_bowl). 0: as r17 P
@@ -1251,7 +1251,7 @@ public static partial class DungeonDress
         foreach (var rr in c.Z.Rooms) if (rr.Kind == "Boss" && new Vector2(rr.X, rr.Z).DistanceTo(ctr) < rr.R + 4f) lairHole = true;
         // (den r17 P, R16 item 1) the lair's walkable hollows (H1) are not dressed as glowing pits: the judged lair "pits" were
         // these (the real holes lay off the frame); the holes (H2) now sit in view (DungeonGen.LairPitPlan). 0: as r16
-        if (sheet == "H1" && SurvivorUnchained.Args.Num("den-hollow-plain", 0f) > 0f) lairHole = false;   // (WIP: on only with the pits in view)
+        if (sheet == "H1" && SurvivorUnchained.Args.Num("den-hollow-plain", SurvivorUnchained.Maps.DungeonGen.LairPits > 0 ? 1f : 0f) > 0f) lairHole = false;   // (den r17 P2) plain whenever the lair's pits are in view (DungeonGen.LairPits); 0: dressed as pits
         if (lairHole) GD.Print($"[den-pit] {sheet} at ({ctr.X:0.0}, {ctr.Y:0.0}) r {co[0]:0.00}");   // (den r17 P2) for framing a pit (--at)
         // (den r13 rooms) one or two pits of the lair dark and empty (no glow, no light): the first, and the third on a seed-salted coin
         bool pitEmpty = false;
