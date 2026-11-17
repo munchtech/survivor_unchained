@@ -37,7 +37,8 @@ PAD = 10                # px between cells (>= 8) and from the atlas' border
 # ---- the palette (sRGB albedo; [lit, mid, shade] for a shaded body) --------------------------------------------------
 INK = "#26170f"         # the dark warm ink
 CAST = "#3b2a1f"        # the cast-shade edge: the den earth in its own shadow
-BONE = ("#c6bba0", "#a69a80", "#7f705a")          # lit ~ linear Y 0.50 (the cap), never white
+BONE = ("#cbb8aa", "#aa978a", "#806f63")   # (den r15 S: OKLab C x0.75, hue 88 -> 58: the bones read yellow, C90 .11 against the target .07)
+#BONE_OLD = ("#c6bba0", "#a69a80", "#7f705a")          # lit ~ linear Y 0.50 (the cap), never white
 ANTLER = ("#b09c7a", "#8f7b5c", "#665540")
 HOLE = "#2e1d15"        # eye sockets, nasal openings
 FUR = ("#aaa397", "#878077", "#5f5951")
@@ -45,7 +46,7 @@ FUR_INK = "#433b35"
 FLESH = ("#6e2a20", "#57201a", "#3d1410")
 FLESH_INK = "#2a0f0b"
 SINEW = "#8a4a3a"
-BLOOD = {"edge": "#380e0b", "body": "#4c1410", "mottle": "#5b1a13", "drop": "#4e1510"}
+BLOOD = {"edge": "#4a1812", "body": "#66241a", "mottle": "#722a1d", "drop": "#8a382a"}   # (den r15 S: core L ~.40, droplets lighter .46-.50, rust h 30-33; was a flat L .37 paint)
 ROOT_C = ("#7c5439", "#573b28", "#3a2519")
 BARK = "#4c301f"
 TWIG = ("#7d5c41", "#584130", "#3b2a1f")
@@ -644,7 +645,7 @@ def k_root(L, g, v):
     main = rot(walk - walk.mean(0), -a0) * (L / max(np.ptp(rot(walk, -a0)[:, 0]), 1e-6))
     # thick where it comes up out of the earth (t=0), swelling over the first tenth, tapering to the tip
     w = W * (1 - 0.7 * t ** 0.8) * (0.6 + 0.4 * np.clip(t / 0.1, 0, 1) ** 0.5)
-    w = np.maximum(w, 0.032)
+    w = np.maximum(w * (1 - 0.15 * t ** 2), 0.02)     # (den r15 S: the tip tapers to ~30 %, not a cable of one width)
     tg = np.gradient(main, axis=0)
     lips = pad.mask()
     lip = lambda j, sgn: lips.ellipse(main[j] + sgn * tg[j] / np.linalg.norm(tg[j]) * 0.012, 0.03, w[j] * 0.9,

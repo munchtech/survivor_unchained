@@ -218,7 +218,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
         // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
         // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)
+        // (den r15 helper D) the kit's whole skull (an olive dome over a skull, r13 #14, r14 #6) and its rib cage (a repeat the per-screen
+        // caps could not see: a made piece, not a card) are not laid in the den: the painted set's piles carry both, under DenCaps
         if (map.Dungeon != null) foreach (var p in map.Props)
+            if (!(map.DungeonTheme == "den" && p.Id is "halloween/skull" or "halloween/ribcage" or "halloween/skull_candle"))
             G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale * (map.DungeonTheme == "den" && p.Id.StartsWith("halloween/bone_") ? 0.6 : 1));
         if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();

@@ -229,6 +229,8 @@ public static partial class DungeonDress
     static List<FloorDecal> PitArt() => pitArt ??= LoadFloorDecals("res://art/dungeon/den/pit_decals.json");
 
     static ZoneData? hollowsFor;
+    /// <summary>(den r16 B2, R15f item 2) The hollows for DungeonLight, which builds first: the same list (cached per zone) by the same salt.</summary>
+    internal static List<(Vector2 p, float r, int v)> HollowsFor(ZoneData z) { Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17; return DenHollows(new Ctx { Z = z }); }
     static List<(Vector2 p, float r, int v)> hollowsCache = new();
 
     /// <summary>(round 7) The lair's shallow hollows, as den_boss.png's floor has them: 4-6 painted dishes (dish radius

@@ -32,7 +32,7 @@ OUT = os.path.join(DEN, "set")
 INPUTS = r"C:\Users\munch\Desktop\survivorsunchained_inputs\gpt_den"
 
 BANKS = {   # name: kind (far: its face looks at the camera; near: seen from above and behind; left/right: a wall's side)
-    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3R": "right",
+    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3b": "left", "B3R": "right", "B3Rb": "right",
     "B4": "corner_l", "B4R_2": "corner_r", "B5": "spur",
 }
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
@@ -40,8 +40,10 @@ SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale
     "H1": ("hollow", 5.0), "H2": ("pit", 12.0),
     # (r10d) above: the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
     "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
+    "O6": ("fur", 1.5),     # (den r16 W, R15f item 10) 6 pale fur clumps and 2 dry leaf drifts for the open floor
     "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
 }
+DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this far to its grey (the fur's lilac read pink on screen; target C <= .03)
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -68,8 +70,37 @@ def key(rgb):
     return f, a
 
 
+# (den r15 R, R15 judge item 9) B3R (the right wall's face) has a big pale moss-topped block painted into it: with the wall
+# drawn at the play camera it is the "pale cube" (s11 room 1790-1920,620-800; --den-set-dbgmod 1 shows it is the bank's own
+# module, not a stone). Its outline (source px, closed polygon) is replaced by bare dirt: the painting inpainted, pulled
+# to the surrounding dirt's colour, with a seeded multi-scale grain. Applied by load(), so every build has it.
+BANK_FIXES = {"B3R": [(660, 552), (667, 520), (685, 487), (710, 462), (740, 440), (775, 420), (805, 416), (837, 436), (880, 431),
+                     (885, 455), (865, 500), (860, 530), (840, 560), (805, 585), (765, 597), (725, 610), (695, 620), (660, 615),
+                     (644, 600), (644, 555)]}
+DIRT = (112.0, 74.0, 56.0)
+
+
+def clear_block(img, poly):
+    import cv2
+    im8 = img.round().clip(0, 255).astype(np.uint8)
+    mask = np.zeros(im8.shape[:2], np.uint8)
+    cv2.fillPoly(mask, [np.array(poly, np.int32)], 255)
+    mask = cv2.dilate(mask, np.ones((11, 11), np.uint8))
+    inp = cv2.inpaint(np.ascontiguousarray(im8[..., ::-1]), mask, 9, cv2.INPAINT_TELEA)[..., ::-1].astype(np.float32)
+    inp = inp * 0.3 + np.array(DIRT, np.float32) * 0.7
+    rng = np.random.default_rng(7)
+    h, w = mask.shape
+    n = sum(cv2.GaussianBlur(rng.standard_normal((h, w)).astype(np.float32), (0, 0), sg) * am for sg, am in ((1.2, 14), (3, 22), (9, 40)))
+    inp = inp * (1 + n[..., None] / 160) + n[..., None] * 0.5
+    soft = cv2.GaussianBlur(mask.astype(np.float32) / 255, (0, 0), 5)[..., None]
+    return np.clip(img * (1 - soft) + inp * soft, 0, 255)
+
+
 def load(name):
-    return np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    img = np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    if name in BANK_FIXES:
+        img = clear_block(img, BANK_FIXES[name])
+    return img
 
 
 def resample(f, a, k):
@@ -271,6 +302,15 @@ def build():
         for (x0, y0, x1, y1, li) in ps:
             pa = a[y0:y1, x0:x1] * (lab[y0:y1, x0:x1] == li)
             cuts.append((f[y0:y1, x0:x1], pa))
+        leafs = set()
+        if kind == "fur":   # (den r16 W) a dry leaf drift is orange (R well over B), the fur grey-lilac: the fur's colour pulled to its grey
+            for i, (cf, ca) in enumerate(cuts):
+                w_ = ca > 0.5
+                if w_.any() and (cf[..., 0][w_].mean() - cf[..., 2][w_].mean()) > 45:
+                    leafs.add(i)
+                elif name in DESAT:
+                    g = (cf @ np.array([0.299, 0.587, 0.114]))[..., None]
+                    cuts[i] = (cf + (g - cf) * DESAT[name], ca)
         W = max(512, max(c[1].shape[1] for c in cuts) + 16)
         order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].shape[0])
         place, x, y, shelf = {}, 8, 8, 0
@@ -300,6 +340,8 @@ def build():
             pe = {"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)}
             if kind in ("hollow", "pit"):
                 pe["mouth"] = mouth(cf, ca, kind)
+            if i in leafs:
+                pe["leaf"] = True
             sh["pieces"].append(pe)
         h, w = H, W
         meta["sheets"].append(sh)
@@ -369,6 +411,12 @@ if __name__ == "__main__":
         ingest()
     elif cmd == "build":
         build()
+    elif cmd == "bank":   # (den r15 R) rebuild one bank's png only (same cut as build): den_set.py bank B3R
+        for name in sys.argv[2:]:
+            f, a = key(load(name))
+            x0, y0, x1, y1 = bbox(a)
+            save_rgba(os.path.join(OUT, name + ".png"), f[y0:y1, x0:x1], a[y0:y1, x0:x1])
+            print("bank", name, "rebuilt", a[y0:y1, x0:x1].shape)
     elif cmd == "check":
         sys.exit(0 if check() else 1)
     else:

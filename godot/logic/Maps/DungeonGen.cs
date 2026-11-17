@@ -47,7 +47,7 @@ public enum RoomRole { Entrance, Fight, Event, Side, Treasure, Boss }
 /// <summary>A hand-made room: its shape, its holes and its sockets, drawn facing +Z (a boss room's
 /// way out lies at +Z, away from where she comes in).</summary>
 public sealed record RoomPlan(string Id, RoomRole Role, Lobe[] Shape, Lobe[] Holes, (double X, double Z)[] Packs,
-    (double X, double Z)? Cache = null, (double X, double Z)? Out = null, string Dress = "")
+    (double X, double Z)? Cache = null, (double X, double Z)? Out = null, string Dress = "", Lobe[]? Spurs = null)
 {
     public double Reach => Shape.Max(l => l.Reach);
 }
@@ -57,13 +57,15 @@ public sealed record DungeonDef(string Id, string Name, string People, string Th
 
 /// <summary>A room as laid: its area's index, its plan, its cell, where it hangs from, its shape in the world.</summary>
 public sealed record DungeonRoom(int Area, RoomPlan Plan, int Ci, int Cj, int Parent, bool OnRoute, double X, double Z, double Rot, bool Mirror, double Scale,
-    Lobe[] Shape, Lobe[] Holes)
+    Lobe[] Shape, Lobe[] Holes, Lobe[]? Spurs = null)
 {
     public RoomRole Role => Plan.Role;
     public double Dist(double x, double z)
     {
         double d = Shape.Min(l => l.Dist(x, z));
         foreach (var h in Holes) d = Math.Max(d, -h.Dist(x, z));
+        // Spurs: rock and root walls run in from the rim (wall, not a pit: no hole field).
+        if (Spurs != null) foreach (var s in Spurs) d = Math.Max(d, -s.Dist(x, z));
         return d;
     }
 }
@@ -114,8 +116,60 @@ public static class DungeonGen
     public const double Gap = 9;
 
     static RoomPlan R(string id, RoomRole role, Lobe[] shape, Lobe[]? holes = null, (double, double)[]? packs = null,
-        (double, double)? cache = null, (double, double)? exit = null, string dress = "")
-        => new(id, role, shape, holes ?? [], packs ?? [], cache, exit, dress);
+        (double, double)? cache = null, (double, double)? exit = null, string dress = "", Lobe[]? spurs = null)
+        => new(id, role, shape, holes ?? [], packs ?? [], cache, exit, dress, spurs);
+
+    /// <summary>(den r16 G, R15f item 11) The den lair's root-wall spurs, run in from its rim to about 9-10 m
+    /// from the middle so the lair reads walled in (den_boss) from the fixed camera: 1 = on (the default),
+    /// 0 = the old open 21 m bowl. Set by the Godot layer from --den-lair-spurs before a map is made.
+    /// (den r16 G2, R15f item 11) 2 (the default) adds the way in as a mouth (MouthSpurs): a spur either side of
+    /// the hall where it enters, so a lair turned with its way in across the frame (seed 11) shows banks there.</summary>
+    public static double LairSpurs = 2;
+    // Each spur a broad root at the rim and a narrower tongue in: E and W level with the middle (between the
+    // pits and the way out), NE and NW either side of the way out; the S side (the way in, the pits) kept open.
+    static readonly Lobe[] LairSpurPlan =
+    [
+        new(25, 0, 15, 1.5, 4.2), new(15, 1.5, 11.6, 2.4, 2.4),
+        new(-25, 2, -15, 3, 4.2), new(-15, 3, -12, 4.2, 2.3),
+        new(17, 19, 11.5, 12.5, 3.8), new(11.5, 12.5, 8.2, 9.4, 2.2),
+        new(-18, 18, -12, 12, 3.8), new(-12, 12, -8.6, 8.8, 2.1),
+    ];
+
+    /// <summary>(den r16 G2, R15f item 11) The lair's way in as a mouth, as the rooms' halls open between banks: a
+    /// spur either side of the hall that reaches the lair, laid along it from past the rim to about 12 m from the
+    /// middle, its inner edge clear of the hall's widest (noise x1.3) by 0.6 m; pulled out along the hall until it
+    /// stands 3 m clear of every pit, dropped if it cannot. No rng: the layout is unchanged.</summary>
+    static Lobe[] MouthSpurs(DungeonRoom r, (double X, double Z, double Hw)[] hall)
+    {
+        // the hall's points by distance from the lair's middle, outward
+        var pts = hall.OrderBy(p => MathX.Dist(p.X, p.Z, r.X, r.Z)).ToArray();
+        (double X, double Z, double Hw) At(double rad)
+        {
+            for (int i = 1; i < pts.Length; i++)
+            {
+                double d0 = MathX.Dist(pts[i - 1].X, pts[i - 1].Z, r.X, r.Z), d1 = MathX.Dist(pts[i].X, pts[i].Z, r.X, r.Z);
+                if (d1 < rad) continue;
+                double t = d1 > d0 ? Math.Clamp((rad - d0) / (d1 - d0), 0, 1) : 0;
+                return (pts[i - 1].X + (pts[i].X - pts[i - 1].X) * t, pts[i - 1].Z + (pts[i].Z - pts[i - 1].Z) * t, pts[i].Hw);
+            }
+            return pts[^1];
+        }
+        double R = r.Shape[0].R;
+        var res = new List<Lobe>();
+        foreach (double side in new[] { -1.0, 1.0 })
+            foreach (double inR in new[] { 0.55, 0.62, 0.69, 0.76, 0.83 })
+            {
+                var a = At(R * 1.12); var m = At(R * (inR + 0.13)); var b = At(R * inR);
+                double tx = a.X - b.X, tz = a.Z - b.Z, tl = Math.Max(Math.Sqrt(tx * tx + tz * tz), 1e-6);
+                double nx = -tz / tl * side, nz = tx / tl * side, c = b.Hw * 1.3 + 0.6;
+                var root = new Lobe(a.X + nx * (c + 3.4), a.Z + nz * (c + 3.4), m.X + nx * (c + 3.0), m.Z + nz * (c + 3.0), 3.4 * r.Scale);
+                var tip = new Lobe(m.X + nx * (c + 3.0), m.Z + nz * (c + 3.0), b.X + nx * (c + 2.3), b.Z + nz * (c + 2.3), 2.3 * r.Scale);
+                if (r.Holes.Any(h => root.Dist(h.X0, h.Z0) < h.R + 3 || tip.Dist(h.X0, h.Z0) < h.R + 3)) continue;
+                res.Add(root); res.Add(tip);
+                break;
+            }
+        return res.ToArray();
+    }
 
     // ------------------------------------------------------------ the rooms --
     // Drawn by hand, in metres, facing +Z. Shared shapes first, then each dungeon's own.
@@ -138,7 +192,7 @@ public static class DungeonGen
         Bowl with { Dress = "bones" }, Twin, Gully, Ring with { Dress = "bones" }, Crook, Clover with { Dress = "bones" }, Pillars, Spine,
         Event,
         Nook with { Dress = "bones" }, Alcove with { Dress = "bones" }, Hoard with { Dress = "bones" },
-        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)], [], exit: (0, 27), dress: "bones"),
+        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)], [], exit: (0, 27), dress: "bones", spurs: LairSpurPlan),
         R("throat", RoomRole.Boss, [new(-7, -2, 7, -2, 17), new(0, 14, 0, 24, 5)], null, [], exit: (0, 25), dress: "bones"),
     ]);
 
@@ -323,6 +377,11 @@ public static class DungeonGen
             }
             halls.Add(pts);
         }
+        // (den r16 G2, R15f item 11) the lair's way in as a mouth: banks either side of the hall that reaches it
+        if (LairSpurs >= 2 && rooms[^1] is { Spurs: not null } br)
+            for (int k = 0; k < edges.Count; k++)
+                if (edges[k].Item2 == rooms.Count - 1 || edges[k].Item1 == rooms.Count - 1)
+                    rooms[^1] = br = br with { Spurs = [.. br.Spurs!, .. MouthSpurs(br, halls[k])] };
 
         // The packs' sockets: the rooms' own, and along the halls a pack every 13 m or so, none on the last hall to the ruler.
         var sockets = new List<PackSpot>();
@@ -384,7 +443,8 @@ public static class DungeonGen
     {
         var tmp = new DungeonRoom(area, plan, c.Item1, c.Item2, parent, onRoute, x, z, rot, mirror, scale, [], []);
         (double, double) F((double X, double Z) p) => Xf(tmp, p);
-        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = plan.Holes.Select(l => l.Moved(F, scale)).ToArray() };
+        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = plan.Holes.Select(l => l.Moved(F, scale)).ToArray(),
+            Spurs = plan.Spurs != null && LairSpurs > 0 ? plan.Spurs.Select(l => l.Moved(F, scale)).ToArray() : null };
     }
 
     /// <summary>A point of a room's plan, in the world: mirrored, scaled, turned so +Z faces along Rot, and moved.</summary>

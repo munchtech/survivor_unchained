@@ -52,6 +52,8 @@ public sealed class ZoneData
     public readonly float[]? HoleField;
     /// <summary>A dungeon's rooms (centre and reach, MapBuild.Areas), for what is placed by rule per room (the den's shafts).</summary>
     public readonly List<(float X, float Z, float R, string Kind)> Rooms = new();
+    /// <summary>(den r16 G2, R15f item 11) A dungeon's root-wall spurs (DungeonRoom.Spurs: x0, z0, x1, z1 and radius), for the set's lair gloom.</summary>
+    public readonly List<(Vector4 Seg, float R)> Spurs = new();
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -212,6 +214,10 @@ public sealed class ZoneData
         HoleField = m.HoleField;
         if (m.WallField != null)
             foreach (var a in m.Areas) Rooms.Add(((float)a.X, (float)a.Z, (float)a.R, a.Kind.ToString()));
+        if (m.Dungeon != null)
+            foreach (var dr in m.Dungeon.Rooms)
+                foreach (var sl in dr.Spurs ?? [])
+                    Spurs.Add((new Vector4((float)sl.X0, (float)sl.Z0, (float)sl.X1, (float)sl.Z1), (float)sl.R));
         if (m.WallField != null && DungeonTheme == "den")
             WallField = DenRagged.Drawn(m.WallField, Res, Half, Step, Seed, Rooms);
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();

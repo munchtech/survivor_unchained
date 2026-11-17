@@ -588,9 +588,13 @@ public static class MapGen
                 for (int n = rng.Int(2, 4); n > 0; n--)
                     if (Near(r, 0.6, 2.2) is { } p) Prop(rng.Pick(new[] { "props/Barrel", "props/Crate_Wooden", "props/Bag", "props/Pouch_Large" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
             if (r.Role == RoomRole.Boss)
-                // Torches round the ruler's room, inside its edge.
+            {
+                // Torches round the ruler's room, inside its edge. (den r15: one in a den lair, the judge's one fire per view;
+                // the four spots are still drawn so the rng runs as before)
+                int torches = lay.Def.Theme == "den" ? 1 : 4, lit = 0;
                 for (int n = 0; n < 4; n++)
-                    if (Near(r, 2.5, 4.5) is { } p) fire(p.X, p.Z, 0.6, 11, "#ff6a3a");
+                    if (Near(r, 2.5, 4.5) is { } p && lit < torches) { fire(p.X, p.Z, 0.6, 11, "#ff6a3a"); lit++; }
+            }
         }
         // The way out: two lantern posts either side of it, dark until the ruler is down (MapRun lights it).
         var b = lay.Rooms[^1];

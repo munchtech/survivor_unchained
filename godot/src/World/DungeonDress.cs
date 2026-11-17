@@ -58,7 +58,7 @@ public static partial class DungeonDress
         }
         if (den) { DenCaps.Clear(); DenDecals(c); DenBankDecals(c); DenFloorDecals(c); }
         if (den && SetMode > 0) DenSet(c);
-        if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.45f, 1.0f, 0.88f) });
+        if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", FungMat());   // (den r15 C) was an unshaded flat colour: caps read as flat polygons
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });
         // Poles (palisade, tents, banners) in one mesh in bark; canvas (vertex-coloured per tent) and banner cloth in one each.
         if (c.PoleParts > 0) { c.Poles.GenerateTangents(); c.Root.AddChild(new MeshInstance3D { Name = "Poles", Mesh = c.Poles.Commit(), MaterialOverride = Bark() }); }
@@ -160,6 +160,9 @@ public static partial class DungeonDress
             {
                 string log = Logs[(int)(Hash(s, 8, 0) * Logs.Length)];
                 float yaw = sp.Yaw + Mathf.Pi / 2;
+                // (den r16 G2, R15f item 11) the lair's scanned trunk: its wall spot moved onto a root spur, in frame, where it drew
+                // as a hard black bar (s23 lair); the painted set lays the lair's logs. --den-lair-trunk 1: as before (den r16 lead: kit logs too, the bar was one)
+                if (r.Kind == "Boss" && SurvivorUnchained.Maps.DungeonGen.LairSpurs > 0 && SurvivorUnchained.Args.Num("den-lair-trunk", 0f) <= 0f) continue;
                 if (log.StartsWith("res:")) PlaceScene(c, log, sp.X, sp.Z, yaw, 0.7f, 0.1f, "logs");   // (at 1 the trunks lay as long dark bars across a room)
                 else PlaceProp(c, log, sp.X, sp.Z, yaw, 1f);
             }
@@ -272,6 +275,7 @@ public static partial class DungeonDress
         n.Position = new Vector3(x, y, zz);
         n.Rotation = new Vector3(0, yaw, 0);
         c.Root.AddChild(n);
+        if (c.Z.DungeonTheme == "den") DenOcclude.Register(c.Root, n);   // (den r15 I)
         c.Tick("props");
     }
 
@@ -299,6 +303,7 @@ public static partial class DungeonDress
         n.Position = new Vector3(x, H(c, x, zz) - (b.Position.Y + sink * b.Size.Y) * scale, zz);
         n.Rotation = new Vector3(0, yaw, 0);
         c.Root.AddChild(n);
+        if (c.Z.DungeonTheme == "den") DenOcclude.Register(c.Root, n);   // (den r15 I: fades while between the camera and her)
         c.Tick(tag);
     }
 
@@ -466,6 +471,17 @@ public static partial class DungeonDress
     }
 
     // 1 to 3 glow-fungus clusters at a room's wall foot, 4 to 8 mushrooms each, one cool light apiece; 14 to the map.
+    static StandardMaterial3D FungMat()
+    {
+        float N(string k, float d) => SurvivorUnchained.Args.Num(k, d);
+        var m = new StandardMaterial3D { AlbedoColor = new Color(N("den-fung-r", 0.45f), N("den-fung-g", 0.53f), N("den-fung-b", 0.51f)), Roughness = 0.7f, EmissionEnabled = true,
+            Emission = new Color(N("den-fung-er", 0.42f), N("den-fung-eg", 0.56f), N("den-fung-eb", 0.54f)), EmissionEnergyMultiplier = N("den-fung-em", 0.5f) };
+        return m;
+    }
+    static readonly float FungCap = SurvivorUnchained.Args.Num("den-fung-cap", 0.85f);
+    static readonly Color FungLightCol = new Color(0.55f, 0.85f, 0.9f);
+    static readonly float FungLightE = SurvivorUnchained.Args.Num("den-fung-light", 0.9f);
+    internal static float FungCapK => FungCap;
     static void Fungus(Ctx c, (float X, float Z, float R, string Kind) r, int s)
     {
         int n = 3 + (int)(Hash(s, 20, 0) * 3);
@@ -481,13 +497,13 @@ public static partial class DungeonDress
                 float a = Hash(s, 24 + q, k) * Mathf.Tau, d = Mathf.Sqrt(Hash(s, 25 + q, k)) * 0.5f;
                 float x = cx + Mathf.Cos(a) * d, zz = cz + Mathf.Sin(a) * d;
                 if (Wall(c, x, zz) < 0.05f || Hole(c, x, zz) < 0.3f) continue;
-                float sh = 0.12f + 0.24f * Hash(s, 26 + q, k), sr = 0.025f + 0.025f * Hash(s, 27 + q, k), cr = 0.1f + 0.14f * Hash(s, 28 + q, k);
-                var basis = new Basis(Vector3.Right, (Hash(s, 29 + q, k) - 0.5f) * 0.4f) * new Basis(Vector3.Forward, (Hash(s, 30 + q, k) - 0.5f) * 0.4f);
+                float sh = 0.12f + 0.24f * Hash(s, 26 + q, k), sr = 0.025f + 0.025f * Hash(s, 27 + q, k), cr = (0.07f + 0.11f * Hash(s, 28 + q, k)) * FungCap;
+                var basis = Basis.Identity;   // (den r15 Q) upright
                 var t = new Transform3D(basis, new Vector3(x, H(c, x, zz), zz));
                 c.Shrooms.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
-                c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr, IsHemisphere = true, RadialSegments = 8, Rings = 4 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
+                c.Shrooms.AppendFrom(new SphereMesh { Radius = cr, Height = cr * (0.8f + 0.5f * Hash(s, 31 + q, k)), IsHemisphere = true, RadialSegments = 16, Rings = 6 }, 0, t * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
             }
-            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = new Color(0.35f, 0.95f, 0.85f), LightEnergy = 1.6f, OmniRange = 2.6f,   /* (round 7: 2.4 / 3.6 washed the floor and boulders green for metres round each cluster) */ ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.5f, cz) });
+            c.Root.AddChild(new OmniLight3D { Name = "FungusLight", LightColor = FungLightCol, LightEnergy = FungLightE, OmniRange = 2.6f,   /* (round 7: 2.4 / 3.6 washed the floor and boulders green for metres round each cluster) */ ShadowEnabled = false, Position = new Vector3(cx, H(c, cx, cz) + 0.5f, cz) });
             c.Clusters++;
             c.Tick("fungus");
         }
