@@ -55,6 +55,9 @@ def target(base_glb, a_path=A_PATH, world=False, want=None, normals=None):
     from rig import Skeleton, qbetween, qinv, qmul
     sk = Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
     body = skin.Body(sk, [(a_path, lambda n: n == "Heroine", "skin")], None, label="her", helpers=True)
+    # (Body extends its skeleton with the runtime armor-only helper bones (hip, thigh, tasset, pauldron hinges: carry
+    # armor, never her skin, appended after her bones): pose and read bones on that skeleton, her own joints by name)
+    sk = body.sk
     want = want if want is not None else base_bones(base_glb)
     # (the fit is in the files' stored space, where her head and ring and B's coincide: the game's Head scale (1.07)
     # and the off-rest bind it gives the body's points on Head (heroine_headscale.py) are taken off, so her rest
