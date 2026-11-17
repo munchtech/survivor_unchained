@@ -185,6 +185,7 @@ def sweep_room(bone, centre, radius, clips=SWEEP_CLIPS, vox=0.002, verbose=True)
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
                                                    else kb.REPO, "tools", "anim", "out"))
     import skin
+    __import__("bodies").clip_source(skin)   # (p1: B's own clips, never A's built ones; A: unchanged)
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
@@ -252,6 +253,7 @@ def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
                                                    else kb.REPO, "tools", "anim", "out"))
     import skin
+    __import__("bodies").clip_source(skin)   # (p1: B's own clips, never A's built ones; A: unchanged)
     if not (skin.OUT / "clips").is_dir():
         from pathlib import Path
         skin.OUT = Path(os.path.join(main, "tools", "anim", "out"))
