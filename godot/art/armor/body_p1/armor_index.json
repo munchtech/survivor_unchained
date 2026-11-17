@@ -49,6 +49,29 @@
   "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
  },
  {
+  "id": "kit_boots",
+  "outfit": null,
+  "slot": "boots",
+  "layer": 2,
+  "covers": [
+   "boots",
+   "greaves"
+  ],
+  "meshes": [
+   "kit_boots.boots.darkleather",
+   "kit_boots.boots.gold",
+   "kit_boots.boots.steel"
+  ],
+  "tuck": "armor_tuck/kit_boots.bin",
+  "tuck_count": 2486,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_boots.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
   "id": "kit_brief",
   "outfit": null,
   "slot": "bottom",

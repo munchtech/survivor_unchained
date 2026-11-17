@@ -213,8 +213,11 @@ def main(argv):
     rep["draws"] = {"full": len(full), "lod1": len(src), "shadow_pass_at_play": 1}
     js["asset"].setdefault("extras", {})["lods"] = {"gameplay": GAMEPLAY, "shadow": SHADOW, "small": SMALL, "inset": INSET}
     ap.save(path)
-    ok = lod_tris <= max(0.25 * t0, FLOOR) and len(Ts) <= max(0.10 * t0, FLOOR * 0.4)
-    rep["floor"] = FLOOR if lod_tris > 0.25 * t0 or len(Ts) > 0.10 * t0 else None
+    # (a piece's own lod_budget (piece.json, via --budget): its share for the lod1 check, where its plates draw whole;
+    # default 0.25 unchanged)
+    share = float(argv[argv.index("--budget") + 1]) if "--budget" in argv else 0.25
+    ok = lod_tris <= max(share * t0, FLOOR) and len(Ts) <= max(0.10 * t0, FLOOR * 0.4)
+    rep["floor"] = FLOOR if lod_tris > share * t0 or len(Ts) > 0.10 * t0 else None
     print("LOD %s: %d -> lod1 %d (%.1f%%), shadow %d (%.1f%%)%s" % (pid, t0, lod_tris, 100 * lod_tris / t0, len(Ts),
                                                                   100 * len(Ts) / t0, "" if ok else "  OVER BUDGET"))
     if "--numbers" in argv:

@@ -81,6 +81,17 @@ def glb_for(skin):
     return skin.PEOPLE / "heroine.glb" if b.name == "a" else skin.Path(b.need(b.glb, "body.glb"))
 
 
+def clip_source(skin):
+    """Point skin's clip loader (skin.OUT / "clips") at the chosen body's clips: p1 reads tools/anim/data/body_p1/clips
+    (Body.clips), never A's built clips (wearcheck and kit_hips default ANIM_OUT to the main checkout's tools/anim/out).
+    A: nothing (A reads skin.OUT as before). Returns skin.OUT."""
+    b = cur()
+    if b.name != "a" and b.clips:
+        skin.OUT = skin.Path(os.path.dirname(b.clips))
+        os.environ["ANIM_OUT"] = str(skin.OUT)
+    return skin.OUT
+
+
 def use_for_check(wc, clips):
     """wearcheck / cover for p1: stop unless its skeleton dump, clips and installed index exist (naming the first
     missing); then catalogue reads only body_p1's index (A's outfits and installs are body A's). A: nothing."""
@@ -88,6 +99,7 @@ def use_for_check(wc, clips):
     if b.name == "a":
         return
     skeleton_path()
+    clip_source(wc.skin)
     b.need(b.glb, "body.glb")
     b.need(b.clips, "clip library dir (<clip>.json per clip)")
     for c in clips:

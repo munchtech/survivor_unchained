@@ -320,6 +320,7 @@ def sweep(rides, under_ids, z0, clips=SWEEP_CLIPS, y0=0.78, y1=1.26, dy=0.002, d
     os.environ.setdefault("ANIM_OUT", os.path.join(main if os.path.isdir(os.path.join(main, "tools", "anim", "out"))
                                                    else kb.REPO, "tools", "anim", "out"))
     import skin
+    __import__("bodies").clip_source(skin)   # (p1: B's own clips)
     # (skin may already be imported (native_build / gear_native) with its default OUT, this worktree's unbuilt
     # tools/anim/out: point it at the built clips as wearcheck does)
     if not (skin.OUT / "clips").is_dir():

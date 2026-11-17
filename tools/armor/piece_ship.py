@@ -248,7 +248,8 @@ def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRA
             num = json.load(open(os.path.join(scratch, "numbers.json"), encoding="utf-8"))
             json.dump({"body_hash": num["body_hash"], "src": src}, open(os.path.join(stage, "built_on.json"), "w"))
             gl_ = os.path.join(sa, pid + ".gltf")
-            r2 = subprocess.run([sys.executable, os.path.join(HERE, "piece_lod.py"), gl_, "--numbers", os.path.join(scratch, "numbers.json")],
+            r2 = subprocess.run([sys.executable, os.path.join(HERE, "piece_lod.py"), gl_, "--numbers", os.path.join(scratch, "numbers.json")]
+                                + (["--budget", str(piece["lod_budget"])] if piece.get("lod_budget") else []),
                                 cwd=ROOT, capture_output=True, text=True)
             say((r2.stdout + r2.stderr).strip()[-400:])
             ok = r2.returncode == 0
