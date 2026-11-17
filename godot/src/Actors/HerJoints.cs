@@ -125,9 +125,10 @@ public partial class HerJoints : SkeletonModifier3D
     {
         public int Bone;
         public Quaternion ParentRest, Rest;
-        public int[][] Chains = { System.Array.Empty<int>(), System.Array.Empty<int>() }; // each thigh up to the parent
-        public Vector3[] Rest0 = new Vector3[2];
-        public double Amount, Soft;
+        public int[][] Chains = System.Array.Empty<int[]>(); // each thigh up to the parent (one or two)
+        public Vector3[] Rest0 = System.Array.Empty<Vector3>();
+        public int[] Sides = System.Array.Empty<int>(); // +1 her left thigh, -1 her right (from its name)
+        public double Amount, Soft, Roll, RollFrom = 2, RollSoft = 6, RollMax = 20;
     }
     readonly List<Tasset> tassets = new();
 
@@ -372,12 +373,18 @@ public partial class HerJoints : SkeletonModifier3D
                     ParentRest = sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion(),
                     Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
                 };
+                if (t.ContainsKey("roll")) one.Roll = (double)t["roll"];
+                if (t.ContainsKey("roll_from")) one.RollFrom = (double)t["roll_from"];
+                if (t.ContainsKey("roll_soft")) one.RollSoft = (double)t["roll_soft"];
+                if (t.ContainsKey("roll_max")) one.RollMax = (double)t["roll_max"];
                 var ths = t["thighs"].AsGodotArray();
-                bool ok = ths.Count == 2;
-                for (int i = 0; ok && i < 2; i++)
+                bool ok = ths.Count is 1 or 2;
+                if (ok) { one.Chains = new int[ths.Count][]; one.Rest0 = new Vector3[ths.Count]; one.Sides = new int[ths.Count]; }
+                for (int i = 0; ok && i < ths.Count; i++)
                 {
                     int thigh = sk.FindBone((string)ths[i]);
                     if (thigh < 0) { ok = false; break; }
+                    one.Sides[i] = ((string)ths[i]).EndsWith("_l") ? 1 : -1;
                     var chain = new List<int>();
                     for (int j = thigh; j >= 0 && j != parent; j = sk.GetBoneParent(j)) chain.Add(j);
                     one.Chains[i] = chain.ToArray();
@@ -587,20 +594,24 @@ public partial class HerJoints : SkeletonModifier3D
             sk.SetBonePoseRotation(hg.Bone, Gq(HipHinge.Pose(Nq(hg.Rest), new N.Vector3(hg.Rest0.X, hg.Rest0.Y, hg.Rest0.Z),
                 new N.Vector3(v.X, v.Y, v.Z), hg.Amount)));
         }
-        // The tasset hinge: each thigh's forward swing in the pelvis's frame, the V turned with the leading one.
+        // The tasset hinges: each thigh's forward swing (and spread) in the pelvis's frame, the V turned with the leading one
+        // (a one-thigh bone with its own), and rolled away from a thigh crossing the midline (roll > 0).
         foreach (var tg in tassets)
         {
-            double fl = 0, fr = 0;
-            for (int i = 0; i < 2; i++)
+            int n = tg.Chains.Length;
+            var sw = new double[n];
+            var sp = new double[n];
+            for (int i = 0; i < n; i++)
             {
                 var q = Quaternion.Identity;
                 foreach (int j in tg.Chains[i]) q = sk.GetBonePoseRotation(j) * q;
                 var v = tg.ParentRest * (q * Vector3.Up);
                 var v0 = tg.Rest0[i];
-                var (sw, _) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, i == 0 ? 1 : -1);
-                if (i == 0) fl = sw; else fr = sw;
+                (sw[i], sp[i]) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, tg.Sides[i]);
             }
-            sk.SetBonePoseRotation(tg.Bone, Gq(HipHinge.TassetPose(Nq(tg.Rest), HipHinge.TassetTurn(fl, fr, tg.Amount, tg.Soft))));
+            double turn = n == 2 ? HipHinge.TassetTurn(sw[0], sw[1], tg.Amount, tg.Soft) : HipHinge.TassetTurnOne(sw[0], tg.Amount, tg.Soft);
+            double roll = n == 2 ? HipHinge.TassetRoll(sp[0], sp[1], tg.Roll, tg.RollFrom, tg.RollSoft, tg.RollMax) : 0;
+            sk.SetBonePoseRotation(tg.Bone, Gq(HipHinge.TassetPose(Nq(tg.Rest), turn, roll)));
         }
         // The panels: each thigh's line in the pelvis's frame (her rest axes
         // carried with it), its forward swing and spread from rest, and the

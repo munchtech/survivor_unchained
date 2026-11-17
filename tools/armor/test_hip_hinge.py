@@ -168,3 +168,75 @@ def test_pauldron_hinge_turns_half_the_arms_swing_none_of_its_roll(sk):
         assert abs(turns[s] - 45) < 1e-4
         assert _deg(qmul(qinv(sk.rest_rot[j]), posed(qaxis(line, 60)))) < 1e-4
     assert abs(turns["l"] - turns["r"]) < 1e-4
+
+
+def _tasset(name, **extra):
+    return {**next(t for t in hp.SPEC["tassets"] if t["name"] == name), **extra}
+
+
+def _driven(sk, tg, **deg):
+    """The tasset bone `tg` driven with thighs turned: forward `l=`/`r=` degrees, spread `al=`/`ar=` (global, her rest
+    axes: forward about -X, spread about her forward axis); returns its turn from rest."""
+    grot, _ = sk.rest_globals()
+    rot = sk.rest_rot.copy()
+    for s in "lr":
+        f, a = deg.get(s, 0), deg.get("a" + s, 0)
+        if not f and not a:
+            continue
+        t = sk.index["thigh_" + s]
+        g = qmul(qaxis([0, 0, 1.0 if s == "l" else -1.0], a), qaxis([-1.0, 0, 0], f))
+        rot[t] = qmul(qinv(grot[0, sk.parent[t]]), qmul(g, grot[0, t]))
+    j = sk.index[tg["name"]]
+    sw, sp = hp.tasset_angles(sk, rot, tg)
+    rot[j] = hp.qnorm(qmul(sk.rest_rot[j], hp.tasset_q(*hp.tasset_pose(tg, sw, sp))))
+    return qmul(qinv(sk.rest_rot[j]), rot[j])
+
+
+def test_hip_tassets_are_one_thigh_hinges_at_their_pivots(sk):
+    grot, gpos = sk.rest_globals()
+    for s in "lr":
+        tg = _tasset("hiptasset_hinge_" + s)
+        assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 0.8 and tg["soft"] == 12.0
+        j = sk.index[tg["name"]]
+        assert sk.names[sk.parent[j]] == "pelvis" and _deg(grot[0, j]) < 1e-6
+        assert np.abs(gpos[0, j] - np.array([0.115 if s == "l" else -0.115, 1.125, 0.075])).max() < 1e-9
+        assert _deg(_driven(sk, tg)) < 1e-6
+
+
+def test_hip_tasset_turns_with_its_own_forward_swing_only(sk):
+    for s in "lr":
+        tg = _tasset("hiptasset_hinge_" + s)
+        o = "r" if s == "l" else "l"
+        want = 0.8 * (45 - 3 - 6)
+        assert abs(_deg(_driven(sk, tg, **{s: 45})) - want) < 1e-3
+        assert _deg(_driven(sk, tg, **{o: 45})) < 1e-6  # the other thigh leaves it be
+        assert _deg(_driven(sk, tg, **{"a" + s: 25})) < 1e-6  # spread
+        assert _deg(_driven(sk, tg, **{"a" + s: -25})) < 1e-6  # crossing: no roll on a one-thigh bone
+        rot = sk.rest_rot.copy()  # a twist about the thigh's own line
+        t, grot = sk.index["thigh_" + s], sk.rest_globals()[0]
+        line = qrot(grot[0, t], [0, 1.0, 0])
+        rot[t] = qmul(qinv(grot[0, sk.parent[t]]), qmul(qaxis(line, 60), grot[0, t]))
+        sw, sp = hp.tasset_angles(sk, rot, tg)
+        assert abs(sw[0]) < 1e-6 and hp.tasset_turn(tg, *sw) == 0
+    a = _driven(sk, _tasset("hiptasset_hinge_l"), l=45)
+    b = _driven(sk, _tasset("hiptasset_hinge_r"), r=45)
+    assert abs(_deg(a) - _deg(b)) < 1e-4 and np.abs(a[:3] - b[:3]).max() < 1e-6  # mirrored: the same turn about x
+
+
+def test_tasset_roll_zero_is_the_old_v_and_roll_turns_it_away_from_the_crossing_thigh(sk):
+    tg0 = _tasset("tasset_hinge")
+    assert tg0["roll"] == 0.0
+    base = {k: v for k, v in tg0.items() if k != "roll"}  # the spec before the field existed
+    for kw in ({"l": 40, "r": 10, "al": -12, "ar": 3}, {"l": 5, "al": -15}, {"r": 30, "ar": -9}):
+        assert np.abs(_driven(sk, tg0, **kw) - _driven(sk, base, **kw)).max() == 0
+    assert _deg(_driven(sk, tg0, al=-20)) < 1e-4
+    on = {**tg0, "roll": 1.3}
+    tip = lambda q: qrot(q, [0, -1.0, 0])
+    # her left thigh 13 deg across: the V's tip goes to her right (-x), the right thigh across: to her left
+    assert tip(_driven(sk, on, al=-13))[0] < -0.1
+    assert tip(_driven(sk, on, ar=-13))[0] > 0.1
+    assert abs(tip(_driven(sk, on, al=-13))[0] + tip(_driven(sk, on, ar=-13))[0]) < 1e-6
+    assert abs(_deg(_driven(sk, on, al=-13)) - hp.tasset_roll(on, -13, 0)) < 1e-3
+    assert _deg(_driven(sk, on, al=1.0)) < 1e-6  # spread out: none
+    assert 9 < hp.tasset_roll(on, -13.1, 1.0) < 10  # sword_heavy f8
+    assert hp.tasset_roll({**on, "roll_max": 8.0, "roll": 3.0, "roll_from": 0.0}, -90, 0) <= 8.0

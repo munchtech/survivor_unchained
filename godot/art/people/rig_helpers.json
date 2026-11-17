@@ -310,6 +310,35 @@
     0.12
    ],
    "amount": 0.8,
+   "soft": 12.0,
+   "roll": 0.0
+  },
+  {
+   "name": "hiptasset_hinge_l",
+   "parent": "pelvis",
+   "thighs": [
+    "thigh_l"
+   ],
+   "pivot": [
+    0.115,
+    1.125,
+    0.075
+   ],
+   "amount": 0.8,
+   "soft": 12.0
+  },
+  {
+   "name": "hiptasset_hinge_r",
+   "parent": "pelvis",
+   "thighs": [
+    "thigh_r"
+   ],
+   "pivot": [
+    -0.115,
+    1.125,
+    0.075
+   ],
+   "amount": 0.8,
    "soft": 12.0
   }
  ],

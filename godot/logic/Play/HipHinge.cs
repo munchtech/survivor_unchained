@@ -43,8 +43,28 @@ public static class HipHinge
     public static double TassetTurn(double fl, double fr, double amount, double soft) =>
         amount * Core.PanelSwing.SoftRelu(Core.PanelSwing.SmoothMax(fl, fr, soft) - soft / 4, soft);
 
+    /// <summary>A tasset hinge read by ONE thigh (hiptasset_hinge_{l,r}; helpers.tasset_turn with fr None): amount *
+    /// softrelu(that thigh's own forward swing - soft/4).</summary>
+    public static double TassetTurnOne(double f, double amount, double soft) =>
+        amount * Core.PanelSwing.SoftRelu(f - soft / 4, soft);
+
+    /// <summary>Degrees the tasset V rolls about her forward axis, its tip toward her right when positive, away from a
+    /// thigh crossing the midline (helpers.tasset_roll): k*(softrelu(-al - from, soft) - softrelu(-ar - from, soft)),
+    /// soft-clamped at `max` by max*tanh(x/max). al, ar: each thigh's spread from rest (negative = crossing). k 0 = none.</summary>
+    public static double TassetRoll(double al, double ar, double k, double from, double soft, double max)
+    {
+        if (k == 0) return 0;
+        double x = k * (Core.PanelSwing.SoftRelu(-al - from, soft) - Core.PanelSwing.SoftRelu(-ar - from, soft));
+        return max * Math.Tanh(x / max);
+    }
+
     /// <summary>The tasset hinge's local pose: its rest (Rest: global rest turn none, at its pivot), then `deg` about her
-    /// lateral axis, the bottom forward (about -X: her -Y toward +Z; helpers.drive_tassets: rest x turn).</summary>
-    public static Quaternion TassetPose(Quaternion rest, double deg) =>
-        Quaternion.Normalize(rest * Quaternion.CreateFromAxisAngle(new Vector3(-1, 0, 0), (float)(deg * Math.PI / 180)));
+    /// lateral axis, the bottom forward (about -X: her -Y toward +Z), then `roll` degrees about her forward axis, the
+    /// bottom toward her right (about -Z, in the pelvis axes; helpers.drive_tassets: rest x roll x pitch).</summary>
+    public static Quaternion TassetPose(Quaternion rest, double deg, double roll = 0)
+    {
+        var pitch = Quaternion.CreateFromAxisAngle(new Vector3(-1, 0, 0), (float)(deg * Math.PI / 180));
+        if (roll == 0) return Quaternion.Normalize(rest * pitch);
+        return Quaternion.Normalize(rest * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, -1), (float)(roll * Math.PI / 180)) * pitch);
+    }
 }

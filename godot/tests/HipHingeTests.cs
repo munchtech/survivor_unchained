@@ -77,7 +77,7 @@ public class HipHingeTests
     {
         var fx = Load("tests", "fixtures", "hinge_parity.json");
         double worst = 0, place = 0;
-        int n = 0;
+        int n = 0, rolled = 0;
         foreach (var s in fx.GetProperty("tassets").EnumerateArray())
         {
             var gp = Q(s.GetProperty("parent_rot"));
@@ -85,17 +85,26 @@ public class HipHingeTests
             Assert.True(Deg(r, Q(s.GetProperty("rest_rot"))) < 1e-3, "rest turn");
             Assert.True((t - V(s.GetProperty("rest_pos"))).Length() < 1e-5f, "rest place");
             var cr = s.GetProperty("chain_rest");
-            var v0 = new[] { 0, 1 }.Select(i => Vector3.Transform(Vector3.Transform(Vector3.UnitY, Q(cr[i])), gp)).ToArray();
+            int nt = cr.GetArrayLength();
+            var v0 = Enumerable.Range(0, nt).Select(i => Vector3.Transform(Vector3.Transform(Vector3.UnitY, Q(cr[i])), gp)).ToArray();
             double amount = s.GetProperty("amount").GetDouble(), soft = s.GetProperty("soft").GetDouble();
             foreach (var f in s.GetProperty("frames").EnumerateArray())
             {
-                var sw = new double[2];
-                for (int i = 0; i < 2; i++)
+                var sw = new double[nt];
+                var sp = new double[nt];
+                for (int i = 0; i < nt; i++)
                 {
                     var v = Vector3.Transform(Vector3.Transform(Vector3.UnitY, Q(f.GetProperty("chains")[i])), gp);
-                    sw[i] = SurvivorUnchained.Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0[i].X, v0[i].Y, v0[i].Z, i == 0 ? 1 : -1).Swing;
+                    var (a, b) = SurvivorUnchained.Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0[i].X, v0[i].Y, v0[i].Z, s.GetProperty("sides")[i].GetInt32());
+                    sw[i] = a;
+                    sp[i] = b;
                 }
-                var got = HipHinge.TassetPose(r, HipHinge.TassetTurn(sw[0], sw[1], amount, soft));
+                double turn = nt == 2 ? HipHinge.TassetTurn(sw[0], sw[1], amount, soft) : HipHinge.TassetTurnOne(sw[0], amount, soft);
+                double roll = nt == 2 ? HipHinge.TassetRoll(sp[0], sp[1], s.GetProperty("roll").GetDouble(), s.GetProperty("roll_from").GetDouble(),
+                    s.GetProperty("roll_soft").GetDouble(), s.GetProperty("roll_max").GetDouble()) : 0;
+                Assert.True(Math.Abs(roll - f.GetProperty("roll_deg").GetDouble()) < 1e-3, "roll degrees");
+                if (s.GetProperty("roll").GetDouble() > 0 && roll > 3) rolled++;
+                var got = HipHinge.TassetPose(r, turn, roll);
                 var want = Q(f.GetProperty("tasset"));
                 worst = Math.Max(worst, Deg(got, want));
                 // (a V tip 18 cm down the fall from the pivot, placed by each turn: mm apart)
@@ -105,6 +114,7 @@ public class HipHingeTests
             }
         }
         Assert.True(n > 200, $"frames {n}");
+        Assert.True(rolled > 10, $"rolled frames {rolled}");
         Assert.True(worst < 0.05, $"worst {worst:F4} deg");
         Assert.True(place < 0.5, $"tip {place:F3} mm");
     }
@@ -124,6 +134,29 @@ public class HipHingeTests
             for (int k = 0; k < 3; k++)
                 Assert.Equal(fx[i].GetProperty("pivot")[k].GetDouble(), game[i].GetProperty("pivot")[k].GetDouble(), 9);
         }
+    }
+
+    [Fact]
+    public void The_roll_goes_away_from_the_crossing_thigh_and_is_off_at_zero()
+    {
+        // left thigh 13.1 deg across (spread -13.1), right none: the V's tip goes right (positive), at most roll_max
+        double r = HipHinge.TassetRoll(-13.1, 1.0, 1.3, 2, 6, 20);
+        Assert.InRange(r, 9, 10);
+        Assert.Equal(-r, HipHinge.TassetRoll(1.0, -13.1, 1.3, 2, 6, 20), 9);
+        Assert.Equal(0, HipHinge.TassetRoll(-13.1, 1.0, 0, 2, 6, 20));
+        Assert.Equal(0, HipHinge.TassetRoll(5, 5, 1.3, 2, 6, 20));
+        Assert.True(HipHinge.TassetRoll(-90, 0, 3, 2, 6, 8) <= 8);
+        var tip = Vector3.Transform(-Vector3.UnitY, HipHinge.TassetPose(Quaternion.Identity, 0, 10));
+        Assert.True(tip.X < -0.1f, "the tip goes to her right (-x)");
+        Assert.Equal(HipHinge.TassetPose(Quaternion.Identity, 25).W, HipHinge.TassetPose(Quaternion.Identity, 25, 0).W);
+    }
+
+    [Fact]
+    public void The_hip_tasset_turns_with_its_own_thigh_alone()
+    {
+        Assert.Equal(0.8 * (40 - 3 - 6), HipHinge.TassetTurnOne(40, 0.8, 12), 9);
+        Assert.Equal(0, HipHinge.TassetTurnOne(-20, 0.8, 12));
+        Assert.Equal(0, HipHinge.TassetTurnOne(2, 0.8, 12));
     }
 
     [Fact]
