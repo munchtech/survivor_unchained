@@ -34,6 +34,25 @@ public class FxP7Tests
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
     }
 
+    /// <summary>(leap-vow-marks, 16 Nov: coordinator #15) Sunder's painted ring is drawn by three skills, each with its own
+    /// numbers (BattleFx.Grip.cs PaintedRing / RingPaint): every number it reads is there; the leap's and the vow's are
+    /// closed rings (360) white-hot 3-4 frames and gone in about 0.4 s.</summary>
+    [Fact]
+    public void ThePaintedRingsHaveTheirNumbers()
+    {
+        var p = Real();
+        foreach (var key in new[] { "sunder_mark", "leap.mark", "vow.mark" })
+            foreach (var k in new[] { "from", "run", "life", "core_frames", "core_cut", "open_deg", "cool", "fade", "band", "wobble", "lip", "dry_from", "dry", "gaps", "gap_w", "streaks", "streak_len" })
+                Assert.True(p.Has(key + "." + k), "fx_language.json p7 lacks " + key + "." + k);
+        foreach (var key in new[] { "leap.mark", "vow.mark" })
+        {
+            Assert.Equal(360f, p[key + ".open_deg"]);
+            Assert.InRange(p[key + ".core_frames"], 3, 4);
+            Assert.InRange(p[key + ".life"], 0.3f, 0.5f);
+        }
+        Assert.Equal(3, p.All("leap.mark.crack_tint").Length);
+    }
+
     [Fact]
     public void TheJudgesFloorsHold()
     {

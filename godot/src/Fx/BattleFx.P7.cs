@@ -269,36 +269,9 @@ public partial class BattleFx
             dir = dir.LengthSquared() > 1e-4f ? dir.Normalized() : Vector3.Forward;
             // the press: one glint on the blade's tip and a kick of dust from her heels
             P7Press(P7BladeAt(1), from, dir);
-            double r = e.Radius, x1 = e.X1, z1 = e.Z1;
-            var run = new P7LeapRun { X0 = e.X0, Z0 = e.Z0, X1 = x1, Z1 = z1, Dur = e.Dur, R = r };
-            // the target: a wavefront standing at the hit radius (marked = hit), its arcs growing to the data's coverage
-            // curve with their opacity; shut, one flash at 1.5x its width (the core hot); gone in two steps at the landing
-            var c = V(x1, Y(x1, z1) + 0.04, z1);
-            float rpx = (float)r / P7Px(c);
-            float lead = P7D["leap.ring.lead_px"] / rpx, trail = P7D["leap.ring.trail_px"] / rpx;
-            int flashN = (int)P7D["leap.ring.flash_frames"];
-            float flashK = P7D["leap.ring.flash_k"];
-            float shutAt = -1;
-            run.Ring = P7Quad(0, c, (float)r, (float)e.Dur + 3 * P7Sample, step: s =>
-            {
-                float cover = P7D.Curve("leap.ring.cover", s.Age);
-                if (cover >= 0.999f && shutAt < 0) shutAt = s.Age;
-                bool flash = shutAt >= 0 && s.Age - shutAt < flashN / 60f - 1e-4f;
-                s.M.SetShaderParameter("p7_shrink", cover);
-                s.M.SetShaderParameter("p7_alpha", P7D.Range("leap.ring.alpha", cover));
-                s.M.SetShaderParameter("p7_lead", lead * (flash ? flashK : 1));
-                s.M.SetShaderParameter("p7_trw", trail);
-                float after = s.Age - (float)run.Dur;
-                int k = after < 0 ? -1 : (int)(after / P7Sample);
-                s.M.SetShaderParameter("p7_fade", k < 0 ? 0f : k == 0 ? 0.34f : 0.67f);
-            });
-            run.Ring.M.SetShaderParameter("p7_shrink", 0f);
-            P7Arcs(run.Ring.M, R() * Mathf.Tau, Mathf.Tau, (int)P7D["leap.ring.arcs"], 1, 1.08f, 1.12f, 0.15f);
-            P7BrushWave(run.Ring.M, rpx, P7D["leap.ring.lead_px"]);
-            // the ribbon: her blade's way through the air (her chest plus the data's share of the blade's own swing: the
-            // stand-in's blade loops), splined, its head the data's px tapering to a point
-            float hw = 0.5f * P7D["leap.ribbon.head_px"] * P7Px(from);
-            run.Ribbon = P7NewTrail(() => (PlayerPos + Vector3.Up * 1.1f).Lerp(P7BladeAt(0.92f), P7D["leap.ribbon.blade"]), hw, (float)e.Dur, P7D["leap.ribbon.life"]);
+            // (leap-vow-marks, 16 Nov: coordinator #15) no target ring, no ribbon through the air: at the play camera the
+            // ring read as a thin even gold sticker and the ribbon as a gold arc across the screen (b0, the lead's look)
+            var run = new P7LeapRun { X0 = e.X0, Z0 = e.Z0, X1 = e.X1, Z1 = e.Z1, Dur = e.Dur, R = e.Radius };
             p7Leap = run;
             return;
         }
@@ -308,8 +281,53 @@ public partial class BattleFx
         if (p7Leap?.Ring is { } rg) rg.Life = Math.Min(rg.Life, rg.Age + 1 / 60f);
         p7Leap = null;
         if (p7Shadow != null) p7Shadow.Visible = false;
-        P7Slam(e.X1, e.Z1, (float)e.Radius, 1f);
+        P7LeapLand(e.X1, e.Z1, (float)e.Radius);
         Cam?.JoltPx(Vector3.Up, 10f);
+    }
+
+    /// <summary>(leap-vow-marks, 16 Nov: coordinator #15) The leap's landing: Sunder's painted ring, closed, out to the hit
+    /// radius (PaintedRing, p7.leap.mark: white-hot, then the steel bands, gone ~0.4 s), its cracks (the dark decals only,
+    /// tinted leap.mark.crack_tint, the line row; no lit seam), dust out to the radius, earth chunks. P7Slam's flat spike
+    /// star and its gold light's warm wash are not the leap's any more (b0: a sticker and a white-out; the charge's slam
+    /// keeps P7Slam). Sound: the landing's own P7Ev("leap_land").</summary>
+    void P7LeapLand(double x, double z, float r)
+    {
+        var c = V(x, Y(x, z), z);
+        float pxm = P7Px(c);
+        PaintedRing("leap.mark", c + Vector3.Up * 0.06f, r, Mathf.Tau, R() * Mathf.Tau);
+        if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
+        {
+            var sp = cam.UnprojectPosition(c) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
+            GD.Print($"leap mark frame {Engine.GetFramesDrawn()} at {sp.X:0},{sp.Y:0} reach {r:0.00} m = {r / pxm:0} px");
+        }
+        var ct = P7D.All("leap.mark.crack_tint");
+        var tint = new Color(ct[0], ct[1], ct[2]);
+        float a0 = R() * Mathf.Tau;
+        int cracks = 3 + (int)(R() * 1.99f);
+        float w0 = P7D["leap.crack.root_px"], w1 = P7D["leap.crack.tip_px"];
+        for (int i = 0; i < cracks && wgAlb != null; i++)
+        {
+            float a = a0 + (i + (R() - 0.5f) * 0.6f) / cracks * Mathf.Tau;
+            float len = r * (0.5f + R() * 0.55f);
+            int t0 = 8 + (int)(R() * 1.99f);
+            var from = new Vector2((float)x, (float)z) + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.1f;
+            P7CrackRun(from, a, len, 3, [w0, Mathf.Lerp(w0, w1, 0.5f), w1 * 1.2f], t0, pxm, [], 1f, out float aEnd, out var mid, tint);
+            if (R() < 0.8f)
+            {
+                float side = R() < 0.5f ? -1 : 1;
+                P7CrackRun(mid, aEnd + side * (0.45f + R() * 0.35f), len * (0.3f + R() * 0.2f), 2, [Mathf.Lerp(w0, w1, 0.55f), w1], t0 + 1, pxm, [], 1f, out _, out _, tint);
+            }
+        }
+        var dpx = P7D.All("leap.dust.px");
+        P7Dust(c, r, P7D.Count("leap.dust.puffs", R()), dpx[0], dpx[1], P7D["leap.dust.run"], 0.3f);
+        int chunks = P7D.Count("leap.chunks", R());
+        for (int i = 0; i < chunks; i++)
+        {
+            float a = R() * Mathf.Tau, d = r * 0.45f * Mathf.Sqrt(R());
+            var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            double px = x + o.X * d, pz = z + o.Z * d;
+            P7Throw(V(px, Y(px, pz) + 0.2, pz), o * (1.2f + R() * 2.2f) + Vector3.Up * (2.6f + R() * 2.4f), 0.6f + R() * 0.35f, 1.6f + R() * 0.5f);
+        }
     }
 
     /// <summary>A star's life by frames: full for `hold` frames, then the core, the gold and the amber step out every `step`.</summary>
@@ -384,7 +402,7 @@ public partial class BattleFx
     /// ground), `len` long, each `px[j]` px wide at its dark gap (the strip's gap is the data's share of its band), its
     /// projector 0.5 m deep (never up into foliage); its light a seam strip down the gap's own centre (P7Seam). Returns its
     /// end; `aEnd` its last heading, `mid` its first joint (where a fork may leave).</summary>
-    Vector2 P7CrackRun(Vector2 from, float a, float len, int n, float[] px, int tex, float pxm, Color[] steps, float day, out float aEnd, out Vector2 mid)
+    Vector2 P7CrackRun(Vector2 from, float a, float len, int n, float[] px, int tex, float pxm, Color[] steps, float day, out float aEnd, out Vector2 mid, Color? tint = null)
     {
         float seg = len / n, gap = P7D["leap.crack.gap"];
         var p = from;
@@ -400,7 +418,7 @@ public partial class BattleFx
             float theta = Mathf.Atan2(-dir.Y, dir.X);
             int t = Math.Min(11, tex + j);
             float w = px[j] * pxm / gap;
-            WgDecalOn(pos, theta, new Vector3(seg * 1.06f, 0.5f, w), wgAlb![t], wgNrm![t], null, 3.2f, 1f, 0, 0);
+            WgDecalOn(pos, theta, new Vector3(seg * 1.06f, 0.5f, w), wgAlb![t], wgNrm![t], null, 3.2f, 1f, 0, 0, 0, tint);
             var side = new Vector2(-dir.Y, dir.X);
             for (int q = 0; q < 6; q++)
             {
@@ -413,7 +431,7 @@ public partial class BattleFx
             if (j == 0) mid = p;
             a += (R() - 0.5f) * 0.5f;
         }
-        P7Seam(seam, seamW, P7D["leap.crack.cool"]);
+        if (tint == null) P7Seam(seam, seamW, P7D["leap.crack.cool"]);   // (a tinted run, the leap's: the dark crack only)
         aEnd = a;
         return p;
     }

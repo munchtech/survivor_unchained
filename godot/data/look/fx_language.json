@@ -708,6 +708,7 @@
    "life": 0.3
   },
   "leap": {
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7.cs P7LeapLand, BattleFx.Grip.cs PaintedRing / RingPaint) Heroic Leap's landing mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed (open_deg 360) round her at the leap's real hit radius (Ev.Leap Radius); knots_k x the bristle detail round its longer length; crack_tint the landing cracks' rgb multiplier (the line row, never black; their lit seams gone). Replaces, for the leap only: leap.ring (target), leap.ribbon head_px/life/blade (air ribbon), leap.star and the landing light (the charge's slam, P7Slam, still reads leap.star / leap.crack)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.3, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.12, 0.4], "band": 0.12, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.8, "gaps": [4, 6], "gap_w": [0.0035, 0.007], "streaks": [8, 11], "streak_len": [0.1, 0.2], "knots_k": 2.0, "crack_tint": [0.85, 0.6, 0.4]},
    "ring": {
     "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
     "lead_px": 8,
@@ -1017,8 +1018,9 @@
    }
   },
   "vow": {
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7Storm.cs P7Vow Burst, BattleFx.Grip.cs PaintedRing / RingPaint) Iron Vow's burst mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed round her at the burst's real radius (Ev.Brace Radius). The brace draws only the plant glint (plant.flash_px) and dust; vow.dome, vow.store and vow.burst's star, wave and light keys are no longer read", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.3, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.12, 0.4], "band": 0.09, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.8, "gaps": [5, 7], "gap_w": [0.003, 0.006], "streaks": [10, 14], "streak_len": [0.08, 0.15], "knots_k": 2.9},
    "plant": {
-    "flash_px": 50,
+    "flash_px": 30,
     "frames": 3,
     "puffs": [
      12,

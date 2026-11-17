@@ -46,7 +46,7 @@ public partial class BattleFx
     }
 
     readonly List<P7Smear> p7Smears = new();
-    OmniLight3D? p7StormLight, p7VowLight;
+    OmniLight3D? p7StormLight;
     double p7StormOff = -9;
     float p7StormR, p7StormOn = -1, p7SpinPrev = float.NaN, p7SpinDir = -1, p7Swirl, p7SpinAngle, p7TiltPhi;
     // the frame's storm work (P7Pre): a tick or start in this batch; a break in it; how many tick kits drawn
@@ -56,9 +56,7 @@ public partial class BattleFx
     float p7VowLevel;
     int p7VowBlows;
     readonly Dictionary<int, P7Scar> p7Scars = new();
-    P7Shape? p7Dome, p7Glow;
     Node3D? p7Shield;
-    static SphereMesh? p7DomeMesh;
 
     /// <summary>The storm's hits and the vow's burst are drawn here (P7Owns).</summary>
     bool P7OwnsStorm(Ev.Hit e)
@@ -447,59 +445,15 @@ public partial class BattleFx
                 P7Ev("vow_start");
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
                 p7VowStart = time;
-                // the shield slams down: one glint the data's px on it (3 frames), a pop of light, dust pressed out from
-                // under her feet all round, two values
+                // (leap-vow-marks, 16 Nov: coordinator #15) the plant: one faint steel glint on her shield (3 frames; the shield
+                // piece's own node, P7ShieldAt) and dust pressed out from under her feet all round, two values; nothing else
+                // through the brace. The even gold circle (the dome's rim), the gold dot (the store glow: a flat disc on her
+                // chest at the play camera, not the shield's own metal), the cream glowing dome and the gold ground light are
+                // gone (b0, the lead's look: a sticker and a white-out tube)
                 P7Glint(P7ShieldAt(), P7D["vow.plant.flash_px"]);
-                P7LightOn(P7ShieldAt(), 3f, Flare.Night ? 1.6f : 2.4f);
                 P7Kick(feet, Vector3.Zero, P7D.Count("vow.plant.puffs", R()), P7D["kick.life"] * 1.3f);
                 p7VowLevel = 0; p7VowBlows = 0; p7StoreAt = -9;
-                P7VowShapesGone(0);
-                p7DomeMesh ??= new SphereMesh { Radius = 1.2f, Height = 1.2f, IsHemisphere = true, RadialSegments = 64, Rings = 20 };
-                // the dome: interior clear, a rim the data's px in from its outline (and where it meets the ground), its
-                // core out; on each blow taken it flares to the flare px with the core in it for the flare's time
-                float rim = P7D["vow.dome.rim_px"], flare = P7D["vow.dome.flare_px"], flareS = P7D["vow.dome.flare_s"];
-                p7Dome = P7Brushed(rim, P7OnMesh(8, p7DomeMesh, feet, new Vector3(1, 1.55f, 1), 9999, step: s =>
-                {
-                    float gy = Y(PlayerPos.X, PlayerPos.Z);
-                    s.N.GlobalPosition = new Vector3(PlayerPos.X, gy, PlayerPos.Z);
-                    s.M.SetShaderParameter("p7_y0", gy + 0.02f);
-                    s.M.SetShaderParameter("p7_t", s.Age);
-                    bool hit = (float)(time - p7StoreAt) < flareS;
-                    s.M.SetShaderParameter("p7_lvl", hit ? 0f : 0.34f);
-                    s.M.SetShaderParameter("p7_width", hit ? flare : rim);
-                    s.M.SetShaderParameter("p7_alpha", s.Age < P7Sample ? 0.6f : 0.95f);
-                }));
-                // the store: a round glow on the shield's face growing over the brace (the data's px), the ground light with it
-                // (fight-ring, 13 Nov: px 20-60 -> 10-26, the boss heating, not a disc: at 60 px it covered the 77 px shield and
-                // read at the play camera as a flat orange UI disc on her chest; the wood rim now stays seen round it)
-                var spx = P7D.All("vow.store.px");
-                float grow = P7D["vow.store.grow"];
-                p7Glow = P7Quad(9, P7ShieldAt(), 0.1f, 9999, bill: true, top: true, step: s =>
-                {
-                    var at = P7ShieldAt();
-                    s.N.GlobalPosition = at;
-                    // (F1) the glow belongs to the shield: no shield held on the forearm (twin blades, mace), no glow
-                    s.N.Visible = P7ShieldHeld();
-                    float t = (float)(time - p7VowStart), since = (float)(time - p7StoreAt);
-                    float u = Mathf.Clamp(Mathf.Floor(t / P7Sample) * P7Sample / grow, 0, 1);
-                    float px = Mathf.Lerp(spx[0], spx[1], u);
-                    s.N.Scale = Vector3.One * 0.5f * px * P7Px(at);
-                    s.M.SetShaderParameter("p7_lvl", since < P7Sample ? 0f : u < 0.5f ? 0.34f : 0f);
-                    s.M.SetShaderParameter("p7_alpha", 0.92f);
-                    if (p7VowLight != null)
-                    {
-                        p7VowLight.GlobalPosition = new Vector3(PlayerPos.X, Y(PlayerPos.X, PlayerPos.Z) + 0.55f, PlayerPos.Z);
-                        p7VowLight.OmniRange = 2.2f + 1.2f * u;
-                        p7VowLight.LightEnergy = (Flare.Night ? 0.45f : 0.75f) * (1 + 2 * u);
-                    }
-                });
-                P7Brush(p7Glow.M, spx[0]);
-                if (p7VowLight == null)
-                {
-                    p7VowLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.3f, LightColor = P7Band(1) };
-                    AddChild(p7VowLight);
-                }
-                p7VowLight.Visible = true;
+                if (GripSayAll) GD.Print($"vow start frame {Engine.GetFramesDrawn()}");
                 break;
             }
             case BracePhase.Store:
@@ -532,38 +486,25 @@ public partial class BattleFx
                 P7Ev("vow_burst");
                 p7VowAt = time;
                 float k = P7StoreLevel(e.Stored);
-                P7VowShapesGone(P7Sample);
                 float r = (float)e.Radius;
                 var c = V(e.X, Y(e.X, e.Z), e.Z);
-                // one star off the shield (3 frames, sized by the store), one wavefront to the radius, then dust there; its
-                // light a gold pop of 2 frames at the data's share (never the crowd bleached cream)
-                int bf = (int)P7D["vow.burst.frames"];
-                P7StarPx(P7ShieldAt(), P7D["vow.burst.px"] * (0.85f + 0.3f * k), P7D.Count("vow.burst.spikes", R()), P7D["vow.burst.root_px"], 0, 1, Math.Max(1, (bf - 1) / 2), true);
-                float run = P7D["vow.burst.run"];
-                P7Wave(c + Vector3.Up * 0.06f, r, run, P7D["vow.burst.lead_px"], P7D["vow.burst.trail_px"]);
+                // (leap-vow-marks, 16 Nov: coordinator #15) Sunder's painted ring, closed, out to the burst's real radius
+                // (PaintedRing, p7.vow.mark: white-hot, then the steel bands, gone ~0.4 s), then dust there and round her
+                // feet. The star off the shield, the old even wavefront and the light's pop are gone (stickers, a wash)
+                PaintedRing("vow.mark", c + Vector3.Up * 0.06f, r, Mathf.Tau, R() * Mathf.Tau);
+                if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
+                {
+                    var sp = cam.UnprojectPosition(c) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
+                    GD.Print($"vow mark frame {Engine.GetFramesDrawn()} at {sp.X:0},{sp.Y:0} reach {r:0.00} m = {r / P7Px(c):0} px store {k:0.00}");
+                }
+                float run = P7D["vow.mark.run"];
                 var dpx = P7D.All("leap.dust.px");
-                WgLater(run - 0.04f, () => P7Dust(c, r * 1.05f, 12 + (int)(6 * k), dpx[0] * 0.8f, dpx[1] * 0.8f, 0.3f, r * 0.9f));
-                P7LightOn(c + Vector3.Up * 1.3f, r * 1.3f, (Flare.Night ? 3f : 4.2f) * (0.8f + 0.5f * k) * P7D["vow.burst.light_k"], P7D["vow.burst.light_frames"] / 60f, 2 / 60f);
+                WgLater(Mathf.Max(0, run - 0.04f), () => P7Dust(c, r * 1.05f, 12 + (int)(6 * k), dpx[0] * 0.8f, dpx[1] * 0.8f, 0.3f, r * 0.9f));
                 P7Dust(c, r * 0.5f, 10 + (int)(4 * k), dpx[0] * 0.7f, dpx[1] * 0.7f, 0.3f, 0.3f);
                 Cam?.JoltPx(Vector3.Up, 6f + 4f * k);
                 break;
             }
         }
-    }
-
-    /// <summary>The dome and the glow: a sample at full, then gone (`after` s); the ground light down with them.</summary>
-    void P7VowShapesGone(float after)
-    {
-        foreach (var sh in new[] { p7Dome, p7Glow })
-        {
-            if (sh == null) continue;
-            if (after <= 0) { if (IsInstanceValid(sh.N)) sh.N.QueueFree(); p7Shapes.Remove(sh); continue; }
-            float at = sh.Age; sh.Life = at + after;
-            var st = sh.Step;
-            sh.Step = s => { st?.Invoke(s); s.M.SetShaderParameter("p7_lvl", 0f); };
-        }
-        p7Dome = p7Glow = null;
-        if (p7VowLight != null) p7VowLight.Visible = false;
     }
 
     /// <summary>A dust puff's lit top: held a third brighter (by night the tan sank under her pool's lit ground; by day,
