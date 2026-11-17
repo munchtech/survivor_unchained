@@ -618,7 +618,13 @@ public sealed class SideCarry
             bool there = !float.IsNaN(lastA) && (lastA > 0f) == (crossTo > 0f) && MathF.Abs(lastA) >= MathF.Min(MathF.Abs(goal), MathF.Max(edge, CaneAngle)) - CrossSlack;
             if (there && far && Weight >= GuardWeight) crossLand = true;
             if (!far || there || Weight < GuardWeight) crossTo = 0f;
-            else aW = goal;
+            else
+            {
+                aW = goal;
+                // (r16) once over on the far side, at most the guard's step box a frame on screen from last frame's drawn blade
+                // (StepMax, the tilt's rate), unless last frame's blade was short (T3's exemption: the guard then judges both ends)
+                if (!float.IsNaN(lastA) && lastShown > ShortShown && (lastA > 0f) == (crossTo > 0f)) { float sb = MathF.Min(StepMax, MaxRate * dt); aW = lastA + Math.Clamp(Wrap(goal - lastA), -sb, sb); }
+            }
         }
         if (MathF.Abs(a0) <= Edge) aW = Math.Clamp(aW, -Edge, Edge);
         else if (MathF.Abs(aW) > MathF.Abs(a0) && MathF.Sign(aW) == MathF.Sign(a0)) aW = a0;

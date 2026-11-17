@@ -384,12 +384,16 @@ public class SideCarryTests
 
     // (r16, judge: e30 s11/s13 leg 10 +3..+9) A crossing, once begun, finishes: a pivot then a run's start crosses the cane's
     // band (drawn |a| under CaneAngle, showing 0.2 or more of its length) in at most 2 frames, never a crawl through it, and the
-    // blade grows back out of its short crossing (no shown-length pump). Without the rule (CrossOn false) it crawls.
+    // blade grows back out of its short crossing (no shown-length pump). Without the rule (CrossOn false) it crawls. Only the
+    // frames between leaving one side (out past the judge's 28, or as far out as the clip's own blade: the run's want can sit inside
+    // it) and landing on the far side (out past the band, or within LandTol of the clip's own blade) count: a blade that stays
+    // on its side inside the band (the layer faded onto a clip whose own blade hangs there) is no crossing.
+    const float LandTol = 5f;
     static (int band, int pumps) CrossFrames(bool on, float to, int turnFrames)
     {
         var c = new SideCarry { CrossOn = on };
         for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
-        int band = 0, pumps = 0; float s0 = float.NaN, s1 = float.NaN;
+        int band = 0, pumps = 0, run = 0; float s0 = float.NaN, s1 = float.NaN, side = 0f;
         float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f);
         for (int i = 0; i < 45; i++)
         {
@@ -398,7 +402,12 @@ public class SideCarryTests
             c.Step(Dt, true, 0f, f);
             var d = SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward);
             float a = SideCarry.ScreenAngle(d, Jx, Jy, 1f), sh = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2) + MathF.Pow(Vector3.Dot(Jy, d), 2)) / n;
-            if (c.Weight > 0f && MathF.Abs(a) < c.CaneAngle && sh >= 0.2f) band++;
+            float a0 = MathF.Abs(SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f)), s = a > 0f ? 1f : -1f;
+            // out past the band: the judge's 28 (CaneAngle keeps a degree's margin on it)
+            float edge = c.CaneAngle - 1f;
+            bool off = side == 0f || s == side ? MathF.Abs(a) >= MathF.Min(edge, a0) : MathF.Abs(a) >= MathF.Min(edge, a0 - LandTol);
+            if (off) { if (side != 0f && s != side) band = Math.Max(band, run); side = s; run = 0; }
+            else if (c.Weight > 0f && sh >= 0.2f) run++;
             if (!float.IsNaN(s0) && (s1 - s0) * (sh - s1) < 0f && MathF.Abs(s1 - s0) >= 0.1f && MathF.Abs(sh - s1) >= 0.1f) pumps++;
             s0 = s1; s1 = sh;
         }
