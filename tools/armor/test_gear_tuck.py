@@ -160,6 +160,26 @@ def test_depth_law_deep_inside_shallow_at_the_open_edge(monkeypatch):
     assert (18.0 * np.where(t1 > 0.973, 1.0, t1) <= 0.3 * x1 + 1e-6).all()
 
 
+def test_through_a_rigid_face_takes_the_law_depth(monkeypatch):
+    """Her skin THROUGH a plate at rest (the plate inside her: a cap of 0.095 m in a ball of 0.1) takes the law's whole
+    depth, as skin just under a plate does; through a bendy part it keeps the shader's 10 mm (lane G solver round 9)."""
+    sk, _, _ = shoulder()
+    cap = trimesh.creation.icosphere(subdivisions=4, radius=0.095)
+    keep = cap.vertices[cap.faces].mean(1)[:, 1] > -0.03
+    PB, TB = np.asarray(cap.vertices, float), np.asarray(cap.faces[keep], np.int64)
+    law = {"tuck_depth_mm": 18, "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0, "tuck_slope": 1.0,
+           "tuck_edge_mm": 10}
+    _law(monkeypatch, law)
+    crown = sk.P[:, 1] > 0.08
+    R = np.ones(len(TB), bool)
+    t = gt.tuck_of(sk, PB, TB, R, "pauldrons")[0]
+    assert (t[crown] >= gt.FULL - 1e-9).all()                                    # (17.6 of 18 mm: all of it)
+    R[:] = False
+    R[np.argmin(PB[TB].mean(1)[:, 1])] = True   # (one rigid face at the open edge: the row keeps the law's scale)
+    t = gt.tuck_of(sk, PB, TB, R, "pauldrons")[0]
+    assert np.allclose(t[crown] * 18.0, 10.0, atol=1e-6)                          # (through a bendy part: 10 mm)
+
+
 def test_reach_follows_the_law(monkeypatch):
     sk, _, _ = shoulder()
     cap = trimesh.creation.icosphere(subdivisions=4, radius=0.115)                # (a plate standing 15 mm off her)
