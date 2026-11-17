@@ -35,7 +35,7 @@ const float DEN_COVER = 0.5;
 // The den's ceilings (lane E loot2): the epic's light knees at DEN_EPIC_KNEE and never passes DEN_EPIC_CAP (its brightest
 // channel); the set's strands are flat bodies DEN_SET_W wide (the one in front) at DEN_SET_PEAK of its colour.
 const float DEN_EPIC_KNEE = 0.25;
-const float DEN_EPIC_CAP = 0.36;
+const float DEN_EPIC_CAP = 0.34;   // (lead 4: .36 -> .34, gm3 had 1 px at C .141)
 const float DEN_SET_W = 0.07;
 const float DEN_SET_PEAK = 0.385;
 
