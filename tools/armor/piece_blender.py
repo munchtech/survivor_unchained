@@ -2960,7 +2960,16 @@ stamp("body hash %s, %d tuck records" % (BODY_HASH, TUCK_N))
 # --------------------------------------- the post steps every piece takes --
 i0, _ = cut(M_STRAYS)
 i1 = src.index(M_RIGID) + len(M_RIGID)
+# (Body B: her game rig is B's own laws (P1Laws), so no panel_front is added to the armature: the helpers' split still
+# runs for B's own share/twist bones; the armor hinge bones come at a piece's bind (pin_shipped.with_hinges), not here)
+_panels_ = None
+if B_BODY:
+    _hp_ = G["rig_helpers"].hp
+    _panels_ = _hp_.SPEC.get("panels")
+    _hp_.SPEC["panels"] = []
 run(i0, i1, NS)
+if B_BODY:
+    _hp_.SPEC["panels"] = _panels_
 names = set(G["BONE_NAMES"])
 n_parts = 0
 PARTS_OF = {}

@@ -1,5 +1,73 @@
 [
  {
+  "id": "kit_bodice",
+  "outfit": null,
+  "slot": "top",
+  "layer": 1,
+  "covers": [
+   "top"
+  ],
+  "meshes": [
+   "kit_bodice.top.darkleather",
+   "kit_bodice.top.gold",
+   "kit_bodice.top.steel"
+  ],
+  "tuck": "armor_tuck/kit_bodice.bin",
+  "tuck_count": 5540,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "file": "res://art/armor/kit_bodice.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
+  "id": "kit_brief",
+  "outfit": null,
+  "slot": "bottom",
+  "layer": 1,
+  "covers": [
+   "bottom"
+  ],
+  "meshes": [
+   "kit_brief.bottom.gold",
+   "kit_brief.bottom.steel"
+  ],
+  "tuck": "armor_tuck/kit_brief.bin",
+  "tuck_count": 1619,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_brief.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
+  "id": "kit_gloves",
+  "outfit": null,
+  "slot": "gloves",
+  "layer": 1,
+  "covers": [
+   "gloves"
+  ],
+  "meshes": [
+   "kit_gloves.gloves.darkleather",
+   "kit_gloves.gloves.gold"
+  ],
+  "tuck": "armor_tuck/kit_gloves.bin",
+  "tuck_count": 386,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_gloves.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
   "id": "kit_helm",
   "outfit": null,
   "slot": "head",
@@ -17,6 +85,50 @@
   "file": "res://art/armor/kit_helm.gltf",
   "tier": 2,
   "rigid": true,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
+  "id": "kit_pauldrons",
+  "outfit": null,
+  "slot": "pauldrons",
+  "layer": 3,
+  "covers": [
+   "pauldrons"
+  ],
+  "meshes": [
+   "kit_pauldrons.pauldrons.darkleather",
+   "kit_pauldrons.pauldrons.gold",
+   "kit_pauldrons.pauldrons.steel"
+  ],
+  "tuck": "armor_tuck/kit_pauldrons.bin",
+  "tuck_count": 1288,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_pauldrons.gltf",
+  "tier": 2,
+  "source": "mesh",
+  "body_glb": "e37f5a0c",
+  "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
+ },
+ {
+  "id": "kit_vambraces",
+  "outfit": null,
+  "slot": "bracers",
+  "layer": 2,
+  "covers": [
+   "bracers"
+  ],
+  "meshes": [
+   "kit_vambraces.bracers.darkleather",
+   "kit_vambraces.bracers.gold",
+   "kit_vambraces.bracers.steel"
+  ],
+  "tuck": "armor_tuck/kit_vambraces.bin",
+  "tuck_count": 957,
+  "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+  "file": "res://art/armor/kit_vambraces.gltf",
+  "tier": 2,
   "source": "mesh",
   "body_glb": "e37f5a0c",
   "built_on": "98efddd3bdf26513b6748925c507011512ca5107"
