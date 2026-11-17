@@ -164,7 +164,7 @@ vec4 p7_fissure(vec2 uv) {
 	if (lf < 3.0 && a < Ls) {
 		float ts = a / max(Ls, 1e-3);
 		float sw = mix(p7_seam.y, p7_seam.x, pow(1.0 - ts, p7_gap.z)) * clamp((1.0 - ts) / 0.07, 0.0, 1.0);
-		sw = min(sw, W - 2.0 * max(0.8, 0.3 * W)) * (lf > 1.5 ? 0.7 : 1.0);
+		sw = min(sw, W - 2.0 * max(0.8, 0.35 * W)) * (lf > 1.5 ? 0.7 : 1.0);
 		float S2 = p7_sbrk.y * S, sq0, sq1;
 		float js = p7_kseg(a, S2, 0.7, 13.0, sq0, sq1);
 		if (p7_son(js, S2) && sw > 0.3) {

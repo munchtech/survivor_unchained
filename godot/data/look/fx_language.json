@@ -987,15 +987,15 @@
     "knots_k": 1.3
    },
    "seam": {
-    "what": "(lane E lead 7, 17 Nov) the line's hot seam in its fissure's gap (storm.line): px wide at her end (was 4 px across a strip that drew a 1 px orange hairline beside the gap), tapering to shape[0] px at shape[1] of the gap's taper (storm.line.taper), then out; never wider than the gap less a dark margin each side (0.3 of the gap, at least 0.8 px). r2 (round 1's read as one continuous gold line): 3 px (was 3.5), glimpsed in pieces on its own knots about breaks[1] x line.jag[0] px apart, breaks[0] of them off near her end rising to shape[2] (was .3) at its end, none over her first breaks[3] px, each piece pointed over breaks[2] px at a break. The school's bands by heat: pending white-hot one sample as it tears open (and again as each line thrown on its path lands on it, storm.line.stack), then gold over amber breathing (pulse: base, swing, Hz on its coverage); split white-hot until cool[0] s, gold until cool[1], amber (0.7 wide) until cool[2], then out",
+    "what": "(lane E lead 7, 17 Nov) the line's hot seam in its fissure's gap (storm.line): px wide at her end (was 4 px across a strip that drew a 1 px orange hairline beside the gap), tapering to shape[0] px at shape[1] of the gap's taper (storm.line.taper), then out; never wider than the gap less a dark margin each side (0.3 of the gap, at least 0.8 px). r2 (round 1's read as one continuous gold line): 3 px (was 3.5), glimpsed in pieces on its own knots about breaks[1] x line.jag[0] px apart, breaks[0] of them off near her end rising to shape[2] (was .3) at its end, none over her first breaks[3] px, each piece pointed over breaks[2] px at a break. The school's bands by heat: pending white-hot one sample as it tears open (and again as each line thrown on its path lands on it, storm.line.stack), then gold over amber breathing (pulse: base, swing, Hz on its coverage); split white-hot until cool[0] s, gold until cool[1], amber (0.7 wide) until cool[2], then out (lead 7 r3: the seam broken more in the middle and the gap wider there, so the dark margins read on each side: breaks[0] .45, shape[2] .6, gap[0] 12, dark margin .35)",
     "px": 3.0,
     "shape": [
      0.8,
      0.86,
-     0.5
+     0.6
     ],
     "breaks": [
-     0.3,
+     0.45,
      0.9,
      4,
      18
@@ -1026,7 +1026,7 @@
      0.3
     ],
     "gap": [
-     10,
+     12,
      1.5,
      1.0,
      6
