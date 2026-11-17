@@ -113,6 +113,12 @@ uniform vec3 kit_floor_close = vec3(-1.0);
 // (finish-2 r6: kit_steps.y, the mid->lit n.l step, at the close camera: the sun's lit band held 80% of her cups flat at L .56-.58,
 // neither the close key's gain nor the floor moved it; 0: kit_steps.y at every distance)
 uniform float kit_lit_step_close = 0.0;
+// (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
+// and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
+// Defaults: every gear bit for bit as r6. Tried and dropped: a directional gain at the den's close camera (0.3 and 0.5 left the
+// den close frame as it was) and the close rig's fill re-hued on the boots' leather (shafts more violet, h 326 and 303))
+uniform vec3 kit_tones_close = vec3(0.0);
+uniform vec3 kit_refl_band_close = vec3(0.0);
 global uniform vec4 cel_her_den;
 vec3 kit_dark_at(float far) { return kit_tone_dark * (any(notEqual(cel_her_den, vec4(0.0))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
 varying float v_kgold;
@@ -832,15 +838,17 @@ void light() {
 		float ka1 = smoothstep(kit_steps.x - ksw, kit_steps.x + ksw, ktw) * ksh;
 		float ksy = kit_lit_step_close > 0.0 ? mix(kit_lit_step_close, kit_steps.y, v_kit_far) : kit_steps.y;   // (finish-2 r6)
 		float ka2 = smoothstep(ksy - ksw, ksy + ksw, ktw) * ksh * kom;
-		vec3 ktone = mix(mix(kit_dark_at(v_kit_far), kit_tone_mid, ka1), kit_tone_lit, ka2);
+		vec3 ktc = kit_tones_close.x > 0.0 ? mix(kit_tones_close, vec3(1.0), v_kit_far) : vec3(1.0);   // (finish-2 r7, see kit_tones_close)
+		vec3 ktone = mix(mix(kit_dark_at(v_kit_far), kit_tone_mid * ktc.x, ka1), kit_tone_lit * ktc.y, ka2);
 		vec2 kbd = normalize(mix(normalize(kit_refl.xy), normalize(LIGHT.xy + vec2(1e-4)), kit_refl.z));
-		float kbs = dot(NORMAL.xy, kbd), kbw = max(kit_refl_band.z, 1e-3);
-		float kband = smoothstep(kit_refl_band.x - kit_refl_band.y - kbw, kit_refl_band.x - kit_refl_band.y + kbw, kbs)
-			* (1.0 - smoothstep(kit_refl_band.x + kit_refl_band.y - kbw, kit_refl_band.x + kit_refl_band.y + kbw, kbs));
-		ktone = mix(ktone, kit_tone_refl, kband * kit_refl_k * mix(0.4, 1.0, ksh) * kom);
+		vec3 krb = kit_refl_band_close.x > 0.0 ? mix(kit_refl_band_close, kit_refl_band, v_kit_far) : kit_refl_band;   // (finish-2 r7)
+		float kbs = dot(NORMAL.xy, kbd), kbw = max(krb.z, 1e-3);
+		float kband = smoothstep(krb.x - krb.y - kbw, krb.x - krb.y + kbw, kbs)
+			* (1.0 - smoothstep(krb.x + krb.y - kbw, krb.x + krb.y + kbw, kbs));
+		ktone = mix(ktone, kit_tone_refl * ktc.z, kband * kit_refl_k * mix(0.4, 1.0, ksh) * kom);
 		float krad2 = mix(kit_glint.x, kit_glint.y, v_kit_far);
 		float klit2 = ksh * step(0.0, kt) * kom;
-		vec3 kpc = (ktone + kit_glint_color * ((1.0 - smoothstep(krad2 - kit_glint.z, krad2 + max(kit_glint.z, 1e-3), kan)) * klit2))
+		vec3 kpc = (ktone + kit_glint_color * ktc.z * ((1.0 - smoothstep(krad2 - kit_glint.z, krad2 + max(kit_glint.z, 1e-3), kan)) * klit2))
 			* mix(kit_plate.x, kit_plate.x * kit_plate.y, v_kit_far);
 		float kg2 = smoothstep(kit_gold.z - ksw, kit_gold.z + ksw, ktw) * ksh * kom;
 		vec3 kgc = (mix(kit_gold_dark, kit_gold_lit, kg2) + vec3(0.9, 0.8, 0.55) * ((1.0 - smoothstep(kit_gold_glint - 1.0, kit_gold_glint + 1.0, kan)) * klit2))
