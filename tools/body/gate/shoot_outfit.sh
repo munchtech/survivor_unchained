@@ -29,8 +29,9 @@ timeout 900 "$G" --headless --path . --import > $O/import.log 2>&1; echo "import
 dotnet build -v q -nologo > $O/build.log 2>&1 || { echo "BUILD FAILED"; give; exit 3; }
 for BODY in $BODIES; do
   mkdir -p $O/$BODY
-  # (A wears the same 30 calling rows as B: --standin 0, A's outfit file; the retired plate stand-ins are not compared)
-  X="--standin 0"; [ $BODY = B ] && X="--body p1 --p1-probe"
+  # (A wears the same calling rows as B: --standin 0, A's outfit file; the retired plate stand-ins are not compared)
+  # (the Warden: A as the game ships her, wearing the plate_pauldrons_warden stand-in (main's call 17 Nov: B wears it too))
+  X="--standin 0"; [ $CAL = warden ] && X=""; [ $BODY = B ] && X="--body p1 --p1-probe"
   for k in $KEYS; do
     timeout 400 "$G" --path . --fixed-fps 60 --resolution 1920x1080 -- --shot rf_${TAG}_${BODY}_${k} ${S[$k]} $C0 $X </dev/null > $O/$BODY/$k.log 2>&1
     echo "== $BODY $k exit $?"; grep -aE "saved|ERROR|Exception" $O/$BODY/$k.log | head -3
