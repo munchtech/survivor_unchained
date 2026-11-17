@@ -107,6 +107,12 @@ uniform float kit_close_wrap = 0.0;
 // z > 0: the den's fire and ember are point lights too, and the town's close gain lifted her plate white there)
 uniform vec3 kit_tint_den_close = vec3(1.0);
 uniform vec3 kit_close_den = vec3(0.0);
+// (finish-2 r6: the floor at the close camera, x in town, y under the den's rig; below 0 the play camera's (kit_floor.x, or
+// kit_floor_den in the den): kit_floor_den 16 at the den's close camera blew her plate white, L50 .98; defaults = r5)
+uniform vec3 kit_floor_close = vec3(-1.0);
+// (finish-2 r6: kit_steps.y, the mid->lit n.l step, at the close camera: the sun's lit band held 80% of her cups flat at L .56-.58,
+// neither the close key's gain nor the floor moved it; 0: kit_steps.y at every distance)
+uniform float kit_lit_step_close = 0.0;
 global uniform vec4 cel_her_den;
 vec3 kit_dark_at(float far) { return kit_tone_dark * (any(notEqual(cel_her_den, vec4(0.0))) ? mix(kit_tint_den_close, kit_tint_den_far, far) : mix(kit_tint_close, vec3(1.0), far)); }
 varying float v_kgold;
@@ -584,9 +590,12 @@ void fragment() {
 		float kfull = max(kpaint, v_kgold);
 		if (kfull > 0.0) {
 			nrm = mix(nrm, vec3(0.5, 0.5, 1.0), kfull); metal = mix(metal, 1.0, kfull); RADIANCE = mix(RADIANCE, vec4(0.0, 0.0, 0.0, 1.0), kfull);
+			bool kden = any(notEqual(cel_her_den, vec4(0.0)));
+			float kff = (kit_floor_den > 0.0 && kden) ? kit_floor_den : kit_floor.x;   // (the play camera's floor)
+			float kfc = kden ? kit_floor_close.y : kit_floor_close.x;                  // (finish-2 r6, see kit_floor_close)
 			look_emit += (kit_dark_at(kit_far) * kpaint * mix(kit_plate.x, kit_plate.x * kit_plate.y, kit_far)
 				+ kit_gold_dark * v_kgold * mix(kit_gold.x, kit_gold.x * kit_gold.y, kit_far))
-				* ((kit_floor_den > 0.0 && any(notEqual(cel_her_den, vec4(0.0)))) ? kit_floor_den : kit_floor.x);
+				* mix(kfc >= 0.0 ? kfc : kff, kff, kit_far);
 		}
 		v_metal = metal;
 		v_paint = paint;
@@ -821,7 +830,8 @@ void light() {
 		float kan = degrees(acos(clamp(dot(NORMAL, H), -1.0, 1.0)));
 		float ksw = max(kit_steps.z, 1e-3);
 		float ka1 = smoothstep(kit_steps.x - ksw, kit_steps.x + ksw, ktw) * ksh;
-		float ka2 = smoothstep(kit_steps.y - ksw, kit_steps.y + ksw, ktw) * ksh * kom;
+		float ksy = kit_lit_step_close > 0.0 ? mix(kit_lit_step_close, kit_steps.y, v_kit_far) : kit_steps.y;   // (finish-2 r6)
+		float ka2 = smoothstep(ksy - ksw, ksy + ksw, ktw) * ksh * kom;
 		vec3 ktone = mix(mix(kit_dark_at(v_kit_far), kit_tone_mid, ka1), kit_tone_lit, ka2);
 		vec2 kbd = normalize(mix(normalize(kit_refl.xy), normalize(LIGHT.xy + vec2(1e-4)), kit_refl.z));
 		float kbs = dot(NORMAL.xy, kbd), kbw = max(kit_refl_band.z, 1e-3);

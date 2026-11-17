@@ -161,7 +161,7 @@
           "kit_close": [
             1.0,
             0.0,
-            5.0
+            2.5
           ],
           "kit_tint_close": [
             1.022,
@@ -178,7 +178,13 @@
             1.0,
             1.0,
             1.0
-          ]
+          ],
+          "kit_floor_close": [
+            1.5,
+            3.0,
+            0.0
+          ],
+          "kit_lit_step_close": 0.7
         }
       },
       "gold": {
@@ -197,13 +203,13 @@
           ],
           "kit_gold_dark": [
             0.72,
-            0.5,
-            0
+            0.47,
+            0.0
           ],
           "kit_gold_lit": [
-            1,
-            0.76,
-            0
+            1.0,
+            0.68,
+            0.0
           ],
           "kit_gold_glint": 3.0,
           "kit_floor": [
@@ -215,13 +221,18 @@
           "kit_close": [
             1.0,
             0.0,
-            5.0
+            2.5
           ],
           "kit_close_wrap": 0.2,
           "kit_close_den": [
             1.0,
             1.0,
             1.0
+          ],
+          "kit_floor_close": [
+            1.0,
+            2.0,
+            0.0
           ]
         }
       },
@@ -234,7 +245,7 @@
     },
     "kit_boots": {
       "darkleather": {
-        "dye": "#3a2d26"
+        "dye": "#3b2f22"
       }
     }
   },
