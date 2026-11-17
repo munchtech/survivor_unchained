@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import re
 import sys
 import time
@@ -1055,8 +1056,20 @@ class Her:
                                             self.cfg["bone_map"], self.order))
 
     def drive(self, G):
-        """B's driver on a pose whose driven bones ride their parents at rest local (how every stored pose was made)."""
-        return self.bd.p.driver.drive(self.bd.p, np.array(G, float), self.bd.rig)[0]
+        """B's driver on a pose whose driven bones ride their parents at rest local (how every stored pose was made).
+        The rig's frozen reading (deform_audit Body.pose_rig, clavicle "frozen"): a stored pose's clavicle already holds
+        the girdle law's lift, so the A1 rebase's rig ("clavicle_by": "law") is read as "shrug" here, never lifted twice
+        (lane G, 16 Nov: on the law rig as written every part pose took the lift again, abd150's clavicle 20 -> 40 deg).
+        On a "shrug" rig the reading is the rig as written (bit for bit as before)."""
+        bd = self.bd
+        if os.environ.get("SU_DRIVE_AS_WRITTEN"):           # bisect option: the rig as written (the lift twice on "law")
+            return bd.p.driver.drive(bd.p, np.array(G, float), bd.rig)[0]
+        keep, bd.clavicle = bd.clavicle, "frozen"
+        try:
+            rig = bd.pose_rig()
+        finally:
+            bd.clavicle = keep
+        return bd.p.driver.drive(bd.p, np.array(G, float), rig)[0]
 
     def part_pose(self, G, bones):
         """(Gr, memory): B's globals with only the bone set `bones` turned as in G (their LOCAL transforms, so a clavicle

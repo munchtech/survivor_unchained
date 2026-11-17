@@ -496,6 +496,50 @@ def cmd_poses(bd, md):
     print("clip worst frame:", worst)
 
 
+def cmd_repose(bd, md):
+    """poses.npz's SAME pose set (names, sides, order) re-posed from each pose's source by the rig as it is now, with
+    the clavicle as the game drives it (bd.clavicle "law": on the A1 rebase's rig, "clavicle_by": "law", the girdle law
+    lifts a keyed clavicle too; on a "shrug" rig, keyed stays keyed and unkeyed goes by the law, as cmd_poses). A pose
+    whose source clip is not on disk (A1's p4 dumps live in motion-a1) keeps its stored G and is named. The old file
+    must have been renamed aside first (lane G, 16 Nov: the round_39d + law rebase). Reads OUT / poses.npz.pre39d."""
+    src = OUT / "poses.npz.pre39d"
+    z = dict(np.load(src))
+    names = [str(x) for x in z["name"]]
+    bd.clavicle = "law"
+    G, law, kept, moved = np.array(z["G"]), np.array(z["law"]), [], {}
+    clips = {}
+    for i, nm in enumerate(names):
+        core = nm.rsplit(":", 1)[0]
+        if core.startswith("x:"):
+            g = extreme_G(bd, core[2:])[0]
+        else:
+            c, f = core.rsplit("@", 1)
+            try:
+                d = clips[c] if c in clips else clips.setdefault(c, da.load_clip(c))
+            except FileNotFoundError:
+                kept.append(nm)
+                continue
+            un = da.unkeyed(d, CLAVICLES["clavicle"], bd.p, bd.rl, PARAMS["unkeyed_deg"])
+            rig = bd.rig
+            try:
+                if un:
+                    bd.rig = law_rig(bd)
+                g = next(G_ for f_, _, G_ in bd.clip_frames(d, 1) if f_ == int(f))
+            finally:
+                bd.rig = rig
+            law[i] = True if bd.rig.get("girdle", {}).get("clavicle_by") == "law" else un
+        moved[nm] = float(np.abs(g - G[i]).max())
+        G[i] = g
+    z["G"], z["law"] = G, law
+    z["desc"] = np.array([describe(md, g if str(s) == "l" else md.mirror_G(g)) for g, s in zip(G, z["side"])])
+    np.savez_compressed(OUT / "poses.npz", **z)
+    big = sorted(moved.items(), key=lambda kv: -kv[1])
+    print(f"repose: {len(names)} poses; re-posed {len(moved)}, kept (source not on disk) {len(kept)}: {sorted({k.rsplit('@', 1)[0] for k in kept})}")
+    print(f"  re-posed bit for bit (max |dG| < 1e-9): {sum(v < 1e-9 for v in moved.values())}; moved: {sum(v >= 1e-9 for v in moved.values())}")
+    print("  most moved (max |dG| matrix entry):", [(k, round(v, 4)) for k, v in big[:12]])
+    print("  law-driven now:", int(law.sum()), "of", len(law))
+
+
 def published(bd, G):
     return bd.p._skin(G, bd.rd.corrective_weights(bd.p, G, bd.rig))
 
@@ -632,7 +676,7 @@ def report(rows):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["region", "poses", "target", "gate", "report"])
+    ap.add_argument("cmd", choices=["region", "poses", "repose", "target", "gate", "report"])
     ap.add_argument("--base", default=PARAMS["base"])
     ap.add_argument("--only", default="train,held,extreme")
     ap.add_argument("--set", default="{}", help="JSON overrides of PARAMS")
@@ -642,7 +686,7 @@ def main():
     bd = da.body("B")
     bd.set_layer("full")
     md = Model(bd.p, {"base": a.base, **json.loads(a.set)})
-    {"region": cmd_region, "poses": cmd_poses, "target": cmd_target}.get(a.cmd, lambda b, m: cmd_gate(b, m, a.only.split(",")))(bd, md)
+    {"region": cmd_region, "poses": cmd_poses, "repose": cmd_repose, "target": cmd_target}.get(a.cmd, lambda b, m: cmd_gate(b, m, a.only.split(",")))(bd, md)
 
 
 if __name__ == "__main__":

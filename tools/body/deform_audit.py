@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import math
 import sys
 from pathlib import Path
@@ -55,6 +56,12 @@ OUT = HERE / "out/audit"
 BODIES = {"B": (P1 / "body.glb", P1 / "rig.json", "lbs", ("full", "nocorr", "nolaws")),
           "Bplay": (P1 / "play.glb", P1 / "play_rig.json", "lbs", ("full",)),
           "A": (REPO / "godot/art/people/heroine.glb", None, "game", ("full", "nocorr"))}
+# Bisect options (lane G, 16 Nov; default unchanged): SU_B_DIR = a folder holding body.glb + rig.json to stand in for
+# body_p1 as "B" (e.g. tools/body/out/round_37); SU_B_CLAVICLE_BY = "shrug" | "law" overrides the rig's girdle
+# "clavicle_by" (the A1 rebase's "law" against the round_37 era's "shrug")
+if os.environ.get("SU_B_DIR"):
+    _bd = Path(os.environ["SU_B_DIR"])
+    BODIES["B"] = (_bd / "body.glb", _bd / "rig.json", *BODIES["B"][2:])
 COLS = ["B.full", "B.nocorr", "B.nolaws", "Bplay.full", "A.full", "A.nocorr"]
 MET = ["st50", "st99", "ext99", "cp99", "bad", "flip", "kink99", "kinkmax", "ins_n", "ins_mm", "slide50", "slide95",
        "slidemax", "at_n", "at_mm", "sb50", "sb95", "sbmax"]
@@ -130,6 +137,8 @@ class Body:
         glb, rigp, kind, self.layers = BODIES[key]
         self.key, self.kind = key, kind
         self.rig = json.loads(Path(rigp).read_text()) if rigp else {}
+        if key == "B" and os.environ.get("SU_B_CLAVICLE_BY") and "girdle" in self.rig:   # bisect option (BODIES note)
+            self.rig["girdle"]["clavicle_by"] = os.environ["SU_B_CLAVICLE_BY"]
         self.p = p = make_poser(kind, str(glb), self.rig)
         if kind == "lbs":
             self.rd = p.driver
