@@ -78,5 +78,34 @@ public partial class SheathSway : SkeletonModifier3D
         // The piece's turn in skeleton space: hung * rest * rigid; back in the bone's space under the pose.
         var basis = new Basis((poseQ.Inverse() * hung * restQ).Normalized()) * rigid.Basis;
         mount.Transform = new Transform3D(basis, pivot - basis * pivotInMount);
+        if (Log && hilt) LogLine(sk);
+    }
+
+    // (warden-move, town run) `--sheath-log`: the hip sword's scabbard as drawn, once a frame: the hang's weight and
+    // whether the clip holds the hilt; on screen (px) the sheath point, the throat (where the run's hand lies, 0.16 m
+    // down), the scabbard's tip, both feet and balls; then in the world the sheath point, the tip and the left hand.
+    static readonly bool Log = Args.Has("sheath-log");
+    float tipLen = -1;
+
+    void LogLine(Skeleton3D sk)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || mount == null) return;
+        if (tipLen < 0)
+        {
+            tipLen = 0;
+            foreach (var n in mount.FindChildren("scabbard", "", true, false))
+                if (n is Node3D sc)
+                    foreach (var m in sc.FindChildren("*", "MeshInstance3D", true, false))
+                        if (m is MeshInstance3D mi) tipLen = Mathf.Max(tipLen, (mount.GlobalTransform.AffineInverse() * mi.GlobalTransform * mi.GetAabb().End).Y);
+        }
+        var g = mount.GlobalTransform;
+        Vector3 sp = g.Origin, th = g * new Vector3(0, 0.16f, 0), tp = g * new Vector3(0, tipLen, 0);
+        Vector3 B(string b) { int i = sk.FindBone(b); return i >= 0 ? sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin : Vector3.Zero; }
+        Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
+        var hl = B("hand_l");
+        string S(Vector2 v) => System.FormattableString.Invariant($"{v.X:0.0} {v.Y:0.0}");
+        string W(Vector3 v) => System.FormattableString.Invariant($"{v.X:0.000} {v.Y:0.000} {v.Z:0.000}");
+        GD.Print(System.FormattableString.Invariant($"SHEATH w {hang.Weight:0.00} held {(held ? 1 : 0)} len {tipLen:0.000} scr {S(P(sp))} {S(P(th))} {S(P(tp))} ft {S(P(B("foot_l")))} {S(P(B("foot_r")))} {S(P(B("ball_l")))} {S(P(B("ball_r")))} w {W(sp)} {W(tp)} {W(th)} hl {W(hl)}"));
     }
 }
