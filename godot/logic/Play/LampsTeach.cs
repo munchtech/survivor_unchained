@@ -16,7 +16,11 @@ public static class LampsTeach
     public const string Key = "Lamps";
     public const string Text = "Press *{key}* to open your Lamps and spend the point you hold.";
 
-    public static string TextFor(Func<string, string> keyLabel) => Text.Replace("{key}", keyLabel(Key));
+    /// <summary>More than one held (lane B j1: "the point you hold" read wrong over 6).</summary>
+    public const string TextMany = "Press *{key}* to open your Lamps and spend the {n} points you hold.";
+
+    public static string TextFor(Func<string, string> keyLabel, int points = 1) =>
+        (points > 1 ? TextMany.Replace("{n}", points.ToString(System.Globalization.CultureInfo.InvariantCulture)) : Text).Replace("{key}", keyLabel(Key));
 
     /// <summary>True when the prompt should go up now (and it marks itself taught); false otherwise.</summary>
     public static bool Take(CharacterData ch, WorldState? w, bool choiceUp)

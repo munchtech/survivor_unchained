@@ -57,4 +57,12 @@ public sealed class LampsTeachTests
         LampsTeach.Used(w);
         Assert.False(LampsTeach.Take(ch, w, false));
     }
+
+    [Fact]
+    public void ThePromptCountsThePointsSheHolds()
+    {
+        Assert.Equal("Press *L* to open your Lamps and spend the point you hold.", LampsTeach.TextFor(_ => "L", 1));
+        Assert.Equal("Press *L* to open your Lamps and spend the point you hold.", LampsTeach.TextFor(_ => "L", 0));
+        Assert.Equal("Press *L* to open your Lamps and spend the 6 points you hold.", LampsTeach.TextFor(_ => "L", 6));
+    }
 }

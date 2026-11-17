@@ -398,10 +398,10 @@ public partial class BattleFx
         var feet = new List<(Vector3 P, Vector3 O)>();
         for (int i = 0; i < n; i++)
         {
-            float a = a0 + (i + (R() - 0.5f) * 0.3f) / n * Mathf.Tau, d = r * (1 + (R() - 0.5f) * 0.03f), delay = late * R();
+            float a = a0 + (i + (R() - 0.5f) * 0.08f) / n * Mathf.Tau, d = r * (1 + (R() - 0.5f) * 0.03f), delay = late * R();
             double x = e.X + Mathf.Cos(a) * d, z = e.Z + Mathf.Sin(a) * d;
             if (!WgSlab(x, z, a, Mathf.Lerp(len[0], len[1], R()), Mathf.DegToRad(Mathf.Lerp(tilt[0], tilt[1], R())), delay,
-                    Mathf.Lerp(wide[0], wide[1], R()), secs - delay - 0.59f, most, thick)) continue;
+                    Mathf.Lerp(wide[0], wide[1], R()), secs - delay - 0.59f, most, thick, WgHengeMat)) continue;
             feet.Add((V(x, Y(x, z), z), new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a))));
         }
         P7HengeDust(feet, dpx[0], dpx[1], 1f, 0.25f);

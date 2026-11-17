@@ -39,6 +39,10 @@ public partial class BattleFx
     /// <summary>Largest side of any ground slab, m (was 0.9-1.4 m long x 1.3 wide, up to ~2 m); and the floor of their albedo (linear).</summary>
     const float WgSlabMax = 0.6f;
     static readonly Color WgSlabLit = new Color(0.30f, 0.26f, 0.22f);
+    /// <summary>(lane B j1) The henge's standing stones: a warm rock (the judge's den rock: h 45-60, lit faces L .45-.60,
+    /// C .04-.06), not the slabs' near-black grey.</summary>
+    static StandardMaterial3D? wgHengeMat;
+    static StandardMaterial3D WgHengeMat => wgHengeMat ??= new StandardMaterial3D { AlbedoColor = new Color("#96725a"), Roughness = 0.9f };
     static Mesh[]? wgChunks, wgSlabs;
     static float[]? wgChunkLen, wgSlabLen;
 
@@ -140,6 +144,7 @@ public partial class BattleFx
                 wgEmi[i] = Load($"crack_emis_{n}.png");
             }
             static Texture2D? Load(string f) => ResourceLoader.Exists(WgDir + f) ? GD.Load<Texture2D>(WgDir + f) : null;
+            wgAlbFirst = WgFeather(wgAlb[0]);
             wgOff = new float[256];
             try
             {
@@ -571,6 +576,34 @@ public partial class BattleFx
     /// <summary>A crack from `from` along `dir`: tiles t0..t0+n-1 of the strip laid over `len`, each as the tip
     /// reaches it (`travel` s for the whole), `across` times the strip's width, with a hot edge on each tile's first
     /// frames, dust jets and chips along it; `life` s to its fade.</summary>
+    /// <summary>Groundbreaker's first tile (lane B j1): it showed alone for 4 frames above her head as a hard dark block (the
+    /// strip's widest start, cut straight at its far end until the next tile lands; judge, sheet_f fix 3). A copy at load
+    /// whose far end fades out over its last 28% and whose band's shoulders thin (alpha^1.6, at most 0.8): its dark kept to
+    /// the gap.</summary>
+    Texture2D? wgAlbFirst;
+
+    static Texture2D? WgFeather(Texture2D? t)
+    {
+        var img = t?.GetImage();
+        if (img == null) return t;
+        img = (Image)img.Duplicate();
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        int w = img.GetWidth(), h = img.GetHeight();
+        var px = img.GetData();
+        for (int x = 0; x < w; x++)
+        {
+            float end = 1 - Mathf.SmoothStep(0.72f, 1f, (x + 0.5f) / w);
+            for (int y = 0; y < h; y++)
+            {
+                int o = (y * w + x) * 4 + 3;
+                float a = px[o] / 255f;
+                px[o] = (byte)Mathf.RoundToInt(Mathf.Pow(a, 1.6f) * 0.8f * end * 255f);
+            }
+        }
+        return ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.Rgba8, px));
+    }
+
     void WgCrack(Vector2 from, Vector2 dir, float len, int t0, int n, float across, float travel, float life, bool night, bool heavy, bool sear = false)
     {
         float seg = len / n;
@@ -588,7 +621,7 @@ public partial class BattleFx
             {
                 var pos = V(c.X, Y(c.X, c.Y), c.Y);
                 // (Sunder's strip darkened: its gap read 6-7 px on the verge's dark earth; 25-32 px at her end wanted)
-                WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), wgAlb![tile], wgNrm![tile], null, life, 1f, 0, 0, 0, heavy ? null : WgLineTint);
+                WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), heavy && tile == 0 && wgAlbFirst != null ? wgAlbFirst : wgAlb![tile], wgNrm![tile], null, life, 1f, 0, 0, 0, heavy ? null : WgLineTint);
                 // The hot edge: this tile's first 4 frames, dull orange; by night held low (never clipping).
                 // Sunder's: a #FF8A3A core held 10 frames, then cooling over 12 (burning_edge: over 1.2 s).
                 // F1 lead 26: Groundbreaker's edge too, held 10 frames then cooling over 12 (it read a dark 2 px line).
@@ -875,10 +908,11 @@ public partial class BattleFx
     /// long, a third of it buried; up in 0.09 s, held `hold` s (0.4), sunk over 0.5 s. (leap-vow-marks r3) `most`: its
     /// largest side (WgSlabMax but for the henge's standing stones, a barrier); `thick` x its thickness (a stone, not a
     /// plate). False when none was stood up.</summary>
-    bool WgSlab(double x, double z, float a, float len, float tilt, float delay, float wide = 1.3f, float hold = 0.4f, float most = WgSlabMax, float thick = 1f)
+    bool WgSlab(double x, double z, float a, float len, float tilt, float delay, float wide = 1.3f, float hold = 0.4f, float most = WgSlabMax, float thick = 1f, Material? mat = null)
     {
         var rk = WgRockNext();
         if (rk == null || wgSlabs == null) return false;
+        rk.N.MaterialOverride = mat;
         // (F1 lead 24: the largest side of a slab, widening included, never passes WgSlabMax, so they stay smaller than a wolf)
         len = Mathf.Min(len, most / Mathf.Max(1f, wide));
         int m = (int)(R() * wgSlabs.Length * 0.999f);
@@ -925,9 +959,11 @@ public partial class BattleFx
         for (int k = 0; k < wgRocks.Count; k++)
         {
             var c = wgRocks[(wgRockNext + k) % wgRocks.Count];
-            if (!c.On) { wgRockNext = (wgRockNext + k + 1) % wgRocks.Count; return c; }
+            if (!c.On) { wgRockNext = (wgRockNext + k + 1) % wgRocks.Count; c.N.MaterialOverride = null; return c; }
         }
-        return wgRocks[wgRockNext++ % wgRocks.Count];
+        var s = wgRocks[wgRockNext++ % wgRocks.Count];
+        s.N.MaterialOverride = null;
+        return s;
     }
 
     void WgStepRocks(float dt)
@@ -975,12 +1011,14 @@ public partial class BattleFx
     /// <summary>Ground dust, lit by hand (the smoke batch is unshaded): brown-grey matched to the verge by day,
     /// dark by night; `lit` above 1 the sunlit top, below 1 the shadowed skirt.</summary>
     static readonly Color WgDustDay = new Color("#8c7558").SrgbToLinear() * new Color(0.95f, 0.95f, 0.75f) * (float)Args.Num("wg-dust-day", 1f),
-        WgDustNight = new Color("#8c7558").SrgbToLinear() * (float)Args.Num("wg-dust-night", 0.7f);
+        WgDustNight = new Color("#8c7558").SrgbToLinear() * (float)Args.Num("wg-dust-night", 0.7f),
+        // (lane B j1: by day it landed at h 80 and read olive on the den's floor, h 30-47; judge, sheet_f fix 5)
+        WgDustDen = new Color("#946b57").SrgbToLinear() * (float)Args.Num("wg-dust-day", 1f);
 
     Color WgDust(float lit)
     {
         // (#8C7558 by day; by night the same tan held low but at least twice the dark ground's value)
-        var c = Flare.Night ? WgDustNight : WgDustDay;
+        var c = Flare.Night ? WgDustNight : SurvivorUnchained.View.MarkPass.Den ? WgDustDen : WgDustDay;
         return new Color(c.R * lit, c.G * lit, c.B * lit);
     }
 
