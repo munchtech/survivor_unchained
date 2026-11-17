@@ -112,7 +112,12 @@ public sealed class SideCarry
     /// <summary>A crossing put off for <see cref="CrossShown"/> waits at most this long (s), and only while the layer holds
     /// at least <see cref="CrossHoldWeight"/>: a fading layer can't hold the blade at the edge, so it crosses while it can.</summary>
     public float CrossWaitMax = 0.12f, CrossHoldWeight = 0.6f;
+    /// <summary>(B r11) A put-off crossing stops waiting once the hold has failed: the drawn blade sat this many degrees or more
+    /// inside the turn band on the last frame (the clip's blade swung where the layer's reach can't keep it at the edge), so it
+    /// crosses now instead of hanging long and steep until <see cref="CrossWaitMax"/> runs out (e20 s11 9->10: 4 frames at 14).</summary>
+    public float HoldMiss = 3f;
     float holdT, crossWaitT;
+    bool holdMissed;
     float bandNow = 10f;
     /// <summary>(judge r9 T2, lead r10) While she turns in place with the drawn blade within <see cref="TipBand"/> deg of
     /// straight down on screen, its tip is kept at least <see cref="TipFloor"/> m over the floor (taken as the lower ankle
@@ -234,7 +239,7 @@ public sealed class SideCarry
     }
 
     /// <summary>Back to no weight and no tilt, the spring at rest (a new body, a cut).</summary>
-    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; }
+    public void Reset() { Weight = 0f; Spring = 0f; springV = 0f; Tilt = 0f; Inward = 0f; Raw = 0f; Want = 0f; Shift = 0f; clipPrev = float.NaN; OutTurn = 0f; calfN = 0; aheadPrev = default; yawRate = 0f; bandNow = DownBand; holdT = 0f; crossWaitT = 0f; holdMissed = false; }
 
     /// <summary>The closest points of segments p0p1 and q0q1: the distance and the share along q (0..1).</summary>
     static (float d, float u) SegDist(Vector3 p0, Vector3 p1, Vector3 q0, Vector3 q1)
@@ -438,12 +443,15 @@ public sealed class SideCarry
             // a target across, out of the down band (it may sit inside the wide one: a layer losing its hold can't keep the blade out there)
             float edgeD = DownBand + CrossMargin;
             bool wants = (aT > 0f) != (was > 0f) && MathF.Abs(aT) >= edgeD;
-            bool defer = wants && turnBand && CrossShown > 0f && shown > CrossShown && Weight >= CrossHoldWeight && crossWaitT < CrossWaitMax;
+            bool defer = wants && turnBand && CrossShown > 0f && shown > CrossShown && Weight >= CrossHoldWeight && crossWaitT < CrossWaitMax && !holdMissed;
             crossWaitT = defer ? crossWaitT + dt : 0f;
             if (wants && !defer)
             {
                 float full = was - dside * MathF.Min(MathF.Max(lim, 2f * edge + CrossSlack), MathF.Abs(Wrap(aT - was)));
                 aW = MathF.Abs(full) >= edgeD ? full : dside * keep;
+                // (B r11) in a turn or a run's start the crossing lands out at the wide band's far edge, not short inside it
+                // (e21 leg 4 +4: landed at -12.6 at shown 0.88, a cane for two frames while the keep eased it out)
+                if (turnBand && MathF.Abs(full) >= edgeD && MathF.Abs(full) < edge && (full > 0f) != (was > 0f)) aW = -dside * edge;
             }
             else aW = (aW > 0f) == (was > 0f) && MathF.Abs(aW) >= keep ? aW : dside * keep;
         }
@@ -463,6 +471,7 @@ public sealed class SideCarry
         ClearCalves(dt, f, b, left, ahead, moving);
         // The layer's shift as drawn (the calf pass's out-turn included), so next frame's rate limit starts from what was seen.
         Shift = Wrap(ScreenAngle(Turned(b, left, Tilt, ahead, Inward), f.Jx, f.Jy, 1f) - a0);
+        holdMissed = crossWaitT > 0f && HoldMiss > 0f && MathF.Abs(Wrap(a0 + Shift)) < bandNow - HoldMiss;
     }
 
     /// <summary>Whether the blade along unit `d` would hang its tip under <see cref="TipFloor"/> in a turn in place
