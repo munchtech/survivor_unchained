@@ -276,17 +276,19 @@ SPEC = {
          # `roll_max` (20). 0 = off (the V as before). Measured sword_heavy: left thigh 13.1 deg across at f8; roll 1.3
          # gives 9.6 deg (the V's tip, 18 cm under the pivot, 30 mm farther from it); run 2.3 deg, leap 7 deg.
          "roll": 1.3, "at": "pelvis", "at_rest": [2.28729882256751e-12, 1.0722957482471516, -3.8052937667565345e-07]},
-        # Hip tassets (armor-D, 16 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same law on that
-        # thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 0.8 * softrelu(swing - 3, 12); no
-        # twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x): her
-        # hip joint, thigh_{s}'s rest head in heroine_skeleton.json (read by bone name; test_hip_hinge holds them
-        # together). Why (hipv-2 r4, 16 Nov): at the belt (+-0.115, 1.125, 0.075, 13 cm off the joint) the run's
-        # thigh swung through the plates' room (mid-thigh 17 cm out in that frame), so a front plate built 12-36 mm.
-        # Users: a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
-        {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.073486, 1.048726, -0.02377],
-         "amount": 0.8, "soft": 12.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
-        {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.073486, 1.048726, -0.02377],
-         "amount": 0.8, "soft": 12.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
+        # Hip tassets (armor-D, 16 Nov; retargeted 17 Nov): one bone per side, driven by ONE thigh (`thighs` of one): the same
+        # law on that thigh's own forward swing alone, amount * softrelu(swing - soft/4, soft) = 1.2 * softrelu(swing - 3, 12);
+        # no twist, no spread, no roll. The pivot is given per side (x signed; the right is the left mirrored in x), at the
+        # belt (0.115, 1.115, 0.067), her rest axes; "at" the thigh with "at_rest" its head on A, so B's pivot moves with B's
+        # thigh head. Why (17 Nov, armor-on-b r1): a plate hung from the hip joint cannot reach V length, and a lower lame hung
+        # under a top lame fails because her belly rises above the top lame's inner face at y 1.07-1.00; one rigid plate
+        # pivoting at its own top on the belt clears at amount 1.2: th 44-56 needs 8-46 mm to y .94; amounts .9/1.0 leave
+        # 70-97/48-67 mm. (Old: pivot at the hip joint, amount 0.8; hipv-2 r4: at the belt the run's thigh swung through the
+        # plates' room, so a front plate built 12-36 mm.) Users: a piece's rigid_ride {"hiptasset_hinge_l": 1.0}.
+        {"name": "hiptasset_hinge_l", "parent": "pelvis", "thighs": ["thigh_l"], "pivot": [0.115, 1.115, 0.067],
+         "amount": 1.2, "soft": 12.0, "at": "thigh_l", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
+        {"name": "hiptasset_hinge_r", "parent": "pelvis", "thighs": ["thigh_r"], "pivot": [-0.115, 1.115, 0.067],
+         "amount": 1.2, "soft": 12.0, "at": "thigh_r", "at_rest": [-0.07348602306472707, 1.0487260084264045, -0.023770160392531263]},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth

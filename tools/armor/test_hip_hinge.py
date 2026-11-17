@@ -196,12 +196,13 @@ def test_hip_tassets_are_one_thigh_hinges_at_their_pivots(sk):
     grot, gpos = sk.rest_globals()
     for s in "lr":
         tg = _tasset("hiptasset_hinge_" + s)
-        assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 0.8 and tg["soft"] == 12.0
+        assert tg["thighs"] == ["thigh_" + s] and tg["amount"] == 1.2 and tg["soft"] == 12.0
         j = sk.index[tg["name"]]
         assert sk.names[sk.parent[j]] == "pelvis" and _deg(grot[0, j]) < 1e-6
         assert np.abs(gpos[0, j] - np.asarray(tg["pivot"], float)).max() < 1e-9
-        # its pivot is her hip joint (hipv-2 r4): thigh_{s}'s rest head, read by bone name
-        assert np.abs(gpos[0, j] - gpos[0, sk.index["thigh_" + s]]).max() < 1e-5
+        # its pivot is on the belt (17 Nov), 0.115 out, 1.115 up, 0.067 forward; "at_rest" is thigh_{s}'s rest head
+        assert np.abs(gpos[0, j] - np.array([0.115 if s == "l" else -0.115, 1.115, 0.067])).max() < 1e-9
+        assert np.abs(np.asarray(tg["at_rest"]) - gpos[0, sk.index["thigh_" + s]]).max() < 1e-5
         assert _deg(_driven(sk, tg)) < 1e-6
 
 
@@ -209,7 +210,7 @@ def test_hip_tasset_turns_with_its_own_forward_swing_only(sk):
     for s in "lr":
         tg = _tasset("hiptasset_hinge_" + s)
         o = "r" if s == "l" else "l"
-        want = 0.8 * (45 - 3 - 6)
+        want = 1.2 * (45 - 3 - 6)
         assert abs(_deg(_driven(sk, tg, **{s: 45})) - want) < 1e-3
         assert _deg(_driven(sk, tg, **{o: 45})) < 1e-6  # the other thigh leaves it be
         assert _deg(_driven(sk, tg, **{"a" + s: 25})) < 1e-6  # spread
