@@ -161,11 +161,11 @@ public static class DungeonLight
             for (int q = 0; q < n; q++) arr[q] = Pools[q];
             m.SetShaderParameter("sp", arr); m.SetShaderParameter("sp_n", n);
             m.SetShaderParameter("sp_lean", new Vector2(-Axis.X, -Axis.Z).Normalized());
-            m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", 1.5f));
+            m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", 1.95f));   // (den r17 lead, from l7c: 1.5 -> 1.95, pools dL +.11 at s11 room)
             m.SetShaderParameter("sp_edge", SurvivorUnchained.Args.Num("den-pool-edge", 0.3f));
             m.SetShaderParameter("sp_grain", SurvivorUnchained.Args.Num("den-pool-grain", 0.5f));
             m.SetShaderParameter("sp_ref", SurvivorUnchained.Args.Num("den-pool-ref", 0.15f));
-            m.SetShaderParameter("sp_tint", DungeonDress.V3("den-pool-tint", new Vector3(1f, 1.0f, 0.84f)));
+            m.SetShaderParameter("sp_tint", DungeonDress.V3("den-pool-tint", new Vector3(1f, 0.97f, 0.76f)));   // (den r17 lead, l7c: warmer, dC +.02)
             GD.Print($"DungeonLight floor pools: {n} on {mi.Name}");
         }
     }
