@@ -56,7 +56,7 @@ public static partial class DungeonDress
             int s = i + 1;
             if (den) Den(c, r, s); else Ravine(c, r, s);
         }
-        if (den) { DenCaps.Clear(); DenDecals(c); DenBankDecals(c); DenFloorDecals(c); }
+        if (den) { DenCaps.Clear(); DenDecals(c); DenBankDecals(c); DenFloorDecals(c); DenOpenTaken(c); }   // (den r17 D) DenOpen's ground taken for the set's open pieces
         if (den && SetMode > 0) DenSet(c);
         if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", FungMat());   // (den r15 C) was an unshaded flat colour: caps read as flat polygons
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });

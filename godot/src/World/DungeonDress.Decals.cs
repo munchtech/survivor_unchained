@@ -192,6 +192,8 @@ public static partial class DungeonDress
             }
         }
 
+        DenOpen(c, b, Ok, boss);   // (den r17 D, R16 item 4) runners, debris clusters and the lair's rib arc (DungeonDress.Open.cs)
+
         // ---- the walls' feet and the open between: thinner, and no bones heaped there ----
         const float cell = 1.6f;
         int nc = (int)(z.Size / cell);
@@ -204,6 +206,7 @@ public static partial class DungeonDress
                 if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
                 bool foot = w < 1.8f;
                 float keep = (foot ? 0.3f : w > 5f ? 0.07f : 0.09f) * (foot ? 1f : OpenLitter);   // (round 8: the open scatter cut by more than half; den r15 D: the open floor was empty, x --den-open-litter)
+                if (!foot) keep *= OpenKeep(x, zz);   // (den r17 D, R16 item 4) the open sprinkle thinned between the clusters (--den-open-between)
                 if (u2 > keep) continue;
                 var d = PickDecal(foot ? AtFoot : InOpen, u3);
                 if (d.Kind == "bone" && !DenCaps.Take("openbone", new Vector2(x, zz), 2, 12f)) d = PickDecal(InOpen, Hash(i, j, 908));
@@ -230,6 +233,7 @@ public static partial class DungeonDress
                 }
                 else yaw = Hash(i, j, 906) * Mathf.Tau;
                 if (d.Kind == "root" && w > 3f) yaw = Hash(i, j, 909) * Mathf.Pi;   // (den r15 D: a root across the open floor lies any way)
+                if (d.Kind == "root") yaw = StickYawFold(yaw);   // (den r17 D, R16 item 8) laid down the camera's depth a stick read as a standing rod: near level on screen
                 AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907) + (d.Kind == "root" && w > 3f ? 0.35f : 0f), d.Kind == "bone");
             }
 
