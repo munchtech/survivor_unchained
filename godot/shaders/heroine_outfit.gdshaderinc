@@ -113,6 +113,8 @@ uniform vec3 kit_floor_close = vec3(-1.0);
 // (finish-2 r6: kit_steps.y, the mid->lit n.l step, at the close camera: the sun's lit band held 80% of her cups flat at L .56-.58,
 // neither the close key's gain nor the floor moved it; 0: kit_steps.y at every distance)
 uniform float kit_lit_step_close = 0.0;
+// (armor-D fin3: the town's sun at the close camera: x scales the plate's banded tones (1: as before), y the plate's glint, z the glint disc's radius (1: as before); the den and a point or spot light and the play camera never see them)
+uniform vec3 kit_dir_close = vec3(1.0);   // (z: the glint disc's radius and soft edge scale)
 // (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
 // and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
 // Defaults: every gear bit for bit as r6. Tried and dropped: a directional gain at the den's close camera (0.3 and 0.5 left the
@@ -721,7 +723,11 @@ void fragment() {
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, roughness before the tag, the tag, debug).
 	CEL_FRAGMENT;
+	// (armor-D fin3: the shared hero shade (cel.gdshaderinc) swaps her shade side's emission for one tone and zeroes the light's
+	// specular, where the kit's plate and gold keep their floor and light; the kit's own pixels take their pre-macro emission and albedo back)
+	vec3 kx_em = EMISSION; vec3 kx_al = ALBEDO;
 	CEL_HERO_FRAGMENT;
+	if (kind == 1 && !cel_hero_abs()) { float kxm = clamp(max((kit_plate.x > 0.0 && cel_on > 0.0) ? v_paint : 0.0, (kit_gold.x > 0.0 && cel_on > 0.0) ? v_kgold : 0.0), 0.0, 1.0); EMISSION = mix(EMISSION, kx_em, kxm); ALBEDO = mix(ALBEDO, kx_al, kxm); }
 }
 
 // The cel model's highlight by kind (see the header), as SPECULAR_LIGHT; lit_sh the lit band times the key's shadow.
@@ -857,9 +863,12 @@ void light() {
 		float kband = smoothstep(krb.x - krb.y - kbw, krb.x - krb.y + kbw, kbs)
 			* (1.0 - smoothstep(krb.x + krb.y - kbw, krb.x + krb.y + kbw, kbs));
 		ktone = mix(ktone, kit_tone_refl * ktc.z, kband * kit_refl_k * mix(0.4, 1.0, ksh) * kom);
-		float krad2 = mix(kit_glint.x, kit_glint.y, v_kit_far);
+		bool kdn = (kit_her_den_close > 0.0 || any(notEqual(cel_her_den, vec4(0.0))));   // (the den keeps its own, see kit_dir_close)
+		vec3 kdc = (LIGHT_IS_DIRECTIONAL && !kdn) ? mix(kit_dir_close, vec3(1.0), v_kit_far) : vec3(1.0);
+		float krad2 = mix(kit_glint.x, kit_glint.y, v_kit_far) * kdc.z;
+		float kgs2 = kit_glint.z * kdc.z;
 		float klit2 = ksh * step(0.0, kt) * kom;
-		vec3 kpc = (ktone + kit_glint_color * ktc.z * ((1.0 - smoothstep(krad2 - kit_glint.z, krad2 + max(kit_glint.z, 1e-3), kan)) * klit2))
+		vec3 kpc = (ktone * kdc.x + kit_glint_color * ktc.z * kdc.y * ((1.0 - smoothstep(krad2 - kgs2, krad2 + max(kgs2, 1e-3), kan)) * klit2))
 			* mix(kit_plate.x, kit_plate.x * kit_plate.y, v_kit_far);
 		float kg2 = smoothstep(kit_gold.z - ksw, kit_gold.z + ksw, ktw) * ksh * kom;
 		vec3 kgc = (mix(kit_gold_dark, kit_gold_lit, kg2) + vec3(0.9, 0.8, 0.55) * ((1.0 - smoothstep(kit_gold_glint - 1.0, kit_gold_glint + 1.0, kan)) * klit2))
@@ -884,7 +893,9 @@ void light() {
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
+	vec3 kx_sp = SPECULAR_LIGHT;
 	CEL_HERO_LIGHT;
+	if (!cel_hero_abs()) { float kxm = clamp(max((kit_plate.x > 0.0 && cel_on > 0.0) ? v_paint : 0.0, (kit_gold.x > 0.0 && cel_on > 0.0) ? v_kgold : 0.0), 0.0, 1.0); SPECULAR_LIGHT = mix(SPECULAR_LIGHT, kx_sp, kxm); }   // (armor-D fin3: see fragment)
 }
 #endif
 

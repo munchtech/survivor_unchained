@@ -180,9 +180,14 @@
             1.0
           ],
           "kit_floor_close": [
-            1.5,
+            3.0,
             3.0,
             0.0
+          ],
+          "kit_dir_close": [
+            0.3,
+            3.5,
+            0.3
           ],
           "kit_lit_step_close": 0.7
         }
