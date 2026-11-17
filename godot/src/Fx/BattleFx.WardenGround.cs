@@ -41,8 +41,21 @@ public partial class BattleFx
     static readonly Color WgSlabLit = new Color(0.30f, 0.26f, 0.22f);
     /// <summary>(lane B j1) The henge's standing stones: a warm rock (the judge's den rock: h 45-60, lit faces L .45-.60,
     /// C .04-.06), not the slabs' near-black grey.</summary>
-    static StandardMaterial3D? wgHengeMat;
-    static StandardMaterial3D WgHengeMat => wgHengeMat ??= new StandardMaterial3D { AlbedoColor = new Color("#96725a"), Roughness = 0.9f };
+    /// (coordinator #15, 16 Nov) painted: the den's own boulder paint (C's boulders_paint.png, the slab's painted inside),
+    /// triplanar in the stone's space (shaders/fx_henge_stone.gdshader), not a flat colour.
+    static ShaderMaterial? wgHengeMat;
+    static ShaderMaterial WgHengeMat
+    {
+        get
+        {
+            if (wgHengeMat != null) return wgHengeMat;
+            wgHengeMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fx_henge_stone.gdshader") };
+            wgHengeMat.SetShaderParameter("paint_tex", GD.Load<Texture2D>("res://art/dungeon/den/boulders_paint.png"));
+            // the slab's fully painted inside (px 597, 71, 328 x 252 of the 2048 atlas; boulders.json "slab")
+            wgHengeMat.SetShaderParameter("rect", new Vector4(597f / 2048f, 71f / 2048f, 328f / 2048f, 252f / 2048f));
+            return wgHengeMat;
+        }
+    }
     static Mesh[]? wgChunks, wgSlabs;
     static float[]? wgChunkLen, wgSlabLen;
 
