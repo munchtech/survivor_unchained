@@ -197,7 +197,7 @@ public partial class PlayerView : Node3D
     bool layered = true, isB;
     /// <summary>(lead r12) B's run weight on the way down (eased over StopEase s; up it follows at once).</summary>
     float wDown;
-    const float StopEase = 0.06f;
+    const float StopEase = 0.1f;   // (e25: 0.06 spread r11's 23 deg snap over 3 frames, 8/11/4; 0.1 gives 5, each under 7)
     // The clips' grips (slide, tilt: animations 47, 48, 58) and the side carry (SideCarry) on them: any body. They turn the
     // held piece in its fist, not her bones, so B's bake (bones only) does not carry them (round 11: off on B, the warden's
     // stand blade lay at the pocket's 30 deg pitch, not the clip's 63: a cane). PersonView.Slide tilts about B's own pocket.

@@ -60,6 +60,8 @@ public sealed class SideCarry
     /// a small margin for the drawn pixels. Screen-space, body-generic. GuardSteps 0: off.</summary>
     /// <summary>(lead r12) Under this layer weight the guard only holds the rates (a layer this faint is the clip's own pose).</summary>
     public float GuardWeight = 0.1f;
+    /// <summary>(lead r12) The guard's pull (deg of screen miss per unit of shown length) toward last frame's shown length.</summary>
+    public float ShownPull = 20f;
     public float CaneShown = 0.58f, CaneAngle = 29f, CanePx = 6f, StepMax = 23f, ShortShown = 0.48f;
     /// <summary>(judge r11 fix 4) Where the guard must search, within <see cref="ShortZone"/> deg past the cane's angle it
     /// prefers the shorter blade, ShortPull deg of angle miss per unit of shown share over <see cref="ShortShown"/>: where the
@@ -74,7 +76,7 @@ public sealed class SideCarry
     /// away_x: the stand's turn in, 33-41 deg, tucked it across her near leg for 9 frames; the clip's Prowl idle showed it at 40
     /// deg, whole), the layer yields to the clip's own over <see cref="YieldTime"/> s and takes it back as that ends. The judge's
     /// bar is 0.6; HideFrac 0: off.</summary>
-    public float HideFrac = 0.5f, HidePx = 12f, HideTol = 0.15f, HideCost = 0.5f, YieldTime = 0.2f;
+    public float HideFrac = 0.5f, HidePx = 12f, HideTol = 0.15f, HideCost = 0.5f, YieldTime = 0.2f, YieldCross = 0.1f;
     /// <summary>(solver r12) Her hips, which the frame doesn't carry: from the grip in her frame (m; toward her left, the
     /// holding side's far hip the further, up), standing; at a run out by HipRunOut, back by HipRunBack, down by HipRunDown
     /// (scaled by how much she moves). Body B's, measured on e23 (standing sd 1-5 cm, at a run 12 cm back and forth).</summary>
@@ -481,6 +483,13 @@ public sealed class SideCarry
                 yw = !(MathF.Abs(ca) < CaneAngle && cs >= CaneShown && cu > CanePx);
             }
             float ys = YieldTime > 0f ? dt / YieldTime : 1f;
+            // (lead r12, e25 s13 leg 4 +42..+51) a yield whose two ends lie on either side of the down band is a crossing: it
+            // goes at the crossing's pace (YieldCross), not a slow fade that holds the blade upright at her boots for 9 frames
+            if (YieldCross > 0f && Weight > 0f)
+            {
+                float yc = ScreenAngle(b, f.Jx, f.Jy, 1f), yl = ScreenAngle(Turned(b, left, Weight * Raw, ahead, Weight * psi), f.Jx, f.Jy, 1f);
+                if ((yc > 0f) != (yl > 0f) && MathF.Abs(yc) + MathF.Abs(yl) >= 2f * DownBand) ys = MathF.Max(ys, dt / YieldCross);
+            }
             Yield = Math.Clamp(Yield + Math.Clamp((yw ? 1f : 0f) - Yield, -ys, ys), 0f, 1f);
         }
         float tilt = Weight * Raw * (1f - Yield), inward = Weight * psi * (1f - Yield);
@@ -645,6 +654,9 @@ public sealed class SideCarry
                     float m = MathF.Abs(Wrap(a - aD)) * MathF.Min(1f, sh / MathF.Max(ShownFull, 1e-3f)) + 0.02f * (MathF.Abs(t - tB) + MathF.Abs(i - iB));
                     // near the cane's angle, a shorter blade is preferred (the way out where the rates can't hold the angle)
                     if (MathF.Abs(a) < CaneAngle + ShortZone) m += ShortPull * MathF.Max(0f, sh - ShortShown);
+                    // (lead r12, e26 leg 12 +38..+48) and the blade's shown length kept from frame to frame: two near-equal turns
+                    // picked by turns flickered it 0.52/0.75/0.84/0.36 (inward 10/23/14/23/34/43)
+                    if (hasLast) m += ShownPull * MathF.Abs(sh - lastShown);
                     if (v < bv - 1e-6f || m < bm) { bv = v; bm = m; bt = t; bi = i; ba = a; bs = sh; bp = po; }
                 }
         }
