@@ -50,9 +50,18 @@ public partial class PlayerView : Node3D
     /// <summary>Her silhouette through what hides her from the play camera (shaders/her_xray.gdshader, H1 round 2C): an
     /// overlay on her solid meshes (no cards, fur, eyes or teeth: an overlay ignores their cut-outs), on only in play
     /// with the camera far (HerLod.InPlay), eased in and out.</summary>
-    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
-        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } };
-    void XraySet(string k, Variant v) { xray.SetShaderParameter(k, v); ((ShaderMaterial)xray.NextPass).SetShaderParameter(k, v); }
+    /// (lane E lead 3, 16 Nov: the outline broke behind a slab she stood against) Three passes: her_xray_mask first
+    /// (priority -1: stencil 7 wherever her own surface is what the camera sees), then the fill, then the outline, which
+    /// both skip stencil 7, so her own body never counts as what hides her and no capsule round her feet is needed.
+    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray_mask.gdshader"), RenderPriority = -1,
+        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
+            NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } } };
+    void XraySet(string k, Variant v)
+    {
+        var fill = (ShaderMaterial)xray.NextPass;
+        fill.SetShaderParameter(k, v);
+        ((ShaderMaterial)fill.NextPass).SetShaderParameter(k, v);
+    }
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
