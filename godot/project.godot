@@ -453,6 +453,22 @@ cel_her_den={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_her_den2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_her_den3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_hero_rim={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_hero_rim2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 hero_steel_lit={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

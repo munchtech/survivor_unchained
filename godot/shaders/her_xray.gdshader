@@ -27,10 +27,10 @@ uniform vec3 fill_tint : source_color = vec3(0.13, 0.19, 0.30);
 uniform float fill_alpha = 0.50;
 uniform float strength = 0.0;
 uniform float strength_ref = 0.6;
-uniform float near = 0.5;
-uniform float full = 1.1;
+uniform float near = 0.15;   // (lane E lead 3: was 0.5; her own body is the mask pass now)
+uniform float full = 0.45;   // (was 1.1)
 uniform vec3 her_at = vec3(0.0, -1000.0, 0.0);
-uniform float her_r = 0.8;
+uniform float her_r = 0.0;   // (lane E lead 3: the capsule is off; was 0.8, it took a slab she stood against for her own body)
 uniform float her_top = 2.2;
 
 void fragment() {
