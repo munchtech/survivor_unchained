@@ -123,8 +123,8 @@ public partial class BattleFx
         var v = (System.Environment.GetEnvironmentVariable(env) ?? def).Split(':');
         return (new Color(v[0]), v.Length > 1 ? float.Parse(v[1], System.Globalization.CultureInfo.InvariantCulture) : 1f);
     }
-    static readonly (Color C, float S) DenRare = DenLit("LOOT_DEN_RARE", "#50a3cb:0.7"), DenEpic = DenLit("LOOT_DEN_EPIC", "#8394d6:0.7"),
-        DenSet = DenLit("LOOT_DEN_SET", "#6beac7:1.2");
+    static readonly (Color C, float S) DenRare = DenLit("LOOT_DEN_RARE", "#3ca8bc:0.7"), DenEpic = DenLit("LOOT_DEN_EPIC", "#679dd4:0.7"),
+        DenSet = DenLit("LOOT_DEN_SET", "#abefd8:1.4");
     static bool InDen => SurvivorUnchained.View.MarkPass.Den;
     ShaderMaterial? lootMat;
     bool? lootDen;

@@ -1970,7 +1970,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>The den's names (lane E r4, judge 2: none over C .14 as seen, none at C .04+ in h 290-25, the set's the
     /// loudest at C .12-.135, h <= 175; drawn as they are): the epic's violet (h 308) goes indigo with its light, the
     /// rare's blue held under the cap, the set's verdigris. Env LOOT_DEN_LABELS "rare,epic,set" overrides for a shot.</summary>
-    static readonly Color[] DenLabel = (System.Environment.GetEnvironmentVariable("LOOT_DEN_LABELS") ?? "#61a9f6,#9493ec,#56d8b1")
+    static readonly Color[] DenLabel = (System.Environment.GetEnvironmentVariable("LOOT_DEN_LABELS") ?? "#61a9f6,#8e95e6,#4fd9b1")
         .Split(',').Select(h => new Color(h)).ToArray();
 
     /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
