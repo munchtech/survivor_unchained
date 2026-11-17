@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play.Zones;
 
@@ -138,7 +139,7 @@ public partial class Game
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
         if (spotClose is float tc) { target = tc; taken = true; }
-        if (CloseHold is float ch) { target = ch; if (p != null) BareGrassRound(p.X, p.Z); if (Args.Has("close-aim")) cam.AimLift = (float)Args.Num("close-aim", 0); }
+        if (CloseHold is float ch) { target = ch; if (p != null) BareGrassRound(p.X, p.Z); if (Args.Get("hide-view") is string hv) HideViewParts(hv); if (Args.Has("close-aim")) cam.AimLift = (float)Args.Num("close-aim", 0); }
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
@@ -156,10 +157,23 @@ public partial class Game
         else zone.KeepClear = null;
     }
 
+    /// <summary>--hide-view A,B (with --close-hold, pictures; bisecting): hides the zone view's children named A,B (logged once), "her" = the heroine, "list" logs only.</summary>
+    bool hideLogged;
+    void HideViewParts(string what)
+    {
+        if (scene?.View is not { } v) return;
+        var names = what.Split(',');
+        if (!hideLogged) { hideLogged = true; GD.Print("hide-view children: " + string.Join(",", v.GetChildren().Select(c => c.Name + ":" + c.GetType().Name))); }
+        foreach (var n in v.GetChildren())
+            if (n is Node3D n3 && names.Contains((string)n.Name)) n3.Visible = false;
+        if (names.Contains("her") && scene.Player != null) scene.Player.Visible = false;
+    }
+
     /// <summary>--close-hold (pictures): the meadow's tufts within 4 m of her are bare (the grass shader's own bare_at slot, the first
     /// unused one, else the last), so no blade stands on her helm or between her and the lens.</summary>
     void BareGrassRound(double x, double z)
     {
+        if (Args.Num("close-bare", 1) == 0) return;
         if (scene?.View is not { } v) return;
         foreach (var n in v.GetChildren())
         {
