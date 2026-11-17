@@ -29,7 +29,8 @@ public partial class Gore : Node3D
     /// (0.44 / 0.090 / 34, drawn as they are; #8e0c0c measured C 0.164); pools #622410 (0.35 / 0.095 / 38: lit and dried
     /// they read about 6 degrees lower, #5e0a07 measured h 21-24). Lane B lead 2 (f1): #622410 still rendered L 0.52-0.61,
     /// h 22-27 in the den (lit): pools #4a1e0a (about 0.6x linear, hue raised ~8 degrees) aim at L ~0.45, h ~32.</summary>
-    static readonly Blood Red = new(new Color("#7c3e30"), new Color("#4a1e0a"));    /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
+    static readonly Blood Red = new(new Color("#7c3e30"), new Color("#4a1e0a"));
+    /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
     /// sent as it was drew as (196, 61, 61), coral-pink droplets (round 3's judge).</summary>
     static Color Lin(Color c) => c.SrgbToLinear();
     static readonly Blood Ichor = new(new Color("#3a4a10"), new Color("#1c240a"));
