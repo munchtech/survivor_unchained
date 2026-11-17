@@ -2590,8 +2590,10 @@ public partial class PlayerView : Node3D
     // (level) through the camera's far side, not its near side: swung through the near side, a blade hanging from her fist
     // points at the camera and reads as a cane under her boots; through the far side it shows short and passes behind her.
     // The way is chosen once, as the turn starts (pivotSign), and held to its end. --pivot-away-off: the short way, as before.
+    // (judge r10) Only near-half turns (165-195: the long way costs at most 30 deg more): a quarter turn taken the long way
+    // reads as a spin against the input and lands 4-6 frames late.
     static readonly bool PivotAwayOff = SurvivorUnchained.Args.Has("pivot-away-off");
-    static readonly float PivotFlipMin = SurvivorUnchained.Args.Num("pivot-flip-min", 80f), PivotFlipMax = SurvivorUnchained.Args.Num("pivot-flip-max", 280f), PivotDone = 20f;
+    static readonly float PivotFlipMin = SurvivorUnchained.Args.Num("pivot-flip-min", 165f), PivotFlipMax = SurvivorUnchained.Args.Num("pivot-flip-max", 195f), PivotDone = 20f;
     // (A's rig, measured on e12) the drawn blade's level heading against her right side (deg, + toward ahead): the clips' stand
     // carry, and the side carry's set where her sword side faces the camera. Body B: re-measure (ana10.py "hd").
     static readonly float PivotBetaOff = SurvivorUnchained.Args.Num("pivot-beta-off", 25f), PivotBetaOn = SurvivorUnchained.Args.Num("pivot-beta-on", -50f);
