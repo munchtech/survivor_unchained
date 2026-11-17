@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// HoldSheathed) about the belt pivot, so the piece trails her hips' roll and turn as a hung weight instead of riding
 /// the bone rigidly. The pivot stays where the rigid mount put it. It frees itself when its mount goes (Sheathe swaps).
 /// A piece whose hilt a clip's hand holds (hilt: the warden's hip sword; Body 17) rides rigidly in those clips
-/// (SheathHang.HiltHeld, read from the playing clip of the AnimationPlayer nearest above the skeleton), the hang eased
+/// (her left wrist on its throat: SheathHang.HandHolds, read from the pose), the hang eased
 /// out and back in over SheathHang.Blend s. `--sheath-rigid`: the old rigid ride (for before/after frames).
 /// </summary>
 public partial class SheathSway : SkeletonModifier3D
@@ -26,9 +26,7 @@ public partial class SheathSway : SkeletonModifier3D
     Quaternion restQ;
     readonly SheathHang hang = new();
     bool hilt;           // rigid in the clips whose hand holds its hilt
-    AnimationPlayer? anim;
-    int seek;
-    StringName? clip;
+    int handIdx = -2;
     bool held;
 
     public static SheathSway Attach(Skeleton3D skeleton, Node3D mount, string bone, Vector3 pivot, bool hilt = false)
@@ -39,23 +37,36 @@ public partial class SheathSway : SkeletonModifier3D
         return s;
     }
 
-    /// <summary>Whether the playing clip holds the hilt (the AnimationPlayer found once, nearest above the skeleton).</summary>
-    bool HiltHeldNow()
+    /// <summary>Whether her left hand holds the hilt now: its wrist within SheathHang.HoldOn of the throat as the rigid
+    /// mount puts it (hysteresis to HoldOff). The pose, not the clip's name: under her AnimationTree the AnimationPlayer's
+    /// current clip is empty, so the name list never engaged in play.</summary>
+    bool HiltHeldNow(Skeleton3D sk)
     {
         if (!hilt) return false;
-        if (anim == null || !IsInstanceValid(anim))
-        {
-            anim = null;
-            if (seek-- > 0) return held;
-            seek = 30;
-            for (Node? n = GetSkeleton(); n != null && anim == null; n = n.GetParent())
-                foreach (var c in n.GetChildren())
-                    if (c is AnimationPlayer ap) { anim = ap; break; }
-            if (anim == null) return held = false;
-        }
-        var now = anim.CurrentAnimation;
-        if (now != clip) { clip = now; held = SheathHang.HoldsHilt(now.ToString()); }
-        return held;
+        if (handIdx == -2) handIdx = sk.FindBone("hand_l");
+        if (handIdx < 0) return held = false;
+        var g = sk.GlobalTransform;
+        var throat = g * (sk.GetBoneGlobalPose(idx) * (rigid * new Vector3(0, SheathHang.Throat, 0)));
+        var wrist = g * sk.GetBoneGlobalPose(handIdx).Origin;
+        return held = SheathHang.HandHolds(held, throat.DistanceTo(wrist));
+    }
+
+    // `--hilt-tilt off`: held, the piece rides rigidly as before (before/after frames); `--hilt-held x,y,z`: another axis.
+    static readonly bool TiltOff = Args.Get("hilt-tilt") == "off";
+    bool tiltSet;
+    Quaternion tilt = Quaternion.Identity;   // in the bone's space: the rigid shaft onto the held one
+
+    void TiltOnce(Skeleton3D sk)
+    {
+        tiltSet = true;
+        var held = WeaponSockets.HipBladeHeld;
+        if (Args.Get("hilt-held") is string hh && hh.Split(',') is { Length: 3 } v)
+            held = new N.Vector3(float.Parse(v[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(v[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(v[2], System.Globalization.CultureInfo.InvariantCulture));
+        var rest = sk.GetBoneGlobalRest(idx).Basis.Orthonormalized();
+        var shaft = rigid.Basis.Y.Normalized();
+        var h = new Vector3(held.X, held.Y, held.Z).Normalized();
+        if ((rest * shaft).X < 0) h.X = -h.X;
+        tilt = new Quaternion(shaft, (rest.Inverse() * h).Normalized()).Normalized();
     }
 
     static N.Quaternion Q(Quaternion q) => new(q.X, q.Y, q.Z, q.W);
@@ -73,11 +84,22 @@ public partial class SheathSway : SkeletonModifier3D
         // The bone's turn in skeleton space and from its rest there (D = pose * rest^-1).
         var poseQ = sk.GetBoneGlobalPose(idx).Basis.Orthonormalized().GetRotationQuaternion();
         var d = Q((poseQ * restQ.Inverse()).Normalized());
-        var h = hang.Step(d, (float)delta, HiltHeldNow());
+        var h = hang.Step(d, (float)delta, HiltHeldNow(sk));
         var hung = new Quaternion(h.X, h.Y, h.Z, h.W).Normalized();
         // The piece's turn in skeleton space: hung * rest * rigid; back in the bone's space under the pose.
         var basis = new Basis((poseQ.Inverse() * hung * restQ).Normalized()) * rigid.Basis;
-        mount.Transform = new Transform3D(basis, pivot - basis * pivotInMount);
+        var at = new Transform3D(basis, pivot - basis * pivotInMount);
+        // Held (the hang eased out), the piece turns about its throat onto WeaponSockets.HipBladeHeld, by as much as the
+        // hand holds it: the throat stays under her hand.
+        float k = hilt && !TiltOff ? 1f - hang.Weight : 0f;
+        if (k > 0.001f)
+        {
+            if (!tiltSet) TiltOnce(sk);
+            var throat = at * new Vector3(0, SheathHang.Throat, 0);
+            var nb = new Basis(Quaternion.Identity.Slerp(tilt, k)) * at.Basis;
+            at = new Transform3D(nb, throat - nb * new Vector3(0, SheathHang.Throat, 0));
+        }
+        mount.Transform = at;
         if (Log && hilt) LogLine(sk);
     }
 

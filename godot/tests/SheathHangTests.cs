@@ -81,6 +81,14 @@ public class SheathHangTests
     [InlineData(null, false)]
     public void TheHiltIsHeldOnlyInTheListedClips(string? clip, bool held) => Assert.Equal(held, SheathHang.HoldsHilt(clip));
 
+    [Theory]
+    [InlineData(false, 0.085f, true)]    // the town run's wrist on the throat
+    [InlineData(false, 0.14f, false)]    // near, not yet holding
+    [InlineData(true, 0.14f, true)]      // holding: kept till past HoldOff
+    [InlineData(true, 0.17f, false)]
+    [InlineData(false, 0.30f, false)]    // the town idle's hand on the pommel
+    public void TheHandHoldsTheHiltByItsWristNearTheThroat(bool was, float d, bool holds) => Assert.Equal(holds, SheathHang.HandHolds(was, d));
+
     [Fact]
     public void InAHiltClipThePieceRidesRigidlyAndTheHangEasesBackWithoutAPop()
     {

@@ -45,6 +45,17 @@ public sealed class SheathHang
         return Array.IndexOf(HiltHeld, bare) >= 0;
     }
 
+    /// <summary>The scabbard's throat down its shaft from the sheath point (m): where the town run's left hand lies.</summary>
+    public const float Throat = 0.16f;
+    /// <summary>Her left wrist this close to the throat (m, world) takes hold (the town run's 7-9 cm); it lets go past
+    /// <see cref="HoldOff"/>, so a hand at the edge does not flicker. Her town idle's hand rests on the pommel, ~0.3 m up.</summary>
+    public const float HoldOn = 0.12f, HoldOff = 0.16f;
+
+    /// <summary>Whether her hand holds the hilt now, from its wrist's distance to the throat and whether it held a frame
+    /// ago. Read from the pose itself: under an AnimationTree the AnimationPlayer's current clip is empty, so the clip
+    /// list (<see cref="HiltHeld"/>) never engaged in play (warden-move, 17 Nov: hang weight 1.00 every frame).</summary>
+    public static bool HandHolds(bool was, float wristToThroat) => wristToThroat < (was ? HoldOff : HoldOn);
+
     Quaternion mean, now;
     bool started;
     float w = 1;
