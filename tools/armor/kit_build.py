@@ -618,8 +618,23 @@ def clearance(ref, part):
     return ((part.P - q) * n).sum(1)
 
 
+def by_body(x, name=None):
+    """A build.json's body-keyed values (armor-D, 17 Nov): any object may carry "by_body": {"<body>": {key: value}}
+    (bodies.py names: a, p1), whose keys replace or add to that object's own for that body; "by_body" itself is dropped.
+    So one recipe serves both bodies and body A reads exactly what it read before unless it is named."""
+    if name is None:
+        import bodies
+        name = bodies.cur().name
+    if isinstance(x, list):
+        return [by_body(v, name) for v in x]
+    if not isinstance(x, dict):
+        return x
+    o = x.get("by_body", {}).get(name, {})
+    return {k: by_body(o[k] if k in o else v, name) for k, v in {**x, **o}.items() if k != "by_body"}
+
+
 def build(pid):
-    cfg = json.load(open(os.path.join(SRC, pid, "build.json"), encoding="utf-8"))
+    cfg = by_body(json.load(open(os.path.join(SRC, pid, "build.json"), encoding="utf-8")))
     d = out_dir(pid)
     if cfg.get("module") in ("kit_limbs", "kit_upper", "kit_helm"):  # limbs; pauldrons, helm (multi-material rigid nodes): own build
         import importlib

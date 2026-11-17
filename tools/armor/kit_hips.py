@@ -207,7 +207,7 @@ def live_lines(cfg):
     for key, pid, sub in (("bodice", "kit_bodice", "corset"), ("belt", "kit_belt", "belt")):
         f = os.path.join(kb.SRC, pid, "build.json")
         if os.path.exists(f):
-            src = json.load(open(f, encoding="utf-8"))[sub]
+            src = kb.by_body(json.load(open(f, encoding="utf-8")))[sub]
             cfg[key] = {k: src[k] for k in cfg[key]}
 
 
