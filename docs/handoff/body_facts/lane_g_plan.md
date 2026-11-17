@@ -6,7 +6,9 @@ To coordinator #15 before any build. Nothing here is built. Facts: `lane_g_plan_
 
 Units: tokens in M (a lead round with helpers ~0.3-0.7M; a max judge ~0.13M). Credits: Meshy. Every judge is a fresh su-lead-max at the game cameras, 1:1.
 
-## Verdict on timing: flip RIGHT AFTER the demo, with everything built and judged behind `--body p1` before it
+## DECIDED (the owner, 16 Nov 2026, word for word): "also comit b to the demo". B is her default before the 20 Nov demo (timing A below, the owner's call). Owner's picks: Q2 retire the plate sets; Q3 the three callings refit on one judged sheet before the flip; Q4 vambraces, then a pauldron; Q5 TRELLIS.2 first, Meshy per piece with the owner's yes. Step 7 is lane D's (it adds `--body` itself, on lane G's B numbers). The fallback to A holds until the flip gate passes.
+
+## Lead 3's verdict on timing (overruled by the owner): flip RIGHT AFTER the demo, with everything built and judged behind `--body p1` before it
 
 The demo is due 20 Nov (RESUME.md:109), four days out. A flip before it needs steps 0, 3, 4, 5a, 6 and 7 done and judged in about three days, while lanes A and D are still changing the inputs those steps consume. The case is in "Timings" at the end. What runs now is additive and leaves A's default bit for bit. The flip is then a one-gate day, about 21-22 Nov.
 
