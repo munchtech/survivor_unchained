@@ -2255,47 +2255,47 @@
   {
    "mimeType": "image/jpeg",
    "name": "Leather026_nor",
-   "uri": "../people/outfit_tex/Leather026_nor.jpg"
+   "uri": "../../people/outfit_tex/Leather026_nor.jpg"
   },
   {
    "mimeType": "image/jpeg",
    "name": "outfit_darkleather_diff",
-   "uri": "../people/outfit_tex/outfit_darkleather_diff.jpg"
+   "uri": "../../people/outfit_tex/outfit_darkleather_diff.jpg"
   },
   {
    "mimeType": "image/png",
    "name": "Leather026_rough",
-   "uri": "../people/outfit_tex/Leather026_rough.png"
+   "uri": "../../people/outfit_tex/Leather026_rough.png"
   },
   {
    "mimeType": "image/jpeg",
    "name": "Metal048C_nor",
-   "uri": "../people/outfit_tex/Metal048C_nor.jpg"
+   "uri": "../../people/outfit_tex/Metal048C_nor.jpg"
   },
   {
    "mimeType": "image/jpeg",
    "name": "outfit_gold_diff",
-   "uri": "../people/outfit_tex/outfit_gold_diff.jpg"
+   "uri": "../../people/outfit_tex/outfit_gold_diff.jpg"
   },
   {
    "mimeType": "image/png",
    "name": "Metal048C_metal-Metal048C_rough",
-   "uri": "../people/outfit_tex/Metal048C_metal-Metal048C_rough.png"
+   "uri": "../../people/outfit_tex/Metal048C_metal-Metal048C_rough.png"
   },
   {
    "mimeType": "image/jpeg",
    "name": "Metal038_nor",
-   "uri": "../people/outfit_tex/Metal038_nor.jpg"
+   "uri": "../../people/outfit_tex/Metal038_nor.jpg"
   },
   {
    "mimeType": "image/jpeg",
    "name": "outfit_steel_diff",
-   "uri": "../people/outfit_tex/outfit_steel_diff.jpg"
+   "uri": "../../people/outfit_tex/outfit_steel_diff.jpg"
   },
   {
    "mimeType": "image/png",
    "name": "Metal038_metal-Metal038_rough",
-   "uri": "../people/outfit_tex/Metal038_metal-Metal038_rough.png"
+   "uri": "../../people/outfit_tex/Metal038_metal-Metal038_rough.png"
   }
  ],
  "skins": [

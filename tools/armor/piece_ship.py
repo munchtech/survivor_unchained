@@ -120,6 +120,20 @@ def piece_files(armor_dir, pid):
     return [f for f in out if os.path.exists(os.path.join(armor_dir, f))]
 
 
+def tex_uris(js, art):
+    """The shared outfit textures (art/people/outfit_tex) named from where the piece is installed. piece_blender writes
+    A's "../people/outfit_tex/"; a piece shipped one folder deeper (art/armor/body_p1, B) kept it, which names no file
+    there, so Godot imported its materials with no albedo, normal or roughness map and the shader's gold mask (its
+    albedo's mean colour) read 0 on every trim (armor-D l7 finish, 17 Nov). A's own stays byte-identical."""
+    ptex = os.path.join(ROOT, "godot", "art", "people", "outfit_tex")
+    rel = os.path.relpath(ptex, os.path.abspath(art)).replace("\\", "/")
+    for im in js.get("images", []):
+        u = im.get("uri", "")
+        if "people/outfit_tex/" in u and os.path.exists(os.path.join(ptex, os.path.basename(u))):
+            im["uri"] = rel + "/" + os.path.basename(u)
+    return js
+
+
 def install(pid, stage_armor, art, body_glb, label, built_on):
     """The staged piece into `art`, its row merged into art/armor_index.json and stamped (body_hash = label,
     body_glb, built_on) on the row, the gltf's asset extras and the sockets."""
@@ -131,6 +145,7 @@ def install(pid, stage_armor, art, body_glb, label, built_on):
     gp = os.path.join(art, f"{pid}.gltf")
     js = json.load(open(gp, encoding="utf-8"))
     js.setdefault("asset", {}).setdefault("extras", {}).update(stamp)
+    tex_uris(js, art)
     json.dump(js, open(gp, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     sp = os.path.join(art, f"{pid}.sockets.json")
     if os.path.exists(sp):
