@@ -37,7 +37,7 @@ RAMP_L = (0.22, 0.66, 1.0)             # stone L from, to, gamma (t ** gamma: th
 RAMP_C0, RAMP_CK, RAMP_CMAX = 0.28, 0.17, 0.075   # chroma = (L - C0) * CK, at most CMAX (grey under C0)
 RAMP_H_LIT, RAMP_H_SHADE = 63.0, 55.0   # hue of the lit planes, of the grey shade (its chroma ~.006)
 SHADE_C = 0.006
-MOSS_H, MOSS_C, MOSS_LK, MOSS_L0 = 112.0, 0.055, 0.66, 0.05   # moss: hue, chroma, L = LK * L_src + L0
+MOSS_H, MOSS_C, MOSS_LK, MOSS_L0 = 110.0, 0.038, 0.5, 0.04   # moss: hue, chroma, L = LK * L_src + L0
 MOSS_CORE = (0.5, 0.85)                 # the moss kept where its blurred mask is over this: its fringe goes back to stone
 SHARP_R, SHARP_K = 2.0 * S, 0.7         # unsharp mask radius (texels) and amount on L
 BELLY = (0.62, 0.18)                    # from this share of the piece's height down, darken to (1 - this) at its foot

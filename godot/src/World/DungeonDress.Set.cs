@@ -35,8 +35,8 @@ public static partial class DungeonDress
     // (den r15 A, R14 judge item 1: r14's O1r blurred O1 to a mip and painted a procedural top: 24 px blocks, no ink) O1r drawn
     // from its own sheet (tools/look/den_rocks.py: O1's stones at 2x in the target's value band, inked), no blur branch; 0 r14's
     static readonly float SetRockPaint = SurvivorUnchained.Args.Num("den-rock-paint", 1f);
-    static readonly float SetRockDome = SurvivorUnchained.Args.Num("den-rock-dome", 1f);   // (den r15 G) plain O1 stones cast on their own dome over the floor, not the bank surface
-    static readonly float SetRockLanePaint = SurvivorUnchained.Args.Num("den-rock-lanepaint", 1f);   // (den r15 G) the lane/alcove stones drawn from the painted round sheet O1r too
+    static readonly float SetRockDome = SurvivorUnchained.Args.Num("den-rock-dome", 0f);   // (den r15 G) plain O1 stones cast on their own dome over the floor, not the bank surface
+    static readonly float SetRockLanePaint = SurvivorUnchained.Args.Num("den-rock-lanepaint", 0f);   // (den r15 G) the lane/alcove stones drawn from the painted round sheet O1r too
     static string? LaneRockKey => SetRockLanePaint > 0f && SetRockPaint > 0f && SetRockLit > 0f ? "O1r" : null;
     static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
     static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
