@@ -50,6 +50,11 @@ DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha":
            # scaled by `shrink` (< 1), so its Poisson solve is in TENSION: a membrane pulled taut between its ring does not
            # buckle, where full-length rest edges pushed into the compressed hollow fold (the core's leftover >45s and flips)
            "shrink": None,
+           # bend (attempt 9; None = off, bit for bit): a bending term over the patch and its held ring, so the solve is
+           # C1 there (the taut core meets its ring with the ring's slope, no rim): bend x sum (median area / area_i)
+           # |(L x)_i - d_i|^2 on the clamped cotangent L, d_i = c_i R_i (L P0)_i + (1 - c_i) (L X)_i ("blend": the rest
+           # curvature turned on the crumple, the posed one off it), or (1 - c_i) (L X)_i ("zero"), or R_i (L P0)_i ("rest")
+           "bend": None, "bend_to": "blend",
            # cap (attempt 7): the cap-band curvature rule (CAP's keys; None = off, bit for bit). Needs the caller's `rigid`
            # (fair(..., rigid=(R, w)): R [nraw, 3, 3] a bone's rigid turn rest -> pose, w [nraw] that bone chain's skin share)
            "cap": None}
@@ -166,7 +171,8 @@ class Fair:
         self._avg = sp.diags(1.0 / np.maximum(deg, 1)) @ self.adj
         self.n0 = _unit(self._VT @ self.E0[:, :, 2])            # rest vertex normals
         self.tag = hashlib.sha1(np.ascontiguousarray(V0).tobytes() + np.ascontiguousarray(T).tobytes()   # (cap None: the old key)
-                                + json.dumps({k: v for k, v in prm.items() if not (k == "cap" and v is None)}, sort_keys=True).encode()).hexdigest()[:16]
+                                + json.dumps({k: v for k, v in prm.items() if not ((k == "cap" or k == "bend") and v is None)
+                                              and not (k == "bend_to" and prm["bend"] is None)}, sort_keys=True).encode()).hexdigest()[:16]
         self._L, self._cap = None, None
 
     # ------------------------------------------------------------------------------------------------ measures --
@@ -177,14 +183,20 @@ class Fair:
         ang = np.degrees(np.arccos(np.clip((fn[self._ta] * fn[self._tb]).sum(1), -1, 1)))
         return ang * np.sign((fn[self._ta] * (X[self._ob] - X[self._oa])).sum(1))
 
-    def curv(self, X, rings=2):
-        """[n] the mean curvature (1/m; + convex, against the outward normals) by the clamped cotangent Laplacian, area-
-        weighted over `rings` (I + adjacency) passes: the cap rule's measure. Rotation free: a rest cap carried rigidly by
-        any bone keeps curv(P0)."""
+    def _lap(self):
+        """The clamped cotangent Laplacian [n, n] (rest weights w) over every edge."""
         if self._L is None:
             E, w = self.E, self.w
             Wm = sp.coo_matrix((np.r_[w, w], (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), (self.n, self.n)).tocsr()
             self._L = (sp.diags(np.asarray(Wm.sum(1)).ravel()) - Wm).tocsr()
+        return self._L
+
+    def curv(self, X, rings=2):
+        """[n] the mean curvature (1/m; + convex, against the outward normals) by the clamped cotangent Laplacian, area-
+        weighted over `rings` (I + adjacency) passes: the cap rule's measure. Rotation free: a rest cap carried rigidly by
+        any bone keeps curv(P0)."""
+        self._lap()
+        if getattr(self, "_inc", None) is None:
             self._inc = sp.csr_matrix((np.ones(3 * len(self.T)), (self.T.ravel(), np.repeat(np.arange(len(self.T)), 3))), (self.n, len(self.T)))
         T = self.T
         fn = np.cross(X[T[:, 1]] - X[T[:, 0]], X[T[:, 2]] - X[T[:, 0]])
@@ -278,7 +290,16 @@ class Fair:
         if self._cap is not None:                               # the cap: the posed points only soft targets
             kc = self._cap[0][p] * ((1 - c[p]) if prm["cap"]["spare"] else 1.0)
             al = (1 - kc) * al + kc * prm["cap"]["alpha"] * np.median(wu)
-        K = (Lpp + sp.diags(al)).tocsc()
+        K, self._bend = Lpp + sp.diags(al), None
+        if prm["bend"] is not None:                             # the C1 solve: the bending rows are the patch and its ring
+            rows = np.nonzero(patch | ring)[0]
+            Lr = self._lap()[rows]
+            Bp = Lr[:, p]
+            m = self.varea[rows]
+            BtW = (Bp.T @ sp.diags(float(prm["bend"]) * np.median(m) / m)).tocsr()
+            K = K + BtW @ Bp
+            self._bend = (rows, BtW, Lr[:, hold] @ X[hold], Lr @ self.P0, Lr @ X)
+        K = K.tocsc()
         solve = factorized(K)
         cols = lambda Y: np.stack([solve(np.ascontiguousarray(Y[:, c])) for c in range(3)], 1)
         # the harmonic rotation field: the posed surface's own rotations on the held points, filled into the patch
@@ -351,7 +372,15 @@ class Fair:
             Bv = np.zeros((self.n, 3))
             np.add.at(Bv, Eu[:, 0], v)
             np.add.at(Bv, Eu[:, 1], -v)
-            Y = cols(Bv[p] - Xb + al[:, None] * X[p])
+            rhs = Bv[p] - Xb + al[:, None] * X[p]
+            if self._bend is not None:                          # the bending target d on the rows (module docstring)
+                rows, BtW, BhX, LP0, LX = self._bend
+                cr = c[rows][:, None] if blend else np.ones((len(rows), 1))
+                dr = np.einsum("nij,nj->ni", R[rows], LP0)
+                to = prm["bend_to"]
+                d = cr * dr + (1 - cr) * LX if to == "blend" else (1 - cr) * LX if to == "zero" else dr
+                rhs = rhs + BtW @ (d - BhX)
+            Y = cols(rhs)
             if prm["volume"] and va.sum() > 0:                  # the mean offset along the smooth normals held at 0
                 nrm = _unit(np.einsum("nij,nj->ni", R[p], self.n0[p]))
                 a = va
