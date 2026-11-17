@@ -1225,6 +1225,81 @@ def a_leads(lead, B, X, comp, tol=A_BLEND["tol"]):
     return lead, moved
 
 
+# THE STACK (rigid_roles.json slots.<slot>."stack"; lane G solver round 7, 17 Nov): a plate hung under another (a
+# pauldron's lames under its cop) is not fit alone. Fitted alone to the stand-off law, B's warden lames moved ~20 mm out
+# (A's lames sit up to 10.5 mm inside her untucked arm, under the tuck; the rest floor clears them by translation) and the
+# cop 4 mm, so the cop / lame 1 overlap broke (judge round 5: skin between them at close; A 600 mm^2 front-outer, B 370).
+# A child (per side, the groups by their top: each hangs from the one above) takes its parent's fit over A's own
+# arrangement (A's rest, carried by the parent's bind), then swings out on its top hinge (the major axis of its overlap
+# zone, the points within "reach_mm" of the parent at A's rest) by the least angle that meets the law (the zone, under
+# the parent, is exempt), at most "max_deg"; "tiers" the tiers it acts on.
+STACK = {"reach_mm": 6.0, "max_deg": 35.0, "rounds": 8, "lever_m": 0.005, "tiers": ["close", "play"]}
+_A_REST = {}
+
+
+def a_rest_uniques(bd, ms):
+    """A tier's uniques at A's rest (ms order, stacked), from the piece's own file."""
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_REST:
+        g, out = gltf_cached(bd.meta["src"]), []
+        for m in ms:
+            ni, _, P, _, _, J, W = read_prim(g, m["node"])
+            inv = bd.z[f"inv{m['i']}"]
+            Xu = np.zeros((int(inv.max()) + 1, 3))
+            Xu[inv] = a_rest_points(g, ni, P, J, W)
+            out.append(Xu)
+        _A_REST[key] = np.vstack(out)
+    return _A_REST[key]
+
+
+def stack_parents(X, comp, lead, side_m=0.02):
+    """{child leader: parent leader}: per side (left, right, middle as top_groups), the rigid groups by their top (Y),
+    each hung from the one above it."""
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    ids = np.unique(g[g >= 0])
+    if len(ids) < 2:
+        return {}
+    mx = np.array([X[g == k, 0].mean() for k in ids])
+    side = np.where(np.abs(mx) < side_m, 0, np.sign(mx))
+    out = {}
+    for sd in np.unique(side):
+        of = ids[side == sd]
+        of = of[np.argsort([-X[g == k, 1].max() for k in of], kind="stable")]
+        out.update({int(b): int(a) for a, b in zip(of[:-1], of[1:])})
+    return out
+
+
+def stack_hinge(body, Y, zone, tgt, ok, law=STACK):
+    """(R, p0, info): the least outward turn of the points Y about their hinge (the major axis of Y[zone] through its
+    middle) that puts every point outside the zone with ok at tgt clearance on body; Y -> (Y - p0) R^T + p0."""
+    Z = Y[zone] if zone.sum() >= 3 else Y
+    p0 = Z.mean(0)
+    a = np.linalg.svd(Z - p0, full_matrices=False)[2][0]
+    free = ok & ~zone
+    th, R, sgn = 0.0, np.eye(3), 0.0
+    info = {"hinge_deg": 0.0, "left_mm": 0.0}
+    for r in range(int(law["rounds"]) + 1):
+        Yr = (Y - p0) @ R.T + p0
+        c, fn = gear_field.signed_clear(body, Yr)
+        need = tgt - c
+        m = free & (need > 1e-5)
+        info["left_mm"] = round(float(max(0.0, need[free].max() if free.any() else 0.0)) * 1000, 2)
+        if not m.any() or r == int(law["rounds"]):
+            break
+        g = (np.cross(a, Yr - p0) * fn).sum(1)
+        if not sgn:
+            sgn = 1.0 if (need[m] * g[m]).sum() >= 0 else -1.0
+        g = sgn * g
+        k = m & (g > law["lever_m"])   # (a point nearer the hinge than lever_m: a turn cannot clear it)
+        if not k.any():
+            break
+        th = min(th + float((need[k] / g[k]).max()), np.radians(law["max_deg"]))
+        kx = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]]) * sgn
+        R = np.eye(3) + np.sin(th) * kx + (1 - np.cos(th)) * kx @ kx
+    info["hinge_deg"] = round(float(np.degrees(th)), 2)
+    return R, p0, info
+
+
 def standoff_floor(bd, ms, ev, path=None, lead=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
@@ -1324,7 +1399,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         flo = standoff_floor(bd, ms, ev, lead=lead) if armor_laws else None
         # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
         wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() and armor_laws else None
-        join, bridges = None, set()
+        join, bridges, stacked = None, set(), {}
         if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
@@ -1344,12 +1419,45 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 order = sorted(np.unique(lead[comp[comp >= 0]]), key=lambda c: (not plate[c], -cnt[c]))
                 jn = worn_rest.Joins(Xa[comp < 0], Xn[comp < 0])
                 join = dict(jn=jn, mean=set(), Xa=Xa, Xn=Xn, lift=None)
+            # (THE STACK: a child plate is fit after its parent, from it; see STACK)
+            stk = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("stack")
+            stk = dict(STACK, **stk) if isinstance(stk, dict) else (dict(STACK) if stk else None)
+            if stk is not None and armor_laws and not jl and wr is None and tier in stk["tiers"]:
+                parents = stack_parents(Xa, comp, lead)
+                Ar = a_rest_uniques(bd, ms)
+                depth = lambda c: 0 if c not in parents else 1 + depth(parents[c])  # noqa: E731
+                order = sorted(order, key=lambda c: (depth(int(c)), int(c)))
+            else:
+                stk, parents = None, {}
             for c in order:
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
                 own = comp == c
                 grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
                 fg = None if flo is None else flo[grp]
+                if stk is not None and int(c) in parents:
+                    # (the child over A's arrangement: its parent's bind and fit, then the least hinge to the law)
+                    p = parents[int(c)]
+                    ownp = comp == p
+                    Rk, cak, cbk = kabsch(Ar[ownp], Xa[ownp])
+                    Mp, cap, cbp = rots.get(p, (np.eye(3), np.zeros(3), np.zeros(3)))
+                    Y = ((Ar[grp] - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp
+                    from scipy.spatial import cKDTree
+                    zone = cKDTree(Ar[ownp]).query(Ar[grp])[0] < stk["reach_mm"] / 1000.0
+                    creq = c0s[grp]
+                    tgt, okq = np.minimum(creq, gear_field.RIGID["clear_m"]), creq >= 0
+                    if fg is not None:
+                        has = np.isfinite(fg)
+                        tgt, okq = np.where(has, np.maximum(tgt, np.nan_to_num(fg)), tgt), okq | has
+                    Rh, p0, info = stack_hinge(body if wr is None else wr.body, Y, zone, tgt, okq, stk)
+                    Rc, cac, cbc = kabsch(Ar[own], Xa[own])
+                    rots[int(c)] = (Rh @ Mp @ Rk @ Rc.T, cbc,
+                                    (((cac - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp - p0) @ Rh.T + p0)
+                    stacked[int(c)] = (grp, (Y - p0) @ Rh.T + p0)
+                    info.update(parent=p, zone=int(zone.sum()))
+                    fit["rigid"][f"{tier}/{int(c)}"] = info
+                    print(f"{bd.id}: {tier}: {int(c)} hangs from {p} (THE STACK): {info}", flush=True)
+                    continue
                 if bbody is None and wr is None and (fg is None or not np.isfinite(fg).any()):
                     continue
                 Bt, Yb = Xn[own], None
@@ -1438,6 +1546,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
                     sv = sel[inv]
                     N[sv] = Nb[sv] @ np.linalg.inv(M)
+                if stacked:
+                    # (a stacked child's points as placed from A's rest: its rims and trims exactly where A hangs them)
+                    k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
+                    for c, (grp, Ys) in stacked.items():
+                        gs = grp[k0:k0 + len(X)]
+                        if gs.any():
+                            X[gs] = Ys[np.cumsum(grp) - 1][k0:k0 + len(X)][gs]
                 if join is not None and join["lift"] is not None:
                     # (a bridge's lift, worn_rest.bridge_lift: its points raised off her, their normals turned with them)
                     k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
