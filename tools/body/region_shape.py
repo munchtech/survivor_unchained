@@ -121,7 +121,9 @@ class Ctx:
         self.sg = {"l": 1, "r": -1}
         cl = lambda bd, s: bd.p.names[bd.p.parent[bd.p.index[bd.role("upperarm", s)]]]
         self.anch = {s: {"upperarm": (B.role("upperarm", s), A.role("upperarm", s)), "clavicle": (cl(B, s), cl(A, s)),
-                         "chest": tuple(bd.p.names[bd.p.parent[bd.p.index[cl(bd, s)]]] for bd in (B, A))} for s in "lr"}
+                         "chest": tuple(bd.p.names[bd.p.parent[bd.p.index[cl(bd, s)]]] for bd in (B, A)),
+                         # lane G (16 Nov, Gate T's trap-shift anchor question): the neck's root on each skeleton
+                         "neck": ("neck_01", "neck_01")} for s in "lr"}
         self.bands = self._bands()
         N0 = B._normals(B.V0)
         self.near, self.sd0, self.q0 = {}, {}, {}
@@ -555,7 +557,8 @@ def cmd_shift(cx, a):
         rows[pose["name"]] = r = {b: stats(v) for b, v in cx.shift(a.provider, pose).items()}
         if len(names) <= 40:
             print(f"{pose['name']:28s}" + "  ".join(f"{b[:6]} {'/'.join(f'{x:.1f}' for x in r[b])}" for b in BANDS), flush=True)
-    (OUT / f"shift_{a.provider}.json").write_text(json.dumps(rows))
+    sfx = "_" + a.anchor.replace("=", "-").replace(",", "_") if getattr(a, "anchor", "") else ""
+    (OUT / f"shift_{a.provider}{sfx}.json").write_text(json.dumps(rows))
     print(f"{a.provider}: {len(rows)} poses. band: worst in95 / worst inmax (pose) / worst outmax | median p50 / in95 / inmax")
     for b in BANDS:
         v = np.array([r[b] for r in rows.values()])
@@ -1017,7 +1020,13 @@ def main():
     ap.add_argument("--views", default="")
     ap.add_argument("--gate", action="store_true")
     ap.add_argument("--target", default=CARRIED["file"], help="the stored carried target in out/shoulder (provider carried)")
+    ap.add_argument("--anchor", default="", help="shift: band=anchor[,band=anchor] over ANCHOR (anchors: chest, clavicle, "
+                    "upperarm, neck); the out file gets an _anchor suffix")
     a = ap.parse_args()
+    for kv in filter(None, a.anchor.split(",")):
+        k, v = kv.split("=")
+        assert k in ANCHOR, k
+        ANCHOR[k] = v
     CARRIED["file"] = a.target
     if a.cmd == "edges":
         return cmd_edges(a)
