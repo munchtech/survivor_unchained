@@ -1340,6 +1340,50 @@ def stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest):
     return mm[sk.kd.query(X)[1]] * (comp >= 0)
 
 
+# THE GROUP (lane G solver round 11, 17 Nov; slots.<slot>.group in rigid_roles.json switches it): the rest fit fitted each
+# plate alone, so the stand-off law pushed B's warden lames out 16-20 mm and the cop 4 mm, each its own way, and A's
+# overlaps broke (cop|l1 at rest, three views: A 816/600/958 mm^2, B 574/370/1035; close_town_day showed her skin
+# between the cop and lame 1). A hinged chain hit its 35 deg cap (THE STACK, parked). Here each side's plates (a
+# pauldron's cop and every lame, with what rides them) are placed as A arranges them (A's rest, a_rest_uniques), and
+# the arrangement is fit as ONE rigid group: the similarity of A's plates onto their carried places, then one
+# translation and per-axis scales (about the topmost plate's centre: the cop stays seated, a scale gives the lames
+# reach) solved against the slot's stand-off law (gear_field.rigid_fit_clear). A's overlaps hold by construction;
+# motion stays per plate (A's blends, A_BLEND). "turn" true also lets the group turn about its middle.
+GROUP = {"tiers": ["close", "play"], "turn": False, "side_m": 0.02}
+
+
+def group_fit(bd, ms, body, comp, lead, Xa, Xn, c0s, flo, law=GROUP):
+    """({leader: (M, ca, cb)}, {leader: (mask of its group, its points placed)}, {side: info}) for each side's plates of a
+    tier fit as one rigid group from A's arrangement (THE GROUP); a side with one plate is left to the lone fit."""
+    Ar = a_rest_uniques(bd, ms)
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    ids = np.unique(g[g >= 0])
+    rots, placed, infos = {}, {}, {}
+    if len(ids) < 2:
+        return rots, placed, infos
+    mx = np.array([Xa[g == k, 0].mean() for k in ids])
+    side = np.where(np.abs(mx) < law["side_m"], 0, np.sign(mx))
+    for sd in np.unique(side):
+        of = ids[side == sd]
+        if sd == 0 or len(of) < 2:
+            continue
+        top = int(of[np.argmax([Xa[g == k, 1].max() for k in of])])
+        gp = np.isin(g, of)
+        own = np.isin(comp, of)
+        M, ca, cb, info = gear_field.rigid_fit_clear(body, Ar[own], Xn[own], Ar[gp], c0s[gp],
+                                                     None if flo is None else flo[gp],
+                                                     centre=Ar[comp == top].mean(0), turn=law.get("turn", False))
+        for k in of:
+            ok_ = comp == k
+            Rk, cak, cbk = kabsch(Ar[ok_], Xa[ok_])
+            rots[int(k)] = (M @ Rk.T, cbk, (cak - ca) @ M.T + cb)
+            gk = g == k
+            placed[int(k)] = (gk, (Ar[gk] - ca) @ M.T + cb)
+        info.update(plates=[int(k) for k in of], top=top)
+        infos["R" if sd < 0 else "L"] = info
+    return rots, placed, infos
+
+
 def standoff_floor(bd, ms, ev, path=None, lead=None, tucked=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
@@ -1473,7 +1517,19 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             else:
                 stk, parents = None, {}
             tk, flt = None, None
+            # (THE GROUP: each side's plates fit as one rigid group from A's arrangement; see GROUP)
+            gl_ = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("group")
+            gl_ = dict(GROUP, **gl_) if isinstance(gl_, dict) else (dict(GROUP) if gl_ else None)
+            if gl_ is not None and armor_laws and not jl and wr is None and stk is None and tier in gl_["tiers"]:
+                g_rots, g_placed, g_info = group_fit(bd, ms, body, comp, lead, Xa, Xn, c0s, flo, gl_)
+                rots.update(g_rots)
+                stacked.update(g_placed)
+                for sd, inf in g_info.items():
+                    fit["rigid"][f"{tier}/group_{sd}"] = inf
+                    print(f"{bd.id}: {tier}: THE GROUP {sd}: {inf}", flush=True)
             for c in order:
+                if int(c) in rots:
+                    continue
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
                 own = comp == c
