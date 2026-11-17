@@ -152,7 +152,33 @@ def crossbow_low():
 # the left shoulder's run swing kept (0: none, held at its mean; 0.3, so the held side rises and falls a little with
 # each stride and doesn't read frozen, judge r1).
 HILT = {"wrist": (0.3004, -0.0235, -0.0058), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
-        "pole": (0.69, -0.6385, -0.3101), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.3}
+        "pole": (0.69, -0.6385, -0.3101), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.3, "tilt": True}
+# `tilt` (warden-move, 17 Nov): held, the game turns the scabbard about its throat from its hung axis (WeaponSockets.cs
+# HipBladeShaft) onto the held one (HipBladeHeld: 45 deg below horizontal, 37 out from straight back; from behind at the
+# play camera the hung one stood 78-86 deg on screen, a cane), so her hand turns with it about the same point: the wrist
+# about the throat (WeaponSockets HipBladeAtA + SheathHang.Throat down the shaft), the knuckles and thumb by the same tilt.
+
+
+def hilt_tilted(h, rig):
+    """HILT with the hand turned about the scabbard's throat by the held tilt (pelvis frame at rest; data read from
+    WeaponSockets.cs and SheathHang.cs, as the game's SheathSway reads it)."""
+    if not h.get("tilt"):
+        return h
+    import re
+    from keyed import _socket_vec
+    from rig import REPO, qbetween, qinv, qmul, qrot
+    sk = rig.sk
+    gr, gp = sk.rest_globals()
+    pel = sk.i("pelvis")
+    R, P = gr[0, pel], gp[0, pel]
+    throat_m = float(re.search(r"Throat\s*=\s*([0-9.]+)f", (REPO / "godot" / "logic" / "Play" / "SheathHang.cs").read_text(encoding="utf-8")).group(1))
+    shaft = _socket_vec("HipBladeShaft") / np.linalg.norm(_socket_vec("HipBladeShaft"))
+    held = _socket_vec("HipBladeHeld") / np.linalg.norm(_socket_vec("HipBladeHeld"))
+    throat = qrot(qinv(R), _socket_vec("HipBladeAtA") + throat_m * shaft - P)
+    T = qmul(qinv(R), qmul(qbetween(shaft, held), R))
+    w = np.array(h["wrist"], float)
+    return dict(h, wrist=tuple(throat + qrot(T, w - throat)), knuckles=tuple(qrot(T, np.array(h["knuckles"], float))),
+                thumb=tuple(qrot(T, np.array(h["thumb"], float))))
 
 
 def hilt_carry(rig, clip, hilt=None):
@@ -160,7 +186,7 @@ def hilt_carry(rig, clip, hilt=None):
     the left arm solved afresh over the clip (keyed.solve_frames, the clip as its base), every other joint as it was."""
     from keyed import solve_frames
     from rig import qrot
-    h = dict(HILT, **(hilt or {}))
+    h = hilt_tilted(dict(HILT, **(hilt or {})), rig)
     I = rig.I
     pel, ua = I["pelvis"], I["upperarm_l"]
     g, p = rig.sk.fk(clip.rot, clip.pos)
