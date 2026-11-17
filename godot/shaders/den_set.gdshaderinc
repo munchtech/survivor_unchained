@@ -42,6 +42,18 @@ uniform float pit_halo = 0.14;   // (den r15 C) the soft halo (was .07)
 uniform float pit_net = 0.6;   // (den r15 P) the thin crack network's strength (0 off)
 uniform float pit_floor = 0.3;   // (den r15 P) how far the pit floor takes veins whatever the painting's brightness
 uniform float pit_dark = 0.35;   // (den r13 rooms) share of each pit left dark: a slow noise mask on the veins
+// (den r16 A, R15f item 1) a lair pit as glowing cracks in a dark pit (den_boss.png's veined pit): inside its broken lip the
+// painting gives way to a closed cell network in world metres (each pit its own, never swims): dark rock plates with a thin lit
+// top edge, cracks a thin lime core in a soft green halo; an inner shadow under the lip, earth crumbs on it; 2-3 cracks run out
+// past the rim (UV2: the point's floor offset from the pit's centre, PlaceSetHole). pit_cells 0: the r15 strokes on the painting
+uniform float pit_cells = 0.0;
+uniform float pit_cell_m = 1.0;   // metres between the plates' seeds
+uniform vec3 pit_cw = vec3(0.03, 0.1, 0.55);   // metres: the core's half width, the halo's fall; share of borders lit
+uniform vec3 pit_core_c = vec3(0.2, 0.33, 0.1);   // linear: the cores' and the halo's emission
+uniform vec3 pit_halo_c = vec3(0.05, 0.16, 0.02);
+uniform vec3 pit_plate_c = vec3(0.05, 0.052, 0.046);   // linear: the plates' albedo
+uniform vec3 pit_lipw = vec3(0.14, 0.05, 0.6);   // the inner shadow's width (lip radii), the lip's break, the plates' lit edge
+uniform vec3 pit_ray = vec3(1.0, 0.75, 1.35);   // the past-rim cracks on, their length past the lip (metres) min, max
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
 uniform vec3 boss_c = vec3(0.0);
@@ -124,6 +136,41 @@ float pg_edge(vec2 p) {
 	}
 	return d2 - d1;
 }
+// (den r16 A) the pits' closed cell network: IQ's two-pass Voronoi (the distance to the cell's nearest border), each border's
+// glow (a core and an e-fold halo, summed over the cell's own borders) lit or dark by its own hash (the same from both sides),
+// and the plate's lit top edge (a border whose normal points up the frame, -z). x: border distance, y core, z halo, w top edge
+vec2 pc_seed(vec2 c) { return 0.12 + 0.76 * pg_h2(c); }
+vec4 pc_net(vec2 x, float cw, float hw, float aa, float share, out float cell_h, out float bot) {
+	vec2 n = floor(x), f = fract(x), mg = vec2(0.0), mr = vec2(0.0);
+	float md = 8.0;
+	for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+		vec2 g = vec2(float(i), float(j)), r = g + pc_seed(n + g) - f;
+		float d = dot(r, r);
+		if (d < md) { md = d; mr = r; mg = g; }
+	}
+	vec2 cid = n + mg;
+	cell_h = pg_h2(cid + 7.31).y;
+	md = 8.0;
+	float core = 0.0, halo = 0.0, top = 0.0;
+	bot = 0.0;
+	for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {
+		vec2 g = mg + vec2(float(i), float(j)), r = g + pc_seed(n + g) - f, dr = r - mr;
+		float l2 = dot(dr, dr);
+		if (l2 < 1e-5) continue;
+		vec2 nr = dr * inversesqrt(l2);
+		float d = dot(0.5 * (mr + r), nr);
+		if (d > 0.7) continue;
+		md = min(md, d);
+		vec2 eh = pg_h2(cid + n + g + 3.7);
+		float s = smoothstep(share - 0.12, share + 0.12, 1.0 - eh.x) * (0.5 + 0.5 * eh.y);
+		core += s * (1.0 - smoothstep(cw - aa, cw + aa, d));
+		halo += s * exp(-max(d - cw, 0.0) / hw);
+		float up = clamp(-nr.y, 0.0, 1.0);
+		top = max(top, up * up * (smoothstep(cw + aa, cw + 2.0 * aa, d) - smoothstep(cw + 3.0 * aa, cw + 4.5 * aa, d)));
+		bot = max(bot, clamp(nr.y, 0.0, 1.0) * (1.0 - smoothstep(cw + aa, cw + 7.0 * aa, d)));
+	}
+	return vec4(md, min(core, 1.3), min(halo, 1.6), top);
+}
 
 void fragment() {
 	if (occ_cut(VIEW_MATRIX, PROJECTION_MATRIX, VERTEX, wpos, FRAGCOORD, VIEWPORT_SIZE)) discard;   // (den r15 F)
@@ -204,6 +251,64 @@ void fragment() {
 #ifdef SET_SOFT
 	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
+	if (pit_cells > 0.0 && pit_glow > 0.0 && COLOR.a < 0.75) {   // (den r16 A, R15f item 1) see pit_cells
+		vec2 xz = wpos.xz, off = UV2;
+		float ell = 2.0 * COLOR.b, rr = length(off);
+		vec2 sd = pg_h2(floor((xz - off) * 2.0 + 0.5) + 41.0);   // the pit's own seed (its centre)
+		// the lip broken in chunks (a 16 cm cell's hash moves the cut) and roughened; crumbs of earth along it
+		vec2 kq = xz / 0.16, kn = floor(kq), kf = fract(kq), kid = kn;
+		float k1 = 8.0;
+		for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+			vec2 g = vec2(float(i), float(j)), r = g + pc_seed(kn + g) - kf;
+			float d = dot(r, r);
+			if (d < k1) { k1 = d; kid = kn + g; }
+		}
+		vec2 kh = pg_h2(kid + 5.1);
+		float en = ell + pit_lipw.y * ((kh.x - 0.5) + 0.6 * (pg_vn(xz * 2.3 + sd * 60.0) - 0.5));
+		float ea = max(fwidth(en), 1e-4);
+		float inside = 1.0 - smoothstep(1.0 - ea, 1.0 + ea, en);
+		float topn = clamp(-off.y / max(rr, 1e-3), 0.0, 1.0), u = max(1.0 - en, 0.0);
+		float sh = smoothstep(0.0, pit_lipw.x * mix(0.8, 1.35, topn), u);   // the inner shadow under the lip
+		// the plates and their cracks (the coordinates warped: the cracks wander, with a fine jag)
+		vec2 x = xz / pit_cell_m;
+		x += 0.32 * (vec2(pg_vn(x * 0.9 + 1.7), pg_vn(x * 0.9 - 6.3)) - 0.5) + 0.07 * (vec2(pg_vn(x * 4.1 + 2.9), pg_vn(x * 4.1 - 8.2)) - 0.5);
+		float aa = 0.75 * length(fwidth(x)), ch, bot, cwc = pit_cw.x / pit_cell_m;
+		vec4 nt = pc_net(x, cwc, pit_cw.y / pit_cell_m, aa, pit_cw.z, ch, bot);
+		float grain = 1.0 + 0.18 * (pg_vn(xz * 9.0) - 0.5) + 0.1 * (pg_vn(xz * 23.0) - 0.5);
+		vec3 alb = pit_plate_c * (0.72 + 0.56 * ch) * grain * (1.0 + 4.0 * pit_lipw.z * nt.w) * (1.0 - 0.45 * bot);
+		alb *= mix(0.25, 1.0, smoothstep(cwc * 0.4, cwc + aa, nt.x));   // the crack a dark groove where it does not glow
+		alb *= mix(0.12, 1.0, sh);
+		alb = mix(alb, vec3(0.05, 0.034, 0.02), topn * (1.0 - smoothstep(0.015, 0.04, u)));   // the far lip's earth face
+		float crumb = step(0.8, kh.y) * (1.0 - smoothstep(0.09, 0.16, sqrt(k1))) * (1.0 - smoothstep(0.03, 0.08, abs(en - 1.03)));
+		float pulse = 0.9 + 0.1 * sin(TIME * 1.3 + xz.x * 0.7);
+		float rm = smoothstep(0.15, 0.75, 0.7 * pg_vn(xz * 0.3 + sd * 80.0) + 0.3 * pg_vn(xz * 0.85 + 3.3));
+		vec3 em = (pit_core_c * nt.y + pit_halo_c * nt.z) * pit_glow * mix(0.2, 1.0, rm) * pulse * mix(0.3, 1.0, sh);
+		// 2-3 cracks run out past the rim on the floor, tapering
+		float rc = 0.0, rh = 0.0;
+		if (pit_ray.x > 0.0 && rr > 0.01) {
+			float th = atan(off.y, off.x), past = rr - rr / max(ell, 1e-3), am = max(fwidth(rr), 1e-4);
+			for (int k = 0; k < 3; k++) {
+				vec2 hk = pg_h2(sd * 97.0 + float(k) * 13.7);
+				if (k == 2 && hk.x < 0.5) break;
+				float tk = 6.2832 * fract(sd.x + float(k) * 0.37 + 0.12 * hk.x);
+				float t = past / mix(pit_ray.y, pit_ray.z, hk.y);
+				if (t > 1.0 || t < -0.6) continue;
+				float wig = 0.16 * (pg_vn(vec2(past * 2.4, float(k) * 5.3 + sd.y * 40.0)) - 0.5) + 0.05 * (pg_vn(vec2(past * 9.0, float(k) * 3.1)) - 0.5);
+				float dth = th - tk;
+				dth -= 6.2832 * floor((dth + 3.1416) / 6.2832);
+				float lat = abs(dth * rr - wig), tp = 1.0 - clamp(t, 0.0, 1.0), cwr = pit_cw.x * mix(0.4, 1.1, tp);
+				rc = max(rc, (1.0 - smoothstep(cwr - am, cwr + am, lat)) * smoothstep(0.0, 0.25, tp));
+				rh = max(rh, exp(-max(lat - cwr, 0.0) / (pit_cw.y * mix(0.5, 1.0, tp))) * tp);
+			}
+		}
+		float out_ = 1.0 - inside, ra = clamp(rc + 0.6 * rh, 0.0, 1.0) * out_;
+		alb = mix(alb, vec3(0.012, 0.01, 0.008), rc * out_);
+		alb = mix(alb, vec3(0.15, 0.1, 0.062) * mix(0.45, 1.0, max(out_, sh)), crumb);
+		alb = gloom_col(alb, lair_gloom(wpos));
+		ALBEDO = alb * mix(1.0, fg_dark, smoothstep(0.82, 1.0, SCREEN_UV.y));
+		EMISSION = em * inside * (1.0 - crumb) + (pit_core_c * rc + pit_halo_c * rh) * pit_glow * pulse * out_ * 0.85 / max(ra, 0.05) * step(0.001, ra);
+		ALPHA = max(inside, max(ra, crumb));
+	} else
 	if (pit_glow > 0.0 && COLOR.a < 0.75) {
 		vec2 q = UV * 13.0;
 		float m = smoothstep(0.25, 0.65, pg_edge(q * 0.33 + 5.3) * 1.6);
