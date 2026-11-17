@@ -246,7 +246,8 @@ SPEC = {
     # thigh's flex -62..76); a two-bone blend shrinks a rigid plate. A belt-line pivot turning part of the swing keeps
     # the plate rigid, on the belt, and over the thigh. Users: a piece's rigid_ride {"thigh_hinge_l": 1.0}.
     "hinges": [
-        {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4},
+        {"name": "thigh_hinge_{s}", "parent": "pelvis", "bone": "thigh_{s}", "pivot": [0.11, 1.08, -0.03], "amount": 0.4,
+         "at": "thigh_{s}", "at_rest": [0.07348603713882518, 1.0487260086578656, -0.02377016100514645]},
     ],
     # Tasset hinge (armor-D, 16 Nov): one centred bone for ARMOR only (no skin of hers on it, not in her body file:
     # extend() adds it, HerJoints.AddHinges in the game, pin_shipped.with_hinges in a piece's bind), for the belt's
@@ -264,7 +265,8 @@ SPEC = {
     # Users: a piece's rigid_ride {"tasset_hinge": 1.0}.
     "tassets": [
         {"name": "tasset_hinge", "parent": "pelvis", "thighs": ["thigh_l", "thigh_r"], "pivot": [0.0, 1.125, 0.12],
-         "amount": 0.8, "soft": 12.0},
+         "amount": 0.8, "soft": 12.0,
+         "at": "pelvis", "at_rest": [2.28729882256751e-12, 1.0722957482471516, -3.8052937667565345e-07]},
     ],
     # Her upper arm's twist chain (Body 5 A2; design: A1 solver, 24 Oct). One twist bone a quarter down the arm
     # undoing half the roll left the turn all in two bands (shear 10.8 deg/cm at reaver_show's +105 roll, girth
@@ -506,7 +508,7 @@ def extend(sk: Skeleton, chain=False) -> Skeleton:
             if n in I or pn_ not in I or hg["bone"].replace("{s}", s) not in I:
                 continue
             p = I[pn_]
-            r, t = hinge_rest(grot[0, p], gpos[0, p], hinge_pivot(hg, s))
+            r, t = hinge_rest(grot[0, p], gpos[0, p], hinge_pivot(hg, s, sk))
             I[n] = len(names_)
             names_.append(n)
             parent.append(p)
@@ -517,7 +519,7 @@ def extend(sk: Skeleton, chain=False) -> Skeleton:
         if n in I or tg["parent"] not in I or any(t_ not in I for t_ in tg["thighs"]):
             continue
         p = I[tg["parent"]]
-        r, t = hinge_rest(grot[0, p], gpos[0, p], np.asarray(tg["pivot"], float))
+        r, t = hinge_rest(grot[0, p], gpos[0, p], tasset_pivot(tg, sk))
         I[n] = len(names_)
         names_.append(n)
         parent.append(p)
@@ -846,10 +848,31 @@ def drive_panels(sk: Skeleton, rot, state=None, dt=None):
 
 
 # ------------------------------------------------------------- hip hinges --
-def hinge_pivot(hg, s):
-    """A hip hinge's pivot in her rest axes on side `s` (SPEC "hinges": given for her left, the right mirrored)."""
+def _pivot_shift(hg, s, sk):
+    """How far the skeleton `sk` has hg's "at" bone from where hers rests ("at_rest", her left; x mirrored for the right),
+    as a vector in her rest axes. Why (the owner, 16 Nov: one pipeline for every body): a pivot is measured from a bone,
+    so it moves with that bone on another body; hers is bit for bit (a shift under 1e-6 m is none)."""
+    if sk is None or "at" not in hg:
+        return np.zeros(3)
+    n = hg["at"].replace("{s}", s)
+    if n not in sk.index:
+        return np.zeros(3)
+    x, y, z = (float(v) for v in hg["at_rest"])
+    ref = np.array([x if s == "l" else -x, y, z])
+    d = sk.rest_globals()[1][0, sk.index[n]] - ref
+    return np.zeros(3) if float(np.max(np.abs(d))) < 1e-6 else d
+
+
+def hinge_pivot(hg, s, sk=None):
+    """A hip hinge's pivot in her rest axes on side `s` (SPEC "hinges": given for her left, the right mirrored), moved
+    with its "at" bone on a body `sk` that isn't hers."""
     x, y, z = (float(v) for v in hg["pivot"])
-    return np.array([x if s == "l" else -x, y, z])
+    return np.array([x if s == "l" else -x, y, z]) + _pivot_shift(hg, s, sk)
+
+
+def tasset_pivot(tg, sk=None):
+    """The tasset hinge's pivot in her rest axes (centred), moved with its "at" bone on a body `sk` that isn't hers."""
+    return np.asarray(tg["pivot"], float) + _pivot_shift(tg, "l", sk)
 
 
 def hinge_rest(gp_rot, gp_pos, pivot):
@@ -1666,6 +1689,24 @@ def corrective_names():
     return [n for c in SPEC.get("correctives", []) for n in each(c["name"])]
 
 
+def write_body_p1():
+    """godot/art/people/body_p1/rig_helpers.json: the hinge and tasset entries with their pivots resolved on body B."""
+    sk = Skeleton.load(REPO / "tools" / "anim" / "data" / "body_p1_skeleton.json")
+    out = {"body": "p1", "skeleton": "tools/anim/data/body_p1_skeleton.json", "hinges": [], "tassets": []}
+    for hg in SPEC["hinges"]:
+        out["hinges"].append({**hg, "pivot": [round(float(v), 9) for v in hinge_pivot(hg, "l", sk)]})
+    for tg in SPEC["tassets"]:
+        out["tassets"].append({**tg, "pivot": [round(float(v), 9) for v in tasset_pivot(tg, sk)]})
+    f = REPO / "godot" / "art" / "people" / "body_p1" / "rig_helpers.json"
+    f.write_text(json.dumps(out, indent=1) + chr(10))
+    return f
+
+
 if __name__ == "__main__":
-    write_spec()
-    print("wrote", SPEC_FILE)
+    import sys
+
+    if "--body" in sys.argv and sys.argv[sys.argv.index("--body") + 1] == "p1":
+        print("wrote", write_body_p1())
+    else:
+        write_spec()
+        print("wrote", SPEC_FILE)
