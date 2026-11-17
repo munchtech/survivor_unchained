@@ -2731,7 +2731,7 @@ public partial class PlayerView : Node3D
     }
     // (aim-move r13, --blade-mask, log only) T4 by pixels: the held blade's meshes move to layer 19 (the main camera still draws
     // them), each gets a flat magenta twin on layer 20 that the main camera skips. Two half-size SubViewports on the same world, each
-    // with a camera copying the main one: FULL draws all but layer 19 (scene + magenta, depth-tested), SOLO draws layer 20 only.
+    // with a camera copying the main one: FULL draws her and the people (layer 2, her layers) + magenta, depth-tested (not the scene), SOLO draws layer 20 only.
     // After the frame is drawn BMASK vis tot: magenta pixels in FULL, blade pixels in SOLO (same frame as that frame's BLADE line).
     const uint MaskReal = 1u << 5, MaskTwin = 1u << 6, MaskOld = 2;   // (free bits; the blade came on layer 2, the people's)
     SubViewport? maskFull, maskSolo; Camera3D? maskCamF, maskCamS;
@@ -2748,7 +2748,7 @@ public partial class PlayerView : Node3D
                 c = new Camera3D { Current = true, CullMask = cull };
                 vp.AddChild(c); AddChild(vp); return vp;
             }
-            maskFull = Mk(0xFFFFFu & ~MaskReal, out maskCamF); maskSolo = Mk(MaskTwin, out maskCamS);
+            maskFull = Mk(MaskOld | HerLayers | MaskTwin, out maskCamF);   // (lead r13, e28: the den's roots and overhangs hid the blade 15 f in a run: T4 is her body hiding it, so only she occludes) maskSolo = Mk(MaskTwin, out maskCamS);
             if (!maskHooked) { maskHooked = true; RenderingServer.FramePostDraw += BladeMaskCount; }
         }
         if (maskMount != mount)
