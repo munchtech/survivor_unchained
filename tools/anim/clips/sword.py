@@ -122,6 +122,21 @@ HEAVY_L = [
 BACK_COCK = (0.30, 0.04, 0.17)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
 
 
+# (body-b-skill-clips, 17 Nov) The recovery's hips swing back onto Prowl's (19 cm back, 26 deg round) while the front
+# foot holds: the front knee went straight for 3-6 frames and bent again in one (calf_l 29/19/20 deg pops at fore f13,
+# back f21, heavy f26). keyed Rig.leg_reach lowers the hips past 0.97 of the leg's reach instead; Prowl's own 0.965 and
+# the stance's 0.94-0.96 untouched.
+LEG_REACH = (0.97, 0.99)
+
+
+def _build(name, rig, keys, meta):
+    rig.leg_reach = LEG_REACH
+    try:
+        return build(name, rig, keys, lead=STRIKE, meta=meta)
+    finally:
+        rig.leg_reach = None
+
+
 def _body(p):
     return {k: v for k, v in p.items() if k != "hand_l"}
 
@@ -181,7 +196,7 @@ def sword_back(rig):
         keys[4] = (15, pose(-10, -18, (-0.30, -0.32, 0.16), _n(-0.9, -0.38, 0.2), pole=(-0.3, -0.9, 0.2), left=False, weight=-0.4), "auto")
     keys = with_shield(keys, BACK_L)
     keys = _land(keys, rig, step=(20, 0.035))
-    return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    return _build("sword_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_fore(rig):
@@ -198,7 +213,7 @@ def sword_fore(rig):
     ]
     keys = with_shield(keys, FORE_L)
     keys = _land(keys, rig, step=(20, 0.035))
-    return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    return _build("sword_fore", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_heavy(rig):
@@ -230,7 +245,7 @@ def sword_heavy(rig):
         # over 24-29 (keyed meta "twist_unwind"): the end lands 4.0 / 4.7, the twist easing one way 95 -> 72 (f29, its
         # keys' 68 at f30), the hand's turn f19-30 at most 13.2 deg a frame (was 17.1); f0-24 as before.
         meta["twist_unwind"] = [24, 29]
-    return build("sword_heavy", rig, keys, lead=STRIKE, meta=meta)
+    return _build("sword_heavy", rig, keys, meta=meta)
 
 
 def clips(rig, want):

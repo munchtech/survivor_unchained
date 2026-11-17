@@ -477,6 +477,35 @@ class Rig:
                     lp = qrot(qinv(self.grest[p]), self.prest[j] - self.prest[p])  # rest offset in parent frame
                     gpos[j] = gpos[p] + qrot(grot[p], lp)
         refresh()
+        leg_reach = getattr(self, "leg_reach", None)
+        if leg_reach is not None and base is None:
+            # (body-b-skill-clips, 17 Nov) A clip that sets `leg_reach = (knee, top)` (shares of the leg's length): a keyed
+            # foot the hips would carry past `knee` of the leg's reach lowers the hips instead, along the hand's soft
+            # curve ("reach"), so the leg eases toward `top` and never locks straight. A stance whose hips swing round
+            # onto Prowl's 19 cm back had the front knee straight for 3-6 frames and bending again in one (the swords'
+            # leg pops: calf_l 29 deg at fore f13). Under `knee` nothing moves.
+            kn_, top_ = leg_reach
+            drop = 0.0
+            for side in "lr":
+                spec = pose.get(f"foot_{side}", {})
+                if "pos" not in spec:
+                    continue
+                th, ca, fo = I[f"thigh_{side}"], I[f"calf_{side}"], I[f"foot_{side}"]
+                full = np.linalg.norm(self.prest[ca] - self.prest[th]) + np.linalg.norm(self.prest[fo] - self.prest[ca])
+                s = 1 if side == "l" else -1
+                p = np.array(spec["pos"], float)
+                target = np.array([p[0] + s * self.feet_out, self.prest[fo][1] + p[1], p[2]])
+                d = target - gpos[th]
+                n = float(np.linalg.norm(d)) / full
+                if n <= kn_:
+                    continue
+                w = (kn_ + (top_ - kn_) * math.tanh((n - kn_) / (top_ - kn_))) * full
+                h2 = d[0] ** 2 + d[2] ** 2
+                if w * w > h2 and d[1] < 0:
+                    drop = max(drop, -d[1] - math.sqrt(w * w - h2))
+            if drop > 0:
+                hp = hp - np.array([0.0, drop, 0.0])
+                refresh()
         chest = delta[I["spine_03"]]
         # The hands keyed with a "plant" (side: (plant, ground, lay)): their
         # fingers are laid on the ground, or kept out of it (Rig._lay).
