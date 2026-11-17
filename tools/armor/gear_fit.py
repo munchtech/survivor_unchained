@@ -1376,7 +1376,6 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
-            J, W = gear_lower.a_weights(sys.modules[__name__], bd, m["node"], body, J, W)   # (gear_lower: A's own, by slot)
             Tv = body.T[e["tri"]]
             shapes = {}
             for nm, dP in body.shapes.items():
