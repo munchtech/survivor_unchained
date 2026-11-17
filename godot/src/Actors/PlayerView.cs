@@ -1369,7 +1369,7 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale * PoolDen;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
         Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)
@@ -1377,7 +1377,7 @@ public partial class PlayerView : Node3D
         Light.LightCullMask = (LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu) & (CrowdOmni ? 0xFFFFFu : ~CrowdLayer);
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
-        FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;
+        FolkLight.LightEnergy = Light.LightEnergy / PoolDen * FolkK * FolkScale;   // (the den's pool energy is the ground's only)
         FolkLight.OmniRange = Light.OmniRange * FolkRange;
         FolkLight.OmniAttenuation = FolkAtt;
         // Her weapon and shield are the world's (layer 1), so the pool lit them: at the pool's hip height her shield's face
@@ -1411,7 +1411,7 @@ public partial class PlayerView : Node3D
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {
-            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
+            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy / PoolDen * Atmosphere.CrowdFill * CrowdEmberK : 0;
             var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
             RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
             // (L1 lead 19, SH2) She stands on her own short shadow: the light is over her, so the cast's rule gives next to
@@ -1860,6 +1860,9 @@ public partial class PlayerView : Node3D
     // at its centre; at 1.7 it was flat to 160 px); --ember-h given wins.
     static readonly bool EmberHArg = SurvivorUnchained.Args.Get("ember-h") != null;
     static float EmberHNow => !EmberHArg && HeroDen.EmberH > 0 ? HeroDen.EmberH : EmberH;
+    // (lane E polish) in the den the pool light's own energy on the ground (hero_den value 38, HeroDen.PoolK; 1 elsewhere): her
+    // folk light (which follows the pool's energy) and her lamp on the crowd divide it back out, so only the ground's pool moves.
+    static float PoolDen => HeroDen.PoolK > 0 ? HeroDen.PoolK : 1;
     // --clip-tour LIST|all (--clip-tour-from S): the clip playing and its time, for the probes (null / -1 outside a tour).
     static readonly string? TourArg = SurvivorUnchained.Args.Get("clip-tour");
     static readonly float TourFrom = SurvivorUnchained.Args.Num("clip-tour-from", 0f);

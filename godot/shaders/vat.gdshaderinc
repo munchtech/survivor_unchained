@@ -199,7 +199,7 @@ float crowd_edge(float rim) {
 // 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
 // they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
 #define DEN_BOSS_BODY vec2(0.040, 50.0)
-#define DEN_BOSS_BACK vec4(0.40, 0.010, 292.0, 0.93)
+#define DEN_BOSS_BACK vec4(0.41, 0.014, 292.0, 0.93)
 #define DEN_TORSO vec2(-0.32, 0.2)
 #define DEN_MANE vec3(0.50, 0.10, 32.0)
 #define DEN_MANE_Z vec2(0.2, 0.46)

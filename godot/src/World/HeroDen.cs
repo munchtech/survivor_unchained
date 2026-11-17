@@ -6,7 +6,8 @@ namespace SurvivorUnchained.View;
 /// (Zone.HeroDen): her cast shadow (shaders/hero_cast.gdshader, Actors/HerShadow.cs), her line where no hero_pool row draws it
 /// (hero_line.gdshader through Atmosphere.HeroLinePx), her hair's chroma and her skin and hair steps (cel_her_den), and her
 /// held steel (Actors/HerSteel.cs, shaders/hero_steel.gdshader), her steps' painted direction (toward the den key, cel_key)
-/// and levels (cel_her_den2, cel_her_den3), and her ember's height over her feet (PlayerView reads EmberH). A rig
+/// and levels (cel_her_den2, cel_her_den3), her ember's height over her feet (PlayerView reads EmberH) and its own energy on
+/// the ground (PoolK). A rig
 /// without the row: every global zero, nothing drawn, her look as before.</summary>
 public static class HeroDen
 {
@@ -17,6 +18,10 @@ public static class HeroDen
     public static bool SteelOn;
     /// <summary>Her ember's (the pool light's) height over her feet in the den, m (value 33); 0: PlayerView's own (--ember-h, 1.7).</summary>
     public static float EmberH;
+    /// <summary>(lane E polish) Her ember's (the pool light's) own energy in the den, a share (value 38; 0 or absent: 1): the
+    /// ground's pool only. Her folk light, which follows the pool's energy, and her lamp on the crowd are given it back
+    /// (PlayerView.PoolDen), so her skin, her hair and the foes stay as they were while the ground by her darkens.</summary>
+    public static float PoolK;
 
     static double V(double[] d, int i, double or) => d.Length > i ? d[i] : or;
 
@@ -48,6 +53,7 @@ public static class HeroDen
         RenderingServer.GlobalShaderParameterSet("cel_her_den2", d != null ? new Vector4((float)V(d, 31, 0), (float)V(d, 34, 0), (float)V(d, 35, 0), (float)V(d, 36, 0)) : Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("cel_her_den3", d != null ? new Vector4((float)V(d, 37, 0), 0, 0, 0) : Vector4.Zero);
         EmberH = d != null ? (float)V(d, 33, 0) : 0;
+        PoolK = d != null ? (float)V(d, 38, 0) : 0;   // her pool's own energy (38)
         // her held steel (values 18-30: its level, lit R, G, B, shade R, G, B, glint R, G, B (sRGB 0-255), the glint's place
         // along the piece (0-1) and half length (share), the grip's light): shaders/hero_steel.gdshader through HerSteel
         SteelOn = d is { Length: >= 31 } && d[18] > 0;

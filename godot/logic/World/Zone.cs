@@ -249,7 +249,9 @@ public sealed record AtmospherePreset(
     /// (round 2, the D judge: "pasty") her steps' painted direction (0 her ember's own, from over her; 1 the den key's, from the
     /// screen's upper left), the lit step's chroma (share of its light's; 0 as is), her ember's height over her feet (m; 0:
     /// --ember-h, 1.7), the steps' n.l (0: 0.42), the lit step's level (0: 0.7), the shade step's warmth (the light's own hue
-    /// again, share), her hair's shade step (share of the lit, in the dye's hue)]. Null: none of it (every rig but the den).</summary>
+    /// again, share), her hair's shade step (share of the lit, in the dye's hue); (lane E polish) her pool's own energy on the
+    /// ground (share of her ember's; 0 or absent: 1; her folk light and her lamp on the crowd are given it back, so only the
+    /// ground's pool moves)]. Null: none of it (every rig but the den).</summary>
     public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
