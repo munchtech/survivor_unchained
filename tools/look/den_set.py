@@ -68,8 +68,37 @@ def key(rgb):
     return f, a
 
 
+# (den r15 R, R15 judge item 9) B3R (the right wall's face) has a big pale moss-topped block painted into it: with the wall
+# drawn at the play camera it is the "pale cube" (s11 room 1790-1920,620-800; --den-set-dbgmod 1 shows it is the bank's own
+# module, not a stone). Its outline (source px, closed polygon) is replaced by bare dirt: the painting inpainted, pulled
+# to the surrounding dirt's colour, with a seeded multi-scale grain. Applied by load(), so every build has it.
+BANK_FIXES = {"B3R": [(660, 552), (667, 520), (685, 487), (710, 462), (740, 440), (775, 420), (805, 416), (837, 436), (880, 431),
+                     (885, 455), (865, 500), (860, 530), (840, 560), (805, 585), (765, 597), (725, 610), (695, 620), (660, 615),
+                     (644, 600), (644, 555)]}
+DIRT = (112.0, 74.0, 56.0)
+
+
+def clear_block(img, poly):
+    import cv2
+    im8 = img.round().clip(0, 255).astype(np.uint8)
+    mask = np.zeros(im8.shape[:2], np.uint8)
+    cv2.fillPoly(mask, [np.array(poly, np.int32)], 255)
+    mask = cv2.dilate(mask, np.ones((11, 11), np.uint8))
+    inp = cv2.inpaint(np.ascontiguousarray(im8[..., ::-1]), mask, 9, cv2.INPAINT_TELEA)[..., ::-1].astype(np.float32)
+    inp = inp * 0.3 + np.array(DIRT, np.float32) * 0.7
+    rng = np.random.default_rng(7)
+    h, w = mask.shape
+    n = sum(cv2.GaussianBlur(rng.standard_normal((h, w)).astype(np.float32), (0, 0), sg) * am for sg, am in ((1.2, 14), (3, 22), (9, 40)))
+    inp = inp * (1 + n[..., None] / 160) + n[..., None] * 0.5
+    soft = cv2.GaussianBlur(mask.astype(np.float32) / 255, (0, 0), 5)[..., None]
+    return np.clip(img * (1 - soft) + inp * soft, 0, 255)
+
+
 def load(name):
-    return np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    img = np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    if name in BANK_FIXES:
+        img = clear_block(img, BANK_FIXES[name])
+    return img
 
 
 def resample(f, a, k):
@@ -369,6 +398,12 @@ if __name__ == "__main__":
         ingest()
     elif cmd == "build":
         build()
+    elif cmd == "bank":   # (den r15 R) rebuild one bank's png only (same cut as build): den_set.py bank B3R
+        for name in sys.argv[2:]:
+            f, a = key(load(name))
+            x0, y0, x1, y1 = bbox(a)
+            save_rgba(os.path.join(OUT, name + ".png"), f[y0:y1, x0:x1], a[y0:y1, x0:x1])
+            print("bank", name, "rebuilt", a[y0:y1, x0:x1].shape)
     elif cmd == "check":
         sys.exit(0 if check() else 1)
     else:

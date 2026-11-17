@@ -745,6 +745,7 @@ public static partial class DungeonDress
         }
         float a0 = pts[0].a, a1 = pts[^1].a, ext = 1.0f, ov = 2.0f;
         int k = 0, laid = 0;
+        SetBank? prev1 = null, prev2 = null;
         var first = choices[(int)(Hash(seed, 61, 0) * choices.Count) % choices.Count];
         float L0 = (alongX ? first.Metres.X : first.Metres.Y) * SetScale;
         float span = a1 - a0 + 2 * ext;
@@ -752,6 +753,10 @@ public static partial class DungeonDress
         while (s < a1 + ext && k < 40)
         {
             var b = k == 0 ? first : choices[(int)(Hash(seed, 63, k) * choices.Count) % choices.Count];
+            // (den r15 R, R15 judge item 7: the same mossy rock twice in the s11 corridor) a run's next card is never one of the last two laid
+            for (int t = 1; SetNoRepeat > 0f && k > 0 && choices.Count > 2 && t < 8 && (b == prev1 || b == prev2); t++)
+                b = choices[(int)(Hash(seed, 63 + 7 * t, k) * choices.Count) % choices.Count];
+            prev2 = prev1; prev1 = b;
             float L = (alongX ? b.Metres.X : b.Metres.Y) * SetScale;
             float from = Mathf.Max(s, a0 - ext), to = Mathf.Min(s + L, a1 + ext);
             if (to - from > 0.5f)
@@ -765,6 +770,7 @@ public static partial class DungeonDress
                     for (int row = 1; row < SetRows; row++)
                     {
                         var b2 = choices[(int)(Hash(seed + 97 * row, 64, k) * choices.Count) % choices.Count];
+                        for (int t = 1; SetNoRepeat > 0f && choices.Count > 2 && t < 8 && b2 == b; t++) b2 = choices[(int)(Hash(seed + 97 * row, 64 + 7 * t, k) * choices.Count) % choices.Count];   // (den r15 R) a row behind is never its own front's card
                         float deep = row * Mathf.Max(1.5f, (cls == 3 ? b2.FootU : 1f - b2.FootU) * b2.Metres.X * SetScale - 1f);
                         // (r13) each module's row behind its own depth: at one depth the cards' far border ran parallel to the
                         // corridor down the whole frame (the seed-11 vertical at x ~200)
@@ -978,6 +984,7 @@ public static partial class DungeonDress
     /// <summary>(round 10b) A painted object from a sheet (O1 boulders, O2 logs, O3 bone piles) on its half-ellipsoid
     /// proxy: ry is its height as a share of its half width (a boulder 0.62, a log 0.18, bones 0.1); the shadow-only hull
     /// for the tall ones. Returns the proxy's half width.</summary>
+    static readonly float SetNoRepeat = SurvivorUnchained.Args.Num("den-set-norepeat", 1f);   // (den r15 R) 0: bank runs may lay one card twice in a row
     static readonly float SetRockVary = SurvivorUnchained.Args.Num("den-rock-vary", 1f);   // (den r15 R) 0: stones near each other may repeat one piece
     static readonly float SetRootK = SurvivorUnchained.Args.Num("den-root-k", 0.8f);   // (den r15 R, judge item 9) the 3D root tendrils (B6) read salmon: albedo L and C x this (linear scale this^3)
     static readonly int BigBoneCap = (int)SurvivorUnchained.Args.Num("den-bigbone-cap", 1f), SkullCap = (int)SurvivorUnchained.Args.Num("den-skull-cap", 1f);   // (den r15 Q) per camera footprint

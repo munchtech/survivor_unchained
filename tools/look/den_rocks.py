@@ -37,8 +37,10 @@ RAMP_L = (0.22, 0.66, 1.0)             # stone L from, to, gamma (t ** gamma: th
 RAMP_C0, RAMP_CK, RAMP_CMAX = 0.28, 0.17, 0.075   # chroma = (L - C0) * CK, at most CMAX (grey under C0)
 RAMP_H_LIT, RAMP_H_SHADE = 63.0, 55.0   # hue of the lit planes, of the grey shade (its chroma ~.006)
 SHADE_C = 0.006
-MOSS_H, MOSS_C, MOSS_LK, MOSS_L0 = 110.0, 0.038, 0.5, 0.04   # moss: hue, chroma, L = LK * L_src + L0
+MOSS_H, MOSS_C, MOSS_LK, MOSS_L0 = 110.0, 0.038, 0.5, 0.04   # moss: hue, chroma, L = LK * L_src + L0 (r15 R: LK .8 drew neon yellow-green at gain 1.5; .55 still bright: back to .5, the lit planes carry the lift)
 MOSS_CORE = (0.5, 0.85)                 # the moss kept where its blurred mask is over this: its fringe goes back to stone
+LIT_LIFT, LIT_FROM, LIT_TO = 0.22, 0.22, 0.50   # (r15 R, judge item 9: the room boulders rendered Lp90 .40 against .45-.57) lit planes x(1 + LIFT) over L FROM..TO; the shade untouched
+LIT_CAP = (0.55, 0.5)                   # above this L the stone's value grows at this share
 SHARP_R, SHARP_K = 2.0 * S, 0.7         # unsharp mask radius (texels) and amount on L
 BELLY = (0.62, 0.18)                    # from this share of the piece's height down, darken to (1 - this) at its foot
 INK_W, INK_SOFT, INK_L, INK_C, INK_H = 2.6 * S, 1.2 * S, 0.11, 0.012, 40.0
@@ -124,6 +126,8 @@ def paint(F, A_, o1):
     # the moss: a darker, cooler olive, its strokes kept
     Lm = MOSS_LK * L + MOSS_L0
     Lv = (Ls * (1 - moss) + Lm * moss) * belly
+    Lv = Lv * (1 + LIT_LIFT * smooth(LIT_FROM, LIT_TO, Lv))
+    Lv = np.where(Lv > LIT_CAP[0], LIT_CAP[0] + (Lv - LIT_CAP[0]) * LIT_CAP[1], Lv)   # the top of the lit planes rolled off: in a shaft's light the L1 boulder's lit plane drew L .8
     # the facets: unsharp mask on the value
     Lv = Lv + SHARP_K * (Lv - ndimage.gaussian_filter(Lv, SHARP_R))
     # the cracks: the painting's own dark lines, inked
