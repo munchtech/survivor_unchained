@@ -305,13 +305,17 @@ def pose_frame(ride, centre, radius, clip, frame=0, rest=False):
     return (P, T, c, a, up, P0) if rest else (P, T, c, a, up)
 
 
-def room_on_dirs(P, O, D, F, ring=1):
+def room_on_dirs(P, O, D, F, ring=1, upto=None):
     """Per unit direction D (an icosphere chart, faces F) the farthest point of P from O binned to it (nan: none),
-    dilated by `ring` rings."""
+    dilated by `ring` rings. `upto` (per direction, m): only points no farther than that count (the rest pass beyond
+    the plate, not under it)."""
     from scipy.spatial import cKDTree
     Q = P - O
     r = np.linalg.norm(Q, axis=1)
     _, j = cKDTree(D).query(Q / r[:, None])
+    if upto is not None:
+        keep = r <= upto[j]
+        r, j = r[keep], j[keep]
     R = np.full(len(D), -1.0)
     np.maximum.at(R, j, r)
     R = np.where(R > 0, R, np.nan)
@@ -532,10 +536,21 @@ def pauldrons(cfg, ref):
         croom = sweep_room(sw.get("cop_ride") or ride_of("cop_l") or sw["bone"], np.round(c, 4), sw["radius"],
                            exclude=sw.get("cop_exclude", sw.get("exclude")))
         room = sweep_room(sw["bone"], np.round(c, 4), sw["radius"], exclude=sw.get("exclude")) if "cop_ride" in sw             else croom
-        R = room_on_dirs(croom, O, dome.D, dome.F, sw.get("ring", 1))
+        # (sweep "cop_band" m (armor-D r14 17 Nov, body B): only her swept skin within that band past the cop's
+        # unlifted face counts toward its lift; what lies farther out is her arm passing beyond the rim (B's leap:
+        # 100-170 mm out), not her shoulder under the cop, and it lifted the whole dome by cop_lift_max (the cop
+        # stood 36-38 mm off her idle shoulder). Unset = every point (A, unchanged))
+        band = sw.get("cop_band")
+        R = room_on_dirs(croom, O, dome.D, dome.F, sw.get("ring", 1),
+                         upto=None if band is None else rho + band)
         need = np.where(np.isfinite(R), R + sw["clear"], 0.0)
         lift = np.clip(need - rho, 0.0, sw.get("cop_lift_max", sw["lift_max"]))
+        ins = g > 0
+        print(f"cop lift need (in outline) mm: p50 {np.median(lift[ins]) * 1000:.1f} p90 {np.percentile(lift[ins], 90) * 1000:.1f}"
+              f", dirs >2 mm {int((lift[ins] > 0.002).sum())} of {int(ins.sum())}", flush=True)
         lift = smooth_scalar(ring_max(lift, dome.F, 2), dome.F, sw.get("lift_smooth", 8))
+        print(f"cop lift smoothed (in outline) mm: p50 {np.median(lift[ins]) * 1000:.1f} p90 "
+              f"{np.percentile(lift[ins], 90) * 1000:.1f}", flush=True)
         rho = rho + lift
         h = smooth_scalar(rho - need, dome.F, sw.get("trim_smooth", 4))
         if sw.get("trim", "contour") == "convex":
