@@ -17,6 +17,7 @@ public partial class Game
     /// <summary>--close-hold [C] (pictures): the close view held at level C every frame, in any zone, moving or fighting, over the wheel,
     /// the idle view and `held`; C is the flag's value, else --close's, else 1. Her back stays to the lens (no idle turn, no drift).</summary>
     static readonly float? CloseHold = Args.Has("close-hold") ? Args.Num("close-hold", Args.Num("close", 1)) : null;
+    /// <summary>--close-aim DY (with --close-hold, pictures): the lens's aim lifted DY metres off the framing's own (at 1: aimed 1.6 m up her; -1.35 looks at her boots).</summary>
     static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
@@ -137,7 +138,7 @@ public partial class Game
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
         if (spotClose is float tc) { target = tc; taken = true; }
-        if (CloseHold is float ch) target = ch;
+        if (CloseHold is float ch) { target = ch; if (p != null) BareGrassRound(p.X, p.Z); if (Args.Has("close-aim")) cam.AimLift = (float)Args.Num("close-aim", 0); }
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
@@ -153,6 +154,24 @@ public partial class Game
         if (!held && near > 0.3f && p != null)
             zone.KeepClear = (p.X, p.Z, -Mathf.Sin(cam.Yaw), -Mathf.Cos(cam.Yaw));
         else zone.KeepClear = null;
+    }
+
+    /// <summary>--close-hold (pictures): the meadow's tufts within 4 m of her are bare (the grass shader's own bare_at slot, the first
+    /// unused one, else the last), so no blade stands on her helm or between her and the lens.</summary>
+    void BareGrassRound(double x, double z)
+    {
+        if (scene?.View is not { } v) return;
+        foreach (var n in v.GetChildren())
+        {
+            if (n is not MultiMeshInstance3D { Multimesh.Mesh: { } m } || m.SurfaceGetMaterial(0) is not ShaderMaterial gm) continue;
+            var cur = gm.GetShaderParameter("bare_at").AsVector4Array();
+            var arr = new Vector4[4];
+            for (int i = 0; i < 4; i++) arr[i] = i < cur.Length ? cur[i] : default;
+            int slot = 3;
+            for (int i = 0; i < 4; i++) if (arr[i].Z <= 0 || Mathf.Abs(arr[i].X - (float)x) < 0.01f && Mathf.Abs(arr[i].Y - (float)z) < 0.01f) { slot = i; break; }
+            arr[slot] = new Vector4((float)x, (float)z, 4f, 0);
+            gm.SetShaderParameter("bare_at", arr);
+        }
     }
 
     /// <summary>In the idle view she turns to it, her head to the lens (never for the wheel alone: the owner,
@@ -182,13 +201,15 @@ public partial class Game
             return;
         }
         float near = cam.CloseShown;
-        bool turn = !held && CloseHold == null && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
+        // (--close-hold with --close-turn R: she is turned R from the lens every frame, so a held view shows her back (3.14) or three-quarters (0.6))
+        bool holdTurn = !held && CloseHold != null && Args.Has("close-turn");
+        bool turn = holdTurn || !held && CloseHold == null && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
             // (--close-turn R: pictures only, her turn from the lens in radians; -0.6 the mirror, her left side to it)
             pv.Turned = cam.Yaw + CloseTurn;
-            pv.Watch = cam.Camera;
+            pv.Watch = holdTurn && Mathf.Abs(Mathf.Wrap(CloseTurn, -Mathf.Pi, Mathf.Pi)) > 1.6f ? null : cam.Camera;
         }
         else if (closeDrives) { pv.Turned = null; pv.Watch = null; }
         // (--spots holds the close view where play would not: lit as play lights it there.)

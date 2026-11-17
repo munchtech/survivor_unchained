@@ -142,6 +142,8 @@ public partial class Shots : Node
         if (ViewerFile != null) ViewerReady?.Invoke();
         RenderingServer.FramePostDraw += Drawn;
         seconds = Args.Num("seconds", 3);
+        // --settle S (default 0.5 with --close-hold, else 0): the frame is taken S seconds after --seconds, so the temporal AA has no ghost of a snap or a pose change.
+        seconds += Args.Num("settle", Args.Has("close-hold") ? 0.5f : 0);
         every = Args.Num("every", 0);
         until = Args.Num("until", Args.Has("on") ? 120 : 0);
         count = (int)Args.Num("count", every > 0 ? 8 : Args.Has("on") || Ui.HudPin.Seq.Length > 0 ? 0 : 1);
