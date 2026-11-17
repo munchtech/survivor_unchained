@@ -126,15 +126,15 @@ public static partial class DungeonDress
             // rim (den_set.gdshaderinc pit_cells). --den-pit-cells 0: the r15 strokes on the painting
             mat.SetShaderParameter("pit_cells", SetPitCells);
             mat.SetShaderParameter("pit_cell_m", SurvivorUnchained.Args.Num("den-pit-cell", 1.0f));
-            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.1f, 0.55f)));
-            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.2f, 0.33f, 0.1f)));
-            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.05f, 0.16f, 0.02f)));
-            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.05f, 0.052f, 0.046f)));
-            mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.14f, 0.05f, 0.6f)));
-            mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.75f, 1.35f)));
+            mat.SetShaderParameter("pit_cw", V3("den-pit-cw", new Vector3(0.03f, 0.13f, 0.55f)));
+            mat.SetShaderParameter("pit_core_c", V3("den-pit-core", new Vector3(0.17f, 0.28f, 0.12f)));
+            mat.SetShaderParameter("pit_halo_c", V3("den-pit-halo-c", new Vector3(0.08f, 0.17f, 0.06f)));
+            mat.SetShaderParameter("pit_plate_c", V3("den-pit-plate", new Vector3(0.065f, 0.066f, 0.058f)));
+            mat.SetShaderParameter("pit_lipw", V3("den-pit-lip", new Vector3(0.08f, 0.12f, 0.4f)));
+            mat.SetShaderParameter("pit_ray", V3("den-pit-ray", new Vector3(1f, 0.7f, 1.3f)));
             // (den r16 A2, R15f item 1: a raised turtle shell) the pit sunken: depth (m; 0 flat), the near lip's shadow reach, the
             // plates' brightness at the middle; H1 (the lair's walkable hollows) shallower than H2 (holes); the wall's earth face
-            mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.55f)) : V3("den-pit-deep", new Vector3(0.8f, 1.6f, 0.55f)));
+            mat.SetShaderParameter("pit_deep", sheet == "H1" ? V3("den-pit-deep1", new Vector3(0.35f, 1.6f, 0.65f)) : V3("den-pit-deep", new Vector3(0.8f, 1.6f, 0.65f)));
             mat.SetShaderParameter("pit_wall_c", V3("den-pit-wall", new Vector3(0.06f, 0.042f, 0.028f)));
         }
         return mat;
