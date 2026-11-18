@@ -85,6 +85,12 @@ public partial class MarkPass : CompositorEffect
     /// inverted), whatever these are (lane E r3).</summary>
     public static float DenK = float.Parse(System.Environment.GetEnvironmentVariable("DEN_K") ?? "1.4", CultureInfo.InvariantCulture), DenTg = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TG") ?? "0.05", CultureInfo.InvariantCulture), DenTb = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TB") ?? "0.02", CultureInfo.InvariantCulture);
 
+    /// <summary>The den's lane and floor (env DEN_LANE_FILL / DEN_G0 / DEN_G1 / DEN_SLACK; baked at launch): a lane's inside
+    /// at this share of the hostile red (judge 6 fix 7: .15-.25); the floor test, full to g0 m over the ground's heights and
+    /// none past g1 (the fissure's 0.1), their slack on a bend capped at slack m (lane E lead 9).</summary>
+    static readonly float DenLaneFill = Env("DEN_LANE_FILL", 0.15f), DenG0 = Env("DEN_G0", 0.03f), DenG1 = Env("DEN_G1", 0.07f), DenSlack = Env("DEN_SLACK", 0.05f);
+    static float Env(string k, float d) => float.Parse(System.Environment.GetEnvironmentVariable(k) ?? d.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
     public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice", "none" };
     /// <summary>mark_look.json "patterns": a telegraph's pattern by its school's name, else by its shape's (line, circle,
@@ -196,7 +202,8 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "lw", "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "lw", "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"))
+            + "\n" + string.Join("\n", new[] { ("DEN_LANE_FILL", DenLaneFill), ("DEN_G0", DenG0), ("DEN_G1", DenG1), ("DEN_SLACK", DenSlack) }.Select(p => $"#define {p.Item1} {p.Item2.ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -715,12 +722,14 @@ public partial class MarkPass : CompositorEffect
                 // the running fill is the same faint bed (the cast line stays a hairline)
                 // (lane E r3, judge 2: the edge lit through the fold read L .32-.38, C .11-.13; it is laid after, in main,
                 // at the hostile red as seen (dek), its full core at least 3 px across where the ground runs away from the eye)
-                float hw = 2.0 * gpx, aa = max(0.5 * gpx, 0.002);
+                // (lane E lead 9, judge 6 fix 7: a charge's lane as two 3 px rims read as laser tripwires; a lane is a
+                // floor decal: its edges about 5 px, its inside filled at the hostile red at DEN_LANE_FILL (.15, seen about .2), no scarlet bed)
+                float hw = (kind == 0 ? 2.5 : 2.0) * gpx, aa = max(0.5 * gpx, 0.002);
                 float ed = clamp((hw + 0.5 * aa - abs(d)) / aa, 0.0, 1.0) * ends;
                 float bed = (d < 0.0 ? 0.15 : 0.0) * ends * smoothstep(0.0, aa, -d);
                 pl = 0.0; pd = 0.0;
-                cover = bed;
-                dek = ed;
+                cover = kind == 0 ? 0.0 : bed;
+                dek = kind == 0 ? max(ed, DEN_LANE_FILL * (d < 0.0 ? 1.0 : 0.0) * ends * smoothstep(0.0, aa, -d)) : ed;
                 light = f * 0.15 * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
                 pl = 0.0;
             }
@@ -810,8 +819,16 @@ public partial class MarkPass : CompositorEffect
                     // ramps, the slack widening them where the heights can be wrong)
                     hgt = (1.0 - smoothstep(pc.g0 + slack, pc.g1 + slack, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
                     gate = hgt * mix(1.0, smoothstep(0.3, 0.6, up), smoothstep(0.04 + slack, 0.12 + 2.0 * slack, gh));
+                    // the den: the floor only (the fissure's floor test, p7_floor): nothing standing over it takes the mark,
+                    // a root, a bone, a body (lane E lead 9, judge 6 fix 7: the Drive's rims ran over the roots)
+                    if (pc.pad2 > 0.5) {
+                        float sk = min(slack, DEN_SLACK);
+                        hgt = (1.0 - smoothstep(DEN_G0 + sk, DEN_G1 + sk, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
+                        // (and past 1 cm only what faces straight up: a root's flank, a body's)
+                        gate = hgt * mix(1.0, smoothstep(0.8, 0.95, up), smoothstep(0.01, 0.03, gh));
+                    }
                     gate *= bank;
-                } else if (mod(e.w, 2.0) > 0.5 && ray.y < -1e-4 && up > 0.5) {
+                } else if (pc.pad2 < 0.5 && mod(e.w, 2.0) > 0.5 && ray.y < -1e-4 && up > 0.5) {
                     // a roof or a canopy over it: the mark where the ground under it would be seen
                     vec3 g = eye + ray * ((a.y - eye.y) / ray.y);
                     if (dot(g - eye, ray) - dot(wp - eye, ray) < pc.roof) continue;
