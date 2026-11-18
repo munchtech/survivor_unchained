@@ -1568,7 +1568,7 @@
         "channelGap": 0.3,
         "pace": 0.85,
         "heavyEvery": 4,
-        "line": 7,
+        "line": 3.5,
         "beamWidth": 1.2,
         "maxLines": 6,
         "lineDamage": 16,
