@@ -357,7 +357,12 @@ uniform float den_head = 0.0;
 // fx_language physical core): L up .32 (l7e1 at .30: whole .70, mane/head .77, belly .61; ground beside .45),
 // tint to C .010 at h 92 in paint (screen ~3x and ~13 deg warmer: at C .013 h 88 it read C .040 h 75); frame 2's half step (pulse .62) keeps the tint
 // whole (DEN_BOSS_STRUCK_TINT x the pulse, capped at 1) while its L is the pulse's share.)
-#define DEN_BOSS_STRUCK vec4(0.32, 0.45, 0.010, 92.0)
+// (lane E lead 9, 17 Nov: on the r10 fur (head and mane darker) the flat +.32 left the struck frame short: whole .666, mane/head
+// .627 (judge 5: .68-.75, .80-.85; frame 2 ~.56 was .501) and the dark locks kept dark streaks inside the flash. The lift now
+// also EVENS: each block gains DEN_BOSS_STRUCK_EVEN.x of its gap below paint L .y, so the dark head and locks lift most, L
+// order kept (slope 1 - .x > 0).)
+#define DEN_BOSS_STRUCK vec4(0.28, 0.45, 0.010, 92.0)
+#define DEN_BOSS_STRUCK_EVEN vec2(0.6, 0.62)
 #define DEN_BOSS_STRUCK_RES 0.002
 #define DEN_BOSS_STRUCK_TINT 2.0
 // (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
@@ -575,7 +580,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	c_ab = mix(c_ab0, c_ab, c_pull);
 	// (lane E lead 7: the boss's struck step on the final paint, past the pull toward its own albedo, so all of it lands)
 	if (c_boss) {
-		c_l += c_h * DEN_BOSS_STRUCK.x;
+		c_l += c_h * (DEN_BOSS_STRUCK.x + DEN_BOSS_STRUCK_EVEN.x * max(DEN_BOSS_STRUCK_EVEN.y - c_l, 0.0));
 		vec2 c_steel = vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w);
 		vec2 c_res = (c_ab - c_steel) * (1.0 - DEN_BOSS_STRUCK.y);
 		c_res *= min(1.0, DEN_BOSS_STRUCK_RES / max(length(c_res), 1e-5));
