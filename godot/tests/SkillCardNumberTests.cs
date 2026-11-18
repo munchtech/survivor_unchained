@@ -56,7 +56,7 @@ public class SkillCardNumberTests
         Assert.Equal(1.2, b.LeapStunOf(w), 2);
         string live = Row(SkillTipModel.Build(j.Ch, b, "heroic_leap", "press"), "Knockdown");
         string alone = Row(SkillTipModel.Build(j.Ch, null, "heroic_leap", "press"), "Knockdown");
-        string want = $"{SkillTipModel.Plain(b.LeapStunOf(w))} s within {SkillTipModel.Plain(b.LeapRadiusOf(w))} m";
+        string want = $"{SkillTipModel.Plain(b.LeapStunOf(w))} s within {SkillTipModel.Metres(b.LeapRadiusOf(w))} m";
         Assert.True(b.LeapRadiusOf(w) >= 4.5, "Crater reaches 4.5 m or more (area grows it), not the written 3.5");
         Assert.Equal(want, live);
         Assert.Equal(want, alone);

@@ -82,4 +82,27 @@ public static class Palette
 
     /// <summary>The colours loot glows by rarity.</summary>
     public static readonly Color[] Rarity = { new("#c8c0b0"), new("#6fd46a"), new("#5aa8ff"), new("#c070ff"), new("#ffb040"), new("#ff6a3a") };
+
+    /// <summary>The den holds Rare and Epic to chroma 0.14 so the set's verdigris (BattleFx.Loot, ui_language.json "loot") is the
+    /// loudest drop. Oklab chroma scaled down at the same lightness and hue; a colour already under the cap is returned as it is.</summary>
+    public static Color CapChroma(Color c, float cmax = 0.14f)
+    {
+        static float Lin(float v) => v <= 0.04045f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f);
+        static float Gam(float v) { v = Mathf.Clamp(v, 0f, 1f); return v <= 0.0031308f ? v * 12.92f : 1.055f * Mathf.Pow(v, 1f / 2.4f) - 0.055f; }
+        float r = Lin(c.R), g = Lin(c.G), b = Lin(c.B);
+        float l = Mathf.Pow(0.4122214708f * r + 0.5363325363f * g + 0.0514459929f * b, 1f / 3f);
+        float m = Mathf.Pow(0.2119034982f * r + 0.6806995451f * g + 0.1073969566f * b, 1f / 3f);
+        float s = Mathf.Pow(0.0883024619f * r + 0.2817188376f * g + 0.6299787005f * b, 1f / 3f);
+        float L = 0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s;
+        float a = 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s;
+        float bb = 0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s;
+        float C = Mathf.Sqrt(a * a + bb * bb);
+        if (C <= cmax) return c;
+        a *= cmax / C; bb *= cmax / C;
+        float l2 = L + 0.3963377774f * a + 0.2158037573f * bb, m2 = L - 0.1055613458f * a - 0.0638541728f * bb, s2 = L - 0.0894841775f * a - 1.2914855480f * bb;
+        l2 = l2 * l2 * l2; m2 = m2 * m2 * m2; s2 = s2 * s2 * s2;
+        return new Color(Gam(4.0767416621f * l2 - 3.3077115913f * m2 + 0.2309699292f * s2),
+            Gam(-1.2684380046f * l2 + 2.6097574011f * m2 - 0.3413193965f * s2),
+            Gam(-0.0041960863f * l2 - 0.7034186147f * m2 + 1.7076147010f * s2), c.A);
+    }
 }

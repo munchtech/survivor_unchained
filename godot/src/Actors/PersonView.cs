@@ -183,7 +183,9 @@ public partial class PersonView : Node3D, INpcView
             {
                 var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
                 var bone = BoneOf(slot);
-                var pk = WeaponSockets.Pocket(kind, bone);
+                var sk = person.Skeleton;
+                bool isB = P1Body.IsB(sk);
+                var pk = WeaponSockets.Pocket(kind, bone, isB);
                 var handAxis = Vector3.Right;
                 if (bone == "hand_l" && !spec.Pistol)
                 {
@@ -195,6 +197,9 @@ public partial class PersonView : Node3D, INpcView
                         onPocket = Arms.SeatOn(id, bone, person.Own != null, tp.At, tp.Dir);
                     }
                 }
+                // (B: the tilt turns about A's hand axis as B's map of A carries it into B's hand: B's hand rest frame against A's)
+                if (isB && P1Body.ARest(bone) is { } ar && sk!.FindBone(P1Body.BoneName(sk, bone)) is int bi and >= 0)
+                    handAxis = (sk.GetBoneGlobalRest(bi).Basis.Orthonormalized().Inverse() * ar.Basis.Orthonormalized() * handAxis).Normalized();
                 if (pk is { } pocketAt)
                 {
                     var inv = mount.Transform.AffineInverse();
@@ -500,6 +505,9 @@ public partial class PersonView : Node3D, INpcView
             if (c is Node3D w && w.HasMeta("tip")) return w.GlobalTransform * new Vector3(0, (float)w.GetMeta("tip"), 0);
         return null;
     }
+
+    /// <summary>(demo-look r2 her) The mount a slot holds now (null: none), for HerSteel.</summary>
+    public Node3D? HeldMount(string slot) => held.TryGetValue(slot, out var m) && IsInstanceValid(m) ? m : null;
 
     /// <summary>(aim-move, log only: BLADE) A held piece's grip point (the fist's fitted pocket its tilt turns about, else
     /// the piece's own origin), its tip and the tilt's axis (the palm's normal), in the world; null if the slot holds none

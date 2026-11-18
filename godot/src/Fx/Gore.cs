@@ -25,7 +25,19 @@ public partial class Gore : Node3D
 {
     public sealed record Blood(Color Spray, Color Pool);
 
-    static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#5e0a07"));
+    /// <summary>(lane B fx, 16 Nov: E rule 3, the den's blood row L 0.36-0.52, C 0.072-0.110, h 25-42) droplets #7c3e30
+    /// (0.44 / 0.090 / 34, drawn as they are; #8e0c0c measured C 0.164); pools #622410 (0.35 / 0.095 / 38: lit and dried
+    /// they read about 6 degrees lower, #5e0a07 measured h 21-24). Lane B lead 2 (f1): #622410 still rendered L 0.52-0.61,
+    /// h 22-27 in the den (lit): pools #4a1e0a (about 0.6x linear, hue raised ~8 degrees) aim at L ~0.45, h ~32.</summary>
+    static readonly Blood Red = new(new Color("#7c3e30"), new Color("#4a1e0a"));
+    /// <summary>(lane E solver, 17 Nov) The den's red blood on the ground. A decal is a MIX over the floor's albedo, not a
+    /// multiply (Godot: albedo = mix(albedo, tex * modulate, alpha * albedo_mix)), so its colour can add chroma, but at
+    /// 0.8 x 0.8 = 0.64 the floor kept a third of the pixel and #4a1e0a (linear 0.07 / 0.01 / 0.00, h 43 next to the
+    /// floor's 48) only darkened it: the splats measured L 0.40 C 0.057 h 44 (bare ground 0.47 / 0.052 / 48), dark
+    /// ground, not blood. In the den the decal mixes at 1.0 (0.8 with its alpha) in #81312b: measured lit at 1:1 in the
+    /// den sun L 0.44 C 0.083 h 36 (10-90%: 0.38-0.51, 0.070-0.099), inside the den's blood row (L 0.36-0.52, C
+    /// 0.072-0.110, h 25-42). The droplets and the gibs keep Blood.Pool (they passed).</summary>
+    static readonly Color DenPool = new("#81312b");
     /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
     /// sent as it was drew as (196, 61, 61), coral-pink droplets (round 3's judge).</summary>
     static Color Lin(Color c) => c.SrgbToLinear();
@@ -133,7 +145,7 @@ public partial class Gore : Node3D
                 // Darker and deeper at the middle, thinner at the rim.
                 float wet = Mathf.Lerp(0.75f, 1.15f, Mathf.SmoothStep(0.05f, 0.4f, rr)) * (0.85f + 0.15f * noise.GetNoise2D(x * 3, y * 3));
                 img.SetPixel(x, y, new Color(Mathf.Min(1, wet), Mathf.Min(1, wet), Mathf.Min(1, wet), a));
-                orm.SetPixel(x, y, new Color(1, 0.3f, 0, a));
+                orm.SetPixel(x, y, new Color(1, 0.8f, 0, a));
             }
         img.GenerateMipmaps();
         orm.GenerateMipmaps();
@@ -148,7 +160,9 @@ public partial class Gore : Node3D
         s.Born = time;
         s.Life = life;
         s.Pool = pool;
-        s.Color = blood.Pool;
+        bool den = MarkPass.Den && blood == Red;   // (the den's red only: ichor and the lamplings' as they were)
+        s.Color = den ? DenPool : blood.Pool;
+        s.Decal.AlbedoMix = den ? 1f : 0.8f;
         s.Size = new Vector2(size, size * (0.8f + R() * 0.4f));
         s.Decal.Position = new Vector3(x, Ground(x, z) + 0.3f, z);
         s.Decal.Rotation = new Vector3(0, R() * Mathf.Tau, 0);

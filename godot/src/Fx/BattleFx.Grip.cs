@@ -312,6 +312,8 @@ public partial class BattleFx
         else if (gripLive is { Contact: < 0 } armed) { tr = armed; how = "armed"; }
         else { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
         if (GripSayAll) GD.Print($"grip arc frame {Engine.GetFramesDrawn()} {how} struck {e.Struck} fresh {e.Fresh} laid {tr.Laid.Count}");
+        // (lane B fx, 16 Nov: E rule 4) Sunder's ground mark at its real reach, once a cut (not once an arc)
+        if (!oath && !again) SunderMark(e, reach);
         int struck0 = again && tr.FlashOwed ? tr.Struck : 0, killed0 = again && tr.FlashOwed ? tr.Killed : 0;
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side; tr.Reach = reach;
         if (tr.Side == 0) tr.Side = e.Side;   // (take 8) before this frame's stroke is drawn, not after it
@@ -357,6 +359,9 @@ public partial class BattleFx
         // include's fx_stroke_shape / fx_bristle are not its uniforms, and the dead key read here (grip.dry) threw before
         // the warm-up was ever asked for: the first cut paid the first use
         gripWarm = 3;
+        // (the painted rings' brushes painted now, not on her first cut, leap, vow or storm: Sunder's, the leap's, the vow's, its
+        // wave's, the storm's arcs')
+        foreach (var k in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave", "storm.ring_paint" }) PaintedRingTex(k);
     }
 
     (MeshInstance3D, ImmediateMesh, ShaderMaterial) GripNewNode(string name, int mode)
@@ -413,6 +418,289 @@ public partial class BattleFx
         }
         gripLive = null;
         if (gripNode != null && IsInstanceValid(gripNode)) gripNode.Visible = false;
+    }
+
+    const string SunderRingShader = "res://shaders/fx_sunder_ring.gdshader";
+    /// <summary>The ring texture's inner radius (a share of the ring's radius): its trailing streaks reach in to here.</summary>
+    const float SunderR0 = 0.6f;
+    /// <summary>The painted rings' brushes by data key (sunder_mark, leap.mark, vow.mark, vow.wave, storm.ring_paint).</summary>
+    static readonly Dictionary<string, ImageTexture[]> paintedRings = new();
+
+    /// <summary>(lane B fx s3, 16 Nov: E rule 4; coordinator #15) Sunder's ground mark: ONE painted shockwave ring on the
+    /// ground in front of her (PaintedRing, fx_language.json p7.sunder_mark), over the cut's arc (at most open_deg) and
+    /// nothing behind her, out to the cut's real reach (Ev.Slash.Reach). Its crack: SunderCrack. Sound: P7Ev("sunder_ring")
+    /// at its birth.</summary>
+    void SunderMark(Ev.Slash e, float reach)
+    {
+        if (P7Off || reach < 0.5f) return;
+        P7WarmUp();
+        P7Ev("sunder_ring");
+        var c = V(e.X, Y(e.X, e.Z) + 0.06, e.Z);
+        float span = PaintedRing("sunder_mark", c, reach, (float)e.Arc, (float)e.Angle);
+        float from = P7D["sunder_mark.from"], run = Mathf.Max(P7D["sunder_mark.run"], 1 / 60f);
+        if (GripSayAll) GD.Print($"sunder mark frame {Engine.GetFramesDrawn()} reach {reach:0.00} m = {reach / P7Px(c):0} px arc {Mathf.RadToDeg(span):0} deg born {from * reach / P7Px(c):0} px");
+        SunderCrack(e, reach, from, run);
+    }
+
+    /// <summary>(leap-vow-marks, 16 Nov: coordinator #15) The painted ring, Sunder's mark factored so three skills draw it:
+    /// at `c` (on the ground), out to `reach` (the skill's real hit radius), over `arc` radians about `mid` (at most the
+    /// key's open_deg; open_deg 360 is a closed ring round her, its brush seamless), with the numbers under `key` in
+    /// fx_language.json p7 (sunder_mark, leap.mark, vow.mark). After the grade (shaders/fx_sunder_ring.gdshader on FxAfter:
+    /// the steel bands are the board's own colors, and the world depth copy hides it behind whatever stands on it). Its
+    /// front grows from `from` x the reach to the reach in `run` s (ease-out); white-hot for `core_frames` frames (60 fps),
+    /// then the steel bands: gold (mid) from the hot lip out to `cool`[2] of its heat, rising to `cool`[3] between
+    /// `cool`[0] and `cool`[1] s (the amber edge takes over as it cools); it erodes dry front first, lip last, between
+    /// `fade`[0] and `fade`[1] s, gone at `life` s. Its brush: RingPaint. Returns the arc drawn (radians).</summary>
+    float PaintedRing(string key, Vector3 c, float reach, float arc, float mid)
+    {
+        float from = P7D[key + ".from"], run = Mathf.Max(P7D[key + ".run"], 1 / 60f);
+        float life = Mathf.Max(P7D[key + ".life"], run + 2 / 60f), hot = (P7D[key + ".core_frames"] - 0.5f) / 60f;
+        var cool = P7D.All(key + ".cool");
+        var fade = P7D.All(key + ".fade");
+        float span = Mathf.Min(arc, Mathf.DegToRad(P7D[key + ".open_deg"]));
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>(SunderRingShader) };
+        FxCel.Apply(m, School.Physical, FxAfter.On);
+        var tex = PaintedRingTex(key);
+        m.SetShaderParameter("ring_tex", tex[(int)(R() * 0.999f * tex.Length)]);
+        m.SetShaderParameter("ring_range", span);
+        m.SetShaderParameter("ring_r0", SunderR0);
+        m.SetShaderParameter("ring_flip", R() < 0.5f ? -1f : 1f);
+        m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+        p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
+        var n = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "PaintedRing" };
+        AddChild(n);
+        n.GlobalPosition = c;
+        n.Rotation = new Vector3(0, -mid, 0);
+        if (FxAfter.On) FxAfter.Adopt(n);
+        var s = new P7Shape
+        {
+            N = n, M = m, Life = life + 1 / 60f,
+            Step = q =>
+            {
+                float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
+                q.N.Scale = Vector3.One * reach * (from + (1 - from) * u);
+                q.M.SetShaderParameter("ring_hot", q.Age < hot ? 1f : 0f);
+                q.M.SetShaderParameter("ring_cut", Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
+                q.M.SetShaderParameter("ring_fade", 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
+            },
+        };
+        s.Step(s);
+        p7Shapes.Add(s);
+        return span;
+    }
+
+    /// <summary>(leap-vow-marks r3, 16 Nov: coordinator #15) The painted ring laid straight (the vow's Full Measure wave): ONE
+    /// front across a line on the ground, `half` m each side of it (its real width), running from `a` toward `b` (its real
+    /// line, both on the ground; the plane leans with the ground between them) from `from` x its length to its end in `run`
+    /// s (ease-out), its middle bowed `bow` m ahead; the brush (RingPaint, open: it tapers at the front's two sides) and the
+    /// steel bands of PaintedRing, by the numbers under `key`, its band, lip, streaks and gaps as on a ring `scale_m` m round
+    /// so they keep their metres as it runs (shaders/fx_sunder_ring.gdshader ring_straight); white-hot for `core_frames`
+    /// frames, then it cools and erodes as the ring does, gone at `life` s.</summary>
+    void PaintedFront(string key, Vector3 a, Vector3 b, float half)
+    {
+        float from = P7D[key + ".from"], run = Mathf.Max(P7D[key + ".run"], 1 / 60f);
+        float life = Mathf.Max(P7D[key + ".life"], run + 2 / 60f), hot = (P7D[key + ".core_frames"] - 0.5f) / 60f;
+        var cool = P7D.All(key + ".cool");
+        var fade = P7D.All(key + ".fade");
+        var along = b - a;
+        float len = along.Length();
+        if (len < 0.5f || half < 0.05f) return;
+        var x = along / len;
+        var z = new Vector3(-x.Z, 0, x.X).Normalized();
+        var y = z.Cross(x).Normalized();
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>(SunderRingShader) };
+        FxCel.Apply(m, School.Physical, FxAfter.On);
+        var tex = PaintedRingTex(key);
+        m.SetShaderParameter("ring_tex", tex[(int)(R() * 0.999f * tex.Length)]);
+        m.SetShaderParameter("ring_straight", 1f);
+        m.SetShaderParameter("strip_half", len / 2);
+        m.SetShaderParameter("strip_span", (1 - SunderR0) * P7D[key + ".scale_m"]);
+        m.SetShaderParameter("strip_bow", P7D[key + ".bow"]);
+        m.SetShaderParameter("ring_flip", R() < 0.5f ? -1f : 1f);
+        m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+        p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
+        var n = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "PaintedFront" };
+        AddChild(n);
+        n.GlobalTransform = new Transform3D(new Godot.Basis(x * (len / 2), y, z * half), (a + b) / 2);
+        if (FxAfter.On) FxAfter.Adopt(n);
+        var s = new P7Shape
+        {
+            N = n, M = m, Life = life + 1 / 60f,
+            Step = q =>
+            {
+                float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
+                q.M.SetShaderParameter("strip_front", len * (from + (1 - from) * u));
+                q.M.SetShaderParameter("ring_hot", q.Age < hot ? 1f : 0f);
+                q.M.SetShaderParameter("ring_cut", Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
+                q.M.SetShaderParameter("ring_fade", 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
+            },
+        };
+        s.Step(s);
+        p7Shapes.Add(s);
+    }
+
+    /// <summary>A painted ring's brushes, painted once a session (when she first takes the blade, GripNode): two a key (or
+    /// the key's `brushes`, at most six), each mirrored at random by its use; closed (seamless round her) when the key's
+    /// open_deg is 360.</summary>
+    static ImageTexture[] PaintedRingTex(string key)
+    {
+        if (paintedRings.TryGetValue(key, out var t)) return t;
+        bool closed = P7D[key + ".open_deg"] >= 359.9f;
+        int[] seeds = { 7, 23, 41, 59, 73, 97 };
+        var all = new ImageTexture[Math.Clamp((int)P7D[key + ".brushes", 2f], 2, seeds.Length)];
+        for (int i = 0; i < all.Length; i++) all[i] = RingPaint(key, closed, seeds[i]);
+        return paintedRings[key] = all;
+    }
+
+    /// <summary>One painted shockwave in polar form (x: round the ring's arc, 0..1; y: SunderR0..1 of the radius), by the
+    /// numbers under `key`: a band `band` of the radius, uneven along it (+-`wobble`), tapering to points at the arc's ends
+    /// (open) or whole round her (`closed`: no ends, its noise wrapping so the seam behind never shows; `knots_k`, open
+    /// or closed, x the bristle detail for its length); a hot inner lip (`lip` of the band, solid) and a dry-brush outer front (from
+    /// `dry_from` of the band out, its bristles broken more toward the front, up to `dry` of them); `gaps` real gaps (gap_w
+    /// of the arc wide, ragged by bristle; an open arc's never across its middle); `streaks` thin trailing streaks from the
+    /// lip in toward the centre (streak_len of the radius), dry, gone first. R heat, G coverage, B the order it erodes in
+    /// (shaders/fx_sunder_ring.gdshader). Sunder's (open) brush is the s3 one, draw for draw. (bladestorm-spin r2) An open
+    /// brush is widest at `head` of its arc (0.5 when the key has none: Sunder's, the vow wave's), so the storm's arcs have
+    /// a short round nose at u 1 and a long tail; its gaps never within 0.08 of it.</summary>
+    static ImageTexture RingPaint(string key, bool closed, int seed)
+    {
+        const int H = 128, Lanes = 14;
+        int W = closed ? 2048 : 1024;
+        float kk = P7D[key + ".knots_k", 1f];
+        var rng = new RandomNumberGenerator { Seed = (ulong)seed };
+        float w0 = P7D[key + ".band"], lip = P7D[key + ".lip"], dryFrom = P7D[key + ".dry_from"], dry = P7D[key + ".dry"];
+        float wob = P7D[key + ".wobble"], hd = Mathf.Clamp(P7D[key + ".head", 0.5f], 0.05f, 0.95f);
+        var gw = P7D.All(key + ".gap_w");
+        var sl = P7D.All(key + ".streak_len");
+        float[] Knots(int n) { var k = new float[(int)(n * kk) + 2]; for (int i = 0; i < k.Length; i++) k[i] = rng.Randf(); return k; }
+        // smooth 1D value noise over x in 0..1 (its knots; closed, a period of all of them)
+        float Vn(float[] k, float x)
+        {
+            float f, t;
+            int i, j;
+            if (closed)
+            {
+                f = (x - Mathf.Floor(x)) * k.Length;
+                i = Math.Min((int)f, k.Length - 1); j = (i + 1) % k.Length; t = f - i;
+            }
+            else
+            {
+                f = Mathf.Clamp(x, 0, 1) * (k.Length - 2);
+                i = Math.Min((int)f, k.Length - 2); j = i + 1; t = f - i;
+            }
+            return Mathf.Lerp(k[i], k[j], t * t * (3 - 2 * t));
+        }
+        // the distance round the arc (closed: the short way round)
+        float Du(float a, float b) { float d = Mathf.Abs(a - b); return closed ? Mathf.Min(d, 1 - d) : d; }
+        var thick = Knots(7);
+        var front = Knots(19);
+        var lane = new float[Lanes][];
+        var laneGap = new float[Lanes];
+        for (int i = 0; i < Lanes; i++) { lane[i] = Knots(36 + 9 * (i % 3)); laneGap[i] = rng.Randf(); }
+        var gaps = new List<(float U, float W)>();
+        int ng = P7D.Count(key + ".gaps", rng.Randf());
+        float apart = closed ? 0.5f / Math.Max(ng, 1) : 0.12f;
+        for (int g = 0, guard = 0; g < ng && guard < 50; guard++)
+        {
+            float gu = closed ? rng.Randf() : 0.14f + 0.72f * rng.Randf(), gwi = Mathf.Lerp(gw[0], gw[1], rng.Randf());
+            if (!closed && Mathf.Abs(gu - hd) < 0.08f) continue;   // never across the cut's line (the storm's: its head)
+            bool near = false;
+            foreach (var o in gaps) near |= Du(o.U, gu) < apart;
+            if (near) continue;
+            gaps.Add((gu, gwi)); g++;
+        }
+        var streaks = new List<(float U, float L, float W)>();
+        int ns = P7D.Count(key + ".streaks", rng.Randf());
+        for (int k = 0; k < ns; k++)
+            streaks.Add((closed ? (k + 0.5f + (rng.Randf() - 0.5f) * 0.6f) / Math.Max(ns, 1) : 0.5f + (k + 0.5f - ns / 2f) / Math.Max(ns, 1) * 0.6f + (rng.Randf() - 0.5f) * 0.1f,
+                Mathf.Lerp(sl[0], sl[1], rng.Randf()), (2.5f + 2.5f * rng.Randf()) / W));
+        var data = new byte[W * H * 4];
+        float texel = (1 - SunderR0) / H;
+        for (int x = 0; x < W; x++)
+        {
+            float u = (x + 0.5f) / W, s = hd == 0.5f ? Mathf.Abs(2 * u - 1) : u >= hd ? (u - hd) / (1 - hd) : (hd - u) / hd;
+            float taper = closed ? 1f : Mathf.Pow(Mathf.Max(0, 1 - Mathf.Pow(s, 2.4f)), 0.75f);
+            float w = w0 * taper * (1 + wob * (2 * Vn(thick, u) - 1));
+            float rOut = 1 - 0.015f * Vn(front, u), rIn = rOut - w;
+            for (int y = 0; y < H; y++)
+            {
+                float rho = SunderR0 + (y + 0.5f) / H * (1 - SunderR0);
+                float heat = 0, cov = 0, grain = 0;
+                if (w > texel && rho > rIn - texel && rho < rOut)
+                {
+                    float xb = Mathf.Clamp((rho - rIn) / w, 0, 1);   // 0 the lip .. 1 the front
+                    int li = Math.Clamp((int)(xb * Lanes), 0, Lanes - 1);
+                    float ln = Vn(lane[li], u);
+                    // the dry front: bristles break toward it (none inside dry_from, up to `dry` of them at the front)
+                    float thr = dry * Mathf.SmoothStep(dryFrom, 1, xb);
+                    cov = ln >= thr ? 1 : 0;
+                    cov *= Mathf.Clamp((rho - rIn) / texel + 0.5f, 0, 1);   // the lip's inner edge, antialiased
+                    foreach (var g in gaps)
+                        if (Du(u, g.U) < g.W * (0.6f + 0.8f * laneGap[li])) cov = 0;
+                    if (xb < lip) cov = Mathf.Clamp((rho - rIn) / texel + 0.5f, 0, 1);   // the lip is whole (except its gaps)
+                    if (xb < lip) foreach (var g in gaps) if (Du(u, g.U) < g.W * 0.6f) cov = 0;
+                    heat = xb < lip ? 1 : 1 - (xb - lip) / (1 - lip);
+                    grain = 0.1f + 0.9f * Mathf.Pow(heat, 0.8f) * (0.8f + 0.2f * ln);
+                }
+                foreach (var st in streaks)
+                {
+                    float d = rIn - rho;
+                    if (d < -texel || d > st.L) continue;
+                    float hw = st.W * (1 - d / st.L);
+                    if (Du(u, st.U) < hw && cov < 1) { cov = 1; heat = 0.15f; grain = 0.3f; }
+                }
+                int o2 = (y * W + x) * 4;
+                data[o2] = (byte)(255 * Mathf.Clamp(heat, 0, 1));
+                data[o2 + 1] = (byte)(255 * Mathf.Clamp(cov, 0, 1));
+                data[o2 + 2] = (byte)(255 * Mathf.Clamp(grain, 0, 1));
+                data[o2 + 3] = 255;
+            }
+        }
+        var img = Image.CreateFromData(W, H, false, Image.Format.Rgba8, data);
+        img.GenerateMipmaps();
+        return ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>(lane B fx s2, 16 Nov: E rules 4a, 4d) Sunder's crack: `cracks` jagged radial cracks fanned over the cut's cone
+    /// (cone_deg at most), each from crack_span[0-1] x the reach out to crack_span[2-3] x it (shorter toward the cone's edges),
+    /// the long-cut strip's last tiles (its gap tapering to the point at the far end) about crack_seg m each, crack_across
+    /// its width, tinted crack_tint (a deeper tone of the ground: the line row, never black), each tile laid as the wave's
+    /// front passes it; whole crack_hold s, gone at crack_life s. Ground decals (WgDecalOn), the strip 0.4 m tall.</summary>
+    void SunderCrack(Ev.Slash e, float reach, float from, float run)
+    {
+        if (wgAlb is not { } alb || wgNrm is not { } nrm) return;
+        int m = P7D.Count("sunder_mark.cracks", R());
+        var sp = P7D.All("sunder_mark.crack_span");
+        float cone = Mathf.Min((float)e.Arc, Mathf.DegToRad(P7D["sunder_mark.cone_deg"]));
+        float across = P7D["sunder_mark.crack_across"], hold = P7D["sunder_mark.crack_hold"], life = P7D["sunder_mark.crack_life"];
+        float segM = P7D["sunder_mark.crack_seg"];
+        var ct = P7D.All("sunder_mark.crack_tint");
+        var tint = new Color(ct[0], ct[1], ct[2]);
+        var o = new Vector2((float)e.X, (float)e.Z);
+        for (int j = 0; j < m; j++)
+        {
+            float w = ((j + 0.5f + (R() - 0.5f) * 0.6f) / m - 0.5f) * 2;   // -1..1 across the cone
+            float ang = (float)e.Angle + 0.5f * w * cone;
+            var dir = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+            float a0 = reach * Mathf.Lerp(sp[0], sp[1], R()), a1 = reach * Mathf.Lerp(sp[2], sp[3], R()) * (1 - 0.15f * Mathf.Abs(w));
+            float len = a1 - a0;
+            if (len < 0.4f) continue;
+            int n = Math.Clamp((int)Mathf.Round(len / segM), 3, 6), t0 = 12 - n;
+            float seg = len / n, theta = Mathf.Atan2(-dir.Y, dir.X);
+            for (int i = 0; i < n; i++)
+            {
+                int tile = t0 + i;
+                var cc = o + dir * (a0 + seg * (i + 0.5f));
+                var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
+                // laid as the front passes the tile's near end (the wave's prog: from + (1 - from)(1 - (1 - t)^2))
+                float qq = Mathf.Clamp(((a0 + seg * i) / reach - from) / (1 - from), 0, 1);
+                WgLater(run * (1 - Mathf.Sqrt(1 - qq)), () =>
+                {
+                    if (WgDecalOn(pos, theta, new Vector3(seg * 1.03f, 0.4f, WgBand * across), alb[tile], nrm[tile], null, life, 1f, 0, 0, 0, tint) is { } d)
+                        d.FadeFrom = hold;
+                });
+            }
+        }
     }
 
     /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade

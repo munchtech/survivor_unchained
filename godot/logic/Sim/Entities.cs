@@ -121,6 +121,9 @@ public sealed class Enemy : Pooled
     public double AimReach;
     public readonly StatusSet Status = new();
     public double Flash;
+    /// <summary>(lane E lead 7, decay order) The sim time its Flash was last set by a blow. Ai.Update decays the flash from the
+    /// step after (the AI runs after her weapons in Battle.Tick, so a blow's own step took 11/s off it before the view saw it).</summary>
+    public double FlashAt = -1;
     /// <summary>A clock for the view, and what it should be playing.</summary>
     public EnemyAnim Anim = EnemyAnim.Move;
     public double AnimT;

@@ -1105,6 +1105,9 @@ public sealed partial class Battle
         // A boss struck many times a second would never stop flashing white and its body
         // would be lost in it: a softer flash, so it stays itself under the build's blows.
         e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
+        // (lane E lead 7: the decay-order fix, Enemy.FlashAt, is the bosses' only: on the pack the view's first struck flash
+        // going .63 -> 1 changed the judged Sunder frame (l7b_sun vs l6_sun, 7230 px in the pack box against ~1600 noise))
+        if (e.Boss) e.FlashAt = Time;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
         double dx = o.DirX, dz = o.DirZ;
@@ -1919,6 +1922,9 @@ public sealed partial class Battle
 
     /// <summary>Debug (--hurt-mul X, a shot of her life truly falling): every blow on her times X. 1 in play.</summary>
     public static double HurtMul = 1;
+    /// <summary>(shots only, --hold-boss; false in play) A living boss stands where it is and as it faces, and never strikes
+    /// (Ai.Update): a picture of her struck blows on its flank, which a boss in play always turns to face.</summary>
+    public static bool HoldBoss;
 
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {

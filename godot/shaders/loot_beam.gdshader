@@ -27,6 +27,17 @@ render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled,
 #include "res://shaders/hero_clear.gdshaderinc"
 
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
+// The den (BattleFx.BeginLoot sets it): a cool light ADDED over its warm ground read magenta (lane E r4, judge 2: the
+// epic's pool h 331-342 at C .19, the rare's h 10). There the rare's, the epic's and the set's pools cover more of the
+// ground they lie on (DEN_COVER of it), so what is seen there is their light and not the ground's red lent to it.
+uniform float den = 0.0;
+const float DEN_COVER = 0.5;
+// The den's ceilings (lane E loot2): the epic's light knees at DEN_EPIC_KNEE and never passes DEN_EPIC_CAP (its brightest
+// channel); the set's strands are flat bodies DEN_SET_W wide (the one in front) at DEN_SET_PEAK of its colour.
+const float DEN_EPIC_KNEE = 0.25;
+const float DEN_EPIC_CAP = 0.34;   // (lead 4: .36 -> .34, gm3 had 1 px at C .141)
+const float DEN_SET_W = 0.07;
+const float DEN_SET_PEAK = 0.385;
 
 varying vec3 tint;
 varying vec2 at;
@@ -100,21 +111,30 @@ void fragment() {
 	// colour, the glow and the pool round it deeper still (a pale glow by day reads as haze).
 	float top = max(max(tint.r, tint.g), max(tint.b, 1e-3));
 	vec3 deep = tint * tint / top;
+	// (the den: the pools lit in their colour itself, not deepened: a deep cool pool over the warm ground went magenta)
+	vec3 pdeep = mix(deep, tint, den);
 	vec3 light = vec3(0.0);
 	float veil = 0.0;
 
 	if (kind < 1.5) {
 		// Rare: a low glow, a fine bright line in it, its light pooled at its foot.
 		float fade = rise * pow(1.0 - u, 1.5);
-		light = (mix(tint, deep, 0.35) * g(x, 0.026) * 1.1 + deep * g(x, 0.13) * 0.5) * fade * shimmer + deep * pool(half_w * 0.6) * 0.34;
-		veil = (g(x, 0.05) * 0.45 + g(x, 0.16) * 0.2) * fade + pool(half_w * 0.6) * 0.06;
+		light = (mix(tint, deep, 0.35) * g(x, 0.026) * 1.1 + deep * g(x, 0.13) * 0.5) * fade * shimmer + pdeep * pool(half_w * 0.6) * 0.34;
+		veil = (g(x, 0.05) * 0.45 + g(x, 0.16) * 0.2) * fade + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
 	} else if (kind < 2.5) {
 		// Epic: thinner and taller, a line of light in a narrow glow, a mote climbing it now and then.
 		float fade = rise * pow(1.0 - u, 1.25);
 		float up = motes(0.1, 1.1, 0.7) * fade;
 		light = (tint * (g(x, 0.022) * 1.1 + up * 0.8) + deep * (g(x, 0.1) * 0.42 + g(x, 0.34) * 0.1)) * fade * shimmer
-			+ deep * pool(half_w * 0.6) * 0.34;
-		veil = (g(x, 0.045) * 0.45 + g(x, 0.14) * 0.2) * fade + pool(half_w * 0.6) * 0.06;
+			+ pdeep * pool(half_w * 0.6) * 0.34;
+		veil = (g(x, 0.045) * 0.45 + g(x, 0.14) * 0.2) * fade + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
+		// The den (lane E loot2): its light held under a soft ceiling, so neither its foot (line, glow and pool on the one
+		// spot: C .159) nor its breath's crest runs deeper than its shaft. Below the knee it is untouched.
+		if (den > 0.5) {
+			float m = max(max(light.r, light.g), light.b);
+			float over = max(m - DEN_EPIC_KNEE, 0.0);
+			light *= (m - over + (DEN_EPIC_CAP - DEN_EPIC_KNEE) * (1.0 - exp(-over / (DEN_EPIC_CAP - DEN_EPIC_KNEE)))) / max(m, 1e-4);
+		}
 	} else if (kind < 3.5) {
 		// Set: two strands twisting about each other, the one in front the brighter (that is what
 		// reads as a twist and not as two lines), a faint glow between them.
@@ -126,8 +146,20 @@ void fragment() {
 		float w1 = 0.45 + 0.55 * front, w2 = 0.45 - 0.55 * front;
 		float lines = g(x - s1, 0.02) * max(w1, 0.08) + g(x + s1, 0.02) * max(w2, 0.08);
 		float halo = g(x - s1, 0.07) * max(w1, 0.15) + g(x + s1, 0.07) * max(w2, 0.15);
-		light = (mix(tint, deep, 0.3) * lines * 1.2 + deep * (halo * 0.36 + g(x, 0.26) * 0.1)) * fade + deep * pool(half_w * 0.6) * 0.32;
-		veil = (g(x - s1, 0.045) + g(x + s1, 0.045)) * fade * 0.26 + pool(half_w * 0.6) * 0.06;
+		light = (mix(tint, deep, 0.3) * lines * 1.2 + deep * (halo * 0.36 + g(x, 0.26) * 0.1)) * fade + pdeep * pool(half_w * 0.6) * 0.32;
+		veil = (g(x - s1, 0.045) + g(x + s1, 0.045)) * fade * 0.26 + pool(half_w * 0.6) * (0.06 + den * DEN_COVER);
+		if (den > 0.5) {
+			// The den (lane E loot2): its strands one even depth of colour from the foot to near the top, never past it. Driven
+			// harder at the foot they went over C .14 there while hairlines in pale halos left the shaft at C .087. So each
+			// strand is a body (the one in front the broader) soft-clipped flat, the pool folded into the same clip, the ground
+			// under it covered so its warmth doesn't grey it: brightness goes into breadth, not depth.
+			float hold = rise * smoothstep(1.02, 0.6, u);
+			float wf = 0.5 + 0.5 * front;
+			float q = g(x - s1, mix(0.035, DEN_SET_W, wf)) + g(x + s1, mix(0.035, DEN_SET_W, 1.0 - wf));
+			float body = 1.0 - exp(-4.0 * (q * hold + pool(half_w * 0.35) * 0.3));
+			light = mix(tint, deep, 0.5) * body * DEN_SET_PEAK + deep * g(x, 0.26) * 0.03 * hold;
+			veil = body * 0.45;
+		}
 	} else if (kind < 4.5) {
 		// The pillar: a hot core, a glow round it and a wide soft halo, rising past the top of the
 		// screen, brightest where it stands and thinning as it climbs. Motes ride up it.

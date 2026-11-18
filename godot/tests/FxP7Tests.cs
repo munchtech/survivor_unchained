@@ -20,8 +20,8 @@ public class FxP7Tests
     public void EveryPathTheViewsReadIsThere()
     {
         var p = Real();
-        foreach (var k in new[] { "glint.px", "glint.frames", "kick.puffs", "kick.px", "kick.life", "leap.ring.lead_px", "leap.ring.trail_px", "leap.ring.arcs",
-            "leap.ring.cover", "leap.ring.alpha", "leap.ring.flash_frames", "leap.ring.flash_k", "leap.ribbon.head_px", "leap.ribbon.life", "leap.ribbon.turn_deg",
+        foreach (var k in new[] { "glint.px", "glint.frames", "kick.puffs", "kick.px", "kick.life",
+            "leap.ribbon.turn_deg",
             "leap.star.spikes", "leap.star.streaks", "leap.star.root_px", "leap.star.reach", "leap.star.hold_frames", "leap.star.step_frames",
             "leap.crack.root_px", "leap.crack.tip_px", "leap.crack.gap", "leap.crack.seam_px", "leap.crack.cool", "leap.dust.puffs", "leap.dust.px", "leap.dust.run", "leap.chunks",
             "charge.crescent.px", "charge.crescent.frames", "charge.ribbon.head_px", "charge.ribbon.life", "charge.star.spikes", "charge.star.px", "charge.star.root_px",
@@ -29,9 +29,71 @@ public class FxP7Tests
             "charge.stop.run", "charge.stop.reach", "charge.ghost.gap", "charge.ghost.life", "charge.plow.gap", "charge.plow.px", "dash.ribbon.head_px", "dash.ribbon.life",
             "dash.shove.lead_px", "dash.shove.trail_px", "dash.shove.run", "dash.shove.puffs", "dash.shove.px", "storm.smear.head_px", "storm.smear.arc_deg", "storm.smear.alpha",
             "storm.seam.px", "storm.ring.lead_px", "storm.ring.trail_px", "storm.ring.run", "storm.star.spikes", "storm.star.px", "storm.star.root_px", "storm.nick.px",
-            "storm.nick.frames", "vow.plant.flash_px", "vow.plant.puffs", "vow.dome.rim_px", "vow.dome.flare_px", "vow.dome.flare_s", "vow.store.px", "vow.store.grow",
-            "vow.burst.spikes", "vow.burst.px", "vow.burst.root_px", "vow.burst.frames", "vow.burst.lead_px", "vow.burst.trail_px", "vow.burst.run", "vow.burst.light_k", "vow.burst.light_frames", "wave.arc_px", "wave.dust_px", "wave.shed", "wave.open_deg" })
+            "storm.nick.frames", "vow.plant.flash_px", "vow.plant.puffs", 
+            "wave.arc_px", "wave.dust_px", "wave.shed", "wave.open_deg" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
+    }
+
+    /// <summary>(leap-vow-marks, 16 Nov: coordinator #15) Sunder's painted ring is drawn by three skills, each with its own
+    /// numbers (BattleFx.Grip.cs PaintedRing / RingPaint): every number it reads is there; the leap's and the vow's are
+    /// closed rings (360) white-hot 3-4 frames (a lip: core_cut about .5) and gone in about 0.4 s. The keys they replaced (leap.ring,
+    /// leap.ribbon head_px/life/blade, vow.dome, vow.store, vow.burst) are pruned (r2).</summary>
+    [Fact]
+    public void ThePaintedRingsHaveTheirNumbers()
+    {
+        var p = Real();
+        foreach (var key in new[] { "sunder_mark", "leap.mark", "vow.mark", "vow.wave" })
+            foreach (var k in new[] { "from", "run", "life", "core_frames", "core_cut", "open_deg", "cool", "fade", "band", "wobble", "lip", "dry_from", "dry", "gaps", "gap_w", "streaks", "streak_len" })
+                Assert.True(p.Has(key + "." + k), "fx_language.json p7 lacks " + key + "." + k);
+        foreach (var key in new[] { "leap.mark", "vow.mark" })
+        {
+            Assert.Equal(360f, p[key + ".open_deg"]);
+            Assert.InRange(p[key + ".core_frames"], 3, 4);
+            Assert.InRange(p[key + ".life"], 0.3f, 0.5f);
+            // (r2, v1a judged) the white-hot frames a lip, not a whole white ring; a thin band (heavy at 380-420 px)
+            Assert.InRange(p[key + ".core_cut"], 0.45f, 0.6f);
+            Assert.InRange(p[key + ".band"], 0.05f, 0.09f);
+        }
+        Assert.Equal(3, p.All("leap.mark.crack_tint").Length);
+        // (r3) the vow's wave: the ring laid straight (open: it tapers at its two sides), its brush's metres and bow, its white
+        // a lip for 3-4 frames, gone in under half a second, dust along it; the henge's standing stones and their dust
+        Assert.True(p["vow.wave.open_deg"] < 360f);
+        Assert.InRange(p["vow.wave.core_frames"], 3, 4);
+        Assert.InRange(p["vow.wave.life"], 0.3f, 0.6f);
+        Assert.InRange(p["vow.wave.core_cut"], 0.45f, 0.6f);
+        Assert.InRange(p["vow.wave.scale_m"], 2f, 8f);
+        Assert.InRange(p["vow.wave.bow"], 0f, 1f);
+        Assert.InRange(p["vow.wave.dust_m"], 0.8f, 3f);
+        foreach (var k in new[] { "knots_k", "dust_k" }) Assert.True(p.Has("vow.wave." + k), "fx_language.json p7 lacks vow.wave." + k);
+        foreach (var k in new[] { "len", "tilt_deg", "wide", "dust_px" }) Assert.Equal(2, p.All("leap.henge." + k).Length);
+        foreach (var k in new[] { "pitch", "thick", "max", "stagger" }) Assert.True(p.Has("leap.henge." + k), "fx_language.json p7 lacks leap.henge." + k);
+        Assert.InRange(p["leap.henge.pitch"], 0.6f, 2f);
+    }
+
+    /// <summary>(bladestorm-spin r2, 16 Nov: E rule 5) The storm's ring is Sunder's painted brush, held and turning with the
+    /// blade (BattleFx.P7Storm.cs P7StormRing): its numbers are there; at least three open arcs that together go all the
+    /// way round her (a gap of at most 12 degrees after each); a short nose ahead of a long tail, white only at the head;
+    /// no light; round 1's stroke arcs (storm.ring_arcs) are retired.</summary>
+    [Fact]
+    public void TheStormsRingIsPainted()
+    {
+        var p = Real();
+        const string key = "storm.ring_paint";
+        foreach (var k in new[] { "n", "arc_deg", "open_deg", "lag_deg", "rad_k", "lift", "from", "run", "out", "relay_turns", "brushes", "head", "head_hot",
+            "core_cut", "cut_along", "fade_along", "band", "wobble", "lip", "dry_from", "dry", "gaps", "gap_w", "streaks", "streak_len", "knots_k" })
+            Assert.True(p.Has(key + "." + k), "fx_language.json p7 lacks " + key + "." + k);
+        int n = (int)p[key + ".n"];
+        Assert.InRange(n, 3, 6);
+        Assert.True(p[key + ".open_deg"] < 360f && p[key + ".arc_deg"] <= p[key + ".open_deg"]);
+        Assert.InRange(360f / n - p[key + ".arc_deg"], 0f, 12f);
+        Assert.InRange(p[key + ".head"], 0.75f, 0.95f);
+        Assert.InRange(p[key + ".head_hot"], 0.05f, 0.3f);
+        Assert.InRange(p[key + ".band"], 0.05f, 0.14f);
+        Assert.Equal(2, p.All(key + ".cut_along").Length);
+        Assert.Equal(3, p.All(key + ".fade_along").Length);
+        Assert.InRange(p[key + ".out"], 0.05f, 0.4f);
+        Assert.Equal(0f, p["storm.light"]);
+        Assert.False(p.Has("storm.ring_arcs.n"));
     }
 
     [Fact]
@@ -43,10 +105,6 @@ public class FxP7Tests
         Assert.InRange(p.All("leap.star.spikes")[1], 3, 7);
         Assert.InRange(p["leap.star.root_px"], 1, 25);
         Assert.InRange(p["storm.seam.px"], 1, 4);
-        Assert.InRange(p["vow.dome.rim_px"], 6, 8);
-        Assert.InRange(p["vow.burst.light_k"], 0, 0.4f);
-        Assert.Equal(1.0, (double)p.Curve("leap.ring.cover", 0.4f), 3);
-        Assert.Equal(0.55, (double)p.Curve("leap.ring.cover", 0.175f), 3);
         Assert.InRange(p.Count("kick.puffs", 0.999f), 8, 12);
         // (r3 fix 2) a ring is 3-9 painted arcs; its shed dust two-value puffs of 20-60 px; the charge stop an open arc
         Assert.InRange(p["wave.arc_px"], 300, 700);
@@ -101,11 +159,11 @@ public class FxP7Tests
         Assert.True(GripPaint.CapFront(1, cap, 1) < GripPaint.CapFront(1, cap) - 0.5f);
         var rag = p.All("grip.cap_rag");
         Assert.True(rag.Length == 3 && rag[0] >= 3 && rag[0] <= 8 && rag[1] >= 0.015f && rag[1] <= 0.06f, "grip.cap_rag: bristle tips, a few px of variation");
-        // the fill: 2-3 close values, the colors' ends tines along the sweep, dry gaps over the last three frames
+        // the fill: 2-3 close values (lane B 16 Nov, lane E rule 1: the second and third are the steel mid and edge bands, so the third may sit at 0.44 of the white), the colors' ends tines along the sweep, dry gaps over the last three frames
         foreach (var vk in new[] { "grip.fill.values_day", "grip.fill.values_night" })
         {
             var v = p.All(vk);
-            Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.7f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
+            Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.4f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
         }
         Assert.InRange(p["grip.fill.lanes"], 6f, 12f);
         Assert.InRange(p.All("grip.fill.gold")[0], 0.08f, 0.2f);   // (take 10: a fifth of the width at most)
@@ -218,6 +276,49 @@ public class FxP7Tests
 
     /// <summary>(take 8, F0) Every literal p7 grip key the held cut's view reads is in the data (a renamed key threw once
     /// a run, and the warm-up after it never ran).</summary>
+    /// <summary>(lane E lead 8, 17 Nov; judge 5: "2-4 forks 8-25 px x 1-2 px + 2-3 broken chunks 6-10 px") The storm
+    /// fissure's forks and chunks (logic/Look/FissureMarks.cs): on any run long enough, 2-4 forks of 8-25 px, 2 px at the root
+    /// to 1, and 2-3 chunks 6-10 px wide, each at least 1.5 x the gap where it lies, all on the run and spread along it,
+    /// no chunk on a fork's root; a short run gets fewer, never squeezed; the seam's clock is the judge's.</summary>
+    [Fact]
+    public void TheFissureHasForksAndBrokenChunks()
+    {
+        var p = Real();
+        float[] fk = p.All("storm.line.fork"), ck = p.All("storm.line.chunk"), gap = p.All("storm.line.gap");
+        Assert.True(p["storm.line.strip_px"] >= fk[3] * 0.87f + gap[0], "a fork (out at 30-60 deg off the gap) must fit across the strip");
+        var rng = new Random(7);
+        foreach (float run in new[] { 300f, 390f, 639f, 900f })
+            for (int t = 0; t < 200; t++)
+            {
+                var (forks, chunks) = FissureMarks.Pick(run, run, fk, ck, gap, () => (float)rng.NextDouble());
+                Assert.InRange(forks.Length, 2, 4);
+                Assert.InRange(chunks.Length, 2, 3);
+                for (int i = 0; i < forks.Length; i++)
+                {
+                    Assert.InRange(forks[i].Long, 8, 25);
+                    Assert.InRange(forks[i].At, 0.05f * run, 0.85f * run);
+                    Assert.Equal(2, forks[i].Root);
+                    if (i > 0) Assert.True(forks[i].At - forks[i - 1].At > 20, "forks spread along the run");
+                }
+                foreach (var c in chunks)
+                {
+                    Assert.InRange(c.Wide, 6, 10);
+                    Assert.InRange(c.At, 0.5f * run, 0.9f * run);
+                    Assert.True(c.Wide >= Math.Min(10, 1.5f * FissureMarks.GapAt(c.At, run, gap)) - 1e-3, "a chunk stands out of the gap");
+                }
+            }
+        Assert.Equal(1f, fk[5]);
+        var shortRun = FissureMarks.Pick(40, 40, fk, ck, gap, () => 0.99f);
+        Assert.True(shortRun.Forks.Length <= 1 && shortRun.Chunks.Length <= 1);
+        var pend = p.All("storm.seam.pending");
+        Assert.InRange(pend[1], 0.25, 0.35);
+        Assert.InRange(pend[2], 0.9, 1.05);
+        Assert.InRange(pend[5], 1.8, 2.2);
+        var em = p.All("storm.seam.ember");
+        Assert.InRange(em[0], 0.35, 0.45);
+        Assert.InRange(em[1], 0.05, 0.08);
+    }
+
     [Fact]
     public void EveryGripKeyTheViewReadsIsThere()
     {
@@ -241,5 +342,47 @@ public class FxP7Tests
         for (int i = 2; i < k.Length; i += 2)
             if (a <= k[i]) return k[i - 1] + (k[i + 1] - k[i - 1]) * (a - k[i - 2]) / (k[i] - k[i - 2]);
         return k[^1];
+    }
+
+    /// <summary>(lane E lead 9, judge 6: "380 px, about 57 px past the storm's ring"; "2-3 broken chunks 6-10 px", one
+    /// drawn; origin 20-30 px ahead of her boot; the tail over a root) The drawn run ends at the storm's ring (never past the
+    /// sim's clipped line, the whole line when no ring); on the den run that now ends there (about 345 px after the start at
+    /// the play camera) 2-3 chunks lie where the gap is narrow enough for a 6-10 px hole to stand out; the start clears her
+    /// boot; the floor mask passes nothing over 8 cm.</summary>
+    [Fact]
+    public void TheFissureEndsAtTheRingWithItsChunks()
+    {
+        var p = Real();
+        var reach = p.All("storm.line.reach");
+        Assert.Equal(5.22f, FissureMarks.Reach(10.45f, 5.22f, reach), 0.001f);
+        Assert.Equal(4.0f, FissureMarks.Reach(4.0f, 5.22f, reach), 0.001f);
+        Assert.Equal(10.45f, FissureMarks.Reach(10.45f, 0f, reach), 0.001f);
+        Assert.Equal(10.45f, FissureMarks.Reach(10.45f, 5.22f, [0f, 0f]), 0.001f);
+        float[] fk = p.All("storm.line.fork"), ck = p.All("storm.line.chunk"), gap = p.All("storm.line.gap");
+        var rng = new Random(11);
+        foreach (float run in new[] { 300f, 345f, 400f })
+            for (int t = 0; t < 300; t++)
+            {
+                var (_, chunks) = FissureMarks.Pick(run, run, fk, ck, gap, () => (float)rng.NextDouble());
+                Assert.InRange(chunks.Length, 2, 3);
+                foreach (var c in chunks)
+                {
+                    Assert.True(FissureMarks.GapAt(c.At, run, gap) <= 0.7f * c.Wide, "a chunk's hole stands out of the gap");
+                    Assert.True(c.At <= run - 20, "a chunk clear of the ring's arcs at the tip");
+                }
+                for (int i = 1; i < chunks.Length; i++) Assert.True(chunks[i].At - chunks[i - 1].At >= 12, "chunks broken apart along the run");
+            }
+        Assert.InRange(p.All("storm.line.start")[0], 38, 50);
+        Assert.True(p["storm.line.floor"] + p["storm.line.lift"] <= 0.08f + 1e-4f, "the floor mask passes nothing over 8 cm");
+    }
+
+    [Fact]
+    public void FissureClipStopsOnOpenFloorBeforeTheBlock()
+    {
+        float L = FissureMarks.ClipRun((x, z) => x >= 5.0, 0, 0, 9, 0, out float at);
+        Assert.InRange(at, 5.0f, 5.21f);
+        Assert.InRange(L, 4.7f, 4.91f);
+        Assert.Equal(9.0, (double)FissureMarks.ClipRun((x, z) => false, 0, 0, 9, 0, out float none), 3);
+        Assert.Equal(-1f, none);
     }
 }

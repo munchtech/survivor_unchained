@@ -28,7 +28,8 @@ public static class Ai
     public static void Update(Battle b, Enemy e, double dt)
     {
         e.AnimT += dt;
-        if (e.Flash > 0) e.Flash = Math.Max(0, e.Flash - dt * 11);
+        // (lane E lead 7: not in the step the blow landed in, Enemy.FlashAt: the view draws the struck value first)
+        if (e.Flash > 0 && e.FlashAt != b.Time) e.Flash = Math.Max(0, e.Flash - dt * 11);
 
         if (e.State == EnemyState.Dying)
         {
@@ -55,6 +56,8 @@ public static class Ai
         if (e.WardT > 0) e.WardT -= dt;
         // A reflection stands where it was left, until it breaks.
         if (e.Decoy) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
+        // (shots only, --hold-boss: Battle.HoldBoss)
+        if (e.Boss && Battle.HoldBoss) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
 
         // Knockback slides, then settles (a normal foe it carries over the ground's end falls: Battle.SlideStep).
         if (e.Kbx != 0 || e.Kbz != 0)

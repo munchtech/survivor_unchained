@@ -43,6 +43,12 @@ public partial class PlayerView : Node3D
     /// light was twelve times the ground's on her crown and shoulders and clipped her copper hair cream-white; from higher up
     /// she takes about a third of it and the dead and the foes in her pool about what the pool gave them.</summary>
     public readonly OmniLight3D FolkLight;
+    /// <summary>(lane E lead 3, row 1, 16 Nov: "she nearly vanishes under the roots ... needs a rim or fill from her carried
+    /// light") Her rim light in the den: her carried light's edge on her alone (HerLayers; her meshes take HerLayer beside
+    /// people's while it is on, RimStep), no shadow, low behind her on the side away from the camera, so her far planes and
+    /// her silhouette's upper edge catch it; its energy grows as the den's own light at her feet falls (DenLightAt), none in
+    /// the open. Hers only (null on other views); off without the den rig's values 47-56 (HeroDen.RimEnergy).</summary>
+    public readonly OmniLight3D? RimLight;
     /// <summary>The survivor in glass: reflections and echoes left behind.</summary>
     public readonly Reflections Reflections;
     readonly List<GeometryInstance3D> skin = new();
@@ -50,14 +56,25 @@ public partial class PlayerView : Node3D
     /// <summary>Her silhouette through what hides her from the play camera (shaders/her_xray.gdshader, H1 round 2C): an
     /// overlay on her solid meshes (no cards, fur, eyes or teeth: an overlay ignores their cut-outs), on only in play
     /// with the camera far (HerLod.InPlay), eased in and out.</summary>
-    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
-        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } };
-    void XraySet(string k, Variant v) { xray.SetShaderParameter(k, v); ((ShaderMaterial)xray.NextPass).SetShaderParameter(k, v); }
+    /// (lane E lead 3, 16 Nov: the outline broke behind a slab she stood against) Three passes: her_xray_mask first
+    /// (priority -1: stencil 7 wherever her own surface is what the camera sees), then the fill, then the outline, which
+    /// both skip stencil 7, so her own body never counts as what hides her and no capsule round her feet is needed.
+    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray_mask.gdshader"), RenderPriority = -1,
+        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
+            NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } } };
+    void XraySet(string k, Variant v)
+    {
+        var fill = (ShaderMaterial)xray.NextPass;
+        fill.SetShaderParameter(k, v);
+        ((ShaderMaterial)fill.NextPass).SetShaderParameter(k, v);
+    }
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
     /// <summary>--xray-old: the x-ray as demo-rc2 had it (her own body hides her too), for the before strip.</summary>
     static readonly bool XrayOld = SurvivorUnchained.Args.Has("xray-old");
+    /// <summary>--xray-twins: the x-ray rides FxAfter's depth twins (the after-grade layer) and her den shadow's quad too, as before lane E s3.</summary>
+    static readonly bool XrayTwins = SurvivorUnchained.Args.Has("xray-twins");
     static bool XraySolid(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return false;
@@ -95,14 +112,43 @@ public partial class PlayerView : Node3D
         var cam = GetViewport()?.GetCamera3D();
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
+        if (XrayLog && (xrayLogT -= dt) <= 0) { xrayLogT = 1; XrayDump(); }
         // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
         if ((k > 0 || want > 0) && !XrayOld) XraySet("her_at", GlobalPosition);
         if (k == xrayK) return;
-        if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
+        // (lane E s3, 17 Nov: the movement judge's pale squiggle on her shield) never on FxAfter's depth twins (FxAfterHole, layer
+        // 20, the after-grade camera's): there the x-ray drew a second time, over the graded frame, with no mask on the twins
+        // made after Gather (her shield's, her sword's), so her body's outline showed through her own shield. Nor on her den
+        // shadow's ground quad (HerShadow, 6.4 m square: the overlay ignores its cut, so scenery standing in the square took a
+        // faint fill and the square's straight edge an outline). --xray-twins: both as before.
+        if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g) && (XrayTwins || (g.Layers & SurvivorUnchained.View.FxAfter.RenderLayer) == 0 && g is not HerShadow)) xrayOn.Add(g);
         bool was = xrayK > 0;
         xrayK = k;
         XraySet("strength", k);
         if (was != k > 0 && !ghostly) foreach (var g in xrayOn) if (IsInstanceValid(g)) g.MaterialOverlay = k > 0 ? xray : null;
+    }
+    /// <summary>--xray-log: once a second, every mesh under her: shown, in skin, solid, its overlay (the x-ray's own-body mask audit).</summary>
+    static readonly bool XrayLog = SurvivorUnchained.Args.Has("xray-log");
+    float xrayLogT;
+    void XrayDump()
+    {
+        var all = new List<GeometryInstance3D>();
+        void Walk(Node n) { if (n is GeometryInstance3D g) all.Add(g); foreach (var c in n.GetChildren()) Walk(c); }
+        Walk(this);
+        GD.Print($"xray-log k {xrayK:0.00} skin {skin.Count} on {xrayOn.Count} all {all.Count}");
+        foreach (var g in all)
+        {
+            if (!g.IsVisibleInTree() || (g.Layers & 524288u) != 0) continue;
+            string Chain(Material? m) { var o = ""; for (int i = 0; m != null && i < 8; i++, m = m.NextPass) o += $"{(m is ShaderMaterial sm ? System.IO.Path.GetFileNameWithoutExtension(sm.Shader?.ResourcePath ?? "?") : m.GetType().Name)}/{m.RenderPriority}>"; return o; }
+            string mats = "";
+            if (g is MeshInstance3D mi && mi.Mesh != null)
+                for (int s2 = 0; s2 < mi.Mesh.GetSurfaceCount(); s2++)
+                {
+                    var m = mi.GetActiveMaterial(s2);
+                    mats += $"[{Chain(m)}{(m is BaseMaterial3D bm ? $" tr {bm.Transparency} cull {bm.CullMode} dd {bm.DepthDrawMode}" : "")}]";
+                }
+            GD.Print($"xray-log  {g.Name} skin {skin.Contains(g)} on {xrayOn.Contains(g)} layers {g.Layers} ovl {Chain(g.MaterialOverlay)} ovr {Chain(g.MaterialOverride)} mats {mats}");
+        }
     }
     bool ghostly;
     Content.AbilityKind? rushSeen;
@@ -180,6 +226,7 @@ public partial class PlayerView : Node3D
     /// <summary>(L1 lead 19, SH2) Her own fire shadow: one cast quad (World/FireCast.cs, shaders/crowd_blob_cast.gdshader)
     /// and its shape, m (--her-cast-long, --her-cast-wide: its length from her feet and its width at them).</summary>
     MultiMeshInstance3D? herCast;
+    HerShadow? herShadow;
     const float HerCastTall = 1.7f;
     static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 1.2f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.4f);   // (SH3: a short tapered trail her stance wide, not a disc)
     readonly OwnClips own = OwnClips.Her;
@@ -195,6 +242,13 @@ public partial class PlayerView : Node3D
     bool armOn;
     // The arm-hold layer (the arms copy, HerArmHold, the grip ease): A only (ArmHold.Layered).
     bool layered = true, isB;
+    /// <summary>(lead r12) B's run weight on the way down (eased over StopEase s; up it follows at once).</summary>
+    float wDown;
+    const float StopEase = 0.1f;   // (e25: 0.06 spread r11's 23 deg snap over 3 frames, 8/11/4; 0.1 gives 5, each under 7)
+    // The clips' grips (slide, tilt: animations 47, 48, 58) and the side carry (SideCarry) on them: any body. They turn the
+    // held piece in its fist, not her bones, so B's bake (bones only) does not carry them (round 11: off on B, the warden's
+    // stand blade lay at the pocket's 30 deg pitch, not the clip's 63: a cane). PersonView.Slide tilts about B's own pocket.
+    const bool grips = true;
 
     /// <summary>A gait clip's ground speed: on B a P4 clip's own (P4Overlay.Speed), else heroine_clips.json's.</summary>
     float Spd(string clip)
@@ -494,8 +548,10 @@ public partial class PlayerView : Node3D
         AddChild(Light);
         FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
         AddChild(FolkLight);
+        if (mine) { RimLight = new OmniLight3D { Name = "HerRim", LightEnergy = 0, ShadowEnabled = false, LightCullMask = HerLayers, LightSpecular = HeroDen.RimTag, Visible = false }; AddChild(RimLight); }
         // (L1 lead 19, SH2) Her own short shadow under her fire (FireCast: one quad; placed every frame below).
         if (mine) { herCast = FireCast.Make("HerCast", 1); AddChild(herCast); }
+        if (mine) { herShadow = new HerShadow(); AddChild(herShadow); }   // (demo-look r2 her: her cast shadow in the den)
         Reflections = new Reflections(lo);
         AddChild(Reflections);
         Gather(this);
@@ -519,6 +575,7 @@ public partial class PlayerView : Node3D
         Light.OmniRange = old.Light.OmniRange;
         FolkLight.LightEnergy = old.FolkLight.LightEnergy;
         FolkLight.OmniRange = old.FolkLight.OmniRange;
+        if (RimLight != null && old.RimLight != null) { RimLight.LightEnergy = old.RimLight.LightEnergy; RimLight.Position = old.RimLight.Position; rimGate = old.rimGate; rimSeen = old.rimSeen; }
         time = old.time;
         flare = old.flare;
         tree.Advance(0);
@@ -946,6 +1003,9 @@ public partial class PlayerView : Node3D
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? Spd(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
         GaitClips(run, sheathed);
+        // (warden-move) The directional set's forward clip is the run just mounted (her town run sheathed, the armed run
+        // drawn): the set took the whole run over at speed, so the den run played in town with the hilt hand off the hilt.
+        if (dirF != null && person.Anim.HasAnimation(run)) { dirF.Animation = run; dirLen[0] = (float)person.Anim.GetAnimation(run).Length; }
         if (sprintNode == null) return;
         // The sprint follows: her town sprint if she has one, else the town run itself; the armed sprint on the draw.
         var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
@@ -1125,7 +1185,7 @@ public partial class PlayerView : Node3D
         {
             tree.Active = false;
             if (!held) { held = true; view?.Sheathe(hold[0].EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed")); } // (--sheathed: her pieces at their sockets, as in a safe place)
-            if (layered)
+            if (grips)
             {
                 slide = own.GripSlide(hold[0]); // the clip's grip, straight (no easing)
                 tilt = own.GripTilt(hold[0]);
@@ -1396,7 +1456,7 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale * PoolDen;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
         Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)
@@ -1404,9 +1464,11 @@ public partial class PlayerView : Node3D
         Light.LightCullMask = (LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu) & (CrowdOmni ? 0xFFFFFu : ~CrowdLayer);
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
-        FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;
+        FolkLight.LightEnergy = Light.LightEnergy / PoolDen * FolkK * FolkScale;   // (the den's pool energy is the ground's only)
         FolkLight.OmniRange = Light.OmniRange * FolkRange;
         FolkLight.OmniAttenuation = FolkAtt;
+        // (before the relayering below: in the close view her meshes leave people's layer, and the rim's HerLayer goes first)
+        if (mine) RimStep((float)dt, (float)((LightBase * (0.7 + 0.3 * hp) + flicker) / LightBase));
         // Her weapon and shield are the world's (layer 1), so the pool lit them: at the pool's hip height her shield's face
         // went white. Off the pool and onto people's layer while the folk light lights her (looked over twice a second, a new
         // weapon or a sheathed one included); back on the world's for the close view's own relayering (Relayer).
@@ -1431,14 +1493,14 @@ public partial class PlayerView : Node3D
             var down = right.Cross(Vector3.Up);   // along the ground toward the camera = down the screen (+Z at yaw 0)
             var foot = right * Atmosphere.HeroFoot.X + down * Atmosphere.HeroFoot.Y;
             var own = GlobalBasis.Inverse() * foot;
-            Light.Position = new Vector3(own.X, EmberH, own.Z);
+            Light.Position = new Vector3(own.X, EmberHNow, own.Z);
             if (mine) Atmosphere.HeroFootWorld(new Vector2(foot.X, foot.Z));
         }
-        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);
+        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberHNow, Atmosphere.HeroFoot.Y);
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {
-            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
+            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy / PoolDen * Atmosphere.CrowdFill * CrowdEmberK : 0;
             var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
             RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
             // (L1 lead 19, SH2) She stands on her own short shadow: the light is over her, so the cast's rule gives next to
@@ -1450,6 +1512,8 @@ public partial class PlayerView : Node3D
                 FireCast.Set(herCast.Multimesh, 0, me, HerCastTall, HerCastWide, ce > 0 ? 1 : 0, HerCastLong, new Vector2(me.X - lf.X, me.Z - lf.Z));
                 if (FireCast.Count) FireCast.Report(lf);
             }
+            herShadow?.Place(GlobalPosition, Visible && IsVisibleInTree());
+            if (herShadow != null) HerSteel.Wear(view?.HeldMount("handslot.r"), HeroDen.SteelOn);   // (demo-look r2 her: her blade as painted steel in the den)
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
             // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;
@@ -1485,6 +1549,100 @@ public partial class PlayerView : Node3D
 
     readonly List<GeometryInstance3D> offPool = new();
     double offPoolT;
+
+    // (lane E lead 3, row 1) her rim light in the den (RimLight)
+    readonly List<GeometryInstance3D> rimTagged = new();
+    readonly List<SpotLight3D> denSpots = new();
+    double rimTagT, denSpotsT, rimLogT;
+    float rimGate;
+    bool rimSeen;
+    /// <summary>--her-rim-log: the den's light at her feet, the rim's gate and energy, once a second.</summary>
+    static readonly bool RimLog = Args.Has("her-rim-log");
+    /// <summary>The gate's smoothing, s (exponential): a stride in or out of a shaft's pool eases the rim, no pop.</summary>
+    const float RimTau = 0.3f;
+
+    /// <summary>Her rim light each frame (RimLight): k her ember's own flicker and health (1 steady at full health). Off (and
+    /// her meshes back on people's layer alone) out of the den, in the close view (OwnLayer), with her lamp off her or hidden.
+    /// Its energy: the row's (value 47) times the gate, 1 where the den's own light at her feet (DenLightAt) is at or under
+    /// value 54 and 0 at or over value 55 (smoothstep between), eased over RimTau, times k and her lamp's share.</summary>
+    void RimStep(float dt, float k)
+    {
+        if (RimLight == null) return;
+        bool on = HeroDen.RimEnergy > 0 && !OwnLayer && !LampOffHer && Visible;
+        if (!on)
+        {
+            RimLight.Visible = false;
+            foreach (var g in rimTagged) if (IsInstanceValid(g)) g.Layers &= ~HerLayer;
+            rimTagged.Clear();
+            rimSeen = false;
+            return;
+        }
+        // her meshes on HerLayer beside people's, so the rim lights her and no one else (four times a second: her level of
+        // detail and her wear make meshes of their own on people's layer)
+        if ((rimTagT -= dt) <= 0) { rimTagT = 0.25; RimTagWalk(this); }
+        float e = DenLightAt(GlobalPosition);
+        float want = HeroDen.RimHi > HeroDen.RimLo ? 1 - Mathf.SmoothStep(HeroDen.RimLo, HeroDen.RimHi, e) : e <= HeroDen.RimLo ? 1 : 0;
+        rimGate = rimSeen ? Mathf.Lerp(rimGate, want, 1 - Mathf.Exp(-dt / RimTau)) : want;
+        rimSeen = true;
+        float energy = HeroDen.RimEnergy * rimGate * k * lamp;
+        RimLight.LightEnergy = energy;
+        RimLight.Visible = energy > 1e-4f;
+        RimLight.LightColor = HeroDen.RimColor;
+        RimLight.OmniRange = HeroDen.RimRange;
+        RimLight.OmniAttenuation = HeroDen.RimAtt;
+        // low behind her, away from the camera along the ground (screen-up), whatever her heading
+        var right = GetViewport()?.GetCamera3D() is { } vc ? vc.GlobalBasis.X : Vector3.Right;
+        right = new Vector3(right.X, 0, right.Z);
+        right = right.LengthSquared() > 1e-6f ? right.Normalized() : Vector3.Right;
+        var toCam = right.Cross(Vector3.Up);
+        var own = GlobalBasis.Inverse() * (-toCam * HeroDen.RimBack);
+        RimLight.Position = new Vector3(own.X, HeroDen.RimH, own.Z);
+        if (RimLog && (rimLogT -= dt) <= 0)
+        {
+            rimLogT = 1;
+            GD.Print($"her rim: den light at her feet {e:0.000} ({denSpots.Count} spots), gate {want:0.00} eased {rimGate:0.00}, energy {energy:0.00}, {rimTagged.Count} meshes on HerLayer");
+        }
+    }
+
+    void RimTagWalk(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c == Reflections || c == herShadow || c == herCast) continue;
+            if (c is GeometryInstance3D g && (g.Layers & 2u) != 0 && (g.Layers & HerLayers) == 0) { g.Layers |= HerLayer; rimTagged.Add(g); }
+            RimTagWalk(c);
+        }
+    }
+
+    /// <summary>The den's own light on the floor at p: the irradiance of View/DungeonLight's spots (the shafts and the room
+    /// washes), by Godot's own spot falloff on a floor facing up, times their colour's luminance. The key and the fill are the
+    /// same everywhere in the den and are left out, so this is what tells a room's lit middle from its dark edges, the bends
+    /// and the ground under the banks' roots (0 where no spot reaches). The spots are looked up once, again every 2 s while none.</summary>
+    float DenLightAt(Vector3 p)
+    {
+        denSpots.RemoveAll(s => !IsInstanceValid(s));
+        if (denSpots.Count == 0 && (denSpotsT -= GetProcessDeltaTime()) <= 0)
+        {
+            denSpotsT = 2;
+            if (GetTree()?.Root.FindChild("DungeonLight", true, false) is { } dl)
+                foreach (var c in dl.GetChildren()) if (c is SpotLight3D s) denSpots.Add(s);
+        }
+        float e = 0;
+        foreach (var s in denSpots)
+        {
+            if (!s.IsVisibleInTree()) continue;
+            var rel = s.GlobalPosition - p;
+            float d = rel.Length();
+            if (d < 1e-3f || d >= s.SpotRange) continue;
+            float nd = d / s.SpotRange; nd *= nd; nd *= nd; nd = Mathf.Max(1 - nd, 0); nd *= nd;
+            float cc = Mathf.Cos(Mathf.DegToRad(s.SpotAngle));
+            float sc = Mathf.Max((-rel / d).Dot((-s.GlobalBasis.Z).Normalized()), cc);
+            float cone = 1 - Mathf.Pow(Mathf.Max(1e-4f, (1 - sc) / Mathf.Max(1 - cc, 1e-4f)), s.SpotAngleAttenuation);
+            var c = s.LightColor;
+            e += s.LightEnergy * nd * Mathf.Pow(Mathf.Max(d, 1e-4f), -s.SpotAttenuation) * Mathf.Max(cone, 0) * Mathf.Max(0, rel.Y / d) * (0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B);
+        }
+        return e;
+    }
 
     /// <summary>Her meshes on the world's layer alone (her weapon, her shield) moved to people's, off her ember's pool light.</summary>
     static void OffPool(Node n, List<GeometryInstance3D> moved, Node skip)
@@ -1736,6 +1894,9 @@ public partial class PlayerView : Node3D
         backW = Mathf.Lerp(backW, backNow ? 1f : 0f, 1 - Mathf.Exp(-BackBlend * dt));
         // (round 4: judge r3 "a scurry, ~7.5 steps/s, 25-35% skate") the run mixed in at BackMix lengthens her backward step
         w = Mathf.Lerp(w, BackMix, backW);
+        // (lead r12, judge r11) B has no arms' copy (the owner, 5 Nov: B's holds are clip data), so her arms follow the run weight
+        // itself: as it falls into the walk/idle (a stop) it eases down over ~4 frames instead of one (r11: a 23 deg blade snap)
+        if (!layered) { wDown = w >= wDown ? w : Mathf.Lerp(wDown, w, 1f - Mathf.Exp(-dt / StopEase)); w = wDown; }
         logW = w; logWWalk = wWalk; logSpd = spd;
         // (aim-move) The directional legs: the six weights, her pelvis's turn, and how much of her run the set takes over.
         if (dirChain) DirFrame(dt, w);
@@ -1820,7 +1981,7 @@ public partial class PlayerView : Node3D
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.
-        if (layered && idleNode != null && runNode != null)
+        if (grips && idleNode != null && runNode != null)
         {
             float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), wWalk, w,
                 own.GripSlide(idleNode.Animation), own.GripSlide((walkNode ?? idleNode).Animation), own.GripSlide(runNode.Animation));
@@ -1935,6 +2096,13 @@ public partial class PlayerView : Node3D
         FolkAtt = SurvivorUnchained.Args.Num("ember-folk-att", 2f);
     // --ember-h H: the pool light's height over her feet; --ember-k K: her ember's gain times K (sweeps of any preset).
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
+    // (demo-look r2 her) in the den the rig's own height (hero_den value 33, HeroDen.EmberH: a pool ~120 px round her, brighter
+    // at its centre; at 1.7 it was flat to 160 px); --ember-h given wins.
+    static readonly bool EmberHArg = SurvivorUnchained.Args.Get("ember-h") != null;
+    static float EmberHNow => !EmberHArg && HeroDen.EmberH > 0 ? HeroDen.EmberH : EmberH;
+    // (lane E polish) in the den the pool light's own energy on the ground (hero_den value 38, HeroDen.PoolK; 1 elsewhere): her
+    // folk light (which follows the pool's energy) and her lamp on the crowd divide it back out, so only the ground's pool moves.
+    static float PoolDen => HeroDen.PoolK > 0 ? HeroDen.PoolK : 1;
     // --clip-tour LIST|all (--clip-tour-from S): the clip playing and its time, for the probes (null / -1 outside a tour).
     static readonly string? TourArg = SurvivorUnchained.Args.Get("clip-tour");
     static readonly float TourFrom = SurvivorUnchained.Args.Num("clip-tour-from", 0f);
@@ -1987,7 +2155,7 @@ public partial class PlayerView : Node3D
         }
         string clip = list[tourAt];
         view?.Sheathe(clip.EndsWith("_town") || SurvivorUnchained.Args.Has("sheathed"));
-        if (layered)
+        if (grips)
         {
             slide = own.GripSlide(clip); tilt = own.GripTilt(clip);
             view?.Slide("handslot.r", slide, tilt);
@@ -2512,6 +2680,8 @@ public partial class PlayerView : Node3D
     bool DirOn => dirChain && !DirLegsOff;
     readonly float[] dirW = new float[6], dirLen = new float[6];
     float dirBackW, dirDelta, dirBlend, dirAlpha;
+    /// <summary>The set's forward clip (Mount swaps it: the town run sheathed, the armed run drawn).</summary>
+    AnimationNodeAnimation? dirF;
     /// <summary>The cursor's ground point (WorldScene wires it each frame; null on a pad, for bots, off the window).</summary>
     public System.Func<(double X, double Z)?>? Pointer;
 
@@ -2523,7 +2693,9 @@ public partial class PlayerView : Node3D
         for (int i = 0; i < 6; i++)
         {
             dirLen[i] = (float)person.Anim.GetAnimation(n[i]).Length;
-            mv.AddNode("d_" + DirId[i], new AnimationNodeAnimation { Animation = n[i] }, new Vector2(1000, 1000 + 100 * i));
+            var dn = new AnimationNodeAnimation { Animation = n[i] };
+            if (i == 0) dirF = dn;
+            mv.AddNode("d_" + DirId[i], dn, new Vector2(1000, 1000 + 100 * i));
             mv.AddNode("dSeek_" + DirId[i], new AnimationNodeTimeSeek(), new Vector2(1200, 1000 + 100 * i));
             mv.ConnectNode("dSeek_" + DirId[i], 0, "d_" + DirId[i]);
         }
@@ -2576,7 +2748,9 @@ public partial class PlayerView : Node3D
         if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get("parameters/fullShot/active") && !fullSoft && !fullGaveWay)) return false;
         float? goal = null;
         var ptr = Pointer?.Invoke();
-        if (Facing.Current == FacingMode.Always && ptr is { } c)
+        // (warden-move) Sheathed in town there is nothing to aim at: she faces her travel, so her town run (the set's forward
+        // clip) carries her and the armed side and back runs only pass through a turn.
+        if (Facing.Current == FacingMode.Always && ptr is { } c && !sheath.Sheathed)
         {
             float dx = (float)c.X - x, dz = (float)c.Z - z;
             if (dx * dx + dz * dz > 0.01f) goal = Mathf.Atan2(dx, dz);
@@ -2724,14 +2898,94 @@ public partial class PlayerView : Node3D
                 Vector2 P(Vector3 v) => cam.UnprojectPosition(v);
                 Vector2 g = P(bd.Grip), tp = P(bd.Tip), hr = P(bodyW[9]), hd = P(headW), fl = P(bodyW[2]), fr = P(bodyW[3]), bl = P(bodyW[4]), br = P(bodyW[5]);
                 GD.Print(System.FormattableString.Invariant($"BLADE {g.X:0.0} {g.Y:0.0} {tp.X:0.0} {tp.Y:0.0} hr {hr.X:0.0} {hr.Y:0.0} hd {hd.X:0.0} {hd.Y:0.0} ft {fl.X:0.0} {fl.Y:0.0} {fr.X:0.0} {fr.Y:0.0} {bl.X:0.0} {bl.Y:0.0} {br.X:0.0} {br.Y:0.0} gw {bd.Grip.X:0.0000} {bd.Grip.Y:0.0000} {bd.Grip.Z:0.0000} tw {bd.Tip.X:0.0000} {bd.Tip.Y:0.0000} {bd.Tip.Z:0.0000} ax {bd.Axis.X:0.000} {bd.Axis.Y:0.000} {bd.Axis.Z:0.000} kn {kneeW[0].X:0.0000} {kneeW[0].Y:0.0000} {kneeW[0].Z:0.0000} {kneeW[1].X:0.0000} {kneeW[1].Y:0.0000} {kneeW[1].Z:0.0000} sc {carry.Weight:0.000} {carry.Tilt:0.00} {carry.Spring:0.00} {carry.Inward:0.00} face {Mathf.RadToDeg(Rotation.Y):0.00} sv {carry.Want:0.00} {carry.Raw:0.00} {carry.Sigma:0} {logWWalk:0.00} {carryStrafe:0.00} c0 {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).X:0.0} {P(bd.Grip + carryB0 * (bd.Tip - bd.Grip).Length()).Y:0.0}"));
+            if (Args.Has("blade-mask")) BladeMaskPrep(cam);
+            if (Args.Has("hide-blade")) HideBlade();
             }
         }
     }
-    readonly Vector3[] bodyW = new Vector3[13];
-    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis" };
+    // (warden-move, --hide-blade, shoot only) the blade's own pixels vanish, its shadow stays: every mesh under the right-hand mount
+    // casts shadows only. A twin shoot of the same run, diffed against the normal one offline (tools/anim/fit/blade_contrast.py).
+    void HideBlade()
+    {
+        if (view?.HeldIn("handslot.r") is not { } mount) return;
+        var stack = new Stack<Node>(); stack.Push(mount);
+        while (stack.Count > 0)
+            foreach (var ch in stack.Pop().GetChildren())
+            {
+                stack.Push(ch);
+                if (ch is MeshInstance3D mi) mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            }
+    }
+    // (aim-move r13, --blade-mask, log only) T4 by pixels: the held blade's meshes move to layer 19 (the main camera still draws
+    // them), each gets a flat magenta twin on layer 20 that the main camera skips. Two half-size SubViewports on the same world, each
+    // with a camera copying the main one: FULL draws her and the people (layer 2, her layers) + magenta, depth-tested (not the scene), SOLO draws layer 20 only.
+    // After the frame is drawn BMASK vis tot: magenta pixels in FULL, blade pixels in SOLO (same frame as that frame's BLADE line).
+    const uint MaskReal = 1u << 5, MaskTwin = 1u << 6, MaskOld = 2;   // (free bits; the blade came on layer 2, the people's)
+    SubViewport? maskFull, maskSolo; Camera3D? maskCamF, maskCamS;
+    readonly List<(MeshInstance3D real, MeshInstance3D twin)> maskPairs = new();
+    Node3D? maskMount; bool maskPending, maskHooked;
+    void BladeMaskPrep(Camera3D cam)
+    {
+        if (view?.HeldIn("handslot.r") is not { } mount) return;
+        if (maskFull == null)
+        {
+            SubViewport Mk(uint cull, out Camera3D c)
+            {
+                var vp = new SubViewport { Size = new Vector2I(960, 540), TransparentBg = true, Msaa3D = Viewport.Msaa.Disabled, UseTaa = false, ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled, Scaling3DMode = Viewport.Scaling3DModeEnum.Bilinear, RenderTargetUpdateMode = SubViewport.UpdateMode.Always, HandleInputLocally = false };
+                c = new Camera3D { Current = true, CullMask = cull };
+                vp.AddChild(c); AddChild(vp); return vp;
+            }
+            maskFull = Mk(MaskOld | HerLayers | MaskTwin, out maskCamF);   // (lead r13, e28: the den's roots and overhangs hid the blade 15 f in a run: T4 is her body hiding it, so only she occludes)
+            maskSolo = Mk(MaskTwin, out maskCamS);   // (r14: this statement had slipped into the comment above in a4ffa6f32: SOLO null, no BMASK lines in e29/e30)
+            if (!maskHooked) { maskHooked = true; RenderingServer.FramePostDraw += BladeMaskCount; }
+        }
+        if (maskMount != mount)
+        {
+            maskMount = mount; maskPairs.Clear();
+            var mat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(1, 0, 1), DisableFog = true };
+            var stack = new Stack<Node>(); stack.Push(mount);
+            while (stack.Count > 0)
+                foreach (var ch in stack.Pop().GetChildren())
+                {
+                    stack.Push(ch);
+                    if (ch is not MeshInstance3D mi || mi.Mesh == null || mi.Layers != MaskOld) continue;
+                    var twin = new MeshInstance3D { Mesh = mi.Mesh, Transform = mi.Transform, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = MaskTwin, Visible = mi.IsVisibleInTree() };
+                    mi.GetParent().AddChild(twin); mi.Layers = MaskReal; maskPairs.Add((mi, twin));
+                }
+        }
+        foreach (var (real, twin) in maskPairs)
+            if (IsInstanceValid(real) && IsInstanceValid(twin)) { twin.Transform = real.Transform; twin.Visible = real.Visible; }
+        cam.CullMask &= ~MaskTwin;
+        // the blade left layer 2, so every light and decal that took layer 2 takes its new one too: lit and shadowed as before
+        foreach (var n in GetTree().Root.FindChildren("*", "Node3D", true, false))
+            if (n is Light3D lt) { if ((lt.LightCullMask & MaskOld) != 0) lt.LightCullMask |= MaskReal; }
+            else if (n is Decal dc) { if ((dc.CullMask & MaskOld) != 0) dc.CullMask |= MaskReal; }
+        foreach (var c in new[] { maskCamF!, maskCamS! })
+        {
+            c.GlobalTransform = cam.GlobalTransform; c.Projection = cam.Projection; c.Fov = cam.Fov; c.Size = cam.Size; c.KeepAspect = cam.KeepAspect;
+            c.Near = cam.Near; c.Far = cam.Far; c.Environment = cam.Environment; c.Attributes = cam.Attributes;
+        }
+        maskPending = true;
+    }
+    void BladeMaskCount()
+    {
+        if (!maskPending || maskFull == null || maskSolo == null) return;
+        maskPending = false;
+        int vis = 0, tot = 0;
+        var a = maskFull.GetTexture().GetImage(); var b = maskSolo.GetTexture().GetImage();
+        if (a != null && a.GetFormat() != Image.Format.Rgba8) a.Convert(Image.Format.Rgba8);
+        if (b != null && b.GetFormat() != Image.Format.Rgba8) b.Convert(Image.Format.Rgba8);
+        if (a != null) { var d = a.GetData(); for (int i = 0; i + 3 < d.Length; i += 4) if (d[i] > 178 && d[i + 2] > 178 && d[i + 1] < 77) vis++; }
+        // (the camp fire shows on layer 20 too: alpha alone counts it, so the colour is tested as well)
+        if (b != null) { var d = b.GetData(); for (int i = 0; i + 3 < d.Length; i += 4) if (d[i + 3] > 127 && d[i] > 178 && d[i + 2] > 178 && d[i + 1] < 77) tot++; }
+        GD.Print($"BMASK {vis} {tot}");
+    }
+    readonly Vector3[] bodyW = new Vector3[15];
+    static readonly string[] BodyBones = { "thigh_l", "thigh_r", "foot_l", "foot_r", "ball_l", "ball_r", "upperarm_l", "upperarm_r", "hand_l", "hand_r", "spine_03", "head", "pelvis", "lowerarm_r", "lowerarm_l" };
     public override void _ExitTree()
     {
         if (feetHooked) RenderingServer.FramePreDraw -= Scr2;
+        if (maskHooked) RenderingServer.FramePostDraw -= BladeMaskCount;
         if (carryHooked && person?.Skeleton is { } sk && IsInstanceValid(sk)) sk.SkeletonUpdated -= CarryPosed;
         base._ExitTree();
     }
@@ -2764,6 +3018,14 @@ public partial class PlayerView : Node3D
             c.Clear = F(25, c.Clear); c.OutMax = F(26, c.OutMax); c.ClearRate = F(27, c.ClearRate); c.ClearAtk = F(28, c.ClearAtk);
             c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
             c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd); c.Cross = F(37, c.Cross ? 1f : 0f) > 0f;
+        }
+        // (r22) --far-cap away,across,toward,spanToward,spanAway: the far side's facing cap (SideCarry.FarCapAt).
+        if (SurvivorUnchained.Args.Get("far-cap") is { } fc)
+        {
+            var v = fc.Split(',');
+            float F(int i, float d) => i < v.Length && float.TryParse(v[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : d;
+            c.FarCapAway = F(0, c.FarCapAway); c.FarCapAcross = F(1, c.FarCapAcross); c.FarCapToward = F(2, c.FarCapToward);
+            c.FarCapSpanToward = F(3, c.FarCapSpanToward); c.FarCapSpanAway = F(4, c.FarCapSpanAway);
         }
         return c;
     }
@@ -2805,7 +3067,7 @@ public partial class PlayerView : Node3D
         carryPos = pos;
         var cam = GetViewport()?.GetCamera3D();
         var bone = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
-        bool on = CarryOn && !held && TourList == null && layered && cam != null;
+        bool on = CarryOn && !held && TourList == null && grips && cam != null;
         var f = default(SideCarry.Frame);
         if (on)
         {
@@ -2842,7 +3104,7 @@ public partial class PlayerView : Node3D
             }
         }
         else bladeHead = float.NaN;
-        if (layered) CarrySlide(bone);
+        if (grips) CarrySlide(bone);
     }
     Vector3 carryPos, carryB0;
     float carryStrafe, carryMove;

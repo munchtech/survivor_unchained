@@ -105,6 +105,7 @@ public sealed partial class Battle
                 break;
             case "bladestorm":
                 if (f == "radius") return SpinRadiusOf(w);
+                if (f == "line") return SpinRadiusOf(w); // the Sunder line reaches the ring (18 Nov)
                 if (f == "breakgrow") return w.Num(s => s.BreakGrow) ?? 1.6;
                 break;
             case "rebuke":

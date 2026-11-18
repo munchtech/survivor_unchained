@@ -407,6 +407,11 @@ public partial class Game : Node, IZoneHost
             var mb = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map);
             var bc = mb.Boss;
             at = Args.Get("at") == "boss" ? new Arrival(bc.X, bc.Z - bc.R + 1) : new Arrival(bc.X, bc.Z);
+            // --at-off DX,DZ: metres added to that arrival (shots only: stands her clear of the ruler's body).
+            if (Args.Get("at-off") is string aoff && aoff.Split(',') is { Length: 2 } ao
+                && double.TryParse(ao[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var aox)
+                && double.TryParse(ao[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var aoz))
+                at = new Arrival(at!.Value.X + aox, at.Value.Z + aoz);
             GD.Print($"at {Args.Get("at")}: ruler's clearing ({bc.X:0.0}, {bc.Z:0.0}) r {bc.R:0.0}");
             if (mb.HoleField is { } hf)
                 for (int j = 1; j < 300; j++)
@@ -903,6 +908,7 @@ public partial class Game : Node, IZoneHost
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
+        if (Graphics.DenNow != SurvivorUnchained.View.Atmosphere.CrowdDen) ApplySettings();   // (the den's SMAA comes and goes with the zone)
         air.Air(scene!.Data.Place?.Air, scene!.Data.Place?.Id ?? "", scene!.Data.Place?.Mood ?? "");
         scene.View.SetNight(time == TimeOfDay.Night);
         scene.Fx.Flare.Night = time == TimeOfDay.Night;
@@ -1333,6 +1339,8 @@ public partial class Game : Node, IZoneHost
                 else Shots.Want($"tell_{kind}_land", 0.15);
             }
             Feel(e, ref crits);
+            // (lane E lead 7) a boss's intro card gives way to the fight's first blow, dealt or taken
+            if (e is Ev.Hit or Ev.PlayerHit) hud.FightStruck();
             // (an unlock's lesson ends when she uses what it taught: a press of its skill, a swap; GameHud.Unlock.cs)
             if (e is Ev.Cast ucast) hud.UnlockUsed(ucast.Weapon);
             else if (e is Ev.Channel { On: true } uchan) hud.UnlockUsed(uchan.Weapon);
@@ -1980,6 +1988,12 @@ public partial class Game : Node, IZoneHost
     /// <summary>(M5 r2) An untaken Legendary's edge pointer shows within this of her (m).</summary>
     const double LegendReach = 40;
 
+    /// <summary>The den's names (lane E r4, judge 2: none over C .14 as seen, none at C .04+ in h 290-25, the set's the
+    /// loudest at C .12-.135, h <= 175; drawn as they are): the epic's violet (h 308) goes indigo with its light, the
+    /// rare's blue held under the cap, the set's verdigris. Env LOOT_DEN_LABELS "rare,epic,set" overrides for a shot.</summary>
+    static readonly Color[] DenLabel = (System.Environment.GetEnvironmentVariable("LOOT_DEN_LABELS") ?? "#61a9f6,#8e95e6,#4fd9b1")
+        .Split(',').Select(h => new Color(h)).ToArray();
+
     /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
     /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>
     List<Ui.GroundLabel> Labels(Battle b)
@@ -2009,6 +2023,13 @@ public partial class Game : Node, IZoneHost
             if (text.Length == 0) continue;
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
+            // (the den: the set's verdigris is the loudest, DenLabel; the magic's green capped .125)
+            if (SurvivorUnchained.View.MarkPass.Den)
+                col = tier switch
+                {
+                    LootTier.Rare => DenLabel[0], LootTier.Epic => DenLabel[1], LootTier.Set => DenLabel[2],
+                    LootTier.Uncommon => SurvivorUnchained.View.Palette.CapChroma(col, 0.125f), _ => col,
+                };
             int loud = tier == LootTier.Gem ? 2 : tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
             // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
             // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
@@ -2188,10 +2209,10 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("loot") && Battle is { } lootB && lootI < (gemLoot ? gemRing.Length : LootRing.Length) && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
-            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootI];
+            var (def, rarity, look) = gemLoot ? gemRing[lootI] : LootRing[lootMode is "legendary" or "gift" ? LootRing.Length - 1 : lootMode == "set" ? 5 : lootI];   // (--loot set: only the Set piece, watch_coif, the verdigris beam)
             // --loot gift: the same drop as --loot legendary (same place and time), but a gift unique (herd_callers_horn) in the Legendary's place.
             if (lootMode == "gift") { def = "herd_callers_horn"; rarity = null; look = Verdict.Emphasised; }
-            lootI = lootMode is "legendary" or "gift" ? LootRing.Length : lootI + 1;
+            lootI = lootMode is "legendary" or "gift" or "set" ? LootRing.Length : lootI + 1;
             int ringLen = gemLoot ? gemRing.Length : LootRing.Length;
             var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
             // (--far: dropped off the screen, for pictures of the edge's pointer to it)

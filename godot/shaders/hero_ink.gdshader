@@ -6,9 +6,19 @@ shader_type spatial;
 // surface of hers well behind it (a limb over her body), the near side taking the line; (c) a fold (deeper than both sides).
 // The hull's own pixels (its tone) never count, so the outer line stays as it is. Width: ink_px at 1080p, full up to
 // fade.x px per metre, none from fade.y (a close shot draws no ink). Off with the line (cel_hero_line.w = 0).
+// (demo-look lead 3, row 1: "she nearly vanishes under the roots ... needs a rim or fill from her carried light") Her RIM:
+// in the den (the rig's hero_den, cel_hero_rim), a thin warm lit edge on her own pixels just inside her outer line: a pixel
+// of hers within the rim's width (px at 1080p) of her silhouette, where the neighbor is the hull's own px (its tone) or a
+// surface well behind her and the ground past the hull lies well behind her too (her outer edge, never a limb over her
+// body), takes the rim's tone, as much as that ground is dark (cel_hero_rim2.xy: its cube-root luminance where the rim is
+// full / gone, so the open floor gets none) and only where she is darker than the rim (it lightens, never darkens); edges
+// facing screen-down (her feet) take cel_hero_rim2.z of it, her carried light being over her. The ink wins over the rim.
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
 
 global uniform vec4 cel_hero_line;
+global uniform vec4 cel_hero_rim;       // rgb: the rim's tone (linear, its level in), w: its width in px at 1080p (0: off)
+global uniform vec4 cel_hero_rim2;      // x, y: the ground's cube-root luminance where the rim is full / gone; z: the
+                                        // share on edges facing screen-down; w: (debug) 1 paints the found edge magenta
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;
 uniform float ink_px = 1.25;            // width at 1080p, px
@@ -25,14 +35,17 @@ uniform float cut_bias = 0.0;
 
 varying float v_px;
 varying float v_ppm;
+varying float v_rim;
 
 void vertex() {
 	bool ortho = PROJECTION_MATRIX[3][3] != 0.0;
 	vec4 o = PROJECTION_MATRIX * (VIEW_MATRIX * vec4(MODEL_MATRIX[3].xyz, 1.0));
 	float ppm = PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * 0.5 / max(ortho ? 1.0 : o.w, 0.0001) * (1080.0 / VIEWPORT_SIZE.y);
 	v_ppm = ppm;
-	v_px = cel_hero_line.w > 0.0 ? ink_px * (VIEWPORT_SIZE.y / 1080.0) * (1.0 - smoothstep(fade.x, fade.y, ppm)) : 0.0;
-	if (v_px <= 0.01) VERTEX = vec3(0.0);   // (the whole mesh collapses: nothing drawn)
+	float near = 1.0 - smoothstep(fade.x, fade.y, ppm);
+	v_px = cel_hero_line.w > 0.0 ? ink_px * (VIEWPORT_SIZE.y / 1080.0) * near : 0.0;
+	v_rim = cel_hero_line.w > 0.0 ? cel_hero_rim.w * (VIEWPORT_SIZE.y / 1080.0) * near : 0.0;
+	if (v_px <= 0.01 && v_rim <= 0.01) VERTEX = vec3(0.0);   // (the whole mesh collapses: nothing drawn)
 }
 
 float lin_z(sampler2D t, ivec2 q, vec2 inv, mat4 ip) {
@@ -87,7 +100,37 @@ void fragment() {
 			ink = max(ink, e * cov * (1.0 - line_n));
 		}
 	}
-	if (ink < 0.02) discard;
-	ALBEDO = ink_c;
-	ALPHA = ink;
+	// her rim (the den): her outer edge within v_rim px, where the ground past her line is dark
+	float rim = 0.0;
+	vec3 rim_c = cel_hero_rim.rgb;
+	if (v_rim > 0.01 && ink < 0.98 && lum(c0) < lum(rim_c)) {
+		int hull = int(ceil(cel_hero_line.w * (VIEWPORT_SIZE.y / 1080.0)));
+		for (int i = 0; i < 8; i++) {
+			ivec2 o = i == 0 ? ivec2(1, 0) : i == 1 ? ivec2(-1, 0) : i == 2 ? ivec2(0, 1) : i == 3 ? ivec2(0, -1)
+				: i == 4 ? ivec2(1, 1) : i == 5 ? ivec2(-1, 1) : i == 6 ? ivec2(1, -1) : ivec2(-1, -1);
+			float up = -normalize(vec2(o)).y;   // (FRAGCOORD's y runs down: 1 an edge facing screen-up)
+			float side = mix(cel_hero_rim2.z, 1.0, smoothstep(-1.0, 0.0, up));
+			for (int k = 1; k <= 2; k++) {
+				if (k == 2 && i >= 4) break;
+				float cov = i >= 4 ? clamp(v_rim - 0.414, 0.0, 1.0) : clamp(v_rim - float(k - 1), 0.0, 1.0);
+				if (cov <= 0.0) continue;
+				ivec2 q = clamp(p + o * k, ivec2(0), sz - 1);
+				float g = lin_z(depth_tex, q, inv, INV_PROJECTION_MATRIX) - z0;
+				vec3 cn = texelFetch(screen_tex, q, 0).rgb;
+				float line_n = 1.0 - smoothstep(0.02, 0.06, length(cn - ink_c) / (lum(ink_c) + 0.01) * 0.25);
+				float outside = max(line_n, smoothstep(0.08, 0.16, g));
+				ivec2 qb = clamp(p + o * (k + hull + 1), ivec2(0), sz - 1);   // (past her line: the ground beside her)
+				float far = smoothstep(0.15, 0.3, lin_z(depth_tex, qb, inv, INV_PROJECTION_MATRIX) - z0);
+				float lb = pow(max(lum(texelFetch(screen_tex, qb, 0).rgb), 0.0), 1.0 / 3.0);
+				float dark = cel_hero_rim2.w > 0.5 ? 1.0 : 1.0 - smoothstep(cel_hero_rim2.x, cel_hero_rim2.y, lb);
+				rim = max(rim, outside * far * dark * side * cov);
+			}
+		}
+		rim *= (1.0 - ink) * (1.0 - smoothstep(0.55, 1.0, lum(c0) / max(lum(rim_c), 1e-5)));
+		if (cel_hero_rim2.w > 0.5) rim_c = vec3(1.0, 0.0, 1.0);
+	}
+	float a = ink + rim;
+	if (a < 0.02) discard;
+	ALBEDO = (ink_c * ink + rim_c * rim) / a;
+	ALPHA = a;
 }

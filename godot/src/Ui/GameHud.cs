@@ -68,11 +68,16 @@ public partial class GameHud : CanvasLayer
     Control bossSheen = null!;
     TextureRect bossGlint = null!;
     ShieldMark bossShield = null!;
-    static readonly Color BossRed = new("#a8141c");   // (judge r1, 18: the orb's crimson; #b0222a under the old whole-bar sheen read rose)
+    static readonly Color BossRed = new("#cf3626");   // (lane E r2: ui_language.json blocks.hostile, Oklab L .565 C .192 h 30; was #a8141c, measured L .47 with the foot shade)
     ColorRect bossFill = null!, bossTrail = null!, bossChannelEdge = null!;
     TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
     double sayT, annT, annLife;
+    /// <summary>The card up gives way to the fight's first blow (Announcement.YieldsToFight); annQuit: the seconds left of its
+    /// quick fade once a blow came (-1: none).</summary>
+    bool annYields;
+    double annQuit = -1;
+    const double AnnQuitFade = 0.25;
     ColorRect fade = null!, pull = null!;
     ShaderMaterial pullMat = null!;
     Label fadeCaption = null!, fadeSub = null!;
@@ -170,6 +175,8 @@ public partial class GameHud : CanvasLayer
         play.MoveChild(her.Edge, 0);
         // (debug --hurt-mul X: every blow on her times X, a shot of her life truly falling)
         if (Args.Has("hurt-mul")) SurvivorUnchained.Sim.Battle.HurtMul = Args.Num("hurt-mul", 1);
+        // (debug --hold-boss: a living boss stands still, faced as it was, and never strikes; Battle.HoldBoss)
+        if (Args.Has("hold-boss")) SurvivorUnchained.Sim.Battle.HoldBoss = true;
         BuildTally();
         BuildCorner();
         BuildEdges();
@@ -456,7 +463,7 @@ public partial class GameHud : CanvasLayer
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);
-        bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossFill = new ColorRect { Color = BossRed, Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
         // Shielded (judge r1, 7: the 2 px paler row read as a bevel): a steel plate laid over the upper half of the red,
         // as long as the life under it, a dark seam at its foot, a steel end on the fill's leading edge, a slow glint
@@ -474,7 +481,7 @@ public partial class GameHud : CanvasLayer
         bossSheen.AddChild(new ColorRect { Color = new Color("#e8edf3"), MouseFilter = Control.MouseFilterEnum.Ignore, AnchorLeft = 1, AnchorRight = 1, AnchorBottom = 1, OffsetLeft = -2, OffsetRight = 0, OffsetBottom = 0 });
         // (the bar's light: a pale line along its top and a shade along its foot, over the fill)
         track.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
-        track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
+        track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.1f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
         // An iron clamp over each end, the groove held between them (UI art's boss_groove.png has its own).
         if (!UiArt.Has("boss_groove"))
             foreach (float cx in new[] { -6f, w - 6 })
@@ -1478,6 +1485,34 @@ public partial class GameHud : CanvasLayer
         announce.Position = new Vector2(place == "lower-left" ? -150 : 360, 1080 * (place is "lower" or "lower-left" ? 0.66f : a.Kind == "zone" ? 0.16f : 0.2f));
         annT = 0;
         annLife = a.Seconds;
+        annYields = a.YieldsToFight;
+        annZone = a.Kind == "zone" && place == null;
+        annQuit = -1;
+        // (lane E lead 7) A boss's intro card stands just under the damage numbers' sheet, in play: a number struck under its
+        // line reads over it (a boss's "159" on "Fire" garbled both, 17 Nov). Every other card keeps the HUD's root, over all
+        // of play and shown while play is hidden (a film's titles).
+        var host = a.YieldsToFight ? play : root;
+        if (announce.GetParent() != host)
+        {
+            announce.Reparent(host, false);
+            if (host == play) play.MoveChild(announce, numberHost.GetIndex());
+        }
+    }
+
+    /// <summary>The card up is the zone's (lane E lead 10: the corner's place name, the same words, hides while it shows).</summary>
+    bool annZone;
+    double lastStruckAt = double.NegativeInfinity;
+    string? tipShownId;
+    /// <summary>The text rects of the cards up, in screen px (the boss card's, the tip's): damage numbers keep HudClear.Gap clear of them.</summary>
+    public static readonly List<Rect2> CardText = new();
+
+    /// <summary>A blow landed in the fight, dealt or taken (Game): a boss's intro card up fades out within 0.25 s.</summary>
+    public void FightStruck()
+    {
+        lastStruckAt = Time.GetTicksMsec() / 1000.0;
+        if (!annYields || annT >= annLife) return;
+        annYields = false;
+        annQuit = AnnQuitFade;
     }
 
     string bossMarks = "";
@@ -2044,7 +2079,7 @@ public partial class GameHud : CanvasLayer
     public void SayClear() { sayT = 0; subtitle.Modulate = Colors.Transparent; }
     public bool BannerUp => annT < annLife;
     /// <summary>A play banner still up when a film starts goes at once (it never reads over a shot).</summary>
-    public void ClearBanner() { annT = annLife; announce.Modulate = Colors.Transparent; }
+    public void ClearBanner() { annT = annLife; annQuit = -1; announce.Modulate = Colors.Transparent; }
     public bool PromptUp => promptBox.Visible;
     public bool TipUp => tipLine != null && IsInstanceValid(tipLine) && !tipLine.Held;
     /// <summary>A callout is up: a tip waits under it.</summary>
@@ -2160,12 +2195,19 @@ public partial class GameHud : CanvasLayer
         {
             annT += delta;
             float a = (float)Math.Clamp(Math.Min(annT / (annLife * 0.1), (annLife - annT) / (annLife * 0.2)), 0, 1);
+            if (annQuit >= 0)
+            {
+                annQuit -= delta;
+                a *= (float)Math.Clamp(annQuit / AnnQuitFade, 0, 1);
+                if (annQuit <= 0) { annT = annLife; annQuit = -1; a = 0; }
+            }
             announce.Modulate = Colors.White with { A = a };
         }
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        zoneName.Modulate = Colors.White with { A = annZone ? 1 - Math.Clamp(announce.Modulate.A, 0, 1) : 1 };
         TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 24;
         Rect2? header = null;
         if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
@@ -2188,7 +2230,11 @@ public partial class GameHud : CanvasLayer
         // comes in whole; below a boss's bar whenever there is one.
         if (tipLine != null && IsInstanceValid(tipLine))
         {
-            tipLine.Held = Banner != null || HoldTip;
+            // (lane E lead 9: an unlock tip not yet showing waits out a fight, HudClear.TipQuiet after the last blow)
+            bool showing = hintView != null && tipShownId == hintView.Id;
+            bool waits = hintView != null && hintView.Id.StartsWith("unlock.") && HudClear.TipWaits(Time.GetTicksMsec() / 1000.0, lastStruckAt, showing);
+            tipLine.Held = Banner != null || HoldTip || waits;
+            if (!tipLine.Held && hintView != null) tipShownId = hintView.Id;
             tipLine.Backed = bossBox.Visible;
             tipLine.Duck = Time.GetTicksMsec() < tipDuckUntil;
             tipLine.Position = new Vector2(960, TipY);
@@ -2196,6 +2242,27 @@ public partial class GameHud : CanvasLayer
             if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);
         }
         TipBottom = TipUp ? tipLine!.Area.End.Y : 0;
+        CardText.Clear();
+        if (Banner is { } bn)
+        {
+            // (lane E lead 10: the card's text block in screen px: its own children's rects, kicker to closing rule, wide as the text;
+            // the boss card stands under `play`, and BannerRect's min-size height stopped short of the subtitle's row)
+            float y0 = float.MaxValue, y1 = float.MinValue;
+            foreach (var ch in announce.GetChildren())
+                if (ch is Control c && c.Visible) { var g = c.GetGlobalRect(); y0 = Math.Min(y0, g.Position.Y); y1 = Math.Max(y1, g.End.Y); }
+            var off = announce.GlobalPosition - announce.Position;
+            // (the labels' min widths are a word's, not the line's: measure the lines themselves)
+            float tw = 0;
+            foreach (var lb in new[] { annTitle, annSub, annKicker })
+                if (lb.Visible && lb.Text.Length > 0)
+                    tw = Math.Max(tw, lb.GetThemeFont("font").GetStringSize(lb.Text, HorizontalAlignment.Left, -1, lb.GetThemeFontSize("font_size")).X);
+            tw = Math.Min(announce.Size.X, tw + 40);
+            var blk = new Rect2(announce.GlobalPosition.X + announce.Size.X / 2 - tw / 2, bn.Position.Y + off.Y, tw, bn.Size.Y);
+            if (y1 > y0) { blk.Position = new Vector2(blk.Position.X, y0); blk.Size = new Vector2(blk.Size.X, y1 - y0); }
+            else blk.Position += new Vector2(0, off.Y);
+            CardText.Add(blk);
+        }
+        if (TipUp && tipLine!.Modulate.A > 0.05f) CardText.Add(tipLine.Area);
         // The chain's heat flows toward its value; a new level has already flared it and filled it,
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));

@@ -287,9 +287,9 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         var thrown = evs.OfType<Ev.SpinLine>().Where(e => e.Phase == SpinLinePhase.Thrown).ToList();
         Assert.Equal(2, thrown.Count);
         Assert.Equal(evs.OfType<Ev.Spin>().Count(e => e.Phase == SpinPhase.Tick && e.Heavy), thrown.Count);
-        // 7 m by 1.2 m, grown with rank as Sunder's line is (rank 8: x1.28).
+        // the ring's radius (3.5 m x area; the line reaches the ring, 18 Nov) by 1.2 m, grown with rank (rank 8: x1.28).
         double k = Firing.AreaOf(b, w, 1);
-        Assert.All(thrown, l => { Assert.Equal(7 * k, Math.Sqrt((l.X1 - l.X0) * (l.X1 - l.X0) + (l.Z1 - l.Z0) * (l.Z1 - l.Z0)), 2); Assert.Equal(1.2 * k, l.Width, 2); });
+        Assert.All(thrown, l => { Assert.Equal(3.5 * k, Math.Sqrt((l.X1 - l.X0) * (l.X1 - l.X0) + (l.Z1 - l.Z0) * (l.Z1 - l.Z0)), 2); Assert.Equal(1.2 * k, l.Width, 2); });
         Assert.Equal(2, w.Lines.Count);
         // The far one on the lines is struck only by the split; the one behind her never.
         double farHp = es[1].Hp, behindHp = es[2].Hp;

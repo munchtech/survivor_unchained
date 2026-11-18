@@ -112,7 +112,10 @@ public sealed partial class Battle
             dx /= l; dz /= l;
             b.Shape = TelegraphShape.Line;
             b.X = from.X; b.Z = from.Z;
-            b.X1 = from.X + dx * k.Length * scale; b.Z1 = from.Z + dz * k.Length * scale;
+            // (its real length: the run stops at the first wall in it (RunCharge, in its 0.4 m steps), so the lane ends
+            // there, at the charger's front; lane E lead 9, judge 6 fix 7: a lane drawn past where she can go)
+            double run = ChargeReach(from, dx, dz, k.Length * scale);
+            b.X1 = from.X + dx * run; b.Z1 = from.Z + dz * run;
             b.Width = k.Width * scale; b.Angle = Math.Atan2(dz, dx);
             from.HoldUntil = Time + k.Windup;
             from.Vx = from.Vz = 0;
@@ -485,6 +488,23 @@ public sealed partial class Battle
             HurtPlayer(t.K.Hit * MaxHp * KitDamageMul, School.Physical, f.Def.Name, f, telegraphed: true);
             if (!p.Alive) return;
         }
+    }
+
+    /// <summary>How far a charger at its spot runs down (dx, dz) (a unit way) before the walls stop it, as RunCharge steps
+    /// it, plus its own radius (its front), at most full; never under 1 m.</summary>
+    double ChargeReach(Enemy e, double dx, double dz, double full)
+    {
+        if (Collision == null) return full;
+        double x = e.X, z = e.Z;
+        for (double done = 0; done < full - 1e-9;)
+        {
+            double s = Math.Min(0.4, full - done);
+            double nx = x + dx * s, nz = z + dz * s;
+            if (Collision.Resolve(ref nx, ref nz, e.Radius))
+                return Math.Clamp((nx - e.X) * dx + (nz - e.Z) * dz + e.Radius, 1, full);
+            x = nx; z = nz; done += s;
+        }
+        return full;
     }
 
     /// <summary>A charger runs its lane to its end in ChargeRun seconds, stopping at whatever stands in it.</summary>

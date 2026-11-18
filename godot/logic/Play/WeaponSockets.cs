@@ -250,6 +250,21 @@ public static class WeaponSockets
     /// scabbard clears B's wider hip and thigh: 17-40 mm of skin over the warden town clips (the outfit's push included),
     /// her left hand 7-9 mm off it in run and sprint town as A's 7-11 (lane A r14).</summary>
     public static readonly Vector3 HipBladeShaftB = new(0.16f, -0.78f, -0.62f);
+    /// <summary>The scabbard's axis (sheath point toward the tip, skeleton space at rest, her left hip; mirrored in X for
+    /// the right) while her hand holds the hilt in the town run and sprint, one for both bodies: 45 deg below horizontal
+    /// and 30 deg out from straight back, so it reads as a sword carried at the hip, not a cane (warden-move, 17 Nov: hung
+    /// 30-39 deg off vertical, from behind at the play camera it stood 78-86 deg on screen, its tip below her rear heel).
+    /// Her hand on the throat presses the hilt in: the piece turns about the throat (SheathHang.Throat), so the hand stays
+    /// on it, and the run's hand (tools/anim/clips/run.py HILT) turns by the same tilt about the same point. The turn
+    /// swings the pommel in toward her chest: at 37 deg out (first cut) it went 8 mm into B's left breast in the sprint
+    /// (nearest-vertex gap; A 7.9 mm clear); at 30 out the pommel clears by 18 mm (B) and 29 mm (A) over the town run and
+    /// sprint, the scabbard 17 mm off B's thigh, and from behind it stands ~68 deg on screen at pitch 60 (37 out: ~63).
+    /// Grid of axes, both bodies: survivorsunchained_inputs/scratch_coord12/aim_move/r16_pommel/grid_final.txt.
+    /// (warden-move r20, 17 Nov, judge r16: hung, it went back to HipBladeShaft(B) when her hand let go, and from behind it
+    /// stood as a cane from under her shield to her heel in the town's most-seen idle: it now hangs at this axis too, turned
+    /// about the same throat, the hang's sway on top (View/SheathSway), and the town idle's palm on the pommel turns with
+    /// it (tools/anim/clips/idle.py HILT_TILT). HipBladeShaft(B) stay the mount's axis the tilt starts from.)</summary>
+    public static readonly Vector3 HipBladeHeld = new(0.354f, -0.707f, -0.612f);
     /// <summary>The pommel's distance up the hilt from the sheath point (the chevalier sword), m.</summary>
     public const float HiltToPommel = 0.17f;
     /// <summary>B's hip bone (iliac crest) height at rest: where B's waist (11.7 cm half-width at 1.25 m) starts to flare to

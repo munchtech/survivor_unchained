@@ -288,7 +288,7 @@ public partial class SkillTip : Control
         if (L.Lines.Count > maxLines && said.Add(v.Skill + "|line")) GD.Print($"SKILLTIP OVERFLOW {v.Skill} line={L.Lines.Count}");
         if (L.Lines.Count > 0) { L.LineBase = y + 10 + L.LineSize; y = L.LineBase + (L.Lines.Count - 1) * L.LinePitch; }
         L.RuleY = y + 12;
-        L.RowBase = L.RuleY + (compact ? 6 : 3) + L.RowSize;
+        L.RowBase = L.RuleY + (compact ? 6 : 3) + 1 + L.RowSize;   // (+1: the rule-to-rows gap measured 7-8 px, not 9)
         var items = v.Rows.Select(r => (r.Label, r.Value, Gold: false)).ToList();
         if (v.Cost is { } c) items.Add((c.Label, c.Value, true));
         if (!compact)

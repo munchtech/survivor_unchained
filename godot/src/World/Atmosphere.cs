@@ -335,7 +335,7 @@ public partial class Atmosphere : Node3D
                 Sky = p.Sky with { Top = H("skytop", p.Sky.Top), Horizon = H("skyhor", p.Sky.Horizon), Glow = H("skyglow", p.Sky.Glow) },
                 HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),
                 KeyIntensity = T("key", p.KeyIntensity), KeyElevation = T("elevation", p.KeyElevation), KeyAzimuth = T("azimuth", p.KeyAzimuth),
-                ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
+                ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), EmberColor = H("emberc", p.EmberColor), EmberReach = T("ereach", p.EmberReach), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
                 FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), CrowdFill = T("crowdfill", p.CrowdFill), RiverLight = T("river", p.RiverLight),
                 RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
                 // (S2b-N3: her pool, the moon's give, and the canopy's dapple, for a sweep in one build: pool=a/b/..., give=a/b/c/d)
@@ -669,6 +669,7 @@ public partial class Atmosphere : Node3D
         var anchor = hp != null ? new Color((float)hp[3] / 255f, (float)hp[4] / 255f, (float)hp[5] / 255f).SrgbToLinear() * (float)hp[2] : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
         HeroLine(hp, toFoot != Vector2.Zero, anchor);   // (L1 lead 20, HER5) her line: values 8, 9
+        HeroDen.Apply(CelRigs && cam == null ? (Tune != null && Tune.TryGetValue("hden", out var hdt) ? hdt.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : p.HeroDen) : null, hp != null && toFoot != Vector2.Zero);   // (demo-look r2 her: her shadow, line, hair and steps in the den)
         // (L1 lead 19, HER3; CEL_HERO_ARM) her held pieces as bodies: row values 10-19 = the body's level, r, g, b, its side edge, the
         // warm light's level, r, g, b, the least screen width in px. A shorter row: both zero, her shield and blade as they were.
         var ha = hp is { Length: >= 20 } ? hp : null;

@@ -43,6 +43,7 @@ public sealed partial class Battle
         o.Hp -= dmg;
         HoldAtFloor(o);
         o.Flash = 1;
+        if (o.Boss) o.FlashAt = Time;   // (bosses only, as in Battle's own hits: lane E lead 7)
         Events.Emit(new Ev.Hit { X = o.X, Z = o.Z, Amount = dmg, Crit = false, School = school, Target = o.Id });
         if (from != null && o.Target != from.Id && Rng.Next() < 0.6) o.Target = from.Id;
         if (o.Hp <= 0) KillEnemy(o, false, null);
