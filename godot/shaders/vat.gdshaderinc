@@ -290,7 +290,15 @@ float crowd_edge(float rim) {
 // column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
 // strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
 // y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
-#define DEN_BOSS_MSTK vec4(0.22, 0.07, 0.65, 2.0)
+#define DEN_BOSS_MSTK vec4(0.50, 0.18, 0.88, 2.0)
+// (lead 8 r6: the mane in CLUMPS, not wedges (l8g5: wedges of a third of a column in rows, near-black between, read as hatching):
+// vat_den_clump on DEN_BOSS_MSTK's columns, twice as wide and long, waved DEN_BOSS_CLUMP_W (x columns, y per unit of z) so no
+// row runs straight; each clump full width DEN_BOSS_CLUMP.x of its column from the root back to .y of its length, then tapered to
+// its tip; its L the row's x (1 +- .w/2 a clump), darker toward the root (.z on, DEN_BOSS_CLUMP_V.x at most: under the clump in
+// front of it), lighter (+ .y) in a streak .z wide on its upper side (.w off its middle): the lit face. Dark only in the gaps)
+#define DEN_BOSS_CLUMP vec4(0.43, 0.5, 0.82, 0.24)
+#define DEN_BOSS_CLUMP_V vec4(0.35, 0.10, 0.12, 0.15)
+#define DEN_BOSS_CLUMP_W vec2(0.25, 14.0)
 #define DEN_BOSS_MANE_GAP vec3(0.25, 0.035, 30.0)
 #define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.5, 0.5)
 #define DEN_BOSS_MANE_TIP_H 75.0
@@ -370,6 +378,14 @@ float vat_den_tooth(float c_t, float c_tp, vec2 c_pp) {
 	return c_t > c_tp ? pow(clamp((1.0 - c_t) / (1.0 - c_tp), 0.0, 1.0), c_pp.x) : pow(clamp(c_t / c_tp, 0.0, 1.0), c_pp.y);
 }
 float vat_den_tip(float c_q) { return pow(max(1.0 - abs(2.0 * c_q - 1.0), 0.0), DEN_FUR_TIP); }
+// (lead 8 r6: the mane's clump, on vat_den_stroke's cells: full width DEN_BOSS_CLUMP.x from the root back to .y of its length,
+// then tapered to a point; x 1 inside a drawn clump, y its place along it (1 the root, 0 the tip), z its cell's hash, w its column)
+vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s) {
+	float c_k = floor(c_q.x);
+	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
+	float c_t = fract(c_v), c_h = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
+	return vec4(step(abs(fract(c_q.x) - 0.5), DEN_BOSS_CLUMP.x * pow(min(c_t / DEN_BOSS_CLUMP.y, 1.0), 0.6)) * step(1.0 - c_sh, c_h), c_t, c_h, c_k);
+}
 // (lead 8 r4: a fur stroke on a strip of columns, c_q.x across them in column widths, c_q.y along them in stroke lengths (the
 // root toward +): each drawn stroke (c_sh of the cells) widest at its root, tapered back to a point; x 1 inside a drawn stroke,
 // y its place along it (1 the root, 0 the tip), z its cell's hash, w its column)
@@ -466,10 +482,15 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_rd = vat_den_cut(c_r.z - c_zA + DEN_BOSS_MANE_SHW, 0.0) * (1.0 - c_ra);
 		float c_rs = max(1.0 - c_ra - c_rd, 0.0);
 		// (r4: its strands; DEN_BOSS_MSTK)
-		vec4 c_ms = vat_den_stroke(vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x, c_r.z / DEN_BOSS_MSTK.y), DEN_BOSS_MSTK.z, 13.0);
+		vec2 c_mq = vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x + DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y),
+			c_r.z / DEN_BOSS_MSTK.y);
+		vec4 c_ms = vat_den_clump(c_mq, DEN_BOSS_MSTK.z, 13.0);
+		// (r6: a clump's value; DEN_BOSS_CLUMP_V)
+		float c_mv = (1.0 + DEN_BOSS_CLUMP.w * (vat_den_hash(c_ms.z * 91.0, 21.0) - 0.5)) * (1.0 - DEN_BOSS_CLUMP_V.x * smoothstep(DEN_BOSS_CLUMP.z, 1.0, c_ms.y))
+			* (1.0 + DEN_BOSS_CLUMP_V.y * (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(fract(c_mq.x) - 0.5 + DEN_BOSS_CLUMP_V.w))));
 		float c_mg = (1.0 - c_ms.x) * (c_ra + c_rs);
 		float c_mt = c_ms.x * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z);
-		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
+		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x * c_mv + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
 			DEN_BOSS_MANE_TIP.x, c_mt);
 		vec2 c_mab = mix((vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs) * c_ms.x
 			+ vat_den_ab(DEN_BOSS_MANE_GAP.y, DEN_BOSS_MANE_GAP.z) * c_mg + vat_den_ab(DEN_BOSS_MANE_DK.y, DEN_BOSS_MANE_DK.z) * c_rd,
