@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.54, 0.105, 30.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.50, 0.12, 29.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -251,7 +251,7 @@ float crowd_edge(float rim) {
 // strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
 #define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
-#define DEN_BOSS_MANE_SH vec3(0.47, 0.095, 27.0)
+#define DEN_BOSS_MANE_SH vec3(0.45, 0.105, 27.0)
 #define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
 #define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
@@ -300,8 +300,8 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_CLUMP_V vec4(0.35, 0.10, 0.12, 0.15)
 #define DEN_BOSS_CLUMP_W vec2(0.25, 14.0)
 #define DEN_BOSS_CLUMP_S vec4(0.12, 0.45, 0.25, 0.35)
-#define DEN_BOSS_MANE_GAP vec3(0.25, 0.035, 30.0)
-#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.3, 0.5)
+#define DEN_BOSS_MANE_GAP vec3(0.22, 0.03, 30.0)
+#define DEN_BOSS_MANE_TIP vec4(0.70, 0.04, 0.22, 1.0)
 #define DEN_BOSS_MANE_TIP_H 75.0
 #define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.5, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
 #define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
@@ -391,7 +391,7 @@ vec4 vat_den_clump1(float c_x, float c_t, float c_h, float c_hb, float c_fw) {
 	float c_o = c_x - DEN_BOSS_CLUMP_S.x * (2.0 * c_hb - 1.0) * (1.0 - c_t) * (1.0 - c_t);
 	return vec4(1.0 - smoothstep(c_w - c_fw, c_w + c_fw, abs(c_o)), c_t, c_h, c_o);
 }
-vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s) {
+vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s, out float c_tok) {
 	float c_k = floor(c_q.x), c_x = fract(c_q.x) - 0.5;
 	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
 	float c_t = fract(c_v), c_e = DEN_BOSS_CLUMP_S.w;
@@ -401,6 +401,9 @@ vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s) {
 	c_a.x *= step(1.0 - c_e, c_t) * step(1.0 - c_sh, c_ha);
 	vec4 c_b = vat_den_clump1(c_x, (c_t + c_e) / (1.0 + c_e), c_hb, vat_den_hash(c_k * 7.0 + c_kv, c_s + 3.0), c_fw);
 	c_b.x *= step(1.0 - c_sh, c_hb);
+	// (r8: c_tok 0 where a tail is drawn over the next clump's root, never its tip's cream there: r7's tails (t' under .26) went
+	// cream over the next root, flat beige patches across the mane and its lower edge; the tip is pale over the gap only)
+	c_tok = c_a.x > 0.5 ? 1.0 - c_b.x : 1.0;
 	return c_a.x > 0.5 ? c_a : vec4(max(c_a.x, c_b.x), c_b.yzw);
 }
 // (lead 8 r4: a fur stroke on a strip of columns, c_q.x across them in column widths, c_q.y along them in stroke lengths (the
@@ -467,7 +470,14 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 #endif
 		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
 		float c_bs = vat_den_stroke(vec2(c_r.x / DEN_BOSS_STROKE.x, c_r.z / DEN_BOSS_STROKE.y), DEN_BOSS_STROKE.w, 9.0).x * c_brow;
-		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark) - DEN_BOSS_BROW_STK * c_bs;
+		// (lead 8 r8, the ear ladder: den_head's planes (on since lead 4) were mixed in after all of this, so their straight cuts
+		// (z .775, y .875) painted over the muzzle's locks and the cheek's and brow's strokes (none read at 1:1), and their DARK took
+		// the head rings' cards, which the r3/r4 rule above kept off c_dark only: the column of dark dashes behind the ear (l8g8d:
+		// those pixels are the boss's cards, painted the planes' dark). Now the planes (lit, shade) go under the strokes, and the
+		// dark is c_dark: the muzzle's locks, the ear tips, never a card)
+		float c_hd = c_head * step(0.5, den_head);
+		c_l = mix(c_l, mix(DEN_HEAD_SHADE, DEN_HEAD_LIT.x, vat_den_cut(c_r.w, DEN_HEAD_LIT.y)), c_hd);
+		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow * (1.0 - c_hd)), DEN_BOSS_HEAD.w, c_dark) - DEN_BOSS_BROW_STK * c_bs;
 		// (r4: the cheek's ruff; DEN_BOSS_CHEEK)
 		vec4 c_cs = vat_den_stroke(vec2((c_r.y + DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z)) / DEN_BOSS_CHEEK.x, c_r.z / DEN_BOSS_CHEEK.y), DEN_BOSS_CHEEK.z, 16.0);
 		float c_yk = (c_cs.w + 0.5) * DEN_BOSS_CHEEK.x - DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z);
@@ -475,9 +485,6 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 			* step(c_yk, DEN_BOSS_CHEEK_Y.y) * step(DEN_BOSS_CHEEK_Y.z - DEN_BOSS_CHEEK_Y.w * vat_den_hash(c_cs.w, 19.0), c_r.z);
 		c_l = mix(c_l, DEN_BOSS_CHEEK_C.x, c_ck);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_CHEEK_C.y, DEN_BOSS_CHEEK_C.z), c_ck);
-		vec3 c_hp = vat_den_head(c_r);
-		float c_hd = (c_hp.x + c_hp.y + c_hp.z) * step(0.5, den_head);
-		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
 		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back) + c_stk * DEN_BOSS_STROKE.z * (1.0 - 2.0 * c_bl);
 		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BACK_SH.y, DEN_BOSS_BACK_SH.z), vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_bl), c_back);
 		// (lead 7: the mane's two rows of locks on the rest pose; DEN_BOSS_MANE_*)
@@ -501,20 +508,14 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		// (r4: its strands; DEN_BOSS_MSTK)
 		vec2 c_mq = vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x + DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y),
 			c_r.z / DEN_BOSS_MSTK.y);
-		vec4 c_ms = vat_den_clump(c_mq, DEN_BOSS_MSTK.z, 13.0);
+		float c_tok;
+		vec4 c_ms = vat_den_clump(c_mq, DEN_BOSS_MSTK.z, 13.0, c_tok);
 		float c_mi = c_ms.x;
-#ifdef VAT_CUT
-		// (lead 8 r7, the ear ladder: a card strand is one colour, its root's (DEN_BOSS_CARD), so a strand rooted in a clump's gap
-		// was a near-black sliver, and the ring of them round the neck behind the ear, edge-on, a column of dark dashes (l8g6;
-		// l8g7d proved it: not the light, not the body's line, cards flat-lit stayed (27,14,9), the gap's paint). A strand takes
-		// its root cell's clump, never the gap; its cream tip only if rooted inside the clump)
-		c_ms.x = 1.0;
-#endif
 		// (r6: a clump's value; DEN_BOSS_CLUMP_V)
 		float c_mv = (1.0 + DEN_BOSS_CLUMP.w * (vat_den_hash(c_ms.z * 91.0, 21.0) - 0.5)) * (1.0 - DEN_BOSS_CLUMP_V.x * smoothstep(DEN_BOSS_CLUMP.z, 1.0, c_ms.y))
 			* (1.0 + DEN_BOSS_CLUMP_V.y * (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_ms.w + DEN_BOSS_CLUMP_V.w))));
 		float c_mg = (1.0 - c_ms.x) * (c_ra + c_rs);
-		float c_mt = c_mi * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z);
+		float c_mt = c_mi * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z) * c_tok;
 		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x * c_mv + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
 			DEN_BOSS_MANE_TIP.x, c_mt);
 		vec2 c_mab = mix((vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs) * c_ms.x
