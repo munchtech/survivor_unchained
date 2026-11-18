@@ -282,6 +282,14 @@ float crowd_edge(float rim) {
 // the back's strokes, see c_stk)
 #define DEN_BOSS_MUZ vec4(0.70, 17.0, 0.085, 0.05)   // (r7: 11 locks .06 deep read as a straight edge at 1:1)
 #define DEN_BOSS_STROKE vec4(0.016, 0.10, 0.08, 0.55)
+// (r12, judge 5: the back a flat plate. Now fur clumps (vat_den_clump) on columns round the torso's axis (y DEN_BOSS_BFUR_R.w),
+// slanting back and down the flank (DEN_BOSS_BFUR: x a column in radians, y a clump's length, z the share drawn, w the slant per
+// unit of z), the mirror broken per side; solid to .y of the stripe's angle (DEN_BOSS_BFUR_R.x radians at its widest), drawn
+// clumps out to .z (its edge their tips); L (DEN_BOSS_BFUR_L) x between clumps, y a clump, z its pale strand, w the fall to the flank)
+#define DEN_BOSS_BFUR vec4(0.32, 0.12, 0.80, 2.4)
+#define DEN_BOSS_BFUR_R vec4(0.55, 0.62, 1.35, 0.62)
+#define DEN_BOSS_BFUR_L vec4(0.45, 0.57, 0.68, 0.08)   // (lead 9: .37/.49/.60/.12 shot back L50 .29 C .017, target .36/.023)
+#define DEN_BOSS_BFUR_C vec4(0.034, 274.0, 0.034, 284.0)   // the back's gaps and clumps C, h (lead 9: at .030/.028 C read .017)
 // (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
 // STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
 // the neck, y a stroke's length in z, z the share of cells drawn, w the flow, radians down the neck a unit of z back), each in
@@ -317,7 +325,7 @@ float crowd_edge(float rim) {
 // (r11: the MUZZLE pale grey (den_boss: a pale grey-beige bridge, dark nose), was c_dark's .28 with the ear tips: DEN_BOSS_MUZ_C
 // x its top's L (rest normal's y past .35), y its sides', z the nose's and the jaw's under it, w the nose's z; DEN_BOSS_MUZ_AB
 // its chroma and hue; the ear tips stay DEN_BOSS_HEAD.w; never a card, as c_dark)
-#define DEN_BOSS_MUZ_C vec4(0.58, 0.44, 0.18, 0.826)
+#define DEN_BOSS_MUZ_C vec4(0.66, 0.50, 0.16, 0.826)   // (r12: was .58/.44/.18: barely read at 1:1)
 #define DEN_BOSS_MUZ_AB vec2(0.022, 70.0)
 #define DEN_BOSS_MANE_GAP vec3(0.28, 0.03, 35.0)
 #define DEN_BOSS_MANE_TIP vec4(0.68, 0.045, 0.15, 0.35)
@@ -334,7 +342,7 @@ float crowd_edge(float rim) {
 // the mesh only, paler .50 and fewer)
 // (r10: l8g9's .24/.32/.14 read near-black at 1:1, the head one dark blob, body L50 .22; its pale strands in the tips' cream
 // read olive on the dark: now charcoal .28/.40, strands .18 lighter at DEN_BOSS_HFUR_C (chroma x, hue y), a warm grey)
-#define DEN_BOSS_HFUR vec4(0.33, 0.46, 0.16, 0.95)
+#define DEN_BOSS_HFUR vec4(0.33, 0.46, 0.16, 0.95)   // (r12 tried .31/.43/.14: the ear ladder came back, 123/204 dark px)
 #define DEN_BOSS_HFUR_C vec2(0.025, 65.0)
 #define DEN_BOSS_HFUR_Q vec4(0.30, 0.12, 0.80, 0.55)
 #define DEN_BOSS_BROW_STK 0.05
@@ -481,7 +489,17 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_kb = floor(c_zb);
 		float c_edge = c_sw * (1.0 - DEN_BOSS_FUR.y) + DEN_BOSS_FUR.z * c_env * (0.5 + 0.7 * vat_den_hash(c_kb, 2.0))
 			* vat_den_tooth(c_zb - c_kb, 0.15 + 0.2 * vat_den_hash(c_kb, 1.0), vec2(1.7, 1.3));
-		float c_back = (1.0 - vat_den_cut(abs(c_r.x) - c_edge, 0.0)) * c_up * step(DEN_BOSS_SPINE.x, c_r.z) * step(c_r.z, DEN_BOSS_SPINE.y);
+		float c_ba = abs(atan(c_r.x, c_r.y - DEN_BOSS_BFUR_R.w)), c_bsd = step(0.0, c_r.x);
+		vec2 c_bq = vec2((c_ba + DEN_BOSS_BFUR.w * c_r.z) / DEN_BOSS_BFUR.x + 0.25 * sin(c_r.z * 9.0 + 2.0 * c_bsd) + 0.43 * c_bsd, c_r.z / DEN_BOSS_BFUR.y + 0.31 * c_bsd);
+		float c_btk;
+		vec4 c_bc = vat_den_clump(c_bq, DEN_BOSS_BFUR.z, 31.0 + 5.0 * c_bsd, vec4(0.36, 0.55, 0.0, 0.0), vec4(0.15, 0.9, 0.12, 0.30), 0.15, c_btk);
+		float c_bsa = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_BFUR_R.x;
+		float c_back = max((1.0 - vat_den_cut(c_ba - c_bsa * DEN_BOSS_BFUR_R.y, 0.0)) * vat_den_cut(c_r.w, 0.0),
+			(1.0 - vat_den_cut(c_ba - c_bsa * DEN_BOSS_BFUR_R.z, 0.0)) * vat_den_cut(c_r.w, -0.2) * c_bc.x) * step(DEN_BOSS_SPINE.x, c_r.z) * step(c_r.z, DEN_BOSS_SPINE.y);
+		float c_bfall = 1.0 - DEN_BOSS_BFUR_L.w * clamp(c_ba / max(c_bsa, 1e-3), 0.0, 1.4);
+		float c_bstr = c_bc.x * step(0.55, vat_den_hash(c_bc.z * 53.0, 34.0)) * (1.0 - smoothstep(0.0, 0.12, abs(c_bc.w + 0.12))) * step(c_bc.y, 0.9);
+		float c_blc = mix(DEN_BOSS_BFUR_L.y * (1.0 + 0.2 * (vat_den_hash(c_bc.z * 91.0, 33.0) - 0.5)) * (1.0 - 0.25 * smoothstep(0.6, 1.0, c_bc.y)), DEN_BOSS_BFUR_L.z, c_bstr) * c_bfall;
+		float c_blb = mix(DEN_BOSS_BFUR_L.x * c_bfall, c_blc, c_bc.x);
 		float c_zc = c_r.z * DEN_BOSS_FUR.w + 0.5 + 0.3 * sin(c_r.z * 6.1 + 2.0);
 		float c_kc = floor(c_zc);
 		float c_core = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_CORE * (0.75 + 0.45 * vat_den_hash(c_kc, 4.0))
@@ -543,8 +561,9 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 #endif
 		c_l = mix(c_l, DEN_BOSS_CHEEK_C.x, c_ck);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_CHEEK_C.y, DEN_BOSS_CHEEK_C.z), c_ck);
-		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back) + c_stk * DEN_BOSS_STROKE.z * (1.0 - 2.0 * c_bl);
-		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BACK_SH.y, DEN_BOSS_BACK_SH.z), vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_bl), c_back);
+		// (r12: the back's clumps; DEN_BOSS_BFUR. Was the stripe in two steps, short strokes on it: a plate at 1:1)
+		c_l = mix(c_l, c_blb, c_back);
+		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BFUR_C.x, DEN_BOSS_BFUR_C.y), vat_den_ab(DEN_BOSS_BFUR_C.z, DEN_BOSS_BFUR_C.w), c_bc.x), c_back);
 		// (lead 7: the mane's two rows of locks on the rest pose; DEN_BOSS_MANE_*)
 		float c_a = abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS));
 		float c_u = (c_a - DEN_BOSS_MANE_LOCK.y * (DEN_BOSS_MANE_LOCK.z - c_r.z)) * DEN_BOSS_MANE_LOCK.x / 6.2831853;
