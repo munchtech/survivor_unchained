@@ -46,7 +46,9 @@ public static class FissureMarks
                 bool near = false;
                 foreach (var f in forks) near |= MathF.Abs(f.At - at) < apart + 0.5f * chunk[5];
                 if (!near) break;
-                at = Math.Clamp(at + (k % 2 == 0 ? 1 : -2) * (apart + 0.5f * chunk[5]), c0 + i * bin, c0 + (i + 1) * bin);
+                // (lead 9) half a chunk inside its stretch, so two never run into one hole
+                float edge = Math.Min(0.5f * chunk[5], 0.25f * bin);
+                at = Math.Clamp(at + (k % 2 == 0 ? 1 : -2) * (apart + 0.5f * chunk[5]), c0 + i * bin + edge, c0 + (i + 1) * bin - edge);
             }
             float w = chunk[2] + (chunk[3] - chunk[2]) * r();
             w = Math.Clamp(MathF.Max(w, 1.5f * GapAt(at, taper, gap)), chunk[2], chunk[3]);
@@ -54,6 +56,12 @@ public static class FissureMarks
         }
         return (forks, chunks);
     }
+
+    /// <summary>(lane E lead 9, 17 Nov; judge 6: "it spans 380 px, about 57 px past the storm's ring") How far the drawn
+    /// line runs, at most: reach[0] x the storm's ring radius `ringR` less reach[1] m, never past `len` (the sim's line,
+    /// clipped); reach[0] 0 or no ring: `len`. View only.</summary>
+    public static float Reach(float len, float ringR, float[] reach) =>
+        reach.Length == 0 || reach[0] <= 0 || ringR <= 0 ? len : Math.Min(len, Math.Max(0, reach[0] * ringR - (reach.Length > 1 ? reach[1] : 0)));
 
     /// <summary>`n` marks, but no more than fit `span` px at `each` px apart.</summary>
     static int Fit(int n, float span, float each) => Math.Max(0, Math.Min(n, (int)MathF.Floor(span / Math.Max(each, 1))));

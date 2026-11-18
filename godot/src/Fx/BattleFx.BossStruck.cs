@@ -24,7 +24,11 @@ public partial class BattleFx
     // (960, 399) against the edge at (960, 430)); from the play camera a metre up lifts 43 px: 0.72 m lower puts its centre on
     // the edge. px across the quad: the star's long spike reaches the quad's edge and the rest 0.5-0.85 of it, so about 0.85 x
     // that across, 37 px; its spikes' roots 6 px, about 4.3 px drawn after the stroke's shape)
-    const float BossSparkY = 1.63f, BossSparkIn = 0.45f, BossSparkPx = 44f, BossSparkRootPx = 6f, BossSparkLate = 0.6f;
+    // (lane E lead 9, judge 6: "26x26 px, core C .044"; 32-44 px, core C <= .04 wanted) the quad 62 px (44 drew 26 px
+    // across: the spikes reach 0.5-0.85 of the quad less their pointed tips), its core a paler cream than the school's
+    // #fbf1d8 (which reads C .044-.049 over the boss): #fff6e6, Oklab L .976 C .023 h 82
+    const float BossSparkY = 1.63f, BossSparkIn = 0.45f, BossSparkPx = 62f, BossSparkRootPx = 6f, BossSparkLate = 0.6f;
+    const string BossSparkCore = "#fff6e6";
 
     /// <summary>A den boss's struck flash this frame (CrowdView.BossPulse): 1 at its peak, BossPulseHalf after, else 0.</summary>
     float BossPulseOn(int id)
@@ -46,6 +50,11 @@ public partial class BattleFx
         // The P7 star, camera-facing over everything (its top shader), 4-6 spikes; stepped by its own age from the frame it first
         // draws (StepP7 runs after the hit's frame has begun, so its first Age is that frame's dt).
         var s = P7StarPx(at, BossSparkPx, 4 + (int)(R() * 2.99f), BossSparkRootPx, 0, 2, 2, true);
+        if (FxCel.Lang["Physical"] is { } ph)
+        {
+            var c = SurvivorUnchained.Look.FxLanguage.Linear(BossSparkCore, FxAfter.On ? null : ph.Core.Emit);
+            s.M.SetShaderParameter("fx_core", new Vector3(c[0], c[1], c[2]) * (float)SurvivorUnchained.Args.Num("fx-gain", 1f));
+        }
         float half = s.N.Scale.X, first = -1;
         s.Life = 0.15f;
         s.Step = q =>

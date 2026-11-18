@@ -303,7 +303,7 @@ public class FxP7Tests
                 foreach (var c in chunks)
                 {
                     Assert.InRange(c.Wide, 6, 10);
-                    Assert.InRange(c.At, 0.3f * run, 0.9f * run);
+                    Assert.InRange(c.At, 0.5f * run, 0.9f * run);
                     Assert.True(c.Wide >= Math.Min(10, 1.5f * FissureMarks.GapAt(c.At, run, gap)) - 1e-3, "a chunk stands out of the gap");
                 }
             }
@@ -342,6 +342,38 @@ public class FxP7Tests
         for (int i = 2; i < k.Length; i += 2)
             if (a <= k[i]) return k[i - 1] + (k[i + 1] - k[i - 1]) * (a - k[i - 2]) / (k[i] - k[i - 2]);
         return k[^1];
+    }
+
+    /// <summary>(lane E lead 9, judge 6: "380 px, about 57 px past the storm's ring"; "2-3 broken chunks 6-10 px", one
+    /// drawn; origin 20-30 px ahead of her boot; the tail over a root) The drawn run ends at the storm's ring (never past the
+    /// sim's clipped line, the whole line when no ring); on the den run that now ends there (about 345 px after the start at
+    /// the play camera) 2-3 chunks lie where the gap is narrow enough for a 6-10 px hole to stand out; the start clears her
+    /// boot; the floor mask passes nothing over 8 cm.</summary>
+    [Fact]
+    public void TheFissureEndsAtTheRingWithItsChunks()
+    {
+        var p = Real();
+        var reach = p.All("storm.line.reach");
+        Assert.Equal(5.22f, FissureMarks.Reach(10.45f, 5.22f, reach), 0.001f);
+        Assert.Equal(4.0f, FissureMarks.Reach(4.0f, 5.22f, reach), 0.001f);
+        Assert.Equal(10.45f, FissureMarks.Reach(10.45f, 0f, reach), 0.001f);
+        Assert.Equal(10.45f, FissureMarks.Reach(10.45f, 5.22f, [0f, 0f]), 0.001f);
+        float[] fk = p.All("storm.line.fork"), ck = p.All("storm.line.chunk"), gap = p.All("storm.line.gap");
+        var rng = new Random(11);
+        foreach (float run in new[] { 300f, 345f, 400f })
+            for (int t = 0; t < 300; t++)
+            {
+                var (_, chunks) = FissureMarks.Pick(run, run, fk, ck, gap, () => (float)rng.NextDouble());
+                Assert.InRange(chunks.Length, 2, 3);
+                foreach (var c in chunks)
+                {
+                    Assert.True(FissureMarks.GapAt(c.At, run, gap) <= 0.7f * c.Wide, "a chunk's hole stands out of the gap");
+                    Assert.True(c.At <= run - 20, "a chunk clear of the ring's arcs at the tip");
+                }
+                for (int i = 1; i < chunks.Length; i++) Assert.True(chunks[i].At - chunks[i - 1].At >= 12, "chunks broken apart along the run");
+            }
+        Assert.InRange(p.All("storm.line.start")[0], 38, 50);
+        Assert.True(p["storm.line.floor"] + p["storm.line.lift"] <= 0.08f + 1e-4f, "the floor mask passes nothing over 8 cm");
     }
 
     [Fact]

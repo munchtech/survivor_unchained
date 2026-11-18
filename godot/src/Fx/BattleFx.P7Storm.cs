@@ -373,6 +373,15 @@ public partial class BattleFx
                 to = from + dir * len;
             }
         }
+        // (lane E lead 9, judge 6) and no further than the storm's ring (storm.line.reach): the ring's arcs over its tip
+        float rr = SurvivorUnchained.Look.FissureMarks.Reach(len, p7StormR, P7D.All("storm.line.reach"));
+        if (rr < len)
+        {
+            p7ClipTxt += $", to the ring {rr:F2} m (ring {p7StormR:F2} m)";
+            len = rr;
+            if (len < 0.3f) return;
+            to = from + dir * len;
+        }
         var side = new Vector2(-dir.Y, dir.X);
         int n = Math.Clamp((int)Mathf.Round(len / 1.0f), 4, 8);
         const int t0 = 2;
