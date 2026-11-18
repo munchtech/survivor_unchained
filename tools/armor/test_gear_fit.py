@@ -632,3 +632,27 @@ def test_trim_rides_its_steel():
         for i in range(3):
             gf._TRIS.pop((_Bd.id, i), None)
     assert gf.trim_ride_rule(_Bd, {"p.gold": g_ev}, law, "close") == {}    # a tier missing a mesh's eval: nothing
+
+
+def test_units_import_as_their_a_source():
+    """Every built unit on B imports with its A source's mesh settings (no generated LODs: Godot's LOD simplified the
+    steel and its riding gold trim apart at the Look camera, body lead 9, 17 Nov). Written by gear_fit build and
+    `gear_fit.py imports`; a unit Godot has not imported yet has no .import to hold it."""
+    import json
+    import os
+    sys.path.insert(0, os.path.join(gf.REPO, "tools", "body"))
+    import publish_p1
+    folder = os.path.join(gf.OUT, "body_p1")
+    if not os.path.isdir(folder):
+        return
+    bad = []
+    for f in sorted(os.listdir(folder)):
+        imp = os.path.join(folder, f + ".import")
+        if not f.endswith(".gltf") or not os.path.exists(imp):
+            continue
+        with open(os.path.join(folder, f), encoding="utf-8") as fh:
+            src = json.loads(fh.read())["asset"]["extras"]["gear_fit"]["a_source"]
+        want = publish_p1.import_params(a_import=os.path.join(gf.REPO, src) + ".import")
+        have = dict(ln.rstrip("\n").partition("=")[::2] for ln in open(imp, encoding="utf-8") if "=" in ln)
+        bad += [f"{f} {k}={have.get(k)} (A {v})" for k, v in want.items() if have.get(k) != v]
+    assert not bad, bad

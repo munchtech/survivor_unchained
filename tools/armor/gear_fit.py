@@ -2196,6 +2196,26 @@ def import_stale(gltf_path, godot_dir):
     return None
 
 
+def unit_import_params(gltf_path):
+    """A built unit imports as its A source does (the keys tools/body/publish_p1.py IMPORT_KEYS carries for B's body):
+    above all no generated LODs. With Godot's default (generate_lods on) the gear drew its decimated LOD at the Look
+    camera, the steel and the gold trim riding 0.3-0.6 mm on it simplified apart, and the trim came through the steel
+    in jagged bronze patches (body lead 9, 17 Nov: the flip's look-key rim blotches on B; A's outfits import with LODs
+    off). Returns the keys changed, or None when Godot has not written the unit's .import yet (rerun `imports`)."""
+    sys.path.insert(0, os.path.join(REPO, "tools", "body"))
+    import publish_p1
+    imp = gltf_path + ".import"
+    if not os.path.exists(imp):
+        return None
+    with open(gltf_path, encoding="utf-8") as f:
+        head = json.loads(f.read())
+    src = (((head.get("asset") or {}).get("extras") or {}).get("gear_fit") or {}).get("a_source")
+    if not src:
+        return []
+    a_imp = (src if os.path.isabs(src) else os.path.join(REPO, src)) + ".import"
+    return publish_p1.write_import(imp, publish_p1.import_params(a_import=a_imp))
+
+
 def imports_cmd(folder, stamp=False):
     name = os.path.basename(os.path.normpath(folder))
     if name.startswith("_"):
@@ -2209,6 +2229,18 @@ def imports_cmd(folder, stamp=False):
         for f in todo:
             stamp_file(os.path.join(folder, f))
         print(f"gear imports: stamped {len(todo)} of {len(files)} gltf")
+    # (each unit's import settings as its A source's: no generated LODs; a changed .import reimports it)
+    unset, set_ = [], []
+    for f in files:
+        ch = unit_import_params(os.path.join(folder, f))
+        if ch is None:
+            unset.append(f)
+        elif ch:
+            set_.append(f)
+            print(f"gear imports: {f}: set {', '.join(ch)} as its A source's")
+    if unset:
+        print(f"gear imports: {len(unset)} units not yet imported by Godot; rerun after the import to set their params: "
+              + ", ".join(unset))
     n = 0
     for f in files:
         r = import_stale(os.path.join(folder, f), godot_dir)
@@ -2927,6 +2959,9 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
             fit, why = fit_verdict(ev["__metrics__"])
         fp = os.path.join(out_dir, f"{bd.id}.gltf")
         write_unit(fp, bd, ev, bodies["close"].glb)
+        ch = unit_import_params(fp)
+        if ch:
+            print(f"{bd.id}: import params set as its A source's: {', '.join(ch)}", flush=True)
         row = dict(bd.meta["row"])
         row.pop("tuck", None)
         row.pop("tuck_count", None)
