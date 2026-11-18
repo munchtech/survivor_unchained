@@ -61,6 +61,10 @@ uniform float sp_edge = 0.3;
 uniform vec3 sp_tint = vec3(1.0, 1.0, 0.84);
 uniform float sp_grain = 0.0;   // the grain's value contrast in the light: albedo times (lum / sp_ref)^(sp_grain) inside (light shows texture)
 uniform float sp_ref = 0.15;
+uniform float sp_smooth = 0.0;   // (den r18 L3, R17 item 3) 1: a smooth elliptical mask (no grain term, no wobble) times the albedo, its gain soft-capped at sp_cap
+uniform float sp_cap = 9.0;
+uniform float sp_soft = 0.7;
+uniform float sp_knee = 0.6;
 uniform float sp_lair = 1.0;   // (den r17 L2) a lair pool's strength (its seed + 1000): the lair's floor is lit brighter than the rooms'
 
 varying vec3 wpos;
@@ -287,9 +291,16 @@ void fragment() {
 				float rr = sp[k].z * (0.82 + 0.36 * fbm(wpos.xz * 1.1 + sp[k].w));
 				float m = 1.0 - smoothstep(rr - sp_edge, rr + 0.25 * sp_edge, length(vec2(pa, pb)));
 				m *= 0.8 + 0.2 * smoothstep(0.3, 0.7, fbm(wpos.xz * 2.3 - sp[k].w));
+				if (sp_smooth > 0.5) { float r0 = sp[k].z * 1.0; m = 1.0 - smoothstep(r0 - sp_soft, r0 + 0.1, length(vec2(pa, pb))); m = m * m * (3.0 - 2.0 * m); }
 				if (sp[k].w >= 1000.0) m *= sp_lair;
 				spm = max(spm, m);
 			}
+			if (sp_smooth > 0.5) {
+				// the light multiplies the albedo: no term of its own, so the floor's grain is lit, not amplified; the sum is soft-capped
+				float l0 = max(lum(col), 1e-4), l1 = l0 * mix(1.0, sp_gain, spm);
+				float kn = sp_knee * sp_cap, l2 = l1 < kn ? l1 : kn + (sp_cap - kn) * tanh((l1 - kn) / (sp_cap - kn));
+				col *= mix(vec3(1.0), sp_tint, spm) * (l2 / l1) * mix(1.0, sp_gain, spm) * pow(clamp(l0 / sp_ref, 0.05, 4.0), sp_grain * spm);
+			} else
 			col *= mix(vec3(1.0), sp_gain * sp_tint, spm) * pow(clamp(lum(col) / sp_ref, 0.05, 4.0), sp_grain * spm);
 		}
 		// the pits: the depths go black

@@ -61,8 +61,11 @@ public static partial class DungeonDress
 
     // One painted boulder at (x, zz) on the floor, kind by the hash among the big or the small forms, at yaw 0 (the
     // painting's view). Returns its footprint's half width (m), 0 when none was placed.
+    /// <summary>(den r18 L3, R17 item 3) Every boulder placed this build (x, z, half width m), for DungeonLight: a lair shaft's pool keeps off them.</summary>
+    internal static readonly List<(float X, float Z, float R)> Placed = new();
     static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
+        Placed.Add((x, zz, scale * (big ? 2.0f : 1.0f)));
         if (SetMode > 0 && SetIn(x, zz)) return PlaceSetBoulder(c, pick, x, zz, scale, big);   // (round 10: the painted set's O1)
         var all = Boulders().FindAll(q => q.Big == big);
         if (all.Count == 0) all = Boulders();
@@ -90,6 +93,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("rect", b.Uv);
         mat.SetShaderParameter("dmax", bDmax);
         mat.SetShaderParameter("gain", BoulderGain);
+        mat.SetShaderParameter("spot_cap", SurvivorUnchained.Args.Num("den-boulder-cap", 99f));   // (den r18 L3, R17 item 10) soft cap on a spot's light on the stone; 99: r17
         mat.SetShaderParameter("right_dir", bRight);
         mat.SetShaderParameter("up_dir", bUp);
         mat.SetShaderParameter("view_dir", bView);

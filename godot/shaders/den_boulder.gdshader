@@ -17,6 +17,7 @@ uniform vec3 up_dir = vec3(0.0, 0.469472, -0.882948);
 uniform vec3 view_dir = vec3(0.0, -0.882948, -0.469472);
 uniform float gain = 1.0;                      // the painting's albedo scale (calibrated on the den's frames)
 uniform float cold_take = 0.5;                 // how much of a cold light's brightness the stone takes
+uniform float spot_cap = 99.0;                 // (den r18 L3, R17 item 10) a spot or omni's light on the stone, soft-capped (99: none)
 uniform float local_turn = 0.5;               // how much a spot or omni follows the painted normal (0 flat)
 
 varying vec3 lpos;
@@ -49,5 +50,10 @@ void light() {
 	vec3 lc = LIGHT_COLOR;
 	float ll = dot(lc, vec3(0.299, 0.587, 0.114));
 	lc = LIGHT_IS_DIRECTIONAL || lc.r >= lc.g ? lc : vec3(ll) * cold_take;
-	DIFFUSE_LIGHT += lc * ATTENUATION * w / PI;
+	vec3 add = lc * ATTENUATION * w / PI;
+	if (!LIGHT_IS_DIRECTIONAL) {
+		float al = dot(add, vec3(0.299, 0.587, 0.114)), kn = 0.5 * spot_cap;
+		if (al > kn) add *= (kn + (spot_cap - kn) * tanh((al - kn) / (spot_cap - kn))) / al;
+	}
+	DIFFUSE_LIGHT += add;
 }

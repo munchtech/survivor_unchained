@@ -80,6 +80,7 @@ public static class DungeonLight
                 ShadowEnabled = false,
                 LightSpecular = 0.3f,
             });
+        DungeonDress.Placed.Clear();   // (den r18 L3) read; the next zone starts empty
         GD.Print($"DungeonLight {z.DungeonTheme}: {root.GetChildCount() / 2} shafts over {z.Rooms.Count} rooms");
         return root;
     }
@@ -143,9 +144,11 @@ public static class DungeonLight
     // place of the fan's additive sprite; --den-pool-floor 0: the r16 sprite. --den-shaft-foot 0: the rays fade out halfway down
     // (r16: each pool sat ~250 px below its shaft's end); 1: they run to the foot and end in the pool.
     static readonly float PoolFloor = SurvivorUnchained.Args.Num("den-pool-floor", 1f), ShaftFoot = SurvivorUnchained.Args.Num("den-shaft-foot", 1f);
+    static readonly bool Smooth = SurvivorUnchained.Args.Num("den-pool-smooth", 1f) > 0f;
     static readonly float PoolR = SurvivorUnchained.Args.Num("den-pool-r", 1.25f);
     // (den r17 L, R16 item 4) the lair's shafts over its open floor, off her and the Pack-Mother in its middle (LairFoot);
     // 0: r16's hashed spots 3-8 m out (s11 a stub on a boulder, s23 one among the root spurs)
+    static readonly float LairKeepOff = SurvivorUnchained.Args.Num("den-lair-keepoff", 2.2f);
     static readonly float LairOpen = SurvivorUnchained.Args.Num("den-lair-open", 1f);
     static readonly System.Collections.Generic.List<Vector4> Pools = new();
 
@@ -161,10 +164,14 @@ public static class DungeonLight
             for (int q = 0; q < n; q++) arr[q] = Pools[q];
             m.SetShaderParameter("sp", arr); m.SetShaderParameter("sp_n", n);
             m.SetShaderParameter("sp_lean", new Vector2(-Axis.X, -Axis.Z).Normalized());
-            m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", 2.1f));   // (den r17 lead, from l7c: 1.5 -> 1.95, pools dL +.11 at s11 room)   // (den r17 L2, R16 item 2: 2.1 with ref .09: l7f at 2.2 dL +.15-.28)
+            m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", Smooth ? 2.0f : 2.1f));   // (den r17 lead, from l7c: 1.5 -> 1.95, pools dL +.11 at s11 room)   // (den r17 L2, R16 item 2: 2.1 with ref .09: l7f at 2.2 dL +.15-.28)
             m.SetShaderParameter("sp_edge", SurvivorUnchained.Args.Num("den-pool-edge", 0.3f));
-            m.SetShaderParameter("sp_grain", SurvivorUnchained.Args.Num("den-pool-grain", 1.0f));   // (den r17 L2, R16 item 2: .5 -> 1, texture .9-1.2 at .9)
+            m.SetShaderParameter("sp_grain", SurvivorUnchained.Args.Num("den-pool-grain", Smooth ? 1.5f : 1.0f));   // (den r17 L2, R16 item 2: .5 -> 1, texture .9-1.2 at .9)
             m.SetShaderParameter("sp_lair", SurvivorUnchained.Args.Num("den-pool-lair", 0.6f));   // (den r17 L2: l7g's lair pools at full strength read as glowing yellow discs on its brighter floor)
+            m.SetShaderParameter("sp_smooth", Smooth ? 1f : 0f);   // (den r18 L3, R17 items 2, 3: the pool mask, gain and cap, and the shaft tint h 205-225) a smooth multiplying mask, gain soft-capped; 0: r17
+            m.SetShaderParameter("sp_cap", SurvivorUnchained.Args.Num("den-pool-cap", 0.12f));
+            m.SetShaderParameter("sp_knee", SurvivorUnchained.Args.Num("den-pool-knee", 0.6f));
+            m.SetShaderParameter("sp_soft", SurvivorUnchained.Args.Num("den-pool-soft2", 0.7f));
             m.SetShaderParameter("sp_ref", SurvivorUnchained.Args.Num("den-pool-ref", 0.09f));   // (den r17 L2, R16 item 2: .15 sat above the floor's albedo, so the grain term darkened the pools on the whole: s11 corr dL +.06)
             m.SetShaderParameter("sp_tint", DungeonDress.V3("den-pool-tint", new Vector3(1f, 0.97f, 0.76f)));   // (den r17 lead, l7c: warmer, dC +.02)
             GD.Print($"DungeonLight floor pools: {n} on {mi.Name}");
@@ -218,7 +225,7 @@ public static class DungeonLight
     // lights) it found no spot in s11 and put s23's over roots and a boulder (l7g).
     // --den-lair-gap-h: the lair's gaps lower than the rooms' (8.5 m stood 560 px over the foot: a gap in frame put the foot
     // below her; den_boss's shafts fall ~280 px from the frame's top to pools in its upper third).
-    static readonly float LairFrame = SurvivorUnchained.Args.Num("den-lair-frame", 0f), LairWallClear = SurvivorUnchained.Args.Num("den-lair-wallclear", 2.5f), LairGapH = SurvivorUnchained.Args.Num("den-lair-gap-h", 4.8f);
+    static readonly float LairFrame = SurvivorUnchained.Args.Num("den-lair-frame", 1f), LairWallClear = SurvivorUnchained.Args.Num("den-lair-wallclear", 2.5f), LairGapH = SurvivorUnchained.Args.Num("den-lair-gap-h", 4.8f);
     static (float X, float Y) LairPx(float dx, float h, float dz)
     {
         const float pitch = 62f * Mathf.Pi / 180f, dist = 24.3f, look = 0.8f;
@@ -247,6 +254,7 @@ public static class DungeonLight
                 if (At(z, z.WallField!, cx, cz) < LairWallClear + 0.5f) { why[2]++; continue; }
                 if (z.HoleField != null && At(z, z.HoleField, cx, cz) < 3.5f) { why[5]++; continue; }
                 if (NearHollow(cx, cz, 2.2f)) { why[6]++; continue; }
+                if (LairKeepOff > 0f && DungeonDress.Placed.Exists(q => new Vector2(q.X - cx, q.Z - cz).Length() < q.R + LairKeepOff)) { why[6]++; continue; }   // (den r18 L3, R17 item 3) the pool keeps off the boulders (--den-lair-keepoff m, 0: r17)
                 bool bad = false;
                 foreach (var f in feet) if (f.DistanceTo(new Vector2(cx, cz)) < 8f) bad = true;
                 foreach (var spr in z.Spurs)
@@ -293,6 +301,7 @@ public static class DungeonLight
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_shaft_fan.gdshader") };
         mat.SetShaderParameter("axis_up", -Axis);
         mat.SetShaderParameter("src_h", lair && LairFrame > 0f ? LairGapH : SurvivorUnchained.Args.Num("den-shaft-gap-h", 8.5f));   // (den r17 L2: the lair's lower gaps)
+        mat.SetShaderParameter("top_fade", SurvivorUnchained.Args.Num("den-shaft-topfade", 0.16f));   // (den r18 L3, R17 item 10) fade in from the frame's top; 0: r17
         mat.SetShaderParameter("w_foot", SurvivorUnchained.Args.Num("den-shaft-wfoot", 2.0f));
         mat.SetShaderParameter("w_src", SurvivorUnchained.Args.Num("den-shaft-wgap", 0.9f));
         mat.SetShaderParameter("pool_r", SurvivorUnchained.Args.Num("den-shaft-pool-r", 1.0f));
@@ -301,11 +310,11 @@ public static class DungeonLight
         // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
         // (den r17 L, R16 item 2) the rays' added light neutral-cool and only added (ext 0): ext .12 took a share of the warm bank
         // behind them, so the shaft's change tracked the albedo (h 35-45, C .05); the old look: --den-shaft-tint d6dce2 --den-shaft-ext .12
-        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? "c8d8f0"));
+        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
         mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
         mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0f));
         mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
-        mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? "eeeae2"));
+        mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? (Smooth ? "d4f0f2" : "eeeae2")));
         mat.SetShaderParameter("gap_gain", SurvivorUnchained.Args.Num("den-shaft-gap-k", 0.8f));
         mat.SetShaderParameter("gap_ext", SurvivorUnchained.Args.Num("den-shaft-gap-ext", 0.2f));
         var hl = new Vector4[8]; int hn = 0;

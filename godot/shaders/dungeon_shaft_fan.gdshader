@@ -36,6 +36,7 @@ uniform float foot_k = 0.0;
 // (den r17 L2, R16 item 2) the rays' light over their lowest stretch against the gap's (r17 L: 0.6): at .15 the rays faded
 // out over the lit floor ~240 px above their pools (l7e at x4 showed them reaching it); >1 carries them down into the pool
 uniform float foot_low = 0.6;
+uniform float top_fade = 0.0;   // (den r18 L3, R17 item 10) the shaft fades in from the screen's top edge over this share of its height (no rounded cap); 0: r17
 uniform sampler2D depth_tex : hint_depth_texture, repeat_disable, filter_nearest;
 
 varying vec3 wpos;
@@ -97,13 +98,14 @@ void fragment() {
 	float along_f = smoothstep(-0.01, 0.06, vn) * mix(foot_low, 1.0, smoothstep(0.15, 0.95, vn)) * (1.0 - smoothstep(0.96, 1.01, vn));
 	along = mix(along, along_f, foot_k);
 	float motes = 0.85 + 0.15 * vnoise(vec2(wpos.x * 1.3 + wpos.z, wpos.y * 0.5 - TIME * 0.15));
-	float ray_a = fan * along * motes * vis * pit;
+	float topf = top_fade > 0.0 ? smoothstep(0.0, top_fade, SCREEN_UV.y) : 1.0;
+	float ray_a = fan * along * motes * vis * pit * topf;
 	// 2. the gap: a bright ragged slit where the rays start
 	// (den r16 B2: a round cyan blob) a long soft slit across the fan's top, ragged, broken by the roots' dark
 	vec2 gq = vec2(u / (w_src * 0.85), (v - src_h) / 0.22);
 	float ge = length(gq) * (0.8 + 0.4 * vnoise(vec2(u * 6.0 + 5.0, v * 3.0)));
 	float gap = (1.0 - smoothstep(0.15, 1.0, ge)) * vis * pit * (0.55 + 0.45 * vnoise(vec2(u * 9.0, 7.0)));
-	gap *= gap;
+	gap *= gap * topf;
 	// 3. the pool: on the ground at the foot (not on her, not on a log: only what lies at the foot's own height)
 	vec2 q = sw.xz - foot.xz;
 	vec2 lean = normalize(axis_up.xz + vec2(1e-5, 0.0));
