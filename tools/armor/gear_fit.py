@@ -2891,6 +2891,53 @@ def trim_ride_rule(bd, ev, law=TRIM_RIDE, tier="close"):
     return st
 
 
+# EACH CUP RIDES ONE BLEND (lane G lead 9 solver, 17 Nov; rigid_roles.json slots.<slot>.cup_blend, its "_cup_blend"
+# note): a big bendy component of the piece's steel ("host_mat", "host_n" unique points and up: the warden top's two
+# cups) takes ONE blend of weights, the mean of its points' skin weights (dense over the joints, top 8), on every point;
+# its shape deltas (the support shapes) stay per point; rest positions untouched. A plate cup is rigid metal: with her
+# skin's weights per point the breast-to-spine change was packed at the cup's lower rim (B: breast_tip_l .40, spine_04
+# .39, spine_03 .21 there; breast_l turns 20 deg against spine_04 at the look), so the rim bent and the gold tube round
+# its edge showed through the steel. Runs before TRIM_RIDE (the trim and rivets copy the cup's one blend); A's own files
+# are not built (A as authored).
+CUP_BLEND = {"host_mat": "steel", "host_n": 2000}
+
+
+def cup_blend_rule(bd, ev, law=CUP_BLEND, tier="close"):
+    """Each big bendy steel component (CUP_BLEND) of ev (a piece's eval_unit output) takes one blend, the mean of its
+    points' weights (top 8); returns stats ({} when the tier has no such component)."""
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier and law["host_mat"] in m["node"].rsplit(".", 1)[-1]]
+    if not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    st = {"cups": 0, "vertices": 0, "max_w": 0.0, "blends": []}
+    for m in ms:
+        v = ev[m["node"]]
+        n, inv = len(v["Xu"]), v["inv"]
+        f = np.zeros(n, np.int64)
+        f[inv] = np.arange(len(inv))
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                   directed=False)[1]
+        nj = int(v["J"].max()) + 1
+        D = np.zeros((n, nj))
+        np.add.at(D, (np.repeat(np.arange(n), v["J"].shape[1]), v["J"][f].astype(np.int64).ravel()),
+                  v["W"][f].astype(float).ravel())
+        bend = np.asarray(v["comp"]) < 0
+        for c in np.unique(lab):
+            s = (lab == c) & bend
+            if s.sum() < law["host_n"]:
+                continue
+            jj, ww = top_k(D[s].mean(0)[None])
+            st["max_w"] = round(max(st["max_w"], float(np.abs(D[s] - D[s].mean(0)).sum(1).max()) / 2), 3)
+            hit = s[inv]
+            v["J"][hit] = jj[0].astype(v["J"].dtype)
+            v["W"][hit] = ww[0].astype(v["W"].dtype)
+            st["cups"] += 1
+            st["vertices"] += int(hit.sum())
+            st["blends"].append({str(int(j)): round(float(w), 3) for j, w in zip(jj[0], ww[0]) if w > 0.005})
+    return st if st["cups"] else {}
+
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
@@ -2938,9 +2985,18 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
                                          bodies[tier])
                 if st:
                     print(f"{bd.id}: {tier} band ends take their cups' support: {st}", flush=True)
+        # (CUP_BLEND: a slot's "cup_blend" rule in rigid_roles.json: each steel cup rides one blend; before TRIM_RIDE,
+        # so the trim and the rivets on a cup copy its one blend)
+        cb = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("cup_blend")
+        if cb and bd.meta["row"].get("outfit"):
+            law = dict(CUP_BLEND, **cb) if isinstance(cb, dict) else CUP_BLEND
+            for tier in TIERS:
+                st = cup_blend_rule(bd, ev, law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} each cup rides one blend: {st}", flush=True)
         # (TRIM_RIDE: a slot's "trim_ride" rule in rigid_roles.json: the trim lying on its steel rides the steel; after
         # the band rules, so the bands keep the values they take from the cups and their rims)
-        tr = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("trim_ride")
+        tr =(rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("trim_ride")
         if tr and bd.meta["row"].get("outfit"):
             law = dict(TRIM_RIDE, **tr) if isinstance(tr, dict) else TRIM_RIDE
             for tier in TIERS:

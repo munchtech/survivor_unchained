@@ -656,3 +656,62 @@ def test_units_import_as_their_a_source():
         have = dict(ln.rstrip("\n").partition("=")[::2] for ln in open(imp, encoding="utf-8") if "=" in ln)
         bad += [f"{f} {k}={have.get(k)} (A {v})" for k, v in want.items() if have.get(k) != v]
     assert not bad, bad
+
+
+def test_each_cup_rides_one_blend():
+    """CUP_BLEND: each big bendy steel component takes one blend, the mean of its points' weights (top 8), on every
+    point; shapes and rest positions untouched; a small steel part, a rigid one and the gold keep their own. Posed (a
+    bone that turns), the cup keeps its shape (its edge does not bend against its middle), where per point weights bent
+    it (B's warden top: the cup's lower inner rim, lane G lead 9, 17 Nov)."""
+    import json as _json
+
+    def grid(x0, x1, z0, z1, y, n):
+        xs, zs = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n), indexing="ij")
+        P = np.c_[xs.ravel(), np.full(n * n, y), zs.ravel()]
+        q = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                     + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+        return P, q
+    cups = [grid(0.0, 0.1, 0.0, 0.1, 1.5, 11), grid(-0.1, 0.0, 0.2, 0.3, 1.5, 11), grid(0.3, 0.31, 0.0, 0.01, 1.5, 3)]
+    X = np.vstack([p for p, _ in cups])
+    T = np.vstack([q + sum(len(p) for p, _ in cups[:k]) for k, (_, q) in enumerate(cups)])
+    n = len(X)
+    w1 = np.clip(np.abs(X[:, 0]) / 0.1, 0, 1)                    # bone 1's share rises across each cup (its rim: 1)
+    J = np.pad(np.tile([[0, 1]], (n, 1)), ((0, 0), (0, 6))).astype(np.uint16)
+    W = np.pad(np.c_[1 - w1, w1], ((0, 0), (0, 6))).astype(np.float32)
+    comp = np.full(n, -1)
+    comp[-3:] = 0                                               # a rigid part of the steel keeps its own
+    lift = np.c_[0 * X[:, 0], 0.002 * X[:, 2], 0 * X[:, 0]]
+    st_ev = {"Xu": X.copy(), "inv": np.arange(n), "J": J.copy(), "W": W.copy(), "shapes": {"lift": lift.copy()},
+             "comp": comp, "lead": np.array([0])}
+    gx, gT = grid(0.02, 0.08, 0.02, 0.04, 1.5005, 5)
+    g_ev = {"Xu": gx, "inv": np.arange(len(gx)), "J": J[:len(gx)].copy(), "W": W[:len(gx)].copy(), "shapes": {},
+            "comp": np.full(len(gx), -1), "lead": None}
+
+    class _Bd:
+        id, meta = "test.cup_blend", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                 {"i": 1, "node": "p.gold", "tier": "close"}]}
+    gf._TRIS[(_Bd.id, 0)], gf._TRIS[(_Bd.id, 1)] = T, gT
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text(encoding="utf-8"))
+    cb = roles["slots"]["top"]["cup_blend"]
+    assert set(cb) <= set(gf.CUP_BLEND), cb             # (a key the rule does not read would be a silent no-op)
+    gJ, gW = g_ev["J"].copy(), g_ev["W"].copy()
+    st = gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(gf.CUP_BLEND, host_n=100))
+    assert st["cups"] == 2 and st["vertices"] == 242, st
+    for a in (slice(0, 121), slice(121, 242)):                  # one blend over each cup: the mean of its points'
+        assert (st_ev["J"][a] == st_ev["J"][a][0]).all() and np.allclose(st_ev["W"][a], st_ev["W"][a][0])
+        assert np.isclose(st_ev["W"][a][0][list(st_ev["J"][a][0]).index(1)], w1[a].mean(), atol=1e-6)
+    assert (st_ev["J"][-3:] == J[-3:]).all() and (st_ev["W"][-3:] == W[-3:]).all()          # the small/rigid part: own
+    assert (g_ev["J"] == gJ).all() and (g_ev["W"] == gW).all()                                # the gold: its own
+    assert np.array_equal(st_ev["Xu"], X) and np.array_equal(st_ev["shapes"]["lift"], lift)  # rest and shapes untouched
+    assert gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(gf.CUP_BLEND, host_n=200)) == {}
+
+    def posed(v, W_):                                           # bone 1 turned 20 deg about z at the origin
+        c, s = np.cos(np.radians(20)), np.sin(np.radians(20))
+        R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+        w = W_[:, 1].astype(float)
+        return (1 - w)[:, None] * v + w[:, None] * (v @ R.T)
+    a = slice(0, 121)
+    bent = posed(X[a], W[a])
+    one = posed(X[a], st_ev["W"][a])
+    flat = lambda P: np.linalg.svd(P - P.mean(0))[1][-1]       # noqa: E731  (off its plane: a flat cup stays flat)
+    assert flat(one) < 1e-9 < 1e-4 < flat(bent), (flat(one), flat(bent))
