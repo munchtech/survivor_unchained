@@ -671,6 +671,16 @@ public partial class Game
         if (d == null) return;
         Journey = Journey.From(d, 0);
         Hook();
+        // --den [--seed N] with --load: the loaded survivor goes into the Hollow's den again, at its ruler's clearing, not to the table
+        // (a chain of runs: clear, wear, --save-file, --load it with --den, clear again).
+        if (Args.Has("den") && SurvivorUnchained.Maps.DungeonGen.Get("hollow") is { } hollow)
+        {
+            Journey.World.Facts["prologue.done"] = true;
+            Journey.World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(hollow, (int)Args.Num("seed", 1), Journey.Ch.Level);
+            var bc = SurvivorUnchained.Maps.MapGen.Generate(Journey.World.Map.Map).Boss;
+            EnterWhenBuilt("map", null, new Arrival(bc.X, bc.Z), () => hud.Fade(0, 0.5));
+            return;
+        }
         EnterWhenBuilt(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing), () => hud.Fade(0, 0.5));
     }
 

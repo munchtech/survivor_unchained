@@ -688,7 +688,7 @@ public partial class Game : Node, IZoneHost
         // --wear-gilt: the set pieces now in the pack put on, as the player would at the pack (pictures of a drop worn).
         if (Args.Has("wear-gilt"))
             foreach (var it in Journey.Ch.Pack.Where(i => i != null && Items.Get(i.Def).Set != null).ToList()) { Journey.Equip(it!.Uid, null, Battle); GD.Print($"her wear: {it!.Def} -> {string.Join(",", Wear.Of(Journey.Ch).Values)}"); }
-        if (Args.Has("wear-gilt")) Save("wear-gilt");
+        if (Args.Has("wear-gilt") || Args.Has("save-clear")) Save("map cleared");
         var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         // (pictures and probes of the atlas's pay read it from the log as well)
         if (Args.Has("shot"))
@@ -2533,6 +2533,19 @@ public partial class Game : Node, IZoneHost
                 if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
                 if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
             }
+            // --click-item DEF|DEF,Wear: a real click (the mouse pushed there, as ClickAt does) on the visible pack tile holding that item def,
+            // then on the visible button of that text (pictures of an item worn from the pack by its own UI; the tile's tip carries "Wear").
+            if (Args.Get("click-item") is string cis && itemClickI < cis.Split(',').Length)
+            {
+                tourT = Args.Num("click-every", 1.2f);
+                var tok = cis.Split(',')[itemClickI];
+                var alts = tok.Split('|');
+                Control? hit = Items.All.ContainsKey(alts[0]) ? FindControl<SlotView>(GetTree().Root, v => v.Item != null && alts.Contains(v.Item.Def))
+                    : FindControl<Button>(GetTree().Root, v => v.Text == tok);
+                if (hit != null) { itemClickI++; var c0 = hit.GetGlobalRect().GetCenter(); ClickAt($"{c0.X:0}:{c0.Y:0}"); GD.Print($"click-item {tok} at {c0.X:0},{c0.Y:0}"); }
+                else GD.Print($"click-item {tok}: not on screen yet");
+                return;
+            }
             // --clicks X:Y,rX:Y,...: then the mouse goes there and clicks (r: the right button), in turn,
             // through the same input a hand would give (pictures of a page worked by mouse).
             else if (Args.Get("clicks") is string clicks && clickI < clicks.Split(',').Length)
@@ -2595,6 +2608,17 @@ public partial class Game : Node, IZoneHost
     int clickI;
 
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
+    int itemClickI;
+    static T? FindControl<T>(Node n, Func<T, bool> pick) where T : Control
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is T t && t.IsVisibleInTree() && pick(t)) return t;
+            if (FindControl(c, pick) is { } f) return f;
+        }
+        return null;
+    }
+
     void ClickAt(string spec)
     {
         // (r: the right button; h: the mouse only comes to rest there, for pictures of a hover;

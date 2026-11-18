@@ -176,4 +176,32 @@ public class GiltTests
         // All worn: the weights see every piece as owned (even), and she still wears all three.
         Assert.All(Pieces, id => Assert.Contains(id, j.World.Owned));
     }
+
+    /// <summary>The worn gilt piece shows no upgrade arrow over a same-level Rare of its slot (the pack's own test, Drops.IsUpgrade), on
+    /// its own stats and with no set bonus counted, and stays within reach of the slot's Legendaries.</summary>
+    [Theory]
+    [InlineData("gilt_helm", EquipSlot.Head)]
+    [InlineData("gilt_harness", EquipSlot.Body)]
+    [InlineData("gilt_boots", EquipSlot.Feet)]
+    public void The_worn_gilt_piece_beats_every_same_level_rare_of_its_slot(string id, EquipSlot slot)
+    {
+        const int Level = 6;   // the den's item level in the demo
+        var ch = Her();
+        var gilt = Inventory.Make(ch, id, level: Level, dropped: true, seed: 1);
+        Assert.True(Inventory.Equip(ch, gilt, slot));
+        var rng = new Random(2026);
+        var x = new DropCtx { Ch = ch, Level = Level, People = "pack", Tier = 1, R = rng.NextDouble };
+        int n = 0;
+        for (int i = 0; i < 40000 && n < 1000; i++)
+        {
+            var it = Drops.Piece(x, LootTier.Rare, rng.NextDouble);
+            if (Items.SlotFor(Items.Get(it.Def)) != slot) continue;
+            n++;
+            Assert.False(Drops.IsUpgrade(ch, it), $"{it.Def} (power {Drops.Power(it):0.0}) shows an arrow over {id} ({Drops.Power(gilt):0.0})");
+        }
+        Assert.Equal(1000, n);
+        var best = Items.All.Values.Where(d => d.Rarity == 4 && d.Set == null && Items.SlotFor(d) == slot)
+            .Max(d => Drops.Power(Inventory.Make(ch, d.Id, level: Level, dropped: true, seed: 1)));
+        Assert.True(Drops.Power(gilt) <= best * 1.5, "gilt must stay about a Legendary's worth");
+    }
 }
