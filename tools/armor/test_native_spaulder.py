@@ -461,6 +461,9 @@ class Reach(unittest.TestCase):
     def setUpClass(cls):
         import hashlib
         import tempfile
+        import gear_wear as gw
+        if not os.path.isdir(gw.CLIPS):   # (tools/body/out/ is git-ignored build output: a clean checkout has no clips)
+            raise unittest.SkipTest("her clips (tools/body/out/clips) are build output, absent on a clean checkout")
         cls.sha = lambda cls, f: hashlib.sha256(open(f, "rb").read()).hexdigest()
         cls.ref = nb.Ref.her()
         # (10 Nov: the plain spaulders became the split, articulated one; the reach rule and the yoke are tested on
