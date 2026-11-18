@@ -308,6 +308,7 @@ float crowd_edge(float rim) {
 // line is drawn on the cut edge. Not the head, the front legs or the paws)
 #define DEN_BOSS_TAIL vec4(-0.47, -0.55, 0.64, -0.80)   // (r1 -.50/-.58: its root stayed thin)
 #define DEN_BOSS_TAIL_D vec2(0.036, 0.030)   // (r1 .026/.034: 23 px at most against the hips' 54 in the boss view)
+#define DEN_BOSS_TAIL_TIP vec2(0.55, 1.0)   // (lead 10: the push tapers to 0 between these shares of the tail's length; judge 7: width at 85% <= .45 max, 95% <= .2)
 // (lead 9, l9t2: the cut shredded the side-on body into ragged orange-lined scraps and the tail into a comb of ribs at 1:1,
 // far worse than the smooth edge: OFF. The plume above stays.)
 #define DEN_BOSS_FURE_ON false
@@ -759,7 +760,10 @@ void vertex() {
 	// more toward its tip, so it ends blunt; the boss alone (the class in COLOR.a's 128s), the hind legs under it untouched)
 	if (crowd_den.y > 0.0 && cel_on > 0.0 && COLOR.a > 255.5) {
 		float tl_m = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, vat_rest.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, vat_rest.y);
-		VERTEX += NORMAL * (tl_m * (DEN_BOSS_TAIL_D.x + DEN_BOSS_TAIL_D.y * clamp((DEN_BOSS_TAIL.x - vat_rest.z) / (DEN_BOSS_TAIL.x - DEN_BOSS_TAIL.w), 0.0, 1.0)));
+		// (lane E lead 10, judge 7 fix 4: a beaver's paddle, blunt at the tip: the push swells to its most at mid-length, then
+		// tapers to nothing over the outer half, so the plume ends in the tail's own point)
+		float tl_t = clamp((DEN_BOSS_TAIL.x - vat_rest.z) / (DEN_BOSS_TAIL.x - DEN_BOSS_TAIL.w), 0.0, 1.0);
+		VERTEX += NORMAL * (tl_m * mix(DEN_BOSS_TAIL_D.x, DEN_BOSS_TAIL_D.x + DEN_BOSS_TAIL_D.y, smoothstep(0.0, 0.5, tl_t)) * (1.0 - smoothstep(DEN_BOSS_TAIL_TIP.x, DEN_BOSS_TAIL_TIP.y, tl_t)));
 	}
 #endif
 	vat_org = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
