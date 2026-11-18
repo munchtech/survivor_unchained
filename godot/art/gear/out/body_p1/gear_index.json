@@ -827,8 +827,8 @@
    "fit": "ok",
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.top.bin",
-   "tuck_count": 1297,
-   "cover_count": 1112
+   "tuck_count": 1245,
+   "cover_count": 1099
   },
   {
    "id": "plate_pauldrons_warden",
