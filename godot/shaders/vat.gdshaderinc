@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.50, 0.10, 30.0)
+#define DEN_MANE vec3(0.54, 0.10, 30.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -251,7 +251,7 @@ float crowd_edge(float rim) {
 // strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
 #define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
-#define DEN_BOSS_MANE_SH vec3(0.46, 0.095, 27.0)
+#define DEN_BOSS_MANE_SH vec3(0.47, 0.095, 27.0)
 #define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
 #define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
@@ -280,8 +280,24 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
 // (lead 8 r3: the muzzle's lock edge, x its axis's y, y locks a turn, z their depth, w its tilt in z a .1 of y under the axis;
 // the back's strokes, see c_stk)
-#define DEN_BOSS_MUZ vec4(0.70, 11.0, 0.035, 0.03)
+#define DEN_BOSS_MUZ vec4(0.70, 11.0, 0.06, 0.05)
 #define DEN_BOSS_STROKE vec4(0.011, 0.075, 0.05, 0.55)
+// (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
+// STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
+// the neck, y a stroke's length in z, z the share of cells drawn, w the flow, radians down the neck a unit of z back), each in
+// its row's red, the gaps between them near-black DEN_BOSS_MANE_GAP; a share (DEN_BOSS_MANE_TIP.w) of the lit row's strokes
+// pale at the tip (the last .z of their length), L .x C .y at hue DEN_BOSS_MANE_TIP_H. The cheek's ruff (DEN_BOSS_CHEEK: x a
+// column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
+// strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
+// y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
+#define DEN_BOSS_MSTK vec4(0.15, 0.07, 0.8, 2.0)
+#define DEN_BOSS_MANE_GAP vec3(0.25, 0.035, 30.0)
+#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.35, 0.35)
+#define DEN_BOSS_MANE_TIP_H 75.0
+#define DEN_BOSS_CHEEK vec4(0.013, 0.07, 0.6, 0.3)
+#define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
+#define DEN_BOSS_CHEEK_C vec3(0.60, 0.03, 72.0)
+#define DEN_BOSS_BROW_STK 0.05
 // (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
 // body's world-normal bands ran over the head's curves as a ramp): LIT (the rest normal's y past DEN_HEAD_LIT.y: crown, brow,
 // the muzzle's bridge) at L DEN_HEAD_LIT.x, SHADE (sides, cheeks, jaw) at DEN_HEAD_SHADE, DARK (the muzzle past DEN_BOSS_HEAD.y,
@@ -354,6 +370,15 @@ float vat_den_tooth(float c_t, float c_tp, vec2 c_pp) {
 	return c_t > c_tp ? pow(clamp((1.0 - c_t) / (1.0 - c_tp), 0.0, 1.0), c_pp.x) : pow(clamp(c_t / c_tp, 0.0, 1.0), c_pp.y);
 }
 float vat_den_tip(float c_q) { return pow(max(1.0 - abs(2.0 * c_q - 1.0), 0.0), DEN_FUR_TIP); }
+// (lead 8 r4: a fur stroke on a strip of columns, c_q.x across them in column widths, c_q.y along them in stroke lengths (the
+// root toward +): each drawn stroke (c_sh of the cells) widest at its root, tapered back to a point; x 1 inside a drawn stroke,
+// y its place along it (1 the root, 0 the tip), z its cell's hash, w its column)
+vec4 vat_den_stroke(vec2 c_q, float c_sh, float c_s) {
+	float c_k = floor(c_q.x);
+	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
+	float c_t = fract(c_v), c_h = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
+	return vec4(step(abs(fract(c_q.x) - 0.5), 0.48 * pow(c_t, 0.7)) * step(1.0 - c_sh, c_h), c_t, c_h, c_k);
+}
 vec2 vat_den_ab(float c_c, float c_hd) { return c_c * vec2(cos(radians(c_hd)), sin(radians(c_hd))); }
 vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit, vec4 c_r) {
 	float c_h = max(c_hit, 0.0);   // (lane E lead 6: c_hit < 0 a dead foe, -1 - its darkening; DEN_DEAD)
@@ -403,11 +428,20 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_zm = DEN_BOSS_HEAD.y - DEN_BOSS_MUZ.z * (0.5 + 0.8 * vat_den_hash(c_km, 12.0)) * vat_den_tip(c_am - c_km) - DEN_BOSS_MUZ.w * (DEN_BOSS_MUZ.x - c_r.y) / 0.1;
 		float c_dark = c_head * max(vat_den_cut(c_r.z - c_zm, 0.0), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
 #ifdef VAT_CUT
-		// (r3: a card is never an ear tip: the crest ring's strands rooted over y .875 read as a dark dash ladder, l8g2)
-		c_dark = c_head * vat_den_cut(c_r.z - c_zm, 0.0);
+		// (r3: a card is never an ear tip: the crest ring's strands rooted over y .875 read as a dark dash ladder, l8g2; r4: nor the
+		// muzzle: the head rings' fore strands rooted near its edge took its dark, the ladder behind the ear at L .17, l8g3)
+		c_dark = 0.0;
 #endif
 		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
-		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark);
+		float c_bs = vat_den_stroke(vec2(c_r.x / DEN_BOSS_STROKE.x, c_r.z / DEN_BOSS_STROKE.y), DEN_BOSS_STROKE.w, 9.0).x * c_brow;
+		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow), DEN_BOSS_HEAD.w, c_dark) - DEN_BOSS_BROW_STK * c_bs;
+		// (r4: the cheek's ruff; DEN_BOSS_CHEEK)
+		vec4 c_cs = vat_den_stroke(vec2((c_r.y + DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z)) / DEN_BOSS_CHEEK.x, c_r.z / DEN_BOSS_CHEEK.y), DEN_BOSS_CHEEK.z, 16.0);
+		float c_yk = (c_cs.w + 0.5) * DEN_BOSS_CHEEK.x - DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z);
+		float c_ck = c_cs.x * c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.w, DEN_BOSS_BROW.y)) * step(DEN_BOSS_CHEEK_Y.x, c_yk)
+			* step(c_yk, DEN_BOSS_CHEEK_Y.y) * step(DEN_BOSS_CHEEK_Y.z - DEN_BOSS_CHEEK_Y.w * vat_den_hash(c_cs.w, 19.0), c_r.z);
+		c_l = mix(c_l, DEN_BOSS_CHEEK_C.x, c_ck);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_CHEEK_C.y, DEN_BOSS_CHEEK_C.z), c_ck);
 		vec3 c_hp = vat_den_head(c_r);
 		float c_hd = (c_hp.x + c_hp.y + c_hp.z) * step(0.5, den_head);
 		c_l = mix(c_l, dot(c_hp, vec3(DEN_HEAD_LIT.x, DEN_HEAD_SHADE, DEN_BOSS_HEAD.w)) / max(c_hp.x + c_hp.y + c_hp.z, 1e-4), c_hd);
@@ -431,9 +465,17 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_ra = vat_den_cut(c_r.z - c_zA, 0.0);
 		float c_rd = vat_den_cut(c_r.z - c_zA + DEN_BOSS_MANE_SHW, 0.0) * (1.0 - c_ra);
 		float c_rs = max(1.0 - c_ra - c_rd, 0.0);
-		c_l = mix(c_l, DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs + DEN_BOSS_MANE_DK.x * c_rd, c_mane);
-		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs
-			+ vat_den_ab(DEN_BOSS_MANE_DK.y, DEN_BOSS_MANE_DK.z) * c_rd, c_mane);
+		// (r4: its strands; DEN_BOSS_MSTK)
+		vec4 c_ms = vat_den_stroke(vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x, c_r.z / DEN_BOSS_MSTK.y), DEN_BOSS_MSTK.z, 13.0);
+		float c_mg = (1.0 - c_ms.x) * (c_ra + c_rs);
+		float c_mt = c_ms.x * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z);
+		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
+			DEN_BOSS_MANE_TIP.x, c_mt);
+		vec2 c_mab = mix((vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs) * c_ms.x
+			+ vat_den_ab(DEN_BOSS_MANE_GAP.y, DEN_BOSS_MANE_GAP.z) * c_mg + vat_den_ab(DEN_BOSS_MANE_DK.y, DEN_BOSS_MANE_DK.z) * c_rd,
+			vat_den_ab(DEN_BOSS_MANE_TIP.y, DEN_BOSS_MANE_TIP_H), c_mt);
+		c_l = mix(c_l, c_ml, c_mane);
+		c_ab = mix(c_ab, c_mab, c_mane);
 		c_hb = c_h * (1.0 - c_back) * (1.0 - c_mane);
 	}
 	else if (c_cls > 0.5) {
