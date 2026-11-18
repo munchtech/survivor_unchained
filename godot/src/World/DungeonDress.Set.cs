@@ -157,6 +157,12 @@ public static partial class DungeonDress
                 mat.SetShaderParameter("pit_cells", 0f);
                 mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.2f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 0.5f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.25f)));
                 mat.SetShaderParameter("pit_paint_pt", SurvivorUnchained.Args.Num("den-pit-paint-pt", 0f));
+                // (den r18 P5, p8a: glow 1.7 % of the s11 main box against 8-12, the far wall L .20-.22 against .40) the veins' bleed
+                // (--den-pit-bleed gain, mip lod, lime-ness full; 0 off) and the painting's light x --den-pit-paint-gain
+                var pb = V3("den-pit-bleed", new Vector3(0.6f, 3.5f, 0.06f));
+                mat.SetShaderParameter("pit_bleed", new Vector4(pb.X, pb.Y, pb.Z, 0f));
+                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.16f, 0.4f, 0.06f)));
+                mat.SetShaderParameter("gain", gain * SurvivorUnchained.Args.Num("den-pit-paint-gain", 1.4f));
             }
         }
         return mat;
