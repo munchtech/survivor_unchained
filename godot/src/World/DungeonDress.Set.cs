@@ -808,7 +808,7 @@ public static partial class DungeonDress
     // (den r15 E, judge r14 item 4: ruled card seams) the cut's fine wander and root-following in the shader (den_set cut_noise,
     // cut_lum, cut_scale), over a wider ramp (SetCutW metres: the ragged border's g from 0 to 1; 0.3 was a 24 px step), and
     // the ragged field unsharpened (SetRagSharp 0: its smoothstep held the cut at 0 or 1 over a fifth of a border, straight)
-    static readonly float SetOcclude = SurvivorUnchained.Args.Num("den-occlude", 1f);   // (den r18 lead, coordinator item: a stone hid her whole body, s11 leg L10) on; r17 0. (den r15 F) default 0 until a den_set card is proven over her (the roots that cover her in the film are kit scenes, other shaders); 1 on: set pieces between the camera and her fade round her (den_set.gdshaderinc occ_cut); 0 off
+    static readonly float SetOcclude = SurvivorUnchained.Args.Num("den-occlude", 0f);   // (den r18 lead, coordinator item: a stone hid her whole body, s11 leg L10) back to 0 after test r8o: on a bank card the cut opened a black hole onto the void behind it, and the x-ray silhouette already shows her through the cards. (den r15 F) default 0 until a den_set card is proven over her (the roots that cover her in the film are kit scenes, other shaders); 1 on: set pieces between the camera and her fade round her (den_set.gdshaderinc occ_cut); 0 off
     static readonly float SetCutNoise = SurvivorUnchained.Args.Num("den-set-cut-noise", 0.4f);
     static readonly float SetCutLum = SurvivorUnchained.Args.Num("den-set-cut-lum", 0.5f);
     static readonly float SetCutScale = SurvivorUnchained.Args.Num("den-set-cut-scale", 2.2f);

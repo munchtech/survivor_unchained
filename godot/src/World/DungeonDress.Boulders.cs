@@ -66,6 +66,7 @@ public static partial class DungeonDress
     static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
         Placed.Add((x, zz, scale * (big ? 2.0f : 1.0f)));
+        if (Args.Has("den-log-boulders")) GD.Print($"[den-boulder] ({x:0.0}, {zz:0.0}) r {scale * (big ? 2.0f : 1.0f):0.00} big {big}");
         if (SetMode > 0 && SetIn(x, zz)) return PlaceSetBoulder(c, pick, x, zz, scale, big);   // (round 10: the painted set's O1)
         var all = Boulders().FindAll(q => q.Big == big);
         if (all.Count == 0) all = Boulders();
@@ -93,7 +94,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("rect", b.Uv);
         mat.SetShaderParameter("dmax", bDmax);
         mat.SetShaderParameter("gain", BoulderGain);
-        mat.SetShaderParameter("occ_k", SurvivorUnchained.Args.Num("den-boulder-occlude", 1f));   // (den r18 lead, coordinator item) the stone fades round her where it stands over her; 0: r17
+        mat.SetShaderParameter("occ_k", SurvivorUnchained.Args.Num("den-boulder-occlude", 0f));   // (den r18 lead, coordinator item) 1: the stone fades round her where it stands over her. Default 0 (r18 test r8o): the cut dithered rocks that did not cover her, and the game's x-ray silhouette already shows her through every den boulder
         mat.SetShaderParameter("spot_cap", SurvivorUnchained.Args.Num("den-boulder-cap", 99f));   // (den r18 L3, R17 item 10) soft cap on a spot's light on the stone; 99: r17
         mat.SetShaderParameter("right_dir", bRight);
         mat.SetShaderParameter("up_dir", bUp);
