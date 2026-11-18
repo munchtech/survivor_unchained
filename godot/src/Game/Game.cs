@@ -401,6 +401,11 @@ public partial class Game : Node, IZoneHost
             var mb = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map);
             var bc = mb.Boss;
             at = Args.Get("at") == "boss" ? new Arrival(bc.X, bc.Z - bc.R + 1) : new Arrival(bc.X, bc.Z);
+            // --at-off DX,DZ: metres added to that arrival (shots only: stands her clear of the ruler's body).
+            if (Args.Get("at-off") is string aoff && aoff.Split(',') is { Length: 2 } ao
+                && double.TryParse(ao[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var aox)
+                && double.TryParse(ao[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var aoz))
+                at = new Arrival(at!.Value.X + aox, at.Value.Z + aoz);
             GD.Print($"at {Args.Get("at")}: ruler's clearing ({bc.X:0.0}, {bc.Z:0.0}) r {bc.R:0.0}");
             if (mb.HoleField is { } hf)
                 for (int j = 1; j < 300; j++)
