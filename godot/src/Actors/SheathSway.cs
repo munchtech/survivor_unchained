@@ -40,15 +40,25 @@ public partial class SheathSway : SkeletonModifier3D
     /// <summary>Whether her left hand holds the hilt now: its wrist within SheathHang.HoldOn of the throat as the rigid
     /// mount puts it (hysteresis to HoldOff). The pose, not the clip's name: under her AnimationTree the AnimationPlayer's
     /// current clip is empty, so the name list never engaged in play.</summary>
-    bool HiltHeldNow(Skeleton3D sk)
+    Vector3 prevRel;
+    bool havePrev;
+    float wristSpeed = float.PositiveInfinity, wristToThroat;
+
+    bool HiltHeldNow(Skeleton3D sk, float dt)
     {
         if (!hilt) return false;
         if (handIdx == -2) handIdx = sk.FindBone("hand_l");
         if (handIdx < 0) return held = false;
         var g = sk.GlobalTransform;
-        var throat = g * (sk.GetBoneGlobalPose(idx) * (rigid * new Vector3(0, SheathHang.Throat, 0)));
+        var boneW = g * sk.GetBoneGlobalPose(idx);
+        var throat = boneW * (rigid * new Vector3(0, SheathHang.Throat, 0));
         var wrist = g * sk.GetBoneGlobalPose(handIdx).Origin;
-        return held = SheathHang.HandHolds(held, throat.DistanceTo(wrist));
+        var rel = boneW.AffineInverse() * wrist;
+        wristSpeed = havePrev && dt > 0 ? wrist.DistanceTo(boneW * prevRel) / dt : float.PositiveInfinity;
+        prevRel = rel;
+        havePrev = true;
+        wristToThroat = throat.DistanceTo(wrist);
+        return held = SheathHang.HandHolds(held, wristToThroat, wristSpeed);
     }
 
     // `--hilt-tilt off`: held, the piece rides rigidly as before (before/after frames); `--hilt-held x,y,z`: another axis.
@@ -84,7 +94,7 @@ public partial class SheathSway : SkeletonModifier3D
         // The bone's turn in skeleton space and from its rest there (D = pose * rest^-1).
         var poseQ = sk.GetBoneGlobalPose(idx).Basis.Orthonormalized().GetRotationQuaternion();
         var d = Q((poseQ * restQ.Inverse()).Normalized());
-        var h = hang.Step(d, (float)delta, HiltHeldNow(sk));
+        var h = hang.Step(d, (float)delta, HiltHeldNow(sk, (float)delta));
         var hung = new Quaternion(h.X, h.Y, h.Z, h.W).Normalized();
         // The piece's turn in skeleton space: hung * rest * rigid; back in the bone's space under the pose.
         var basis = new Basis((poseQ.Inverse() * hung * restQ).Normalized()) * rigid.Basis;
@@ -128,6 +138,6 @@ public partial class SheathSway : SkeletonModifier3D
         var hl = B("hand_l");
         string S(Vector2 v) => System.FormattableString.Invariant($"{v.X:0.0} {v.Y:0.0}");
         string W(Vector3 v) => System.FormattableString.Invariant($"{v.X:0.000} {v.Y:0.000} {v.Z:0.000}");
-        GD.Print(System.FormattableString.Invariant($"SHEATH w {hang.Weight:0.00} held {(held ? 1 : 0)} len {tipLen:0.000} scr {S(P(sp))} {S(P(th))} {S(P(tp))} ft {S(P(B("foot_l")))} {S(P(B("foot_r")))} {S(P(B("ball_l")))} {S(P(B("ball_r")))} w {W(sp)} {W(tp)} {W(th)} hl {W(hl)}"));
+        GD.Print(System.FormattableString.Invariant($"SHEATH w {hang.Weight:0.00} held {(held ? 1 : 0)} len {tipLen:0.000} scr {S(P(sp))} {S(P(th))} {S(P(tp))} ft {S(P(B("foot_l")))} {S(P(B("foot_r")))} {S(P(B("ball_l")))} {S(P(B("ball_r")))} w {W(sp)} {W(tp)} {W(th)} hl {W(hl)} v {wristSpeed:0.000} d {wristToThroat:0.000}"));
     }
 }

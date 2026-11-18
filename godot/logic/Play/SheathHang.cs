@@ -56,6 +56,17 @@ public sealed class SheathHang
     /// list (<see cref="HiltHeld"/>) never engaged in play (warden-move, 17 Nov: hang weight 1.00 every frame).</summary>
     public static bool HandHolds(bool was, float wristToThroat) => wristToThroat < (was ? HoldOff : HoldOn);
 
+    /// <summary>A hand only TAKES hold when its wrist is nearly still on the piece: under this speed (m/s, the wrist's
+    /// speed relative to the mount's bone). Measured from the clips (pelvis frame): the town run and sprint hold the wrist
+    /// 0.085 m from the throat at 0 m/s; the town walk's free left hand swings past the throat (under 0.12 m for 17 of 41
+    /// frames) at 0.42-1.31 m/s, which must not grab and drop the scabbard every stride.</summary>
+    public const float HoldStill = 0.3f;
+
+    /// <summary>As <see cref="HandHolds(bool,float)"/>, taking hold only near AND still (<see cref="HoldStill"/>); letting go
+    /// stays distance-only (hysteresis to <see cref="HoldOff"/>).</summary>
+    public static bool HandHolds(bool was, float wristToThroat, float wristSpeed) =>
+        was ? wristToThroat < HoldOff : wristToThroat < HoldOn && wristSpeed < HoldStill;
+
     Quaternion mean, now;
     bool started;
     float w = 1;
