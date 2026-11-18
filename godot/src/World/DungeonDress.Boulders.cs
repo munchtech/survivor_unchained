@@ -93,6 +93,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("rect", b.Uv);
         mat.SetShaderParameter("dmax", bDmax);
         mat.SetShaderParameter("gain", BoulderGain);
+        mat.SetShaderParameter("occ_k", SurvivorUnchained.Args.Num("den-boulder-occlude", 1f));   // (den r18 lead, coordinator item) the stone fades round her where it stands over her; 0: r17
         mat.SetShaderParameter("spot_cap", SurvivorUnchained.Args.Num("den-boulder-cap", 99f));   // (den r18 L3, R17 item 10) soft cap on a spot's light on the stone; 99: r17
         mat.SetShaderParameter("right_dir", bRight);
         mat.SetShaderParameter("up_dir", bUp);

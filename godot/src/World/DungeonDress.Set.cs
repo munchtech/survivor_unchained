@@ -39,7 +39,7 @@ public static partial class DungeonDress
     static readonly float SetRockLanePaint = SurvivorUnchained.Args.Num("den-rock-lanepaint", 0f);   // (den r15 G) the lane/alcove stones drawn from the painted round sheet O1r too
     static string? LaneRockKey => SetRockLanePaint > 0f && SetRockPaint > 0f && SetRockLit > 0f ? "O1r" : null;
     static readonly float SetRockNoCube = SurvivorUnchained.Args.Num("den-rock-nocube", 0f);   // (den r15 A) 1: plain O1 stones never the flat-topped block (PlaceSetObj). Off: a1 showed the s11 pale cube is not that piece (the cast over the bank's rise makes the cube)
-    static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 3f);   // (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
+    static readonly int SetLairCrowns = (int)SurvivorUnchained.Args.Num("den-lair-crowns", 2f);   // (den r18 lead, R17 item 4: 6-7 crowns carpeted the lairs; r17 3) (den r13 rooms) root-crowns (B6) a lair may hold (0: no cap)
     static int lairPits;   // (den r13 rooms) lair holes met so far
     static readonly float SetPitCells = SurvivorUnchained.Args.Num("den-pit-cells", 1f);   // (den r16 A, R15f item 1) the lair pits as glowing cracks in a dark pit (SetMat); 0: the r15 strokes
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
@@ -142,6 +142,13 @@ public static partial class DungeonDress
             // --den-pit-bw x at its foot, the floor y at the far foot within z metres; smooth lip, no crumbs (den_set pit_bowl). 0: as r17 P
             mat.SetShaderParameter("pit_bowl", SurvivorUnchained.Args.Num("den-pit-bowl", 1f));
             mat.SetShaderParameter("pit_bw", V3("den-pit-bw", new Vector3(0.35f, 0.55f, 0.5f)));
+            // (den r18 P4, R17 items 1, 5) --den-pit-v2 1: veins not plates, a smooth far wall, the near lip's shade, no shader root wires (den_set pit_v2); 0: r17
+            mat.SetShaderParameter("pit_v2", SurvivorUnchained.Args.Num("den-pit-v2", 1f));
+            var pv = V3("den-pit-vein", new Vector3(0.06f, 0.15f, 0.55f));
+            mat.SetShaderParameter("pit_vein", new Vector4(pv.X, pv.Y, pv.Z, SurvivorUnchained.Args.Num("den-pit-branch", 0.35f)));
+            mat.SetShaderParameter("pit_wg", V3("den-pit-wg", new Vector3(1.4f, 0.45f, 0.8f)));
+            mat.SetShaderParameter("pit_near", new Vector2(SurvivorUnchained.Args.Num("den-pit-near", 0.7f), SurvivorUnchained.Args.Num("den-pit-near-m", 0.9f)));
+            mat.SetShaderParameter("pit_self", new Vector2(SurvivorUnchained.Args.Num("den-pit-self-alb", 1f), SurvivorUnchained.Args.Num("den-pit-self", 0f)));
         }
         return mat;
     }
@@ -786,7 +793,7 @@ public static partial class DungeonDress
     // (den r15 E, judge r14 item 4: ruled card seams) the cut's fine wander and root-following in the shader (den_set cut_noise,
     // cut_lum, cut_scale), over a wider ramp (SetCutW metres: the ragged border's g from 0 to 1; 0.3 was a 24 px step), and
     // the ragged field unsharpened (SetRagSharp 0: its smoothstep held the cut at 0 or 1 over a fifth of a border, straight)
-    static readonly float SetOcclude = SurvivorUnchained.Args.Num("den-occlude", 0f);   // (den r15 F) default 0 until a den_set card is proven over her (the roots that cover her in the film are kit scenes, other shaders); 1 on: set pieces between the camera and her fade round her (den_set.gdshaderinc occ_cut); 0 off
+    static readonly float SetOcclude = SurvivorUnchained.Args.Num("den-occlude", 1f);   // (den r18 lead, coordinator item: a stone hid her whole body, s11 leg L10) on; r17 0. (den r15 F) default 0 until a den_set card is proven over her (the roots that cover her in the film are kit scenes, other shaders); 1 on: set pieces between the camera and her fade round her (den_set.gdshaderinc occ_cut); 0 off
     static readonly float SetCutNoise = SurvivorUnchained.Args.Num("den-set-cut-noise", 0.4f);
     static readonly float SetCutLum = SurvivorUnchained.Args.Num("den-set-cut-lum", 0.5f);
     static readonly float SetCutScale = SurvivorUnchained.Args.Num("den-set-cut-scale", 2.2f);
@@ -1160,7 +1167,11 @@ public static partial class DungeonDress
         // (den r15 A, R14 judge item 6 "the pale cube rock") O1's flat-topped block (piece 2), cast on its proxy at the banks'
         // feet, drew a pale cube (s11 room 1790-1920,620-800): the plain O1 stones (lanes, alcoves) take the round mossed piece 1
         if (SetRockNoCube > 0f && sheet == "O1" && key == null && setSheets!["O1"].Count > 2 && setSheets["O1"].IndexOf(pc) == 2) pc = setSheets["O1"][1];
+        // (den r18 lead, D4 R17 item 2) the painted bone litter and carcasses turned a little (about +-35 deg, inside the painted light; mirrors are in the sheets)
+        if (SetVary > 0f && sheet is "O7" or "O9") rot = (Hash((int)(x * 17f), (int)(zz * 17f), 2205) - 0.5f) * 1.2f;
         float W = pc.Metres.X * k, Hr = pc.Metres.Y * k;
+        // (den r18 lead, L3 R17 item 5) the light's lair shafts keep off the stones, the root crowns and the arc (DungeonLight LairFrameFoot)
+        if (sheet is "B6" or "O1" or "O8") Placed.Add((x, zz, 0.5f * W));
         float rx = 0.46f * W, ry = ryk * rx;
         float aa = CamUp.Y * ry, hm = 0.94f * Hr;
         float bb = Mathf.Max((hm * hm - aa * aa) / (2f * hm), 0.25f * rx);
@@ -1383,7 +1394,7 @@ public static partial class DungeonDress
     static readonly float SetLairBlood = SurvivorUnchained.Args.Num("den-lair-blood", 0.12f);   // (den r15 lead) a lair pick's chance of a blood splash (was: every bone pile plus 0.6 of the rest: red smears all over the s23 lair)
     static readonly float SetLairFungus = SurvivorUnchained.Args.Num("den-lair-fungus", 0f);   // (den r15 Q, judge r15 item 1) off: the 3D clusters read as toppled teal pills; the root crowns carry painted glow caps.    // (den r14 objects, item 13) glow-fungus clusters on the lair's pit rims (0 off)
     static readonly float SetPitRoots = SurvivorUnchained.Args.Num("den-pit-roots", 2f);   // (den r17 P3, R16 item 1) B6 root ends laid over each in-view lair pit's lip (den_boss.png's roots over the rims): this many on the main, one on each smaller; 0 off
-    static readonly float SetLairRoots = SurvivorUnchained.Args.Num("den-lair-roots", 3f);     // root tendrils (B6) laid between its pits
+    static readonly float SetLairRoots = SurvivorUnchained.Args.Num("den-lair-roots", 0f);     // (den r18 lead, R17 item 4; r17 3) root tendrils (B6) laid between its pits
 
     /// <summary>(den r14 objects, item 13) The lair's middle had no fungus and its pits stood bare: root tendrils (B6, cards
     /// that block nothing) laid between the pits and glow-fungus clusters on the pit rims (the Fungus() mushrooms and cool light).</summary>

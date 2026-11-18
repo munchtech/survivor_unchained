@@ -21,6 +21,33 @@ uniform float spot_cap = 99.0;                 // (den r18 L3, R17 item 10) a sp
 uniform float local_turn = 0.5;               // how much a spot or omni follows the painted normal (0 flat)
 
 varying vec3 lpos;
+// (den r18 lead, coordinator #15 item: a boulder hid her whole body at the play camera, s11 leg L10) the occlusion cut-out as
+// den_set's occ_cut: the painted stone nearer the camera than her chest and above her knees, inside a screen disc round her,
+// dithered out to occ_a of itself. occ_k 0 off (--den-boulder-occlude). Her chest is the global 'survivor' (WorldScene).
+global uniform vec4 survivor;
+uniform float occ_k = 0.0;
+uniform float occ_a = 0.2;
+uniform vec2 occ_r = vec2(0.085, 0.15);
+float occ_bayer(ivec2 p) {
+	int x = p.x & 7;
+	int y = p.y & 7;
+	int v = 0;
+	for (int i = 2; i >= 0; i--) {
+		v = (v << 2) | ((((x >> i) & 1) ^ ((y >> i) & 1)) << 1) | ((y >> i) & 1);
+	}
+	return (float(v) + 0.5) / 64.0;
+}
+bool occ_cut(mat4 pm, vec3 vpos, vec3 wp, vec4 frag, vec2 vsz, mat4 vm) {
+	if (occ_k <= 0.0 || survivor.w <= 0.0 || wp.y < survivor.y - 0.2) return false;
+	vec3 her_v = (vm * vec4(survivor.xyz, 1.0)).xyz;
+	if (-vpos.z >= -her_v.z - 0.4) return false;
+	vec4 hp = pm * vec4(her_v, 1.0);
+	vec2 ndc = hp.xy / hp.w;
+	vec2 her_px = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5) * vsz;
+	float d = length(frag.xy - her_px) / vsz.y;
+	float hole = (1.0 - occ_a) * occ_k * (1.0 - smoothstep(occ_r.x, occ_r.y, d));
+	return occ_bayer(ivec2(frag.xy)) < hole;
+}
 
 void vertex() {
 	lpos = VERTEX;
@@ -34,6 +61,7 @@ void fragment() {
 	vec4 vp = VIEW_MATRIX * (MODEL_MATRIX * vec4(lp, 1.0));
 	vec4 cp = PROJECTION_MATRIX * vp;
 	DEPTH = cp.z / cp.w;
+	if (occ_cut(PROJECTION_MATRIX, vp.xyz, (MODEL_MATRIX * vec4(lp, 1.0)).xyz, FRAGCOORD, VIEWPORT_SIZE, VIEW_MATRIX)) discard;
 	LIGHT_VERTEX = vp.xyz;
 	vec3 nw = normalize(right_dir * (f.r * 2.0 - 1.0) + up_dir * (f.g * 2.0 - 1.0) - view_dir * (f.b * 2.0 - 1.0));
 	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(nw, 0.0))).xyz);
