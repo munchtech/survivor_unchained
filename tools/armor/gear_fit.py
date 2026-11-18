@@ -2749,6 +2749,116 @@ def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close", body=None)
     return st
 
 
+# THE TRIM RIDES ITS STEEL (lane G solver rim2, 17 Nov; rigid_roles.json slots.<slot>.trim_ride, its "_trim_ride" note):
+# a component of a piece's trim mesh ("mats": the gold) with "share" of its points within "ride_mm" of the same piece's
+# steel ("host_mat": its big bendy parts, "host_n" points and up) at the built rest rides that steel: each point takes
+# the steel's skin weights (dense over the joints, top 8) and its blend-shape deltas, every shape (one the steel lacks
+# is 0 there), interpolated at its nearest point on the steel surface, full within "near_mm", a cosine fade to its own
+# at "fade_mm"; it keeps its own rest point (and so its offset off the steel). A rivet on the steel rides it so too, per
+# point, if A made it rigid (ORNAMENT: one blend, the mean of her skin under it, stood +-0.7 mm in and off the steel as
+# the steel bends under it; per point 0.1); a rigid group shared with another mesh keeps its own. Each layer had taken her skin's values at its own bound point, so the gold set 0.3-0.4 mm into the steel came
+# out through it as she moved (B's warden top: up to 2.5 mm, the jagged bronze at the cups' lower inner rims).
+TRIM_RIDE = {"host_mat": "steel", "host_n": 2000, "mats": ["gold"], "ride_mm": 2.0, "share": 0.5,
+             "near_mm": 4.0, "fade_mm": 8.0, "k": 16}
+
+
+def trim_ride_rule(bd, ev, law=TRIM_RIDE, tier="close"):
+    """The trim components lying on the piece's steel take the steel's weights and shape deltas (TRIM_RIDE) in ev (a
+    piece's eval_unit output); returns stats ({} when the tier has no steel or no trim)."""
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
+    if not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    mat = lambda nd: nd.rsplit(".", 1)[-1]  # noqa: E731
+    hosts = [m for m in ms if law["host_mat"] in mat(m["node"])]
+    trims = [m for m in ms if m not in hosts and any(k in mat(m["node"]) for k in law["mats"])]
+    if not hosts or not trims:
+        return {}
+    nj = max(int(ev[m["node"]]["J"].max()) for m in ms) + 1
+
+    def per_unique(v):
+        f = np.zeros(len(v["Xu"]), np.int64)
+        f[v["inv"]] = np.arange(len(v["inv"]))
+        return f
+
+    def dense(J, W):
+        D = np.zeros((len(J), nj))
+        np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.astype(np.int64).ravel()), W.astype(float).ravel())
+        return D
+
+    def labels(i, n):
+        T = bd_tris(bd, i)
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        return T, connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)[1]
+    HX, HT, HD, HS, names, n0 = [], [], [], [], set(), 0
+    for m in hosts:
+        v = ev[m["node"]]
+        n, f = len(v["Xu"]), per_unique(v)
+        T, lab = labels(m["i"], n)
+        big = (np.bincount(lab)[lab] >= law["host_n"]) & (np.asarray(v["comp"]) < 0)
+        HX.append(v["Xu"])
+        HT.append(T[big[T].all(1)] + n0)
+        HD.append(dense(v["J"][f], v["W"][f]))
+        HS.append({nm: s[f] for nm, s in v["shapes"].items()})
+        names |= set(v["shapes"])
+        n0 += n
+    HX, HT, HD = np.vstack(HX), np.vstack(HT), np.vstack(HD)
+    if not len(HT):
+        return {}
+    HS = {nm: np.vstack([s.get(nm, np.zeros((len(d), 3))) for s, d in zip(HS, [ev[m["node"]]["Xu"] for m in hosts])])
+          for nm in names}
+    surf = Surface(HX, HT)
+    near, fade = law["near_mm"] / 1000.0, law["fade_mm"] / 1000.0
+    st = {"trims": 0, "rivets": 0, "points": 0, "vertices": 0, "by_side": {}, "max_w": 0.0, "max_mm": 0.0}
+    for m in trims:
+        v = ev[m["node"]]
+        n, f, inv = len(v["Xu"]), per_unique(v), v["inv"]
+        comp, lead = np.asarray(v["comp"]), np.asarray(v["lead"])
+        _, lab = labels(m["i"], n)
+        q, _, t, d = surf.closest(v["Xu"], k=law["k"])
+        Tv = HT[t]
+        b = bary(q, HX[Tv[:, 0]], HX[Tv[:, 1]], HX[Tv[:, 2]])
+        Dq = np.einsum("nc,ncj->nj", b, HD[Tv])
+        Sq = {nm: np.einsum("nc,ncx->nx", b, s[Tv]) for nm, s in HS.items()}
+        on = d <= law["ride_mm"] / 1000.0
+        g = 0.5 * (1.0 + np.cos(np.pi * np.clip((d - near) / max(fade - near, 1e-9), 0.0, 1.0)))
+        # (a component rides whole, a rivet as the trim: per point; a rigid group shared with another mesh keeps its own)
+        others = np.concatenate([np.asarray(ev[mm["node"]]["comp"]) for mm in ms if mm is not m])
+        shared = np.isin(np.where(comp >= 0, lead[np.maximum(comp, 0)], -1), lead[others[others >= 0]])
+        rides = np.zeros(n, bool)
+        for c in np.unique(lab):
+            s = lab == c
+            if on[s].mean() >= law["share"] and not shared[s].any():
+                rides |= s
+                st["trims" if s.sum() >= law["host_n"] // 4 else "rivets"] += 1
+        Jn, Wn = top_k(np.where(rides[:, None], (1 - g)[:, None] * dense(v["J"][f], v["W"][f]) + g[:, None] * Dq, 0.0))
+        Sn = {}
+        for nm in set(v["shapes"]) | names:
+            own = v["shapes"][nm][f] if nm in v["shapes"] else np.zeros((n, 3))
+            Sn[nm] = (1 - g)[:, None] * own + g[:, None] * Sq.get(nm, np.zeros((n, 3)))
+        go = rides & (g > 1e-6)
+        if not go.any():
+            continue
+        hit = go[inv]
+        ref = dense(v["J"][f], v["W"][f])
+        st["max_w"] = round(max(st["max_w"], float(np.abs(dense(Jn, Wn) - ref)[go].sum(1).max()) / 2), 3)
+        v["J"][hit] = Jn[inv[hit]].astype(v["J"].dtype)
+        v["W"][hit] = Wn[inv[hit]].astype(v["W"].dtype)
+        for nm, s in Sn.items():
+            if nm not in v["shapes"]:
+                v["shapes"][nm] = np.zeros((len(inv), 3))
+            old = v["shapes"][nm][f]
+            st["max_mm"] = round(max(st["max_mm"], float(np.linalg.norm(s - old, axis=1)[go].max()) * 1000), 2)
+            v["shapes"][nm][hit] = s[inv[hit]]
+            if nm not in names and not np.abs(v["shapes"][nm]).max() > 1e-5:
+                del v["shapes"][nm]
+        st["points"] += int(go.sum())
+        st["vertices"] += int(hit.sum())
+        for sd, sm in (("x+", v["Xu"][:, 0] > 0), ("x-", v["Xu"][:, 0] < 0)):
+            st["by_side"][f"{m['node']} {sd}"] = int((go & sm)[inv].sum())
+    return st
+
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
@@ -2796,6 +2906,15 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
                                          bodies[tier])
                 if st:
                     print(f"{bd.id}: {tier} band ends take their cups' support: {st}", flush=True)
+        # (TRIM_RIDE: a slot's "trim_ride" rule in rigid_roles.json: the trim lying on its steel rides the steel; after
+        # the band rules, so the bands keep the values they take from the cups and their rims)
+        tr = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("trim_ride")
+        if tr and bd.meta["row"].get("outfit"):
+            law = dict(TRIM_RIDE, **tr) if isinstance(tr, dict) else TRIM_RIDE
+            for tier in TIERS:
+                st = trim_ride_rule(bd, ev, law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} trim rides its steel: {st}", flush=True)
         evs[bd.id] = ev
         for line in rim_lines(bd, ev):
             print(line, flush=True)
