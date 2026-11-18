@@ -148,4 +148,14 @@ def clips(rig, want):
         c = make(rig, name, **row)
         if c is not None:
             out.append(c)
+    # The warden's own leap: the shared take, its axe crouch settled into Prowl's f0 over 18 frames, the feet stepping
+    # (prowl.settle). PlayerView plays leap_<calling> when the pack has one; the other callings keep `leap`.
+    if os.environ.get("WARDEN_IDLE", "prowl") == "prowl" and (not want or any(w in "leap_warden" and len(w) > 4 or "leap_warden" in w for w in want)):
+        from clips import prowl, idle
+        row = dict(TABLE["leap"]); row["warp_"] = row.pop("warp", None)
+        c = make(rig, "leap", **row)
+        if c is not None:
+            c = prowl.settle(rig, c, n=18, fingers_l=idle.warden(0, 0)["fingers_l"])
+            c.name = "leap_warden"
+            out.append(c)
     return out

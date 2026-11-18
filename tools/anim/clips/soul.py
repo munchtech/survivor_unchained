@@ -287,6 +287,9 @@ def _swing_l(abd, flex, reach=0.0):
 
 
 def warden_break(rig):
+    if os.environ.get("WARDEN_IDLE", "prowl") == "prowl":  # (aim-move: the drawn idle is Prowl; its break is built on it)
+        from clips import prowl
+        return prowl.build_break(rig, fingers_l=idle.warden(0, 0)["fingers_l"])
     base = idle.base_of(rig, "warden")
     # The fist up and forward of the shoulder, so the guard stands in front of
     # it and the flat rests on the pauldron (armscheck, 13 October: at 6 cm

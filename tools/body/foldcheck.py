@@ -19,7 +19,7 @@ Per pose and mode, on the body's own triangles (head pieces left out, as the R&D
                 counted as edges, new against rest (at rest only the toes cross, 380 edges a side).
 The four routed faults per side (rest centroid boxes, mm; her left is +x):
   shoulder_{s}  x 60..280, y 1380..1600 (the deltoid-trapezius seam, shoulder_flex);
-  strap_{s}     the skin within 35 mm of the fitted top (x14/r19 p1_top_rest.glb, a closed shell: its whole surface;
+  strap_{s}     the skin within 35 mm of the fitted top (x14/r19 p1_top_rest.glb; frozen in base/rnd, a closed shell: its whole surface;
                 the strike's keys 18-21 folded under its strap edge);
   lumbar_{s}    y 1080..1130, |x| < 60, z < -40 (walk:10's lumbar midline);
   belly_{s}     front torso self-crossing: edges with rest y 950..1250, z > 20, |x| < 170 through triangles of that
@@ -52,6 +52,9 @@ MARIONETTE = Path(r"C:\Users\munch\Desktop\Marionette")
 RND = MARIONETTE / "generated/rnd/x14"
 RND_CLIPS = {"walk": RND / "r11/p1_top_folk_f_walk.glb", "fight": RND / "r11/p1_top_dw_strike_f.glb"}
 TOP = RND / "r19/p1_top_rest.glb"
+# the two above frozen into the repo (rnd_freeze.py, 16 Nov: r19 was swept from the scratch and the build broke);
+# used when present, the Marionette paths otherwise
+FROZEN = HERE / "base/rnd"
 SIDES = (("l", 1.0), ("r", -1.0))
 HELPER = ("twist", "share", "point", "corrective")
 # fitgates.ROM restated (Marionette tools/npc/attach/fitgates.py; rig.mjs setupPose)
@@ -197,7 +200,9 @@ class Skin:
         em = Xw[self.Ew].mean(1) * 1e3
         self.reg_t, self.reg_tw = {}, {}
         strap = None
-        if top is not None and Path(top).exists():
+        if top is TOP and (FROZEN / "top.npz").exists():
+            strap = cKDTree(np.load(FROZEN / "top.npz")["pts"])
+        elif top is not None and Path(top).exists():
             g = Glb(str(top))
             m = next(m for m in g.meshes if m.node.startswith("piece_"))
             pts = m.P.astype(float)[::7] * 1e3          # (the top is a closed shell: its whole surface, thinned)
@@ -278,6 +283,19 @@ def rom_poses(p):
 
 
 def rnd_poses(p, which):
+    if (FROZEN / "clips.npz").exists():
+        z = np.load(FROZEN / "clips.npz")
+        my_ibm = np.linalg.inv(p.rest)
+        for tag in which:
+            jn, S, keyed = list(z[f"{tag}_joints"]), z[f"{tag}_S"], set(z[f"{tag}_keyed"].tolist())
+            for k in range(len(S)):
+                G = p.rest.copy()
+                for i, n in enumerate(jn):
+                    q = p.index.get(str(n))
+                    if q is not None:
+                        G[q] = S[k, i] @ np.linalg.inv(my_ibm[q])
+                yield f"{tag}:{k}", G, keyed
+        return
     sys.path.insert(0, str(MARIONETTE / "tools/npc/attach"))
     import glbx  # noqa: E402
     for tag in which:

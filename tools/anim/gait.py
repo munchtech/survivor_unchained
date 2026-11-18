@@ -59,6 +59,24 @@ class Gait:
     head_up: float = 0.0         # chin raised (+) beyond level
     shoulders: tuple = (0, 0)    # clavicles (raise, forward)
     arms: dict = field(default_factory=dict)  # per side overrides: {"r": callable(phase, pose)->hand spec}
+    # (aim-move) The directional set: her travel's heading in her hips' frame, degrees, left + (0 her run, 45 forward-left,
+    # 180 a backpedal, 135 back-left). Past 90 she runs backward (foot_back): the feet land behind her on the ball and roll
+    # forward under her; either way each foot keeps to its own side of the travel line (no crossing). The game yaws her
+    # pelvis toward her travel and plays the clip for what is left (PlayerView, Play/DirLegs.cs).
+    heading: float = 0.0
+    reach_back: float = 0.33     # how far behind the pelvis a backpedal's foot lands
+    kick_back: float = 0.26      # a backpedal's swing foot height
+    # (aim-move, judge r1 fix 3) the recovery leg: s of the swing where the heel reaches its height (the knee folded) and
+    # how high (0 = the old spline: kick*0.8 at 0.22, kick at 0.42).
+    fold_at: float = 0.0
+    fold_kick: float = 0.0
+    # (aim-move, 15 Nov) The arms against the legs. Measured on the built clips (every run, forward and back): with the
+    # arms' phase as it was, each fist came forward WITH its own foot (a pacing swing: at the left foot's landing the left
+    # fist was forward), against the chest, which turns correctly against the hips; so the arm's swing and the shoulder's
+    # turn cancelled on screen (the owner: "the running animation dosn't move anything but her legs") and the trailing
+    # sword arm swung forward as its shoulder went back, into her side (29 mm). contra: each fist forward with the OTHER
+    # foot, swinging with its shoulder. False keeps the old phase (callings not rebuilt yet).
+    contra: bool = False
 
 
 def _spline(points, s):
@@ -97,17 +115,72 @@ def foot(g: Gait, phase):
         return np.array([0.0, y, z]), pitch, 0.0
     s = (ph - g.duty) / (1 - g.duty)
     # Off the toe, the heel kicked up, the knee driven through, the reach.
-    p = _spline([
-        (0.0, z_off, 0.10),
-        (0.22, z_off * 0.75, g.kick * 0.8),
-        (0.42, z_off * 0.25, g.kick),
-        (0.62, z_land * 0.45, g.knee + 0.04),
-        (0.82, z_land + 0.1, 0.12),
-        (1.0, z_land, 0.0),
-    ], s)
+    if g.fold_at > 0:
+        # (judge r1 fix 3) the heel straight up toward the glute off the toe (the knee folded within 2-3 frames), then
+        # carried through high under her and out to the reach.
+        fk = g.fold_kick or g.kick
+        p = _spline([
+            (0.0, z_off, 0.10),
+            (g.fold_at, z_off * 0.80, fk),
+            (g.fold_at + 0.20, z_off * 0.30, fk * 0.95),
+            (0.62, z_land * 0.45, g.knee + 0.04),
+            (0.82, z_land + 0.1, 0.12),
+            (1.0, z_land, 0.0),
+        ], s)
+    else:
+        p = _spline([
+            (0.0, z_off, 0.10),
+            (0.22, z_off * 0.75, g.kick * 0.8),
+            (0.42, z_off * 0.25, g.kick),
+            (0.62, z_land * 0.45, g.knee + 0.04),
+            (0.82, z_land + 0.1, 0.12),
+            (1.0, z_land, 0.0),
+        ], s)
     pitch = float(_spline([(0.0, -g.toe_off), (0.25, -g.toe_off * 1.2), (0.55, -15), (0.8, 8), (1.0, 6)], s)[0])
     toe = float(_spline([(0.0, 30), (0.2, 10), (0.4, 0), (1.0, 0)], s)[0])
     return np.array([0.0, p[1], p[0]]), pitch, toe
+
+
+def foot_back(g: Gait, phase):
+    """A backpedal's foot, as foot() gives it but z measured along her travel (behind her): it lands reach_back behind
+    the pelvis on the ball, rolls flat as it comes forward under her at the ground's speed, leaves ahead of her, and is
+    picked up (the knee bent, the heel up) and set back down behind."""
+    T = g.frames / 30.0
+    travel = g.speed * T * g.duty
+    z_land = g.reach_back
+    z_off = g.reach_back - travel
+    ph = phase % 1.0
+    if ph < g.duty:
+        u = ph / g.duty
+        pitch = -14 * (1 - u) ** 2 + 5 * u ** 2
+        y = 0.035 * (1 - u) ** 2 + 0.02 * max(0.0, (u - 0.7) / 0.3) ** 2
+        return np.array([0.0, y, z_land - travel * u]), pitch, 18 * (1 - u) ** 2
+    s = (ph - g.duty) / (1 - g.duty)
+    p = _spline([
+        (0.0, z_off, 0.03),
+        (0.25, z_off * 0.45, g.kick_back * 0.8),
+        (0.5, z_land * 0.35, g.kick_back),
+        (0.78, z_land * 0.95, 0.12),
+        (1.0, z_land, 0.035),
+    ], s)
+    pitch = float(_spline([(0.0, 5), (0.3, -18), (0.7, -24), (1.0, -14)], s)[0])
+    return np.array([0.0, p[1], p[0]]), pitch, 18 * max(0.0, (s - 0.8) / 0.2) ** 2
+
+
+def foot_dir(g: Gait, phase, side):
+    """A foot of the directional set in the hips' frame (x left, y up, z forward), its yaw (+ toes left), pitch and toe:
+    the forward or back foot along her travel's line (heading), each on its own side of that line by width."""
+    h = math.radians(g.heading)
+    back = abs(g.heading) > 90
+    d = np.array([math.sin(h), math.cos(h)])           # her travel, (x, z)
+    n = np.array([math.cos(h), -math.sin(h)])          # across it, the side her left foot keeps
+    if n[0] < 0 or (abs(n[0]) < 1e-9 and back):
+        n = -n
+    a, pitch, toe = (foot_back if back else foot)(g, phase)
+    along = a[2]
+    x, z = d * along + n * (side * g.width)
+    line = g.heading - (180 if g.heading > 0 else -180) if back else g.heading
+    return np.array([x, a[1], z]), side * 4 + 0.3 * line, pitch, toe
 
 
 def arc_of(v):
@@ -138,7 +211,9 @@ def pose_at(g: Gait, rig: Rig, ph):
     """Her pose at a phase of the cycle (0 = left foot lands); his, as he runs it (manly)."""
     if getattr(rig, "body", "her") == "him":
         g = manly(g)
-    c = math.cos(2 * math.pi * ph)
+    # (aim-move) A backpedal's swing goes the other way: the hips and the chest turn, and the arms swing, against it.
+    backpedal = abs(g.heading) > 90
+    c = math.cos(2 * math.pi * ph) * (-1 if backpedal else 1)
     d2 = g.duty / 2
     # Pelvis: lowest in the middle of each plant, highest in flight.
     y = -g.drop - g.bob / 2 * math.cos(4 * math.pi * (ph - d2))
@@ -155,14 +230,14 @@ def pose_at(g: Gait, rig: Rig, ph):
         "clav_l": g.shoulders, "clav_r": g.shoulders,
         "fingers_l": g.fingers, "fingers_r": g.fingers_r or g.fingers,
     }
+    lead = (0.0 if backpedal else 0.5) if not g.contra else (0.5 if backpedal else 0.0)
     for side, off in (("l", 0.0), ("r", 0.5)):
         s = 1 if side == "l" else -1
-        a, pitch, toe = foot(g, ph - off)
-        rest = rig.prest[rig.I[f"foot_{side}"]]
-        pose[f"foot_{side}"] = {"pos": (s * g.width + a[0], a[1], a[2]), "rot": (s * 4, -pitch, 0), "toe": toe,
+        a, fyaw, pitch, toe = foot_dir(g, ph - off, s)
+        pose[f"foot_{side}"] = {"pos": (a[0], a[1], a[2]), "rot": (fyaw, -pitch, 0), "toe": toe,
                                 "pole": (s * 0.1, 0, 1)}
         # Arms against the legs: the left fist forward as the right foot lands.
-        k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - 0.5))  # 1: this arm fully forward
+        k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - lead))  # 1: this arm fully forward
         fwd = np.array(g.arm_fwd) * [s * -1, 1, 1]
         back = np.array(g.arm_back) * [s * 1, 1, 1]
         # The fist swings on an arc about the shoulder, the arm's reach
@@ -172,7 +247,10 @@ def pose_at(g: Gait, rig: Rig, ph):
         if g.swing is not None:
             hand = _swung(g.swing_r if side == "r" and g.swing_r is not None else g.swing, rig, side, k)
             if side in g.arms:
-                hand = g.arms[side](ph, k, hand)
+                # (aim-move) the carry may read the swing at another phase (a blade lagging the fist): k(ph') =
+                # 0.5 - 0.5 cos(2 pi (ph' - _koff))
+                hand = g.arms[side](ph, k, dict(hand, _koff=off + lead))
+                hand.pop("_koff", None)
             pose[f"hand_{side}"] = hand
             pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
             continue

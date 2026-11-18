@@ -52,6 +52,10 @@ public partial class P1PoseProbe : Node
 
     public override void _ExitTree() => sk.SkeletonUpdated -= Sample;
 
+    /// <summary>(--clip-tour) the clip playing and its time, so a sampled frame can be laid on its clip's phase (lane G motion probe).</summary>
+    static string TourTag() => PlayerView.TourClip is { } c
+        ? $"\"clip\":\"{c}\",\"t\":{PlayerView.TourTime.ToString("0.####", CultureInfo.InvariantCulture)}," : "";
+
     static string V(Vector3 v) => string.Format(CultureInfo.InvariantCulture, "[{0:0.#####},{1:0.#####},{2:0.#####}]", v.X, v.Y, v.Z);
 
     void Start()
@@ -88,7 +92,7 @@ public partial class P1PoseProbe : Node
         if (!started) Start();
         var w = sk.GlobalTransform;
         var sb = new StringBuilder();
-        sb.Append($"{{\"frame\":{f},\"ground\":{root.GlobalPosition.Y.ToString("0.#####", CultureInfo.InvariantCulture)},\"bones\":{{");
+        sb.Append($"{{\"frame\":{f},{TourTag()}\"ground\":{root.GlobalPosition.Y.ToString("0.#####", CultureInfo.InvariantCulture)},\"bones\":{{");
         bool first = true;
         for (int i = 0; i < Roles.Length; i++)
         {
@@ -151,7 +155,8 @@ public partial class P1PoseProbe : Node
             if (c is MeshInstance3D mi && mi.Mesh != null)
                 for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 {
-                    var vs = verts[(mi, s)];
+                    // (a mesh added under the piece after it was counted, e.g. a blade trail: read now, lane G motion probe)
+                    if (!verts.TryGetValue((mi, s), out var vs)) verts[(mi, s)] = vs = mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array();
                     for (int i = 0; i < vs.Length; i++, idx++)
                         if (idx % step == 0) sb.Append($"{(sb.Length > 0 ? "," : "")}{V(to * (m * vs[i]))}");
                 }
@@ -186,7 +191,7 @@ public partial class P1PoseProbe : Node
         var sb = new StringBuilder();
         var cam = sk.GetViewport().GetCamera3D();
         var size = sk.GetViewport().GetVisibleRect().Size;
-        sb.Append($"{{\"frame\":{f},\"skeleton\":{X(sk.GlobalTransform)}");
+        sb.Append($"{{\"frame\":{f},{TourTag()}\"skeleton\":{X(sk.GlobalTransform)}");
         if (cam != null)
             sb.Append($",\"camera\":{{\"x\":{X(cam.GlobalTransform)},\"fov\":{cam.Fov.ToString("0.####", CultureInfo.InvariantCulture)},\"size\":[{size.X.ToString("0", CultureInfo.InvariantCulture)},{size.Y.ToString("0", CultureInfo.InvariantCulture)}]}}");
         sb.Append(",\"meshes\":{");

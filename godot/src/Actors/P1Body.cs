@@ -31,8 +31,40 @@ public static class P1Body
         if (string.IsNullOrEmpty(d)) return DefaultDir;
         return d.EndsWith("/") ? d : d + "/";
     }
-    /// <summary>--body p1, and a published B (with its baked clips) to load.</summary>
-    public static bool On => Args.Get("body") == "p1" && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
+    /// <summary>B is her body: `--body p1` (always, even for a hidden calling), or no --body at all and data/body/her_body.json's
+    /// default is "p1" (any other --body value, a, woman, hero, keeps its meaning) unless the current calling is hidden on B
+    /// (ForCalling); and a published B (with its baked clips) to load.</summary>
+    public static bool On => ForCalling(Calling);
+
+    /// <summary>The current character's calling id, set by Game when a journey begins or loads (null: none yet).</summary>
+    public static string? Calling;
+
+    /// <summary>Whether B is her body for a character of this calling (see On); null calling: no calling to hide.</summary>
+    public static bool ForCalling(string? archetype)
+    {
+        var arg = Args.Get("body");
+        bool want = arg == "p1" || (string.IsNullOrEmpty(arg) && Cfg().Default == "p1" && (archetype == null || !Cfg().Hidden.Contains(archetype)));
+        return want && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
+    }
+
+    /// <summary>Whether the creator offers this calling: all do under any --body flag or an empty hidden_on_b; else not those hidden on B.</summary>
+    public static bool Offered(string archetype) => !(string.IsNullOrEmpty(Args.Get("body")) && Cfg().Default == "p1" && Cfg().Hidden.Contains(archetype));
+
+    static (string Default, HashSet<string> Hidden)? cfg;
+    static (string Default, HashSet<string> Hidden) Cfg()
+    {
+        if (cfg is { } c) return c;
+        string def = "a"; var hid = new HashSet<string>();
+        const string path = "res://data/body/her_body.json";
+        if (FileAccess.FileExists(path))
+        {
+            using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(path));
+            var r = doc.RootElement;
+            if (r.TryGetProperty("default", out var d)) def = d.GetString() ?? "a";
+            if (r.TryGetProperty("hidden_on_b", out var h)) foreach (var e in h.EnumerateArray()) hid.Add(e.GetString() ?? "");
+        }
+        return (cfg = (def, hid)).Value;
+    }
     static PackedScene? close, play;
 
     /// <summary>Meta on a mesh laid from a built body's gear (HerWear.Lay, HerLod.Attach with B's play-tier unit): B's own

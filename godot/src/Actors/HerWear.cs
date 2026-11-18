@@ -61,6 +61,8 @@ public static class HerWear
     {
         var ix = ArmorIndex.Shared;
         var w = new Dictionary<string, string>(worn ?? new Dictionary<string, string>());
+        // (on B, an equipped item's pieces from an outfit hidden on B are not drawn: her calling's own fill shows; --wear still can)
+        if (P1Body.On) w = Wear.Without(w, ix, Wear.OutfitsHiddenOnB);
         if (Override != null) foreach (var id in Override) w[ix.SlotOf(id)] = id;
         // (her show-helm toggle off: "head" stays empty, which needs the piece path even with nothing worn)
         if (HelmOverride is bool shown) hide = shown ? null : new[] { "head" };

@@ -65,3 +65,12 @@ Read:
 - "also comit b to the demo": B goes IN the demo (20 Nov). My picks 2-5 stand: retire the 10 old plate sets; refit reaver, ranger and arcanist on one judged sheet before the flip; first generated proof the vambrace pair, then a pauldron; TRELLIS.2 local first, Meshy per piece only with the owner's yes (the generated route is after the demo).
 - Fallback until the flip gate passes: A stays one setting away and every build takes the body as an input, so a failed gate ships the demo whole on A, never half-moved.
 - "the generator will eventually be meshy first (or rodan or tripo) once its buttery smooth working well.  they are usually better than trellis.  but for learning it could be costly": TRELLIS.2 (free, local) while the route is being learned; once it runs smooth, the paid generators (Meshy, Rodin, Tripo) become the production default.
+
+## The owner on the callings (17 Nov 2026, word for word)
+- "hide all 3 besides warden for demo.": on B the demo ships the Warden only; reaver, ranger and arcanist are hidden by data (one switch back). Their refit on B (B's crotch and inner-thigh skin weights in Marionette, then the three units) is post-demo.
+
+## The owner on the Warden top (17 Nov 2026, word for word)
+- On the creator side view: "honestly that armor piece dosn't look great at all.  lets make it better designed"
+- "ok redesign it but make sure marionette can copy and paste any of these armor pieces and for \"dressing\" anyway we want you know?"
+- "actually.  try the quick fix first.  and mark that as something to do first next week.  but still make sure marionette is involved with our new gear.  you still don't seem to be following the pipeline but maybe you are"
+- So: lead 8 spends ONE quick-fix round on the far-cup line (trim re-cut first, then cups lowered 25-30 mm), hard stop, else it ships as a known. The Warden top REDESIGN is first thing next week (after the demo), built through Marionette's gear stage (plan step 1a) as the first piece on the real pipe. A Marionette gear-library lead (separate) registers every armor piece now so Marionette can dress any roster body.

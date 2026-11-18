@@ -490,7 +490,7 @@ public static class Arms
             if (pivotAt is { } pv) pivotAt = toB * pv;
             if (WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade)
             {
-                // (B's own sheath point, WeaponSockets.HipBladeAtB: the hilt 15 cm lower on B's hip; the hang point moves with it)
+                // (B's own sheath point, WeaponSockets.HipBladeAtB: under B's rebaked palm, clear of B's hip; the hang point moves with it)
                 var d = G(WeaponSockets.HipBladeAtB - WeaponSockets.HipBladeAtA);
                 var shift = skeleton.GetBoneGlobalRest(bb).Basis.Inverse() * new Vector3(left ? -d.X : d.X, d.Y, d.Z);
                 at.Origin += shift;

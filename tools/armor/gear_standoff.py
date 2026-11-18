@@ -27,6 +27,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 REPO = os.path.dirname(os.path.dirname(HERE))
 OUT_MM = 2.0          # gear_wear's out2: through the outer face by more than this
+# THE CLOSE VIEW (lane G round 6, 17 Nov: B's warden lame 2 showed her arm through its lower-front corner at the close
+# camera, 1.8 mm in idle_warden_town, 2.7 mm in idle_warden_look, which the 2 mm count let pass): in a clip seen at the
+# close cameras (gear_wear CLOSE_WORDS: ~1000 px/m, a pixel a mm) any through shows, so it counts from OUT_CLOSE_MM; and
+# skin swept in from beside a plate (gear_wear's sweep) sets targets on the face it stood out past, as the skin under it does.
+OUT_CLOSE_MM = 0.0
 NEAR_PLAY = 0.015     # a play-tier vertex takes the extra need of the close tier's nearest targeted vertex this close
 
 
@@ -39,7 +44,13 @@ def _work(args):
     ck = gw.Check(sc, [r for r in rows if r["id"] in pieces], order, 0.0025, True)
     ck.add_skin(pieces)
     ck.run(gw.dump_sources(sc, gw.clip_files(",".join(clips)), step), log=lambda *a: None)
-    return {x["B"]: dict(hitv=x["hitv"], minout=x["min_out"], area=x["area"]) for x in ck.tests}
+    return {x["B"]: dict(hitv=x["hitv"], minout=x["min_out"], area=x["area"], swv=x.get("sw_hitv"), swo=x.get("sw_best"),
+                         clips={c: pc["out"] for c, pc in x["per_clip"].items()}) for x in ck.tests}
+
+
+def gw_close_words():
+    import gear_wear as gw
+    return gw.CLOSE_WORDS
 
 
 def scene_nodes(gear, pieces):
@@ -82,13 +93,27 @@ def measure(gear, pieces, clips, jobs=3, step=2, say=print):
         mg = float(law.get("margin_mm", 1.0)) / 1000.0
         mo = np.min([r[pc]["minout"] for r in rs], 0)
         hitv, area = rs[0][pc]["hitv"], rs[0][pc]["area"]
+        # (per clip its own count: the close-view clips from OUT_CLOSE_MM; short = the most a sample fell short anywhere)
+        short_all = np.full(len(mo), -np.inf)
+        for r in rs:
+            for c, o in r[pc]["clips"].items():
+                thr = (OUT_CLOSE_MM if any(w in c for w in gw_close_words()) else OUT_MM) / 1000.0
+                short_all = np.maximum(short_all, np.where(np.isfinite(o), -o - thr, -np.inf))
+        swv = None
+        for r in rs:
+            if r[pc].get("swv") is not None:
+                if swv is None:
+                    swv, swo = r[pc]["swv"].copy(), r[pc]["swo"].copy()
+                else:
+                    tk = r[pc]["swo"] < swo
+                    swv[tk], swo[tk] = r[pc]["swv"][tk], r[pc]["swo"][tk]
         # (gear_wear's sweep adds her points near the piece that were never under it at rest, after the samples under
         # it: they have no hit vertices and set no target; they are counted apart)
         n_fp = len(hitv)
         swept = -mo[n_fp:] > OUT_MM / 1000.0
         swept_mm2 = float(area[n_fp:][swept].sum() * 1e6)
         mo, area = mo[:n_fp], area[:n_fp]
-        short = -mo - OUT_MM / 1000.0
+        short = short_all[:n_fp]
         bad = short > 0
         fp = os.path.join(gf.STANDOFF, f"{pc}.json")
         old = json.load(open(fp)).get("targets", {}) if os.path.isfile(fp) else {}
@@ -100,14 +125,24 @@ def measure(gear, pieces, clips, jobs=3, step=2, say=print):
                 continue
             inv = z[f"inv{node_of[node]['i']}"]
             sel = bad[:, None] & (hitv >= st) & (hitv < st + n)
-            if not sel.any():
-                continue
             rows_, cols = np.nonzero(sel)
-            c_now, _ = gf.signed_clear(bodies["close"], sc.P0[hitv[rows_, cols]])
-            want = c_now + short[rows_] + mg
-            d = tg.setdefault(node, {})
-            for u, w in zip(inv[hitv[rows_, cols] - st], want):
-                d[int(u)] = max(d.get(int(u), -1.0), float(w))
+            if len(rows_):
+                c_now, _ = gf.signed_clear(bodies["close"], sc.P0[hitv[rows_, cols]])
+                want = c_now + short[rows_] + mg
+                d = tg.setdefault(node, {})
+                for u, w in zip(inv[hitv[rows_, cols] - st], want):
+                    d[int(u)] = max(d.get(int(u), -1.0), float(w))
+            if swv is not None:
+                # (swept in from beside it: the face it stood out past at its deepest)
+                ssh = short_all[n_fp:]
+                rows_ = np.nonzero((ssh > 0) & (swv >= st).all(1) & (swv < st + n).all(1))[0]
+                if len(rows_):
+                    vv = swv[rows_].ravel()
+                    c_now, _ = gf.signed_clear(bodies["close"], sc.P0[vv])
+                    want = c_now + np.repeat(ssh[rows_], 3) + mg
+                    d = tg.setdefault(node, {})
+                    for u, w in zip(inv[vv - st], want):
+                        d[int(u)] = max(d.get(int(u), -1.0), float(w))
         # the play tier: the close tier's extra need (target less its clearance as bound), by the nearest targeted vertex
         cl = [(m, tg[m["node"]]) for m in bd.meta["meshes"] if m["tier"] == "close" and m["node"] in tg]
         if cl:
@@ -139,7 +174,7 @@ def measure(gear, pieces, clips, jobs=3, step=2, say=print):
         res[pc] = {"out2_mm2": round(float(area[bad].sum() * 1e6), 1), "worst_mm": round(float(-mo.min() * 1000), 1),
                    "targets": sum(len(v) for v in tg.values()), "swept_out2_mm2": round(swept_mm2, 1)}
         say(f"gear_standoff {pc}: out2 {res[pc]['out2_mm2']} mm2, worst {res[pc]['worst_mm']} mm (under it at rest; "
-            f"swept in from beside it: {res[pc]['swept_out2_mm2']} mm2, no target), "
+            f"swept in from beside it: {res[pc]['swept_out2_mm2']} mm2, targeted on the face it went through), "
             f"{res[pc]['targets']} targeted vertices -> {os.path.relpath(fp, REPO)}")
     return res
 
