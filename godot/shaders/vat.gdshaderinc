@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.55, 0.10, 29.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.57, 0.10, 29.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -313,7 +313,10 @@ float crowd_edge(float rim) {
 // round the neck, y a clump's length in z, z the share of cells drawn, w the share of clumps with a pale strand), between them
 // DEN_BOSS_HFUR.x, a clump .y, its pale strand (DEN_BOSS_CLUMP_V's streak) .z lighter in the tips' cream; the cheek's strokes on
 // the mesh only, paler .50 and fewer)
-#define DEN_BOSS_HFUR vec4(0.24, 0.32, 0.14, 0.95)
+// (r10: l8g9's .24/.32/.14 read near-black at 1:1, the head one dark blob, body L50 .22; its pale strands in the tips' cream
+// read olive on the dark: now charcoal .28/.40, strands .18 lighter at DEN_BOSS_HFUR_C (chroma x, hue y), a warm grey)
+#define DEN_BOSS_HFUR vec4(0.28, 0.40, 0.18, 0.95)
+#define DEN_BOSS_HFUR_C vec2(0.025, 65.0)
 #define DEN_BOSS_HFUR_Q vec4(0.30, 0.12, 0.80, 0.55)
 #define DEN_BOSS_BROW_STK 0.05
 // (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
@@ -496,7 +499,7 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 			* (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_hs.w + DEN_BOSS_CLUMP_V.w)));
 		float c_hf = c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.z, DEN_BOSS_HFUR.w));
 		c_l = mix(c_l, mix(DEN_BOSS_HFUR.x, DEN_BOSS_HFUR.y, c_hs.x) + DEN_BOSS_HFUR.z * c_hr, c_hf);
-		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_MANE_TIP.y, DEN_BOSS_MANE_TIP_H), c_hf * c_hr);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_HFUR_C.x, DEN_BOSS_HFUR_C.y), c_hf * c_hr);
 		// (r4: the cheek's ruff; DEN_BOSS_CHEEK)
 		vec4 c_cs = vat_den_stroke(vec2((c_r.y + DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z)) / DEN_BOSS_CHEEK.x, c_r.z / DEN_BOSS_CHEEK.y), DEN_BOSS_CHEEK.z, 16.0);
 		float c_yk = (c_cs.w + 0.5) * DEN_BOSS_CHEEK.x - DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z);
