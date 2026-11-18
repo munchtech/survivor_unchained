@@ -308,6 +308,9 @@ float crowd_edge(float rim) {
 // line is drawn on the cut edge. Not the head, the front legs or the paws)
 #define DEN_BOSS_TAIL vec4(-0.47, -0.55, 0.64, -0.80)   // (r1 -.50/-.58: its root stayed thin)
 #define DEN_BOSS_TAIL_D vec2(0.036, 0.030)   // (r1 .026/.034: 23 px at most against the hips' 54 in the boss view)
+// (lead 9, l9t2: the cut shredded the side-on body into ragged orange-lined scraps and the tail into a comb of ribs at 1:1,
+// far worse than the smooth edge: OFF. The plume above stays.)
+#define DEN_BOSS_FURE_ON false
 #define DEN_BOSS_FURE vec4(0.85, 0.65, 0.045, 0.11)
 #define DEN_BOSS_FURE_V vec4(0.3, 0.25, 0.55, 0.25)
 #define DEN_BOSS_FURE_X vec3(0.25, 0.42, -0.72)
@@ -868,7 +871,7 @@ void fragment() {
 	// (n.v's, its cut's held to twice that) here, before any per-pixel branch; the pixel is cut at the end of fragment())
 	vec3 fo_p = vat_rest.xyz, fo_n = normalize(vat_rn);
 	bool fo_tl = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, fo_p.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, fo_p.y) > 0.5;
-	bool fo_on = den_on && dn_cls > 1.5 && !((fo_p.z > DEN_BOSS_HEAD.x && fo_p.y > DEN_BOSS_HEAD2.x)
+	bool fo_on = DEN_BOSS_FURE_ON && den_on && dn_cls > 1.5 && !((fo_p.z > DEN_BOSS_HEAD.x && fo_p.y > DEN_BOSS_HEAD2.x)
 		|| (fo_p.z > DEN_BOSS_FURE_X.x && fo_p.y < DEN_BOSS_FURE_X.y) || (fo_p.z < DEN_BOSS_FURE_X.z && fo_p.y < DEN_BOSS_FURE_X.y));
 	float fo_u = (abs(fo_n.z) > 0.6 ? fo_p.y + abs(fo_p.x) : DEN_BOSS_TAIL.x - fo_p.z) / (fo_tl ? DEN_BOSS_FURE.z : DEN_BOSS_FURE.w)
 		+ (fo_n.y > 0.0 ? 0.5 : 0.0);
