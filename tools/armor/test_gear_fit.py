@@ -534,3 +534,101 @@ def test_a_leads_gives_a_trim_to_the_plate_A_skins_it_with():
     comp = np.arange(5)
     lead, moved = gf.a_leads(np.array([0, 1, 1, 1, 1]), B, X, comp)
     assert list(lead) == [0, 1, 0, 1, 1] and moved == {2: (1, 0)}
+
+
+def test_trim_rides_its_steel():
+    """TRIM_RIDE: a gold component lying on the piece's steel takes the steel's weights and every shape delta at its
+    nearest steel point (a shape the steel lacks is 0 there), full within near_mm, a cosine fade to its own by fade_mm;
+    rest positions untouched; a strap far off the steel and a rigid group shared with another mesh keep their own. Posed
+    (bones that translate, a shape on), the riding trim keeps its rest offset off the steel exactly, where its own values
+    let it drift (B's warden top: the cup-edge gold out through the steel, lane G rim2, 17 Nov)."""
+    import json as _json
+
+    def grid(x0, x1, z0, z1, y, n):
+        xs, zs = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n), indexing="ij")
+        P = np.c_[xs.ravel(), np.full(n * n, y), zs.ravel()]
+        q = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                     + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+        return P, q
+
+    def unit(parts, J, W, shapes, comp):
+        X = np.vstack([p for p, _ in parts])
+        T = np.vstack([q + sum(len(p) for p, _ in parts[:k]) for k, (_, q) in enumerate(parts)])
+        n = len(X)
+        J, W = np.pad(J, ((0, 0), (0, 8 - J.shape[1]))), np.pad(W, ((0, 0), (0, 8 - W.shape[1])))   # (8 a vertex, as built)
+        return T, {"Xu": X.copy(), "inv": np.arange(n), "J": J.astype(np.uint16), "W": W.astype(np.float32),
+                   "shapes": {k: v.astype(float) for k, v in shapes.items()}, "comp": comp, "lead": None}
+
+    sx, sT = grid(0.0, 0.1, 0.0, 0.1, 1.5, 11)          # the steel: a 100 mm plate, weights and its lift shape vary
+    sJ = np.tile([[0, 1]], (len(sx), 1))
+    sW = np.c_[1 - sx[:, 0] / 0.1, sx[:, 0] / 0.1]
+    S_T, st_ev = unit([(sx, sT)], sJ, sW, {"lift": np.c_[0 * sx[:, 0], 0.002 * sx[:, 2] / 0.1, 0 * sx[:, 0]]},
+                      np.full(len(sx), -1))
+    parts = [grid(0.02, 0.08, 0.02, 0.04, 1.5005, 5),   # A: a trim 0.5 mm on it: rides
+             grid(0.02, 0.08, 0.20, 0.22, 1.5005, 5),   # B: a strap trim 100 mm off: keeps its own
+             grid(0.048, 0.052, 0.07, 0.074, 1.501, 2),  # C: a rivet (rigid, its own group): rides per point
+             grid(0.048, 0.052, 0.09, 0.094, 1.501, 2),  # D: a rivet whose group is shared with the leather: keeps its own
+             grid(0.090, 0.106, 0.05, 0.06, 1.5005, 9)]  # E: a trim past the plate's edge: rides, fading out by 8 mm
+    n = sum(len(p) for p, _ in parts)
+    comp = np.full(n, -1)
+    comp[50:54], comp[54:58] = 0, 1
+    gJ = np.tile([[0, 1]], (n, 1))
+    gW = np.tile([[0.5, 0.5]], (n, 1))
+    G_T, g_ev = unit(parts, gJ, gW, {"lift": np.tile([0, 0.0005, 0], (n, 1)), "hang": np.tile([0, 0, 0.003], (n, 1))}, comp)
+    lx, lT = grid(0.3, 0.32, 0.0, 0.02, 1.5, 3)          # the leather, sharing rivet D's group
+    L_T, l_ev = unit([(lx, lT)], np.tile([[0, 1]], (9, 1)), np.tile([[1.0, 0.0]], (9, 1)), {}, np.full(9, 2))
+    lead = np.array([0, 2, 2])
+    for v in (st_ev, g_ev, l_ev):
+        v["lead"] = lead
+
+    class _Bd:
+        id, meta = "test.trim_ride", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                 {"i": 1, "node": "p.gold", "tier": "close"},
+                                                 {"i": 2, "node": "p.darkleather", "tier": "close"}]}
+    for i, T in enumerate((S_T, G_T, L_T)):
+        gf._TRIS[(_Bd.id, i)] = T
+    ev = {"p.steel": st_ev, "p.gold": g_ev, "p.darkleather": l_ev}
+    X0, W0 = g_ev["Xu"].copy(), g_ev["W"].copy()
+    hang0 = g_ev["shapes"]["hang"].copy()
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text())
+    tr = roles["slots"]["top"]["trim_ride"]
+    assert set(tr) <= set(gf.TRIM_RIDE), tr           # (a key the rule does not read would be a silent no-op)
+    law = dict(gf.TRIM_RIDE, host_n=50)
+
+    def posed(v, t=np.array([0.0, 0.01, 0.004])):     # bone 0 still, bone 1 moved by t, lift on: LBS = P + S + W1 t
+        D = np.zeros((len(v["Xu"]), 2))
+        np.add.at(D, (np.repeat(np.arange(len(D)), v["J"].shape[1]), v["J"].astype(int).ravel()), v["W"].astype(float).ravel())
+        return v["Xu"] + v["shapes"]["lift"] + D[:, 1:2] * t
+    surf = gf.Surface(sx, sT)
+    q, _, tq, d = surf.closest(X0, k=16)
+    b = gf.bary(q, sx[sT[tq, 0]], sx[sT[tq, 1]], sx[sT[tq, 2]])
+    drift = lambda: np.linalg.norm((posed(g_ev) - np.einsum("nc,ncx->nx", b, posed(st_ev)[sT[tq]])) - (X0 - q), axis=1)  # noqa: E731
+    assert drift()[:25].max() > 1e-3                  # own values: the trim drifts off the steel (here 1 mm and up)
+    st = gf.trim_ride_rule(_Bd, ev, law, "close")
+    try:
+        assert st["trims"] == 2 and st["rivets"] == 1, st
+        assert np.array_equal(g_ev["Xu"], X0)
+        A, B, C, D, E = (np.arange(0, 25), np.arange(25, 50), np.arange(50, 54), np.arange(54, 58), np.arange(58, 139))
+        ride = np.r_[A, C]
+        assert np.allclose(g_ev["W"][ride, 1], 1 - g_ev["W"][ride, 0], atol=1e-6)
+        # (J is [0, 1] here; W at the nearest steel point is the steel's, interpolated: x / 0.1 on bone 1)
+        k1 = (g_ev["J"][ride] == 1)
+        w1 = np.where(k1, g_ev["W"][ride], 0).sum(1)
+        assert np.allclose(w1, np.clip(q[ride, 0] / 0.1, 0, 1), atol=1e-5)
+        assert np.allclose(g_ev["shapes"]["lift"][ride], np.c_[0 * ride, 0.002 * q[ride, 2] / 0.1, 0 * ride], atol=1e-9)
+        assert np.abs(g_ev["shapes"]["hang"][ride]).max() == 0
+        for keep in (B, D):
+            assert np.array_equal(g_ev["W"][keep], W0[keep]) and np.array_equal(g_ev["shapes"]["hang"][keep], hang0[keep])
+            assert np.allclose(g_ev["shapes"]["lift"][keep], [0, 0.0005, 0])
+        assert drift()[ride].max() < 1e-9             # riding: the rest offset held exactly, posed
+        # E past the plate's edge: the column 6 mm off is half its own (cosine fade from near_mm 4 to fade_mm 8)
+        far = E[np.abs(X0[E, 0] - 0.106) < 1e-9]
+        g = 0.5 * (1 + np.cos(np.pi * np.clip((d[far] - 0.004) / 0.004, 0, 1)))
+        assert 0.4 < g.min() and g.max() < 0.6
+        assert np.allclose(g_ev["shapes"]["hang"][far, 2], (1 - g) * 0.003, atol=1e-9)
+        near = E[X0[E, 0] <= 0.1 + 1e-9]
+        assert np.abs(g_ev["shapes"]["hang"][near]).max() == 0 and drift()[near].max() < 1e-9
+    finally:
+        for i in range(3):
+            gf._TRIS.pop((_Bd.id, i), None)
+    assert gf.trim_ride_rule(_Bd, {"p.gold": g_ev}, law, "close") == {}    # a tier missing a mesh's eval: nothing

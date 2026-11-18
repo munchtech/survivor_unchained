@@ -17,7 +17,8 @@
              "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
  "slots": {
   "top": {"ride": {"spine": 1}, "one_bone": true, "worn_rest": "top", "joins": true,
-          "support_follow": {"near_mm": 70.0, "fade_mm": 150.0, "floor_mm": 1.0}},
+          "support_follow": {"near_mm": 70.0, "fade_mm": 150.0, "floor_mm": 1.0},
+          "trim_ride": {"host_mat": "steel", "mats": ["gold"], "ride_mm": 2.0, "share": 0.5, "near_mm": 4.0, "fade_mm": 8.0}},
   "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true, "rims": false, "a_blend": true,
                 "standoff": {"cap_mm": 6, "seat_cap_mm": 4, "rest_min_mm": 1, "margin_mm": 1,
                              "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,
