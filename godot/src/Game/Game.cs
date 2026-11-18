@@ -687,6 +687,15 @@ public partial class Game : Node, IZoneHost
     {
         // --wear-gilt: the set pieces now in the pack put on, as the player would at the pack (pictures of a drop worn).
         if (Args.Has("wear-gilt"))
+        {
+            // (a full pack sends a drop to the storeroom: the player would fetch it, so the picture does too)
+            foreach (var g in World.Stash.Where(i => i != null && Items.Get(i.Def).Set != null).ToList())
+            {
+                if (Inventory.Free(Journey.Ch) == 0 && Journey.Ch.Pack.FirstOrDefault(i => i != null && Items.Get(i.Def).Set == null) is { } junk) Journey.ToStash(junk.Uid);
+                Journey.FromStash(g!.Uid);
+            }
+        }
+        if (Args.Has("wear-gilt"))
             foreach (var it in Journey.Ch.Pack.Where(i => i != null && Items.Get(i.Def).Set != null).ToList()) { Journey.Equip(it!.Uid, null, Battle); GD.Print($"her wear: {it!.Def} -> {string.Join(",", Wear.Of(Journey.Ch).Values)}"); }
         if (Args.Has("wear-gilt") || Args.Has("save-clear")) Save("map cleared");
         var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
