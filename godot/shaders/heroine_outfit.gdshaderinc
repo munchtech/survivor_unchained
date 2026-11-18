@@ -115,6 +115,16 @@ uniform vec3 kit_floor_close = vec3(-1.0);
 uniform float kit_lit_step_close = 0.0;
 // (armor-D fin3: the town's sun at the close camera: x scales the plate's banded tones (1: as before), y the plate's glint, z the glint disc's radius (1: as before); the den and a point or spot light and the play camera never see them)
 uniform vec3 kit_dir_close = vec3(1.0);   // (z: the glint disc's radius and soft edge scale)
+// (armor-D fin4, 17 Nov: the leap's held frame blew her helm, bodice and hips white, L .83 on 38% of her plate. The town sun's
+// glint disc is cut by angle (n.h) alone, so at a camera where the sun stands behind the lens (H near VIEW) every near-flat
+// panel facing it lies inside the disc whole (at the leap's mid distance kit_dir_close's gain 2.25 on a 4 degree disc). kit_glint_px:
+// the disc's radius never past the form's own turn across that many screen pixels (v_kcurv), so a dome keeps its disc and a flat
+// panel a point at most, at every distance; the town sun only, as kit_dir_close (the den and point lights keep theirs); 0: off)
+uniform float kit_glint_px = 0.0;
+// (armor-D fin4: kit_dir_close.y, the close glint's gain, is gone past this share of the far blend (v_kit_far), where its disc has
+// widened back toward kit_glint.y: leap_glint (gain only) held 38% of her plate at L .83, gain 1 none; 0: mixed as kit_dir_close.x, z)
+uniform float kit_dir_glint_far = 0.0;
+varying float v_kcurv;                             // (armor-D fin4: the shading normal's turn per screen pixel, degrees)
 // (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
 // and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
 // Defaults: every gear bit for bit as r6. Tried and dropped: a directional gain at the den's close camera (0.3 and 0.5 left the
@@ -370,6 +380,7 @@ void fragment() {
 	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0))) || kit_plate.x > 0.0 || kit_gold.x > 0.0) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
 		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
 	v_kit_far = kit_far;
+	v_kcurv = kit_glint_px > 0.0 ? degrees(length(fwidth(NORMAL))) : 0.0;   // (armor-D fin4, see kit_glint_px)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -865,8 +876,10 @@ void light() {
 		ktone = mix(ktone, kit_tone_refl * ktc.z, kband * kit_refl_k * mix(0.4, 1.0, ksh) * kom);
 		bool kdn = (kit_her_den_close > 0.0 || any(notEqual(cel_her_den, vec4(0.0))));   // (the den keeps its own, see kit_dir_close)
 		vec3 kdc = (LIGHT_IS_DIRECTIONAL && !kdn) ? mix(kit_dir_close, vec3(1.0), v_kit_far) : vec3(1.0);
+		if (kit_dir_glint_far > 0.0 && LIGHT_IS_DIRECTIONAL && !kdn) kdc.y = mix(kit_dir_close.y, 1.0, smoothstep(0.0, kit_dir_glint_far, v_kit_far));   // (armor-D fin4)
 		float krad2 = mix(kit_glint.x, kit_glint.y, v_kit_far) * kdc.z;
 		float kgs2 = kit_glint.z * kdc.z;
+		if (kit_glint_px > 0.0 && LIGHT_IS_DIRECTIONAL && !kdn) { float kfp = clamp(v_kcurv * kit_glint_px / max(krad2, 1e-3), 0.0, 1.0); krad2 *= kfp; kgs2 *= kfp; }   // (armor-D fin4)
 		float klit2 = ksh * step(0.0, kt) * kom;
 		vec3 kpc = (ktone * kdc.x + kit_glint_color * ktc.z * kdc.y * ((1.0 - smoothstep(krad2 - kgs2, krad2 + max(kgs2, 1e-3), kan)) * klit2))
 			* mix(kit_plate.x, kit_plate.x * kit_plate.y, v_kit_far);
