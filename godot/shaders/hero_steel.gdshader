@@ -36,6 +36,11 @@ void fragment() {
 	float t = dot(mp - axis_lo, ax) / max(dot(ax, ax), 1e-6);
 	float glint = step(abs(t - hero_steel_lit.w), hero_steel_shade.w) * step(0.3, abs(dot(wn, wv)));
 	vec3 steel = mix(mix(hero_steel_shade.rgb, hero_steel_lit.rgb, lit), hero_steel_glint.rgb, glint);
+	// (lane E lead 9, 17 Nov; the movement judge r19: "on dark ground the drawn blade loses its edge": her dark line round a
+	// dark blade on dark ground leaves nothing. Where the steel turns edge-on to the eye (its bevels, its silhouette) it
+	// takes most of the glint's tone, so the blade keeps a lit edge whatever it lies on.)
+	float edge = 1.0 - smoothstep(0.22, 0.42, abs(dot(wn, wv)));
+	steel = mix(steel, hero_steel_glint.rgb, edge * 0.75);
 	vec3 grip = own * hero_steel_glint.w * mix(0.55, 1.0, lit);
 	EMISSION = mix(grip, steel, metal);
 	ALBEDO = vec3(0.0);
