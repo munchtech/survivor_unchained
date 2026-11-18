@@ -133,7 +133,10 @@ public static class DirRun
     /// <summary>The script's cursor (world point) at this fight time given her position, or null before the script begins.</summary>
     public static (double X, double Z)? Pointer(double time, double px, double pz)
     {
-        if (Start < 0 || time < Start) return null;
+        if (Start < 0) return null;
+        // (lead r12) before the run starts the pointer sits on her (no goal: she keeps her spawn facing), so the desktop's real
+        // mouse, if it happens to lie over the window, never turns her in the pre-roll (r11 on B: she opened turned ~110 deg)
+        if (time < Start) return (px, pz);
         origin ??= (px, pz);
         double t = time - Start;
         if (Film)

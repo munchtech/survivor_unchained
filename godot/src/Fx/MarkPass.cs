@@ -79,8 +79,17 @@ public partial class MarkPass : CompositorEffect
 
     /// <summary>The den: a red mark is a crisp 3 px edge on a bed of at most 15% (lane E r2; the arena keeps its look).</summary>
     public static bool Den;
-    /// <summary>The den's red: its edge reads Oklab .565 / .192 / 30 (ui_language.json hostile): the bed's value k, the green and blue shares.</summary>
+    /// <summary>The den's bed only (env DEN_K / DEN_TG / DEN_TB): its value k, and the green and blue shares of the bed and of
+    /// the light run over it (the cast line; tg/hg and tb/hb alike). The den's edge is not set here: it is laid in main at the
+    /// hostile red as seen (denEdge: #cf3626, Oklab .565 / .192 / 30, ui_language.json accents.hostile, the frame's grade
+    /// inverted), whatever these are (lane E r3).</summary>
     public static float DenK = float.Parse(System.Environment.GetEnvironmentVariable("DEN_K") ?? "1.4", CultureInfo.InvariantCulture), DenTg = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TG") ?? "0.05", CultureInfo.InvariantCulture), DenTb = float.Parse(System.Environment.GetEnvironmentVariable("DEN_TB") ?? "0.02", CultureInfo.InvariantCulture);
+
+    /// <summary>The den's lane and floor (env DEN_LANE_FILL / DEN_G0 / DEN_G1 / DEN_SLACK; baked at launch): a lane's inside
+    /// at this share of the hostile red (judge 6 fix 7: .15-.25); the floor test, full to g0 m over the ground's heights and
+    /// none past g1 (the fissure's 0.1), their slack on a bend capped at slack m (lane E lead 9).</summary>
+    static readonly float DenLaneFill = Env("DEN_LANE_FILL", 0.15f), DenG0 = Env("DEN_G0", 0.03f), DenG1 = Env("DEN_G1", 0.07f), DenSlack = Env("DEN_SLACK", 0.05f);
+    static float Env(string k, float d) => float.Parse(System.Environment.GetEnvironmentVariable(k) ?? d.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
     public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice", "none" };
@@ -193,7 +202,8 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "lw", "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "lw", "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"))
+            + "\n" + string.Join("\n", new[] { ("DEN_LANE_FILL", DenLaneFill), ("DEN_G0", DenG0), ("DEN_G1", DenG1), ("DEN_SLACK", DenSlack) }.Select(p => $"#define {p.Item1} {p.Item2.ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -416,6 +426,19 @@ public partial class MarkPass : CompositorEffect
             return c;
         }
 
+        // The den's edge (lane E r3): the scene colour SEEN as the hostile red, #cf3626 (ui_language.json accents.hostile,
+        // Oklab .565 / .192 / 30), the frame's grade above inverted channel by channel; where AgX cannot show it (its
+        // inset lends a red some green) the nearest it can, the red's channel held
+        vec3 lin1(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+        vec3 denEdge() {
+            vec3 wl = lin1(vec3(207.0, 54.0, 38.0) / 255.0), c = wl / max(pc.expo, 1e-6);
+            for (int it = 0; it < 24; it++) {
+                vec3 s = lin1(clamp(seen(c), vec3(1e-4), vec3(1.0)));
+                c = clamp(c * pow(wl / max(s, vec3(1e-5)), vec3(0.6)), vec3(1e-7), vec3(1e4));
+            }
+            return c;
+        }
+
         // The scarlet's seen value over 64 steps of its light (log2, x the exposure: -12 to +1 stops), one step per
         // invocation of the group; and its fold, the last step still scarlet (saturation >= fs, hue <= fh degrees).
         const int NT = 64;
@@ -480,6 +503,8 @@ public partial class MarkPass : CompositorEffect
 
         // The pixel's footprint on the ground (m) and the hatch's share here (the still water's), set per pixel and mark.
         float gpx = 0.01, ghw = 1.0;
+        // The den's edge coverage of the mark shape() drew last (0 outside the den).
+        float dek = 0.0;
         // One family of hatch lines across t (m): period T_HP, half width T_HW antialiased over a pixel; a line thinner
         // than half a pixel is drawn half a pixel wide at its light's share (no shimmer), and the hatch fades out where
         // its period nears a few pixels (no moire far off).
@@ -602,6 +627,7 @@ public partial class MarkPass : CompositorEffect
         // light (pl), the bed's darkening under it (pd) and the pattern's id
         void shape(int i, vec2 l, out float cover, out float light, out float pl, out float pd, out int pid) {
             vec4 a = mk.m[i * 4], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
+            dek = 0.0;
             int kind = int(a.w + 0.5);
             int code = int(floor(e.w * 0.5 + 0.01));
             pid = T_HS >= -0.5 ? int(T_HS + 0.5) + (code / 8) * 8 : code;
@@ -694,13 +720,18 @@ public partial class MarkPass : CompositorEffect
             if (pc.pad2 > 0.5) {
                 // the den: a crisp edge about 3 px wide (no glow, no keyline), a bed of at most 15%, no pattern;
                 // the running fill is the same faint bed (the cast line stays a hairline)
-                float hw = 1.5 * gpx, aa = max(0.5 * gpx, 0.002);
+                // (lane E r3, judge 2: the edge lit through the fold read L .32-.38, C .11-.13; it is laid after, in main,
+                // at the hostile red as seen (dek), its full core at least 3 px across where the ground runs away from the eye)
+                // (lane E lead 9, judge 6 fix 7: a charge's lane as two 3 px rims read as laser tripwires; a lane is a
+                // floor decal: its edges about 5 px, its inside filled at the hostile red at DEN_LANE_FILL (.15, seen about .2), no scarlet bed)
+                float hw = (kind == 0 ? 2.5 : 2.0) * gpx, aa = max(0.5 * gpx, 0.002);
                 float ed = clamp((hw + 0.5 * aa - abs(d)) / aa, 0.0, 1.0) * ends;
                 float bed = (d < 0.0 ? 0.15 : 0.0) * ends * smoothstep(0.0, aa, -d);
                 pl = 0.0; pd = 0.0;
-                cover = max(bed, ed);
-                light = ed * 0.3 * s.z * pc.le + (f * 0.15 * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0));
-                pl = fln * 0.0;
+                cover = kind == 0 ? 0.0 : bed;
+                dek = kind == 0 ? max(ed, DEN_LANE_FILL * (d < 0.0 ? 1.0 : 0.0) * ends * smoothstep(0.0, aa, -d)) : ed;
+                light = f * 0.15 * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
+                pl = 0.0;
             }
         }
 
@@ -757,6 +788,8 @@ public partial class MarkPass : CompositorEffect
             float tint = 0.0, plight = 0.0, pdark = 0.0; vec3 ptint = vec3(0.0);
             float light = 0.0;
             float rs = 0.0;
+            // (the den: the edge's coverage, and its mark's light for the landing's flare)
+            float dk = 0.0, dkz = 0.0;
             int n = int(pc.n);
             for (int i = 0; i < n; i++) {
                 vec4 a = mk.m[i * 4], ax = mk.m[i * 4 + 1], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
@@ -786,8 +819,16 @@ public partial class MarkPass : CompositorEffect
                     // ramps, the slack widening them where the heights can be wrong)
                     hgt = (1.0 - smoothstep(pc.g0 + slack, pc.g1 + slack, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
                     gate = hgt * mix(1.0, smoothstep(0.3, 0.6, up), smoothstep(0.04 + slack, 0.12 + 2.0 * slack, gh));
+                    // the den: the floor only (the fissure's floor test, p7_floor): nothing standing over it takes the mark,
+                    // a root, a bone, a body (lane E lead 9, judge 6 fix 7: the Drive's rims ran over the roots)
+                    if (pc.pad2 > 0.5) {
+                        float sk = min(slack, DEN_SLACK);
+                        hgt = (1.0 - smoothstep(DEN_G0 + sk, DEN_G1 + sk, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
+                        // (and past 1 cm only what faces straight up: a root's flank, a body's)
+                        gate = hgt * mix(1.0, smoothstep(0.8, 0.95, up), smoothstep(0.01, 0.03, gh));
+                    }
                     gate *= bank;
-                } else if (mod(e.w, 2.0) > 0.5 && ray.y < -1e-4 && up > 0.5) {
+                } else if (pc.pad2 < 0.5 && mod(e.w, 2.0) > 0.5 && ray.y < -1e-4 && up > 0.5) {
                     // a roof or a canopy over it: the mark where the ground under it would be seen
                     vec3 g = eye + ray * ((a.y - eye.y) / ray.y);
                     if (dot(g - eye, ray) - dot(wp - eye, ray) < pc.roof) continue;
@@ -810,8 +851,11 @@ public partial class MarkPass : CompositorEffect
                 light += li * gate;
                 plight += pl_ * gate;
                 ptint += pcol(pid_) * pl_ * gate;
+                // (whole from a fifth of a crowd mark's light: steady under the breath, gone as a called-off mark fades)
+                float ek = dek * gate * clamp(s.z / 0.15, 0.0, 1.0);
+                if (ek > dk) { dk = ek; dkz = s.z; }
             }
-            if (tint <= 0.0 && light <= 0.0 && plight <= 0.0) { imageStore(mask, p, vec4(0.0)); return; }
+            if (tint <= 0.0 && light <= 0.0 && plight <= 0.0 && dk <= 0.0) { imageStore(mask, p, vec4(0.0)); return; }
             vec4 col = imageLoad(colour, p);
             // the fold: the last step that is still scarlet (the steps below it are)
             int fi = 0;
@@ -850,10 +894,13 @@ public partial class MarkPass : CompositorEffect
                 add = max(y - base.r, 0.0);
             }
             col.rgb = base + add * lc + pa * pcl;
+            // the den's edge over it, at the hostile red as seen; the landing's flare (a boss's light 1.4 against 0.45
+            // steady) up to twice its light
+            if (dk > 0.0) col.rgb = mix(col.rgb, denEdge() * (1.0 + clamp((dkz - 0.6) / 0.8, 0.0, 1.0)), clamp(dk, 0.0, 1.0));
             imageStore(colour, p, col);
             // the mark's coverage, for the after-grade layer laid under it: the fill's tint, the rims' and the pattern's
-            // light as a share of the fold's red
-            imageStore(mask, p, vec4(clamp(max(tint, (add + pa) / max(rf, 1e-6)), 0.0, 1.0)));
+            // light as a share of the fold's red (the den's edge whole)
+            imageStore(mask, p, vec4(clamp(max(max(tint, dk), (add + pa) / max(rf, 1e-6)), 0.0, 1.0)));
         }
         """;
 }

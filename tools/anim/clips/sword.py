@@ -119,7 +119,33 @@ HEAVY_L = [
     (22, (0.02, -0.18, 0.37), (1.0, -0.5, -0.4), "auto"),
     (30, GUARD_L_AT, GUARD_L_POLE, "ease"),
 ]
-BACK_COCK = (0.30, 0.04, 0.17)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
+BACK_COCK = (0.28, 0.10, 0.26)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
+
+
+def _fill(keys):
+    """(body-b-skill-clips, 17 Nov) A key that sets only the buckler or one foot (with_shield's own keys, _land's step)
+    carries each turn it leaves out as the keys that do set it give it at that frame: keyed's Track reads a turn or
+    offset a key leaves out as none (hips, spine, head, the feet's turns at zero), and the hips dropping to zero there
+    (fore f11-12 and f17-18: the pelvis up 8 cm, 19 deg round) locked the front knee straight for frames and bent it
+    again in one (calf_l 29 deg at fore f13). Places (a foot's, a hand's) were already eased between the keys."""
+    from keyed import _flatten, _hermite, _unflatten, _zero_default
+    flats = [_flatten(p) for _, p, _ in keys]
+    names = {n for f in flats for n in f if _zero_default(n) and isinstance(f[n], float)}
+    out = []
+    for (t, p, e), f in zip(keys, flats):
+        miss = [n for n in names if n not in f]
+        if miss:
+            f = dict(f)
+            for n in miss:
+                have = [(k[0], g[n], k[2]) for k, g in zip(keys, flats) if n in g]
+                f[n] = _hermite([h[0] for h in have], [h[1] for h in have], [h[2] for h in have], t)
+            p = _unflatten(f)
+        out.append((t, p, e))
+    return out
+
+
+def _build(name, rig, keys, meta, pin_first=0, pin_path=None):
+    return build(name, rig, _fill(keys), lead=STRIKE, meta=meta, pin_first=pin_first, pin_path=pin_path)
 
 
 def _body(p):
@@ -165,9 +191,9 @@ def sword_back(rig):
     keys = [
         # Cocked: the blade drawn back across her to the left, high; hips and
         # back wound to the left.
-        (0, pose(18, 30, BACK_COCK, _n(0.55, 0.6, -0.55), pole=(0.2, -0.3, -1.0), left=False, weight=0.4, pitch=4), "fast"),
+        (0, pose(18, 30, BACK_COCK, _n(0.55, 0.6, -0.55), pole=(-0.4, 0.3, 0.8), left=False, weight=0.4, pitch=4), "fast"),
         # Through the middle at full reach, the blade level and leading.
-        (2.5, pose(4, 4, (-0.08, -0.12, 0.46), _n(0.05, 0.5, 0.86), pole=(-0.3, -0.8, -0.4), left=False, weight=0.0), "linear"),
+        (2.5, pose(4, 4, (-0.08, -0.12, 0.46), _n(0.05, 0.5, 0.86), pole=(-0.6, -0.6, 0.0), left=False, weight=0.0), "linear"),
         # Out to her right: the cut ends.
         (5, pose(-16, -32, (-0.36, -0.14, 0.30), _n(-0.93, 0.26, 0.24), pole=(-0.2, -1.0, 0.2), left=False, weight=-0.5), "ease"),
         # Held, the blade carrying on a hair (the weight of it).
@@ -181,34 +207,37 @@ def sword_back(rig):
         keys[4] = (15, pose(-10, -18, (-0.30, -0.32, 0.16), _n(-0.9, -0.38, 0.2), pole=(-0.3, -0.9, 0.2), left=False, weight=-0.4), "auto")
     keys = with_shield(keys, BACK_L)
     keys = _land(keys, rig, step=(20, 0.035))
-    return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    # (body-b-skill-clips) pin_first: frame 0's right elbow is the cocked key's own (the pole's), eased into the
+    # smoothed path over two frames; smoothed, the cut's later elbows drew it in and the arm sat 19 mm into her trunk (A).
+    return _build("sword_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"},
+                  pin_first={"r": 2})
 
 
 def sword_fore(rig):
     keys = [
         # Cocked over the right shoulder, the back wound to the right.
         (0, pose(-18, -32, (-0.20, 0.10, 0.14), _n(-0.3, 0.79, -0.69), pole=(-0.8, -0.2, -0.5), left=False, weight=-0.4), "fast"),
-        (2.5, pose(-3, -4, (-0.125, -0.0925, 0.46), _n(0.015, 0.49, 0.88), pole=(-0.6, -0.325, -0.3), left=False, weight=0.0), "linear"),
+        (2.5, pose(-3, -4, (-0.125, -0.0925, 0.46), _n(0.015, 0.49, 0.88), pole=(-0.8, 0.0, 0.0), left=False, weight=0.0), "linear"),
         # Out to her left, across her: the cut ends low.
-        (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, 0.0175, 0.0), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
-        (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.86, -0.26, -0.17), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
+        (5, pose(16, 30, (0.12, -0.12, 0.45), _n(0.9, 0.0175, 0.0), pole=(-1.0, 0.3, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
+        (8, pose(19, 36, (0.10, -0.17, 0.44), _n(0.86, -0.26, -0.17), pole=(-1.0, 0.3, 0.2), left=False, weight=0.7, pivot=0.7), "ease"),
         (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.2, pivot=0.2),
          "auto"),
         (24, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, FORE_L)
     keys = _land(keys, rig, step=(20, 0.035))
-    return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    return _build("sword_fore", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_heavy(rig):
     keys = [
         # Wound far round to the right and low.
         (0, pose(-30, -40, (-0.30, -0.20, 0.06), _n(-0.6, 0.1, -0.8), pole=(-0.6, -0.8, 0.0), left=False, weight=-0.7, pitch=14), "fast"),
-        (3, pose(-6, -8, (-0.165, -0.14, 0.47), _n(-0.4, 0.29, 1.0), pole=(-0.4, -0.9, -0.1), left=False, weight=0.0, pitch=12), "linear"),
+        (3, pose(-6, -8, (-0.165, -0.14, 0.47), _n(-0.4, 0.29, 1.0), pole=(-0.9, 0.2, 0.1), left=False, weight=0.0, pitch=12), "linear"),
         # All the way round to her left, the whole back behind it.
-        (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, 0.175, 0.075), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
-        (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.25, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
+        (6, pose(26, 44, (0.16, -0.06, 0.46), _n(0.95, 0.175, 0.075), pole=(-1.0, 0.3, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
+        (10, pose(30, 50, (0.12, -0.12, 0.45), _n(0.8, -0.25, -0.3), pole=(-1.0, 0.3, 0.2), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
         (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.3, pivot=0.3), "auto"),
         (30, _body(GUARD), "ease"),
     ]
@@ -230,7 +259,7 @@ def sword_heavy(rig):
         # over 24-29 (keyed meta "twist_unwind"): the end lands 4.0 / 4.7, the twist easing one way 95 -> 72 (f29, its
         # keys' 68 at f30), the hand's turn f19-30 at most 13.2 deg a frame (was 17.1); f0-24 as before.
         meta["twist_unwind"] = [24, 29]
-    return build("sword_heavy", rig, keys, lead=STRIKE, meta=meta)
+    return _build("sword_heavy", rig, keys, meta=meta)
 
 
 def clips(rig, want):

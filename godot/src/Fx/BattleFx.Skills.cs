@@ -425,7 +425,12 @@ public partial class BattleFx
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, (float)(now * 9 + p.Id));
                 daggers.Add(new Transform3D(basis, at), Colors.White);
                 var c = art == "dagger_blood" ? Hdr("#ff4a3a", 1f) : Hdr("#fff4e0", 1f);
-                Ribbons.Feed(key, at, 0.22f * g, 0.16f, c, art == "dagger_flurry" ? 2.8f : 2.3f, Ribbons.Style.Steel);
+                float ke = art == "dagger_flurry" ? 2.8f : 2.3f;
+                // (lane B j1, the den: Knifestorm's ring of six read as white needles round her for half a second (judge, sheet_f
+                // fix 1): its trail in the physical school's steel, mid #f9b214, held under the tone curve's white-out; only the
+                // head's glint is pale)
+                if (SurvivorUnchained.View.MarkPass.Den && art != "dagger_blood") { c = Hdr("#f9b214", 1f); ke = 0.5f; }
+                Ribbons.Feed(key, at, 0.22f * g, 0.16f, c, ke, Ribbons.Style.Steel);
                 return true;
             }
             case "axe" or "axe_blood" or "axe_storm":

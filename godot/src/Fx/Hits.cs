@@ -93,7 +93,9 @@ public partial class Hits : Node3D
         return m;
     }
 
-    static readonly Color Blood = new("#6a0c0a");
+    /// <summary>(lane B fx, 16 Nov: E rules 2-3) the lit spray's default: the blood row (0.40 / 0.085 / 36), not #6a0c0a
+    /// (0.34 / 0.127 / 28), whose lit puffs read pink (h 18-21) on the wolves.</summary>
+    static readonly Color Blood = new("#6e3526");
 
     /// <summary>Blood thrown from a wound (dust from the dry dead: `color`).</summary>
     public void Spray(Vector3 at, Vector3 away, Color? color = null, float amount = 1)

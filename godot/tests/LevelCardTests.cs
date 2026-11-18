@@ -41,7 +41,7 @@ public sealed class LevelCardTests
         var s = LevelCards.ForCampaignLevel(8, Warden, _ => -1, 0);
         Assert.Equal(LevelCardKind.NewStance, s.Kind);
         Assert.Equal("LEVEL 8 · A SECOND WEAPON", LevelCards.Header(s));
-        Assert.Equal("Bulwark", s.Skill);
+        Assert.Equal("Shieldwall", s.Skill);
         Assert.False(string.IsNullOrEmpty(s.Line));
         Assert.Equal(Act.Character, s.PromptKey);
         // the dev specs: slot:ID:LEVEL:SLOT with SLOT 4+ is an auto card, "stance" is the second weapon's

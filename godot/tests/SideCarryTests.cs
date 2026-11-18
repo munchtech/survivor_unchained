@@ -66,7 +66,7 @@ public class SideCarryTests
     {
         foreach (float face in new[] { 0f, 180f, -90f, -135f })
         {
-            var c = new SideCarry();
+            var c = new SideCarry { FarOn = false };   // (r20) the far side's own layer: TheFarSide... below
             for (int i = 0; i < 60; i++) c.Step(Dt, true, 15f * MathF.Sin(i * 0.4f), At(face));
             Assert.Equal(0f, c.Weight);
             Assert.Equal(0f, c.Tilt);
@@ -264,6 +264,9 @@ public class SideCarryTests
                 // (lead r11) the band is TurnBand wide while she turns in place and as she starts
                 if (c.Cross && (a > 0f) != (pa > 0f) && MathF.Abs(pa) >= c.DownBand - 0.5f && MathF.Abs(a) >= c.DownBand - 0.5f)
                     cap = MathF.Max(cap, 2f * (MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin) + c.CrossSlack + 1f);
+                // (solver r12) the guard spreads a crossing over frames, each step at most StepMax on screen (judge r11 fix 4)
+                if ((a > 0f) != (pa > 0f) || MathF.Abs(a) < MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin || MathF.Abs(pa) < MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin)
+                    cap = MathF.Max(cap, c.StepMax);
                 worst = MathF.Max(worst, MathF.Abs(W(a - pa)) - cap);
             }
             pa = a; pc = a0;
@@ -277,9 +280,9 @@ public class SideCarryTests
     [InlineData(0f)]       // a quarter turn to face the camera
     public void OutOfASideStandTheBladeTurnsNoFasterThanHerPlusTheRate(float to)
     {
-        float e = MaxExcess(new SideCarry(), to, turnOnly: true);
+        float e = MaxExcess(new SideCarry { FarOn = false }, to, turnOnly: true);
         Assert.True(e <= 1f, $"blade outran her turn by {e:F1} deg in a frame");
-        float off = MaxExcess(new SideCarry { CarryRate = 0f }, to);
+        float off = MaxExcess(new SideCarry { CarryRate = 0f, FarOn = false }, to);
         Assert.True(off <= 1f, $"with CarryRate 0 the blade outran her turn by {off:F1} deg in a frame");
     }
 
@@ -290,7 +293,7 @@ public class SideCarryTests
     [InlineData(180f)]
     public void OnceHerTurnEndsTheBladeEasesOnNoFasterThanTheCarryRate(float to)
     {
-        var c = new SideCarry();
+        var c = new SideCarry { FarOn = false };   // (r20) the screen rate is the near side's; the far side steps FarStep in 3D
         for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
         float pa = float.NaN, pc = float.NaN;
         float W(float d) { d %= 360f; return d > 180f ? d - 360f : d < -180f ? d + 360f : d; }
@@ -307,6 +310,8 @@ public class SideCarryTests
                 // (lead r11) a crossing of the band is made whole in one frame (see MaxExcess)
                 if (c.Cross && (a > 0f) != (pa > 0f) && MathF.Abs(pa) >= c.DownBand - 0.5f && MathF.Abs(a) >= c.DownBand - 0.5f)
                     allow = MathF.Max(allow, 2f * (MathF.Max(c.DownBand, c.TurnBand) + c.CrossMargin) + c.CrossSlack);
+                // (solver r12) after a turn, the guard's step and rate box: at most StepMax on screen a frame
+                allow = MathF.Max(allow, MathF.Min(c.StepMax, c.MaxRate * Dt));
                 Assert.True(MathF.Abs(W(a - pa)) <= allow + 1f, $"frame {i}: {MathF.Abs(W(a - pa)):F1} deg against {allow:F1}");
             }
             pa = a; pc = a0;
@@ -346,22 +351,8 @@ public class SideCarryTests
     [InlineData(270f, 10)]   // 270 at the game's 28 deg/frame
     [InlineData(-90f, 12)]
     [InlineData(180f, 8)]
-    public void APivotHoldsTheBladeAtTheStandAngleWhileTheLayerHolds(float to, int turnFrames)
-    {
-        var c = new SideCarry();
-        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
-        float pa = float.NaN; int n = 0;
-        for (int i = 1; i <= turnFrames; i++)
-        {
-            var f = At(90f + (to - 90f) * i / (float)turnFrames, 0f);
-            c.Step(Dt, true, 0f, f);
-            float a = SideCarry.ScreenAngle(SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward), Jx, Jy, 1f);
-            bool crossed = !float.IsNaN(pa) && (a > 0f) != (pa > 0f);
-            if (c.Weight >= c.CrossHoldWeight && !crossed && MathF.Abs(a) < c.TurnBand - 0.5f) n++;
-            pa = a;
-        }
-        Assert.Equal(0, n);
-    }
+    public void APivotHoldsTheBladeAtTheStandAngleWhileTheLayerHolds(float to, int turnFrames) =>
+        Assert.Equal("", BandStays(to, turnFrames, true));   // (lead r12) the crossing under way passes it (see BandStays)
 
     static int BandLandings(bool cross, float to, int turnFrames)
     {
@@ -389,7 +380,134 @@ public class SideCarryTests
     [InlineData(180f, 8)]
     [InlineData(0f, 8)]
     public void AStandPivotNeverDropsTheBladeIntoTheDownBand(float to, int turnFrames) =>
-        Assert.Equal(0, BandLandings(true, to, turnFrames));
+        Assert.Equal("", BandStays(to, turnFrames));
+
+    // (r16, judge: e30 s11/s13 leg 10 +3..+9) A crossing, once begun, finishes: a pivot then a run's start crosses the cane's
+    // band (drawn |a| under CaneAngle, showing 0.2 or more of its length) in at most 2 frames, never a crawl through it, and the
+    // blade grows back out of its short crossing (no shown-length pump). Without the rule (CrossOn false) it crawls. Only the
+    // frames between leaving one side (out past the judge's 28, or as far out as the clip's own blade: the run's want can sit inside
+    // it) and landing on the far side (out past the band, or within LandTol of the clip's own blade) count: a blade that stays
+    // on its side inside the band (the layer faded onto a clip whose own blade hangs there) is no crossing.
+    const float LandTol = 5f;
+    static (int band, int pumps) CrossFrames(bool on, float to, int turnFrames)
+    {
+        var c = new SideCarry { CrossOn = on };
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        int band = 0, pumps = 0, run = 0; float s0 = float.NaN, s1 = float.NaN, side = 0f;
+        float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f);
+        for (int i = 0; i < 45; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / (float)turnFrames);
+            var f = At(face, Math.Clamp((i - turnFrames) / 4f, 0f, 1f));
+            c.Step(Dt, true, 0f, f);
+            var d = SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward);
+            float a = SideCarry.ScreenAngle(d, Jx, Jy, 1f), sh = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2) + MathF.Pow(Vector3.Dot(Jy, d), 2)) / n;
+            float a0 = MathF.Abs(SideCarry.ScreenAngle(f.Blade, Jx, Jy, 1f)), s = a > 0f ? 1f : -1f;
+            // out past the band: the judge's 28 (CaneAngle keeps a degree's margin on it)
+            float edge = c.CaneAngle - 1f;
+            bool off = side == 0f || s == side ? MathF.Abs(a) >= MathF.Min(edge, a0) : MathF.Abs(a) >= MathF.Min(edge, a0 - LandTol);
+            if (off) { if (side != 0f && s != side) band = Math.Max(band, run); side = s; run = 0; }
+            else if (c.Weight > 0f && sh >= 0.2f) run++;
+            if (!float.IsNaN(s0) && (s1 - s0) * (sh - s1) < 0f && MathF.Abs(s1 - s0) >= 0.1f && MathF.Abs(sh - s1) >= 0.1f) pumps++;
+            s0 = s1; s1 = sh;
+        }
+        return (band, pumps);
+    }
+
+    [Theory]
+    [InlineData(-90f, 6)]
+    [InlineData(270f, 10)]
+    [InlineData(180f, 8)]
+    [InlineData(0f, 8)]
+    public void ACrossingOnceBegunFinishesInTwoFrames(float to, int turnFrames)
+    {
+        var (band, pumps) = CrossFrames(true, to, turnFrames);
+        Assert.True(band <= 2, $"{band} frames in the band");
+        Assert.Equal(0, pumps);
+    }
+
+    [Fact]
+    public void WithoutTheFinishRuleACrossingCrawls()
+    {
+        int worse = 0;
+        foreach (var (to, tf) in new[] { (-90f, 6), (270f, 10), (180f, 8), (0f, 8) })
+            if (CrossFrames(false, to, tf).band > 2) worse++;
+        Assert.True(worse > 0, "no crawl without the rule, so the rule's test tests nothing");
+    }
+
+    // (judge r11 fix 3, lead r12: 12 deg a frame, not the judge's 8, which held the pivots' 20-28 deg/frame turns out of reach)
+    [Theory]
+    [InlineData(270f, 6)]
+    [InlineData(-90f, 12)]
+    [InlineData(180f, 8)]
+    public void TheLayersTurnNeverMovesFasterThanItsRates(float to, int turnFrames)
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        for (int i = 0; i < 40; i++)
+        {
+            float t0 = c.Tilt, i0 = c.Inward;
+            c.Step(Dt, i < 24, 0f, At(90f + (to - 90f) * MathF.Min(1f, i / (float)turnFrames), 0f));
+            Assert.InRange(MathF.Abs(c.Tilt - t0), 0f, c.MaxRate * Dt + 1e-3f);
+            Assert.InRange(MathF.Abs(c.Inward - i0), 0f, c.InwardRate * Dt + 1e-3f);
+        }
+    }
+
+    // (lead r12, runsame e23->e24 leg 14) a layer under GuardWeight never turns the blade off the clip's own: it only eases back
+    [Fact]
+    public void AFaintLayerOnlyEasesBackToTheClipsOwn()
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float tp = MathF.Abs(c.Tilt), ip = MathF.Abs(c.Inward); int faint = 0;
+        for (int i = 0; i < 90; i++)
+        {
+            c.Step(Dt, false, 0f, At(90f + 2f * i, 0f));
+            if (c.Weight < c.GuardWeight) { faint++; Assert.True(MathF.Abs(c.Tilt) <= tp + 1e-3f && MathF.Abs(c.Inward) <= ip + 1e-3f, $"frame {i}: tilt {c.Tilt:F2} inward {c.Inward:F2}"); }
+            tp = MathF.Abs(c.Tilt); ip = MathF.Abs(c.Inward);
+        }
+        Assert.True(faint > 5, "the layer never faded under GuardWeight, so this tests nothing");
+    }
+
+    /// <summary>(lead r12, judge r11 fixes 3, 4) With the layer's turn rate-limited (MaxRate) the blade can't jump the down
+    /// band in one frame, so a crossing passes through it: allowed only as a crossing under way (each frame on toward the far
+    /// side, through in at most 4 frames, no on-screen step over StepMax unless the blade is short on both frames), or with
+    /// the blade short (shown at most CrossShown). Never a stay, nor a dip in and back out the same side.</summary>
+    static string BandStays(float to, int turnFrames, bool turnBand = false)
+    {
+        var c = new SideCarry();
+        for (int i = 0; i < 30; i++) c.Step(Dt, true, 0f, At(90f, 0f));
+        float pa = float.NaN, ps = 0f, side = 0f; int inN = 0; var bad = new System.Text.StringBuilder();
+        float jn = Jx.Length();
+        for (int i = 0; i < 40; i++)
+        {
+            float face = 90f + (to - 90f) * MathF.Min(1f, i / (float)turnFrames);
+            var f = At(face, 0f);
+            c.Step(Dt, true, 0f, f);
+            var d = SideCarry.Turned(f.Blade, f.Left, c.Tilt, f.Ahead, c.Inward);
+            float a = SideCarry.ScreenAngle(d, Jx, Jy, 1f);
+            float sh = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2) + MathF.Pow(Vector3.Dot(Jy, d), 2)) / jn;
+            if (!float.IsNaN(pa) && MathF.Abs(((a - pa) % 360f + 540f) % 360f - 180f) > c.StepMax + 0.01f && !(sh <= c.ShortShown && ps <= c.ShortShown))
+                bad.Append($"step {i} {pa:F1}->{a:F1} ");
+            float band = turnBand && c.Weight >= c.CrossHoldWeight ? c.TurnBand : c.DownBand;
+            // (a degree's jiggle at the edge as the weight falls is not a stay: 270/10 frame 4 read 29.2 against a 30 band)
+            bool inBand = MathF.Abs(a) < band - 1.5f && sh > c.CrossShown;
+            if (inBand)
+            {
+                if (inN == 0) side = MathF.Sign(pa);
+                inN++;
+                if (inN > 4) bad.Append($"stay {i} ");
+                if (inN > 1 && side * (pa - a) < -0.01f) bad.Append($"back {i} ");
+            }
+            else
+            {
+                if (inN > 0 && MathF.Sign(a) == side && MathF.Abs(a) >= band - 1.5f) bad.Append($"dip {i} ");
+                inN = 0;
+            }
+            pa = a; ps = sh;
+        }
+        return bad.ToString();
+    }
 
     [Fact]
     public void WithoutTheCrossRuleAPivotDoesLandInTheBand()
@@ -427,5 +545,241 @@ public class SideCarryTests
         float was = c.OutTurn;
         c.Step(Dt, true, 0f, F(Far, Far + new Vector3(0f, -0.4f, 0f)));
         Near(MathF.Max(0f, was - c.ClearDown * Dt), c.OutTurn, 0.6f);
+    }
+
+    // (r13) The swing's spring turns at most SpringRate: the run's end (a hard deceleration) can't swing the tip ~7 deg a frame.
+    [Fact]
+    public void SpringTurnsAtMostItsRate()
+    {
+        var c = new SideCarry();
+        float prev = 0f, worst = 0f;
+        for (int k = 0; k < 60; k++)
+        {
+            c.Step(Dt, true, k < 30 ? 18f : -24f, At(90f));
+            if (k > 0) worst = MathF.Max(worst, MathF.Abs(c.Spring - prev));
+            prev = c.Spring;
+        }
+        Assert.True(worst <= c.SpringRate * Dt + 1e-3f, $"spring step {worst}");
+        Assert.True(c.Spring < 0f, "the stop's swing still goes tip forward");
+    }
+
+    // (r13, judge r12 bar 2) At a stop (her speed falling), the drawn blade's world pitch steps at most StopRate a frame
+    // and doesn't pump (reverse by StopRev or more each way).
+    [Fact]
+    public void StopPitchStepsAndNeverPumps()
+    {
+        var c = new SideCarry();
+        var (a, l, b) = Her(90f);
+        float pPrev = float.NaN, dPrev = 0f, worst = 0f; int pumps = 0;
+        for (int k = 0; k < 70; k++)
+        {
+            float mv = k < 40 ? 1f : MathF.Max(0f, 1f - (k - 39) * 0.3f);
+            c.Step(Dt, true, k < 36 ? 15f : -40f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, mv, 0f));
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float p = MathF.Asin(Math.Clamp(-d.Y, -1f, 1f)) * 180f / MathF.PI;
+            if (k > 40 && c.Weight > 0f)
+            {
+                float dp = p - pPrev; worst = MathF.Max(worst, MathF.Abs(dp));
+                if (dp * dPrev < 0f && MathF.Abs(dp) >= 1f && MathF.Abs(dPrev) >= 1f) pumps++;
+            }
+            if (!float.IsNaN(pPrev)) dPrev = p - pPrev;
+            pPrev = p;
+        }
+        Assert.True(worst <= c.StopRate * Dt + 0.5f, $"stop pitch step {worst}");
+        Assert.Equal(0, pumps);
+    }
+
+    /// <summary>A stand that turns in place (held 20 frames, then `rate` deg a frame): the frames at w > 0 whose drawn blade's
+    /// shown length steps 0.1 or more and straight back as far (the judge's pump).</summary>
+    static int ShownPumps(SideCarry c, float face0, float rate)
+    {
+        float n = MathF.Sqrt((Jx.LengthSquared() + Jy.LengthSquared()) / 2f), prev = float.NaN, d0 = 0f, w0 = 0f; int pumps = 0;
+        for (int i = 0; i < 60; i++)
+        {
+            float face = face0 + rate * MathF.Max(0f, i - 20);
+            var (a, l, b) = Her(face);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, 0f, 0f));
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float s = MathF.Sqrt(MathF.Pow(Vector3.Dot(Jx, d), 2f) + MathF.Pow(Vector3.Dot(Jy, d), 2f)) / n;
+            if (!float.IsNaN(prev))
+            {
+                float d1 = s - prev;
+                if (w0 > 0f && d0 * d1 < 0f && MathF.Abs(d0) >= 0.1f && MathF.Abs(d1) >= 0.1f) pumps++;
+                d0 = d1;
+            }
+            prev = s; w0 = c.Weight;
+        }
+        return pumps;
+    }
+
+    // (r14, e29 s11 leg 4 +57) in a turn, the guard won't draw a shown-length step the turn carries straight back next frame
+    [Theory]
+    [InlineData(30f, 27f)]
+    [InlineData(-60f, 27f)]
+    [InlineData(120f, 27f)]
+    public void ATurnDrawsNoShownBlipItCarriesBack(float face0, float rate)
+    {
+        Assert.True(ShownPumps(new SideCarry { PumpCost = 0f }, face0, rate) > 0, "no pump without the cost, so this tests nothing");
+        Assert.Equal(0, ShownPumps(new SideCarry(), face0, rate));
+    }
+
+    /// <summary>(r15, judge r14 bar 2) A run's stop facing the camera (weight 0, the clip's own blade): the clip's blade pitch
+    /// (e30 seed 13 leg 8 +36..+50: 70 at the run, -8.2 and -6.6 a frame at the stop, a +2.8 settle wobble) drawn; the worst
+    /// pitch step, the reversals of 1 deg or more each way, the drawn heading's miss off the clip's, and the end's miss.</summary>
+    static (float worst, int revs, float headMiss, float endMiss) StopAtW0(SideCarry c)
+    {
+        float[] p = { 71.7f, 73.2f, 73.5f, 70.0f, 61.8f, 55.2f, 53.9f, 56.7f, 58.3f, 57.4f, 57.2f, 57.2f, 57.1f, 56.9f, 56.8f };
+        float[] mv = { 1f, 1f, 1f, 1f, 1f, 0.69f, 0.21f, 0.02f };
+        var (a, l, _) = Her(0f);
+        var h = Vector3.Normalize(-a - 0.3f * l);
+        float worst = 0f, prev = float.NaN, dPrev = 0f, head = 0f, last = 0f; int revs = 0;
+        for (int i = 0; i < 70; i++)
+        {
+            float pc = p[Math.Min(i, p.Length - 1)] * MathF.PI / 180f;
+            var b = h * MathF.Cos(pc) - Vector3.UnitY * MathF.Sin(pc);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, i < mv.Length ? mv[i] : 0f, 0f));
+            Assert.Equal(0f, c.Weight);
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            float pd = MathF.Asin(-d.Y) * 180f / MathF.PI;
+            head = MathF.Max(head, MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(new Vector3(d.X, 0f, d.Z)), h), -1f, 1f)) * 180f / MathF.PI);
+            if (!float.IsNaN(prev))
+            {
+                float dp = pd - prev;
+                worst = MathF.Max(worst, MathF.Abs(dp));
+                if (dp * dPrev < 0f && MathF.Abs(dp) >= 1f && MathF.Abs(dPrev) >= 1f) revs++;
+                dPrev = dp;
+            }
+            prev = pd; last = MathF.Abs(pd - p[^1]);
+        }
+        return (worst, revs, head, last);
+    }
+
+    // (r15) at a stop where the layer is off (weight 0), the drawn blade's pitch steps at most StandRate a frame and never
+    // reverses 1 deg each way, on the clip's own heading, and lets go onto the clip's own blade once it has caught up
+    [Fact]
+    public void AStopAtWeightZeroDrawsNoPitchJumpOrWobble()
+    {
+        var (w0, r0, _, _) = StopAtW0(new SideCarry { StandRate = 0f });
+        Assert.True(w0 > 8f && r0 > 0, $"the clip's own stop jumps {w0} and wobbles {r0}, or this tests nothing");
+        var c = new SideCarry();
+        var (w, r, hm, em) = StopAtW0(c);
+        Assert.True(w <= c.StandRate * Dt + 0.05f, $"stop pitch step {w}");
+        Assert.Equal(0, r);
+        Assert.True(hm < 0.1f, $"heading off the clip's by {hm}");
+        Assert.True(em < 0.05f && c.Tilt == 0f && c.Inward == 0f, $"not handed back: {em}, tilt {c.Tilt}, inward {c.Inward}");
+    }
+    // (r18, judge e31 bar 4; r19, judge r15 guards 1-4) the far side's carry: at a run, the drawn blade sits on her own trailing
+    // direction (FarDir) while the clip's blade swings under it; through her stop and stand it holds (FarStand), its pitch easing
+    // to the stand's: at least half the blade shows on every frame, and the drawn direction never steps over FarStep a frame.
+    // FarStand false: the weight follows her speed and hands back to the clip's own.
+    static (float off, float least, float step, SideCarry c, float standOff) FarRun(bool stand)
+    {
+        var c = new SideCarry { FarOn = true, FarStand = stand, FarFloorNow = stand };   // (r20) the whole floor holds an end-on clip blade, so the hand-back takes the ramp
+        var (a, l, b0) = Her(-90f);
+        float off = 0f, least = 9f, step = 0f, standOff = 0f; Vector3 prev = default;
+        for (int k = 0; k < 90; k++)
+        {
+            var b = SideCarry.Rot(l, 15f * MathF.Max(0f, 1f - MathF.Max(0f, k - 39) / 10f) * MathF.Sin(k * 0.6f), b0);   // the run's swing, stilled over her stop
+            float mv = k < 40 ? 1f : MathF.Max(0f, 1f - (k - 39) * 0.3f);
+            var f = new SideCarry.Frame(b, l, a, Jx, Jy, CamBack, mv, 0f);
+            c.Step(Dt, true, 0f, f);
+            var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
+            if (k >= 20 && k < 40)
+                off = MathF.Max(off, MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarPitch, c.FarOutNow(1f, l, a, CamBack))), -1f, 1f)) * 180f / MathF.PI);
+            if (k >= 20) least = MathF.Min(least, SideCarry.Shown(d, f));
+            if (k >= 1 && c.Weight > 0f) step = MathF.Max(step, MathF.Acos(Math.Clamp(Vector3.Dot(d, prev), -1f, 1f)) * 180f / MathF.PI);
+            if (k == 89) standOff = MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarStandPitch, c.FarOutNow(0f, l, a, CamBack))), -1f, 1f)) * 180f / MathF.PI;
+            prev = d;
+        }
+        return (off, least, step, c, standOff);
+    }
+
+    [Fact]
+    public void TheFarSideTrailsHerOwnDirectionHoldsThroughHerStopAndNeverGoesEndOn()
+    {
+        var (off, least, step, c, standOff) = FarRun(true);
+        Assert.True(off < 1f, $"the run's blade off her trailing direction by {off} deg");
+        Assert.True(least >= 0.5f, $"the blade went end-on: shown {least}");
+        Assert.True(step <= c.FarStep + 0.05f, $"the drawn direction stepped {step} deg in a frame");
+        Assert.True(c.Weight > 0.99f, $"the stand let go: w {c.Weight}");
+        // (r20) standing, Prowl's blade held clear: out to her holding side, FarStandPitch under level, not the run's trailing carry
+        Assert.True(standOff < 1f, $"the stand's blade off its Prowl hold by {standOff} deg");
+        var (_, _, step2, c2, _) = FarRun(false);
+        Assert.True(step2 <= c2.FarStep + 0.05f, $"the hand-back stepped {step2} deg in a frame");
+        Assert.True(c2.Weight == 0f && MathF.Abs(c2.Tilt) < 0.5f && MathF.Abs(c2.Inward) < 0.5f, $"not handed back: w {c2.Weight} tilt {c2.Tilt} inward {c2.Inward}");
+        var off0 = new SideCarry { FarOn = false };
+        off0.Step(Dt, true, 0f, At(-90f));
+        Assert.Equal(0f, off0.Weight);   // FarOn false: the far side stays the clip's own
+    }
+
+    // (r21, judge r16 fixes 1, 2) the far heading capped by her facing: square across (face -90) the stand's blade trails low
+    // on her back's side of the screen, 30 deg or more off the vertical and under level, not up out of her head; heading away
+    // (face -135) the run's blade angles back 25 deg or more under screen level; toward the camera (face -45) the guard is
+    // FarStandOut's own; the cap is continuous in her facing.
+    [Theory]
+    [InlineData(-90f, 0f), InlineData(-135f, 1f), InlineData(-135f, 0f), InlineData(-90f, 1f)]
+    public void TheFarHeadingIsCappedByHerFacingLowAndBack(float face, float moving)
+    {
+        var c = new SideCarry();
+        var (a, l, b0) = Her(face);
+        for (int k = 0; k < 60; k++) c.Step(Dt, true, 0f, new SideCarry.Frame(b0, l, a, Jx, Jy, CamBack, moving, 0f));
+        var d = SideCarry.Turned(b0, l, c.Tilt, a, c.Inward);
+        float sx = Vector3.Dot(Jx, d), sy = Vector3.Dot(Jy, d), back = MathF.Sign(Vector3.Dot(Jx, -a));
+        float under = MathF.Atan2(sy, sx * back) * 180f / MathF.PI;   // deg under screen level, toward her back's side
+        Assert.True(sx * back > 0f && under >= (moving > 0.5f ? 25f : 20f) && under <= 60f, $"face {face} mv {moving}: {under} deg under level, x {sx}");
+    }
+    [Fact]
+    public void TheFarCapKeepsTheTowardGuardAndIsContinuous()
+    {
+        var c = new SideCarry();
+        var (a, l, _) = Her(-45f);
+        Assert.Equal(c.FarStandOut, c.FarOutNow(0f, l, a, CamBack), 0.001f);
+        Assert.Equal(0f, SideCarry.FarFacing(Her(-90f).left, Her(-90f).ahead, CamBack), 0.01f);
+        for (float th = -90f; th < 90f; th += 0.5f) Assert.True(MathF.Abs(c.FarCapAt(th + 0.5f) - c.FarCapAt(th)) <= 1.6f, $"cap jumps at {th}");   // (r22) Across -40: 140 over 45 toward
+        Assert.Equal(c.FarOut, new SideCarry { FarCapOn = false }.FarOutNow(1f, Her(-90f).left, Her(-90f).ahead, CamBack), 0.001f);
+    }
+
+    // (r19, judge r15 guards 2, 3) the end-on guard turns a direction about the vertical until the share asked shows; the step
+    // toward a direction is at most the degrees asked
+    [Fact]
+    public void TheEndOnGuardShowsHalfTheBladeAndTheStepIsCapped()
+    {
+        var f = At(-90f);
+        var ray = Vector3.Normalize(-CamBack + new Vector3(0.05f, 0f, 0f));   // nearly along the view ray: end-on
+        Assert.True(SideCarry.Shown(ray, f) < 0.2f, "not end-on, so this tests nothing");
+        var g = SideCarry.EndOn(ray, f, 0.5f);
+        Assert.True(SideCarry.Shown(g, f) >= 0.5f, $"shown {SideCarry.Shown(g, f)}");
+        Near(ray.Y, g.Y, 1e-4f);   // turned about the vertical only
+        var t = SideCarry.Toward(Vector3.UnitX, Vector3.UnitZ, 6f);
+        Near(6f, MathF.Acos(Vector3.Dot(t, Vector3.UnitX)) * 180f / MathF.PI, 0.01f);
+    }
+
+    // (r22, judge r22) Pivoting in place on the far side (her turn over TurnEnd, standing), the far blade keeps its heading (it steps toward the wanted one at most FarStep a frame, so it trails her turn)
+    // (FarPivotHold) instead of turning with her yaw, which read from behind as a cane swung around by her foot.
+    static float FarPivotDrift(bool hold, out float worstStep)
+    {
+        var c = new SideCarry { FarPivotHold = hold };
+        var (a, l, b0) = Her(-90f);
+        for (int k = 0; k < 60; k++) c.Step(Dt, true, 0f, new SideCarry.Frame(b0, l, a, Jx, Jy, CamBack, 0f, 0f));
+        var start = SideCarry.Turned(b0, l, c.Tilt, a, c.Inward);
+        var prev = start; worstStep = 0f;
+        for (int k = 1; k <= 8; k++)   // 6 deg a frame = 180 deg/s, over TurnEnd 120, and she does not move
+        {
+            var (a2, l2, b2) = Her(-90f + 6f * k);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b2, l2, a2, Jx, Jy, CamBack, 0f, 0f));
+            var d = SideCarry.Turned(b2, l2, c.Tilt, a2, c.Inward);
+            worstStep = MathF.Max(worstStep, MathF.Acos(Math.Clamp(Vector3.Dot(d, prev), -1f, 1f)) * 180f / MathF.PI);
+            prev = d;
+        }
+        return MathF.Acos(Math.Clamp(Vector3.Dot(prev, start), -1f, 1f)) * 180f / MathF.PI;
+    }
+    [Fact]
+    public void WhileShePivotsInPlaceTheFarBladeKeepsItsHeading()
+    {
+        float held = FarPivotDrift(true, out float step), carried = FarPivotDrift(false, out _);
+        Assert.True(carried > 20f, $"the carried blade turned only {carried} deg: the pivot tests nothing");
+        Assert.True(held < carried * 0.7f, $"the far blade drifted {held} deg in the pivot (carried with her: {carried})");
+        var c = new SideCarry();
+        Assert.True(step <= c.FarStep + 0.05f, $"the far blade stepped {step} deg in a frame");
     }
 }

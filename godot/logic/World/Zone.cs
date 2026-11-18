@@ -234,8 +234,8 @@ public sealed record AtmospherePreset(
     /// up), [8] the MID band's L step over the flank (the fur's three bands: flank, mid past the shader's DEN_MID_CUT 0.3 of the world normal's y, top past [13]), [9] the rim's level (0: no rim at all), [10-12] its R, G, B (sRGB 0-255);
     /// [13] the top band's cut in the world normal's y, [14] its L step over the flank (the boss takes half; the pack's top also a chroma step, the shader's DEN_TOP_C), [15] the probe
     /// (0 in play, always the committed value; 1 each class flat in its own colour for masks: pack green, elite blue, boss
-    /// magenta; 2 the model's space), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
-    /// C are the shader's DEN_ACCENT), [20] the full rim's level on an elite or the boss; [21-23] the boss body's tint R, G, B (its hue only,
+    /// magenta; 2 the model's space; 3 the hit red and an elite accent's mask blue), [16] the boss's pull; [17-19] the elite's accent tint R, G, B (its hue only; its L and
+    /// C are the shader's DEN_ACCENT, on its ruff's top: n.y past DEN_ACCENT.z; a struck elite's hit spares it), [20] the full rim's level on an elite or the boss (an elite's rim in the shader's DEN_ELITE_RIM, bone-ivory; the boss's bands at DEN_BOSS_STEP of the pack's; no gloss on a den foe); [21-23] the boss body's tint R, G, B (its hue only,
     /// at the shader's DEN_BOSS_BODY.x chroma; the back, the mane and the belly are DEN_BOSS_BACK, DEN_MANE, DEN_BELLY), [24] the
     /// boss's body L. A living den foe's hit is a step in its own paint (DEN_HIT: L +0.08 never past DEN_FLASH_L 0.36, C to
     /// 0.075 at h 40), the boss's half of it on its body only (DEN_HIT_BOSS: L +0.04, C to 0.05); no struck light on them.</summary>
@@ -254,7 +254,11 @@ public sealed record AtmospherePreset(
     /// ground's pool moves); (lead 3, row 1: "she nearly vanishes under the roots") her rim, a warm lit edge just inside her
     /// line where the ground past it is dark (hero_ink.gdshader): its width (px at 1080p; 0 or absent: off), its tone R, G, B
     /// (sRGB 0-255) and level, the ground's cube-root luminance (the scene's, before the grade) where it is full and where it
-    /// is gone, its share on edges facing screen-down]. Null: none of it (every rig but the den).</summary>
+    /// is gone, its share on edges facing screen-down (committed off: 0); (lead 3, row 1, her rim LIGHT: View/PlayerView RimLight,
+    /// a real light on her alone, from low behind her away from the camera) its energy where full (0 or absent: off), its colour
+    /// R, G, B (sRGB 0-255), its height over her feet and offset behind her (m), its range (m), the den's own light at her feet
+    /// (the den spots' irradiance, PlayerView.DenLightAt) where it is full and where it is gone, its fall (OmniAttenuation)].
+    /// Null: none of it (every rig but the den).</summary>
     public double[]? HeroDen { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";

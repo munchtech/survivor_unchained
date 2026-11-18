@@ -683,6 +683,7 @@
  },
  "p7": {
   "what": "P7 round 3 (9 Nov): the skills lead's shapes in numbers, FROM judge r2 (survivorsunchained_inputs/skills_p7/judge_r2/verdict.md). px are at the play camera (1080 lines, the view converts with BattleFx.P7Px); s seconds; frames at 60 fps; [lo, hi] a range; a curve is [t, v] pairs. Colors stay the physical school's (L1). Read by logic/Look/FxP7.cs.",
+  "sunder_mark": {"what": "(lane B fx s3, 16 Nov: E rule 4, coordinator #15; BattleFx.Grip.cs SunderMark / SunderRingPaint / SunderCrack, shaders/fx_sunder_ring.gdshader) Sunder's ground mark: ONE painted shockwave ring on the ground in front of her over the cut's arc (at most open_deg; nothing behind her), after the grade (FxAfter). Its front grows from `from` x the cut's real reach (Ev.Slash.Reach) to the reach in `run` s (ease-out); white-hot for core_frames frames at 60 fps (heat over core_cut the core band, the dry front mid), then the steel bands: mid from the lip out to cool[2] of its heat, rising to cool[3] between cool[0] and cool[1] s; it erodes front first between fade[0] and fade[1] s, gone at `life` s. The brush (painted once a session, polar): `band` of the radius thick at the cut's line, tapering to points, +-`wobble` uneven; the lip `lip` of the band solid; dry-brush from dry_from of the band out, up to `dry` of the bristles broken at the front; `gaps` real gaps gap_w (share of the arc) wide; `streaks` trailing streaks streak_len of the radius in from the lip. The crack: `cracks` radial cracks over the cut's cone (cone_deg at most) from crack_span[0-1] to crack_span[2-3] x the reach, the long-cut strip's last tiles (crack_seg m each, crack_across wide), tinted crack_tint (rgb multiplier on the crack albedo: the line row L 0.08-0.22, warm, never black), laid as the front passes, whole crack_hold s, gone at crack_life s", "from": 0.4, "run": 0.12, "life": 0.38, "core_frames": 4, "core_cut": 0.3, "open_deg": 160, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.12, 0.38], "band": 0.12, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.8, "gaps": [2, 3], "gap_w": [0.008, 0.016], "streaks": [3, 5], "streak_len": [0.1, 0.2], "cracks": [4, 5], "cone_deg": 120, "crack_span": [0.38, 0.48, 0.88, 1.0], "crack_seg": 0.45, "crack_across": 1.05, "crack_tint": [0.85, 0.6, 0.4], "crack_hold": 1.0, "crack_life": 1.8},
   "wave": {
    "what": "r3 fix 2: every ring's wavefront (p7_wave): painted arcs about arc_px long at the reach (3-9 a ring), dust shed off them as the front passes each share of its reach (shed), dust_px the puffs at the play camera; open_deg the charge stop's forward arc",
    "arc_px": 480,
@@ -707,42 +708,11 @@
    "life": 0.3
   },
   "leap": {
-   "ring": {
-    "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
-    "lead_px": 8,
-    "trail_px": 6,
-    "arcs": 3,
-    "cover": [
-     [
-      0.0,
-      0.0
-     ],
-     [
-      0.1,
-      0.4
-     ],
-     [
-      0.25,
-      0.7
-     ],
-     [
-      0.4,
-      1.0
-     ]
-    ],
-    "alpha": [
-     0.6,
-     1.0
-    ],
-    "flash_frames": 2,
-    "flash_k": 1.5
-   },
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7.cs P7LeapLand, BattleFx.Grip.cs PaintedRing / RingPaint) Heroic Leap's landing mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed (open_deg 360) round her at the leap's real hit radius (Ev.Leap Radius); knots_k x the bristle detail round its longer length; crack_tint the landing cracks' rgb multiplier (the line row, never black; their lit seams gone). Replaced, for the leap only: the target ring and the air ribbon (their keys, leap.ring and leap.ribbon head_px/life/blade, pruned in r2), leap.star and the landing light (the charge's slam, P7Slam, still reads leap.star / leap.crack). r2 (v1a judged): band .08, dry .9, fade .08-.36 s, gaps 6-8 (the gold read heavy at 380 px); core_cut .5 (the white-hot frames a lip, not a whole white ring)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.5, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.08, 0.36], "band": 0.08, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.9, "gaps": [6, 8], "gap_w": [0.0035, 0.007], "streaks": [8, 11], "streak_len": [0.1, 0.2], "knots_k": 2.0, "crack_tint": [0.85, 0.6, 0.4]},
+   "henge": {"what": "(leap-vow-marks r3, 16 Nov: coordinator #15; BattleFx.P7.cs P7Henge, BattleFx.WardenGround.cs WgSlab) Heroic Leap's Henge Turn (heroic_leap.henge, Ev.Nova art heroic_leap_henge): its standing stones, the Warden ground's stood-up plates (their lit earth; thick x their thickness; their largest side up to max m, over WgSlabMax: a barrier's stones), one about every pitch m round the Turn's real radius (6 m, outside the landing ring at the leap's 5.34 m), len m long (a third buried), tilt_deg from the ground (leaning out a little), wide x across, up in 0.09 s within stagger s of the landing, held, sunk over the last 0.5 s of its real seconds (4 s); dust_px puffs at their feet as they rise and sink. Replaced: the generic nova's soft ring (the halo outside the landing ring) and its light (the gold pool round her feet)", "pitch": 1.15, "len": [1.2, 1.5], "tilt_deg": [80, 88], "wide": [1.05, 1.35], "thick": 2.2, "max": 1.8, "stagger": 0.05, "dust_px": [22, 44]},
    "ribbon": {
-    "what": "the blade's path through the air, splined; blade: the share of the blade's own swing over her chest's arc",
-    "head_px": 10,
-    "life": 0.2,
-    "turn_deg": 30,
-    "blade": 0.35
+    "what":"(leap-vow-marks r2: the leap's own air ribbon is gone; its head_px, life and blade pruned) turn_deg: the most a joint of any P7 ribbon turns at the play camera once eased (BattleFx.P7.cs P7BuildTrail / P7Ease: the charge's and the dash's ribbons)",
+    "turn_deg": 30
    },
    "star": {
     "spikes": [
@@ -912,8 +882,9 @@
     "_doc": "(take 7, iii) THE BODY IS BRUSHED. lanes = bristle lanes across the width (uneven); (take 8) share = a lane's share of its length [at the stroke's white, up to the second value; the rest the third] (each lane changes value in streaks along the sweep, hard ends); values_day / values_night = the second and the third value as the white x [r, g, b, r, g, b] in sRGB: FAR ENOUGH APART TO READ at 1:1 (take 7's 0.93 / 0.85 in linear could not be seen); gold = the inner edge's band [its share of the width (take 10: the innermost lane only, a fifth of the width at most), the light gold's green and blue x the gold's (take 10: 1.25, the kit's WARM gold; 1.9 was lemon), the next lane's share in gold (the band's border steps in and out)]; press = THE PRESS IS MORE PAINT [the values' shares shift toward the deeper ones by this at the contact's size 1, a streak's half splits in two finer lanes from this press (+0.3 x the lane's own number)] (take 10: asked at each half streak's CENTRE from the stamp's place and reaches, so a pressed patch ends in the streaks' own slanted ends: per pixel it drew block borders); groove = (take 10) THE BRISTLES' GROOVES on the lanes' borders [a groove's width (px), the share of a border's length grooved, a dry gap's width (px), the groove's color (0 the deepest value, 1 the light gold)]: hair lines that make the white read as brushed, and the places the dry gaps open (grip.dry_tail); streak = a value streak's length [m least, most]; tine = [a lane's own threshold on the rib's whiteness (+-), its slant across the lane]: the white's, the gold's and the amber's ends are tines along the sweep, never a line across; cut = the whiteness at which [amber turns gold, gold turns white]; comb = a lane starts at its own whiteness up to this (the tail's comb tines; the lane on the tip's path whole: the comma's point); dry = a dry gap's cell along a lane [m least, most]. All anchored to the laid path's metres: nothing swims.",
     "lanes": 9,
     "share": [0.55, 0.85],
-    "values_day": [0.96, 0.91, 0.8, 0.92, 0.8, 0.58],
-    "values_night": [0.96, 0.93, 0.86, 0.88, 0.8, 0.66],
+    "_doc_values_den": "(lane B fx, 16 Nov: E rule 1) the second value is the physical school's mid band (#f9b214, 0.81 / 0.165 / 79) and the third its edge band (#ca6e06, 0.63 / 0.149 / 58), as shares of the white: the stroke is white core, gold body, amber lanes (C 0.14-0.19 on warm earth; the old cream 0.913 / 0.064 vanished there)",
+    "values_day": [0.976, 0.72, 0.089, 0.792, 0.444, 0.027],
+    "values_night": [0.976, 0.72, 0.089, 0.792, 0.444, 0.027],
     "gold": [0.12, 1.25, 0.3],
     "press": [0.15, 0.12],
     "groove": [1.3, 0.5, 2.4, 0.45],
@@ -985,8 +956,125 @@
     "core_share": 0.25,
     "alpha": 0.8
    },
+   "light": 0,
+   "ring_paint": {
+    "what": "(bladestorm-spin r2, 16 Nov: E rule 5; BattleFx.P7Storm.cs P7StormRing, BattleFx.Grip.cs RingPaint, shaders/fx_sunder_ring.gdshader ring_along) the storm's ring, painted with Sunder's brush (round 1's stroke arcs, storm.ring_arcs, retired): n open arcs evenly round her on the ground (lift m up) at the storm's real hit radius (Ev.Spin Radius x rad_k), held while she spins and turning with the blade, arc i's head lag_deg + i/n of the turn behind the blade's angle round her, its tail arc_deg back (shorter as the spin winds up); the brush widest at `head` of the arc (a short round nose ahead, a long tail), band/lip/dry/wobble/gaps/streaks/knots_k as p7.sunder_mark's, `brushes` of them, a fresh one each relay_turns turns; the lip white-hot over the head's first head_hot of the arc (heat over core_cut, thinning to the lip), then the steel bands, the gold/amber cut rising cut_along[0] at the head to [1] at the tail, the grain eroding from fade_along[0] at the head to [1] at the tail from [2] of the way back (dry tail); r2 c2b (c2a judged by the solver: band .1 = 42 px read heavy and flat at the 3.5 m ring, about 420 px; the white a long blade): band .06, lip .2, head_hot .1, core_cut .6, cut .5-.9, dry .3-.9, wobble .45, gaps 2-3; c2c: band .08 (c2b .06 read a thin line in its body); grows from `from` x the radius in `run` s; erodes away where it stands in `out` s once the storm ends or breaks. storm.light: the storm's old gold OmniLight over her, x it (0: none, the painted ring is the read: no light, no glow)",
+    "n": 3,
+    "arc_deg": 116,
+    "open_deg": 130,
+    "lag_deg": 0,
+    "rad_k": [1.0, 0.97, 0.985],
+    "lift": 0.08,
+    "from": 0.6,
+    "run": 0.14,
+    "out": 0.2,
+    "relay_turns": 1,
+    "brushes": 4,
+    "head": 0.92,
+    "head_hot": 0.1,
+    "core_cut": 0.6,
+    "cut_along": [0.5, 0.9],
+    "fade_along": [0.0, 1.0, 0.3],
+    "band": 0.08,
+    "wobble": 0.45,
+    "lip": 0.2,
+    "dry_from": 0.3,
+    "dry": 0.9,
+    "gaps": [2, 3],
+    "gap_w": [0.006, 0.012],
+    "streaks": [0, 0],
+    "streak_len": [0.1, 0.2],
+    "knots_k": 1.3
+   },
    "seam": {
-    "px": 4
+    "what": "(lane E lead 7, 17 Nov) the line's hot seam in its fissure's gap (storm.line): px wide at her end (was 4 px across a strip that drew a 1 px orange hairline beside the gap), tapering to shape[0] px at shape[1] of the gap's taper (storm.line.taper), then out; never wider than the gap less a dark margin each side (0.3 of the gap, at least 0.8 px). r2 (round 1's read as one continuous gold line): 3 px (was 3.5), glimpsed in pieces on its own knots about breaks[1] x line.jag[0] px apart, breaks[0] of them off near her end rising to shape[2] (was .3) at its end, none over her first breaks[3] px, each piece pointed over breaks[2] px at a break. The school's bands by heat: pending white-hot one sample as it tears open (and again as each line thrown on its path lands on it, storm.line.stack), then gold over amber breathing (pulse: base, swing, Hz on its coverage); split white-hot until cool[0] s, gold until cool[1], amber (0.7 wide) until cool[2], then out (lead 7 r3: the seam broken more in the middle and the gap wider there, so the dark margins read on each side: breaks[0] .45, shape[2] .6, gap[0] 12, dark margin .35)",
+    "px": 3.0,
+    "shape": [
+     0.8,
+     0.86,
+     0.6
+    ],
+    "breaks": [
+     0.45,
+     0.9,
+     4,
+     18
+    ],
+    "cool": [
+     0.1,
+     0.3,
+     0.55
+    ],
+    "pulse": [
+     0.86,
+     0.14,
+     1.6
+    ],
+    "pending": [0.1, 0.3, 1.0, 1.15, 1.25, 2.0],
+    "ember": [0.4, 0.065, 50]
+   },
+   "line": {
+    "what": "(lane E lead 7, 17 Nov; BattleFx.P7Storm.cs P7Fissure, shaders/fx_p7_b.gdshaderinc p7_fissure, mode 18) the storm's thrown Sunder line as a painted ground fissure. It replaces the long-cut crack decals tinted sunder_mark.crack_tint and their seam strip, which the den judge (17 Nov) read as 'a soft dark smear + 1 px orange hairline from her feet south to the skull pin': at the dungeon camera the decal's stretched albedo fell off over 10-15 px and the seam sat off its gap. Now one strip on the crack's path (P7CrackAt; strip_px each side, lift m over the ground), its UV in px at the play camera, every edge hard (one pixel's antialias, no halo): a jagged gap, knots about every jag[0] px (jittered jag[1]), its centre swinging jag[2] of its width, each edge chipped jag[3]; gap[0] px wide at her end tapering (power gap[2]) to gap[1] at the far end, then a point over gap[3] px, each knot 0.75-1.25 of that. Two flat darks of the line row (deep, and the wall along the lit side, the across facing the screen's lower right, over lip[2] of the width where it is 3 px or more), a broken lit lip lip[0] px outside that edge on lip[1] of its knots (lip_lch), forks and broken chunks (fork, chunk; lead 8 replaced r1's random hairline branches, which never read). Colors Oklab L, C, h, drawn after the grade. Laid from her end over `open` s; split: holds until life[0] s, breaks up where it lies in steps, gone at life[1]; faded: breaks up over life[2] s. r2 (17 Nov): the taper by screen px: when the line runs off the screen the gap reaches gap[1] taper[0] px inside the edge (at least taper[1] of the visible part), a hairline on from there (r1's 715 px line tapered over its whole length, about 4 px where it left the screen); wholly on screen it tapers over its length. One fissure a path: a line thrown on a pending scar's path (her end within stack[0] m, its way within stack[1] degrees, its length within stack[2] m: she stood still, the storm throws one every heavy tick, each seeded apart, and r1 braided two or three fissures and seams on one path) draws none, its id joins the scar (a fresh white-hot sample on its seam), kept until every line mapped onto it has split or faded",
+    "strip_px": 36,
+    "fork_what": "(lane E lead 8, 17 Nov; judge 5: 2-4 forks 8-25 px x 1-2 px + 2-3 broken chunks 6-10 px; logic/Look/FissureMarks.cs) fork: count min, max, px long min, max, px wide at the root, at the tip, from, to (shares of the visible run; the shader snaps each to the gap's nearest knot, out on the kink's outer side, one kink, a twig off the long ones). chunk: count min, max, px wide min, max (at least 1.5 x the gap where it lies), px long min, max, from, to (shares of the taper): the gap broken open to an angular hole, its lit wall and lip. strip_px 36 (was 26) so a fork's 25 px fit across",
+    "fork": [2, 4, 8, 25, 2, 1, 0.08, 0.82],
+    "chunk": [3, 3, 7, 10, 9, 14, 0.5, 0.9],
+    "chunk_what": "(lane E lead 9, judge 6: 'only one chunk, 7x11 px') from/to moved to .5-.9 of the taper (was .42-.86): nearer her end the gap is 7-12 px and a 6-10 px chunk drowns in it; three of them (was 2-3: l9s1 drew two, one a 6 px swell of a 3 px gap), 7-10 px wide (was 6-10)",
+    "reach": [1.0, 0.0],
+    "reach_what": "(lane E lead 9, judge 6: 'it spans 380 px, about 57 px past the storm's ring') the drawn run ends at reach[0] x the storm's ring radius less reach[1] m (FissureMarks.Reach), the ring's arcs over its tip; reach[0] 0 = the sim's whole line. View only: the sim's line (skills.json line x area, 10.45 m at the den test) and its hits are untouched",
+    "lift": 0.05,
+    "floor": 0.03,
+    "floor_what": "(lane E lead 9, judge 6: the tail painted over a root tip past the ring) the floor mask hides the fissure where the world's surface stands more than floor m over the strip, which lies lift m over the ground: .03 hides anything over 8 cm (was .1: 15 cm, a lying root passed)",
+    "origin": 6.5,
+    "start": [42, 58, 12, 60],
+    "start_what": "(lane E lead 9, judge 6: origin 5-10 px ahead of her boot, 20-30 wanted) start[0] 42 px from her root (was 24)",
+    "open": 0.1,
+    "taper": [
+     120,
+     0.5
+    ],
+    "stack": [
+     0.3,
+     5,
+     0.3
+    ],
+    "gap": [
+     12,
+     1.5,
+     1.0,
+     6
+    ],
+    "jag": [
+     14,
+     0.6,
+     0.35,
+     0.3
+    ],
+    "lip": [
+     1.5,
+     0.55,
+     0.38
+    ],
+    "deep": [
+     0.13,
+     0.024,
+     48
+    ],
+    "wall": [
+     0.2,
+     0.03,
+     52
+    ],
+    "lip_lch": [
+     0.62,
+     0.06,
+     62
+    ],
+    "life": [
+     0.9,
+     1.8,
+     0.5
+    ]
    },
    "ring": {
     "lead_px": 12,
@@ -1004,43 +1092,14 @@
    }
   },
   "vow": {
+   "mark": {"what": "(leap-vow-marks, 16 Nov: coordinator #15; BattleFx.P7Storm.cs P7Vow Burst, BattleFx.Grip.cs PaintedRing / RingPaint) Iron Vow's burst mark: Sunder's painted ring (the keys read as p7.sunder_mark's), closed round her at the burst's real radius (Ev.Brace Radius). The brace draws only the plant glint (plant.flash_px) and dust; vow.dome, vow.store, vow.burst (star, wave, light) and plant.frames/px are pruned (r2). r2 (v1a judged): band .07, dry .9, fade .08-.36 s, gaps 7-9 (heavy at 420 px); core_cut .5 (the white a lip, not a whole ring)", "from": 0.4, "run": 0.12, "life": 0.4, "core_frames": 4, "core_cut": 0.5, "open_deg": 360, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.08, 0.36], "band": 0.07, "wobble": 0.34, "lip": 0.14, "dry_from": 0.45, "dry": 0.9, "gaps": [7, 9], "gap_w": [0.003, 0.006], "streaks": [10, 14], "streak_len": [0.08, 0.15], "knots_k": 2.9},
+   "wave": {"what": "(leap-vow-marks r3, 16 Nov: coordinator #15; BattleFx.P7.cs P7VowWave, BattleFx.Grip.cs PaintedFront / RingPaint) Iron Vow's Full Measure wave (iron_vow.full_measure, Ev.Beam art iron_vow_wave, 14 m toward the cursor, 3 m wide): Sunder's painted ring laid straight (the keys read as p7.sunder_mark's; open, so it tapers at its two sides), one front across the wave's real width running its real line from from x its length to its end in run s (ease-out), its middle bow m ahead; its band, lip, streaks and gaps as on a ring scale_m m round (they keep their metres as it runs; knots_k x the bristle detail, for its 3 m); dust (leap.dust.px x dust_k) thrown out to its sides about every dust_m m as the front passes. Replaced: the generic beam's glowing band and light (the cream tube) Lead tune (v3a): run .4, life .52, fade .2-.5 (more screen time), streaks 2-3 at .06-.12 (they read as needles).", "from": 0.06, "run": 0.4, "life": 0.52, "core_frames": 4, "core_cut": 0.5, "open_deg": 120, "cool": [0.07, 0.3, 0.45, 0.8], "fade": [0.2, 0.5], "band": 0.07, "wobble": 0.3, "lip": 0.14, "dry_from": 0.45, "dry": 0.9, "gaps": [1, 2], "gap_w": [0.03, 0.06], "streaks": [2, 3], "streak_len": [0.06, 0.12], "knots_k": 0.4, "scale_m": 5.0, "bow": 0.35, "dust_m": 1.6, "dust_k": 0.7},
    "plant": {
-    "flash_px": 50,
-    "frames": 3,
+    "flash_px": 30,
     "puffs": [
      12,
      16
-    ],
-    "px": [
-     20,
-     40
     ]
-   },
-   "dome": {
-    "rim_px": 7,
-    "flare_px": 12,
-    "flare_s": 0.1
-   },
-   "store": {
-    "px": [
-     10,
-     26
-    ],
-    "grow": 2.0
-   },
-   "burst": {
-    "spikes": [
-     6,
-     8
-    ],
-    "px": 130,
-    "root_px": 18,
-    "frames": 3,
-    "lead_px": 10,
-    "trail_px": 16,
-    "run": 0.3,
-    "light_k": 0.4,
-    "light_frames": 2
    }
   }
  }

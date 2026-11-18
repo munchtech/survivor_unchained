@@ -37,6 +37,8 @@ public sealed record MapResult(Chart Chart, bool Cleared, double Seconds, int Ki
 /// </summary>
 public sealed class MapRun : ZoneRuntime, IBossArena
 {
+    /// <summary>(den r17 lead) true lays the kit's long bones (halloween/bone_*) in the den again; the game sets it from --den-kit-bone.</summary>
+    public static bool DenKitBones;
     public readonly Chart Chart;
     readonly MapBuild map;
     readonly Denizens people;
@@ -221,7 +223,12 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         // A dungeon's caches lie in its side rooms from the start: the deep branch's hoard is the richer.
         // Its rooms' dressing (MapGen.DressDungeon), made pieces and the kit's both, through the scene.
         // (the den's long bones at the size of its painted litter, DungeonDress.Decals: a metre-long femur read as a log)
+        // (den r15 helper D) the kit's whole skull (an olive dome over a skull, r13 #14, r14 #6) and its rib cage (a repeat the per-screen
+        // caps could not see: a made piece, not a card) are not laid in the den: the painted set's piles carry both, under DenCaps
         if (map.Dungeon != null) foreach (var p in map.Props)
+            // (den r17 lead, R16 item 5: the yellow femurs at s11 room (1325,595) and s23 lair (1612,872) were these kit long bones,
+            // laid here past Dressing's --den-kit-bone cut) the den's painted litter carries its bones: the kit's are not laid
+            if (!(map.DungeonTheme == "den" && (p.Id is "halloween/skull" or "halloween/ribcage" or "halloween/skull_candle" || p.Id.StartsWith("halloween/bone_") && !DenKitBones)))
             G.Look.AddProp(p.Id, p.X, p.Z, p.Rot, p.Scale * (map.DungeonTheme == "den" && p.Id.StartsWith("halloween/bone_") ? 0.6 : 1));
         if (map.Dungeon is { } dl) foreach (var c in dl.Caches) b.SpawnPickup(PickupKind.Chest, c.X, c.Z, 1, c.Rich ? "hoard" : "strongbox");
         Objectives();
@@ -349,7 +356,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         if (lit != null) Event();
         Press(dt);
         // The ruler, in its clearing.
-        if (!bossUp && !cleared && !returning && boss == null && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
+        if (!bossUp && !cleared && !returning && boss == null && Seconds >= RulerHold && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
     }
 
     /* ------------------------------------------- the packs' kit (M3 round 4) -- */
@@ -526,6 +533,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     /* ---------------------------------------------------------- the ruler -- */
 
+    /// <summary>(den r18 lead, R17 item 8; pictures only) seconds into the run before the ruler may rise (--den-ruler-hold): the lair shot clear of the boss. 0: as before.</summary>
+    public static double RulerHold;
+
     void Ruler(bool again)
     {
         // (SU-028) Never a second over a living one.
@@ -556,7 +566,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         B.Events.Emit(new Ev.Focus { X = bc.X, Z = bc.Z, Duration = 1.6 });
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
         G.Announce(new Announcement(people.BossName, script != null ? $"{people.BossTitle} · Weakness: {script.WeaknessText}" : people.BossTitle, "danger", 3.4,
-            again ? "It comes again" : "The map's ruler"));
+            again ? "It comes again" : "The map's ruler") { YieldsToFight = true });
         Objectives();
     }
 

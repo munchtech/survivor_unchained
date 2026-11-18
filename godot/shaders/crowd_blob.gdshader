@@ -54,5 +54,6 @@ void fragment() {
 	a *= a;
 	if (crowd_shade.a > 0.0) a = 0.0;
 	ALBEDO = vec3(1.0 - a * min(strength * (1.0 + BLOB_DARK * pool), 0.95) * COLOR.a);
-	if (crowd_den.y > 0.0) ALBEDO = vec3(1.0 - (1.0 - DEN_BLOB_K) * (1.0 - smoothstep(DEN_BLOB_EDGE.x, DEN_BLOB_EDGE.y, d)) * COLOR.a);
+	// (lane E s2: --blob-strength 0 takes the den's off too, for measuring the blobs by difference; any other strength keeps it)
+	if (crowd_den.y > 0.0) ALBEDO = vec3(1.0 - (1.0 - DEN_BLOB_K) * (1.0 - smoothstep(DEN_BLOB_EDGE.x, DEN_BLOB_EDGE.y, d)) * COLOR.a * step(1e-4, strength));
 }

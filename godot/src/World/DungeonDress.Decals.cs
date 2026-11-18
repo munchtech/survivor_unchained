@@ -16,6 +16,12 @@ public static partial class DungeonDress
     sealed record Decal(string Kind, Rect2 Uv, Vector2 Metres, float Weight);
 
     static List<Decal>? decals;
+    // (den r17 D3, R16 item: the lit decal bones rendered cream-yellow, L .82 C .10, den_room's L .69-.75 C .06-.07) the cause:
+    // dungeon_decal.gdshader's bone_k branch gates on luminance .3-.6 and saturation under .25-.5 measured on the LINEAR
+    // atlas (a source_color sampler), where the bones' body sits at L .17, sat .42: it fired on about a tenth of their
+    // pixels, so --den-bone / --den-bone-sat did nothing visible. Now the bone kinds are marked per vertex (COLOR.r) and
+    // graded in Oklab there: x the L scale, y the chroma scale, z a hue turn (degrees), w on (0 = the old branch alone).
+    static readonly Vector4 BoneGrade = new(SurvivorUnchained.Args.Num("den-bone-l", 0.95f), SurvivorUnchained.Args.Num("den-bone-c", 0.38f), SurvivorUnchained.Args.Num("den-bone-h", -12f), SurvivorUnchained.Args.Num("den-bone-grade", 1f));
     static Vector2 decalLight = new(-0.45f, -0.89f);
 
     static List<Decal> Decals()
@@ -41,12 +47,15 @@ public static partial class DungeonDress
 
     // Kind weights by where a decal lies: in a pile (a kill's leavings), a wall's foot, the open between, the lair's floor.
     // (round 8) bones a third of a pile, not two thirds: a kill reads by its rib cage, skull and fur, the long bones were white noise
-    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 0.5f, ["wolf_skull"] = 0.35f, ["leaves"] = 1.1f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
-    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 0.5f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 1.0f };
+    static readonly Dictionary<string, float> InPile = new() { ["bone"] = 1.0f, ["ribcage"] = 0.8f, ["fur"] = 0.5f, ["wolf_skull"] = 0.35f, ["leaves"] = 0.5f, ["twigs"] = 0.35f, ["pebbles"] = 0.2f };
+    static readonly Dictionary<string, float> InBossPile = new() { ["bone"] = 1.0f, ["ribcage"] = 1.0f, ["fur"] = 0.5f, ["hide"] = 0.45f, ["wolf_skull"] = 0.35f, ["deer_skull"] = 0.12f, ["leaves"] = 0.45f };
     static readonly Dictionary<string, float> AtFoot = new() { ["root"] = 2.0f, ["twigs"] = 1.2f, ["pebbles"] = 1.0f, ["leaves"] = 1.0f, ["fur"] = 0.4f, ["moss"] = 0.5f };
-    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.5f, ["root"] = 0.5f, ["fur"] = 0.2f, ["blood"] = 0.35f };   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
-    static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = 0.6f };
+    static readonly Dictionary<string, float> InOpen = new() { ["leaves"] = 1.4f, ["pebbles"] = 0.8f, ["twigs"] = 0.6f, ["root"] = 2.4f, ["fur"] = 0.2f, ["blood"] = SurvivorUnchained.Args.Num("den-open-blood", 0f), ["bone"] = SurvivorUnchained.Args.Num("den-open-bone", 0f) };   // (den r17 D2, lead item 1: bones only inside the clusters, none alone in the open; .6 = d7e)   // (den r15 S: no lone floor blood: a puddle with no kill read as paint)   // (den r14 item 8: the open floor was empty: thin roots, flat leaves, pebbles)
+    static readonly Dictionary<string, float> Under = new() { ["blood"] = 1.0f, ["drift"] = SurvivorUnchained.Args.Num("den-drift", 0f) };   // (den r15 Q, judge r15 item 4: still the orange bean clumps at 0.08, now cut)   // (den r15 D: the leaf drifts read as orange bean clumps at the camera; kept rare)
 
+    static readonly float OpenLitter = SurvivorUnchained.Args.Num("den-open-litter", 6f);   // (den r15 D) the open floor's litter density, x
+    static Vector2? lairC; static float lairR;
+    static readonly float LairLeaves = SurvivorUnchained.Args.Num("den-lair-leaves", 0f);
     static readonly int LairDeerCap = (int)SurvivorUnchained.Args.Num("den-lair-deer", 3f);
     static int lairDeer;
     static Decal PickDecal(Dictionary<string, float> by, float u)
@@ -70,6 +79,7 @@ public static partial class DungeonDress
         public readonly List<Vector3> V = new();
         public readonly List<Vector2> U = new();
         public readonly List<int> I = new();
+        public readonly List<Color> K = new();   // (den r17 D3) per vertex: r 1 on the pale bone kinds (dungeon_decal.gdshader's bone grade); empty = none
         public int Count;
         public readonly Dictionary<string, int> Kinds = new();
     }
@@ -92,6 +102,7 @@ public static partial class DungeonDress
         int boss = -1;
         for (int k = 0; k < z.Rooms.Count; k++) if (z.Rooms[k].Kind == "Boss") boss = k;
         bool InBoss(Vector2 p) => boss >= 0 && p.DistanceTo(new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z)) < z.Rooms[boss].R * 1.05f;
+        lairC = boss >= 0 ? new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z) : null; lairR = boss >= 0 ? z.Rooms[boss].R * 1.05f : 0f;   // (den r15 Q) for AddDecal's lair leaf cut
         Vector2 Inward(float x, float zz)
         {
             var g = new Vector2(Wall(c, x + 0.5f, zz) - Wall(c, x - 0.5f, zz), Wall(c, x, zz + 0.5f) - Wall(c, x, zz - 0.5f));
@@ -166,7 +177,7 @@ public static partial class DungeonDress
         }
 
         // ---- the piles: a ground layer (old blood or a leaf drift), then 4-10 pieces round the seed ----
-        int si = 0;
+        int si = 0; nO7 = nO8 = nO9 = 0;
         foreach (var (sp, size, inBoss) in seeds)
         {
             si++;
@@ -188,6 +199,8 @@ public static partial class DungeonDress
             }
         }
 
+        DenOpen(c, b, Ok, boss);   // (den r17 D, R16 item 4) runners, debris clusters and the lair's rib arc (DungeonDress.Open.cs)
+
         // ---- the walls' feet and the open between: thinner, and no bones heaped there ----
         const float cell = 1.6f;
         int nc = (int)(z.Size / cell);
@@ -199,10 +212,25 @@ public static partial class DungeonDress
                 float w = Wall(c, x, zz), h = Hole(c, x, zz);
                 if (w < 0.15f || h < 0.5f || !Ok(x, zz, 0.15f, 0.5f)) continue;
                 bool foot = w < 1.8f;
-                float keep = foot ? 0.3f : w > 5f ? 0.07f : 0.09f;   // (round 8: the open scatter cut by more than half)
+                float keep = (foot ? 0.3f : w > 5f ? 0.07f : 0.09f) * (foot ? 1f : OpenLitter);   // (round 8: the open scatter cut by more than half; den r15 D: the open floor was empty, x --den-open-litter)
+                if (!foot) keep *= OpenKeep(x, zz);   // (den r17 D, R16 item 4) the open sprinkle thinned between the clusters (--den-open-between)
                 if (u2 > keep) continue;
                 var d = PickDecal(foot ? AtFoot : InOpen, u3);
+                if (d.Kind == "bone" && !DenCaps.Take("openbone", new Vector2(x, zz), 2, 12f)) d = PickDecal(InOpen, Hash(i, j, 908));
                 if (d.Metres.X * 0.5f > w + 0.4f && d.Kind != "root") continue;
+                // (den r15 S) open-floor sticks read as cables: none within --den-stick-clear m of her spawn or the lair's middle, one per --den-stick-gap m
+                if (d.Kind == "root" && !foot)
+                {
+                    var rp = new Vector2(x, zz);
+                    float clr = SurvivorUnchained.Args.Num("den-stick-clear", 3.6f);
+                    // (den r16 E, R15f item 9) a stick longer than --den-stick-max m (as laid: x its scale) is cut, and the clear radius counts from its nearest end (a long stick began 3.6 m out and reached her); 0 = as r15
+                    float stickMax = SurvivorUnchained.Args.Num("den-stick-max", 2.4f);
+                    float stickLen = d.Metres.X * (0.9f + 0.25f * Hash(i, j, 907) + (w > 3f ? 0.35f : 0f));
+                    if (stickMax > 0f) { if (stickLen > stickMax) continue; clr += stickLen * 0.5f; }
+                    if (z.Rooms.Count > 0 && rp.DistanceTo(new Vector2(z.Rooms[0].X, z.Rooms[0].Z)) < clr) continue;
+                    if (boss >= 0 && rp.DistanceTo(new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z)) < clr) continue;
+                    if (!DenCaps.Take("openroot", rp, 1, SurvivorUnchained.Args.Num("den-stick-gap", 7f))) continue;
+                }
                 float yaw;
                 if (d.Kind == "root")
                 {
@@ -211,9 +239,12 @@ public static partial class DungeonDress
                     yaw = Mathf.Atan2(g.Y, g.X) + (Hash(i, j, 905) - 0.5f) * 0.9f;
                 }
                 else yaw = Hash(i, j, 906) * Mathf.Tau;
-                AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907));
+                if (d.Kind == "root" && w > 3f) yaw = Hash(i, j, 909) * Mathf.Pi;   // (den r15 D: a root across the open floor lies any way)
+                if (d.Kind == "root") yaw = StickYawFold(yaw);   // (den r17 D, R16 item 8) laid down the camera's depth a stick read as a standing rod: near level on screen
+                AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907) + (d.Kind == "root" && w > 3f ? 0.35f : 0f), d.Kind == "bone");
             }
 
+        GD.Print($"DenOpen sets: O7 {nO7}, O8 {nO8}, O9 {nO9}");   // (den r18 D4b) placement counts this zone
         // ---- the lair's floor: drag marks out from its piles, moss in the damp by the banks, drifts against them ----
         if (boss >= 0)
         {
@@ -223,7 +254,7 @@ public static partial class DungeonDress
             foreach (var (sp, size, inBoss) in seeds)
             {
                 k++;
-                if (nd >= 14 || Hash(k, 5, 953) < (inBoss ? 0.45f : 0.65f)) continue;   // (round 8: kills dragged in every room, not the lair only)
+                if (nd >= (int)SurvivorUnchained.Args.Num("den-drags", 0f) || Hash(k, 5, 953) < (inBoss ? 0.45f : 0.65f)) continue;   // (round 8: kills dragged in every room, not the lair only)
                 var dir = (ctr - sp).LengthSquared() > 1f ? (ctr - sp).Normalized() : Vector2.Right;
                 dir = dir.Rotated((Hash(k, 5, 954) - 0.5f) * 1.4f);
                 var mid = sp + dir * 1.6f;
@@ -237,7 +268,7 @@ public static partial class DungeonDress
                 float x = r.X + Mathf.Cos(a) * dd, zz = r.Z + Mathf.Sin(a) * dd;
                 float w = Wall(c, x, zz);
                 if (!Ok(x, zz, 0.5f, 0.8f)) continue;
-                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "drift") : (Hash(q, 9, 959) < 0.55f ? "drift" : "blood");   // (r11 judge: no moss alone on the open lair floor: it read as stickers)
+                string kind = w < 3.2f ? (Hash(q, 9, 959) < 0.55f ? "moss" : "leaves") : "leaves";   // (r11 judge: no moss alone on the open lair floor: it read as stickers)
                 AddDecal(c, b, PickDecal(new() { [kind] = 1f }, Hash(q, 9, 960)), x, zz, Hash(q, 9, 961) * Mathf.Tau, 0.95f + 0.35f * Hash(q, 9, 962));
             }
         }
@@ -251,6 +282,7 @@ public static partial class DungeonDress
         arr[(int)Mesh.ArrayType.Normal] = nrm;
         arr[(int)Mesh.ArrayType.TexUV] = b.U.ToArray();
         arr[(int)Mesh.ArrayType.Index] = b.I.ToArray();
+        if (b.K.Count == b.V.Count && b.K.Count > 0) arr[(int)Mesh.ArrayType.Color] = b.K.ToArray();
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_decal.gdshader") };
@@ -259,19 +291,29 @@ public static partial class DungeonDress
         mat.SetShaderParameter("half_size", z.Half);
         mat.SetShaderParameter("step", z.Step);
         mat.SetShaderParameter("res", (float)z.Res);
-        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.62f));
+        mat.SetShaderParameter("bone_k", SurvivorUnchained.Args.Num("den-bone", 0.3f));   // (den r17 D2, lead item 1) the decal bones down to den_room's lit bone value (.62 = d7e)
+        mat.SetShaderParameter("bone_sat", SurvivorUnchained.Args.Num("den-bone-sat", 0.7f));
+        mat.SetShaderParameter("bone_grade", BoneGrade);
+        mat.SetShaderParameter("bone_knee", new Vector2(SurvivorUnchained.Args.Num("den-bone-knee", 0.55f), SurvivorUnchained.Args.Num("den-bone-share", 0.3f)));   // (den r17 D3) the bones' highlights rolled off above Oklab L .55 to 30 % of their rise (1 = none)
+        if (SurvivorUnchained.Args.Num("den-bone-patch", 0f) > 0f) { var sh = (Shader)mat.Shader.Duplicate(); sh.Code = sh.Code.Replace("uniform float bone_k = 0.62;", "uniform float bone_k = 0.62; uniform float bone_sat = 1.0;").Replace("col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));", "col *= mix(1.0, bone_k, smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat))); col = mix(col, mix(vec3(dot(col, vec3(0.299, 0.587, 0.114))), col, bone_sat), smoothstep(0.3, 0.6, l) * (1.0 - smoothstep(0.25, 0.5, sat)));"); mat.Shader = sh; GD.Print("TESTPATCH bone_sat " + sh.Code.Contains("bone_sat")); }
         c.Root.AddChild(new MeshInstance3D { Name = "Decals", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         foreach (var kv in b.Kinds) c.Count["decal " + kv.Key] = kv.Value;
     }
 
     /// <summary>One decal draped on the ground: its long axis at yaw, mirrored across it when that keeps the painted lit
     /// side (the cell's top) toward the light.</summary>
-    static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale)
+    static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale, bool litterBone = false)
     {
-        if (SetMode > 0 && SetDrops(d.Kind) && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills)
+        // (den r18 D4b) with --den-open-mix the procedural decal bone is gone wherever the set dresses: an O7 piece in its place
+        if (OpenMix > 0f && SetMode > 0 && d.Kind is "bone" or "arctusk" && SetIn(x, zz) && BoneAsO7(c, x, zz)) return;
+        if (SetMode > 0 && SetDrops(d.Kind) && !(litterBone && d.Kind == "bone") && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills; den r15 D: a lone floor bone is litter, kept)
+        // (den r15 D) the orange "bean" clumps were leaves in a pile: at most 3 within 1.5 m, each one then a flat leaf (scaled, turned)
+        if (d.Kind == "leaves" && LairLeaves <= 0f && lairC is Vector2 lc && lc.DistanceTo(new Vector2(x, zz)) < lairR) return;   // (den r15 Q, judge r15 item 4) the lair's leaf decals read as orange bean clumps: none (the rooms' flat litter stays)
+        if (d.Kind == "leaves") { if (!DenCaps.Take("leaf", new Vector2(x, zz), 3, 1.5f)) return; scale *= 1.25f; }
         // (den r14 floor, judge r13 item 4) per camera footprint at most 2 deer skulls and 3 rib cages (DenCaps, radius 9 m);
         // a refused one is small litter instead (a single bone, a leaf, a fur tuft), scaled .8-1.2 and turned by its hash
-        if (d.Kind is "deer_skull" or "ribcage" && !DenCaps.Take(d.Kind, new Vector2(x, zz), d.Kind == "deer_skull" ? 2 : 3, 9f))
+        // (den r16 E2, R15f item 7) an antlered skull is a large piece too (BigSkull) and the skull cap counts within SkullR, not 9 m
+        if (d.Kind is "deer_skull" or "ribcage" && !((d.Kind == "deer_skull" && !BigSkull || DenCaps.Take("bigbone", new Vector2(x, zz), BigBoneCap, BigBoneR)) && DenCaps.Take(d.Kind == "deer_skull" ? "skull" : d.Kind, new Vector2(x, zz), d.Kind == "deer_skull" ? SkullCap : 3, d.Kind == "deer_skull" ? SkullR : 9f)))
         {
             float hu = Hash((int)(x * 10), (int)(zz * 10), 977);
             d = PickDecal(new() { ["bone"] = 1f, ["leaves"] = 1.2f, ["fur"] = 0.3f, ["pebbles"] = 0.3f }, hu);
@@ -293,6 +335,7 @@ public static partial class DungeonDress
                 float s = (float)p / (nx - 1), t = (float)q / (ny - 1);  // (t 0 = the cell's top, the lit side)
                 var w = new Vector2(x, zz) + ax * ((s - 0.5f) * W) + up * ((0.5f - t) * Hh);
                 b.V.Add(new Vector3(w.X, H(c, w.X, w.Y) + lift, w.Y));
+                if (BoneGrade.W > 0f) b.K.Add(new Color(d.Kind is "bone" or "arctusk" or "ribcage" or "wolf_skull" or "deer_skull" ? 1f : 0f, 0f, 0f, 1f));
                 b.U.Add(new Vector2(d.Uv.Position.X + s * d.Uv.Size.X, d.Uv.Position.Y + t * d.Uv.Size.Y));
             }
         // (winding by the mirror, so every decal faces up)

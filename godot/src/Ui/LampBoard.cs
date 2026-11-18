@@ -1350,7 +1350,7 @@ public partial class LampBoard : Control
         if (why != null) GD.Print($"LAMPBOARD denied: {why}");
     }
 
-    string? Refusal() => ReadOnly ? "In the arena the board is read-only" : !Safe ? "Lamps are lit out of a fight" : Busy ? "" : null;
+    string? Refusal() => ReadOnly ? "In the arena the board is read-only." : !Safe ? "Lamps are lit out of a fight" : Busy ? "" : null;
 
     /// <summary>A or a click: light the focus; a far lamp, its whole path (as previewed) if the points allow.</summary>
     public bool LightFocus()
@@ -1420,7 +1420,7 @@ public partial class LampBoard : Control
         {
             Deny(no switch
             {
-                OutNo.Night => "In the arena the board is read-only",
+                OutNo.Night => "In the arena the board is read-only.",
                 OutNo.Free => "This lamp is hers for good",
                 OutNo.Place => "Lamps go out at a lamp-post",
                 OutNo.Holds => AtPost ? "Others hang on it" : "Lamps lit after it hang on it: put those out first",
@@ -1450,7 +1450,7 @@ public partial class LampBoard : Control
     public bool Switch(int index, string? zone)
     {
         if (index == LampBook.State(ch).Active || Busy) return false;
-        if (ReadOnly) { Deny("In the arena the board is read-only"); return false; }
+        if (ReadOnly) { Deny("In the arena the board is read-only."); return false; }
         var before = lit.ToList();
         if (!LampBook.Switch(ch, index, w, zone)) { Deny("Layouts change at a lamp-post"); return false; }
         var after = LampBook.Now(ch).Lit.Where(M.Index.ContainsKey).Select(x => M.Index[x]).ToHashSet();

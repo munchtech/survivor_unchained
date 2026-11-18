@@ -21,28 +21,46 @@ public static class DungeonLight
         Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17;
         var root = new Node3D { Name = "DungeonLight" };
         var shader = GD.Load<Shader>("res://shaders/dungeon_shaft.gdshader");
-        int i = 0;
+        HoleTex = null;
+        if (z.HoleField != null && SurvivorUnchained.Args.Num("den-shaft-pitmask", 1f) > 0f)   // (r15) the veil is masked off over pits
+        {
+            var px = new byte[z.Res * z.Res];
+            for (int q = 0; q < px.Length; q++) px[q] = (byte)Mathf.Clamp(Mathf.Round((z.HoleField[q] + 4f) / 8f * 255f), 0f, 255f);
+            HoleTex = ImageTexture.CreateFromImage(Image.CreateFromData(z.Res, z.Res, false, Image.Format.R8, px));
+            HoleMap = new Vector3(-z.Half - 0.5f * z.Step, -z.Half - 0.5f * z.Step, 1f / (z.Res * z.Step));
+        }
+        int i = 0; fanN = 0; Pools.Clear();
+        // (den r16 B2, R15f item 2) the lair's painted hollows are no holes: the fans keep off them and mask them (--den-shaft-hollows 0: not)
+        Hollows = Fan > 0f && SurvivorUnchained.Args.Num("den-shaft-hollows", 1f) > 0f ? DungeonDress.HollowsFor(z) : new();
+        var feet = new System.Collections.Generic.List<Vector2>();   // (den r16 B) every shaft's foot: the corridors' spacing, the log
         foreach (var r in z.Rooms)
         {
             i++;
             if (r.Kind == "Bend") continue;
             // One shaft to a room, two in a big one, three in the boss lair; off its centre so the fight is not always in the spot.
-            int count = SurvivorUnchained.Args.Num("den-shafts", 1f) <= 0f ? 0 : r.Kind == "Boss" ? 3 : r.R > 11 ? 2 : 1;   // (the lair three: round 6, its open floor read as one empty stretch)
+            int count = SurvivorUnchained.Args.Num("den-shafts", 1f) <= 0f ? 0 : r.Kind == "Boss" ? (int)SurvivorUnchained.Args.Num("den-shaft-boss", 2f) : r.R > 11 ? 2 : 1;   // (den r16 B: the lair 3 -> 2, R15f "1-2 a screen")   // (the lair three: round 6, its open floor read as one empty stretch)
             for (int k = 0; k < count; k++)
             {
                 // (clear of the pits and the walls: a shaft down a pit lit its roots bone-white)
                 float x = r.X, zz = r.Z;
-                for (int t = 0; t < 10; t++)
+                if (r.Kind == "Boss" && LairOpen > 0f && LairFoot(z, r, i, k, feet, out x, out zz)) { }
+                else for (int t = 0; t < 10; t++)
                 {
                     float a = Hash(i, k + 7 * t, 1) * Mathf.Tau, d = (r.Kind == "Boss" ? 3f + 5f * Hash(i, k + 7 * t, 2) : r.R * ( 0.25f + 0.35f * Hash(i, k + 7 * t, 2)));   // (r11: the lair's pools in its middle frame)
                     x = r.X + Mathf.Cos(a) * d; zz = r.Z + Mathf.Sin(a) * d;
-                    if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f)) break;
+                    if (At(z, z.WallField!, x, zz) > 2.5f && (z.HoleField == null || At(z, z.HoleField, x, zz) > 3f) && !NearHollow(x, zz, 1.8f)) break;
                 }
                 float w = 1.6f + 1.4f * Hash(i, k, 3);   // (r11 judge: broad beams, 150-250 px; was 1.1 + 1.0)
                 if (k == 0 && r.Kind != "Boss") AddWash(root, r.X, z.HeightAt(r.X, r.Z), r.Z, r.R, i);
+                feet.Add(new Vector2(x, zz));
                 AddShaft(root, shader, new Vector3(x, z.HeightAt(x, zz), zz), w, r.Kind == "Boss" ? BossPool : PoolWide, r.Kind == "Boss");
             }
         }
+        int roomFans = feet.Count;
+        AddCorridorFans(root, z, feet);
+        var fl = new System.Text.StringBuilder(); foreach (var f in feet) fl.Append($" ({f.X:F1},{f.Y:F1})");
+        GD.Print($"DungeonLight fans: {roomFans} in rooms, {feet.Count - roomFans} in corridors:{fl}");
+        if (PoolFloor > 0f && Fan > 0f) root.TreeEntered += () => FloorPools(root);
         // (round 8, 15 Nov) The pack reads in the den's light: the wolves' dark fur under a dim key read as black
         // silhouettes (round 7's "black fragments" by the big pit were the resting pack). A fill from the camera's side,
         // high, that reaches the crowd's own layer only (PlayerView.CrowdLayer): the floor, the banks and HER take none of
@@ -62,6 +80,7 @@ public static class DungeonLight
                 ShadowEnabled = false,
                 LightSpecular = 0.3f,
             });
+        DungeonDress.Placed.Clear();   // (den r18 L3) read; the next zone starts empty
         GD.Print($"DungeonLight {z.DungeonTheme}: {root.GetChildCount() / 2} shafts over {z.Rooms.Count} rooms");
         return root;
     }
@@ -72,6 +91,9 @@ public static class DungeonLight
         return f[j * z.Res + i];
     }
 
+    static ImageTexture? HoleTex;
+    static Vector3 HoleMap;
+
     static void AddShaft(Node3D root, Shader shader, Vector3 foot, float w, float pool, bool lair = false)
     {
         var top = foot - Axis * Height;
@@ -81,7 +103,7 @@ public static class DungeonLight
         {
             Name = "shaft_light",
             Transform = new Transform3D(basis, top),
-            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffd68a" : "ffc890")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
+            LightColor = new Color(SurvivorUnchained.Args.Get("den-pool-colour") ?? (lair ? "ffdc8a" : "ffdea0")),   // (r12: 13 / ffd2a0 -> 8 / ffc890 and the beams .22 -> .18: the room median 54 -> 51, lit (151,107,89) -> (133,98,83) against (134,95,73))   // (round 8: warmer, den_room.png's pools (134,95,73); ffe2b8 read pale beige)
             LightEnergy = PoolEnergy * (lair ? SurvivorUnchained.Args.Num("den-lair-pool", 0.73f) : 1f),   // (r12) the lair's pools against its floor (lit/median 109/68 in den_boss.png)   // (round 8: --den-pool-energy) (lead 6: 12 lifted the boss frame to 85; 6 left rooms at 35; warm 9 in the pools only, round 6; 16 moved the room median 36 -> 36: the pools are too small a share of the frame)
             SpotRange = Height + 4f,
             SpotAngle = Mathf.RadToDeg(Mathf.Atan((w * 1.25f * pool) / Height)),
@@ -91,17 +113,260 @@ public static class DungeonLight
             LightSpecular = 0.2f,
         };
         root.AddChild(spot);
+        if (Fan > 0f) { AddFan(root, foot, lair); return; }
         // The shaft in the air: a soft cone, brightest a little above the floor and gone toward the roof.
         var mesh = new CylinderMesh { TopRadius = w * 0.55f, BottomRadius = w, Height = Height, RadialSegments = 20, Rings = 1, CapTop = false, CapBottom = false };
         var mat = new ShaderMaterial { Shader = shader };
         mat.SetShaderParameter("height", Height);
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.18f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.8f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
+        if (lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-lair-veil") ?? "c8dcf0"));   // (r15b: cool additive streaks)
+        mat.SetShaderParameter("veil_cut", SurvivorUnchained.Args.Num("den-veil-cut", 0.75f));
+        mat.SetShaderParameter("floor_fade", SurvivorUnchained.Args.Num("den-veil-floor", 1.0f));
+        if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
+        if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "c8dcf0"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
+        // (den r15 lead: at .5 / x1.6 and b4ecff the streak cores were cyan lasers, +.24-.34 L at C .07-.09; now +.09-.15, C .03, h 216-245)
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.26f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
         var mid = foot - Axis * (Height * 0.5f);
         // CylinderMesh stands along +y: turn +y to the shaft's upward axis (-Axis).
         var up = -Axis;
         var side = up.Cross(Vector3.Back).Normalized();
         var b = new Basis(side, up, side.Cross(up).Normalized());
         root.AddChild(new MeshInstance3D { Name = "shaft", Mesh = mesh, MaterialOverride = mat, Transform = new Transform3D(b, mid), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+    }
+
+    // (den r16 B, R15f item 2) The shaft as den_room.png has it: a fan of 3-5 rays from a bright gap ~8 m up, landing in a soft
+    // pool (shaders/dungeon_shaft_fan.gdshader). --den-shaft-fan 0: r15's cylinder veil. --den-shaft-corr 0: none in the corridors.
+    static readonly float Fan = SurvivorUnchained.Args.Num("den-shaft-fan", 1f);
+    static ArrayMesh? fanMesh;
+    static int fanN;
+    static System.Collections.Generic.List<(Vector2 p, float r, int v)> Hollows = new();
+    static bool NearHollow(float x, float zz, float m) { foreach (var h in Hollows) if (h.p.DistanceTo(new Vector2(x, zz)) < h.r + m) return true; return false; }
+    // (den r17 L, R16 item 2) The pools as light on the floor's albedo (dungeon_floor.gdshader sp_*), each at its fan's foot, in
+    // place of the fan's additive sprite; --den-pool-floor 0: the r16 sprite. --den-shaft-foot 0: the rays fade out halfway down
+    // (r16: each pool sat ~250 px below its shaft's end); 1: they run to the foot and end in the pool.
+    static readonly float PoolFloor = SurvivorUnchained.Args.Num("den-pool-floor", 1f), ShaftFoot = SurvivorUnchained.Args.Num("den-shaft-foot", 1f);
+    static readonly bool Smooth = SurvivorUnchained.Args.Num("den-pool-smooth", 1f) > 0f;
+    static readonly float PoolR = SurvivorUnchained.Args.Num("den-pool-r", 1.25f);
+    // (den r17 L, R16 item 4) the lair's shafts over its open floor, off her and the Pack-Mother in its middle (LairFoot);
+    // 0: r16's hashed spots 3-8 m out (s11 a stub on a boulder, s23 one among the root spurs)
+    static readonly float LairKeepOff = SurvivorUnchained.Args.Num("den-lair-keepoff", 2.2f);
+    static readonly float LairOpen = SurvivorUnchained.Args.Num("den-lair-open", 1f);
+    static readonly System.Collections.Generic.List<Vector4> Pools = new();
+
+    static void FloorPools(Node3D root)
+    {
+        if (root.GetParent() is not Node p) return;
+        foreach (var ch in p.GetChildren())
+        {
+            if (ch is not MeshInstance3D mi || mi.Mesh == null || mi.Mesh.GetSurfaceCount() == 0) continue;
+            var m = mi.MaterialOverride as ShaderMaterial ?? mi.Mesh.SurfaceGetMaterial(0) as ShaderMaterial;
+            if (m?.Shader == null || !m.Shader.ResourcePath.EndsWith("dungeon_floor.gdshader")) continue;
+            var arr = new Vector4[64]; int n = System.Math.Min(64, Pools.Count);
+            for (int q = 0; q < n; q++) arr[q] = Pools[q];
+            m.SetShaderParameter("sp", arr); m.SetShaderParameter("sp_n", n);
+            m.SetShaderParameter("sp_lean", new Vector2(-Axis.X, -Axis.Z).Normalized());
+            m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", Smooth ? 2.0f : 2.1f));   // (den r17 lead, from l7c: 1.5 -> 1.95, pools dL +.11 at s11 room)   // (den r17 L2, R16 item 2: 2.1 with ref .09: l7f at 2.2 dL +.15-.28)
+            m.SetShaderParameter("sp_edge", SurvivorUnchained.Args.Num("den-pool-edge", 0.3f));
+            m.SetShaderParameter("sp_grain", SurvivorUnchained.Args.Num("den-pool-grain", Smooth ? 0.5f : 1.0f));   // (den r17 L2, R16 item 2: .5 -> 1, texture .9-1.2 at .9)
+            m.SetShaderParameter("sp_lair", SurvivorUnchained.Args.Num("den-pool-lair", 0.6f));   // (den r17 L2: l7g's lair pools at full strength read as glowing yellow discs on its brighter floor)
+            m.SetShaderParameter("sp_smooth", Smooth ? 1f : 0f);   // (den r18 L3, R17 items 2, 3: the pool mask, gain and cap, and the shaft tint h 205-225) a smooth multiplying mask, gain soft-capped; 0: r17
+            m.SetShaderParameter("sp_cap", SurvivorUnchained.Args.Num("den-pool-cap", 0.12f));
+            m.SetShaderParameter("sp_knee", SurvivorUnchained.Args.Num("den-pool-knee", 0.6f));
+            m.SetShaderParameter("sp_blur", SurvivorUnchained.Args.Num("den-pool-blur", 0.5f));   // (den r18 L4, R18 item 3) the grain toward its blurred self inside the pool; 0: r18 L3
+            m.SetShaderParameter("sp_norm", SurvivorUnchained.Args.Num("den-pool-norm", 1f));   // (den r18 L4, R18 item 3) the gain per pool against its own floor, lifting it by den-pool-dl; 0: the flat gain
+            m.SetShaderParameter("sp_dl", SurvivorUnchained.Args.Num("den-pool-dl", 0.17f));
+            m.SetShaderParameter("sp_blur_lod", SurvivorUnchained.Args.Num("den-pool-blur-lod", 5f));
+            m.SetShaderParameter("sp_soft", SurvivorUnchained.Args.Num("den-pool-soft2", 0.7f));
+            m.SetShaderParameter("sp_ref", SurvivorUnchained.Args.Num("den-pool-ref", 0.09f));   // (den r17 L2, R16 item 2: .15 sat above the floor's albedo, so the grain term darkened the pools on the whole: s11 corr dL +.06)
+            m.SetShaderParameter("sp_tint", DungeonDress.V3("den-pool-tint", new Vector3(1f, 0.97f, 0.76f)));   // (den r17 lead, l7c: warmer, dC +.02)
+            GD.Print($"DungeonLight floor pools: {n} on {mi.Name}");
+        }
+    }
+
+    /// <summary>(den r17 L) A lair shaft's foot: 5-9 m from its middle (her and the Pack-Mother), toward the frame's top half and
+    /// its sides, on open floor, and the floor seen behind the shaft up to its gap clear of pits and hollows (the masks cut the
+    /// rays over them); the second on the other side of the first.</summary>
+    static bool LairFoot(ZoneData z, (float X, float Z, float R, string Kind) r, int i, int k, System.Collections.Generic.List<Vector2> feet, out float x, out float zz)
+    {
+        if (LairFrame > 0f) return LairFrameFoot(z, r, i, k, feet, out x, out zz);
+        float pitch = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch), gapH = SurvivorUnchained.Args.Num("den-shaft-gap-h", 8.5f);
+        var up = -Axis;
+        float best = -1f; x = r.X; zz = r.Z;
+        for (int t = 0; t < 48; t++)
+        {
+            float side = (k % 2 == 0 ? 1f : -1f) * (t % 2 == 0 ? 1f : -1f);
+            float cx = r.X + side * (4.5f + 4.5f * Hash(i, k + 11 * t, 41)), cz = r.Z - 1f - 4.5f * Hash(i, k + 11 * t, 42);
+            if (new Vector2(cx - r.X, cz - r.Z).Length() < 5f) continue;
+            if (At(z, z.WallField!, cx, cz) < 3f || (z.HoleField != null && At(z, z.HoleField, cx, cz) < 3.5f) || NearHollow(cx, cz, 2.2f)) continue;
+            bool near = false;
+            foreach (var f in feet) if (f.DistanceTo(new Vector2(cx, cz)) < 8f) near = true;
+            foreach (var sp in z.Spurs)   // (the root spurs' banks and the stones on them: s11's right shaft fell on one)
+            {
+                Vector2 a0 = new(sp.Seg.X, sp.Seg.Y), a1 = new(sp.Seg.Z, sp.Seg.W), pq = new(cx, cz), ab = a1 - a0;
+                float tt = Mathf.Clamp((pq - a0).Dot(ab) / Mathf.Max(ab.LengthSquared(), 1e-4f), 0f, 1f);
+                if ((a0 + ab * tt).DistanceTo(pq) < sp.R + 3f) near = true;
+            }
+            if (near) continue;
+            float clear = 1f;
+            for (float v = 0.5f; v <= gapH; v += 0.5f)
+            {
+                // the floor behind the shaft at v up it, seen down the camera's ray
+                float h = v * up.Y, bx = cx + v * up.X, bz = cz + v * up.Z - h / Mathf.Tan(pitch);
+                if (At(z, z.WallField!, bx, bz) < 0.5f) break;   // the bank behind: the rays fall over it unmasked
+                if ((z.HoleField != null && At(z, z.HoleField, bx, bz) < 1.5f) || NearHollow(bx, bz, 0.8f)) { clear = 0f; break; }
+            }
+            float score = clear * (1f + Hash(i, k + 11 * t, 43));
+            if (score > best) { best = score; x = cx; zz = cz; }
+        }
+        return best > 0f;
+    }
+
+    // (den r17 L2, R16 item 2) The lair's shafts composed in the boss frame (--at boss-mid: the camera over the lair's middle,
+    // DungeonGen.LairScreen): each foot on open floor in the frame's upper half and sides (den_boss.png: two shafts, upper left
+    // and right, their pools bright), its gap (gap-h up the axis) inside the frame's top, off her and the Pack-Mother, the pits,
+    // the hollows and the spurs, and the whole shaft seen over open floor: no floor behind it within --den-lair-wallclear m of
+    // the walls, where the boulders stand half into the bank (l7c: s11's top-left shaft over a boulder, its gap off-frame).
+    // --den-lair-frame 0 (default): r17 L's LairFoot. 1 is a WIP: without the dress's boulders and root crowns (built after the
+    // lights) it found no spot in s11 and put s23's over roots and a boulder (l7g).
+    // --den-lair-gap-h: the lair's gaps lower than the rooms' (8.5 m stood 560 px over the foot: a gap in frame put the foot
+    // below her; den_boss's shafts fall ~280 px from the frame's top to pools in its upper third).
+    static readonly float LairFrame = SurvivorUnchained.Args.Num("den-lair-frame", 1f), LairWallClear = SurvivorUnchained.Args.Num("den-lair-wallclear", 2.5f), LairGapH = SurvivorUnchained.Args.Num("den-lair-gap-h", 4.8f);
+    static (float X, float Y) LairPx(float dx, float h, float dz)
+    {
+        const float pitch = 62f * Mathf.Pi / 180f, dist = 24.3f, look = 0.8f;
+        float sp = Mathf.Sin(pitch), cp = Mathf.Cos(pitch), f = 540f / Mathf.Tan(17f * Mathf.Pi / 180f);
+        float vy = h - (look + sp * dist), vz = dz - cp * dist;
+        float depth = -sp * vy - cp * vz, upv = cp * vy - sp * vz;
+        return (960f + f * dx / depth, 540f - f * upv / depth);
+    }
+    static bool LairFrameFoot(ZoneData z, (float X, float Z, float R, string Kind) r, int i, int k, System.Collections.Generic.List<Vector2> feet, out float x, out float zz)
+    {
+        float pitch = Mathf.DegToRad((float)SurvivorUnchained.Play.Zones.MapRun.CamPitch), gapH = LairGapH;
+        var up = -Axis;
+        var why = new int[7];
+        float best = -1e9f; x = r.X; zz = r.Z;
+        Vector2? other = null; foreach (var f in feet) if (f.DistanceTo(new Vector2(r.X, r.Z)) < r.R + 6f) other = f;
+        for (float u = -16f; u <= 16f; u += 0.5f)
+            for (float v = -14f; v <= 8f; v += 0.5f)
+            {
+                float cx = r.X + u, cz = r.Z + v;
+                var (sx, sy) = LairPx(u, 0f, v);
+                if (sx < 140f || sx > 1780f || sy < 200f || sy > 830f || !SurvivorUnchained.Maps.DungeonGen.LairScreenClear(sx, sy)) continue;
+                if (new Vector2(u, v).Length() < 5.5f || new Vector2(sx - 960f, (sy - 560f) * 1.4f).Length() < 330f) { why[0]++; continue; }   // her, the Pack-Mother, the fight
+                var g = new Vector3(cx, z.HeightAt(cx, cz), cz) + up * gapH;
+                var (gx, gy) = LairPx(g.X - r.X, g.Y, g.Z - r.Z);
+                if (gy < 25f || gy > 420f || gx < 40f || gx > 1880f || (gy < 95f && gx > 480f && gx < 1440f)) { why[1]++; continue; }   // the gap in frame, off the ruler's bar
+                if (At(z, z.WallField!, cx, cz) < LairWallClear + 0.5f) { why[2]++; continue; }
+                if (z.HoleField != null && At(z, z.HoleField, cx, cz) < 3.5f) { why[5]++; continue; }
+                if (NearHollow(cx, cz, 2.2f)) { why[6]++; continue; }
+                if (LairKeepOff > 0f && DungeonDress.Placed.Exists(q => new Vector2(q.X - cx, q.Z - cz).Length() < q.R + LairKeepOff)) { why[6]++; continue; }   // (den r18 L3, R17 item 3) the pool keeps off the boulders (--den-lair-keepoff m, 0: r17)
+                bool bad = false;
+                foreach (var f in feet) if (f.DistanceTo(new Vector2(cx, cz)) < 8f) bad = true;
+                foreach (var spr in z.Spurs)
+                {
+                    Vector2 a0 = new(spr.Seg.X, spr.Seg.Y), a1 = new(spr.Seg.Z, spr.Seg.W), pq = new(cx, cz), ab = a1 - a0;
+                    float tt = Mathf.Clamp((pq - a0).Dot(ab) / Mathf.Max(ab.LengthSquared(), 1e-4f), 0f, 1f);
+                    if ((a0 + ab * tt).DistanceTo(pq) < spr.R + 3f) bad = true;
+                }
+                if (bad) { why[3]++; continue; }
+                // the floor seen behind the shaft, foot to gap: open (no wall foot, pit, hollow or spur bank)
+                for (float t = 0.5f; t <= gapH && !bad; t += 0.5f)
+                {
+                    float h = t * up.Y, bx = cx + t * up.X, bz = cz + t * up.Z - h / Mathf.Tan(pitch);
+                    if (At(z, z.WallField!, bx, bz) < LairWallClear || (z.HoleField != null && At(z, z.HoleField, bx, bz) < 1.5f) || NearHollow(bx, bz, 0.8f)) bad = true;
+                }
+                if (bad) { why[4]++; continue; }
+                // den_boss: high in the frame and out to the sides; the second across from the first
+                float score = 1f - Mathf.Abs(sy - 450f) / 500f + 0.4f * Mathf.Min(1f, Mathf.Abs(sx - 960f) / 600f) + 0.15f * Hash(i, (int)(u * 2f) * 97 + (int)(v * 2f), 44 + k);
+                if (other is Vector2 o) { var (ox, _) = LairPx(o.X - r.X, 0f, o.Y - r.Z); if ((ox - 960f) * (sx - 960f) < 0f) score += 0.6f; }
+                if (score > best) { best = score; x = cx; zz = cz; }
+            }
+        GD.Print($"DungeonLight lair shaft {k}: " + (best > -1e8f ? $"({x:F1},{zz:F1}) px {LairPx(x - r.X, 0f, zz - r.Z)}" : "no open spot in frame") + $" (rejects: fight {why[0]}, gap {why[1]}, wall {why[2]}, pit {why[5]}, hollow {why[6]} ({Hollows.Count}), spacing/spurs {why[3]}, behind {why[4]})");
+        return best > -1e8f;
+    }
+
+    static void AddFan(Node3D root, Vector3 foot, bool lair)
+    {
+        if (fanMesh == null)
+        {
+            var arr = new Godot.Collections.Array(); arr.Resize((int)Mesh.ArrayType.Max);
+            arr[(int)Mesh.ArrayType.Vertex] = new Vector3[] { new(-1, 0, 0), new(1, 0, 0), new(-1, 1, 0), new(1, 1, 0) };
+            arr[(int)Mesh.ArrayType.TexUV] = new Vector2[] { new(-1, 0), new(1, 0), new(-1, 1), new(1, 1) };
+            arr[(int)Mesh.ArrayType.Index] = new int[] { 0, 2, 1, 1, 2, 3 };
+            fanMesh = new ArrayMesh(); fanMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        }
+        int s = ++fanN + 101;
+        // 3-5 rays; widths and gaps in units, then scaled to the fan (bars ~10-25 px, gaps ~10-20 px over 100-150 px)
+        int n = 3 + (Hash(s, 1, 21) < 0.3f ? 0 : Hash(s, 1, 22) < 0.6f ? 1 : 2);
+        var w = new float[n]; var g = new float[n]; float sum = 0f;
+        for (int k = 0; k < n; k++) { w[k] = 1f + 0.8f * Hash(s, k, 23); g[k] = k < n - 1 ? 1f + 0.5f * Hash(s, k, 24) : 0f; sum += w[k] + g[k]; }
+        float unit = 0.92f / sum, at = 0.04f;
+        var rays = new Vector4[5];
+        for (int k = 0; k < n; k++) { rays[k] = new Vector4(at + 0.5f * w[k] * unit, 0.5f * w[k] * unit / 0.72f, 0.45f + 0.55f * Hash(s, k, 25), Hash(s, k, 26)); at += (w[k] + g[k]) * unit; }   // (den r16 B2: gains .7-1 -> .45-1, uneven)
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/dungeon_shaft_fan.gdshader") };
+        mat.SetShaderParameter("axis_up", -Axis);
+        mat.SetShaderParameter("src_h", lair && LairFrame > 0f ? LairGapH : SurvivorUnchained.Args.Num("den-shaft-gap-h", 8.5f));   // (den r17 L2: the lair's lower gaps)
+        mat.SetShaderParameter("top_fade", SurvivorUnchained.Args.Num("den-shaft-topfade", 0.16f));   // (den r18 L3, R17 item 10) fade in from the frame's top; 0: r17
+        mat.SetShaderParameter("w_foot", SurvivorUnchained.Args.Num("den-shaft-wfoot", 2.0f));
+        mat.SetShaderParameter("w_src", SurvivorUnchained.Args.Num("den-shaft-wgap", 0.9f));
+        mat.SetShaderParameter("pool_r", SurvivorUnchained.Args.Num("den-shaft-pool-r", 1.0f));
+        mat.SetShaderParameter("rays", rays);
+        mat.SetShaderParameter("ray_n", n);
+        // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
+        // (den r17 L, R16 item 2) the rays' added light neutral-cool and only added (ext 0): ext .12 took a share of the warm bank
+        // behind them, so the shaft's change tracked the albedo (h 35-45, C .05); the old look: --den-shaft-tint d6dce2 --den-shaft-ext .12
+        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));
+        mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0f));
+        mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
+        mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? (Smooth ? "d4f0f2" : "eeeae2")));
+        mat.SetShaderParameter("gap_gain", SurvivorUnchained.Args.Num("den-shaft-gap-k", 0.8f));
+        mat.SetShaderParameter("gap_ext", SurvivorUnchained.Args.Num("den-shaft-gap-ext", 0.2f));
+        var hl = new Vector4[8]; int hn = 0;
+        foreach (var h in Hollows) if (hn < 8 && h.p.DistanceTo(new Vector2(foot.X, foot.Z)) < h.r + 16f) hl[hn++] = new Vector4(h.p.X, h.p.Y, h.r, 0f);
+        mat.SetShaderParameter("holl", hl); mat.SetShaderParameter("holl_n", hn);
+        mat.SetShaderParameter("pool_strength", SurvivorUnchained.Args.Num("den-shaft-pool-k", 0.16f));
+        mat.SetShaderParameter("pool_ext", SurvivorUnchained.Args.Num("den-shaft-pool-ext", 0.15f));
+        if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
+        if (PoolFloor > 0f)
+        {
+            // (den r17 L, R16 item 2) the pool is drawn on the floor's albedo (FloorPools): no sprite here
+            mat.SetShaderParameter("pool_strength", 0f); mat.SetShaderParameter("pool_ext", 0f);
+            Pools.Add(new Vector4(foot.X, foot.Z, PoolR * (0.9f + 0.25f * Hash(s, 2, 27)), Hash(s, 3, 28) * 100f + (lair ? 1000f : 0f)));   // (den r17 L2: a lair pool's seed + 1000, sp_lair)
+        }
+        if (ShaftFoot > 0f) { mat.SetShaderParameter("foot_k", ShaftFoot); mat.SetShaderParameter("soft_depth", SurvivorUnchained.Args.Num("den-shaft-soft", 0.35f)); }
+        // (den r17 L2, R16 item 2) the rays carried down into their pools (r17 L: .6, they faded out over the lit floor ~240 px short)
+        if (ShaftFoot > 0f) mat.SetShaderParameter("foot_low", SurvivorUnchained.Args.Num("den-shaft-foot-low", 1.8f));
+        root.AddChild(new MeshInstance3D
+        {
+            Name = "shaft_fan", Mesh = fanMesh, MaterialOverride = mat, Transform = new Transform3D(Basis.Identity, foot),
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, CustomAabb = new Aabb(new Vector3(-8, -3, -8), new Vector3(16, 14, 16)),
+        });
+    }
+
+    /// <summary>(den r16 B, R15f item 2) The corridors' shafts: on corridor floor (past every room's reach, 2 m in from the
+    /// wall, clear of the pits), the deepest-in first, none nearer than --den-shaft-corr-gap metres to another shaft.</summary>
+    static void AddCorridorFans(Node3D root, ZoneData z, System.Collections.Generic.List<Vector2> feet)
+    {
+        float gapM = SurvivorUnchained.Args.Num("den-shaft-corr-gap", 13f);
+        if (SurvivorUnchained.Args.Num("den-shaft-corr", 1f) <= 0f || z.WallField == null || Fan <= 0f) return;
+        var cand = new System.Collections.Generic.List<(float S, float X, float Z)>();
+        for (float x = -z.Half + 2f; x < z.Half - 2f; x += 2f)
+            for (float zz = -z.Half + 2f; zz < z.Half - 2f; zz += 2f)
+            {
+                float wf = At(z, z.WallField, x, zz);
+                if (wf < 2f || DenRagged.Corridor(x, zz, z.Rooms) < 0.99f || (z.HoleField != null && At(z, z.HoleField, x, zz) <= 3f)) continue;
+                cand.Add((wf + 1.5f * Hash((int)x * 3, (int)zz * 5, 31), x, zz));
+            }
+        cand.Sort((a, b) => b.S.CompareTo(a.S));
+        foreach (var c in cand)
+        {
+            var p = new Vector2(c.X, c.Z);
+            bool clear = true;
+            foreach (var f in feet) if (f.DistanceTo(p) < gapM) { clear = false; break; }
+            if (!clear) continue;
+            feet.Add(p);
+            AddFan(root, new Vector3(c.X, z.HeightAt(c.X, c.Z), c.Z), false);
+        }
     }
 
     // (r14) The room's play floor read dim grey (ring by her L.31 C.028): where the room's light falls it pools warm,
@@ -120,7 +385,7 @@ public static class DungeonLight
             {
                 Name = "room_wash",
                 Transform = new Transform3D(Basis.LookingAt(Axis, Vector3.Up), top),
-                LightColor = new Color(SurvivorUnchained.Args.Get("den-wash-colour") ?? "ffc47a"),
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-wash-colour") ?? "ffd088"),
                 LightEnergy = e * (n == 0 ? 1f : 0.8f),
                 SpotRange = Height + 4f,
                 SpotAngle = Mathf.RadToDeg(Mathf.Atan(wide / Height)),

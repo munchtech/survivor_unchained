@@ -588,9 +588,30 @@ public static class MapGen
                 for (int n = rng.Int(2, 4); n > 0; n--)
                     if (Near(r, 0.6, 2.2) is { } p) Prop(rng.Pick(new[] { "props/Barrel", "props/Crate_Wooden", "props/Bag", "props/Pouch_Large" }), p.X, p.Z, rng.Range(0, Math.PI * 2), 1.0);
             if (r.Role == RoomRole.Boss)
-                // Torches round the ruler's room, inside its edge.
+            {
+                // Torches round the ruler's room, inside its edge. (den r15: one in a den lair, the judge's one fire per view;
+                // the four spots are still drawn so the rng runs as before)
+                int torches = lay.Def.Theme == "den" ? 1 : 4, lit = 0;
+                // (den r18 D5, R18 item 2) --den-fire-clear 0 = the first spot lit; else the spot >= 3 m from the room's middle (her arrival)
+                // farthest from the holes, or the farthest from the middle when none is 3 m out. The four spots are drawn as ever.
+                var cl = Environment.GetCommandLineArgs();
+                int ci = Array.IndexOf(cl, "--den-fire-clear");
+                bool far = lay.Def.Theme == "den" && !(ci >= 0 && ci + 1 < cl.Length && cl[ci + 1] == "0");
+                var spots = new List<(double X, double Z)>();
                 for (int n = 0; n < 4; n++)
-                    if (Near(r, 2.5, 4.5) is { } p) fire(p.X, p.Z, 0.6, 11, "#ff6a3a");
+                    if (Near(r, 2.5, 4.5) is { } p) { spots.Add(p); if (!far && lit < torches) { fire(p.X, p.Z, 0.6, 11, "#ff6a3a"); lit++; } }
+                if (far && spots.Count > 0)
+                {
+                    double Cd((double X, double Z) s) => MathX.Dist(s.X, s.Z, r.X, r.Z);
+                    double Hd((double X, double Z) s) { double m = 99; foreach (var h in r.Holes) m = Math.Min(m, h.Dist(s.X, s.Z)); return m; }
+                    var out3 = spots.Where(s => Cd(s) >= 3).ToList();
+                    // (den r18 lead, d9c: the farthest-from-holes spot fell under the HUD or off the lair's view) first the spots the
+                    // lair's play view shows from its middle (13 m either side, 9 m north to 4 m south) clear of the holes by 2.5 m
+                    bool Seen((double X, double Z) s) => Math.Abs(s.X - r.X) < 13 && s.Z - r.Z > -9 && s.Z - r.Z < 4;
+                    var best = out3.Count > 0 ? out3.OrderByDescending(s => (Seen(s) ? 2 : 0) + (Hd(s) >= 2.5 ? 1 : 0)).ThenByDescending(Hd).First() : spots.OrderByDescending(Cd).First();
+                    fire(best.X, best.Z, 0.6, 11, "#ff6a3a");
+                }
+            }
         }
         // The way out: two lantern posts either side of it, dark until the ruler is down (MapRun lights it).
         var b = lay.Rooms[^1];

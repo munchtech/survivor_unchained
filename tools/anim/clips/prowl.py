@@ -12,7 +12,7 @@ B's ankles (the rest knees and feet differ a little), the knees toward B's. The 
 middle knuckle, the line from the little finger's to the index's) through A's own hand at rest; the sword's line is
 Prowl's (44 deg below level, heading -120: trailing low behind her right hip), alive with her weight shift.
 
-Build: `python tools/anim/p4.py build idle_fight_a` first (writes the git-ignored godot/art/people/body_p1/p4/), then
+Build: reads the frozen source tools/anim/p4/frozen/idle_fight_a.json (WARDEN_PROWL_SRC=build: p4.py's fresh build), then
 `WARDEN_IDLE=prowl` (the default) builds idle_warden from it; `WARDEN_IDLE=heavyset` is the old idle.
 """
 from __future__ import annotations
@@ -27,7 +27,11 @@ import numpy as np
 from rig import Clip, qfrom_basis, qinv, qmul, qrot, qaxis, qbetween, two_bone_ik
 
 REPO = Path(__file__).resolve().parents[3]
-B_CLIP = REPO / "godot/art/people/body_p1/p4/idle_fight_a.json"
+# The source, frozen in the repo (the Marionette rule, PIPELINE.md: p4.py's build runs Marionette's motion core from
+# outside the repo, so its output could drift): the build Prowl was judged and approved on (15-16 Nov).
+# WARDEN_PROWL_SRC=build reads p4.py's fresh build output instead (godot/art/people/body_p1/p4/, git-ignored).
+B_CLIP = (REPO / "godot/art/people/body_p1/p4/idle_fight_a.json" if os.environ.get("WARDEN_PROWL_SRC") == "build"
+          else REPO / "tools/anim/p4/frozen/idle_fight_a.json")
 B_SKEL = REPO / "tools/body/rig/b_skeleton.json"
 # A bone <- B bone (world turn from rest)
 BODY = {"pelvis": "pelvis", "spine_01": "spine_02", "spine_02": "spine_03", "spine_03": "spine_05", "neck_01": "neck_02",

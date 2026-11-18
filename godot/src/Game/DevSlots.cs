@@ -92,7 +92,10 @@ public static class DevSlots
             while (resolveNext < ResolveAt.Length && b.Time >= ResolveAt[resolveNext].T)
             {
                 b.Resolve.Set(ResolveAt[resolveNext].V);
-                GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}");
+                // (lane B, 16 Nov) full is a kindled heave's trigger (Groundbreaker fires itself at SelfAt of the cap and
+                // spends all of it, with a crowd near): a storm's fuel set full is gone before its press. Ask 95.
+                var heave = b.Resolve.Value >= ResolveMeter.SelfAt * b.Resolve.Max ? b.Weapons.Find(w => w.KindledNow && w.Press?.Resolve > 0) : null;
+                GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}{(heave != null ? $" (FULL: kindled {heave.Id} fires itself at full and spends it all; a storm's fuel asks 95)" : "")}");
                 resolveNext++;
             }
         }

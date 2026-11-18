@@ -23,6 +23,29 @@ public sealed class WickBoardTests
     }
 
     [Fact]
+    public void A_lamp_lit_by_level_counts_as_before_it_for_the_plan_gate()
+    {
+        var ch = Warden(3);
+        var lit = WickBoardModel.Read(ch, "sunder").Lit;
+        Assert.NotEmpty(lit);
+        bool checkedOne = false;
+        foreach (var id in lit)
+        {
+            var (s, n) = Wicks.Lamp("sunder", id)!.Value;
+            if (n >= Wicks.PerStrand) continue;
+            var next = s.LampId(n + 1);
+            if (lit.Contains(next)) continue;
+            Assert.DoesNotContain(id, WickBook.PlanOf(ch, "sunder"));
+            Assert.Equal(WickNo.None, WickBook.CanPlan(ch, "sunder", next));
+            checkedOne = true;
+        }
+        Assert.True(checkedOne);
+        // an unlit lamp two on, with its one before neither planned nor lit, still waits
+        var strand = Wicks.StrandsOf("sunder").First(st => !lit.Contains(st.LampId(1)));
+        Assert.Equal(WickNo.Order, WickBook.CanPlan(ch, "sunder", strand.LampId(2)));
+    }
+
+    [Fact]
     public void Held_points_do_not_light_the_wick_board()
     {
         var ch = Warden(9);

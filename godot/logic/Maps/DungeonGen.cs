@@ -47,7 +47,7 @@ public enum RoomRole { Entrance, Fight, Event, Side, Treasure, Boss }
 /// <summary>A hand-made room: its shape, its holes and its sockets, drawn facing +Z (a boss room's
 /// way out lies at +Z, away from where she comes in).</summary>
 public sealed record RoomPlan(string Id, RoomRole Role, Lobe[] Shape, Lobe[] Holes, (double X, double Z)[] Packs,
-    (double X, double Z)? Cache = null, (double X, double Z)? Out = null, string Dress = "")
+    (double X, double Z)? Cache = null, (double X, double Z)? Out = null, string Dress = "", Lobe[]? Spurs = null)
 {
     public double Reach => Shape.Max(l => l.Reach);
 }
@@ -57,13 +57,15 @@ public sealed record DungeonDef(string Id, string Name, string People, string Th
 
 /// <summary>A room as laid: its area's index, its plan, its cell, where it hangs from, its shape in the world.</summary>
 public sealed record DungeonRoom(int Area, RoomPlan Plan, int Ci, int Cj, int Parent, bool OnRoute, double X, double Z, double Rot, bool Mirror, double Scale,
-    Lobe[] Shape, Lobe[] Holes)
+    Lobe[] Shape, Lobe[] Holes, Lobe[]? Spurs = null)
 {
     public RoomRole Role => Plan.Role;
     public double Dist(double x, double z)
     {
         double d = Shape.Min(l => l.Dist(x, z));
         foreach (var h in Holes) d = Math.Max(d, -h.Dist(x, z));
+        // Spurs: rock and root walls run in from the rim (wall, not a pit: no hole field).
+        if (Spurs != null) foreach (var s in Spurs) d = Math.Max(d, -s.Dist(x, z));
         return d;
     }
 }
@@ -114,8 +116,277 @@ public static class DungeonGen
     public const double Gap = 9;
 
     static RoomPlan R(string id, RoomRole role, Lobe[] shape, Lobe[]? holes = null, (double, double)[]? packs = null,
-        (double, double)? cache = null, (double, double)? exit = null, string dress = "")
-        => new(id, role, shape, holes ?? [], packs ?? [], cache, exit, dress);
+        (double, double)? cache = null, (double, double)? exit = null, string dress = "", Lobe[]? spurs = null)
+        => new(id, role, shape, holes ?? [], packs ?? [], cache, exit, dress, spurs);
+
+    /// <summary>(den r16 G, R15f item 11) The den lair's root-wall spurs, run in from its rim to about 9-10 m
+    /// from the middle so the lair reads walled in (den_boss) from the fixed camera: 1 = on (the default),
+    /// 0 = the old open 21 m bowl. Set by the Godot layer from --den-lair-spurs before a map is made.
+    /// (den r16 G2, R15f item 11) 2 (the default) adds the way in as a mouth (MouthSpurs): a spur either side of
+    /// the hall where it enters, so a lair turned with its way in across the frame (seed 11) shows banks there.</summary>
+    public static double LairSpurs = 2;
+    // Each spur a broad root at the rim and a narrower tongue in: E and W level with the middle (between the
+    // pits and the way out), NE and NW either side of the way out; the S side (the way in, the pits) kept open.
+    /// <summary>(den r17 G, R16 item 1) The den lair's pits laid in the fixed camera's frame, as den_boss.png's: the plan's two
+    /// (2.6 m, 14.4 m out) lie off the boss frame, so the lit "pits" judged were the walkable hollows. With the halls and the
+    /// mouth known, a lobed main pit (4.6-5.4 m across) and one or two smaller (2.6-3.4 m) are laid in WORLD space (the camera
+    /// looks north whatever way the lair turns), the main's middle in the frame's open middle band, each 3.5 m or more clear of
+    /// the ruler's spot (her arrival, the fight's middle), with 2.5 m of floor round it (rim, spurs, halls, the charge lane in,
+    /// the way out). No rng drawn: the layout is unchanged. 1 (the default) = these as well as the plan's two; 0 = the plan's two.
+    /// Set by the Godot layer from --den-lair-pits before a map is made.</summary>
+    public static double LairPits = 1;
+    /// <summary>(den r17 P3, R16 item 1) The lair's pits sized by the frame, not in metres: G's 4.8-5.3 m main drew about 300 px
+    /// across in the boss frame (its lobes' rim projected 342 px; the stamped outline, a 6-harmonic fit, draws about 0.88 of
+    /// that), den_boss.png's about 420. 1 (the default): the main's rim spans 435-485 px across the frame (drawn about 385-425),
+    /// the smaller 240-310 (about 210-270), the size found at each spot tried (the lens shrinks a pit up the frame); where none
+    /// fits, 0.9x steps down to G's. 0: G's sizes in metres. Set by the Godot layer from --den-lair-pit-px.</summary>
+    public static double LairPitPx = 1;
+    /// <summary>The boss frame's camera over the lair's middle (--at boss-mid, play's fixed view): pitch 62, 24.3 m off,
+    /// aimed 0.8 m up her, fov 34 (vertical), 1920x1080, looking north (-Z up the frame).</summary>
+    public static (double X, double Y) LairScreen(double dx, double dz)
+    {
+        const double pitch = 62 * Math.PI / 180, dist = 24.3, look = 0.8;
+        double sp = Math.Sin(pitch), cp = Math.Cos(pitch), f = 540 / Math.Tan(17 * Math.PI / 180);
+        double vy = -(look + sp * dist), vz = dz - cp * dist;
+        double depth = -sp * vy - cp * vz, up = cp * vy - sp * vz;
+        return (960 + f * dx / depth, 540 - f * up / depth);
+    }
+    /// <summary>Whether a frame pixel is clear of the HUD: the bars along the bottom, the ruler's bar at the top, the quest text and map top right.</summary>
+    public static bool LairScreenClear(double x, double y) =>
+        x > 20 && x < 1900 && y < 850 && y > 20 && !(y < 90 && x > 500 && x < 1420) && !(x > 1340 && y < 470);
+    // The pits' shapes, unit-ish, laid turned and scaled: the main five lobes (a broad core and four bays), the small three.
+    static readonly Lobe[] PitMain = [new(-0.95, -0.15, 0.85, 0.2, 1.35), Lobe.O(-0.35, 1.05, 1.0), Lobe.O(0.55, -1.0, 0.95), Lobe.O(1.75, 0.55, 0.75), Lobe.O(-1.9, -0.75, 0.7)];
+    // (den r17 P3) LairPitPx's main: the five lobes laid broad (about 1.6:1), laid within 20 degrees of the frame's across: a
+    // round 400 px pit stands 3 m deep into the floor and cannot clear her spot, the lanes and the spurs in the frame's band
+    static readonly Lobe[] PitMainWide = [new(-1.2, 0, 1.2, 0.1, 1.15), Lobe.O(-0.2, 0.95, 0.8), Lobe.O(0.6, -0.85, 0.8), Lobe.O(2.05, 0.35, 0.7), Lobe.O(-2.1, -0.45, 0.65)];
+    static readonly Lobe[] PitSmall = [new(-0.5, 0, 0.45, 0.15, 0.95), Lobe.O(0.2, 0.75, 0.6), Lobe.O(-0.75, -0.45, 0.55)];
+    /// <summary>A pit's widest span across, in metres.</summary>
+    public static double Across(IReadOnlyList<Lobe> pit)
+    {
+        double best = 0;
+        for (int k = 0; k < 24; k++)
+        {
+            double a = k * Math.PI / 24, ux = Math.Cos(a), uz = Math.Sin(a), lo = double.MaxValue, hi = double.MinValue;
+            foreach (var l in pit)
+            {
+                double p0 = l.X0 * ux + l.Z0 * uz, p1 = l.X1 * ux + l.Z1 * uz;
+                lo = Math.Min(lo, Math.Min(p0, p1) - l.R); hi = Math.Max(hi, Math.Max(p0, p1) + l.R);
+            }
+            best = Math.Max(best, hi - lo);
+        }
+        return best;
+    }
+    /// <summary>Points round a pit's outline (each lobe's), for the clearances.</summary>
+    public static IEnumerable<(double X, double Z)> Rim(IEnumerable<Lobe> pit)
+    {
+        foreach (var l in pit)
+            for (int t = 0; t <= 2; t++)
+            {
+                double cx = l.X0 + (l.X1 - l.X0) * t / 2, cz = l.Z0 + (l.Z1 - l.Z0) * t / 2;
+                for (int k = 0; k < 16; k++) yield return (cx + Math.Cos(k * Math.PI / 8) * l.R, cz + Math.Sin(k * Math.PI / 8) * l.R);
+            }
+    }
+    /// <summary>The lair's pits in view (LairPits): see LairPits. The lair as laid (spurs and mouth on), the halls that reach it.</summary>
+    static DungeonRoom LairPitsIn(DungeonRoom r, IEnumerable<(double X, double Z, double Hw)[]> halls)
+    {
+        const double ring = 2.5, mid = 3.5, gap = 4, lane = 3.5;
+        uint h = (uint)((int)Math.Round(r.X * 37) * 73856093 ^ (int)Math.Round(r.Z * 37) * 19349663 ^ 0x5bd1e995);
+        var rng = new Rng(h);
+        var hs = halls.ToArray();
+        // the way in: the hall's point furthest out still inside the lair's bowl; the charge runs from the middle to it.
+        // The way out: its corridor from 0.4 of the way there (the bowl short of it is open floor).
+        (double X, double Z) mouth = (r.X, r.Z);
+        double far = -1;
+        foreach (var w in hs) foreach (var p in w)
+        {
+            double d = MathX.Dist(p.X, p.Z, r.X, r.Z);
+            if (d <= r.Shape[0].R && d > far) { far = d; mouth = (p.X, p.Z); }
+        }
+        var exit = Xf(r, r.Plan.Out ?? (0, 0));
+        var spurs = r.Spurs ?? [];
+        var laid = new List<Lobe[]>();
+        bool Fits(Lobe[] pit)
+        {
+            foreach (var (x, z) in Rim(pit))
+            {
+                if (r.Shape.Min(l => l.Dist(x, z)) > -ring) return false;
+                if (spurs.Any(s => s.Dist(x, z) < ring)) return false;
+                if (r.Holes.Any(o => o.Dist(x, z) < gap)) return false;
+                if (laid.Any(p => p.Any(o => o.Dist(x, z) < gap))) return false;
+                if (MathX.Dist(x, z, r.X, r.Z) < mid) return false;
+                if (MathX.DistToSegment(x, z, r.X, r.Z, mouth.X, mouth.Z) < lane) return false;
+                if (MathX.DistToSegment(x, z, r.X + (exit.X - r.X) * 0.4, r.Z + (exit.Z - r.Z) * 0.4, exit.X, exit.Z) < ring) return false;
+                // the hall where it comes in (inside the bowl it is the lair's floor: the charge lane above holds the way open)
+                foreach (var w in hs)
+                    for (int i = 1; i < w.Length; i++)
+                        if (MathX.Dist(w[i].X, w[i].Z, r.X, r.Z) > r.Shape[0].R * 0.6
+                            && MathX.DistToSegment(x, z, w[i - 1].X, w[i - 1].Z, w[i].X, w[i].Z) < w[i].Hw * 1.3 + ring) return false;
+                var (sx, sy) = LairScreen(x - r.X, z - r.Z);
+                if (!LairScreenClear(sx, sy)) return false;
+            }
+            return true;
+        }
+        Lobe[] Lay(Lobe[] shape, double across, double rot, double x, double z)
+        {
+            double s = across / Across(shape), c = Math.Cos(rot), n = Math.Sin(rot);
+            return shape.Select(l => new Lobe(x + (l.X0 * c - l.Z0 * n) * s, z + (l.X0 * n + l.Z0 * c) * s, x + (l.X1 * c - l.Z1 * n) * s, z + (l.X1 * n + l.Z1 * c) * s, l.R * s)).ToArray();
+        }
+        // The main: its middle in the frame's open band, as near the fight as it may (about 6 m), low in the frame as den_boss's.
+        double rot0 = rng.Range(0, Math.PI * 2), side = rng.Chance(0.5) ? -1 : 1, acrossM = rng.Range(4.8, 5.3);
+        // (den r17 P3) LairPitPx: the across that spans this many px of the frame at this spot and turn (two linear steps)
+        double PxWide(Lobe[] pit) { var px = Rim(pit).Select(p => LairScreen(p.X - r.X, p.Z - r.Z).X).ToArray(); return px.Max() - px.Min(); }
+        Lobe[] LayPx(Lobe[] shape, double px, double rot, double x, double z)
+        {
+            double a = 5;
+            for (int it = 0; it < 2; it++) a *= px / PxWide(Lay(shape, a, rot, x, z));
+            return Lay(shape, a, rot, x, z);
+        }
+        double mainPx = 435 + (acrossM - 4.8) / 0.5 * 50;
+        // The floor the fight's paths can use (half-metre cells): 2 m in from the rim, 1.5 m off the spurs, 2 m off every pit (its
+        // carved lip and the rim's dressing, then her width), flooded from the middle; a pit is laid only if the way in, the way
+        // out and all the floor reached before are still reached (no pocket cut off, no way pinched shut).
+        double reach = r.Plan.Reach * r.Scale + 1;
+        int nG = (int)(reach * 4) + 1;
+        var baseFree = new bool[nG * nG];
+        for (int j = 0; j < nG; j++)
+            for (int i = 0; i < nG; i++)
+            {
+                double x = r.X - reach + i * 0.5, z = r.Z - reach + j * 0.5;
+                baseFree[j * nG + i] = r.Shape.Min(l => l.Dist(x, z)) <= -2 && spurs.All(o => o.Dist(x, z) >= 1.5) && r.Holes.All(o => o.Dist(x, z) >= 2);
+            }
+        int Cell(double x, double z) => Math.Clamp((int)Math.Round((z - r.Z + reach) * 2), 0, nG - 1) * nG + Math.Clamp((int)Math.Round((x - r.X + reach) * 2), 0, nG - 1);
+        var inPt = (r.X + (mouth.X - r.X) * 0.85, r.Z + (mouth.Z - r.Z) * 0.85);
+        var outPt = Xf(r, (0, 19));
+        (int Count, bool Ways) Flood(IEnumerable<Lobe> extra)
+        {
+            var holes = extra.ToArray();
+            var free = new bool[nG * nG];
+            for (int c = 0; c < free.Length; c++)
+                free[c] = baseFree[c] && holes.All(o => o.Dist(r.X - reach + c % nG * 0.5, r.Z - reach + c / nG * 0.5) >= 2);
+            var seen = new bool[nG * nG];
+            var q = new Queue<int>();
+            int s0 = Cell(r.X, r.Z), n = 0;
+            if (free[s0]) { seen[s0] = true; q.Enqueue(s0); }
+            while (q.Count > 0)
+            {
+                int c = q.Dequeue(); n++;
+                int ci = c % nG, cj = c / nG;
+                foreach (var (di, dj) in Steps)
+                {
+                    int ni = ci + di, nj = cj + dj, nc = nj * nG + ni;
+                    if (ni < 0 || nj < 0 || ni >= nG || nj >= nG || seen[nc] || !free[nc]) continue;
+                    seen[nc] = true; q.Enqueue(nc);
+                }
+            }
+            bool Near((double X, double Z) p)
+            {
+                for (double ox = -2; ox <= 2; ox += 0.5)
+                    for (double oz = -2; oz <= 2; oz += 0.5)
+                        if (seen[Cell(p.X + ox, p.Z + oz)]) return true;
+                return false;
+            }
+            return (n, Near(inPt) && Near(outPt));
+        }
+        var before = Flood([]);
+        bool Open(Lobe[] pit)
+        {
+            var all = laid.SelectMany(p => p).Concat(pit).ToArray();
+            int lost = 0;
+            for (int c = 0; c < baseFree.Length; c++)
+                if (baseFree[c] && all.Any(o => o.Dist(r.X - reach + c % nG * 0.5, r.Z - reach + c / nG * 0.5) < 2)) lost++;
+            var after = Flood(all);
+            return (after.Ways || !before.Ways) && after.Count >= before.Count - lost - 8;
+        }
+        Lobe[]? best = null;
+        for (double shrink = 1; best == null && shrink > 0.7; shrink -= 0.1)
+        {
+        var mains = new List<(double S, Lobe[] Pit)>();
+        for (int k = 0; k < (LairPitPx > 0 ? 12 : 6); k++)
+            for (double dx = -13; dx <= 13; dx += 0.5)
+                for (double dz = -9; dz <= 7; dz += 0.5)
+                {
+                    var (sx, sy) = LairScreen(dx, dz);
+                    if (LairPitPx > 0 ? sx < 300 || sx > 1620 || sy < 280 || sy > 720 : sx < 380 || sx > 1420 || sy < 300 || sy > 700) continue;   // (den r17 P3) the bigger main needs the band's ends: 3.5 m off her spot its middle stands 7 m out
+                    double d = Math.Sqrt(dx * dx + dz * dz), sc = Math.Abs(d - 6) + Math.Abs(sy - 600) / 150 + (Math.Sign(dx) == side ? 0 : 0.6) + k * 0.05;
+                    var pit = LairPitPx > 0 ? LayPx(PitMainWide, mainPx * shrink, (rot0 > Math.PI ? Math.PI : 0) + (k % 2 == 0 ? 1 : -1) * (k / 2) * 0.07, r.X + dx, r.Z + dz) : Lay(PitMain, acrossM, rot0 + k * Math.PI / 3, r.X + dx, r.Z + dz);
+                    // big in the frame as den_boss's (350-450 px): low enough in it that the lens does not shrink it
+                    if (LairPitPx <= 0 && PxWide(pit) < 330) continue;
+                    if (Fits(pit)) mains.Add((sc, pit));
+                }
+        best = mains.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+        if (LairPitPx <= 0) break;
+        }
+        if (best == null) return r;
+        laid.Add(best);
+        // One or two smaller elsewhere in the frame, spread from the main and each other.
+        int want = rng.Chance(0.65) ? 2 : 1;
+        for (int n = 0; n < want; n++)
+        {
+            double across = rng.Range(2.6, 3.4), rot = rng.Range(0, Math.PI * 2), smallPx = 240 + (across - 2.6) / 0.8 * 70;
+            Lobe[]? pick = null;
+            for (double shrink = 1; pick == null && shrink > 0.7; shrink -= 0.1)
+            {
+            var smalls = new List<(double S, Lobe[] Pit)>();
+            for (double dx = -13; dx <= 13; dx += 0.5)
+                for (double dz = -9; dz <= 7; dz += 0.5)
+                {
+                    var (sx, sy) = LairScreen(dx, dz);
+                    if (sx < 150 || sx > 1770 || sy < 150 || sy > 800) continue;
+                    double spread = laid.Min(p => { var (px, py) = LairScreen(p.Average(o => o.X0) - r.X, p.Average(o => o.Z0) - r.Z); return MathX.Dist(sx, sy, px, py); });
+                    double d = Math.Sqrt(dx * dx + dz * dz), sc = -Math.Min(spread, 900) / 200 + Math.Abs(d - 7.5) * 0.4;
+                    var pit = LairPitPx > 0 ? LayPx(PitSmall, smallPx * shrink, rot, r.X + dx, r.Z + dz) : Lay(PitSmall, across, rot, r.X + dx, r.Z + dz);
+                    if (Fits(pit)) smalls.Add((sc, pit));
+                }
+            pick = smalls.OrderBy(c => c.S).Select(c => c.Pit).Take(40).FirstOrDefault(Open);
+            if (LairPitPx <= 0) break;
+            }
+            if (pick != null) laid.Add(pick);
+        }
+        return r with { Holes = [.. r.Holes, .. laid.SelectMany(p => p)] };
+    }
+    static readonly Lobe[] LairSpurPlan =
+    [
+        new(25, 0, 15, 1.5, 4.2), new(15, 1.5, 11.6, 2.4, 2.4),
+        new(-25, 2, -15, 3, 4.2), new(-15, 3, -12, 4.2, 2.3),
+        new(17, 19, 11.5, 12.5, 3.8), new(11.5, 12.5, 8.2, 9.4, 2.2),
+        new(-18, 18, -12, 12, 3.8), new(-12, 12, -8.6, 8.8, 2.1),
+    ];
+
+    /// <summary>(den r16 G2, R15f item 11) The lair's way in as a mouth, as the rooms' halls open between banks: a
+    /// spur either side of the hall that reaches the lair, laid along it from past the rim to about 12 m from the
+    /// middle, its inner edge clear of the hall's widest (noise x1.3) by 0.6 m; pulled out along the hall until it
+    /// stands 3 m clear of every pit, dropped if it cannot. No rng: the layout is unchanged.</summary>
+    static Lobe[] MouthSpurs(DungeonRoom r, (double X, double Z, double Hw)[] hall)
+    {
+        // the hall's points by distance from the lair's middle, outward
+        var pts = hall.OrderBy(p => MathX.Dist(p.X, p.Z, r.X, r.Z)).ToArray();
+        (double X, double Z, double Hw) At(double rad)
+        {
+            for (int i = 1; i < pts.Length; i++)
+            {
+                double d0 = MathX.Dist(pts[i - 1].X, pts[i - 1].Z, r.X, r.Z), d1 = MathX.Dist(pts[i].X, pts[i].Z, r.X, r.Z);
+                if (d1 < rad) continue;
+                double t = d1 > d0 ? Math.Clamp((rad - d0) / (d1 - d0), 0, 1) : 0;
+                return (pts[i - 1].X + (pts[i].X - pts[i - 1].X) * t, pts[i - 1].Z + (pts[i].Z - pts[i - 1].Z) * t, pts[i].Hw);
+            }
+            return pts[^1];
+        }
+        double R = r.Shape[0].R;
+        var res = new List<Lobe>();
+        foreach (double side in new[] { -1.0, 1.0 })
+            foreach (double inR in new[] { 0.55, 0.62, 0.69, 0.76, 0.83 })
+            {
+                var a = At(R * 1.12); var m = At(R * (inR + 0.13)); var b = At(R * inR);
+                double tx = a.X - b.X, tz = a.Z - b.Z, tl = Math.Max(Math.Sqrt(tx * tx + tz * tz), 1e-6);
+                double nx = -tz / tl * side, nz = tx / tl * side, c = b.Hw * 1.3 + 0.6;
+                var root = new Lobe(a.X + nx * (c + 3.4), a.Z + nz * (c + 3.4), m.X + nx * (c + 3.0), m.Z + nz * (c + 3.0), 3.4 * r.Scale);
+                var tip = new Lobe(m.X + nx * (c + 3.0), m.Z + nz * (c + 3.0), b.X + nx * (c + 2.3), b.Z + nz * (c + 2.3), 2.3 * r.Scale);
+                if (r.Holes.Any(h => root.Dist(h.X0, h.Z0) < h.R + 3 || tip.Dist(h.X0, h.Z0) < h.R + 3)) continue;
+                res.Add(root); res.Add(tip);
+                break;
+            }
+        return res.ToArray();
+    }
 
     // ------------------------------------------------------------ the rooms --
     // Drawn by hand, in metres, facing +Z. Shared shapes first, then each dungeon's own.
@@ -138,7 +409,7 @@ public static class DungeonGen
         Bowl with { Dress = "bones" }, Twin, Gully, Ring with { Dress = "bones" }, Crook, Clover with { Dress = "bones" }, Pillars, Spine,
         Event,
         Nook with { Dress = "bones" }, Alcove with { Dress = "bones" }, Hoard with { Dress = "bones" },
-        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)], [], exit: (0, 27), dress: "bones"),
+        R("lair", RoomRole.Boss, [Lobe.O(0, 0, 21), new(0, 18, 0, 26, 5)], [Lobe.O(-12, -8, 2.6), Lobe.O(12, -8, 2.6)], [], exit: (0, 27), dress: "bones", spurs: LairSpurPlan),
         R("throat", RoomRole.Boss, [new(-7, -2, 7, -2, 17), new(0, 14, 0, 24, 5)], null, [], exit: (0, 25), dress: "bones"),
     ]);
 
@@ -323,6 +594,14 @@ public static class DungeonGen
             }
             halls.Add(pts);
         }
+        // (den r16 G2, R15f item 11) the lair's way in as a mouth: banks either side of the hall that reaches it
+        if (LairSpurs >= 2 && rooms[^1] is { Spurs: not null } br)
+            for (int k = 0; k < edges.Count; k++)
+                if (edges[k].Item2 == rooms.Count - 1 || edges[k].Item1 == rooms.Count - 1)
+                    rooms[^1] = br = br with { Spurs = [.. br.Spurs!, .. MouthSpurs(br, halls[k])] };
+        // (den r17 G, R16 item 1) the lair's pits in view, laid in the world with the halls and the mouth known
+        if (LairPits > 0 && rooms[^1].Plan.Id == "lair")
+            rooms[^1] = LairPitsIn(rooms[^1], Enumerable.Range(0, edges.Count).Where(k => edges[k].Item2 == rooms.Count - 1 || edges[k].Item1 == rooms.Count - 1).Select(k => halls[k]));
 
         // The packs' sockets: the rooms' own, and along the halls a pack every 13 m or so, none on the last hall to the ruler.
         var sockets = new List<PackSpot>();
@@ -384,7 +663,8 @@ public static class DungeonGen
     {
         var tmp = new DungeonRoom(area, plan, c.Item1, c.Item2, parent, onRoute, x, z, rot, mirror, scale, [], []);
         (double, double) F((double X, double Z) p) => Xf(tmp, p);
-        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = plan.Holes.Select(l => l.Moved(F, scale)).ToArray() };
+        return tmp with { Shape = plan.Shape.Select(l => l.Moved(F, scale)).ToArray(), Holes = plan.Holes.Select(l => l.Moved(F, scale)).ToArray(),
+            Spurs = plan.Spurs != null && LairSpurs > 0 ? plan.Spurs.Select(l => l.Moved(F, scale)).ToArray() : null };
     }
 
     /// <summary>A point of a room's plan, in the world: mirrored, scaled, turned so +Z faces along Rot, and moved.</summary>

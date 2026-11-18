@@ -198,21 +198,191 @@ float crowd_edge(float rim) {
 // (solver 3: the boss's body paint, its own chroma and hue: at the pack's 0.028/32 she read purple-grey on screen, 0.25-0.35 /
 // 0.016 / h 313-340, under the lair's cool light; her back and mane paint likewise sit past their screen targets, which
 // they reach in the lair: back 0.37/0.025/292, mane 0.43/0.089/30)
-#define DEN_BOSS_BODY vec2(0.034, 50.0)
-#define DEN_BOSS_BACK vec4(0.41, 0.014, 292.0, 0.93)
+// (lane E boss r2: back .41/.014/292 read .31-.32/.011/h 326-338; body .034 left boss-mid 65% at C <= .035; mane h 32 read 33-34)
+// (lane E boss r3: back C .030 read .026-.030 with 2 px over C .040 in h 300-15: .028)
+#define DEN_BOSS_BODY vec2(0.029, 50.0)
+// (lane E lead 5, judge 3: "one flat tone cut as a rectangle, a blue blanket": the back is now a dorsal stripe on her REST pose
+// (c_r), round the spine: its half-width DEN_BOSS_SPINE.z at its widest, tapered to nothing at both ends (DEN_BOSS_SPINE.xy in
+// z, a sine's DEN_BOSS_SPINE_P power, its widest toward the shoulders), its edges fur-notched (DEN_BOSS_SPINE_TUFT: notches per
+// unit of z, their depth's share of the width), in two steps: the core (DEN_BOSS_SPINE.w of the width) LIT at DEN_BOSS_BACK.xyz,
+// the rest SHADE at DEN_BOSS_BACK_SH; on faces past DEN_BOSS_BACK.w of the rest normal's up. Screen targets lit .39/.025/292,
+// shade .31/.020/292; r3's flat paint .46/.028/288 read .40/.025/298 in the lair; lead 5 r1: lit .45/.028/282 read .387/.024/293, shade .355/.022/282 read .27/.012/325 (the flank under less key: raised; .40/.034/280 read .325/.025/295: C eased; .395/.028/280 read .317/.018/302: hue 272, C .030) Was: |x| under a width in three straight
+// steps on the animated pose, its ends cut square)
+#define DEN_BOSS_BACK vec4(0.45, 0.028, 282.0, 0.15)
+#define DEN_BOSS_BACK_SH vec3(0.395, 0.030, 272.0)
+#define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
+#define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.50, 0.10, 32.0)
+#define DEN_MANE vec3(0.62, 0.13, 29.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
 #define DEN_MANE_TUFT vec2(9.0, 0.05)
-#define DEN_ACCENT vec3(0.36, 0.12, 0.80)
+// (lane E lead 7, judge 5 17 Nov: "the mane is a flat red block with straight vertical sides ... its back is a flat blue
+// lozenge. That is not den_boss.png's painted fur": both are now fur LOCKS on her rest pose (c_r), each a pointed cell, its
+// sides concave by DEN_FUR_TIP, its length per lock from a hash (vat_den_hash), no two alike. The BACK's edge: locks hooked
+// back and out (vat_den_tooth) along z, DEN_BOSS_FUR.x a unit (warped), over a base of (1 - DEN_BOSS_FUR.y) of the stripe's
+// width, out to DEN_BOSS_FUR.z at most; its LIT core a chain of clumps, DEN_BOSS_FUR.w a unit, each widest at its root and
+// tapered back to a point, DEN_BOSS_CORE (x the width's share) at most: 45% of the back lit, as before; the taper, its
+// DEN_BOSS_SPINE.xy ends and the paint as before. The MANE in two rows of locks round the neck (DEN_BOSS_MANE_LOCK.x a
+// turn, slanted down .y radians a unit of z behind z .z): the upper row LIT at DEN_MANE, its tips back to
+// DEN_BOSS_MANE_ROW.x, .y long at most; the row under it SHADE at DEN_BOSS_MANE_SH, its tips the mane's hind edge, .z, .w
+// long; a dark DEN_BOSS_MANE_DK, DEN_BOSS_MANE_SHW wide, under the upper row's tips; its fore edge the head's fur over it in
+// back-pointing locks (DEN_BOSS_MANE_FORE: x a turn, z .y at the crest, slanting back .z down the neck, .w deep at most);
+// its lower edge in hanging locks (DEN_BOSS_MANE_LOW: at y .x, .y a unit of z, .z deep at most). Was: the stripe's notches a
+// triangle wave, 20 a unit, 22% deep; the mane z .2-.46 on the animated pose, 9 tufts a turn .05 deep, one flat L .50)
+#define DEN_FUR_TIP 1.6
+#define DEN_BOSS_FUR vec4(8.0, 0.3, 0.040, 6.5)
+#define DEN_BOSS_CORE 0.054
+#define DEN_BOSS_MANE_LOCK vec3(12.0, 2.0, 0.30)
+// (lane E lead 8 solver, judge 5's straight fore edge, 17 Nov: the mane's fore edge is on the ruff's fur CARDS (surface 4,
+// alpha-cut rings round the neck), and in her idle the side-on camera sees only the neck's upper flank, angle 0-70 deg round
+// DEN_MANE_AXIS: at 9 locks a turn (40 deg each) that is 1-2 locks, one smooth arc down the neck, read as a straight line
+// (l7g1_st_02 x 1029-1045 over y 372-404). Now 26 a turn, each hooked down-and-back DEN_BOSS_MANE_FORE_H radians a unit of z
+// behind the crest, .085 deep at most; the shade row paler (.42 -> .46) and the lit row's tips further back (.33 -> .30))
+#define DEN_BOSS_MANE_ROW vec4(0.30, 0.09, 0.235, 0.08)
+#define DEN_BOSS_MANE_FORE vec4(26.0, 0.53, 0.10, 0.085)
+#define DEN_BOSS_MANE_FORE_H 1.2
+// (lane E lead 8 r2: the boss's fur CARDS (vat_cut, the ruff's shingled rings) cut by their strand's ROOT, not per pixel: a
+// ring's strand is all head or all mane, so the fore edge is the head rings' own strands over the red, not a z cut across a
+// ring (a straight vertical line, l8g1). The root is the pixel's rest place less (v - DEN_BOSS_CARD.w) of the card's rest
+// dP/dv (screen derivatives, its length capped at .z); mane under z DEN_BOSS_CARD.y there (the head rings' roots .62-.66, the
+// shoulder ring's .48-.61). The cards' alpha mirrored past v DEN_BOSS_CARD.x, so each ring ends at the rear in its painted
+// strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
+#define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
+#define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
+#define DEN_BOSS_MANE_SH vec3(0.52, 0.115, 26.0)
+#define DEN_BOSS_MANE_DK vec3(0.24, 0.03, 32.0)
+#define DEN_BOSS_MANE_SHW 0.014
+// (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
+// (its n.y past -0.2) at L 0.52, C 0.13, ember-gold from the rig's elite tint; its rim DEN_ELITE_RIM (linear), bone-ivory)
+// (lane E elites r4: the whole ruff was 20% of an unstruck elite's px, over the 6-15% asked: the ruff's top only, its n.y past
+// 0.5 (17% at 0.25); the rim paler, bone not gold: it read C .13 h 80 on screen)
+#define DEN_ACCENT vec3(0.52, 0.13, 0.5)
+// (lane E lead 5, 17 Nov: an elite's rim is no band here any more: every n.v band lit each leg's, fur card's and fold's own
+// grazing edge, an ivory squiggle per interior contour (28-40 bits an elite). Its rim is its OUTER silhouette's, a pass of its
+// own outside the body (vat_elite_mask/vat_elite_rim.gdshader, chained by Vat.Build); here an elite keeps the dark line only)
+// (r3: the boss's bands at the pack's full step (was half: she read as smooth gradients)
+#define DEN_BOSS_STEP 1.5
+// (lane E boss r1: her back a stepped SADDLE on the spine, not the straight n.y cut stripe: the model's |x| under a width that
+// widens from the hips to the shoulders in DEN_BOSS_SPINE.z steps (x at the hips, y at the shoulders), on faces past
+// DEN_BOSS_BACK.w of the model's up. Her HEAD reads at 1:1: a darker muzzle past DEN_BOSS_HEAD.y in z and ear tips over
+// DEN_BOSS_HEAD.z in y (L DEN_BOSS_HEAD.w), a lighter brow and cheek band between the mane and the muzzle on faces past
+// DEN_BOSS_BROW.y of up (L DEN_BOSS_BROW.x); all in her warm body hue and chroma)
+// (lane E boss r3: the head's regions are cut on her REST pose (vat_rest: the mesh's own vertex and normal, the bake's first
+// frame, the gallop's stretch; Vat.Write), not the animated one: cut on vat_local, the whole head crossed z 0.68 mid-leap and
+// went one near-black blot (screen L .05-.11), and in the gallop z 0.68 sat behind the ears, so the head read one dark
+// block. In the rest pose: eyes at z .75-.77, nose .84, ear tips y .94 at z .70-.73, the forepaws reach z .93 under y .4.
+// The head past DEN_BOSS_HEAD.x in z over DEN_BOSS_HEAD2.x in y; the muzzle past DEN_BOSS_HEAD.y in z, the ear tips over
+// DEN_BOSS_HEAD.z in y past DEN_BOSS_HEAD2.y in z; the brow by the rest normal's y. Was .47/.68/.84/.22 on vat_local)
+#define DEN_BOSS_HEAD vec4(0.47, 0.775, 0.875, 0.28)
+#define DEN_BOSS_HEAD2 vec2(0.58, 0.64)
+#define DEN_BOSS_BROW vec2(0.40, 0.25)
+// (lead 8 r3: the muzzle's lock edge, x its axis's y, y locks a turn, z their depth, w its tilt in z a .1 of y under the axis;
+// the back's strokes, see c_stk)
+#define DEN_BOSS_MUZ vec4(0.70, 17.0, 0.085, 0.05)   // (r7: 11 locks .06 deep read as a straight edge at 1:1)
+#define DEN_BOSS_STROKE vec4(0.016, 0.10, 0.08, 0.55)
+// (r12, judge 5: the back a flat plate. Now fur clumps (vat_den_clump) on columns round the torso's axis (y DEN_BOSS_BFUR_R.w),
+// slanting back and down the flank (DEN_BOSS_BFUR: x a column in radians, y a clump's length, z the share drawn, w the slant per
+// unit of z), the mirror broken per side; solid to .y of the stripe's angle (DEN_BOSS_BFUR_R.x radians at its widest), drawn
+// clumps out to .z (its edge their tips); L (DEN_BOSS_BFUR_L) x between clumps, y a clump, z its pale strand, w the fall to the flank)
+#define DEN_BOSS_BFUR vec4(0.32, 0.12, 0.80, 2.4)
+#define DEN_BOSS_BFUR_R vec4(0.55, 0.62, 1.35, 0.62)
+#define DEN_BOSS_BFUR_L vec4(0.40, 0.50, 0.58, 0.08)   // (lead 9: .37/.49/.60/.12 shot back L50 .29 C .017, target .36/.023; r13 .45/.57/.68 read a periwinkle saddle, strokes L .449 C .046)
+#define DEN_BOSS_BFUR_C vec4(0.026, 274.0, 0.028, 282.0)   // the back's gaps and clumps C, h (lead 9: at .030/.028 C read .017 on the brown body; r13 .034 read .046)
+// (lead 9 solver, judge 6 fix 5, ONE COAT: the back read as a periwinkle saddle over a brown body (flank L .237 C .028 h 37): the
+// body's hue was the rig's boss tint. Now the body, legs and tail are the back's slate (den_boss.png: a dark slate wolf), C
+// DEN_BOSS_COAT.x at hue .y in paint, the back's clumps darker and greyer (DEN_BOSS_BFUR_L/_C), and the back goes to the body's
+// own paint over its lower edge: from DEN_BOSS_BLEND.x to .y of its reach (the clumps' tips, DEN_BOSS_BFUR_R.z), no hard edge)
+#define DEN_BOSS_COAT vec2(0.026, 272.0)
+#define DEN_BOSS_BLEND vec2(0.45, 1.0)
+// (judge 6 fix 6, TAIL AND OUTLINE (vertex() and fragment()'s fo_): the tail a thin smooth
+// taper to a needle (a rat's tail), the outline smooth. The TAIL a plume:
+// pushed out along its normal in the vertex stage (rest z past DEN_BOSS_TAIL.x, whole past .y, over rest y .z: the hind legs are
+// under it), DEN_BOSS_TAIL_D x at its root, y more at its tip (blunt: it ends in a clump, not a needle; its tip at rest z .w). The
+// OUTLINE in fur clumps: the silhouette cut back (in px from it, a tube's measure from n.v and its screen derivative) in pointed
+// clumps along the rest pose's long axis (z: the pose is a leap, its legs and tail along z), round the body's axis on faces turned
+// along z (the rump, the chest's front); DEN_BOSS_FURE x the tail's cut in n.v at most, y the body's, z the tail's clump in rest z,
+// w the body's; DEN_BOSS_FURE_V x the valleys' depth's spread, y the tips' height's, z + w a hash the tip's place in a clump
+// (past .5: leaning back); DEN_BOSS_FURE_X the front legs (z past .x under y .y) and hind paws (z under .z) left whole. The den
+// line is drawn on the cut edge. Not the head, the front legs or the paws)
+#define DEN_BOSS_TAIL vec4(-0.47, -0.55, 0.64, -0.80)   // (r1 -.50/-.58: its root stayed thin)
+#define DEN_BOSS_TAIL_D vec2(0.036, 0.030)   // (r1 .026/.034: 23 px at most against the hips' 54 in the boss view)
+// (lead 9, l9t2: the cut shredded the side-on body into ragged orange-lined scraps and the tail into a comb of ribs at 1:1,
+// far worse than the smooth edge: OFF. The plume above stays.)
+#define DEN_BOSS_FURE_ON false
+#define DEN_BOSS_FURE vec4(0.85, 0.65, 0.045, 0.11)
+#define DEN_BOSS_FURE_V vec4(0.3, 0.25, 0.55, 0.25)
+#define DEN_BOSS_FURE_X vec3(0.25, 0.42, -0.72)
+// (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
+// STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
+// the neck, y a stroke's length in z, z the share of cells drawn, w the flow, radians down the neck a unit of z back), each in
+// its row's red, the gaps between them near-black DEN_BOSS_MANE_GAP; a share (DEN_BOSS_MANE_TIP.w) of the lit row's strokes
+// pale at the tip (the last .z of their length), L .x C .y at hue DEN_BOSS_MANE_TIP_H. The cheek's ruff (DEN_BOSS_CHEEK: x a
+// column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
+// strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
+// y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
+#define DEN_BOSS_MSTK vec4(0.34, 0.20, 0.90, 2.0)
+// (lead 8 r6: the mane in CLUMPS, not wedges (l8g5: wedges of a third of a column in rows, near-black between, read as hatching):
+// vat_den_clump on DEN_BOSS_MSTK's columns, twice as wide and long, waved DEN_BOSS_CLUMP_W (x columns, y per unit of z) so no
+// row runs straight; each clump full width DEN_BOSS_CLUMP.x of its column from the root back to .y of its length, then tapered to
+// its tip; its L the row's x (1 +- .w/2 a clump), darker toward the root (.z on, DEN_BOSS_CLUMP_V.x at most: under the clump in
+// front of it), lighter (+ .y) in a streak .z wide on its upper side (.w off its middle): the lit face. Dark only in the gaps)
+#define DEN_BOSS_CLUMP vec4(0.34, 0.62, 0.82, 0.24)
+#define DEN_BOSS_CLUMP_V vec4(0.22, 0.10, 0.12, 0.15)
+#define DEN_BOSS_CLUMP_W vec2(0.25, 14.0)
+#define DEN_BOSS_CLUMP_S vec4(0.12, 0.60, 0.25, 0.35)
+// (lane E lead 9 r11 (solver), the mane red into black: l8g10's clumps (.68 of a .44 column, full width over the root .38,
+// blunt .60 taper, rounded root) read at 1:1 as rows of salmon scales, and den_boss's mane is near-black fur with thin red
+// flame-strokes (concept: 13% of it red at C .07+, 45% under L .30). Now the mane's own shape, DEN_BOSS_SPIKE (as
+// DEN_BOSS_CLUMP: x the half-width of a column at its widest, y the share of its length tapered, z/w unused/its L's spread)
+// and DEN_BOSS_SPIKE_S (as DEN_BOSS_CLUMP_S): narrow spikes tapered almost the whole way to a point, on narrower columns
+// (DEN_BOSS_MSTK .34), each darkened toward its root (DEN_BOSS_SPIKE_V.x at most, from .y of its length: it comes out of the
+// black), its width varied (.z); the gaps near-black warm (DEN_BOSS_MANE_GAP), the red brighter and redder (DEN_MANE .60/.13/32),
+// cream tips on a third of the spikes only (DEN_BOSS_MANE_TIP.w); the head clumps keep DEN_BOSS_CLUMP's shape. l9f1 (spikes
+// .24 wide, root dark .55, 80% drawn) read as a black mass with sparse red flecks, mane red px 654 (r10 1647) at L .39 h 35:
+// now .32 wide, root dark .35, 90% drawn, gaps .28, the red at hue 29 (shade 26) for 32 on screen. The back's strokes (the
+// slate's third tone, DEN_BOSS_STROKE) wider, longer and stronger: at .011/.075/.05 the back read as one flat plate at 1:1)
+#define DEN_BOSS_SPIKE vec4(0.32, 0.85, 0.0, 0.22)
+#define DEN_BOSS_SPIKE_S vec4(0.15, 0.95, 0.12, 0.25)
+#define DEN_BOSS_SPIKE_V vec3(0.35, 0.66, 0.35)
+// (r11: the MUZZLE pale grey (den_boss: a pale grey-beige bridge, dark nose), was c_dark's .28 with the ear tips: DEN_BOSS_MUZ_C
+// x its top's L (rest normal's y past .35), y its sides', z the nose's and the jaw's under it, w the nose's z; DEN_BOSS_MUZ_AB
+// its chroma and hue; the ear tips stay DEN_BOSS_HEAD.w; never a card, as c_dark)
+#define DEN_BOSS_MUZ_C vec4(0.66, 0.50, 0.16, 0.826)   // (r12: was .58/.44/.18: barely read at 1:1)
+#define DEN_BOSS_MUZ_AB vec2(0.022, 70.0)
+#define DEN_BOSS_MANE_GAP vec3(0.28, 0.03, 35.0)
+#define DEN_BOSS_MANE_TIP vec4(0.68, 0.045, 0.15, 0.35)
+#define DEN_BOSS_MANE_TIP_H 75.0
+#define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.35, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
+#define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
+#define DEN_BOSS_CHEEK_C vec3(0.50, 0.03, 72.0)
+// (lead 8 r9, the head ring: the head rings' cards and the neck's mesh in front of the mane took den_head's two flat planes
+// (L .48/.34) and the cheek's pale strokes on the cards' root place (a strand's root, noisy along it): a flat grey block with
+// pale hatching at 1:1 (l8g8). den_boss's head is charcoal fur in strands with paler strand highlights. Now the head behind
+// z DEN_BOSS_HFUR.w (all of it but the muzzle's and ear tips' dark: a cut behind the eyes was a straight line) is the mane's clump field in charcoal: DEN_BOSS_HFUR_Q (x a column's width
+// round the neck, y a clump's length in z, z the share of cells drawn, w the share of clumps with a pale strand), between them
+// DEN_BOSS_HFUR.x, a clump .y, its pale strand (DEN_BOSS_CLUMP_V's streak) .z lighter in the tips' cream; the cheek's strokes on
+// the mesh only, paler .50 and fewer)
+// (r10: l8g9's .24/.32/.14 read near-black at 1:1, the head one dark blob, body L50 .22; its pale strands in the tips' cream
+// read olive on the dark: now charcoal .28/.40, strands .18 lighter at DEN_BOSS_HFUR_C (chroma x, hue y), a warm grey)
+#define DEN_BOSS_HFUR vec4(0.33, 0.46, 0.16, 0.95)   // (r12 tried .31/.43/.14: the ear ladder came back, 123/204 dark px)
+#define DEN_BOSS_HFUR_C vec2(0.025, 65.0)
+#define DEN_BOSS_HFUR_Q vec4(0.30, 0.12, 0.80, 0.55)
+#define DEN_BOSS_BROW_STK 0.05
+// (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
+// body's world-normal bands ran over the head's curves as a ramp): LIT (the rest normal's y past DEN_HEAD_LIT.y: crown, brow,
+// the muzzle's bridge) at L DEN_HEAD_LIT.x, SHADE (sides, cheeks, jaw) at DEN_HEAD_SHADE, DARK (the muzzle past DEN_BOSS_HEAD.y,
+// the ear tips) at DEN_BOSS_HEAD.w. den_head (Vat.cs --den-head): 1 these planes, 0 r3's head. Not yet measured: off by default.)
+uniform float den_head = 0.0;
+#define DEN_HEAD_LIT vec2(0.48, 0.30)
+#define DEN_HEAD_SHADE 0.34
 // (lead 3 foes: the MID band, the fur's three bands: flank, mid past DEN_MID_CUT of the world normal's y, top past
 // crowd_den_top.x; the mid's L step over the flank is crowd_den_rim.w (rigs foe_den [8]), the top's crowd_den_top.y)
 #define DEN_MID_CUT 0.3
 // (lead 3 polish: the pack's TOP band's chroma step over the flank's crowd_den.z, the boss not: the key on the top greys it,
 // screen C .014 h 36 at a paint .028 in the lair)
-#define DEN_TOP_C 0.02
+#define DEN_TOP_C 0.006
 #define DEN_FLASH_L 0.36
 // (lead 3 foes: a den foe's hit is a step in its own paint, never a lift toward white: L up by at most DEN_HIT.x and never
 // past DEN_FLASH_L (a block already paler keeps its L), its chroma to at least DEN_HIT.y at hue DEN_HIT.z, warm)
@@ -221,9 +391,52 @@ float crowd_edge(float rim) {
 // the cap, so no cap), chroma to at least DEN_HIT_BOSS.y at DEN_HIT's hue; its back and mane keep theirs. At the pack's step
 // a struck boss, struck all fight long, read orange-red)
 #define DEN_HIT_BOSS vec2(0.04, 0.05)
+// (lane E lead 7, judge 4 17 Nov: "struck read not enough even at .4: whole boss + .15 L for 2-3 frames, steel core mix .4-.5".
+// A struck den boss (its pulse, BattleFx.BossStruck: c_hit 1 for 2-3 frames, at most every 0.18 s) lifts WHOLE, body, back and
+// mane, L up DEN_BOSS_STRUCK.x over each block's own, its chroma mixed DEN_BOSS_STRUCK.y toward steel (C .z at hue .w: cool
+// neutral, not the cream white-out, not the pack's orange). DEN_HIT_BOSS is no longer drawn: the boss's hit is this.)
+// (on screen the lift multiplies each block's kept colour about 3x and the den's warm key adds its own: at mix .45 toward
+// C .03 h 250 the red mane read pink (l7c_st, h 30 -> 14, C .089); at .5 toward C .09 h 215 the mane read grey but the back and
+// flank teal, C .10 (l7c2_st). A whole-boss steel needs the blocks' own colour mostly gone: mix .7 toward C .04 at 228.)
+// (round 2, judge 17 Nov: at .7 toward C .04 h 228 the struck boss read as a blue-teal body, back C .065 h 238 on screen: a
+// colour swap that reads as a frost status, not a hit. The lift multiplies the struck paint's chroma about 2.2x on screen, so
+// a steel that reads near-neutral is C .004 in paint, and each block's own colour, mixed .45 toward it, is kept only as a
+// residual capped at paint C DEN_BOSS_STRUCK_RES: the mane's red (.10) at any plain mix under ~.95 read pink or orange, the
+// blocks' value bands (dark back, flank, mane) carry the wolf instead, L order kept as the lift is the same on each.)
+// (round 3, judge 5 17 Nov: the near-neutral step, L50 .318 -> .453, landed on the ground's value beside it (.453) and grey
+// on warm umber read as a stone or frost blink, not light. The step is now toward the steel core's WARM CREAM (#fbf1d8,
+// fx_language physical core): L up .32 (l7e1 at .30: whole .70, mane/head .77, belly .61; ground beside .45),
+// tint to C .010 at h 92 in paint (screen ~3x and ~13 deg warmer: at C .013 h 88 it read C .040 h 75); frame 2's half step (pulse .62) keeps the tint
+// whole (DEN_BOSS_STRUCK_TINT x the pulse, capped at 1) while its L is the pulse's share.)
+// (lane E lead 9, 17 Nov: on the r10 fur (head and mane darker) the flat +.32 left the struck frame short: whole .666, mane/head
+// .627 (judge 5: .68-.75, .80-.85; frame 2 ~.56 was .501) and the dark locks kept dark streaks inside the flash. The lift now
+// also EVENS: each block gains DEN_BOSS_STRUCK_EVEN.x of its gap below paint L .y, so the dark head and locks lift most, L
+// order kept (slope 1 - .x > 0).)
+#define DEN_BOSS_STRUCK vec4(0.28, 0.45, 0.010, 92.0)
+#define DEN_BOSS_STRUCK_EVEN vec2(0.6, 0.62)
+#define DEN_BOSS_STRUCK_RES 0.002
+#define DEN_BOSS_STRUCK_TINT 2.0
+// (lead 9 solver, judge 6 fix 4, FLASH FORM: the evened lift left frame 1 flat (L10/50/90 .768/.798/.841), the back brightest
+// (.833). Now a BLEND toward cream, DEN_BOSS_FLASH.x of the way at the pulse's peak, not a lift: its target .y on the body, .z on
+// the mane and head, so a quarter of the paint's own value order stays and the struck reads brightest at the head and mane.
+// The tint is as before. DEN_BOSS_STRUCK.x and DEN_BOSS_STRUCK_EVEN are no longer drawn)
+#define DEN_BOSS_FLASH vec3(0.75, 0.79, 0.95)
+// (lane E lead 6, 17 Nov judge: the den's dying read as flat pale-tan cut-outs, pack .38/.046/h55: a falling body kept its live
+// tint, so it was painted as a living foe, all top band. A dead pack foe or elite (CrowdView.DenDead: a grey tint, its mean
+// DEN_DEAD_TOP x (1 - its darkening)) is its den body capped at L DEN_DEAD.x at its kill, going to the bank umber (L .y,
+// C .z at hue .w) as it darkens, its hue half way there at once; not the tint's value as well)
+#define DEN_DEAD vec4(0.31, 0.22, 0.010, 37.0)
+#define DEN_DEAD_TOP 0.58
 float vat_den_cut(float c_v, float c_at) {
 	float c_w = fwidth(c_v) * 0.5 + 1e-4;
 	return smoothstep(c_at - c_w, c_at + c_w, c_v);
+}
+// (lane E s2: the boss's head planes on her rest pose c_r: x lit, y shade, z dark; their sum the head's share)
+vec3 vat_den_head(vec4 c_r) {
+	float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
+	float c_dark = c_head * max(vat_den_cut(c_r.z, DEN_BOSS_HEAD.y), vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z));
+	float c_lit = (c_head - c_dark) * vat_den_cut(c_r.w, DEN_HEAD_LIT.y);
+	return vec3(c_lit, c_head - c_dark - c_lit, c_dark);
 }
 // (the mane's or ruff's mask: the neck and shoulders over DEN_MANE_LOW, its fore and hind edges in tufts round the neck)
 float vat_den_mane(vec3 c_p) {
@@ -231,8 +444,53 @@ float vat_den_mane(vec3 c_p) {
 	float c_tuft = DEN_MANE_TUFT.y * abs(fract(c_ang * DEN_MANE_TUFT.x / 6.2831853) * 2.0 - 1.0);
 	return vat_den_cut(c_p.z, DEN_MANE_Z.x + c_tuft) * (1.0 - vat_den_cut(c_p.z, DEN_MANE_Z.y - c_tuft)) * vat_den_cut(c_p.y, DEN_MANE_LOW);
 }
+// (lane E lead 7: the boss's fur locks. A lock's hash, 0-1 for its cell c_k (c_s the seed); a hooked lock's edge across its
+// cell (c_t 0-1): 0 at both ends, 1 at its tip c_tp, its sides concave by c_pp (x toward the cell's top, y its foot); a
+// pointed lock's, its tip mid-cell (c_q 0-1))
+float vat_den_hash(float c_k, float c_s) { return fract(sin(c_k * 12.9898 + c_s * 78.233) * 43758.5453); }
+float vat_den_tooth(float c_t, float c_tp, vec2 c_pp) {
+	return c_t > c_tp ? pow(clamp((1.0 - c_t) / (1.0 - c_tp), 0.0, 1.0), c_pp.x) : pow(clamp(c_t / c_tp, 0.0, 1.0), c_pp.y);
+}
+float vat_den_tip(float c_q) { return pow(max(1.0 - abs(2.0 * c_q - 1.0), 0.0), DEN_FUR_TIP); }
+// (lead 8 r6: the mane's clump, on vat_den_stroke's cells: full width DEN_BOSS_CLUMP.x from the root back to .y of its length,
+// then tapered to a point; x 1 inside a drawn clump, y its place along it (1 the root, 0 the tip), z its cell's hash, w its
+// offset across from its middle, in columns. r7 (judge: angular shards): each clump runs DEN_BOSS_CLUMP_S.w of a cell past its
+// cell's hind end, over the root of the clump behind it (drawn in front of it), its root rounded over the last .z of it (no
+// flat cut where the next tip begins), its taper's exponent .y (blunter), bent to one side by up to .x of a column at its tip,
+// its edge a pixel soft: a painted streak, not a shard)
+vec4 vat_den_clump1(float c_x, float c_t, float c_h, float c_hb, float c_fw, vec4 c_cl, vec4 c_cs, float c_wv) {
+	float c_rr = max(c_t - 1.0 + c_cs.z, 0.0) / c_cs.z;
+	float c_w = c_cl.x * pow(clamp(c_t / c_cl.y, 0.0, 1.0), c_cs.y) * sqrt(max(1.0 - c_rr * c_rr, 0.0)) * (1.0 - c_wv * fract(c_h * 13.7 + c_hb));
+	float c_o = c_x - c_cs.x * (2.0 * c_hb - 1.0) * (1.0 - c_t) * (1.0 - c_t);
+	return vec4(1.0 - smoothstep(c_w - c_fw, c_w + c_fw, abs(c_o)), c_t, c_h, c_o);
+}
+vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s, vec4 c_cl, vec4 c_cs, float c_wv, out float c_tok) {
+	float c_k = floor(c_q.x), c_x = fract(c_q.x) - 0.5;
+	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
+	float c_t = fract(c_v), c_e = c_cs.w;
+	float c_fw = min(0.5 * fwidth(c_q.x), 0.08) + 1e-3;
+	float c_ha = vat_den_hash(c_k * 7.0 + c_kv + 1.0, c_s + 2.0), c_hb = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
+	vec4 c_a = vat_den_clump1(c_x, (c_t - 1.0 + c_e) / (1.0 + c_e), c_ha, vat_den_hash(c_k * 7.0 + c_kv + 1.0, c_s + 3.0), c_fw, c_cl, c_cs, c_wv);
+	c_a.x *= step(1.0 - c_e, c_t) * step(1.0 - c_sh, c_ha);
+	vec4 c_b = vat_den_clump1(c_x, (c_t + c_e) / (1.0 + c_e), c_hb, vat_den_hash(c_k * 7.0 + c_kv, c_s + 3.0), c_fw, c_cl, c_cs, c_wv);
+	c_b.x *= step(1.0 - c_sh, c_hb);
+	// (r8: c_tok 0 where a tail is drawn over the next clump's root, never its tip's cream there: r7's tails (t' under .26) went
+	// cream over the next root, flat beige patches across the mane and its lower edge; the tip is pale over the gap only)
+	c_tok = c_a.x > 0.5 ? 1.0 - c_b.x : 1.0;
+	return c_a.x > 0.5 ? c_a : vec4(max(c_a.x, c_b.x), c_b.yzw);
+}
+// (lead 8 r4: a fur stroke on a strip of columns, c_q.x across them in column widths, c_q.y along them in stroke lengths (the
+// root toward +): each drawn stroke (c_sh of the cells) widest at its root, tapered back to a point; x 1 inside a drawn stroke,
+// y its place along it (1 the root, 0 the tip), z its cell's hash, w its column)
+vec4 vat_den_stroke(vec2 c_q, float c_sh, float c_s) {
+	float c_k = floor(c_q.x);
+	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
+	float c_t = fract(c_v), c_h = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
+	return vec4(step(abs(fract(c_q.x) - 0.5), 0.48 * pow(c_t, 0.7)) * step(1.0 - c_sh, c_h), c_t, c_h, c_k);
+}
 vec2 vat_den_ab(float c_c, float c_hd) { return c_c * vec2(cos(radians(c_hd)), sin(radians(c_hd))); }
-vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit) {
+vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c_hit, vec4 c_r) {
+	float c_h = max(c_hit, 0.0);   // (lane E lead 6: c_hit < 0 a dead foe, -1 - its darkening; DEN_DEAD)
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	float c_l0 = dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
@@ -241,22 +499,142 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 	float c_pull = c_boss ? crowd_den_top.w : crowd_den.y;
 	float c_top = vat_den_cut(c_ny, crowd_den_top.x), c_belly = 1.0 - vat_den_cut(c_ny, DEN_BELLY.x);
 	float c_mid = vat_den_cut(c_ny, DEN_MID_CUT) * (1.0 - c_top);
-	float c_l = (c_boss ? crowd_den_boss.w : crowd_den.x) + (crowd_den_top.y * c_top + crowd_den_rim.w * c_mid) * (c_boss ? 0.5 : 1.0)
+	float c_l = (c_boss ? crowd_den_boss.w : crowd_den.x) + (crowd_den_top.y * c_top + crowd_den_rim.w * c_mid) * (c_boss ? DEN_BOSS_STEP : 1.0)
 		+ DEN_BELLY.y * c_belly;
 	// (lead 3: the boss body's hue from the rig's boss tint, crowd_den_boss.rgb (foe_den [21-23]), its chroma DEN_BOSS_BODY.x)
 	vec3 c_bt = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(crowd_den_boss.rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	vec2 c_btab = vec2(dot(vec3(1.9779984951, -2.4285922050, 0.4505937099), c_bt), dot(vec3(0.0259040371, 0.7827717662, -0.8086757660), c_bt));
-	vec2 c_ab = c_boss ? DEN_BOSS_BODY.x * normalize(c_btab + vec2(1e-5, 0.0)) : vat_den_ab(crowd_den.z + DEN_TOP_C * c_top, crowd_den.w);
-	float c_hb = c_hit;   // (the hit's share: the boss's body only)
+	// (lead 9 solver, judge 6 fix 5: the boss's body in the back's slate, DEN_BOSS_COAT; was the tint's hue at DEN_BOSS_BODY.x)
+	vec2 c_ab = c_boss ? vat_den_ab(DEN_BOSS_COAT.x, DEN_BOSS_COAT.y) : vat_den_ab(crowd_den.z + DEN_TOP_C * c_top, crowd_den.w);
+	float c_hb = c_h;   // (the hit's share: the boss's body only)
+	float c_ff = 0.0;   // (the boss's mane and head share, for her struck flash's form; DEN_BOSS_FLASH)
 	if (c_boss) {
-		float c_back = vat_den_cut(c_n.y, DEN_BOSS_BACK.w) * vat_den_cut(c_p.z, DEN_TORSO.x) * (1.0 - vat_den_cut(c_p.z, DEN_TORSO.y));
-		c_l = mix(c_l, DEN_BOSS_BACK.x, c_back);
-		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_BACK.y, DEN_BOSS_BACK.z), c_back);
-		float c_mane = vat_den_mane(c_p);
-		c_l = mix(c_l, DEN_MANE.x, c_mane);
-		c_ab = mix(c_ab, vat_den_ab(DEN_MANE.y, DEN_MANE.z), c_mane);
-		c_hb = c_hit * (1.0 - c_back) * (1.0 - c_mane);
+		// (lead 5: the dorsal stripe, two steps; c_bl the lit core's share, c_back the whole stripe's)
+		float c_st = clamp((c_r.z - DEN_BOSS_SPINE.x) / (DEN_BOSS_SPINE.y - DEN_BOSS_SPINE.x), 0.0, 1.0);
+		float c_sw = DEN_BOSS_SPINE.z * pow(max(sin(3.14159265 * pow(c_st, DEN_BOSS_SPINE_P.x)), 0.0), DEN_BOSS_SPINE_P.y);
+		float c_up = vat_den_cut(c_r.w, DEN_BOSS_BACK.w);
+		// (lead 7: its edge in hooked locks, its lit core a chain of clumps; DEN_BOSS_FUR)
+		float c_env = pow(max(sin(3.14159265 * c_st), 0.0), 0.35);
+		float c_zb = c_r.z * DEN_BOSS_FUR.x + 0.3 * sin(c_r.z * 9.0 + 1.0);
+		float c_kb = floor(c_zb);
+		float c_edge = c_sw * (1.0 - DEN_BOSS_FUR.y) + DEN_BOSS_FUR.z * c_env * (0.5 + 0.7 * vat_den_hash(c_kb, 2.0))
+			* vat_den_tooth(c_zb - c_kb, 0.15 + 0.2 * vat_den_hash(c_kb, 1.0), vec2(1.7, 1.3));
+		float c_ba = abs(atan(c_r.x, c_r.y - DEN_BOSS_BFUR_R.w)), c_bsd = step(0.0, c_r.x);
+		vec2 c_bq = vec2((c_ba + DEN_BOSS_BFUR.w * c_r.z) / DEN_BOSS_BFUR.x + 0.25 * sin(c_r.z * 9.0 + 2.0 * c_bsd) + 0.43 * c_bsd, c_r.z / DEN_BOSS_BFUR.y + 0.31 * c_bsd);
+		float c_btk;
+		vec4 c_bc = vat_den_clump(c_bq, DEN_BOSS_BFUR.z, 31.0 + 5.0 * c_bsd, vec4(0.36, 0.55, 0.0, 0.0), vec4(0.15, 0.9, 0.12, 0.30), 0.15, c_btk);
+		float c_bsa = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_BFUR_R.x;
+		float c_back = max((1.0 - vat_den_cut(c_ba - c_bsa * DEN_BOSS_BFUR_R.y, 0.0)) * vat_den_cut(c_r.w, 0.0),
+			(1.0 - vat_den_cut(c_ba - c_bsa * DEN_BOSS_BFUR_R.z, 0.0)) * vat_den_cut(c_r.w, -0.2) * c_bc.x) * step(DEN_BOSS_SPINE.x, c_r.z) * step(c_r.z, DEN_BOSS_SPINE.y);
+		float c_bfall = 1.0 - DEN_BOSS_BFUR_L.w * clamp(c_ba / max(c_bsa, 1e-3), 0.0, 1.4);
+		float c_bstr = c_bc.x * step(0.55, vat_den_hash(c_bc.z * 53.0, 34.0)) * (1.0 - smoothstep(0.0, 0.12, abs(c_bc.w + 0.12))) * step(c_bc.y, 0.9);
+		float c_blc = mix(DEN_BOSS_BFUR_L.y * (1.0 + 0.2 * (vat_den_hash(c_bc.z * 91.0, 33.0) - 0.5)) * (1.0 - 0.25 * smoothstep(0.6, 1.0, c_bc.y)), DEN_BOSS_BFUR_L.z, c_bstr) * c_bfall;
+		float c_blb = mix(DEN_BOSS_BFUR_L.x * c_bfall, c_blc, c_bc.x);
+		float c_zc = c_r.z * DEN_BOSS_FUR.w + 0.5 + 0.3 * sin(c_r.z * 6.1 + 2.0);
+		float c_kc = floor(c_zc);
+		float c_core = c_sw / DEN_BOSS_SPINE.z * DEN_BOSS_CORE * (0.75 + 0.45 * vat_den_hash(c_kc, 4.0))
+			* (0.25 + 0.75 * vat_den_tooth(c_zc - c_kc, 0.2 + 0.2 * vat_den_hash(c_kc, 3.0), vec2(0.8, 1.5)));
+		float c_bl = (1.0 - vat_den_cut(abs(c_r.x) - c_core, 0.0)) * c_back;
+		// (lead 8 r3: the back's third tone, short strokes along z (DEN_BOSS_STROKE: x a column's width, y a stroke's length,
+		// z its tone step, w the share of cells drawn), each widest at its root (fore) and tapered back to a point: darker in the
+		// lit core, paler in the shade, so the slate reads as fur clumps following the spine, not a flat lozenge)
+		float c_sx = c_r.x / DEN_BOSS_STROKE.x, c_ks = floor(c_sx);
+		float c_zs = c_r.z / (DEN_BOSS_STROKE.y * (0.7 + 0.6 * vat_den_hash(c_ks, 9.0))) + vat_den_hash(c_ks, 10.0), c_kz = floor(c_zs);
+		float c_stk = step(abs(fract(c_sx) - 0.5), 0.48 * pow(fract(c_zs), 0.7)) * step(1.0 - DEN_BOSS_STROKE.w, vat_den_hash(c_ks * 7.0 + c_kz, 11.0)) * c_back;
+		// (r3: on the rest pose, c_r: xyz its place, w its normal's y)
+		float c_head = vat_den_cut(c_r.z, DEN_BOSS_HEAD.x) * vat_den_cut(c_r.y, DEN_BOSS_HEAD2.x);
+		// (lead 8 r3: the muzzle's edge in locks round its axis, tilted with the face (the jaw's further back), not the z plane)
+		float c_am = atan(c_r.x, c_r.y - DEN_BOSS_MUZ.x) * DEN_BOSS_MUZ.y / 6.2831853, c_km = floor(c_am);
+		float c_zm = DEN_BOSS_HEAD.y - DEN_BOSS_MUZ.z * (0.5 + 0.8 * vat_den_hash(c_km, 12.0)) * vat_den_tip(c_am - c_km) - DEN_BOSS_MUZ.w * (DEN_BOSS_MUZ.x - c_r.y) / 0.1;
+		float c_mz = c_head * vat_den_cut(c_r.z - c_zm, 0.0);
+		float c_er = c_head * vat_den_cut(c_r.z, DEN_BOSS_HEAD2.y) * vat_den_cut(c_r.y, DEN_BOSS_HEAD.z) * (1.0 - c_mz);
+		float c_dark = c_mz + c_er;
+#ifdef VAT_CUT
+		c_mz = 0.0;
+		c_er = 0.0;
+		// (r3: a card is never an ear tip: the crest ring's strands rooted over y .875 read as a dark dash ladder, l8g2; r4: nor the
+		// muzzle: the head rings' fore strands rooted near its edge took its dark, the ladder behind the ear at L .17, l8g3)
+		c_dark = 0.0;
+#endif
+		float c_brow = c_head * (1.0 - c_dark) * vat_den_cut(c_r.w, DEN_BOSS_BROW.y);
+		float c_bs = vat_den_stroke(vec2(c_r.x / DEN_BOSS_STROKE.x, c_r.z / DEN_BOSS_STROKE.y), DEN_BOSS_STROKE.w, 9.0).x * c_brow;
+		// (lead 8 r8, the ear ladder: den_head's planes (on since lead 4) were mixed in after all of this, so their straight cuts
+		// (z .775, y .875) painted over the muzzle's locks and the cheek's and brow's strokes (none read at 1:1), and their DARK took
+		// the head rings' cards, which the r3/r4 rule above kept off c_dark only: the column of dark dashes behind the ear (l8g8d:
+		// those pixels are the boss's cards, painted the planes' dark). Now the planes (lit, shade) go under the strokes, and the
+		// dark is c_dark: the muzzle's locks, the ear tips, never a card)
+		float c_hd = c_head * step(0.5, den_head);
+		c_l = mix(c_l, mix(DEN_HEAD_SHADE, DEN_HEAD_LIT.x, vat_den_cut(c_r.w, DEN_HEAD_LIT.y)), c_hd);
+		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow * (1.0 - c_hd)), DEN_BOSS_HEAD.w, c_er) - DEN_BOSS_BROW_STK * c_bs;
+		// (r11: the muzzle pale grey, its nose and jaw dark; DEN_BOSS_MUZ_C)
+		float c_ml0 = mix(mix(DEN_BOSS_MUZ_C.y, DEN_BOSS_MUZ_C.x, vat_den_cut(c_r.w, 0.35)), DEN_BOSS_MUZ_C.z,
+			max(vat_den_cut(c_r.z, DEN_BOSS_MUZ_C.w), 1.0 - vat_den_cut(c_r.w, -0.25)));
+		c_l = mix(c_l, c_ml0, c_mz);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_MUZ_AB.x, DEN_BOSS_MUZ_AB.y), c_mz);
+		// (r9: the head's fur in charcoal strands; DEN_BOSS_HFUR)
+		vec2 c_hq = vec2((abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS)) - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_HFUR_Q.x
+			+ DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y), c_r.z / DEN_BOSS_HFUR_Q.y);
+		float c_htk;
+		vec4 c_hs = vat_den_clump(c_hq, DEN_BOSS_HFUR_Q.z, 23.0, DEN_BOSS_CLUMP, DEN_BOSS_CLUMP_S, 0.0, c_htk);
+		float c_hr = c_hs.x * step(1.0 - DEN_BOSS_HFUR_Q.w, vat_den_hash(c_hs.z * 53.0, 24.0))
+			* (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_hs.w + DEN_BOSS_CLUMP_V.w)));
+		float c_hf = c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.z, DEN_BOSS_HFUR.w));
+		c_l = mix(c_l, mix(DEN_BOSS_HFUR.x, DEN_BOSS_HFUR.y, c_hs.x) + DEN_BOSS_HFUR.z * c_hr, c_hf);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_HFUR_C.x, DEN_BOSS_HFUR_C.y), c_hf * c_hr);
+		// (r4: the cheek's ruff; DEN_BOSS_CHEEK)
+		vec4 c_cs = vat_den_stroke(vec2((c_r.y + DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z)) / DEN_BOSS_CHEEK.x, c_r.z / DEN_BOSS_CHEEK.y), DEN_BOSS_CHEEK.z, 16.0);
+		float c_yk = (c_cs.w + 0.5) * DEN_BOSS_CHEEK.x - DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z);
+		float c_ck = c_cs.x * c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.w, DEN_BOSS_BROW.y)) * step(DEN_BOSS_CHEEK_Y.x, c_yk)
+			* step(c_yk, DEN_BOSS_CHEEK_Y.y) * step(DEN_BOSS_CHEEK_Y.z - DEN_BOSS_CHEEK_Y.w * vat_den_hash(c_cs.w, 19.0), c_r.z);
+#ifdef VAT_CUT
+		c_ck = 0.0;   // (r9: never on a card: its root place is noisy along the strand, so its strokes went dashes)
+#endif
+		c_l = mix(c_l, DEN_BOSS_CHEEK_C.x, c_ck);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_CHEEK_C.y, DEN_BOSS_CHEEK_C.z), c_ck);
+		// (r12: the back's clumps; DEN_BOSS_BFUR. Was the stripe in two steps, short strokes on it: a plate at 1:1)
+		// (judge 6 fix 5: the back goes to the body's own paint over its lower edge; DEN_BOSS_BLEND)
+		float c_bfd = c_back * (1.0 - smoothstep(DEN_BOSS_BLEND.x, DEN_BOSS_BLEND.y, c_ba / max(c_bsa * DEN_BOSS_BFUR_R.z, 1e-3)));
+		c_l = mix(c_l, c_blb, c_bfd);
+		c_ab = mix(c_ab, mix(vat_den_ab(DEN_BOSS_BFUR_C.x, DEN_BOSS_BFUR_C.y), vat_den_ab(DEN_BOSS_BFUR_C.z, DEN_BOSS_BFUR_C.w), c_bc.x), c_bfd);
+		// (lead 7: the mane's two rows of locks on the rest pose; DEN_BOSS_MANE_*)
+		float c_a = abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS));
+		float c_u = (c_a - DEN_BOSS_MANE_LOCK.y * (DEN_BOSS_MANE_LOCK.z - c_r.z)) * DEN_BOSS_MANE_LOCK.x / 6.2831853;
+		float c_k1 = floor(c_u), c_k2 = floor(c_u + 0.5);
+		float c_zA = DEN_BOSS_MANE_ROW.x - DEN_BOSS_MANE_ROW.y * (0.45 + 0.8 * vat_den_hash(c_k1, 5.0)) * vat_den_tip(c_u - c_k1);
+		float c_zH = DEN_BOSS_MANE_ROW.z - DEN_BOSS_MANE_ROW.w * (0.45 + 0.8 * vat_den_hash(c_k2, 6.0)) * vat_den_tip(c_u + 0.5 - c_k2);
+		float c_af = (c_a + DEN_BOSS_MANE_FORE_H * (DEN_BOSS_MANE_FORE.y - c_r.z)) * DEN_BOSS_MANE_FORE.x / 6.2831853 + 0.5, c_kf = floor(c_af);
+		float c_zF = DEN_BOSS_MANE_FORE.y - DEN_BOSS_MANE_FORE.z * c_a / 3.14159265
+			- DEN_BOSS_MANE_FORE.w * (0.45 + 0.8 * vat_den_hash(c_kf, 7.0)) * vat_den_tip(c_af - c_kf);
+		float c_zd = c_r.z * DEN_BOSS_MANE_LOW.y + 0.25 * sin(c_r.z * 11.0), c_kd = floor(c_zd);
+		float c_yL = DEN_BOSS_MANE_LOW.x - DEN_BOSS_MANE_LOW.z * (0.4 + 0.9 * vat_den_hash(c_kd, 8.0)) * vat_den_tip(c_zd - c_kd);
+#ifdef VAT_CUT
+		c_zF = DEN_BOSS_CARD.y;
+#endif
+		float c_mane = vat_den_cut(c_r.z - c_zH, 0.0) * (1.0 - vat_den_cut(c_r.z - c_zF, 0.0)) * vat_den_cut(c_r.y - c_yL, 0.0);
+		float c_ra = vat_den_cut(c_r.z - c_zA, 0.0);
+		float c_rd = vat_den_cut(c_r.z - c_zA + DEN_BOSS_MANE_SHW, 0.0) * (1.0 - c_ra);
+		float c_rs = max(1.0 - c_ra - c_rd, 0.0);
+		// (r4: its strands; DEN_BOSS_MSTK)
+		vec2 c_mq = vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x + DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y),
+			c_r.z / DEN_BOSS_MSTK.y);
+		float c_tok;
+		vec4 c_ms = vat_den_clump(c_mq, DEN_BOSS_MSTK.z, 13.0, DEN_BOSS_SPIKE, DEN_BOSS_SPIKE_S, DEN_BOSS_SPIKE_V.z, c_tok);
+		float c_mi = c_ms.x;
+		// (r6: a clump's value; DEN_BOSS_CLUMP_V)
+		float c_mv = (1.0 + DEN_BOSS_SPIKE.w * (vat_den_hash(c_ms.z * 91.0, 21.0) - 0.5)) * (1.0 - DEN_BOSS_SPIKE_V.x * smoothstep(DEN_BOSS_SPIKE_V.y, 1.0, c_ms.y))
+			* (1.0 + DEN_BOSS_CLUMP_V.y * (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_ms.w + DEN_BOSS_CLUMP_V.w))));
+		float c_mg = (1.0 - c_ms.x) * (c_ra + c_rs);
+		float c_mt = c_mi * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z) * c_tok;
+		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x * c_mv + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
+			DEN_BOSS_MANE_TIP.x, c_mt);
+		vec2 c_mab = mix((vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs) * c_ms.x
+			+ vat_den_ab(DEN_BOSS_MANE_GAP.y, DEN_BOSS_MANE_GAP.z) * c_mg + vat_den_ab(DEN_BOSS_MANE_DK.y, DEN_BOSS_MANE_DK.z) * c_rd,
+			vat_den_ab(DEN_BOSS_MANE_TIP.y, DEN_BOSS_MANE_TIP_H), c_mt);
+		c_l = mix(c_l, c_ml, c_mane);
+		c_ab = mix(c_ab, c_mab, c_mane);
+		c_hb = c_h * (1.0 - c_back) * (1.0 - c_mane);
+		c_ff = max(c_head, c_mane);
 	}
 	else if (c_cls > 0.5) {
 		// (its accent's hue from the rig's elite tint, crowd_den_elite.rgb, linear)
@@ -266,11 +644,29 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_acc = vat_den_mane(c_p) * vat_den_cut(c_n.y, DEN_ACCENT.z);
 		c_l = mix(c_l, DEN_ACCENT.x, c_acc);
 		c_ab = mix(c_ab, DEN_ACCENT.y * normalize(c_eab + vec2(1e-5, 0.0)), c_acc);
+		// (lane E elites r4: its hit is its body's only, as the boss's: the hit's hue (DEN_HIT.z, the pack's) turned the struck
+		// elite's ruff to the pack's band, and an elite in a fight is struck in most frames)
+		c_hb = c_h * (1.0 - c_acc);
 	}
-	c_l += c_boss ? c_hb * DEN_HIT_BOSS.x : c_hit * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
-	c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), c_boss ? DEN_HIT_BOSS.y : DEN_HIT.y), DEN_HIT.z), c_hb);
+	if (!c_boss) {
+		c_l += c_h * clamp(DEN_FLASH_L - c_l, 0.0, DEN_HIT.x);
+		c_ab = mix(c_ab, vat_den_ab(max(length(c_ab), DEN_HIT.y), DEN_HIT.z), c_hb);
+	}
+	if (c_hit < 0.0) {
+		float c_dk = clamp(-c_hit - 1.0, 0.0, 1.0);
+		c_l = mix(min(c_l, DEN_DEAD.x), DEN_DEAD.y, c_dk);
+		c_ab = mix(c_ab, vat_den_ab(DEN_DEAD.z, DEN_DEAD.w), mix(0.5, 1.0, c_dk));
+	}
 	c_l = mix(c_l0, c_l, c_pull);
 	c_ab = mix(c_ab0, c_ab, c_pull);
+	// (lane E lead 7: the boss's struck step on the final paint, past the pull toward its own albedo, so all of it lands)
+	if (c_boss) {
+		c_l = mix(c_l, mix(DEN_BOSS_FLASH.y, DEN_BOSS_FLASH.z, c_ff), c_h * DEN_BOSS_FLASH.x);   // (judge 6 fix 4; DEN_BOSS_FLASH)
+		vec2 c_steel = vat_den_ab(DEN_BOSS_STRUCK.z, DEN_BOSS_STRUCK.w);
+		vec2 c_res = (c_ab - c_steel) * (1.0 - DEN_BOSS_STRUCK.y);
+		c_res *= min(1.0, DEN_BOSS_STRUCK_RES / max(length(c_res), 1e-5));
+		c_ab = mix(c_ab, c_steel + c_res, min(1.0, c_h * DEN_BOSS_STRUCK_TINT));
+	}
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);
 	c_m = c_m * c_m * c_m;
@@ -317,6 +713,11 @@ varying flat float fx_aa;
 varying vec3 vat_local;
 // (demo-look r2 foes: the body's own normal, model space (+Z its head, +Y up), for the den's regions: the boss's back and mane)
 varying vec3 vat_nloc;
+// (lane E boss r3: the REST pose, model space: xyz the mesh's own vertex, w its own normal's y; the bake's first frame
+// (Vat.Write), for the boss's head regions, so they stay on her head through a leap)
+varying vec4 vat_rest;
+// (judge 6 fix 6: the rest pose's own normal, model space, for the boss's fur outline's run round faces turned along z)
+varying vec3 vat_rn;
 // (the body's own place in the world, for the Long Cut's burn from the line outward)
 varying flat vec3 vat_org;
 // How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
@@ -347,10 +748,20 @@ void vertex() {
 	vec3 p1 = texelFetch(vat_pos, vat_coord(f1, vid), 0).xyz;
 	vec3 n0 = texelFetch(vat_nor, vat_coord(f0, vid), 0).xyz * 2.0 - 1.0;
 	vec3 n1 = texelFetch(vat_nor, vat_coord(f1, vid), 0).xyz * 2.0 - 1.0;
+	vat_rest = vec4(VERTEX, NORMAL.y);
+	vat_rn = NORMAL;
 	VERTEX = mix(p0, p1, k);
 	NORMAL = normalize(mix(n0, n1, k));
 	vat_local = VERTEX;
 	vat_nloc = NORMAL;
+#ifndef VAT_CUT
+	// (judge 6 fix 6: the boss's TAIL a plume, DEN_BOSS_TAIL: pushed out along its normal, DEN_BOSS_TAIL_D.x at its root and .y
+	// more toward its tip, so it ends blunt; the boss alone (the class in COLOR.a's 128s), the hind legs under it untouched)
+	if (crowd_den.y > 0.0 && cel_on > 0.0 && COLOR.a > 255.5) {
+		float tl_m = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, vat_rest.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, vat_rest.y);
+		VERTEX += NORMAL * (tl_m * (DEN_BOSS_TAIL_D.x + DEN_BOSS_TAIL_D.y * clamp((DEN_BOSS_TAIL.x - vat_rest.z) / (DEN_BOSS_TAIL.x - DEN_BOSS_TAIL.w), 0.0, 1.0)));
+	}
+#endif
 	vat_org = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	int w = int(INSTANCE_CUSTOM.w + 0.5);
 	fx = vec4(float(w & 63) / 63.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
@@ -394,6 +805,9 @@ void fragment() {
 	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
 	c *= tex.rgb;
 #ifdef VAT_CUT
+	// (lane E lead 8 r2: the den boss's cards, alpha mirrored past v DEN_BOSS_CARD.x: strand tips at both ends)
+	bool dn_bc = crowd_den.y > 0.0 && cel_on > 0.0 && floor(COLOR.a / 128.0) > 1.5;
+	if (dn_bc && use_tex && UV.y > DEN_BOSS_CARD.x) tex.a = texture(albedo_tex, vec2(UV.x, 2.0 * DEN_BOSS_CARD.x - UV.y), tex_bias * vat_pace).a;
 	// Fur and hair cards: cut where the paint is clear.
 	ALPHA = tex.a * albedo.a;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
@@ -437,7 +851,39 @@ void fragment() {
 	float dn_live = den_on ? step(dn_cls > 1.5 ? 0.3 : 0.6, dot(abs(COLOR.rgb), vec3(0.333))) : 0.0;
 	// (lead 3: a den foe's hit is its paint's own step (vat_den_body, DEN_HIT): the hit kit's blend (0-0.5) or a struck's)
 	float dn_hit = den_on ? clamp(max(2.0 * fx.x * fx_aa * (1.0 - fx_aa * fx_crit), pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5) * (1.0 - fx_aa)), 0.0, 1.0) * dn_live : 0.0;
-	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_hit);
+	bool dn_dead = den_on && dn_live < 0.5 && dn_cls < 1.5;
+	float dn_dk = clamp(1.0 - dot(abs(COLOR.rgb), vec3(0.333)) / DEN_DEAD_TOP, 0.0, 1.0);
+	vec4 dn_r = vat_rest;
+#ifdef VAT_CUT
+	// (lead 8 r2: a boss card's regions on its strand's root; DEN_BOSS_CARD)
+	vec2 dn_ux = dFdx(UV), dn_uy = dFdy(UV);
+	float dn_det = dn_ux.x * dn_uy.y - dn_uy.x * dn_ux.y;
+	vec3 dn_pv = (dFdy(vat_rest.xyz) * dn_ux.x - dFdx(vat_rest.xyz) * dn_uy.x) / (abs(dn_det) > 1e-9 ? dn_det : 1e-9);
+	dn_pv *= min(1.0, DEN_BOSS_CARD.z / max(length(dn_pv), 1e-5));
+	if (dn_cls > 1.5) dn_r.xyz -= (UV.y - DEN_BOSS_CARD.w) * dn_pv;
+#endif
+#ifndef VAT_CUT
+	// (judge 6 fix 6: the boss's OUTLINE in fur clumps, DEN_BOSS_FURE: the silhouette cut back where n.v is under fo_c, a pointed
+	// clump's profile (vat_den_tooth, leaning back, its valleys' depth varied without a step) along the rest pose's z (on faces
+	// turned along z, its y and |x|), the top's half a clump on from the bottom's. By n.v alone a tube R px across is cut
+	// R (1 - sqrt(1 - c^2)) deep at most, smooth over the mesh's triangles (r1's px from n.v's screen derivative was ragged and its
+	// cap squared the tail's clumps). Not the head, front legs or paws. fo_g its signed measure and fo_w its screen derivative
+	// (n.v's, its cut's held to twice that) here, before any per-pixel branch; the pixel is cut at the end of fragment())
+	vec3 fo_p = vat_rest.xyz, fo_n = normalize(vat_rn);
+	bool fo_tl = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, fo_p.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, fo_p.y) > 0.5;
+	bool fo_on = DEN_BOSS_FURE_ON && den_on && dn_cls > 1.5 && !((fo_p.z > DEN_BOSS_HEAD.x && fo_p.y > DEN_BOSS_HEAD2.x)
+		|| (fo_p.z > DEN_BOSS_FURE_X.x && fo_p.y < DEN_BOSS_FURE_X.y) || (fo_p.z < DEN_BOSS_FURE_X.z && fo_p.y < DEN_BOSS_FURE_X.y));
+	float fo_u = (abs(fo_n.z) > 0.6 ? fo_p.y + abs(fo_p.x) : DEN_BOSS_TAIL.x - fo_p.z) / (fo_tl ? DEN_BOSS_FURE.z : DEN_BOSS_FURE.w)
+		+ (fo_n.y > 0.0 ? 0.5 : 0.0);
+	float fo_k = floor(fo_u), fo_t = fract(fo_u), fo_h = vat_den_hash(fo_k, 5.0);
+	float fo_c = fo_on ? (fo_tl ? DEN_BOSS_FURE.x : DEN_BOSS_FURE.y) * (1.0 - DEN_BOSS_FURE_V.x * mix(vat_den_hash(fo_k, 9.0), vat_den_hash(fo_k + 1.0, 9.0), fo_t))
+		* (1.0 - (1.0 - DEN_BOSS_FURE_V.y * fo_h) * vat_den_tooth(fo_t, DEN_BOSS_FURE_V.z + DEN_BOSS_FURE_V.w * fo_h, vec2(1.5, 1.3))) : 0.0;
+	float fo_nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+	float fo_g = fo_nv - fo_c;
+	float fo_w = fwidth(fo_nv);
+	fo_w += min(fwidth(fo_c), 2.0 * fo_w);
+#endif
+	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_dead ? -1.0 - dn_dk : dn_hit, dn_r);
 	vec3 dn_c0 = c;   // (r2 foes: the den body before any flash, for the flash's cap below)
 	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
 	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
@@ -447,7 +893,7 @@ void fragment() {
 	if (crowd_night.w > 7.5 && crowd_night.w < 8.5) c = vec3(dot(c, vec3(0.2126, 0.7152, 0.0722)));
 	// (lead 3: the den's dead darken by their tint's value only, in their own warm paint: its cool cast (CrowdView's 0.88/0.92/1
 	// per channel) and the rig's cool fill on a fully lit body read blue-lavender in shade; they keep the flat share below too)
-	c *= dn_live > 0.5 ? vec3(1.0) : den_on ? vec3(dot(abs(COLOR.rgb), vec3(0.2126, 0.7152, 0.0722))) : abs(COLOR.rgb);
+	c *= dn_live > 0.5 || dn_dead ? vec3(1.0) : den_on ? vec3(dot(abs(COLOR.rgb), vec3(0.2126, 0.7152, 0.0722))) : abs(COLOR.rgb);
 	if (COLOR.r < 0.0 && dn_live < 0.5) {
 		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);
 		float mud = smoothstep(0.5, 0.64, vat_noise(vat_local * 6.5) * 0.8 + low * 0.4) * (0.35 + 0.65 * low);
@@ -551,7 +997,8 @@ void fragment() {
 	// by night), for its first 2 frames only.
 	// (F1 r5: the hit kit's flag with a critical's (never both otherwise) is the ember look, CrowdView: no blend there)
 	float fx_ember = fx_aa * fx_crit;
-	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa * (1.0 - fx_ember));
+	// (lane E lead 6: a dead den foe takes the kit's first flash frame only (0.15; its second, 0.06, and a critical's held 0.12 not))
+	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa * (1.0 - fx_ember) * (dn_dead ? step(0.135, fx.x) : 1.0));
 	// (r2 foes: in the den a hit lifts the body at most DEN_FLASH x in linear, about +0.06 L: a pale hit wolf read L 0.61-0.75)
 	// (solver 2: and never past Oklab L DEN_FLASH_L (luminance its cube) unless its own block is paler, the boss's mane)
 	// (lead 3: in the den a living foe's hit is in its paint already, dn_c0 (DEN_HIT): no lift, no blend toward white)
@@ -593,12 +1040,14 @@ void fragment() {
 	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
 	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
-	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8
+		* (den_on && dn_live > 0.5 && dn_cls > 0.5 && dn_cls < 1.5 ? 0.0 : 1.0);   // (lane E lead 5: an elite's struck look is its outline's, vat_elite_rim.gdshader)
 	// (F1 r5) The ember look: a launched mass-kill body (strength 1, its flight's first frames) and a struck survivor
 	// after the pool (0.45): ember light through the whole body and a hot band at its edge, in light, not paint (a pale
 	// blend over a blue wolf by night read as an ice ghost), so the kill out-shouts the frame and keeps its shape.
 	// (own look: 0.22 through the body went a peach-cream ghost under bloom: the body stays dark, the edge carries it)
-	e += vec3(1.0, 0.38, 0.06) * fx_ember * fx_rim * (0.07 * fx_rim + 1.6 * smoothstep(0.4, 0.9, rim));
+	// (lane E lead 6: on a dead den foe the edge only, as the struck rim's: from up here most of a body is "rim", the tan cut-out)
+	e += vec3(1.0, 0.38, 0.06) * fx_ember * fx_rim * (dn_dead ? 1.6 * smoothstep(0.8, 0.97, rim) : 0.07 * fx_rim + 1.6 * smoothstep(0.4, 0.9, rim));
 	// (H7 r2, judge r1 fix 5: the foe stands in its mark's pool, so the pool lights it from below: its lower body and the
 	// faces turned from the sky, in the school's light, x its own paint (light, not paint: a dark body stays dark))
 	e += flare_mark_rim.rgb * flare_mark_rim.a * flare_mark_lift * fx_rim * c * exp(-max(vat_local.y, 0.0) / 0.8) * (0.35 + 0.65 * (1.0 - up));
@@ -731,12 +1180,32 @@ void fragment() {
 	// it at crowd_den_edge.w of the level; none on the dead. Her lamp does not light the pack here (PlayerView.CrowdOmni).
 	if (den_on) {
 		float dn_alive = dn_live;
+		// (lead 3 foes r3, judge 2: no gloss on a den foe: the engine's smooth specular was the boss's violet back hotspot
+		// (L .77 C .146 h 294) and the pack heads' soft round gloss; its read is the stepped bands)
+		SPECULAR = 0.0;
 		float dn_line = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x);
 		// (r2 foes, solver 2: the rim one unbroken stroke on the lit edge. Its side is the screen's: the silhouette's outward
 		// normal (view NORMAL.xy) toward the key's screen direction leaned to screen-up by crowd_den_edge.w, past DEN_RIM_CUT, so it
 		// runs the whole back; no busy fade (it cut the stroke into dashes on a 60 px wolf) and no turn toward her. An elite or the
 		// boss takes a FULL rim, all round, at crowd_den_elite.w at least.)
 		float dn_band = vat_edge_px(NORMAL, VIEW, crowd_den_edge.x + crowd_den_edge.z) * (1.0 - dn_line);
+		// (lane E lead 5, 17 Nov: an elite's rim is its outer silhouette's, vat_elite_rim.gdshader, outside the body: no band in it)
+		bool dn_el = dn_cls > 0.5 && dn_cls < 1.5;
+		if (dn_el) dn_band = 0.0;
+#ifndef VAT_CUT
+		// (judge 6 fix 6: the boss's line and band on its fur-cut edge: its distance from the cut in px, fo_g / fo_w, vat_edge_px's
+		// measure, so the notches carry them)
+		if (fo_on) {
+			float fo_e = fo_g / max(fo_w, 1e-4), fo_f = 1.0 - smoothstep(0.88, 0.95, fo_nv);
+			dn_line = (1.0 - smoothstep(crowd_den_edge.x - 0.5, crowd_den_edge.x + 0.5, fo_e)) * fo_f;
+			dn_band = (1.0 - smoothstep(crowd_den_edge.x + crowd_den_edge.z - 0.5, crowd_den_edge.x + crowd_den_edge.z + 0.5, fo_e)) * fo_f * (1.0 - dn_line);
+		}
+#endif
+#ifdef VAT_CUT
+		// (lane E lead 8: no silhouette line or band on the boss's fur cards: seen edge-on in their shingled rings they drew a
+		// ladder of dark dashes behind the ear; the body under them keeps its line)
+		if (dn_bc) { dn_line = 0.0; dn_band = 0.0; }
+#endif
 		vec3 dn_kv = (VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz;
 		vec2 dn_ks = normalize(mix(normalize(dn_kv.xy + vec2(0.0, 1e-4)), vec2(0.0, 1.0), crowd_den_edge.w) + vec2(0.0, 1e-4));
 		float dn_side = vat_den_cut(dot(normalize(NORMAL.xy + vec2(0.0, 1e-4)), dn_ks), DEN_RIM_CUT);
@@ -752,6 +1221,8 @@ void fragment() {
 			ALBEDO = vec3(0.0);
 			vec3 dn_pz = clamp(abs(mod(clamp(floor((vat_local.z + 0.6) / 0.1) / 12.0, 0.0, 1.0) * 5.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 			e = crowd_den_top.z < 1.5 ? (dn_cls > 1.5 ? vec3(3.0, 0.0, 3.0) : dn_cls > 0.5 ? vec3(0.0, 0.0, 3.0) : vec3(0.0, 3.0, 0.0))
+				: crowd_den_top.z > 3.5 ? (dn_cls > 1.5 ? 3.0 * vat_den_head(vat_rest) : vec3(0.0))   // (s2: 4 the head planes, lit r shade g dark b)
+				: crowd_den_top.z > 2.5 ? 3.0 * vec3(dn_hit, 0.0, vat_den_mane(vat_local) * vat_den_cut(normalize(vat_nloc).y, DEN_ACCENT.z))
 				: dn_pz * (fract(vat_local.y / 0.1) < 0.12 ? 0.15 : 1.0);
 		}
 	}
@@ -781,4 +1252,8 @@ void fragment() {
 	if (crowd_night.w > 9.5 && crowd_night.w < 10.5) EMISSION = vec3(0.0);
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
+#ifndef VAT_CUT
+	// (judge 6 fix 6: the boss's fur outline cut, last: fo_g above)
+	if (fo_g < 0.0) discard;
+#endif
 }

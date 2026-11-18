@@ -23,6 +23,9 @@
  },
  "runtime_body_constants": {
   "why": "SideCarry and PlayerView constants that depend on the body; re-measured per body from a game shoot (ana10.py 'hd' and the calf columns), kept in the code with the body they were measured on.",
-  "measured_on_a": {"CalfKnee": 0.074, "CalfAnkle": 0.046, "Clear": 0.055, "TipGround": 0.03, "PivotBetaOff": 25, "PivotBetaOn": -50}
+  "measured_on_a": {"CalfKnee": 0.074, "CalfAnkle": 0.046, "Clear": 0.055, "TipGround": 0.03, "PivotBetaOff": 25, "PivotBetaOn": -50},
+  "measured_on_b": {"CalfKnee": 0.071, "CalfAnkle": 0.046, "ankle_height_ratio_to_a": 0.994, "PivotBetaOff": 22, "PivotBetaOn": -50,
+   "source": "calf_radii.py on body_p1 body.glb (knee x0.959, ankle x1.002 of A's); PivotBeta = PIVOT beta0 in the e20/e20s13 views.log (off 21.1-22.5, on -48.2..-52.1), 17 Nov",
+   "decision": "the game keeps A's values on B: A's calf is the larger (safer clearance) and the beta deltas (3 deg, 0-2 deg) are far inside the way-round's margin (sweeps of 135-180 deg); TipGround unused while TipFloor is 0"}
  }
 }

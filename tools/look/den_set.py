@@ -32,16 +32,42 @@ OUT = os.path.join(DEN, "set")
 INPUTS = r"C:\Users\munch\Desktop\survivorsunchained_inputs\gpt_den"
 
 BANKS = {   # name: kind (far: its face looks at the camera; near: seen from above and behind; left/right: a wall's side)
-    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3R": "right",
+    "B1": "far", "B1b": "far", "B2": "near", "B2b": "near", "B3": "left", "B3b": "left", "B3R": "right", "B3Rb": "right",
     "B4": "corner_l", "B4R_2": "corner_r", "B5": "spur",
 }
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
     "B6": ("spill", None), "O1": ("boulder", 3.2), "O2": ("log", 6.0), "O3": ("bones", 2.0),
     "H1": ("hollow", 5.0), "H2": ("pit", 12.0),
+    # (den r18 P5, R17 item 1) the lair's two pits as den_boss.png's (sunken, the far wall lit, veins glowing, roots over the lips):
+    # source px kept (None: k 1), since PlaceSetHole lays each painted lip to its hole's own radius, only the resolution rides on it
+    "H3": ("pit", None),
     # (r10d) above: the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
     "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
+    "O6": ("fur", 1.5),     # (den r16 W, R15f item 10) 6 pale fur clumps and 2 dry leaf drifts for the open floor
     "O5": ("blood", 2.0),   # (r11) blood pools, spatters and smears (the owner had ChatGPT make it by hand after a refusal)
+    # (den r18 D4, R17 items 2, 7) Batch 6: shaped bones for the litter (3 long bones, 2 ribs, a jaw, 2 skull fragments, 2 shard
+    # scatters: the decal dumbbells' place), the lair's arc of standing tusks on earth mounds, flayed hides and gnawed haunches
+    "O7": ("bones", 1.25), "O8": ("arc", 1.9), "O9": ("carcass", 2.3),
 }
+JOIN = {"O7": 30, "O9": 30}   # (den r18 D4) source px within which parts are one piece (a shard scatter is one; default 20)
+MIRROR = {"O7", "O8", "O9"}   # (den r18 D4, R17 item 2) each piece followed by its mirror image (piece i + n): the litter's mirroring (light kept from the upper side)
+DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this far to its grey (the fur's lilac read pink on screen; target C <= .03)
+# (den r17 S, R16 judge item 6: the tufts rendered two-toned, blue h 238-251 or cream h 77-85, never the target's warm grey)
+# the fur graded in OKLab to one warm-grey albedo: its value strokes kept (L re-centred on L50, spread kept), hue FUR_H,
+# chroma FUR_C (rising from the darks), so the sheet carries the colour and the material's sat can stay near 1. Replaces DESAT.
+# (den r17 D3, R16 item: the tufts rendered L .73-.79 C .085-.09 at --den-fur-sat 2, bright confetti; den_room's fur sits
+# into the floor, warm grey with a darker underside) l50 and c down, the spread up (its strands), and "under": L taken
+# off toward each piece's lower edge (its ground side), up to this much at the foot. Was h 54, c .045, l50 .68, spread .85 (graded on the painting, so the sat 2 material doubles its C).
+FUR_GRADE = {"O6": {"h": 52.0, "c": 0.028, "l50": 0.66, "spread": 1.0, "under": 0.1}}
+# (den r17 S, R16 judge item 7: the s23 corridor log's lit top rendered L50 .755, C .120, glowing orange under the shaft, against
+# den_room's .678 / .101) a sheet's lit values rolled off in OKLab: above L knee, the rise kept at this share, and its chroma
+# scaled toward this (at the top), the darks and strokes untouched.
+LIT_KNEE = {"O2": {"knee": 0.58, "share": 0.4, "c": 0.85},
+            # (den r18 D4, R17 item 2: bone band h 47-60, C .04-.06, lit L50 <= .70; O8 painted tan) the new bones' lights rolled off
+            "O7": {"knee": 0.62, "share": 0.45, "c": 0.85}, "O8": {"knee": 0.58, "share": 0.4, "c": 0.72}}
+# (den r18 P5) a hole painting's mouth found as its biggest cool region (R - B over the sum, blurred, under this): H3's veins and
+# lit far wall split the dark-mass rule's throat (it took the left third of the bowl); the lip is the warm earth's inner edge
+MOUTH_WARM = {"H3": 0.10}
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -68,8 +94,51 @@ def key(rgb):
     return f, a
 
 
+# (den r15 R, R15 judge item 9) B3R (the right wall's face) has a big pale moss-topped block painted into it: with the wall
+# drawn at the play camera it is the "pale cube" (s11 room 1790-1920,620-800; --den-set-dbgmod 1 shows it is the bank's own
+# module, not a stone). Its outline (source px, closed polygon) is replaced by bare dirt: the painting inpainted, pulled
+# to the surrounding dirt's colour, with a seeded multi-scale grain. Applied by load(), so every build has it.
+BANK_FIXES = {"B3R": [(660, 552), (667, 520), (685, 487), (710, 462), (740, 440), (775, 420), (805, 416), (837, 436), (880, 431),
+                     (885, 455), (865, 500), (860, 530), (840, 560), (805, 585), (765, 597), (725, 610), (695, 620), (660, 615),
+                     (644, 600), (644, 555)]}
+DIRT = (112.0, 74.0, 56.0)
+# (den r17 S, R16 judge item 9: the cleared block drew a smooth dirt oval at the s11 room's right edge, grad .0079, edge share
+# .033, no ink) the cleared area filled from the card's own painting at this offset (source px: B3R's inked roots over dirt
+# below the block), its colour matched to the ring round the hole, over the inpaint. None: the r15 inpaint and grain only.
+BANK_DONOR = {"B3R": (-100, 400)}
+
+
+def clear_block(img, poly, donor=None):
+    import cv2
+    im8 = img.round().clip(0, 255).astype(np.uint8)
+    mask = np.zeros(im8.shape[:2], np.uint8)
+    cv2.fillPoly(mask, [np.array(poly, np.int32)], 255)
+    mask = cv2.dilate(mask, np.ones((11, 11), np.uint8))
+    inp = cv2.inpaint(np.ascontiguousarray(im8[..., ::-1]), mask, 9, cv2.INPAINT_TELEA)[..., ::-1].astype(np.float32)
+    inp = inp * 0.3 + np.array(DIRT, np.float32) * 0.7
+    rng = np.random.default_rng(7)
+    h, w = mask.shape
+    n = sum(cv2.GaussianBlur(rng.standard_normal((h, w)).astype(np.float32), (0, 0), sg) * am for sg, am in ((1.2, 14), (3, 22), (9, 40)))
+    inp = inp * (1 + n[..., None] / 160) + n[..., None] * 0.5
+    soft = cv2.GaussianBlur(mask.astype(np.float32) / 255, (0, 0), 5)[..., None]
+    if donor is not None:
+        dx, dy = donor
+        don = np.roll(img, (-dy, -dx), axis=(0, 1)).astype(np.float32)
+        hole = mask > 0
+        ring = (cv2.dilate(mask, np.ones((41, 41), np.uint8)) > 0) & ~hole
+        for ch in range(3):   # the donor's mean and spread to the ring's
+            dm, ds = don[..., ch][hole].mean(), don[..., ch][hole].std() + 1e-3
+            rm, rs = img[..., ch][ring].mean(), img[..., ch][ring].std()
+            don[..., ch] = (don[..., ch] - dm) * min(1.0, rs / ds) + rm
+        inp = don
+    return np.clip(img * (1 - soft) + inp * soft, 0, 255)
+
+
 def load(name):
-    return np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    img = np.asarray(Image.open(os.path.join(SRC, name + ".png")).convert("RGB"), dtype=np.float64)
+    if name in BANK_FIXES:
+        img = clear_block(img, BANK_FIXES[name], BANK_DONOR.get(name))
+    return img
 
 
 def resample(f, a, k):
@@ -209,11 +278,20 @@ def destreak(img, k):
     return np.clip(img * (np.maximum(nl, 0.0) / np.maximum(lum, 1.0))[..., None], 0, 255)
 
 
-def mouth(f, a, kind):
+def mouth(f, a, kind, warm=None):
     """(r10d) A hole painting's mouth (its lip's ellipse) as its centre and half sizes in fractions of the piece (cu, cv,
     ru, rv): the biggest dark mass (luminance blurred at 3% of the piece, under the 2nd percentile + 0.65 of the way to
     the median); for a pit its lit far inner wall stands above that throat, so the lip reaches a quarter further up."""
     h, w = a.shape
+    if warm is not None:   # (den r18 P5) see MOUTH_WARM: the lip's ellipse is the bbox of the biggest cool region, as found
+        wm = ndimage.gaussian_filter((f[..., 0] - f[..., 2]) / (f.sum(-1) + 1.0), 0.02 * max(w, h))
+        cool = ndimage.binary_fill_holes((a > 0.5) & (wm < warm))
+        lab, n = ndimage.label(cool)
+        if n == 0:
+            return [0.5, 0.5, 0.3, 0.3]
+        ys, xs = np.nonzero(lab == 1 + int(np.argmax(ndimage.sum(cool, lab, range(1, n + 1)))))
+        return [round((xs.min() + xs.max() + 1) / 2 / w, 4), round((ys.min() + ys.max() + 1) / 2 / h, 4),
+                round((xs.max() + 1 - xs.min()) / 2 / w, 4), round((ys.max() + 1 - ys.min()) / 2 / h, 4)]
     lum = ndimage.gaussian_filter(f @ np.array([0.299, 0.587, 0.114]), 0.03 * max(w, h))
     inside = a > 0.5
     lo, med = np.percentile(lum[inside], 2), np.median(lum[inside])
@@ -265,12 +343,40 @@ def build():
         k = 1.0 if widest is None else OBJ_PPM / src_ppm
         f, a = resample(f, a, k)
         ppm = src_ppm * k
-        ps, lab = pieces(a, join=max(4, round(20 * k)))
+        ps, lab = pieces(a, join=max(4, round(JOIN.get(name, 20) * k)))
         # each piece cut out by its own label (a neighbour's reach is keyed out) and shelf-packed with 8 px gutters
         cuts = []
         for (x0, y0, x1, y1, li) in ps:
             pa = a[y0:y1, x0:x1] * (lab[y0:y1, x0:x1] == li)
             cuts.append((f[y0:y1, x0:x1], pa))
+        leafs = set()
+        if kind == "fur":   # (den r16 W) a dry leaf drift is orange (R well over B), the fur grey-lilac: the fur's colour pulled to its grey
+            for i, (cf, ca) in enumerate(cuts):
+                w_ = ca > 0.5
+                if w_.any() and (cf[..., 0][w_].mean() - cf[..., 2][w_].mean()) > 45:
+                    leafs.add(i)
+                elif name in FUR_GRADE:
+                    import den_rocks as dr
+                    g_ = FUR_GRADE[name]
+                    L_, A_, B_ = dr.to_oklab(cf)
+                    L_ = np.clip(g_["l50"] + (L_ - np.median(L_[w_])) * g_["spread"], 0.05, 0.92)
+                    L_ = L_ - g_.get("under", 0.0) * dr.smooth(0.35, 1.0, np.linspace(0.0, 1.0, L_.shape[0]))[:, None]
+                    C_ = g_["c"] * dr.smooth(0.25, 0.5, L_)
+                    hr = np.radians(g_["h"])
+                    cuts[i] = (dr.from_oklab(L_, C_ * np.cos(hr), C_ * np.sin(hr)), ca)
+                elif name in DESAT:
+                    g = (cf @ np.array([0.299, 0.587, 0.114]))[..., None]
+                    cuts[i] = (cf + (g - cf) * DESAT[name], ca)
+        if name in LIT_KNEE:
+            import den_rocks as dr
+            kn = LIT_KNEE[name]
+            for i, (cf, ca) in enumerate(cuts):
+                L_, A_, B_ = dr.to_oklab(cf)
+                over = np.maximum(L_ - kn["knee"], 0.0)
+                ck = 1.0 + (kn["c"] - 1.0) * dr.smooth(kn["knee"], kn["knee"] + 0.15, L_)
+                cuts[i] = (dr.from_oklab(L_ - over * (1.0 - kn["share"]), A_ * ck, B_ * ck), ca)
+        if name in MIRROR:
+            cuts += [(cf[:, ::-1].copy(), ca[:, ::-1].copy()) for cf, ca in cuts]
         W = max(512, max(c[1].shape[1] for c in cuts) + 16)
         order = sorted(range(len(cuts)), key=lambda i: -cuts[i][1].shape[0])
         place, x, y, shelf = {}, 8, 8, 0
@@ -299,7 +405,9 @@ def build():
             fv = (rows.max() + 1) / ch if len(rows) else 1.0
             pe = {"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)}
             if kind in ("hollow", "pit"):
-                pe["mouth"] = mouth(cf, ca, kind)
+                pe["mouth"] = mouth(cf, ca, kind, MOUTH_WARM.get(name))
+            if i in leafs:
+                pe["leaf"] = True
             sh["pieces"].append(pe)
         h, w = H, W
         meta["sheets"].append(sh)
@@ -369,6 +477,12 @@ if __name__ == "__main__":
         ingest()
     elif cmd == "build":
         build()
+    elif cmd == "bank":   # (den r15 R) rebuild one bank's png only (same cut as build): den_set.py bank B3R
+        for name in sys.argv[2:]:
+            f, a = key(load(name))
+            x0, y0, x1, y1 = bbox(a)
+            save_rgba(os.path.join(OUT, name + ".png"), f[y0:y1, x0:x1], a[y0:y1, x0:x1])
+            print("bank", name, "rebuilt", a[y0:y1, x0:x1].shape)
     elif cmd == "check":
         sys.exit(0 if check() else 1)
     else:

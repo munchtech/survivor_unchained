@@ -5,7 +5,7 @@
   },
   "stances": [
     {
-      "id": "shield", "name": "Bulwark", "weapon": "sword and shield", "kinds": ["shield"],
+      "id": "shield", "name": "Shieldwall", "weapon": "sword and shield", "kinds": ["shield"],
       "held": { "forearm.l": "shield_round" },
       "flavor": "Your blows block and stun: each landed blow brings your Warding light back sooner, and every third stuns.",
       "mods": [
