@@ -605,7 +605,10 @@ public static class MapGen
                     double Cd((double X, double Z) s) => MathX.Dist(s.X, s.Z, r.X, r.Z);
                     double Hd((double X, double Z) s) { double m = 99; foreach (var h in r.Holes) m = Math.Min(m, h.Dist(s.X, s.Z)); return m; }
                     var out3 = spots.Where(s => Cd(s) >= 3).ToList();
-                    var best = out3.Count > 0 ? out3.OrderByDescending(Hd).First() : spots.OrderByDescending(Cd).First();
+                    // (den r18 lead, d9c: the farthest-from-holes spot fell under the HUD or off the lair's view) first the spots the
+                    // lair's play view shows from its middle (13 m either side, 9 m north to 4 m south) clear of the holes by 2.5 m
+                    bool Seen((double X, double Z) s) => Math.Abs(s.X - r.X) < 13 && s.Z - r.Z > -9 && s.Z - r.Z < 4;
+                    var best = out3.Count > 0 ? out3.OrderByDescending(s => (Seen(s) ? 2 : 0) + (Hd(s) >= 2.5 ? 1 : 0)).ThenByDescending(Hd).First() : spots.OrderByDescending(Cd).First();
                     fire(best.X, best.Z, 0.6, 11, "#ff6a3a");
                 }
             }

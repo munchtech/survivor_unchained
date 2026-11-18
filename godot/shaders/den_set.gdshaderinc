@@ -87,6 +87,16 @@ uniform float pit_paint_pt = 0.0;
 // pit_bleed_c x x, inside the lip (den_boss.png's glow runs 10-20 px off each vein; the painting's own about 5)
 uniform vec4 pit_bleed = vec4(0.0, 3.5, 0.06, 0.0);
 uniform vec3 pit_bleed_c = vec3(0.16, 0.4, 0.06);
+// (den r18 lead, R18 judge item 1: the veins neon, glow C50 .150 / C90 .195 against den_boss .073 / .089, cores L99 .85-.88
+// against .60-.72) the veins' look: x the saturation kept in their emission and albedo (1: r18 as judged), y the emission's
+// luminance cap (linear; 0 off)
+uniform vec2 pit_look = vec2(1.0, 0.0);
+// (den r18 lead, R18 judge item 5: the pit rims stickers, a pale crumb ring ending hard with a lilac fringe) x the painting
+// darkened by this much toward its fade (an earth falloff), y the lilac fringe's saturation taken out near the rim (0 off)
+uniform vec2 pit_rim = vec2(0.0, 0.0);
+// (den r18 lead, R18 judge item 5: the crumb ring ends hard on the floor) the painting's own edge eroded and feathered: its
+// alpha read at this mip (0 off) from x to y
+uniform vec3 pit_feather = vec3(0.0, 0.5, 0.95);
 varying float pit_pt;
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
@@ -299,7 +309,17 @@ void fragment() {
 	if (pit_paint.x > 0.0 && COLOR.a < 0.75) {   // (den r18 P5) see pit_paint
 		float lime = smoothstep(pit_paint.z, pit_paint.w, c.g - max(c.r, c.b));
 		ALBEDO *= 1.0 - pit_paint.y * lime;
-		EMISSION += c.rgb * pit_paint.x * lime * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
+		ALBEDO = mix(vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))), ALBEDO, mix(1.0, pit_look.x, lime));
+		vec3 pem = c.rgb * pit_paint.x * lime * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
+		float pel = dot(pem, vec3(0.2126, 0.7152, 0.0722));
+		pem = mix(vec3(pel), pem, pit_look.x);
+		if (pit_look.y > 0.0) pem *= min(1.0, pit_look.y / max(pel, 1e-4));
+		EMISSION += pem;
+		float prb = smoothstep(rim_in - 0.3, rim_out, 2.0 * COLOR.b);
+		float plil = smoothstep(0.0, 0.03, min(c.r, c.b) - c.g) * smoothstep(0.75, 1.0, 2.0 * COLOR.b);
+		ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))) * vec3(1.04, 1.0, 0.9), pit_rim.y * plil);
+		ALBEDO *= 1.0 - pit_rim.x * prb;
+		if (pit_feather.x > 0.0) ALPHA *= smoothstep(pit_feather.y, pit_feather.z, textureLod(paint_tex, UV, pit_feather.x).a);
 		pit_pt = mix(1.0, pit_paint_pt, 1.0 - smoothstep(0.85, 1.05, 2.0 * COLOR.b));
 		vec3 cb1 = textureLod(paint_tex, UV, pit_bleed.y).rgb, cb2 = textureLod(paint_tex, UV, pit_bleed.y + 1.5).rgb;
 		float lbl = 0.6 * smoothstep(0.0, pit_bleed.z, cb1.g - max(cb1.r, cb1.b)) + 0.4 * smoothstep(0.0, pit_bleed.z, cb2.g - max(cb2.r, cb2.b));

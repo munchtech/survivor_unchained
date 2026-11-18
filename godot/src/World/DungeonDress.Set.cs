@@ -155,21 +155,22 @@ public static partial class DungeonDress
             if (sheet == "H3")
             {
                 mat.SetShaderParameter("pit_cells", 0f);
-                mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.2f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 0.5f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.25f)));
+                mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.7f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 0.8f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.12f)));
                 mat.SetShaderParameter("pit_paint_pt", SurvivorUnchained.Args.Num("den-pit-paint-pt", 0f));
                 // (den r18 P5, p8a: glow 1.7 % of the s11 main box against 8-12, the far wall L .20-.22 against .40) the veins' bleed
                 // (--den-pit-bleed gain, mip lod, lime-ness full; 0 off) and the painting's light x --den-pit-paint-gain
-                var pb = V3("den-pit-bleed", new Vector3(0.6f, 3.5f, 0.06f));
+                var pb = V3("den-pit-bleed", new Vector3(1.2f, 4.5f, 0.06f));
                 mat.SetShaderParameter("pit_bleed", new Vector4(pb.X, pb.Y, pb.Z, 0f));
-                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.16f, 0.4f, 0.06f)));
-                // (den r18 lead, R18 judge item 1: the veins neon) --den-pit-sat (saturation kept, 1 = as judged) and --den-pit-cap
+                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.22f, 0.28f, 0.17f)));
+                // (den r18 lead, R18 judge item 1: the veins neon, glow C50 .150 -> .076 at v9 j, den_boss .073; r18 judged: sat 1, cap 0, k 1.2, alb .5, hi .25, bleed .6/3.5 c .16,.4,.06) --den-pit-sat (saturation kept, 1 = as judged) and --den-pit-cap
                 // (the veins' emission luminance cap, linear; 0 off)
-                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 1f), SurvivorUnchained.Args.Num("den-pit-cap", 0f)));
+                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 0.15f), SurvivorUnchained.Args.Num("den-pit-cap", 0.35f)));
                 // (den r18 lead, R18 judge item 5: the rims stickers) --den-pit-rim-dark (the painting darkened toward its fade),
                 // --den-pit-rim-lilac (the lilac fringe's saturation out), the fade itself from --den-pit-rim-in to -out lip radii (H3 only)
-                mat.SetShaderParameter("pit_rim", new Vector2(SurvivorUnchained.Args.Num("den-pit-rim-dark", 0f), SurvivorUnchained.Args.Num("den-pit-rim-lilac", 0f)));
-                mat.SetShaderParameter("rim_in", SurvivorUnchained.Args.Num("den-pit-rim-in", 1.15f));
-                mat.SetShaderParameter("rim_out", SurvivorUnchained.Args.Num("den-pit-rim-out", 1.45f));
+                mat.SetShaderParameter("pit_rim", new Vector2(SurvivorUnchained.Args.Num("den-pit-rim-dark", 0.15f), SurvivorUnchained.Args.Num("den-pit-rim-lilac", 1f)));
+                mat.SetShaderParameter("pit_feather", new Vector3(SurvivorUnchained.Args.Num("den-pit-feather", 3f), SurvivorUnchained.Args.Num("den-pit-feather-lo", 0.6f), SurvivorUnchained.Args.Num("den-pit-feather-hi", 1.0f)));   // (den r18 lead, R18 item 5) the painting's edge eroded and feathered (alpha at this mip; 0 off)
+                mat.SetShaderParameter("rim_in", SurvivorUnchained.Args.Num("den-pit-rim-in", 1.0f));
+                mat.SetShaderParameter("rim_out", SurvivorUnchained.Args.Num("den-pit-rim-out", 1.6f));
                 mat.SetShaderParameter("gain", gain * SurvivorUnchained.Args.Num("den-pit-paint-gain", 1.4f));
             }
         }
@@ -1274,7 +1275,7 @@ public static partial class DungeonDress
         if (pc.Mouth.Z <= 0f) return false;
         // (den r18 lead, R18 judge item 5: both seeds the same two pit paintings, the vein shape and fungus in the same place) an H3
         // painting mirrored east-west on a hash of its spot (--den-pit-mirror 1; 0 as judged)
-        bool hm = sheet == "H3" && SurvivorUnchained.Args.Num("den-pit-mirror", 0f) > 0f && Hash((int)(ctr.X * 7f), (int)(ctr.Y * 7f), 2207) < 0.5f;
+        bool hm = sheet == "H3" && SurvivorUnchained.Args.Num("den-pit-mirror", 1f) > 0f && Hash((int)(ctr.X * 7f), (int)(ctr.Y * 7f), 2207) < 0.5f;
         float mx = hm ? 1f - pc.Mouth.X : pc.Mouth.X;
         // (den r14 objects, item 11) the cracked-mud hollows were stamps: clear of each other by two diameters, each its own size,
         // turned, its rim a noise outline (Fourier lobes 2-5)
@@ -1451,7 +1452,7 @@ public static partial class DungeonDress
                 {
                     float a = a0 + ia * 0.05f, rad = 3.8f + ir * 0.5f;
                     var p = rc + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * rad;
-                    if (p.Y < rc.Y + 1.5f || Wall(c, p.X, p.Y) < 2.2f || Hole(c, p.X, p.Y) < 2.6f || p.DistanceTo(rc) < 3.4f || FireNear(p, 1.5f, 1.2f)) continue;
+                    if (p.Y < rc.Y + 1.5f || p.Y > rc.Y + 6.5f || Mathf.Abs(p.X - rc.X) > 13f || Wall(c, p.X, p.Y) < 2.2f || Hole(c, p.X, p.Y) < 2.6f || p.DistanceTo(rc) < 3.4f || FireNear(p, 1.5f, 1.2f)) continue;
                     float sc = Mathf.Abs(ia) * 0.4f + Mathf.Abs(rad - r0);
                     if (sc >= best) continue;
                     bool bad = false;
@@ -1470,9 +1471,10 @@ public static partial class DungeonDress
         if (Spot(Mathf.Pi * (0.82f + 0.06f * Hash(ri, 41, 4501)), 10f, out var pa))   // a carcass on blood
         {
             mine.Add(pa);
-            if (SetPickBlood(Hash(ri, 41, 4502)) is SetPiece bp) PlaceSetObj(c, "O5", bp, pa.X, pa.Y, 0.55f + 0.2f * Hash(ri, 41, 4503), 0f, false, 0f);
+            if (SetPickBlood(Hash(ri, 41, 4502)) is SetPiece bp) PlaceSetObj(c, "O5", bp, pa.X, pa.Y, SurvivorUnchained.Args.Num("den-lair-low-k", 1.4f) * (0.55f + 0.2f * Hash(ri, 41, 4503)), 0f, false, 0f);
             int bi = (int)(Hash(ri, 41, 4504) * 5f) % 5 + (Hash(ri, 41, 4505) < 0.5f ? 5 : 0);
-            PlaceSetObj(c, "O9", o9[bi], pa.X, pa.Y, 0.7f, 0.1f, false, 0.4f);
+            PlaceSetObj(c, "O9", o9[bi], pa.X, pa.Y, 0.7f * SurvivorUnchained.Args.Num("den-lair-low-k", 1.4f), 0.1f, false, 0.4f);   // (den r18 lead: at 0.7 the carcass did not read in d9c; --den-lair-low-k)
+            GD.Print($"[den-lair-low] carcass at ({pa.X - rc.X:0.0}, {pa.Y - rc.Y:0.0}) from the lair middle");
             nlay++;
         }
         if (Spot(Mathf.Pi * (0.14f + 0.06f * Hash(ri, 42, 4501)), 11.5f, out var pb))   // a long bone and a tuft
@@ -1546,6 +1548,7 @@ public static partial class DungeonDress
                     float half = dir.Y == 0f ? 0.5f * bp.Metres.X * k2 : 0.35f * bp.Metres.Y * k2 / -CamUp.Z;
                     var m = pp + dir * (t + half - rin) + new Vector2(0f, (Hash(ri, i * 7 + q, 2333) - 0.5f) * pr * (dir.Y == 0f ? 0.6f : 0f));
                     if (Wall(c, m.X, m.Y) < 1.0f) continue;
+                    if (FireNear(m, 0.4f * bp.Metres.X * k2, 0.4f * bp.Metres.Y * k2)) continue;   // (den r18 lead, v9s23_j: a lip crown grew over the lair fire)
                     PlaceSetObj(c, "B6", bp, m.X, m.Y, k2, 0f, false, 0f, null, true);
                     lipRoots++;
                 }
