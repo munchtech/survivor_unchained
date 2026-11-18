@@ -125,4 +125,20 @@ public class GiltTests
             }
         }
     }
+    // B (--body p1) reads only its built gear index: without the kit's rows there, an equipped piece's wear ids have no slot and
+    // Wear.Of drops them (the gilt kit drew nothing in the game while --wear still drew it).
+    [Theory]
+    [InlineData("gilt_helm", EquipSlot.Head)]
+    [InlineData("gilt_harness", EquipSlot.Body)]
+    [InlineData("gilt_boots", EquipSlot.Feet)]
+    public void B_gear_index_holds_every_kit_piece_in_its_items_slot_group(string id, EquipSlot slot)
+    {
+        var ix = ArmorIndex.Load(ArmorIndex.Text, "gear/out/body_p1");
+        Assert.False(ix.GearMissing);
+        foreach (var p in Items.Get(id).Wear!)
+        {
+            Assert.NotNull(ix.Find(p));
+            Assert.Contains(ix.SlotOf(p), Wear.Group(slot));
+        }
+    }
 }

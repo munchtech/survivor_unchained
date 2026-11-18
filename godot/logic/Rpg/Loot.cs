@@ -383,6 +383,8 @@ public static class Drops
         foreach (var d in list) { roll -= W(d); if (roll < 0) { pick = d; break; } }
         var it = Inventory.Make(x.Ch, pick.Id, seed: (uint)(x.R() * int.MaxValue), dropped: true, level: Math.Clamp(x.Level, 1, Rules.MaxLevel));
         x.World?.Owned.Add(pick.Id);
+        int have = list.Count(d => Owned(x.Ch, x.World, d.Id));
+        System.Console.WriteLine($"loot: chase {(set.Id != "" ? set.Id : set.Name)} -> {pick.Id} (owned {have}/{list.Count})");
         return new Dropped(it, null, 1, LootTier.Set);
     }
 
