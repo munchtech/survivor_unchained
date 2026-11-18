@@ -154,7 +154,7 @@ def crossbow_low():
 HILT = {"wrist": (0.3004, -0.0235, -0.0058), "knuckles": (0.0102, -0.2861, 0.9582), "thumb": (-0.1359, 0.9489, 0.2848),
         "pole": (0.69, -0.6385, -0.3101), "pole_chest": 1.0, "fingers": "relaxed", "clav": 0.3, "tilt": True}
 # `tilt` (warden-move, 17 Nov): held, the game turns the scabbard about its throat from its hung axis (WeaponSockets.cs
-# HipBladeShaft) onto the held one (HipBladeHeld: 45 deg below horizontal, 37 out from straight back; from behind at the
+# HipBladeShaft) onto the held one (HipBladeHeld: 45 deg below horizontal, 30 out from straight back (37 put the pommel into her breast); from behind at the
 # play camera the hung one stood 78-86 deg on screen, a cane), so her hand turns with it about the same point: the wrist
 # about the throat (WeaponSockets HipBladeAtA + SheathHang.Throat down the shaft), the knuckles and thumb by the same tilt.
 
