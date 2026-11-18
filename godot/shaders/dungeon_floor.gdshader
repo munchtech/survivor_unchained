@@ -63,6 +63,10 @@ uniform float sp_grain = 0.0;   // the grain's value contrast in the light: albe
 uniform float sp_ref = 0.15;
 uniform float sp_smooth = 0.0;   // (den r18 L3, R17 item 3) 1: a smooth elliptical mask (no grain term, no wobble) times the albedo, its gain soft-capped at sp_cap
 uniform float sp_cap = 9.0;
+uniform float sp_blur = 0.0;   // (den r18 L4) 0..1: the floor's grain blended toward its blurred self inside the pool
+uniform float sp_blur_lod = 5.0;
+uniform float sp_norm = 0.0;   // (den r18 L4) 1: each pool's gain set from its own floor so it lifts by sp_dl; 0: the flat sp_gain
+uniform float sp_dl = 0.17;
 uniform float sp_soft = 0.7;
 uniform float sp_knee = 0.6;
 uniform float sp_lair = 1.0;   // (den r17 L2) a lair pool's strength (its seed + 1000): the lair's floor is lit brighter than the rooms'
@@ -153,6 +157,7 @@ void fragment() {
 	float big = fbm(wpos.xz * 0.09);
 	float mid = fbm(wpos.xz * 0.45 + 17.0);
 	vec3 col;
+	float blr = 1.0;   // (den r18 L4, R18 item 3) the painted floor's lum blurred (lod sp_blur_lod, no band) over its lum: the pool's flattening factor
 	if (ravine < 0.5) {
 		// The den's own painted set (ground.json "den", tools/look/ground_paint.py): 0 earth, 1 trodden, 2 litter,
 		// 3 rootmat, 4 dark, 5 pitface. Laid by rule from the fields: trodden earth in the rooms' open middles, litter in
@@ -235,6 +240,13 @@ void fragment() {
 				vec3 m4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), 7.0).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), 7.0).rgb, tw);
 				float ln = lum(mix(mix(mix(n1, n2, k2), n4, k4), n3, k3)), lm = lum(mix(mix(mix(m1, m2, k2), m4, k4), m3, k3));
 				if (set_band > 0.001) sc *= clamp(pow(max(ln, 1e-4) / max(lm, 1e-4), set_band), 0.45, 2.2);
+				if (sp_blur > 0.0) {
+					vec3 b1 = mix(textureLod(set_floor, vec3(s0, 0.0), sp_blur_lod).rgb, textureLod(set_floor, vec3(s1, 0.0), sp_blur_lod).rgb, tw);
+					vec3 b2 = mix(textureLod(set_floor, vec3(s0 + 0.5, 1.0), sp_blur_lod).rgb, textureLod(set_floor, vec3(s1 + 0.5, 1.0), sp_blur_lod).rgb, tw);
+					vec3 b3 = mix(textureLod(set_floor, vec3(s0, 2.0), sp_blur_lod).rgb, textureLod(set_floor, vec3(s1, 2.0), sp_blur_lod).rgb, tw);
+					vec3 b4 = mix(textureLod(set_floor, vec3(s0 + 0.25, 3.0), sp_blur_lod).rgb, textureLod(set_floor, vec3(s1 + 0.25, 3.0), sp_blur_lod).rgb, tw);
+					blr = clamp(lum(mix(mix(mix(b1, b2, k2), b4, k4), b3, k3)) / max(lum(sc), 1e-4), 0.4, 2.5);
+				}
 				col = sc * set_gain;
 			}
 		col *= den_tint;
@@ -297,9 +309,12 @@ void fragment() {
 			}
 			if (sp_smooth > 0.5) {
 				// the light multiplies the albedo: no term of its own, so the floor's grain is lit, not amplified; the sum is soft-capped
-				float l0 = max(lum(col), 1e-4), l1 = l0 * mix(1.0, sp_gain, spm);
+				col *= mix(1.0, blr, sp_blur * spm);   // (den r18 L4, R18 item 3) light flattens the grain: toward the blurred floor by sp_blur x mask
+					float l0 = max(lum(col), 1e-4);
+					float pg = mix(sp_gain, clamp(pow(pow(l0, 0.3333) + sp_dl, 3.0) / l0, 1.3, 3.5), sp_norm);   // (den r18 L4) a gain per pool against its own floor: the lift in OKLab-ish L, sp_dl
+					float l1 = l0 * mix(1.0, pg, spm);
 				float kn = sp_knee * sp_cap, l2 = l1 < kn ? l1 : kn + (sp_cap - kn) * tanh((l1 - kn) / (sp_cap - kn));
-				col *= mix(vec3(1.0), sp_tint, spm) * (l2 / l1) * mix(1.0, sp_gain, spm) * pow(clamp(l0 / sp_ref, 0.05, 4.0), sp_grain * spm);
+				col *= mix(vec3(1.0), sp_tint, spm) * (l2 / l1) * mix(1.0, pg, spm) * pow(clamp(l0 / sp_ref, 0.05, 4.0), sp_grain * spm);
 			} else
 			col *= mix(vec3(1.0), sp_gain * sp_tint, spm) * pow(clamp(lum(col) / sp_ref, 0.05, 4.0), sp_grain * spm);
 		}
