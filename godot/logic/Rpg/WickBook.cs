@@ -46,7 +46,8 @@ public static class WickBook
         var plan = PlanOf(ch, skill);
         if (plan.Contains(lamp)) return WickNo.Planned;
         if (plan.Count >= Wicks.LampCount) return WickNo.Full;
-        if (n > 1 && !plan.Contains(s.LampId(n - 1))) return WickNo.Order;
+        // the lamp before it counts if it is planned or already lit (lit by level, Light my way's suggestion, a point)
+        if (n > 1 && !plan.Contains(s.LampId(n - 1)) && !Panel(ch, skill, false).Lit.Contains(s.LampId(n - 1))) return WickNo.Order;
         if (n == Wicks.PerStrand && plan.Any(id => Wicks.IsTurn(skill, id))) return WickNo.Turn;
         return WickNo.None;
     }
@@ -366,7 +367,7 @@ public static class WickBook
         double? size = def.Base.Reach ?? def.Base.Radius;
         double a0 = now.Wick?.Area ?? 1, a1 = more.Wick?.Area ?? 1;
         if (size is { } sz && System.Math.Abs(a1 - a0) > 1e-9)
-            return (def.Base.Reach != null ? "Reach" : "Size", (sz * a0).ToString("0.##", inv) + " m", (sz * a1).ToString("0.##", inv) + " m", "");
+            return (def.Base.Reach != null ? "Reach" : "Size", (sz * a0).ToString("0.#", inv) + " m", (sz * a1).ToString("0.#", inv) + " m", "");
         double c0 = Firing.CampaignCooldownOf(now, true), c1 = Firing.CampaignCooldownOf(more, true);
         if (System.Math.Round(c1, 1) != System.Math.Round(c0, 1)) return ("Cooldown", System.Math.Round(c0, 1).ToString("0.#", inv) + " s", System.Math.Round(c1, 1).ToString("0.#", inv) + " s", "");
         return null;

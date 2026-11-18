@@ -358,7 +358,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             foreach (var f in fires.Where(f => !f.Burning)) b.Mark(TelegraphKind.Safe, f.X, f.Z, 1.4, 30);
         Now = Stage.Boss;
         Goal = null;
-        G.Announce(new Announcement(BossName, $"{BossTitle} · Weakness: {script.WeaknessText}", "danger", 3.4, rise ? "Again" : "The night's end"));
+        G.Announce(new Announcement(BossName, $"{BossTitle} · Weakness: {script.WeaknessText}", "danger", 3.4, rise ? "Again" : "The night's end") { YieldsToFight = true });
         Objectives();
     }
 

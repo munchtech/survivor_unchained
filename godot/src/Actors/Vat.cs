@@ -44,6 +44,12 @@ public sealed class VatAsset
     /// <summary>When each death's body is half way down (s into the clip): its vertices' mean height has fallen half way
     /// from its first frame to its lowest (Vat.Downs). A mass kill's topple runs its clip to here fast (CrowdView).</summary>
     public Dictionary<string, double> Down = new();
+    /// <summary>(demo-look lane E s2) The body's middle at each frame row: the mean of its vertices, model space (Vat.Masses);
+    /// RestY that mean's height in its idle's first frame. The soft dark under a body sits under this middle, not its feet's
+    /// origin: a death clip lays the body half a length off the origin (the den's kill frames: a dark disc on the bare floor
+    /// beside each corpse, read as a hole), and a lunge carries it forward. Null: none (the blob at the origin, as before).</summary>
+    public Vector3[]? Mass;
+    public float RestY;
     /// <summary>Where its glowing glass is (a carried lamp's: Corvane's), model space, at each frame row; null: it has none
     /// (Vat.Glass). The view sets a carried light and its glow on it, in every pose (P6 judge r2 fix 2).</summary>
     public Vector3[]? Glass;
@@ -93,7 +99,7 @@ public static class Vat
 {
     const int MaxFrames = 48;
     static readonly Dictionary<string, VatAsset> cache = new();
-    static Shader? shader, cutShader;
+    static Shader? shader, cutShader, eliteMask, eliteRim;
 
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
     static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
@@ -815,6 +821,9 @@ public static class Vat
     /// wolf's fur sparkle, 299 to 89).</summary>
     static readonly float TexBias = SurvivorUnchained.Args.Num("vat-bias", 1.5f),
         ShineAa = SurvivorUnchained.Args.Num("vat-shine-aa", 1f);
+    /// <summary>(demo-look lane E s2) --den-head 1: the den boss's head in stepped planes (vat.gdshaderinc den_head); 0 (for now
+    /// the default, not yet measured): as r3 painted it.</summary>
+    static readonly float DenHead = SurvivorUnchained.Args.Num("den-head", 1f);   // (lead 4: on; l4a_bch_02 vs bc_02 at 2x: crown/brow, cheek and muzzle read as planes)
 
     static VatAsset Build(Baked b)
     {
@@ -847,6 +856,7 @@ public static class Vat
             if (s.Cut >= 0) m.SetShaderParameter("alpha_cut", s.Cut);
             m.SetShaderParameter("tex_bias", TexBias);
             m.SetShaderParameter("shine_aa", ShineAa);
+            m.SetShaderParameter("den_head", DenHead);
             m.SetShaderParameter("vat_pos", posTex);
             m.SetShaderParameter("vat_nor", norTex);
             m.SetShaderParameter("vat_width", b.Width);
@@ -867,11 +877,55 @@ public static class Vat
                 m.SetShaderParameter("dye_v", s.DyeV);
                 m.SetShaderParameter("dye_lum", s.DyeLum);
             }
+            // (lane E lead 5, 17 Nov) A den elite's outline on its solid surfaces: a stencil mask of its own body, then its outer
+            // silhouette's stroke outside it (shaders/vat_elite_mask, vat_elite_rim: every other instance folds away in them)
+            if (s.Cut < 0)
+            {
+                eliteMask ??= GD.Load<Shader>("res://shaders/vat_elite_mask.gdshader");
+                eliteRim ??= GD.Load<Shader>("res://shaders/vat_elite_rim.gdshader");
+                var rimM = new ShaderMaterial { Shader = eliteRim, RenderPriority = -2 };
+                var maskM = new ShaderMaterial { Shader = eliteMask, RenderPriority = -3, NextPass = rimM };
+                foreach (var pm in new[] { maskM, rimM })
+                {
+                    pm.SetShaderParameter("vat_pos", posTex); pm.SetShaderParameter("vat_nor", norTex);
+                    pm.SetShaderParameter("vat_width", b.Width); pm.SetShaderParameter("vat_rows", b.Rows); pm.SetShaderParameter("vat_offset", s.Offset);
+                }
+                m.NextPass = maskM;
+            }
             mesh.SurfaceSetMaterial(mesh.GetSurfaceCount() - 1, m);
         }
         // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
-        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Down = Downs(b), Glass = Glass(b) };
+        var mass = Masses(b);
+        int rest = b.Clips.TryGetValue("idle", out var idle) ? idle.Start : 0;
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Down = Downs(b), Glass = Glass(b),
+            Mass = mass, RestY = mass != null && rest < mass.Length ? mass[rest].Y : b.Height * 0.5f };
+    }
+
+    /// <summary>(demo-look lane E s2) The body's middle at each frame row (VatAsset.Mass): the mean of up to about 2048 of its
+    /// vertices, evenly taken, model space.</summary>
+    static Vector3[]? Masses(Baked b)
+    {
+        int total = 0;
+        foreach (var sf in b.Surfs) total = Math.Max(total, sf.Offset + sf.Count);
+        if (total == 0 || b.FrameCount * b.Rows * b.Width * 8 > b.Pos.Length) return null;
+        int step = Math.Max(1, total / 2048);
+        var at = new Vector3[b.FrameCount];
+        for (int fr = 0; fr < b.FrameCount; fr++)
+        {
+            double x = 0, y = 0, z = 0;
+            int n = 0, row = fr * b.Rows * b.Width;
+            for (int i = 0; i < total; i += step)
+            {
+                int o = (row + i) * 8;
+                x += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o));
+                y += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o + 2));
+                z += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o + 4));
+                n++;
+            }
+            at[fr] = new Vector3((float)(x / n), (float)(y / n), (float)(z / n));
+        }
+        return at;
     }
 
     /// <summary>Each death's lying body against its first frame: the move of the body's middle (all its vertices' mean,
@@ -1353,7 +1407,7 @@ public partial class VatCrowd : MultiMeshInstance3D
     }
 
     /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
-    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false, float rim = 0, float rimFlash = -1, float champRim = -1)
+    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false, float rim = 0, float rimFlash = -1, float champRim = -1, int cls = 0, float floor = float.NaN)
     {
         if (!slotOf.TryGetValue(key, out int s))
         {
@@ -1386,7 +1440,7 @@ public partial class VatCrowd : MultiMeshInstance3D
         buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = at.Origin.Y;
         buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = at.Origin.Z;
         buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; // (M5 r3: a champion's affix rim rides in the glow's whole part: 1 + its hue (degrees) in 64ths; vat.gdshaderinc)
-        buf[o + 15] = Math.Clamp(glow, 0, 0.99f) + (champRim >= 0 ? 1 + (int)Math.Round(champRim / 360f * 64) % 64 : 0);
+        buf[o + 15] = Math.Clamp(glow, 0, 0.99f) + (champRim >= 0 ? 1 + (int)Math.Round(champRim / 360f * 64) % 64 : 0) + 128 * cls;   // (demo-look item 4 pass 2: the class in 128s, 1 an elite, 2 a boss: the den's look, vat.gdshaderinc dn_cls)
         // The pace rides in the first frame's fraction (the shader rounds the frame).
         buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1 + 0.45f * Math.Clamp(rim, 0, 1); buf[o + 18] = blend; buf[o + 19] = word;
         // The dark under it: flat on the ground at its feet, as wide as it is tall by its scale, a hand over the
@@ -1394,13 +1448,39 @@ public partial class VatCrowd : MultiMeshInstance3D
         int q = s * BlobStride;
         float w = blobSize * b.X.Length();
         var bb = blobBuf;
-        bb[q] = w; bb[q + 1] = 0; bb[q + 2] = 0; bb[q + 3] = at.Origin.X;
-        bb[q + 4] = 0; bb[q + 5] = 1; bb[q + 6] = 0; bb[q + 7] = at.Origin.Y + 0.06f;
-        bb[q + 8] = 0; bb[q + 9] = 0; bb[q + 10] = w; bb[q + 11] = at.Origin.Z;
+        // (demo-look lane E s2: the dark is the body's, where its body is: under its middle this frame (VatAsset.Mass), on the
+        // ground under it (`floor`, the ground's height there; NaN: the origin's), fading as the body leaves the ground (its
+        // origin off the floor, a launch's hop or a fall over a ledge, plus its middle's rise over its idle's) and narrowing
+        // as it lies down. At the origin a death clip left it half a length beside the corpse, a dark disc on bare floor;
+        // a lunge left it behind. --blob-mass 0: at the origin, as before.)
+        var foot = at.Origin;
+        float show = 1 - dissolve;
+        if (BlobMass && Asset.Mass is { } ms && f1 < ms.Length)
+        {
+            var m = ms[f0].Lerp(ms[f1], blend);
+            var mid = at * new Vector3(m.X, 0, m.Z);
+            float sy = b.Y.Length(), hb = Math.Max(Asset.Height * sy, 0.1f);
+            float ground = float.IsNaN(floor) ? at.Origin.Y : floor;
+            float rise = Math.Abs(at.Origin.Y - ground) + Math.Max(0, (m.Y - Asset.RestY) * sy);
+            show *= 1 - Mathf.SmoothStep(BlobRise.X, BlobRise.Y, rise / hb);
+            w *= Mathf.Lerp(BlobLie, 1, Math.Clamp(m.Y / Math.Max(Asset.RestY, 1e-3f), 0, 1));
+            foot = new Vector3(mid.X, ground, mid.Z);
+        }
+        bb[q] = w; bb[q + 1] = 0; bb[q + 2] = 0; bb[q + 3] = foot.X;
+        bb[q + 4] = 0; bb[q + 5] = 1; bb[q + 6] = 0; bb[q + 7] = foot.Y + 0.06f;
+        bb[q + 8] = 0; bb[q + 9] = 0; bb[q + 10] = w; bb[q + 11] = foot.Z;
         // (L1 lead 19, SH2: the second pass, its fire shadow (crowd_blob_cast), reads the body in the blob's color: r its
         // height m, g its width at the feet m, b zero (the trail's length is the rule's); the first pass reads a alone)
-        bb[q + 12] = Asset.Height * b.Y.Length(); bb[q + 13] = w * CastFeet; bb[q + 14] = 0; bb[q + 15] = 1 - dissolve;
+        bb[q + 12] = Asset.Height * b.Y.Length(); bb[q + 13] = w * CastFeet; bb[q + 14] = 0; bb[q + 15] = show;
     }
+
+    /// <summary>(demo-look lane E s2) --blob-mass 0: the dark under a body at its origin (as before), not under its middle.
+    /// --blob-rise A,B: it fades from A to B of the body's height off the ground (gone at B). --blob-lie K: a body lying
+    /// flat (its middle down at the ground) has K of the blob's width, a standing one all of it.</summary>
+    static readonly bool BlobMass = SurvivorUnchained.Args.Num("blob-mass", 1f) > 0.5f;
+    static readonly Vector2 BlobRise = SurvivorUnchained.Args.Get("blob-rise") is string br && br.Split(',') is { Length: 2 } bs
+        ? new Vector2(float.Parse(bs[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bs[1], System.Globalization.CultureInfo.InvariantCulture)) : new Vector2(0.08f, 0.6f);
+    static readonly float BlobLie = SurvivorUnchained.Args.Num("blob-lie", 1f);
 
     /// <summary>(L1 lead 19, SH2) A body's width at the feet, where its fire shadow starts, against the soft blob's (a
     /// wolf's blob is as wide as the wolf is long; toward her it is about half that across).</summary>

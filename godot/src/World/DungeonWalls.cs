@@ -8,7 +8,7 @@ namespace SurvivorUnchained.View;
 /// edge on a 0.5 m height grid (smooth outline, lumpy face, never the 1 m cells' steps), a continuous top beyond it, and
 /// for the den roots hanging down its face and over its pits' rims. shaders/dungeon_wall.gdshader shades it all.
 /// </summary>
-public static partial class DungeonWalls
+public static class DungeonWalls
 {
     static bool UseRoots = false;
     const float Cell = 0.5f, CapCell = 2f, Lo = -0.6f, Hi = 5f;
@@ -146,6 +146,15 @@ public static partial class DungeonWalls
             if (lumps) y += 0.25f * (2 * N3(x * 1.0f + 5.7f, 0.3f, z * 1.0f - 1.9f) - 1) * Mathf.Sin(Mathf.Pi * Mathf.Clamp(s / sc, 0f, 1f));
             return y;
         }
+        // (den r12) The painted set's proxy: the bank's rise held at its crest (no fall past it), so a card cast over the crest
+        // lies on one smooth sheet and never across the crease and down the fall (the corridor's faceted right bank, c_p15).
+        public float HoldY(float x, float z)
+        {
+            if (Ravine) return SurfY(x, z);
+            float s = S(x, z), sc = BankSc(x, z), hc = BankHc(x, z), fl = Floor(x, z), bk = Back(x, z);
+            float rise = fl - 0.1f + hc * Sm(-0.3f, sc, s);
+            return Mathf.Lerp(rise, rise + BackRise * Sm(sc - 0.5f, sc + BackRun, s), bk);
+        }
         public Vector2 Grad(float[]? f, float x, float z, bool sField)
         {
             float e = 0.25f;
@@ -166,6 +175,13 @@ public static partial class DungeonWalls
             bankCtx.Hb = bankCtx.Ravine ? 13f : 4f;
         }
         return bankCtx.SurfY(x, zz);
+    }
+
+    /// <summary>(den r12) The bank's height with its rise held at the crest (Ctx.HoldY): the painted set's cast proxy.</summary>
+    public static float BankHoldY(ZoneData z, float x, float zz)
+    {
+        BankY(z, x, zz);
+        return bankCtx!.HoldY(x, zz);
     }
 
     /// <summary>(Ledge view shots) The drawn ground's height over the floor at x, z: 0 on the floor, below it where the edge
@@ -195,10 +211,18 @@ public static partial class DungeonWalls
         int n = (int)(size / Cell) + 1;
 
         float hi = c.Ravine ? Hi : 6.5f + Ctx.BackRun;   // the den's bank band runs to its fall-off (sc + 3 at most 6), and on up the back banks' climb (round 8)
-        // s at every grid vertex; the band and its dilation get positions.
+        // s at every grid vertex; the band and its dilation get positions up front, and any other corner a drawn cell or a
+        // normal reaches is placed when it is first asked for (Pos).
+        // (den r11 solver, 15 Nov: a cell is drawn when any corner is in the band, and the 1.6 m dilation was taken to cover
+        // its other corners. The den's s is no distance field: where a wall gives way to a pit WallOnly (pit solver, 15 Nov)
+        // takes it from the band to -8 within one 0.5 m cell, and along MapGen's per-room and per-hall culling boxes it
+        // leaps to WallField's clamp (16). Those corners were never placed and stood at Vector3.Zero, the world's origin. Their triangles ran from the pits' walls to the origin: the fan over the seed-23
+        // lair (the origin under its middle), the dark plank across seed 11's corridor at -108,-78 (the origin behind the
+        // lens), and the normals beside them pointed at it. 290 such corners on seed 23, triangles up to 148 m long.)
         var s = new float[n * n];
         var pos = new Vector3[n * n];
         var fly = new float[n * n];
+        var placed = new bool[n * n];
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++)
             {
@@ -207,7 +231,21 @@ public static partial class DungeonWalls
                 s[j * n + i] = sv;
                 if (sv < Lo - 1.6f || sv > hi + 1.6f) continue;
                 pos[j * n + i] = Place(c, x, zz, sv, out fly[j * n + i]);
+                placed[j * n + i] = true;
             }
+        int late = 0;
+        float lateLo = float.MaxValue, lateHi = float.MinValue;
+        Vector3 Pos(int i, int j)
+        {
+            int k = j * n + i;
+            if (!placed[k])
+            {
+                pos[k] = Place(c, -c.Half + i * Cell, -c.Half + j * Cell, s[k], out fly[k]);
+                placed[k] = true;
+                late++; lateLo = Mathf.Min(lateLo, s[k]); lateHi = Mathf.Max(lateHi, s[k]);
+            }
+            return pos[k];
+        }
 
         var wall = new Buf();
         var map = new int[n * n];
@@ -217,12 +255,13 @@ public static partial class DungeonWalls
             int k = j * n + i;
             if (map[k] >= 0) return map[k];
             // Normal by central differences on the displaced grid (as the ground's).
-            Vector3 P(int a, int b) => pos[Mathf.Clamp(b, 0, n - 1) * n + Mathf.Clamp(a, 0, n - 1)];
+            Vector3 P(int a, int b) => Pos(Mathf.Clamp(a, 0, n - 1), Mathf.Clamp(b, 0, n - 1));
             var nrm = (P(i, j + 1) - P(i, j - 1)).Cross(P(i + 1, j) - P(i - 1, j));
             nrm = nrm.LengthSquared() < 1e-10f ? Vector3.Up : nrm.Normalized();
+            var p = Pos(i, j);
             float bt = 0f;
-            if (!c.Ravine) { float sx = c.BankTop(pos[k].X, pos[k].Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
-            return map[k] = wall.Add(pos[k], nrm, 0f, fly[k], s[k], bt);
+            if (!c.Ravine) { float sx = c.BankTop(p.X, p.Z); bt = Sm(sx - 0.2f, sx + 1f, s[k]); }
+            return map[k] = wall.Add(p, nrm, 0f, fly[k], s[k], bt);
         }
         bool In(int i, int j) { float v = s[j * n + i]; return v >= Lo && v <= hi; }
         for (int j = 0; j < n - 1; j++)
@@ -269,10 +308,8 @@ public static partial class DungeonWalls
         }
         var mat = Material(c);
         for (int k = 0; k < mesh.GetSurfaceCount(); k++) mesh.SurfaceSetMaterial(k, mat);
-        GD.Print($"DungeonWalls {z.DungeonTheme}: {wallTris} wall tris, {rootTris} root tris");
-        var walls = new MeshInstance3D { Name = "DungeonWalls", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
-        if (!c.Ravine && BigRoots) BankRoots(c, s, n, walls, mat);   // (den round 9: the banks' big roots, DungeonWalls.BankRoots.cs)
-        return walls;
+        GD.Print($"DungeonWalls {z.DungeonTheme}: {wallTris} wall tris, {rootTris} root tris, {late} corners past the band placed late" + (late > 0 ? $" (s {lateLo:F1} to {lateHi:F1})" : ""));
+        return new MeshInstance3D { Name = "DungeonWalls", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
     }
 
     // One wall vertex: on the height profile, with the face's lumps (and the ravine's strata) pushed sideways.
@@ -281,7 +318,7 @@ public static partial class DungeonWalls
         floorY = c.Floor(x, z);
         float y = c.Ravine ? floorY - 0.1f + (c.HLoc(x, z) + 0.1f) * c.Rise(s) : c.BankY(x, z, s);
         float w = Sm(-0.1f, 0.4f, s) * (1 - Sm(1.4f, 2.4f, s));
-        if (w > 0 && (c.Ravine || !BigRoots))   // (den round 9: the big roots lie on the bank's own surface, BankY, unjittered)
+        if (w > 0)
         {
             float dx = 0.35f * w * (2 * N3(x * 0.9f + 3.1f, y * 0.6f, z * 0.9f) - 1);
             float dz = 0.35f * w * (2 * N3(x * 0.9f - 8.7f, y * 0.6f + 5f, z * 0.9f + 1.3f) - 1);
@@ -690,17 +727,22 @@ public static partial class DungeonWalls
             mat.SetShaderParameter("den_alb", GD.Load<TextureLayered>("res://art/dungeon/den/albedo.png"));
             mat.SetShaderParameter("bank_alb", GD.Load<TextureLayered>("res://art/dungeon/den/bank_albedo.png"));
             mat.SetShaderParameter("bank_nrm", GD.Load<TextureLayered>("res://art/dungeon/den/bank_normal.png"));
-            // (den round 9, bank lane) With the big roots: the painted bank is the dark tangle between them, its hollows
-            // near black and cool (hollow 0.1 lifted every dark of the painting to a mid grey: the round-8 scrim), its
-            // normal map softer (its painted edges drew ink fringes), the far wall receding into the dark.
-            bool r9 = BigRoots;
-            mat.SetShaderParameter("beyond_k", Args.Num("den-beyond", r9 ? 0.3f : 0.45f));
-            mat.SetShaderParameter("bank_gain", Args.Num("den-bank-gain", r9 ? 0.9f : 1.6f));
-            mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", r9 ? 0.02f : 0.1f));
-            mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", r9 ? 0.25f : 0.6f));
-            mat.SetShaderParameter("r9", r9 ? 1f : 0f);
-            mat.SetShaderParameter("broot_col", Args.Get("den-root-col") is string rc ? new Color(rc).SrgbToLinear() : new Color(0.2f, 0.12f, 0.075f));
-            mat.SetShaderParameter("wall_top_k", Args.Num("den-wall-top", 0.55f));
+            mat.SetShaderParameter("beyond_k", Args.Num("den-beyond", 0.45f));
+            mat.SetShaderParameter("bank_gain", Args.Num("den-bank-gain", 1.6f));
+            mat.SetShaderParameter("hollow_min", Args.Num("den-hollow", 0.1f));
+            mat.SetShaderParameter("bank_nk", Args.Num("den-bank-nk", 0.6f));
+            mat.SetShaderParameter("set_area", DungeonDress.SetArea(c.Z));   // (den round 10b: the mound is the dark mass behind the set)
+            mat.SetShaderParameter("set_glow", Args.Num("den-set-glow", 0.025f));
+            mat.SetShaderParameter("deep_tint", DungeonDress.V3("den-deep-tint", new Vector3(1.18f, 0.96f, 0.74f)));   // (r13) the mass past the cards warm umber, not cool grey
+            mat.SetShaderParameter("deep_mip", Args.Num("den-deep-mip", 3f));
+            mat.SetShaderParameter("set_deep", Args.Num("den-set-deep", 0.2f));   // (r13 0.5 -> 0.2: past the cards the mass reads as gloom, its border dark against dark)   // (r13) the deep painting's share in the mass past the cards
+            // (r14, B1) under the painted set the mass behind the cards is lit level and draws no ink: its cel facets and its
+            // silhouette ink (the mesh's own crease and cap seams) drew straight lines between the cards
+            if (DungeonDress.SetArea(c.Z).W > 1.5f)
+            {
+                mat.SetShaderParameter("set_flat", Args.Num("den-set-flat", 1f));
+                if (Args.Num("den-wall-ink", 2f) >= 0f) mat.SetShaderParameter("cel_ink", (int)Args.Num("den-wall-ink", 2f));
+            }   // (r11 0.008 -> 0.025: the frame's top-left corner was 59 % near-black)
         }
         return mat;
     }

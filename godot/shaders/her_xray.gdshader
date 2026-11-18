@@ -21,15 +21,16 @@ shader_type spatial;
 render_mode unshaded, depth_test_disabled, depth_draw_never, cull_back, blend_mix, shadows_disabled, fog_disabled;
 stencil_mode read, write, compare_not_equal, 7;
 
+global uniform vec4 crowd_den;   // (.y > 0: the den; project global)
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform vec3 fill_tint : source_color = vec3(0.13, 0.19, 0.30);
 uniform float fill_alpha = 0.50;
 uniform float strength = 0.0;
 uniform float strength_ref = 0.6;
-uniform float near = 0.5;
-uniform float full = 1.1;
+uniform float near = 0.15;   // (lane E lead 3: was 0.5; her own body is the mask pass now)
+uniform float full = 0.45;   // (was 1.1)
 uniform vec3 her_at = vec3(0.0, -1000.0, 0.0);
-uniform float her_r = 0.8;
+uniform float her_r = 0.0;   // (lane E lead 3: the capsule is off; was 0.8, it took a slab she stood against for her own body)
 uniform float her_top = 2.2;
 
 void fragment() {
@@ -43,6 +44,9 @@ void fragment() {
 	if (occ <= 0.001) discard;
 	float fres = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	float lit = 0.6 + 0.55 * clamp(dot(NORMAL, normalize(vec3(-0.35, 0.85, 0.4))), 0.0, 1.0) + 0.25 * fres * fres;
-	ALBEDO = fill_tint * lit;
-	ALPHA = clamp(occ * (strength / strength_ref) * fill_alpha, 0.0, 1.0);
+	vec3 tint = fill_tint; float fa = fill_alpha;
+	// den: warm, quiet x-ray so the boss reads solid; lane E 16 Nov
+	if (crowd_den.y > 0.0) { tint = pow(vec3(0.10, 0.07, 0.05), vec3(2.2)); fa = 0.5 * 0.2; }
+	ALBEDO = tint * lit;
+	ALPHA = clamp(occ * (strength / strength_ref) * fa, 0.0, 1.0);
 }

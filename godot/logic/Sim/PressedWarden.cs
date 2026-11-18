@@ -315,7 +315,7 @@ public static partial class Firing
         b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Tick, X = p.X, Z = p.Z, Radius = r, Heavy = heavy });
         if (heavy && w.Num(s => s.Line) is { } line)
         {
-            double len = AreaOf(b, w, line), width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2);
+            double len = b.SpinRadiusOf(w), width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2);
             double dx = Math.Sin(p.Facing), dz = Math.Cos(p.Facing);
             int most = Math.Max(1, (int)(w.Num(s => s.MaxLines) ?? 6));
             while (w.Lines.Count >= most) { Fade(b, w.Lines[0]); w.Lines.RemoveAt(0); }

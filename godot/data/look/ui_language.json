@@ -244,6 +244,19 @@
    "what": "12's red bar under her (the hostile/harm red)"
   }
  },
+ "loot": {
+  "_doc": "Loot tier colours as the code uses them (ItemViews.TierColour for labels and tiles, Palette.Rarity for the beams; the set's beam is BattleFx.Loot.Verdigris). Recorded values: the code does not read this block. In the den (MarkPass.Den) Rare and Epic beams, glints and ground labels are held to Oklab C .14 (Palette.CapChroma), their beam strength .7, so the set's verdigris is the loudest drop.",
+  "tiers": {
+   "common": {"hex": "#c8c0b0"},
+   "uncommon": {"hex": "#6fd46a"},
+   "rare": {"hex": "#5aa8ff", "L": 0.72, "C": 0.149, "h": 253, "den_cap_C": 0.14},
+   "epic": {"hex": "#c070ff", "L": 0.694, "C": 0.21, "h": 308, "den_cap_C": 0.14},
+   "set": {"label_hex": "#3fd6c0", "label_L": 0.793, "label_C": 0.128, "label_h": 181, "beam_rgb": [0.16, 0.8, 0.66], "beam_L": 0.757, "beam_C": 0.138, "beam_h": 173},
+   "legendary": {"hex": "#ffb040", "L": 0.815, "C": 0.152, "h": 71},
+   "storied": {"hex": "#ff6a3a", "L": 0.704, "C": 0.192, "h": 38},
+   "gem": {"hex": "#40e0c8"}
+  }
+ },
  "blocks": {
   "bronze": {
    "field": "#684422",

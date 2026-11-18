@@ -506,6 +506,9 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
+    /// <summary>(demo-look r2 her) The mount a slot holds now (null: none), for HerSteel.</summary>
+    public Node3D? HeldMount(string slot) => held.TryGetValue(slot, out var m) && IsInstanceValid(m) ? m : null;
+
     /// <summary>(aim-move, log only: BLADE) A held piece's grip point (the fist's fitted pocket its tilt turns about, else
     /// the piece's own origin), its tip and the tilt's axis (the palm's normal), in the world; null if the slot holds none
     /// or the piece has no tip.</summary>

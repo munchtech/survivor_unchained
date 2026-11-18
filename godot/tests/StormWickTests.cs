@@ -151,6 +151,24 @@ public sealed class StormWickTests(ITestOutputHelper output)
         Assert.True(b3.LinesStruck > b2.LinesStruck);
     }
 
+    /// <summary>(the coordinator, 18 Nov) The Sunder line reaches exactly the storm's ring: the sim's line = the spin's hit
+    /// radius, at the base area and at a larger one (Long Blade), so every hit has a crack under it.</summary>
+    [Fact]
+    public void The_line_reaches_the_ring()
+    {
+        foreach (var path in new string[]?[] { null, Long4 })
+        {
+            var (b, w) = Storm(path);
+            var evs = Spin(b, w, 3);
+            var ring = evs.OfType<Ev.Spin>().First(e => e.Phase == SpinPhase.Tick).Radius;
+            var line = evs.OfType<Ev.SpinLine>().First(e => e.Phase == SpinLinePhase.Thrown);
+            double len = Math.Sqrt((line.X1 - line.X0) * (line.X1 - line.X0) + (line.Z1 - line.Z0) * (line.Z1 - line.Z0));
+            output.WriteLine($"ring {ring:F3} line {len:F3} (path {(path == null ? "none" : "long")})");
+            Assert.Equal(ring, len, 6);
+            Assert.Equal(ring, b.SkillNumber(w, "line")!.Value, 6);
+        }
+    }
+
     [Fact]
     public void Long_Blade_reaches_30_percent_further()
     {

@@ -1112,7 +1112,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         // Its bar up before its name is called, so the arrival is heard as a boss's (stinger.boss, not stinger.danger).
         if (boss != null) G.SetBoss(BarOf(boss));
         G.Announce(new Announcement(BossName, (script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle) + (sworn.Length > 0 ? $" · Sworn: {sworn}" : ""), "danger", 3.4,
-            again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes));
+            again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes) { YieldsToFight = true });
         Objectives();
     }
 

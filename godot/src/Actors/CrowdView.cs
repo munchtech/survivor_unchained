@@ -234,6 +234,8 @@ public partial class CrowdView : Node3D
     {
         /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
         public float Char;
+        /// <summary>(lane E lead 6) A pack foe or elite of the fight's own: in the den it lies as the den's dead (DenDead).</summary>
+        public bool Den;
         /// <summary>The fallen's enemy id (its struck rim lasts into its fall: most of a crowd her blade strikes dies of it).</summary>
         public int Id = -1;
         /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
@@ -434,6 +436,11 @@ public partial class CrowdView : Node3D
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
+    /// <summary>(lane E lead 7) A den boss's struck flash this frame, 1 in its pulse (BattleFx.BossStruck: rate-limited, so a boss
+    /// struck many times a second flashes distinctly); it drives the boss's flare and flinch in place of its sim flash.</summary>
+    public static Func<int, float>? BossPulse;
+    /// <summary>(lane E lead 7) A den boss's flinch in its pulse (the old struck boss's sim flash).</summary>
+    const float BossFlinch = 0.4f;
     /// <summary>How far a dying body's death runs behind the sim's (s, by id and seed; 0 none): the Warden's heave kills
     /// stand in their last living pose until the heave lands, then fall, burst and are thrown on DieT minus this.</summary>
     public static Func<int, double, double>? DeathHeld;
@@ -930,7 +937,9 @@ public partial class CrowdView : Node3D
             if (stRole != null && e.State == EnemyState.Active && asset.Clips.ContainsKey(stRole)) { role = stRole; t = stT; }
         }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
+        float bp = e.Boss && Atmosphere.CrowdDen && e.State != EnemyState.Dying ? BossPulse?.Invoke(e.Id) ?? 0 : -1;
         float f = e.State == EnemyState.Dying ? 0 : (FlashHeld?.Invoke(e.Id) ?? (float)e.Flash) * (1 - Still);
+        if (bp >= 0) f = bp * BossFlinch * (1 - Still);
         // Local hit-stop: the pose (and the flash) of the first held frame is held, running at the rate; no walk, no slide.
         double shx = 0, shz = 0;   // (the shake is drawn on the body only: never in the place the walker rule reads)
         if (stopped)
@@ -1018,6 +1027,9 @@ public partial class CrowdView : Node3D
         float chr = e.State == EnemyState.Dying ? g.Char : FlareChar?.Invoke(ex, ez, true) ?? 0;
         tint = Charred(tint, chr);
         if (e.Fell && e.State == EnemyState.Dying) tint = Darkened(tint, (float)g.FallDark);
+        // (lane E lead 6, 17 Nov: in the den a dying pack foe or elite is dead to the shader from its kill frame, darkening over its fall: DenDead)
+        if (Atmosphere.CrowdDen && e.State == EnemyState.Dying && !e.Fell && !e.Boss && e.Disposition != Disposition.Ally)
+            tint = DenDead(tint, 0.5 * Smooth(e.DieT, 0, Ai.DieTime), chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         if (MassTrace && e.MassKill && e.State == EnemyState.Dying)
@@ -1052,6 +1064,10 @@ public partial class CrowdView : Node3D
         if (lrim > 0) { hk = new Vector2(WarmFlash, Math.Max(warm ? 0 : hk.Y, lrim)); warm = true; }
         else if (hk.X >= 0) hk.Y *= SurvivorUnchained.View.BattleFx.KillDimNow;
         if (hk.X >= 0) flare = hk.X;
+        // (lane E lead 7: a den boss's struck look is its pulse alone, whole body: vat DEN_BOSS_STRUCK)
+        // (round 3: the pulse steps 1, then .62, then 0; the shader reads it as dn_hit, which is 2 x the flash on a hit-kit
+        // struck body (its rim bit) and pow((flash - .12) / .88, 1.5) otherwise: so the flash is encoded to land the pulse as is)
+        if (bp >= 0) flare = bp <= 0 ? 0 : hk.X >= 0 ? 0.5f * bp : 0.12f + 0.88f * MathF.Pow(bp, 2f / 3f);
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();
@@ -1065,7 +1081,7 @@ public partial class CrowdView : Node3D
         var xf = new Transform3D(basis, at);
         crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, warm || (e.LastCrit && !e.LastDot && hk.X < 0),hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
             // (M5 r3) a champion's affix rim (Content/Champions.Look): its body reads at night and in shade
-            e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1);
+            e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1, e.Boss ? 2 : e.Elite ? 1 : 0, (float)heightAt(at.X, at.Z));   // (lane E s2: its dark on the ground under it, Vat.Push)
         // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)
         if (e.Def.CarriedLight != null && asset.GlassAt(role, t) is Vector3 gl) GlassOn[e.Id] = (xf * gl, e.Seed, Engine.GetProcessFrames());
         living++;
@@ -1086,6 +1102,15 @@ public partial class CrowdView : Node3D
     /// <summary>How heavy it is to throw: 0 light (flips off), 1 heavy (drags over).</summary>
     public static double Heft(Enemy e) => Smooth(e.Mass * (e.Def.Scale ?? 1), Fall.LightMass, Fall.HeavyMass);
 
+    /// <summary>(lane E lead 6) The den's dead (Atmosphere.CrowdDen): a grey tint of mean DenDeadTop x (1 - p), p its darkening
+    /// (0 at its kill, 0.5 down, 1 lying dark; a Flare's char darkens it more). Under the shader's 0.6 a body is dead
+    /// (vat.gdshaderinc DEN_DEAD: its den body capped, going to the bank umber), not a living foe's top band, pale tan. The mud's sign kept.</summary>
+    const float DenDeadTop = 0.58f;
+    static Color DenDead(Color tint, double p, float chr)
+    {
+        float v = DenDeadTop * (float)(1 - Math.Clamp(p, 0, 1)) * (1 - 0.5f * Math.Clamp(chr, 0, 1));
+        return new Color(Math.Sign(tint.R + 1e-9f) * v, v, v, tint.A);
+    }
     static Color Darkened(Color tint, float k) => k <= 0 ? tint : new Color(Math.Sign(tint.R + 1e-9f) * Mathf.Lerp(Math.Abs(tint.R), 0.04f, k), Mathf.Lerp(tint.G, 0.035f, k), Mathf.Lerp(tint.B, 0.05f, k), tint.A);
 
     void FellLook(Enemy e, Gait g, double t, float sc, Func<double, double, double> heightAt, ref Vector3 at, ref Godot.Basis basis, ref float dissolve)
@@ -1214,7 +1239,7 @@ public partial class CrowdView : Node3D
             censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
             float brim = FlareBandRim?.Invoke(st.Id) ?? 0, lift = FlareStatueLift?.Invoke(st.Id) ?? 0;
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1, floor: (float)heightAt(st.X, st.Z));
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
@@ -1234,7 +1259,7 @@ public partial class CrowdView : Node3D
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Rank > 0) tint *= new Color((float)e.RankR, (float)e.RankG, (float)e.RankB);
-        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)(((e.Def.Scale ?? 1) * e.RankScale) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad });
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)(((e.Def.Scale ?? 1) * e.RankScale) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad, Den = !e.Boss && e.Disposition != Disposition.Ally });
         cnLastRad = float.NaN;
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
@@ -1318,6 +1343,7 @@ public partial class CrowdView : Node3D
             float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
             if (FlareChar != null) c.Char = Math.Max(c.Char, FlareChar(c.X, c.Z, false));
             var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
+            if (Atmosphere.CrowdDen && c.Den) tint = DenDead(c.Tint, 0.5 + 0.5 * (1 - k) / 0.65, c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
             censusCorpse++;
@@ -1335,10 +1361,10 @@ public partial class CrowdView : Node3D
             {
                 var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
                 censusBurn++;
-                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow, floor: (float)heightAt(c.X, c.Z));
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0, floor: (float)heightAt(c.X, c.Z));
         }
     }
 

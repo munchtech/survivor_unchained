@@ -531,6 +531,11 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (dh.Contains("herlights") && Player != null) { Player.Light.Visible = false; Player.FolkLight.Visible = false; }
                 if (dh.Contains("alllights")) foreach (var n in GetTree().Root.FindChildren("*", "Light3D", true, false)) if (n is not DirectionalLight3D) ((Light3D)n).Visible = false;
                 if (dh.Contains("decals")) foreach (var n in GetTree().Root.FindChildren("*", "Decal", true, false)) ((Decal)n).Visible = false;
+                // (den r14) --dbg-hide "node:Set_B2,DungeonWalls,...": hide every 3D node whose name starts with one of the
+                // prefixes after "node:" (a layer-ID diagnostic: which layer draws an edge)
+                if (dh.IndexOf("node:", System.StringComparison.Ordinal) is int ni && ni >= 0)
+                    foreach (var pre in dh[(ni + 5)..].Split(',', System.StringSplitOptions.RemoveEmptyEntries))
+                        foreach (var n in GetTree().Root.FindChildren(pre + "*", "Node3D", true, false)) ((Node3D)n).Visible = false;
             }
             if (ShadowDbg && (shadowDbgT += dt) >= 2)
             {

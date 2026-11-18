@@ -83,12 +83,14 @@ vec4 p7_wave(vec2 p, float front, float lead, float trail, float fall, float lif
 		vec4 ac = p7_arc_at(j, sec);
 		float fj = float(j);
 		float dth = p7_wrap(th - ac.x);
-		float s = dth / max(ac.y * shrink, 1e-4) * ac.w, u = (s + 1.0) * 0.5;
+		// (lane B fx s2) |w| is the arc's own width (1: every caller but Sunder's mark), its sign the side its head is on
+		float hs = ac.w < 0.0 ? -1.0 : 1.0, wk = abs(ac.w) > 1e-3 ? abs(ac.w) : 1.0;
+		float s = dth / max(ac.y * shrink, 1e-4) * hs, u = (s + 1.0) * 0.5;
 		float inside = valid * step(abs(s), 1.0);
 		float env = p7_env(u) * inside;
 		float f = r0 + ac.z * L0 - L0 * kw * pow(clamp(1.0 - u, 0.0, 1.0), 1.6)
 			+ 0.35 * L0 * fx_gnoise(vec2(dth * 4.0 + fj * 5.1, fj * 1.3 + fx_stroke_seed));
-		float W = max(L * env * (1.0 + 0.3 * fx_gnoise(vec2(dth * 7.0 + fj * 3.3, 7.7 + fx_stroke_seed))), 1e-3);
+		float W = max(L * wk * env * (1.0 + 0.3 * fx_gnoise(vec2(dth * 7.0 + fj * 3.3, 7.7 + fx_stroke_seed))), 1e-3);
 		float d = f - rp;
 		float al = 0.06 + 0.86 * pow(clamp(u, 0.0, 1.0), 0.9);
 		float hot = smoothstep(0.15, 1.0, al);

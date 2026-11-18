@@ -38,6 +38,7 @@ public static partial class DungeonDress
         if (PitDecals)
             foreach (var (p, rad, co) in pitC)
             {
+                if (SetMode > 0 && SetIn(p.X, p.Y) && PlaceSetHole(c, "H2", p, co, 0)) continue;   // (r10d: the painted pit H2)
                 // (round 7) a big hole (r over 4 m) takes a pit painted at its own size: the 2.6 m pit stretched 2.1-2.4x
                 // read as a flat black disk ringed by jagged black fragments
                 bool isBig = rad > 4f && big.Count > 0;
@@ -49,6 +50,7 @@ public static partial class DungeonDress
         // the lair's shallow hollows: painted dishes, walkable, no hole (laid like a pit, scaled whole, never turned)
         foreach (var (hp, hr, vi) in DenHollows(c))
         {
+            if (SetMode > 0 && SetIn(hp.X, hp.Y) && PlaceSetHole(c, "H1", hp, new[] { hr }, vi)) continue;   // (r10d: the painted hollows H1)
             AddPit(c, bhol, hol[vi], hp, new[] { hr }, hr / hol[vi].MouthR);
             nHol++;
         }
@@ -69,6 +71,7 @@ public static partial class DungeonDress
                 {
                     float x = -z.Half + (i + 0.5f) * scan, zz = -z.Half + (j + 0.5f) * scan;
                     float w = Wall(c, x, zz);
+                    if (SetMode > 0 && SetIn(x, zz)) continue;   // (round 10: the painted set's spills own the banks' feet)
                     if (Mathf.Abs(w - 0.3f) > 0.12f || Hole(c, x, zz) < 1.2f) continue;
                     float gx = Wall(c, x + 0.4f, zz) - Wall(c, x - 0.4f, zz), gz = Wall(c, x, zz + 0.4f) - Wall(c, x, zz - 0.4f);
                     var g = new Vector2(gx, gz);
@@ -135,7 +138,7 @@ public static partial class DungeonDress
         foreach (var (bp0, bh) in c.Boulders)
         {
             bi++;
-            if (bh < 1.0f || roots.Count == 0) continue;
+            if (bh < 1.0f || roots.Count == 0 || (SetMode > 0 && SetIn(bp0.X, bp0.Y))) continue;
             var inw = new Vector2(Wall(c, bp0.X + 0.5f, bp0.Y) - Wall(c, bp0.X - 0.5f, bp0.Y), Wall(c, bp0.X, bp0.Y + 0.5f) - Wall(c, bp0.X, bp0.Y - 0.5f));
             inw = inw.LengthSquared() < 1e-8f ? Vector2.Down : inw.Normalized();
             int m = 1 + (int)(2.99f * Hash(bi, 1, 981));
@@ -226,6 +229,8 @@ public static partial class DungeonDress
     static List<FloorDecal> PitArt() => pitArt ??= LoadFloorDecals("res://art/dungeon/den/pit_decals.json");
 
     static ZoneData? hollowsFor;
+    /// <summary>(den r16 B2, R15f item 2) The hollows for DungeonLight, which builds first: the same list (cached per zone) by the same salt.</summary>
+    internal static List<(Vector2 p, float r, int v)> HollowsFor(ZoneData z) { Salt = z.Seed == 0 ? 0 : z.Seed * 40503 + 17; return DenHollows(new Ctx { Z = z }); }
     static List<(Vector2 p, float r, int v)> hollowsCache = new();
 
     /// <summary>(round 7) The lair's shallow hollows, as den_boss.png's floor has them: 4-6 painted dishes (dish radius
