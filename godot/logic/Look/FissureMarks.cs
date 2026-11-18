@@ -57,4 +57,18 @@ public static class FissureMarks
 
     /// <summary>`n` marks, but no more than fit `span` px at `each` px apart.</summary>
     static int Fit(int n, float span, float each) => Math.Max(0, Math.Min(n, (int)MathF.Floor(span / Math.Max(each, 1))));
+
+    /// <summary>(lane E lead 8, 17 Nov) How far the drawn line runs: from (x0,z0) toward (x1,z1) in `step` m, stopping at the
+    /// first point `blocked` calls blocked, then `back` m short of it so the taper ends on open floor. Returns the full length
+    /// when nothing blocks; view only (the sim's line is untouched). `blockedAt` is the length of the first blocked step, or -1.</summary>
+    public static float ClipRun(Func<double, double, bool> blocked, double x0, double z0, double x1, double z1, out float blockedAt, float step = 0.2f, float back = 0.3f)
+    {
+        double len = Math.Sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0));
+        blockedAt = -1;
+        if (len < 1e-6) return 0;
+        double dx = (x1 - x0) / len, dz = (z1 - z0) / len;
+        for (double a = step; a <= len + 1e-9; a += step)
+            if (blocked(x0 + dx * a, z0 + dz * a)) { blockedAt = (float)a; return (float)Math.Max(0, a - back); }
+        return (float)len;
+    }
 }

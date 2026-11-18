@@ -349,6 +349,7 @@ public partial class BattleFx
     /// storm.line.open s, its seam white-hot a sample then gold over amber, breathing; split: the seam flares white-hot, dust
     /// and chunks along the whole line within 0.1 s, the seam cools in steps (storm.seam.cool) and the gap breaks up where
     /// it lies (storm.line.life); faded: the seam steps out and the gap breaks up, nothing dealt.</summary>
+    string p7ClipTxt = "";
     void P7Line(Ev.SpinLine e)
     {
         if (P7Off) return;
@@ -358,6 +359,20 @@ public partial class BattleFx
         float len = from.DistanceTo(to);
         if (len < 0.3f) return;
         var dir = (to - from) / len;
+        // (lane E lead 8, 17 Nov) drawn only over open floor: stops at the first point the sim's collision calls blocked (logs,
+        // rocks, banks; "soft" is a hedge or fence, static, so counted); the sim's line, hits and X1/Z1 are unchanged
+        p7ClipTxt = "";
+        if (b0 != null)
+        {
+            float cl = SurvivorUnchained.Look.FissureMarks.ClipRun((x, z) => b0.Collision.Blocked(x, z, 0.15), from.X, from.Y, to.X, to.Y, out float bAt);
+            if (bAt >= 0)
+            {
+                p7ClipTxt = $", clipped to {cl:F2} m of {len:F2} at blocked ({from.X + dir.X * bAt:F2},{from.Y + dir.Y * bAt:F2})";
+                len = cl;
+                if (len < 0.3f) return;
+                to = from + dir * len;
+            }
+        }
         var side = new Vector2(-dir.Y, dir.X);
         int n = Math.Clamp((int)Mathf.Round(len / 1.0f), 4, 8);
         const int t0 = 2;
@@ -597,7 +612,7 @@ public partial class BattleFx
             GD.Print($"p7line marks: forks at/long px {fs}; chunks at/wide x long px {cs}; floor mask {(FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? "on" : "off")}");
         }
         if (Args.Has("clip") && cam != null)
-            GD.Print($"p7line fissure {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, start {a0:F0}px ahead (feet {feet:F0}), reach {cam.UnprojectPosition(V(from.X + dir.X * len, Y(from.X + dir.X * len, from.Y + dir.Y * len), from.Y + dir.Y * len)) * vk:F0}, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
+            GD.Print($"p7line fissure{p7ClipTxt} {apx:F0}px long, visible {(vis < 0 ? apx : vis):F0}px, start {a0:F0}px ahead (feet {feet:F0}), reach {cam.UnprojectPosition(V(from.X + dir.X * len, Y(from.X + dir.X * len, from.Y + dir.Y * len), from.Y + dir.Y * len)) * vk:F0}, taper {tpx:F0}px, strip {2 * hwPx:F0}px, lit {lit:+0;-0}, from {cam.UnprojectPosition(pts[0]) * vk:F0} to {cam.UnprojectPosition(pts[K]) * vk:F0} frame {Engine.GetFramesDrawn()}");
         return new P7Scar { N = node, M = m };
     }
 
