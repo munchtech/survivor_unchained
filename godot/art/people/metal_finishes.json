@@ -189,7 +189,10 @@
             3.5,
             0.3
           ],
-          "kit_lit_step_close": 0.7
+          "kit_lit_step_close": 0.7,
+          "kit_glint_px": 4,
+          "kit_dir_glint_far": 0.3,
+          "kit_glint_minpx": 5
         }
       },
       "gold": {
