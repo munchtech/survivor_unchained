@@ -1486,6 +1486,7 @@ public partial class GameHud : CanvasLayer
         annT = 0;
         annLife = a.Seconds;
         annYields = a.YieldsToFight;
+        annZone = a.Kind == "zone" && place == null;
         annQuit = -1;
         // (lane E lead 7) A boss's intro card stands just under the damage numbers' sheet, in play: a number struck under its
         // line reads over it (a boss's "159" on "Fire" garbled both, 17 Nov). Every other card keeps the HUD's root, over all
@@ -1498,6 +1499,8 @@ public partial class GameHud : CanvasLayer
         }
     }
 
+    /// <summary>The card up is the zone's (lane E lead 10: the corner's place name, the same words, hides while it shows).</summary>
+    bool annZone;
     double lastStruckAt = double.NegativeInfinity;
     string? tipShownId;
     /// <summary>The text rects of the cards up, in screen px (the boss card's, the tip's): damage numbers keep HudClear.Gap clear of them.</summary>
@@ -2204,6 +2207,7 @@ public partial class GameHud : CanvasLayer
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        zoneName.Modulate = Colors.White with { A = annZone ? 1 - Math.Clamp(announce.Modulate.A, 0, 1) : 1 };
         TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 24;
         Rect2? header = null;
         if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
@@ -2239,7 +2243,25 @@ public partial class GameHud : CanvasLayer
         }
         TipBottom = TipUp ? tipLine!.Area.End.Y : 0;
         CardText.Clear();
-        if (Banner is { } bn) CardText.Add(bn);
+        if (Banner is { } bn)
+        {
+            // (lane E lead 10: the card's text block in screen px: its own children's rects, kicker to closing rule, wide as the text;
+            // the boss card stands under `play`, and BannerRect's min-size height stopped short of the subtitle's row)
+            float y0 = float.MaxValue, y1 = float.MinValue;
+            foreach (var ch in announce.GetChildren())
+                if (ch is Control c && c.Visible) { var g = c.GetGlobalRect(); y0 = Math.Min(y0, g.Position.Y); y1 = Math.Max(y1, g.End.Y); }
+            var off = announce.GlobalPosition - announce.Position;
+            // (the labels' min widths are a word's, not the line's: measure the lines themselves)
+            float tw = 0;
+            foreach (var lb in new[] { annTitle, annSub, annKicker })
+                if (lb.Visible && lb.Text.Length > 0)
+                    tw = Math.Max(tw, lb.GetThemeFont("font").GetStringSize(lb.Text, HorizontalAlignment.Left, -1, lb.GetThemeFontSize("font_size")).X);
+            tw = Math.Min(announce.Size.X, tw + 40);
+            var blk = new Rect2(announce.GlobalPosition.X + announce.Size.X / 2 - tw / 2, bn.Position.Y + off.Y, tw, bn.Size.Y);
+            if (y1 > y0) { blk.Position = new Vector2(blk.Position.X, y0); blk.Size = new Vector2(blk.Size.X, y1 - y0); }
+            else blk.Position += new Vector2(0, off.Y);
+            CardText.Add(blk);
+        }
         if (TipUp && tipLine!.Modulate.A > 0.05f) CardText.Add(tipLine.Area);
         // The chain's heat flows toward its value; a new level has already flared it and filled it,
         // and it drains back to what carried over.
