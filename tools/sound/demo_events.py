@@ -70,6 +70,33 @@ ev("dodge.perfect", "sfx", "her_perfect", 0.6, near=1, synth="under")
 ev("her.stance", "sfx", "her_stance", 0.5, near=1)
 ev("heartbeat", "sfx", "her_heartbeat", 0.6, near=1)
 
+# --- the owner's second batch (16 Nov 13:01-13:42; ids are the hooks' own, docs/team/den_sound_events.md "Second batch")
+# skills: from SoundBridge on Ev.Cast (Sunder's heavy cut, Groundbreaker's press) and Ev.Spin Start (Bladestorm); gain by the loudness of the
+# take each stands beside (sunder_impact 0.26-0.45, quake_crack 0.45) since the ingest levelled them to those
+ev("skill.sunder.heavy", "sfx", "skill_sunder", 0.45, pitch=[0.97, 1.03], near=1)
+ev("skill.groundbreaker.crack", "sfx", "skill_groundbreaker", 0.5, pitch=[0.98, 1.02], near=1)
+ev("skill.bladestorm.spin", "sfx", "skill_bladestorm", 0.7, near=1, stereo=True)
+# the skill tree (Sfx.Lamps cues): the screen's own swells on the interface bus, the ticks at the hover's level
+ev("lamps.open", "ui", "tree_open", 0.3, near=1, stereo=True)
+ev("lamps.close", "ui", "tree_close", 0.3, near=1, stereo=True)
+ev("lamps.focus_small", "ui", "tree_focus", 0.22, pitch=[0.97, 1.03], near=1)
+ev("lamps.focus_notable", "ui", "tree_focus", 0.3, pitch=[0.97, 1.03], near=1)
+ev("lamps.focus_blue", "ui", "tree_focus", 0.3, pitch=[0.97, 1.03], near=1)
+ev("lamps.path_tick", "ui", "tree_path", 0.3, pitch=[0.97, 1.03], near=1)
+ev("lamps.denied", "ui", "tree_denied", 0.32, near=1)
+# the interface (Sfx.Hover, Click, Equip): no gate here, the recipes gate
+ev("ui.hover", "ui", "ui_hover", 0.22, pitch=[0.97, 1.03], near=1)
+ev("ui.click", "ui", "ui_click", 0.3, pitch=[0.97, 1.03], near=1)
+ev("ui.equip", "ui", "ui_equip", 0.35, near=1)
+# loot picked up by rarity (Sfx.Loot: a toast at rarity 2 and up, a relic, a tome, a quench is rare)
+ev("loot", "ui", "loot_generic", 0.4, pitch=[0.98, 1.03], near=1, stereo=True)
+ev("loot.rare", "ui", "loot_rare", 0.5, near=1, stereo=True)
+# gear put on, by slot (Sfx.Equip(slot): Body plate, Head and Feet helm-and-boots; the rest ui.equip)
+ev("equip.plate", "ui", "equip_plate", 0.4, pitch=[0.97, 1.03], near=1)
+ev("equip.helm_boots", "ui", "equip_helmboots", 0.4, pitch=[0.97, 1.03], near=1)
+# BANKED, NO HOOK (the set's drops and its completion are not wired: lanes B and D fire "set.complete", Sfx.Cue)
+ev("set.complete", "ui", "set_complete", 0.5, near=1, stereo=True, lead=True)
+
 
 def line(id, d):
     return f'    {json.dumps(id)}: {json.dumps(d)}'

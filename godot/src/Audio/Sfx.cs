@@ -1094,10 +1094,11 @@ public static partial class Sfx
         a.Play(new Tone { F = 220, F2 = 180, D = 0.12, G = 0.04, Bus = Bus.Ui });
     }
 
-    public static void Equip()
+    /// <summary>A piece put on, or a gem seated: by its slot the recorded plate or helm-and-boots (EquipCue), else the interface's own.</summary>
+    public static void Equip(Rpg.EquipSlot? slot = null)
     {
         if (A is not { } a) return;
-        if (Bank("ui.equip")) return;
+        foreach (var id in EquipCue.Chain(slot)) if (Bank(id)) return;
         a.Play(new Clip { Of = "cloth", G = 0.25, Pitch = R(0.95, 1.05), Bus = Bus.Ui });
         a.Play(new Fm { F = R(380, 460), Ratio = 1.41, Index = 2.2, D = 0.22, G = 0.04, Bus = Bus.Ui });
         a.Play(new Hiss { D = 0.06, G = 0.03, Bp = 1800, Bus = Bus.Ui });

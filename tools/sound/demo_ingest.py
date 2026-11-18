@@ -83,6 +83,27 @@ SPEC = {
     "her_perfect": ("shot", 1, ["hurt_her"], ["her perfect"]),
     "her_stance": ("shot", 1, ["hurt_her"], ["Stance1", "Stance2"]),
     "her_heartbeat": ("shot", 1, ["hurt_her"], [f"low-health-heartbeat#{k}" for k in range(4)]),
+    # --- (16 Nov 13:01-13:42, the owner's second batch, same folder) skills: Sunder and Groundbreaker are placed in the world (mono);
+    #     Bladestorm's six seconds of whirl is the storm's own bed (stereo, a long fade: it is cut at the spin's start, never looped)
+    "skill_sunder": ("shot", 1, ["sunder_impact"], ["sunder"]),
+    "skill_groundbreaker": ("shot", 1, ["quake_crack"], ["groundbreaker"]),
+    "skill_bladestorm": ("sting", 2, ["storm_whir"], ["Bladestorm"]),
+    # --- the skill tree (the Lamps screen): open and close are slow swells (stereo), the rest are ticks (mono)
+    "tree_open": ("sting", 2, ["ui_open"], ["skill tree open"]),
+    "tree_close": ("sting", 2, ["ui_close"], ["skill tree close"]),
+    "tree_focus": ("shot", 1, ["ui_card"], ["skill tree focus"]),
+    "tree_path": ("shot", 1, ["ui_pick"], ["skill tree path click"]),
+    "tree_denied": ("shot", 1, ["ui_deny"], ["skill tree denied"]),
+    # --- the interface
+    "ui_hover": ("shot", 1, ["ui_card"], ["hover"]),
+    "ui_click": ("shot", 1, ["ui_pick"], ["click"]),
+    "ui_equip": ("shot", 1, ["ui_pick"], ["equip ui"]),
+    # --- loot picked up, by rarity (the drop's own fall is drop_<tier>); gear put on, by slot; a set completed
+    "loot_generic": ("shot", 2, ["gold_pickup"], ["Generic loot pickup"]),
+    "loot_rare": ("sting", 2, ["drop_rare"], ["Rare loot pickup"]),
+    "equip_plate": ("shot", 1, ["impactPlate_medium"], ["Equip plate armor"]),
+    "equip_helmboots": ("shot", 1, ["impactPlate_medium"], ["Equp helm or boots"]),
+    "set_complete": ("sting", 2, ["drop_set"], ["set complete"]),
 }
 
 IMPORT_TEMPLATE = (SOUND / "anvil_0.wav.import")
@@ -301,7 +322,7 @@ def main():
     if not a.dry:
         (SOUND / "sounds.json").write_text(json.dumps(counts, indent=1) + "\n", encoding="utf-8")
     table = ["# Den sound ingest (tools/sound/demo_ingest.py)", "",
-             "Source: `survivorsunchained_inputs/sounds_demo/` (ElevenLabs, made by the owner, 15-16 Nov 2026, no attribution needed).",
+             "Source: `survivorsunchained_inputs/sounds_demo/` (ElevenLabs, made by the owner, 15-16 Nov 2026, no attribution needed; the last 16 files written 16 Nov 13:01-13:42).",
              "Format: 16-bit PCM, 44100 Hz; mono for takes the bank places in the world, stereo for loops, music, the Pack-Mother's calls.",
              "Level: each family takes the mean LUFS of its nearest banked neighbour (column `neighbour`); music = the title bed +2 LU;",
              "`limited` = the take would have passed -1 dBFS, so its gain was capped there.", "",

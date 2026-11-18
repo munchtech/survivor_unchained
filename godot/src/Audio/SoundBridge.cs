@@ -32,7 +32,7 @@ public sealed class SoundBridge
     readonly DenSound.HerVoice her = new();
     readonly Random dice = new(23);
     int xpStep, swellTier = -1;
-    double xpT, hostilesNear, beatT, sweepT, swellT, now;
+    double xpT, hostilesNear, beatT, sweepT, swellT, now, spinAt = -99;
     /// <summary>The player's kills in the last second and a half, for the swell (S-08).</summary>
     readonly Queue<double> recent = new();
     static readonly int[] SwellAt = [15, 40, 80, 150];
@@ -105,7 +105,16 @@ public sealed class SoundBridge
                 case Ev.HardLanding hl2: Sfx.Cue("dash.hard_landing", At(hl2.X, hl2.Z)); break;
                 // (P7) Bladestorm: the whir chained on every blow of the spin, the break, each line's split; Iron Vow's
                 // brace and stored blows (its burst is its Ev.Explosion's, art.iron_vow_burst.burst)
-                case Ev.Spin sn when sn.Phase is SpinPhase.Start or SpinPhase.Tick: Sfx.Cue("art.bladestorm.whir", At(sn.X, sn.Z)); break;
+                // The owner's recording of the storm (6 s, 16 Nov) plays at the spin's start and carries its own whir; the chained
+                // whir returns once it has run out (a spin held past 5.5 s) and stands alone where the recording is not banked.
+                case Ev.Spin { Phase: SpinPhase.Start } ss when SoundBank.Has("skill.bladestorm.spin"): spinAt = now; Sfx.Cue("skill.bladestorm.spin", At(ss.X, ss.Z)); break;
+                case Ev.Spin sn when sn.Phase is SpinPhase.Start or SpinPhase.Tick:
+                    if (now - spinAt > 5.5) Sfx.Cue("art.bladestorm.whir", At(sn.X, sn.Z));
+                    break;
+                // Sunder's heavy cut (every fourth: the one that splits the ground) and Groundbreaker's press: the owner's recordings
+                // of the two (16 Nov), under what the swing and the heave already play.
+                case Ev.Cast { Weapon: "sunder", Heavy: true }: Sfx.Cue("skill.sunder.heavy", At(px, pz)); break;
+                case Ev.Cast { Weapon: "groundbreaker" }: Sfx.Cue("skill.groundbreaker.crack", At(px, pz)); break;
                 case Ev.Spin { Phase: SpinPhase.Break } sb: Sfx.Cue("art.bladestorm.break", At(sb.X, sb.Z)); break;
                 case Ev.SpinLine { Phase: SpinLinePhase.Split } sl: Sfx.Cue("art.bladestorm.split", At((sl.X0 + sl.X1) / 2, (sl.Z0 + sl.Z1) / 2)); break;
                 case Ev.Brace { Phase: BracePhase.Start } bs: Sfx.Cue("art.iron_vow.brace", At(bs.X, bs.Z)); break;

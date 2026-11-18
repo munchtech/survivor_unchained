@@ -5,6 +5,7 @@ using Godot;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
+using SurvivorUnchained.View;
 using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
@@ -533,6 +534,7 @@ public partial class CreateScreen : Overlay
         v.AddChild(SexRow());
         v.AddChild(Style.Gap(Style.Gap1));
         foreach (var (id, c) in Callings.Archetypes)
+            if (P1Body.Offered(id) || d.Archetype == id)
             v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), c.Name, c.Tagline, d.Archetype == id, () => Set(() => { d.Section = 0; ChooseArchetype(id); })));
         v.AddChild(Style.Gap(Style.Gap2));
         v.AddChild(Arms(a));

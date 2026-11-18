@@ -1954,6 +1954,9 @@ public partial class PlayerView : Node3D
     public static string? TourClip { get; private set; }
     public static double TourTime { get; private set; } = -1;
     List<string>? tourList;
+    static readonly int TourShots = (int)SurvivorUnchained.Args.Num("clip-tour-shots", 0);
+    static readonly long TourWait = (long)SurvivorUnchained.Args.Num("clip-tour-wait", 0);
+    int tourShot;
     int tourAt = -1, tourPhase;   // 0: next clip to set up, 2: its first pose drawn for a frame, 1: playing, 3: done
     List<string>? TourList => TourArg == null ? null : tourList ??= TourNames();
 
@@ -1973,9 +1976,15 @@ public partial class PlayerView : Node3D
     {
         var list = tourList!;
         if (tourPhase == 3) return;   // done, quitting
+        // --clip-tour-wait F (lane G motion probe): the first clip starts after process frame F (a close-up's camera settles first)
+        if (tourAt < 0 && tourPhase == 0 && (long)Engine.GetProcessFrames() < TourWait) return;
         if (tourPhase == 1)
         {
             TourTime = person.Anim.CurrentAnimationPosition;
+            // --clip-tour-shots N (lane G motion probe, 16 Nov): N frames a clip, evenly over its length, saved as CLIP_KK
+            if (TourShots > 0 && person.Anim.CurrentAnimation is { } ca && person.Anim.GetAnimation(ca) is { } tl)
+                while (tourShot < TourShots && TourTime >= tourShot * tl.Length / TourShots)
+                    Shots.WantFrames($"{list[tourAt]}_{tourShot++:00}", 0);
             if (person.Anim.IsPlaying()) return;
             GD.Print($"clip-tour: {list[tourAt]} end");
         }
@@ -2005,7 +2014,7 @@ public partial class PlayerView : Node3D
         person.Anim.Play(full);
         person.Anim.Seek(TourFrom, true);
         person.Anim.Pause();
-        TourClip = clip; TourTime = TourFrom;
+        TourClip = clip; TourTime = TourFrom; tourShot = 0;
         bool moveClip = clip.StartsWith("idle_") || clip.StartsWith("run_") || clip.StartsWith("sprint_") || clip.StartsWith("stop_") || clip.StartsWith("walk_");
         if (carriage != null) carriage.HeadLevel = moveClip || own.Stance(clip) ? HeadLevel : 0;
         if (person.Pose != null) person.Pose.Native = 1;

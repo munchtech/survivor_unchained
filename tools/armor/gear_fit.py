@@ -72,13 +72,38 @@ PEOPLE = os.path.join(REPO, "godot", "art", "people")
 ARMOR = os.path.join(REPO, "godot", "art", "armor")
 GEAR = os.path.join(REPO, "godot", "art", "gear")
 BIND = os.path.join(GEAR, "bind")
-BIND_VERSION = 1  # bump when the bind step changes what it writes; `stale` then rebinds everything
+BIND_VERSION = 2  # bump when the bind step changes what it writes; `stale` then rebinds everything
 OUT = os.path.join(GEAR, "out")
 BIND_BODY = os.path.join(PEOPLE, "body_p1")
 A_PATH = os.path.join(PEOPLE, "heroine.glb")
 BAND_MM = {0: 1.0, 1: 1.0, 2: 2.0, 3: 3.0}
 BENDY_MATS = ("leather", "thread", "cloth", "satin", "fur", "hide", "linen", "stocking", "glove", "pipe")
 SMALL_SHARE = 0.02
+# AN ORNAMENT RIDES AS ONE (outfit rows; the refit lead, 17 Nov: nothing of B in an outfit may read worse than A): a
+# component of an outfit's metal mesh (not BENDY_MATS, not a shadow or ink) that A's file skins with ONE blend of weights
+# (every joint's weight the same over it within "uniform": A made it to move rigidly) and whose longest side at A's rest
+# is at most "max_mm" (a boss, a gem, a buckle, a clasp, a stud; A's rigid outfit parts measured 7 to 67 mm, its rigid
+# plates 105 mm and up) is a rigid component on every body: placed A -> B by Procrustes, one blend of weights (the plain
+# mean of the body's weights over its own bound points: no slot roles, no worn rest, no stand-off law; those are the
+# armor rows'), its blend shapes as their mean delta. Bendy, each vertex took the weights and shapes of its own bound skin
+# point: the warden top's sternum boss (37 mm, 42 mm off her skin over the cleavage) took breast_tip weights up to 0.58
+# on its upper rays and form_support_press / _lift deltas 12 mm apart, and with the top worn (support 1: the shapes on,
+# the springs' tips ~20 mm up) its upper rays stood out of it as a blade (36 mm off rigid at the worn rest; 0.1 mm as
+# one). A smaller part within "ride_mm" of a larger one rides it (the boss's gem); one further from all rides itself.
+ORNAMENT = {"max_mm": 80.0, "uniform": 1e-3, "ride_mm": 2.0, "not": ("shadow", "ink"), "plates": True,
+            "plate_blend": "mean"}
+# A PLATE RIDES AS A RIDES IT (main's call, 17 Nov, Lane G: "plates over 80 mm ride RIGID on B as on A"): a component as
+# above but longer than "max_mm" (the warden boots' shin, knee and instep plates, 105-134 mm; the dome pauldron's steel,
+# 180 mm) is rigid on every body too, placed the same way, and rides A's OWN blend of weights by joint name (A made the
+# shin plate move with the calf alone, {calf: 1}: the plain mean of B's skin under it would mix in thigh and foot and turn
+# it half-way with the knee and ankle). A joint of A's blend that B lacks: the plain mean, as an ornament. Bendy on B
+# before (17 Nov, f19b161e0), each vertex took its own skin point's weights: the 180 mm pauldron steel spread 55 mm of
+# shape deltas over itself and the boots' plates bent at the knee and ankle.
+# "plate_blend" (lead 4, 17 Nov, measured on B's warden boots over idle_warden(_town), run_warden, sword_heavy, leap,
+# gear_wear skin under warden.boots, mm^2 / run's worst mm): "a" (A's own blend: the heel cups, 135 mm tall, ride foot 1)
+# 1526 / 11 mm, her lower calf over the cup's top as the foot points; "mean" (the ornaments' plain mean of B's skin
+# weights under the plate: foot with some calf) 647 / 8 mm; bendy (before) 0. "mean" ships; "a" stays switchable.
+OUTFIT_KINDS = ("outfit", "outfit_lod")
 SMOOTH = {"rounds": 12, "near_m": 0.004, "far_m": 0.02}
 TIERS = ("close", "play")
 
@@ -102,6 +127,75 @@ def is_rigid_mesh(unit_rigid, node):
         return False
     mat = node.rsplit(".", 1)[-1]
     return not any(k in mat for k in BENDY_MATS)
+
+
+def ornament_mask(node, X, Tu, inv, J, W, nj=None):
+    """Per unique point of an outfit mesh: True on its ornaments (ORNAMENT: small metal components A skins with one
+    blend of weights). X: A's rest points (uniques), Tu: unique triangles, inv: vertex -> unique, J, W: A's weights."""
+    mat = node.rsplit(".", 1)[-1]
+    if any(k in mat for k in BENDY_MATS) or any(k in mat for k in ORNAMENT["not"]):
+        return np.zeros(len(X), bool)
+    nc, lab, _ = components(Tu, len(X), X)
+    nj = int(J.max()) + 1 if nj is None else nj
+    D = np.zeros((len(J), nj))
+    Wn = W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+    np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.ravel()), Wn.ravel())
+    labv = lab[inv]
+    hi = np.full((nc, nj), -np.inf)
+    lo = np.full((nc, nj), np.inf)
+    np.maximum.at(hi, labv, D)
+    np.minimum.at(lo, labv, D)
+    uni = (hi - lo).max(1) <= ORNAMENT["uniform"]
+    ext = np.zeros((nc, 3))
+    for k in range(3):
+        mx = np.full(nc, -np.inf)
+        mn = np.full(nc, np.inf)
+        np.maximum.at(mx, lab, X[:, k])
+        np.minimum.at(mn, lab, X[:, k])
+        ext[:, k] = mx - mn
+    small = ext.max(1) <= ORNAMENT["max_mm"] / 1000.0
+    return (uni & (small | bool(ORNAMENT.get("plates"))))[lab]
+
+
+def plate_blends(node, X, Tu, inv, J, W, names):
+    """Per unique point of an outfit mesh: the index of its plate's A blend in the returned list ({joint name: weight},
+    weights over 1e-4, summing to 1), -1 off the plates (ORNAMENT "plates": rigid components longer than "max_mm")."""
+    pid = np.full(len(X), -1, np.int32)
+    blends = []
+    m = ornament_mask(node, X, Tu, inv, J, W)
+    if not m.any():
+        return pid, blends
+    nc, lab, _ = components(Tu, len(X), X)
+    first = np.full(len(X), -1, np.int64)
+    first[inv[::-1]] = np.arange(len(inv))[::-1]
+    for c in np.unique(lab[m]):
+        own = lab == c
+        ext = (X[own].max(0) - X[own].min(0)).max()
+        if ext <= ORNAMENT["max_mm"] / 1000.0:
+            continue
+        v = int(first[np.nonzero(own)[0][0]])
+        w = W[v] / max(float(W[v].sum()), 1e-12)
+        bl = {}
+        for j, x in zip(J[v], w):
+            if x > 1e-4:
+                bl[names[int(j)]] = bl.get(names[int(j)], 0.0) + float(x)
+        pid[own] = len(blends)
+        blends.append(bl)
+    return pid, blends
+
+
+def a_blend(body, blend):
+    """A plate's A blend ({joint name: weight}) as the body's (J, W) top 8, or None when the body lacks one of its joints."""
+    names = body.joint_names
+    if any(n not in names for n in blend):
+        return None
+    items = sorted(blend.items(), key=lambda kv: -kv[1])[:8]
+    J = np.zeros(8, np.int64)
+    W = np.zeros(8)
+    tot = sum(x for _, x in items)
+    for k, (n, x) in enumerate(items):
+        J[k], W[k] = names.index(n), x / tot
+    return J, W
 
 
 def units():
@@ -333,6 +427,23 @@ def rigid_roles(path=None):
     if path not in _ROLES:
         _ROLES[path] = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"slots": {}}
     return _ROLES[path]
+
+
+def plate_blend_of(bd, ms, own_all):
+    """The A blend of the plate a rigid component (own_all over the tier's uniques) is (ORNAMENT "plates"), or None."""
+    if ORNAMENT.get("plate_blend", "a") != "a":
+        return None
+    k0 = 0
+    for mm in ms:
+        n = len(bd.z[f"comp{mm['i']}"])
+        key = f"pbl{mm['i']}"
+        if key in bd.z and mm.get("plate_blends"):
+            ids = bd.z[key][own_all[k0:k0 + n]]
+            ids = ids[ids >= 0]
+            if len(ids):
+                return mm["plate_blends"][int(np.bincount(ids).argmax())]
+        k0 += n
+    return None
 
 
 def rigid_blend(body, trs, ws, slot, roles=None):
@@ -584,28 +695,51 @@ def uniques(P):
     return first, inv.reshape(-1).astype(np.int32)
 
 
-def rigid_groups(Xs, Ts, ns, rigid_flags):
+def rigid_groups(Xs, Ts, ns, rigid_flags, reach=None):
     """Over the rigid meshes of one tier: (per mesh: global component id per unique or -1), leader per component,
-    component areas."""
+    component areas. A flag is a mesh's (True: all of it) or a per-unique mask (its components that are rigid: the
+    ornaments). reach (m, the ornaments' rule): a component rides the largest larger one it touches (a point within
+    reach), transitively; None: the armor rows' rule (under SMALL_SHARE of the rigid area rides the nearest big one)."""
     comp_of, areas, base = [], [], 0
     for X, T, n, rg in zip(Xs, Ts, ns, rigid_flags):
-        if not rg:
+        mask = None if isinstance(rg, (bool, np.bool_)) else np.asarray(rg, bool)
+        if (mask is None and not rg) or (mask is not None and not mask.any()):
             comp_of.append(np.full(n, -1, np.int64))
             continue
         nc, lab, area = components(T, n, X)
-        comp_of.append(lab + base)
+        if mask is not None:
+            keep = np.zeros(nc, bool)
+            keep[lab[mask]] = True
+            new = np.full(nc, -1, np.int64)
+            new[keep] = np.arange(int(keep.sum()))
+            lab = new[lab]
+            area, nc = area[keep], int(keep.sum())
+            comp_of.append(np.where(lab >= 0, lab + base, -1))
+        else:
+            comp_of.append(lab + base)
         areas.append(area)
         base += nc
     if not base:
         return comp_of, np.zeros(0, np.int64), np.zeros(0)
     areas = np.concatenate(areas)
+    Pall = np.vstack([X[c >= 0] for X, c in zip(Xs, comp_of) if (c >= 0).any()])
+    Call = np.concatenate([c[c >= 0] for c in comp_of if (c >= 0).any()])
+    from scipy.spatial import cKDTree
+    if reach is not None:
+        # (ornaments: a part rides the largest larger part it touches, and so on down; one touching none rides itself)
+        lead = np.arange(base)
+        tree = cKDTree(Pall)
+        for c in np.argsort(-areas, kind="stable"):
+            hits = tree.query_ball_point(Pall[Call == c], reach)
+            nb = np.unique(Call[np.concatenate([np.asarray(h, np.int64) for h in hits])])
+            nb = nb[areas[nb] > areas[c]]
+            if len(nb):
+                lead[c] = lead[nb[np.argmax(areas[nb])]]
+        return comp_of, lead, areas
     big = areas >= SMALL_SHARE * areas.sum()
     if not big.any():
         big[np.argmax(areas)] = True
     lead = np.arange(base)
-    Pall = np.vstack([X[c >= 0] for X, c in zip(Xs, comp_of) if (c >= 0).any()])
-    Call = np.concatenate([c[c >= 0] for c in comp_of if (c >= 0).any()])
-    from scipy.spatial import cKDTree
     keep = big[Call]
     tree = cKDTree(Pall[keep])
     ccent = np.zeros((base, 3))
@@ -671,15 +805,22 @@ def bind_unit(u, car, bodies):
         Nv = U(np.einsum("nij,nj->ni", M_all, U(N)))
         if h.any():
             Nv = U(h[inv] * U(N) + (1 - h[inv]) * Nv)
+        orn = ornament_mask(node, X, Tu, inv, J, W) if u["kind"] in OUTFIT_KINDS and not rg else None
+        pbl, pblends = (np.full(len(X), -1, np.int32), [])
+        if orn is not None and orn.any() and ORNAMENT.get("plates"):
+            sk = g.js["skins"][g.js["nodes"][ni]["skin"]]
+            pbl, pblends = plate_blends(node, X, Tu, inv, J, W, [g.js["nodes"][j].get("name", "") for j in sk["joints"]])
         by_tier.setdefault(tier, []).append(dict(i=i, node=node, rg=rg, X=X, Xb=Xb, Nv=Nv, Mu=M_all[first], N=U(N), inv=inv,
-                                                 T=Tu, E=E, nv=len(P), cA=cA, move=np.linalg.norm(Xb - X, axis=1)))
+                                                 T=Tu, E=E, nv=len(P), cA=cA, move=np.linalg.norm(Xb - X, axis=1),
+                                                 orn=orn if orn is not None and orn.any() else None, pbl=pbl, pblends=pblends))
     aux = None
     if u.get("sockets"):
         aux = socket_points(json.load(open(os.path.join(REPO, u["sockets"]))))
     for tier, ms in by_tier.items():
         body = bodies[tier]
         comp_of, lead, areas = rigid_groups([m["X"] for m in ms], [m["T"] for m in ms], [len(m["X"]) for m in ms],
-                                           [m["rg"] for m in ms])
+                                           [m["orn"] if m["orn"] is not None else m["rg"] for m in ms],
+                                           reach=ORNAMENT["ride_mm"] / 1000.0 if u["kind"] in OUTFIT_KINDS else None)
         X0 = np.vstack([m["X"] for m in ms])
         X1 = np.vstack([m["Xb"] for m in ms])
         comp = np.concatenate(comp_of)
@@ -751,8 +892,11 @@ def bind_tier(u, tier, ms, body, car, rotAB, lead, arrays, metas, rep):
         nloc = np.einsum("nji,nj->ni", F[m["inv"]], Nb)
         arrays.update({f"inv{i}": m["inv"], f"tri{i}": tri, f"bw{i}": bq, f"off{i}": off, f"nrm{i}": snorm16(nloc),
                        f"comp{i}": comp.astype(np.int32)})
+        if m.get("pblends"):
+            arrays[f"pbl{i}"] = m["pbl"]
         metas.append({"i": i, "node": m["node"], "tier": tier, "rigid": bool(m["rg"]), "nv": int(m["nv"]),
-                      "nu": int(len(Xb))})
+                      "nu": int(len(Xb)), "ornament_uniques": int((comp >= 0).sum()) if not m["rg"] else 0,
+                      "plate_blends": m.get("pblends") or []})
         Xe, _ = eval_points(body, tri, bq, off)
         cB, _ = car.b_clear(Xb)
         cA = m["cA"]
@@ -975,7 +1119,334 @@ def rim_leads(lead, rims):
     return lead
 
 
-def standoff_floor(bd, ms, ev, path=None, lead=None):
+def plate_riders(bd, ms, ev, comp, lead, rots):
+    """{mesh i: (mask over its uniques, host leader per unique)}: an armor row's bendy parts that A skins with their
+    plate's one blend ride that plate on every body (rigid_roles.json "ride_plate": {"<piece id>": {"<node suffix>":
+    near_mm}}; solver U, 17 Nov: plate_pauldrons_warden's buckle strap is A's cop blend on A, B's skin on B, and stood
+    off the cop's side in her idles). Each connected piece of the mesh takes the fit and the blend of the rigid group
+    most of its points lie nearest at the bind (within near_mm; a piece farther off stays bendy)."""
+    named = (rigid_roles().get("ride_plate") or {}).get(bd.id) or {}
+    if not named or not rots or not (comp >= 0).any():
+        return {}
+    from scipy.spatial import cKDTree
+    rg = comp >= 0
+    kd = cKDTree(np.vstack([ev[m["i"]]["Xbind"] for m in ms])[rg])
+    host_of = np.asarray(lead)[comp[rg]]
+    out = {}
+    for m in ms:
+        near = named.get(m["node"].rsplit(".", 1)[-1])
+        e = ev[m["i"]]
+        if near is None or (e["comp"] >= 0).any():
+            continue
+        d, j = kd.query(e["Xbind"])
+        h = host_of[j]
+        T = bd_tris(bd, m["i"])
+        n = len(e["Xbind"])
+        _, piece = connected_components(sparse.coo_matrix((np.ones(3 * len(T)), (T.ravel(), np.roll(T, 1, 1).ravel())),
+                                                          shape=(n, n)), directed=False)
+        ok, hh = np.zeros(n, bool), np.full(n, -1)
+        for p in np.unique(piece):
+            s = (piece == p) & (d <= near / 1000.0) & np.isin(h, list(rots))
+            if s.sum() * 2 > (piece == p).sum():
+                ok[piece == p], hh[piece == p] = True, np.bincount(h[s]).argmax()
+        out[m["i"]] = (ok, hh)
+    return out
+
+
+# A PLATE RIDES A's OWN BLEND (main's call, 17 Nov, lane G: B's pauldron cop must lean on the clavicle as A's does). A
+# skins each plate of an armor piece with one blend of weights, and its small parts (trims, rivets) with their plate's.
+# A slot whose rule in rigid_roles.json has "a_blend": true takes that from A's file, by joint name, on every body:
+#   the blend: each rigid group rides its leader plate's A blend (a joint the body lacks: the slot's "ride" rule);
+#   the leads: a small component whose A blend is not its leader's (beyond A_BLEND["tol"], the largest joint difference)
+#     rides the nearest plate whose A blend is its own (the bind's nearest-big-component rule put plate_pauldrons_warden's
+#     gold trims on the next plate: close lame 1's on lame 2, and 4 play components); none alike: it keeps its leader.
+# Measured on B (lead 5's solver, 17 Nov): the slot rule rode each plate on one upper-arm bone (the right cop on
+# upperarm_twist_02_r alone; A's: clavicle_r .70, delt_r .16, upperarm_share_r .10, scap_r .02), so in her idles the right
+# cop faced 66-76 deg from straight up against A's 50-57 (turned from the key light: darker, flatter); on A's blend 52-55.
+A_BLEND = {"tol": 1e-3}
+_A_UNIQ = {}
+
+
+def a_unique_blends(bd, ms):
+    """Per mesh of a tier (ms order): A's weights per unique, dense over the joints of A's file, and those joint names."""
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_UNIQ:
+        g = gltf_cached(bd.meta["src"])
+        out, names = [], None
+        for m in ms:
+            ni, _, _, _, _, J, W = read_prim(g, m["node"])
+            sk = g.js["skins"][g.js["nodes"][ni]["skin"]]
+            nm = [g.js["nodes"][j].get("name", "") for j in sk["joints"]]
+            names = names or nm
+            assert nm == names, f"{m['node']}: one skin per piece expected"
+            inv = bd.z[f"inv{m['i']}"]
+            Wn = W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+            D = np.zeros((len(J), len(nm)))
+            np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.ravel()), Wn.ravel())
+            Du = np.zeros((int(inv.max()) + 1, len(nm)))
+            Du[inv] = D
+            out.append(Du)
+        _A_UNIQ[key] = (out, names)
+    return _A_UNIQ[key]
+
+
+def a_blend_on(bd, ms, slot):
+    """(per-component A blend rows, joint names) of a tier when the slot rides A's own blends ("a_blend"), else None."""
+    rule = (rigid_roles().get("slots", {}).get(slot) or {}) if slot else {}
+    if not rule.get("a_blend") or bd.meta.get("kind") in OUTFIT_KINDS + ("native",):
+        return None
+    Du, names = a_unique_blends(bd, ms)
+    comp = np.concatenate([bd.z[f"comp{m['i']}"] for m in ms])
+    D = np.vstack(Du)
+    nc = int(comp.max()) + 1 if (comp >= 0).any() else 0
+    B = np.zeros((nc, len(names)))
+    np.add.at(B, comp[comp >= 0], D[comp >= 0])
+    B /= np.maximum(B.sum(1, keepdims=True), 1e-12)
+    return B, names
+
+
+def a_leads(lead, B, X, comp, tol=A_BLEND["tol"]):
+    """The leaders with each small component whose A blend is not its leader's given to the nearest plate with its own
+    blend (A_BLEND); returns (lead, {component: (old leader, new leader)})."""
+    lead = np.array(lead)
+    cen = np.zeros((len(B), 3))
+    np.add.at(cen, comp[comp >= 0], X[comp >= 0])
+    cen /= np.maximum(np.bincount(comp[comp >= 0], minlength=len(B)), 1)[:, None]
+    plates = np.nonzero(lead == np.arange(len(lead)))[0]
+    moved = {}
+    for c in np.nonzero(lead != np.arange(len(lead)))[0]:
+        if np.abs(B[c] - B[lead[c]]).max() <= tol:
+            continue
+        alike = plates[np.abs(B[plates] - B[c]).max(1) <= tol]
+        if len(alike):
+            k = int(alike[np.argmin(np.linalg.norm(cen[alike] - cen[c], axis=1))])
+            moved[int(c)] = (int(lead[c]), k)
+            lead[c] = k
+    return lead, moved
+
+
+# A CALLING ROW'S CUPS RIDE A's OWN WEIGHTS (lane G round 15, 17 Nov). An outfit's bendy points ride her skin's weights;
+# on B the warden top's steel cup took B's (breast_tip_r .41, spine_04 .39; A's file: spine_03 .50, breast_r .39), so
+# in her idles it pivoted up at its tip (posed B - A height: +0.3 mm by the band, +3.5 at 30-60 mm, +12 at 60-100, +23
+# beyond) and opened the band's end at her right cup's outer edge (a knot of ring, trim and skin at the look camera).
+# A slot whose rule has "a_points" {"mats", "ride_mm", "ride_share"} gives an outfit row's bendy pieces (connected over
+# A's uniques) of those materials (the node's last name part), and every piece with at least ride_share of its points
+# within ride_mm of them at A's rest (their rims, rivets, stitches, the leather riding them), A's own weights per point
+# by joint name; a point naming a joint the body lacks keeps the body's. The band, straps and the rest keep her skin's.
+_A_PTS = {}
+
+
+def a_points_on(bd, ms, slot):
+    """Per mesh of a tier (ms order): a bool mask over its uniques of the points that ride A's own weights ("a_points"),
+    with (A's dense weights per unique per mesh, A's joint names); None when the slot has no such rule."""
+    rule = (rigid_roles().get("slots", {}).get(slot) or {}).get("a_points") if slot else None
+    if not rule or bd.meta.get("kind") not in OUTFIT_KINDS:
+        return None
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_PTS:
+        Du, names = a_unique_blends(bd, ms)
+        g = gltf_cached(bd.meta["src"])
+        pcs = []
+        for k, m in enumerate(ms):
+            _, _, P, _, T, _, _ = read_prim(g, m["node"])
+            inv = bd.z[f"inv{m['i']}"]
+            first = np.zeros(len(Du[k]), np.int64)
+            first[inv] = np.arange(len(inv))
+            X = P[first]
+            _, lab, _ = components(inv[T], len(X), X)
+            pcs.append((X, lab))
+        mats = tuple(rule.get("mats", ()))
+        host = [m["node"].rsplit(".", 1)[-1] in mats for m in ms]
+        masks = [np.array(h, bool).repeat(len(X)) for h, (X, _) in zip(host, pcs)]
+        Xh = [X for h, (X, _) in zip(host, pcs) if h]
+        if Xh:
+            from scipy.spatial import cKDTree
+            kt = cKDTree(np.vstack(Xh))
+            for k, (X, lab) in enumerate(pcs):
+                if host[k]:
+                    continue
+                near = kt.query(X, distance_upper_bound=rule.get("ride_mm", 4.0) / 1000.0)[0] < np.inf
+                share = np.bincount(lab, weights=near.astype(float)) / np.maximum(np.bincount(lab), 1)
+                masks[k] = share[lab] >= rule.get("ride_share", 0.5)
+        _A_PTS[key] = (masks, Du, names)
+    return _A_PTS[key]
+
+
+def a_weights(body, D, names, sel, J, W):
+    """J, W with the selected points' rows taken from A's dense weights D (A's joint names) by joint name, top 8; a point
+    naming a joint the body lacks keeps the body's row."""
+    J, W = J.copy(), W.copy()
+    bi = np.array([body.joint_names.index(n) if n in body.joint_names else -1 for n in names])
+    for v in np.nonzero(sel)[0]:
+        nz = np.nonzero(D[v] > 1e-4)[0]
+        if not len(nz) or (bi[nz] < 0).any():
+            continue
+        o = nz[np.argsort(-D[v][nz])][:J.shape[1]]
+        J[v], W[v] = 0, 0.0
+        J[v, :len(o)], W[v, :len(o)] = bi[o], D[v][o] / D[v][o].sum()
+    return J, W
+
+
+# THE STACK (rigid_roles.json slots.<slot>."stack"; lane G solver round 7, 17 Nov): a plate hung under another (a
+# pauldron's lames under its cop) is not fit alone. Fitted alone to the stand-off law, B's warden lames moved ~20 mm out
+# (A's lames sit up to 10.5 mm inside her untucked arm, under the tuck; the rest floor clears them by translation) and the
+# cop 4 mm, so the cop / lame 1 overlap broke (judge round 5: skin between them at close; A 600 mm^2 front-outer, B 370).
+# A child (per side, the groups by their top: each hangs from the one above) takes its parent's fit over A's own
+# arrangement (A's rest, carried by the parent's bind), then swings out on its top hinge (the major axis of its overlap
+# zone, the points within "reach_mm" of the parent at A's rest) by the least angle that meets the law (the zone, under
+# the parent, is exempt), at most "max_deg"; "tiers" the tiers it acts on.
+STACK = {"reach_mm": 6.0, "max_deg": 35.0, "rounds": 8, "lever_m": 0.005, "tiers": ["close", "play"]}
+_A_REST = {}
+
+
+def a_rest_uniques(bd, ms):
+    """A tier's uniques at A's rest (ms order, stacked), from the piece's own file."""
+    key = (bd.id, tuple(m["i"] for m in ms))
+    if key not in _A_REST:
+        g, out = gltf_cached(bd.meta["src"]), []
+        for m in ms:
+            ni, _, P, _, _, J, W = read_prim(g, m["node"])
+            inv = bd.z[f"inv{m['i']}"]
+            Xu = np.zeros((int(inv.max()) + 1, 3))
+            Xu[inv] = a_rest_points(g, ni, P, J, W)
+            out.append(Xu)
+        _A_REST[key] = np.vstack(out)
+    return _A_REST[key]
+
+
+def stack_parents(X, comp, lead, side_m=0.02):
+    """{child leader: parent leader}: per side (left, right, middle as top_groups), the rigid groups by their top (Y),
+    each hung from the one above it."""
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    ids = np.unique(g[g >= 0])
+    if len(ids) < 2:
+        return {}
+    mx = np.array([X[g == k, 0].mean() for k in ids])
+    side = np.where(np.abs(mx) < side_m, 0, np.sign(mx))
+    out = {}
+    for sd in np.unique(side):
+        of = ids[side == sd]
+        of = of[np.argsort([-X[g == k, 1].max() for k in of], kind="stable")]
+        out.update({int(b): int(a) for a, b in zip(of[:-1], of[1:])})
+    return out
+
+
+def stack_hinge(body, Y, zone, tgt, ok, law=STACK):
+    """(R, p0, info): the least outward turn of the points Y about their hinge (the major axis of Y[zone] through its
+    middle) that puts every point outside the zone with ok at tgt clearance on body; Y -> (Y - p0) R^T + p0."""
+    Z = Y[zone] if zone.sum() >= 3 else Y
+    p0 = Z.mean(0)
+    a = np.linalg.svd(Z - p0, full_matrices=False)[2][0]
+    free = ok & ~zone
+    th, R, sgn = 0.0, np.eye(3), 0.0
+    info = {"hinge_deg": 0.0, "left_mm": 0.0}
+    for r in range(int(law["rounds"]) + 1):
+        Yr = (Y - p0) @ R.T + p0
+        c, fn = gear_field.signed_clear(body, Yr)
+        need = tgt - c
+        m = free & (need > 1e-5)
+        info["left_mm"] = round(float(max(0.0, need[free].max() if free.any() else 0.0)) * 1000, 2)
+        if not m.any() or r == int(law["rounds"]):
+            break
+        g = (np.cross(a, Yr - p0) * fn).sum(1)
+        if not sgn:
+            sgn = 1.0 if (need[m] * g[m]).sum() >= 0 else -1.0
+        g = sgn * g
+        k = m & (g > law["lever_m"])   # (a point nearer the hinge than lever_m: a turn cannot clear it)
+        if not k.any():
+            break
+        th = min(th + float((need[k] / g[k]).max()), np.radians(law["max_deg"]))
+        kx = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]]) * sgn
+        R = np.eye(3) + np.sin(th) * kx + (1 - np.cos(th)) * kx @ kx
+    info["hinge_deg"] = round(float(np.degrees(th)), 2)
+    return R, p0, info
+
+
+_SKINS = {}
+
+
+def stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest):
+    """THE STACK AS TUCKED (lane G solver round 9, 17 Nov): per point of the tier, how deep (m) her skin under it is
+    tucked when every child hangs as A hangs it (its parent's fit over A's arrangement, no hinge) and the fitted plates
+    sit where they are. The plates' footprint is taken SEATED (each point at least `rest` off her untucked skin), so the
+    tuck is the cover's own (gear_tuck.tuck_of on the tier's body: full under the plates, ramped in from the footprint's
+    border), never one a plate earns by standing through her: at the plates' outer edges it is ~0 and THE REST FLOOR
+    holds there; well inside them it is the law's whole depth. (B's warden lames sit up to 10.5 mm inside her untucked
+    arm as A's do; A hides that skin with the tuck, so the floor is measured against her skin as tucked.)"""
+    import gear_tuck
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    X = np.vstack([ev[m["i"]]["X"] for m in ms]).copy()
+    for c, (M, ca, cb) in rots.items():
+        grp = g == c
+        X[grp] = (Xa[grp] - ca) @ M.T + cb
+    R = dict(rots)
+    dep = lambda c: 0 if c not in parents else 1 + dep(parents[c])  # noqa: E731
+    for c in sorted(parents, key=lambda c: (dep(c), c)):
+        p = parents[c]
+        ownp, own, grp = comp == p, comp == c, g == c
+        Rk, cak, cbk = kabsch(Ar[ownp], Xa[ownp])
+        Mp, cap, cbp = R.get(p, (np.eye(3), np.zeros(3), np.zeros(3)))
+        X[grp] = ((Ar[grp] - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp
+        Rc, cac, cbc = kabsch(Ar[own], Xa[own])
+        R[c] = (Mp @ Rk @ Rc.T, cbc, ((cac - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp)
+    cl, fn = gear_field.signed_clear(body, X, k=16)
+    Xs = X + fn * np.maximum(rest - cl, 0.0)[:, None] * (comp >= 0)[:, None]
+    cut = np.cumsum([0] + [len(ev[m["i"]]["X"]) for m in ms])
+    T = np.vstack([bd_tris(bd, m["i"]) + cut[k] for k, m in enumerate(ms)])
+    rg = (comp[T] >= 0).all(1)
+    if body.glb not in _SKINS:
+        _SKINS[body.glb] = gear_tuck.Skin(body.glb)
+    sk = _SKINS[body.glb]
+    t = gear_tuck.tuck_of(sk, Xs, T, rg, bd.meta["row"].get("slot"))[0]
+    mm = gear_tuck.depth_of(rg, bd.meta["row"].get("slot")) * np.where(t >= 0.973, 1.0, t)
+    return mm[sk.kd.query(X)[1]] * (comp >= 0)
+
+
+# THE GROUP (lane G solver round 11, 17 Nov; slots.<slot>.group in rigid_roles.json switches it): the rest fit fitted each
+# plate alone, so the stand-off law pushed B's warden lames out 16-20 mm and the cop 4 mm, each its own way, and A's
+# overlaps broke (cop|l1 at rest, three views: A 816/600/958 mm^2, B 574/370/1035; close_town_day showed her skin
+# between the cop and lame 1). A hinged chain hit its 35 deg cap (THE STACK, parked). Here each side's plates (a
+# pauldron's cop and every lame, with what rides them) are placed as A arranges them (A's rest, a_rest_uniques), and
+# the arrangement is fit as ONE rigid group: the similarity of A's plates onto their carried places, then one
+# translation and per-axis scales (about the topmost plate's centre: the cop stays seated, a scale gives the lames
+# reach) solved against the slot's stand-off law (gear_field.rigid_fit_clear). A's overlaps hold by construction;
+# motion stays per plate (A's blends, A_BLEND). "turn" true also lets the group turn about its middle.
+GROUP = {"tiers": ["close", "play"], "turn": False, "side_m": 0.02}
+
+
+def group_fit(bd, ms, body, comp, lead, Xa, Xn, c0s, flo, law=GROUP):
+    """({leader: (M, ca, cb)}, {leader: (mask of its group, its points placed)}, {side: info}) for each side's plates of a
+    tier fit as one rigid group from A's arrangement (THE GROUP); a side with one plate is left to the lone fit."""
+    Ar = a_rest_uniques(bd, ms)
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    ids = np.unique(g[g >= 0])
+    rots, placed, infos = {}, {}, {}
+    if len(ids) < 2:
+        return rots, placed, infos
+    mx = np.array([Xa[g == k, 0].mean() for k in ids])
+    side = np.where(np.abs(mx) < law["side_m"], 0, np.sign(mx))
+    for sd in np.unique(side):
+        of = ids[side == sd]
+        if sd == 0 or len(of) < 2:
+            continue
+        top = int(of[np.argmax([Xa[g == k, 1].max() for k in of])])
+        gp = np.isin(g, of)
+        own = np.isin(comp, of)
+        M, ca, cb, info = gear_field.rigid_fit_clear(body, Ar[own], Xn[own], Ar[gp], c0s[gp],
+                                                     None if flo is None else flo[gp],
+                                                     centre=Ar[comp == top].mean(0), turn=law.get("turn", False))
+        for k in of:
+            ok_ = comp == k
+            Rk, cak, cbk = kabsch(Ar[ok_], Xa[ok_])
+            rots[int(k)] = (M @ Rk.T, cbk, (cak - ca) @ M.T + cb)
+            gk = g == k
+            placed[int(k)] = (gk, (Ar[gk] - ca) @ M.T + cb)
+        info.update(plates=[int(k) for k in of], top=top)
+        infos["R" if sd < 0 else "L"] = info
+    return rots, placed, infos
+
+
+def standoff_floor(bd, ms, ev, path=None, lead=None, tucked=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
     by tools/armor/gear_standoff.py from her skin's excursion under the plate over the clips: per node, [unique vertex,
@@ -985,7 +1456,8 @@ def standoff_floor(bd, ms, ev, path=None, lead=None):
     it may stand off to "cap_mm". "rest_min_mm" (optional) is THE REST FLOOR: every rigid point, measured need or not,
     stands at least this far off her untucked skin at rest (a point the clips never drove through has no target, and
     sat under her skin where the form the plate was made on was smaller than she is). `lead`: the tier's leaders with
-    the rims given to their plates (rim_leads; None = the binding's own)."""
+    the rims given to their plates (rim_leads; None = the binding's own). `tucked` (per point of the tier, m; THE STACK
+    AS TUCKED, stack_tucked): the rest floor stands that much lower, off her skin as tucked."""
     law = standoff_law(bd.meta["row"].get("slot"))
     fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
     if not law or not os.path.isfile(fp):
@@ -1002,14 +1474,16 @@ def standoff_floor(bd, ms, ev, path=None, lead=None):
                          bd.z[f"lead_{ms[0]['tier']}"] if lead is None else lead)
         seat = np.where(top, min(cap, float(law["seat_cap_mm"]) / 1000.0), cap)
         caps = np.split(seat, np.cumsum([len(c) for c in caps])[:-1])
-    out = []
+    out, k0 = [], 0
     for m in ms:
         f = np.full(len(ev[m["i"]]["X"]), np.nan)
         for u, c in tg.get(m["node"], []):
             if 0 <= int(u) < len(f):
                 f[int(u)] = min(float(c), caps[len(out)][int(u)])
         if rest > 0:
-            f = np.where(np.isfinite(f), np.maximum(f, rest), rest)
+            r_ = rest if tucked is None else rest - tucked[k0:k0 + len(f)]
+            f = np.where(np.isfinite(f), np.maximum(f, r_), r_)
+        k0 += len(f)
         f[ev[m["i"]]["comp"] < 0] = np.nan
         out.append(f)
     out = np.concatenate(out) if out else np.zeros(0)
@@ -1029,6 +1503,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         body = bodies[tier]
         bbody = None if bind_bodies is None else bind_bodies[tier]
         lead = z[f"lead_{tier}"]
+        # (rigid_roles.json "lead_of" {"<piece id>": {"<tier>/<component>": <leader>}}: a small component rides the plate
+        # A skins it with, where the nearest-big-component rule picked another; solver U, 17 Nov: the warden pauldron's
+        # lame-1 gold trims rode lame 2)
+        for k, v in ((rigid_roles().get("lead_of") or {}).get(bd.id) or {}).items():
+            if k.split("/")[0] == tier:
+                lead = np.array(lead)
+                lead[int(k.split("/")[1])] = int(v)
         rots = {}
         ev = {}
         for m in ms:
@@ -1049,16 +1530,25 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 ev[i].update(c0=c0, n0=n0, beta=bt, G=G, Gk=fld.gradient(Xbind), Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
+        # (A_BLEND: a slot riding A's own blends; a small part rides the plate A skins it with)
+        abl = a_blend_on(bd, ms, bd.meta["row"].get("slot")) if (comp >= 0).any() else None
+        if abl is not None:
+            lead, moved = a_leads(lead, abl[0], np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp)
+            if moved:
+                fit.setdefault("a_leads", {})[tier] = moved
+                print(f"{bd.id}: {tier}: rides the plate A skins it with (component: old -> new leader) {moved}", flush=True)
         # (a rim rides its plate, RIMS: its components join its plate's group for the fit, the weights and the bands)
         rims = rim_hosts(bd, ms, np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp, lead) if (comp >= 0).any() else {}
         if rims:
             lead = rim_leads(lead, rims)
             rims_tier[tier] = {int(a): v for a, v in rims.items()}
         # (the stand-off law, rigid_roles.json slots "standoff": each plate point's measured need, on every body)
-        flo = standoff_floor(bd, ms, ev, lead=lead)
+        # (an outfit's rigid components are its ornaments, ORNAMENT: the armor rows' slot laws below never act on them)
+        armor_laws = bd.meta.get("kind") not in OUTFIT_KINDS
+        flo = standoff_floor(bd, ms, ev, lead=lead) if armor_laws else None
         # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
-        wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() else None
-        join, bridges = None, set()
+        wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() and armor_laws else None
+        join, bridges, stacked = None, set(), {}
         if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
@@ -1078,12 +1568,81 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 order = sorted(np.unique(lead[comp[comp >= 0]]), key=lambda c: (not plate[c], -cnt[c]))
                 jn = worn_rest.Joins(Xa[comp < 0], Xn[comp < 0])
                 join = dict(jn=jn, mean=set(), Xa=Xa, Xn=Xn, lift=None)
+            # (THE STACK: a child plate is fit after its parent, from it; see STACK)
+            stk = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("stack")
+            stk = dict(STACK, **stk) if isinstance(stk, dict) else (dict(STACK) if stk else None)
+            if stk is not None and armor_laws and not jl and wr is None and tier in stk["tiers"]:
+                parents = stack_parents(Xa, comp, lead)
+                Ar = a_rest_uniques(bd, ms)
+                depth = lambda c: 0 if c not in parents else 1 + depth(parents[c])  # noqa: E731
+                order = sorted(order, key=lambda c: (depth(int(c)), int(c)))
+            else:
+                stk, parents = None, {}
+            tk, flt = None, None
+            # (THE GROUP: each side's plates fit as one rigid group from A's arrangement; see GROUP)
+            gl_ = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("group")
+            gl_ = dict(GROUP, **gl_) if isinstance(gl_, dict) else (dict(GROUP) if gl_ else None)
+            if gl_ is not None and armor_laws and not jl and wr is None and stk is None and tier in gl_["tiers"]:
+                g_rots, g_placed, g_info = group_fit(bd, ms, body, comp, lead, Xa, Xn, c0s, flo, gl_)
+                rots.update(g_rots)
+                stacked.update(g_placed)
+                for sd, inf in g_info.items():
+                    fit["rigid"][f"{tier}/group_{sd}"] = inf
+                    print(f"{bd.id}: {tier}: THE GROUP {sd}: {inf}", flush=True)
             for c in order:
+                if int(c) in rots:
+                    continue
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
                 own = comp == c
                 grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
                 fg = None if flo is None else flo[grp]
+                if stk is not None and int(c) in parents:
+                    # (the child over A's arrangement: its parent's bind and fit, then the least hinge to the law)
+                    p = parents[int(c)]
+                    if tk is None:
+                        # (THE STACK AS TUCKED: a child's floor is measured off her skin as the plates' cover tucks it,
+                        # once every plate above is fit; stack_tucked)
+                        rest_m = float((standoff_law(bd.meta["row"].get("slot")) or {}).get("rest_min_mm", 0.0)) / 1000.0
+                        tk = stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest_m)
+                        flt = standoff_floor(bd, ms, ev, lead=lead, tucked=tk) if armor_laws else None
+                        ch = np.isin(np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1), list(parents))
+                        fit["rigid"][f"{tier}/as_tucked"] = {
+                            "children_pts": int(ch.sum()), "full": int((tk[ch] >= 0.0175).sum()),
+                            "zero": int((tk[ch] <= 1e-4).sum()), "median_mm": round(float(np.median(tk[ch])) * 1000, 2)}
+                        print(f"{bd.id}: {tier}: THE STACK AS TUCKED {fit['rigid'][f'{tier}/as_tucked']}", flush=True)
+                    fg = None if flt is None else flt[grp]
+                    ownp = comp == p
+                    Rk, cak, cbk = kabsch(Ar[ownp], Xa[ownp])
+                    Mp, cap, cbp = rots.get(p, (np.eye(3), np.zeros(3), np.zeros(3)))
+                    Y = ((Ar[grp] - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp
+                    from scipy.spatial import cKDTree
+                    zone = cKDTree(Ar[ownp]).query(Ar[grp])[0] < stk["reach_mm"] / 1000.0
+                    creq = c0s[grp]
+                    tgt, okq = np.minimum(creq, gear_field.RIGID["clear_m"]) - tk[grp], creq >= 0
+                    if fg is not None:
+                        has = np.isfinite(fg)
+                        tgt, okq = np.where(has, np.maximum(tgt, np.nan_to_num(fg)), tgt), okq | has
+                    if stk.get("fit") == "clear":
+                        # (MADE TO MEASURE FROM A's ARRANGEMENT: the child's similarity onto its place under the parent,
+                        # then the lone fit's least translation and per-axis scales to the targets, off her as tucked)
+                        M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Y[own[grp]],
+                                                                     Xa[grp], np.full(int(grp.sum()), -1.0),
+                                                                     np.where(okq, tgt, np.nan))
+                        rots[int(c)] = (M, ca, cb)
+                        info.update(parent=p, zone=int(zone.sum()), stack="clear")
+                        fit["rigid"][f"{tier}/{int(c)}"] = info
+                        print(f"{bd.id}: {tier}: {int(c)} hangs from {p} (THE STACK, made to measure): {info}", flush=True)
+                        continue
+                    Rh, p0, info = stack_hinge(body if wr is None else wr.body, Y, zone, tgt, okq, stk)
+                    Rc, cac, cbc = kabsch(Ar[own], Xa[own])
+                    rots[int(c)] = (Rh @ Mp @ Rk @ Rc.T, cbc,
+                                    (((cac - cak) @ Rk.T + cbk - cap) @ Mp.T + cbp - p0) @ Rh.T + p0)
+                    stacked[int(c)] = (grp, (Y - p0) @ Rh.T + p0)
+                    info.update(parent=p, zone=int(zone.sum()))
+                    fit["rigid"][f"{tier}/{int(c)}"] = info
+                    print(f"{bd.id}: {tier}: {int(c)} hangs from {p} (THE STACK): {info}", flush=True)
+                    continue
                 if bbody is None and wr is None and (fg is None or not np.isfinite(fg).any()):
                     continue
                 Bt, Yb = Xn[own], None
@@ -1145,6 +1704,9 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 stats[tier] = dict(sst)
             for k, m in enumerate(ms):
                 ev[m["i"]]["X"] = np.where(bend_all[cut[k]:cut[k + 1], None], Xall[cut[k]:cut[k + 1]], ev[m["i"]]["X"])
+        riders = plate_riders(bd, ms, ev, comp, lead, rots) if armor_laws and wr is None else {}
+        # (a calling row's cups ride A's own weights per point, "a_points")
+        apt = a_points_on(bd, ms, bd.meta["row"].get("slot"))
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -1171,13 +1733,36 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
                     sv = sel[inv]
                     N[sv] = Nb[sv] @ np.linalg.inv(M)
+                if stacked:
+                    # (a stacked child's points as placed from A's rest: its rims and trims exactly where A hangs them)
+                    k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
+                    for c, (grp, Ys) in stacked.items():
+                        gs = grp[k0:k0 + len(X)]
+                        if gs.any():
+                            X[gs] = Ys[np.cumsum(grp) - 1][k0:k0 + len(X)][gs]
                 if join is not None and join["lift"] is not None:
                     # (a bridge's lift, worn_rest.bridge_lift: its points raised off her, their normals turned with them)
                     k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
                     X += join["lift"][0][k0:k0 + len(X)]
                     N = np.einsum("nij,nj->ni", join["lift"][1][k0:k0 + len(X)][inv], N)
+            ride, host = riders.get(i, (None, None))
+            if ride is not None and ride.any():
+                # (a part riding its plate, plate_riders: the plate's fit, its normals turned with it)
+                Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
+                for c in np.unique(host[ride]):
+                    M, ca, cb = rots[int(c)]
+                    sel = ride & (host == c)
+                    X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
+                    sv = sel[inv]
+                    N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
+            if apt is not None:
+                k = ms.index(m)
+                sel = apt[0][k] & (comp_i < 0)
+                if sel.any():
+                    J, W = a_weights(body, apt[1][k], apt[2], sel, J, W)
+                    fit.setdefault("a_points", {}).setdefault(tier, {})[m["node"]] = int(sel.sum())
             Tv = body.T[e["tri"]]
             shapes = {}
             for nm, dP in body.shapes.items():
@@ -1192,7 +1777,12 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     # the leader's bound points over all meshes of the tier
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    J[sel], W[sel] = rigid_blend(body, trs, ws, None if join and int(c) in join["mean"] else bd.meta["row"].get("slot"))
+                    ab = None if armor_laws else plate_blend_of(bd, ms, own_all)
+                    if abl is not None:
+                        ab = {n: float(x) for n, x in zip(abl[1], abl[0][int(c)]) if x > 1e-4}
+                    ab = None if ab is None else a_blend(body, ab)
+                    J[sel], W[sel] = ab if ab is not None else rigid_blend(
+                        body, trs, ws, None if (join and int(c) in join["mean"]) or not armor_laws else bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
@@ -1206,6 +1796,22 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                         k0 = int(np.nonzero(sel)[0][0])
                         sv = sel[inv]
                         X[sel], N[sv] = wr.unpose(X[sel], N[sv], J[k0], W[k0], {nm: shapes[nm][k0] for nm in wr.weights if nm in shapes})
+            if ride is not None and ride.any():
+                # (and its plate's one blend and mean shape deltas, as the plate's own points take them above)
+                comp_all = np.concatenate([ev[mm["i"]]["comp"] for mm in ms])
+                for c in np.unique(host[ride]):
+                    sel, own_all = ride & (host == c), comp_all == c
+                    trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
+                    ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
+                    ab = None if abl is None else a_blend(body, {n: float(x) for n, x in zip(abl[1], abl[0][int(c)]) if x > 1e-4})
+                    J[sel], W[sel] = ab if ab is not None else rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
+                    Tvs = body.T[trs]
+                    for nm, dP in body.shapes.items():
+                        mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
+                        if nm in shapes:
+                            shapes[nm][sel] = mean
+                        elif np.abs(mean).max() > 1e-5:
+                            shapes[nm] = np.where(sel[:, None], mean, (e["w"][:, :, None] * dP[Tv]).sum(1))
             if join is not None and (comp_i < 0).any():
                 # (the join field, worn_rest JOIN: a bendy vertex at a fitted plate takes the plate's move and its
                 # blend of weights and shape deltas, fading to her skin's own; stored so the engine lands it there)
@@ -1590,6 +2196,26 @@ def import_stale(gltf_path, godot_dir):
     return None
 
 
+def unit_import_params(gltf_path):
+    """A built unit imports as its A source does (the keys tools/body/publish_p1.py IMPORT_KEYS carries for B's body):
+    above all no generated LODs. With Godot's default (generate_lods on) the gear drew its decimated LOD at the Look
+    camera, the steel and the gold trim riding 0.3-0.6 mm on it simplified apart, and the trim came through the steel
+    in jagged bronze patches (body lead 9, 17 Nov: the flip's look-key rim blotches on B; A's outfits import with LODs
+    off). Returns the keys changed, or None when Godot has not written the unit's .import yet (rerun `imports`)."""
+    sys.path.insert(0, os.path.join(REPO, "tools", "body"))
+    import publish_p1
+    imp = gltf_path + ".import"
+    if not os.path.exists(imp):
+        return None
+    with open(gltf_path, encoding="utf-8") as f:
+        head = json.loads(f.read())
+    src = (((head.get("asset") or {}).get("extras") or {}).get("gear_fit") or {}).get("a_source")
+    if not src:
+        return []
+    a_imp = (src if os.path.isabs(src) else os.path.join(REPO, src)) + ".import"
+    return publish_p1.write_import(imp, publish_p1.import_params(a_import=a_imp))
+
+
 def imports_cmd(folder, stamp=False):
     name = os.path.basename(os.path.normpath(folder))
     if name.startswith("_"):
@@ -1603,6 +2229,18 @@ def imports_cmd(folder, stamp=False):
         for f in todo:
             stamp_file(os.path.join(folder, f))
         print(f"gear imports: stamped {len(todo)} of {len(files)} gltf")
+    # (each unit's import settings as its A source's: no generated LODs; a changed .import reimports it)
+    unset, set_ = [], []
+    for f in files:
+        ch = unit_import_params(os.path.join(folder, f))
+        if ch is None:
+            unset.append(f)
+        elif ch:
+            set_.append(f)
+            print(f"gear imports: {f}: set {', '.join(ch)} as its A source's")
+    if unset:
+        print(f"gear imports: {len(unset)} units not yet imported by Godot; rerun after the import to set their params: "
+              + ", ".join(unset))
     n = 0
     for f in files:
         r = import_stale(os.path.join(folder, f), godot_dir)
@@ -1671,16 +2309,720 @@ def bindings(only=None):
     return [b for b in out if not only or b.id in only]
 
 
+# A SKIRT HANGS UNDER ITS BELT (lane G solver, 17 Nov; the engine's HerWear hangs a skirt from its own outfit's belt,
+# gear_wear HANGS): every bind carries each piece by its own skin points, so on B the warden skirt's top stood up to 6.3 mm
+# out past the belt's outer face at rest (490 mm^2, round the waist). After the belt is evaluated, each skirt point under
+# it (a belt point whose foot on her skin lies within "reach_mm" of the skirt point's foot) is held "inside_mm" inside the
+# belt's inner face there (the least clearance of those belt points), never nearer her than "floor_mm"; the push fades to
+# nothing over "fade_mm" beyond the belt's footprint, so the skirt hangs on without a step. Any outfit, any body.
+# THE HANG ENDS AT THE BELT'S EDGE (lane G solver round 10, 17 Nov): an ornament of the hanging piece (a rigid component,
+# ORNAMENT) that the belt does not cover from outside (under "cover_share" of its points have a belt point ahead of them on
+# her outward normal, within "cover_mm" of that ray and "ahead_mm" of the point) sits where its fit puts it, as on A: the
+# hang never pulls it. A's warden skirt carries 17 gold studs (5 mm) on its band at the belt's lower edge, in front of the
+# belt there (A's look frame: on the dark band above the gold edge line); their feet lie within reach of the belt's, so
+# the hang held every one 1 mm inside the belt's inner face (pushed 6.5-9.2 mm) and B showed none. The bendy band keeps the
+# hang and its fade: with no fade the under region (the footprint widened by "reach_mm") would end in a step 4 mm below the
+# belt's edge, in sight. Belt-covered studs (her sides, already inside it) still hang.
+# PARKED ("cover_mm": 0 switches it off; 1.5 switches it on): measured on B (5 clips), it kept 15 of the 17 studs, and
+# gear_wear's control skirt->belt went 0 -> 87.5 mm^2 OUT>2 (worst 6.08 mm): the kept studs stand in front of the belt's
+# outer face over its footprint, as A's do, and the pair test counts them as skirt through belt. Needs the lead's call
+# (an ornament on the belt's face is not cloth through it) or a test that reads A's own layering before it ships.
+HANG = {"skirt": "belt"}
+HANG_LAW = {"reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "fade_mm": 15.0,
+            "cover_mm": 1.5, "ahead_mm": 30.0, "cover_share": 0.5}
+
+
+def hang_rule(ev, host_ev, body, law=HANG_LAW):
+    """Moves the close-tier uniques of ev (a skirt's eval_unit output) inside host_ev's (its belt's); returns stats."""
+    from scipy.spatial import cKDTree
+    hb = [v for k, v in host_ev.items() if not k.startswith("__") and v["tier"] == "close"]
+    if not hb:
+        return {}
+    Xb = np.vstack([v["Xu"] for v in hb])
+    cb, nb = gear_field.signed_clear(body, Xb, k=16)
+    kb = cKDTree(Xb - cb[:, None] * nb)
+    kx = cKDTree(Xb)
+    r, ins, flo, fade = (law[k] / 1000.0 for k in ("reach_mm", "inside_mm", "floor_mm", "fade_mm"))
+    st = {"moved": 0, "max_mm": 0.0}
+    for k, v in ev.items():
+        if k.startswith("__") or v["tier"] != "close":
+            continue
+        X = v["Xu"]
+        cs, ns = gear_field.signed_clear(body, X, k=16)
+        hits = kb.query_ball_point(X - cs[:, None] * ns, r)
+        under = np.array([len(h) > 0 for h in hits])
+        e = np.zeros(len(X))
+        for i in np.nonzero(under)[0]:
+            e[i] = max(0.0, cs[i] - max(float(cb[hits[i]].min()) - ins, flo))
+        if under.any() and (~under).any():
+            ku = cKDTree(X[under])
+            d, j = ku.query(X[~under], k=8, distance_upper_bound=fade)
+            ok = np.isfinite(d)
+            eu = np.where(ok, e[under][np.minimum(j, under.sum() - 1)] * np.clip(1 - d / fade, 0, 1), 0.0)
+            e[~under] = eu.max(1)
+        comp = v.get("comp")
+        if comp is not None and (comp >= 0).any() and law.get("cover_mm"):
+            for c in np.unique(comp[comp >= 0]):
+                a = np.nonzero(comp == c)[0]
+                if not (e[a] > 1e-6).any():
+                    continue
+                cov = 0
+                for i, idx in zip(a, kx.query_ball_point(X[a], law["ahead_mm"] / 1000.0)):
+                    if idx:
+                        w = Xb[idx] - X[i]
+                        t = w @ ns[i]
+                        lat = np.linalg.norm(w - t[:, None] * ns[i], axis=1)
+                        cov += bool(((t > 0) & (lat < law["cover_mm"] / 1000.0)).any())
+                if cov < law["cover_share"] * len(a):
+                    e[a] = 0.0
+                    st["ornaments_kept"] = st.get("ornaments_kept", 0) + 1
+        mv = e > 1e-6
+        X[mv] -= e[mv, None] * ns[mv]
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(e.max(initial=0.0)) * 1000), 2)
+    return st
+
+
+
+# A BAND ENDS UNDER ITS CUP (lane G builder round 12, 17 Nov; the lead's design: HANG with the cup as the host): on B the
+# warden top's back band (with its gold trim, ring and laces) shows between her right cup's rim and her arm at the look
+# camera as a dark knot (A's arm hides the same spot). Per slot ("CUP": slot -> the host's material), the piece's welded
+# parts are sorted: a host is a part of that material with at least "host_n" uniques (a cup), its rim any big part
+# ("big_n") with "rim_share" of its points within "rim_mm" of a host; a band is any other big part with under "out_share"
+# of its points under a host (its foot on her skin within "reach_mm" of a host point's foot) and some under at "meets"
+# cups or more (a band runs round her from cup to cup; a shoulder strap ends on one cup's top, where A lays it on the
+# cup's face, and keeps its fit). Each band point under a host is held "inside_mm" inside its inner face (never nearer
+# her than "floor_mm"); past the host the band may rise off her no faster than "rise" (mm per mm along it), never under
+# "lie_mm", its own fit wherever that is lower (no step); both faces move together ("thick_mm"); a small part rides the
+# big part it lies nearest (a ring, a lace: the band's one mean move; none on a cup or its rim). Worked in worn-rest
+# space, carried back through each point's own blend. Both sides, any body.
+# PARKED (CUP empty; {"top": "steel"} switches it on). Measured on B, idle_warden_look f150, offline raster: the knot is
+# not the band's end under the cup but the band itself on her flank 30-60 mm round from the cup's edge, 8-19 mm off her
+# skin (7 mm further back), which shows past the cup's silhouette at yaw 8 and 14 wherever it lies. Band pixels past the
+# rim (purple/pink/red, yaw 8 / 14): before 146/196/7, 473/328/18; fade 25 mm 160/126/15, 511/260/18; rise 0.25
+# 195/72/15, 515/120/18; rise 0.1 + lie 4 mm 181/47/16, 585/87/20 (the moved band hides and the band further round
+# shows instead), with back-face specks at yaw 14 (the band pressed thin). Needs the band laid snug round her side over
+# its whole visible run, or the arm's cover, not a cup-local hold.
+CUP = {}
+CUP_LAW = {"host_n": 2000, "big_n": 1000, "rim_mm": 3.0, "rim_share": 0.9, "out_share": 0.5,
+           "reach_mm": 4.0, "inside_mm": 1.0, "floor_mm": 0.3, "rise": 0.1, "lie_mm": 4.0, "thick_mm": 3.0, "meets": 2}
+
+
+def cup_rule(bd, ev, body, wr=None, mat="steel", law=CUP_LAW, tier="close"):
+    """Holds the bands of ev (a piece's eval_unit output) inside its cups (CUP); returns stats. body: the tier's body,
+    wr: its worn rest (worn_rest.worn) or None."""
+    from scipy.spatial import cKDTree
+    parts, Ys, Lis = [], {}, {}
+    for m in bd.meta["meshes"]:
+        v = ev.get(m["node"])
+        if v is None or m["tier"] != tier:
+            continue
+        X, n = v["Xu"], len(v["Xu"])
+        if wr is None:
+            Ys[m["node"]], Lis[m["node"]] = X.copy(), np.broadcast_to(np.eye(3), (n, 3, 3))
+        else:
+            f = np.zeros(n, np.int64)
+            f[v["inv"]] = np.arange(len(v["inv"]))
+            M = np.einsum("nk,nkij->nij", np.asarray(v["W"][f], np.float64),
+                          wr.S[np.asarray(v["J"][f], np.int64)][:, :, :3, :])
+            X0 = X.copy()
+            for nm, d in v["shapes"].items():
+                X0 = X0 + wr.weights.get(nm, 0.0) * d[f]
+            Ys[m["node"]] = np.einsum("nij,nj->ni", M[:, :, :3], X0) + M[:, :, 3]
+            Lis[m["node"]] = np.linalg.inv(M[:, :, :3])
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        nc, lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)
+        for c in range(nc):
+            parts.append((m["node"], np.nonzero(lab == c)[0]))
+    wb = body if wr is None else wr.body
+    host = [k for k, (nd, a) in enumerate(parts) if mat in nd.split(".")[-1] and len(a) >= law["host_n"]]
+    if not host:
+        return {}
+    Xh = np.vstack([Ys[parts[k][0]][parts[k][1]] for k in host])
+    cup = np.concatenate([np.full(len(parts[k][1]), q) for q, k in enumerate(host)])
+    kh = cKDTree(Xh)
+    big = [k for k, (nd, a) in enumerate(parts) if len(a) >= law["big_n"] and k not in host]
+    rims = []
+    for k in big:
+        nd, a = parts[k]
+        d, j = kh.query(Ys[nd][a])
+        if (d <= law["rim_mm"] / 1000.0).mean() >= law["rim_share"]:
+            rims.append((k, np.bincount(cup[j]).argmax()))
+    big = [k for k in big if k not in [k_ for k_, _ in rims]]
+    cup = np.concatenate([cup] + [np.full(len(parts[k][1]), q) for k, q in rims])
+    host += [k for k, _ in rims]
+    Xh = np.vstack([Ys[parts[k][0]][parts[k][1]] for k in host])
+    cb, nb = gear_field.signed_clear(wb, Xh, k=16)
+    kb = cKDTree(Xh - cb[:, None] * nb)
+    r, ins, flo = (law[k] / 1000.0 for k in ("reach_mm", "inside_mm", "floor_mm"))
+    D = {}
+    st = {"hosts": len(host), "bands": 0, "moved": 0, "max_mm": 0.0, "riders": 0}
+    for k in big:
+        nd, a = parts[k]
+        Y = Ys[nd][a]
+        cs, ns = gear_field.signed_clear(wb, Y, k=16)
+        hits = kb.query_ball_point(Y - cs[:, None] * ns, r)
+        under = np.array([len(h) > 0 for h in hits])
+        if not under.any() or under.mean() >= law["out_share"]:
+            continue
+        if len(np.unique(cup[np.concatenate([hits[i] for i in np.nonzero(under)[0]]).astype(np.int64)])) < law["meets"]:
+            continue
+        tgt = np.full(len(a), np.inf)
+        for i in np.nonzero(under)[0]:
+            tgt[i] = max(float(cb[hits[i]].min()) - ins, flo)
+        dd, j = cKDTree(Y[under]).query(Y[~under])
+        tgt[~under] = np.maximum(tgt[under][j] + law["rise"] * dd, law["lie_mm"] / 1000.0)
+        e = np.maximum(cs - tgt, 0.0)
+        if not (e > 1e-6).any():
+            continue
+        # (both faces of the band go together: each point takes the most any point within "thick_mm" of it needs)
+        e = np.array([e[q].max() for q in cKDTree(Y).query_ball_point(Y, law["thick_mm"] / 1000.0)])
+        D[k] = -e[:, None] * ns
+        st["bands"] += 1
+    if not D:
+        return st
+    kbig = cKDTree(np.vstack([Ys[parts[k][0]][parts[k][1]] for k in big + host]))
+    own = np.concatenate([np.full(len(parts[k][1]), k) for k in big + host])
+    row = np.concatenate([np.arange(len(parts[k][1])) for k in big + host])
+    for k, (nd, a) in enumerate(parts):
+        if len(a) >= law["big_n"] or k in host:
+            continue
+        _, j = kbig.query(Ys[nd][a])
+        if not np.isin(own[j], list(D)).all():
+            # (on a cup, its rim or a band the rule leaves: it stays; across a band and another part: the band's move)
+            j = j[np.isin(own[j], list(D))]
+            if not len(j) or len(j) < len(a) // 2:
+                continue
+        D[k] = np.broadcast_to(np.mean([D[own[q]][row[q]] for q in j], axis=0), (len(a), 3))
+        st["riders"] += 1
+    for k, d in D.items():
+        nd, a = parts[k]
+        mv = np.linalg.norm(d, axis=1) > 1e-6
+        ev[nd]["Xu"][a[mv]] += np.einsum("nij,nj->ni", Lis[nd][a[mv]], d[mv])
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(np.linalg.norm(d, axis=1).max(initial=0.0)) * 1000), 2)
+    return st
+
+# A BAND'S END FOLLOWS ITS CUP (lane G builder round 13, 17 Nov; lead 5's design, measured cause): on B the warden top's
+# back band (its gold trim and ring with it) showed a knot at her right cup's outer edge at the look camera, skin between
+# ring and trim. B's worn rest lifts each cup (her support: springs, form_support shapes) 15 mm up and 7 mm forward of A's
+# while the band, fit to her skin, stays; within 0-40 mm of the cup the band end sits 5-12 mm further in than A's (further
+# round it matches A's within 0.1 mm), so it rides inside a cup that lifted off it. A slot whose rule in rigid_roles.json
+# has "band_end" (true, or a law over BAND_END) gives a band's points near a cup the cup's own A->B move: the per-point
+# displacement the cup's nearest points ("k") got from A's rest to this body's worn rest, less the band point's own,
+# full within "near_mm" of the cup (or its rim), fading (cosine, no kink) to none at "fade_mm". Hosts, rims and bands are
+# found as in cup_rule (a band: a big part with points within "fade_mm" of "meets" cups or more; a shoulder strap ends on
+# one cup and keeps its fit). A band lying on another band (its median within "ride_mm": the gold trim on the leather)
+# takes, point by point, the move of the point it lies on; a small part (the ring, laces) the mean move of the band
+# points it lies nearest. Worked in worn-rest space, carried back through each point's own blend. Both sides, any body.
+# PARKED (no slot has it). Built on B (warden.top: 2 bands, 66 riders, 4263 points moved, at most 4.1 mm): B's worn rest
+# moves the cups' outer edges with the band (rest: cup and band within 0.6 mm of A's), and posed (idle_warden_look f150)
+# the band end's place against the cup's nearest point is A's within 0.1-0.9 mm, its clearance off her skin A's within
+# 0.5 mm, none inside. The 15 mm is the cup's TIP: B's cup rides breast_tip_r .41 / spine_04 .39 (A's spine_03 .50 /
+# breast_r .39), so posed it pivots on its outer edge: B-A +0.3 mm up within 10 mm of the band, +3.5 at 30-60, +12 at
+# 60-100, +23 past 100. With the rule the band end left the cup by 1-3 mm (10-40 mm out), and the raster's band, trim and
+# ring px past the rim (purple/pink/red, yaw 8 / 14) stayed: before 146/196/7, 473/328/18; rule 131/191/3, 475/334/18.
+BAND_END = {"host_mat": "steel", "host_n": 2000, "big_n": 1000, "rim_mm": 3.0, "rim_share": 0.9, "meets": 2,
+            "near_mm": 10.0, "fade_mm": 50.0, "k": 8, "ride_mm": 6.0}
+
+
+def band_end_rule(bd, ev, wr=None, law=BAND_END, tier="close"):
+    """Gives the bands of ev (a piece's eval_unit output) near its cups their cup's A->B move (BAND_END); returns
+    stats. wr: the tier body's worn rest (worn_rest.worn) or None."""
+    from scipy.spatial import cKDTree
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
+    if not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    Ar = a_rest_uniques(bd, ms)
+    parts, Ys, Lis, Ds, o = [], {}, {}, {}, 0
+    for m in ms:
+        v = ev[m["node"]]
+        X, n = v["Xu"], len(v["Xu"])
+        XA, o = Ar[o:o + n], o + n
+        if wr is None:
+            Y, Li = X.copy(), np.broadcast_to(np.eye(3), (n, 3, 3))
+        else:
+            f = np.zeros(n, np.int64)
+            f[v["inv"]] = np.arange(len(v["inv"]))
+            M = np.einsum("nk,nkij->nij", np.asarray(v["W"][f], np.float64),
+                          wr.S[np.asarray(v["J"][f], np.int64)][:, :, :3, :])
+            X0 = X.copy()
+            for nm, d in v["shapes"].items():
+                X0 = X0 + wr.weights.get(nm, 0.0) * d[f]
+            Y = np.einsum("nij,nj->ni", M[:, :, :3], X0) + M[:, :, 3]
+            Li = np.linalg.inv(M[:, :, :3])
+        Ys[m["node"]], Lis[m["node"]], Ds[m["node"]] = Y, Li, Y - XA
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        nc, lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)
+        for c in range(nc):
+            parts.append((m["node"], np.nonzero(lab == c)[0]))
+    P = lambda k: Ys[parts[k][0]][parts[k][1]]  # noqa: E731
+    host = [k for k, (nd, a) in enumerate(parts) if law["host_mat"] in nd.split(".")[-1] and len(a) >= law["host_n"]]
+    if not host:
+        return {}
+    cup = np.concatenate([np.full(len(parts[k][1]), q) for q, k in enumerate(host)])
+    kh = cKDTree(np.vstack([P(k) for k in host]))
+    big = [k for k, (nd, a) in enumerate(parts) if len(a) >= law["big_n"] and k not in host]
+    rims = []
+    for k in big:
+        d, j = kh.query(P(k))
+        if (d <= law["rim_mm"] / 1000.0).mean() >= law["rim_share"]:
+            rims.append((k, np.bincount(cup[j]).argmax()))
+    big = [k for k in big if k not in [k_ for k_, _ in rims]]
+    cup = np.concatenate([cup] + [np.full(len(parts[k][1]), q) for k, q in rims])
+    host += [k for k, _ in rims]
+    Dh = np.vstack([Ds[parts[k][0]][parts[k][1]] for k in host])
+    kh = cKDTree(np.vstack([P(k) for k in host]))
+    near, fade = law["near_mm"] / 1000.0, law["fade_mm"] / 1000.0
+    D, bands = {}, []
+    st = {"hosts": len(host), "bands": 0, "riders": 0, "moved": 0, "max_mm": 0.0}
+    for k in big:
+        nd, a = parts[k]
+        d, j = kh.query(P(k), k=law["k"])
+        t = np.clip((d[:, 0] - near) / max(fade - near, 1e-9), 0.0, 1.0)
+        w = 0.5 * (1.0 + np.cos(np.pi * t))
+        if len(np.unique(cup[j[w > 0, 0]])) < law["meets"]:
+            continue
+        D[k] = w[:, None] * (Dh[j].mean(1) - Ds[nd][a])
+        bands.append(k)
+    # (a band lying on another, the trim on the leather: point by point the move of the point it lies on)
+    for k in sorted(bands, key=lambda k: len(parts[k][1])):
+        for b in sorted(bands, key=lambda b: -len(parts[b][1])):
+            if b == k or len(parts[b][1]) <= len(parts[k][1]):
+                continue
+            d, j = cKDTree(P(b)).query(P(k))
+            if np.median(d) <= law["ride_mm"] / 1000.0:
+                D[k] = D[b][j]
+                break
+    st["bands"] = len(bands)
+    if not D:
+        return st
+    kbig = cKDTree(np.vstack([P(k) for k in big + host]))
+    own = np.concatenate([np.full(len(parts[k][1]), k) for k in big + host])
+    row = np.concatenate([np.arange(len(parts[k][1])) for k in big + host])
+    for k, (nd, a) in enumerate(parts):
+        if len(a) >= law["big_n"] or k in host:
+            continue
+        _, j = kbig.query(P(k))
+        j = j[np.isin(own[j], list(D))]
+        if len(j) < len(a) // 2:
+            continue
+        mv = np.mean([D[own[q]][row[q]] for q in j], axis=0)
+        if np.linalg.norm(mv) > 1e-6:
+            D[k] = np.broadcast_to(mv, (len(a), 3))
+            st["riders"] += 1
+    for k, d in D.items():
+        nd, a = parts[k]
+        mv = np.linalg.norm(d, axis=1) > 1e-6
+        ev[nd]["Xu"][a[mv]] += np.einsum("nij,nj->ni", Lis[nd][a[mv]], d[mv])
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(np.linalg.norm(d, axis=1).max(initial=0.0)) * 1000), 2)
+    return st
+
+
+# A BAND'S END TAKES ITS CUP'S SUPPORT (lane G builder round 13 of item body-b-warden-outfit, 17 Nov; lead 6's measured
+# cause): on B the warden top's knot at the look camera (her right cup's outer edge: back band leather, its gold trim,
+# its ring) is the SUPPORT shapes, not the rest fit: support 0 removes it. At support 1 the gear's form_support_lift /
+# _press / _fill move the right cup about (+11.8 in, +11.3 up, +3.3 fwd) mm while the band end's deltas fade with its
+# distance from the cup (0-10 mm ~12/11/2.6, 20-40 ~7.4/7.4, 40-60 ~4.3/4.5, 60-100 ~1.1/1.4): the band end that lay
+# behind the cup's outer rim is uncovered and sheared as the cup moves in and up. A slot whose rule in rigid_roles.json
+# has "support_follow" (true, or a law over SUPPORT_FOLLOW) gives a band's points near a cup the cup's own support
+# deltas: per cup, a share w full within "near_mm" of the cup (or its rim) at rest, a cosine fade to none at "fade_mm";
+# each support shape becomes own + sum_c w_c (cup_c - own) / max(1, sum_c w_c) (cup_c: the mean of the cup's "k"
+# nearest points; two cups mix, no seam). A band is a big part reaching "meets" cups within "fade_mm" (a shoulder strap
+# ends on one cup and keeps its deltas); a small part whose points lie nearest a band (the ring, the laces) takes ONE
+# delta, the mean of its points' (no shearing inside it). Cups, rims and the rivets on them are untouched; so are the
+# body, the positions (support 0 is as before) and every other shape. Runs only where the body has a worn rest.
+# PARKED (no slot has it): at 40 / 100 the look knot's black spot and most of its leather went, a trim sliver stayed,
+# and the band bent up at close_town_day along its last 40-100 mm (and 149 leather points sat up to 3.7 mm inside her
+# worn skin); at 30 / 70 the knot came back. See rigid_roles.json "_support_follow".
+SUPPORT_FOLLOW = {"host_mat": "steel", "host_n": 2000, "big_n": 1000, "rim_mm": 3.0, "rim_share": 0.9, "meets": 2,
+                  "near_mm": 40.0, "fade_mm": 100.0, "k": 8}
+
+
+def support_follow_rule(bd, ev, wr, law=SUPPORT_FOLLOW, tier="close", body=None):
+    """Gives the bands of ev (a piece's eval_unit output) near its cups their cup's support shape deltas
+    (SUPPORT_FOLLOW); returns stats. wr: the tier body's worn rest (worn_rest.worn); nothing runs without it."""
+    from scipy.spatial import cKDTree
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
+    if wr is None or not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    names = [nm for nm in worn_rest.SHAPES if all(nm in ev[m["node"]]["shapes"] for m in ms)]
+    if not names:
+        return {}
+    parts, Xs, Ss, fs = [], {}, {}, {}
+    for m in ms:
+        v = ev[m["node"]]
+        n = len(v["Xu"])
+        f = np.zeros(n, np.int64)
+        f[v["inv"]] = np.arange(len(v["inv"]))
+        fs[m["node"]], Xs[m["node"]] = f, v["Xu"]
+        Ss[m["node"]] = np.stack([v["shapes"][nm][f] for nm in names], 1)  # (n, shapes, 3)
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        nc, lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)
+        for c in range(nc):
+            parts.append((m["node"], np.nonzero(lab == c)[0]))
+    P = lambda k: Xs[parts[k][0]][parts[k][1]]  # noqa: E731
+    S = lambda k: Ss[parts[k][0]][parts[k][1]]  # noqa: E731
+    host = [k for k, (nd, a) in enumerate(parts) if law["host_mat"] in nd.split(".")[-1] and len(a) >= law["host_n"]]
+    if len(host) < law["meets"]:
+        return {}
+    cup = {k: q for q, k in enumerate(host)}
+    kh = cKDTree(np.vstack([P(k) for k in host]))
+    lab_h = np.concatenate([np.full(len(parts[k][1]), q) for q, k in enumerate(host)])
+    # (a rim: a big part lying on a cup; a small part lying on a cup or a rim, its rivets: both join their cup)
+    for k, (nd, a) in enumerate(parts):
+        if k in cup:
+            continue
+        d, j = kh.query(P(k))
+        if (d <= law["rim_mm"] / 1000.0).mean() >= law["rim_share"]:
+            cup[k] = int(np.bincount(lab_h[j]).argmax())
+    trees = []
+    for q in range(len(host)):
+        ks = [k for k, c in cup.items() if c == q]
+        trees.append((cKDTree(np.vstack([P(k) for k in ks])), np.vstack([S(k) for k in ks])))
+    near, fade = law["near_mm"] / 1000.0, law["fade_mm"] / 1000.0
+
+    def follow(X, own):
+        num, ws = np.zeros_like(own), np.zeros(len(X))
+        for tr, Sc in trees:
+            d, j = tr.query(X, k=law["k"])
+            w = 0.5 * (1.0 + np.cos(np.pi * np.clip((d[:, 0] - near) / max(fade - near, 1e-9), 0.0, 1.0)))
+            num += w[:, None, None] * (Sc[j].mean(1) - own)
+            ws += w
+        return own + num / np.maximum(1.0, ws)[:, None, None], ws
+
+    st = {"cups": len(host), "bands": 0, "riders": 0, "moved": 0, "max_mm": 0.0}
+    new, bands = {}, []
+    for k, (nd, a) in enumerate(parts):
+        if k in cup or len(a) < law["big_n"]:
+            continue
+        reach = sum(tr.query(P(k))[0].min() <= fade for tr, _ in trees)
+        if reach >= law["meets"]:
+            new[k] = follow(P(k), S(k))[0]
+            bands.append(k)
+    st["bands"] = len(bands)
+    if not bands:
+        return st
+    floor = law.get("floor_mm")
+    if floor is not None and body is not None:
+        # (the FLOOR, round 14: a band point's share is cut back, by bisection on its fraction t, until it lies floor_mm
+        # off her worn skin (her support shapes on, her springs' worn rest); one at its own deltas already nearer keeps them)
+        Db = sum(wr.weights[nm] * body.shapes[nm] for nm in wr.weights if nm in body.shapes)
+
+        def skin(X, J, W, D):
+            Mx = np.einsum("nk,nkij->nij", W, wr.S[J][:, :, :3, :])
+            return np.einsum("nij,nj->ni", Mx[:, :, :3], X + D) + Mx[:, :, 3]
+        import copy as _copy
+        B2 = _copy.copy(body)
+        B2.V = skin(body.V, body.J, body.W, Db)
+        B2._surf = None
+        B2.N = vertex_normals(B2.V, B2.T, body.wid)
+        for k in bands:
+            nd, a = parts[k]
+            v = ev[nd]
+            f = fs[nd][a]
+            J, W, own, s1 = v["J"][f].astype(np.int64), v["W"][f].astype(float), S(k), new[k]
+
+            def clr(t):
+                s = own + t[:, None, None] * (s1 - own)
+                D = sum(wr.weights[nm] * s[:, q] for q, nm in enumerate(names) if nm in wr.weights)
+                return gear_field.signed_clear(B2, skin(P(k), J, W, D), k=16)[0] * 1000.0
+            bad = clr(np.ones(len(a))) < floor
+            if not bad.any():
+                continue
+            lo, hi = np.zeros(len(a)), np.ones(len(a))
+            for _ in range(law.get("floor_steps", 6)):
+                mid = 0.5 * (lo + hi)
+                ok = clr(np.where(bad, mid, 1.0)) >= floor
+                lo, hi = np.where(bad & ok, mid, lo), np.where(bad & ~ok, mid, hi)
+            new[k] = own + np.where(bad, lo, 1.0)[:, None, None] * (s1 - own)
+            st["floored"] = st.get("floored", 0) + int(bad.sum())
+    kb = cKDTree(np.vstack([P(k) for k in bands + list(cup)]))
+    own_b = np.concatenate([np.full(len(parts[k][1]), k) for k in bands + list(cup)])
+    for k, (nd, a) in enumerate(parts):
+        if k in cup or k in new or len(a) >= law["big_n"]:
+            continue
+        _, j = kb.query(P(k))
+        if np.isin(own_b[j], bands).mean() <= 0.5:
+            continue
+        if floor is not None and body is not None:
+            # (with the floor, a rider takes its band's own change at its nearest band points: one delta, floored as the band)
+            jb = j[np.isin(own_b[j], bands)]
+            dS = np.vstack([new[kk] - S(kk) for kk in bands])[jb]
+            if np.abs(dS).max() > 0:
+                new[k] = np.broadcast_to(S(k) + dS.mean(0), S(k).shape)
+                st["riders"] += 1
+            continue
+        s, ws = follow(P(k), S(k))
+        if ws.max() > 0:
+            new[k] = np.broadcast_to(s.mean(0), s.shape)
+            st["riders"] += 1
+    for k, s in new.items():
+        nd, a = parts[k]
+        dd = np.linalg.norm(s - S(k), axis=2).max(1)
+        mv = dd > 1e-6
+        if not mv.any():
+            continue
+        v = ev[nd]
+        hit = np.isin(v["inv"], a[mv])
+        loc = np.full(len(v["Xu"]), -1)
+        loc[a] = np.arange(len(a))
+        for q, nm in enumerate(names):
+            v["shapes"][nm][hit] = s[loc[v["inv"][hit]], q]
+        st["moved"] += int(mv.sum())
+        st["max_mm"] = round(max(st["max_mm"], float(dd.max()) * 1000), 2)
+    return st
+
+
+# THE TRIM RIDES ITS STEEL (lane G solver rim2, 17 Nov; rigid_roles.json slots.<slot>.trim_ride, its "_trim_ride" note):
+# a component of a piece's trim mesh ("mats": the gold) with "share" of its points within "ride_mm" of the same piece's
+# steel ("host_mat": its big bendy parts, "host_n" points and up) at the built rest rides that steel: each point takes
+# the steel's skin weights (dense over the joints, top 8) and its blend-shape deltas, every shape (one the steel lacks
+# is 0 there), interpolated at its nearest point on the steel surface, full within "near_mm", a cosine fade to its own
+# at "fade_mm"; it keeps its own rest point (and so its offset off the steel). A rivet on the steel rides it so too, per
+# point, if A made it rigid (ORNAMENT: one blend, the mean of her skin under it, stood +-0.7 mm in and off the steel as
+# the steel bends under it; per point 0.1); a rigid group shared with another mesh keeps its own. Each layer had taken her skin's values at its own bound point, so the gold set 0.3-0.4 mm into the steel came
+# out through it as she moved (B's warden top: up to 2.5 mm, the jagged bronze at the cups' lower inner rims).
+TRIM_RIDE = {"host_mat": "steel", "host_n": 2000, "mats": ["gold"], "ride_mm": 2.0, "share": 0.5,
+             "near_mm": 4.0, "fade_mm": 8.0, "k": 16}
+
+
+def trim_ride_rule(bd, ev, law=TRIM_RIDE, tier="close"):
+    """The trim components lying on the piece's steel take the steel's weights and shape deltas (TRIM_RIDE) in ev (a
+    piece's eval_unit output); returns stats ({} when the tier has no steel or no trim)."""
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
+    if not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    mat = lambda nd: nd.rsplit(".", 1)[-1]  # noqa: E731
+    hosts = [m for m in ms if law["host_mat"] in mat(m["node"])]
+    trims = [m for m in ms if m not in hosts and any(k in mat(m["node"]) for k in law["mats"])]
+    if not hosts or not trims:
+        return {}
+    nj = max(int(ev[m["node"]]["J"].max()) for m in ms) + 1
+
+    def per_unique(v):
+        f = np.zeros(len(v["Xu"]), np.int64)
+        f[v["inv"]] = np.arange(len(v["inv"]))
+        return f
+
+    def dense(J, W):
+        D = np.zeros((len(J), nj))
+        np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.astype(np.int64).ravel()), W.astype(float).ravel())
+        return D
+
+    def labels(i, n):
+        T = bd_tris(bd, i)
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        return T, connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                       directed=False)[1]
+    HX, HT, HD, HS, names, n0 = [], [], [], [], set(), 0
+    for m in hosts:
+        v = ev[m["node"]]
+        n, f = len(v["Xu"]), per_unique(v)
+        T, lab = labels(m["i"], n)
+        big = (np.bincount(lab)[lab] >= law["host_n"]) & (np.asarray(v["comp"]) < 0)
+        HX.append(v["Xu"])
+        HT.append(T[big[T].all(1)] + n0)
+        HD.append(dense(v["J"][f], v["W"][f]))
+        HS.append({nm: s[f] for nm, s in v["shapes"].items()})
+        names |= set(v["shapes"])
+        n0 += n
+    HX, HT, HD = np.vstack(HX), np.vstack(HT), np.vstack(HD)
+    if not len(HT):
+        return {}
+    HS = {nm: np.vstack([s.get(nm, np.zeros((len(d), 3))) for s, d in zip(HS, [ev[m["node"]]["Xu"] for m in hosts])])
+          for nm in names}
+    surf = Surface(HX, HT)
+    near, fade = law["near_mm"] / 1000.0, law["fade_mm"] / 1000.0
+    st = {"trims": 0, "rivets": 0, "points": 0, "vertices": 0, "by_side": {}, "max_w": 0.0, "max_mm": 0.0}
+    for m in trims:
+        v = ev[m["node"]]
+        n, f, inv = len(v["Xu"]), per_unique(v), v["inv"]
+        comp, lead = np.asarray(v["comp"]), np.asarray(v["lead"])
+        _, lab = labels(m["i"], n)
+        q, _, t, d = surf.closest(v["Xu"], k=law["k"])
+        Tv = HT[t]
+        b = bary(q, HX[Tv[:, 0]], HX[Tv[:, 1]], HX[Tv[:, 2]])
+        Dq = np.einsum("nc,ncj->nj", b, HD[Tv])
+        Sq = {nm: np.einsum("nc,ncx->nx", b, s[Tv]) for nm, s in HS.items()}
+        on = d <= law["ride_mm"] / 1000.0
+        g = 0.5 * (1.0 + np.cos(np.pi * np.clip((d - near) / max(fade - near, 1e-9), 0.0, 1.0)))
+        # (a component rides whole, a rivet as the trim: per point; a rigid group shared with another mesh keeps its own)
+        others = np.concatenate([np.asarray(ev[mm["node"]]["comp"]) for mm in ms if mm is not m])
+        shared = np.isin(np.where(comp >= 0, lead[np.maximum(comp, 0)], -1), lead[others[others >= 0]])
+        rides = np.zeros(n, bool)
+        for c in np.unique(lab):
+            s = lab == c
+            if on[s].mean() >= law["share"] and not shared[s].any():
+                rides |= s
+                st["trims" if s.sum() >= law["host_n"] // 4 else "rivets"] += 1
+        Jn, Wn = top_k(np.where(rides[:, None], (1 - g)[:, None] * dense(v["J"][f], v["W"][f]) + g[:, None] * Dq, 0.0))
+        Sn = {}
+        for nm in set(v["shapes"]) | names:
+            own = v["shapes"][nm][f] if nm in v["shapes"] else np.zeros((n, 3))
+            Sn[nm] = (1 - g)[:, None] * own + g[:, None] * Sq.get(nm, np.zeros((n, 3)))
+        go = rides & (g > 1e-6)
+        if not go.any():
+            continue
+        hit = go[inv]
+        ref = dense(v["J"][f], v["W"][f])
+        st["max_w"] = round(max(st["max_w"], float(np.abs(dense(Jn, Wn) - ref)[go].sum(1).max()) / 2), 3)
+        v["J"][hit] = Jn[inv[hit]].astype(v["J"].dtype)
+        v["W"][hit] = Wn[inv[hit]].astype(v["W"].dtype)
+        for nm, s in Sn.items():
+            if nm not in v["shapes"]:
+                v["shapes"][nm] = np.zeros((len(inv), 3))
+            old = v["shapes"][nm][f]
+            st["max_mm"] = round(max(st["max_mm"], float(np.linalg.norm(s - old, axis=1)[go].max()) * 1000), 2)
+            v["shapes"][nm][hit] = s[inv[hit]]
+            if nm not in names and not np.abs(v["shapes"][nm]).max() > 1e-5:
+                del v["shapes"][nm]
+        st["points"] += int(go.sum())
+        st["vertices"] += int(hit.sum())
+        for sd, sm in (("x+", v["Xu"][:, 0] > 0), ("x-", v["Xu"][:, 0] < 0)):
+            st["by_side"][f"{m['node']} {sd}"] = int((go & sm)[inv].sum())
+    return st
+
+
+# EACH CUP RIDES ONE BLEND (lane G lead 9 solver, 17 Nov; rigid_roles.json slots.<slot>.cup_blend, its "_cup_blend"
+# note): a big bendy component of the piece's steel ("host_mat", "host_n" unique points and up: the warden top's two
+# cups) takes ONE blend of weights, the mean of its points' skin weights (dense over the joints, top 8), on every point;
+# its shape deltas (the support shapes) stay per point; rest positions untouched. A plate cup is rigid metal: with her
+# skin's weights per point the breast-to-spine change was packed at the cup's lower rim (B: breast_tip_l .40, spine_04
+# .39, spine_03 .21 there; breast_l turns 20 deg against spine_04 at the look), so the rim bent and the gold tube round
+# its edge showed through the steel. Runs before TRIM_RIDE (the trim and rivets copy the cup's one blend); A's own files
+# are not built (A as authored).
+# "mode" "smooth" (lane G lead 9 solver 3, 17 Nov): each cup's weights are diffused over the cup's own surface instead
+# ("rounds" Laplacian rounds over its edges between unique points, so welded at its UV seams, each point moved toward its
+# neighbours' mean by "alpha"; top 8): the breast-to-spine change is spread across the cup, not packed at its rim, and
+# the crown keeps most of its breast weight (one blend rode about half the breast's worn-rest lift: her skin came through).
+CUP_BLEND = {"host_mat": "steel", "host_n": 2000, "mode": "blend", "rounds": 0, "alpha": 0.5}
+
+
+def dense_w(J, W, nj):
+    """Per point weights (top k joints J, weights W) as a dense (points, nj) array."""
+    D = np.zeros((len(J), nj))
+    np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.astype(np.int64).ravel()), W.astype(float).ravel())
+    return D
+
+
+def cup_blend_rule(bd, ev, law=CUP_BLEND, tier="close"):
+    """Each big bendy steel component (CUP_BLEND) of ev (a piece's eval_unit output) takes one blend, the mean of its
+    points' weights (top 8), or ("mode" "smooth") its weights diffused over its own surface; returns stats ({} when the
+    tier has no such component)."""
+    law = dict(CUP_BLEND, **law)
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == tier and law["host_mat"] in m["node"].rsplit(".", 1)[-1]]
+    if not ms or any(m["node"] not in ev for m in ms):
+        return {}
+    st = {"cups": 0, "vertices": 0, "max_w": 0.0, "blends": []}
+    for m in ms:
+        v = ev[m["node"]]
+        n, inv = len(v["Xu"]), v["inv"]
+        f = np.zeros(n, np.int64)
+        f[inv] = np.arange(len(inv))
+        T = bd_tris(bd, m["i"])
+        e = np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]
+        lab = connected_components(sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)),
+                                   directed=False)[1]
+        nj = int(v["J"].max()) + 1
+        D = np.zeros((n, nj))
+        np.add.at(D, (np.repeat(np.arange(n), v["J"].shape[1]), v["J"][f].astype(np.int64).ravel()),
+                  v["W"][f].astype(float).ravel())
+        bend = np.asarray(v["comp"]) < 0
+        for c in np.unique(lab):
+            s = (lab == c) & bend
+            if s.sum() < law["host_n"]:
+                continue
+            hit = s[inv]
+            if law["mode"] == "smooth":
+                Es = e[s[e[:, 0]] & s[e[:, 1]]]
+                jj, ww = top_k(smooth_field(D, Es, n, np.where(s, float(law["alpha"]), 0.0), int(law["rounds"])))
+                st["max_w"] = round(max(st["max_w"], float(np.abs(dense_w(jj, ww, nj) - D)[s].sum(1).max()) / 2), 3)
+                v["J"][hit] = jj[inv[hit]].astype(v["J"].dtype)
+                v["W"][hit] = ww[inv[hit]].astype(v["W"].dtype)
+            else:
+                jj, ww = top_k(D[s].mean(0)[None])
+                st["max_w"] = round(max(st["max_w"], float(np.abs(D[s] - D[s].mean(0)).sum(1).max()) / 2), 3)
+                v["J"][hit] = jj[0].astype(v["J"].dtype)
+                v["W"][hit] = ww[0].astype(v["W"].dtype)
+                st["blends"].append({str(int(j)): round(float(w), 3) for j, w in zip(jj[0], ww[0]) if w > 0.005})
+            st["cups"] += 1
+            st["vertices"] += int(hit.sum())
+    return st if st["cups"] else {}
+
+
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
     """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
     os.makedirs(out_dir, exist_ok=True)
     index, evs = [], {}
     bds = bindings(only)
+    # (HANG: a hanging piece is built after its host, which is evaluated here when the build leaves it out)
+    hosts = {}
+    for bd in bds:
+        h = HANG.get(bd.meta["row"].get("slot"))
+        if h and bd.meta["row"].get("outfit"):
+            hid = f"{bd.meta['row']['outfit']}.{h}"
+            if hid not in [b.id for b in bds] and os.path.exists(os.path.join(BIND, f"{hid}.npz")):
+                hosts[hid] = Binding(os.path.join(BIND, f"{hid}.npz"))
+    bds = sorted(bds, key=lambda b: b.meta["row"].get("slot") in HANG)
     for bd in bds:
         same = is_bind_body(bodies, bd)
         if not same and bind_bodies is None:
             bind_bodies = load_bodies(os.path.join(REPO, bd.meta["bind_body"]))
         ev = eval_unit(bd, bodies, None if same else bind_bodies)
+        h = HANG.get(bd.meta["row"].get("slot"))
+        if h and bd.meta["row"].get("outfit"):
+            hid = f"{bd.meta['row']['outfit']}.{h}"
+            hev = evs.get(hid) or (eval_unit(hosts[hid], bodies, None if is_bind_body(bodies, hosts[hid]) else bind_bodies)
+                                   if hid in hosts else None)
+            if hev is not None:
+                print(f"{bd.id}: hangs under {hid}: {hang_rule(ev, hev, bodies['close'])}", flush=True)
+        if CUP.get(bd.meta["row"].get("slot")):
+            print(f"{bd.id}: its bands end under its cups: "
+                  f"{cup_rule(bd, ev, bodies['close'], worn_rest.worn(bodies['close'], bd.meta['row'], rigid_roles()), CUP[bd.meta['row']['slot']])}",
+                  flush=True)
+        # (BAND_END: a slot's "band_end" rule in rigid_roles.json gives its bands' ends their cups' move)
+        be = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("band_end")
+        if be and bd.meta["row"].get("outfit"):
+            law = dict(BAND_END, **be) if isinstance(be, dict) else BAND_END
+            for tier in TIERS:
+                st = band_end_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} band ends follow their cups: {st}", flush=True)
+        # (SUPPORT_FOLLOW: a slot's "support_follow" rule in rigid_roles.json gives its bands' ends their cups' support)
+        sf = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("support_follow")
+        if sf and bd.meta["row"].get("outfit"):
+            law = dict(SUPPORT_FOLLOW, **sf) if isinstance(sf, dict) else SUPPORT_FOLLOW
+            for tier in TIERS:
+                st = support_follow_rule(bd, ev, worn_rest.worn(bodies[tier], bd.meta["row"], rigid_roles()), law, tier,
+                                         bodies[tier])
+                if st:
+                    print(f"{bd.id}: {tier} band ends take their cups' support: {st}", flush=True)
+        # (CUP_BLEND: a slot's "cup_blend" rule in rigid_roles.json: each steel cup rides one blend; before TRIM_RIDE,
+        # so the trim and the rivets on a cup copy its one blend)
+        cb = (rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("cup_blend")
+        if cb and bd.meta["row"].get("outfit"):
+            law = dict(CUP_BLEND, **cb) if isinstance(cb, dict) else CUP_BLEND
+            for tier in TIERS:
+                st = cup_blend_rule(bd, ev, law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} each cup's weights ({law['mode']}): {st}", flush=True)
+        # (TRIM_RIDE: a slot's "trim_ride" rule in rigid_roles.json: the trim lying on its steel rides the steel; after
+        # the band rules, so the bands keep the values they take from the cups and their rims)
+        tr =(rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("trim_ride")
+        if tr and bd.meta["row"].get("outfit"):
+            law = dict(TRIM_RIDE, **tr) if isinstance(tr, dict) else TRIM_RIDE
+            for tier in TIERS:
+                st = trim_ride_rule(bd, ev, law, tier)
+                if st:
+                    print(f"{bd.id}: {tier} trim rides its steel: {st}", flush=True)
         evs[bd.id] = ev
         for line in rim_lines(bd, ev):
             print(line, flush=True)
@@ -1693,6 +3035,9 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
             fit, why = fit_verdict(ev["__metrics__"])
         fp = os.path.join(out_dir, f"{bd.id}.gltf")
         write_unit(fp, bd, ev, bodies["close"].glb)
+        ch = unit_import_params(fp)
+        if ch:
+            print(f"{bd.id}: import params set as its A source's: {', '.join(ch)}", flush=True)
         row = dict(bd.meta["row"])
         row.pop("tuck", None)
         row.pop("tuck_count", None)

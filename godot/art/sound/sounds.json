@@ -180,5 +180,21 @@
  "her_dodge": 2,
  "her_perfect": 1,
  "her_stance": 2,
- "her_heartbeat": 4
+ "her_heartbeat": 4,
+ "skill_sunder": 1,
+ "skill_groundbreaker": 1,
+ "skill_bladestorm": 1,
+ "tree_open": 1,
+ "tree_close": 1,
+ "tree_focus": 1,
+ "tree_path": 1,
+ "tree_denied": 1,
+ "ui_hover": 1,
+ "ui_click": 1,
+ "ui_equip": 1,
+ "loot_generic": 1,
+ "loot_rare": 1,
+ "equip_plate": 1,
+ "equip_helmboots": 1,
+ "set_complete": 1
 }
