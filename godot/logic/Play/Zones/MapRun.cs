@@ -625,7 +625,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     List<Loot> Gear(DropSource source, int extra = 0, int levelUp = 0) => G.Journey.Drops(new DropCtx
     {
         Source = source, Level = Chart.ItemLevel + levelUp, People = Chart.People, Lean = MapOffers.Lean(Chart.Map, people.Id),
-        Luck = B!.Stats.Get(Stat.Luck), Rarity = Chart.RarityBonus, Quantity = Chart.Quantity, Extra = extra, Tier = Chart.Tier, R = R,
+        Luck = B!.Stats.Get(Stat.Luck), Rarity = Chart.RarityBonus, Quantity = Chart.Quantity, Extra = extra, Tier = Chart.Tier, R = R, Dungeon = Chart.Dungeon,
     });
 
     /// <summary>The people's material, as their carriers leave it. In the atlas the Dig's lamplings carry

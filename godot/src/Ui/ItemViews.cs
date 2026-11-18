@@ -536,6 +536,16 @@ void fragment() {
             int wornN = ch != null ? Drops.SetsWorn(ch).GetValueOrDefault(set.Id) : 0;
             var sv = Style.V(2, Style.H(8, Style.Label(set.Name.ToUpperInvariant(), Style.UiHeavy, 13, SetColour, false, HorizontalAlignment.Left, false),
                 Style.Label($"{wornN} of {set.Pieces.Count} worn", Style.Ui, 14, Kit.Dim, false, HorizontalAlignment.Left, false)));
+            // Which piece this is, and what the survivor still lacks (worn, in the pack, or not yet found).
+            foreach (var pid in set.Pieces)
+            {
+                string state = pid == def.Id ? "this piece"
+                    : ch != null && Items.EquipSlots.Any(s => ch.Equipment[s]?.Def == pid) ? "worn"
+                    : ch != null && ch.Pack.Any(p => p?.Def == pid) ? "in your pack" : "not yet found";
+                bool have = state != "not yet found";
+                sv.AddChild(Style.H(8, Style.Label(Items.Find(pid)?.Name ?? pid, Style.Ui, 14, have ? Kit.Ink : Kit.Faint, false, HorizontalAlignment.Left, false),
+                    Style.Label(state, Style.TextItalic, 14, have ? Kit.Dim : Kit.Faint, false, HorizontalAlignment.Left, false)));
+            }
             foreach (var bonus in set.Bonuses)
             {
                 bool lit = wornN >= bonus.Worn;

@@ -1877,6 +1877,80 @@
    ],
    "lore": "The torch is the Watch's. It was painted over once, and someone scraped it back."
   },
+  "gilt_helm": {
+   "id": "gilt_helm",
+   "name": "Gilt Helm",
+   "kind": "head",
+   "rarity": 3,
+   "set": "hollow_gilt",
+   "icon": "helm",
+   "value": 190,
+   "of": "iron_helm",
+   "description": "+16 health. The Hollow's Gilt.",
+   "mods": [
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 16,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "kit_helm"
+   ],
+   "lore": "Gold laid over bone-white metal, and no dent in it. Whatever wore it down here was never struck."
+  },
+  "gilt_harness": {
+   "id": "gilt_harness",
+   "name": "Gilt Harness",
+   "kind": "body",
+   "rarity": 3,
+   "set": "hollow_gilt",
+   "icon": "armor",
+   "value": 220,
+   "of": "chain_shirt",
+   "description": "+4 armor. The Hollow's Gilt.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "kit_pauldrons",
+    "kit_bodice",
+    "kit_brief",
+    "kit_belt",
+    "kit_vambraces",
+    "kit_gloves"
+   ],
+   "lore": "Made to be seen, and to be paid for. The den kept it warm for someone."
+  },
+  "gilt_boots": {
+   "id": "gilt_boots",
+   "name": "Gilt Boots",
+   "kind": "feet",
+   "rarity": 3,
+   "set": "hollow_gilt",
+   "icon": "boot",
+   "value": 170,
+   "of": "travelers_boots",
+   "description": "+3% movement speed. The Hollow's Gilt.",
+   "mods": [
+    {
+     "stat": "moveSpeed",
+     "kind": "inc",
+     "value": 0.03,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "kit_boots"
+   ],
+   "lore": "The soles are worn through. Something that wore them walked a long way down and did not walk back."
+  },
   "roost_hood": {
    "id": "roost_hood",
    "name": "Roost Hood",

@@ -61,6 +61,9 @@ public sealed class SetDef
     public List<string> Pieces = new();
     public List<SetBonus> Bonuses = new();
     public string? Lore;
+    /// <summary>A dungeon's id: its ruler's fall pays exactly one piece of this set, leaning to the ones not owned (Drops.Chase), and the
+    /// pieces fall from nowhere else (they have no DropsFrom). Null: an ordinary set.</summary>
+    public string? Chase;
 }
 
 public sealed class LootRules
@@ -88,6 +91,8 @@ public sealed class LootRules
     public double WeaponShare = 0.25, CallingShare = 0.67;
     /// <summary>A Set or Legendary piece never owned is this much likelier; one whose home is here this much.</summary>
     public double Unowned = 4, Home = 2;
+    /// <summary>A chase set's unowned piece is this much likelier than an owned one (SetDef.Chase): with three pieces, a median of four clears.</summary>
+    public double ChaseUnowned = 2;
     /// <summary>The dark's debt: gear rolls without a Legendary before a boss's hoard holds one for certain.</summary>
     public int Debt = 120;
     /// <summary>The scars past the half hour: Rare and up likelier by this a minute, to this much more.</summary>
@@ -139,6 +144,8 @@ public sealed class DropCtx
     public int Floor;
     /// <summary>A story fight's boss: the first one a survivor beats pays a Legendary for certain.</summary>
     public bool StoryBoss;
+    /// <summary>The dungeon this fell in (Chart.Dungeon): its ruler pays its chase set's piece (SetDef.Chase).</summary>
+    public string? Dungeon;
     /// <summary>(M9) A designed Legendary's id: the first roll is that piece (once; owned, it falls through).</summary>
     public string? Grant;
     /// <summary>Whether a story condition holds (a piece's DropsWhen).</summary>
@@ -363,6 +370,22 @@ public static class Drops
     public static IEnumerable<ItemDef> SetPieces(DropCtx x) =>
         Items.All.Values.Where(d => d.Set != null && MayDrop(d, x));
 
+    /// <summary>The one piece a dungeon's ruler pays of its chase set (SetDef.Chase == dungeon), by ownership; null where no set is chased.
+    /// It is owned from the moment it falls, as a set piece rolled by chance is.</summary>
+    public static Dropped? Chase(DropCtx x, string dungeon)
+    {
+        var set = Rules.Sets.Values.FirstOrDefault(s => s.Chase == dungeon);
+        if (set == null) return null;
+        var list = set.Pieces.Select(Items.Get).ToList();
+        double W(ItemDef d) => Owned(x.Ch, x.World, d.Id) ? 1 : Rules.ChaseUnowned;
+        double roll = x.R() * list.Sum(W);
+        var pick = list[^1];
+        foreach (var d in list) { roll -= W(d); if (roll < 0) { pick = d; break; } }
+        var it = Inventory.Make(x.Ch, pick.Id, seed: (uint)(x.R() * int.MaxValue), dropped: true, level: Math.Clamp(x.Level, 1, Rules.MaxLevel));
+        x.World?.Owned.Add(pick.Id);
+        return new Dropped(it, null, 1, LootTier.Set);
+    }
+
     /// <summary>The early pool: the Legendaries that drop from the first levels (the certain first).</summary>
     public static IEnumerable<ItemDef> EarlyLegendaries() =>
         Items.All.Values.Where(d => d.Rarity == 4 && d.Set == null && d.DropsFrom is <= 3 && d.DropsWhen == null && Leveled(d));
@@ -503,6 +526,7 @@ public static class Drops
             }
             o.Add(new Dropped(it, null, 1, tier, GiftOf(Items.Get(it.Def), x.Ch?.Archetype)));
         }
+        if (x.Source == DropSource.MapRuler && !string.IsNullOrEmpty(x.Dungeon) && Chase(x, x.Dungeon) is { } chased) o.Add(chased);
         if (x.Ch is { } gch && gch.Level >= Supports.File.Drop.Level && Supports.File.Drop.Chance.GetValueOrDefault(x.Source.Key()) is > 0 and var gc && R() < gc)
         {
             var g = Supports.Roll(gch.Gems, R());

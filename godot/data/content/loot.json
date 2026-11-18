@@ -12,7 +12,7 @@
   "set": 0.9, "legendary": 0.4,
   "luckShare": 0.5,
   "weaponShare": 0.25, "callingShare": 0.67,
-  "unowned": 4, "home": 2,
+  "unowned": 4, "home": 2, "chaseUnowned": 2,
   "debt": 120,
   "depthPerMinute": 0.02, "depthCap": 1,
   "_material": "A carrier roll that is not gear: its people's material this often, old iron this often (crafting's CraftingEconomy: these leave Act 1's stores about where they were before fewer drops). In the night's arenas they go to the night's end tally.",
@@ -54,6 +54,17 @@
         { "worn": 3, "text": "Standing still, you block a blow every six seconds, as a shield-wall does. The Watch takes you for one of its own",
           "mods": [{ "stat": "block", "kind": "flat", "value": 2, "source": "set", "when": "still" }],
           "tags": ["watch_kit"] }
+      ]
+    },
+    "hollow_gilt": {
+      "id": "hollow_gilt", "name": "The Hollow's Gilt", "chase": "hollow",
+      "pieces": ["gilt_helm", "gilt_harness", "gilt_boots"],
+      "lore": "Someone dressed for a feast in the den and was left there. The den keeps giving her back, a piece at a time.",
+      "bonuses": [
+        { "worn": 2, "text": "+10% maximum health",
+          "mods": [{ "stat": "maxHealth", "kind": "inc", "value": 0.10, "source": "set" }] },
+        { "worn": 3, "text": "+10% critical damage; +8% movement speed",
+          "mods": [{ "stat": "critDamage", "kind": "flat", "value": 0.10, "source": "set" }, { "stat": "moveSpeed", "kind": "inc", "value": 0.08, "source": "set" }] }
       ]
     },
     "levy_red": {
