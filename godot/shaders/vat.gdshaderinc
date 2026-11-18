@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.54, 0.10, 30.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.54, 0.12, 30.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -290,9 +290,9 @@ float crowd_edge(float rim) {
 // column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
 // strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
 // y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
-#define DEN_BOSS_MSTK vec4(0.15, 0.07, 0.8, 2.0)
+#define DEN_BOSS_MSTK vec4(0.22, 0.07, 0.65, 2.0)
 #define DEN_BOSS_MANE_GAP vec3(0.25, 0.035, 30.0)
-#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.35, 0.35)
+#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.5, 0.5)
 #define DEN_BOSS_MANE_TIP_H 75.0
 #define DEN_BOSS_CHEEK vec4(0.013, 0.07, 0.6, 0.3)
 #define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
@@ -1002,6 +1002,11 @@ void fragment() {
 		// (lane E lead 5, 17 Nov: an elite's rim is its outer silhouette's, vat_elite_rim.gdshader, outside the body: no band in it)
 		bool dn_el = dn_cls > 0.5 && dn_cls < 1.5;
 		if (dn_el) dn_band = 0.0;
+#ifdef VAT_CUT
+		// (lane E lead 8: no silhouette line or band on the boss's fur cards: seen edge-on in their shingled rings they drew a
+		// ladder of dark dashes behind the ear; the body under them keeps its line)
+		if (dn_bc) { dn_line = 0.0; dn_band = 0.0; }
+#endif
 		vec3 dn_kv = (VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz;
 		vec2 dn_ks = normalize(mix(normalize(dn_kv.xy + vec2(0.0, 1e-4)), vec2(0.0, 1.0), crowd_den_edge.w) + vec2(0.0, 1e-4));
 		float dn_side = vat_den_cut(dot(normalize(NORMAL.xy + vec2(0.0, 1e-4)), dn_ks), DEN_RIM_CUT);
