@@ -284,12 +284,15 @@ public sealed class SideCarry
     /// the camera's side (30 deg toward the camera from square across, both): low, back and clear. Toward the camera nothing
     /// changes (FarCapToward at FarStandOut). FarCapOn false: no cap.</summary>
     public bool FarCapOn = true; public float FarCapAway = 15f, FarCapAcross = -30f, FarCapToward = 100f;
+    /// <summary>(r22) The facing span (deg from square across) over which the cap eases from FarCapAcross to FarCapToward
+    /// (toward the camera) and to FarCapAway (away): 45 both = r21's.</summary>
+    public float FarCapSpanToward = 45f, FarCapSpanAway = 45f;
 
     /// <summary>(r21) The far heading's cap (deg out from straight back) for her facing `th` deg toward the camera from square
     /// across (her holding side away; + toward the camera, - away).</summary>
     public float FarCapAt(float th)
     {
-        float u = Math.Clamp(th / 45f, -1f, 1f);
+        float u = th < 0f ? Math.Clamp(th / MathF.Max(FarCapSpanAway, 1f), -1f, 0f) : Math.Clamp(th / MathF.Max(FarCapSpanToward, 1f), 0f, 1f);
         return u < 0f ? FarCapAcross + (FarCapAway - FarCapAcross) * -u : FarCapAcross + (FarCapToward - FarCapAcross) * u;
     }
 

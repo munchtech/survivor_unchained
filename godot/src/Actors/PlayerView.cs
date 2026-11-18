@@ -2864,6 +2864,14 @@ public partial class PlayerView : Node3D
             c.ClearDown = F(29, c.ClearDown); c.ClearLook = (int)F(30, c.ClearLook);
             c.InReach = F(31, c.InReach); c.ClearReach = F(32, c.ClearReach); c.DownBand = F(33, c.DownBand); c.Hold = F(34, c.Hold); c.CarryRate = F(35, c.CarryRate); c.TurnEnd = F(36, c.TurnEnd); c.Cross = F(37, c.Cross ? 1f : 0f) > 0f;
         }
+        // (r22) --far-cap away,across,toward,spanToward,spanAway: the far side's facing cap (SideCarry.FarCapAt).
+        if (SurvivorUnchained.Args.Get("far-cap") is { } fc)
+        {
+            var v = fc.Split(',');
+            float F(int i, float d) => i < v.Length && float.TryParse(v[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : d;
+            c.FarCapAway = F(0, c.FarCapAway); c.FarCapAcross = F(1, c.FarCapAcross); c.FarCapToward = F(2, c.FarCapToward);
+            c.FarCapSpanToward = F(3, c.FarCapSpanToward); c.FarCapSpanAway = F(4, c.FarCapSpanAway);
+        }
         return c;
     }
 
