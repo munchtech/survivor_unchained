@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.54, 0.12, 30.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.54, 0.105, 30.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -280,7 +280,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_BROW vec2(0.40, 0.25)
 // (lead 8 r3: the muzzle's lock edge, x its axis's y, y locks a turn, z their depth, w its tilt in z a .1 of y under the axis;
 // the back's strokes, see c_stk)
-#define DEN_BOSS_MUZ vec4(0.70, 11.0, 0.06, 0.05)
+#define DEN_BOSS_MUZ vec4(0.70, 17.0, 0.085, 0.05)   // (r7: 11 locks .06 deep read as a straight edge at 1:1)
 #define DEN_BOSS_STROKE vec4(0.011, 0.075, 0.05, 0.55)
 // (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
 // STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
@@ -299,10 +299,11 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_CLUMP vec4(0.43, 0.5, 0.82, 0.24)
 #define DEN_BOSS_CLUMP_V vec4(0.35, 0.10, 0.12, 0.15)
 #define DEN_BOSS_CLUMP_W vec2(0.25, 14.0)
+#define DEN_BOSS_CLUMP_S vec4(0.12, 0.45, 0.25, 0.35)
 #define DEN_BOSS_MANE_GAP vec3(0.25, 0.035, 30.0)
-#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.5, 0.5)
+#define DEN_BOSS_MANE_TIP vec4(0.66, 0.035, 0.3, 0.5)
 #define DEN_BOSS_MANE_TIP_H 75.0
-#define DEN_BOSS_CHEEK vec4(0.013, 0.07, 0.6, 0.3)
+#define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.5, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
 #define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
 #define DEN_BOSS_CHEEK_C vec3(0.60, 0.03, 72.0)
 #define DEN_BOSS_BROW_STK 0.05
@@ -379,12 +380,28 @@ float vat_den_tooth(float c_t, float c_tp, vec2 c_pp) {
 }
 float vat_den_tip(float c_q) { return pow(max(1.0 - abs(2.0 * c_q - 1.0), 0.0), DEN_FUR_TIP); }
 // (lead 8 r6: the mane's clump, on vat_den_stroke's cells: full width DEN_BOSS_CLUMP.x from the root back to .y of its length,
-// then tapered to a point; x 1 inside a drawn clump, y its place along it (1 the root, 0 the tip), z its cell's hash, w its column)
+// then tapered to a point; x 1 inside a drawn clump, y its place along it (1 the root, 0 the tip), z its cell's hash, w its
+// offset across from its middle, in columns. r7 (judge: angular shards): each clump runs DEN_BOSS_CLUMP_S.w of a cell past its
+// cell's hind end, over the root of the clump behind it (drawn in front of it), its root rounded over the last .z of it (no
+// flat cut where the next tip begins), its taper's exponent .y (blunter), bent to one side by up to .x of a column at its tip,
+// its edge a pixel soft: a painted streak, not a shard)
+vec4 vat_den_clump1(float c_x, float c_t, float c_h, float c_hb, float c_fw) {
+	float c_rr = max(c_t - 1.0 + DEN_BOSS_CLUMP_S.z, 0.0) / DEN_BOSS_CLUMP_S.z;
+	float c_w = DEN_BOSS_CLUMP.x * pow(clamp(c_t / DEN_BOSS_CLUMP.y, 0.0, 1.0), DEN_BOSS_CLUMP_S.y) * sqrt(max(1.0 - c_rr * c_rr, 0.0));
+	float c_o = c_x - DEN_BOSS_CLUMP_S.x * (2.0 * c_hb - 1.0) * (1.0 - c_t) * (1.0 - c_t);
+	return vec4(1.0 - smoothstep(c_w - c_fw, c_w + c_fw, abs(c_o)), c_t, c_h, c_o);
+}
 vec4 vat_den_clump(vec2 c_q, float c_sh, float c_s) {
-	float c_k = floor(c_q.x);
+	float c_k = floor(c_q.x), c_x = fract(c_q.x) - 0.5;
 	float c_v = c_q.y / (0.7 + 0.6 * vat_den_hash(c_k, c_s)) + vat_den_hash(c_k, c_s + 1.0), c_kv = floor(c_v);
-	float c_t = fract(c_v), c_h = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
-	return vec4(step(abs(fract(c_q.x) - 0.5), DEN_BOSS_CLUMP.x * pow(min(c_t / DEN_BOSS_CLUMP.y, 1.0), 0.6)) * step(1.0 - c_sh, c_h), c_t, c_h, c_k);
+	float c_t = fract(c_v), c_e = DEN_BOSS_CLUMP_S.w;
+	float c_fw = min(0.5 * fwidth(c_q.x), 0.08) + 1e-3;
+	float c_ha = vat_den_hash(c_k * 7.0 + c_kv + 1.0, c_s + 2.0), c_hb = vat_den_hash(c_k * 7.0 + c_kv, c_s + 2.0);
+	vec4 c_a = vat_den_clump1(c_x, (c_t - 1.0 + c_e) / (1.0 + c_e), c_ha, vat_den_hash(c_k * 7.0 + c_kv + 1.0, c_s + 3.0), c_fw);
+	c_a.x *= step(1.0 - c_e, c_t) * step(1.0 - c_sh, c_ha);
+	vec4 c_b = vat_den_clump1(c_x, (c_t + c_e) / (1.0 + c_e), c_hb, vat_den_hash(c_k * 7.0 + c_kv, c_s + 3.0), c_fw);
+	c_b.x *= step(1.0 - c_sh, c_hb);
+	return c_a.x > 0.5 ? c_a : vec4(max(c_a.x, c_b.x), c_b.yzw);
 }
 // (lead 8 r4: a fur stroke on a strip of columns, c_q.x across them in column widths, c_q.y along them in stroke lengths (the
 // root toward +): each drawn stroke (c_sh of the cells) widest at its root, tapered back to a point; x 1 inside a drawn stroke,
@@ -485,11 +502,19 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		vec2 c_mq = vec2((c_a - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_MSTK.x + DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y),
 			c_r.z / DEN_BOSS_MSTK.y);
 		vec4 c_ms = vat_den_clump(c_mq, DEN_BOSS_MSTK.z, 13.0);
+		float c_mi = c_ms.x;
+#ifdef VAT_CUT
+		// (lead 8 r7, the ear ladder: a card strand is one colour, its root's (DEN_BOSS_CARD), so a strand rooted in a clump's gap
+		// was a near-black sliver, and the ring of them round the neck behind the ear, edge-on, a column of dark dashes (l8g6;
+		// l8g7d proved it: not the light, not the body's line, cards flat-lit stayed (27,14,9), the gap's paint). A strand takes
+		// its root cell's clump, never the gap; its cream tip only if rooted inside the clump)
+		c_ms.x = 1.0;
+#endif
 		// (r6: a clump's value; DEN_BOSS_CLUMP_V)
 		float c_mv = (1.0 + DEN_BOSS_CLUMP.w * (vat_den_hash(c_ms.z * 91.0, 21.0) - 0.5)) * (1.0 - DEN_BOSS_CLUMP_V.x * smoothstep(DEN_BOSS_CLUMP.z, 1.0, c_ms.y))
-			* (1.0 + DEN_BOSS_CLUMP_V.y * (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(fract(c_mq.x) - 0.5 + DEN_BOSS_CLUMP_V.w))));
+			* (1.0 + DEN_BOSS_CLUMP_V.y * (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_ms.w + DEN_BOSS_CLUMP_V.w))));
 		float c_mg = (1.0 - c_ms.x) * (c_ra + c_rs);
-		float c_mt = c_ms.x * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z);
+		float c_mt = c_mi * c_ra * step(1.0 - DEN_BOSS_MSTK.z * DEN_BOSS_MANE_TIP.w, c_ms.z) * step(c_ms.y, DEN_BOSS_MANE_TIP.z);
 		float c_ml = mix((DEN_MANE.x * c_ra + DEN_BOSS_MANE_SH.x * c_rs) * c_ms.x * c_mv + DEN_BOSS_MANE_GAP.x * c_mg + DEN_BOSS_MANE_DK.x * c_rd,
 			DEN_BOSS_MANE_TIP.x, c_mt);
 		vec2 c_mab = mix((vat_den_ab(DEN_MANE.y, DEN_MANE.z) * c_ra + vat_den_ab(DEN_BOSS_MANE_SH.y, DEN_BOSS_MANE_SH.z) * c_rs) * c_ms.x
