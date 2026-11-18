@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.50, 0.12, 29.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.55, 0.10, 29.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -251,7 +251,7 @@ float crowd_edge(float rim) {
 // strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
 #define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
-#define DEN_BOSS_MANE_SH vec3(0.45, 0.105, 27.0)
+#define DEN_BOSS_MANE_SH vec3(0.48, 0.095, 27.0)
 #define DEN_BOSS_MANE_DK vec3(0.32, 0.075, 26.0)
 #define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
@@ -290,22 +290,31 @@ float crowd_edge(float rim) {
 // column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
 // strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
 // y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
-#define DEN_BOSS_MSTK vec4(0.50, 0.18, 0.88, 2.0)
+#define DEN_BOSS_MSTK vec4(0.44, 0.16, 0.75, 2.0)
 // (lead 8 r6: the mane in CLUMPS, not wedges (l8g5: wedges of a third of a column in rows, near-black between, read as hatching):
 // vat_den_clump on DEN_BOSS_MSTK's columns, twice as wide and long, waved DEN_BOSS_CLUMP_W (x columns, y per unit of z) so no
 // row runs straight; each clump full width DEN_BOSS_CLUMP.x of its column from the root back to .y of its length, then tapered to
 // its tip; its L the row's x (1 +- .w/2 a clump), darker toward the root (.z on, DEN_BOSS_CLUMP_V.x at most: under the clump in
 // front of it), lighter (+ .y) in a streak .z wide on its upper side (.w off its middle): the lit face. Dark only in the gaps)
-#define DEN_BOSS_CLUMP vec4(0.43, 0.5, 0.82, 0.24)
-#define DEN_BOSS_CLUMP_V vec4(0.35, 0.10, 0.12, 0.15)
+#define DEN_BOSS_CLUMP vec4(0.34, 0.62, 0.82, 0.24)
+#define DEN_BOSS_CLUMP_V vec4(0.22, 0.10, 0.12, 0.15)
 #define DEN_BOSS_CLUMP_W vec2(0.25, 14.0)
-#define DEN_BOSS_CLUMP_S vec4(0.12, 0.45, 0.25, 0.35)
+#define DEN_BOSS_CLUMP_S vec4(0.12, 0.60, 0.25, 0.35)
 #define DEN_BOSS_MANE_GAP vec3(0.22, 0.03, 30.0)
 #define DEN_BOSS_MANE_TIP vec4(0.70, 0.04, 0.22, 1.0)
 #define DEN_BOSS_MANE_TIP_H 75.0
-#define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.5, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
+#define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.35, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
 #define DEN_BOSS_CHEEK_Y vec4(0.70, 0.80, 0.62, 0.03)
-#define DEN_BOSS_CHEEK_C vec3(0.60, 0.03, 72.0)
+#define DEN_BOSS_CHEEK_C vec3(0.50, 0.03, 72.0)
+// (lead 8 r9, the head ring: the head rings' cards and the neck's mesh in front of the mane took den_head's two flat planes
+// (L .48/.34) and the cheek's pale strokes on the cards' root place (a strand's root, noisy along it): a flat grey block with
+// pale hatching at 1:1 (l8g8). den_boss's head is charcoal fur in strands with paler strand highlights. Now the head behind
+// z DEN_BOSS_HFUR.w (all of it but the muzzle's and ear tips' dark: a cut behind the eyes was a straight line) is the mane's clump field in charcoal: DEN_BOSS_HFUR_Q (x a column's width
+// round the neck, y a clump's length in z, z the share of cells drawn, w the share of clumps with a pale strand), between them
+// DEN_BOSS_HFUR.x, a clump .y, its pale strand (DEN_BOSS_CLUMP_V's streak) .z lighter in the tips' cream; the cheek's strokes on
+// the mesh only, paler .50 and fewer)
+#define DEN_BOSS_HFUR vec4(0.24, 0.32, 0.14, 0.95)
+#define DEN_BOSS_HFUR_Q vec4(0.30, 0.12, 0.80, 0.55)
 #define DEN_BOSS_BROW_STK 0.05
 // (lane E s2, judge 2: "smooth gradients -> 2-3 stepped tones". The head in three flat painted planes on her REST pose (the
 // body's world-normal bands ran over the head's curves as a ramp): LIT (the rest normal's y past DEN_HEAD_LIT.y: crown, brow,
@@ -478,11 +487,24 @@ vec3 vat_den_body(vec3 c_c, float c_cls, float c_ny, vec3 c_p, vec3 c_n, float c
 		float c_hd = c_head * step(0.5, den_head);
 		c_l = mix(c_l, mix(DEN_HEAD_SHADE, DEN_HEAD_LIT.x, vat_den_cut(c_r.w, DEN_HEAD_LIT.y)), c_hd);
 		c_l = mix(mix(c_l, DEN_BOSS_BROW.x, c_brow * (1.0 - c_hd)), DEN_BOSS_HEAD.w, c_dark) - DEN_BOSS_BROW_STK * c_bs;
+		// (r9: the head's fur in charcoal strands; DEN_BOSS_HFUR)
+		vec2 c_hq = vec2((abs(atan(c_r.x, c_r.y - DEN_MANE_AXIS)) - DEN_BOSS_MSTK.w * (DEN_BOSS_MANE_LOCK.z - c_r.z)) / DEN_BOSS_HFUR_Q.x
+			+ DEN_BOSS_CLUMP_W.x * sin(c_r.z * DEN_BOSS_CLUMP_W.y), c_r.z / DEN_BOSS_HFUR_Q.y);
+		float c_htk;
+		vec4 c_hs = vat_den_clump(c_hq, DEN_BOSS_HFUR_Q.z, 23.0, c_htk);
+		float c_hr = c_hs.x * step(1.0 - DEN_BOSS_HFUR_Q.w, vat_den_hash(c_hs.z * 53.0, 24.0))
+			* (1.0 - smoothstep(0.0, DEN_BOSS_CLUMP_V.z, abs(c_hs.w + DEN_BOSS_CLUMP_V.w)));
+		float c_hf = c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.z, DEN_BOSS_HFUR.w));
+		c_l = mix(c_l, mix(DEN_BOSS_HFUR.x, DEN_BOSS_HFUR.y, c_hs.x) + DEN_BOSS_HFUR.z * c_hr, c_hf);
+		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_MANE_TIP.y, DEN_BOSS_MANE_TIP_H), c_hf * c_hr);
 		// (r4: the cheek's ruff; DEN_BOSS_CHEEK)
 		vec4 c_cs = vat_den_stroke(vec2((c_r.y + DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z)) / DEN_BOSS_CHEEK.x, c_r.z / DEN_BOSS_CHEEK.y), DEN_BOSS_CHEEK.z, 16.0);
 		float c_yk = (c_cs.w + 0.5) * DEN_BOSS_CHEEK.x - DEN_BOSS_CHEEK.w * (DEN_BOSS_HEAD.y - c_r.z);
 		float c_ck = c_cs.x * c_head * (1.0 - c_dark) * (1.0 - vat_den_cut(c_r.w, DEN_BOSS_BROW.y)) * step(DEN_BOSS_CHEEK_Y.x, c_yk)
 			* step(c_yk, DEN_BOSS_CHEEK_Y.y) * step(DEN_BOSS_CHEEK_Y.z - DEN_BOSS_CHEEK_Y.w * vat_den_hash(c_cs.w, 19.0), c_r.z);
+#ifdef VAT_CUT
+		c_ck = 0.0;   // (r9: never on a card: its root place is noisy along the strand, so its strokes went dashes)
+#endif
 		c_l = mix(c_l, DEN_BOSS_CHEEK_C.x, c_ck);
 		c_ab = mix(c_ab, vat_den_ab(DEN_BOSS_CHEEK_C.y, DEN_BOSS_CHEEK_C.z), c_ck);
 		c_l = mix(c_l, mix(DEN_BOSS_BACK_SH.x, DEN_BOSS_BACK.x, c_bl), c_back) + c_stk * DEN_BOSS_STROKE.z * (1.0 - 2.0 * c_bl);
