@@ -58,8 +58,15 @@ public partial class SheathSway : SkeletonModifier3D
         prevRel = rel;
         havePrev = true;
         wristToThroat = throat.DistanceTo(wrist);
-        return held = SheathHang.HandHolds(held, wristToThroat, wristSpeed);
+        bool now = SheathHang.HandHolds(held, wristToThroat, wristSpeed);
+        // Letting go takes two frames past HoldOff: on A the run-to-stop blend pops her wrist 15 cm off the throat for one
+        // frame (t35townA: d 0.117, 0.229, 0.094), and with the stillness gate the moving hand could not take hold again,
+        // so the scabbard swung back to its hang under a hand still on it (warden-move r16).
+        if (held && !now && ++outFrames < 2) return held;
+        outFrames = 0;
+        return held = now;
     }
+    int outFrames;
 
     // `--hilt-tilt off`: held, the piece rides rigidly as before (before/after frames); `--hilt-held x,y,z`: another axis.
     static readonly bool TiltOff = Args.Get("hilt-tilt") == "off";
