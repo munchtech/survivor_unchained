@@ -685,10 +685,10 @@ public class SideCarryTests
             c.Step(Dt, true, 0f, f);
             var d = SideCarry.Turned(b, l, c.Tilt, a, c.Inward);
             if (k >= 20 && k < 40)
-                off = MathF.Max(off, MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarPitch, c.FarOut)), -1f, 1f)) * 180f / MathF.PI);
+                off = MathF.Max(off, MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarPitch, c.FarOutNow(1f, l, a, CamBack))), -1f, 1f)) * 180f / MathF.PI);
             if (k >= 20) least = MathF.Min(least, SideCarry.Shown(d, f));
             if (k >= 1 && c.Weight > 0f) step = MathF.Max(step, MathF.Acos(Math.Clamp(Vector3.Dot(d, prev), -1f, 1f)) * 180f / MathF.PI);
-            if (k == 89) standOff = MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarStandPitch, c.FarStandOut)), -1f, 1f)) * 180f / MathF.PI;
+            if (k == 89) standOff = MathF.Acos(Math.Clamp(Vector3.Dot(d, SideCarry.FarDir(l, a, c.FarStandPitch, c.FarOutNow(0f, l, a, CamBack))), -1f, 1f)) * 180f / MathF.PI;
             prev = d;
         }
         return (off, least, step, c, standOff);
@@ -710,6 +710,33 @@ public class SideCarryTests
         var off0 = new SideCarry { FarOn = false };
         off0.Step(Dt, true, 0f, At(-90f));
         Assert.Equal(0f, off0.Weight);   // FarOn false: the far side stays the clip's own
+    }
+
+    // (r21, judge r16 fixes 1, 2) the far heading capped by her facing: square across (face -90) the stand's blade trails low
+    // on her back's side of the screen, 30 deg or more off the vertical and under level, not up out of her head; heading away
+    // (face -135) the run's blade angles back 25 deg or more under screen level; toward the camera (face -45) the guard is
+    // FarStandOut's own; the cap is continuous in her facing.
+    [Theory]
+    [InlineData(-90f, 0f), InlineData(-135f, 1f), InlineData(-135f, 0f), InlineData(-90f, 1f)]
+    public void TheFarHeadingIsCappedByHerFacingLowAndBack(float face, float moving)
+    {
+        var c = new SideCarry();
+        var (a, l, b0) = Her(face);
+        for (int k = 0; k < 60; k++) c.Step(Dt, true, 0f, new SideCarry.Frame(b0, l, a, Jx, Jy, CamBack, moving, 0f));
+        var d = SideCarry.Turned(b0, l, c.Tilt, a, c.Inward);
+        float sx = Vector3.Dot(Jx, d), sy = Vector3.Dot(Jy, d), back = MathF.Sign(Vector3.Dot(Jx, -a));
+        float under = MathF.Atan2(sy, sx * back) * 180f / MathF.PI;   // deg under screen level, toward her back's side
+        Assert.True(sx * back > 0f && under >= (moving > 0.5f ? 25f : 20f) && under <= 60f, $"face {face} mv {moving}: {under} deg under level, x {sx}");
+    }
+    [Fact]
+    public void TheFarCapKeepsTheTowardGuardAndIsContinuous()
+    {
+        var c = new SideCarry();
+        var (a, l, _) = Her(-45f);
+        Assert.Equal(c.FarStandOut, c.FarOutNow(0f, l, a, CamBack), 0.001f);
+        Assert.Equal(0f, SideCarry.FarFacing(Her(-90f).left, Her(-90f).ahead, CamBack), 0.01f);
+        for (float th = -90f; th < 90f; th += 0.5f) Assert.True(MathF.Abs(c.FarCapAt(th + 0.5f) - c.FarCapAt(th)) <= 1.5f, $"cap jumps at {th}");
+        Assert.Equal(c.FarOut, new SideCarry { FarCapOn = false }.FarOutNow(1f, Her(-90f).left, Her(-90f).ahead, CamBack), 0.001f);
     }
 
     // (r19, judge r15 guards 2, 3) the end-on guard turns a direction about the vertical until the share asked shows; the step

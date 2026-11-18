@@ -275,6 +275,41 @@ public sealed class SideCarry
     /// at a run to FarStandOut standing (deg out from straight back to the holding side: 180 is straight ahead), at
     /// FarStandPitch; and no swing (FarSwing) while she slows. FarStandOut 0: the run's heading throughout.</summary>
     public float FarStandOut = 100f; public bool FarSlowSwing = false, FarFloorNow = true;
+    /// <summary>(r21, judge r16 fixes 1 and 2) The far side's heading capped by her facing to the camera, at a stand and in the
+    /// run alike: the heading (deg out from straight back to the holding side, as FarOut) at most FarCapAway with her facing
+    /// 45 deg or more away from square across the screen, FarCapAcross square across, FarCapToward 45 deg or more toward the
+    /// camera, linear between (<see cref="FarCapAt"/>). Square across, FarStandOut's guard (out to her side, a little ahead)
+    /// heads away from the camera, so the steep view drew it up out of the top of her head (an antenna, 1:1); heading away,
+    /// the run's FarOut stood the blade out square from her hip (a rod across her travel). The caps keep it trailing back on
+    /// the camera's side (30 deg toward the camera from square across, both): low, back and clear. Toward the camera nothing
+    /// changes (FarCapToward at FarStandOut). FarCapOn false: no cap.</summary>
+    public bool FarCapOn = true; public float FarCapAway = 15f, FarCapAcross = -30f, FarCapToward = 100f;
+
+    /// <summary>(r21) The far heading's cap (deg out from straight back) for her facing `th` deg toward the camera from square
+    /// across (her holding side away; + toward the camera, - away).</summary>
+    public float FarCapAt(float th)
+    {
+        float u = Math.Clamp(th / 45f, -1f, 1f);
+        return u < 0f ? FarCapAcross + (FarCapAway - FarCapAcross) * -u : FarCapAcross + (FarCapToward - FarCapAcross) * u;
+    }
+
+    /// <summary>(r21) Her facing's angle toward the camera from square across (deg; + toward, - away) on the far side, from her
+    /// unit level `left` and `ahead` and the camera's back `camBack`: 0 with her holding side square away from the camera.</summary>
+    public static float FarFacing(Vector3 left, Vector3 ahead, Vector3 camBack)
+    {
+        var cb = new Vector3(camBack.X, 0f, camBack.Z);
+        if (cb.LengthSquared() < 1e-8f) return 0f;
+        cb = Vector3.Normalize(cb);
+        return MathF.Atan2(Vector3.Dot(ahead, cb), Vector3.Dot(left, cb)) * R2D;
+    }
+
+    /// <summary>(r20, r21) The far side's heading (deg out from straight back) at `moving`: FarStandOut standing eased to FarOut
+    /// at a run, capped by her facing (<see cref="FarCapAt"/>, FarCapOn).</summary>
+    public float FarOutNow(float moving, Vector3 left, Vector3 ahead, Vector3 camBack)
+    {
+        float o = FarStandOut > 0f ? FarStandOut + (FarOut - FarStandOut) * moving : FarOut;
+        return FarCapOn ? MathF.Min(o, FarCapAt(FarFacing(left, ahead, camBack))) : o;
+    }
     bool farNow; Vector3 farD, farPrev, farWant;
 
     /// <summary>The unit direction `k` of the way along the shortest arc from unit `p` to unit `q`.</summary>
@@ -600,7 +635,7 @@ public sealed class SideCarry
             // (r18) the far side: the turn to her own trailing direction, this frame's (her frame's, so a fade eases it back
             // onto the clip's own along the same turn, at a stop as in a run)
             Want = FarStandPitch + (FarPitch - FarStandPitch) * moving - (FarSlowSwing || (!falling && moving >= 0.99f) ? FarSwing * Spring : 0f);
-            farD = EndOn(FarDir(left, ahead, Want, FarStandOut > 0f ? FarStandOut + (FarOut - FarStandOut) * moving : FarOut), f, FarShown);
+            farD = EndOn(FarDir(left, ahead, Want, FarOutNow(moving, left, ahead, f.CamBack)), f, FarShown);
             FarTurn(b, left, ahead, farD, out float tF, out psi);
             Raw = tF; lo = MathF.Min(0f, tF); hi = MathF.Max(0f, tF);
         }
