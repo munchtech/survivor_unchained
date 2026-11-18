@@ -1498,9 +1498,15 @@ public partial class GameHud : CanvasLayer
         }
     }
 
+    double lastStruckAt = double.NegativeInfinity;
+    string? tipShownId;
+    /// <summary>The text rects of the cards up, in screen px (the boss card's, the tip's): damage numbers keep HudClear.Gap clear of them.</summary>
+    public static readonly List<Rect2> CardText = new();
+
     /// <summary>A blow landed in the fight, dealt or taken (Game): a boss's intro card up fades out within 0.25 s.</summary>
     public void FightStruck()
     {
+        lastStruckAt = Time.GetTicksMsec() / 1000.0;
         if (!annYields || annT >= annLife) return;
         annYields = false;
         annQuit = AnnQuitFade;
@@ -2220,7 +2226,11 @@ public partial class GameHud : CanvasLayer
         // comes in whole; below a boss's bar whenever there is one.
         if (tipLine != null && IsInstanceValid(tipLine))
         {
-            tipLine.Held = Banner != null || HoldTip;
+            // (lane E lead 9: an unlock tip not yet showing waits out a fight, HudClear.TipQuiet after the last blow)
+            bool showing = hintView != null && tipShownId == hintView.Id;
+            bool waits = hintView != null && hintView.Id.StartsWith("unlock.") && HudClear.TipWaits(Time.GetTicksMsec() / 1000.0, lastStruckAt, showing);
+            tipLine.Held = Banner != null || HoldTip || waits;
+            if (!tipLine.Held && hintView != null) tipShownId = hintView.Id;
             tipLine.Backed = bossBox.Visible;
             tipLine.Duck = Time.GetTicksMsec() < tipDuckUntil;
             tipLine.Position = new Vector2(960, TipY);
@@ -2228,6 +2238,9 @@ public partial class GameHud : CanvasLayer
             if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);
         }
         TipBottom = TipUp ? tipLine!.Area.End.Y : 0;
+        CardText.Clear();
+        if (Banner is { } bn) CardText.Add(bn);
+        if (TipUp && tipLine!.Modulate.A > 0.05f) CardText.Add(tipLine.Area);
         // The chain's heat flows toward its value; a new level has already flared it and filled it,
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));

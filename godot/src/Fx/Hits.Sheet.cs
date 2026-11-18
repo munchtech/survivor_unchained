@@ -122,6 +122,7 @@ public partial class Hits
     {
         readonly Hits hits;
         Font? font;
+        readonly System.Collections.Generic.List<SurvivorUnchained.Play.HudClear.Box> cardBuf = new();
 
         public Sheet(Hits hits)
         {
@@ -154,6 +155,15 @@ public partial class Hits
                 int ol = Mathf.Max(1, Mathf.RoundToInt(NumOutline * per * fs / px));
                 var size = font.GetStringSize(n.Text, HorizontalAlignment.Left, -1, fs);
                 var o = new Vector2(-size.X / 2, (font.GetAscent(fs) - font.GetDescent(fs)) / 2);
+                // (lane E lead 9: a number keeps HudClear.Gap clear of the text of a card up, moved up or aside as it rises)
+                if (SurvivorUnchained.Ui.GameHud.CardText.Count > 0)
+                {
+                    float k = GetViewport().GetVisibleRect().Size.Y / 1080f, w = size.X * s, h = (font.GetAscent(fs) + font.GetDescent(fs)) * s;
+                    cardBuf.Clear();
+                    foreach (var r in SurvivorUnchained.Ui.GameHud.CardText) cardBuf.Add(new SurvivorUnchained.Play.HudClear.Box(r.Position.X, r.Position.Y, r.End.X, r.End.Y));
+                    var (sx, sy) = SurvivorUnchained.Play.HudClear.Shift(new SurvivorUnchained.Play.HudClear.Box(p.X - w / 2, p.Y - h / 2, p.X + w / 2, p.Y + h / 2), cardBuf, SurvivorUnchained.Play.HudClear.Gap * k);
+                    p += new Vector2(sx, sy);
+                }
                 DrawSetTransform(inv * p, 0, new Vector2(s, s));
                 DrawStringOutline(font, o, n.Text, HorizontalAlignment.Left, -1, fs, ol, n.OutlineModulate);
                 DrawString(font, o, n.Text, HorizontalAlignment.Left, -1, fs, n.Modulate);
