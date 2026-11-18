@@ -350,7 +350,7 @@ public class FxP7Tests
         float L = FissureMarks.ClipRun((x, z) => x >= 5.0, 0, 0, 9, 0, out float at);
         Assert.InRange(at, 5.0f, 5.21f);
         Assert.InRange(L, 4.7f, 4.91f);
-        Assert.Equal(9f, FissureMarks.ClipRun((x, z) => false, 0, 0, 9, 0, out float none), 3);
+        Assert.Equal(9.0, (double)FissureMarks.ClipRun((x, z) => false, 0, 0, 9, 0, out float none), 3);
         Assert.Equal(-1f, none);
     }
 }
