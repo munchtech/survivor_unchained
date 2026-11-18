@@ -69,12 +69,18 @@ public class P1GripTests
     }
 
     [Fact]
-    public void SheathedHiltOnB_AtTheHipBone_12To15cmLower()
+    public void SheathedHiltOnB_UnderHerPalm_AsOnA()
     {
+        // (lane A r14, 17 Nov: B plays A's town idle rebaked, so B's pommel sits at A's height, within 2 cm, its sheath
+        // point at B's hip bone; the old 12-15 cm lower hilt was for A1 P4's own B idle, which never shipped: her hand hung
+        // open over it)
         var a = WeaponSockets.PommelAt(WeaponSockets.HipBladeAtA);
         var b = WeaponSockets.PommelAtB();
-        Assert.InRange(b.Y, WeaponSockets.HipBoneYB - 0.01f, WeaponSockets.HipBoneYB + 0.005f);
-        Assert.InRange(a.Y - b.Y, 0.12f, 0.15f + 1e-4f);
+        Assert.InRange(a.Y - b.Y, -0.02f, 0.02f);
+        Assert.InRange(WeaponSockets.HipBladeAtB.Y, WeaponSockets.HipBoneYB - 0.01f, WeaponSockets.HipBoneYB + 0.01f);
+        // its tip out from her side by 6-12 deg (clear of B's wider thigh, never a flag)
+        var s = Vector3.Normalize(WeaponSockets.HipBladeShaftB);
+        Assert.InRange(Math.Asin(s.X) * 180 / Math.PI, 6, 12);
     }
 
     [Fact]

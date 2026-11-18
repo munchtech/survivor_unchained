@@ -1,0 +1,28 @@
+{
+ "why": "Her drawn sword carry (warden-move, lane A), as targets any body is held to, not as A's joint angles (PIPELINE.md 'Marionette is the pipe'; the owner 16 Nov: 'always keep marionette looped in ... so we can reproduce it'). Two parts. 'pose': the clips' arm read at the den camera (pitch 62, orthographic), per facing psi (0 = facing the camera), from carry_ref_a.json (fr.py on A's judged clips, judges r3-r6 and r9-r10): a body passes when its baked clips (bake keys dump, carry_read.py) read within 'tol' of A's. 'game': the bars the judged game shoots are measured to (t10.py, ana10.py, runsame.py on a DirRun eight-leg shoot's views.log), body-generic.",
+ "pose": {
+  "ref": "carry_ref_a.json",
+  "pitch": 62,
+  "clips": ["idle_warden", "idle_warden_break", "run_warden", "run_warden_b", "run_warden_bl", "run_warden_br", "run_warden_fl", "run_warden_fr", "stop_warden_l", "stop_warden_r"],
+  "tol_m": {"fist_dn_mean": 0.03, "fist_dn_min": 0.04, "ox": 0.04, "elbow_dn": 0.04},
+  "rules": {
+   "fist_under_shoulder": "fist_dn mean >= 0.05 m at every psi (the fist hangs below her shoulder on screen; the owner 15 Nov: 'locked elbow' is the failure)",
+   "elbow_relaxed": "elbow_dn >= -0.03 m at psi 0 (the elbow not raised over the shoulder line)"
+  }
+ },
+ "game": {
+  "window_frames": [[-10, 6], [44, 59]],
+  "T1_prime": "no frame with shown >= 0.6 of the blade's length, its tip > 8 px under the lower boot and |screen angle from vertical| < 28 (judge r10, the round 11 cane bar)",
+  "T3": "screen step <= 25 deg per frame unless shown <= 0.5 on both frames; no isolated spike (> 12 and > 2x both neighbours)",
+  "T4": "sword side to the camera: hidden behind the legs <= 3 frames in a row",
+  "T5": "runs +7..+35: blade traces within 3.5 deg of the judged reference shoot (runsame.py)",
+  "stand_deg": [27, 32],
+  "side_deg": {"forward": 30, "back": [50, 55]},
+  "vertical_frames_max": 2,
+  "start_deg_over_clip_max": 5
+ },
+ "runtime_body_constants": {
+  "why": "SideCarry and PlayerView constants that depend on the body; re-measured per body from a game shoot (ana10.py 'hd' and the calf columns), kept in the code with the body they were measured on.",
+  "measured_on_a": {"CalfKnee": 0.074, "CalfAnkle": 0.046, "Clear": 0.055, "TipGround": 0.03, "PivotBetaOff": 25, "PivotBetaOn": -50}
+ }
+}

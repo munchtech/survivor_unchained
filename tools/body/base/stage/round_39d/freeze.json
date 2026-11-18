@@ -1,0 +1,15 @@
+{
+ "source": "tools/body/out/round_39d/stage (copied from the main checkout's build round, the one godot/art/people/body_p1/publish.json names)",
+ "why": "gear_fit (bind/build/check) reads stage close.npz/play.npz; the round is git-ignored scratch; refit lead, lane G, 16 Nov",
+ "files": {
+  "close.npz": {
+   "bytes": 7956032,
+   "sha1": "9be97b649d5b36ec067b43a864634b57e21d5b45"
+  },
+  "play.npz": {
+   "bytes": 2247728,
+   "sha1": "533ddd19b3234b01a24d69919102bd6022678987"
+  }
+ },
+ "date": "2026-11-16"
+}

@@ -141,6 +141,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     }
 
     public override string Id => "map";
+    public override string SoundZone => map.DungeonTheme == "den" ? "den" : "map";
+    public override (float[] Field, int Res, double Half, double Step)? SoundHoles =>
+        map.DungeonTheme == "den" && map.HoleField is { } hf ? (hf, map.Meta.Res, map.Meta.Size / 2, map.Meta.Size / (map.Meta.Res - 1)) : null;
     public override string Name => Chart.Name;
     public override string? Region => map.Dungeon is { } dl ? $"{dl.Def.Region} · held by {people.Name}" : $"Tier {Chart.Tier} · {people.Name}";
     /// <summary>A dungeon (DungeonGen), not a Wayfinder's map: its caches, its way out past the ruler, no mark on the atlas.</summary>

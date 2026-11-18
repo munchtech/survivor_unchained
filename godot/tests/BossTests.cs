@@ -64,6 +64,18 @@ public class BossTests
 
     static Enemy Boss(Fight f) => f.B.Enemies.Items.First(e => e.Alive && e.Boss);
 
+    [Fact]
+    public void The_pack_mother_says_her_moves_for_the_sound_layer()
+    {
+        var f = At30("pack");
+        var said = new System.Collections.Generic.List<string>();
+        Step(f, 45, null, evs => said.AddRange(evs.OfType<Ev.Sound>().Where(s => s.Id.StartsWith("voice.packmother.")).Select(s => s.Id)));
+        Assert.Contains("voice.packmother.drive", said);
+        Assert.Contains("voice.packmother.hamstring", said);
+        Assert.All(said, id => Assert.Contains(id, new[] { "voice.packmother.arrival", "voice.packmother.drive", "voice.packmother.hamstring",
+            "voice.packmother.moonhowl", "voice.packmother.phase", "voice.packmother.call" }));
+    }
+
     [Theory]
     [InlineData("pack", typeof(PackMother))]
     [InlineData("dead", typeof(BarrowLord))]

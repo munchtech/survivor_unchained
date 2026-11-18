@@ -680,7 +680,7 @@ def rigid_clear(body, Xs, c_req):
     return min_translation(fn[m], need[m])
 
 
-def rigid_fit_clear(body, A, B, Ag, c_req, floor=None):
+def rigid_fit_clear(body, A, B, Ag, c_req, floor=None, centre=None, turn=None):
     """A rigid group made to measure and cleared: the similarity fit of its leader's bind points A onto their followed
     points B (similarity_fit), then the smallest change of translation and per-axis scales (an LP: L1 of the translation
     + RIGID "clear_w" x the scales' change, the scales kept in their clamp) that puts every point of the group Ag that was
@@ -688,9 +688,14 @@ def rigid_fit_clear(body, A, B, Ag, c_req, floor=None):
     re-measured over a few rounds. A plate that wraps the body (front, sides) cannot clear by one translation; a scale can.
     `floor` (per point of Ag, m, or None): a stand-off the point must reach whatever its bind clearance (gear_fit
     standoff_targets: the skin's measured excursion under the plate as she moves); NaN where none.
-    Returns (M, ca, cb, info)."""
+    `centre` (a point, or None = A's mean): the scales act about it (gear_fit THE GROUP: a pauldron's cop's centre, so a
+    scale grows the lames' reach and leaves the cop seated); `turn` (None = on under a floor): False keeps the fit to
+    translation + scales. Returns (M, ca, cb, info), ca the centre."""
     from scipy.optimize import linprog
     M, ca, cb, s, P = similarity_fit(A, B)
+    if centre is not None:
+        # (the same start, its scales about the centre: (Ag - ca) M^T + cb == (Ag - centre) M^T + cb')
+        cb, ca = cb + (np.asarray(centre, float) - ca) @ M.T, np.asarray(centre, float)
     R = M @ P @ np.diag(1.0 / s) @ P.T
     lo, hi = RIGID["scale"]
     t = np.zeros(3)
@@ -704,7 +709,7 @@ def rigid_fit_clear(body, A, B, Ag, c_req, floor=None):
     info = {"scale_fit": [round(float(v), 4) for v in s], "rounds": 0, "left_mm": 0.0}
     # (a stand-off floor also lets the plate turn about its middle, RIGID "turn_w" metres a radian: a pauldron's edge
     # swings out where her skin rises while its top stays seated, as a hinged plate does)
-    turn = floor is not None
+    turn = floor is not None if turn is None else bool(turn)
     Q, cc = np.eye(3), (Ag - ca).mean(0) + cb
     for r in range(RIGID["clear_rounds"] + 1):
         Mr = R @ P @ np.diag(s) @ P.T

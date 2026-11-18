@@ -446,7 +446,7 @@ void fragment() {
     void Set(string? id)
     {
         var at = Slot;
-        Sound.Sfx.Equip();
+        Sound.Sfx.Equip(Sound.EquipCue.OfLook(at));
         want = null; wantDirty = false;
         G.Gear((j, b) => Wardrobe.SetShown(j.Ch, at, id));
     }

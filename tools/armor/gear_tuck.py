@@ -264,7 +264,7 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     under = np.zeros(len(sk.P), bool)
     under[v] = True
     t[v] = 0.8 * np.clip((0.005 - d[face_on] - LIFT) / 0.004, 0, 1)
-    full = FULL   # (what says "all of BASE" in this row's marks: the general rule and through-at-rest keep their mm)
+    full = FULL   # (what says "all of BASE" in this row's marks: the general rule and through a bendy part keep their mm)
     if scale != 1.0:
         t[v] = np.minimum(t[v] / scale, FULL)
         full = min(FULL, 1.0 / scale)
@@ -282,12 +282,19 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     tb, rb, lb = ray.intersects_id(sk.P[cand] + sk.N[cand] * LIFT, -sk.N[cand], multiple_hits=False, return_locations=True)
     db = np.linalg.norm(lb - (sk.P[cand[rb]] + sk.N[cand[rb]] * LIFT), axis=1)
     outer = (mesh.face_normals[tb] * sk.N[cand[rb]]).sum(1) > 0
-    thr = cand[rb[(db <= BACK + LIFT) & outer]]
-    thr = thr[~infront[thr]]
+    mk = (db <= BACK + LIFT) & outer
+    thr, tf = cand[rb[mk]], tb[mk]
+    keep = ~infront[thr]
+    thr, tf = thr[keep], tf[keep]
+    # (THROUGH A RIGID FACE, lane G solver round 9, 17 Nov: her skin through a plate at rest takes the law's whole depth,
+    # as skin just under it does (the rule above: tuck_full_mm in front of a face is a full tuck). It took 10 mm, so on
+    # B's warden pauldron, whose lames sit in her untucked arm as A's do, the skin THROUGH a lame was tucked less than
+    # the skin beside it under the lame: B 527 records / 8 full vs A 1560 / 1443.)
+    fv = np.where(rigid[tf], FULL, full) if law else np.full(len(thr), full)
     hard = np.zeros(len(sk.P), bool)
     hard[thr] = True
-    raised += int((t[thr] < full).sum())
-    t[thr] = np.maximum(t[thr], full)
+    raised += int((t[thr] < fv).sum())
+    t[thr] = np.maximum(t[thr], fv)
     under[thr] = True
     if not law:
         return tuck_bound(sk, t, hard, under | (t > 0)), grazed, raised

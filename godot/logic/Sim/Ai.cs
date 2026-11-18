@@ -116,6 +116,12 @@ public static class Ai
         double dx = tgt.X - e.X, dz = tgt.Z - e.Z;
         double dist = Len(dx, dz);
         if (dist == 0) dist = 0.001;
+        // The first time a hostile turns on her: its voice (the sound layer's notice; sound only, no dice).
+        if (!e.Noticed && tgt.Player && e.Disposition == Disposition.Hostile)
+        {
+            e.Noticed = true;
+            b.Events.Emit(new Ev.Voice { Def = e.Def.Id, Moment = "notice", X = e.X, Z = e.Z, Enemy = e.Id });
+        }
         var def = e.Def;
         double speed = e.Speed * SlowFactor(e) * (e.HasteT > 0 ? e.Haste : 1) * b.HamstrungMul(e) * (e.SlowUntil > b.Time ? 1 - e.SlowBy : 1); // butcher.hamstrung; the bell's iron
         double wantX = dx / dist, wantZ = dz / dist;
@@ -449,7 +455,7 @@ public static class Ai
         e.AttackT -= dt;
         if (dist <= reach + 0.25 && e.AttackT <= 0)
         {
-            if (tgt.Player) b.HurtPlayer(e.Damage, School.Physical, def.Name, e);
+            if (tgt.Player) { b.Events.Emit(new Ev.Voice { Def = def.Id, Moment = "bite", X = e.X, Z = e.Z, Enemy = e.Id }); b.HurtPlayer(e.Damage, School.Physical, def.Name, e); }
             else if (tgt.Enemy is { } te) Strike(b, e, te, 1);
             double every = (def.AttackEvery ?? 1.0) / (e.HasteT > 0 ? e.Haste : 1);
             if (e.Disposition == Disposition.Ally) every /= b.Stats.Get(Stat.SummonHaste);
@@ -468,6 +474,7 @@ public static class Ai
         e.State = EnemyState.Windup;
         e.StateT = windup;
         e.LungeX = dirX; e.LungeZ = dirZ;
+        if (e.Disposition == Disposition.Hostile) b.Events.Emit(new Ev.Voice { Def = e.Def.Id, Moment = "lunge", X = e.X, Z = e.Z, Enemy = e.Id });
         double reachL = lunge.Speed * lunge.Time;
         b.Events.Emit(new Ev.Telegraph
         {

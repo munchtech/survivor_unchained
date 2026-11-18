@@ -503,10 +503,28 @@ def _feet(w, c, base_w):
         xl, xr = Pp[:, I["foot_l"], 0].mean(), Pp[:, I["foot_r"], 0].mean()
         Pf[:, 0] = (xl + xr) / 2 + sg * ((xl - xr) + c["width"]) / 2
         bv = qrot(qinv(w.grest[f]), w.prest[I[f"ball_{s}"]] - w.prest[f])
+        # (The heading is read off the foot->ball line only where that line lies within 60 deg of level (its level
+        # share >= 0.5): her_2's swing foot hangs it 85-89 deg down just after the toe-off, where its heading
+        # swung through 180 in a frame and the foot spun 110-170 deg about itself (solver 10). There the heading is
+        # the foot's hinge axis's (its pitch doesn't move it), offset to meet the line's on the frames either side.)
+        yb, yx, lv = np.zeros(n), np.zeros(n), np.zeros(n)
         for t in range(n):
             v = qrot(Gf[t], bv)
-            yaw = math.degrees(math.atan2(v[0], v[2]))
-            Gf[t] = qmul(qaxis(UP, sg * TOE_OUT - yaw), Gf[t])
+            yb[t] = math.degrees(math.atan2(v[0], v[2]))
+            lv[t] = math.hypot(v[0], v[2]) / float(np.linalg.norm(v))
+            x = qrot(Gf[t], axl)
+            yx[t] = math.degrees(math.atan2(-x[2], x[0]))
+        yaw = yb.copy()
+        off = _wrap(yb - yx)
+        for t in range(n):
+            if lv[t] >= 0.5:
+                continue
+            kb = next(k for k in range(1, n) if lv[(t - k) % n] >= 0.5)
+            ka = next(k for k in range(1, n) if lv[(t + k) % n] >= 0.5)
+            ob, oa = off[(t - kb) % n], off[(t + ka) % n]
+            yaw[t] = yx[t] + ob + kb / (kb + ka) * _wrap(oa - ob)
+        for t in range(n):
+            Gf[t] = qmul(qaxis(UP, sg * TOE_OUT - yaw[t]), Gf[t])
         zc = Pf[mask, 2].mean()
         Pf[:, 2] = zc + c["stride"] * (Pf[:, 2] - zc)
         # The swing's heel kick (her_2 folds the swing knee to ~80 deg): the foot's rise off its stance height kept
