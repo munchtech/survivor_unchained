@@ -42,7 +42,7 @@ public static partial class DungeonDress
     {
         if (OpenMix <= 0f || !setSheets!.TryGetValue("O7", out var o7) || o7.Count < 20) return false;
         float h = Hash((int)(x * 10f), (int)(zz * 10f), 4401);
-        int[] pool = { 0, 4, 8, 1, 5, 7, 6, 9 };
+        int[] pool = { 0, 4, 8, 1, 5, 6, 9 };   // (den r18 lead) no jaw (7) here: three wolf jaws read in one lair view (r8a); the recipes lay it, one a view
         int i = pool[(int)(h * pool.Length) % pool.Length];
         if (Hash((int)(x * 10f), (int)(zz * 10f), 4402) < 0.5f) i += 10;
         if (PlaceSetObj(c, "O7", o7[i], x, zz, 0.85f * (0.7f + 0.6f * Hash((int)(x * 10f), (int)(zz * 10f), 4403)), 0.1f, false, 0.3f) > 0f) nO7++;
@@ -247,6 +247,7 @@ public static partial class DungeonDress
                             for (int pi = 0; pi < pool.Length && recipe < 0; pi++)
                             {
                                 int cand = rc * 100 + pool[(p0 + pi) % pool.Length]; bool blocked = false;
+                                if (cand == 507 && !DenCaps.Take("jaw", p, 1, 10f)) continue;   // (den r18 lead) the wolf jaw is a distinct piece: one within 10 m
                                 foreach (var (mp, mk) in mixPlaced) { float dx = mp.X - p.X, dz = mp.Y - p.Y; if (mk == cand && dx * dx + 0.77f * dz * dz < OpenMixGap * OpenMixGap) { blocked = true; break; } }
                                 if (!blocked) { recipe = rc; main = cand; }
                             }
