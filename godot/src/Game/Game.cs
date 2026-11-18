@@ -1209,8 +1209,6 @@ public partial class Game : Node, IZoneHost
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
         if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return SaveOutcome.Skipped;
-        // (a journey read with --load is a picture's, never written back)
-        if (Args.Has("load")) return SaveOutcome.Skipped;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
@@ -1221,6 +1219,8 @@ public partial class Game : Node, IZoneHost
             GD.Print($"save-file: written {sf}");
             return SaveOutcome.Saved;
         }
+        // (a journey read with --load is a picture's, never written back to a slot; --save-file above is the chain's own file)
+        if (Args.Has("load")) return SaveOutcome.Skipped;
         if (saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })))
             return SaveOutcome.Saved;
         GD.PushError($"save: slot {Journey.Slot} could not be written ({reason})");
