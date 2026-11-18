@@ -302,15 +302,15 @@ float crowd_edge(float rim) {
 // under it), DEN_BOSS_TAIL_D x at its root, y more at its tip (blunt: it ends in a clump, not a needle; its tip at rest z .w). The
 // OUTLINE in fur clumps: the silhouette cut back (in px from it, a tube's measure from n.v and its screen derivative) in pointed
 // clumps along the rest pose's long axis (z: the pose is a leap, its legs and tail along z), round the body's axis on faces turned
-// along z (the rump, the chest's front); DEN_BOSS_FURE x the tail's cut in px at most, y the body's, z the tail's clump in rest z,
+// along z (the rump, the chest's front); DEN_BOSS_FURE x the tail's cut in n.v at most, y the body's, z the tail's clump in rest z,
 // w the body's; DEN_BOSS_FURE_V x the valleys' depth's spread, y the tips' height's, z + w a hash the tip's place in a clump
-// (past .5: leaning back); DEN_BOSS_FURE_X the front legs (z past .x under y .y) and hind paws (z under .z) left whole, .w of a
-// tube's radius cut at most. The den line is drawn on the cut edge. Not the head, the front legs or the paws)
-#define DEN_BOSS_TAIL vec4(-0.50, -0.58, 0.64, -0.80)
-#define DEN_BOSS_TAIL_D vec2(0.026, 0.034)
-#define DEN_BOSS_FURE vec4(9.0, 5.0, 0.045, 0.11)
+// (past .5: leaning back); DEN_BOSS_FURE_X the front legs (z past .x under y .y) and hind paws (z under .z) left whole. The den
+// line is drawn on the cut edge. Not the head, the front legs or the paws)
+#define DEN_BOSS_TAIL vec4(-0.47, -0.55, 0.64, -0.80)   // (r1 -.50/-.58: its root stayed thin)
+#define DEN_BOSS_TAIL_D vec2(0.036, 0.030)   // (r1 .026/.034: 23 px at most against the hips' 54 in the boss view)
+#define DEN_BOSS_FURE vec4(0.85, 0.65, 0.045, 0.11)
 #define DEN_BOSS_FURE_V vec4(0.3, 0.25, 0.55, 0.25)
-#define DEN_BOSS_FURE_X vec4(0.25, 0.42, -0.72, 0.45)
+#define DEN_BOSS_FURE_X vec3(0.25, 0.42, -0.72)
 // (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
 // STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
 // the neck, y a stroke's length in z, z the share of cells drawn, w the flow, radians down the neck a unit of z back), each in
@@ -860,32 +860,25 @@ void fragment() {
 	if (dn_cls > 1.5) dn_r.xyz -= (UV.y - DEN_BOSS_CARD.w) * dn_pv;
 #endif
 #ifndef VAT_CUT
-	// (judge 6 fix 6: the boss's OUTLINE in fur clumps, DEN_BOSS_FURE. fo_px a pixel's distance in from the silhouette in px, a
-	// tube's (radius fo_r = s / (n.v |grad n.v|), s = sin of the view's angle, in from it fo_r (1 - s)); its derivatives here,
-	// before any per-pixel branch. fo_d the cut there: clumps on the rest pose's z (on faces turned along z, its y and |x|), the
-	// top's half a clump on from the bottom's, each pointed (vat_den_tooth) and leaning back, the valleys' depth varied without a
-	// step; at most DEN_BOSS_FURE_X.w of the radius (thin legs), none where n.v is .9 or more; not the head, front legs or paws.
-	// The pixel is cut at the end of fragment(), after every screen derivative)
+	// (judge 6 fix 6: the boss's OUTLINE in fur clumps, DEN_BOSS_FURE: the silhouette cut back where n.v is under fo_c, a pointed
+	// clump's profile (vat_den_tooth, leaning back, its valleys' depth varied without a step) along the rest pose's z (on faces
+	// turned along z, its y and |x|), the top's half a clump on from the bottom's. By n.v alone a tube R px across is cut
+	// R (1 - sqrt(1 - c^2)) deep at most, smooth over the mesh's triangles (r1's px from n.v's screen derivative was ragged and its
+	// cap squared the tail's clumps). Not the head, front legs or paws. fo_g its signed measure and fo_w its screen derivative
+	// (n.v's, its cut's held to twice that) here, before any per-pixel branch; the pixel is cut at the end of fragment())
+	vec3 fo_p = vat_rest.xyz, fo_n = normalize(vat_rn);
+	bool fo_tl = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, fo_p.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, fo_p.y) > 0.5;
+	bool fo_on = den_on && dn_cls > 1.5 && !((fo_p.z > DEN_BOSS_HEAD.x && fo_p.y > DEN_BOSS_HEAD2.x)
+		|| (fo_p.z > DEN_BOSS_FURE_X.x && fo_p.y < DEN_BOSS_FURE_X.y) || (fo_p.z < DEN_BOSS_FURE_X.z && fo_p.y < DEN_BOSS_FURE_X.y));
+	float fo_u = (abs(fo_n.z) > 0.6 ? fo_p.y + abs(fo_p.x) : DEN_BOSS_TAIL.x - fo_p.z) / (fo_tl ? DEN_BOSS_FURE.z : DEN_BOSS_FURE.w)
+		+ (fo_n.y > 0.0 ? 0.5 : 0.0);
+	float fo_k = floor(fo_u), fo_t = fract(fo_u), fo_h = vat_den_hash(fo_k, 5.0);
+	float fo_c = fo_on ? (fo_tl ? DEN_BOSS_FURE.x : DEN_BOSS_FURE.y) * (1.0 - DEN_BOSS_FURE_V.x * mix(vat_den_hash(fo_k, 9.0), vat_den_hash(fo_k + 1.0, 9.0), fo_t))
+		* (1.0 - (1.0 - DEN_BOSS_FURE_V.y * fo_h) * vat_den_tooth(fo_t, DEN_BOSS_FURE_V.z + DEN_BOSS_FURE_V.w * fo_h, vec2(1.5, 1.3))) : 0.0;
 	float fo_nv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-	float fo_g = length(vec2(dFdx(fo_nv), dFdy(fo_nv)));
-	float fo_s = sqrt(max(1.0 - fo_nv * fo_nv, 0.0));
-	float fo_r = fo_s / max(fo_nv * fo_g, 1e-6);
-	float fo_px = fo_r * (1.0 - fo_s);
-	float fo_d = 0.0;
-	bool fo_on = false;
-	if (den_on && dn_cls > 1.5 && fo_nv < 0.9) {
-		vec3 fo_p = vat_rest.xyz, fo_n = normalize(vat_rn);
-		bool fo_tl = (1.0 - smoothstep(DEN_BOSS_TAIL.y, DEN_BOSS_TAIL.x, fo_p.z)) * smoothstep(DEN_BOSS_TAIL.z - 0.03, DEN_BOSS_TAIL.z + 0.03, fo_p.y) > 0.5;
-		fo_on = !((fo_p.z > DEN_BOSS_HEAD.x && fo_p.y > DEN_BOSS_HEAD2.x) || (fo_p.z > DEN_BOSS_FURE_X.x && fo_p.y < DEN_BOSS_FURE_X.y)
-			|| (fo_p.z < DEN_BOSS_FURE_X.z && fo_p.y < DEN_BOSS_FURE_X.y));
-		float fo_u = (abs(fo_n.z) > 0.6 ? fo_p.y + abs(fo_p.x) : DEN_BOSS_TAIL.x - fo_p.z) / (fo_tl ? DEN_BOSS_FURE.z : DEN_BOSS_FURE.w)
-			+ (fo_n.y > 0.0 ? 0.5 : 0.0);
-		float fo_k = floor(fo_u), fo_t = fract(fo_u), fo_h = vat_den_hash(fo_k, 5.0);
-		float fo_v = mix(vat_den_hash(fo_k, 9.0), vat_den_hash(fo_k + 1.0, 9.0), fo_t);
-		fo_d = fo_on ? min((fo_tl ? DEN_BOSS_FURE.x : DEN_BOSS_FURE.y) * (1.0 - DEN_BOSS_FURE_V.x * fo_v)
-			* (1.0 - (1.0 - DEN_BOSS_FURE_V.y * fo_h) * vat_den_tooth(fo_t, DEN_BOSS_FURE_V.z + DEN_BOSS_FURE_V.w * fo_h, vec2(1.5, 1.3))),
-			DEN_BOSS_FURE_X.w * fo_r) : 0.0;
-	}
+	float fo_g = fo_nv - fo_c;
+	float fo_w = fwidth(fo_nv);
+	fo_w += min(fwidth(fo_c), 2.0 * fo_w);
 #endif
 	if (den_on) c = vat_den_body(c, dn_cls, dn_ny, vat_local, normalize(vat_nloc), dn_dead ? -1.0 - dn_dk : dn_hit, dn_r);
 	vec3 dn_c0 = c;   // (r2 foes: the den body before any flash, for the flash's cap below)
@@ -1197,10 +1190,10 @@ void fragment() {
 		bool dn_el = dn_cls > 0.5 && dn_cls < 1.5;
 		if (dn_el) dn_band = 0.0;
 #ifndef VAT_CUT
-		// (judge 6 fix 6: the boss's line and band on its fur-cut edge: its distance from the cut, fo_px - fo_d, in vat_edge_px's
-		// measure (n.v / fwidth, about 1.7 of a tube's px), to n.v .9, so the notches carry them)
+		// (judge 6 fix 6: the boss's line and band on its fur-cut edge: its distance from the cut in px, fo_g / fo_w, vat_edge_px's
+		// measure, so the notches carry them)
 		if (fo_on) {
-			float fo_e = 1.7 * (fo_px - fo_d), fo_f = 1.0 - smoothstep(0.82, 0.9, fo_nv);
+			float fo_e = fo_g / max(fo_w, 1e-4), fo_f = 1.0 - smoothstep(0.88, 0.95, fo_nv);
 			dn_line = (1.0 - smoothstep(crowd_den_edge.x - 0.5, crowd_den_edge.x + 0.5, fo_e)) * fo_f;
 			dn_band = (1.0 - smoothstep(crowd_den_edge.x + crowd_den_edge.z - 0.5, crowd_den_edge.x + crowd_den_edge.z + 0.5, fo_e)) * fo_f * (1.0 - dn_line);
 		}
@@ -1257,7 +1250,7 @@ void fragment() {
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
 #ifndef VAT_CUT
-	// (judge 6 fix 6: the boss's fur outline cut, last: fo_d above)
-	if (fo_on && fo_px < fo_d) discard;
+	// (judge 6 fix 6: the boss's fur outline cut, last: fo_g above)
+	if (fo_g < 0.0) discard;
 #endif
 }
