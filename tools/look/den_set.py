@@ -38,6 +38,9 @@ BANKS = {   # name: kind (far: its face looks at the camera; near: seen from abo
 SHEETS = {  # name: (kind, metres of its widest piece or None = the banks' scale)
     "B6": ("spill", None), "O1": ("boulder", 3.2), "O2": ("log", 6.0), "O3": ("bones", 2.0),
     "H1": ("hollow", 5.0), "H2": ("pit", 12.0),
+    # (den r18 P5, R17 item 1) the lair's two pits as den_boss.png's (sunken, the far wall lit, veins glowing, roots over the lips):
+    # source px kept (None: k 1), since PlaceSetHole lays each painted lip to its hole's own radius, only the resolution rides on it
+    "H3": ("pit", None),
     # (r10d) above: the hollows' bowls 3-4 m and the pit 10 m, each with its fading surround
     "O4": ("drift", 5.5),   # (r11) two long low bone drifts for the far banks' feet
     "O6": ("fur", 1.5),     # (den r16 W, R15f item 10) 6 pale fur clumps and 2 dry leaf drifts for the open floor
@@ -62,6 +65,9 @@ FUR_GRADE = {"O6": {"h": 52.0, "c": 0.028, "l50": 0.66, "spread": 1.0, "under": 
 LIT_KNEE = {"O2": {"knee": 0.58, "share": 0.4, "c": 0.85},
             # (den r18 D4, R17 item 2: bone band h 47-60, C .04-.06, lit L50 <= .70; O8 painted tan) the new bones' lights rolled off
             "O7": {"knee": 0.62, "share": 0.45, "c": 0.85}, "O8": {"knee": 0.58, "share": 0.4, "c": 0.72}}
+# (den r18 P5) a hole painting's mouth found as its biggest cool region (R - B over the sum, blurred, under this): H3's veins and
+# lit far wall split the dark-mass rule's throat (it took the left third of the bowl); the lip is the warm earth's inner edge
+MOUTH_WARM = {"H3": 0.10}
 DESTREAK = {"F1": 0.8, "F2": 1.0, "F3": 0.9, "F4": 0.6}   # (r10d) how far each tile's directional mid band is evened (1: fully)
 # (r11) the floor's layers, in the shader's order: base earth, trodden, damp, root runs, a second base earth. Batch 4's
 # cel-painted tiles (inked stones, drawn cracks); F1-F4's photographic grain read as a soft cloud at the play camera and
@@ -272,11 +278,20 @@ def destreak(img, k):
     return np.clip(img * (np.maximum(nl, 0.0) / np.maximum(lum, 1.0))[..., None], 0, 255)
 
 
-def mouth(f, a, kind):
+def mouth(f, a, kind, warm=None):
     """(r10d) A hole painting's mouth (its lip's ellipse) as its centre and half sizes in fractions of the piece (cu, cv,
     ru, rv): the biggest dark mass (luminance blurred at 3% of the piece, under the 2nd percentile + 0.65 of the way to
     the median); for a pit its lit far inner wall stands above that throat, so the lip reaches a quarter further up."""
     h, w = a.shape
+    if warm is not None:   # (den r18 P5) see MOUTH_WARM: the lip's ellipse is the bbox of the biggest cool region, as found
+        wm = ndimage.gaussian_filter((f[..., 0] - f[..., 2]) / (f.sum(-1) + 1.0), 0.02 * max(w, h))
+        cool = ndimage.binary_fill_holes((a > 0.5) & (wm < warm))
+        lab, n = ndimage.label(cool)
+        if n == 0:
+            return [0.5, 0.5, 0.3, 0.3]
+        ys, xs = np.nonzero(lab == 1 + int(np.argmax(ndimage.sum(cool, lab, range(1, n + 1)))))
+        return [round((xs.min() + xs.max() + 1) / 2 / w, 4), round((ys.min() + ys.max() + 1) / 2 / h, 4),
+                round((xs.max() + 1 - xs.min()) / 2 / w, 4), round((ys.max() + 1 - ys.min()) / 2 / h, 4)]
     lum = ndimage.gaussian_filter(f @ np.array([0.299, 0.587, 0.114]), 0.03 * max(w, h))
     inside = a > 0.5
     lo, med = np.percentile(lum[inside], 2), np.median(lum[inside])
@@ -390,7 +405,7 @@ def build():
             fv = (rows.max() + 1) / ch if len(rows) else 1.0
             pe = {"rect": [px_, py_, cw, ch], "metres": [round(cw / ppm, 3), round(ch / ppm, 3)], "foot_v": round(fv, 4)}
             if kind in ("hollow", "pit"):
-                pe["mouth"] = mouth(cf, ca, kind)
+                pe["mouth"] = mouth(cf, ca, kind, MOUTH_WARM.get(name))
             if i in leafs:
                 pe["leaf"] = True
             sh["pieces"].append(pe)

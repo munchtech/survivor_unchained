@@ -78,6 +78,11 @@ uniform vec4 pit_vein = vec4(0.06, 0.15, 0.55, 0.35);
 uniform vec3 pit_wg = vec3(1.4, 0.45, 0.8);
 uniform vec2 pit_near = vec2(0.7, 0.9);
 uniform vec2 pit_self = vec2(1.0, 0.0);   // the bowl's albedo share kept under the room's light, and its own light (x albedo)
+// (den r18 P5, R17 items 1, 5) pit_paint.x > 0: a painted lair pit (H3, den_boss.png's bowls: the far wall lit, the near lip shaded,
+// roots over the lips): its lime pixels (G over max(R, B), from z to w, linear) emit x times their colour, y of their albedo taken
+// off; pit_paint_pt the share of a spot's or omni's light kept inside its lip (the painting carries its own light)
+uniform vec4 pit_paint = vec4(0.0, 0.5, 0.02, 0.25);
+uniform float pit_paint_pt = 0.0;
 varying float pit_pt;
 // (r12) the lair's gloom (dungeon_floor.gdshader's boss_gloom, the same rule): its pools of light in the middle, the
 // ground and its dressing falling dark and cool toward the walls (den_boss.png: its 12-35 band 13 %, cool 18.8 %)
@@ -287,6 +292,12 @@ void fragment() {
 #ifdef SET_SOFT
 	// (r11) a hole painting's own earth surround fades out past its rim (COLOR.b: half the distance in lip radii)
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
+	if (pit_paint.x > 0.0 && COLOR.a < 0.75) {   // (den r18 P5) see pit_paint
+		float lime = smoothstep(pit_paint.z, pit_paint.w, c.g - max(c.r, c.b));
+		ALBEDO *= 1.0 - pit_paint.y * lime;
+		EMISSION += c.rgb * pit_paint.x * lime * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
+		pit_pt = mix(1.0, pit_paint_pt, 1.0 - smoothstep(0.85, 1.05, 2.0 * COLOR.b));
+	} else
 	if (pit_cells > 0.0 && pit_glow > 0.0 && COLOR.a < 0.75) {   // (den r16 A, R15f item 1) see pit_cells
 		// (den r16 A2) sunken (see pit_deep): the view ray carried pit_deep.x metres down. Where it meets the pit's wall before its
 		// floor, the wall's dark earth face (the far side, lit at its brink, dark at its foot); else the floor's plates where the ray

@@ -149,6 +149,15 @@ public static partial class DungeonDress
             mat.SetShaderParameter("pit_wg", V3("den-pit-wg", new Vector3(1.4f, 0.45f, 0.8f)));
             mat.SetShaderParameter("pit_near", new Vector2(SurvivorUnchained.Args.Num("den-pit-near", 0.7f), SurvivorUnchained.Args.Num("den-pit-near-m", 0.9f)));
             mat.SetShaderParameter("pit_self", new Vector2(SurvivorUnchained.Args.Num("den-pit-self-alb", 1f), SurvivorUnchained.Args.Num("den-pit-self", 0f)));
+            // (den r18 P5, R17 items 1, 5) H3, the painted lair pits (PlaceSetHole, --den-pit-paint): no procedural pit over the painting;
+            // its lime veins emit --den-pit-paint-k x their colour (--den-pit-paint-alb of their albedo off; lime from lo to hi, G over
+            // max(R, B) linear), a spot's or omni's light kept at --den-pit-paint-pt inside the lip (the painting carries its own light)
+            if (sheet == "H3")
+            {
+                mat.SetShaderParameter("pit_cells", 0f);
+                mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.2f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 0.5f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.25f)));
+                mat.SetShaderParameter("pit_paint_pt", SurvivorUnchained.Args.Num("den-pit-paint-pt", 0f));
+            }
         }
         return mat;
     }
@@ -1237,6 +1246,12 @@ public static partial class DungeonDress
     /// level floor; blended at its fading surround. False when there is no such painting.</summary>
     static bool PlaceSetHole(Ctx c, string sheet, Vector2 ctr, float[] co, int pick)
     {
+        // (den r18 P5, R17 items 1, 5) --den-pit-paint 1: a lair pit (H2's place) laid as H3's painting (den_boss.png's sunken bowls,
+        // the far wall lit, roots over the lips), its big piece on a pit of radius --den-pit-paint-r m or more, the small on the rest;
+        // the hole and its ledge kill unchanged (DungeonGen). 0: the procedural pit (pit_cells, pit_v2)
+        if (sheet == "H2" && co.Length > 0 && SurvivorUnchained.Args.Num("den-pit-paint", 1f) > 0f)
+            foreach (var lr in c.Z.Rooms)
+                if (lr.Kind == "Boss" && new Vector2(lr.X, lr.Z).DistanceTo(ctr) < lr.R + 4f) { sheet = "H3"; pick = co[0] >= SurvivorUnchained.Args.Num("den-pit-paint-r", 2.2f) ? 0 : 1; break; }
         if (SetHoles <= 0f || !LoadSet() || !setSheets!.TryGetValue(sheet, out var all) || all.Count == 0) return false;
         var pc = all[pick % all.Count];
         if (pc.Mouth.Z <= 0f) return false;
@@ -1296,7 +1311,7 @@ public static partial class DungeonDress
                 // den_set_soft fades the painting's own earth surround out past the rim (it read as a pink stamped ring)
                 float ell = Mathf.Sqrt(dx * dx / Mathf.Max(ma * ma, 1e-4f) + dz * dz / Mathf.Max(mb * mb, 1e-4f));
                 // (den r16 A2, R15f item 1) a cell pit's COLOR.g: its lip's radius on this bearing / 8 (metres; the sunken pit's wall)
-                float cg = lairHole && !pitEmpty && SetPitCells > 0f && SurvivorUnchained.Args.Num("den-pit-glow", 0.8f) > 0f ? Mathf.Clamp(rp * g / 8f, 0f, 1f) : 1f;
+                float cg = lairHole && !pitEmpty && SetPitCells > 0f && sheet != "H3" && SurvivorUnchained.Args.Num("den-pit-glow", 0.8f) > 0f ? Mathf.Clamp(rp * g / 8f, 0f, 1f) : 1f;   // (den r18 P5) H3 a painting: COLOR.g 1 (den_set's alpha cut at .5)
                 buf.C.Add(new Color(1f, cg, Mathf.Clamp(0.5f * ell, 0f, 1f), lairHole && !pitEmpty ? 0.5f : 1f));
             }
         for (int j = 0; j < nv - 1; j++)
