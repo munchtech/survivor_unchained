@@ -1234,8 +1234,9 @@ def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None,
 # The sheathed viking sword's pommel (arms_local.json "sheathed", pelvis frame, the scabbard's push not added): a flat
 # lobed plate 25 mm thick (x 0.193-0.218), 60 mm fore and aft (z 0.025-0.085), its top edge at y 0.225-0.235.
 POMMEL_TOP = (0.207, 0.231, 0.055)
-# HILT_TILT (env WARDEN_HILT_TILT, "0" for the hung axis as before): the pommel where the game's tilt puts it.
-HILT_TILT = os.environ.get("WARDEN_HILT_TILT", "1") != "0"
+# HILT_TILT (env WARDEN_HILT_TILT, "1" = the r22 held axis hung and held): the pommel where the game's tilt puts it. Default
+# OFF since 18 Nov (r23): the r22 hang read from behind as a cane, the town hang is r16's (SheathSway tilts only while held).
+HILT_TILT = os.environ.get("WARDEN_HILT_TILT", "0") == "1"
 # Her left palm on it (animation 55, the owner on the town close-up of the fist on the grip: "is this angle possible or
 # natural?"; the forearm level, the elbow out, the wrist bent ~90 down, the fingers open). With the hilt where it hangs
 # (its grip's top 0.29 m under her shoulder, the pommel's 0.22) no closed fist on the grip lets the elbow hang by her
