@@ -61,6 +61,23 @@ def test_bodice_apron_and_gem_are_body_b_only():
     assert kb.by_body(stripped, "a") == a
 
 
+def test_bodice_apron_corner_laps_the_side_panel():
+    """(armor-D r3, 18 Nov) B's apron goes round her outer-lower corner: from a spoke before L's, its first column over
+    the side panel's front edge (theta_side + step_th) by at least 4 mm at her side's girth there (about 0.129 m); its
+    lap deeper at the centre front (her arms up); the side seam then starts under the apron's rim. A has none of it."""
+    raw = _bodice_raw()
+    a, b = kb.by_body(raw, "a"), kb.by_body(raw, "p1")
+    ap, cu, co = b["cup"]["apron"], b["cup"], b["corset"]
+    cn = ap["corner"]
+    assert cn["psi"] < ap["psi"][0]
+    import math
+    lap_mm = math.radians(cn["th"] - (cu["theta_side"] + co["step_th"])) * 0.129 * 1000
+    assert lap_mm >= 4.0, lap_mm
+    assert ap["lap_c"] >= 0.008 and ap["lap"] >= 0.004 and ap["lap_w"] > 0
+    assert cn["seam_dy"] > 0
+    assert "apron" not in a["cup"]
+
+
 def test_cup_slab_welds_the_apron_to_the_cup():
     """cup_slab: the apron's row 0 IS the cup's last ring at its spokes (one point each, no seam), and the rim's outline
     runs once round the joined edge."""

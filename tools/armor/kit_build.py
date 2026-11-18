@@ -461,8 +461,9 @@ def bodice(cfg, ref):
         for h in (1, -1):
             s = np.linspace(0, 1, 60)
             seams.append((h * (a0 + (a1 - a0) * s ** 0.8), y0 + (y1 - y0) * s))
+    apc = (cu.get("apron") or {}).get("corner")  # (r3: the cup apron's corner laps this seam's top: it starts under its rim)
     for h in (1, -1):
-        y = np.linspace(cu["ub"] + 0.002, co["hip"] + 0.004, 60)
+        y = np.linspace(cu["ub"] - cu["apron"]["lap"] - apc["seam_dy"] if apc else cu["ub"] + 0.002, co["hip"] + 0.004, 60)
         seams.append((np.full(60, h * (ts + co["side_seam"])), y))
     y = np.linspace(sk["mid"] - 0.004, co["back_bot"] + 0.004, 60)
     seams.append((np.full(60, 180.0), y))
@@ -598,8 +599,14 @@ def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_
     along the band to C (ap.c_x off the centre), up the V (the cup's V law xv scaled through N) to N' (ap.n_drop under
     N). Inside: each column a line in (x, y) from the edge to its outline point (C on one column), lifted onto her
     skin on the wrap chart at ap.off[0] off her, rising to ap.off[1] over the ap.ramp above the outline's bottom
-    (over the band's top), never closer than ap.guard to the band's outer face. Returns (spokes J, points, normals)."""
-    J = np.where((psis >= ap["psi"][0] - 1e-6) & (psis <= ap["psi"][1] + 1e-6))[0]
+    (over the band's top), never closer than ap.guard to the band's outer face. (r3, 18 Nov) ap.corner: the apron goes on
+    round her outer-lower corner from spoke corner.psi (where the cup's outer edge leaves the side panel's front edge),
+    its first column at corner.th over the side panel (a lap onto it), its foot along the band to L's (the skin between
+    the cup's lower-outer edge, the side panel and the band showed); ap.lap_c: the lap deeper at the centre front (over
+    ap.lap_w; her arms up lift the apron there). Returns (spokes J, points, normals)."""
+    cn = ap.get("corner")  # (r3, 18 Nov: round her outer-lower corner too, from spoke cn.psi; off unless named)
+    J = np.where((psis >= (cn["psi"] if cn else ap["psi"][0]) - 1e-6) & (psis <= ap["psi"][1] + 1e-6))[0]
+    jL = int(np.argmin(np.abs(psis[J] - ap["psi"][0]))) if cn else 0  # L's column (the corner's columns before it)
     C = len(J)
     # N on the V law: the cup's edge at the notch spoke stopped up to 16 mm past it (a tooth that kinked the V's rim);
     # it goes back along its last strip to where that crosses the V (the outline's own rule), the cup's ring with it
@@ -612,10 +619,16 @@ def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_
         Nn[-1, jn] = U(Nn[-2, jn] + (Nn[-1, jn] - Nn[-2, jn]) * s)
     E0, N0 = Pin[-1, J], Nn[-1, J]
     x0, y0 = hand * E0[:, 0], E0[:, 1]
-    lap, cxa = ap["lap"], ap["c_x"]
+    cxa = ap["c_x"]
+
+    def lap_f(x):  # the lap under the band's top; deeper at the centre front where "lap_c" names it (her arms up)
+        lp = np.full(np.shape(x), float(ap["lap"]))
+        if "lap_c" in ap:
+            lp = lp + (ap["lap_c"] - ap["lap"]) * (1 - smooth01(np.abs(np.asarray(x, float)) / ap["lap_w"]))
+        return lp
     # the free outline as a dense polyline: the bottom (L's foot to C) and the V (C to N')
-    xb = np.linspace(x0[0], cxa, 400)
-    bot_ = np.c_[xb, ub(xb) - lap]
+    xb = np.linspace(x0[jL], cxa, 400)
+    bot_ = np.c_[xb, ub(xb) - lap_f(xb)]
     yC = float(bot_[-1, 1])
     yN2 = y0[-1] - ap["n_drop"]
     yv = np.linspace(yC, yN2, 400)
@@ -627,14 +640,15 @@ def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_
 
     _, lb = at(bot_, 0.0)
     _, lv = at(v_, 0.0)
-    cC = int(np.clip(round(lb / (lb + lv) * (C - 1)), 1, C - 2))  # the column on C
-    ob = np.vstack([at(bot_, np.linspace(0, 1, cC + 1))[0], at(v_, np.linspace(0, 1, C - cC))[0][1:]])
+    Cm = C - jL
+    cC = int(np.clip(round(lb / (lb + lv) * (Cm - 1)), 1, Cm - 2))  # the column on C
+    ob = np.vstack([at(bot_, np.linspace(0, 1, cC + 1))[0], at(v_, np.linspace(0, 1, Cm - cC))[0][1:]])
     # rows: lines from the edge to the outline, lifted onto her skin
     R = ap["rows"]
     t = np.linspace(0, 1, R)[1:, None]
-    X = (1 - t) * x0[None, :] + t * ob[None, :, 0]
-    Y = (1 - t) * y0[None, :] + t * ob[None, :, 1]
-    ybot = ub(X) - lap
+    X = (1 - t) * x0[None, jL:] + t * ob[None, :, 0]
+    Y = (1 - t) * y0[None, jL:] + t * ob[None, :, 1]
+    ybot = ub(X) - lap_f(X)
     off = ap["off"][0] + (ap["off"][1] - ap["off"][0]) * (1 - smooth01((Y - ybot) / ap["ramp"]))
     lo, hi = np.zeros_like(X), np.full(X.shape, 80.0)  # theta (deg, her side) where (skin + off) sin(theta) = x
     for _ in range(40):
@@ -646,6 +660,23 @@ def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_
     near = Y <= top(TH) + 0.001
     rb = rho_at(Y, TH)
     rho = np.where(near, np.maximum(rho, rb + th_ + ex_fn(Y, TH, rb) + ap["guard"]), rho)
+    if jL:
+        # the corner: columns from the cup's edge (spokes cn.psi .. L) down to the band on her wrap chart in theta (the
+        # x of a point near her side barely moves with theta), the first one at cn.th, lapped over the side panel's
+        # front edge; the foot along the band's top (ap.lap under it) from there to L's foot. Where the side panel or
+        # the band lies within cn.margin deg outward, never closer than ap.guard to its outer face.
+        th_e = np.degrees(np.arctan2(x0[:jL], E0[:jL, 2] - wrap.z0))
+        th_o = cn["th"] + (abs(TH[-1, 0]) - cn["th"]) * np.linspace(0, 1, jL + 1)[:-1]
+        Tc = hand * ((1 - t) * th_e[None, :] + t * th_o[None, :])
+        xc = skin_f(np.full(jL, 1.31), hand * th_o) * np.sin(np.radians(th_o))
+        yb_c = ub(xc) - lap_f(xc)
+        Yc = (1 - t) * y0[None, :jL] + t * yb_c[None, :]
+        offc = ap["off"][0] + (ap["off"][1] - ap["off"][0]) * (1 - smooth01((Yc - yb_c[None, :]) / ap["ramp"]))
+        rc = skin_f(Yc, Tc) + offc
+        nearc = Yc <= np.maximum(top(Tc), top(Tc + hand * cn["margin"])) + 0.001
+        rbc = rho_at(Yc, Tc)
+        rc = np.where(nearc, np.maximum(rc, rbc + th_ + ex_fn(Yc, Tc, rbc) + ap["guard"]), rc)
+        TH, Y, rho = np.c_[Tc, TH], np.c_[Yc, Y], np.c_[rc, rho]
     Pa = np.concatenate([E0[None], wrap.pt(Y, TH, rho)], 0)
     Na = np.concatenate([N0[None], wrap.dirs(TH)], 0)
     return J, Pa, Na
