@@ -31,6 +31,24 @@ public static partial class DungeonDress
     static readonly float OpenArcIn = SurvivorUnchained.Args.Num("den-open-arc-in", 0.7f);   // (den r17 D2, lead item 4) a blocked arc slot steps in this many m (0 = d7e: skipped)
     static readonly float StickYaw = SurvivorUnchained.Args.Num("den-stick-yaw", 30f);      // (den r17 D, R16 item 8) a root decal lies within this many degrees of the screen's level (0 = any way: the standing rods)
 
+    static readonly float OpenMix = SurvivorUnchained.Args.Num("den-open-mix", 1f);   // (den r18 D4b, R17 item) mixed cluster recipes of the set's O6/O7/O9 pieces; 0 = r17 (bone/fur/leaf/twig loop and decal bones)
+    static readonly float OpenMixGap = SurvivorUnchained.Args.Num("den-open-mix-gap", 7.8f);   // no recipe with the same main piece within this many m (dx^2 + 0.77 dz^2 metric)
+    static readonly float OpenArcO8 = SurvivorUnchained.Args.Num("den-open-arc-o8", 1f);   // (den r18 D4b) the lair arc of O8 standing tusk groups (0 = r17 decal tusks)
+    static readonly List<(Vector2 p, int key)> mixPlaced = new();
+    static int nO7, nO8, nO9;
+
+    /// <summary>(den r18 D4b) A bone the decals used to lay, as an O7 piece (shards and long bones), when the mix is on and the set dresses the spot.</summary>
+    static bool BoneAsO7(Ctx c, float x, float zz)
+    {
+        if (OpenMix <= 0f || !setSheets!.TryGetValue("O7", out var o7) || o7.Count < 20) return false;
+        float h = Hash((int)(x * 10f), (int)(zz * 10f), 4401);
+        int[] pool = { 0, 4, 8, 1, 5, 7, 6, 9 };
+        int i = pool[(int)(h * pool.Length) % pool.Length];
+        if (Hash((int)(x * 10f), (int)(zz * 10f), 4402) < 0.5f) i += 10;
+        if (PlaceSetObj(c, "O7", o7[i], x, zz, 0.85f * (0.7f + 0.6f * Hash((int)(x * 10f), (int)(zz * 10f), 4403)), 0.1f, false, 0.3f) > 0f) nO7++;
+        return true;
+    }
+
     static readonly List<Vector2> openClumps = new();
     static readonly List<(Vector2 p, float half)> openTaken = new();
 
@@ -48,7 +66,7 @@ public static partial class DungeonDress
 
     static void DenOpen(Ctx c, DecalBuf b, System.Func<float, float, float, float, bool> ok, int boss)
     {
-        openClumps.Clear(); openTaken.Clear();
+        openClumps.Clear(); openTaken.Clear(); mixPlaced.Clear();
         var z = c.Z;
         if (!LoadSet()) return;
         var spawn = z.Rooms.Count > 0 ? new Vector2(z.Rooms[0].X, z.Rooms[0].Z) : new Vector2(1e6f, 1e6f);
@@ -143,13 +161,36 @@ public static partial class DungeonDress
                 }
                 a0 = bestA;
             }
-            for (int q = 0; q < m && rib.Count > 0 && tusk.Count > 0; q++)
+            bool arcO8 = OpenArcO8 > 0f && setSheets.TryGetValue("O8", out var o8l) && o8l.Count >= 12;
+            setSheets.TryGetValue("O8", out var o8);
+            setSheets.TryGetValue("O9", out var o9a);
+            for (int q = 0; q < m && ((rib.Count > 0 && tusk.Count > 0) || arcO8); q++)
             {
                 float a = a0 + (q / (m - 1f) - 0.5f) * span + (Hash(boss, q, 4204) - 0.5f) * 0.08f;
                 var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
                 if (Slot(a0, q) is not Vector2 p) continue;
-                bool isCarc = (q == carcAt || q == carc2) && hide.Count > 0;
+                bool isCarc = (q == carcAt || q == carc2) && (hide.Count > 0 || (arcO8 && o9a != null && o9a.Count >= 10));
                 float yaw = a + (Hash(boss, q, 4206) - 0.5f) * 0.5f;   // (radial: the ribs and tusks point at the fight)
+                if (arcO8)
+                {
+                    // (den r18 D4b, R17 item) the arc of standing painted tusk groups (O8, 12 pieces = 6 + mirrors) on even slots; carcass slots O5 blood + an O9 hide/haunch; odd slots empty but the middle cage
+                    float hq = Hash(boss, q, 4220);
+                    if (isCarc)
+                    {
+                        if (SetPickBlood(Hash(boss, q, 4207)) is SetPiece bp2) PlaceSetObj(c, "O5", bp2, p.X, p.Y + 0.15f, 0.55f, 0f, false, 0f);
+                        if (o9a != null && o9a.Count >= 10) { int bi = (int)(hq * 5f) % 5; PlaceSetObj(c, "O9", o9a[bi + (Hash(boss, q, 4221) < 0.5f ? 5 : 0)], p.X, p.Y, 0.6f + 0.15f * Hash(boss, q, 4208), 0.1f, false, 0.4f); }
+                        nCarc++;
+                    }
+                    else if (q == m / 2 && setSheets.TryGetValue("O3", out var o3b) && o3b.Count > 0 && PlaceSetObj(c, "O3", o3b[0], p.X, p.Y, 0.75f, 0.1f, false) > 0f) { openTaken.Add((p, 1.2f)); nArc++; continue; }
+                    else if (q % 2 == 0 && o8 != null)
+                    {
+                        if (PlaceSetObj(c, "O8", o8[(q / 2 + (int)(hq * 12f)) % 12], p.X, p.Y, 0.55f + 0.25f * hq, 0.62f, false, 0.45f) > 0f) nO8++;
+                    }
+                    else continue;
+                    openTaken.Add((p, 0.6f));
+                    nArc++;
+                    continue;
+                }
                 if (isCarc)
                 {
                     if (SetPickBlood(Hash(boss, q, 4207)) is SetPiece bp) PlaceSetObj(c, "O5", bp, p.X, p.Y + 0.15f, 0.55f, 0f, false, 0f);
@@ -190,6 +231,68 @@ public static partial class DungeonDress
                     foreach (var q in openClumps) if (q.DistanceSquaredTo(p) < 0.5f * g * g) { near = true; break; }
                     if (near) continue;
                     bool lair = InLair(p);
+                    if (OpenMix > 0f)
+                    {
+                        // (den r18 D4b, R17 item) one of 7 recipes; O7/O9 main pieces keep --den-open-mix-gap m apart (dx^2 + 0.77 dz^2)
+                        setSheets.TryGetValue("O7", out var o7); setSheets.TryGetValue("O9", out var o9);
+                        int nrec = lair ? 7 : 6, r0 = (int)(Hash(i, j, 4400) * nrec) % nrec, recipe = -1, main = -1;
+                        int[] pool = { 0 };
+                        for (int ri = 0; ri < nrec && recipe < 0; ri++)
+                        {
+                            int rc = (r0 + ri) % nrec;
+                            if (rc <= 1) { recipe = rc; break; }
+                            if (rc == 6) { if (o9 == null || o9.Count < 10) continue; pool = new[] { 0, 1, 2, 3, 4 }; }
+                            else { if (o7 == null || o7.Count < 20) continue; pool = rc == 2 ? new[] { 0, 4, 8 } : rc == 3 ? new[] { 1, 5 } : rc == 4 ? new[] { 6, 9 } : new[] { 2, 3, 7 }; }
+                            int p0 = (int)(Hash(i, j, 4401) * pool.Length) % pool.Length;
+                            for (int pi = 0; pi < pool.Length && recipe < 0; pi++)
+                            {
+                                int cand = rc * 100 + pool[(p0 + pi) % pool.Length]; bool blocked = false;
+                                foreach (var (mp, mk) in mixPlaced) { float dx = mp.X - p.X, dz = mp.Y - p.Y; if (mk == cand && dx * dx + 0.77f * dz * dz < OpenMixGap * OpenMixGap) { blocked = true; break; } }
+                                if (!blocked) { recipe = rc; main = cand; }
+                            }
+                        }
+                        if (recipe < 0) continue;
+                        openClumps.Add(p); openTaken.Add((p, 0.8f)); nClump++;
+                        if (main >= 0) mixPlaced.Add((p, main));
+                        float sk = 0.7f + 0.6f * Hash(i, j, 4402);
+                        float ang = Hash(i, j, 4403) * Mathf.Tau, off = 0.25f + 0.25f * Hash(i, j, 4404);
+                        var p2 = p + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * off;
+                        bool mir = Hash(i, j, 4405) < 0.5f;
+                        void Tuft(Vector2 at, int s)
+                        {
+                            if (furs.Count == 0 || !ok(at.X, at.Y, 0.8f, 1.0f)) return;
+                            PlaceSetObj(c, "O6", furs[(int)(Hash(i, j, 4410 + s) * furs.Count) % furs.Count], at.X, at.Y, (0.62f + 0.2f * Hash(i, j, 4413)) * sk, 0.1f, false, 0f); nPiece++;
+                        }
+                        void Leaf(Vector2 at, int s)
+                        {
+                            if (!ok(at.X, at.Y, 0.8f, 1.0f)) return;
+                            float u = Hash(i, j, 4420 + s);
+                            if (lair && leafs.Count > 0) PlaceSetObj(c, "O6", leafs[(int)(u * leafs.Count) % leafs.Count], at.X, at.Y, (0.5f + 0.15f * Hash(i, j, 4423)) * sk, 0.1f, false, 0f);
+                            else if (!lair && leafDec.Count > 0) AddDecal(c, b, leafDec[(int)(u * leafDec.Count) % leafDec.Count], at.X, at.Y, Hash(i, j, 4424 + s) * Mathf.Tau, (0.9f + 0.2f * Hash(i, j, 4423)) * OpenLeafK * sk);
+                            else return;
+                            nPiece++;
+                        }
+                        if (recipe == 0) { Tuft(p, 0); if (Hash(i, j, 4430) < 0.4f) Tuft(p2, 1); }
+                        else if (recipe == 1)
+                        {
+                            int nl = 2 + (Hash(i, j, 4431) < 0.5f ? 1 : 0);
+                            for (int s = 0; s < nl; s++) Leaf(p + new Vector2(Mathf.Cos(ang + s * 2.1f), Mathf.Sin(ang + s * 2.1f)) * (0.1f + 0.2f * s), s);
+                            if (twigDec.Count > 0 && ok(p2.X, p2.Y, 0.8f, 1.0f)) { AddDecal(c, b, twigDec[(int)(Hash(i, j, 4432) * twigDec.Count) % twigDec.Count], p2.X, p2.Y, StickYawFold(Hash(i, j, 4433) * Mathf.Tau), (0.9f + 0.2f * Hash(i, j, 4434)) * sk); nPiece++; }
+                        }
+                        else if (recipe == 6)
+                        {
+                            if (SetPickBlood(Hash(i, j, 4307)) is SetPiece bp6) { PlaceSetObj(c, "O5", bp6, p.X, p.Y, 0.4f + 0.15f * Hash(i, j, 4308), 0f, false, 0f); nPiece++; }
+                            int bi = main % 100; if (mir) bi += 5;
+                            if (PlaceSetObj(c, "O9", o9![bi], p.X, p.Y, 0.62f * sk, 0.1f, false, 0.4f) > 0f) { nO9++; nPiece++; }
+                        }
+                        else
+                        {
+                            int bi = main % 100; if (mir) bi += 10;
+                            if (PlaceSetObj(c, "O7", o7![bi], p.X, p.Y, 0.85f * sk, 0.1f, false, 0.3f) > 0f) { nO7++; nPiece++; }
+                            if (recipe == 3 || recipe == 5) Leaf(p2, 0); else Tuft(p2, 0);
+                        }
+                        continue;
+                    }
                     openClumps.Add(p); openTaken.Add((p, 0.8f)); nClump++;
                     int pieces = 3 + (int)(Hash(i, j, 4304) * 3.99f);
                     float a0 = Hash(i, j, 4305) * Mathf.Tau;

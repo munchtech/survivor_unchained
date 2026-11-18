@@ -177,7 +177,7 @@ public static partial class DungeonDress
         }
 
         // ---- the piles: a ground layer (old blood or a leaf drift), then 4-10 pieces round the seed ----
-        int si = 0;
+        int si = 0; nO7 = nO8 = nO9 = 0;
         foreach (var (sp, size, inBoss) in seeds)
         {
             si++;
@@ -244,6 +244,7 @@ public static partial class DungeonDress
                 AddDecal(c, b, d, x, zz, yaw, 0.9f + 0.25f * Hash(i, j, 907) + (d.Kind == "root" && w > 3f ? 0.35f : 0f), d.Kind == "bone");
             }
 
+        GD.Print($"DenOpen sets: O7 {nO7}, O8 {nO8}, O9 {nO9}");   // (den r18 D4b) placement counts this zone
         // ---- the lair's floor: drag marks out from its piles, moss in the damp by the banks, drifts against them ----
         if (boss >= 0)
         {
@@ -303,6 +304,8 @@ public static partial class DungeonDress
     /// side (the cell's top) toward the light.</summary>
     static void AddDecal(Ctx c, DecalBuf b, Decal d, float x, float zz, float yaw, float scale, bool litterBone = false)
     {
+        // (den r18 D4b) with --den-open-mix the procedural decal bone is gone wherever the set dresses: an O7 piece in its place
+        if (OpenMix > 0f && SetMode > 0 && d.Kind is "bone" or "arctusk" && SetIn(x, zz) && BoneAsO7(c, x, zz)) return;
         if (SetMode > 0 && SetDrops(d.Kind) && !(litterBone && d.Kind == "bone") && SetIn(x, zz)) return;   // (round 10b: the set's paintings carry the kills; den r15 D: a lone floor bone is litter, kept)
         // (den r15 D) the orange "bean" clumps were leaves in a pile: at most 3 within 1.5 m, each one then a flat leaf (scaled, turned)
         if (d.Kind == "leaves" && LairLeaves <= 0f && lairC is Vector2 lc && lc.DistanceTo(new Vector2(x, zz)) < lairR) return;   // (den r15 Q, judge r15 item 4) the lair's leaf decals read as orange bean clumps: none (the rooms' flat litter stays)
