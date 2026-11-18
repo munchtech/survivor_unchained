@@ -735,7 +735,7 @@ public class SideCarryTests
         var (a, l, _) = Her(-45f);
         Assert.Equal(c.FarStandOut, c.FarOutNow(0f, l, a, CamBack), 0.001f);
         Assert.Equal(0f, SideCarry.FarFacing(Her(-90f).left, Her(-90f).ahead, CamBack), 0.01f);
-        for (float th = -90f; th < 90f; th += 0.5f) Assert.True(MathF.Abs(c.FarCapAt(th + 0.5f) - c.FarCapAt(th)) <= 1.5f, $"cap jumps at {th}");
+        for (float th = -90f; th < 90f; th += 0.5f) Assert.True(MathF.Abs(c.FarCapAt(th + 0.5f) - c.FarCapAt(th)) <= 1.6f, $"cap jumps at {th}");   // (r22) Across -40: 140 over 45 toward
         Assert.Equal(c.FarOut, new SideCarry { FarCapOn = false }.FarOutNow(1f, Her(-90f).left, Her(-90f).ahead, CamBack), 0.001f);
     }
 

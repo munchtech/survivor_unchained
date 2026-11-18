@@ -269,7 +269,7 @@ public sealed class SideCarry
     /// stand), faded no faster than FarFade (8 frames) where she turns; the end-on guard turns the wanted direction about the
     /// vertical, away from the view ray, until at least FarShown of the blade's length shows; the drawn direction steps at
     /// most FarStep deg a frame (her own turn carried on); the guard scores its choice by the 3D angle to it.</summary>
-    public float FarStandPitch = 15f, FarShown = 0.55f, FarStep = 6f; public bool FarStand = true;
+    public float FarStandPitch = 15f, FarShown = 0.55f, FarStep = 5.8f; public bool FarStand = true;
     /// <summary>(r20, the owner's "Prowl must actually ship", 15 Nov) Standing on the far side she holds Prowl's blade clear of
     /// her body, forward and low (a guard, not the run's trailing carry held on): the heading eases with her speed from FarOut
     /// at a run to FarStandOut standing (deg out from straight back to the holding side: 180 is straight ahead), at
@@ -283,10 +283,16 @@ public sealed class SideCarry
     /// the run's FarOut stood the blade out square from her hip (a rod across her travel). The caps keep it trailing back on
     /// the camera's side (30 deg toward the camera from square across, both): low, back and clear. Toward the camera nothing
     /// changes (FarCapToward at FarStandOut). FarCapOn false: no cap.</summary>
-    public bool FarCapOn = true; public float FarCapAway = 15f, FarCapAcross = -30f, FarCapToward = 100f;
+    public bool FarCapOn = true; public float FarCapAway = 60f, FarCapAcross = -40f, FarCapToward = 100f;
     /// <summary>(r22) The facing span (deg from square across) over which the cap eases from FarCapAcross to FarCapToward
     /// (toward the camera) and to FarCapAway (away): 45 both = r21's.</summary>
-    public float FarCapSpanToward = 45f, FarCapSpanAway = 45f;
+    /// (r22 lead: Away 60 over 90 = Across -40 eased to 10 at 45 away, held fixed on screen past it; FarStep 5.8 keeps a
+    /// pure-pitch step under the stop's 6 a frame.)
+    public float FarCapSpanToward = 45f, FarCapSpanAway = 90f;
+    /// <summary>(r22, the L3 stand -> L4 pivot's cane: her own turn carried on swept the capped blade through straight down the
+    /// screen) Pivoting in place on the far side (her turn over TurnEnd, under half a run) the drawn direction keeps its own
+    /// heading instead of turning with her, stepping at most FarStep toward the wanted one. false: her turn carried (r19).</summary>
+    public bool FarPivotHold = true;
 
     /// <summary>(r21) The far heading's cap (deg out from straight back) for her facing `th` deg toward the camera from square
     /// across (her holding side away; + toward the camera, - away).</summary>
@@ -709,7 +715,8 @@ public sealed class SideCarry
             farW = Slerp(b, farD, wy);
             // (r20) the floor whole from a leg's first frame (a start showed 0.01-0.02 while the weight rose)
             if (sb < FarShown) farW = EndOn(farW, f, FarFloorNow ? FarShown : sb + (FarShown - sb) * MathF.Min(1f, 2f * wy));
-            if (FarStep > 0f && farPrev.LengthSquared() > 0.5f) farW = Toward(Rot(Vector3.UnitY, yawStep, farPrev), farW, FarStep);
+            bool farHold = FarPivotHold && TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f;
+            if (FarStep > 0f && farPrev.LengthSquared() > 0.5f) farW = Toward(farHold ? farPrev : Rot(Vector3.UnitY, yawStep, farPrev), farW, FarStep);
             FarTurn(b, left, ahead, farW, out tilt, out inward);
         }
         float a0 = ScreenAngle(b, f.Jx, f.Jy, 1f), aT = ScreenAngle(Turned(b, left, tilt, ahead, inward), f.Jx, f.Jy, 1f);
@@ -925,7 +932,7 @@ public sealed class SideCarry
         bool hideOn = legsOn && moving < 0.5f;
         float ts = MaxRate > 0f ? MaxRate * dt : 360f, isd = InwardRate > 0f ? InwardRate * dt : 360f, ps = PitchRate > 0f ? PitchRate * dt : float.MaxValue;
         // (r19, judge r15 guard 4) on the far side the turn is exact to the wanted direction (no tilt rate: the 3D step holds)
-        Vector3 fp = Rot(Vector3.UnitY, yawStep, farPrev); bool fs = farNow && FarStep > 0f && farPrev.LengthSquared() > 0.5f;
+        Vector3 fp = FarPivotHold && TurnEnd > 0f && yawRate > TurnEnd && moving < 0.5f ? farPrev : Rot(Vector3.UnitY, yawStep, farPrev); bool fs = farNow && FarStep > 0f && farPrev.LengthSquared() > 0.5f;
         if (farNow) { ts = MathF.Max(ts, MathF.Abs(Tilt - tPrev)); isd = MathF.Max(isd, MathF.Abs(Inward - iPrev)); ps = float.MaxValue; }
         float tW = Tilt, iW = Inward;   // the turn the layer wants this frame, before the rates
         float tB = tPrev + Math.Clamp(Tilt - tPrev, -ts, ts), iB = iPrev + Math.Clamp(Inward - iPrev, -isd, isd);
