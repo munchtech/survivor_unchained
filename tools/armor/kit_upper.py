@@ -375,6 +375,45 @@ def arm_frame(ref, side="l"):
     return c, a, e, f
 
 
+def cop_clearance(ride, R0, V, F, step=1, clips=SWEEP_CLIPS):
+    """For the liner's cop_clear (armor-D 17 Nov): each of her rest skin points R0 (left side), posed in every `step`th
+    frame of the demo clips and carried into the rest frame of the cop riding `ride`, its least distance to the cop's
+    inner surface (V, F, that frame), metres; the right arm's motion mirrored onto the left joined in (min of both), as
+    sweep_room does, so one mirrored liner clears both. Cached by its inputs (git-ignored .shots)."""
+    sys.path.insert(0, os.path.join(kb.REPO, "tools", "anim"))
+    import skin   # (configured by pose_frame, which the liner calls first)
+    from scipy.spatial import cKDTree
+    from native_build import Ref
+    __import__("bodies").clip_source(skin)
+    deps = [kb.body_glb()] + [str(skin.OUT / "clips" / f"{cl}.json") for cl in clips]
+    stamp = [(os.path.basename(p), os.path.getsize(p), int(os.path.getmtime(p))) for p in deps]
+    key = hashlib.sha1(json.dumps(["cc1", sorted((k, round(float(v), 5)) for k, v in ride.items()), step, list(clips),
+                                   stamp, hashlib.sha1(np.round(R0, 6).tobytes() + np.round(V, 6).tobytes()
+                                                       + np.asarray(F, np.int64).tobytes()).hexdigest()]
+                                  + _hinge_key(ride)).encode()).hexdigest()[:14]
+    cache = os.path.join(kb.CACHE, f"paul_coproom_{key}.npz")
+    if os.path.exists(cache):
+        return np.load(cache)["d"]
+    sk = skin.Skeleton.load(__import__("bodies").skeleton_path())
+    body = skin.Body(sk, [(skin.Path(kb.body_glb()), lambda n: n == "Heroine", "skin")], skin.Jiggle(sk, 1, 1),
+                     label="her", helpers=True)
+    names = list(body.sk.names)
+    cop = Ref(np.asarray(V, float), np.asarray(F))
+    d = np.full(len(R0), np.inf)
+    for side, sgn in (("l", 1.0), ("r", -1.0)):
+        idx = cKDTree(body.P).query(np.asarray(R0, float) * [sgn, 1, 1])[1]
+        bw = [(names.index(k[:-2] + "_" + side), w) for k, w in ride.items()]
+        for cl in clips:
+            for G in body.frames(body.clip(cl))[::step]:
+                S = body.skin_mats(G)
+                Mi = np.linalg.inv(sum(w * S[b] for b, w in bw))
+                X = (body.pose(G, idx) @ Mi[:3, :3].T + Mi[:3, 3]) * [sgn, 1, 1]
+                d = np.minimum(d, np.linalg.norm(X - cop.closest(X)[0], axis=1))
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez_compressed(cache, d=d)
+    return d
+
+
 def liner(ln, ref, cop_ride, c, lpose, above, mat):
     """The pauldron's liner (16 Nov, pauldron-2 r2): dark leather on her skin under the plates, so any opening between
     them shows leather, never skin. Her idle skin (the plates' design pose) in the cop's ride frame is under a plate
@@ -413,7 +452,22 @@ def liner(ln, ref, cop_ride, c, lpose, above, mat):
             deep |= h_ & (dist_to(~h_) > ins)
         g = np.minimum(g, np.where(deep, -dist_to(~deep), dist_to(deep)))
         print(f"liner inset {ins * 1000:.0f} mm: {int(deep.sum())} deep skin pts dropped", flush=True)
-    bp = os.path.join(kb.out_root(), ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
+    cc = ln.get("cop_clear")
+    if cc:
+        # (liner "cop_clear" m, armor-D 17 Nov, B's sword_heavy: the hinge swings the cop down onto her shoulder, her
+        # skin rises to its inner face and the liner on it had no room there and came out through the steel (wearcheck
+        # liner->plates 12.3 mm): no liner where her skin, posed over the demo clips (both arms, the right mirrored)
+        # into the cop's ride frame, comes within cop_clear of the cop's inner surface (above[0]). Unset = off)
+        sub = g > -0.006   # (the liner's skin and a rim round it; farther points never carry it)
+        mind = np.full(len(R0), np.inf)
+        mind[sub] = cop_clearance(cop_ride, R0[sub], *above[0], ln.get("cop_clear_step", 1))
+        tight = mind < cc
+        drop = int((tight & (g > 0)).sum())
+        g = np.minimum(g, np.where(tight, -dist_to(~tight), dist_to(tight)))
+        print(f"liner cop_clear {cc * 1000:.1f} mm: {drop} liner skin pts dropped (her skin's "
+              f"least gap to the cop over the clips: <2 mm {int(((mind < 0.002) & sub).sum())}, <{cc * 1000:.0f} mm "
+              f"{int(((mind < cc) & sub).sum())} of {int(sub.sum())})", flush=True)
+    bp =os.path.join(kb.out_root(), ln.get("bodice", "kit_bodice"), ln.get("bodice", "kit_bodice") + ".glb")
     if os.path.exists(bp):
         G = kb_gl(bp)
         g = np.minimum(g, cKDTree(G).query(R0)[0] - ln.get("bodice_back", 0.010))

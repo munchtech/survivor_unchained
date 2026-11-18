@@ -300,6 +300,6 @@
   "bodice_back": 0.01,
   "smooth": 6,
   "inset": 0.022,
-  "by_body": {"p1": {"inset": 0.014}}
+  "by_body": {"p1": {"inset": 0.014, "cop_clear": 0.006}}
  }
 }
