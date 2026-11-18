@@ -592,8 +592,22 @@ public static class MapGen
                 // Torches round the ruler's room, inside its edge. (den r15: one in a den lair, the judge's one fire per view;
                 // the four spots are still drawn so the rng runs as before)
                 int torches = lay.Def.Theme == "den" ? 1 : 4, lit = 0;
+                // (den r18 D5, R18 item 2) --den-fire-clear 0 = the first spot lit; else the spot >= 3 m from the room's middle (her arrival)
+                // farthest from the holes, or the farthest from the middle when none is 3 m out. The four spots are drawn as ever.
+                var cl = Environment.GetCommandLineArgs();
+                int ci = Array.IndexOf(cl, "--den-fire-clear");
+                bool far = lay.Def.Theme == "den" && !(ci >= 0 && ci + 1 < cl.Length && cl[ci + 1] == "0");
+                var spots = new List<(double X, double Z)>();
                 for (int n = 0; n < 4; n++)
-                    if (Near(r, 2.5, 4.5) is { } p && lit < torches) { fire(p.X, p.Z, 0.6, 11, "#ff6a3a"); lit++; }
+                    if (Near(r, 2.5, 4.5) is { } p) { spots.Add(p); if (!far && lit < torches) { fire(p.X, p.Z, 0.6, 11, "#ff6a3a"); lit++; } }
+                if (far && spots.Count > 0)
+                {
+                    double Cd((double X, double Z) s) => MathX.Dist(s.X, s.Z, r.X, r.Z);
+                    double Hd((double X, double Z) s) { double m = 99; foreach (var h in r.Holes) m = Math.Min(m, h.Dist(s.X, s.Z)); return m; }
+                    var out3 = spots.Where(s => Cd(s) >= 3).ToList();
+                    var best = out3.Count > 0 ? out3.OrderByDescending(Hd).First() : spots.OrderByDescending(Cd).First();
+                    fire(best.X, best.Z, 0.6, 11, "#ff6a3a");
+                }
             }
         }
         // The way out: two lantern posts either side of it, dark until the ruler is down (MapRun lights it).

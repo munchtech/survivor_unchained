@@ -35,6 +35,22 @@ public static partial class DungeonDress
     static readonly float OpenMixGap = SurvivorUnchained.Args.Num("den-open-mix-gap", 7.8f);   // no recipe with the same main piece within this many m (dx^2 + 0.77 dz^2 metric)
     static readonly float OpenArcO8 = SurvivorUnchained.Args.Num("den-open-arc-o8", 1f);   // (den r18 D4b) the lair arc of O8 standing tusk groups (0 = r17 decal tusks)
     static readonly List<(Vector2 p, int key)> mixPlaced = new();
+    // (den r18 D5, R18 items 2, 4, 7) --den-fire-clear m: pieces keep this far from a fire (0 = old); --den-flat-rot: the flat bone pieces (O7, O9) turn the full circle and tufts (O6) mirror;
+    // --den-tuft-bone-gap m: one tuft-and-long-bone cluster per this far (0 = old); --den-no-ribheap 1: the curved-rib heap (O3 piece 1) is not laid; --den-lair-low 1: a carcass on blood and two litter groups in the lair's near half
+    public static readonly float FireClear = SurvivorUnchained.Args.Num("den-fire-clear", 2f);
+    public static readonly float FlatRot = SurvivorUnchained.Args.Num("den-flat-rot", 1f);
+    static readonly float TuftBoneGap = SurvivorUnchained.Args.Num("den-tuft-bone-gap", 12f);
+    static readonly float NoRibHeap = SurvivorUnchained.Args.Num("den-no-ribheap", 1f);
+    static readonly float LairLow = SurvivorUnchained.Args.Num("den-lair-low", 1f);
+    static readonly List<Vector2> denFires = new();
+    static readonly List<Vector2> tuftBones = new();
+    /// <summary>(den r18 D5) True when p, with an ellipse of half sizes (rx, rz), lies within --den-fire-clear m of a fire.</summary>
+    static bool FireNear(Vector2 p, float rx, float rz)
+    {
+        if (FireClear <= 0f) return false;
+        foreach (var f in denFires) { float dx = (f.X - p.X) / (rx + FireClear), dz = (f.Y - p.Y) / (rz + FireClear); if (dx * dx + dz * dz < 1f) return true; }
+        return false;
+    }
     static int nO7, nO8, nO9;
 
     /// <summary>(den r18 D4b) A bone the decals used to lay, as an O7 piece (shards and long bones), when the mix is on and the set dresses the spot.</summary>
@@ -66,8 +82,9 @@ public static partial class DungeonDress
 
     static void DenOpen(Ctx c, DecalBuf b, System.Func<float, float, float, float, bool> ok, int boss)
     {
-        openClumps.Clear(); openTaken.Clear(); mixPlaced.Clear();
+        openClumps.Clear(); openTaken.Clear(); mixPlaced.Clear(); tuftBones.Clear(); denFires.Clear();
         var z = c.Z;
+        foreach (var fd in z.Meta.Fires) denFires.Add(new Vector2((float)fd.X, (float)fd.Z));
         if (!LoadSet()) return;
         var spawn = z.Rooms.Count > 0 ? new Vector2(z.Rooms[0].X, z.Rooms[0].Z) : new Vector2(1e6f, 1e6f);
         var lairM = boss >= 0 ? new Vector2(z.Rooms[boss].X, z.Rooms[boss].Z) : new Vector2(1e6f, 1e6f);
@@ -78,6 +95,7 @@ public static partial class DungeonDress
         {
             foreach (var (bp, bh) in c.Boulders) if (bp.DistanceTo(p) < bh + pad) return false;
             foreach (var (tp, th) in openTaken) if (tp.DistanceTo(p) < th + pad) return false;
+            if (FireNear(p, pad, pad)) return false;   // (den r18 D5)
             return true;
         }
         setSheets!.TryGetValue("O6", out var o6);
@@ -256,7 +274,7 @@ public static partial class DungeonDress
                         openClumps.Add(p); openTaken.Add((p, 0.8f)); nClump++;
                         if (main >= 0) mixPlaced.Add((p, main));
                         float sk = 0.7f + 0.6f * Hash(i, j, 4402);
-                        float ang = Hash(i, j, 4403) * Mathf.Tau, off = 0.25f + 0.25f * Hash(i, j, 4404);
+                        float ang = Hash(i, j, 4403) * Mathf.Tau, off = TuftBoneGap > 0f && recipe >= 2 && recipe != 6 ? 0.15f + 0.65f * Hash(i, j, 4404) : 0.25f + 0.25f * Hash(i, j, 4404);   // (den r18 D5) the tuft's offset from a bone varies
                         var p2 = p + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * off;
                         bool mir = Hash(i, j, 4405) < 0.5f;
                         void Tuft(Vector2 at, int s)
@@ -290,7 +308,10 @@ public static partial class DungeonDress
                         {
                             int bi = main % 100; if (mir) bi += 10;
                             if (PlaceSetObj(c, "O7", o7![bi], p.X, p.Y, 0.85f * sk, 0.1f, false, 0.3f) > 0f) { nO7++; nPiece++; }
-                            if (recipe == 3 || recipe == 5) Leaf(p2, 0); else Tuft(p2, 0);
+                            bool tb = TuftBoneGap > 0f && recipe is 2 or 4;   // (den r18 D5, R18 item 4) one tuft-and-long-bone group per --den-tuft-bone-gap m: the next lays leaves
+                            if (tb) foreach (var q in tuftBones) { float dx = q.X - p.X, dz = q.Y - p.Y; if (dx * dx + 0.77f * dz * dz < TuftBoneGap * TuftBoneGap) { tb = false; Leaf(p2, 0); goto laid; } }
+                            if (recipe == 3 || recipe == 5) Leaf(p2, 0); else { Tuft(p2, 0); if (tb) tuftBones.Add(p); }
+                            laid:;
                         }
                         continue;
                     }
