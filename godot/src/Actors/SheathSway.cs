@@ -68,10 +68,11 @@ public partial class SheathSway : SkeletonModifier3D
     }
     int outFrames;
 
-    // `--hilt-tilt off`: no tilt, held or hung (the hung axis throughout, before 17 Nov); `--hilt-tilt held`: the tilt only
-    // while her hand holds the hilt (warden-move r16: let go, it swung back to the hung axis); `--hilt-held x,y,z`: another axis.
+    // Default (= `--hilt-tilt held`, r16): the tilt only while her hand holds the hilt; let go, it swings back to the hung
+    // axis (the r22 held-axis hang, `--hilt-tilt all`, read from behind as a walking stick planted by her foot, 18 Nov).
+    // `--hilt-tilt off`: no tilt at all; `--hilt-held x,y,z`: another axis.
     static readonly bool TiltOff = Args.Get("hilt-tilt") == "off";
-    static readonly bool TiltHeldOnly = Args.Get("hilt-tilt") == "held";
+    static readonly bool TiltHeldOnly = Args.Get("hilt-tilt") != "all" && !TiltOff;
     bool tiltSet;
     Quaternion tilt = Quaternion.Identity;   // in the bone's space: the rigid shaft onto the held one
 

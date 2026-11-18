@@ -753,4 +753,33 @@ public class SideCarryTests
         var t = SideCarry.Toward(Vector3.UnitX, Vector3.UnitZ, 6f);
         Near(6f, MathF.Acos(Vector3.Dot(t, Vector3.UnitX)) * 180f / MathF.PI, 0.01f);
     }
+
+    // (r22, judge r22) Pivoting in place on the far side (her turn over TurnEnd, standing), the far blade keeps its heading (it steps toward the wanted one at most FarStep a frame, so it trails her turn)
+    // (FarPivotHold) instead of turning with her yaw, which read from behind as a cane swung around by her foot.
+    static float FarPivotDrift(bool hold, out float worstStep)
+    {
+        var c = new SideCarry { FarPivotHold = hold };
+        var (a, l, b0) = Her(-90f);
+        for (int k = 0; k < 60; k++) c.Step(Dt, true, 0f, new SideCarry.Frame(b0, l, a, Jx, Jy, CamBack, 0f, 0f));
+        var start = SideCarry.Turned(b0, l, c.Tilt, a, c.Inward);
+        var prev = start; worstStep = 0f;
+        for (int k = 1; k <= 8; k++)   // 6 deg a frame = 180 deg/s, over TurnEnd 120, and she does not move
+        {
+            var (a2, l2, b2) = Her(-90f + 6f * k);
+            c.Step(Dt, true, 0f, new SideCarry.Frame(b2, l2, a2, Jx, Jy, CamBack, 0f, 0f));
+            var d = SideCarry.Turned(b2, l2, c.Tilt, a2, c.Inward);
+            worstStep = MathF.Max(worstStep, MathF.Acos(Math.Clamp(Vector3.Dot(d, prev), -1f, 1f)) * 180f / MathF.PI);
+            prev = d;
+        }
+        return MathF.Acos(Math.Clamp(Vector3.Dot(prev, start), -1f, 1f)) * 180f / MathF.PI;
+    }
+    [Fact]
+    public void WhileShePivotsInPlaceTheFarBladeKeepsItsHeading()
+    {
+        float held = FarPivotDrift(true, out float step), carried = FarPivotDrift(false, out _);
+        Assert.True(carried > 20f, $"the carried blade turned only {carried} deg: the pivot tests nothing");
+        Assert.True(held < carried * 0.7f, $"the far blade drifted {held} deg in the pivot (carried with her: {carried})");
+        var c = new SideCarry();
+        Assert.True(step <= c.FarStep + 0.05f, $"the far blade stepped {step} deg in a frame");
+    }
 }
