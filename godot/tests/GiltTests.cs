@@ -141,4 +141,39 @@ public class GiltTests
             Assert.Contains(ix.SlotOf(p), Wear.Group(slot));
         }
     }
+
+    /// <summary>The demo's proof of drops (17 Nov): several den clears for one survivor, each ruler's piece taken home as Gather does,
+    /// worn, saved and read back; the kit stays on and the next clear's weighting sees what she owns.</summary>
+    [Fact]
+    public void Clears_drop_pieces_she_wears_and_they_survive_a_save()
+    {
+        var j = Begin();
+        var rng = new Random(11);
+        var slots = new Dictionary<string, EquipSlot> { ["gilt_helm"] = EquipSlot.Head, ["gilt_harness"] = EquipSlot.Body, ["gilt_boots"] = EquipSlot.Feet };
+        var worn = new List<string>();
+        int clears = 0;
+        while (worn.Count < 3)
+        {
+            Assert.True(++clears < 40);
+            var got = Gilt(Drops.Roll(Ctx(j, DropSource.MapRuler, "hollow", rng.NextDouble))).Single();
+            var it = Inventory.Make(j.Ch, got, dropped: true, level: 6);
+            if (!worn.Contains(got))
+            {
+                Assert.True(Inventory.AddToPack(j.Ch, it));
+                j.Equip(it.Uid, null, null);
+                Assert.Equal(got, j.Ch.Equipment[slots[got]]?.Def);
+                worn.Add(got);
+            }
+            // Between runs: save, read back, carry on with the reloaded survivor.
+            var text = Json.Write(j.ToSave(new SaveLocation { Zone = "map", X = 1, Z = 2 }));
+            j = Journey.From(Json.Parse<SaveData>(text), 1);
+            foreach (var id in worn) Assert.Equal(id, j.Ch.Equipment[slots[id]]?.Def);
+            var kit = Wear.Of(j.Ch).Values.ToHashSet();
+            foreach (var id in worn) foreach (var w in Items.Get(id).Wear!) Assert.Contains(w, kit);
+            foreach (var id in worn) Assert.Contains(id, j.World.Owned);
+        }
+        Assert.InRange(clears, 3, 12);
+        // All worn: the weights see every piece as owned (even), and she still wears all three.
+        Assert.All(Pieces, id => Assert.Contains(id, j.World.Owned));
+    }
 }

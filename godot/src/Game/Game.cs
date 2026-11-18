@@ -685,6 +685,10 @@ public partial class Game : Node, IZoneHost
     /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
     public void MapOver(MapResult r, bool alive)
     {
+        // --wear-gilt: the set pieces now in the pack put on, as the player would at the pack (pictures of a drop worn).
+        if (Args.Has("wear-gilt"))
+            foreach (var it in Journey.Ch.Pack.Where(i => i != null && Items.Get(i.Def).Set != null).ToList()) { Journey.Equip(it!.Uid, null, Battle); GD.Print($"her wear: {it!.Def} -> {string.Join(",", Wear.Of(Journey.Ch).Values)}"); }
+        if (Args.Has("wear-gilt")) Save("wear-gilt");
         var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         // (pictures and probes of the atlas's pay read it from the log as well)
         if (Args.Has("shot"))
@@ -1210,6 +1214,13 @@ public partial class Game : Node, IZoneHost
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
+        // --save-file PATH (a picture's two-process proof): the save goes to that file, never to a slot; read again with --load PATH.
+        if (Args.Get("save-file") is string sf)
+        {
+            System.IO.File.WriteAllText(sf, SurvivorUnchained.Core.Json.Write(Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })));
+            GD.Print($"save-file: written {sf}");
+            return SaveOutcome.Saved;
+        }
         if (saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })))
             return SaveOutcome.Saved;
         GD.PushError($"save: slot {Journey.Slot} could not be written ({reason})");
