@@ -40,3 +40,48 @@ def test_shipped_recipes_keep_body_a():
         raw = json.load(open(f, encoding="utf-8"))
         if "by_body" not in json.dumps(raw):
             assert kb.by_body(raw, "a") == raw, pid
+
+
+def _bodice_raw():
+    import json
+    return json.load(open(os.path.join(kb.SRC, "kit_bodice", "build.json"), encoding="utf-8"))
+
+
+def test_bodice_apron_and_gem_are_body_b_only():
+    """(armor-D, 18 Nov) The cup apron and the gem's lift are B's knobs: A's bodice reads no apron and no gem (its
+    cups, rims and clasp are built by the code path they always were), and stripping B's knobs leaves A unchanged."""
+    raw = _bodice_raw()
+    a, b = kb.by_body(raw, "a"), kb.by_body(raw, "p1")
+    assert "apron" not in a["cup"] and "gem" not in a["cup"]
+    assert b["cup"]["apron"]["psi"][1] == 255.0 and b["cup"]["gem"]["off"] > 0
+    import copy
+    stripped = copy.deepcopy(raw)
+    stripped["cup"]["by_body"]["p1"] = {k: v for k, v in stripped["cup"]["by_body"]["p1"].items()
+                                        if k not in ("apron", "gem")}
+    assert kb.by_body(stripped, "a") == a
+
+
+def test_cup_slab_welds_the_apron_to_the_cup():
+    """cup_slab: the apron's row 0 IS the cup's last ring at its spokes (one point each, no seam), and the rim's outline
+    runs once round the joined edge."""
+    import numpy as np
+    K, S, R = 4, 12, 5
+    ph = np.linspace(0.2, 1.0, K)[:, None]
+    ps = np.radians(np.linspace(0, 360, S, endpoint=False))[None, :]
+    Pin = np.stack([np.sin(ph) * np.cos(ps), np.sin(ph) * np.sin(ps), np.cos(ph) + 0 * ps], -1) * 0.05
+    Nn = Pin / np.linalg.norm(Pin, axis=-1, keepdims=True)
+    J = np.arange(6, 9)
+    t = np.linspace(0, 1, R)[:, None, None]
+    Pa = Pin[-1, J][None] + t * np.array([0.0, 0.0, -0.02])
+    Na = np.broadcast_to(Nn[-1, J][None], Pa.shape).copy()
+    part, loop = kb.cup_slab("cup_t", "steel", Pin, Nn, 0.0016, J, Pa, Na)
+    n_face = K * S + (R - 1) * len(J)
+    assert len(part.P) == 2 * n_face + 2 * len(loop)
+    assert len(loop) == (S - len(J) + 2) + (R - 1) + (len(J) - 1) + (R - 2)
+    inner = part.P[n_face:2 * n_face]
+    assert np.allclose(inner[(K - 1) * S + J], Pa[0])
+    # every inner-face edge is shared by two faces except the outline's (a closed surface with one boundary loop)
+    T = part.T[(part.T >= n_face).all(1) & (part.T < 2 * n_face).all(1)] - n_face
+    e = np.sort(np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]], 1)
+    _, c = np.unique(e, axis=0, return_counts=True)
+    assert (c <= 2).all() and (c == 1).sum() == len(loop)

@@ -540,8 +540,17 @@ def bodice(cfg, ref):
         # outward = the shell's normal, from a fine local difference
         Nn = shell_normals(pol, fr, PH, PS)
         nm = "cup_" + ("l" if hand > 0 else "r")
-        plate.append(slab(nm, M["plate"], Pin, Nn, th_, closed_c=True, fan=True))
-        trim.append(bead(ref, "trim_" + nm, M["trim"], Pin[-1], rim, edge_off, True, relax_it=1))
+        ap = cu.get("apron")  # (B, 18 Nov: her crease sits above the band; off unless named)
+        if ap:
+            def xv_f(yq, cx=cx, cy=cy, rx=rx, ry=ry, wv=wv):
+                return cx + (rx - wv - cx) * np.clip((np.asarray(yq, float) - cy) / (ry - cy), 0, 1) ** cu["bow"]
+            J, Pa, Na = cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_, xv_f)
+            part, loop = cup_slab(nm, M["plate"], Pin, Nn, th_, J, Pa, Na)
+            plate.append(part)
+            trim.append(bead(ref, "trim_" + nm, M["trim"], loop, rim, edge_off, True, relax_it=1))
+        else:
+            plate.append(slab(nm, M["plate"], Pin, Nn, th_, closed_c=True, fan=True))
+            trim.append(bead(ref, "trim_" + nm, M["trim"], Pin[-1], rim, edge_off, True, relax_it=1))
         if hand > 0:
             clasp_y = cy
         # shoulder strap: from the cup's flat top over her shoulder to the back's corner
@@ -567,10 +576,111 @@ def bodice(cfg, ref):
         for e in (0, -1):
             trim.append(bead(ref, f"trim_strap_{nm[-1]}{e}", M["trim"], Ps[e], rim, edge_off, False, relax_it=1))
     # the clasp at the V's foot
+    gm = cu.get("gem")  # (B, 18 Nov: over the aprons' V foot, "dy" up, "off" off her skin; off unless named)
+    if gm:
+        gy = cu["clasp"][1] + gm["dy"]
+        t0, _ = cast(ref, [[0.0, gy, 0.4]], [[0, 0, -1.0]])
+        cp = np.array([0.0, gy, 0.4 - t0[0]])
+        rigid.append(diamond(cp + [0, 0, gm["off"]], [0, 0, 1.0], [0, 1.0, 0], 0.012, 0.017, 0.006, "clasp_rigid", M["trim"]))
+        return plate, trim, straps, rigid
     t0, _ = cast(ref, [[0.0, cu["clasp"][1], 0.4]], [[0, 0, -1.0]])
     cp = np.array([0.0, cu["clasp"][1], 0.4 - t0[0]])
     rigid.append(diamond(cp + [0, 0, cl + th_ + 0.002], [0, 0, 1.0], [0, 1.0, 0], 0.012, 0.017, 0.006, "clasp_rigid", M["trim"]))
     return plate, trim, straps, rigid
+
+
+def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_, xv_f):
+    """(armor-D, 18 Nov; build.json cup.apron, body B) The cup carried down from its lower-inner edge to the band and
+    the V's foot. On B her crease (where the cup's edge must stop: past it the cup's rays run inside her or onto the
+    other breast) sits 2-4 cm above the band's top, so bare skin showed under and between the cups. The apron's first
+    row IS the cup's edge ring over spokes psi ap.psi (L, her outer end .. N, the V's notch), with the cup's normals
+    there (one surface: cup_slab welds them). Its free outline: from L straight down to the band (ap.lap under its top),
+    along the band to C (ap.c_x off the centre), up the V (the cup's V law xv scaled through N) to N' (ap.n_drop under
+    N). Inside: each column a line in (x, y) from the edge to its outline point (C on one column), lifted onto her
+    skin on the wrap chart at ap.off[0] off her, rising to ap.off[1] over the ap.ramp above the outline's bottom
+    (over the band's top), never closer than ap.guard to the band's outer face. Returns (spokes J, points, normals)."""
+    J = np.where((psis >= ap["psi"][0] - 1e-6) & (psis <= ap["psi"][1] + 1e-6))[0]
+    C = len(J)
+    # N on the V law: the cup's edge at the notch spoke stopped up to 16 mm past it (a tooth that kinked the V's rim);
+    # it goes back along its last strip to where that crosses the V (the outline's own rule), the cup's ring with it
+    jn = J[-1]
+    a, b = Pin[-2, jn], Pin[-1, jn]
+    fa, fb = hand * a[0] - xv_f(a[1]), hand * b[0] - xv_f(b[1])
+    if fb < 0 < fa:
+        s = fa / (fa - fb)
+        Pin[-1, jn] = a + (b - a) * s
+        Nn[-1, jn] = U(Nn[-2, jn] + (Nn[-1, jn] - Nn[-2, jn]) * s)
+    E0, N0 = Pin[-1, J], Nn[-1, J]
+    x0, y0 = hand * E0[:, 0], E0[:, 1]
+    lap, cxa = ap["lap"], ap["c_x"]
+    # the free outline as a dense polyline: the bottom (L's foot to C) and the V (C to N')
+    xb = np.linspace(x0[0], cxa, 400)
+    bot_ = np.c_[xb, ub(xb) - lap]
+    yC = float(bot_[-1, 1])
+    yN2 = y0[-1] - ap["n_drop"]
+    yv = np.linspace(yC, yN2, 400)
+    v_ = np.c_[cxa + (x0[-1] - cxa) * xv_f(yv) / xv_f(y0[-1]), yv]
+
+    def at(P, s):  # the point at arc-length fractions s along polyline P
+        d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
+        return np.stack([np.interp(np.asarray(s) * d[-1], d, P[:, k]) for k in range(2)], -1), d[-1]
+
+    _, lb = at(bot_, 0.0)
+    _, lv = at(v_, 0.0)
+    cC = int(np.clip(round(lb / (lb + lv) * (C - 1)), 1, C - 2))  # the column on C
+    ob = np.vstack([at(bot_, np.linspace(0, 1, cC + 1))[0], at(v_, np.linspace(0, 1, C - cC))[0][1:]])
+    # rows: lines from the edge to the outline, lifted onto her skin
+    R = ap["rows"]
+    t = np.linspace(0, 1, R)[1:, None]
+    X = (1 - t) * x0[None, :] + t * ob[None, :, 0]
+    Y = (1 - t) * y0[None, :] + t * ob[None, :, 1]
+    ybot = ub(X) - lap
+    off = ap["off"][0] + (ap["off"][1] - ap["off"][0]) * (1 - smooth01((Y - ybot) / ap["ramp"]))
+    lo, hi = np.zeros_like(X), np.full(X.shape, 80.0)  # theta (deg, her side) where (skin + off) sin(theta) = x
+    for _ in range(40):
+        m = 0.5 * (lo + hi)
+        f = (skin_f(Y, hand * m) + off) * np.sin(np.radians(m)) - X
+        lo, hi = np.where(f < 0, m, lo), np.where(f < 0, hi, m)
+    TH = hand * 0.5 * (lo + hi)
+    rho = skin_f(Y, TH) + off
+    near = Y <= top(TH) + 0.001
+    rb = rho_at(Y, TH)
+    rho = np.where(near, np.maximum(rho, rb + th_ + ex_fn(Y, TH, rb) + ap["guard"]), rho)
+    Pa = np.concatenate([E0[None], wrap.pt(Y, TH, rho)], 0)
+    Na = np.concatenate([N0[None], wrap.dirs(TH)], 0)
+    return J, Pa, Na
+
+
+def cup_slab(name, mat, Pin, Nout, thick, J, Pa, Na):
+    """A cup's slab (slab(..., closed_c=True, fan=True)) with its apron (cup_apron): the apron's row 0 is the cup's last
+    ring at spokes J, welded (one surface: the shared points are one point each, no seam to open in motion). The edge
+    wall runs round the joined outline: the cup's ring from N (J[-1]) the long way round to L (J[0]), down the apron's
+    first column, along its last row, up its last column. Returns the part and that outline's inner points (the rim)."""
+    K, S = Pin.shape[:2]
+    R, C = Pa.shape[:2]
+    ida = np.zeros((R, C), np.int64)
+    ida[0] = (K - 1) * S + np.asarray(J)
+    ida[1:] = K * S + np.arange((R - 1) * C).reshape(R - 1, C)
+    Pi = np.vstack([Pin.reshape(-1, 3), Pa[1:].reshape(-1, 3)])
+    Nv = np.vstack([Nout.reshape(-1, 3), Na[1:].reshape(-1, 3)])
+    Po = Pi + Nv * thick
+    T = np.vstack([grid_tris(K, S, close=True), strip_cap(S), ida.reshape(-1)[grid_tris(R, C)]])
+    rn = rand01(name)
+    parts = []
+    for P, sgn in ((Po, 1), (Pi, -1)):
+        parts.append(Part(name, mat, P, orient(P, T, Nv * sgn), uv0=np.c_[P[:, 0] + P[:, 2], P[:, 1]] * 3.0,
+                          col=np.tile([1.0, rn, 0.0, 1.0], (len(P), 1))))
+    ring = np.r_[np.arange(J[-1], S), np.arange(0, J[0] + 1)]
+    loop = np.r_[(K - 1) * S + ring, ida[1:, 0], ida[-1, 1:], ida[-2:0:-1, -1]]
+    # each outline point's inward neighbour (its wall's outward direction is away from it)
+    inn = np.r_[(K - 2) * S + ring, ida[1:, 1], ida[-2, 1:], ida[-2:0:-1, -2]]
+    a, b = Pi[loop], Po[loop]
+    out = U(a - Pi[inn])
+    V = np.vstack([a, b])
+    Tw = orient(V, grid_tris(2, len(a), close=True), np.vstack([out, out]))
+    parts.append(Part(name, mat, V, Tw, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
+                      col=np.tile([1.0, rn, 0.0, 0.0], (len(V), 1))))
+    return Part.join(name, mat, parts), a
 
 
 def dome(dm, pol, phis, psis, edge_phi, r, base):
