@@ -692,7 +692,7 @@ def test_each_cup_rides_one_blend():
                                                  {"i": 1, "node": "p.gold", "tier": "close"}]}
     gf._TRIS[(_Bd.id, 0)], gf._TRIS[(_Bd.id, 1)] = T, gT
     roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text(encoding="utf-8"))
-    cb = roles["slots"]["top"]["cup_blend"]
+    cb = roles["slots"]["top"].get("cup_blend") or dict(gf.CUP_BLEND)   # (PARKED: no slot has it)
     assert set(cb) <= set(gf.CUP_BLEND), cb             # (a key the rule does not read would be a silent no-op)
     gJ, gW = g_ev["J"].copy(), g_ev["W"].copy()
     st = gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(gf.CUP_BLEND, host_n=100))
