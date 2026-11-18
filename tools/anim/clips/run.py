@@ -181,6 +181,25 @@ def hilt_tilted(h, rig):
                 thumb=tuple(qrot(T, np.array(h["thumb"], float))))
 
 
+def hilt_tilt(rig, push=0.0):
+    """The game's tilt of the hip sword in the pelvis frame at rest (the scabbard `push` m out): (throat, T), a point p on
+    the hung piece going to throat + T(p - throat), from WeaponSockets HipBladeShaft onto HipBladeHeld about the pushed
+    throat (warden-move r20, 17 Nov: the scabbard now hangs at the held axis too, so letting go of the hilt does not
+    change its angle; the town idle's palm on the pommel goes where the pommel goes)."""
+    import re
+    from keyed import _socket_vec
+    from rig import REPO, qbetween, qinv, qmul, qrot
+    gr, gp = rig.sk.rest_globals()
+    pel = rig.sk.i("pelvis")
+    R, P = gr[0, pel], gp[0, pel]
+    throat_m = float(re.search(r"Throat\s*=\s*([0-9.]+)f", (REPO / "godot" / "logic" / "Play" / "SheathHang.cs").read_text(encoding="utf-8")).group(1))
+    shaft = _socket_vec("HipBladeShaft") / np.linalg.norm(_socket_vec("HipBladeShaft"))
+    held = _socket_vec("HipBladeHeld") / np.linalg.norm(_socket_vec("HipBladeHeld"))
+    throat = qrot(qinv(R), _socket_vec("HipBladeAtA") + throat_m * shaft - P) + np.array([push, 0.0, 0.0])
+    T = qmul(qinv(R), qmul(qbetween(shaft, held), R))
+    return throat, T
+
+
 def hilt_carry(rig, clip, hilt=None):
     """`clip` with her left arm laid onto the sheathed sword's hilt (HILT), frame by frame on the clip's own pelvis:
     the left arm solved afresh over the clip (keyed.solve_frames, the clip as its base), every other joint as it was."""

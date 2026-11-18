@@ -259,7 +259,11 @@ public static class WeaponSockets
     /// swings the pommel in toward her chest: at 37 deg out (first cut) it went 8 mm into B's left breast in the sprint
     /// (nearest-vertex gap; A 7.9 mm clear); at 30 out the pommel clears by 18 mm (B) and 29 mm (A) over the town run and
     /// sprint, the scabbard 17 mm off B's thigh, and from behind it stands ~68 deg on screen at pitch 60 (37 out: ~63).
-    /// Grid of axes, both bodies: survivorsunchained_inputs/scratch_coord12/aim_move/r16_pommel/grid_final.txt.</summary>
+    /// Grid of axes, both bodies: survivorsunchained_inputs/scratch_coord12/aim_move/r16_pommel/grid_final.txt.
+    /// (warden-move r20, 17 Nov, judge r16: hung, it went back to HipBladeShaft(B) when her hand let go, and from behind it
+    /// stood as a cane from under her shield to her heel in the town's most-seen idle: it now hangs at this axis too, turned
+    /// about the same throat, the hang's sway on top (View/SheathSway), and the town idle's palm on the pommel turns with
+    /// it (tools/anim/clips/idle.py HILT_TILT). HipBladeShaft(B) stay the mount's axis the tilt starts from.)</summary>
     public static readonly Vector3 HipBladeHeld = new(0.354f, -0.707f, -0.612f);
     /// <summary>The pommel's distance up the hilt from the sheath point (the chevalier sword), m.</summary>
     public const float HiltToPommel = 0.17f;

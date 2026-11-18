@@ -68,8 +68,10 @@ public partial class SheathSway : SkeletonModifier3D
     }
     int outFrames;
 
-    // `--hilt-tilt off`: held, the piece rides rigidly as before (before/after frames); `--hilt-held x,y,z`: another axis.
+    // `--hilt-tilt off`: no tilt, held or hung (the hung axis throughout, before 17 Nov); `--hilt-tilt held`: the tilt only
+    // while her hand holds the hilt (warden-move r16: let go, it swung back to the hung axis); `--hilt-held x,y,z`: another axis.
     static readonly bool TiltOff = Args.Get("hilt-tilt") == "off";
+    static readonly bool TiltHeldOnly = Args.Get("hilt-tilt") == "held";
     bool tiltSet;
     Quaternion tilt = Quaternion.Identity;   // in the bone's space: the rigid shaft onto the held one
 
@@ -106,9 +108,11 @@ public partial class SheathSway : SkeletonModifier3D
         // The piece's turn in skeleton space: hung * rest * rigid; back in the bone's space under the pose.
         var basis = new Basis((poseQ.Inverse() * hung * restQ).Normalized()) * rigid.Basis;
         var at = new Transform3D(basis, pivot - basis * pivotInMount);
-        // Held (the hang eased out), the piece turns about its throat onto WeaponSockets.HipBladeHeld, by as much as the
-        // hand holds it: the throat stays under her hand.
-        float k = hilt && !TiltOff ? 1f - hang.Weight : 0f;
+        // The piece turns about its throat onto WeaponSockets.HipBladeHeld, held or hung, the hang's sway on top (warden-move
+        // r20, 17 Nov: hung on its old axis, from behind it stood as a cane from under her shield to her heel, and letting
+        // go of the hilt swung it back there; now letting go changes nothing but the sway). The throat stays under her
+        // hand; the town idles' palm on the pommel was rebuilt onto the tilted pommel (tools/anim/clips/idle.py HILT_TILT).
+        float k = !hilt || TiltOff ? 0f : TiltHeldOnly ? 1f - hang.Weight : 1f;
         if (k > 0.001f)
         {
             if (!tiltSet) TiltOnce(sk);

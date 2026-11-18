@@ -1234,6 +1234,8 @@ def grip_hilt(rig, clip, at=0.0, spin=20.0, pole=(1.0, -0.2, 0.3), fingers=None,
 # The sheathed viking sword's pommel (arms_local.json "sheathed", pelvis frame, the scabbard's push not added): a flat
 # lobed plate 25 mm thick (x 0.193-0.218), 60 mm fore and aft (z 0.025-0.085), its top edge at y 0.225-0.235.
 POMMEL_TOP = (0.207, 0.231, 0.055)
+# HILT_TILT (env WARDEN_HILT_TILT, "0" for the hung axis as before): the pommel where the game's tilt puts it.
+HILT_TILT = os.environ.get("WARDEN_HILT_TILT", "1") != "0"
 # Her left palm on it (animation 55, the owner on the town close-up of the fist on the grip: "is this angle possible or
 # natural?"; the forearm level, the elbow out, the wrist bent ~90 down, the fingers open). With the hilt where it hangs
 # (its grip's top 0.29 m under her shoulder, the pommel's 0.22) no closed fist on the grip lets the elbow hang by her
@@ -1265,6 +1267,15 @@ def rest_on_pommel(rig, clip, pole=(0.15, -0.55, -1.0), ext=10.0, palm=PALM_L, f
     pel, ua, la, ha = I["pelvis"], I["upperarm_l"], I["lowerarm_l"], I["hand_l"]
     g, p = rig.sk.fk(clip.rot, clip.pos)
     C = np.array(POMMEL_TOP) + (push, 0.0, 0.0)
+    # (warden-move r20, 17 Nov) The scabbard hangs at its held axis (WeaponSockets HipBladeHeld), turned about its throat
+    # as the run's hand holds it (run.hilt_tilt): the pommel and its top edge turn with it, so the palm goes onto them.
+    Tm = np.eye(3)
+    if HILT_TILT:
+        from clips.run import hilt_tilt
+        from rig import qrot
+        th, Tq = hilt_tilt(rig, push)
+        C = th + qrot(Tq, C - th)
+        Tm = qmatrix(qnorm(Tq))
     arm = [ua]
     for j in arm:
         arm += [k for k, q in enumerate(rig.sk.parent) if q == j and k not in arm]
@@ -1281,7 +1292,9 @@ def rest_on_pommel(rig, clip, pole=(0.15, -0.55, -1.0), ext=10.0, palm=PALM_L, f
             # The hand's axes: +y the forearm's line bent back `ext` about the palm's side-to-side axis, +x (the palm side)
             # facing down onto the pommel, +z = x cross y (the thumb side, toward her middle).
             y = fa[f] / np.linalg.norm(fa[f])
-            x = np.array([0.0, -1.0, 0.0]) - y * (-y[1])
+            # (the palm faces down onto the pommel's top edge: straight down, turned as the piece is when it hangs tilted)
+            x = Mp[f] @ Tm @ Mp[f].T @ np.array([0.0, -1.0, 0.0]) if HILT_TILT else np.array([0.0, -1.0, 0.0])
+            x = x - y * float(x @ y)
             x /= np.linalg.norm(x)
             y = y * math.cos(e) - x * math.sin(e)
             x = x * math.cos(e) + fa[f] / np.linalg.norm(fa[f]) * math.sin(e)
