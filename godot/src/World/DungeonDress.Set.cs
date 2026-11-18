@@ -1403,6 +1403,7 @@ public static partial class DungeonDress
                 // (r11: a stone up to 2.4 m across, a log 3-4 m: they are cards, she walks through them; the room's
                 // fight was tuned without them, so none has a body)
                 if (lair && got == 0) pc = sorted[sorted.Count - 1];   // (the lair's hero stone: the sheet's biggest)
+                if (!lair && FireNear(p, 0.5f * pc.Metres.X, 0.5f * pc.Metres.X)) { rn++; continue; }   // (den r18 lead, r9a/r9b: the s11 start room's stone stood on its campfire)
                 if (lair && (FireClear > 0f || FlatRot > 0f))
                 {
                     // (den r18 D5, R18 items 2, 4) crowns, stones and logs keep --den-fire-clear m from a fire; a crown (and the hero stone's) keeps off the litter groups already laid
