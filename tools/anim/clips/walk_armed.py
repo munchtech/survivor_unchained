@@ -51,15 +51,129 @@ LAG = 2.5
 # ---------------------------------------------------------------- carriages --
 # Each: (k, frame) -> the hand's spec (keyed.Rig.solve), k the town walk's swing on that side.
 
+def _arc_v(arc):
+    az, el, r = arc
+    a, e = math.radians(az), math.radians(el)
+    return r * np.array([math.sin(a) * math.cos(e), math.sin(e), math.cos(a) * math.cos(e)])
+
+
+# Prowl's hands (prowl.end_keys frame 0, chest frame; set by make() when her idle is Prowl): the walk carries the sword
+# as Prowl holds it, the elbow soft, the arm live: the fist swings PROWL_SWING m with the stride from the shoulder, the
+# point trailing the fist PROWL_LAG deg as it comes through (the owner, 15 Nov: "held rigid not moving at all").
+_PROWL = {}
+PROWL_SWING = 9.0  # deg either way about the shoulder (the reach kept: the elbow stays at Prowl's bend)
+PROWL_LAG = 7.0
+# (aim-move solver 7, 15 Nov) The trailing fist set by the wrist, not by a blade line: armroll's own reading (pro, flex,
+# dev; run_grip.fist_frame, as the run's wrist carry) eased between PROWL_WRIST's fist-forward and fist-back readings with
+# the stride read PROWL_WRIST_LAG frames late, so the blade trails the fist. Keyed by the line (the grip turned with the
+# forearm, then PROWL_LAG about her chest), the front of the swing laid the line out sideways again (as played
+# -111..-60 heading, the tip 0.41 m ahead of her hips) with the forearm turned past armroll's 80 and the wrist at its
+# extension cap (the pack turned the hand 15 deg back). None: that keyed line. PROWL_EL: the elbow's inside angle off
+# TRAIL_ARM's with the fist back and forward (was 0, -8: bend 39-49 as played; the idle's 32-38).
+# (solver 11c, 16 Nov) On 11a's idle arm (-30, 20, 125, 50) the old readings hung the blade 74-86 down, the tip 0.038 m
+# off the floor: fist-back now the idle's own grip reading (64, -30, -5; was 66, -17, -3), fist-forward dev -3 (was -8):
+# as played 71-80 down (the idle 70-77), tip 0.058, share 0.313, armroll 0.8, bend 54-60.
+PROWL_WRIST = ((76.0, -27.0, -3.0), (64.0, -30.0, -5.0))
+PROWL_WRIST_LAG = -1.0
+PROWL_EL = (0.0, -4.0)
+# (solver 9b, 15 Nov) PROWL_ARM: the sword arm's joints (th, out, el, turn; gait.arm_joints), None: prowl.TRAIL_ARM.
+# "idle": prowl.IDLE_ARM, the idle's own arm (the blend idle -> walk -> run keeps the blade back and down). PROWL_HANG
+# (follow, yaw): the arm and fist ride `follow` of the walk chest's turn from its mean (prowl._trail_frame's way: a
+# relaxed arm hangs, it does not turn with the chest whole), turned `yaw` deg about her up (+ toward her left; "idle":
+# the idle chest's own mean, 15 deg to her right: it swung the back of the stride in toward her middle, the fist 61 mm
+# into her, solve9b x1/h3); None: the walk's chest whole. PROWL_LINE_LAG: the grip frame keyed off the arm as it was
+# that many frames before; 0: off. With PROWL_WRIST's fist-forward reading turning the blade back on the forearm, read
+# 1 frame EARLY (PROWL_WRIST_LAG -1), most of the arm's swing of the line is countered and what is left trails the fist
+# (the run's way, run.WRIST_LAG). Was (TRAIL_ARM in the walk's chest, one reading (75, -40, 6)): as played -118..-68 /
+# 51-58 below level, share 0.61, armroll turned 9.3 back on every frame, the line 1-5 frames AHEAD of the fist.
+PROWL_ARM = "idle"
+PROWL_HANG = (0.35, 0.0)
+PROWL_LINE_LAG = 1.0
+
+
+def _prowl_hand(side, k, f, swing, lag):
+    """Prowl's hand swung `swing` deg about the shoulder's left-right line with the stride (the whole arm and the blade
+    turning with it), the point trailing a further `lag` deg as the fist comes through."""
+    h = {kk: v for kk, v in _PROWL[side].items()}
+    a = swing * (2.0 * k - 1.0)
+    h["arc"] = arc_of(np.array(_pitch(_arc_v(h["arc"]), a)))
+    d = -lag * float(_CTX[side][0][f]) if lag else 0.0
+    for kk in ("blade", "knuckles", "pole"):
+        if kk in h:
+            h[kk] = _pitch(h[kk], a + (d if kk != "pole" else 0.0))
+    return h
+
+
+def _trail_hand(k, f):
+    """(solver 3a, 15 Nov; prowl.TRAIL) Prowl's trailing sword arm by its joints (prowl.TRAIL_ARM, chest frame): the
+    upper arm swung PROWL_SWING deg about the shoulder with the stride, the elbow bending 33-41 (more as the fist comes
+    forward), the fist's grip (prowl.TRAIL_GRIP) turned with the forearm so the wrist keeps Prowl's set, the point
+    trailing a further PROWL_LAG deg as the fist comes through."""
+    from clips import prowl
+    from gait import arm_joints
+    from rig import qaxis, qbetween, qmul
+    th, out, el, turn = prowl.IDLE_ARM if PROWL_ARM == "idle" else (PROWL_ARM or prowl.TRAIL_ARM)
+    lu, lf = _CTX["arm"]
+    m = np.array([-1.0, 1, 1])
+    E0, H0 = arm_joints(th, out, el, turn, lu, lf)
+    p = float(_CTX.get("push_r", np.zeros(f + 1))[f])
+    D = _CTX["hang"][f] if PROWL_HANG else None
+
+    def joints(kk):
+        ek = el + PROWL_EL[0] + (PROWL_EL[1] - PROWL_EL[0]) * kk
+        E, H = arm_joints(th + PROWL_SWING * (2.0 * kk - 1.0), out, ek, turn, lu, lf)
+        # (solver 4a) where her mesh needs the fist let out (_solve's push, m), the whole arm swung that much further
+        # out from her side about the shoulder (the reach and the elbow's bend kept; the push laid on the wrist as a
+        # longer reach straightened the elbow to 4 deg and turned the wrist past armroll's caps)
+        if p > 0:
+            E, H = arm_joints(th + PROWL_SWING * (2.0 * kk - 1.0), out + math.degrees(p / max(float(np.hypot(H[0], H[1])), 0.2)),
+                              ek, turn, lu, lf)
+        E, H = E * m, H * m
+        if D is not None:
+            E, H = qrot(D, E), qrot(D, H)
+        return E, H
+
+    E, H = joints(k)
+    E0, H0 = E0 * m, H0 * m
+    if PROWL_WRIST:
+        from clips.run_grip import fist_frame
+        spec = {"arc": arc_of(H), "pole": _n(E), "pole_at": "shoulder", "frame": "chest"}
+        fw, bk = np.array(PROWL_WRIST[0], float), np.array(PROWL_WRIST[1], float)
+        pro, flex, dev = bk + (fw - bk) * float(_CTX["kw"][f])
+        sd = spec
+        if PROWL_LINE_LAG:
+            Ed, Hd = joints(float(_CTX["kl"][f]))
+            sd = {"arc": arc_of(Hd), "pole": _n(Ed), "pole_at": "shoulder", "frame": "chest"}
+        b, kn = fist_frame(sd, pro, flex, dev, "r", prowl.GRIP_TILT)
+        spec.update(blade=tuple(b), knuckles=tuple(kn))
+        return spec
+    assert D is None, "PROWL_HANG keys the fist by PROWL_WRIST"
+    # the forearm's turn from Prowl's (its line, then its hinge's way: the elbow's side of the arm)
+    q = qbetween(H0 - E0, H - E)
+    n0, n = np.cross(E0, H0 - E0), np.cross(E, H - E)
+    a = math.degrees(math.atan2(np.dot(np.cross(qrot(q, n0), n), _n(H - E)), np.dot(qrot(q, n0), n)))
+    q = qmul(qaxis(_n(H - E), a), q)
+    lag = qaxis([1.0, 0, 0], -PROWL_LAG * float(_CTX["r"][0][f]))
+    b, kn = (qrot(q, np.array(v, float)) for v in prowl.TRAIL_GRIP)
+    return {"arc": arc_of(H), "pole": _n(E), "pole_at": "shoulder", "frame": "chest",
+            "blade": tuple(qrot(lag, b)), "knuckles": tuple(qrot(lag, kn))}
+
+
 def sword(k, f):
     """The sword low at her right, as her armed idle holds it (idle.warden: the point 34 deg below level ahead, the
     thumb forward, the elbow swung out over the hilt), the fist swinging a little with the stride."""
+    if "r" in _PROWL and _CTX.get("trail"):
+        return _trail_hand(k, f)
+    if "r" in _PROWL:
+        return _prowl_hand("r", k, f, PROWL_SWING, PROWL_LAG)
     return {"arc": arc_of(_at((-0.12, -0.45, 0.04), 0.08, k, 0.01)), "pole": (-0.744, 0.09, -0.662), "frame": "chest",
             "blade": _n((-0.30, -0.52, 0.80)), "knuckles": _n((0.123, -0.828, -0.548)), "twist": 0.5}
 
 
 def shield(k, f):
     """The shield at rest at her left side, off her body (idle.warden's hand_l), braced, riding the step a little."""
+    if "l" in _PROWL:
+        return _prowl_hand("l", k, f, 3.0, 0.0)
     return {"arc": arc_of(_at((0.0817, -0.3796, 0.1299), 0.02, k)), "pole": (0.3281, -0.4168, -0.8477), "frame": "chest",
             "thumb": (-0.1498, 0.7455, 0.6495), "twist": 1.0}
 
@@ -169,18 +283,29 @@ OUTFIT = {"warden": "warden", "reaver": "reaver", "arcanist": "arcanist", "stalk
 _LAST = {}  # per clip: the hands' push (m, per side per frame) and the arms' clearance after it (read by the checks)
 
 
+def _tilt(name):
+    """(solver 6a) The grip tilt the walk holds: the warden's Prowl walk the idle's (prowl.GRIP_TILT), else none."""
+    if name == "walk_warden" and "r" in _PROWL:
+        from clips import prowl
+        return prowl.GRIP_TILT
+    return 0.0
+
+
 def _solve(rig, name, town, k, push):
     from keyed import solve_frames
     calling, arms, fingers, weapon = WALKS[name]
     rot, pos = town.rot.copy(), town.pos.copy()
     n = len(rot) - 1  # the closing frame is the first again
     way = PUSH.get(name, OUT)
+    # (solver 4a) the trailing sword arm takes its push as more out at the shoulder (walk_armed._trail_hand)
+    joints = name == "walk_warden" and "r" in _PROWL and bool(_CTX.get("trail"))
+    _CTX["push_r"] = push["r"] if joints else np.zeros(n)
     specs = []
     for f in range(n):
         sp = {}
         for s, carry in arms.items():
             h = dict(carry(float(k[s][f]), f))
-            if push[s][f] > 0:
+            if push[s][f] > 0 and not (joints and s == "r"):
                 from gait import arc_of as _arc
                 az, el, r = h["arc"]
                 a, e = math.radians(az), math.radians(el)
@@ -190,7 +315,7 @@ def _solve(rig, name, town, k, push):
             sp[f"fingers_{s}"] = fingers[s]
         specs.append(sp)
     bases = [(rot[f], pos[f]) for f in range(n)]
-    srot, _ = solve_frames(rig, specs, bases, loop=True, weapon=weapon)
+    srot, _ = solve_frames(rig, specs, bases, loop=True, weapon=weapon, tilt=_tilt(name))
     I = rig.I
     for s in arms:
         chain = [I[f"upperarm_{s}"]]
@@ -202,8 +327,52 @@ def _solve(rig, name, town, k, push):
     return rot, pos
 
 
+def _hang(rig, town, n):
+    """(solver 9b) Per frame, the turn (in the walk chest's frame) that carries the sword arm and fist from the walk's
+    chest into the frame they hang in: the walk chest's mean turn from rest turned PROWL_HANG[1] deg about her up (or the
+    idle chest's mean, "idle"), riding PROWL_HANG[0] of the walk chest's own turn from its mean (prowl._trail_frame)."""
+    from clips import prowl
+    from rig import qaxis, qinv, qmul, qslerp
+    sk = rig.sk
+    ag = sk.rest_globals()[0][0]
+    c = sk.i("spine_03")
+
+    def turns(rot, pos):
+        g, _ = sk.fk(rot, pos)
+        C = np.array([qmul(g[t, c], qinv(ag[c])) for t in range(len(g))])
+        C = C * np.where(C @ C[0] < 0, -1.0, 1.0)[:, None]
+        mc = C.mean(0)
+        return C, mc / np.linalg.norm(mc)
+
+    Cw, mw = turns(town.rot[:n], town.pos[:n])
+    follow, yaw = PROWL_HANG
+    if yaw == "idle":  # the idle chest's own mean (solver 7's way): its 15 deg to her right swung the back of the
+        mw2 = turns(*prowl.body(rig)[:2])[1]  # swing in toward her middle, the fist 61 mm into her (solve9b x1/h3)
+        base = mw2
+    else:
+        base = qmul(qaxis([0.0, 1.0, 0.0], yaw), mw)
+    one = np.array([0.0, 0.0, 0.0, 1.0])
+    return np.array([qmul(qinv(q), qmul(base, qslerp(one, qmul(qinv(mw), q), follow))) for q in Cw])
+
+
 def make(rig, name, rounds=6):
     calling, arms, fingers, weapon = WALKS[name]
+    _PROWL.clear()
+    if name == "walk_warden":
+        from clips.sword import prowl_end
+        end = prowl_end(rig)
+        if end is not None:
+            from clips import prowl
+            # (solver 6a) the walk holds at the idle's grip tilt (prowl.GRIP_TILT), so its keys are the idle's own
+            end = prowl.end_keys(rig, fingers_l=end["fingers_l"])
+            _PROWL.update({s: end[f"hand_{s}"] for s in "lr"})
+            ap = rig.sk.rest_globals()[1][0]
+            I = rig.I
+            _CTX["trail"] = prowl.TRAIL
+            _CTX["arm"] = (float(np.linalg.norm(ap[I["lowerarm_r"]] - ap[I["upperarm_r"]])),
+                           float(np.linalg.norm(ap[I["hand_r"]] - ap[I["lowerarm_r"]])))
+            fingers = dict(fingers, l=end["fingers_l"])
+            WALKS[name] = (calling, arms, fingers, weapon)
     if calling not in _TOWN:
         _TOWN[calling] = wt.make_walk(rig, calling)
     town = _TOWN[calling]
@@ -212,6 +381,10 @@ def make(rig, name, rounds=6):
     for s in "lr":
         vel = np.gradient(np.concatenate([k[s][-3:-1], k[s][:n], k[s][:2]]))[2:-2]
         _CTX[s] = (vel / max(np.abs(vel).max(), 1e-6), wt._shift(k[s][:n], LAG))
+    _CTX["kw"] = wt._shift(k["r"][:n], PROWL_WRIST_LAG)  # (solver 7) the wrist's reading eased by the swing, late
+    _CTX["kl"] = wt._shift(k["r"][:n], PROWL_LINE_LAG)  # (solver 9b) the arm the grip frame is keyed off, late
+    if name == "walk_warden" and "r" in _PROWL and PROWL_HANG:
+        _CTX["hang"] = _hang(rig, town, n)
     push = {s: np.zeros(n) for s in "lr"}
     c = {"outfit": OUTFIT[calling]}
     # The hands let out where (and as much as) her real mesh needs: the forearm and hand wt.NEAR clear of her and her
@@ -235,6 +408,8 @@ def make(rig, name, rounds=6):
     meta.update({"weapon": weapon,
                  "changes": town.meta["changes"] + "; the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
                  "note": f"her armed walk, {calling} ({weapon}); her town walk's gait; loop starts at the left heel strike"})
+    if _tilt(name):
+        meta["grip_tilt"] = _tilt(name)
     return Clip(name, 30, rot, pos, loop=True, meta=meta)
 
 

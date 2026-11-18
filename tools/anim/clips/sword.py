@@ -126,6 +126,41 @@ def _body(p):
     return {k: v for k, v in p.items() if k != "hand_l"}
 
 
+_PROWL = {}
+
+
+def prowl_end(rig):
+    """(aim-move, the owner 15 Nov: her idle out of town is Prowl, and every skill lands on it.) Prowl's frame 0 as
+    keys (clips/prowl.end_keys: body, feet, both hands in the chest frame, fingers): the swings' recovery ends there,
+    the blade let down to its trail at her right, not raised into the old high guard. None with WARDEN_IDLE=old."""
+    import os
+    if os.environ.get("WARDEN_IDLE", "prowl") != "prowl":
+        return None
+    if id(rig) not in _PROWL:
+        from clips import idle, prowl
+        # (solver 6a) the skills hold at grip tilt 0: keyed to land the idle's hand bone (the blade then turns in her
+        # fist by the idle's tilt as the game eases it over the fade)
+        _PROWL[id(rig)] = prowl.end_keys(rig, fingers_l=idle.warden(0, 0)["fingers_l"], tilt=0.0)
+    return {k: (dict(v) if isinstance(v, dict) else v) for k, v in _PROWL[id(rig)].items()}
+
+
+def _land(keys, rig, step=None):
+    """The last key (the guard) made Prowl's; `step` = (frame, rise): her right foot lifted that much at that frame on
+    its way from the stance's place to Prowl's (it is 7 cm back and 22 degrees out from the stance's), not slid."""
+    end = prowl_end(rig)
+    if end is None:
+        return keys
+    t, _, e = keys[-1]
+    keys = keys[:-1] + [(t, end, e)]
+    if step:
+        f, rise = step
+        a = np.array(feet()["foot_r"]["pos"], float); b = np.array(end["foot_r"]["pos"], float)
+        mid = (a + b) / 2 + np.array([0, rise, 0])
+        keys.append((f, {"foot_r": {"pos": tuple(mid), "rot": ((-25 + end["foot_r"]["rot"][0]) / 2, 0, 0), "toe": 0}}, "auto"))
+        keys.sort(key=lambda k: k[0])
+    return keys
+
+
 def sword_back(rig):
     keys = [
         # Cocked: the blade drawn back across her to the left, high; hips and
@@ -141,7 +176,11 @@ def sword_back(rig):
         (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.34, 0.51, 0.79), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
         (24, _body(GUARD), "ease"),
     ]
+    if prowl_end(rig) is not None:
+        # (aim-move) Out of the cut at her right the blade drops on down to its trail, not up into the guard and down again.
+        keys[4] = (15, pose(-10, -18, (-0.30, -0.32, 0.16), _n(-0.9, -0.38, 0.2), pole=(-0.3, -0.9, 0.2), left=False, weight=-0.4), "auto")
     keys = with_shield(keys, BACK_L)
+    keys = _land(keys, rig, step=(20, 0.035))
     return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -158,6 +197,7 @@ def sword_fore(rig):
         (24, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, FORE_L)
+    keys = _land(keys, rig, step=(20, 0.035))
     return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -173,7 +213,24 @@ def sword_heavy(rig):
         (30, _body(GUARD), "ease"),
     ]
     keys = with_shield(keys, HEAVY_L)
-    return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
+    keys = _land(keys, rig, step=(25, 0.035))
+    if prowl_end(rig) is not None:
+        # (aim-move solver 7) Prowl reached a frame early and held: solve_frames smooths each elbow's way over +-6
+        # frames, one-sided at a clip's end, so a recovery still turning into its last key (3.7 deg a frame) left the
+        # hand 12.2 deg off the idle's frame 0 (the back and fore cuts 4.0). Held from 29 it lands 4.0 off, easing in
+        # (0.2 deg the last frame); the cut's own elbows keep their smoothing (elbow_sigma 1 also gave 4.0, clip-wide).
+        import os
+        hold = float(os.environ.get("SWORD_HEAVY_HOLD", "29"))
+        keys = sorted(keys + [(hold, prowl_end(rig), "ease")], key=lambda k: k[0])
+    meta = {"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"}
+    if prowl_end(rig) is not None:
+        # (aim-move solver 9a) The cut keys her hand 170 deg about the forearm at f4 (past the 95 it turns; the swivel at
+        # its 42 edge), and keyed's twist, taken nearest the last frame's, read f5's -41 as 319: from there every frame
+        # sat a whole turn up, pinned at +95 (f30 keyed 68: the hand 27.6 deg off the idle's, the forearm 11.8). Let go
+        # over 24-29 (keyed meta "twist_unwind"): the end lands 4.0 / 4.7, the twist easing one way 95 -> 72 (f29, its
+        # keys' 68 at f30), the hand's turn f19-30 at most 13.2 deg a frame (was 17.1); f0-24 as before.
+        meta["twist_unwind"] = [24, 29]
+    return build("sword_heavy", rig, keys, lead=STRIKE, meta=meta)
 
 
 def clips(rig, want):

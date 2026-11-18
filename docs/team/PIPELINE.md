@@ -44,6 +44,8 @@ Each pipeline below has: source, stages, the check at each stage, the state toda
 
 ## Marionette is the pipe (the owner, 4 Nov night: "and of course make marionette the pipe that we pipeline through")
 
+**The owner, 16 Nov 2026, word for word:** "marionette is supposed to handle animations as well.  its a one stop shop for generation and rigging and animating", then: "remember to always keep marionette looped in for anything were building in modeling rigging animating so we can reproduce it.  we want to be able to make npcs on the same body and play dress up with our generated armor and outfits over time.  (and the other bodies that will come later)". So every modeling, rigging or animation build, demo work included, is a recipe Marionette can rerun: its inputs are frozen in the repo, the body is an input (never a hard-wired heroine.glb), a hand fix is fine when it lands in the source Marionette rebuilds from (the body, the rig, the recipe), so every rerun and every NPC on that body carries it, but never as a patch on an output alone (the owner, 16 Nov: "well it can be fixed by hand if the fix ends up in the body in marionette.  you know?  specific stuff on per npc basis obv is different"; per-NPC specifics stay that NPC's own data), and it has a line in lane G's Marionette stage list (`docs/handoff/body_facts/lane_g_plan.md`, steps 1a/1b/1c on body-b) naming the tool, its inputs and its outputs.
+
 The character pipelines are built as Marionette tools (`C:\Users\munch\Desktop\Marionette`, its `HANDOFF.md` "Start here") and run through the app, not as loose scripts one lead drives. Per pipeline:
 
 | # | Runs in Marionette | What moves there |

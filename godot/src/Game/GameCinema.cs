@@ -307,6 +307,7 @@ public partial class Game
     {
         if (cineWalk is { } w) return w;
         if (Battle is { } fb8 && TurnRun.Stick(fb8.Time) is { } f8) return f8;
+        if (Battle is { } fb9 && DirRun.Stick(fb9.Time) is { } f9) return f9;
         // --stroll M: a constant move at M m/s of ground speed along the --facing heading (0 = +Z; the move is (sin, cos) of it), for gait shots.
         if (Args.Has("stroll") && Battle is { } sb)
         {

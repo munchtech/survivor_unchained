@@ -419,6 +419,16 @@ def test_rim_rides_its_plate(tmp_path, monkeypatch):
     assert gf.rim_hosts(_Native, ms, X, comp, lead, T=T) == {}
 
 
+def test_built_outputs_stamped():
+    """Every built gear .gltf carries its .bin's sha1 (asset.extras.build). Godot reimports a .gltf only when the .gltf's
+    own bytes change, so a .bin rewritten without the stamp leaves a stale imported scene on screen (lane G lead 6, 17 Nov)."""
+    root = Path(__file__).resolve().parents[2] / "godot" / "art" / "gear" / "out"
+    paths = [p for p in root.rglob("*.gltf") if p.with_suffix(".bin").exists()]
+    assert paths, root
+    bad = {str(p.relative_to(root)): r for p in paths for ok, r in [gf.gltf_stamp_state(str(p))] if not ok}
+    assert not bad, bad
+
+
 def test_import_stale_and_stamp(tmp_path):
     import hashlib
     import json
@@ -499,3 +509,291 @@ def test_native_rows_replace_bound_and_skip_stale(tmp_path, monkeypatch):
     # no native folder for the body: nothing, nothing written
     bodies["close"].glb = str(tmp_path / "people" / "body_y" / "body.glb")
     assert gf.native_rows(bodies, str(out)) == {}
+
+def test_ornaments_ride_as_one():
+    """ORNAMENT: an outfit metal part A skins with one blend (and small) is rigid; one A bends is not; a gem touching a
+    boss rides it, a stud far from both rides itself; leather never."""
+    def quad(c, s):
+        P = np.array([[c[0] - s, c[1] - s, c[2]], [c[0] + s, c[1] - s, c[2]], [c[0] + s, c[1] + s, c[2]], [c[0] - s, c[1] + s, c[2]]])
+        return P, np.array([[0, 1, 2], [0, 2, 3]])
+    parts = [quad((0, 0, 0), 0.018), quad((0, 0, 0.001), 0.0175), quad((0.2, 0, 0), 0.003), quad((0, 0.3, 0), 0.06)]
+    X = np.vstack([p for p, _ in parts])
+    T = np.vstack([t + 4 * k for k, (_, t) in enumerate(parts)])
+    J = np.tile([[0, 1]], (16, 1))
+    W = np.tile([[0.6, 0.4]], (16, 1)).astype(float)
+    W[12] = [0.1, 0.9]    # the last part: A bends it
+    inv = np.arange(16)
+    m = gf.ornament_mask("piece.gold", X, T, inv, J, W)
+    assert m[:12].all() and not m[12:].any()
+    assert not gf.ornament_mask("piece.darkleather", X, T, inv, J, W).any()
+    comp_of, lead, _ = gf.rigid_groups([X], [T], [16], [m], reach=gf.ORNAMENT["ride_mm"] / 1000.0)
+    c = comp_of[0]
+    assert (c[12:] == -1).all() and len(lead) == 3
+    assert lead[c[4]] == c[0] and lead[c[8]] == c[8] and lead[c[0]] == c[0]
+
+
+def test_plates_ride_as_a_rides_them():
+    """ORNAMENT "plates": a metal part over max_mm that A skins with one blend is rigid too and keeps A's blend by joint
+    name (the plain mean only when the body lacks a joint of it); a small one keeps none (the plain mean)."""
+    def quad(c, s):
+        P = np.array([[c[0] - s, c[1] - s, c[2]], [c[0] + s, c[1] - s, c[2]], [c[0] + s, c[1] + s, c[2]], [c[0] - s, c[1] + s, c[2]]])
+        return P, np.array([[0, 1, 2], [0, 2, 3]])
+    parts = [quad((0, 0, 0), 0.018), quad((0, 0.3, 0), 0.06)]
+    X = np.vstack([p for p, _ in parts])
+    T = np.vstack([t + 4 * k for k, (_, t) in enumerate(parts)])
+    J = np.tile([[0, 1]], (8, 1))
+    W = np.tile([[0.25, 0.75]], (8, 1)).astype(float)
+    inv = np.arange(8)
+    assert gf.ornament_mask("boots.steel", X, T, inv, J, W).all()
+    pid, bl = gf.plate_blends("boots.steel", X, T, inv, J, W, ["thigh_l", "calf_l"])
+    assert (pid[:4] == -1).all() and (pid[4:] == 0).all() and bl == [{"thigh_l": 0.25, "calf_l": 0.75}]
+
+    class B:
+        joint_names = ["root", "calf_l", "thigh_l"]
+    Jb, Wb = gf.a_blend(B, bl[0])
+    assert Jb[0] == 1 and abs(Wb[0] - 0.75) < 1e-9 and Jb[1] == 2 and abs(Wb[1] - 0.25) < 1e-9
+    B.joint_names = ["root", "calf_l"]
+    assert gf.a_blend(B, bl[0]) is None
+
+
+def test_a_leads_gives_a_trim_to_the_plate_A_skins_it_with():
+    # plates 0 and 1 (own leaders), trim 2 led by plate 1 but skinned on A with plate 0's blend: it moves to 0;
+    # trim 3 led by plate 1 with plate 1's blend stays; trim 4 with a blend no plate has keeps its leader
+    import numpy as np
+    import gear_fit as gf
+    B = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0], [0.5, 0, 0.5]], float)
+    X = np.array([[0, 0, 0], [1, 0, 0], [0.9, 0, 0], [1, 0.1, 0], [1, 0, 0.1]], float)
+    comp = np.arange(5)
+    lead, moved = gf.a_leads(np.array([0, 1, 1, 1, 1]), B, X, comp)
+    assert list(lead) == [0, 1, 0, 1, 1] and moved == {2: (1, 0)}
+
+
+def test_trim_rides_its_steel():
+    """TRIM_RIDE: a gold component lying on the piece's steel takes the steel's weights and every shape delta at its
+    nearest steel point (a shape the steel lacks is 0 there), full within near_mm, a cosine fade to its own by fade_mm;
+    rest positions untouched; a strap far off the steel and a rigid group shared with another mesh keep their own. Posed
+    (bones that translate, a shape on), the riding trim keeps its rest offset off the steel exactly, where its own values
+    let it drift (B's warden top: the cup-edge gold out through the steel, lane G rim2, 17 Nov)."""
+    import json as _json
+
+    def grid(x0, x1, z0, z1, y, n):
+        xs, zs = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n), indexing="ij")
+        P = np.c_[xs.ravel(), np.full(n * n, y), zs.ravel()]
+        q = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                     + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+        return P, q
+
+    def unit(parts, J, W, shapes, comp):
+        X = np.vstack([p for p, _ in parts])
+        T = np.vstack([q + sum(len(p) for p, _ in parts[:k]) for k, (_, q) in enumerate(parts)])
+        n = len(X)
+        J, W = np.pad(J, ((0, 0), (0, 8 - J.shape[1]))), np.pad(W, ((0, 0), (0, 8 - W.shape[1])))   # (8 a vertex, as built)
+        return T, {"Xu": X.copy(), "inv": np.arange(n), "J": J.astype(np.uint16), "W": W.astype(np.float32),
+                   "shapes": {k: v.astype(float) for k, v in shapes.items()}, "comp": comp, "lead": None}
+
+    sx, sT = grid(0.0, 0.1, 0.0, 0.1, 1.5, 11)          # the steel: a 100 mm plate, weights and its lift shape vary
+    sJ = np.tile([[0, 1]], (len(sx), 1))
+    sW = np.c_[1 - sx[:, 0] / 0.1, sx[:, 0] / 0.1]
+    S_T, st_ev = unit([(sx, sT)], sJ, sW, {"lift": np.c_[0 * sx[:, 0], 0.002 * sx[:, 2] / 0.1, 0 * sx[:, 0]]},
+                      np.full(len(sx), -1))
+    parts = [grid(0.02, 0.08, 0.02, 0.04, 1.5005, 5),   # A: a trim 0.5 mm on it: rides
+             grid(0.02, 0.08, 0.20, 0.22, 1.5005, 5),   # B: a strap trim 100 mm off: keeps its own
+             grid(0.048, 0.052, 0.07, 0.074, 1.501, 2),  # C: a rivet (rigid, its own group): rides per point
+             grid(0.048, 0.052, 0.09, 0.094, 1.501, 2),  # D: a rivet whose group is shared with the leather: keeps its own
+             grid(0.090, 0.106, 0.05, 0.06, 1.5005, 9)]  # E: a trim past the plate's edge: rides, fading out by 8 mm
+    n = sum(len(p) for p, _ in parts)
+    comp = np.full(n, -1)
+    comp[50:54], comp[54:58] = 0, 1
+    gJ = np.tile([[0, 1]], (n, 1))
+    gW = np.tile([[0.5, 0.5]], (n, 1))
+    G_T, g_ev = unit(parts, gJ, gW, {"lift": np.tile([0, 0.0005, 0], (n, 1)), "hang": np.tile([0, 0, 0.003], (n, 1))}, comp)
+    lx, lT = grid(0.3, 0.32, 0.0, 0.02, 1.5, 3)          # the leather, sharing rivet D's group
+    L_T, l_ev = unit([(lx, lT)], np.tile([[0, 1]], (9, 1)), np.tile([[1.0, 0.0]], (9, 1)), {}, np.full(9, 2))
+    lead = np.array([0, 2, 2])
+    for v in (st_ev, g_ev, l_ev):
+        v["lead"] = lead
+
+    class _Bd:
+        id, meta = "test.trim_ride", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                 {"i": 1, "node": "p.gold", "tier": "close"},
+                                                 {"i": 2, "node": "p.darkleather", "tier": "close"}]}
+    for i, T in enumerate((S_T, G_T, L_T)):
+        gf._TRIS[(_Bd.id, i)] = T
+    ev = {"p.steel": st_ev, "p.gold": g_ev, "p.darkleather": l_ev}
+    X0, W0 = g_ev["Xu"].copy(), g_ev["W"].copy()
+    hang0 = g_ev["shapes"]["hang"].copy()
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text())
+    tr = roles["slots"]["top"]["trim_ride"]
+    assert set(tr) <= set(gf.TRIM_RIDE), tr           # (a key the rule does not read would be a silent no-op)
+    law = dict(gf.TRIM_RIDE, host_n=50)
+
+    def posed(v, t=np.array([0.0, 0.01, 0.004])):     # bone 0 still, bone 1 moved by t, lift on: LBS = P + S + W1 t
+        D = np.zeros((len(v["Xu"]), 2))
+        np.add.at(D, (np.repeat(np.arange(len(D)), v["J"].shape[1]), v["J"].astype(int).ravel()), v["W"].astype(float).ravel())
+        return v["Xu"] + v["shapes"]["lift"] + D[:, 1:2] * t
+    surf = gf.Surface(sx, sT)
+    q, _, tq, d = surf.closest(X0, k=16)
+    b = gf.bary(q, sx[sT[tq, 0]], sx[sT[tq, 1]], sx[sT[tq, 2]])
+    drift = lambda: np.linalg.norm((posed(g_ev) - np.einsum("nc,ncx->nx", b, posed(st_ev)[sT[tq]])) - (X0 - q), axis=1)  # noqa: E731
+    assert drift()[:25].max() > 1e-3                  # own values: the trim drifts off the steel (here 1 mm and up)
+    st = gf.trim_ride_rule(_Bd, ev, law, "close")
+    try:
+        assert st["trims"] == 2 and st["rivets"] == 1, st
+        assert np.array_equal(g_ev["Xu"], X0)
+        A, B, C, D, E = (np.arange(0, 25), np.arange(25, 50), np.arange(50, 54), np.arange(54, 58), np.arange(58, 139))
+        ride = np.r_[A, C]
+        assert np.allclose(g_ev["W"][ride, 1], 1 - g_ev["W"][ride, 0], atol=1e-6)
+        # (J is [0, 1] here; W at the nearest steel point is the steel's, interpolated: x / 0.1 on bone 1)
+        k1 = (g_ev["J"][ride] == 1)
+        w1 = np.where(k1, g_ev["W"][ride], 0).sum(1)
+        assert np.allclose(w1, np.clip(q[ride, 0] / 0.1, 0, 1), atol=1e-5)
+        assert np.allclose(g_ev["shapes"]["lift"][ride], np.c_[0 * ride, 0.002 * q[ride, 2] / 0.1, 0 * ride], atol=1e-9)
+        assert np.abs(g_ev["shapes"]["hang"][ride]).max() == 0
+        for keep in (B, D):
+            assert np.array_equal(g_ev["W"][keep], W0[keep]) and np.array_equal(g_ev["shapes"]["hang"][keep], hang0[keep])
+            assert np.allclose(g_ev["shapes"]["lift"][keep], [0, 0.0005, 0])
+        assert drift()[ride].max() < 1e-9             # riding: the rest offset held exactly, posed
+        # E past the plate's edge: the column 6 mm off is half its own (cosine fade from near_mm 4 to fade_mm 8)
+        far = E[np.abs(X0[E, 0] - 0.106) < 1e-9]
+        g = 0.5 * (1 + np.cos(np.pi * np.clip((d[far] - 0.004) / 0.004, 0, 1)))
+        assert 0.4 < g.min() and g.max() < 0.6
+        assert np.allclose(g_ev["shapes"]["hang"][far, 2], (1 - g) * 0.003, atol=1e-9)
+        near = E[X0[E, 0] <= 0.1 + 1e-9]
+        assert np.abs(g_ev["shapes"]["hang"][near]).max() == 0 and drift()[near].max() < 1e-9
+    finally:
+        for i in range(3):
+            gf._TRIS.pop((_Bd.id, i), None)
+    assert gf.trim_ride_rule(_Bd, {"p.gold": g_ev}, law, "close") == {}    # a tier missing a mesh's eval: nothing
+
+
+def test_units_import_as_their_a_source():
+    """Every built unit on B imports with its A source's mesh settings (no generated LODs: Godot's LOD simplified the
+    steel and its riding gold trim apart at the Look camera, body lead 9, 17 Nov). Written by gear_fit build and
+    `gear_fit.py imports`; a unit Godot has not imported yet has no .import to hold it."""
+    import json
+    import os
+    sys.path.insert(0, os.path.join(gf.REPO, "tools", "body"))
+    import publish_p1
+    folder = os.path.join(gf.OUT, "body_p1")
+    if not os.path.isdir(folder):
+        return
+    bad = []
+    for f in sorted(os.listdir(folder)):
+        imp = os.path.join(folder, f + ".import")
+        if not f.endswith(".gltf") or not os.path.exists(imp):
+            continue
+        with open(os.path.join(folder, f), encoding="utf-8") as fh:
+            src = json.loads(fh.read())["asset"]["extras"]["gear_fit"]["a_source"]
+        want = publish_p1.import_params(a_import=os.path.join(gf.REPO, src) + ".import")
+        have = dict(ln.rstrip("\n").partition("=")[::2] for ln in open(imp, encoding="utf-8") if "=" in ln)
+        bad += [f"{f} {k}={have.get(k)} (A {v})" for k, v in want.items() if have.get(k) != v]
+    assert not bad, bad
+
+
+def test_each_cup_rides_one_blend():
+    """CUP_BLEND: each big bendy steel component takes one blend, the mean of its points' weights (top 8), on every
+    point; shapes and rest positions untouched; a small steel part, a rigid one and the gold keep their own. Posed (a
+    bone that turns), the cup keeps its shape (its edge does not bend against its middle), where per point weights bent
+    it (B's warden top: the cup's lower inner rim, lane G lead 9, 17 Nov)."""
+    import json as _json
+
+    def grid(x0, x1, z0, z1, y, n):
+        xs, zs = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n), indexing="ij")
+        P = np.c_[xs.ravel(), np.full(n * n, y), zs.ravel()]
+        q = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                     + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+        return P, q
+    cups = [grid(0.0, 0.1, 0.0, 0.1, 1.5, 11), grid(-0.1, 0.0, 0.2, 0.3, 1.5, 11), grid(0.3, 0.31, 0.0, 0.01, 1.5, 3)]
+    X = np.vstack([p for p, _ in cups])
+    T = np.vstack([q + sum(len(p) for p, _ in cups[:k]) for k, (_, q) in enumerate(cups)])
+    n = len(X)
+    w1 = np.clip(np.abs(X[:, 0]) / 0.1, 0, 1)                    # bone 1's share rises across each cup (its rim: 1)
+    J = np.pad(np.tile([[0, 1]], (n, 1)), ((0, 0), (0, 6))).astype(np.uint16)
+    W = np.pad(np.c_[1 - w1, w1], ((0, 0), (0, 6))).astype(np.float32)
+    comp = np.full(n, -1)
+    comp[-3:] = 0                                               # a rigid part of the steel keeps its own
+    lift = np.c_[0 * X[:, 0], 0.002 * X[:, 2], 0 * X[:, 0]]
+    st_ev = {"Xu": X.copy(), "inv": np.arange(n), "J": J.copy(), "W": W.copy(), "shapes": {"lift": lift.copy()},
+             "comp": comp, "lead": np.array([0])}
+    gx, gT = grid(0.02, 0.08, 0.02, 0.04, 1.5005, 5)
+    g_ev = {"Xu": gx, "inv": np.arange(len(gx)), "J": J[:len(gx)].copy(), "W": W[:len(gx)].copy(), "shapes": {},
+            "comp": np.full(len(gx), -1), "lead": None}
+
+    class _Bd:
+        id, meta = "test.cup_blend", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                 {"i": 1, "node": "p.gold", "tier": "close"}]}
+    gf._TRIS[(_Bd.id, 0)], gf._TRIS[(_Bd.id, 1)] = T, gT
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text(encoding="utf-8"))
+    cb = roles["slots"]["top"].get("cup_blend") or dict(gf.CUP_BLEND)   # (PARKED: no slot has it)
+    assert set(cb) <= set(gf.CUP_BLEND), cb             # (a key the rule does not read would be a silent no-op)
+    gJ, gW = g_ev["J"].copy(), g_ev["W"].copy()
+    st = gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(gf.CUP_BLEND, host_n=100))
+    assert st["cups"] == 2 and st["vertices"] == 242, st
+    for a in (slice(0, 121), slice(121, 242)):                  # one blend over each cup: the mean of its points'
+        assert (st_ev["J"][a] == st_ev["J"][a][0]).all() and np.allclose(st_ev["W"][a], st_ev["W"][a][0])
+        assert np.isclose(st_ev["W"][a][0][list(st_ev["J"][a][0]).index(1)], w1[a].mean(), atol=1e-6)
+    assert (st_ev["J"][-3:] == J[-3:]).all() and (st_ev["W"][-3:] == W[-3:]).all()          # the small/rigid part: own
+    assert (g_ev["J"] == gJ).all() and (g_ev["W"] == gW).all()                                # the gold: its own
+    assert np.array_equal(st_ev["Xu"], X) and np.array_equal(st_ev["shapes"]["lift"], lift)  # rest and shapes untouched
+    assert gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(gf.CUP_BLEND, host_n=200)) == {}
+
+    def posed(v, W_):                                           # bone 1 turned 20 deg about z at the origin
+        c, s = np.cos(np.radians(20)), np.sin(np.radians(20))
+        R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+        w = W_[:, 1].astype(float)
+        return (1 - w)[:, None] * v + w[:, None] * (v @ R.T)
+    a = slice(0, 121)
+    bent = posed(X[a], W[a])
+    one = posed(X[a], st_ev["W"][a])
+    flat = lambda P: np.linalg.svd(P - P.mean(0))[1][-1]       # noqa: E731  (off its plane: a flat cup stays flat)
+    assert flat(one) < 1e-9 < 1e-4 < flat(bent), (flat(one), flat(bent))
+
+
+def test_each_cup_takes_a_smooth_field():
+    """CUP_BLEND "mode" "smooth": each big bendy steel component's weights diffused over its own surface (Laplacian
+    rounds over its edges between unique points: welded at its seams): a weight change packed at its rim is spread
+    over the cup, the crown keeps most of its own (not the one mean), the weights stay a partition of 1; shapes, rest
+    positions, a small or rigid steel part and the gold keep their own; the rule reads the slot's law from rigid_roles
+    (B's warden top: the cups' lower inner rims, lane G lead 9 solver 3, 17 Nov)."""
+    import json as _json
+    n = 21
+    xs, zs = np.meshgrid(np.linspace(0, 0.1, n), np.linspace(0, 0.1, n), indexing="ij")
+    X = np.c_[xs.ravel(), np.full(n * n, 1.5), zs.ravel()]
+    T = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                 + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+    X = np.vstack([X, [[0.3, 1.5, 0.0], [0.31, 1.5, 0.0], [0.3, 1.5, 0.01]]])
+    T = np.vstack([T, [[n * n, n * n + 1, n * n + 2]]])
+    m = len(X)
+    w1 = np.clip(X[:, 0] / 0.1, 0, 1)                           # bone 1 (the breast) rises across the cup to its crown
+    w1 = np.where(X[:, 0] < 0.012, 0.6 - w1, w1)                # and a wiggle packed at its rim (x 0)
+    w1[n * n:] = 0.5
+    J = np.pad(np.tile([[0, 1]], (m, 1)), ((0, 0), (0, 6))).astype(np.uint16)
+    W = np.pad(np.c_[1 - w1, w1], ((0, 0), (0, 6))).astype(np.float32)
+    comp = np.full(m, -1)
+    lift = np.c_[0 * X[:, 0], 0.002 * X[:, 2], 0 * X[:, 0]]
+    inv = np.r_[np.arange(m), np.arange(n)]                     # a UV seam: the cup's first row twice, one unique each
+    st_ev = {"Xu": X.copy(), "inv": inv, "J": J[inv].copy(), "W": W[inv].copy(), "shapes": {"lift": lift[inv].copy()},
+             "comp": comp, "lead": None}
+    gx = X[:4] + [0, 0.0005, 0]
+    g_ev = {"Xu": gx, "inv": np.arange(4), "J": J[:4].copy(), "W": W[:4].copy(), "shapes": {},
+            "comp": np.full(4, -1), "lead": None}
+
+    class _Bd:
+        id, meta = "test.cup_smooth", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                  {"i": 1, "node": "p.gold", "tier": "close"}]}
+    gf._TRIS[(_Bd.id, 0)], gf._TRIS[(_Bd.id, 1)] = T, np.array([[0, 1, 2], [1, 3, 2]])
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text(encoding="utf-8"))
+    cb = roles["slots"]["top"]["cup_blend"]
+    assert cb["mode"] == "smooth" and set(cb) <= set(gf.CUP_BLEND) and cb["rounds"] > 0, cb
+    gJ, gW = g_ev["J"].copy(), g_ev["W"].copy()
+    st = gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(cb, host_n=100))
+    assert st["cups"] == 1 and st["vertices"] == n * n + n, st
+    D = gf.dense_w(st_ev["J"], st_ev["W"], 2)
+    assert np.allclose(D.sum(1), 1, atol=1e-5) and np.allclose(D[n * n + 3:][:n], D[:n], atol=1e-6)   # seam welded
+    grad = lambda w: np.abs(np.diff(w[:n * n].reshape(n, n), axis=0)).max()   # noqa: E731  (along x, per row step)
+    assert grad(D[:m, 1]) < 0.5 * grad(w1), (grad(D[:m, 1]), grad(w1))             # the rim's packed change spread
+    crown = X[:m, 0] > 0.095
+    assert D[:m, 1][crown].mean() > w1[:n * n].mean() + 0.1                         # the crown keeps most of its own
+    assert (st_ev["J"][n * n:m] == J[n * n:]).all() and (st_ev["W"][n * n:m] == W[n * n:]).all()   # small part: own
+    assert (g_ev["J"] == gJ).all() and (g_ev["W"] == gW).all()                       # the gold: its own (TRIM_RIDE's)
+    assert np.array_equal(st_ev["Xu"], X) and np.array_equal(st_ev["shapes"]["lift"], lift[inv])

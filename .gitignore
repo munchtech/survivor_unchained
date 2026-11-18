@@ -57,7 +57,12 @@ godot/art/people/body_p1/p4_clips.res
 godot/art/people/body_p1_var/
 
 # tools/armor/gear_fit.py build output (per body; the bindings in godot/art/gear/bind are the source)
-/godot/art/gear/out/
+/godot/art/gear/out/*
+# (FROZEN, lane G refit lead 16 Nov: B is her demo body ("also comit b to the demo", the owner 16 Nov), so the game must load
+# B's outfits from a fresh checkout and a sweep must not lose them: B's built calling gear is tracked, staged by name only
+# (the four callings' units, gear_index.json and their .import files; the retired plate pieces and _check/ stay out))
+!/godot/art/gear/out/body_p1/
+/godot/art/gear/out/body_p1/_*/
 
 # tools/armor/gear_fit.py bind output: regenerable in ~3 min, a build output (the P2 lead 2, coordinator 9 Nov); `gear_fit.py stale` fails when they are stale
 /godot/art/gear/bind/

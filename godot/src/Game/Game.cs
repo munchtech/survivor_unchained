@@ -523,6 +523,7 @@ public partial class Game : Node, IZoneHost
 
     void Hook()
     {
+        P1Body.Calling = Journey.Ch.Archetype;   // (B's default hides some callings on B: her_body.json)
         Journey.OnToast = Toast;
         Journey.OnAnnounce = Announce;
         Journey.OnTouch = () => screens.Current?.Refresh();
@@ -791,6 +792,13 @@ public partial class Game : Node, IZoneHost
             scene.Held = x => sp.Held(x) || bHeld(x);
             scene.Pointer = () => sp.Pointer() ?? bPointer();
         }
+        // --dirrun T0 (DirRun.cs): the rows harness's scripted cursor (the stick is PlayMove's).
+        if (DirRun.Start >= 0)
+        {
+            var bPointer2 = scene.Pointer;
+            scene.Pointer = () => Battle is { } db ? DirRun.Pointer(db.Time, db.Player.X, db.Player.Z) ?? bPointer2() : bPointer2();
+        }
+        scene.FacePointer = FacePointer;
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) { zone?.Step(dt); if (zone != null) SurvivorUnchained.Play.Zones.LampRise.Doors(zone, Battle); } };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
