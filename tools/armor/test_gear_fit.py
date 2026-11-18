@@ -715,3 +715,53 @@ def test_each_cup_rides_one_blend():
     one = posed(X[a], st_ev["W"][a])
     flat = lambda P: np.linalg.svd(P - P.mean(0))[1][-1]       # noqa: E731  (off its plane: a flat cup stays flat)
     assert flat(one) < 1e-9 < 1e-4 < flat(bent), (flat(one), flat(bent))
+
+
+def test_each_cup_takes_a_smooth_field():
+    """CUP_BLEND "mode" "smooth": each big bendy steel component's weights diffused over its own surface (Laplacian
+    rounds over its edges between unique points: welded at its seams): a weight change packed at its rim is spread
+    over the cup, the crown keeps most of its own (not the one mean), the weights stay a partition of 1; shapes, rest
+    positions, a small or rigid steel part and the gold keep their own; the rule reads the slot's law from rigid_roles
+    (B's warden top: the cups' lower inner rims, lane G lead 9 solver 3, 17 Nov)."""
+    import json as _json
+    n = 21
+    xs, zs = np.meshgrid(np.linspace(0, 0.1, n), np.linspace(0, 0.1, n), indexing="ij")
+    X = np.c_[xs.ravel(), np.full(n * n, 1.5), zs.ravel()]
+    T = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                 + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+    X = np.vstack([X, [[0.3, 1.5, 0.0], [0.31, 1.5, 0.0], [0.3, 1.5, 0.01]]])
+    T = np.vstack([T, [[n * n, n * n + 1, n * n + 2]]])
+    m = len(X)
+    w1 = np.clip(X[:, 0] / 0.1, 0, 1)                           # bone 1 (the breast) rises across the cup to its crown
+    w1 = np.where(X[:, 0] < 0.012, 0.6 - w1, w1)                # and a wiggle packed at its rim (x 0)
+    w1[n * n:] = 0.5
+    J = np.pad(np.tile([[0, 1]], (m, 1)), ((0, 0), (0, 6))).astype(np.uint16)
+    W = np.pad(np.c_[1 - w1, w1], ((0, 0), (0, 6))).astype(np.float32)
+    comp = np.full(m, -1)
+    lift = np.c_[0 * X[:, 0], 0.002 * X[:, 2], 0 * X[:, 0]]
+    inv = np.r_[np.arange(m), np.arange(n)]                     # a UV seam: the cup's first row twice, one unique each
+    st_ev = {"Xu": X.copy(), "inv": inv, "J": J[inv].copy(), "W": W[inv].copy(), "shapes": {"lift": lift[inv].copy()},
+             "comp": comp, "lead": None}
+    gx = X[:4] + [0, 0.0005, 0]
+    g_ev = {"Xu": gx, "inv": np.arange(4), "J": J[:4].copy(), "W": W[:4].copy(), "shapes": {},
+            "comp": np.full(4, -1), "lead": None}
+
+    class _Bd:
+        id, meta = "test.cup_smooth", {"meshes": [{"i": 0, "node": "p.steel", "tier": "close"},
+                                                  {"i": 1, "node": "p.gold", "tier": "close"}]}
+    gf._TRIS[(_Bd.id, 0)], gf._TRIS[(_Bd.id, 1)] = T, np.array([[0, 1, 2], [1, 3, 2]])
+    roles = _json.loads((Path(__file__).resolve().parent / "rigid_roles.json").read_text(encoding="utf-8"))
+    cb = roles["slots"]["top"]["cup_blend"]
+    assert cb["mode"] == "smooth" and set(cb) <= set(gf.CUP_BLEND) and cb["rounds"] > 0, cb
+    gJ, gW = g_ev["J"].copy(), g_ev["W"].copy()
+    st = gf.cup_blend_rule(_Bd, {"p.steel": st_ev, "p.gold": g_ev}, dict(cb, host_n=100))
+    assert st["cups"] == 1 and st["vertices"] == n * n + n, st
+    D = gf.dense_w(st_ev["J"], st_ev["W"], 2)
+    assert np.allclose(D.sum(1), 1, atol=1e-5) and np.allclose(D[n * n + 3:][:n], D[:n], atol=1e-6)   # seam welded
+    grad = lambda w: np.abs(np.diff(w[:n * n].reshape(n, n), axis=0)).max()   # noqa: E731  (along x, per row step)
+    assert grad(D[:m, 1]) < 0.5 * grad(w1), (grad(D[:m, 1]), grad(w1))             # the rim's packed change spread
+    crown = X[:m, 0] > 0.095
+    assert D[:m, 1][crown].mean() > w1[:n * n].mean() + 0.1                         # the crown keeps most of its own
+    assert (st_ev["J"][n * n:m] == J[n * n:]).all() and (st_ev["W"][n * n:m] == W[n * n:]).all()   # small part: own
+    assert (g_ev["J"] == gJ).all() and (g_ev["W"] == gW).all()                       # the gold: its own (TRIM_RIDE's)
+    assert np.array_equal(st_ev["Xu"], X) and np.array_equal(st_ev["shapes"]["lift"], lift[inv])

@@ -2899,12 +2899,25 @@ def trim_ride_rule(bd, ev, law=TRIM_RIDE, tier="close"):
 # .39, spine_03 .21 there; breast_l turns 20 deg against spine_04 at the look), so the rim bent and the gold tube round
 # its edge showed through the steel. Runs before TRIM_RIDE (the trim and rivets copy the cup's one blend); A's own files
 # are not built (A as authored).
-CUP_BLEND = {"host_mat": "steel", "host_n": 2000}
+# "mode" "smooth" (lane G lead 9 solver 3, 17 Nov): each cup's weights are diffused over the cup's own surface instead
+# ("rounds" Laplacian rounds over its edges between unique points, so welded at its UV seams, each point moved toward its
+# neighbours' mean by "alpha"; top 8): the breast-to-spine change is spread across the cup, not packed at its rim, and
+# the crown keeps most of its breast weight (one blend rode about half the breast's worn-rest lift: her skin came through).
+CUP_BLEND = {"host_mat": "steel", "host_n": 2000, "mode": "blend", "rounds": 0, "alpha": 0.5}
+
+
+def dense_w(J, W, nj):
+    """Per point weights (top k joints J, weights W) as a dense (points, nj) array."""
+    D = np.zeros((len(J), nj))
+    np.add.at(D, (np.repeat(np.arange(len(J)), J.shape[1]), J.astype(np.int64).ravel()), W.astype(float).ravel())
+    return D
 
 
 def cup_blend_rule(bd, ev, law=CUP_BLEND, tier="close"):
     """Each big bendy steel component (CUP_BLEND) of ev (a piece's eval_unit output) takes one blend, the mean of its
-    points' weights (top 8); returns stats ({} when the tier has no such component)."""
+    points' weights (top 8), or ("mode" "smooth") its weights diffused over its own surface; returns stats ({} when the
+    tier has no such component)."""
+    law = dict(CUP_BLEND, **law)
     ms = [m for m in bd.meta["meshes"] if m["tier"] == tier and law["host_mat"] in m["node"].rsplit(".", 1)[-1]]
     if not ms or any(m["node"] not in ev for m in ms):
         return {}
@@ -2927,14 +2940,21 @@ def cup_blend_rule(bd, ev, law=CUP_BLEND, tier="close"):
             s = (lab == c) & bend
             if s.sum() < law["host_n"]:
                 continue
-            jj, ww = top_k(D[s].mean(0)[None])
-            st["max_w"] = round(max(st["max_w"], float(np.abs(D[s] - D[s].mean(0)).sum(1).max()) / 2), 3)
             hit = s[inv]
-            v["J"][hit] = jj[0].astype(v["J"].dtype)
-            v["W"][hit] = ww[0].astype(v["W"].dtype)
+            if law["mode"] == "smooth":
+                Es = e[s[e[:, 0]] & s[e[:, 1]]]
+                jj, ww = top_k(smooth_field(D, Es, n, np.where(s, float(law["alpha"]), 0.0), int(law["rounds"])))
+                st["max_w"] = round(max(st["max_w"], float(np.abs(dense_w(jj, ww, nj) - D)[s].sum(1).max()) / 2), 3)
+                v["J"][hit] = jj[inv[hit]].astype(v["J"].dtype)
+                v["W"][hit] = ww[inv[hit]].astype(v["W"].dtype)
+            else:
+                jj, ww = top_k(D[s].mean(0)[None])
+                st["max_w"] = round(max(st["max_w"], float(np.abs(D[s] - D[s].mean(0)).sum(1).max()) / 2), 3)
+                v["J"][hit] = jj[0].astype(v["J"].dtype)
+                v["W"][hit] = ww[0].astype(v["W"].dtype)
+                st["blends"].append({str(int(j)): round(float(w), 3) for j, w in zip(jj[0], ww[0]) if w > 0.005})
             st["cups"] += 1
             st["vertices"] += int(hit.sum())
-            st["blends"].append({str(int(j)): round(float(w), 3) for j, w in zip(jj[0], ww[0]) if w > 0.005})
     return st if st["cups"] else {}
 
 
@@ -2993,7 +3013,7 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
             for tier in TIERS:
                 st = cup_blend_rule(bd, ev, law, tier)
                 if st:
-                    print(f"{bd.id}: {tier} each cup rides one blend: {st}", flush=True)
+                    print(f"{bd.id}: {tier} each cup's weights ({law['mode']}): {st}", flush=True)
         # (TRIM_RIDE: a slot's "trim_ride" rule in rigid_roles.json: the trim lying on its steel rides the steel; after
         # the band rules, so the bands keep the values they take from the cups and their rims)
         tr =(rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("trim_ride")
