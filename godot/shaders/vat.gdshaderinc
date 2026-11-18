@@ -213,7 +213,7 @@ float crowd_edge(float rim) {
 #define DEN_BOSS_SPINE vec4(-0.34, 0.24, 0.085, 0.5)
 #define DEN_BOSS_SPINE_P vec2(1.3, 0.55)
 #define DEN_TORSO vec2(-0.32, 0.2)
-#define DEN_MANE vec3(0.60, 0.13, 32.0)   // (lead 8 r4: its strands, was .50 flat)
+#define DEN_MANE vec3(0.62, 0.13, 29.0)   // (lead 8 r4: its strands, was .50 flat)
 #define DEN_MANE_Z vec2(0.2, 0.46)
 #define DEN_MANE_LOW 0.42
 #define DEN_MANE_AXIS 0.62
@@ -251,7 +251,7 @@ float crowd_edge(float rim) {
 // strands' tips (pointing back), not its straight mesh edge. Was: one per-pixel cut for body and cards.)
 #define DEN_BOSS_CARD vec4(0.665, 0.615, 0.5, 0.05)
 #define DEN_BOSS_MANE_LOW vec3(0.45, 14.0, 0.06)
-#define DEN_BOSS_MANE_SH vec3(0.50, 0.115, 28.0)
+#define DEN_BOSS_MANE_SH vec3(0.52, 0.115, 26.0)
 #define DEN_BOSS_MANE_DK vec3(0.24, 0.03, 32.0)
 #define DEN_BOSS_MANE_SHW 0.014
 // (lead 3 foes r3, judge 2: the elite's accent was the pack's top band, .26/.066/41 on its ruff's top only: now the whole ruff
@@ -281,7 +281,7 @@ float crowd_edge(float rim) {
 // (lead 8 r3: the muzzle's lock edge, x its axis's y, y locks a turn, z their depth, w its tilt in z a .1 of y under the axis;
 // the back's strokes, see c_stk)
 #define DEN_BOSS_MUZ vec4(0.70, 17.0, 0.085, 0.05)   // (r7: 11 locks .06 deep read as a straight edge at 1:1)
-#define DEN_BOSS_STROKE vec4(0.011, 0.075, 0.05, 0.55)
+#define DEN_BOSS_STROKE vec4(0.016, 0.10, 0.08, 0.55)
 // (lead 8 r4, judge 5: "boss mane a flat red block with straight vertical sides ... not den_boss painted fur". The mane in
 // STRANDS: vat_den_stroke's wedges on columns that follow the neck's flow (DEN_BOSS_MSTK: x a column's width in radians round
 // the neck, y a stroke's length in z, z the share of cells drawn, w the flow, radians down the neck a unit of z back), each in
@@ -290,7 +290,7 @@ float crowd_edge(float rim) {
 // column's width in y, y a stroke's length in z, z the share, w the flow, y down a unit of z back): pale DEN_BOSS_CHEEK_C
 // strokes sweeping back from under the eye on the head's sides (rest normal's y under DEN_BOSS_BROW.y), whole columns between
 // y DEN_BOSS_CHEEK_Y.xy, back to z .z less up to .w a column. The brow's strokes DEN_BOSS_BROW_STK darker (DEN_BOSS_STROKE's).)
-#define DEN_BOSS_MSTK vec4(0.34, 0.20, 0.80, 2.0)
+#define DEN_BOSS_MSTK vec4(0.34, 0.20, 0.90, 2.0)
 // (lead 8 r6: the mane in CLUMPS, not wedges (l8g5: wedges of a third of a column in rows, near-black between, read as hatching):
 // vat_den_clump on DEN_BOSS_MSTK's columns, twice as wide and long, waved DEN_BOSS_CLUMP_W (x columns, y per unit of z) so no
 // row runs straight; each clump full width DEN_BOSS_CLUMP.x of its column from the root back to .y of its length, then tapered to
@@ -307,16 +307,19 @@ float crowd_edge(float rim) {
 // and DEN_BOSS_SPIKE_S (as DEN_BOSS_CLUMP_S): narrow spikes tapered almost the whole way to a point, on narrower columns
 // (DEN_BOSS_MSTK .34), each darkened toward its root (DEN_BOSS_SPIKE_V.x at most, from .y of its length: it comes out of the
 // black), its width varied (.z); the gaps near-black warm (DEN_BOSS_MANE_GAP), the red brighter and redder (DEN_MANE .60/.13/32),
-// cream tips on a third of the spikes only (DEN_BOSS_MANE_TIP.w); the head clumps keep DEN_BOSS_CLUMP's shape)
-#define DEN_BOSS_SPIKE vec4(0.24, 0.85, 0.0, 0.22)
+// cream tips on a third of the spikes only (DEN_BOSS_MANE_TIP.w); the head clumps keep DEN_BOSS_CLUMP's shape. l9f1 (spikes
+// .24 wide, root dark .55, 80% drawn) read as a black mass with sparse red flecks, mane red px 654 (r10 1647) at L .39 h 35:
+// now .32 wide, root dark .35, 90% drawn, gaps .28, the red at hue 29 (shade 26) for 32 on screen. The back's strokes (the
+// slate's third tone, DEN_BOSS_STROKE) wider, longer and stronger: at .011/.075/.05 the back read as one flat plate at 1:1)
+#define DEN_BOSS_SPIKE vec4(0.32, 0.85, 0.0, 0.22)
 #define DEN_BOSS_SPIKE_S vec4(0.15, 0.95, 0.12, 0.25)
-#define DEN_BOSS_SPIKE_V vec3(0.55, 0.62, 0.35)
+#define DEN_BOSS_SPIKE_V vec3(0.35, 0.66, 0.35)
 // (r11: the MUZZLE pale grey (den_boss: a pale grey-beige bridge, dark nose), was c_dark's .28 with the ear tips: DEN_BOSS_MUZ_C
 // x its top's L (rest normal's y past .35), y its sides', z the nose's and the jaw's under it, w the nose's z; DEN_BOSS_MUZ_AB
 // its chroma and hue; the ear tips stay DEN_BOSS_HEAD.w; never a card, as c_dark)
 #define DEN_BOSS_MUZ_C vec4(0.58, 0.44, 0.18, 0.826)
 #define DEN_BOSS_MUZ_AB vec2(0.022, 70.0)
-#define DEN_BOSS_MANE_GAP vec3(0.25, 0.03, 35.0)
+#define DEN_BOSS_MANE_GAP vec3(0.28, 0.03, 35.0)
 #define DEN_BOSS_MANE_TIP vec4(0.68, 0.045, 0.15, 0.35)
 #define DEN_BOSS_MANE_TIP_H 75.0
 #define DEN_BOSS_CHEEK vec4(0.018, 0.08, 0.35, 0.3)   // (r7: .013/.07/.6 did not read at 1:1)
