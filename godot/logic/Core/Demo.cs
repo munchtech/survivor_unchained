@@ -44,6 +44,8 @@ public static class Demo
         public bool NoDevKeys;
         /// <summary>Dungeons offered, by id (an empty list: all).</summary>
         public List<string> Dungeons = new();
+        /// <summary>Callings the creator offers, by id (an empty list: as the full game; the owner 17 Nov: "hide all 3 besides warden for demo").</summary>
+        public List<string> Callings = new();
     }
 
     static Cuts? cuts;
@@ -67,7 +69,7 @@ public static class Demo
         List<string> L(string k) => r.TryGetProperty(k, out var a) && a.ValueKind == JsonValueKind.Array ? a.EnumerateArray().Select(e => e.GetString() ?? "").Where(s => s != "").ToList() : new();
         bool B(string k) => r.TryGetProperty(k, out var b) && b.ValueKind == JsonValueKind.True;
         c.Interactables = L("hide_interactables"); c.Cinematics = L("hide_cinematics"); c.Storybooks = L("hide_storybooks");
-        c.Talks = L("hide_talks"); c.HideGoals = L("hide_goals"); c.Dungeons = L("dungeons");
+        c.Talks = L("hide_talks"); c.HideGoals = L("hide_goals"); c.Dungeons = L("dungeons"); c.Callings = L("callings");
         if (r.TryGetProperty("goals", out var g) && g.ValueKind == JsonValueKind.Array) c.Goals = g.Clone();
         c.FreezeClock = B("freeze_clock"); c.NoArenas = B("no_arenas"); c.NoMapTable = B("no_map_table");
         c.NoOpeningStory = B("no_opening_story"); c.HideMale = B("hide_male"); c.NoDevKeys = B("no_dev_keys");
@@ -85,6 +87,8 @@ public static class Demo
     public static bool HidesTalk(string id) => On && Listed(Data.Talks, id);
     public static bool HidesGoal(string id) => On && Data.HideGoals.Contains(id);
     public static bool HidesDungeon(string id) => On && Data.Dungeons.Count > 0 && !Data.Dungeons.Contains(id);
+    /// <summary>In the demo, whether the creator leaves this calling out entirely (whatever --body or her_body.json say).</summary>
+    public static bool HidesCalling(string id) => On && Data.Callings.Count > 0 && !Data.Callings.Contains(id);
     public static bool FreezeClock => On && Data.FreezeClock;
     public static bool NoArenas => On && Data.NoArenas;
     public static bool NoMapTable => On && Data.NoMapTable;

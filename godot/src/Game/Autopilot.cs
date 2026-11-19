@@ -472,7 +472,8 @@ public sealed class Autopilot
         if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
-        if (fromLowford && z.Id == "waystation") { TownStop(dt, b); return; }
+        // (the demo: no stop at the lamp; on along its own goals, the Old Road and the den)
+        if (fromLowford && z.Id == "waystation" && !Core.Demo.On) { TownStop(dt, b); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);

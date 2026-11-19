@@ -35,6 +35,7 @@ public class DemoTests
         Assert.True(Demo.Listed(c.Storybooks, "sb00"));
         Assert.True(c.NoArenas && c.NoMapTable && c.FreezeClock && c.HideMale && c.NoDevKeys && c.NoOpeningStory);
         Assert.Equal(["hollow"], c.Dungeons);
+        Assert.Equal(["warden"], c.Callings);
         Assert.Contains("table", c.HideGoals);
     }
 

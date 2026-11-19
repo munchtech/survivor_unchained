@@ -45,6 +45,7 @@
     }
   ],
   "dungeons": ["hollow"],
+  "callings": ["warden"],
   "freeze_clock": true,
   "no_arenas": true,
   "no_map_table": true,
