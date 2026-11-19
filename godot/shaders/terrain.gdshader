@@ -736,8 +736,9 @@ void fragment() {
 	// (lane J: the world palette: ground, and path where the road mask (paint R, soft-kinds weight) says road)
 	// (lane J: the palette's path a shape with an edge, not the road's soft lift: its own narrower step on the paint mask)
 	// (lead 2: and a dark rim just outside it, the path's drawn edge, as the reference's path meets its verge; off with the palette)
-	float pal_pe = smoothstep(0.55, 0.66, pm.r) * w_soft;
-	float pal_rim = smoothstep(0.42, 0.55, pm.r) * (1.0 - smoothstep(0.55, 0.62, pm.r)) * w_soft * step(0.001, pal_path0.w);
+	// (lead 2: narrower, coordinator k19 "wide"; the rim on the step's outer side)
+	float pal_pe = smoothstep(0.64, 0.72, pm.r) * w_soft;
+	float pal_rim = smoothstep(0.52, 0.62, pm.r) * (1.0 - smoothstep(0.62, 0.68, pm.r)) * w_soft * step(0.001, pal_path0.w);
 	albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), pal_pe) * (1.0 - 0.45 * pal_rim);
 	albedo *= 1.0 + verge_lift * smoothstep(0.2, 0.5, pm.r) * (1.0 - smoothstep(0.78, 0.9, pm.r)) * (1.0 - smoothstep(0.05, 0.3, rut_w)) * w_soft;
 	albedo *= mix(1.0, 0.64, wet);

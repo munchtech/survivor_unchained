@@ -9,7 +9,9 @@ global uniform float glow_k;
 uniform vec3 cap_col : source_color = vec3(0.75, 0.97, 1.0);
 uniform vec3 stem_col : source_color = vec3(0.37, 0.82, 0.88);
 uniform float is_stem = 0.0;
-uniform float cap_emit = 1.6;
+uniform float cap_emit = 1.0;   // (lead 2: 1.6 bloomed into soft puffs, coordinator k19)
+uniform vec3 ink_col : source_color = vec3(0.05, 0.03, 0.12);
+uniform float ink_w = 0.38;   // (lead 2: the cap's silhouette inked, as every form in the reference: where the surface turns from the eye)
 uniform float stem_emit = 0.55;
 uniform vec2 bands = vec2(0.82, 0.42);   // the normal's up at which the core ends, and the mid band ends
 
@@ -26,6 +28,7 @@ void fragment() {
 		vec3 core = mix(cap_col, vec3(1.0), 0.55);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through)
 		c = (up > bands.x ? core : up > bands.y ? mix(cap_col, core, 0.35) : cap_col) * cap_emit;
 	}
+	if (dot(normalize(NORMAL), VIEW) < ink_w) c = ink_col;
 	ALBEDO = c * glow_k;
 	ROUGHNESS = 2.0 / 127.0;
 }
