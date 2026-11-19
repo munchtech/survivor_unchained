@@ -1062,10 +1062,10 @@
     "cool_share": 0,
     "algae": 0,
     "flag_amount": 1,
-    "flag_lit": "#7a89a5",
-    "flag_lit_n": "#d8d6ff",
-    "flag_shade_n": "#a09cd8",
-    "flag_shade": "#586382",
+    "flag_lit": "#8c8379",
+    "flag_lit_n": "#a8a6e4",
+    "flag_shade_n": "#6e6ab0",
+    "flag_shade": "#5e4c66",
     "flag_moss": "#a89030",
     "flag_ink": "#1a0f1c"
    }
