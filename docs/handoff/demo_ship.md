@@ -1,0 +1,24 @@
+# Demo ship + bug report (lane H, coordinator #15): state
+
+<!-- TOP BLOCK: the next context reads this first -->
+- State: IN PROGRESS 18 Nov 2026. Item 2's engine-free half done; mapping item 1's cuts.
+- Branch: demo-ship off integration claude/vigilant-galileo-l6jqyx@b637960e8; tip 9224725b1. Worktree: C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a739a2ca98e2a117a (junction godot/assets -> own public/assets done; .godot/imported seeded).
+- Brief: C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord15\briefs\H_demo_ship.md
+- Items: demo-ship (in progress: mapping), bug-report (logic done 9224725b1: logic/Core/MjpegAvi.cs, logic/Core/BugReports.cs, tests/BugReportTests.cs 9/9, suite 3048/0/11, tools/bugs/ingest.py needs Pillow (not under python -I); Godot side not started)
+- Facts: F8 free (F7 = GameFacing dev facing key; LookViewer F5/F9 is a tool). Hide pattern = data/body/her_body.json hidden_on_b + P1Body.Offered. Screens: Game.Open(kind) in src/Game/GameMenus.cs ("maps"/"atlas" -> MapTableScreen); PauseScreen src/Ui/Menus.cs:287 (menu.Add). Act.Answer (N) = answer the night (arena night entry). Screens CanvasLayer Layer 20.
+- Bug report plan: own CanvasLayer above 20, SceneTree.Paused while open; clip = 960x540 SubViewport showing root ViewportTexture, RD TextureGetDataAsync every 4th frame, JPEG on a worker thread, 450-frame ring.
+- Next: Demo flag (logic Demo.On: feature "demo" or --demo; data/demo.json cut lists); guard each entry; creator male; F7; preset "Windows Demo"; export.sh windows-demo + zip + README; Godot bug-report side; proofs.
+- Cost so far: ~110k (one compaction)
+<!-- END TOP BLOCK -->
+
+## Map of the cuts (explore agent a7285e2889ab7dc99, 18 Nov; paths under godot/)
+- Night: DayClock (logic/World/DayClock.cs) runs in Waystation (Waystation.cs:23 ClockRuns) and Verge (Verge.cs:51) after arrival in town; night at 720 s free play, passes at 1080 s. Night only OFFERS arenas: GameClock.cs:79-86/213-225 "Tonight" block + hold [[answer]]; AnswerNight GameClock.cs:223.
+- Arena funnel: Game.EnterArena (src/Game/Game.cs:606): SetOut, Rematch (Game.cs:589-602), AnswerNight, Verge scars (Verge.cs:227-262, OpenScars; tip :260), story fights night:hollow/roost/dig/vault (Verge.cs:166-187; StoryFights.cs:34-59). Table maps: Game.EnterMap (Game.cs:616) with chart.Dungeon=="" (den needs EnterMap with Dungeon "hollow").
+- Table: Waystation.cs:270-275 interactable "maps"; Game.Open "maps"/"atlas" GameMenus.cs:88-89; dialogue action "maps" GameMenus.cs:535 (dialogue.json lines ~20854-21176, nine); goals.json:23 pin "maps". Rest screen (GameMenus.cs Rest(untilNight)).
+- Verge: exit :467; enter_hollow/enter_roost Verge.cs:563-578, only gate W.Time != Night; no level gate (den floor 5). Hollow mouth (-64,-94.5), Verge entry (-132,8) ~115 m. Greymuzzle :562, Redcowl :579, cages :583, strongbox :599, crates :620/631, Snib :641, pump :645, survivor :662, vault :665-700, circlet :706, moonpetal :719, Maeca :952, camps :353-420, wreck :470, ruts :480, watch fire :490/496, carcass :510, sample :523, bitterroot :539, pipe :546. None gate the Hollow. LeaveMap Game.cs:733 returns to the mouth.
+- Zones: lowford, waystation, verge, arena, map only (Game.Make Game.cs:678). Waystation gate:south -> lowford (:253, check Prologue day-stretch :2172), gate:east -> Verge with 5-gold toll (:255-267), gate:north locked (:276). Pell's warehouse :278-300, burial cinematic :303, grave+trunk :318-345, DoorOwners :247, notice board.
+- Creator: Front.cs SexRow :551-571 ("A man" greyed, "coming later", not pressable); Calling rows Front.cs:535-538 use P1Body.Offered.
+- Title (Front.cs:80-87): Continue, New Journey, Journeys, Settings, Controls, Credits, Quit.
+- Prologue stages (Prologue.cs:35): Wake, Rising, Road, Ambush, Road2, Post, Barrow, ToFord, Intro (c02 :1551), Boss, Victory (:1637), Dawn (c04a :1962), Exit -> Finish() :2092 Travel waystation. Callouts() :490-790.
+- Level 6 road: LampBook.RoadLevel=6; RaiseRoad Journey.cs:371, called MapRun.cs:222 on den entry -> road card. No road scene exists.
+- Not yet mapped: B story (GameStory.cs:127, storybook, BeginWithStory GameFront.cs:640, chapter "fortune"), full dev-key grep.
