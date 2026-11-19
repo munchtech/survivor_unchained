@@ -39,13 +39,20 @@ public class WalkNotchTests
     }
 
     /// <summary>Every notch in a stretch of the zone: (where she stopped, the heading), one per stopping place.</summary>
-    static List<(double X, double Z, int Heading)> Notches(CollisionWorld cw, double x0, double x1, double z0, double z1, double step)
+    static List<(double X, double Z, int Heading)> Notches(CollisionWorld cw, double x0, double x1, double z0, double z1, double step, Func<double, double, bool>? where = null)
     {
         var all = cw.All().Where(c => !c.Gap).ToList();
+        var ext = all.Select(c => c.R + Math.Max(c.Hw, c.Hd) + R + 0.9).ToArray();
         var found = new List<(double X, double Z, int Heading)>();
         for (double x = x0; x <= x1; x += step)
             for (double z = z0; z <= z1; z += step)
             {
+                if (where != null && !where(x, z)) continue;
+                // (a notch needs two pieces within reach: skip open ground at once)
+                int near = 0;
+                for (int i = 0; i < all.Count && near < 2; i++)
+                    if (Math.Abs(all[i].X - x) < ext[i] && Math.Abs(all[i].Z - z) < ext[i]) near++;
+                if (near < 2) continue;
                 double sx = x, sz = z;
                 if (cw.Resolve(ref sx, ref sz, R, true)) continue;
                 for (int k = 0; k < 16; k++)
@@ -69,6 +76,33 @@ public class WalkNotchTests
                 }
             }
         return found;
+    }
+
+    /// <summary>Low Ford's ROAD (zone.json paths), the line she walks from the camp (z 90) to the exit (z -104).</summary>
+    static readonly (double X, double Z)[] Road = { (-2, 88), (1, 70), (8, 52), (10, 36), (4, 18), (-3, 2), (-2, -16), (2, -30), (0, -44), (-1, -60), (2, -78), (0, -96), (0, -104) };
+
+    static double RoadDist(double x, double z)
+    {
+        double best = 1e9;
+        for (int i = 0; i + 1 < Road.Length; i++)
+        {
+            var (ax, az) = Road[i]; var (bx, bz) = Road[i + 1];
+            double dx = bx - ax, dz = bz - az, t = Math.Clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
+            best = Math.Min(best, Math.Sqrt((x - ax - t * dx) * (x - ax - t * dx) + (z - az - t * dz) * (z - az - t * dz)));
+        }
+        return best;
+    }
+
+    /// <summary>The whole prologue walk, start to the zone exit: everywhere within 20 m of the road (the camp, the post,
+    /// the barrow and crypt, the ford all lie inside it), no notch anywhere (the owner, 18 Nov; playtest-bugs-2: four
+    /// more off the road west of the wagon).</summary>
+    [Fact]
+    public void The_whole_Low_Ford_walk_has_no_notch()
+    {
+        var cw = ZoneMeta.Load("lowford").Collision();
+        var n = Notches(cw, -35, 35, -104, 92, 0.25, (x, z) => RoadDist(x, z) < 20).Where(f => f.Z > -104).ToList();
+        foreach (var f in n) _out.WriteLine($"notch ({f.X:0.00},{f.Z:0.00}) heading {f.Heading * 22.5:0}");
+        Assert.Empty(n);
     }
 
     [Fact]
