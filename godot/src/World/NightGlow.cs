@@ -151,7 +151,7 @@ public partial class NightGlow : Node3D
         foreach (var fg in z.Flora) if (System.Array.IndexOf(Feet, fg.Kind) >= 0) all += fg.At.Count();
         double share = System.Math.Min(g.Share, all > 0 ? (double)System.Math.Max(g.Max - clusters, 0) / all : 0);
         if (SurvivorUnchained.Args.Has("glow-rocks"))   // (lead 3: where the rocks stand, for framing stone in a shot)
-            foreach (var fg in z.Flora) if (fg.Kind is "boulder" or "rock") GD.Print($"rocks {fg.Kind}: " + string.Join(" ", fg.At.Take(40).Select(t => $"{t.Origin.X:0},{t.Origin.Z:0}")));
+            foreach (var fg in z.Flora) if (fg.Kind is "boulder" or "rock" or "dead") GD.Print($"rocks {fg.Kind}: " + string.Join(" ", fg.At.Take(40).Select(t => $"{t.Origin.X:0},{t.Origin.Z:0}")));
         foreach (var fg in z.Flora)
         {
             if (System.Array.IndexOf(Feet, fg.Kind) < 0) continue;
