@@ -29,6 +29,9 @@ public partial class P1Jiggle : SkeletonModifier3D
     float lift, press, fill;
     /// <summary>--p1-springs off (diagnostic shots): the springs held at their rest offsets, no swing, no squash.</summary>
     public static readonly bool FrozenFlag = SurvivorUnchained.Args.Get("p1-springs") == "off";
+    /// <summary>--p1-springs bind (diagnostic shots): the springs never pose her; her breast bones stay where the clip puts
+    /// them (her bind under the chest: no clip keys them), the shape a rigid cup's mesh was built in.</summary>
+    public static readonly bool BindFlag = SurvivorUnchained.Args.Get("p1-springs") == "bind";
     /// <summary>The worn bottom's support for the glutes (TODO P2 gear: set where bottoms are equipped).</summary>
     public float SupportBottom { get => (float)(springs?.Support["bottom"] ?? supportBottom); set { supportBottom = value; if (springs != null) springs.Support["bottom"] = value; } }
     /// <summary>Overall strength (1 as tuned) and the squash and stretch along the bone (0 under formed plate).</summary>
@@ -41,6 +44,17 @@ public partial class P1Jiggle : SkeletonModifier3D
     bool failed;
 
     public P1Jiggle() { Name = "P1Jiggle"; }
+
+    /// <summary>The worn top is formed plate (ArmorHold.RigidValue): the top group's springs held at its worn rest
+    /// (P1Springs.Held), its rigid cups riding her chest. Not pinned by --p1-support (that flag moves the rest, not this).</summary>
+    public bool HeldTop { get => springs?.Held["top"] ?? heldTop; set { heldTop = value && !HeldOff; if (springs != null) springs.Held["top"] = heldTop; } }
+    bool heldTop;
+    /// <summary>The held top rests her at bind (ArmorHold.RestsAtBind: a piece built on her bind), else at the worn rest.
+    /// --p1-held worn (before/after shots) keeps the worn rest.</summary>
+    public bool HeldTopAtBind { get => springs?.HeldAtBind["top"] ?? heldBind; set { heldBind = value && SurvivorUnchained.Args.Get("p1-held") != "worn"; if (springs != null) springs.HeldAtBind["top"] = heldBind; } }
+    bool heldBind;
+    /// <summary>--p1-held off (before/after shots): a plate top's springs not held, its support only (before 18 Nov).</summary>
+    public static readonly bool HeldOff = SurvivorUnchained.Args.Get("p1-held") == "off";
 
     /// <summary>One call for the armor code: the support on her skeleton's springs, if B's springs are there.</summary>
     public static void SetSupport(Skeleton3D sk, float top, float? bottom = null) => SetSupport(sk, top, bottom, top, top, top);
@@ -85,7 +99,7 @@ public partial class P1Jiggle : SkeletonModifier3D
                 Enumerable.Range(0, n).Select(i => sk.GetBoneParent(i)).ToArray(),
                 Enumerable.Range(0, n).Select(i => P1Body.M(sk.GetBoneGlobalRest(i))).ToArray());
             if (Flag is float fx) { SetTop(fx); SupportBottom = supportBottom; lift = press = fill = fx; }
-            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom;
+            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom; springs.Held["top"] = heldTop; springs.HeldAtBind["top"] = heldBind;
             ApplyShapes(sk);
             g = Enumerable.Range(0, n).Select(_ => P1M4.Id).ToArray();
             if (Args.Has("p1-probe"))
@@ -109,7 +123,7 @@ public partial class P1Jiggle : SkeletonModifier3D
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
-        if (sk == null || failed) return;
+        if (sk == null || failed || BindFlag) return;
         if (springs == null) { Build(sk); if (springs == null) return; }
         springs.Amount = Amount; springs.Squash = Squash; springs.Frozen = FrozenFlag;
         foreach (int j in springs.Needed) g[j] = P1Body.M(sk.GetBoneGlobalPose(j));
@@ -128,6 +142,16 @@ public partial class P1Jiggle : SkeletonModifier3D
             var sb = new System.Text.StringBuilder($"p1: clip f {Engine.GetProcessFrames()}");
             foreach (var s in springs.Springs)
                 sb.Append(System.FormattableString.Invariant($" {s.Name} {(s.X - s.Eq).Len() * 1000:F1}/{s.Rel.Y * 1000:F1}/{s.X.Len() * 1000:F1}"));
+            // (creator-jiggle, 18 Nov: each spring's drawn point in her chest's frame (the root spring's clip parent), mm:
+            // the ride a rigid cup must hold still against her chest)
+            foreach (var s in springs.Springs)
+            {
+                int chest = s.Of >= 0 ? springs.Springs[s.Of].Parent : s.Parent;
+                var p = g[chest].Inverse() * (s.G * s.Tip);
+                sb.Append(System.FormattableString.Invariant($" ride_{s.Name} {p.X * 1000:F2},{p.Y * 1000:F2},{p.Z * 1000:F2}"));
+                var o = g[chest].Inverse() * (g[s.Bone] * s.Tip);
+                sb.Append(System.FormattableString.Invariant($" ride_own_{s.Name} {o.X * 1000:F2},{o.Y * 1000:F2},{o.Z * 1000:F2}"));
+            }
             foreach (double side in springs.Arms)
             {
                 var c = springs.ArmClip(side, g);

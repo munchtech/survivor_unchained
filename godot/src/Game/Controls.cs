@@ -425,7 +425,13 @@ public partial class Controls : Node
     public static string Label(string code) =>
         Named.TryGetValue(code, out var n) ? n : code.StartsWith("Key") ? code[3..] : code.StartsWith("Digit") ? code[5..] : code;
 
-    public string KeyLabel(Act a) => Label(Bindings[a].FirstOrDefault() ?? "");
+    readonly HashSet<Act> warnedUnbound = new();
+    public string KeyLabel(Act a)
+    {
+        if (Bindings.TryGetValue(a, out var bs)) return Label(bs.FirstOrDefault() ?? "");
+        if (warnedUnbound.Add(a)) Godot.GD.PushWarning($"Controls.KeyLabel: {a} has no binding");
+        return "";
+    }
     public IEnumerable<string> KeyLabels(Act a) => Bindings[a].Select(Label);
 
     public IEnumerable<string> PadLabels(Act a) => KeyMap.Pad.TryGetValue(a, out var bs) ? bs : [];
