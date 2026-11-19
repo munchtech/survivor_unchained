@@ -245,15 +245,18 @@
         }
       },
       "darkleather": {
-        "dye": "#5e3a28"
+        "dye": "#5e3a28",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
       },
       "brownleather": {
-        "dye": "#5e3a28"
+        "dye": "#5e3a28",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
       }
     },
     "kit_boots": {
       "darkleather": {
-        "dye": "#3d3118"
+        "dye": "#3d3118",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
       }
     },
     "sol": "kit"

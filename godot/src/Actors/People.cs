@@ -1648,7 +1648,7 @@ public static class People
                     if (od.TryGetValue("dye", out var odye)) { m.SetShaderParameter("dye", new Color((string)odye)); m.SetShaderParameter("dye_amount", 1.0f); }
                     if (od.TryGetValue("params", out var opr))
                         foreach (var (pn, pv) in opr.AsGodotDictionary())
-                            if (pv.VariantType == Variant.Type.Array) { var a = pv.AsGodotArray(); m.SetShaderParameter((string)pn, new Color((float)a[0], (float)a[1], (float)a[2])); }
+                            if (pv.VariantType == Variant.Type.Array) { var a = pv.AsGodotArray(); m.SetShaderParameter((string)pn, a.Count >= 4 ? new Color((float)a[0], (float)a[1], (float)a[2], (float)a[3]) : new Color((float)a[0], (float)a[1], (float)a[2])); }   // (4 numbers: a vec4, as hl_disc)
                             else m.SetShaderParameter((string)pn, (float)pv);
                 }
             }
