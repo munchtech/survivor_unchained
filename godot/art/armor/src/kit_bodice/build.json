@@ -14,7 +14,8 @@
   "tier_name": "gilded",
   "hold": {
    "amount": 0.55,
-   "squash": 0
+   "squash": 0,
+   "rest": "bind"
   },
   "adorn": [],
   "by_body": {

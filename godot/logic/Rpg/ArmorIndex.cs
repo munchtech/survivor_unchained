@@ -29,12 +29,12 @@ public sealed class ArmorHold
     /// so its rigid parts ride her rigidly. Null: squash 0 says so (plate holds its shape: it moves, it never gives).</summary>
     [JsonPropertyName("rigid")] public bool? Rigid { get; set; }
     [JsonIgnore] public bool RigidValue => Rigid ?? Squash <= 0;
-    /// <summary>Where a rigid hold rests her springs (P1Springs.HeldAtBind): "bind" (her breast bones at bind: a piece
-    /// built on her bind, a native one: tools/armor/kit_build.py her_a, exact-installed with her skin's weights) or "worn"
-    /// (the worn rest: a bound piece whose plates gear_fit fitted there and unposed, tools/armor/worn_rest.py). Null: by the
-    /// row, a native piece's "bind", any other's "worn".</summary>
+    /// <summary>Where a rigid hold rests her springs, the pose the piece was made to measure on: "worn" (default: the worn
+    /// rest, tools/armor/worn_rest.py; gear_fit fits and unposes a bound top's plates there, Marionette's gearbuild fits
+    /// on its posed skin, "worn_pose") or "bind" (P1Springs.HeldAtBind: her breast bones at bind; a piece built on her
+    /// bind, tools/armor/kit_build.py her_a, whose steel carries her breast weights: kit_bodice).</summary>
     [JsonPropertyName("rest")] public string? Rest { get; set; }
-    public bool RestsAtBind(bool native) => (Rest ?? (native ? "bind" : "worn")) == "bind";
+    [JsonIgnore] public bool RestsAtBind => Rest == "bind";
 }
 
 /// <summary>One spring link of a piece (PieceSprings.Link): a bone from head to tail under its parent (a body bone or
@@ -112,9 +112,6 @@ public sealed class ArmorPiece
     [JsonIgnore] public float TuckDepth => TuckDepthMm > 0 ? (float)TuckDepthMm : 10f;
     [JsonPropertyName("body_hash")] public string? BodyHash { get; set; }
     [JsonPropertyName("hold")] public ArmorHold? Hold { get; set; }
-    /// <summary>Built natively on this body (tools/armor/gear_fit.py native_rows: a kit piece from piece_ship, made on her
-    /// bind), not bound to it from A's fit.</summary>
-    [JsonPropertyName("native")] public bool Native { get; set; }
     /// <summary>A rigid piece (a plate style, or a free mesh made only of `_rigid` parts): the garment tuck never bends it
     /// (GarmentTuck.Over is false with it inner), so its plates keep their shape under any piece over it.</summary>
     [JsonPropertyName("rigid")] public bool Rigid { get; set; }

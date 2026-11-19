@@ -349,9 +349,9 @@ public static class HerWear
             pj.Squash = (float)(hold?.Squash ?? 1);
             // (formed plate: its cups ride her chest at their worn rest, never swing inside it: creator-jiggle, 18 Nov)
             pj.HeldTop = hold?.RigidValue ?? false;
-            // (at the rest its steel was built in: a native piece's her bind, a bound one's the worn rest; round 2: the
-            // owner's "mishapen" cup was kit_bodice bent at the worn rest)
-            pj.HeldTopAtBind = hold?.RestsAtBind(topRow!.Native) ?? false;
+            // (at the rest it was made to measure on: the worn rest, or her bind where its row says so; round 2: the
+            // owner's "mishapen" cup was kit_bodice, built on her bind, bent at the worn rest)
+            pj.HeldTopAtBind = hold?.RestsAtBind ?? false;
         }
 
         bool full = Wear.IsCallingSet(look, calling, ix);

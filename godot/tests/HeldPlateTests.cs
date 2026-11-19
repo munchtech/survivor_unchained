@@ -112,9 +112,10 @@ public class HeldPlateTests
         Assert.False(new ArmorHold { Squash = 0, Rigid = false }.RigidValue);
     }
 
-    /// <summary>Round 2 (the owner, 18 Nov: "thats not jiggle thats mishapen"): a native piece (kit_bodice, built on her
-    /// bind: kit_build.py her_a) is held at her bind, offset 0, its bones exactly the clip's, so its steel keeps the shape
-    /// it was built in; the bound starter top (warden.top, fitted at the worn rest by gear_fit) keeps the worn rest.</summary>
+    /// <summary>Round 2 (the owner, 18 Nov: "thats not jiggle thats mishapen"): kit_bodice (built on her bind:
+    /// kit_build.py her_a; its row's hold says "rest": "bind") is held at her bind, offset 0, its bones exactly the clip's,
+    /// so its steel keeps the shape it was built in; the starter top (warden.top, fitted at the worn rest by gear_fit) and
+    /// any row that says nothing (Marionette's pieces fit on the worn skin) keep the worn rest.</summary>
     [Theory]
     [InlineData("kit_bodice", true)]
     [InlineData("warden.top", false)]
@@ -122,7 +123,8 @@ public class HeldPlateTests
     {
         var rows = Doc("art/gear/out/body_p1/gear_index.json").GetProperty("rows");
         var row = JsonSerializer.Deserialize<ArmorPiece>(rows.EnumerateArray().First(r => r.GetProperty("id").GetString() == top).GetRawText())!;
-        Assert.Equal(atBind, row.Hold!.RestsAtBind(row.Native));
+        Assert.Equal(atBind, row.Hold!.RestsAtBind);
+        Assert.False(new ArmorHold { Squash = 0 }.RestsAtBind);   // (no "rest": the worn rest, what gear_fit and Marionette fit to)
         var sp = new P1Springs(Doc("data/body/springs.json"), "p1", null, Names, Parent, Rest);
         sp.Support["top"] = row.Hold.SupportValue; sp.Squash = row.Hold.Squash;
         sp.Held["top"] = true; sp.HeldAtBind["top"] = atBind;

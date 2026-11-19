@@ -908,7 +908,8 @@
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
-    "squash": 0
+    "squash": 0,
+    "rest": "bind"
    },
    "file": "res://art/armor/body_p1/kit_bodice.gltf",
    "tier": 2,
