@@ -1397,8 +1397,8 @@ def stack_tucked(bd, ms, ev, body, comp, lead, Xa, Ar, parents, rots, rest):
     if body.glb not in _SKINS:
         _SKINS[body.glb] = gear_tuck.Skin(body.glb)
     sk = _SKINS[body.glb]
-    t = gear_tuck.tuck_of(sk, Xs, T, rg, bd.meta["row"].get("slot"))[0]
-    mm = gear_tuck.depth_of(rg, bd.meta["row"].get("slot")) * np.where(t >= 0.973, 1.0, t)
+    t = gear_tuck.tuck_of(sk, Xs, T, rg, bd.meta["row"].get("slot"), bd.meta["row"])[0]
+    mm = gear_tuck.depth_of(rg, bd.meta["row"].get("slot"), bd.meta["row"]) * np.where(t >= 0.973, 1.0, t)
     return mm[sk.kd.query(X)[1]] * (comp >= 0)
 
 

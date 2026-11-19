@@ -255,7 +255,7 @@ def with_hinges(B):
     return B
 
 
-def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None, fit=None):
+def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None, fit=None, soft_drop=()):
     """The staged piece `path` (followed) back on its pre-follow points, her weights and her bind. Returns numbers.
     `drop` (piece params.rigid_drop, bone name prefixes): left out of every rigid shell's blend, the rest renormalized
     (a helm rides Head only: the mean of her skin under its rim took neck_01 and spine_03, and its brim swung off her
@@ -322,6 +322,17 @@ def pin(path, pre, body, B=None, drop=(), ride=(), authored=None, bend=None, fit
         Wq = (1 - mx_) * Wq + mx_ * T_
         Wq /= np.maximum(Wq.sum(1, keepdims=True), 1e-12)
         res["bend_ride"] = {"covered": int(cov_.sum()), "eased": int(((f_ > 0) & ~cov_).sum()), "points": len(Q)}
+    if soft_drop:
+        # (params.soft_drop (armor-ref, 18 Nov: the builder's steel corset): the bending points leave out those bones,
+        # the rest renormalized, where any weight remains. Its cups ride her chest, pecs and clavicles as her skin does,
+        # never her breast springs: no wobble inside the plates. piece_blender's pass alone was undone here, where every
+        # bending point takes her skin's weights again.)
+        kd_ = np.array([not str(nm_).startswith(tuple(soft_drop)) for nm_ in B.names], float)
+        Wk_ = Wq * kd_
+        ok_ = Wk_.sum(1) > 1e-6
+        Wq = Wq.copy()
+        Wq[ok_] = Wk_[ok_] / Wk_[ok_].sum(1, keepdims=True)
+        res["soft_drop"] = {"points": int(ok_.sum()), "left": int((~ok_).sum())}
     nb = len(B.names)
     TOP = np.zeros((len(Q), 8), int)
     TW = np.zeros((len(Q), 8))

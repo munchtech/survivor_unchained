@@ -48,9 +48,16 @@ public class WearTests
         Assert.Empty(Wear.Of(new Equipment()));
     }
 
+    /// <summary>B's built gear index (gear/out/body_p1): a piece built only on B (sol_corset, the demo's harness top, 18 Nov) is
+    /// in it and not in A's two.</summary>
+    static readonly ArmorIndex B = ArmorIndex.Load(ArmorIndex.Text, "gear/out/body_p1");
+
     [Fact]
     public void Every_item_def_validates() =>
-        Assert.All(Items.All.Values, d => Assert.Empty(Wear.Validate(d)));
+        // (a piece A's index does not know is flagged by Validate on A; it must then be B's, in the item slot's group)
+        Assert.All(Items.All.Values, d => Assert.All(Wear.Validate(d), p =>
+            Assert.True(ArmorIndex.Shared.Find(p) == null && B.Find(p) is { } r && Items.SlotFor(d) is EquipSlot s && Wear.Group(s).Contains(r.Slot),
+                $"{d.Id} wears '{p}', not valid on A and not a B piece of its slot's group")));
 
     [Fact]
     public void Every_wear_id_in_items_is_in_an_armor_index()
@@ -60,7 +67,7 @@ public class WearTests
         foreach (var it in doc.RootElement.GetProperty("items").EnumerateObject())
             if (it.Value.TryGetProperty("wear", out var wear))
                 foreach (var p in wear.EnumerateArray())
-                    Assert.True(ArmorIndex.Shared.Find(p.GetString()!) != null, $"{it.Name} wears '{p}', which is in neither armor index");
+                    Assert.True(ArmorIndex.Shared.Find(p.GetString()!) != null || B.Find(p.GetString()!) != null, $"{it.Name} wears '{p}', which is in neither armor index nor B's gear index");
     }
 
     [Fact]
