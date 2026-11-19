@@ -33,8 +33,8 @@ public static class HitPaint
         // across the blow: the perpendicular of away, in the shader's convention (ax = (cos a, sin a) in (x, z))
         d = d.Normalized();
         float px = -d.Y, pz = d.X;
-        // (lead 8: laid between her and the foe, 0.6 m back from the contact along the blow: at the contact the foe stood on it)
-        X[k] = at.X - d.X * 0.6f; Z[k] = at.Z - d.Y * 0.6f; Ang[k] = MathF.Atan2(pz, px); Crit[k] = crit; Born[k] = now; Live[k] = true;
+        // (lead 8: laid 0.2 m past the contact along the blow: 0.6 m back it lay under her feet and was hidden; her contact is ~0.6 m from her)
+        X[k] = at.X + d.X * 0.2f; Z[k] = at.Z + d.Y * 0.2f; Ang[k] = MathF.Atan2(pz, px); Crit[k] = crit; Born[k] = now; Live[k] = true;
         counter++;
         uint h = counter * 2654435761u; h ^= h >> 15; h *= 2246822519u; h ^= h >> 13;
         Seed[k] = (h & 0xFFFFu) / 65535f;
