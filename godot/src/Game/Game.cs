@@ -746,6 +746,8 @@ public partial class Game : Node, IZoneHost
         // A dungeon returns to where it was entered; a map, to the Waystation.
         if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
         else Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+        // A fall closed it: she arrives whole (Travel's Capture took the fall's 1 HP).
+        if (!r.Cleared) Journey.RiseWhole();
         if (leaving) Wait(0.8, () => screens.Close());
     }
 

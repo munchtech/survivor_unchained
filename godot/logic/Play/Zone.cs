@@ -111,7 +111,11 @@ public interface IZoneHost
     /// dungeon's mouth, <see cref="Maps.Chart.ReturnZone"/>, else the Waystation), as Game.LeaveMap; a host without a
     /// page goes straight back.</summary>
     void MapOver(Zones.MapResult r, bool alive) =>
-        After(alive ? 0.6 : 2.2, () => Travel(r.Chart.ReturnZone ?? "waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes"));
+        After(alive ? 0.6 : 2.2, () =>
+        {
+            Travel(r.Chart.ReturnZone ?? "waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+            if (!r.Cleared) Journey.RiseWhole();
+        });
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>
     void After(double seconds, Action fn);
     void Save(string reason);

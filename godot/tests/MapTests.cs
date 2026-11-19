@@ -192,8 +192,15 @@ public class MapTests
         Assert.False(r.Zone.Result!.Cleared);
         Assert.Equal(1, r.Zone.Result.Falls);
         Assert.Null(r.Host.TravelledTo);
+        // (as the battle leaves her when the zone takes the death, and as the game's Travel captures her wounds)
+        r.B.Player.Hp = 1;
+        r.J.Capture(r.B);
         r.Host.Pass(2.3);
         Assert.Equal("verge", r.Host.TravelledTo);
+        // (the coordinator, 19 Nov: she arrives whole, not at the fall's 1 HP among the Verge's foes)
+        var at = r.Zone.ArrivalFrom(null);
+        var verge = r.J.StartBattle(true, r.Map.Meta.Collision(), r.Map.Ground.HeightAt, at.X, at.Z, at.Facing, 3);
+        Assert.Equal(verge.MaxHp, verge.Player.Hp, 6);
     }
 
     [Fact]
