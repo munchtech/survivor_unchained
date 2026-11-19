@@ -40,7 +40,8 @@ build() {
 # The build's stamp (BugReporter reads res://data/build.json into each report; git-ignored, rewritten each export).
 stamp() {
   local sha; sha="$(git -C "$ROOT" rev-parse --short=9 HEAD)"
-  git -C "$ROOT" diff --quiet HEAD -- godot || sha="$sha+dirty"
+  # (the editor's own .import rewrites are not a change to the game)
+  git -C "$ROOT" diff --quiet HEAD -- godot ':(exclude)*.import' || sha="$sha+dirty"
   printf '{ "sha": "%s", "flavor": "%s", "date": "%s" }\n' "$sha" "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$ROOT/godot/data/build.json"
 }
 # The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.txt (tools/godot/demo_README.txt).
