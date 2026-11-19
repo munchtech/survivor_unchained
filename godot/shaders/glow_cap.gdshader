@@ -23,7 +23,7 @@ void fragment() {
 		c = stem_col * stem_emit;
 	} else {
 		float up = normalize(v_n).y;
-		vec3 core = mix(cap_col, vec3(1.0), 0.8);
+		vec3 core = mix(cap_col, vec3(1.0), 0.55);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through)
 		c = (up > bands.x ? core : up > bands.y ? mix(cap_col, core, 0.35) : cap_col) * cap_emit;
 	}
 	ALBEDO = c * glow_k;
