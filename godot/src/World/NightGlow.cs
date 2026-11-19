@@ -79,7 +79,7 @@ public partial class NightGlow : Node3D
             int n = g.CapsMin + (int)(Hash(sx, sz, 4) * (g.CapsMax - g.CapsMin + 1));
             float cy = (float)z.HeightAt(cx, cz);
             if (g.HaloRadius > 0) Halo(alt ? haloAlts : halos, new Vector3(cx, cy + 0.18f, cz), (float)(g.HaloRadius * (0.8 + 0.4 * Hash(sx, sz, 9))));
-            if (g.Pool is { Length: >= 7 } pp)
+            if (g.Pool is { Length: >= 7 } pp && SurvivorUnchained.Args.Get("glow-pools") is not ("off" or "0"))   // (--glow-pools off: none, for the perf A/B)
             {
                 if (poolEmit == null) PoolTextures(pp);
                 float pr = (float)(pp[0] * (0.85 + 0.3 * Hash(sx, sz, 12)));
