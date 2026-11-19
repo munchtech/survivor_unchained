@@ -301,7 +301,7 @@ public partial class Atmosphere : Node3D
     public static float GlowK;
     public static void SetPalette(double[]? pal)
     {
-        bool on = pal is { Length: >= 76 } && SurvivorUnchained.Args.Get("pal") != "off";
+        bool on = pal is { Length: >= 84 } && SurvivorUnchained.Args.Get("pal") != "off";
         for (int c = 0; c < PalClasses.Length; c++)
             for (int k = 0; k < 3; k++)
             {
@@ -309,6 +309,8 @@ public partial class Atmosphere : Node3D
                 RenderingServer.GlobalShaderParameterSet($"pal_{PalClasses[c]}{k}", on ? new Vector4((float)pal![o], (float)pal[o + 1], (float)pal[o + 2], (float)pal[o + 3]) : Vector4.Zero);
             }
         RenderingServer.GlobalShaderParameterSet("pal_ember", on ? new Vector4((float)pal![72], (float)pal[73], (float)pal[74], (float)pal[75]) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("pal_vk0", on ? new Vector4((float)pal![76], (float)pal[77], (float)pal[78], (float)pal[79]) : Vector4.Zero);   // (lead 2: each class its value keep)
+        RenderingServer.GlobalShaderParameterSet("pal_vk1", on ? new Vector4((float)pal![80], (float)pal[81], 0, 0) : Vector4.Zero);
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

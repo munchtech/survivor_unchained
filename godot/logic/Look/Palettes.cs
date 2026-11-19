@@ -39,7 +39,8 @@ public static class Palettes
     public static readonly string[] Classes = ["leaf", "grass", "ground", "path", "stone", "bark"];
     public const int Row = 12;
     public const int EmberAt = 6 * Row;   // (ember: near m, far m, keep, 0: within near m of her light the palette is taken back by keep, none again at far m)
-    public static int Size => Classes.Length * Row + 4;
+    public const int ValueAt = EmberAt + 4;   // (lead 2: each class its own "value", default the palette's: [leaf, grass, ground, path], [stone, bark, 0, 0])
+    public static int Size => Classes.Length * Row + 12;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -69,6 +70,10 @@ public static class Palettes
         // (value: 0 the ramp's own value, 1 the albedo's own luminance kept and only the ramp's hue and chroma taken, so the
         // lanes' tuned values hold and only the colour turns; saturated albedos at the sun's full value clip to white)
         r[EmberAt + 3] = e.TryGetProperty("value", out var vk) ? vk.GetDouble() : 0;
+        // (lead 2: one value for every class clipped the day's bright bushes at .4 and flattened the sand path at .8: a class
+        // may name its own, e.g. the path its ramp's value (low), the leaves the albedo's (high))
+        for (int c = 0; c < Classes.Length; c++)
+            r[ValueAt + c] = e.TryGetProperty(Classes[c], out var kc) && kc.TryGetProperty("value", out var cv) ? cv.GetDouble() : r[EmberAt + 3];
         return r;
     }
 
