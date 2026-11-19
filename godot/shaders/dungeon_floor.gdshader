@@ -67,6 +67,7 @@ uniform float sp_blur = 0.0;   // (den r18 L4) 0..1: the floor's grain blended t
 uniform float sp_blur_lod = 5.0;
 uniform float sp_norm = 0.0;   // (den r18 L4) 1: each pool's gain set from its own floor so it lifts by sp_dl; 0: the flat sp_gain
 uniform float sp_dl = 0.17;
+uniform float sp_gmin = 1.3;   // (den r19 L2, R18b item 1) the per-pool gain's floor: a bright floor (s23) needs less than 1.3 for its dL
 uniform float sp_soft = 0.7;
 uniform float sp_knee = 0.6;
 uniform float sp_lair = 1.0;   // (den r17 L2) a lair pool's strength (its seed + 1000): the lair's floor is lit brighter than the rooms'
@@ -311,7 +312,7 @@ void fragment() {
 				// the light multiplies the albedo: no term of its own, so the floor's grain is lit, not amplified; the sum is soft-capped
 				col *= mix(1.0, blr, sp_blur * spm);   // (den r18 L4, R18 item 3) light flattens the grain: toward the blurred floor by sp_blur x mask
 					float l0 = max(lum(col), 1e-4);
-					float pg = mix(sp_gain, clamp(pow(pow(l0, 0.3333) + sp_dl, 3.0) / l0, 1.3, 3.5), sp_norm);   // (den r18 L4) a gain per pool against its own floor: the lift in OKLab-ish L, sp_dl
+					float pg = mix(sp_gain, clamp(pow(pow(l0, 0.3333) + sp_dl, 3.0) / l0, sp_gmin, 3.5), sp_norm);   // (den r18 L4) a gain per pool against its own floor: the lift in OKLab-ish L, sp_dl
 					float l1 = l0 * mix(1.0, pg, spm);
 				float kn = sp_knee * sp_cap, l2 = l1 < kn ? l1 : kn + (sp_cap - kn) * tanh((l1 - kn) / (sp_cap - kn));
 				col *= mix(vec3(1.0), sp_tint, spm) * (l2 / l1) * mix(1.0, pg, spm) * pow(clamp(l0 / sp_ref, 0.05, 4.0), sp_grain * spm);

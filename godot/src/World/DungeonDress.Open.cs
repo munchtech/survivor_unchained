@@ -104,7 +104,7 @@ public static partial class DungeonDress
         var dec = Decals();
         var bones = dec.FindAll(d => d.Kind == "bone");
         var leafDec = dec.FindAll(d => d.Kind == "leaves");
-        var twigDec = dec.FindAll(d => d.Kind == "twigs");
+        var twigDec = SurvivorUnchained.Args.Num("den-twigs", 0f) > 0f ? dec.FindAll(d => d.Kind == "twigs") : new List<Decal>();   // (den r19 B, R18b item 5) the straight stick sprite dropped (--den-twigs 1: as before)
         int nRun = 0, nClump = 0, nPiece = 0, nArc = 0, nCarc = 0;
 
         // ---- root runners: the set's painted roots (B6, the long low pieces 1 and 2), small and flat on the open ground ----
