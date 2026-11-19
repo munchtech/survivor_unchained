@@ -116,6 +116,8 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// her shaded skin, the blue lerp passed through red and violet on the way: deep skin's shade side went from h 40-55 to
     /// 20-43, brick-red and purple patches with hard edges where her shade crossed its L and C thresholds.</summary>
     public double PaintShadowSkin { get; init; }
+    /// <summary>(lane J lead 8, 19 Nov) How far a dark CHROMATIC pixel (Oklab L under 0.45, C over 0.08: the sunlit ground under a cast shadow, which PaintShadowK's low-chroma gate never reached) is turned to PaintShadow's hue and chroma and darkened (0: off). The wild day's orange shade turns crimson-violet.</summary>
+    public double PaintShadowTurn { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
     /// <summary>(L1 W2) The tone curve on Oklab L, last in the grade: (in, out) pairs from 0 to 1, flattened, through which a

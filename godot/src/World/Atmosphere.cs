@@ -1082,6 +1082,7 @@ public partial class Atmosphere : Node3D
                     if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
                     if (tone != null) outLin = Tone(outLin, tone);
                     if (sceneK > 0) outLin = SceneColour(c, outLin, sceneK);
+                    outLin = paint.Turn(outLin);
                     if (paint.On && late) outLin = paint.Apply(outLin);
                     // (L1 lead 7, S2: GradeSettings.SceneMoon, the moon's blue (dawn's lilac) over the scene's own color)
                     if (sceneK > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
@@ -1459,7 +1460,7 @@ public partial class Atmosphere : Node3D
     /// <summary>The paint grade's terms for one table: the grade's own, each --grade-try key over its own.</summary>
     readonly struct Paint
     {
-        readonly float vib, skin, shadowK, lift, hi, vibDark, shadowSkin;
+        readonly float vib, skin, shadowK, lift, hi, vibDark, shadowSkin, turn;
         readonly bool hasShadow;
         readonly float ls, cs, hs;
         public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
@@ -1468,7 +1469,7 @@ public partial class Atmosphere : Node3D
         {
             vib = t?.Vib ?? (float)g.PaintVib; hi = t?.Hi ?? (float)g.PaintHi; lift = t?.Lift ?? (float)g.PaintLift;
             shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
-            shadowSkin = t?.ShadowSkin ?? (float)g.PaintShadowSkin;
+            shadowSkin = t?.ShadowSkin ?? (float)g.PaintShadowSkin; turn = (float)g.PaintShadowTurn;
             string hex = t?.Shadow ?? g.PaintShadow;
             hasShadow = hex != "";
             ls = cs = hs = 0;
@@ -1478,6 +1479,21 @@ public partial class Atmosphere : Node3D
                 var o = Oklab(Lin(new Vector3(c.R, c.G, c.B)));
                 ls = o.X; cs = o.Y; hs = o.Z;
             }
+        }
+
+        /// <summary>(lead 8, 19 Nov) The chromatic dark's turn, laid last (after SceneColour, which erased any earlier shade): toward the
+        /// shadow's hue and chroma, and down to its lightness.</summary>
+        public Vector3 Turn(Vector3 outLin)
+        {
+            if (!hasShadow || turn == 0) return outLin;
+            var ok = Oklab(outLin);
+            float L = ok.X, C = ok.Y, h = Mathf.DegToRad(ok.Z);
+            float w2 = Mathf.Clamp(turn * (1 - Smooth(0.30f, 0.40f, L)) * Smooth(0.08f, 0.10f, C) * Smooth(0.10f, 0.20f, L), 0, 1);
+            if (w2 <= 0) return outLin;
+            float hsr2 = Mathf.DegToRad(hs);
+            float a = Mathf.Lerp(C * Mathf.Cos(h), cs * Mathf.Cos(hsr2), w2), b = Mathf.Lerp(C * Mathf.Sin(h), cs * Mathf.Sin(hsr2), w2);
+            L = Mathf.Lerp(L, Mathf.Min(L, ls), w2);
+            return FromOklab(L, a, b).Clamp(Vector3.Zero, Vector3.One);
         }
 
         public Vector3 Apply(Vector3 outLin)
