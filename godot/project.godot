@@ -622,6 +622,14 @@ ps_hp7b={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+ps_glb={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hpb={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

@@ -152,8 +152,12 @@ vec2 ps_stamp(vec2 xz, vec4 a, vec4 b, vec2 r) {
 	return m.x > r.x ? m : r;
 }
 // (coverage, inner) of the hit paint at world xz.
+// (lead 9, perf) ps_hpb = (x, z, R, n live): one circle round every live stamp; a pixel outside it (most) skips all 8.
+global uniform vec4 ps_hpb;
 vec2 ps_hits(vec2 xz) {
-	if (ps_cover1.z <= 0.0) return vec2(0.0);
+	if (ps_cover1.z <= 0.0 || ps_hpb.w < 0.5) return vec2(0.0);
+	vec2 bd = xz - ps_hpb.xy;
+	if (dot(bd, bd) > ps_hpb.z * ps_hpb.z) return vec2(0.0);
 	vec2 r = vec2(0.0);
 	r = ps_stamp(xz, ps_hp0a, ps_hp0b, r); r = ps_stamp(xz, ps_hp1a, ps_hp1b, r);
 	r = ps_stamp(xz, ps_hp2a, ps_hp2b, r); r = ps_stamp(xz, ps_hp3a, ps_hp3b, r);
@@ -211,17 +215,25 @@ vec3 ps_gl_one(vec4 g, vec3 wp, vec3 n, vec3 alb, float wob) {
 	vec3 outer = lc * (alb * 0.5 + 0.03) * ps_glk.w * s3;
 	return (inner + outer) * face;
 }
+// (lead 9, perf) ps_glb = (x, z, R, n sources): one circle (xz) round every source's outer step; a pixel outside it skips
+// the loop; the sources past the 8th are read only when n > 8 (a uniform branch). n = 0 (day, --glowlight off): nothing.
+global uniform vec4 ps_glb;
 vec3 ps_glow_light(vec3 wp, vec3 n_world, vec3 albedo) {
+	if (ps_glb.w < 0.5) return vec3(0.0);
+	vec2 bd = wp.xz - ps_glb.xy;
+	if (dot(bd, bd) > ps_glb.z * ps_glb.z) return vec3(0.0);
 	float wob = 1.0 + 0.1 * sin(wp.x * 1.9 + wp.z * 1.3) * sin(wp.z * 2.7 - wp.x * 0.9 + 1.0) + 0.05 * sin(wp.x * 5.1 - wp.z * 4.3);
 	vec3 e = vec3(0.0);
 	e += ps_gl_one(ps_gl0, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl1, wp, n_world, albedo, wob);
 	e += ps_gl_one(ps_gl2, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl3, wp, n_world, albedo, wob);
 	e += ps_gl_one(ps_gl4, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl5, wp, n_world, albedo, wob);
 	e += ps_gl_one(ps_gl6, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl7, wp, n_world, albedo, wob);
-	e += ps_gl_one(ps_gl8, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl9, wp, n_world, albedo, wob);
-	e += ps_gl_one(ps_gl10, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl11, wp, n_world, albedo, wob);
-	e += ps_gl_one(ps_gl12, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl13, wp, n_world, albedo, wob);
-	e += ps_gl_one(ps_gl14, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl15, wp, n_world, albedo, wob);
+	if (ps_glb.w > 8.5) {
+		e += ps_gl_one(ps_gl8, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl9, wp, n_world, albedo, wob);
+		e += ps_gl_one(ps_gl10, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl11, wp, n_world, albedo, wob);
+		e += ps_gl_one(ps_gl12, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl13, wp, n_world, albedo, wob);
+		e += ps_gl_one(ps_gl14, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl15, wp, n_world, albedo, wob);
+	}
 	return e;
 }
 #endif

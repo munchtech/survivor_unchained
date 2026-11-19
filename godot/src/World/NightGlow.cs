@@ -51,11 +51,27 @@ public partial class NightGlow : Node3D
     float[] spill = [1.5f, 2.25f, 3f, 0.4f, 0.25f, 0.1f];
     Vector4 spillCy, spillVi; Vector3 lastPos = new(1e9f, 0, 0); float lastR = -1, spillR = 1;
     static Vector3 Lin(string hex) { var c = new Color(hex).SrgbToLinear(); return new Vector3(c.R, c.G, c.B); }
+    // (lead 9, perf) the names made once (a string to a StringName each frame cost a lookup and an allocation); --glow-n 8|16
+    // how many nearest sources light the world (the shader reads 9..16 only when n > 8); --glowlight off: none.
+    static readonly StringName[] GlName = Enumerable.Range(0, 16).Select(i => new StringName("ps_gl" + i)).ToArray();
+    static readonly StringName GlbName = new("ps_glb");
+    static readonly int GlowN = System.Math.Clamp((int)SurvivorUnchained.Args.Num("glow-n", 16f), 1, 16);
+    static readonly bool GlowLightOff = SurvivorUnchained.Args.Get("glowlight") == "off";
     void SpillSet(Vector3 center, float k)
     {
-        var sorted = srcs.OrderBy(s => s.P.DistanceSquaredTo(center)).Take(16).ToArray();
+        var sorted = srcs.OrderBy(s => s.P.DistanceSquaredTo(center)).Take(GlowN).ToArray();
+        bool on = k > 0.01f && !GlowLightOff && sorted.Length > 0;
+        int n = on ? sorted.Length : 0;
+        float reach = spill[2] * spillR * 1.12f, bx = 0, bz = 0, br = 0;
+        if (n > 0)
+        {
+            foreach (var s in sorted) { bx += s.P.X; bz += s.P.Z; }
+            bx /= n; bz /= n;
+            foreach (var s in sorted) br = Mathf.Max(br, new Vector2(s.P.X - bx, s.P.Z - bz).Length() + reach);
+        }
         for (int i = 0; i < 16; i++)
-            RenderingServer.GlobalShaderParameterSet("ps_gl" + i, i < sorted.Length && k > 0.01f ? new Vector4(sorted[i].P.X, sorted[i].P.Y, sorted[i].P.Z, sorted[i].Alt ? -spillR : spillR) : Vector4.Zero);
+            RenderingServer.GlobalShaderParameterSet(GlName[i], i < n ? new Vector4(sorted[i].P.X, sorted[i].P.Y, sorted[i].P.Z, sorted[i].Alt ? -spillR : spillR) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(GlbName, new Vector4(bx, bz, br, n));
         lastPos = center; lastR = k;
     }
 

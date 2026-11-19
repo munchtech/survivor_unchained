@@ -41,9 +41,18 @@ public static class HitPaint
         lastAdd = now;
     }
 
-    /// <summary>Each frame: the stamps' erosion by age and the 16 globals.</summary>
+    // (lead 9, perf) names made once; a stamp's globals are set only when they change; ps_hpb = one circle round every live stamp
+    static readonly StringName[] NameA = new StringName[N], NameB = new StringName[N];
+    static readonly StringName NameBound = new("ps_hpb");
+    static readonly Vector4[] LastA = new Vector4[N], LastB = new Vector4[N];
+    static Vector4 lastBound = new(0, 0, 0, -1);
+
+    /// <summary>Each frame: the stamps' erosion by age and the globals.</summary>
     public static void Tick(double now)
     {
+        if (NameA[0] == null) for (int i = 0; i < N; i++) { NameA[i] = new StringName($"ps_hp{i}a"); NameB[i] = new StringName($"ps_hp{i}b"); LastA[i] = new Vector4(float.NaN, 0, 0, 0); }
+        int live = 0; float bx = 0, bz = 0, br = 0;
+        Span<float> sz = stackalloc float[N];
         for (int i = 0; i < N; i++)
         {
             float size = 0, erode = 0;
@@ -57,8 +66,19 @@ public static class HitPaint
                     erode = age < 0.6 ? 0f : age < 1.3 ? 0.3f : age < 2.0 ? 0.55f : 0.8f;
                 }
             }
-            RenderingServer.GlobalShaderParameterSet($"ps_hp{i}a", new Vector4(X[i], Z[i], Ang[i], size));
-            RenderingServer.GlobalShaderParameterSet($"ps_hp{i}b", new Vector4(erode, Seed[i], Crit[i] ? 1f : 0f, 0));
+            sz[i] = size;
+            if (size > 0) { live++; bx += X[i]; bz += Z[i]; }
+            var a = new Vector4(X[i], Z[i], Ang[i], size);
+            var b = new Vector4(erode, Seed[i], Crit[i] ? 1f : 0f, 0);
+            if (a != LastA[i]) { RenderingServer.GlobalShaderParameterSet(NameA[i], a); LastA[i] = a; }
+            if (b != LastB[i]) { RenderingServer.GlobalShaderParameterSet(NameB[i], b); LastB[i] = b; }
         }
+        if (live > 0)
+        {
+            bx /= live; bz /= live;
+            for (int i = 0; i < N; i++) if (sz[i] > 0) br = MathF.Max(br, MathF.Sqrt((X[i] - bx) * (X[i] - bx) + (Z[i] - bz) * (Z[i] - bz)) + sz[i] * 0.8f);
+        }
+        var bound = new Vector4(bx, bz, br, live);
+        if (bound != lastBound) { RenderingServer.GlobalShaderParameterSet(NameBound, bound); lastBound = bound; }
     }
 }
