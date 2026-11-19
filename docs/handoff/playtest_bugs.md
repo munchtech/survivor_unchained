@@ -1,0 +1,20 @@
+# playtest-bugs lead: state file
+
+## Top block (read first)
+- Coordinator #15 (main session). Demo 20 Nov; merge-ready by midday 19 Nov.
+- Worktree: C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-aea9fc9f2d095828a, branch playtest-bugs off 5e8e9c3ff. godot/assets = junction to own public/assets (done).
+- Owner, 18 Nov, word for word: "also I started playing and my character got frozen a couple times, and couldn't exit a tutorial hint for a while, but my character got \"stuck\" a couple times too"
+- Owner, 18 Nov later, word for word (via coordinator): "got stuck approaching the wagon in tutorial.  the hint before that wouldn't close". So bugs 2+3 are in the PROLOGUE, at the wagon.
+- Owner's logs are LOST: Godot keeps 5 logs and harness runs from 17:36 rotated them out. Work from code + harness.
+- Bug 2 (IN PROGRESS) cause found in code: Controls._Input mouse press only latches, never calls listeners (keys do, pad does), so Game.TeachKey never sees LMB/RMB. A freeze whose answer is skill1 ("swing", Prologue.cs ~619, "Hold LMB to swing") can only be closed by Esc; answerless freezes say "[E] to go on" and ignore clicks and WASD. The autopilot answers via Controls.Press (calls listeners) so harness never saw it. Fix plan: route mouse skill presses to the freeze (narrow), test, harness repro with real InputEventMouseButton.
+- Bug 3: den probe (godot/tests/DenStuckProbe.cs, temp, uncommitted) 30 hollow seeds: 0-5 walk-pockets per seed (unreviewed; may be unreachable islands). Now: the tutorial wagon approach (not started).
+- Bug 1 frozen: candidate = the same freeze (sim paused, WASD ignored). Not proven.
+- Hands off: HerJiggle.cs, P1Jiggle.cs, PieceSprings.cs, creator UI; DungeonDress*/den art+shaders; sol_*, Marionette.
+
+- 18:08 Bug 3 CAUSE (solver ab98343707798abdc, headless Prologue sim, seeds 7/42/99: she stops dead at (3.29,58.41) from t=8 s to 240 s holding north, no lock flags): a NOTCH, the wagon box (5,60 hw1 hd1.8 rot -0.5, src/world/zones/lowford.ts:255) and the tipped barrel circle (3.2,57.6 r0.4, lowford.ts:257 kit.env Barrel) 0.77 m apart < her 0.84 m body: a V she walks into and cannot slide out of. Also the crate (7.2,61.4 r0.5) vs box corner: stop at (6.36,61.78) walking north-east. Foes never block her (Ai.cs:814-826). zone.json is exported from lowford.ts (tools/godot/export_zone.mjs) but hand-edited since (lights): do NOT re-export; fix via props_own.json (solid circles) or Zone.cs.
+- New test godot/tests/WalkNotchTests.cs (uncommitted): both facts FAIL on old data (8 notches in x -6..14 z 50..70, incl. 4 at the wagon). Temp probes to delete before commit: godot/tests/DenStuckProbe.cs, godot/tests/WagonStuckProbe.cs.
+- Next: fix wagon notches (data), make the notch test pass (scope it to the wagon cluster or fix all 8), then bug 2 code fix (Controls mouse -> freeze), then bug 1 verdict, suite, smoke, push.
+- 18:15 Bug 3 FIXED 1c21706e5 (props_own solid box over the wagon cluster; Zone.cs boxes; WalkNotchTests fail on old). Solver's Prologue walk probe re-run: she now passes the wagon (moved to the post). Temp probes moved to survivorsunchained_inputs/scratch_playtest_bugs/.
+- Bug 2 code committed (see git log: Controls.Click + Game hook + Autopilot --real-clicks / --old-clicks). Proof run pending: worktree import cache was bare (robocopy seed per lead_brief Appendix needed), runner to do it.
+- 18:35 Bug 2 commit a9f431675. Suite at a9f431675: 3035/0/11 (godot/.shots/pb/suite.log). Harness proof INCONCLUSIVE: `--zone lowford --auto --teach-reset --real-clicks` (A) and `--old-clicks` (B) never put a freeze up (swing and ember_ground queued, then dropped how=gone; captain never came), so neither run showed a click answering or failing. Next: a run that puts a freeze up (the full new-game path: title, new, SB00, C01 into the prologue, as DEMO_GATE b_path / tools/experience/demo_run.py `fresh`), A vs B, and look for `teach swing answered how=key` in A only. Town smoke C: exit 0, only the engine's leak-at-exit ERROR lines.
+- Bug 1: not reproduced. Leading candidate: the freeze callouts themselves (sim paused, WASD ignored, clicks ignored before a9f431675).
