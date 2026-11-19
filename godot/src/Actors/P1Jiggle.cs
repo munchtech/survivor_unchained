@@ -44,8 +44,10 @@ public partial class P1Jiggle : SkeletonModifier3D
 
     /// <summary>The worn top is formed plate (ArmorHold.RigidValue): the top group's springs held at its worn rest
     /// (P1Springs.Held), its rigid cups riding her chest. Not pinned by --p1-support (that flag moves the rest, not this).</summary>
-    public bool HeldTop { get => springs?.Held["top"] ?? heldTop; set { heldTop = value; if (springs != null) springs.Held["top"] = value; } }
+    public bool HeldTop { get => springs?.Held["top"] ?? heldTop; set { heldTop = value && !HeldOff; if (springs != null) springs.Held["top"] = heldTop; } }
     bool heldTop;
+    /// <summary>--p1-held off (before/after shots): a plate top's springs not held, its support only (before 18 Nov).</summary>
+    public static readonly bool HeldOff = SurvivorUnchained.Args.Get("p1-held") == "off";
 
     /// <summary>One call for the armor code: the support on her skeleton's springs, if B's springs are there.</summary>
     public static void SetSupport(Skeleton3D sk, float top, float? bottom = null) => SetSupport(sk, top, bottom, top, top, top);
