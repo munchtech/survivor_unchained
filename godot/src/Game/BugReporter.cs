@@ -31,9 +31,6 @@ public partial class BugReporter : CanvasLayer
     bool prevPaused, resumeClip, askName;
     string tester = "";
     readonly ConcurrentQueue<string> done = new();
-    string toast = "";
-    double toastLeft;
-    Label? toastLabel;
     readonly List<Thread> threads = new();
     // the pause menu's snapshot: the world as it was before the menu opened
     Image? snapShot;
@@ -57,13 +54,6 @@ public partial class BugReporter : CanvasLayer
 
     public override void _Ready()
     {
-        toastLabel = Style.Label("", Style.UiBold, 18, Kit.Ink, false, HorizontalAlignment.Center, true);
-        toastLabel.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
-        toastLabel.GrowHorizontal = Control.GrowDirection.Both;
-        toastLabel.Position = new Vector2(0, 24);
-        toastLabel.MouseFilter = Control.MouseFilterEnum.Ignore;
-        toastLabel.Visible = false;
-        AddChild(toastLabel);
         tester = Args.Get("bug-tester") ?? ReadPrefs();
         autoZone = Args.Get("bug-auto-zone");
         autoAfter = autoZone != null ? Args.Num("bug-auto-after", 5) : -1;
@@ -116,7 +106,7 @@ public partial class BugReporter : CanvasLayer
             if (Typed() && !discardAsked)
             {
                 discardAsked = true;
-                if (hintLabel != null) { hintLabel.Text = "Esc again to discard"; hintLabel.Visible = true; }
+                if (hintLabel != null) { hintLabel.Text = "Esc again to discard"; }
             }
             else Cancel();
             GetViewport().SetInputAsHandled();
@@ -175,7 +165,7 @@ public partial class BugReporter : CanvasLayer
 
     void Cancel() { if (box != null) Close(); }
 
-    static StyleBoxFlat Underline() => new() { DrawCenter = false, BorderColor = Style.Ember, BorderWidthBottom = 2 };
+    static StyleBoxFlat Underline() => new() { DrawCenter = false, BorderColor = Style.Ember, BorderWidthBottom = 2, CornerRadiusBottomLeft = 3, CornerRadiusBottomRight = 3 };
 
     static void Tune(Control edit)
     {
@@ -192,7 +182,7 @@ public partial class BugReporter : CanvasLayer
         var edit = new LineEdit { PlaceholderText = placeholder, MaxLength = 120, CustomMinimumSize = new Vector2(440, 36), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, ContextMenuEnabled = false, CaretBlink = true };
         Style.Font(edit, Style.UiBold, size, Kit.Ink, false);
         Tune(edit);
-        edit.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Kit.Edge, BorderWidthBottom = 1, ContentMarginLeft = 10, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 });
+        var well = Kit.WellBox(10); well.ContentMarginTop = 5; well.ContentMarginBottom = 5; edit.AddThemeStyleboxOverride("normal", well);
         return edit;
     }
 
@@ -215,9 +205,9 @@ public partial class BugReporter : CanvasLayer
 
         if (askName)
         {
-            nameEdit = Field("Asked once; it signs your reports", 18);
+            nameEdit = Field("Signs every report you send", 18);
             nameEdit.MaxLength = 24;
-            col.AddChild(Group(Kit.Head("Your name"), nameEdit));
+            col.AddChild(Group(Kit.Head("Your name", "asked once"), nameEdit));
         }
         else nameEdit = null;
 
@@ -228,23 +218,24 @@ public partial class BugReporter : CanvasLayer
         Style.Font(descEdit, Style.UiBold, 16, Kit.Ink, false);
         Tune(descEdit);
         descEdit.AddThemeStyleboxOverride("normal", Kit.WellBox(10));
-        col.AddChild(Group(Kit.Head("More", "optional"), descEdit));
+        descEdit.Ready += () => descEdit.CustomMinimumSize = new Vector2(440, 5 * descEdit.GetLineHeight() + 20);
+        col.AddChild(Group(Kit.Head("Details", "optional"), descEdit));
 
         bool withClip = clip is { Jpegs.Count: > 0 };
-        var note = Style.Label(withClip ? "The screenshot and the last 30 seconds are attached." : "Screenshot only: the clip is off.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Left, false);
+        var note = Style.Label(withClip ? $"A screenshot and the last {ClipRecorder.Seconds:0} seconds of play are attached." : "Only a screenshot is attached: recording is off in Settings.", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
         note.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         var folder = Kit.Word("Open reports folder", OpenFolder, Kit.Ink2, 15);
+        foreach (var s in new[] { "normal", "hover", "pressed", "focus", "disabled" }) folder.AddThemeStyleboxOverride(s, new StyleBoxEmpty { ContentMarginLeft = 4, ContentMarginTop = 2, ContentMarginBottom = 2 });
         col.AddChild(Style.H(Style.Gap4, note, folder));
 
         sendBtn = Kit.Keyed(Act.Confirm, "Send", () => Send(false), Style.EmberHi);
         var cancel = Kit.Keyed(Act.Cancel, "Cancel", Cancel);
         // Enter sends from the one-line fields; in the description it adds a line, so the hint there says Ctrl+Enter
-        var hint = Style.Label("Ctrl+Enter sends", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Right, false);
+        var hint = Style.Label("", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Right, false);
         hint.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         hint.MouseFilter = Control.MouseFilterEnum.Ignore;
-        hint.Visible = false;
         hintLabel = hint;
-        var row = Style.H(0, cancel, hint, sendBtn);
+        var row = Style.H(Style.Gap4, cancel, hint, sendBtn);
         col.AddChild(Style.V(Style.Gap3, Kit.RuleH(), row));
 
         void Refresh()
@@ -258,8 +249,8 @@ public partial class BugReporter : CanvasLayer
         if (nameEdit != null) nameEdit.TextChanged += _ => Refresh();
         titleEdit.TextSubmitted += _ => { if (Valid()) Send(false); };
         if (nameEdit != null) nameEdit.TextSubmitted += _ => titleEdit.GrabFocus();
-        descEdit.FocusEntered += () => { hint.Text = "Ctrl+Enter sends"; hint.Visible = true; };
-        descEdit.FocusExited += () => { if (!discardAsked) hint.Visible = false; };
+        descEdit.FocusEntered += () => hint.Text = "Ctrl+Enter sends";
+        descEdit.FocusExited += () => { if (!discardAsked) hint.Text = ""; };
         descEdit.GuiInput += ev =>
         {
             if (ev is InputEventKey { Pressed: true, Echo: false } k && (k.Keycode == Key.Enter || k.Keycode == Key.KpEnter) && k.CtrlPressed)
@@ -439,14 +430,7 @@ public partial class BugReporter : CanvasLayer
         if (zid != lastZone) { lastZone = zid; zoneSince = clock; }
         while (done.TryDequeue(out var d))
         {
-            toast = d.StartsWith("failed") ? "Bug report " + d : "Bug report saved: " + d;
-            toastLeft = 6;
-        }
-        if (toastLabel != null)
-        {
-            toastLeft = Math.Max(0, toastLeft - delta);
-            toastLabel.Visible = toastLeft > 0;
-            toastLabel.Text = toast;
+            g.Toast(d.StartsWith("failed") ? new Toast(ToastKind.Warning, "The bug report could not be saved.") : new Toast(ToastKind.World, "Bug report saved", Path.GetFileName(d)));
         }
         // proof runs
         if (!autoDone && box == null && ((autoAt >= 0 && clock >= autoAt) || (autoZone != null && zid == autoZone && clock - zoneSince >= autoAfter)))

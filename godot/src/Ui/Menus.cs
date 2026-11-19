@@ -360,7 +360,7 @@ public partial class PauseScreen : Overlay
             menu.Add("Save", () => { if (G.Save("manual") == Play.Game.SaveOutcome.Saved) G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
-        menu.Add("Report a bug", () => Play.BugReporter.Instance?.OpenFromPause());
+        menu.Add("Report a bug", () => Play.BugReporter.Instance?.OpenFromPause(), "F8 at any moment");
         menu.Add("Open reports folder", Play.BugReporter.OpenFolder);
         menu.Add("Credits and licences", G.Credits);
         menu.Add("Leave to the title", G.QuitToTitle);
