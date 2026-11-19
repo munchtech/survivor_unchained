@@ -63,6 +63,8 @@ public static partial class DungeonDress
     // painting's view). Returns its footprint's half width (m), 0 when none was placed.
     /// <summary>(den r18 L3, R17 item 3) Every boulder placed this build (x, z, half width m), for DungeonLight: a lair shaft's pool keeps off them.</summary>
     internal static readonly List<(float X, float Z, float R)> Placed = new();
+    /// <summary>(den r19 lead, R18b item 4) The lair's standing tusk groups (O8; x, z, half width m), also in Placed: DungeonLight keeps the lair beams' screen quads off them. Cleared with Placed.</summary>
+    internal static readonly List<(float X, float Z, float R)> Tusks = new();
     static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
         // (den r18 lead, r9a: a big stone stood over the start room's campfire) no stone within --den-boulder-fire-clear m of a fire past its own half width (0 off)

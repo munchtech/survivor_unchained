@@ -1236,6 +1236,7 @@ public static partial class DungeonDress
         float W = pc.Metres.X * k, Hr = pc.Metres.Y * k;
         // (den r18 lead, L3 R17 item 5) the light's lair shafts keep off the stones, the root crowns and the arc (DungeonLight LairFrameFoot)
         if (sheet is "B6" or "O1" or "O8") Placed.Add((x, zz, 0.5f * W));
+        if (sheet == "O8") Tusks.Add((x, zz, 0.5f * W));   // (den r19 lead) the tusk groups apart, for the lair beams
         float rx = 0.46f * W, ry = ryk * rx;
         float aa = CamUp.Y * ry, hm = 0.94f * Hr;
         float bb = Mathf.Max((hm * hm - aa * aa) / (2f * hm), 0.25f * rx);
