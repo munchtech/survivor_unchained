@@ -2,6 +2,9 @@
 # Desktop builds of the Godot game, into release/godot/<platform>/.
 #
 #   tools/godot/export.sh [windows|linux|macos|all]    (default: all)
+#   tools/godot/export.sh windows-demo   the demo testers download (preset "Windows Demo", feature demo) and its
+#                                        proof twin ("Windows Demo (proof)", + perf: the autopilot's switches are read),
+#                                        then release/godot/SurvivorUnchained_Demo_<yyyymmdd>_<sha>.zip (the demo alone)
 #
 # Needs Godot's export templates (tools/godot/setup.sh --templates). Each
 # build is a release build: the C# compiled optimised, the .pck beside it.
@@ -32,8 +35,27 @@ build() {
   cp "$ROOT/godot/licences/"* "$ROOT/release/godot/$dir/licences/"
   echo "  release/godot/$dir/$file"
 }
+# The build's stamp (BugReporter reads res://data/build.json into each report; git-ignored, rewritten each export).
+stamp() {
+  local sha; sha="$(git -C "$ROOT" rev-parse --short=9 HEAD)"
+  git -C "$ROOT" diff --quiet HEAD -- godot || sha="$sha+dirty"
+  printf '{ "sha": "%s", "flavor": "%s", "date": "%s" }\n' "$sha" "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$ROOT/godot/data/build.json"
+}
+# The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.txt (tools/godot/demo_README.txt).
+demo_zip() {
+  local dir="$ROOT/release/godot/windows-demo"
+  cp "$ROOT/tools/godot/demo_README.txt" "$dir/README.txt"
+  local name="SurvivorUnchained_Demo_$(date +%Y%m%d)_$(git -C "$ROOT" rev-parse --short=9 HEAD).zip"
+  rm -f "$ROOT/release/godot/$name"
+  python "$ROOT/tools/godot/zip_dir.py" "$dir" "$ROOT/release/godot/$name" SurvivorUnchained_Demo
+  echo "  release/godot/$name ($(du -h "$ROOT/release/godot/$name" | cut -f1))"
+}
 # The first export imports anything new.
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+case "$want" in
+  windows-demo) stamp demo; build "Windows Demo" windows-demo SurvivorUnchained.exe; build "Windows Demo (proof)" windows-demo-proof SurvivorUnchained.exe; demo_zip; exit 0 ;;
+esac
+stamp full
 case "$want" in
   windows|all) build "Windows" windows SurvivorUnchained.exe ;;&
   linux|all) build "Linux" linux SurvivorUnchained.x86_64 ;;&

@@ -1070,6 +1070,11 @@ public sealed class Autopilot
         ActiveGoal? pin;
         bool crowd = false;
         if (!z.Combat) pin = pins.FirstOrDefault();
+        // (the demo, in the wood: on to the den's mouth (its own goal) whenever no foe is within 10 m; else she fights)
+        else if (Core.Demo.On && pins.FirstOrDefault(a => a.Def.Id.StartsWith("demo_")) is { } demoPin
+            && !b.Enemies.Living().Any(e => e.State is not (EnemyState.Dying or EnemyState.Burrowed) && b.HostileToPlayer(e)
+                && (e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z) < 100))
+            pin = demoPin;
         else
         {
             if (wonT < 0 || wonT < Args.Num("leave-after", 20)) return false;
