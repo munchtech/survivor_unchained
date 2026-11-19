@@ -1,6 +1,8 @@
 # Lane J: art and colour (day/night as data, painted cel that is ours)
 
-## TOP BLOCK (state file; read first) — HANDOFF READY art-color (19 Nov, lead 1 stopped at its 250k budget)
+## TOP BLOCK (state file; read first) — LEAD 2 IN PROGRESS (19 Nov; lead 1 stopped at 250k)
+- Lead 2 order (coordinator, usage at 95%): 1 glow bug, 2 day (gold tips, path edge, violet-brown shadows), 3 Verge day|night pair + 2-3 signature-idea sheet to main, 4 one judge round art-day-night, 5 her pool/skin, perf of night lights. Dusk/dawn, Low Ford, town, den: a later lead.
+- Lead 2 done: GLOW BUG FIXED ed6d5123d (cause: GlowK was 1; no cluster was in the frame, one a 97 m2 over the zone, most under crowns; a test light by her lit at once). Clusters now line VROAD/RUTS (glow paths/step/side/path_light), 669 clusters, 142 lights (was 331), violet alt 30%. Frame k6_vnight.
 - Lead 1: lane J art-color lead (su-lead-high), reporting to coordinator #15. Brief: C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord15\briefs\J_art_color.md (read whole). Owner ref: ...\scratch_coord15\owner_frames\owner_ref_night_day_colors_19nov.webp (split copies in the worktree's godot/.shots/ref/ref_day.png, ref_night.png).
 - Worktree: C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a4d7d9ecb5b5bf562 (godot/assets is a junction to its OWN public/assets, assume-unchanged; .godot/imported seeded). Branch art-color off origin/claude/vigilant-galileo-l6jqyx@446daf74d; tip = the commit that adds this block (pushed).
 - Items: art-day-night (3 judge rounds, 0 spent), art-cel-unique (3 rounds, 0 spent). Gate: one fresh su-lead-max judge per item, `Effort tier: always-seen`, effort max, 1:1 frames beside the ref. Nothing judged yet; nothing shown to the owner.
