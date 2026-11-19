@@ -289,6 +289,11 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None, row=None):
     mk = (db <= (law["back"] if law else BACK) + LIFT) & outer
     thr, tf = cand[rb[mk]], tb[mk]
     keep = ~infront[thr]
+    if law:
+        # (through a RIGID face at rest, her skin is through the plate whatever lies in front of her: a leather strap
+        # over the steel took her out of this rule and left the general rule's partial tuck, and her skin showed beside
+        # the straps' edges on the builder's cinched corset (armor-ref judge 3, 18 Nov))
+        keep |= rigid[tf]
     thr, tf = thr[keep], tf[keep]
     # (THROUGH A RIGID FACE, lane G solver round 9, 17 Nov: her skin through a plate at rest takes the law's whole depth,
     # as skin just under it does (the rule above: tuck_full_mm in front of a face is a full tuck). It took 10 mm, so on
