@@ -25,7 +25,7 @@ void fragment() {
 		c = stem_col * stem_emit;
 	} else {
 		float up = normalize(v_n).y;
-		vec3 core = mix(cap_col, vec3(1.0), 0.55);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through)
+		vec3 core = mix(cap_col, vec3(1.0), 0.3);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through; lead 4: 0.55 still white, 0.3)
 		c = (up > bands.x ? core : up > bands.y ? mix(cap_col, core, 0.35) : cap_col) * cap_emit;
 	}
 	if (dot(normalize(NORMAL), VIEW) < ink_w) c = ink_col;

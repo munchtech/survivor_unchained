@@ -8,7 +8,7 @@ render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabl
 global uniform float glow_k;
 uniform vec3 halo_col : source_color = vec3(0.56, 0.96, 1.0);
 uniform float halo_k = 0.5;        // the inner band's strength
-uniform vec4 bands = vec4(0.25, 0.5, 0.35, 0.2);   // (m1: two flat bands read as stickers) the core to, the mid band to (shares of the radius), the mid's and the outer's strength (of the core's)
+uniform vec4 bands = vec4(0.25, 0.5, 0.35, 0.3);   // (m1: two flat bands read as stickers) the core to, the mid band to (shares of the radius), the mid's and the outer's strength (of the core's)
 uniform float lobes = 0.12;        // how far the bands' edges wander with the angle (share of the radius)
 
 varying vec2 v_q;
