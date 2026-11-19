@@ -280,7 +280,7 @@ public static class DungeonLight
         var up = -Axis; var (sx, sy) = LairPx(x - r.X, 0f, zz - r.Z); var (gx, gy) = LairPx(x - r.X + up.X * LairGapH, z.HeightAt(x, zz) + up.Y * LairGapH, zz - r.Z + up.Z * LairGapH);
         return BeamNear(sx, sy, gx, gy, z, r, LairBeamClear, false) > 0;
     }
-    static readonly float SetClear = SurvivorUnchained.Args.Num("den-lair-set-clear", 1f);   // (den r19 L2) 0: only the fires reject (wave 1)
+    static readonly float SetClear = SurvivorUnchained.Args.Num("den-lair-set-clear", 0f);   // (den r19 L2) 0: only the fires reject (wave 1)   // (den r19 lead: default 0, r19b: with the crowns and tusks rejected the hashed fallback kept its last try, short beams over the s11 carcass and the s23 fire)
     static int BeamNear(float sx, float sy, float gx, float gy, ZoneData z, (float X, float Z, float R, string Kind) r, float clear, bool placed)
     {
         var a = new Vector2(sx, sy); var ab = new Vector2(gx, gy) - a; float d2 = Mathf.Max(ab.LengthSquared(), 1e-4f);
