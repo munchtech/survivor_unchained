@@ -39,13 +39,20 @@ public class WalkNotchTests
     }
 
     /// <summary>Every notch in a stretch of the zone: (where she stopped, the heading), one per stopping place.</summary>
-    static List<(double X, double Z, int Heading)> Notches(CollisionWorld cw, double x0, double x1, double z0, double z1, double step)
+    static List<(double X, double Z, int Heading)> Notches(CollisionWorld cw, double x0, double x1, double z0, double z1, double step, Func<double, double, bool>? where = null)
     {
         var all = cw.All().Where(c => !c.Gap).ToList();
+        var ext = all.Select(c => c.R + Math.Max(c.Hw, c.Hd) + R + 0.9).ToArray();
         var found = new List<(double X, double Z, int Heading)>();
         for (double x = x0; x <= x1; x += step)
             for (double z = z0; z <= z1; z += step)
             {
+                if (where != null && !where(x, z)) continue;
+                // (a notch needs two pieces within reach: skip open ground at once)
+                int near = 0;
+                for (int i = 0; i < all.Count && near < 2; i++)
+                    if (Math.Abs(all[i].X - x) < ext[i] && Math.Abs(all[i].Z - z) < ext[i]) near++;
+                if (near < 2) continue;
                 double sx = x, sz = z;
                 if (cw.Resolve(ref sx, ref sz, R, true)) continue;
                 for (int k = 0; k < 16; k++)
@@ -69,6 +76,122 @@ public class WalkNotchTests
                 }
             }
         return found;
+    }
+
+    /// <summary>Low Ford's ROAD (zone.json paths), the line she walks from the camp (z 90) to the exit (z -104).</summary>
+    static readonly (double X, double Z)[] Road = { (-2, 88), (1, 70), (8, 52), (10, 36), (4, 18), (-3, 2), (-2, -16), (2, -30), (0, -44), (-1, -60), (2, -78), (0, -96), (0, -104) };
+
+    static double RoadDist(double x, double z)
+    {
+        double best = 1e9;
+        for (int i = 0; i + 1 < Road.Length; i++)
+        {
+            var (ax, az) = Road[i]; var (bx, bz) = Road[i + 1];
+            double dx = bx - ax, dz = bz - az, t = Math.Clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
+            best = Math.Min(best, Math.Sqrt((x - ax - t * dx) * (x - ax - t * dx) + (z - az - t * dz) * (z - az - t * dz)));
+        }
+        return best;
+    }
+
+    /// <summary>The whole prologue walk, start to the zone exit: everywhere within 20 m of the road (the camp, the post,
+    /// the barrow and crypt, the ford all lie inside it), no notch anywhere (the owner, 18 Nov; playtest-bugs-2: four
+    /// more off the road west of the wagon).</summary>
+    [Fact]
+    public void The_whole_Low_Ford_walk_has_no_notch()
+    {
+        var cw = ZoneMeta.Load("lowford").Collision();
+        var n = Notches(cw, -35, 35, -104, 92, 0.25, (x, z) => RoadDist(x, z) < 20).Where(f => f.Z > -104).ToList();
+        foreach (var f in n) _out.WriteLine($"notch ({f.X:0.00},{f.Z:0.00}) heading {f.Heading * 22.5:0}");
+        Assert.Empty(n);
+    }
+
+    /// <summary>The notch fills (boxes 0.24 m thick in props_own.json "solid", each laid between two props) closed no way
+    /// through: on a 0.1 m grid of where her centre can stand within 20 m of the road, cells that were joined on the data
+    /// without the fills stay joined with them, the exit is still reached from the start, and no fill reaches more than
+    /// 0.55 m from the props it sits between (the middle of a gap up to 0.8 m wide) (it fills a gap between them, it adds nothing visible).</summary>
+    [Fact]
+    public void The_fills_close_no_way_through_and_stay_between_their_props()
+    {
+        var z = ZoneMeta.Load("lowford");
+        bool Fill(ColliderDef c) => c.Tag == "solid" && c.Kind == ColliderKind.Box && Math.Abs(c.Hd - 0.12) < 1e-9;
+        var fills = z.Colliders.Where(Fill).ToList();
+        Assert.True(fills.Count > 50);
+        var cwNew = z.Collision();
+        var cwOld = new CollisionWorld(z.Size) { Bound = z.Bound };
+        foreach (var c in z.Colliders.Where(c => !Fill(c)))
+            cwOld.Restore(new Collider { Id = c.Id, Kind = c.Kind, X = c.X, Z = c.Z, R = c.R, Hw = c.Hw, Hd = c.Hd, Rot = c.Rot, Tag = c.Tag, Soft = c.Soft, PlayerOnly = c.PlayerOnly, Drop = c.Drop });
+        const double step = 0.1; const double x0 = -35, z0 = -104; int nx = 701, nz = 1961;
+        int[] Label(CollisionWorld cw, out int count)
+        {
+            var lab = new int[nx * nz]; var free = new bool[nx * nz];
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < nz; j++)
+                {
+                    double x = x0 + i * step, zz = z0 + j * step;
+                    if (RoadDist(x, zz) >= 20) continue;
+                    double px = x, pz = zz; free[i * nz + j] = !cw.Resolve(ref px, ref pz, R, true);
+                }
+            count = 0; var q = new Stack<int>();
+            for (int s = 0; s < lab.Length; s++)
+            {
+                if (!free[s] || lab[s] != 0) continue;
+                lab[s] = ++count; q.Push(s);
+                while (q.Count > 0)
+                {
+                    int c = q.Pop(), ci = c / nz, cj = c % nz;
+                    for (int di = -1; di <= 1; di++)
+                        for (int dj = -1; dj <= 1; dj++)
+                        {
+                            int a = ci + di, b = cj + dj;
+                            if (a < 0 || b < 0 || a >= nx || b >= nz) continue;
+                            int n = a * nz + b;
+                            if (free[n] && lab[n] == 0) { lab[n] = count; q.Push(n); }
+                        }
+                }
+            }
+            return lab;
+        }
+        var lo = Label(cwOld, out int co); var ln = Label(cwNew, out int cn);
+        // each old region's cells that remain free lie in one new region
+        var map = new Dictionary<int, int>(); int split = 0, lost = 0, freeOld = 0;
+        for (int k = 0; k < lo.Length; k++)
+        {
+            if (lo[k] != 0) freeOld++;
+            if (lo[k] == 0) continue;
+            if (ln[k] == 0) { lost++; continue; }
+            if (!map.TryGetValue(lo[k], out var m)) map[lo[k]] = ln[k];
+            else if (m != ln[k]) split++;
+        }
+        _out.WriteLine($"old regions {co}, new regions {cn}, free cells {freeOld}, closed cells {lost}, cells split off {split}");
+        Assert.Equal(0, split);
+        int si = (int)Math.Round((-7.5 - x0) / step), sj = (int)Math.Round((87 - z0) / step), ei = (int)Math.Round((0 - x0) / step), ej = (int)Math.Round((-102 - z0) / step);
+        Assert.NotEqual(0, ln[si * nz + sj]);
+        Assert.Equal(ln[si * nz + sj], ln[ei * nz + ej]);
+        // reach: the furthest a fill's body stands from the nearest of the other pieces
+        var others = z.Colliders.Where(c => !Fill(c)).ToList();
+        double worst = 0;
+        foreach (var f in fills)
+            for (double u = -f.Hw; u <= f.Hw + 1e-9; u += 0.05)
+                for (double v = -f.Hd; v <= f.Hd + 1e-9; v += 0.06)
+                {
+                    double px = f.X + u * Math.Cos(f.Rot) - v * Math.Sin(f.Rot), pz = f.Z + u * Math.Sin(f.Rot) + v * Math.Cos(f.Rot), best = 1e9;
+                    foreach (var c in others)
+                    {
+                        if (Math.Abs(c.X - px) > c.R + 1 || Math.Abs(c.Z - pz) > c.R + 1) continue;
+                        double d;
+                        if (c.Kind == ColliderKind.Circle) d = Math.Sqrt((px - c.X) * (px - c.X) + (pz - c.Z) * (pz - c.Z)) - c.R;
+                        else
+                        {
+                            double cs = Math.Cos(-c.Rot), sn = Math.Sin(-c.Rot), lx = (px - c.X) * cs - (pz - c.Z) * sn, lz = (px - c.X) * sn + (pz - c.Z) * cs;
+                            double ex = lx - Math.Clamp(lx, -c.Hw, c.Hw), ez = lz - Math.Clamp(lz, -c.Hd, c.Hd);
+                            d = Math.Sqrt(ex * ex + ez * ez);
+                        }
+                        best = Math.Min(best, Math.Max(0, d));
+                    }
+                    worst = Math.Max(worst, best);
+                }
+        _out.WriteLine($"fills {fills.Count}, furthest a fill stands from any other piece: {worst:0.000} m");
+        Assert.True(worst <= 0.55, $"a fill reaches {worst:0.00} m from the props");
     }
 
     [Fact]

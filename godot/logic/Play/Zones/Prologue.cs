@@ -655,13 +655,21 @@ public sealed partial class Prologue : ZoneRuntime
             List<Enemy> InReach() => NearFoes(B!.Player, reach);
             if (InReach().Count >= 2)
             {
-                string act = $"Skill{gb.Slot + 1}";
-                Teach("groundbreaker", CalloutKind.Freeze, "Groundbreaker", $"When Resolve is full, it heaves itself at the pack. {Key(act.ToLowerInvariant())}: heave now.",
-                    new Aim { Hud = "seat:" + act, World = () => InReach().Select(e => Up(e.X, e.Z, 1.0)).ToList() }, act.ToLowerInvariant(), urgent: true);
+                // Groundbreaker is a kindled auto (taught_builds.json), so it sits past the four keys and has none to press or
+                // wait for (18 Nov: its slot 4 made "Skill5", unbound, and the Freeze could never be answered). A key slot
+                // would still name its key; an auto is a plain arrow and never freezes.
+                string? act = KeyActFor(gb.Slot);
+                string line = act == null ? "When Resolve is full, it heaves itself at the pack." : $"When Resolve is full, it heaves itself at the pack. {Key(act)}: heave now.";
+                Teach("groundbreaker", act == null ? CalloutKind.Arrow : CalloutKind.Freeze, "Groundbreaker", line,
+                    new Aim { Hud = act == null ? null : "seat:" + act, World = () => InReach().Select(e => Up(e.X, e.Z, 1.0)).ToList() }, act, urgent: act != null);
             }
         }
         ArpgCallouts2(p);
     }
+
+    /// <summary>The key action (lowercase act name) that fires the skill in this slot, or null when the slot is an auto (the
+    /// four keys are slots 0-3; the autos follow and have no key).</summary>
+    public static string? KeyActFor(int slot) => slot is >= 0 and < Weapons.MaxKeys ? $"skill{slot + 1}" : null;
 
     /// <summary>(A2, A4b) The hostile foes awake and up within r of her, nearest first.</summary>
     List<Enemy> NearFoes(PlayerState p, double r) => B?.Enemies.Living()
