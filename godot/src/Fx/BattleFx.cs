@@ -528,8 +528,8 @@ public partial class BattleFx : Node3D
         {
             float a = (R() - 0.5f) * 1.1f, v = (crit ? 4.5f : 3.6f) * (0.6f + R() * 0.7f);
             var dir = new Vector3(away.X * Mathf.Cos(a) - away.Z * Mathf.Sin(a), 0, away.X * Mathf.Sin(a) + away.Z * Mathf.Cos(a));
-            var c = R() < 0.4f ? HitPaint.Edge : HitPaint.Body;
-            float sz = (crit ? 0.085f : 0.07f) * (0.7f + R() * 0.6f);
+            var c = (R() < 0.4f ? HitPaint.Edge : HitPaint.Body) * 2.2f;   // (lit paint: the palette's linear colour lifted to read in the air)
+            float sz = (crit ? 0.14f : 0.11f) * (0.7f + R() * 0.6f);
             // up 1.2-2.4 m/s under gravity 11: ~0.3-0.45 s in the air; the life ends about then, the size shrinking to a speck
             Sparks.Spawn(at + Vector3.Up * 0.2f, dir * v + Vector3.Up * (1.2f + R() * 1.2f), 0.32f + R() * 0.14f, sz, c, c * 0.8f, sz * 0.25f, 11f, 0.5f);
         }
