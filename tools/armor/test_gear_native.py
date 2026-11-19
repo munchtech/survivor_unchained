@@ -204,7 +204,8 @@ def test_plain_natives_name_bare_steel_and_it_has_a_template():
     row = table["plainsteel"]
     assert (row["kind"], row["zone"], row["template"]) == ("metal", "metal", "steel") and "template" not in table["steel"]
     fin = json.load(open(os.path.join(os.path.dirname(gn.MATERIALS), "metal_finishes.json"), encoding="utf-8"))
-    assert "plainsteel" not in fin and fin["steel"] == "enamel"
+    # (steel keeps a finish row of its own, which has changed twice (enamel, then blued gunmetal): the test is that plainsteel has none)
+    assert "plainsteel" not in fin and "steel" in fin
     nat = os.path.join(gn.REPO, "godot", "art", "gear", "native")
     for pid in ("plate_spaulders_plain", "plate_cuisses_plain"):
         names = {p["material"] for p in gn.read_parts(os.path.join(nat, pid, pid + ".glb"))}

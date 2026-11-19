@@ -2309,6 +2309,51 @@ def bindings(only=None):
     return [b for b in out if not only or b.id in only]
 
 
+def native_rows(bodies, out_dir, only=None, say=print):
+    """Rows built natively on this body (godot/art/armor/<body folder>/armor_index.json, tools/armor/piece_ship.py --body):
+    {id: row} for those stamped body_glb == glb_body_hash(this body's close glb); a mismatched stamp is named and skipped
+    (the bound row, if any, is used). The row's tuck and cover files are copied into out_dir (the game reads a gear row's
+    tuck at gear/out/BODY/<tuck> and its cover at gear/out/BODY/armor_cover/<id>.bin), so the native ones are used as built."""
+    import shutil
+    bname = os.path.basename(os.path.normpath(os.path.dirname(bodies["close"].glb)))
+    nd = os.path.join(ARMOR, bname)
+    ip = os.path.join(nd, "armor_index.json")
+    if not os.path.exists(ip):
+        return {}
+    import piece_ship
+    want = piece_ship.glb_body_hash(bodies["close"].glb)
+    out = {}
+    for r in json.load(open(ip, encoding="utf-8")):
+        if only and r["id"] not in only:
+            continue
+        if r.get("body_glb") != want:
+            say(f"gear native: {r['id']}: stamped {r.get('body_glb')}, this body is {want}: skipped, the bound row is used")
+            continue
+        row = dict(r)
+        pre = "res://" + rel(nd)[len("godot/"):]
+        row["file"] = f"{pre}/{r['id']}.gltf"
+        if os.path.exists(os.path.join(nd, f"{r['id']}.sockets.json")):
+            row["sockets"] = f"{pre}/{r['id']}.sockets.json"
+        else:
+            row.pop("sockets", None)
+        row["fit"], row["native"] = "ok", True
+        row.pop("fit_fail", None)
+        row["body_hash"], row["play_hash"] = bodies["close"].hash, bodies["play"].hash
+        for kind, key in (("armor_tuck", "tuck"), ("armor_cover", None)):
+            src = os.path.join(nd, kind, f"{r['id']}.bin")
+            if not os.path.exists(src):
+                row.pop(key, None) if key else None
+                continue
+            os.makedirs(os.path.join(out_dir, kind), exist_ok=True)
+            shutil.copyfile(src, os.path.join(out_dir, kind, f"{r['id']}.bin"))
+            n = struct.unpack("<I", open(src, "rb").read(4))[0]
+            if key:
+                row["tuck"], row["tuck_count"] = f"armor_tuck/{r['id']}.bin", n
+            else:
+                row["cover_count"] = n
+        out[r["id"]] = row
+    return out
+
 # A SKIRT HANGS UNDER ITS BELT (lane G solver, 17 Nov; the engine's HerWear hangs a skirt from its own outfit's belt,
 # gear_wear HANGS): every bind carries each piece by its own skin points, so on B the warden skirt's top stood up to 6.3 mm
 # out past the belt's outer face at rest (490 mm^2, round the waist). After the belt is evaluated, each skirt point under
@@ -2959,10 +3004,12 @@ def cup_blend_rule(bd, ev, law=CUP_BLEND, tier="close"):
 
 
 def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
-    """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body."""
+    """Every binding evaluated on bodies; returns {id: eval}. bind_bodies is loaded when bodies is another body.
+    Rows built natively on this body (native_rows) replace the bound rows of the same id."""
     os.makedirs(out_dir, exist_ok=True)
     index, evs = [], {}
-    bds = bindings(only)
+    nat = native_rows(bodies, out_dir, only) if write else {}
+    bds = [bd for bd in bindings(only) if bd.id not in nat]
     # (HANG: a hanging piece is built after its host, which is evaluated here when the build leaves it out)
     hosts = {}
     for bd in bds:
@@ -3061,6 +3108,7 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
         # (her skin's tuck and each piece's cover, native on this body: tools/armor/gear_tuck.py)
         import gear_tuck
         gear_tuck.write_all(out_dir, bodies["close"].glb, bodies["play"].glb, index)
+        index += nat.values()
         ip = os.path.join(out_dir, "gear_index.json")
         if only and os.path.exists(ip):
             # (a build of some pieces keeps the folder's other rows as they stand, when they are this body's)

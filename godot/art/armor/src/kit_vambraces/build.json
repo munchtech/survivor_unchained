@@ -1,0 +1,81 @@
+{
+ "recipe": "vambraces",
+ "module": "kit_limbs",
+ "piece": {
+  "id": "kit_vambraces",
+  "name": "Gilded Vambraces",
+  "slot": "bracers",
+  "covers": [
+   "bracers"
+  ],
+  "layer": 2,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "leather": "darkleather",
+  "plate": "steel",
+  "trim": "gold"
+ },
+ "clear": 0.0055,
+ "clear_min": 0.004,
+ "thick": 0.0016,
+ "plate_thick": 0.0018,
+ "rim": {
+  "w": 0.0085,
+  "h": 0.0032,
+  "sides": 6,
+  "step": 0.004
+ },
+ "faces_x": 0.26,
+ "axis": [
+  0.02,
+  0.262
+ ],
+ "step": 0.004,
+ "dth": 3.0,
+ "close": [
+  5,
+  7
+ ],
+ "sig": [
+  2.0,
+  2.5
+ ],
+ "lining": {
+  "elbow": 0.028,
+  "elbow_in": 0.07,
+  "wrist": 0.218,
+  "nr": 24,
+  "nc": 72,
+  "tuck": 16.0
+ },
+ "plate": {
+  "th": 112.0,
+  "nr": 22,
+  "nc": 37,
+  "elbow": 0.024,
+  "elbow_dip": 0.03,
+  "wrist": 0.21,
+  "flare": 0.016,
+  "flare_len": 0.06,
+  "rim_k": 0.85,
+  "gap": 0.0012
+ },
+ "wrist_band": {
+  "s0": 0.198,
+  "s1": 0.222,
+  "thick": 0.0018
+ },
+ "laces": {
+  "s0": 0.08,
+  "s1": 0.185,
+  "n": 6,
+  "half": 0.011
+ },
+ "params": {},
+ "plate_follow": true
+}

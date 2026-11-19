@@ -27,7 +27,7 @@ cover.py), spread past its edge over --tuck-r mm (falling off to 0); its triangl
 without the tuck (the baseline).
 
     python tools/armor/wearcheck.py [--pieces a,b,..] [--clips c1,c2,..] [--step 2] [--same] [--grid 2.5]
-                                    [--out <dir>] [--no-skin] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
+                                    [--out <dir>] [--no-skin] [--no-cap] [--no-lift] [--lift-mm 10] [--dump] [--file id=<gltf>] [--tuck-file id=<bin>] [--garment-tuck [--tuck-r 20] [--tuck-off] [--order ..]]
 Writes <out>/matrix.json and <out>/table.txt (worst first).
 """
 
@@ -129,6 +129,84 @@ def signed_gap(t, facing, reach):
     return g, j, gout
 
 
+class Caps:
+    """A piece's openings, for the inside/outside decision only (--no-cap switches it off). The piece's open boundary
+    loops (edges used by one triangle, after welding coincident positions) each capped by a fan from the loop's centroid,
+    wound as the continuation of the piece's own faces (an inner wall's loop is capped facing into the cavity, so a ray
+    leaving the cavity through it meets an entry face). Distances never measure to a cap: see cap_fix."""
+
+    def __init__(self, P, T):
+        from scipy.sparse import coo_matrix
+        from scipy.sparse.csgraph import connected_components
+        u = np.unique(T)
+        q = np.round(P[u] * 1e5).astype(np.int64)
+        _, inv = np.unique(q, axis=0, return_inverse=True)
+        inv = inv.ravel()
+        wid = np.zeros(len(P), np.int64)
+        wid[u] = inv
+        rep = np.zeros(inv.max() + 1, np.int64)
+        rep[inv[::-1]] = u[::-1]
+        ea, eb = T[:, [0, 1, 2]].ravel(), T[:, [1, 2, 0]].ravel()
+        wa, wb = wid[ea], wid[eb]
+        ok = wa != wb
+        ea, eb, wa, wb = ea[ok], eb[ok], wa[ok], wb[ok]
+        key = np.minimum(wa, wb) * (inv.max() + 1) + np.maximum(wa, wb)
+        _, k2, cnt = np.unique(key, return_inverse=True, return_counts=True)
+        bd = cnt[k2.ravel()] == 1
+        wa, wb = wa[bd], wb[bd]
+        self.n = int(len(wa))
+        if not self.n:
+            self.ids = np.zeros(0, np.int64)
+            return
+        nw = inv.max() + 1
+        _, lab = connected_components(coo_matrix((np.ones(len(wa)), (wa, wb)), shape=(nw, nw)), directed=False)
+        self.A, self.B = rep[wa], rep[wb]
+        self.comp = lab[wa]
+        cu = np.unique(np.r_[wa, wb])
+        self.cv, self.cc = rep[cu], lab[cu]
+        _, self.cc = np.unique(self.cc, return_inverse=True)
+        self.comp = np.unique(lab[wa], return_inverse=True)[1].ravel()
+        self.cc = self.cc.ravel()
+        self.ncomp = int(self.cc.max()) + 1
+        self.ids = np.unique(np.r_[self.A, self.B, self.cv])
+
+    def tris(self, getp):
+        """The cap triangles [m, 3, 3] with positions from getp(vertex ids): (b, a, centroid) per boundary edge a->b."""
+        if not self.n:
+            return np.zeros((0, 3, 3))
+        pv = getp(self.cv)
+        cen = np.stack([np.bincount(self.cc, pv[:, k], self.ncomp) for k in range(3)], 1) /             np.bincount(self.cc, minlength=self.ncomp)[:, None]
+        return np.stack((getp(self.B), getp(self.A), cen[self.comp]), 1)
+
+
+CAP = True
+
+
+def cap_fix(O, D, g, go, t, capT):
+    """A ray that leaves through an opening of the piece counts as crossing it. Rays read past the piece (g < 0) whose
+    nearest forward hit, real faces (t: cast against them, unfiltered) and caps (capT [m, 3, 3]) together, is an entry
+    face of a cap are inside it: their gap is the distance to the real face they were read against, made positive
+    (clearance); the cap only decides. Returns g, go."""
+    if capT is None or not len(capT) or not len(O):
+        return g, go
+    sel = np.nonzero(g < 0)[0]
+    if not len(sel):
+        return g, go
+    real = np.where(t[sel] >= 0, t[sel], np.inf).min(1)
+    inside = np.zeros(len(sel), bool)
+    for a in range(0, len(sel), 128):
+        ii = sel[a:a + 128]
+        V = np.broadcast_to(capT[None], (len(ii),) + capT.shape)
+        tc, fc, _, _ = cast(O[ii], D[ii], V)
+        tc = np.where((tc >= 0) & (fc < 0), tc, np.inf).min(1)
+        inside[a:a + 128] = tc < real[a:a + 128]
+    sel = sel[inside]
+    g, go = g.copy(), go.copy()
+    g[sel] = np.abs(g[sel])
+    go[sel] = np.where(np.isfinite(go[sel]), np.maximum(go[sel], g[sel]), g[sel])
+    return g, go
+
+
 def closest_on_tri(p, A, B, C):
     """Closest points on triangles A, B, C [..., 3] to points p [..., 3] (broadcast; Ericson's regions)."""
     ab, ac, ap = B - A, C - A, p - A
@@ -157,6 +235,10 @@ def closest_on_tri(p, A, B, C):
     return Q
 
 
+EXTRA_REST = 0.012  # an extra face reads only if it lay within this of the sample at rest (m)
+LEGACY = False     # --legacy-depth: confirm_gap reads only the rest-footprint faces and one face's normal (the old reading)
+
+
 def confirm_gap(O, F, inner, thick):
     """(--confirm, armor 10 c2) A ray-cast gap checked by the nearest face: O [m, 3] samples, F [m, k, 3, 3] B's posed
     faces near each, inner [m, k] (the face looked at the sample at rest: B's inner face there), thick B's shell (m).
@@ -167,12 +249,31 @@ def confirm_gap(O, F, inner, thick):
     A, B, C = F[:, :, 0], F[:, :, 1], F[:, :, 2]
     Q = closest_on_tri(O[:, None], A, B, C)
     d = np.linalg.norm(Q - O[:, None], axis=2)
+    d = np.where(np.isnan(d), np.inf, d)      # (nan faces: not used)
     k = d.argmin(1)
     rows = np.arange(len(O))
-    n = np.cross(B - A, C - A)[rows, k]
-    n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
+    if LEGACY:
+        n = np.cross(B - A, C - A)[rows, k]
+        n /= np.linalg.norm(n, axis=1)[:, None] + 1e-30
+    else:
+        # (the sign from the pseudo-normal: every face as near as the nearest adds its unit normal, so a point nearest a
+        # shared edge or corner, or a 1 mm rim seen edge-on, reads the side of the surface and not of one face)
+        nf = np.cross(B - A, C - A)
+        nf /= np.linalg.norm(nf, axis=2)[:, :, None] + 1e-30
+        n = np.where((d <= d[rows, k][:, None] + 1e-7)[:, :, None], np.nan_to_num(nf), 0.0).sum(1)
+        nn = np.linalg.norm(n, axis=1)
+        n /= nn[:, None] + 1e-30
+        # (the faces nearest cancel (antiparallel inner and outer walls meeting at an open rim): the point is nearest an
+        # opening's edge, past the end of the piece, not inside it: no sign to read; it is clear by its distance)
+        rim = nn < 0.5
     side = ((O - Q[rows, k]) * n).sum(1)
     dk, ik = d[rows, k], inner[rows, k]
+    if not LEGACY:
+        # (nearest an edge or corner, more than the shell away and not square to the surface (cos under 0.8): that is the
+        # piece's rim beside the point, and a sign off a shell's edge is not reliable; clear by distance, as the rule below)
+        rim = rim | ((np.abs(side) < 0.8 * np.maximum(dk, 1e-9)) & (dk > thick))
+        side = np.where(rim, np.maximum(side, 1e-9), side)
+        ik = ik | rim
     # (in front of a face that faced away at rest counts as through only square to it: a nearest point on its edge
     # (cos under 0.8) is B's rim beside her, her skin past the plate's end, not out through it)
     cs = np.abs(side) / np.maximum(dk, 1e-9)
@@ -308,6 +409,21 @@ class SkinPts:
         return disp, t
 
 
+SEATED_MM = 15.0   # a piece point this near her skin at rest is "seated" (lift)
+
+
+def seated_mask(skin_mm, seated_mm=SEATED_MM):
+    """Which of a piece's points sit on her skin at rest (distance <= seated_mm)."""
+    return np.asarray(skin_mm) <= seated_mm
+
+
+def lift_of(P_posed, skin_posed_kd, rest_mm):
+    """Lift of seated points, mm: posed distance to her posed skin minus the rest distance (a plate that peels off her
+    reads positive; one that rides along, ~0)."""
+    d, _ = skin_posed_kd.query(P_posed)
+    return d * 1000 - np.asarray(rest_mm)
+
+
 def hold_key(*rows):
     top = next((r for r in rows if r["slot"] == "top"), None)
     h = (top or {}).get("hold") or DEFAULT_HOLD
@@ -315,7 +431,48 @@ def hold_key(*rows):
 
 
 # ---------------------------------------------------------------------- main --
+def worn_shapes_of(rows):
+    """Her support shapes {name: weight} while the checked pieces are worn: the max over the rows whose own build.json
+    says "worn_rest" (armor-D, 17 Nov), each as kit_build.worn_shapes reads it (worn_rest.law: the row's hold -> support ->
+    form_support_lift / _press / _fill, the build's own function). {} when no piece is built on her worn rest (all of A's)."""
+    import kit_build
+    out = {}
+    for r in rows:
+        f = os.path.join(kit_build.SRC, r["id"], "build.json")
+        if not os.path.isfile(f):
+            continue
+        cfg = kit_build.by_body(json.load(open(f, encoding="utf-8")))
+        if cfg.get("worn_rest"):
+            for k, w in kit_build.worn_shapes(cfg).items():
+                out[k] = max(out.get(k, 0.0), float(w))
+    return out
+
+
+def shape_delta(path, shapes, n):
+    """Her skin's rest points moved by the named morph targets (weight x delta), per vertex of skin.Body's order (her
+    "Heroine" meshes come first in its files); a shape the body lacks is skipped (A has no support shapes). [n, 3]."""
+    D = np.zeros((n, 3))
+    g = skin.Gltf(path)
+    base = 0
+    for nd in g.js["nodes"]:
+        if "mesh" not in nd or "skin" not in nd or nd["name"] != "Heroine":
+            continue
+        mesh = g.js["meshes"][nd["mesh"]]
+        names_t = mesh.get("extras", {}).get("targetNames", [])
+        for pr in mesh["primitives"]:
+            m = len(g.accessor(pr["attributes"]["POSITION"]))
+            for nm, w in shapes.items():
+                k = names_t.index(nm) if nm in names_t else -1
+                tg = pr.get("targets", [])
+                if w and 0 <= k < len(tg) and "POSITION" in tg[k]:
+                    D[base:base + m] += w * g.accessor(tg[k]["POSITION"]).astype(float)
+            base += m
+    return D
+
+
 def main(argv):
+    import bodies
+    bodies.take(argv)
     def opt(name, default):
         return argv[argv.index(name) + 1] if name in argv else default
     only = set(opt("--pieces", "").split(",")) - {""} or None
@@ -323,10 +480,15 @@ def main(argv):
     step = int(opt("--step", "2"))
     grid = float(opt("--grid", "2.5")) / 1000
     same = "--same" in argv
+    lift_on = "--no-lift" not in argv
+    lift_mm = float(opt("--lift-mm", "10"))
     gt = "--garment-tuck" in argv
     gt_off = "--tuck-off" in argv
     gt_r = float(opt("--tuck-r", "20")) / 1000
     gt_w = "--tuck-weights" in argv     # (a prototype: the laid part of A skinned toward B's weights by its value)
+    global CAP, LEGACY
+    LEGACY = "--legacy-depth" in argv   # (skin tests: --confirm reads the old depth, a ray hit distance's nearest face among the rest footprint's only)
+    CAP = "--no-cap" not in argv        # (openings of a piece capped for the inside test, Caps; --no-cap: the old reading)
     conf = "--confirm" in argv          # (skin tests: each gap past B checked by the nearest face, confirm_gap)
     dump = "--dump" in argv             # (per sample of each skin test: its least gap and where: <out>/skin_<B>.npz)
     order = opt("--order", "").split(",") if "--order" in argv else \
@@ -335,6 +497,7 @@ def main(argv):
     os.makedirs(out_dir, exist_ok=True)
     t_start = time.time()
 
+    bodies.use_for_check(sys.modules[__name__], clips)
     rows = catalogue(only)
     byid = {r["id"]: r for r in rows}
     # (--file id=<gltf> / --tuck-file id=<bin>: a candidate in place of the installed piece or its tuck record)
@@ -343,9 +506,9 @@ def main(argv):
             if a_ == flag and "=" in argv[i_ + 1]:
                 k_, v_ = argv[i_ + 1].split("=", 1)
                 byid[k_][fld] = v_
-    sk = skin.Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
-    files = [(skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin"),
-             (skin.PEOPLE / "heroine.glb", lambda n: n == "HeroineHead", "head")]
+    sk = skin.Skeleton.load(bodies.skeleton_for(skin))
+    files = [(bodies.glb_for(skin), lambda n: n == "Heroine", "skin"),
+             (bodies.glb_for(skin), lambda n: n == "HeroineHead", "head")]
     owner = {}
     for path in sorted({r["path"] for r in rows}):
         names = {m: r["id"] for r in rows if r["path"] == path for m in r["meshes"]}
@@ -353,6 +516,14 @@ def main(argv):
         files.append((skin.Path(path), lambda n, s=frozenset(names): n in s, "garment"))
     body = skin.Body(sk, files, skin.Jiggle(sk, 1, 1), label="her", helpers=True)
     pid = np.array([owner.get(p, "") for p in body.piece])
+    # (her skin at her worn rest when a piece being checked is built on it, as in game under a hold-0.55 top: the shapes the
+    # build used, in her rest points before every clip's skinning; --bare: her bare skin, as before)
+    worn = {} if "--bare" in argv else worn_shapes_of(rows)
+    if worn:
+        shaped = shape_delta(bodies.glb_for(skin), worn, len(body.P))
+        body.P = body.P + shaped
+        print("wearcheck: her skin at the worn rest", {k: round(v, 3) for k, v in worn.items()},
+              f"(moves {int((np.abs(shaped).max(1) > 1e-7).sum())} points, up to {np.abs(shaped).max() * 1000:.1f} mm)")
     P0 = body.P
     isk = np.nonzero(body.kind == "skin")[0]
     ish = np.nonzero(body.kind != "garment")[0]                      # her skin and head: her surface's normals
@@ -376,8 +547,14 @@ def main(argv):
         dist, near = kd_sh.query(P0[smp])
         T = body.T[tri_piece == r["id"]]
         pc[r["id"]] = {"samples": smp, "near": ish[near], "skin_mm": dist * 1000, "T": T,
-                       "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v])}
+                       "kd": cKDTree(P0[T].mean(1)), "kdv": cKDTree(P0[v]),
+                       "caps": Caps(P0, T) if CAP else None}
 
+    if os.environ.get("WC_CAPS"):
+        for k_, v_ in pc.items():
+            if v_["caps"] is not None:
+                c_ = v_["caps"]
+                print(f"wearcheck: caps {k_}: {c_.n} boundary edges, {getattr(c_, 'ncomp', 0)} loops")
     # (each sample's area in GRID^2 units, g4: her skin is tested at every vertex, so its counts grew with her mesh's
     # density (the arm-root graft: 2.5 v/cm2 -> 5.9 on her arms) though no more of her came through; the area columns
     # (aOUT>2 etc.: a skin vertex its third of its triangles' area, a voxel-thinned sample at least one voxel) do not)
@@ -422,6 +599,8 @@ def main(argv):
             ci = ci.reshape(len(ii), -1)
             t, fa, u, v = cast(O[ii], D[ii], P0[B["T"][ci]])
             g, j, go = signed_gap(t, fa, REACH)
+            if B["caps"] is not None:
+                g, go = cap_fix(O[ii], D[ii], g, go, t, B["caps"].tris(lambda i: P0[i]))
             ok = np.isfinite(g)
             if not ok.any():
                 continue
@@ -499,6 +678,17 @@ def main(argv):
     t_rest = time.time() - t_start
     print(f"wearcheck: {len(rows)} pieces, {len(tests)} tests with a footprint ({t_rest:.0f} s at rest)")
 
+    # Lift: each piece's seated points (<= SEATED_MM from her skin at rest), per mesh part.
+    lift = {}
+    if lift_on:
+        for rid, c_ in pc.items():
+            m_ = seated_mask(c_["skin_mm"])
+            if m_.any():
+                sm_ = c_["samples"][m_]
+                lift[rid] = {"pts": sm_, "rest": c_["skin_mm"][m_], "part": np.array([str(body.piece[i]) for i in sm_]),
+                             "hold": hold_key(byid[rid]), "max": np.full(len(sm_), -np.inf), "n": np.zeros(len(sm_), bool),
+                             "worst": (-np.inf, None, None, 0)}
+
     # Each test's points into the posed set.
     for x in tests:
         fp = x["fp"]
@@ -530,6 +720,7 @@ def main(argv):
             x["inner0"] = (n0 * (O0[:, None] - F0.mean(2))).sum(2) > 0
             x["thick"] = float(np.median(fp["out"] - fp["gap"]))
             x["raw_min"] = np.full(n, np.inf)
+            x["O0"] = O0
             rr0 = np.nonzero(fp["gap"] < -0.0005)[0]
             if len(rr0):
                 g0, go0 = confirm_gap(O0[rr0], F0[rr0], x["inner0"][rr0], x["thick"])
@@ -544,10 +735,12 @@ def main(argv):
         x["per_clip"] = {}
         x["seen"] = 0
 
-    holds = sorted({x["hold"] for x in tests})
+    holds = sorted({x["hold"] for x in tests} | {v_["hold"] for v_ in lift.values()})
     for h in holds:
         group = [x for x in tests if x["hold"] == h]
-        need = np.unique(np.concatenate([ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group]))
+        lg = [v_ for v_ in lift.values() if v_["hold"] == h]
+        need = np.unique(np.concatenate([ish] + [v_["pts"] for v_ in lg] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group] +
+                                        [pc[B]["caps"].ids for B in {x["B"] for x in group} if pc[B]["caps"] is not None]))
         at = np.full(len(P0), -1)
         at[need] = np.arange(len(need))
         sh_local = at[ish]
@@ -562,6 +755,15 @@ def main(argv):
                 Np = np.zeros_like(Pp)
                 Np[sh_local] = skin._normals(Pp[sh_local], TS)
                 kd_frame = {}
+                if lg:
+                    kd_pose = cKDTree(Pp[sh_local])
+                    for v_ in lg:
+                        L = lift_of(Pp[at[v_["pts"]]], kd_pose, v_["rest"])
+                        v_["max"] = np.maximum(v_["max"], L)
+                        v_["n"] |= L > lift_mm
+                        k_ = int(L.argmax())
+                        if L[k_] > v_["worst"][0]:
+                            v_["worst"] = (float(L[k_]), c, f, int(v_["pts"][k_]))
                 for x in group:
                     O = Pp[at[x["pts"]]]
                     D = Np[at[x["dir"]]]
@@ -592,6 +794,8 @@ def main(argv):
                     if len(r):
                         t, fa, _, _ = cast(O[r], D[r], Pp[at[x["candv"][r]]])
                         gr, _, gor = signed_gap(t, fa, REACH_POSED)
+                        if pc[x["B"]]["caps"] is not None:
+                            gr, gor = cap_fix(O[r], D[r], gr, gor, t, pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]))
                         lost = np.nonzero(~np.isfinite(gr))[0]
                         if len(lost):
                             # (B slid off its rest hit: B's faces over every footprint of B, nearest the sample)
@@ -601,6 +805,9 @@ def main(argv):
                             _, ii = kd_frame[x["B"]].query(O[r[lost]], k=min(K0, len(Sv)))
                             t, fa, _, _ = cast(O[r[lost]], D[r[lost]], Pp[at[Sv[ii.reshape(len(lost), -1)]]])
                             gl, _, gol = signed_gap(t, fa, REACH_POSED)
+                            if pc[x["B"]]["caps"] is not None:
+                                gl, gol = cap_fix(O[r[lost]], D[r[lost]], gl, gol, t,
+                                                  pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]))
                             gr[lost], gor[lost] = gl, gol
                             x["lost"] += int((~np.isfinite(gl)).sum())
                         g[r], go[r] = gr, gor
@@ -608,13 +815,32 @@ def main(argv):
                         x["raw_min"] = np.minimum(x["raw_min"], np.where(np.isfinite(g), g, np.inf))
                         rc = np.nonzero(g < -0.0005)[0]
                         if len(rc):
-                            g[rc], go[rc] = confirm_gap(O[rc], Pp[at[x["candv"][rc]]], x["inner0"][rc], x["thick"])
+                            Fc, ic = Pp[at[x["candv"][rc]]], x["inner0"][rc]
+                            if not LEGACY:
+                                # (the nearest faces of all of B, not only the rest footprint's: a sample whose footprint
+                                # faces are far read a far wall as its depth; the rest flag of each extra face from rest)
+                                if x["B"] not in kd_frame:
+                                    kd_frame[x["B"]] = cKDTree(Pp[at[SvB[x["B"]]]].mean(1))
+                                Sv = SvB[x["B"]]
+                                _, ii = kd_frame[x["B"]].query(O[rc], k=min(24, len(Sv)))
+                                ii = ii.reshape(len(rc), -1)
+                                F0x = P0[Sv[ii]]
+                                n0x = np.cross(F0x[:, :, 1] - F0x[:, :, 0], F0x[:, :, 2] - F0x[:, :, 0])
+                                ix = (n0x * (x["O0"][rc][:, None] - F0x.mean(2))).sum(2) > 0
+                                # (only faces that were near her at rest count: the rest flag says nothing of a face far off)
+                                q0 = closest_on_tri(x["O0"][rc][:, None], F0x[:, :, 0], F0x[:, :, 1], F0x[:, :, 2])
+                                far0 = np.linalg.norm(q0 - x["O0"][rc][:, None], axis=2) > EXTRA_REST
+                                F0x = np.where(far0[:, :, None, None], np.nan, F0x)
+                                Fx = np.where(far0[:, :, None, None], np.nan, Pp[at[Sv[ii]]])
+                                Fc = np.concatenate([Fc, Fx], 1)
+                                ic = np.concatenate([ic, ix], 1)
+                            g[rc], go[rc] = confirm_gap(O[rc], Fc, ic, x["thick"])
                     x["min_out"] = np.minimum(x["min_out"], np.where(np.isfinite(go), go, np.inf))
                     # (WC_PROBE=<clip>:<frame>,..: that frame's skin samples, rays, gaps and B's posed faces written to
                     # <out>/probe_<B>_<clip>_<frame>.npz, for a check by other means; nothing else changes)
                     if x["A"] == "skin" and f"{c}:{f}" in os.environ.get("WC_PROBE", "").split(","):
                         np.savez(os.path.join(out_dir, f"probe_{x['B']}_{c}_{f}.npz"), O=O, D=D, g=g, go=go, pts=x["pts"],
-                                 T=Pp[at[SvB[x["B"]]]])
+                                 T=Pp[at[SvB[x["B"]]]], CAP=pc[x["B"]]["caps"].tris(lambda i: Pp[at[i]]) if pc[x["B"]]["caps"] else np.zeros((0, 3, 3)))
                     x["seen"] += len(g)
                     gg = np.where(np.isfinite(g), g, np.inf)
                     if dump:
@@ -673,6 +899,22 @@ def main(argv):
             e["B_skin_mm_median"] = round(float(np.median(pc[A]["skin_mm"][fi] + x["fp"]["gap"] * 1000)), 2)
             e["A_skin_mm_at_worst"] = round(float(pc[A]["skin_mm"][fi][wi]), 2)
         out.append(e)
+    lift_rows = []
+    for rid, v_ in lift.items():
+        parts = sorted(set(v_["part"])) if len(set(v_["part"])) > 1 else []
+        for part in [None] + parts:
+            sel = np.ones(len(v_["pts"]), bool) if part is None else v_["part"] == part
+            mx = v_["max"][sel]
+            if part is None:
+                w = v_["worst"]
+            else:
+                k_ = int(np.nonzero(sel)[0][mx.argmax()])
+                w = (float(v_["max"][k_]), None, None, int(v_["pts"][k_]))
+            lift_rows.append({"piece": rid, "part": part, "seated": int(sel.sum()), "worst_lift_mm": round(float(mx.max()), 1),
+                              "n_over": int((mx > lift_mm).sum()), "clip": w[1], "frame": w[2],
+                              "bone": str(np.array(body.sk.names)[body.J[w[3], int(body.W[w[3]].argmax())]]),
+                              "worst_pt_rest_mm": round(float(v_["rest"][np.nonzero(sel)[0][mx.argmax()]]), 1)})
+    lift_rows.sort(key=lambda e: -e["worst_lift_mm"])
     out.sort(key=lambda e: (-e["out_n_over_2"], -(e["worst_mm"] if e["worst_mm"] is not None else -99)))
     took = time.time() - t_start
     meta = {"garment_tuck": gt and not gt_off, "tuck_r_mm": gt_r * 1000, "order": order, "clips": clips, "step": step, "grid_mm": grid * 1000, "reach_mm": REACH * 1000, "K": K, "seconds": round(took),
@@ -680,7 +922,8 @@ def main(argv):
             "the least clearance); n_*: A samples (grid voxels) ever past by more than 0.5 / 2 mm; rest_n_over_2 at rest; "
             "per_clip: [worst mm, samples past 2 mm]; out_*: the same past B's OUTER face (what shows; inside B's shell "
             "is hidden); table sorted by out_n_over_2 then worst_mm"}
-    json.dump({"meta": meta, "pairs": out}, open(os.path.join(out_dir, "matrix.json"), "w"), indent=1)
+    meta["lift_mm"] = lift_mm
+    json.dump({"meta": meta, "pairs": out, "lift": lift_rows}, open(os.path.join(out_dir, "matrix.json"), "w"), indent=1)
     if dump:
         for x in tests:
             if x["A"] == "skin":
@@ -698,6 +941,15 @@ def main(argv):
                      f"{e.get('B_skin_mm_median', 0):5.1f} {e['B_shell_mm_median']:4.1f} {e['out_worst_mm'] or 0:5.1f} {e['out_n_over_2']:5d} "
                      f"{e['rest_out_n_over_2']:6d} {e['worst_clip']}@{e['worst_frame']} {e['worst_bone']}"
                      f"{' REVERSED' if e['reversed'] else ''}{' RIGID-INNER' if e.get('rigid_lay') else ''}\n")
+    if lift_on:
+        with open(os.path.join(out_dir, "lift.txt"), "w") as fh:
+            fh.write(f"LIFT: seated points (<= {SEATED_MM:g} mm from her skin at rest); lift = posed distance - rest distance\n")
+            fh.write(f"{'piece':16} {'part':24} {'seated':>6} {'worst':>6} {'n>' + format(lift_mm, 'g'):>6} {'rest':>5} worst_clip@frame bone\n")
+            for e in lift_rows:
+                at_ = f"{e['clip']}@{e['frame']}" if e['clip'] else "-"
+                fh.write(f"{e['piece']:16} {e['part'] or '(all)':24} {e['seated']:6d} {e['worst_lift_mm']:6.1f} {e['n_over']:6d} "
+                         f"{e['worst_pt_rest_mm']:5.1f} {at_} {e['bone']}\n")
+        print(open(os.path.join(out_dir, "lift.txt")).read())
     with open(os.path.join(out_dir, "table_area.txt"), "w") as fh:
         fh.write(f"{'A':22} {'B':24} {'foot':>7} {'>2':>7} {'OUT>2':>7} {'afoot':>8} {'a>2':>8} {'aOUT>2':>8}\n")
         for e in sorted(out, key=lambda e: -e["area_out_n_over_2"]):

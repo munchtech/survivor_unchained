@@ -11,6 +11,10 @@ sys.path.insert(0, HERE)
 import gear_fit as gf  # noqa: E402
 import worn_rest  # noqa: E402
 
+# The plate-top builds read the local bindings (godot/art/gear/bind/, git-ignored, made by gear_fit bind): a clean
+# checkout has none, so those two cases wait for them.
+NEEDS_BIND = pytest.mark.skipif(not os.path.isdir(gf.BIND), reason="no local gear bindings (gear_fit bind)")
+
 ROW = {"slot": "top", "hold": {"amount": 0.55, "squash": 0}}
 
 
@@ -57,6 +61,7 @@ def test_unpose_inverts_the_engines_pose(bodies):
     assert np.abs(back - X).max() < 1e-9
 
 
+@NEEDS_BIND
 def test_plate_top_cups_clear_her_worn_skin_at_rest(bodies):
     """The built plate top: no rigid point under her skin as the engine rests her under it (the bare-bind fit left
     3,821 points under, 20.4 mm deep), and the plates keep their shape (a similarity inside the rigid fit's clamp)."""
@@ -132,6 +137,7 @@ def test_unpose_each_lands():
     assert np.allclose(wr_.pose(S, {"s": 0.5}, X0, J, Wt, {"s": d}), Y, atol=1e-12)
 
 
+@NEEDS_BIND
 def test_joins_keep_the_piece_joined(bodies, tmp_path, monkeypatch):
     """The join law (slots.top.joins) on the plate top, as the engine poses the stored points in her worn rest: the
     stored points land on the fit, a strap's end stays on its cup, a buckle on its strap, and the gore (a bridge) stays

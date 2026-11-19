@@ -1,0 +1,272 @@
+{
+ "recipe": "bodice",
+ "piece": {
+  "id": "kit_bodice",
+  "name": "Gilded Gunmetal Bodice",
+  "slot": "top",
+  "covers": [
+   "top"
+  ],
+  "layer": 1,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "hold": {
+   "amount": 0.55,
+   "squash": 0
+  },
+  "adorn": [],
+  "by_body": {
+   "p1": {
+    "params": {
+     "file": "kit_bodice.glb",
+     "bend_fit": {
+      "bones": [
+       "clavicle_",
+       "upperarm_",
+       "scap_",
+       "lat_",
+       "pec_",
+       "trap_",
+       "delt_",
+       "breast_"
+      ],
+      "offer": [
+       "spine_04",
+       "spine_05",
+       "clavicle_{s}",
+       "pec_{s}",
+       "trap_{s}",
+       "scap_{s}",
+       "delt_{s}",
+       "neck_01"
+      ],
+      "clear_mm": 3.0,
+      "veto_mm": 0.3,
+      "passes": 3
+     }
+    }
+   }
+  }
+ },
+ "mat": {
+  "plate": "steel",
+  "trim": "gold",
+  "strap": "darkleather"
+ },
+ "clear": 0.003,
+ "clear_min": 0.0022,
+ "thick": 0.0016,
+ "rim": {
+  "w": 0.0095,
+  "h": 0.0034,
+  "sides": 6,
+  "step": 0.007
+ },
+ "axis_z": 0.02,
+ "worn_rest": true,
+ "cup": {
+  "apex": [
+   0.091,
+   1.376,
+   0.17
+  ],
+  "base_back": 0.045,
+  "ub": 1.312,
+  "clasp": [
+   0.0,
+   1.308
+  ],
+  "by_body": {
+   "p1": {
+    "clasp": [
+     0.0,
+     1.31
+    ],
+    "apron": {
+     "psi": [
+      165.0,
+      255.0
+     ],
+     "lap": 0.004,
+     "lap_c": 0.009,
+     "lap_w": 0.035,
+     "corner": {"psi": 105.0, "th": 76.5, "margin": 2.0, "seam_dy": 0.003},
+     "c_x": 0.0015,
+     "n_drop": 0.003,
+     "rows": 12,
+     "off": [
+      0.004,
+      0.0064
+     ],
+     "ramp": 0.012,
+     "guard": 0.0006
+    },
+    "gem": {
+     "dy": 0.002,
+     "off": 0.009
+    }
+   }
+  },
+  "root": [
+   0.12,
+   1.47
+  ],
+  "root_w": 0.03,
+  "bow": 1.25,
+  "arm": [
+   0.15,
+   1.438
+  ],
+  "theta_side": 74.0,
+  "rings": 14,
+  "spokes": 48,
+  "dome": {
+   "fit_u": 0.8,
+   "u0": 0.62,
+   "drop": 0.012,
+   "full": 0.0015,
+   "soft": 0.004
+  }
+ },
+ "corset": {
+  "point": 1.11,
+  "hip": 1.14,
+  "back_bot": 1.14,
+  "v_theta": 70.0,
+  "back_corner": [
+   136.0,
+   1.462
+  ],
+  "rows": 17,
+  "ridge": {
+   "h": 0.0048,
+   "w": 0.026,
+   "p": 1.0,
+   "fade_bot": 0.012,
+   "fade_top": 0.016
+  },
+  "seams": [
+   [
+    [
+     30.0,
+     1.312
+    ],
+    [
+     8.0,
+     1.115
+    ]
+   ]
+  ],
+  "straps": [
+   {
+    "y": 1.27,
+    "th": [
+     34,
+     84
+    ],
+    "buckle": 62
+   },
+   {
+    "y": 1.22,
+    "th": [
+     26,
+     82
+    ],
+    "buckle": 58
+   }
+  ],
+  "back_straps": [
+   {
+    "y": 1.33
+   },
+   {
+    "y": 1.265
+   },
+   {
+    "y": 1.2
+   }
+  ],
+  "back_th": [
+   140,
+   220
+  ],
+  "strap_w": 0.018,
+  "step_th": 0.4,
+  "side_seam": 1.0,
+  "side": [
+   [
+    86.0,
+    1.434
+   ],
+   [
+    96.0,
+    1.412
+   ],
+   [
+    106.0,
+    1.392
+   ],
+   [
+    118.0,
+    1.405
+   ]
+  ],
+  "scoop": {
+   "edge": 6.0,
+   "drop": 8.0,
+   "floor": 1.366,
+   "mid": 1.362
+  },
+  "front_w": 24.0,
+  "front_step": 1.5,
+  "scoop_step": 2.0,
+  "col_step": 5.0,
+  "chevron": {
+   "y": [
+    1.18,
+    1.22,
+    1.26
+   ],
+   "gap": 0.0012,
+   "h": 0.0022,
+   "inset": 1.5,
+   "fade": 3.0
+  },
+  "relief": {
+   "mm": 0.0,
+   "h": 0.03,
+   "th": [
+    0,
+    20,
+    40,
+    60,
+    100,
+    140,
+    180
+   ],
+   "k": [
+    1,
+    1,
+    1,
+    1.5,
+    1.5,
+    0.8,
+    0.5
+   ]
+  }
+ },
+ "shoulder": {
+  "top": [
+   0.118,
+   1.572
+  ],
+  "w": 0.03,
+  "by_body": {
+   "p1": {
+    "clear": 0.0055
+   }
+  }
+ }
+}

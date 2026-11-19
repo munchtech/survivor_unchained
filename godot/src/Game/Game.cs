@@ -356,6 +356,7 @@ public partial class Game : Node, IZoneHost
         DevSockets.Apply(Journey.Ch);
         // (bd-ui W18: --looks, --shown, --wardrobe-dye; the wardrobe screen reads --wardrobe-slot)
         DevWardrobe.Apply(Journey.Ch);
+        if (Args.Get("offhand") != null) Journey.RefreshKit(Battle); // the world her matches the emptied off-hand
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
@@ -365,6 +366,8 @@ public partial class Game : Node, IZoneHost
         {
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
+            // --at x,z,yaw: her facing at the spot in radians (as Arrival.Facing; --facing DEG still wins)
+            if (p.Length > 2) at = at.Value with { Facing = double.Parse(p[2], System.Globalization.CultureInfo.InvariantCulture) };
         }
         // --zone arena [--offer 0|1|2 --people ID --oaths A,B --tier T]: straight into one of the
         // Wayfinder's arenas (and back to the table after).
@@ -695,6 +698,19 @@ public partial class Game : Node, IZoneHost
     /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
     public void MapOver(MapResult r, bool alive)
     {
+        // --wear-gilt: the set pieces now in the pack put on, as the player would at the pack (pictures of a drop worn).
+        if (Args.Has("wear-gilt"))
+        {
+            // (a full pack sends a drop to the storeroom: the player would fetch it, so the picture does too)
+            foreach (var g in World.Stash.Where(i => i != null && Items.Get(i.Def).Set != null).ToList())
+            {
+                if (Inventory.Free(Journey.Ch) == 0 && Journey.Ch.Pack.FirstOrDefault(i => i != null && Items.Get(i.Def).Set == null) is { } junk) Journey.ToStash(junk.Uid);
+                Journey.FromStash(g!.Uid);
+            }
+        }
+        if (Args.Has("wear-gilt"))
+            foreach (var it in Journey.Ch.Pack.Where(i => i != null && Items.Get(i.Def).Set != null).ToList()) { Journey.Equip(it!.Uid, null, Battle); GD.Print($"her wear: {it!.Def} -> {string.Join(",", Wear.Of(Journey.Ch).Values)}"); }
+        if (Args.Has("wear-gilt") || Args.Has("save-clear")) Save("map cleared");
         var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         // (pictures and probes of the atlas's pay read it from the log as well)
         if (Args.Has("shot"))
@@ -1215,11 +1231,18 @@ public partial class Game : Node, IZoneHost
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
         if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return SaveOutcome.Skipped;
-        // (a journey read with --load is a picture's, never written back)
-        if (Args.Has("load")) return SaveOutcome.Skipped;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
+        // --save-file PATH (a picture's two-process proof): the save goes to that file, never to a slot; read again with --load PATH.
+        if (Args.Get("save-file") is string sf)
+        {
+            System.IO.File.WriteAllText(sf, SurvivorUnchained.Core.Json.Write(Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })));
+            GD.Print($"save-file: written {sf}");
+            return SaveOutcome.Saved;
+        }
+        // (a journey read with --load is a picture's, never written back to a slot; --save-file above is the chain's own file)
+        if (Args.Has("load")) return SaveOutcome.Skipped;
         if (saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })))
             return SaveOutcome.Saved;
         GD.PushError($"save: slot {Journey.Slot} could not be written ({reason})");
@@ -2546,6 +2569,19 @@ public partial class Game : Node, IZoneHost
                 if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
                 if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
             }
+            // --click-item DEF|DEF,Wear: a real click (the mouse pushed there, as ClickAt does) on the visible pack tile holding that item def,
+            // then on the visible button of that text (pictures of an item worn from the pack by its own UI; the tile's tip carries "Wear").
+            if (Args.Get("click-item") is string cis && itemClickI < cis.Split(',').Length)
+            {
+                tourT = Args.Num("click-every", 1.2f);
+                var tok = cis.Split(',')[itemClickI];
+                var alts = tok.Split('|');
+                Control? hit = Items.All.ContainsKey(alts[0]) ? FindControl<SlotView>(GetTree().Root, v => v.Item != null && alts.Contains(v.Item.Def))
+                    : FindControl<Button>(GetTree().Root, v => v.Text == tok);
+                if (hit != null) { itemClickI++; var c0 = hit.GetGlobalRect().GetCenter(); ClickAt($"{c0.X:0}:{c0.Y:0}"); GD.Print($"click-item {tok} at {c0.X:0},{c0.Y:0}"); }
+                else GD.Print($"click-item {tok}: not on screen yet");
+                return;
+            }
             // --clicks X:Y,rX:Y,...: then the mouse goes there and clicks (r: the right button), in turn,
             // through the same input a hand would give (pictures of a page worked by mouse).
             else if (Args.Get("clicks") is string clicks && clickI < clicks.Split(',').Length)
@@ -2608,6 +2644,17 @@ public partial class Game : Node, IZoneHost
     int clickI;
 
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
+    int itemClickI;
+    static T? FindControl<T>(Node n, Func<T, bool> pick) where T : Control
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is T t && t.IsVisibleInTree() && pick(t)) return t;
+            if (FindControl(c, pick) is { } f) return f;
+        }
+        return null;
+    }
+
     void ClickAt(string spec)
     {
         // (r: the right button; h: the mouse only comes to rest there, for pictures of a hover;

@@ -1,0 +1,305 @@
+{
+ "recipe": "pauldrons",
+ "module": "kit_upper",
+ "piece": {
+  "id": "kit_pauldrons",
+  "name": "Gilded Gunmetal Pauldrons",
+  "slot": "pauldrons",
+  "covers": [
+   "pauldrons"
+  ],
+  "layer": 3,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "plate": "steel",
+  "trim": "gold",
+  "strap": "darkleather"
+ },
+ "params": {
+  "graft": "leather",
+  "shoulder_shapes": false,
+  "shoulder_shapes_meshes": [
+   "darkleather"
+  ],
+  "rigid_ride": [
+   {
+    "match": "cop_l",
+    "weights": {
+     "pauldron_hinge_l": 1.0
+    }
+   },
+   {
+    "match": "lame0_l",
+    "weights": {
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "lame1_l",
+    "weights": {
+     "delt_l": 1.0
+    }
+   },
+   {
+    "match": "cop_r",
+    "weights": {
+     "pauldron_hinge_r": 1.0
+    }
+   },
+   {
+    "match": "lame0_r",
+    "weights": {
+     "delt_r": 1.0
+    }
+   },
+   {
+    "match": "lame1_r",
+    "weights": {
+     "delt_r": 1.0
+    }
+   }
+  ],
+  "by_body": {"p1": {"rigid_ride": [
+   {"match": "cop_l", "weights": {"pauldron_hinge_l": 1.0}},
+   {"match": "lame0_l", "weights": {"upperarm_twist_01_l": 1.0}},
+   {"match": "lame1_l", "weights": {"upperarm_twist_01_l": 1.0}},
+   {"match": "cop_r", "weights": {"pauldron_hinge_r": 1.0}},
+   {"match": "lame0_r", "weights": {"upperarm_twist_01_r": 1.0}},
+   {"match": "lame1_r", "weights": {"upperarm_twist_01_r": 1.0}}
+  ]}}
+ },
+ "clear_min": 0.0022,
+ "thick": 0.0022,
+ "rim": {
+  "w": 0.0095,
+  "h": 0.0034,
+  "sides": 6,
+  "step": 0.005
+ },
+ "cop": {
+  "subdiv": 5,
+  "sink": 0.01,
+  "pole_up": 0.6,
+  "rise": 0.0,
+  "chart_deg": 110,
+  "dilate": 4,
+  "smooth": 30,
+  "clear": 0.006,
+  "outline": [
+   [
+    0,
+    30
+   ],
+   [
+    45,
+    44
+   ],
+   [
+    90,
+    74
+   ],
+   [
+    135,
+    72
+   ],
+   [
+    180,
+    64
+   ]
+  ],
+  "rivets": {
+   "beta": 160,
+   "step": 25,
+   "in_deg": 4.5,
+   "r": 0.0026,
+   "h": 0.0016
+  },
+  "ridge": {
+   "beta": 40,
+   "be0": -40,
+   "in_deg": 5,
+   "h": 0.012,
+   "lean": 0.5,
+   "thick": 0.0025,
+   "rim_w": 0.006,
+   "rim_h": 0.0025
+  },
+  "flare": 0.01,
+  "flare_pow": 2.0,
+  "pose": {
+   "clip": "idle_warden",
+   "frame": 0
+  },
+  "env_margin": 8,
+  "outline_signed": [
+   [
+    -180,
+    64
+   ],
+   [
+    -135,
+    72
+   ],
+   [
+    -90,
+    74
+   ],
+   [
+    -50,
+    44
+   ],
+   [
+    -25,
+    36
+   ],
+   [
+    0,
+    48
+   ],
+   [
+    15,
+    66
+   ],
+   [
+    30,
+    96
+   ],
+   [
+    60,
+    96
+   ],
+   [
+    90,
+    88
+   ],
+   [
+    120,
+    78
+   ],
+   [
+    150,
+    70
+   ],
+   [
+    180,
+    64
+   ]
+  ],
+  "crown": {
+   "h": 0.01,
+   "al": 35,
+   "be": 30,
+   "r": 70
+  },
+  "by_body": {
+   "p1": {
+    "flare": 0.003,
+    "ridge": {"beta": 40, "be0": -40, "in_deg": 5, "h": 0.006, "lean": 0.5, "thick": 0.0025, "rim_w": 0.006, "rim_h": 0.0025},
+    "outline_signed": [[-180, 92], [-135, 94], [-90, 82], [-60, 52], [-50, 38], [-25, 30], [0, 40], [15, 58], [30, 92], [60, 96], [90, 82], [120, 82], [150, 84], [180, 92]],
+    "chart_ref": {
+     "a": [
+      0.4292,
+      -0.8858,
+      -0.1768
+     ],
+     "up": [
+      0.0294,
+      0.9795,
+      -0.1994
+     ]
+    }
+   }
+  }
+ },
+ "lames": {
+  "theta": 112,
+  "cols": 41,
+  "rivet_r": 0.0024,
+  "rivet_h": 0.0015,
+  "rows": [
+   {
+    "s": [
+     0.02,
+     0.08
+    ],
+    "n": 12,
+    "dip": 0.012,
+    "dil": 3,
+    "clear": 0.022,
+    "flare": 0.01,
+    "tuck": 0.003,
+    "tuck_min": 0.006,
+    "lift_max": 0.02,
+    "by_body": {"p1": {"tuck": 0.01, "s": [0.008, 0.08]}}
+   },
+   {
+    "s": [
+     0.055,
+     0.135
+    ],
+    "n": 12,
+    "dip": 0.012,
+    "dil": 3,
+    "clear": 0.026,
+    "flare": 0.012,
+    "tuck": 0.003,
+    "tuck_min": 0.006,
+    "lift_max": 0.014
+   }
+  ],
+  "pose": {
+   "clip": "idle_warden",
+   "frame": 0
+  },
+  "split": true,
+  "by_body": {
+   "p1": {
+    "up_ref": [
+     -0.219,
+     0.8952,
+     -0.3882
+    ]
+   }
+  }
+ },
+ "strap": {
+  "s": 0.112,
+  "w": 0.018,
+  "clear": 0.0038,
+  "thick": 0.002,
+  "buckle_deg": 140
+ },
+ "sweep": {
+  "bone": "delt_l",
+  "radius": 0.22,
+  "clear": 0.005,
+  "lift_max": 0.008,
+  "ring": 1,
+  "lift_smooth": 24,
+  "trim_smooth": 12,
+  "deg_per_mm": 2.0,
+  "trim": "none",
+  "trim_pad": 2.0,
+  "trim_round": 6.0,
+  "trim_tol": 0.0,
+  "cop_lift_max": 0.025,
+  "by_body": {"p1": {"exclude": {"bones": ["Head", "neck", "spine_04"], "w": 0.5}, "cop_exclude": {"bones": ["Head", "neck", "spine_04"], "w": 0.5}, "cop_band": 0.006}}
+ },
+ "liner": {
+  "off": 0.0023,
+  "thick": 0.0012,
+  "reach": 0.05,
+  "close": 0.012,
+  "margin": 0.0,
+  "bodice": "kit_bodice",
+  "bodice_back": 0.01,
+  "smooth": 6,
+  "inset": 0.022,
+  "by_body": {"p1": {"inset": 0.014, "cop_clear": 0.006}}
+ }
+}

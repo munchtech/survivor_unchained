@@ -308,8 +308,10 @@ public partial class PlayerView : Node3D
         // --held-right ID (pictures only): that Arms piece in her right hand and nothing else held (a clip with its own
         // piece, e.g. The Long Cut's sunder_blade; animation 59).
         var heldRight = SurvivorUnchained.Args.Get("held-right");
+        // --offhand off (pictures only): no forearm shield on her either, so back views see her armor.
+        var noShield = SurvivorUnchained.Args.Get("offhand") is "off" or "0" or "false";
         var v = new PersonView(lo.Person, heldRight != null ? new World.Held { Right = heldRight }
-            : new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
+            : new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = noShield ? null : lo.Arms.Forearm }, 0.8);
         person = v.Person;
         view = v;
         AddChild(v);

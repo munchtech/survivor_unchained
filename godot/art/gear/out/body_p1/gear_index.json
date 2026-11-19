@@ -861,6 +861,226 @@
    "tuck_count": 203,
    "tuck_depth_mm": 18.0,
    "cover_count": 1399
+  },
+  {
+   "id": "kit_belt",
+   "outfit": null,
+   "slot": "belt",
+   "layer": 2,
+   "covers": [
+    "belt",
+    "skirt"
+   ],
+   "meshes": [
+    "kit_belt.belt.brownleather",
+    "kit_belt.belt.gold",
+    "kit_belt.belt.steel"
+   ],
+   "tuck": "armor_tuck/kit_belt.bin",
+   "tuck_count": 27,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_belt.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_belt.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1997
+  },
+  {
+   "id": "kit_bodice",
+   "outfit": null,
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "kit_bodice.top.darkleather",
+    "kit_bodice.top.gold",
+    "kit_bodice.top.steel"
+   ],
+   "tuck": "armor_tuck/kit_bodice.bin",
+   "tuck_count": 5058,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "hold": {
+    "amount": 0.55,
+    "squash": 0
+   },
+   "file": "res://art/armor/body_p1/kit_bodice.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_bodice.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 5450
+  },
+  {
+   "id": "kit_boots",
+   "outfit": null,
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots",
+    "greaves"
+   ],
+   "meshes": [
+    "kit_boots.boots.darkleather",
+    "kit_boots.boots.gold",
+    "kit_boots.boots.steel"
+   ],
+   "tuck": "armor_tuck/kit_boots.bin",
+   "tuck_count": 5973,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_boots.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_boots.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 7255
+  },
+  {
+   "id": "kit_brief",
+   "outfit": null,
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom"
+   ],
+   "meshes": [
+    "kit_brief.bottom.gold",
+    "kit_brief.bottom.steel"
+   ],
+   "tuck": "armor_tuck/kit_brief.bin",
+   "tuck_count": 1619,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_brief.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_brief.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1616
+  },
+  {
+   "id": "kit_gloves",
+   "outfit": null,
+   "slot": "gloves",
+   "layer": 1,
+   "covers": [
+    "gloves"
+   ],
+   "meshes": [
+    "kit_gloves.gloves.darkleather",
+    "kit_gloves.gloves.gold"
+   ],
+   "tuck": "armor_tuck/kit_gloves.bin",
+   "tuck_count": 514,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_gloves.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_gloves.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1045
+  },
+  {
+   "id": "kit_helm",
+   "outfit": null,
+   "slot": "head",
+   "layer": 3,
+   "covers": [
+    "head"
+   ],
+   "meshes": [
+    "kit_helm.head.gold",
+    "kit_helm.head.steel"
+   ],
+   "tuck": "armor_tuck/kit_helm.bin",
+   "tuck_count": 0,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_helm.gltf",
+   "tier": 2,
+   "rigid": true,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_helm.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 0
+  },
+  {
+   "id": "kit_pauldrons",
+   "outfit": null,
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "kit_pauldrons.pauldrons.darkleather",
+    "kit_pauldrons.pauldrons.gold",
+    "kit_pauldrons.pauldrons.steel"
+   ],
+   "tuck": "armor_tuck/kit_pauldrons.bin",
+   "tuck_count": 548,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_pauldrons.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_pauldrons.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1448
+  },
+  {
+   "id": "kit_vambraces",
+   "outfit": null,
+   "slot": "bracers",
+   "layer": 2,
+   "covers": [
+    "bracers"
+   ],
+   "meshes": [
+    "kit_vambraces.bracers.darkleather",
+    "kit_vambraces.bracers.gold",
+    "kit_vambraces.bracers.steel"
+   ],
+   "tuck": "armor_tuck/kit_vambraces.bin",
+   "tuck_count": 952,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_vambraces.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_vambraces.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1687
   }
  ]
 }

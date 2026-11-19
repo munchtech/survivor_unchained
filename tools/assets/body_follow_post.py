@@ -68,6 +68,19 @@ HAIR_WEIGHTS = False            # (hair keeps its own chains' weights; its rest 
 # the arm and clavicle, not the deltoid's bulge); BF_PAUL_SHAPES=0 carries no shoulder shapes onto them
 PAUL_HELPERS = os.environ.get("BF_PAUL_HELPERS", "on")
 PAUL_SHAPES = os.environ.get("BF_PAUL_SHAPES", "1") != "0"
+# (BF_PAUL_SHAPES_MESHES=a,b: with BF_PAUL_SHAPES=0, the pauldron meshes whose name's last part (their material) is
+# one of these still carry her shoulder shapes: the leather on her skin under the plates (piece params
+# shoulder_shapes_meshes, 16 Nov pauldron-2 r3: the liner on her weights alone let her raised arm's shapes put her skin
+# 37 mm out through it in the leap)
+PAUL_SHAPES_MESHES = tuple(s for s in os.environ.get("BF_PAUL_SHAPES_MESHES", "").split(",") if s)
+
+
+def paul_carries(mesh_name, on=None, meshes=None):
+    """Whether a pauldron mesh carries her shoulder shapes: all do with BF_PAUL_SHAPES on, else only the meshes named
+    (by their last name part) in BF_PAUL_SHAPES_MESHES."""
+    on = PAUL_SHAPES if on is None else on
+    meshes = PAUL_SHAPES_MESHES if meshes is None else meshes
+    return bool(on) or str(mesh_name).rsplit(".", 1)[-1] in meshes
 
 
 def _say(*a):
@@ -224,6 +237,8 @@ class Field:
              % (len(A.U), len(B.U), ok.sum(), len(lost), len(s.new), mv.max() * 1000, (mv > 5e-4).sum(),
                 (np.abs(s.dW).sum(1) / 2 > 0.05).sum()))
         live = (mv > 1e-5) | (np.abs(s.dW).max(1) > 1e-4)
+        if not live.any():
+            live[:] = True          # (the identity, BASE = BODY (piece_ship's exact install): no move or weight change; the shapes still carried)
         s.lo, s.hi = A.U[live].min(0) - FAR, A.U[live].max(0) + FAR
 
 
@@ -647,7 +662,7 @@ def _shapes(G, prims, Ps, M, inv, offs, fld, shapes, kind, path):
         slot = piece_slot if kind == "armor" else _slot_of(m.get("name", ""), kind)
         if slot in SHAPE_PARTS:
             near, far = SHAPE_NEAR, SHAPE_FAR
-        elif slot == "pauldrons" and PAUL_SHAPES:
+        elif slot == "pauldrons" and paul_carries(m.get("name", "")):
             near, far = PAULDRON_NEAR, PAULDRON_FAR
         else:
             continue

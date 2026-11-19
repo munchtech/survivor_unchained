@@ -1,0 +1,861 @@
+"""The kit's free meshes (lane D, 16 Nov 2026): a piece authored at the SHIPPED body's rest (body A, heroine.glb).
+
+    python tools/armor/kit_build.py kit_bodice          -> godot/art/armor/src/kit_bodice/{kit_bodice.glb, piece.json}
+    python tools/turn.py run blender "armor-D: kit_bodice" -- python tools/armor/piece_ship.py kit_bodice
+
+A piece is data (godot/art/armor/src/<id>/build.json: its recipe and every measure) + a recipe here. The output is the
+free-mesh contract (docs/armor/PIECE_SCHEMA.md): glTF axes, metres, unskinned, identity transforms; `*_rigid` objects
+ride one blend; material names from godot/art/people/outfit_materials.json.
+
+Charts (each one a ray field from inside her, so a plate follows HER surface, smoothed and lifted):
+    her_a()        heroine.glb's body at rest as a native_build.Ref (the builder's primitives run on body A)
+    Polar          a cup: rays from a point inside a mound, (phi off its apex, psi round it); outline = a signed
+                   field g(hit point) > 0, cut on every spoke (exact boundary, corners kept)
+    Wrap           a band round her torso: horizontal rays from a vertical axis, (y, theta); top(theta), bot(theta)
+    slab           a plate from a grid of inner points + outward directions: inner, outer, an edge wall
+    bead           a rolled gold rim: a half-ellipse tube swept along an edge (its own geometry: reads at play camera)
+"""
+import json
+import os
+import sys
+
+import numpy as np
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(REPO, "tools", "assets"))
+from native_build import Part, Ref, U, buckle, grid_tris, rand01, raycast, vertex_normals  # noqa: E402
+
+BODY = os.path.join(REPO, "godot", "art", "people", "heroine.glb")
+SRC = os.path.join(REPO, "godot", "art", "armor", "src")
+MATS = os.path.join(REPO, "godot", "art", "people", "outfit_materials.json")
+
+
+def body_glb():
+    """The body glb the route builds on: heroine.glb (body A) unless --body p1 / SU_ARMOR_BODY (bodies.py)."""
+    import bodies
+    b = bodies.cur()
+    return BODY if b.name == "a" else b.need(b.glb, "body.glb")
+
+
+def require_body_inputs(clips=()):
+    """Body A: nothing (its skeleton and clips are found as before). Another body: its skeleton dump and each clip must
+    exist (bodies.py), else stop naming the first one missing."""
+    import bodies
+    b = bodies.cur()
+    if b.name == "a":
+        return
+    bodies.skeleton_path()
+    b.need(b.clips, "clip library dir (<clip>.json per clip)")
+    for c in clips:
+        b.need(os.path.join(b.clips, f"{c}.json"), f"clip {c}")
+
+
+def out_root():
+    import bodies
+    b = bodies.cur()
+    return SRC if b.name == "a" else b.src
+
+
+def out_dir(pid):
+    """Where a piece's build outputs go: SRC/<pid> for body A, bodies.p1's body-keyed src for another body."""
+    import bodies
+    b = bodies.cur()
+    d = os.path.join(SRC, pid) if b.name == "a" else os.path.join(b.src, pid)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def her_a(path=None, shapes=None):
+    """Body A (the shipped heroine.glb) at rest: Ref over its welded skin, joints from its inverse binds.
+    shapes {name: weight}: her skin with those shapes applied at bind (worn_shapes: what a piece's hold sets on her);
+    a shape the body lacks is skipped (body A has no support shapes: A reads exactly what it read before)."""
+    import body_follow_post as bf
+    B = bf.Body(path or body_glb())
+    used = {nm: float(w) for nm, w in (shapes or {}).items() if w and nm in B.tn}
+    for nm, w in used.items():
+        B.U = B.U + w * B.shape(nm)
+    if used:
+        B.N = bf._vn(B.U, B.F)
+    joints = {}
+    for n, m in zip(B.names, B.ibm):
+        M = np.linalg.inv(m.reshape(4, 4).T)
+        joints[n] = M[:3, 3]
+    r = Ref(B.U, B.F, B.N, joints, list(B.names), None, None)
+    r.B = B
+    c = B.U[B.F].mean(1)
+    r.torso = B.F[(c[:, 1] > 0.85) & (c[:, 1] < 1.75) & (np.abs(c[:, 0]) < 0.30)]
+    r.shapes_key = json.dumps(sorted(used.items())).encode() if used else b""  # (cast's cache key: a shaped skin is another skin)
+    return r
+
+
+def worn_shapes(cfg):
+    """The shapes a piece's hold sets on her while it is worn (worn_rest: the row's hold -> support -> her
+    form_support_lift / _press / _fill; rigid_roles.json's slot switch "worn_rest"), {} if none. On B a top with
+    hold 0.55 is a push-up (support 1): her breasts rest lifted, pressed in and filled under it, so a cup made for her
+    bare bind has her skin through its top edge (13 mm, buried rim) in game. A kit piece is built on her skin as worn;
+    its own bone blend (her breasts' springs at the support) moves it with her."""
+    import worn_rest
+    import gear_fit
+    lw = worn_rest.law({"slot": cfg["piece"]["slot"], "hold": cfg["piece"].get("hold")}, gear_fit.rigid_roles())
+    return {} if lw is None else {nm: w for nm, w in zip(worn_rest.SHAPES, lw[0][1]) if w}
+
+
+CACHE = os.path.join(REPO, "godot", ".shots", "demo_armor", "kit_cache")
+
+
+def cast(ref, O, D, tmax=0.5):
+    """First hits on her torso; cached by the rays (git-ignored .shots), so a re-tune of an outline is quick."""
+    import hashlib
+    O, D = np.asarray(O, float), U(D)
+    key = hashlib.sha1(O.round(7).tobytes() + D.round(7).tobytes() + str(tmax).encode() + ref.V[:50].tobytes() +
+                       getattr(ref, "shapes_key", b"")).hexdigest()
+    f = os.path.join(CACHE, key + ".npz")
+    if os.path.exists(f):
+        z = np.load(f)
+        return z["t"], z["i"]
+    t, i = raycast(ref.V, ref.torso, O, D, tmax, chunk=64)
+    os.makedirs(CACHE, exist_ok=True)
+    np.savez(f, t=t, i=i)
+    return t, i
+
+
+def gsmooth(A, sig, wrap_c):
+    from scipy.ndimage import gaussian_filter
+    return gaussian_filter(A, sig, mode=("nearest", "wrap" if wrap_c else "nearest"))
+
+
+def fill_rows(A):
+    """nan filled along each column from its nearest finite row."""
+    A = A.copy()
+    for j in range(A.shape[1]):
+        c = A[:, j]
+        ok = np.isfinite(c)
+        if ok.any() and not ok.all():
+            idx = np.arange(len(c))
+            A[~ok, j] = np.interp(idx[~ok], idx[ok], c[ok])
+    return A
+
+
+# ---------------------------------------------------------------- geometry
+
+def slab(name, mat, Pin, Nout, thick, closed_c=False, fan=None, extra=None, col_w=1.0):
+    """A plate from inner points (R, C, 3) and outward unit directions: inner face, outer face (thick + extra), edge
+    wall. closed_c: the columns wrap (a band: walls on its first and last rows); fan: row 0 is a small ring
+    closed by a strip (a cup: wall on its last row only)."""
+    R, C = Pin.shape[:2]
+    ex = np.zeros((R, C)) if extra is None else extra
+    Pout = Pin + Nout * (thick + ex)[..., None]
+    rn = rand01(name)
+    parts = []
+    for P, sgn in ((Pout, 1), (Pin, -1)):
+        V = P.reshape(-1, 3)
+        T = grid_tris(R, C, close=closed_c)
+        D = Nout.reshape(-1, 3) * sgn
+        if fan:  # row 0 is a small ring: closed by a zig-zag strip (no fan: every point keeps a low valence)
+            T = np.vstack([T, strip_cap(C)])
+        T = orient(V, T, D)
+        parts.append(Part(name, mat, V, T, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
+                          col=np.tile([1.0, rn, 0.0, col_w], (len(V), 1))))
+    loops = [R - 1] if fan is not None or not closed_c else [0, R - 1]
+    if not closed_c and fan is None:
+        loops = ["perim"]
+    for lp in loops:
+        if lp == "perim":
+            ij = [(0, j) for j in range(C)] + [(i, C - 1) for i in range(1, R)] + \
+                 [(R - 1, j) for j in range(C - 2, -1, -1)] + [(i, 0) for i in range(R - 2, 0, -1)]
+            ii, jj = np.array(ij).T
+            inner_i = np.clip(ii + np.where(ii == 0, 1, np.where(ii == R - 1, -1, 0)), 0, R - 1)
+            inner_j = np.clip(jj + np.where(jj == 0, 1, np.where(jj == C - 1, -1, 0)), 0, C - 1)
+        else:
+            ii, jj = np.full(C, lp), np.arange(C)
+            inner_i, inner_j = np.full(C, lp - 1 if lp else 1), jj
+        a, b = Pin[ii, jj], Pout[ii, jj]
+        out = U(a - Pin[inner_i, inner_j])
+        n = len(a)
+        V = np.vstack([a, b])
+        T = grid_tris(2, n, close=True)
+        T = orient(V, T, np.vstack([out, out]))
+        parts.append(Part(name, mat, V, T, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
+                          col=np.tile([1.0, rn, 0.0, 0.0], (len(V), 1))))
+    return Part.join(name, mat, parts)
+
+
+def strip_cap(C):
+    """A ring 0..C-1 closed by a zig-zag strip between its two halves."""
+    lo, hi, T, k = 0, C - 1, [], 0
+    while hi - lo > 1:
+        if k % 2 == 0:
+            T.append([lo, lo + 1, hi])
+            lo += 1
+        else:
+            T.append([lo, hi - 1, hi])
+            hi -= 1
+        k += 1
+    return np.array(T)
+
+
+def orient(V, T, D):
+    """Each face wound to look along D (per vertex)."""
+    fn = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+    flip = (fn * D[T].mean(1)).sum(1) < 0
+    T = T.copy()
+    T[flip] = T[flip][:, ::-1]
+    return T
+
+
+def resample(P, step, closed):
+    P = np.asarray(P, float)
+    Q = np.vstack([P, P[:1]]) if closed else P
+    d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(Q, axis=0), axis=1))]
+    n = max(int(round(d[-1] / step)), 3)
+    s = np.linspace(0, d[-1], n + (0 if closed else 1), endpoint=not closed)
+    return np.stack([np.interp(s, d, Q[:, k]) for k in range(3)], 1)
+
+
+def relax(P, it, closed, keep_ends=True):
+    P = P.copy()
+    for _ in range(it):
+        if closed:
+            P = 0.5 * P + 0.25 * (np.roll(P, 1, 0) + np.roll(P, -1, 0))
+        else:
+            P[1:-1] = 0.5 * P[1:-1] + 0.25 * (P[:-2] + P[2:])
+    return P
+
+
+def bead(ref, name, mat, E, rim, off, closed, relax_it=2, corners=None):
+    """A rolled rim: a half-ellipse tube (rim w wide, h proud) swept along E, centred `off` out along her normal."""
+    E = resample(E, rim["step"], closed)
+    E = relax(E, relax_it, closed)
+    q, n, _ = ref.closest(E)
+    n = U(relax(n, 3, closed))
+    t = U(np.gradient(np.vstack([E[-1:], E, E[:1]]) if closed else E, axis=0))
+    t = t[1:-1] if closed else t
+    b = U(np.cross(n, t))
+    n = U(np.cross(t, b))
+    k = rim["sides"]
+    a = np.linspace(0, 2 * np.pi, k, endpoint=False)
+    hx = np.cos(a) * rim["w"] / 2
+    hy = np.sin(a) * np.where(np.sin(a) > 0, rim["h"], rim.get("below", 0.0011))
+    C = E + n * off
+    P = C[:, None, :] + hx[None, :, None] * b[:, None, :] + hy[None, :, None] * n[:, None, :]
+    m = len(E)
+    if closed:
+        P = np.vstack([P, P[:1]])
+        m += 1
+    V = P.reshape(-1, 3)
+    T = grid_tris(m, k, close=True)
+    D = (P - C[np.r_[np.arange(len(E)), [0]] if closed else np.arange(m)][:, None, :]).reshape(-1, 3)
+    if not closed:
+        caps = []
+        for r, c in ((0, C[0]), (m - 1, C[-1])):
+            j = len(V) + len(caps)
+            caps.append(c)
+            T = np.vstack([T, np.c_[np.full(k, j), r * k + np.arange(k), r * k + (np.arange(k) + 1) % k]])
+        V = np.vstack([V, caps])
+        D = np.vstack([D, -t[0], t[-1]])
+    T = orient(V, T, D)
+    rn = rand01(name)
+    s = np.r_[0, np.cumsum(np.linalg.norm(np.diff(V[:m * k:k], axis=0), axis=1))] if m > 1 else np.zeros(1)
+    uv = np.zeros((len(V), 2))
+    uv[:m * k, 0] = np.repeat(s, k) * 4.0
+    uv[:m * k, 1] = np.tile(a / (2 * np.pi), m)
+    return Part(name, mat, V, T, uv0=uv, uv1=np.tile([0.0, 0.8], (len(V), 1)),
+                col=np.tile([1.0, rn, 0.0, 0.0], (len(V), 1)))
+
+
+def diamond(c, n, up, w, h, depth, name, mat):
+    """A faceted diamond clasp: a flat rhombus base, a raised table, on a point and its normal."""
+    n, up = U(n), U(up - U(n) * (U(n) @ up))
+    x = np.cross(up, n)
+    rim = [c + up * h, c + x * w, c - up * h, c - x * w]
+    mid = [c + n * depth * 0.55 + up * h * 0.55, c + n * depth * 0.55 + x * w * 0.55,
+           c + n * depth * 0.55 - up * h * 0.55, c + n * depth * 0.55 - x * w * 0.55]
+    top = c + n * depth
+    back = c - n * 0.0005
+    V = np.vstack([rim, mid, [top, back]])
+    T = []
+    for k in range(4):
+        a, b = k, (k + 1) % 4
+        T += [[a, b, 4 + b], [a, 4 + b, 4 + a], [4 + a, 4 + b, 8], [a, 9, b]]
+    T = np.array(T)
+    T = orient(V, T, U(V - (c - n * 0.004)))
+    return Part(name, mat, V, T, uv0=(V - c) @ np.c_[x, up] * 2.5, uv1=np.tile([0.0, 0.9], (len(V), 1)),
+                col=np.tile([0.95, rand01(name), 0.0, 0.0], (len(V), 1)))
+
+
+# ---------------------------------------------------------------- charts
+
+class Wrap:
+    """Horizontal rays from the vertical axis x = 0, z = z0: rho(y, theta) of her skin; theta 0 front, +90 her left."""
+
+    def __init__(self, ref, z0, y0, y1, dy=0.004, dth=2.0):
+        self.z0 = z0
+        self.ys = np.arange(y0, y1 + dy / 2, dy)
+        self.ths = np.arange(-180.0, 180.0, dth)
+        Y, TH = np.meshgrid(self.ys, self.ths, indexing="ij")
+        O = np.c_[np.zeros(Y.size), Y.ravel(), np.full(Y.size, z0)]
+        t, _ = cast(ref, O, self.dirs(TH.ravel()), 0.45)
+        self.rho = t.reshape(Y.shape)
+
+    def dirs(self, th):
+        r = np.radians(th)
+        return np.stack([np.sin(r), np.zeros_like(r), np.cos(r)], -1)
+
+    def field(self, rho):
+        from scipy.interpolate import RegularGridInterpolator
+        th = np.r_[self.ths, 180.0]
+        A = np.c_[rho, rho[:, :1]]
+        f = RegularGridInterpolator((self.ys, th), A, bounds_error=False, fill_value=None)
+        return lambda y, t: f(np.stack(np.broadcast_arrays(y, (np.asarray(t) + 180.0) % 360.0 - 180.0), -1))
+
+    def pt(self, y, th, rho):
+        y, th, rho = np.broadcast_arrays(np.asarray(y, float), np.asarray(th, float), np.asarray(rho, float))
+        return np.stack([np.zeros_like(y), y, np.full(y.shape, self.z0)], -1) + rho[..., None] * self.dirs(th)
+
+
+class Polar:
+    """Rays from a point inside a mound: phi off its apex direction, psi round it (0 up, 90 her outer side)."""
+
+    def __init__(self, ref, c, apex, hand, phis, psis):
+        self.c, self.hand = np.asarray(c, float), hand
+        self.a = U(np.asarray(apex, float) - self.c)
+        e1 = U(np.array([0, 1.0, 0]) - self.a * self.a[1])
+        e2 = np.cross(self.a, e1)
+        self.e1, self.e2 = e1, (e2 if e2[0] * hand > 0 else -e2)
+        self.phis, self.psis = phis, psis
+        PH, PS = np.meshgrid(phis, psis, indexing="ij")
+        t, _ = cast(ref, np.tile(self.c, (PH.size, 1)), self.dirs(PH.ravel(), PS.ravel()), 0.3)
+        self.r = t.reshape(PH.shape)
+
+    def dirs(self, phi, psi):
+        p, s = np.radians(phi)[..., None], np.radians(psi)[..., None]
+        return np.cos(p) * self.a + np.sin(p) * (np.cos(s) * self.e1 + np.sin(s) * self.e2)
+
+
+# ---------------------------------------------------------------- the bodice
+
+def bodice(cfg, ref):
+    M, rim, cl, th_ = cfg["mat"], cfg["rim"], cfg["clear"], cfg["thick"]
+    cu, co = cfg["cup"], cfg["corset"]
+    z0 = cfg["axis_z"]
+    wrap = Wrap(ref, z0, 0.95, 1.52)
+    rho_skin = wrap.rho
+    skin_f = wrap.field(fill_rows(rho_skin))
+    ts = cu["theta_side"]
+    tj = ts + co["step_th"]  # the side panel's top is at the cup's outer corner from here on (one outline)
+    bc, by = co["back_corner"]
+    sk = co["scoop"]
+    plate, trim, straps, rigid = [], [], [], []
+    from scipy.interpolate import PchipInterpolator
+
+    def ub(xs):
+        return cu["ub"] + (cu["clasp"][1] - cu["ub"]) * np.clip(1 - xs / 0.05, 0, 1)
+
+    # ---- corset outline in (y, theta), theta in [0, 180] mirrored. Front (under the cups): the underbust; past
+    # the cup's outer side a step up to its outer corner (cu.arm), then the side panel under her arm (co.side),
+    # flat under the shoulder strap's back end, then a square scoop down to the back's floor.
+    P_ = np.array([[tj, cu["arm"][1]]] + co["side"] + [[bc - sk["edge"], by], [bc + sk["edge"], by],
+                                                       [bc + sk["edge"] + sk["drop"], sk["floor"]], [180.0, sk["mid"]]])
+    side_f = PchipInterpolator(P_[:, 0], P_[:, 1])
+
+    def top(th):
+        a = np.abs(th)
+        x = skin_f(np.full(np.shape(a), cu["ub"]), a) * np.sin(np.radians(a))
+        return np.where(a <= ts + 1e-6, ub(x), side_f(np.clip(a, tj, 180.0)))
+
+    def bot(th):
+        a = np.abs(th)
+        v = co["point"] + (co["hip"] - co["point"]) * np.clip(a / co["v_theta"], 0, 1)
+        return np.where(a > co["v_theta"], co["hip"] + (co["back_bot"] - co["hip"]) *
+                        smooth01((a - co["v_theta"]) / (180 - co["v_theta"])), v)
+
+    # ---- corset: rows between bot and top; columns round her: dense over the front panel (the ridge) and the
+    # scoop's sides (a square corner), exact at the cup's outer side (ts) and the step's top (tj)
+    exact = np.array([ts, tj, -ts, -tj])
+    dense = [np.arange(-co["front_w"], co["front_w"] + 1e-6, co["front_step"])]
+    for h in (1, -1):
+        dense.append(h * np.arange(bc - sk["edge"] - 2.0, bc + sk["edge"] + sk["drop"] + 4.0 + 1e-6, co["scoop_step"]))
+    dense = np.concatenate(dense)
+    dense = dense[np.min(np.abs(dense[:, None] - exact[None, :]), 1) > 0.3]
+    base = np.arange(-180.0, 180.0, co["col_step"])
+    near = np.abs((base[:, None] - np.r_[dense, exact][None, :] + 180.0) % 360.0 - 180.0).min(1)
+    TH = np.unique(np.round(np.r_[dense, exact, base[near > 0.6 * co["col_step"]]], 4))
+    Cn = len(TH)
+    tt, bb = top(TH), bot(TH)
+    w = np.linspace(0, 1, co["rows"])
+    w = 0.5 - 0.5 * np.cos(np.pi * w) * 0.35 + (w - 0.5) * 0.65  # a little denser at both edges
+    w = (w - w[0]) / (w[-1] - w[0])
+    # chevrons: shingled lames on the front panel; each line is two close rows (a crisp step, its upper lame proud)
+    ch = co["chevron"]
+    b0, t0 = float(np.ravel(bot(0.0))[0]), float(np.ravel(top(np.zeros(1)))[0])
+    wk = (np.array(ch["y"]) - b0) / (t0 - b0)
+    dw = ch["gap"] / (t0 - b0)
+    w = np.unique(np.r_[w[np.min(np.abs(w[:, None] - wk[None, :]), 1) > 0.02], wk - dw / 2, wk + dw / 2])
+    Y = bb[None, :] + (tt - bb)[None, :] * w[:, None]
+    # her rho there, smoothed over the band only (what lies above its top never pulls it)
+    rs = rho_skin.copy()
+    above = wrap.ys[:, None] > top(wrap.ths)[None, :] + 0.004
+    rs[above] = np.nan
+    rs = fill_rows(rs)
+    sm = gsmooth(rs, (2.0, 1.2), True)
+    shell = np.maximum(sm + cl, fill_rows(rho_skin) + cl * 0)  # never under her skin
+    shell = np.maximum(shell, fill_rows(rs) + cfg["clear_min"])
+    shell_f = wrap.field(shell)
+    TT = np.broadcast_to(TH[None, :], Y.shape)
+    rl = co["relief"]
+    rt = co.get("relief_top")  # (off unless named: the top edge's relief, e.g. under her arm's back in a leap)
+
+    def rho_at(Yq, Aq):
+        """The plate's inner face; its bottom edge relieved: the last few cm stand a little further off her (room
+        for her hip and belly in a stride); its top edge too where "relief_top" names it (theta knots th/k)."""
+        a = (np.asarray(Aq, float) + 180.0) % 360.0 - 180.0
+        lift = rl["mm"] * (1 - smooth01((np.asarray(Yq, float) - bot(a)) / rl["h"])) * np.interp(np.abs(a), rl["th"], rl["k"])
+        if rt:
+            lift = lift + rt["mm"] * (1 - smooth01((top(a) - np.asarray(Yq, float)) / rt["h"])) * \
+                np.interp(np.abs(a), rt["th"], rt["k"], left=0.0, right=0.0)
+        return shell_f(Yq, a) + lift
+
+    rho_in = rho_at(Y, TT)
+    Pin = wrap.pt(Y, TT, rho_in)
+    Nout = wrap.dirs(TT)
+    sa0, sy0 = co["seams"][0][0]
+    sa1, sy1 = co["seams"][0][1]
+
+    def ex_fn(Yq, Aq, rho):
+        """The plate's outer relief: the centre keel (a sharp roof) and the chevron lames between the panel's seams."""
+        a = (np.asarray(Aq, float) + 180.0) % 360.0 - 180.0
+        Yq = np.asarray(Yq, float)
+        bq, tq = bot(a), top(a)
+        rg = co["ridge"]
+        ridge = rg["h"] * np.clip(1 - np.abs(np.radians(a)) * rho / (rg["w"] / 2), 0, 1) ** rg["p"]
+        ridge = ridge * smooth01((Yq - bq) / rg["fade_bot"]) * smooth01((tq - Yq) / rg["fade_top"])
+        wv = (Yq - bq) / np.maximum(tq - bq, 1e-6)
+        edges = np.r_[0.0, wk, 1.0]
+        k = np.clip(np.searchsorted(edges, wv, side="right") - 1, 0, len(edges) - 2)
+        lo, hi = edges[k], edges[k + 1]
+        chev = ch["h"] * np.clip((hi - wv) / (hi - lo), 0, 1)
+        s = np.clip((sy0 - Yq) / (sy0 - sy1), 0, 1)
+        a_seam = sa0 + (sa1 - sa0) * s ** 0.8
+        chev = chev * smooth01((a_seam - np.abs(a) - ch["inset"]) / ch["fade"]) * smooth01((tq - Yq) / 0.006)
+        return ridge + chev
+
+    ex = ex_fn(Y, TT, rho_in)
+    plate.append(slab("corset", M["plate"], Pin, Nout, th_, closed_c=True, extra=ex))
+
+    def surf(y, th, up):
+        """A point on the corset's outer face (+ up) and its outward direction."""
+        y, th = np.asarray(y, float), np.asarray(th, float)
+        return wrap.pt(y, th, rho_at(y, th) + th_ + up), wrap.dirs(th)
+
+    # corset rims: bottom all round; top where no cup sits over it
+    edge_off = th_ * 0.5 + 0.0003
+    trim.append(bead(ref, "trim_corset_bot", M["trim"], Pin[0], rim, edge_off, True, relax_it=1))
+    jt = [j for j in range(Cn) if TH[j] >= tj - 1e-6] + [j for j in range(Cn) if TH[j] <= -tj + 1e-6]
+    trim.append(bead(ref, "trim_corset_top", M["trim"], Pin[-1][jt], rim, edge_off, False, relax_it=1))
+    # seams (proud of the plate): the front panel's, the side panels', the back's centre
+    seams = []
+    for sm_ in co["seams"]:
+        (a0, y0), (a1, y1) = sm_
+        for h in (1, -1):
+            s = np.linspace(0, 1, 60)
+            seams.append((h * (a0 + (a1 - a0) * s ** 0.8), y0 + (y1 - y0) * s))
+    apc = (cu.get("apron") or {}).get("corner")  # (r3: the cup apron's corner laps this seam's top: it starts under its rim)
+    for h in (1, -1):
+        y = np.linspace(cu["ub"] - cu["apron"]["lap"] - apc["seam_dy"] if apc else cu["ub"] + 0.002, co["hip"] + 0.004, 60)
+        seams.append((np.full(60, h * (ts + co["side_seam"])), y))
+    y = np.linspace(sk["mid"] - 0.004, co["back_bot"] + 0.004, 60)
+    seams.append((np.full(60, 180.0), y))
+    for k, (a, y) in enumerate(seams):
+        y = np.clip(y, bot(a) + 0.003, top(a) - 0.003)
+        P = wrap.pt(y, a, rho_at(y, a) + th_ + 0.0003)
+        trim.append(bead(ref, f"trim_seam{k}", M["trim"], P, dict(rim, w=rim["w"] * 0.7, h=rim["h"] * 0.7,
+                                                                       below=0.0003), 0.0, False, relax_it=1))
+
+    # leather straps with gold buckles: two each side, three across the back
+    sw = co["strap_w"]
+    strap_defs = [(s["y"], h * s["th"][0], h * s["th"][1], h * s["buckle"]) for s in co["straps"] for h in (1, -1)]
+    a0, a1 = co["back_th"]
+    strap_defs += [(s["y"], a0, a1, 180.0) for s in co["back_straps"]]
+    for k, (y, a, b, bk) in enumerate(strap_defs):
+        lo, hi = min(a, b), max(a, b)
+        A = np.linspace(lo, hi, max(int((hi - lo) / 2.5), 4))
+        Ys = np.linspace(y - sw / 2, y + sw / 2, 4)
+        YY, AA = np.meshgrid(Ys, A, indexing="ij")
+        rr = rho_at(YY, AA) + th_ + 0.0006 + ex_fn(YY, AA, rho_at(YY, AA))
+        straps.append(slab(f"strap{k}", M["strap"], wrap.pt(YY, AA, rr), wrap.dirs(AA), 0.0018))
+        c, n = (np.reshape(v, 3) for v in surf(y, bk, 0.0045))
+        tdir = U(np.reshape(wrap.pt(y, bk + 1.0, rho_at(y, bk + 1.0)) - wrap.pt(y, bk - 1.0, rho_at(y, bk - 1.0)), 3))
+        rigid.append(buckle(c, n, tdir, w=sw + 0.006, h=0.019, bar=0.0028, name=f"buckle{k}_rigid", material=M["trim"]))
+
+    # ---- cups (each side on her own skin) and shoulder straps
+    sh = cfg["shoulder"]
+    for hand in (1, -1):
+        ax, ay, az = cu["apex"]
+        c = np.array([hand * ax, ay - 0.006, az - cu["base_back"]])
+        apex = np.array([hand * (ax + 0.012), ay - 0.004, az])
+        phis = np.arange(0.0, 150.0, 0.5)
+        psis = np.linspace(0, 360, cu["spokes"], endpoint=False)
+        pol = Polar(ref, c, apex, hand, phis, psis)
+        r = pol.r.copy()
+        H = pol.c + r[..., None] * pol.dirs(*np.meshgrid(phis, psis, indexing="ij"))
+        xs, y = hand * H[..., 0], H[..., 1]
+        thH = np.degrees(np.arctan2(xs, H[..., 2] - z0))
+        rx, ry = cu["root"]
+        cx, cy = cu["clasp"]
+        wv = cu["root_w"] / 2
+        tv = np.clip((y - cy) / (ry - cy), 0, 1)
+        xv = cx + (rx - wv - cx) * tv ** cu["bow"]
+        arx, ary = cu["arm"]
+        yline = ry + (ary - ry) * (xs - (rx + wv)) / (arx - (rx + wv))
+        g = np.minimum.reduce([y - ub(xs), xs - xv, ry - y, np.where(xs > rx + wv, yline - y, 1.0),
+                               np.radians(ts - thH) * 0.14])
+        g[~np.isfinite(r)] = -1
+        # the edge on each spoke: the first phi where g turns negative (linear crossing)
+        K = cu["rings"]
+        edge_phi = np.zeros(len(psis))
+        for j in range(len(psis)):
+            neg = np.where(g[:, j] <= 0)[0]
+            i = neg[0] if len(neg) else len(phis) - 1
+            g0, g1 = g[i - 1, j], g[i, j]
+            edge_phi[j] = phis[i - 1] + (phis[i] - phis[i - 1]) * g0 / max(g0 - g1, 1e-9)
+            if not np.isfinite(r[i, j]) or abs(r[i, j] - r[i - 1, j]) > 0.004:  # the ray jumped (a gap, a fold)
+                edge_phi[j] = phis[i - 1]
+        # her r along each spoke inside the outline (what lies past it never pulls the cup), smoothed, lifted
+        rin = r.copy()
+        rin[(g <= 0) & (phis[:, None] > edge_phi[None, :] + 1.0)] = np.nan
+        rf = fill_rows(rin)
+        rsm = gsmooth(rf, (3.0, 1.0), True)
+        shell_r = np.clip(rsm + cl, rf + cfg["clear_min"], rf + cl + 0.003)  # on her own skin's ray, never past it
+        shell_r = np.maximum(dome(cu["dome"], pol, phis, psis, edge_phi, r, shell_r), rf + cfg["clear_min"])
+        from scipy.interpolate import RegularGridInterpolator
+        fr = RegularGridInterpolator((phis, np.r_[psis, 360.0]), np.c_[shell_r, shell_r[:, :1]])
+        u = np.linspace(0.07, 1.0, K)
+        u = 1 - (1 - u) ** 1.35  # rings denser at the rim; ring 0 a small ring round the apex
+        PH = u[:, None] * edge_phi[None, :]
+        PS = np.broadcast_to(psis[None, :], PH.shape)
+        D = pol.dirs(PH, PS)
+        rr = fr(np.stack([PH, PS], -1))
+        Pin = pol.c + rr[..., None] * D
+        # outward = the shell's normal, from a fine local difference
+        Nn = shell_normals(pol, fr, PH, PS)
+        nm = "cup_" + ("l" if hand > 0 else "r")
+        ap = cu.get("apron")  # (B, 18 Nov: her crease sits above the band; off unless named)
+        if ap:
+            def xv_f(yq, cx=cx, cy=cy, rx=rx, ry=ry, wv=wv):
+                return cx + (rx - wv - cx) * np.clip((np.asarray(yq, float) - cy) / (ry - cy), 0, 1) ** cu["bow"]
+            J, Pa, Na = cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_, xv_f)
+            part, loop = cup_slab(nm, M["plate"], Pin, Nn, th_, J, Pa, Na)
+            plate.append(part)
+            trim.append(bead(ref, "trim_" + nm, M["trim"], loop, rim, edge_off, True, relax_it=1))
+        else:
+            plate.append(slab(nm, M["plate"], Pin, Nn, th_, closed_c=True, fan=True))
+            trim.append(bead(ref, "trim_" + nm, M["trim"], Pin[-1], rim, edge_off, True, relax_it=1))
+        if hand > 0:
+            clasp_y = cy
+        # shoulder strap: from the cup's flat top over her shoulder to the back's corner
+        jt = np.argmin(np.abs(((psis + 180) % 360) - 180) + 0 * psis)  # psi 0: up
+        top_pts = Pin[-1]
+        front = top_pts[np.argmin(np.linalg.norm(top_pts[:, :2] - [hand * rx, ry], axis=1))]
+        bc, by = co["back_corner"]
+        back = np.reshape(wrap.pt(by, hand * bc, shell_f(by, hand * bc)), 3)
+        t0, _ = cast(ref, [[hand * sh["top"][0], 1.9, -0.01]], [[0, -1.0, 0]], 0.6)
+        stop = np.array([hand * sh["top"][0], 1.9 - t0[0], -0.01])
+        path = catmull([front, front + [0, 0.035, -0.01], stop + [0, 0.004, 0.035], stop,
+                        stop + [0, -0.004, -0.04], back + [0, 0.04, 0.0], back], 80)
+        q, n, _ = ref.closest(path)
+        n = U(relax(n, 4, False))
+        tng = U(np.gradient(q, axis=0))
+        bn = U(np.cross(n, tng))
+        across = np.linspace(-sh["w"] / 2, sh["w"] / 2, 5)
+        G = q[None, :, :] + across[:, None, None] * bn[None, :, :]
+        qq, nn, _ = ref.closest(G.reshape(-1, 3))
+        nn = U(nn).reshape(G.shape)
+        Ps = qq.reshape(G.shape) + nn * sh.get("clear", cl)  # (shoulder.clear: the strap's own stand-off; default the piece's)
+        plate.append(slab("strap_" + nm[-1], M["plate"], Ps, nn, th_))
+        for e in (0, -1):
+            trim.append(bead(ref, f"trim_strap_{nm[-1]}{e}", M["trim"], Ps[e], rim, edge_off, False, relax_it=1))
+    # the clasp at the V's foot
+    gm = cu.get("gem")  # (B, 18 Nov: over the aprons' V foot, "dy" up, "off" off her skin; off unless named)
+    if gm:
+        gy = cu["clasp"][1] + gm["dy"]
+        t0, _ = cast(ref, [[0.0, gy, 0.4]], [[0, 0, -1.0]])
+        cp = np.array([0.0, gy, 0.4 - t0[0]])
+        rigid.append(diamond(cp + [0, 0, gm["off"]], [0, 0, 1.0], [0, 1.0, 0], 0.012, 0.017, 0.006, "clasp_rigid", M["trim"]))
+        return plate, trim, straps, rigid
+    t0, _ = cast(ref, [[0.0, cu["clasp"][1], 0.4]], [[0, 0, -1.0]])
+    cp = np.array([0.0, cu["clasp"][1], 0.4 - t0[0]])
+    rigid.append(diamond(cp + [0, 0, cl + th_ + 0.002], [0, 0, 1.0], [0, 1.0, 0], 0.012, 0.017, 0.006, "clasp_rigid", M["trim"]))
+    return plate, trim, straps, rigid
+
+
+def cup_apron(ap, hand, Pin, Nn, psis, wrap, skin_f, ub, top, rho_at, ex_fn, th_, xv_f):
+    """(armor-D, 18 Nov; build.json cup.apron, body B) The cup carried down from its lower-inner edge to the band and
+    the V's foot. On B her crease (where the cup's edge must stop: past it the cup's rays run inside her or onto the
+    other breast) sits 2-4 cm above the band's top, so bare skin showed under and between the cups. The apron's first
+    row IS the cup's edge ring over spokes psi ap.psi (L, her outer end .. N, the V's notch), with the cup's normals
+    there (one surface: cup_slab welds them). Its free outline: from L straight down to the band (ap.lap under its top),
+    along the band to C (ap.c_x off the centre), up the V (the cup's V law xv scaled through N) to N' (ap.n_drop under
+    N). Inside: each column a line in (x, y) from the edge to its outline point (C on one column), lifted onto her
+    skin on the wrap chart at ap.off[0] off her, rising to ap.off[1] over the ap.ramp above the outline's bottom
+    (over the band's top), never closer than ap.guard to the band's outer face. (r3, 18 Nov) ap.corner: the apron goes on
+    round her outer-lower corner from spoke corner.psi (where the cup's outer edge leaves the side panel's front edge),
+    its first column at corner.th over the side panel (a lap onto it), its foot along the band to L's (the skin between
+    the cup's lower-outer edge, the side panel and the band showed); ap.lap_c: the lap deeper at the centre front (over
+    ap.lap_w; her arms up lift the apron there). Returns (spokes J, points, normals)."""
+    cn = ap.get("corner")  # (r3, 18 Nov: round her outer-lower corner too, from spoke cn.psi; off unless named)
+    J = np.where((psis >= (cn["psi"] if cn else ap["psi"][0]) - 1e-6) & (psis <= ap["psi"][1] + 1e-6))[0]
+    jL = int(np.argmin(np.abs(psis[J] - ap["psi"][0]))) if cn else 0  # L's column (the corner's columns before it)
+    C = len(J)
+    # N on the V law: the cup's edge at the notch spoke stopped up to 16 mm past it (a tooth that kinked the V's rim);
+    # it goes back along its last strip to where that crosses the V (the outline's own rule), the cup's ring with it
+    jn = J[-1]
+    a, b = Pin[-2, jn], Pin[-1, jn]
+    fa, fb = hand * a[0] - xv_f(a[1]), hand * b[0] - xv_f(b[1])
+    if fb < 0 < fa:
+        s = fa / (fa - fb)
+        Pin[-1, jn] = a + (b - a) * s
+        Nn[-1, jn] = U(Nn[-2, jn] + (Nn[-1, jn] - Nn[-2, jn]) * s)
+    E0, N0 = Pin[-1, J], Nn[-1, J]
+    x0, y0 = hand * E0[:, 0], E0[:, 1]
+    cxa = ap["c_x"]
+
+    def lap_f(x):  # the lap under the band's top; deeper at the centre front where "lap_c" names it (her arms up)
+        lp = np.full(np.shape(x), float(ap["lap"]))
+        if "lap_c" in ap:
+            lp = lp + (ap["lap_c"] - ap["lap"]) * (1 - smooth01(np.abs(np.asarray(x, float)) / ap["lap_w"]))
+        return lp
+    # the free outline as a dense polyline: the bottom (L's foot to C) and the V (C to N')
+    xb = np.linspace(x0[jL], cxa, 400)
+    bot_ = np.c_[xb, ub(xb) - lap_f(xb)]
+    yC = float(bot_[-1, 1])
+    yN2 = y0[-1] - ap["n_drop"]
+    yv = np.linspace(yC, yN2, 400)
+    v_ = np.c_[cxa + (x0[-1] - cxa) * xv_f(yv) / xv_f(y0[-1]), yv]
+
+    def at(P, s):  # the point at arc-length fractions s along polyline P
+        d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))]
+        return np.stack([np.interp(np.asarray(s) * d[-1], d, P[:, k]) for k in range(2)], -1), d[-1]
+
+    _, lb = at(bot_, 0.0)
+    _, lv = at(v_, 0.0)
+    Cm = C - jL
+    cC = int(np.clip(round(lb / (lb + lv) * (Cm - 1)), 1, Cm - 2))  # the column on C
+    ob = np.vstack([at(bot_, np.linspace(0, 1, cC + 1))[0], at(v_, np.linspace(0, 1, Cm - cC))[0][1:]])
+    # rows: lines from the edge to the outline, lifted onto her skin
+    R = ap["rows"]
+    t = np.linspace(0, 1, R)[1:, None]
+    X = (1 - t) * x0[None, jL:] + t * ob[None, :, 0]
+    Y = (1 - t) * y0[None, jL:] + t * ob[None, :, 1]
+    ybot = ub(X) - lap_f(X)
+    off = ap["off"][0] + (ap["off"][1] - ap["off"][0]) * (1 - smooth01((Y - ybot) / ap["ramp"]))
+    lo, hi = np.zeros_like(X), np.full(X.shape, 80.0)  # theta (deg, her side) where (skin + off) sin(theta) = x
+    for _ in range(40):
+        m = 0.5 * (lo + hi)
+        f = (skin_f(Y, hand * m) + off) * np.sin(np.radians(m)) - X
+        lo, hi = np.where(f < 0, m, lo), np.where(f < 0, hi, m)
+    TH = hand * 0.5 * (lo + hi)
+    rho = skin_f(Y, TH) + off
+    near = Y <= top(TH) + 0.001
+    rb = rho_at(Y, TH)
+    rho = np.where(near, np.maximum(rho, rb + th_ + ex_fn(Y, TH, rb) + ap["guard"]), rho)
+    if jL:
+        # the corner: columns from the cup's edge (spokes cn.psi .. L) down to the band on her wrap chart in theta (the
+        # x of a point near her side barely moves with theta), the first one at cn.th, lapped over the side panel's
+        # front edge; the foot along the band's top (ap.lap under it) from there to L's foot. Where the side panel or
+        # the band lies within cn.margin deg outward, never closer than ap.guard to its outer face.
+        th_e = np.degrees(np.arctan2(x0[:jL], E0[:jL, 2] - wrap.z0))
+        th_o = cn["th"] + (abs(TH[-1, 0]) - cn["th"]) * np.linspace(0, 1, jL + 1)[:-1]
+        Tc = hand * ((1 - t) * th_e[None, :] + t * th_o[None, :])
+        xc = skin_f(np.full(jL, 1.31), hand * th_o) * np.sin(np.radians(th_o))
+        yb_c = ub(xc) - lap_f(xc)
+        Yc = (1 - t) * y0[None, :jL] + t * yb_c[None, :]
+        offc = ap["off"][0] + (ap["off"][1] - ap["off"][0]) * (1 - smooth01((Yc - yb_c[None, :]) / ap["ramp"]))
+        rc = skin_f(Yc, Tc) + offc
+        nearc = Yc <= np.maximum(top(Tc), top(Tc + hand * cn["margin"])) + 0.001
+        rbc = rho_at(Yc, Tc)
+        rc = np.where(nearc, np.maximum(rc, rbc + th_ + ex_fn(Yc, Tc, rbc) + ap["guard"]), rc)
+        TH, Y, rho = np.c_[Tc, TH], np.c_[Yc, Y], np.c_[rc, rho]
+    Pa = np.concatenate([E0[None], wrap.pt(Y, TH, rho)], 0)
+    Na = np.concatenate([N0[None], wrap.dirs(TH)], 0)
+    return J, Pa, Na
+
+
+def cup_slab(name, mat, Pin, Nout, thick, J, Pa, Na):
+    """A cup's slab (slab(..., closed_c=True, fan=True)) with its apron (cup_apron): the apron's row 0 is the cup's last
+    ring at spokes J, welded (one surface: the shared points are one point each, no seam to open in motion). The edge
+    wall runs round the joined outline: the cup's ring from N (J[-1]) the long way round to L (J[0]), down the apron's
+    first column, along its last row, up its last column. Returns the part and that outline's inner points (the rim)."""
+    K, S = Pin.shape[:2]
+    R, C = Pa.shape[:2]
+    ida = np.zeros((R, C), np.int64)
+    ida[0] = (K - 1) * S + np.asarray(J)
+    ida[1:] = K * S + np.arange((R - 1) * C).reshape(R - 1, C)
+    Pi = np.vstack([Pin.reshape(-1, 3), Pa[1:].reshape(-1, 3)])
+    Nv = np.vstack([Nout.reshape(-1, 3), Na[1:].reshape(-1, 3)])
+    Po = Pi + Nv * thick
+    T = np.vstack([grid_tris(K, S, close=True), strip_cap(S), ida.reshape(-1)[grid_tris(R, C)]])
+    rn = rand01(name)
+    parts = []
+    for P, sgn in ((Po, 1), (Pi, -1)):
+        parts.append(Part(name, mat, P, orient(P, T, Nv * sgn), uv0=np.c_[P[:, 0] + P[:, 2], P[:, 1]] * 3.0,
+                          col=np.tile([1.0, rn, 0.0, 1.0], (len(P), 1))))
+    ring = np.r_[np.arange(J[-1], S), np.arange(0, J[0] + 1)]
+    loop = np.r_[(K - 1) * S + ring, ida[1:, 0], ida[-1, 1:], ida[-2:0:-1, -1]]
+    # each outline point's inward neighbour (its wall's outward direction is away from it)
+    inn = np.r_[(K - 2) * S + ring, ida[1:, 1], ida[-2, 1:], ida[-2:0:-1, -2]]
+    a, b = Pi[loop], Po[loop]
+    out = U(a - Pi[inn])
+    V = np.vstack([a, b])
+    Tw = orient(V, grid_tris(2, len(a), close=True), np.vstack([out, out]))
+    parts.append(Part(name, mat, V, Tw, uv0=np.c_[V[:, 0] + V[:, 2], V[:, 1]] * 3.0,
+                      col=np.tile([1.0, rn, 0.0, 0.0], (len(V), 1))))
+    return Part.join(name, mat, parts), a
+
+
+def dome(dm, pol, phis, psis, edge_phi, r, base):
+    """A cup's designed dome: an ellipsoid on the cup's axis (axes along a, e1 up, e2 out; its centre on the axis,
+    dropped along e1 by dm.drop: a full lower pole), fitted to her skin + clear inside the outline, lifted to clear
+    it everywhere there (+ dm.full), eased back to her offset (base) over the outline's last part (u0..1)."""
+    from scipy.optimize import least_squares
+    PH, PS = np.meshgrid(phis, psis, indexing="ij")
+    D = pol.dirs(PH, PS)
+    da, d1, d2 = (D * pol.a).sum(-1), (D * pol.e1).sum(-1), (D * pol.e2).sum(-1)
+    u = PH / edge_phi[None, :]
+    fit = (u <= dm["fit_u"]) & np.isfinite(r)
+
+    def ray(p, m=slice(None)):
+        s, A, B1, B2 = p
+        t = -dm["drop"]
+        Q = da[m] ** 2 / A ** 2 + d1[m] ** 2 / B1 ** 2 + d2[m] ** 2 / B2 ** 2
+        L = s * da[m] / A ** 2 + t * d1[m] / B1 ** 2
+        K = s * s / A ** 2 + t * t / B1 ** 2 - 1
+        return (L + np.sqrt(np.maximum(L * L - Q * K, 0))) / Q
+
+    tgt = base[fit]
+    r0 = float(np.nanmedian(tgt))
+    p = least_squares(lambda q: ray(q, fit) - tgt, [0.0, r0, r0, r0],
+                      bounds=([-0.05, 0.03, 0.03, 0.03], [0.05, 0.2, 0.2, 0.2])).x
+    E = ray(p) + dm["full"]
+    k = dm["soft"]  # a smooth max of the dome and her offset: the dome fills her hollows, never cuts into her
+    core = 0.5 * (E + base + np.sqrt((E - base) ** 2 + k * k))
+    b = smooth01((u - dm["u0"]) / (1 - dm["u0"]))
+    out = core * (1 - b) + base * b
+    print("dome", np.round(p * 1000, 1).tolist(), "lift over her offset mm: p50 %.1f max %.1f" %
+          (np.median((out - base)[fit]) * 1000, (out - base)[fit].max() * 1000))
+    return np.where(np.isfinite(out), out, base)
+
+
+def shell_normals(pol, fr, PH, PS):
+    e = 0.4
+    def P(ph, ps):
+        return pol.c + fr(np.stack([np.clip(ph, 0, pol.phis[-1]), ps % 360.0], -1))[..., None] * pol.dirs(ph, ps)
+    dphi = P(PH + e, PS) - P(np.maximum(PH - e, 0), PS)
+    dpsi = P(PH, PS + 2.0) - P(PH, PS - 2.0)
+    n = U(np.cross(dphi, dpsi))
+    d = pol.dirs(PH, PS)
+    return n * np.sign((n * d).sum(-1, keepdims=True))
+
+
+def catmull(P, n):
+    P = np.asarray(P, float)
+    P = np.vstack([2 * P[0] - P[1], P, 2 * P[-1] - P[-2]])
+    out = []
+    for i in range(1, len(P) - 2):
+        p0, p1, p2, p3 = P[i - 1:i + 3]
+        for t in np.linspace(0, 1, n // (len(P) - 3), endpoint=False):
+            out.append(0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t +
+                              (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    out.append(P[-2])
+    return np.array(out)
+
+
+def smooth01(x):
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3 - 2 * x)
+
+
+RECIPES = {"bodice": bodice}
+
+
+def clearance(ref, part):
+    q, n, d = ref.closest(part.P)
+    return ((part.P - q) * n).sum(1)
+
+
+def by_body(x, name=None):
+    """A build.json's body-keyed values (armor-D, 17 Nov): any object may carry "by_body": {"<body>": {key: value}}
+    (bodies.py names: a, p1), whose keys replace or add to that object's own for that body; "by_body" itself is dropped.
+    So one recipe serves both bodies and body A reads exactly what it read before unless it is named."""
+    if name is None:
+        import bodies
+        name = bodies.cur().name
+    if isinstance(x, list):
+        return [by_body(v, name) for v in x]
+    if not isinstance(x, dict):
+        return x
+    o = x.get("by_body", {}).get(name, {})
+    return {k: by_body(o[k] if k in o else v, name) for k, v in {**x, **o}.items() if k != "by_body"}
+
+
+def build(pid):
+    cfg = by_body(json.load(open(os.path.join(SRC, pid, "build.json"), encoding="utf-8")))
+    d = out_dir(pid)
+    if cfg.get("module") in ("kit_limbs", "kit_upper", "kit_helm"):  # limbs; pauldrons, helm (multi-material rigid nodes): own build
+        import importlib
+        return importlib.import_module(cfg["module"]).build(pid, cfg)
+    mats = json.load(open(MATS, encoding="utf-8"))
+    for m in cfg["mat"].values():
+        assert m in mats, f"material {m} not in outfit_materials.json"
+    ref = her_a(shapes=worn_shapes(cfg) if cfg.get("worn_rest") else None)
+    if cfg["recipe"] not in RECIPES:  # (a recipe in another module: build.json "module", e.g. kit_hips)
+        import importlib
+        RECIPES.update(importlib.import_module(cfg["module"]).RECIPES)
+    plate, trim, straps, rigid = RECIPES[cfg["recipe"]](cfg, ref)
+    pre = cfg.get("prefix", "bodice")
+    pushed = 0
+    for p in plate + trim + straps:  # never closer than clear_min (a rim's underside: 1.2 mm) along her normal
+        fl = cfg["clear_min"] if p in plate else 0.0012
+        for _ in range(4):  # (a push can change the closest point: again until it holds)
+            c = clearance(ref, p)
+            q, n, _ = ref.closest(p.P)
+            low = c < fl
+            if not low.any():
+                break
+            p.P[low] += n[low] * (fl - c[low] + 0.0001)[:, None]
+            pushed += int(low.sum())
+        p.N = vertex_normals(p.P, p.T)
+    low_trim = {p.name: round(float(clearance(ref, p).min()) * 1000, 1) for p in trim + rigid}
+    low_trim = {k: v for k, v in low_trim.items() if v < 1.5}
+    parts = [Part.join(pre + k, cfg["mat"][m], ps) if ps else None
+             for k, m, ps in (("_plate", "plate", plate), ("_trim", "trim", trim), ("_straps", "strap", straps))]
+    mn = [round(float(clearance(ref, p).min()) * 1000, 2) if p else None for p in parts]  # (an empty list: no node)
+    parts = [p for p in parts if p] + rigid
+    for p in parts:
+        p.N = vertex_normals(p.P, p.T)
+    import gear_native as gn
+    gn.write_glb(os.path.join(d, f"{pid}.glb"), [p.node() for p in parts], {"kit_build": {"piece": pid}})
+    import hashlib
+    piece = {k: v for k, v in cfg["piece"].items() if k != "layer"}
+    piece = {"id": piece["id"], "name": piece["name"], "slot": piece["slot"], "style": "mesh",
+             "params": {"file": f"{pid}.glb"}, **{k: v for k, v in piece.items() if k not in ("id", "name", "slot")},
+             "layer": cfg["piece"].get("layer", 1), "body_sha1": hashlib.sha1(open(body_glb(), "rb").read()).hexdigest()}
+    with open(os.path.join(d, "piece.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(piece, f, indent=1)
+        f.write("\n")
+    cp = clearance(ref, parts[0])
+    inner = cp[cp < cfg["clear"] + 0.0015]
+    rep = {"tris": int(sum(len(p.T) for p in parts)), "points": int(sum(len(p.P) for p in parts)),
+           "by_part": {p.name: int(len(p.T)) for p in parts if not p.name.endswith("_rigid")}, "pushed_to_min": pushed,
+           "plate_clear_mm": [round(float(cp.min()) * 1000, 2), round(float(np.percentile(inner, 99)) * 1000, 2) if len(inner) else None],
+           "trim_min_mm": mn[1], "trim_low": low_trim, "strap_min_mm": mn[2],
+           "rigid_min_mm": round(float(min(clearance(ref, p).min() for p in rigid)) * 1000, 2) if rigid else None}
+    print(json.dumps(rep, indent=1))
+    return rep
+
+
+if __name__ == "__main__":
+    import bodies
+    bodies.take(sys.argv)
+    build(sys.argv[1])

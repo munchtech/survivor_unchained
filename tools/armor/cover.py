@@ -36,14 +36,17 @@ HIDDEN = 1.0
 
 def skin_body(rows):
     """Her body (skin), its normals, and the pieces of `rows` on her skeleton, as wearcheck loads them."""
-    sk = wc.skin.Skeleton.load(wc.skin.SKELETONS / "heroine_skeleton.json")
-    files = [(wc.skin.PEOPLE / "heroine.glb", lambda n: n == "Heroine", "skin")]
+    import bodies
+    sk = wc.skin.Skeleton.load(bodies.skeleton_for(wc.skin))
+    files = [(bodies.glb_for(wc.skin), lambda n: n == "Heroine", "skin")]
     owner = {}
     for path in sorted({r["path"] for r in rows}):
         names = {m: r["id"] for r in rows if r["path"] == path for m in r["meshes"]}
         owner.update(names)
         files.append((wc.skin.Path(path), lambda n, s=frozenset(names): n in s, "garment"))
-    body = wc.skin.Body(sk, files, None, label="her", helpers=False)
+    # (B: its armor-only hinge bones (pauldron_hinge_*, thigh_hinge_*, tasset hinges) are added as wearcheck adds them, so a
+    # pauldron's weights on them are kept, not dropped as "bones the skeleton lacks"; A is unchanged)
+    body = wc.skin.Body(sk, files, None, label="her", helpers=bodies.cur().name != "a")
     pid = np.array([owner.get(p, "") for p in body.piece])
     isk = np.nonzero(body.kind == "skin")[0]
     loc = np.full(len(body.P), -1)
@@ -134,6 +137,9 @@ def cover_path(r):
 
 
 def main(argv):
+    import bodies
+    bodies.take(argv)
+    bodies.use_for_check(wc, [])
     def opt(name, default):
         return argv[argv.index(name) + 1] if name in argv else default
     only = set(opt("--pieces", "").split(",")) - {""} or None
@@ -160,7 +166,10 @@ def main(argv):
             c0 = int((c > 0).sum())
             c = grown(Ps, TS, c, *[float(x) for x in r["cover_grow"]])
             print(f"cover: {r['id']} grown {r['cover_grow']}: {c0} -> {int((c > 0).sum())} points")
-        n = write(os.path.abspath(cover_path(r)), Ps, c)
+        out = os.path.abspath(cover_path(r))
+        if bodies.cur().name != "a" and os.path.commonpath([out, os.path.abspath(bodies.cur().art)]) != os.path.abspath(bodies.cur().art):
+            raise SystemExit(f"cover: body {bodies.cur().name} would write outside {bodies.cur().art}: {out}")
+        n = write(out, Ps, c)
         print(f"cover: {r['id']:20} {len(v):6d} verts, {n:6d} points ({int((c >= FULL).sum())} full, {int((c >= HIDDEN).sum())} hidden)")
 
 

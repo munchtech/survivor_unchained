@@ -1,0 +1,19 @@
+{
+ "id": "kit_vambraces",
+ "name": "Gilded Vambraces",
+ "slot": "bracers",
+ "style": "mesh",
+ "params": {
+  "file": "kit_vambraces.glb"
+ },
+ "covers": [
+  "bracers"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "adorn": [],
+ "layer": 2,
+ "body_sha1": "d6533a15dda48c35b60445b0c02c625f3e9b0e90"
+}

@@ -105,6 +105,9 @@ public sealed class ArmorPiece
     /// <summary>A rigid piece (a plate style, or a free mesh made only of `_rigid` parts): the garment tuck never bends it
     /// (GarmentTuck.Over is false with it inner), so its plates keep their shape under any piece over it.</summary>
     [JsonPropertyName("rigid")] public bool Rigid { get; set; }
+    /// <summary>The kit build (git hash of the recipe set) the piece was fitted in: pieces with the same one were fitted together
+    /// (piece_ship), so the garment tuck never lays one under another. Null: not a kit piece.</summary>
+    [JsonPropertyName("built_on")] public string? BuiltOn { get; set; }
     /// <summary>Its own file (res://art/armor/ID.gltf) for a new piece; null: its outfit's heroine_outfit_OUTFIT.gltf.</summary>
     [JsonPropertyName("file")] public string? File { get; set; }
     [JsonPropertyName("tier")] public JsonElement? Tier { get; set; }

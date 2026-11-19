@@ -478,6 +478,38 @@ def test_import_stale_and_stamp(tmp_path):
     assert "changed since import" in gf.import_stale(str(g), str(godot))[0]
 
 
+def test_native_rows_replace_bound_and_skip_stale(tmp_path, monkeypatch):
+    import json as _json
+    import struct
+    import types
+    import piece_ship
+    arm, out = tmp_path / "armor", tmp_path / "out"
+    nd = arm / "body_x"
+    (nd / "armor_tuck").mkdir(parents=True)
+    (nd / "armor_cover").mkdir()
+    for pid in ("kit_a", "kit_b"):
+        (nd / "armor_tuck" / f"{pid}.bin").write_bytes(struct.pack("<I", 3) + b"\0" * 48)
+        (nd / "armor_cover" / f"{pid}.bin").write_bytes(struct.pack("<I", 2) + b"\0" * 32)
+    (nd / "kit_a.sockets.json").write_text("{}")
+    rows = [{"id": "kit_a", "slot": "top", "tuck": "armor_tuck/kit_a.bin", "body_glb": "good"},
+            {"id": "kit_b", "slot": "head", "body_glb": "old"}]
+    (nd / "armor_index.json").write_text(_json.dumps(rows))
+    monkeypatch.setattr(gf, "ARMOR", str(arm))
+    monkeypatch.setattr(piece_ship, "glb_body_hash", lambda p: "good")
+    bodies = {"close": types.SimpleNamespace(glb=str(tmp_path / "people" / "body_x" / "body.glb"), hash="hc"),
+              "play": types.SimpleNamespace(glb="p", hash="hp")}
+    said = []
+    got = gf.native_rows(bodies, str(out), say=said.append)
+    assert list(got) == ["kit_a"] and len(said) == 1 and "kit_b" in said[0] and "bound row is used" in said[0]
+    r = got["kit_a"]
+    assert r["native"] is True and r["fit"] == "ok" and r["body_hash"] == "hc" and r["play_hash"] == "hp"
+    assert r["file"].startswith("res://") and r["file"].endswith("body_x/kit_a.gltf")
+    assert r["sockets"].endswith("kit_a.sockets.json") and r["tuck_count"] == 3 and r["cover_count"] == 2
+    assert (out / "armor_tuck" / "kit_a.bin").exists() and (out / "armor_cover" / "kit_a.bin").exists()
+    # no native folder for the body: nothing, nothing written
+    bodies["close"].glb = str(tmp_path / "people" / "body_y" / "body.glb")
+    assert gf.native_rows(bodies, str(out)) == {}
+
 def test_ornaments_ride_as_one():
     """ORNAMENT: an outfit metal part A skins with one blend (and small) is rigid; one A bends is not; a gem touching a
     boss rides it, a stud far from both rides itself; leather never."""

@@ -27,6 +27,11 @@ namespace SurvivorUnchained.View;
 /// - a panel bone (the Reaver's front loincloth) swings forward with her
 ///   leading thigh (Core/PanelSwing.cs), so the thigh lifts it at a
 ///   stride's foot strike instead of showing through it.
+/// - a hip hinge per side (armor only: no skin of hers on it, not in her body
+///   file; added here, AddHinges) turns part of its thigh's swing about a
+///   belt-line pivot (Play/HipHinge.cs), so a belt plate riding it stays on the
+///   belt and over the thigh; a tasset hinge (one, centred, at the belt's
+///   front V's top) turns with her leading thigh, the V's bottom forward.
 /// A body without the helpers is left as it is. The numbers are in
 /// art/people/rig_helpers.json, written by helpers.py, so the tools and the
 /// game drive them alike.
@@ -102,6 +107,90 @@ public partial class HerJoints : SkeletonModifier3D
     Skeleton3D? found;
     readonly List<Side> sides = new();
     readonly List<Panel> panels = new();
+
+    /// <summary>A hip hinge (helpers.py SPEC "hinges"): a child of the pelvis turned `Amount` of its thigh's swing.</summary>
+    sealed class Hinge
+    {
+        public int Bone;
+        public Quaternion ParentRest, Rest; // the parent's global rest; the hinge's own local rest
+        public int[] Chain = System.Array.Empty<int>(); // the thigh up to (not with) the parent
+        public Vector3 Rest0;               // the thigh's line at rest, her rest axes
+        public double Amount;
+    }
+    readonly List<Hinge> hinges = new();
+
+    /// <summary>The tasset hinge (helpers.py SPEC "tassets"): one centred child of the pelvis at the belt's front V's top,
+    /// turned about her lateral axis with the leading thigh (Play/HipHinge.TassetTurn).</summary>
+    sealed class Tasset
+    {
+        public int Bone;
+        public Quaternion ParentRest, Rest;
+        public int[][] Chains = System.Array.Empty<int[]>(); // each thigh up to the parent (one or two)
+        public Vector3[] Rest0 = System.Array.Empty<Vector3>();
+        public int[] Sides = System.Array.Empty<int>(); // +1 her left thigh, -1 her right (from its name)
+        public double Amount, Soft, Roll, RollFrom = 2, RollSoft = 6, RollMax = 20;
+    }
+    readonly List<Tasset> tassets = new();
+
+    public override void _Notification(int what)
+    {
+        // (the hinges added as soon as this joins her skeleton, before any piece riding them is laid on her)
+        if (what == NotificationParented && GetParent() is Skeleton3D sk) AddHinges(sk);
+    }
+
+    /// <summary>Her hip hinges (rig_helpers.json "hinges") added to `sk` where missing (and where it has the parent
+    /// and the thigh): each a child of its parent at its pivot, its global rest turn none (Play/HipHinge.Rest).
+    /// Returns how many were added. Safe to call again.</summary>
+    public static int AddHinges(Skeleton3D sk)
+    {
+        var s = Spec();
+        if (s == null || !s.ContainsKey("hinges")) return 0;
+        int added = 0;
+        foreach (var hv in s["hinges"].AsGodotArray())
+        {
+            var h = hv.AsGodotDictionary();
+            var pv = h["pivot"].AsGodotArray();
+            var left = new N.Vector3((float)(double)pv[0], (float)(double)pv[1], (float)(double)pv[2]);
+            foreach (var side in new[] { "l", "r" })
+            {
+                string name = ((string)h["name"]).Replace("{s}", side);
+                int parent = sk.FindBone(((string)h["parent"]).Replace("{s}", side));
+                if (sk.FindBone(name) >= 0 || parent < 0 || sk.FindBone(((string)h["bone"]).Replace("{s}", side)) < 0) continue;
+                var gp = sk.GetBoneGlobalRest(parent);
+                var (r, t) = HipHinge.Rest(Nq(gp.Basis.GetRotationQuaternion()), new N.Vector3(gp.Origin.X, gp.Origin.Y, gp.Origin.Z),
+                    HipHinge.Pivot(left, side == "l"));
+                int b = sk.AddBone(name);
+                sk.SetBoneParent(b, parent);
+                var rest = new Transform3D(new Basis(Gq(r)), new Vector3(t.X, t.Y, t.Z));
+                sk.SetBoneRest(b, rest);
+                sk.SetBonePosePosition(b, rest.Origin);
+                sk.SetBonePoseRotation(b, Gq(r));
+                added++;
+            }
+        }
+        if (s.ContainsKey("tassets"))
+            foreach (var tv in s["tassets"].AsGodotArray())
+            {
+                var t = tv.AsGodotDictionary();
+                string name = (string)t["name"];
+                int parent = sk.FindBone((string)t["parent"]);
+                bool thighs = true;
+                foreach (var th in t["thighs"].AsGodotArray()) thighs &= sk.FindBone((string)th) >= 0;
+                if (sk.FindBone(name) >= 0 || parent < 0 || !thighs) continue;
+                var pv = t["pivot"].AsGodotArray();
+                var gp = sk.GetBoneGlobalRest(parent);
+                var (r, tr) = HipHinge.Rest(Nq(gp.Basis.GetRotationQuaternion()), new N.Vector3(gp.Origin.X, gp.Origin.Y, gp.Origin.Z),
+                    new N.Vector3((float)(double)pv[0], (float)(double)pv[1], (float)(double)pv[2]));
+                int b = sk.AddBone(name);
+                sk.SetBoneParent(b, parent);
+                var rest = new Transform3D(new Basis(Gq(r)), new Vector3(tr.X, tr.Y, tr.Z));
+                sk.SetBoneRest(b, rest);
+                sk.SetBonePosePosition(b, rest.Origin);
+                sk.SetBonePoseRotation(b, Gq(r));
+                added++;
+            }
+        return added;
+    }
     // Her meshes come and go (an outfit put on): look for the shapes again.
     bool rescan = true;
 
@@ -242,6 +331,69 @@ public partial class HerJoints : SkeletonModifier3D
                 }
             sides.Add(one);
         }
+        // Hip hinges (helpers.py SPEC "hinges"): added if this skeleton lacks them, then driven.
+        AddHinges(sk);
+        hinges.Clear();
+        if (s.ContainsKey("hinges"))
+            foreach (var hv in s["hinges"].AsGodotArray())
+            {
+                var h = hv.AsGodotDictionary();
+                foreach (var side in new[] { "l", "r" })
+                {
+                    int bone = sk.FindBone(((string)h["name"]).Replace("{s}", side)), thigh = sk.FindBone(((string)h["bone"]).Replace("{s}", side));
+                    if (bone < 0 || thigh < 0) continue;
+                    int parent = sk.GetBoneParent(bone);
+                    var one = new Hinge
+                    {
+                        Bone = bone, Amount = (double)h["amount"],
+                        ParentRest = sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion(),
+                        Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
+                    };
+                    var chain = new List<int>();
+                    for (int j = thigh; j >= 0 && j != parent; j = sk.GetBoneParent(j)) chain.Add(j);
+                    one.Chain = chain.ToArray();
+                    var q = Quaternion.Identity;
+                    foreach (int j in one.Chain) q = sk.GetBoneRest(j).Basis.GetRotationQuaternion() * q;
+                    one.Rest0 = one.ParentRest * (q * Vector3.Up);
+                    hinges.Add(one);
+                }
+            }
+        // The tasset hinge (helpers.py SPEC "tassets"): added by AddHinges above, driven by the leading thigh.
+        tassets.Clear();
+        if (s.ContainsKey("tassets"))
+            foreach (var tv in s["tassets"].AsGodotArray())
+            {
+                var t = tv.AsGodotDictionary();
+                int bone = sk.FindBone((string)t["name"]);
+                if (bone < 0) continue;
+                int parent = sk.GetBoneParent(bone);
+                var one = new Tasset
+                {
+                    Bone = bone, Amount = (double)t["amount"], Soft = (double)t["soft"],
+                    ParentRest = sk.GetBoneGlobalRest(parent).Basis.GetRotationQuaternion(),
+                    Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
+                };
+                if (t.ContainsKey("roll")) one.Roll = (double)t["roll"];
+                if (t.ContainsKey("roll_from")) one.RollFrom = (double)t["roll_from"];
+                if (t.ContainsKey("roll_soft")) one.RollSoft = (double)t["roll_soft"];
+                if (t.ContainsKey("roll_max")) one.RollMax = (double)t["roll_max"];
+                var ths = t["thighs"].AsGodotArray();
+                bool ok = ths.Count is 1 or 2;
+                if (ok) { one.Chains = new int[ths.Count][]; one.Rest0 = new Vector3[ths.Count]; one.Sides = new int[ths.Count]; }
+                for (int i = 0; ok && i < ths.Count; i++)
+                {
+                    int thigh = sk.FindBone((string)ths[i]);
+                    if (thigh < 0) { ok = false; break; }
+                    one.Sides[i] = ((string)ths[i]).EndsWith("_l") ? 1 : -1;
+                    var chain = new List<int>();
+                    for (int j = thigh; j >= 0 && j != parent; j = sk.GetBoneParent(j)) chain.Add(j);
+                    one.Chains[i] = chain.ToArray();
+                    var q = Quaternion.Identity;
+                    foreach (int j in one.Chains[i]) q = sk.GetBoneRest(j).Basis.GetRotationQuaternion() * q;
+                    one.Rest0[i] = one.ParentRest * (q * Vector3.Up);
+                }
+                if (ok) tassets.Add(one);
+            }
         // Panel bones (helpers.py SPEC "panels"): one centred bone each.
         panels.Clear();
         if (s.ContainsKey("panels"))
@@ -432,6 +584,35 @@ public partial class HerJoints : SkeletonModifier3D
                 foreach (var (mi, i) in c.On)
                     if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
+        }
+        // The hip hinges: the thigh's line in the parent's frame (her rest axes carried with it), part of its arc.
+        foreach (var hg in hinges)
+        {
+            var q = Quaternion.Identity;
+            foreach (int j in hg.Chain) q = sk.GetBonePoseRotation(j) * q;
+            var v = hg.ParentRest * (q * Vector3.Up);
+            sk.SetBonePoseRotation(hg.Bone, Gq(HipHinge.Pose(Nq(hg.Rest), new N.Vector3(hg.Rest0.X, hg.Rest0.Y, hg.Rest0.Z),
+                new N.Vector3(v.X, v.Y, v.Z), hg.Amount)));
+        }
+        // The tasset hinges: each thigh's forward swing (and spread) in the pelvis's frame, the V turned with the leading one
+        // (a one-thigh bone with its own), and rolled away from a thigh crossing the midline (roll > 0; a one-thigh bone:
+        // rolled with its thigh's spread).
+        foreach (var tg in tassets)
+        {
+            int n = tg.Chains.Length;
+            var sw = new double[n];
+            var sp = new double[n];
+            for (int i = 0; i < n; i++)
+            {
+                var q = Quaternion.Identity;
+                foreach (int j in tg.Chains[i]) q = sk.GetBonePoseRotation(j) * q;
+                var v = tg.ParentRest * (q * Vector3.Up);
+                var v0 = tg.Rest0[i];
+                (sw[i], sp[i]) = Core.PanelSwing.SwingSpread(v.X, v.Y, v.Z, v0.X, v0.Y, v0.Z, tg.Sides[i]);
+            }
+            double turn = n == 2 ? HipHinge.TassetTurn(sw[0], sw[1], tg.Amount, tg.Soft) : HipHinge.TassetTurnOne(sw[0], tg.Amount, tg.Soft);
+            double roll = HipHinge.TassetRollFor(sp, tg.Sides, tg.Roll, tg.RollFrom, tg.RollSoft, tg.RollMax);
+            sk.SetBonePoseRotation(tg.Bone, Gq(HipHinge.TassetPose(Nq(tg.Rest), turn, roll)));
         }
         // The panels: each thigh's line in the pelvis's frame (her rest axes
         // carried with it), its forward swing and spread from rest, and the

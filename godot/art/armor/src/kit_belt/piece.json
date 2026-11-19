@@ -1,0 +1,85 @@
+{
+ "id": "kit_belt",
+ "name": "Gilded Gunmetal Belt",
+ "slot": "belt",
+ "style": "mesh",
+ "params": {
+  "file": "kit_belt.glb",
+  "rigid_ride": [
+   {
+    "match": "tasset",
+    "weights": {
+     "tasset_hinge": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hipf_l",
+    "weights": {
+     "thigh_hinge_l": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hipf_r",
+    "weights": {
+     "thigh_hinge_r": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_l",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "back_r",
+    "weights": {
+     "pelvis": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_l",
+    "weights": {
+     "thigh_hinge_l": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "hip_r",
+    "weights": {
+     "thigh_hinge_r": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "ring_l_rigid",
+    "weights": {
+     "tasset_hinge": 1.0
+    },
+    "mix": 1.0
+   },
+   {
+    "match": "ring_r_rigid",
+    "weights": {
+     "tasset_hinge": 1.0
+    },
+    "mix": 1.0
+   }
+  ]
+ },
+ "covers": [
+  "belt",
+  "skirt"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "adorn": [],
+ "layer": 2,
+ "body_sha1": "d6533a15dda48c35b60445b0c02c625f3e9b0e90"
+}

@@ -1,0 +1,82 @@
+using System;
+using System.Numerics;
+
+namespace SurvivorUnchained.Play;
+
+/// <summary>Her hip hinges (tools/anim/helpers.py SPEC "hinges", drive_hinges; armor-D 16 Nov): one bone per side
+/// for ARMOR only, a child of the pelvis at a belt-line pivot, its global rest turn none, turned `amount` of the
+/// thigh's swing (the arc from the thigh's rest line to its posed line, both in her rest axes carried with the pelvis:
+/// flexion and spread, never its roll). A belt plate rides it rigidly: on the belt, over the thigh. HerJoints adds the
+/// bones (AddHinges) and drives them with this. The tasset hinge (SPEC "tassets") is one centred bone at the belt's
+/// front V's top, turned with the leading thigh (TassetTurn), so a long V rides it rigidly off the thigh.</summary>
+public static class HipHinge
+{
+    /// <summary>The pivot on side `left` (the spec gives her left; the right mirrored in x).</summary>
+    public static Vector3 Pivot(Vector3 leftPivot, bool left) => left ? leftPivot : new Vector3(-leftPivot.X, leftPivot.Y, leftPivot.Z);
+
+    /// <summary>The hinge's local rest under its parent (global rest turn `parentRot` at `parentPos`): its global turn
+    /// none, at `pivot` (helpers.hinge_rest).</summary>
+    public static (Quaternion Rot, Vector3 Pos) Rest(Quaternion parentRot, Vector3 parentPos, Vector3 pivot)
+    {
+        var inv = Quaternion.Inverse(parentRot);
+        return (inv, Vector3.Transform(pivot - parentPos, inv));
+    }
+
+    /// <summary>`amount` of the arc from v0 to v, about the arc's own axis (helpers.hinge_turn_q).</summary>
+    public static Quaternion Turn(Vector3 v0, Vector3 v, double amount)
+    {
+        var a = Vector3.Normalize(v0);
+        var b = Vector3.Normalize(v);
+        var c = Vector3.Cross(a, b);
+        double sn = c.Length(), cs = Math.Clamp(Vector3.Dot(a, b), -1f, 1f);
+        if (sn < 1e-9) return Quaternion.Identity;
+        return Quaternion.CreateFromAxisAngle(c / (float)sn, (float)(Math.Atan2(sn, cs) * amount));
+    }
+
+    /// <summary>The hinge's local pose: its rest, then the turn (helpers.drive_hinges: rest x turn).</summary>
+    public static Quaternion Pose(Quaternion rest, Vector3 v0, Vector3 v, double amount) =>
+        Quaternion.Normalize(rest * Turn(v0, v, amount));
+
+    /// <summary>Degrees the tasset hinge turns (helpers.py SPEC "tassets", tasset_turn): its V's bottom forward and up by
+    /// `amount` of the leading thigh's forward swing (fl, fr: degrees from rest, Core.PanelSwing.SwingSpread), smoothly:
+    /// amount * softrelu(smooth max(fl, fr) - soft/4).</summary>
+    public static double TassetTurn(double fl, double fr, double amount, double soft) =>
+        amount * Core.PanelSwing.SoftRelu(Core.PanelSwing.SmoothMax(fl, fr, soft) - soft / 4, soft);
+
+    /// <summary>A tasset hinge read by ONE thigh (hiptasset_hinge_{l,r}; helpers.tasset_turn with fr None): amount *
+    /// softrelu(that thigh's own forward swing - soft/4).</summary>
+    public static double TassetTurnOne(double f, double amount, double soft) =>
+        amount * Core.PanelSwing.SoftRelu(f - soft / 4, soft);
+
+    /// <summary>Degrees the tasset V rolls about her forward axis, its tip toward her right when positive, away from a
+    /// thigh crossing the midline (helpers.tasset_roll): k*(softrelu(-al - from, soft) - softrelu(-ar - from, soft)),
+    /// soft-clamped at `max` by max*tanh(x/max). al, ar: each thigh's spread from rest (negative = crossing). k 0 = none.</summary>
+    public static double TassetRoll(double al, double ar, double k, double from, double soft, double max)
+    {
+        if (k == 0) return 0;
+        double x = k * (Core.PanelSwing.SoftRelu(-al - from, soft) - Core.PanelSwing.SoftRelu(-ar - from, soft));
+        return max * Math.Tanh(x / max);
+    }
+
+    /// <summary>Degrees a ONE-thigh tasset (hiptasset_hinge_{l,r}; helpers.tasset_follow) rolls about her forward axis WITH
+    /// its thigh's spread, both ways: max*tanh(-side*k*sp/max), positive = the bottom toward her right (so her left plate's
+    /// bottom goes out with her left thigh spreading out). sp: the thigh's spread from rest; side +1 her left, -1 her right;
+    /// k (SPEC `roll` on a one-thigh bone) 0 = none.</summary>
+    public static double TassetFollow(double sp, int side, double k, double max) =>
+        k == 0 ? 0 : max * Math.Tanh(-side * k * sp / max);
+
+    /// <summary>A tasset hinge's roll from its thighs' spreads (helpers.tasset_pose): two thighs, the V away from a crossing
+    /// one (TassetRoll); one thigh, the plate with its thigh's spread (TassetFollow).</summary>
+    public static double TassetRollFor(double[] sp, int[] sides, double k, double from, double soft, double max) =>
+        sp.Length == 2 ? TassetRoll(sp[0], sp[1], k, from, soft, max) : TassetFollow(sp[0], sides[0], k, max);
+
+    /// <summary>The tasset hinge's local pose: its rest (Rest: global rest turn none, at its pivot), then `deg` about her
+    /// lateral axis, the bottom forward (about -X: her -Y toward +Z), then `roll` degrees about her forward axis, the
+    /// bottom toward her right (about -Z, in the pelvis axes; helpers.drive_tassets: rest x roll x pitch).</summary>
+    public static Quaternion TassetPose(Quaternion rest, double deg, double roll = 0)
+    {
+        var pitch = Quaternion.CreateFromAxisAngle(new Vector3(-1, 0, 0), (float)(deg * Math.PI / 180));
+        if (roll == 0) return Quaternion.Normalize(rest * pitch);
+        return Quaternion.Normalize(rest * Quaternion.CreateFromAxisAngle(new Vector3(0, 0, -1), (float)(roll * Math.PI / 180)) * pitch);
+    }
+}

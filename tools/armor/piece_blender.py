@@ -2107,6 +2107,10 @@ MESH = SPEC_PIECE.get("style") == "mesh"
 # second-skin pieces 1 mm, layer 2 (belts, bracers, greaves, boots) 2 mm, layer 3 (pauldrons, cloak, head) 3 mm)
 SLOT_BAND = {0: 0.0005, 1: 0.0010, 2: 0.0020, 3: 0.0030}
 IMPORT = {}
+# (ARMOR_EXACT=1 (piece_ship.py's exact install of a free mesh, 16 Nov): the mesh was modelled at the SHIPPED body's
+# rest (heroine.glb), not this blend's, so neither push-out runs here (this blend's skin is not hers); piece_ship
+# puts it back on its authored points and her own weights after the follow, and reports its clearance off her skin)
+EXACT = MESH and os.environ.get("ARMOR_EXACT") == "1"
 
 
 def _base_name(n):
@@ -2291,7 +2295,7 @@ def build_mesh():
     sig = PRM.get("band_sigma", 0.010)
     allco = [np.array([v.co[:] for v in p_.data.vertices]) for p_ in parts]
     start = np.vstack(allco)
-    for rnd in range(6):
+    for rnd in range(0 if EXACT else 6):
         X = np.vstack(allco)
         Q, D, A = [], [], []
         for x in X:
@@ -2656,42 +2660,46 @@ TUCK_P = 0.010 * np.where(tuck[jb] > 0.973, 1.0, tuck[jb])
 # her points, and the records and hash made from them, are the game's.
 # (her breast weights eased into her body's groups, as the full build does first: chest_smooth and the helpers'
 # split read them)
-_, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
-changed = np.abs(W - G["W_AUTHORED"]).sum(1) > 1e-4
-groups = {vg.name: vg for vg in body.vertex_groups}
-n_eased = 0
-for v in me.vertices:
-    j = jw[v.index]
-    if not changed[j]:
-        continue
-    for e in list(v.groups):
-        body.vertex_groups[e.group].remove([v.index])
-    row_ = W[j]
-    top_ = np.argsort(-row_)[:4]
-    tot_ = row_[top_].sum() or 1.0
-    for b_ in top_:
-        if row_[b_] > 0.003:
-            vg = groups.get(BONES[b_]) or body.vertex_groups.new(name=BONES[b_])
-            groups[BONES[b_]] = vg
-            vg.add([v.index], float(row_[b_] / tot_), "REPLACE")
-    n_eased += 1
-print("BODY breast weights eased at", n_eased, "of her vertices")
-if os.environ.get("CHEST_SMOOTH", "1") == "1":
-    from heroine_chest import chest_smooth
-    chest_smooth(body, G["mend_folds"])
-if os.environ.get("AREOLA_OUT", "1") == "1":
-    import heroine_areola
-    heroine_areola.apply(body, [G["NIPPLE"]["l"], G["NIPPLE"]["r"]])
-G["mend_folds"](me, body)
-G["rig_helpers"].apply(arm, [body])
+# (Body B (SU_ARMOR_BODY=p1) already IS the game's body, published as built: its joints, names, weights and points
+# are what the base is made from. These are body A's full-build steps; skipped on B.)
+B_BODY = os.environ.get("SU_ARMOR_BODY", "a") == "p1"
 keep = None
-if G["HAND_PIVOTS"] and G["FINGER_FIX"]:
-    keep = [np.empty(len(me.vertices) * 3)]
-    me.vertices.foreach_get("co", keep[0])
-    for kb in (me.shape_keys.key_blocks if me.shape_keys else []):
-        keep.append(np.empty(len(kb.data) * 3))
-        kb.data.foreach_get("co", keep[-1])
-    G["finger_flattened"](body)
+if not B_BODY:
+    _, jw = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+    changed = np.abs(W - G["W_AUTHORED"]).sum(1) > 1e-4
+    groups = {vg.name: vg for vg in body.vertex_groups}
+    n_eased = 0
+    for v in me.vertices:
+        j = jw[v.index]
+        if not changed[j]:
+            continue
+        for e in list(v.groups):
+            body.vertex_groups[e.group].remove([v.index])
+        row_ = W[j]
+        top_ = np.argsort(-row_)[:4]
+        tot_ = row_[top_].sum() or 1.0
+        for b_ in top_:
+            if row_[b_] > 0.003:
+                vg = groups.get(BONES[b_]) or body.vertex_groups.new(name=BONES[b_])
+                groups[BONES[b_]] = vg
+                vg.add([v.index], float(row_[b_] / tot_), "REPLACE")
+        n_eased += 1
+    print("BODY breast weights eased at", n_eased, "of her vertices")
+    if os.environ.get("CHEST_SMOOTH", "1") == "1":
+        from heroine_chest import chest_smooth
+        chest_smooth(body, G["mend_folds"])
+    if os.environ.get("AREOLA_OUT", "1") == "1":
+        import heroine_areola
+        heroine_areola.apply(body, [G["NIPPLE"]["l"], G["NIPPLE"]["r"]])
+    G["mend_folds"](me, body)
+    G["rig_helpers"].apply(arm, [body])
+    if G["HAND_PIVOTS"] and G["FINGER_FIX"]:
+        keep = [np.empty(len(me.vertices) * 3)]
+        me.vertices.foreach_get("co", keep[0])
+        for kb in (me.shape_keys.key_blocks if me.shape_keys else []):
+            keep.append(np.empty(len(kb.data) * 3))
+            kb.data.foreach_get("co", keep[-1])
+        G["finger_flattened"](body)
 def mesh_world(objs):
     vs, fs, owner = [], [], []
     for o in objs:
@@ -2887,7 +2895,7 @@ pushed = {}
 # (a free mesh: at rest only unless params.pose_push. Its rigid plates don't bend in a pose, so her skin coming
 # through one there is her own skin folding (an elbow, a shoulder): a rest-pose bump for it only dents the plate;
 # the pose check below still counts it)
-for rnd in range(PRM.get("push_rounds", 4)):
+for rnd in range(0 if EXACT else PRM.get("push_rounds", 4)):
     defs = {}
     for pname, rots in [("rest", [])] + ([] if MESH and not PRM.get("pose_push") else list(POSES.items())):
         bv, bn, dg = pose_body(rots)
@@ -2952,7 +2960,16 @@ stamp("body hash %s, %d tuck records" % (BODY_HASH, TUCK_N))
 # --------------------------------------- the post steps every piece takes --
 i0, _ = cut(M_STRAYS)
 i1 = src.index(M_RIGID) + len(M_RIGID)
+# (Body B: her game rig is B's own laws (P1Laws), so no panel_front is added to the armature: the helpers' split still
+# runs for B's own share/twist bones; the armor hinge bones come at a piece's bind (pin_shipped.with_hinges), not here)
+_panels_ = None
+if B_BODY:
+    _hp_ = G["rig_helpers"].hp
+    _panels_ = _hp_.SPEC.get("panels")
+    _hp_.SPEC["panels"] = []
 run(i0, i1, NS)
+if B_BODY:
+    _hp_.SPEC["panels"] = _panels_
 names = set(G["BONE_NAMES"])
 n_parts = 0
 PARTS_OF = {}
@@ -3061,7 +3078,7 @@ COV = NEAR[R0["covered"]]
 g_ = R0["gap"][R0["covered"]]
 NUM["rest"] = {"skin_points_near": int(len(NEAR)), "covered": int(len(COV)),
                "gap_mm": {"max": round(float(g_.max() * 1000), 2), "p99": round(float(np.percentile(g_, 99) * 1000), 2),
-                          "p50": round(float(np.median(g_) * 1000), 2)},
+                          "p50": round(float(np.median(g_) * 1000), 2)} if len(g_) else None,  # (a helm covers none of her body)
                "through_untucked": int(R0["through"].sum()), "through_tucked": int(R0["through_t"].sum()),
                "tucked_not_covered": int(((tuck[NEAR] > 0.5) & ~R0["covered"]).sum())}
 # (by place: under the cups' lower rims, along their inner rims, under the gore, the crown (over 30 mm in from a rim))
@@ -3403,8 +3420,11 @@ g_ = json.load(open(path, encoding="utf-8"))
 # (the steel's metal map (Metal038, shared with the outfits) drops to non-metal in specks, which lit as white paint
 # spatter on the cups: this piece's steel is metal all over at the map's mean roughness. Wear is the touch-up shader's,
 # never painted here.)
+# (armor-D finish, 16 Nov: only when the piece's main key IS a metal: kit_boots and kit_gloves name darkleather as theirs,
+# and their leather shipped with steel's factors and no roughness map)
+_mkind = json.load(open(os.path.join(ROOT, "godot", "art", "people", "outfit_materials.json"), encoding="utf-8")).get(MKEY, {}).get("kind")
 for m_ in g_.get("materials", []):
-    if m_.get("name") == MKEY:
+    if m_.get("name") == MKEY and _mkind == "metal":
         pb_ = m_.setdefault("pbrMetallicRoughness", {})
         pb_.pop("metallicRoughnessTexture", None)
         pb_["metallicFactor"] = 1.0

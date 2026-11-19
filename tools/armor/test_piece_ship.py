@@ -134,3 +134,84 @@ def test_adorn_four_weight_shell_stays_one_set():
     parts = [(P, np.tile([0, 0, 1.0], (len(P), 1)), np.zeros((len(P), 2)), np.zeros((len(P), 2)), np.zeros((len(P), 4)), d, np.array([[0, 1, 2]]))]
     adorn.append(m, parts, nb)
     assert adorn.weight_sets(m["attrs"]) == 1 and m["attrs"]["JOINTS_0"][0].dtype == np.uint8
+
+
+def test_exact_verdict_gates_on_the_authored_points():
+    ok = {"move_max_mm": 0.0, "installed_to_authored_mm": 0.0}
+    assert ps.exact_verdict(0, 1.0, ok, 0.5) is None
+    assert "exit" in ps.exact_verdict(1, 1.0, ok, 0.5)
+    assert "twins" in ps.exact_verdict(0, 0.49, ok, 0.5)                    # (the identity follow: every twin)
+    assert "0.600 mm" in ps.exact_verdict(0, 1.0, dict(ok, move_max_mm=0.6), 0.5)
+    assert "0.700 mm" in ps.exact_verdict(0, 1.0, dict(ok, installed_to_authored_mm=0.7), 0.5)
+
+
+BODY_GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "people", "heroine.glb")
+
+
+@pytest.mark.skipif(not os.path.exists(BODY_GLB), reason="no heroine.glb")
+def test_exact_weights_are_hers_and_the_probe_sits_off_her():
+    """The exact install's weights at her own points are her skin's (eight kept, normalized), and the probe fixture's
+    band stands its offset off her skin."""
+    import pin_shipped as pn
+    import probe_mesh as pm
+    B = pn.bf.Body(BODY_GLB)
+    i = np.arange(0, len(B.U), 97)
+    Wq, sd = pn.her_weights(B, B.U[i])
+    assert np.abs(Wq - B.W[i]).max() < 1e-4 and np.abs(sd).max() < 1e-5
+    top, tw = pn._top(Wq, 8)
+    assert np.allclose(tw.sum(1), 1.0) and (tw >= 0).all()
+    P, F = pm.band(B)
+    _, sd = pn.her_weights(B, P[::7])
+    assert np.median(sd) == pytest.approx(pm.OFF, abs=2e-4) and F.max() < len(P)
+
+
+def test_rigid_ride_picks_first_match_mixes_and_names_unknown_bones():
+    import pin_shipped as pn
+    names = ["hip", "thigh", "wrist"]
+    mean = np.array([1.0, 0.0, 0.0])
+    ride = [{"match": "lame", "weights": {"thigh": 2, "wrist": 2}}, {"match": "lame_l", "weights": {"hip": 1}}]
+    w, hit = pn.ride_weights(mean, ["k.lame_l"], ride, names)
+    assert hit == "lame" and np.allclose(w, [0, .5, .5])
+    w, hit = pn.ride_weights(mean, ["k.cop"], ride, names)
+    assert hit is None and np.allclose(w, mean)
+    w, _ = pn.ride_weights(mean, ["k.lame"], [{"match": "lame", "weights": {"wrist": 1}, "mix": 0.25}], names)
+    assert np.allclose(w, [.75, 0, .25])
+    with pytest.raises(SystemExit, match="nobone"):
+        pn.ride_weights(mean, ["k.lame"], [{"match": "lame", "weights": {"nobone": 1}}], names)
+
+
+
+def test_rigid_shell_named_by_its_authored_part():
+    """pin's rigid_ride match sees the authored object a shell sits on (installed meshes are named by material)."""
+    import pin_shipped as pn
+    objs = {"pauldron_cop_l_rigid": np.array([[0.2, 1.5, 0.0], [0.21, 1.5, 0.0]]),
+            "pauldron_lames_l_rigid": np.array([[0.22, 1.4, 0.0], [0.23, 1.39, 0.0]])}
+    Q = np.array([[0.2, 1.5, 0.0], [0.21, 1.501, 0.0], [0.225, 1.4, 0.0], [0.2, 1.49, 0.0]])
+    assert pn.part_names(Q, [np.array([0, 1, 3])], objs) == {"pauldron_cop_l_rigid"}
+    assert pn.part_names(Q, [np.array([2])], objs) == {"pauldron_lames_l_rigid"}
+    w, hit = pn.ride_weights(np.array([1.0, 0.0]), {"k.pauldrons.steel", "pauldron_cop_l_rigid"},
+                             [{"match": "lames_l", "weights": {"b": 1}}, {"match": "cop_l", "weights": {"b": 1}}], ["a", "b"])
+    assert hit == "cop_l" and np.allclose(w, [0, 1])
+
+def test_follow_env_shoulder_shapes_switch():
+    import piece_ship as ps
+    assert ps.follow_env({"params": {"shoulder_shapes": False}})["BF_PAUL_SHAPES"] == "0"
+    assert ps.follow_env({"params": {}}).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")
+    assert ps.follow_env(None).get("BF_PAUL_SHAPES") == os.environ.get("BF_PAUL_SHAPES")
+
+
+def test_follow_env_shoulder_shapes_meshes_switch():
+    # (16 Nov pauldron-2 r3: the plates carry no shoulder shapes, the leather under them (its material's mesh) does)
+    import piece_ship as ps
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets"))
+    import body_follow_post as bf
+    env = ps.follow_env({"params": {"shoulder_shapes": False, "shoulder_shapes_meshes": ["darkleather"]}})
+    assert env["BF_PAUL_SHAPES"] == "0" and env["BF_PAUL_SHAPES_MESHES"] == "darkleather"
+    assert ps.follow_env({"params": {"shoulder_shapes": False}}).get("BF_PAUL_SHAPES_MESHES") ==         os.environ.get("BF_PAUL_SHAPES_MESHES")
+    on = ("darkleather",)
+    assert bf.paul_carries("kit_pauldrons.pauldrons.darkleather", False, on)
+    assert bf.paul_carries("kit_pauldrons.lod1.darkleather", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.steel", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.gold", False, on)
+    assert not bf.paul_carries("kit_pauldrons.pauldrons.darkleather", False, ())
+    assert bf.paul_carries("kit_pauldrons.pauldrons.steel", True, ())

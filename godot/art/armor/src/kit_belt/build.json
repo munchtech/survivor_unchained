@@ -1,0 +1,280 @@
+{
+ "recipe": "belt",
+ "module": "kit_hips",
+ "prefix": "belt",
+ "piece": {
+  "id": "kit_belt",
+  "name": "Gilded Gunmetal Belt",
+  "slot": "belt",
+  "covers": [
+   "belt",
+   "skirt"
+  ],
+  "layer": 2,
+  "material": "steel",
+  "tint": null,
+  "tier": 2,
+  "tier_name": "gilded",
+  "adorn": []
+ },
+ "mat": {
+  "plate": "steel",
+  "trim": "gold",
+  "strap": "brownleather"
+ },
+ "under": [
+  "kit_bodice",
+  "kit_brief"
+ ],
+ "clear": 0.003,
+ "clear_min": 0.0022,
+ "thick": 0.002,
+ "plate_thick": 0.002,
+ "rim": {
+  "w": 0.0095,
+  "h": 0.0034,
+  "sides": 6,
+  "step": 0.007
+ },
+ "axis_z": -0.02,
+ "belt": {
+  "front_y": 1.125,
+  "side_y": 1.152,
+  "back_y": 1.15,
+  "side_th": 80.0,
+  "w": 0.05,
+  "col_step": 2.0,
+  "gap": 0.0015,
+  "thick": 0.0042,
+  "sig": 2.0,
+  "studs": {
+   "step": 9.0,
+   "rows": [
+    0.0
+   ],
+   "r": 0.0034,
+   "h": 0.0024,
+   "skip": [
+    30.0,
+    -30.0
+   ],
+   "skip_w": 7.0,
+   "skip_front": 14.0
+  },
+  "buckle": {
+   "w": 0.064,
+   "h": 0.056,
+   "bar": 0.0085
+  },
+  "rings": {
+   "th": 30.0,
+   "drop": 0.0,
+   "tab_w": 0.018,
+   "R": 0.018,
+   "r": 0.0042,
+   "out": 0.009,
+   "ride": {
+    "tasset_hinge": 1.0
+   }
+  }
+ },
+ "plates": [
+  {
+   "name": "tasset",
+   "mirror": false,
+   "th": [
+    0.0,
+    26.0
+   ],
+   "cols": 53,
+   "tuck": 0.01,
+   "keel": {
+    "h": 0.003,
+    "w": 0.03
+   },
+   "lames": [
+    {
+     "sfx": "",
+     "ride": {
+      "tasset_hinge": 1.0
+     },
+     "len": [
+      0.255,
+      0.19225,
+      0.1295,
+      0.06675,
+      0.004
+     ],
+     "rows": 18,
+     "a_in": 14.0,
+     "smax": 0.042,
+     "band": false,
+     "min_len": 0.003
+    }
+   ],
+   "by_body": {
+    "p1": {
+     "lames": [
+      {
+       "sfx": "",
+       "ride": {
+        "tasset_hinge": 1.0
+       },
+       "len": [
+        0.135,
+        0.10225,
+        0.0695,
+        0.03675,
+        0.004
+       ],
+       "rows": 18,
+       "a_in": 14.0,
+       "smax": 0.042,
+       "band": false,
+       "min_len": 0.003
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "hipf",
+   "th": [
+    44.0,
+    66.0
+   ],
+   "cols": 12,
+   "tuck": 0.01,
+   "band": {
+    "v": [
+     0.55,
+     0.85
+    ],
+    "wl": 0.032,
+    "w": 0.0026,
+    "h": 0.0012,
+    "border_w": 0.0028,
+    "border_h": 0.001
+   },
+   "lames": [
+    {
+     "sfx": "",
+     "ride": {
+      "thigh_hinge_l": 1.0
+     },
+     "len": [
+      0.065,
+      0.09
+     ],
+     "rows": 12,
+     "a_in": 6.0,
+     "smax": 0.05
+    }
+   ],
+   "by_body": {
+    "p1": {
+     "th": [
+      42.0,
+      64.0
+     ],
+     "tuck": 0.045,
+     "lames": [
+      {
+       "sfx": "",
+       "ride": {
+        "hiptasset_hinge_l": 1.0
+       },
+       "len": [
+        0.1785,
+        0.1882
+       ],
+       "rows": 18,
+       "a_in": 6.0,
+       "smax": 0.09
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "back",
+   "th": [
+    108.0,
+    156.0
+   ],
+   "cols": 25,
+   "tuck": 0.01,
+   "band": {
+    "v": [
+     0.55,
+     0.85
+    ],
+    "wl": 0.032,
+    "w": 0.0026,
+    "h": 0.0012,
+    "border_w": 0.0028,
+    "border_h": 0.001
+   },
+   "lames": [
+    {
+     "sfx": "",
+     "ride": {
+      "pelvis": 1.0
+     },
+     "len": [
+      0.06,
+      0.06
+     ],
+     "rows": 12,
+     "a_in": 12.0,
+     "smax": 0.045
+    }
+   ]
+  },
+  {
+   "name": "hip",
+   "th": [
+    62.0,
+    104.0
+   ],
+   "cols": 22,
+   "tuck": 0.01,
+   "band": {
+    "v": [
+     0.55,
+     0.85
+    ],
+    "wl": 0.032,
+    "w": 0.0026,
+    "h": 0.0012,
+    "border_w": 0.0028,
+    "border_h": 0.001
+   },
+   "over": [
+    "hipf",
+    "back"
+   ],
+   "lames": [
+    {
+     "sfx": "",
+     "ride": {
+      "thigh_hinge_l": 1.0
+     },
+     "len": [
+      0.09,
+      0.2
+     ],
+     "rows": 14,
+     "a_in": 10.0,
+     "smax": 0.045
+    }
+   ]
+  }
+ ],
+ "hug": {
+  "need": 0.005,
+  "under": [
+   "kit_brief"
+  ]
+ }
+}

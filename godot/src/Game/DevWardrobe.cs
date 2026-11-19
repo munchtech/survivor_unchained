@@ -14,6 +14,8 @@ public static class DevWardrobe
     {
         Wardrobe.BackFill(ch);
         if (Args.Get("headgear") is string hg) ch.Headgear = !(hg is "off" or "0" or "false");
+        // `--offhand off`: her off-hand (the Warden's shield) left empty so armor shots see her back (Game.cs refreshes the kit after).
+        if (Args.Get("offhand") is "off" or "0" or "false") ch.Equipment[EquipSlot.Offhand] = null;
         if (Args.Get("looks") is string looks)
             foreach (var id in looks.Split(',', System.StringSplitOptions.RemoveEmptyEntries)) GD.Print($"looks {id}: {(Wardrobe.Collect(ch, id.Trim()) ? "found" : "not a new look of hers")}");
         if (Args.Get("shown") is string shown)

@@ -1,24 +1,264 @@
 {
- "_": "Her metal's finish by material key (outfit_materials.json kind metal; shaders/heroine_outfit_metal.gdshader's finish). Any key not here is bare: as built. blued: blued steel, deep blue-black, chipped back to bright steel at its worn edges (the look bible's armor-metal page, item 4). enamel: blue enamel chipped at its worn edges to bright steel (item 4's other finish; body 16: fully metallic blued steel read pale glassy silver edge-on to a bright sky, paint holds its navy at every angle; a dye recolours the paint).",
- "_l23": "L1 lead 23 (TUNE, the owner 10 Nov): her steel and darksteel to BLUED gunmetal (bare read warm grey under her key, C 0.013 h 48) (dark cool plate, gold trim brighter and warmer, one hot edge glint); the blue enamel was finish 2. Any value but blued / enamel is bare.",
- "steel": "blued",
- "darksteel": "blued",
- "_dye_paint": "Keys bare as built when undyed; a colour dye paints them like the enamel (finish 2), a metal dye gives dyed metal (finish 3): fully metallic iron in a dye read as glassy coloured chrome edge-on.",
- "dye_paint": ["iron", "blacksteel"],
- "_wp_interim": "Warden polish r3 (15 Nov, judge r2: the plate cups read as wet black vinyl at pack view): INTERIM plate.cups rough 0.22 -> 0.6, spec_mute 0.85 -> 0.7; plate.plate rough 0.38 -> 0.6. Hits every plate_* top and the Forged Cuirass (their gltfs carry steel). The L1 steel-finish row replaces this.",
- "pieces": {
-  "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her pauldrons keep the key's 0.45 / 0.3. Armor 12 (c3): the cuirass's plate (piece word 'plate': only the cuirass has one; set 'plate' is every plate_* armor mesh) a step crisper at 0.38, its patina's patches halved (metal_blot, 1 the key's own). Armor 13 (c4): patches down to 0.2, fine scratches instead (metal_fine), its rolled edges glossier and brighter (metal_rim_rough, metal_rim_bright: a rolled binding's flag, COLOR.a 0). Armor 15 (b1): the cups (warden.cups, and plate.cups: every plate_* top's cups) polished at 0.22, patches at 0.2: at 0.45 the close-up's warm night key spread over each apex as a cloudy pink blot (read as a stain or a nipple, J1); now one small warm highlight. Armor 13 (c5): its rolled edges worn to bare steel (metal_rim_steel, a neutral grey F0, fading 3 mm onto the plate), its wear and grime by its shape and its oxide lifted 10% toward steel grey (metal_form).",
-  "steel": {
-   "warden.greave": {"metal_rough": 0.36, "metal_env_graze": 0.45},
-   "warden.sabaton": {"metal_rough": 0.36, "metal_env_graze": 0.45},
-   "warden.cups": {"metal_rough": 0.22, "metal_blot": 0.2},
-   "plate.cups": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_spec_mute": 0.7},
-   "plate.plate": {"metal_rough": 0.6, "metal_blot": 0.2, "metal_fine": 1.0, "metal_rim_rough": 0.2, "metal_rim_bright": 1.15, "metal_rim_steel": 0.57, "metal_form": 1.0}
-  }
- },
- "_meshes": "Warden polish r4 (15 Nov, judge: her three plate tops read alike at the play camera): a worn piece's own finish for one metal key, by wear piece id (the mesh name's start). The Forged Cuirass: blued steel darkened to gunmetal. The Gilded Plate Top: its steel a gold metal dye (finish 3, painted-cel brushed gold, worn bright at its edges). Warden's Plate: as it is.",
- "meshes": {
-  "plate_cuirass_plain": {"steel": {"params": {"blued": [0.2, 0.21, 0.24], "blued_temper": [0.22, 0.21, 0.26], "metal_spec_cap": 0.55, "metal_env": 0.3, "metal_wear_bright": 1.0}}},
-  "plate_top_gilded": {"steel": {"finish": 3, "dye": "#ffa818", "params": {"steel_dim": 4.0, "metal_grime": 0.1, "dyed_env": 2.0, "dyed_ao": 1.0, "dyed_sheen": 2.5, "dyed_rough_min": 0.15, "metal_wear_bright": 4.0, "metal_spec_cap": 5.0}}}
- }
+  "_": "Her metal's finish by material key (outfit_materials.json kind metal; shaders/heroine_outfit_metal.gdshader's finish). Any key not here is bare: as built. blued: blued steel, deep blue-black, chipped back to bright steel at its worn edges (the look bible's armor-metal page, item 4). enamel: blue enamel chipped at its worn edges to bright steel (item 4's other finish; body 16: fully metallic blued steel read pale glassy silver edge-on to a bright sky, paint holds its navy at every angle; a dye recolours the paint).",
+  "_l23": "L1 lead 23 (TUNE, the owner 10 Nov): her steel and darksteel to BLUED gunmetal (bare read warm grey under her key, C 0.013 h 48) (dark cool plate, gold trim brighter and warmer, one hot edge glint); the blue enamel was finish 2. Any value but blued / enamel is bare.",
+  "steel": "blued",
+  "darksteel": "blued",
+  "_dye_paint": "Keys bare as built when undyed; a colour dye paints them like the enamel (finish 2), a metal dye gives dyed metal (finish 3): fully metallic iron in a dye read as glassy coloured chrome edge-on.",
+  "dye_paint": [
+    "iron",
+    "blacksteel"
+  ],
+  "_wp_interim": "Warden polish r3 (15 Nov, judge r2: the plate cups read as wet black vinyl at pack view): INTERIM plate.cups rough 0.22 -> 0.6, spec_mute 0.85 -> 0.7; plate.plate rough 0.38 -> 0.6. Hits every plate_* top and the Forged Cuirass (their gltfs carry steel). The L1 steel-finish row replaces this.",
+  "pieces": {
+    "_": "by key, then outfit.piece (the piece's name's first word): its own metal_rough and metal_env_graze. Metal r4: the Warden's greaves and sabatons, smoother with more edge sheen (a cylinder's highlight is a line); her pauldrons keep the key's 0.45 / 0.3. Armor 12 (c3): the cuirass's plate (piece word 'plate': only the cuirass has one; set 'plate' is every plate_* armor mesh) a step crisper at 0.38, its patina's patches halved (metal_blot, 1 the key's own). Armor 13 (c4): patches down to 0.2, fine scratches instead (metal_fine), its rolled edges glossier and brighter (metal_rim_rough, metal_rim_bright: a rolled binding's flag, COLOR.a 0). Armor 15 (b1): the cups (warden.cups, and plate.cups: every plate_* top's cups) polished at 0.22, patches at 0.2: at 0.45 the close-up's warm night key spread over each apex as a cloudy pink blot (read as a stain or a nipple, J1); now one small warm highlight. Armor 13 (c5): its rolled edges worn to bare steel (metal_rim_steel, a neutral grey F0, fading 3 mm onto the plate), its wear and grime by its shape and its oxide lifted 10% toward steel grey (metal_form).",
+    "steel": {
+      "warden.greave": {
+        "metal_rough": 0.36,
+        "metal_env_graze": 0.45
+      },
+      "warden.sabaton": {
+        "metal_rough": 0.36,
+        "metal_env_graze": 0.45
+      },
+      "warden.cups": {
+        "metal_rough": 0.22,
+        "metal_blot": 0.2
+      },
+      "plate.cups": {
+        "metal_rough": 0.6,
+        "metal_blot": 0.2,
+        "metal_spec_mute": 0.7
+      },
+      "plate.plate": {
+        "metal_rough": 0.6,
+        "metal_blot": 0.2,
+        "metal_fine": 1.0,
+        "metal_rim_rough": 0.2,
+        "metal_rim_bright": 1.15,
+        "metal_rim_steel": 0.57,
+        "metal_form": 1.0
+      }
+    }
+  },
+  "_meshes": "Warden polish r4 (15 Nov, judge: her three plate tops read alike at the play camera): a worn piece's own finish for one metal key, by wear piece id (the mesh name's start). The Forged Cuirass: blued steel darkened to gunmetal. The Gilded Plate Top: its steel a gold metal dye (finish 3, painted-cel brushed gold, worn bright at its edges). Warden's Plate: as it is.",
+  "meshes": {
+    "plate_cuirass_plain": {
+      "steel": {
+        "params": {
+          "blued": [
+            0.2,
+            0.21,
+            0.24
+          ],
+          "blued_temper": [
+            0.22,
+            0.21,
+            0.26
+          ],
+          "metal_spec_cap": 0.55,
+          "metal_env": 0.3,
+          "metal_wear_bright": 1.0
+        }
+      }
+    },
+    "plate_top_gilded": {
+      "steel": {
+        "finish": 3,
+        "dye": "#ffa818",
+        "params": {
+          "steel_dim": 4.0,
+          "metal_grime": 0.1,
+          "dyed_env": 2.0,
+          "dyed_ao": 1.0,
+          "dyed_sheen": 2.5,
+          "dyed_rough_min": 0.15,
+          "metal_wear_bright": 4.0,
+          "metal_spec_cap": 5.0
+        }
+      }
+    },
+    "kit": {
+      "steel": {
+        "finish": 2,
+        "params": {
+          "enamel": [
+            0.33,
+            0.26,
+            0.28
+          ],
+          "enamel_chip": 0.0,
+          "enamel_metal": 0.3,
+          "enamel_rough": 0.55,
+          "enamel_spec_cap": 0.05,
+          "enamel_gloss_cap": 0.25,
+          "enamel_env": 0.25,
+          "enamel_grime": 0.3,
+          "paint_far": [
+            1.3,
+            1.3,
+            1.3
+          ],
+          "kit_lit": 0.0,
+          "kit_soft": 1.0,
+          "kit_glint": [
+            7.0,
+            5.0,
+            2.0
+          ],
+          "kit_glint_color": [
+            0.548,
+            0.517,
+            0.522
+          ],
+          "kit_lit_far": 0.15,
+          "kit_plate": [
+            0.45,
+            1.3,
+            0.05
+          ],
+          "kit_steps": [
+            0.05,
+            0.5,
+            0.04
+          ],
+          "kit_tone_dark": [
+            0.135,
+            0.091,
+            0.091
+          ],
+          "kit_tone_mid": [
+            0.271,
+            0.227,
+            0.229
+          ],
+          "kit_tone_lit": [
+            0.442,
+            0.399,
+            0.401
+          ],
+          "kit_tone_refl": [
+            0.621,
+            0.588,
+            0.589
+          ],
+          "kit_refl": [
+            -0.35,
+            0.94,
+            0.5
+          ],
+          "kit_refl_band": [
+            0.5,
+            0.28,
+            0.12
+          ],
+          "kit_refl_k": 1.0,
+          "kit_floor": [
+            3.0,
+            1.0,
+            0.0
+          ],
+          "kit_floor_den": 16.0,
+          "kit_close": [
+            1.0,
+            0.0,
+            2.5
+          ],
+          "kit_tint_close": [
+            1.022,
+            1.015,
+            0.784
+          ],
+          "kit_tint_den_far": [
+            0.913,
+            0.997,
+            1.284
+          ],
+          "kit_close_wrap": 0.2,
+          "kit_close_den": [
+            1.0,
+            0.9,
+            1.0
+          ],
+          "kit_floor_close": [
+            3.0,
+            3.0,
+            0.0
+          ],
+          "kit_dir_close": [
+            0.3,
+            3.5,
+            0.3
+          ],
+          "kit_lit_step_close": 0.7,
+          "kit_glint_px": 4,
+          "kit_dir_glint_far": 0.3,
+          "kit_glint_minpx": 5
+        }
+      },
+      "gold": {
+        "dye": "#ffbf50",
+        "params": {
+          "metal_grime": 0.1,
+          "gold_floor": 0.15,
+          "gold_gloss": 1.0,
+          "gold_rough": 0.3,
+          "metal_spec_cap": 1.6,
+          "gold_floor_far": 0.3,
+          "kit_gold": [
+            0.45,
+            1.6,
+            0.35
+          ],
+          "kit_gold_dark": [
+            0.72,
+            0.47,
+            0.0
+          ],
+          "kit_gold_lit": [
+            1.0,
+            0.68,
+            0.0
+          ],
+          "kit_gold_glint": 3.0,
+          "kit_floor": [
+            2.0,
+            1.0,
+            0.0
+          ],
+          "kit_floor_den": 6.0,
+          "kit_close": [
+            1.0,
+            0.0,
+            2.5
+          ],
+          "kit_close_wrap": 0.2,
+          "kit_close_den": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "kit_floor_close": [
+            1.0,
+            2.0,
+            0.0
+          ]
+        }
+      },
+      "darkleather": {
+        "dye": "#5e3a28",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
+      },
+      "brownleather": {
+        "dye": "#5e3a28",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
+      }
+    },
+    "kit_boots": {
+      "darkleather": {
+        "dye": "#3d3118",
+        "params": {"hl_disc": [6.0, 4.0, 0.2, 1.0]}
+      }
+    }
+  },
+  "_kit": "Demo armor lane D lead 2 S1c (16 Nov, finish r3): the kit set (wear ids kit_*). Steel: warm gunmetal enamel [0.27,0.23,0.21] (close: the sheet's plate value), paint_far [1.75,1.65,1.9] lifts it at the play camera only (heroine_outfit.gdshaderinc kit_far, px/m 120-300). Gold: dye #ffbf50, floor 1.7 close, gold_floor_far 4.5 at the play camera (the trim is ~1 px there; ink costs it ~0.005 L, no skip needed). Leather brown #5e3a28; kit_boots' leather the sheet's dark gunmetal-purple #4a3a3e (its row after kit's, so it wins). Variants and numbers: godot/.shots/demo_armor/s1r3 (V1-V4), final s1r4. Finish r5 (16 Nov): the kit's toon ramp on its paint set (heroine_outfit.gdshaderinc kit_lit .02 lit ceiling, kit_soft .5, kit_glint [4,8,1] in [.66,.48,.40]); enamel warmer [.36,.28,.21] (close plate h 43-49 C .035, was h 18-35 C .02), enamel_env .25, paint_far .75 (den pauldron L50 .28-.29). In the den her plate takes almost nothing from light(): its level is the far albedo under the den's ambient, and its lit top (L .5-.6) is the unpainted px (rims, chips, gold fringe). Shots godot/.shots/demo_armor/fin5r1. Finish r6 (16 Nov): kit_lit .02 -> .06 and kit_soft .5 -> 1: the close plate was the key's lit side flattened by the .02 ceiling (near-black L .20, bimodal: 7-8% of px between .26 and .38); now a soft form ramp, L50 .29-.32 close/.55/play, 62-69% between. enamel_env has no measurable effect (0 and .6 alike); the den is the hero absolute-tone rig (kit light knobs don't reach it) and its >.40 box share is mostly non-kit px (skin). Open: a flat band L .45-.48 on 16-28% of a cup survives albedo ~0, env 0, cel_rim_k 0 and a whole paint share: its source is not found. Shots godot/.shots/demo_armor/fin6a-c. Finish r7 (16 Nov): the flat L .45-.48 band was the kit GLINT itself (kit_glint_color [.66,.48,.40] over a 4 degree disc, flat by its cap; metal_ground 0 and spec caps ~0 left it bit for bit): glint now [2,4,.75] deg in [1,.85,.75] (cups >.55 1-2%, band 0-2%, was 6-22%); enamel cooler [.33,.26,.28] (close h 0-11, the sheet's mauve gunmetal h ~10, was 46-49; C .028); kit_lit_far .15 (new uniform) + paint_far 1.3 at the play camera (den plate L50 .26). The den rig has no hero_pool row, so cel_hero_abs is off there and the kit light knobs do reach it. Shots godot/.shots/demo_armor/fin7a, fin7f."
 }
