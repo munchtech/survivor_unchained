@@ -50,7 +50,7 @@ public partial class Game
     static bool StoryExists(string id) => FileAccess.FileExists($"res://data/storybook/{id}.json");
 
     /// <summary>A new journey opens on SB00 when there is one; --nocine and quick starts go without, as they go without C01.</summary>
-    static bool OpensOnStory => StoryExists("sb00") && StoryLive("sb00") && !Args.Has("nocine");
+    static bool OpensOnStory => StoryExists("sb00") && StoryLive("sb00") && !Args.Has("nocine") && !Core.Demo.NoOpeningStory;
 
     /// <summary>Whether the storybook says it is live (false on any error).</summary>
     static bool StoryLive(string id)
@@ -178,7 +178,7 @@ public partial class Game
     /// storybook can play (--nocine, a quick start without --cines, one already up, a cinematic, no such file) it goes on.</summary>
     public void Storybook(string id, Action then)
     {
-        if (scene == null || StoryHolds || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id)) { then(); return; }
+        if (scene == null || StoryHolds || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id) || Core.Demo.HidesStorybook(id)) { then(); return; }
         StoryFile f;
         try { f = StoryFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"storybook: {id} not played ({e.Message})"); then(); return; }

@@ -98,6 +98,7 @@ public static class SettingsPanel
         v.AddChild(Row("Pad rumble", ["full", "low", "off"], s.Rumble, x => s.Rumble = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
         v.AddChild(Row("Tips", ["on", "off"], s.Tips ? "on" : "off", x => s.Tips = x == "on"));
+        v.AddChild(Row("Record the last 30 seconds for bug reports", ["on", "off"], s.BugClip ? "on" : "off", x => s.BugClip = x == "on"));
         v.AddChild(Style.Gap(Style.Gap2));
         v.AddChild(Style.Label("Lower pictures trade shadow detail, grass, sparks and ambient occlusion for speed. Upscaling draws the world at fewer pixels and brings it up to your screen; the interface stays sharp. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow. Health under you draws your health beneath your feet in a night's fight.",
             Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Left, false));
@@ -292,6 +293,7 @@ public partial class PauseScreen : Overlay
 
     public PauseScreen(Game g) : base(g)
     {
+        Play.BugReporter.Instance?.SnapshotNow();   // the world as it was, for "Report a bug"
         menu = new MenuList(Refresh, 20);
         // (--pause-panel controls|settings: the shots' keys page)
         if (Args.Get("pause-panel") is "controls" or "settings") panel = Args.Get("pause-panel")!;
@@ -311,6 +313,7 @@ public partial class PauseScreen : Overlay
 
     protected override void Build()
     {
+        if (Play.BugReporter.Instance is { } br) br.PausePanelOpen = panel != "";
         // The world stays in view, paused, the HUD stepped away as the book does it; the world shaded
         // a little toward the panel, as the book shades toward its own. A click on the world goes back.
         HideHud();
@@ -358,6 +361,8 @@ public partial class PauseScreen : Overlay
             menu.Add("Save", () => { if (G.Save("manual") == Play.Game.SaveOutcome.Saved) G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
+        menu.Add("Report a bug", () => Play.BugReporter.Instance?.OpenFromPause(), "F8 at any moment");
+        menu.Add("Open reports folder", Play.BugReporter.OpenFolder);
         menu.Add("Credits and licences", G.Credits);
         menu.Add("Leave to the title", G.QuitToTitle);
         menu.Add("Quit the game", G.QuitGame);

@@ -186,7 +186,7 @@ public static class Kit
         // measures wide, which left the word short of the panel's edge)
         b.CustomMinimumSize = row.GetCombinedMinimumSize();
         b.Ready += () => b.CustomMinimumSize = row.GetCombinedMinimumSize();
-        b.MouseEntered += () => word.AddThemeColorOverride("font_color", colour.Lightened(0.3f));
+        b.MouseEntered += () => { if (!b.Disabled) word.AddThemeColorOverride("font_color", colour.Lightened(0.3f)); };
         b.MouseExited += () => word.AddThemeColorOverride("font_color", colour);
         b.Pressed += press;
         return b;

@@ -37,7 +37,8 @@ public partial class Game
     void TickDay(double dt)
     {
         bool free = FreePlay;
-        if (free)
+        // (the demo: the day stands still, so no night comes: Core.Demo.FreezeClock)
+        if (free && !Core.Demo.FreezeClock)
             foreach (var t in Journey.PassTime(dt)) OnClock(t);
         // The dial by the place's name: where the clock runs, dimmed while it stands still.
         hud.Clock(zone?.ClockRuns == true ? World.Clock : null, free && Journey.ClockStarted);
@@ -223,6 +224,7 @@ public partial class Game
     void AnswerNight()
     {
         if (zone == null || Battle is not { } b) return;
+        if (Core.Demo.NoArenas) return;
         var p = b.Player;
         // A second fight the same night: she does not go back to the lamps.
         if (Journey.FoughtTonight) Say(Journey.DayLines.StraightOn, null, 3.5);

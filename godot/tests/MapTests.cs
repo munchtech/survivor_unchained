@@ -174,6 +174,35 @@ public class MapTests
         Assert.Equal(4, r.J.Ch.Materials.GetValueOrDefault("bone_dust"));
     }
 
+    /// <summary>(19 Nov, the owner: "the character died, so its doing nothing now", the demo proof in the den) Her HP at
+    /// nought in the den closes it as a fall: the battle's hook hands the death on (false), the zone's death ends the map
+    /// (true), its result is the page the game shows (MapOver), and she is taken back to the den's mouth on the Verge. No
+    /// demo cut stands on this path (MapRun, Game.OnDeath, MapOver, MapResultScreen: none reads Demo); what stranded her was
+    /// the autopilot closing the result page as an unknown screen (Autopilot: "mapresult" is now read, then Confirm).</summary>
+    [Fact]
+    public void Her_fall_in_the_den_ends_it_on_its_result_page_and_takes_her_back_to_the_verge()
+    {
+        var den = SurvivorUnchained.Maps.Chart.ForDungeon(DungeonGen.Get("hollow")!, 1, 6, "verge", 3, 4, 0);
+        var r = Open(den, level: 6);
+        r.B.Player.Hp = 0;
+        Assert.False(r.B.Hooks.OnPlayerDeath!(null));
+        Assert.True(r.Zone.OnDeath("test"));
+        Assert.True(r.Zone.Over);
+        Assert.NotNull(r.Zone.Result);
+        Assert.False(r.Zone.Result!.Cleared);
+        Assert.Equal(1, r.Zone.Result.Falls);
+        Assert.Null(r.Host.TravelledTo);
+        // (as the battle leaves her when the zone takes the death, and as the game's Travel captures her wounds)
+        r.B.Player.Hp = 1;
+        r.J.Capture(r.B);
+        r.Host.Pass(2.3);
+        Assert.Equal("verge", r.Host.TravelledTo);
+        // (the coordinator, 19 Nov: she arrives whole, not at the fall's 1 HP among the Verge's foes)
+        var at = r.Zone.ArrivalFrom(null);
+        var verge = r.J.StartBattle(true, r.Map.Meta.Collision(), r.Map.Ground.HeightAt, at.X, at.Z, at.Facing, 3);
+        Assert.Equal(verge.MaxHp, verge.Player.Hp, 6);
+    }
+
     [Fact]
     public void Cold_Then_Not_gets_her_up_on_a_map_before_the_fall_counts()
     {

@@ -307,6 +307,15 @@ public sealed partial class Journey
         Expedition = new Expedition { Hp = b.Player.Hp };
     }
 
+    /// <summary>A fall that closed a map: she gets up where it was entered whole (life full; nothing else is carried out of a
+    /// fight). (19 Nov, the demo proof, the coordinator: the fall left her at 1 HP (Battle: the zone took the death), carried
+    /// to the den's mouth among the Verge's foes, and she fell again at once: a death loop in any build.) After
+    /// <see cref="Capture"/>, which took the 1 HP.</summary>
+    public void RiseWhole()
+    {
+        if (Expedition != null) Expedition.Hp = double.MaxValue;
+    }
+
     /// <summary>A kill: the survivor grows too, more slowly than the ember;
     /// the bestiary and the weapon's mastery remember it.</summary>
     public void Killed(Enemy e, bool byPlayer)

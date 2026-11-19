@@ -107,10 +107,15 @@ public interface IZoneHost
     /// <summary>The place a journey will soon go to, built ahead of it while this one plays (a host that builds
     /// nothing does nothing).</summary>
     void Prepare(string zone) { }
-    /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
-    /// Waystation; a host without a page goes straight back.</summary>
+    /// <summary>A map is over: the game tells it on its own page, then goes back where it was entered from (a
+    /// dungeon's mouth, <see cref="Maps.Chart.ReturnZone"/>, else the Waystation), as Game.LeaveMap; a host without a
+    /// page goes straight back.</summary>
     void MapOver(Zones.MapResult r, bool alive) =>
-        After(alive ? 0.6 : 2.2, () => Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes"));
+        After(alive ? 0.6 : 2.2, () =>
+        {
+            Travel(r.Chart.ReturnZone ?? "waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+            if (!r.Cleared) Journey.RiseWhole();
+        });
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>
     void After(double seconds, Action fn);
     void Save(string reason);

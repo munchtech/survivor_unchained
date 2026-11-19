@@ -103,6 +103,13 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         rd = null;
     }
 
+    /// <summary>Whether a buffer's colour can be bound as a storage image. (19 Nov, the demo export: some viewports render a
+    /// colour without the storage bit; a debug build refuses the uniform set and says so each frame (the known "needs the
+    /// TEXTURE_USAGE_STORAGE_BIT" errors), a release build dispatched on the null set and died, an access violation in
+    /// ComputeListDispatch. Such a viewport is left as it is: the pass never ran on it in any build.)</summary>
+    internal static bool Storable(RenderingDevice rd, Rid t) =>
+        t.IsValid && (rd.TextureGetFormat(t).UsageBits & RenderingDevice.TextureUsageBits.StorageBit) != 0;
+
     static RDUniform U(RenderingDevice.UniformType t, int binding, params Rid[] ids)
     {
         var u = new RDUniform { UniformType = t, Binding = binding };
@@ -160,6 +167,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
             Rid colour = buf.GetColorLayer(v), depth = buf.GetDepthLayer(v);
             Rid nr = hasN ? buf.GetTextureSlice("forward_clustered", "normal_roughness", v, 0, 1, 1) : depth;
             Rid pre = hasPre ? buf.GetTextureSlice(InkSnap.Ctx, InkSnap.Name, v, 0, 1, 1) : depth;
+            if (!Storable(rd, colour)) continue;
             var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
             {
                 U(RenderingDevice.UniformType.Image, 0, colour),
@@ -168,6 +176,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
                 U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
                 U(RenderingDevice.UniformType.SamplerWithTexture, 4, sampler, pre),
             });
+            if (!set.IsValid) continue;
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
             rd.ComputeListBindUniformSet(l, set, 0);
@@ -274,11 +283,14 @@ public partial class InkSnap : CompositorEffect, InkRelease.IRids
                 RenderingDevice.TextureSamples.Samples1, size, nv, 1, true, false);
         for (uint v = 0; v < nv; v++)
         {
+            // (a colour that cannot be a storage image: left alone, InkPass.Storable)
+            if (!InkPass.Storable(rd, buf.GetColorLayer(v))) continue;
             var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
             {
                 new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 0, }.With(buf.GetColorLayer(v)),
                 new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 1, }.With(buf.GetTextureSlice(Ctx, Name, v, 0, 1, 1)),
             });
+            if (!set.IsValid) continue;
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
             rd.ComputeListBindUniformSet(l, set, 0);

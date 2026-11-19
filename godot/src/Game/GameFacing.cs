@@ -9,7 +9,8 @@ public partial class Game
 
     public override void _UnhandledKeyInput(InputEvent e)
     {
-        if (e is InputEventKey { Pressed: true, Echo: false, Keycode: FacingKey })
+        // (the demo: no dev key a tester could hit by accident)
+        if (e is InputEventKey { Pressed: true, Echo: false, Keycode: FacingKey } && !Core.Demo.NoDevKeys)
         {
             var name = Facing.Toggle();
             hud?.Toast(new Toast(ToastKind.World, "FACING MODE " + name.ToUpperInvariant(), name == "always" ? "she faces the cursor" : "she faces her travel; the cursor on a skill", null, null, 1.6));

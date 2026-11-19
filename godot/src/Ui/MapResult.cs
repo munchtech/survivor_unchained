@@ -127,6 +127,10 @@ public partial class MapResultScreen : TellingScreen
         if (notes.Count > 0) { v.AddChild(Beat(Style.Label(string.Join("  ", notes), Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center), cue)); cue += 0.25; }
 
         // Beat three: the atlas, across the panel, and the mark the map left on it.
+        // (the demo: no atlas and no Wayfinder's table, Demo.NoMapTable: the beat and its lines are left out)
+        bool atlasOn = !SurvivorUnchained.Core.Demo.NoMapTable;
+        if (atlasOn)
+        {
         Register(v, "The atlas");
         var atlasLine = MapSpoils.AtlasLine(r.Chart, r.Cleared, r.FirstClear);
         var atlas = Style.V(Style.Gap3, Style.Label(atlasLine, Style.TextItalic, 17, r.FirstClear ? Style.EmberHi : r.Cleared ? Kit.Ink : Kit.Dim, true, HorizontalAlignment.Center));
@@ -136,13 +140,15 @@ public partial class MapResultScreen : TellingScreen
         v.AddChild(Beat(atlas, cue, r.FirstClear ? Sound.Sfx.Discovery : null));
         int unspent = Atlas.Unspent(G.Journey.World);
         if (unspent > 0) v.AddChild(Beat(Style.Label($"{unspent} point{(unspent == 1 ? "" : "s")} to spend on the atlas, at the Wayfinder's table.", Style.UiBold, 15, Style.EmberHi, true, HorizontalAlignment.Center), cue + 0.3));
+        }
         cue += 0.6;
 
         // Beat four: a line for how it went; the way back has been there all along.
         var after = r.Cleared ? "The Wayfinder will want it for her margins." : $"The chart is spent. {people.BossName} keeps the ground, for now.";
         v.AddChild(Kit.RuleH());
-        v.AddChild(Beat(Style.Label(after, Style.TextItalic, 18, Kit.Ink2, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
-        v.AddChild(OnwardWord("Back to the Waystation", () => G.LeaveMap(r)));
+        if (atlasOn) v.AddChild(Beat(Style.Label(after, Style.TextItalic, 18, Kit.Ink2, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
+        // (a dungeon goes back to its mouth, Chart.ReturnZone (the den: Thornhollow Verge); a Wayfinder's map to the Waystation)
+        v.AddChild(OnwardWord($"Back to {SurvivorUnchained.Play.PostMenu.ZoneName(r.Chart.ReturnZone ?? "waystation")}", () => G.LeaveMap(r)));
     }
 
     /// <summary>The head's count: "5 pieces and a chart", "a chart", "12 pieces and 2 charts".</summary>
@@ -237,7 +243,7 @@ public partial class MapResultScreen : TellingScreen
 
     public override bool Key(Act a)
     {
-        // The first press tells the rest at once; the next goes back to the Waystation.
+        // The first press tells the rest at once; the next goes back (LeaveMap: the Waystation, or a dungeon's mouth).
         if (a is Act.Confirm or Act.Cancel && !Told) { told = true; return true; }
         if (a == Act.Confirm) { G.LeaveMap(r); return true; }
         return a is not (Act.Up or Act.Down or Act.Left or Act.Right);

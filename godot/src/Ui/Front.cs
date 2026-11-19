@@ -534,7 +534,8 @@ public partial class CreateScreen : Overlay
         v.AddChild(SexRow());
         v.AddChild(Style.Gap(Style.Gap1));
         foreach (var (id, c) in Callings.Archetypes)
-            if (P1Body.Offered(id) || d.Archetype == id)
+            // (the demo: only its callings, never even the chosen one's row if it is cut)
+            if (!Core.Demo.HidesCalling(id) && (P1Body.Offered(id) || d.Archetype == id))
             v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), c.Name, c.Tagline, d.Archetype == id, () => Set(() => { d.Section = 0; ChooseArchetype(id); })));
         v.AddChild(Style.Gap(Style.Gap2));
         v.AddChild(Arms(a));
@@ -568,6 +569,8 @@ public partial class CreateScreen : Overlay
         left.AddChild(woman);
         woman.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         him.CustomMinimumSize = new Vector2(w, 0);
+        // (the demo: the male hero is untested, so not even his greyed tab shows; she stands alone, centred)
+        if (Core.Demo.HideMale) { him.QueueFree(); left.CustomMinimumSize = Vector2.Zero; var only = Style.H(0, left); only.Alignment = BoxContainer.AlignmentMode.Center; return only; }
         var row = Style.H(40, left, him);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         return row;

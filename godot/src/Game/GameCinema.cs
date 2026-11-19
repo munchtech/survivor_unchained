@@ -38,6 +38,8 @@ public partial class Game
     public bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null)
     {
         if (scene?.Battle is not { } b || cine != null) return false;
+        // (the demo: the story's films are not played; the zone does without, as under --nocine)
+        if (Core.Demo.HidesCinematic(id)) { GD.Print($"demo: cinematic {id} not played"); return false; }
         // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
         // --cines: a quick start that plays every cinematic as the zone reaches it (real-play checks).
         if (Args.Has("nocine") || (quick && !Args.Has("cines") && Args.Get("cine") != id && chained == null)) return false;

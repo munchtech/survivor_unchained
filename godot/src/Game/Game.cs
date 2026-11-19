@@ -81,6 +81,11 @@ public partial class Game : Node, IZoneHost
         ZoneData.UseGodotFiles();
         // A release build takes no tuning file from the environment (SU-007): only dev and perf builds do.
         Core.DevOverrides.On = Args.Dev;
+        // The demo flavor (export feature `demo`, or --demo in a dev run): data/content/demo.json's cuts (Core.Demo).
+        Core.Demo.On = OS.HasFeature("demo") || Args.Has("demo");
+        if (Core.Demo.On) GD.Print("demo: the demo flavor is on (data/content/demo.json)");
+        AddChild(new ClipRecorder());
+        AddChild(new BugReporter(this));
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
         // (den r16 G, R15f item 11) --den-lair-spurs 0: the den lair as the old open bowl, no root-wall spurs from its rim.
@@ -606,6 +611,8 @@ public partial class Game : Node, IZoneHost
     public void EnterArena(ArenaSpec spec)
     {
         if (inTransit || zone is ArenaRun or StoryNight) return;
+        // (the demo has no arena of any kind)
+        if (Core.Demo.NoArenas) { GD.Print($"demo: arena {spec.Name} refused"); return; }
         CloseOverlay();
         Save("arena");
         Arenas.Begin(World, spec);
@@ -616,6 +623,8 @@ public partial class Game : Node, IZoneHost
     public void EnterMap(SurvivorUnchained.Maps.Chart chart)
     {
         if (inTransit || zone is MapRun || zone is ArenaRun or StoryNight) return;
+        // (the demo: no Wayfinder's map, and only its own dungeons)
+        if ((chart.Dungeon == "" && Core.Demo.NoMapTable) || (chart.Dungeon != "" && Core.Demo.HidesDungeon(chart.Dungeon))) { GD.Print($"demo: map {chart.Name} refused"); return; }
         CloseOverlay();
         Save("map");
         World.Map = chart;
@@ -737,6 +746,8 @@ public partial class Game : Node, IZoneHost
         // A dungeon returns to where it was entered; a map, to the Waystation.
         if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
         else Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
+        // A fall closed it: she arrives whole (Travel's Capture took the fall's 1 HP).
+        if (!r.Cleared) Journey.RiseWhole();
         if (leaving) Wait(0.8, () => screens.Close());
     }
 
@@ -1272,6 +1283,8 @@ public partial class Game : Node, IZoneHost
         foreach (var it in zone.Interactables)
         {
             if (it.When != null && !it.When()) continue;
+            // (the demo: what it cuts is never offered)
+            if (Core.Demo.HidesInteractable(it.Id)) continue;
             double d = Math.Sqrt((it.X - p.X) * (it.X - p.X) + (it.Z - p.Z) * (it.Z - p.Z));
             if (d < it.R && d < bd) { bd = d; best = it; }
         }

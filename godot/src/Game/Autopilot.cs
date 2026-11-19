@@ -26,6 +26,7 @@ public sealed class Autopilot
     readonly HashSet<Act> pressed = new();
     int wp = 1;
     readonly Dictionary<string, double> lampTried = new();
+    double earlyDrinkAt = -9;
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
@@ -156,7 +157,10 @@ public sealed class Autopilot
     {
         if (!piloted) { PressPlan.Run(b, planHands); return; }
         Pilot.UsesFlare = !g.HoldFlare;
-        bool drinks = !noDrink && !g.TeachWaiting("draught");
+        bool drinks = !noDrink && !g.TeachWaiting("draught") && g.Journey.Draughts > 0; // (none left: not pressed every step, "No draughts left x318")
+        // (19 Nov, the demo proof, the coordinator: the test tool fights the den better, the game unchanged: a draught by its
+        // key under 40% of her life, ahead of the Pilot's 33% (the balance harness's, left as it is), as a careful player drinks)
+        if (drinks && b.Player.Alive && b.Player.Hp < b.MaxHp * 0.4 && b.Time - earlyDrinkAt > 2) { earlyDrinkAt = b.Time; Controls.Instance.Press(Act.Draught); }
         if (pilotHuman != null) pilotHuman.Act(b, g.Journey, Move.X, Move.Z, pilotBoss, drinks);
         else Pilot.Act(b, g.Journey, Move.X, Move.Z, hands: planHands, drinks: drinks);
     }
@@ -426,11 +430,20 @@ public sealed class Autopilot
             return;
         }
         resultSeen = false;
+        // (19 Nov, the demo proof: a map's result page (a fall, or its ruler down) was closed as a screen below, which
+        // stranded her at 0 HP in the den for good: read, then left as a player leaves it, Confirm twice (MapResultScreen.Key))
+        if (g.Overlay == "mapresult")
+        {
+            if (!mapResultSeen) { mapResultSeen = true; mapsEnded++; resultT = 0; Godot.GD.Print($"auto: map over #{mapsEnded}, its page read, then Confirm"); }
+            if ((resultT += dt) > 4) { resultT = 0; Controls.Instance.Press(Act.Confirm); }
+            return;
+        }
+        mapResultSeen = false;
         // The Wayfinder's table: a picture of it, then the night's offer taken (--offer N), as a player does.
         // (the zone ends at the town: a run begun in the Low Ford never works the table, M5 r2)
         if (g.Overlay == "maps" && GoalsOn && !(fromLowford && g.Zone?.Id == "waystation")) { Table(dt); return; }
         tableOpen = false;
-        if (g.Overlay != null) { g.CloseOverlay(); return; }
+        if (g.Overlay != null) { if (!BugReporter.Shooting) g.CloseOverlay(); return; }
         // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
         // (spare, finish), or with its first answer: a run never stalls at his knee.
         if (g.Zone?.Choice is { } choice)
@@ -472,7 +485,8 @@ public sealed class Autopilot
         if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
-        if (fromLowford && z.Id == "waystation") { TownStop(dt, b); return; }
+        // (the demo: no stop at the lamp; on along its own goals, the Old Road and the den)
+        if (fromLowford && z.Id == "waystation" && !Core.Demo.On) { TownStop(dt, b); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);
@@ -562,7 +576,11 @@ public sealed class Autopilot
                 var m = Place("watchman");
                 double ax = c.X - m.X, az = c.Z - m.Z, al = Math.Max(0.01, Math.Sqrt(ax * ax + az * az));
                 tx = c.X + ax / al * 1.2; tz = c.Z + az / al * 1.2;
-                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < (pil ? 1.5 : 1.0) && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
+                // (18 Nov, the demo proof: she came at it from the watchman's side, the chest itself between her and that spot;
+                // pressed into it, the dead watchman's prompt was the nearer and she stood there for good: after 8 s, the chest
+                // from wherever she is; and the key whenever the chest's prompt is up, as a player presses it)
+                if (postT > 8) { tx = c.X; tz = c.Z; }
+                if (g.Prompted == "chest" && (interactT -= dt) <= 0) { interactT = 1.0; Controls.Instance.Press(Act.Interact); }
                 break;
             }
             // (M5 r2) The watch-post's lamp once the Knight is down (its prompt offered then): walked to and lit, as a player
@@ -658,9 +676,19 @@ public sealed class Autopilot
                 if (!Idle && z is Zones.Prologue pn && pn.Night is { } nn)
                 {
                     var gn = nn.Goal(_ => true, _ => null, Place("gate").X);
-                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; }
+                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; break; }
                     else if (p.Z < Place("ford").Z + 25) { tx = Place("ford").X; tz = Place("ford").Z + 12; }
                 }
+                // (18 Nov, the demo proof: the road's next point straight was into the watch-post's wall, and she leaned on it
+                // for six minutes: round what is solid to it, GroundPath, as the night's goal is (Encounters.Route))
+                routeT -= dt;
+                if (route == null || routeT <= 0 || Math.Abs(routeFor.Item1 - tx) + Math.Abs(routeFor.Item2 - tz) > 1.5)
+                {
+                    routeT = 2; routeFor = (tx, tz);
+                    route = SurvivorUnchained.Sim.GroundPath.Find(b.Collision, p.X, p.Z, tx, tz);
+                }
+                while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.9) route.RemoveAt(0);
+                if (route is { Count: > 0 }) (tx, tz) = route[0];
                 break;
             }
         }
@@ -881,6 +909,8 @@ public sealed class Autopilot
     bool resultSeen, tableOpen, townShot, leaving, tableEnded;
     int nightsEnded, arenasEntered, backFor;
     double tableT, wonT = -1, leaveT, interactT, printT;
+    bool mapResultSeen;
+    int mapsEnded;
     string lastZone = "";
 
     /* ---- (M5 r2) capture hooks for the judge: named frames at the moments that matter, a line or two each ---- */
@@ -1070,6 +1100,11 @@ public sealed class Autopilot
         ActiveGoal? pin;
         bool crowd = false;
         if (!z.Combat) pin = pins.FirstOrDefault();
+        // (the demo, in the wood: on to the den's mouth (its own goal) whenever no foe is within 10 m; else she fights)
+        else if (Core.Demo.On && pins.FirstOrDefault(a => a.Def.Id.StartsWith("demo_")) is { } demoPin
+            && !b.Enemies.Living().Any(e => e.State is not (EnemyState.Dying or EnemyState.Burrowed) && b.HostileToPlayer(e)
+                && (e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z) < 100))
+            pin = demoPin;
         else
         {
             if (wonT < 0 || wonT < Args.Num("leave-after", 20)) return false;

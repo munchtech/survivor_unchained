@@ -5,3 +5,4 @@ obj/
 *.translation
 tests/results/
 .lab/
+data/build.json

@@ -42,7 +42,16 @@ public sealed record ActiveGoal(GoalDef Def, double X, double Z, double R, bool 
 public static class Goals
 {
     static List<GoalDef>? all;
-    public static List<GoalDef> All => all ??= Json.Parse<List<GoalDef>>(Json.ReadContent("goals.json"));
+    public static List<GoalDef> All => all ??= WithDemo(Json.Parse<List<GoalDef>>(Json.ReadContent("goals.json")));
+
+    /// <summary>In the demo (Core.Demo): its hidden goals dropped and its own added (data/content/demo.json "goals").</summary>
+    static List<GoalDef> WithDemo(List<GoalDef> defs)
+    {
+        if (!Core.Demo.On) return defs;
+        defs.RemoveAll(d => Core.Demo.HidesGoal(d.Id));
+        if (Core.Demo.Data.Goals is { } g) defs.AddRange(Json.Parse<List<GoalDef>>(g.GetRawText()));
+        return defs;
+    }
 
     public static List<ActiveGoal> Active(IEnumerable<GoalDef> defs, Ctx ctx, string zoneId, IEnumerable<Interactable> interactables)
     {
@@ -51,7 +60,7 @@ public static class Goals
         foreach (var d in defs)
         {
             if (d.Zone != zoneId || !Rules.Test(d.When, ctx)) continue;
-            var pin = things.FirstOrDefault(i => i.Id == d.Pin && (i.When == null || i.When()));
+            var pin = things.FirstOrDefault(i => i.Id == d.Pin && !Core.Demo.HidesInteractable(i.Id) && (i.When == null || i.When()));
             if (pin == null) continue;
             o.Add(new ActiveGoal(d, pin.X, pin.Z, pin.R, Rules.Test(d.LineWhen, ctx)));
         }
