@@ -80,6 +80,8 @@ public sealed class RigSet
     public readonly Dictionary<string, (double R, double Cover)> Crowns = new();
     /// <summary>(lane J art-color) The world's palettes by name (rigs.json "palettes"; Palettes.cs), flattened for the shaders.</summary>
     public readonly Dictionary<string, double[]> Palettes = new();
+    /// <summary>(lane J) The palettes' light sources (rigs.json palettes.*.glow), by palette name.</summary>
+    public readonly Dictionary<string, SurvivorUnchained.Look.PaletteGlow> Glows = new();
 
     public LightRig? this[string id] => Rigs.TryGetValue(id, out var r) ? r : null;
 
@@ -102,7 +104,7 @@ public sealed class RigSet
         foreach (var id in raw.Keys) Resolve(id, 0);
         if (root.TryGetProperty("palettes", out var pals))
             foreach (var p in pals.EnumerateObject())
-                if (!p.Name.StartsWith("_")) set.Palettes[p.Name] = SurvivorUnchained.Look.Palettes.Read(p.Name, p.Value);
+                if (!p.Name.StartsWith("_")) { set.Palettes[p.Name] = SurvivorUnchained.Look.Palettes.Read(p.Name, p.Value); if (SurvivorUnchained.Look.Palettes.ReadGlow(p.Value) is { } gl) set.Glows[p.Name] = gl; }
         if (root.TryGetProperty("crowns", out var cr))
             foreach (var p in cr.EnumerateObject())
                 set.Crowns[p.Name] = (p.Value[0].GetDouble(), p.Value[1].GetDouble());
@@ -194,6 +196,7 @@ public static class Rigs
             ShadowLevel = r.OneShade, DappleEdge = r.Dapple.Edge ?? p.DappleEdge, DappleClusters = r.Dapple.Clusters ?? p.DappleClusters, DappleLeaf = r.Dapple.Leaf ?? p.DappleLeaf, DappleLeaves = r.Dapple.Leaves ?? p.DappleLeaves, DappleMass = r.Dapple.Mass ?? p.DappleMass,
             DappleHeight = r.Dapple.Height ?? p.DappleHeight, DappleSize = r.Dapple.Size ?? p.DappleSize, DappleFloor = r.Dapple.Floor ?? p.DappleFloor,
             Palette = r.Palette is { } pn ? set.Palettes.TryGetValue(pn, out var pv) ? pv : throw new FormatException($"rigs.json: no palette {pn}") : p.Palette,
+            GlowName = r.Palette is { } gn && set.Glows.ContainsKey(gn) ? gn : "", GlowK = r.Palette is { } gk && set.Glows.ContainsKey(gk) ? 1 : 0,
             IsLit = true, CelTwin = null, Source = p,
         };
     }

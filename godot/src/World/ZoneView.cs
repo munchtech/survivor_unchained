@@ -93,6 +93,7 @@ public partial class ZoneView : Node3D
         // (The den grows nothing under its roof: DungeonDress lays its fungus and bones by rule.)
         var flora = z.DungeonTheme == "den" ? new Node3D { Name = "Flora" } : Dressing.Flora(z);
         AddChild(flora);
+        if (NightGlow.Build(z) is { } nightGlow) AddChild(nightGlow);   // (lane J: night glow caps and their lights, by the palette's "glow")
         // Nothing grows in a fire pit: neither the flora nor the meadow (GrowGrass).
         foreach (var f in z.Meta.Fires)
             if (f.Ring)

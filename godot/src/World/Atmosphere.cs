@@ -297,6 +297,8 @@ public partial class Atmosphere : Node3D
     /// sun that does not come is only wasted, and the one that does is baked as before.)</summary>
     static readonly string[] PalClasses = { "leaf", "grass", "ground", "path", "stone", "bark" };
     /// <summary>(lane J art-color) The world's palette (Palettes.cs: per class 12 doubles) to the pal_* globals; null or --pal off: amount 0, the albedo as built.</summary>
+    /// <summary>(lane J) The glow sources' strength under the air last set (0 by day); NightGlow scales its lights by it.</summary>
+    public static float GlowK;
     public static void SetPalette(double[]? pal)
     {
         bool on = pal is { Length: >= 76 } && SurvivorUnchained.Args.Get("pal") != "off";
@@ -471,6 +473,7 @@ public partial class Atmosphere : Node3D
         TownLit = Mathf.Max(moon, 1f - Mathf.SmoothStep(18f, 26f, (float)p.KeyElevation));
         RenderingServer.GlobalShaderParameterSet("town_lit", TownLit);
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, (float)p.RiverMoon));
+        GlowK = (float)p.GlowK; RenderingServer.GlobalShaderParameterSet("glow_k", GlowK);   // (lane J: night glow caps and their lights)
         SetPalette(p.Palette);   // (lane J: the world palette per time of day, rigs.json "palettes")
         RenderingServer.GlobalShaderParameterSet("flora_lamp", SurvivorUnchained.Args.Num("grass-lamp-ochre", (float)p.GrassLampOchre));
         RenderingServer.GlobalShaderParameterSet("flora_night", new Vector4(SurvivorUnchained.Args.Num("bush-night-sat", (float)p.BushNightSat), SurvivorUnchained.Args.Num("ground-ember-ochre", (float)p.GroundEmberOchre), 0, 0));

@@ -336,6 +336,7 @@ public static class Atmospheres
             DappleCover = Lerp(a.DappleCover, b.DappleCover, t), DappleStrength = Lerp(a.DappleStrength, b.DappleStrength, t),
             DappleHeight = Lerp(a.DappleHeight, b.DappleHeight, t), DappleSize = t < 0.5 ? a.DappleSize : b.DappleSize, DappleFloor = Lerp(a.DappleFloor, b.DappleFloor, t),
             Palette = SurvivorUnchained.Look.Palettes.Blend(a.Palette, b.Palette, t),
+            GlowName = t >= 0.5 ? b.GlowName : a.GlowName, GlowK = Lerp(a.GlowK, b.GlowK, t),
             Rig = t < 0.5 ? a.Rig : b.Rig, IsLit = a.IsLit && b.IsLit,
         } is var r && (r.IsLit || (a.Rig == "" && b.Rig == "" && a.CelTwin == null && b.CelTwin == null)) ? r
           : r with { CelTwin = Blend(LitAsIs(a), LitAsIs(b), t) };

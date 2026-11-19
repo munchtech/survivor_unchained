@@ -11,8 +11,22 @@ namespace SurvivorUnchained.Look;
 /// (the square root of its linear luminance, from lo to hi), so a surface keeps its painted variation and takes the time's hue: autumn by day,
 /// violet and teal by night. Only the world's classes take it: her skin, hair, eyes and gear never do (lane E's skin band).
 /// Flattened per class: [dark r g b (linear), amount, mid r g b, lo, lit r g b, hi].</summary>
+/// <summary>(lane J, night glow) A palette's light sources: cap, stem and light colours (sRGB hex), the light's energy and range (m),
+/// the share of tree feet that get a cluster, the most clusters in a zone, the mushrooms a cluster [min, max], the cap radius [min, max] (m).</summary>
+public sealed record PaletteGlow(string Cap, string Stem, string Light, double Energy, double Range, double Share, int Max, int CapsMin, int CapsMax, double SizeMin, double SizeMax);
+
 public static class Palettes
 {
+    public static PaletteGlow? ReadGlow(JsonElement e)
+    {
+        if (!e.TryGetProperty("glow", out var g) || g.ValueKind != JsonValueKind.Object) return null;
+        double D(string k, double d) => g.TryGetProperty(k, out var v) ? v.GetDouble() : d;
+        string S(string k, string d) => g.TryGetProperty(k, out var v) ? v.GetString()! : d;
+        var caps = g.TryGetProperty("caps", out var c) ? (c[0].GetInt32(), c[1].GetInt32()) : (3, 7);
+        var size = g.TryGetProperty("size", out var z) ? (z[0].GetDouble(), z[1].GetDouble()) : (0.08, 0.22);
+        return new PaletteGlow(S("cap", "#bff8ff"), S("stem", "#5fd0e0"), S("light", "#55e0ff"), D("energy", 1.6), D("range", 3.2), D("share", 0.45), (int)D("max", 40), caps.Item1, caps.Item2, size.Item1, size.Item2);
+    }
+
     /// <summary>The classes in their order (the shader's PAL_* index).</summary>
     public static readonly string[] Classes = ["leaf", "grass", "ground", "path", "stone", "bark"];
     public const int Row = 12;
