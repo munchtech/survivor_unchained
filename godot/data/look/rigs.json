@@ -311,7 +311,7 @@
     "_what": "(lane J art-color, 19 Nov) The world's colour per time (logic/Look/Palettes.cs): each class a ramp dark, mid, lit (sRGB) over the albedo's own value (the square root of its linear luminance, range lo-hi), taken by amount. FROM the owner's day and night reference (owner_ref_night_day_colors_19nov.webp): day autumn reds, oranges and golds, a warm sand path, warm grey stone; night indigo-violet ground, violet and teal foliage, blue-violet stone. These are albedos, not the frame: the rig's light colours them after.",
     "_stroke": "(lane J lead 8, 19 Nov) \"stroke\": the painted stroke layer (shaders/paint_stroke.gdshaderinc): brush cell/len/wid/bend, hue turn/lift/inner/chroma, cover per class [leaf, grass, ground, path, stone, bark], and the hit paint (color, edge, amount, emit).",
     "wild_day": {
-      "stroke": {"cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 38, "lift": 0.05, "inner": 0.08, "chroma": 1.15, "cmin": 0.05, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#fbf1d8", "edge": "#8a1a3a", "amount": 1, "emit": 0.15}},
+      "stroke": {"cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 38, "lift": 0.05, "inner": 0.08, "chroma": 1.15, "cmin": 0.05, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#b0103c", "edge": "#ffd040", "amount": 1, "emit": 0.15}},
       "value": 0.8,
       "leaf": {"ramp": ["#2a0606", "#e04a08", "#f8b828"], "alt": [["#2a0210", "#c0102c", "#f03a28"], ["#8a4a00", "#f4ac00", "#ffd818"]], "mix": [0.33, 0.35, 0.14, 0.27], "near": [0.3, 0.55, 0.95, 20], "amount": 1.0, "range": [0.12, 0.34]},
       "grass": {"ramp": ["#7a3a0c", "#d88a1c", "#ffd040"], "amount": 0.9, "range": [0.15, 0.55]},
@@ -335,7 +335,7 @@
       "stone": {"ramp": ["#24264e", "#3e4278", "#7a80bc"], "amount": 0.8, "value": 0.2, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#2e1a30", "#4a2a48", "#6a4060"], "amount": 0.75, "range": [0.15, 0.55]},
       "ember": {"near": 0.0, "far": 2.0, "keep": 1.0, "albedo": "#d8a8a0"},
-      "glow": {"cap": "#22cfee", "stem": "#58d8ea", "light": "#00f0ff", "energy": 1.2, "range": 2.6, "share": 0.45, "max": 700, "caps": [2, 3], "size": [0.3, 0.5], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.4, "wood_light": 0.1, "alt_cap": "#c468ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [0, 0], "cap_emit": 1.2, "cap_ink": 0.3, "pool": [0, 0.5, 0.65, 0.25, 0.0, 0.3, 2.2], "spill": [1.5, 2.25, 3.0, 1.8, 1.2, 0.9, 0.7]},
+      "glow": {"cap": "#22cfee", "stem": "#58d8ea", "light": "#00f0ff", "energy": 1.2, "range": 2.6, "share": 0.45, "max": 700, "caps": [2, 3], "size": [0.3, 0.5], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.4, "wood_light": 0.1, "alt_cap": "#c468ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [0, 0], "cap_emit": 1.8, "cap_ink": 0.3, "pool": [0, 0.5, 0.65, 0.25, 0.0, 0.3, 2.2], "spill": [1.4, 2.2, 3.0, 0.9, 0.5, 0.3, 0.5]},
       "ink": {"color": "#40306a", "k": 0.2, "px": 4.0, "crease": 0.6, "thin": 1.0, "lum": 12, "class": [1, 1, 0, 1], "inner": [1, 1, 0, 1], "crease_deg": 28, "depth": 0.15, "rim": [0.9, 0.9, 0.0], "rim_nv": [0.22, 0.34], "rim_color": "#22184a", "fit": 0.22, "fit_px": 24},
       "bands": [4, 0, 3, 3, 3, 3],
       "band_edge": 0.05,

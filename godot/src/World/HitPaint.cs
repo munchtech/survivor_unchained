@@ -53,7 +53,7 @@ public static class HitPaint
                 if (age >= 2.7 || age < 0) Live[i] = false;
                 else
                 {
-                    size = Crit[i] ? 2.0f : 1.6f;
+                    size = Crit[i] ? 2.6f : 2.2f;   // (lead 8: wider than a wolf, so its arms show past the foe standing on it)
                     erode = age < 0.6 ? 0f : age < 1.3 ? 0.3f : age < 2.0 ? 0.55f : 0.8f;
                 }
             }

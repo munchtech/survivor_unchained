@@ -694,6 +694,7 @@ void vertex() {
 }
 
 void fragment() {
+	vec2 ps_hp_k = vec2(0.0);   // (lead 8: hit paint on stone tops, set in the stone branch)
 #if defined(OWN_WALL) || defined(OWN_ROOF)
 	// (no round window: the house fade above)
 	vec2 mo = vec2(0.0);
@@ -1329,6 +1330,9 @@ void fragment() {
 		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the stones' strokes, the flagstones' too (once)
 			vec4 sf = ps_frame(v_wpos, wn, 0.0, vec2(0.8, 0.6));
 			col = ps_paint(col, sf.xy, sf.zw, ps_cover1.x, 0.37);
+			// (lead 8: hit paint on what faces up, the path's flush slabs too: on terrain alone the slabs hid it where she fights)
+			ps_hp_k = ps_hits(v_wpos.xz) * step(0.75, wn.y);
+			col = ps_hit_paint(col, ps_hp_k);
 		}
 		if (pal_stonem.w > 0.0 && flag_amount < 0.5) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
 			float mp = pnt ? pal_vn3(v_wpos * 2.3 + 5.1) : st.a;
@@ -1395,6 +1399,7 @@ void fragment() {
 #endif
 
 	// (lane J lead 8: painted light, glows light the world in hard steps: stones, bark, leaves, plants; facing rims)
+	EMISSION += ps_hit_emit(ps_hp_k);   // (lead 8: hit paint glows a little, as on the ground)
 	EMISSION += ps_glow_light((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), ALBEDO);
 
 	// The Flare's drain and frost (flare_world.gdshaderinc).
