@@ -311,7 +311,7 @@
     "_what": "(lane J art-color, 19 Nov) The world's colour per time (logic/Look/Palettes.cs): each class a ramp dark, mid, lit (sRGB) over the albedo's own value (the square root of its linear luminance, range lo-hi), taken by amount. FROM the owner's day and night reference (owner_ref_night_day_colors_19nov.webp): day autumn reds, oranges and golds, a warm sand path, warm grey stone; night indigo-violet ground, violet and teal foliage, blue-violet stone. These are albedos, not the frame: the rig's light colours them after.",
     "_stroke": "(lane J lead 8, 19 Nov) \"stroke\": the painted stroke layer (shaders/paint_stroke.gdshaderinc): brush cell/len/wid/bend, hue turn/lift/inner/chroma, cover per class [leaf, grass, ground, path, stone, bark], and the hit paint (color, edge, amount, emit).",
     "wild_day": {
-      "stroke": {"cell": 0.38, "len": 0.42, "wid": 0.11, "bend": 0.12, "hue": 38, "lift": 0.05, "inner": 0.08, "chroma": 1.15, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#fbf1d8", "edge": "#8a1a3a", "amount": 1, "emit": 0.15}},
+      "stroke": {"cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 38, "lift": 0.05, "inner": 0.08, "chroma": 1.15, "cmin": 0.05, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#fbf1d8", "edge": "#8a1a3a", "amount": 1, "emit": 0.15}},
       "value": 0.8,
       "leaf": {"ramp": ["#2a0606", "#e04a08", "#f8b828"], "alt": [["#2a0210", "#c0102c", "#f03a28"], ["#8a4a00", "#f4ac00", "#ffd818"]], "mix": [0.33, 0.35, 0.14, 0.27], "near": [0.55, 0.55, 0.95, 20], "amount": 1.0, "range": [0.12, 0.48]},
       "grass": {"ramp": ["#7a3a0c", "#d88a1c", "#ffd040"], "amount": 0.9, "range": [0.15, 0.55]},
@@ -326,7 +326,7 @@
       "leaf_form": 1.0
     },
     "wild_night": {
-      "stroke": {"cell": 0.38, "len": 0.42, "wid": 0.11, "bend": 0.12, "hue": 40, "lift": 0.04, "inner": 0.07, "chroma": 1.1, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#f9b214", "edge": "#ca6e06", "amount": 1, "emit": 0.7}},
+      "stroke": {"cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 40, "lift": 0.04, "inner": 0.07, "chroma": 1.1, "cmin": 0.06, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#f9b214", "edge": "#ca6e06", "amount": 1, "emit": 0.7}},
       "value": 0.4,
       "leaf": {"ramp": ["#0a3a50", "#0898b8", "#48f0ff"], "alt": [["#3a1060", "#7428b8", "#c8a4ff"], ["#1c1850", "#3c48b0", "#6a90e8"]], "mix": [0.42, 0.1, 0.2, 0.27], "near": [0.3, 0.55, 0.95, 20], "amount": 0.9, "range": [0.15, 0.55]},
       "grass": {"ramp": ["#103c58", "#1a8aa8", "#40c8e0"], "amount": 0.85, "range": [0.15, 0.55]},

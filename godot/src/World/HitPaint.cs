@@ -31,8 +31,10 @@ public static class HitPaint
         var d = new Vector2(away.X, away.Z);
         if (d.LengthSquared() < 1e-4f) d = new Vector2(0, -1);
         // across the blow: the perpendicular of away, in the shader's convention (ax = (cos a, sin a) in (x, z))
+        d = d.Normalized();
         float px = -d.Y, pz = d.X;
-        X[k] = at.X; Z[k] = at.Z; Ang[k] = MathF.Atan2(pz, px); Crit[k] = crit; Born[k] = now; Live[k] = true;
+        // (lead 8: laid between her and the foe, 0.6 m back from the contact along the blow: at the contact the foe stood on it)
+        X[k] = at.X - d.X * 0.6f; Z[k] = at.Z - d.Y * 0.6f; Ang[k] = MathF.Atan2(pz, px); Crit[k] = crit; Born[k] = now; Live[k] = true;
         counter++;
         uint h = counter * 2654435761u; h ^= h >> 15; h *= 2246822519u; h ^= h >> 13;
         Seed[k] = (h & 0xFFFFu) / 65535f;
@@ -51,7 +53,7 @@ public static class HitPaint
                 if (age >= 2.7 || age < 0) Live[i] = false;
                 else
                 {
-                    size = Crit[i] ? 1.5f : 1.1f;
+                    size = Crit[i] ? 2.0f : 1.6f;
                     erode = age < 0.6 ? 0f : age < 1.3 ? 0.3f : age < 2.0 ? 0.55f : 0.8f;
                 }
             }

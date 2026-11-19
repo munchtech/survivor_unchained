@@ -19,6 +19,8 @@ global uniform vec4 ps_brush;
 global uniform vec4 ps_tone;
 global uniform vec4 ps_cover0;
 global uniform vec4 ps_cover1;
+global uniform vec4 ps_hitc;
+global uniform vec4 ps_hite;
 
 float ps_h(vec2 p) { p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }
 
@@ -46,6 +48,9 @@ vec3 ps_turn(vec3 c, float deg, float dl, float cs) {
 	vec3 l = ps_lab(c);
 	float a = radians(deg), ca = cos(a), sa = sin(a);
 	l.yz = vec2(l.y * ca - l.z * sa, l.y * sa + l.z * ca) * cs;
+	// (the chroma floor ps_hitc.w: a near-grey field, a stone, still takes a coloured mark, in its own faint hue)
+	float c0 = length(l.yz);
+	if (c0 < ps_hitc.w) l.yz = (c0 > 1e-4 ? l.yz / c0 : vec2(ca, sa)) * ps_hitc.w;
 	l.x = max(l.x + dl, 0.0);
 	return ps_rgb(l);
 }
@@ -118,10 +123,8 @@ vec4 ps_frame(vec3 wp, vec3 n, float along, vec2 top_dir) {
 // laid across her swing at the contact, with two small satellite marks flung along it. HitPaint.cs keeps the 8 newest as
 // ps_hp<k>a = (x, z, swing angle rad, size m; size 0 = empty) and ps_hp<k>b = (erode 0 fresh .. 1 gone, stepped in 4;
 // seed; crit 0/1; 0). It dies by stepping (FX_LANGUAGE §4): holes open and the mark thins, never an alpha fade.
-// Colour from the palette (blended by the clock): ps_hitc = (body rgb linear, emission share), ps_hite = (inner edge rgb, 0).
+// Colour from the palette (blended by the clock): ps_hitc = (body rgb linear, the strokes' chroma floor "cmin"), ps_hite = (inner edge rgb, 0).
 // Terrain only: every figure, decal and tell draws over it.
-global uniform vec4 ps_hitc;
-global uniform vec4 ps_hite;
 global uniform vec4 ps_hp0a; global uniform vec4 ps_hp0b;
 global uniform vec4 ps_hp1a; global uniform vec4 ps_hp1b;
 global uniform vec4 ps_hp2a; global uniform vec4 ps_hp2b;
