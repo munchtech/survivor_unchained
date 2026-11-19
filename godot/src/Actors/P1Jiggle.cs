@@ -29,6 +29,9 @@ public partial class P1Jiggle : SkeletonModifier3D
     float lift, press, fill;
     /// <summary>--p1-springs off (diagnostic shots): the springs held at their rest offsets, no swing, no squash.</summary>
     public static readonly bool FrozenFlag = SurvivorUnchained.Args.Get("p1-springs") == "off";
+    /// <summary>--p1-springs bind (diagnostic shots): the springs never pose her; her breast bones stay where the clip puts
+    /// them (her bind under the chest: no clip keys them), the shape a rigid cup's mesh was built in.</summary>
+    public static readonly bool BindFlag = SurvivorUnchained.Args.Get("p1-springs") == "bind";
     /// <summary>The worn bottom's support for the glutes (TODO P2 gear: set where bottoms are equipped).</summary>
     public float SupportBottom { get => (float)(springs?.Support["bottom"] ?? supportBottom); set { supportBottom = value; if (springs != null) springs.Support["bottom"] = value; } }
     /// <summary>Overall strength (1 as tuned) and the squash and stretch along the bone (0 under formed plate).</summary>
@@ -116,7 +119,7 @@ public partial class P1Jiggle : SkeletonModifier3D
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
-        if (sk == null || failed) return;
+        if (sk == null || failed || BindFlag) return;
         if (springs == null) { Build(sk); if (springs == null) return; }
         springs.Amount = Amount; springs.Squash = Squash; springs.Frozen = FrozenFlag;
         foreach (int j in springs.Needed) g[j] = P1Body.M(sk.GetBoneGlobalPose(j));
