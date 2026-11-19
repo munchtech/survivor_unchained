@@ -93,6 +93,8 @@ public partial class GameHud
             LevelCard(LevelCards.NewSkill(0, w.Skill));
         }
         double now = Time.GetTicksMsec() / 1000.0;
+        // (den r19 lead, shots only) --no-lessons: no lesson or Lamps prompt over a judged frame
+        if (Args.Has("no-lessons")) return;
         if (lessonHint != null && now >= lessonUntil) TakeLessonDown(game, expired: true);
         // (a lesson waits for its card to leave: the card says what opened, the lesson then says how, never both at once)
         if (Lessons()?.Tick(near && !LevelCardUp && game.CurrentHint == null && !HudPin.Active, dt) is { } row)

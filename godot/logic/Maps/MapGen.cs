@@ -436,7 +436,23 @@ public static class MapGen
         }
         // Where you come in: a fire someone left.
         var st = areas[0];
-        Fire(st.X + 2.5, st.Z + 1.5, 0.8, 12);
+        // (den r19 K, R18b item 8) in a den the start fire's spot is the old bearing turned by a hash of the seed (+-40 degrees) and 5.2-7 m out (it was 2.9 m off her
+        // and clipped her in r17); the first of a few turns that is >= 3 m inside a room and its holes. --den-fire-jitter 0 = the fixed (2.5, 1.5) offset.
+        double fx = st.X + 2.5, fz = st.Z + 1.5;
+        var fcl = Environment.GetCommandLineArgs();
+        int fji = Array.IndexOf(fcl, "--den-fire-jitter");
+        if (lay != null && lay.Def.Theme == "den" && !(fji >= 0 && fji + 1 < fcl.Length && fcl[fji + 1] == "0"))
+        {
+            uint hs = (uint)spec.Seed * 2654435761u + 0x9e3779b9u; hs ^= hs >> 15; hs *= 2246822519u; hs ^= hs >> 13;
+            double h1 = (hs & 0xffff) / 65535.0, h2 = ((hs >> 16) & 0xffff) / 65535.0;
+            double a0 = Math.Atan2(1.5, 2.5) + (h1 - 0.5) * 2 * 40 * Math.PI / 180, dist = 5.2 + 1.8 * h2;
+            for (int t = 0; t < 12; t++)
+            {
+                double a = a0 + (t % 2 == 0 ? 1 : -1) * (t / 2) * 30 * Math.PI / 180, x = st.X + Math.Cos(a) * dist, z = st.Z + Math.Sin(a) * dist;
+                if (lay.Rooms.Any(r => -r.Dist(x, z) >= 3.0)) { fx = x; fz = z; break; }
+            }
+        }
+        Fire(fx, fz, 0.8, 12);
         foreach (var a in areas.Where(a => a.Kind == AreaKind.Altar))
         {
             // A ring of standing stones round a cold hearth (lit when the altar is woken).
