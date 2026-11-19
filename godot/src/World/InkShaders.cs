@@ -15,7 +15,7 @@ public static class InkShaders
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth_tex;
         layout(set = 0, binding = 2) uniform sampler2D nr_tex;
-        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; vec4 opt; } mt;
+        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; vec4 opt; vec4 wt; vec4 wo; vec4 wc; vec4 wr; vec4 wm; } mt;
         layout(set = 0, binding = 4) uniform sampler2D pre_tex; // the frame before the transparent pass (InkSnap; opt.x 1)
         layout(push_constant, std430) uniform P {
             vec2 size; float r_close; float r_play;
@@ -48,7 +48,7 @@ public static class InkShaders
                     // Godot 4.5.1 (scene_forward_clustered.glsl): alpha = roughness x 127/255, 1 - that on a dynamic instance.
                     uint b = uint(round(texelFetch(nr_tex, p, 0).a * 255.0));
                     uint n = b <= 127u ? b : 255u - b;
-                    cls = (pc.dbg > 2.5 && pc.dbg < 3.5) ? float(n) + (b > 127u ? 128.0 : 0.0) : float(n & 3u);
+                    cls = (pc.dbg > 2.5 && pc.dbg < 3.5) ? float(n) + (b > 127u ? 128.0 : 0.0) : float(n & 3u) + (b <= 127u && mt.wo.x > 0.0 ? 4.0 : 0.0); // (+4: a static pixel, the world's ink)
                 }
                 sp[i] = vec4(v.xyz, d <= 0.0 ? -1.0 : cls);
             }
@@ -83,6 +83,8 @@ public static class InkShaders
                 vec4 s = P_(q + ivec2(x, y));
                 if (s.w >= 0.0 && s.z > best) { best = s.z; cls = s.w; }
             }
+            bool wd = cls > 3.5;   // (lane J lead 5) the world's ink: a static pixel, while the palette names one
+            if (wd) cls -= 4.0;
             if (pc.dbg > 1.5 && pc.dbg < 2.5) {
                 vec3 k = cls < 0.5 ? vec3(1.0) : cls < 1.5 ? vec3(1.0, 1.0, 0.0) : cls < 2.5 ? vec3(0.0, 0.2, 1.0) : vec3(1.0, 0.0, 0.0);
                 imageStore(colour, px, vec4(k, col.a));
@@ -90,11 +92,16 @@ public static class InkShaders
             }
             float line = 0.0;
             float z = -c.z, dist = length(c.xyz);
-            if (cls < 1.5 || cls > 2.5) {
+            float wcl = cls < 0.5 ? mt.wc.x : cls < 1.5 ? mt.wc.y : cls < 2.5 ? mt.wc.z : mt.wc.w;
+            float wcr = cls < 0.5 ? mt.wr.x : cls < 1.5 ? mt.wr.y : cls < 2.5 ? mt.wr.z : mt.wr.w;
+            bool sil = wd ? wcl > 0.0 : (cls < 1.5 || cls > 2.5);
+            bool cre = wd ? wcr > 0.0 : (cls < 0.5 || cls > 2.5);
+            if (sil || cre) {
                 vec3 N = N_(qn);
-                float r = mix(pc.r_close, pc.r_play, smoothstep(pc.z_close, pc.z_play, z));
-                float th = max(pc.th_a, pc.th_b * z);
-                int K = min(int(ceil(r + 1.0)), A);
+                float r = wd ? mt.wo.x * wcl : mix(pc.r_close, pc.r_play, smoothstep(pc.z_close, pc.z_play, z));
+                float th = max(pc.th_a, pc.th_b * z) * (wd ? mt.wm.y : 1.0);
+                float thin = wd ? mt.wo.z : pc.sil_thin;
+                int K = sil ? min(int(ceil(r + 1.0)), A) : 0;
                 // The silhouette: a neighbor behind this pixel's tangent plane (the line thicker the deeper the drop).
                 for (int j = 0; j < 8; j++) {
                     float len = j < 4 ? 1.0 : 1.41421356;
@@ -105,13 +112,14 @@ public static class InkShaders
                         float gap = s.w < 0.0 ? 1e9 : dot(c.xyz - s.xyz, N);
                         float w = smoothstep(th, th * 1.5, gap);
                         if (w <= 0.0) continue;
-                        float f = mix(pc.sil_thin, 1.0, smoothstep(th * 2.0, th * 12.0, gap));
+                        float f = mix(thin, 1.0, smoothstep(th * 2.0, th * 12.0, gap));
                         line = max(line, w * clamp(r * f + 1.0 - d, 0.0, 1.0));
                     }
                 }
                 // The crease (classes 0 and 3): the surface folding by more than the crease angle.
-                if (cls < 0.5 || cls > 2.5) {
-                    float rc = r * pc.crease_w;
+                if (cre) {
+                    float rc = wd ? mt.wo.x * mt.wo.y * wcr : r * pc.crease_w;
+                    float ccos = wd ? mt.wm.x : pc.crease_cos;
                     int Kc = min(int(ceil(rc + 1.0)), NA);
                     for (int j = 0; j < 8; j++) {
                         float len = j < 4 ? 1.0 : 1.41421356;
@@ -122,7 +130,7 @@ public static class InkShaders
                             vec4 s = P_(q + o);
                             if (s.w < 0.0 || abs(dot(c.xyz - s.xyz, N)) > th) continue;
                             float cs = dot(N, N_(qn + o));
-                            float w = 1.0 - smoothstep(pc.crease_cos - 0.08, pc.crease_cos + 0.08, cs);
+                            float w = 1.0 - smoothstep(ccos - 0.08, ccos + 0.08, cs);
                             line = max(line, w * clamp(rc + 1.0 - d, 0.0, 1.0));
                         }
                     }
@@ -135,9 +143,10 @@ public static class InkShaders
             else if (mt.fog.x > 0.5) fogk = 1.0 - exp(-dist * mt.fog.y);
             a *= (1.0 - clamp(fogk, 0.0, 1.0)) * exp(-min(dist, mt.fog2.z) * mt.fog2.y);
             float lum = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
-            a *= 1.0 - smoothstep(pc.lum_cut * 0.75, pc.lum_cut * 1.25, lum);
+            float lc = wd ? mt.wo.w : pc.lum_cut;
+            a *= 1.0 - smoothstep(lc * 0.75, lc * 1.25, lum);
             if (pc.dbg > 3.5) { imageStore(colour, px, vec4(vec3(a), col.a)); return; } // "lines": before the effects' mask
-            vec3 ink = mix(vec3(1.0), mt.rig.rgb * mt.rig.w, a);
+            vec3 ink = mix(vec3(1.0), wd ? mt.wt.rgb * mt.wt.w : mt.rig.rgb * mt.rig.w, a);
             vec3 outc = col.rgb * ink;
             // Under the effects (rule 8): the darkening is the opaque frame's (pre x (1 - ink)), taken off the final
             // frame, never more than today's multiply. Opaque pixels (post = pre) are as before; an additive effect is

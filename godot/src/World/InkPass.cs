@@ -34,6 +34,19 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     public static float RClose = 2.5f, RPlay = 1.5f, ThA = 0.05f, ThB = 0.025f, CreaseDeg = 45, FadeNear = 30, FadeFar = 60, Dark = 0.25f,
         LumCut = 2.0f, ZClose = 3f, ZPlay = 16f, CreaseW = 0.5f, SilThin = 0.6f;
     public static int Dbg;
+    /// <summary>(lane J lead 5) The world's ink, from the palette's "ink" (rigs.json; Palettes.InkAt): static pixels only (her, foes and
+    /// anything skinned or moving are dynamic instances and keep the figure line above, lane E's). Tint linear rgb and k (the
+    /// multiply at a full line); px (the contour's width at 1080p at the play distance), crease (its inner lines' width share),
+    /// thin (a shallow drop's share of the width), lum (the HDR luminance the line fades out above); the four ink classes'
+    /// width scales (0 none) and crease weights; crease cos, the drop threshold's scale. Px 0: off (the figure line everywhere, as before).</summary>
+    public static Vector4 WTint, WOpt, WCls, WCre, WMore;
+    public static void SetWorld(double[]? w)
+    {
+        if (w is not { Length: >= 20 } || Args.Get("ink-world") is "off" or "0") { WOpt = Vector4.Zero; return; }
+        Vector4 V4(int o) => new((float)w[o], (float)w[o + 1], (float)w[o + 2], (float)w[o + 3]);
+        WTint = V4(0); WOpt = V4(4); WCls = V4(8); WCre = V4(12); WMore = V4(16);
+        if (Args.Get("ink-wpx") is string px && float.TryParse(px, NumberStyles.Float, CultureInfo.InvariantCulture, out var pv)) WOpt.X = pv;
+    }
     public static readonly bool Time = Args.Has("ink-time");
 
     static InkPass()
@@ -90,7 +103,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
             MinFilter = RenderingDevice.SamplerFilter.Nearest, MagFilter = RenderingDevice.SamplerFilter.Nearest,
             RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
         });
-        ubo = rd.UniformBufferCreate(128);
+        ubo = rd.UniformBufferCreate(208);
         InkRelease.Track(this);
     }
 
@@ -140,7 +153,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         // (the projection comes depth-corrected, reverse Z 0-1; NDC y taken as 2v - 1, Vulkan's, so an unflipped one is turned over)
         var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
         var inv = proj.Inverse() * flipY;
-        var m = new float[32];
+        var m = new float[52];
         Vector4[] cols = { inv.X, inv.Y, inv.Z, inv.W };
         for (int c = 0; c < 4; c++) { m[c * 4] = cols[c].X; m[c * 4 + 1] = cols[c].Y; m[c * 4 + 2] = cols[c].Z; m[c * 4 + 3] = cols[c].W; }
         var rig = RigInk;
@@ -151,6 +164,9 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         bool hasPre = Mask && InkSnap.Fresh && buf.HasTexture(InkSnap.Ctx, InkSnap.Name) && InkSnap.Size == size;
         InkSnap.Fresh = false;
         m[28] = hasPre ? 1 : 0;
+        float sc = size.Y / 1080f;
+        Vector4[] wv = { WTint, new(WOpt.X * sc, WOpt.Y, WOpt.Z, WOpt.W), WCls, WCre, WMore };
+        for (int i = 0; i < 5; i++) { m[32 + i * 4] = wv[i].X; m[33 + i * 4] = wv[i].Y; m[34 + i * 4] = wv[i].Z; m[35 + i * 4] = wv[i].W; }
         rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
         float scale = size.Y / 1080f;
         bool hasN = buf.HasTexture("forward_clustered", "normal_roughness");

@@ -44,11 +44,33 @@ global uniform vec4 pal_leafn;
 global uniform vec4 pal_embera;
 // (lead 4, judge r2 fix 8) pal_stonem = (moss rgb linear, share): laid on the stones' tops after the ramp (kit.gdshader)
 global uniform vec4 pal_stonem;
+// (lane J lead 5: the world's ink, the form's own contour) pal_inkw = (leaf, stone, bark weights, n.v where the line starts),
+// pal_inkc = (ink rgb linear, n.v where it is full): a form's edge, where its surface turns away from the camera, inked in a
+// hard band (the reference's bold line round every rock, root and crown); the screen pass (InkPass) adds the drops and creases.
+global uniform vec4 pal_inkw;
+global uniform vec4 pal_inkc;
+vec3 pal_ink(vec3 a, vec3 n_view, vec3 vtx, float w) {
+	if (w <= 0.0) return a;
+	float nv = abs(dot(normalize(n_view), normalize(-vtx)));
+	float k = w * (1.0 - smoothstep(pal_inkc.w, pal_inkw.w, nv));
+	return mix(a, a * pal_inkc.rgb, k);
+}
 
-vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk) {
+// (lead 5: the reference's flat colour fields with hard edges) pal_band0 = bands for (leaf, grass, ground, path), pal_band1 =
+// (stone, bark, the band edge's half width, 0): the albedo's value on the ramp taken in that many flat steps (0/1: smooth, as before)
+global uniform vec4 pal_band0;
+global uniform vec4 pal_band1;
+float pal_bands(float u, float nb) {
+	if (nb < 1.5) return u;
+	float x = u * (nb - 1.0), e = max(pal_band1.z, 0.01);
+	return (floor(x) + smoothstep(0.5 - e, 0.5 + e, fract(x))) / (nb - 1.0);
+}
+vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb) {
 	if (d.w <= 0.0 || k <= 0.0) return albedo;
 	float v = sqrt(max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 0.0));
-	float t = clamp((v - m.w) / max(l.w - m.w, 1e-3) + shift, 0.0, 1.0);
+	float u = pal_bands(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), nb);
+	if (nb >= 1.5) v = m.w + u * (l.w - m.w);   // (the value kept is the band's)
+	float t = clamp(u + shift, 0.0, 1.0);
 	vec3 r = t < 0.5 ? mix(d.rgb, m.rgb, t * 2.0) : mix(m.rgb, l.rgb, t * 2.0 - 1.0);
 	// (pal_ember.w, the palette's "value": how far the albedo's own luminance is kept, the ramp giving hue and chroma only)
 	float lr = dot(r, vec3(0.2126, 0.7152, 0.0722));
@@ -65,9 +87,9 @@ float pal_keep(vec3 wp) {
 	if (pal_ember.z <= 0.0 || cel_ember.w <= 0.0) return 1.0;
 	return 1.0 - pal_ember.z * (1.0 - smoothstep(pal_ember.x, max(pal_ember.y, pal_ember.x + 1e-3), distance(wp.xz, cel_ember.xz)));
 }
-vec3 pal_leaf(vec3 a) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, 1.0, 0.0, pal_vk0.x); }
+vec3 pal_leaf(vec3 a) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, 1.0, 0.0, pal_vk0.x, pal_band0.x); }
 // (a tree its own place on the ramp: s -1..1, a per-copy hash, moves t by up to 0.3: one tree crimson, the next orange or gold)
-vec3 pal_leaf(vec3 a, vec3 wp, float s) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.3 * s, pal_vk0.x); }
+vec3 pal_leaf(vec3 a, vec3 wp, float s) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.3 * s, pal_vk0.x, pal_band0.x); }
 // (lead 3) a crown's own ramp by its hash h (0..1): the first pal_leafm.x of them on ramp a, the last pal_leafm.y on ramp b,
 // the rest on the leaf ramp; h2 (0..1) its place on it (shift pal_leafm.z), tip the spray's sky-facing (-1..1, shift pal_leafm.w)
 // dist: the frame radius (0 the frame's centre, about 1 its corners; m5: by metres from the lens nothing darkened, the play
@@ -88,17 +110,17 @@ vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float edge, float 
 	// ramp's mid instead, amber, on its own dark stop: toward crimson it went khaki)
 	if (nw > 0.0 && h > 1.0 - pal_leafm.y) m = vec4(mix(m.rgb, pal_leaf1.rgb, nw), pal_leaf1.w);
 	else if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }
-	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x) * (1.0 - pal_leafn.x * nw);
+	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x, pal_band0.x) * (1.0 - pal_leafn.x * nw);
 }
-vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x); }
-vec3 pal_grass(vec3 a) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, 1.0, 0.0, pal_vk0.y); }
-vec3 pal_grass(vec3 a, vec3 wp) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, pal_keep(wp), 0.0, pal_vk0.y); }
-vec3 pal_ground(vec3 a) { return pal_ramp(a, pal_ground0, pal_ground1, pal_ground2, 1.0, 0.0, pal_vk0.z); }
-vec3 pal_ground(vec3 a, vec3 wp) { return pal_ramp(a, pal_ground0, pal_ground1, pal_ground2, pal_keep(wp), 0.0, pal_vk0.z); }
-vec3 pal_path(vec3 a) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, 1.0, 0.0, pal_vk0.w); }
-vec3 pal_path(vec3 a, vec3 wp) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, pal_keep(wp), 0.0, pal_vk0.w); }
-vec3 pal_stone(vec3 a) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, 1.0, 0.0, pal_vk1.x); }
-vec3 pal_stone(vec3 a, vec3 wp) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, pal_keep(wp), 0.0, pal_vk1.x); }
-vec3 pal_bark(vec3 a) { return pal_ramp(a, pal_bark0, pal_bark1, pal_bark2, 1.0, 0.0, pal_vk1.y); }
-vec3 pal_bark(vec3 a, vec3 wp) { return pal_ramp(a, pal_bark0, pal_bark1, pal_bark2, pal_keep(wp), 0.0, pal_vk1.y); }
+vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x, pal_band0.x); }
+vec3 pal_grass(vec3 a) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, 1.0, 0.0, pal_vk0.y, pal_band0.y); }
+vec3 pal_grass(vec3 a, vec3 wp) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, pal_keep(wp), 0.0, pal_vk0.y, pal_band0.y); }
+vec3 pal_ground(vec3 a) { return pal_ramp(a, pal_ground0, pal_ground1, pal_ground2, 1.0, 0.0, pal_vk0.z, pal_band0.z); }
+vec3 pal_ground(vec3 a, vec3 wp) { return pal_ramp(a, pal_ground0, pal_ground1, pal_ground2, pal_keep(wp), 0.0, pal_vk0.z, pal_band0.z); }
+vec3 pal_path(vec3 a) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, 1.0, 0.0, pal_vk0.w, pal_band0.w); }
+vec3 pal_path(vec3 a, vec3 wp) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, pal_keep(wp), 0.0, pal_vk0.w, pal_band0.w); }
+vec3 pal_stone(vec3 a) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, 1.0, 0.0, pal_vk1.x, pal_band1.x); }
+vec3 pal_stone(vec3 a, vec3 wp) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, pal_keep(wp), 0.0, pal_vk1.x, pal_band1.x); }
+vec3 pal_bark(vec3 a) { return pal_ramp(a, pal_bark0, pal_bark1, pal_bark2, 1.0, 0.0, pal_vk1.y, pal_band1.y); }
+vec3 pal_bark(vec3 a, vec3 wp) { return pal_ramp(a, pal_bark0, pal_bark1, pal_bark2, pal_keep(wp), 0.0, pal_vk1.y, pal_band1.y); }
 #endif

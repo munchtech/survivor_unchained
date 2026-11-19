@@ -1094,6 +1094,7 @@ void fragment() {
 		float pal_tip = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y, -1.0, 1.0);
 		// (lead 3: each crown on its own ramp, crimson, orange or gold, a second hash its place on it; the leaves by the lens darker)
 		ALBEDO = pal_leaf3(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5), fract(v_jit * 11.13 + 0.29), pal_tip, length((SCREEN_UV - 0.5) * vec2(VIEWPORT_SIZE.x / max(VIEWPORT_SIZE.y, 1.0), 1.0)), length(VERTEX));
+		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.x);   // (lead 5: the crown's own contour)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
@@ -1141,6 +1142,7 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
+		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.z);   // (lead 5: the trunk's own contour)
 		ALBEDO *= mix(0.6, 1.0, open_);
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
@@ -1264,6 +1266,7 @@ void fragment() {
 		const bool stand = false;
 #endif
 		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
+		col = pal_ink(col, NORMAL, VERTEX, pal_inkw.y);   // (lead 5: the stone's own contour)
 		if (pal_stonem.w > 0.0 && !pnt)   // (lead 4: the palette's moss on what faces up, in patches)
 			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * st.a), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.4, 0.55, st.a));
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);

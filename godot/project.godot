@@ -438,6 +438,22 @@ pal_stonem={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+pal_inkw={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_inkc={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_band0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_band1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

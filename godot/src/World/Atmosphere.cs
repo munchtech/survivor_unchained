@@ -321,6 +321,11 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("pal_leafn", At(SurvivorUnchained.Look.Palettes.LeafMixAt + 4));
         RenderingServer.GlobalShaderParameterSet("pal_embera", At(SurvivorUnchained.Look.Palettes.EmberAlbedoAt));
         RenderingServer.GlobalShaderParameterSet("pal_stonem", At(SurvivorUnchained.Look.Palettes.StoneMossAt));   // (lead 4: the stones' moss)
+        InkPass.SetWorld(more ? pal![SurvivorUnchained.Look.Palettes.InkAt..(SurvivorUnchained.Look.Palettes.InkAt + 20)] : null);   // (lead 5: the world's ink)
+        RenderingServer.GlobalShaderParameterSet("pal_inkw", At(SurvivorUnchained.Look.Palettes.InkAt + 20));
+        RenderingServer.GlobalShaderParameterSet("pal_inkc", At(SurvivorUnchained.Look.Palettes.InkAt + 24));
+        RenderingServer.GlobalShaderParameterSet("pal_band0", At(SurvivorUnchained.Look.Palettes.BandAt));
+        RenderingServer.GlobalShaderParameterSet("pal_band1", At(SurvivorUnchained.Look.Palettes.BandAt + 4));
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

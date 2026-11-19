@@ -54,7 +54,16 @@ public static class Palettes
     // (lead 4, judge r2 fix 8: the reference's stones are warm grey with ochre moss on their tops) "stone" "moss" [sRGB, share]:
     // the moss laid after the ramp on what faces up, in patches (kit.gdshader; absent: none)
     public const int StoneMossAt = EmberAlbedoAt + 4;
-    public static int Size => StoneMossAt + 4;
+    // (lane J lead 5: the reference's look is a bold dark contour on every form and a few lines inside; the world had almost
+    // none: terrain, grass and stones' pixels fell in ink class 2 or the figures' thin line) "ink": the world's own line
+    // (InkPass.SetWorld; static pixels only, her and the foes keep theirs): {"color" sRGB, "k" the multiply at a full line,
+    // "px" the contour's width at 1080p, "crease" the inner lines' width share, "thin" a shallow drop's width share, "lum" the
+    // HDR luminance it fades out above, "class" [4 width scales, by ink class 0-3], "inner" [4 crease weights], "crease_deg",
+    // "depth" (the drop threshold's scale)}. Absent: px 0, the figure line on the world as before.
+    public const int InkAt = StoneMossAt + 4;
+    // (lead 5) "bands" [leaf, grass, ground, path, stone, bark] (flat steps on each ramp; 0 smooth), "band_edge" (the step's half width)
+    public const int BandAt = InkAt + 28;
+    public static int Size => BandAt + 8;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -91,6 +100,28 @@ public static class Palettes
             var (R, G, B) = Atmospheres.Linear(mo[0].GetString()!);
             r[StoneMossAt] = R; r[StoneMossAt + 1] = G; r[StoneMossAt + 2] = B; r[StoneMossAt + 3] = mo[1].GetDouble();
         }
+        if (e.TryGetProperty("ink", out var ik))
+        {
+            double D(string k, double d) => ik.TryGetProperty(k, out var v) ? v.GetDouble() : d;
+            var (R, G, B) = Atmospheres.Linear(ik.TryGetProperty("color", out var ic) ? ic.GetString()! : "#2a1838");
+            r[InkAt] = R; r[InkAt + 1] = G; r[InkAt + 2] = B; r[InkAt + 3] = D("k", 1);
+            r[InkAt + 4] = D("px", 3); r[InkAt + 5] = D("crease", 0.6); r[InkAt + 6] = D("thin", 1); r[InkAt + 7] = D("lum", 8);
+            for (int i = 0; i < 4; i++)
+            {
+                r[InkAt + 8 + i] = ik.TryGetProperty("class", out var cw) && i < cw.GetArrayLength() ? cw[i].GetDouble() : i == 2 ? 0 : 1;
+                r[InkAt + 12 + i] = ik.TryGetProperty("inner", out var cr) && i < cr.GetArrayLength() ? cr[i].GetDouble() : i is 0 or 3 ? 1 : 0;
+            }
+            r[InkAt + 16] = Math.Cos(D("crease_deg", 40) * Math.PI / 180); r[InkAt + 17] = D("depth", 1);
+            // "rim" [leaf, stone, bark weights], "rim_nv" [n.v full, n.v start]: the form's own contour (kit.gdshader pal_ink), the ink colour's
+            var (Rr, Rg, Rb) = Atmospheres.Linear(ik.TryGetProperty("rim_color", out var rc) ? rc.GetString()! : "#3a2848");
+            for (int i = 0; i < 3; i++) r[InkAt + 20 + i] = ik.TryGetProperty("rim", out var rw) && i < rw.GetArrayLength() ? rw[i].GetDouble() : 0;
+            r[InkAt + 23] = ik.TryGetProperty("rim_nv", out var rn) && rn.GetArrayLength() > 1 ? rn[1].GetDouble() : 0.35;
+            r[InkAt + 24] = Rr; r[InkAt + 25] = Rg; r[InkAt + 26] = Rb;
+            r[InkAt + 27] = ik.TryGetProperty("rim_nv", out var rn2) && rn2.GetArrayLength() > 0 ? rn2[0].GetDouble() : 0.25;
+        }
+        if (e.TryGetProperty("bands", out var bd))
+            for (int i = 0; i < Math.Min(6, bd.GetArrayLength()); i++) r[BandAt + (i < 4 ? i : i + 0)] = bd[i].GetDouble();
+        r[BandAt + 6] = e.TryGetProperty("band_edge", out var be) ? be.GetDouble() : 0.06;
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts
         for (int a = 0; a < 2; a++)
             for (int i = 0; i < Row; i++) r[LeafAltAt + a * Row + i] = r[i];

@@ -316,7 +316,10 @@
       "ground": {"ramp": ["#3a1c24", "#9a6c18", "#c09c34"], "amount": 0.85, "value": 0.4, "range": [0.15, 0.55]},
       "path": {"ramp": ["#8a5c36", "#b88a58", "#d8aa72"], "amount": 0.9, "value": 0.3, "range": [0.15, 0.55]},
       "stone": {"ramp": ["#2a2238", "#4a4058", "#6a5a70"], "amount": 0.85, "value": 0.0, "range": [0.15, 0.55], "moss": ["#b08820", 0.6]},
-      "bark": {"ramp": ["#2e160e", "#5a2e1a", "#844a2a"], "amount": 0.7, "range": [0.15, 0.55]}
+      "bark": {"ramp": ["#2e160e", "#5a2e1a", "#844a2a"], "amount": 0.7, "range": [0.15, 0.55]},
+      "ink": {"color": "#6a3040", "k": 0.3, "px": 4.0, "crease": 0.6, "thin": 1.0, "lum": 12, "class": [1, 1, 0, 1], "inner": [1, 0, 0, 1], "crease_deg": 40, "depth": 0.3, "rim": [0.9, 1.0, 1.0], "rim_nv": [0.22, 0.34], "rim_color": "#3a1a22"},
+      "bands": [4, 0, 0, 3, 3, 3],
+      "band_edge": 0.05
     },
     "wild_night": {
       "value": 0.4,
@@ -327,7 +330,10 @@
       "stone": {"ramp": ["#24264e", "#3c3e78", "#5e60a8"], "amount": 0.85, "value": 0.2, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#26101e", "#40202e", "#5c3040"], "amount": 0.75, "range": [0.15, 0.55]},
       "ember": {"near": 0.0, "far": 2.0, "keep": 1.0, "albedo": "#d8a8a0"},
-      "glow": {"cap": "#8ff4ff", "stem": "#5fd0e0", "light": "#00f0ff", "energy": 3.0, "range": 4.5, "share": 0.45, "max": 700, "caps": [3, 6], "size": [0.14, 0.34], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.75, "wood_light": 0.15, "alt_cap": "#e8a8ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [1.4, 1.4]}
+      "glow": {"cap": "#8ff4ff", "stem": "#5fd0e0", "light": "#00f0ff", "energy": 3.0, "range": 4.5, "share": 0.45, "max": 700, "caps": [3, 6], "size": [0.14, 0.34], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.75, "wood_light": 0.15, "alt_cap": "#e8a8ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [1.4, 1.4]},
+      "ink": {"color": "#40306a", "k": 0.3, "px": 4.0, "crease": 0.6, "thin": 1.0, "lum": 12, "class": [1, 1, 0, 1], "inner": [1, 0, 0, 1], "crease_deg": 40, "depth": 0.3, "rim": [0.9, 1.0, 1.0], "rim_nv": [0.22, 0.34], "rim_color": "#22184a"},
+      "bands": [4, 0, 0, 3, 3, 3],
+      "band_edge": 0.05
     }
   },
   "crowns": {
