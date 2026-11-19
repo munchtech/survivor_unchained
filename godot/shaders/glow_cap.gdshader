@@ -1,7 +1,7 @@
 // (lane J art-color, night glow) The glowing mushrooms at tree and rock feet (NightGlow.cs; the palette's "glow" in rigs.json).
 // A cap is lit from within, cel: its core near white at the top centre, stepping to the cap colour at its rim in two hard bands
 // (the top's normal gives the band); a stem is the stem colour, dim. All times the global glow_k (0 by day: nothing shows).
-// The ink class is none (class 2, cel.gdshaderinc cel_tag): a lamp is not inked.
+// The ink class is 1 (cel.gdshaderinc cel_tag; lead 5: the reference's caps are inked shapes, the brightest thing).
 shader_type spatial;
 render_mode unshaded, cull_back, shadows_disabled;
 
@@ -30,5 +30,5 @@ void fragment() {
 	}
 	if (dot(normalize(NORMAL), VIEW) < ink_w) c = ink_col;
 	ALBEDO = c * glow_k;
-	ROUGHNESS = 2.0 / 127.0;
+	ROUGHNESS = 1.0 / 127.0;   // (lead 5: ink class 1, the world's contour from the screen pass round each cap: an inked shape)
 }

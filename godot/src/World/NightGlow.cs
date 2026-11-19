@@ -15,6 +15,32 @@ public partial class NightGlow : Node3D
 {
     static readonly string[] Feet = ["pine", "broadleaf", "autumn", "dead", "boulder", "rock"];
     readonly List<(OmniLight3D L, float E)> lights = new();
+    // (lane J lead 5, judge r3 fix 1: the sources were white bloom balls 120-170 px hiding the cap; the reference's cap is an inked
+    // shape, the brightest thing, and its pool two flat bands with an inked rim) a painted pool a cluster: a Decal projecting down
+    // on the ground and the stones round it, emission in two flat bands (the light, no falloff), albedo an ink rim (the palette's
+    // glow "pool"); the lights stay on a share, for the lit faces.
+    readonly List<(Decal D, float E)> pools = new();
+    static ImageTexture? poolEmit, poolRim;
+    static void PoolTextures(double[] p)
+    {
+        const int N = 256;
+        var em = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        var rim = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        float inner = (float)p[1], ik = (float)p[2], ok = (float)p[3], rw = (float)p[4], rd = (float)p[5];
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1, r = Mathf.Sqrt(u * u + v * v), an = Mathf.Atan2(v, u);
+                float wob = 0.05f * Mathf.Sin(an * 3 + 1.3f) + 0.035f * Mathf.Sin(an * 5 - 0.7f);   // (a brush's dab, not a compass circle)
+                float rr = r + wob, edge = 1 - rw;
+                float aa = 1.5f / N * 2;   // (a pixel and a half of softness on each step)
+                float b = Mathf.Lerp(ok, ik, 1 - Mathf.SmoothStep(inner - aa, inner + aa, rr)) * (1 - Mathf.SmoothStep(edge - aa, edge + aa, rr));
+                em.SetPixel(x, y, new Color(b, b, b, 1));
+                float ring = Mathf.SmoothStep(edge - aa, edge + aa, rr) * (1 - Mathf.SmoothStep(1 - aa * 2, 1, rr));
+                rim.SetPixel(x, y, new Color(rd, rd, rd, ring));
+            }
+        poolEmit = ImageTexture.CreateFromImage(em); poolRim = ImageTexture.CreateFromImage(rim);
+    }
     float last = -1;
 
     static float Hash(float x, float z, int k)
@@ -53,6 +79,16 @@ public partial class NightGlow : Node3D
             int n = g.CapsMin + (int)(Hash(sx, sz, 4) * (g.CapsMax - g.CapsMin + 1));
             float cy = (float)z.HeightAt(cx, cz);
             if (g.HaloRadius > 0) Halo(alt ? haloAlts : halos, new Vector3(cx, cy + 0.18f, cz), (float)(g.HaloRadius * (0.8 + 0.4 * Hash(sx, sz, 9))));
+            if (g.Pool is { Length: >= 7 } pp)
+            {
+                if (poolEmit == null) PoolTextures(pp);
+                float pr = (float)(pp[0] * (0.85 + 0.3 * Hash(sx, sz, 12)));
+                var dc = new Decal { Name = "GlowPool", Size = new Vector3(pr * 2, 2.4f, pr * 2), Position = new Vector3(cx, cy + 0.6f, cz),
+                    TextureEmission = poolEmit, TextureAlbedo = poolRim, Modulate = Hex(alt ? g.AltLight : g.Light), EmissionEnergy = 0, AlbedoMix = 1,
+                    NormalFade = 0.35f, UpperFade = 0.2f, LowerFade = 0.3f, CullMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers & ~PlayerView.CastLayer,
+                    RotationDegrees = new Vector3(0, Hash(sx, sz, 13) * 360, 0) };
+                root.AddChild(dc); root.pools.Add((dc, (float)pp[6]));
+            }
             for (int q = 0; q < n; q++)
             {
                 float qa = Hash(sx, sz, 10 + q) * Mathf.Tau, qd = Mathf.Sqrt(Hash(sx, sz, 30 + q)) * 0.35f;
@@ -130,9 +166,9 @@ public partial class NightGlow : Node3D
         var mesh = new ArrayMesh();
         var shader = GD.Load<Shader>("res://shaders/glow_cap.gdshader");
         void Surface(SurfaceTool st, ShaderMaterial m) { int before = mesh.GetSurfaceCount(); st.Commit(mesh); if (mesh.GetSurfaceCount() > before) mesh.SurfaceSetMaterial(before, m); }
-        var cm = new ShaderMaterial { Shader = shader }; cm.SetShaderParameter("cap_col", Hex(g.Cap));
+        var cm = new ShaderMaterial { Shader = shader }; cm.SetShaderParameter("cap_col", Hex(g.Cap)); cm.SetShaderParameter("cap_emit", (float)g.CapEmit); cm.SetShaderParameter("ink_w", (float)g.CapInk);
         Surface(caps, cm);
-        if (nAlt > 0) { var am = new ShaderMaterial { Shader = shader }; am.SetShaderParameter("cap_col", Hex(g.AltCap)); Surface(alts, am); }
+        if (nAlt > 0) { var am = new ShaderMaterial { Shader = shader }; am.SetShaderParameter("cap_col", Hex(g.AltCap)); am.SetShaderParameter("cap_emit", (float)g.CapEmit); am.SetShaderParameter("ink_w", (float)g.CapInk); Surface(alts, am); }
         var sm = new ShaderMaterial { Shader = shader }; sm.SetShaderParameter("stem_col", Hex(g.Stem)); sm.SetShaderParameter("is_stem", 1f);
         Surface(stems, sm);
         root.AddChild(new MeshInstance3D { Name = "GlowCaps", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
@@ -158,6 +194,7 @@ public partial class NightGlow : Node3D
         last = k;
         Visible = k >= 0.01f;
         foreach (var (l, e) in lights) l.LightEnergy = e * k;
+        foreach (var (d, e) in pools) d.EmissionEnergy = e * k;
         if (k >= 0.01f && GetViewport()?.GetCamera3D() is { } cam)
             GD.Print($"NightGlow k={k}: {lights.Count(x => cam.IsPositionInFrustum(x.L.GlobalPosition))} lights in view");
     }

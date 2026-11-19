@@ -18,7 +18,8 @@ namespace SurvivorUnchained.Look;
 /// them and on "wood_light" of the woods' ones; "alt" a second source (cap, light colours) on "alt_share" of the clusters.)</summary>
 public sealed record PaletteGlow(string Cap, string Stem, string Light, double Energy, double Range, double Share, int Max, int CapsMin, int CapsMax, double SizeMin, double SizeMax,
     string[]? Paths = null, double Step = 4, double SideMin = 2.8, double SideMax = 4.4, double PathLight = 0.5, double WoodLight = 0.25,
-    string AltCap = "#e8c8ff", string AltLight = "#b070ff", double AltShare = 0, double HaloRadius = 0, double HaloK = 0.5);   // (lead 3: "halo" [radius m, strength], glow_halo.gdshader)
+    string AltCap = "#e8c8ff", string AltLight = "#b070ff", double AltShare = 0, double HaloRadius = 0, double HaloK = 0.5,
+    double[]? Pool = null, double CapEmit = 1, double CapInk = 0.38);   // (lead 5: "pool" [radius m, inner share, inner k, outer k, rim share, rim dark], "cap_emit", "cap_ink": painted light, NightGlow)   // (lead 3: "halo" [radius m, strength], glow_halo.gdshader)
 
 public static class Palettes
 {
@@ -33,7 +34,9 @@ public static class Palettes
         string[]? paths = g.TryGetProperty("paths", out var ps) ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(ps.EnumerateArray(), x => x.GetString()!)) : null;
         return new PaletteGlow(S("cap", "#bff8ff"), S("stem", "#5fd0e0"), S("light", "#55e0ff"), D("energy", 1.6), D("range", 3.2), D("share", 0.45), (int)D("max", 40), caps.Item1, caps.Item2, size.Item1, size.Item2,
             paths, D("step", 4), side.Item1, side.Item2, D("path_light", 0.5), D("wood_light", 0.25), S("alt_cap", "#e8c8ff"), S("alt_light", "#b070ff"), D("alt_share", 0),
-            g.TryGetProperty("halo", out var hl) ? hl[0].GetDouble() : 0, g.TryGetProperty("halo", out var hk) && hk.GetArrayLength() > 1 ? hk[1].GetDouble() : 0.5);
+            g.TryGetProperty("halo", out var hl) ? hl[0].GetDouble() : 0, g.TryGetProperty("halo", out var hk) && hk.GetArrayLength() > 1 ? hk[1].GetDouble() : 0.5,
+            g.TryGetProperty("pool", out var pl) ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(pl.EnumerateArray(), x => x.GetDouble())) : null,
+            D("cap_emit", 1), D("cap_ink", 0.38));
     }
 
     /// <summary>The classes in their order (the shader's PAL_* index).</summary>
