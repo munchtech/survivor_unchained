@@ -426,6 +426,15 @@ public sealed class Autopilot
             return;
         }
         resultSeen = false;
+        // (19 Nov, the demo proof: a map's result page (a fall, or its ruler down) was closed as a screen below, which
+        // stranded her at 0 HP in the den for good: read, then left as a player leaves it, Confirm twice (MapResultScreen.Key))
+        if (g.Overlay == "mapresult")
+        {
+            if (!mapResultSeen) { mapResultSeen = true; mapsEnded++; resultT = 0; Godot.GD.Print($"auto: map over #{mapsEnded}, its page read, then Confirm"); }
+            if ((resultT += dt) > 4) { resultT = 0; Controls.Instance.Press(Act.Confirm); }
+            return;
+        }
+        mapResultSeen = false;
         // The Wayfinder's table: a picture of it, then the night's offer taken (--offer N), as a player does.
         // (the zone ends at the town: a run begun in the Low Ford never works the table, M5 r2)
         if (g.Overlay == "maps" && GoalsOn && !(fromLowford && g.Zone?.Id == "waystation")) { Table(dt); return; }
@@ -896,6 +905,8 @@ public sealed class Autopilot
     bool resultSeen, tableOpen, townShot, leaving, tableEnded;
     int nightsEnded, arenasEntered, backFor;
     double tableT, wonT = -1, leaveT, interactT, printT;
+    bool mapResultSeen;
+    int mapsEnded;
     string lastZone = "";
 
     /* ---- (M5 r2) capture hooks for the judge: named frames at the moments that matter, a line or two each ---- */
