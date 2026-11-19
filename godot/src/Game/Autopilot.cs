@@ -77,6 +77,15 @@ public sealed class Autopilot
     static readonly bool oldFeet = Args.Has("old-feet"), clip = Args.Has("clip");
     /// <summary>This frame's Move is the Pilot's (PilotMove): the step's hands are the Pilot's too (PlanStep).</summary>
     bool piloted;
+    string? clickedOn; double clickedAt;
+
+    /// <summary>(--real-clicks) A left click as the window gets one: down now, up a frame later.</summary>
+    static void RealClick()
+    {
+        var at = Godot.DisplayServer.WindowGetSize() / 2;
+        Godot.Input.ParseInputEvent(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Left, Pressed = true, Position = at, GlobalPosition = at });
+        Godot.Callable.From(() => Godot.Input.ParseInputEvent(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Left, Pressed = false, Position = at, GlobalPosition = at })).CallDeferred();
+    }
     ArenaBoss? pilotBoss;
     bool Pilots(Battle b) => b.Campaign && !oldFeet && !Idle && !Toward && !Away && !Across && !Talk && !Stand;
 
@@ -368,6 +377,13 @@ public sealed class Autopilot
             if (g.TeachingFor < 1.2 || Shots.Pending("teach_" + tc.Id)) return;
             if (tc.Kind == CalloutKind.Freeze)
             {
+                // --real-clicks (playtest 18 Nov): a freeze is answered as a player does, by a real left click (Godot's own
+                // input event, through Controls._Input), not a pressed act: a click that never reached the callout left it up
+                if (Args.Has("real-clicks") && (tc.Answer == null || tc.Answer.Equals("skill1", StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (clickedOn != tc.Id || g.TeachingFor >= clickedAt + 1.0) { clickedOn = tc.Id; clickedAt = g.TeachingFor; RealClick(); }
+                    return;
+                }
                 Controls.Instance.Press(tc.Answer != null && Enum.TryParse<Act>(tc.Answer, true, out var ans) ? ans : Act.Confirm);
                 return;
             }
