@@ -87,6 +87,23 @@ uniform float pit_paint_pt = 0.0;
 // pit_bleed_c x x, inside the lip (den_boss.png's glow runs 10-20 px off each vein; the painting's own about 5)
 uniform vec4 pit_bleed = vec4(0.0, 3.5, 0.06, 0.0);
 uniform vec3 pit_bleed_c = vec3(0.16, 0.4, 0.06);
+// (den r19 V2, R18b item 1) pit_cmax > 0: the painted pit's emissive and bleed colours clamped to this OKLab chroma (same luminance), 0 off
+uniform float pit_cmax = 0.0;
+// (den r19 V2, R18b item 6) the painted pit's rim: pit_gaps (half-width rad, ell from, ell to; 0 off) 2-3 wedges of its crumb ring cut away by
+// angle hash; pit_fall (x: albedo off at the painting's outer edge, y: blur lod of the alpha it reads; x 0 off) a darker earth falloff
+uniform vec3 pit_gaps = vec3(0.0, 1.05, 1.3);
+uniform vec2 pit_fall = vec2(0.0, 4.0);
+vec3 pit_cclamp(vec3 rgb) {
+	if (pit_cmax <= 0.0) return rgb;
+	vec3 lms = vec3(0.4122214708 * rgb.r + 0.5363325363 * rgb.g + 0.0514459929 * rgb.b,
+		0.2119034982 * rgb.r + 0.6806995451 * rgb.g + 0.1073969566 * rgb.b,
+		0.0883024619 * rgb.r + 0.2817188376 * rgb.g + 0.6299787005 * rgb.b);
+	lms = pow(max(lms, vec3(1e-9)), vec3(1.0 / 3.0));
+	float a = 1.9779984951 * lms.x - 2.4285922050 * lms.y + 0.4505937099 * lms.z;
+	float b = 0.0259040371 * lms.x + 0.7827717662 * lms.y - 0.8086757660 * lms.z;
+	float k = min(1.0, pit_cmax / max(length(vec2(a, b)), 1e-5));
+	return mix(vec3(dot(rgb, vec3(0.2126, 0.7152, 0.0722))), rgb, k);
+}
 // (den r18 lead, R18 judge item 1: the veins neon, glow C50 .150 / C90 .195 against den_boss .073 / .089, cores L99 .85-.88
 // against .60-.72) the veins' look: x the saturation kept in their emission and albedo (1: r18 as judged), y the emission's
 // luminance cap (linear; 0 off)
@@ -313,6 +330,7 @@ void fragment() {
 		vec3 pem = c.rgb * pit_paint.x * lime * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
 		float pel = dot(pem, vec3(0.2126, 0.7152, 0.0722));
 		pem = mix(vec3(pel), pem, pit_look.x);
+		pem = pit_cclamp(pem);
 		if (pit_look.y > 0.0) pem *= min(1.0, pit_look.y / max(pel, 1e-4));
 		EMISSION += pem;
 		float prb = smoothstep(rim_in - 0.3, rim_out, 2.0 * COLOR.b);
@@ -320,10 +338,21 @@ void fragment() {
 		ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))) * vec3(1.04, 1.0, 0.9), pit_rim.y * plil);
 		ALBEDO *= 1.0 - pit_rim.x * prb;
 		if (pit_feather.x > 0.0) ALPHA *= smoothstep(pit_feather.y, pit_feather.z, textureLod(paint_tex, UV, pit_feather.x).a);
+		if (pit_gaps.x > 0.0) {
+			vec2 gsd = pg_h2(floor((wpos.xz - UV2) * 2.0 + 0.5) + 77.0);
+			float ga = atan(UV2.y, UV2.x), gm = 0.0;
+			for (int gi = 0; gi < 3; gi++) {
+				float gc = gsd.x * 6.2832 + float(gi) * 2.0944 + (gi == 0 ? 0.0 : 0.7 * (pg_h2(gsd + float(gi)).x - 0.5));
+				float gd = abs(mod(ga - gc + 3.1416, 6.2832) - 3.1416);
+				gm = max(gm, (gi < 2 || gsd.y > 0.5 ? 1.0 : 0.0) * (1.0 - smoothstep(pit_gaps.x * 0.6, pit_gaps.x, gd)));
+			}
+			ALPHA *= 1.0 - gm * (1.0 - smoothstep(pit_gaps.y, pit_gaps.z, textureLod(paint_tex, UV, 5.0).a));   // the wedge's outer band eroded (the blurred alpha under pit_gaps.y .. .z)
+		}
+		if (pit_fall.x > 0.0) ALBEDO *= 1.0 - pit_fall.x * (1.0 - smoothstep(0.5, 0.95, textureLod(paint_tex, UV, pit_fall.y).a));
 		pit_pt = mix(1.0, pit_paint_pt, 1.0 - smoothstep(0.85, 1.05, 2.0 * COLOR.b));
 		vec3 cb1 = textureLod(paint_tex, UV, pit_bleed.y).rgb, cb2 = textureLod(paint_tex, UV, pit_bleed.y + 1.5).rgb;
 		float lbl = 0.6 * smoothstep(0.0, pit_bleed.z, cb1.g - max(cb1.r, cb1.b)) + 0.4 * smoothstep(0.0, pit_bleed.z, cb2.g - max(cb2.r, cb2.b));
-		EMISSION += pit_bleed_c * pit_bleed.x * lbl * (1.0 - lime) * (1.0 - smoothstep(0.9, 1.05, 2.0 * COLOR.b));
+		EMISSION += pit_cclamp(pit_bleed_c * pit_bleed.x) * lbl * (1.0 - lime) * (1.0 - smoothstep(0.9, 1.05, 2.0 * COLOR.b));
 	} else
 	if (pit_cells > 0.0 && pit_glow > 0.0 && COLOR.a < 0.75) {   // (den r16 A, R15f item 1) see pit_cells
 		// (den r16 A2) sunken (see pit_deep): the view ray carried pit_deep.x metres down. Where it meets the pit's wall before its

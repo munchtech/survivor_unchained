@@ -20,6 +20,15 @@ uniform vec4 bone_grade = vec4(1.0, 1.0, 0.0, 0.0);
 // (and its highlight knee: x the Oklab L above which the rise is kept at y; the lit bones rendered at the tonemap's top, the shaded ones need their value)
 uniform vec2 bone_knee = vec2(1.0, 1.0);
 
+// (den r19 L, R18b item 3) the light pools' mask as the floor has it (dungeon_floor.gdshader sp_*): decal alpha x (1 - mask), so litter
+// does not sit as a starburst inside a pool. sp_n 0 (or sp_fade 0): none.
+uniform vec4 sp[64];
+uniform int sp_n = 0;
+uniform vec2 sp_lean = vec2(-0.58, -0.81);
+uniform float sp_soft = 0.7;
+uniform float sp_lair = 0.6;
+uniform float sp_fade = 1.0;
+
 varying vec3 wpos;
 varying float bone_m;
 
@@ -63,7 +72,18 @@ void fragment() {
 	// (both faces lit as the floor: the normal is the world's up whichever side the camera sees)
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ALBEDO = col * decal_lift;
-	ALPHA = a.a;
+	float spm = 0.0;
+	for (int k = 0; k < 64; k++) {
+		if (k >= sp_n) break;
+		vec2 q = wpos.xz - sp[k].xy;
+		if (dot(q, q) > 9.0 * sp[k].z * sp[k].z) continue;
+		float pa = dot(q, sp_lean) / 1.25, pb = dot(q, vec2(-sp_lean.y, sp_lean.x));
+		float m = 1.0 - smoothstep(sp[k].z - sp_soft, sp[k].z + 0.1, length(vec2(pa, pb)));
+		m = m * m * (3.0 - 2.0 * m);
+		if (sp[k].w >= 1000.0) m *= sp_lair;
+		spm = max(spm, m);
+	}
+	ALPHA = a.a * (1.0 - sp_fade * spm);
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	ROUGHNESS = 0.95;
 	CEL_FRAGMENT;

@@ -58,6 +58,8 @@ DESAT = {"O6": 0.8}   # (den r16 W, R15f item 10) a sheet's colour pulled this f
 # (den r17 D3, R16 item: the tufts rendered L .73-.79 C .085-.09 at --den-fur-sat 2, bright confetti; den_room's fur sits
 # into the floor, warm grey with a darker underside) l50 and c down, the spread up (its strands), and "under": L taken
 # off toward each piece's lower edge (its ground side), up to this much at the foot. Was h 54, c .045, l50 .68, spread .85 (graded on the painting, so the sat 2 material doubles its C).
+# (den r19 B, R18b item 8: loud orange leaf clusters, s23 corr (560,690,620,730)) the O6 sheet's dry leaf drifts: chroma x C, L + DL (OKLab); `den_set.py leaves` applies it to O6.png in place
+LEAF_GRADE = {"O6": {"c": 0.7, "dl": -0.05}}
 FUR_GRADE = {"O6": {"h": 52.0, "c": 0.028, "l50": 0.66, "spread": 1.0, "under": 0.1}}
 # (den r17 S, R16 judge item 7: the s23 corridor log's lit top rendered L50 .755, C .120, glowing orange under the shaft, against
 # den_room's .678 / .101) a sheet's lit values rolled off in OKLab: above L knee, the rise kept at this share, and its chroma
@@ -355,6 +357,11 @@ def build():
                 w_ = ca > 0.5
                 if w_.any() and (cf[..., 0][w_].mean() - cf[..., 2][w_].mean()) > 45:
                     leafs.add(i)
+                    if name in LEAF_GRADE:
+                        import den_rocks as dr
+                        L_, A_, B_ = dr.to_oklab(cf)
+                        g_ = LEAF_GRADE[name]
+                        cuts[i] = (dr.from_oklab(L_ + g_["dl"], A_ * g_["c"], B_ * g_["c"]), ca)
                 elif name in FUR_GRADE:
                     import den_rocks as dr
                     g_ = FUR_GRADE[name]
@@ -477,6 +484,20 @@ if __name__ == "__main__":
         ingest()
     elif cmd == "build":
         build()
+    elif cmd == "leaves":   # (den r19 B) grade O6's leaf drifts (set.json "leaf") in place, as build does: den_set.py leaves
+        import den_rocks as dr
+        sh = [q for q in json.load(open(os.path.join(OUT, "set.json")))["sheets"] if q["name"] == "O6"][0]
+        im = np.asarray(Image.open(os.path.join(OUT, "O6.png")).convert("RGBA")).astype(np.float64)
+        for pe in sh["pieces"]:
+            if not pe.get("leaf"):
+                continue
+            x_, y_, w_, h_ = pe["rect"]
+            reg = im[y_:y_ + h_, x_:x_ + w_]
+            L_, A_, B_ = dr.to_oklab(reg[..., :3])
+            g_ = LEAF_GRADE["O6"]
+            reg[..., :3] = dr.from_oklab(L_ + g_["dl"], A_ * g_["c"], B_ * g_["c"])
+        Image.fromarray(im.round().clip(0, 255).astype(np.uint8), "RGBA").save(os.path.join(OUT, "O6.png"), optimize=True)
+        print("O6 leaves graded")
     elif cmd == "bank":   # (den r15 R) rebuild one bank's png only (same cut as build): den_set.py bank B3R
         for name in sys.argv[2:]:
             f, a = key(load(name))
