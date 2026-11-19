@@ -65,13 +65,15 @@ public static partial class DungeonDress
     internal static readonly List<(float X, float Z, float R)> Placed = new();
     /// <summary>(den r19 lead, R18b item 4) The lair's standing tusk groups (O8; x, z, half width m), also in Placed: DungeonLight keeps the lair beams' screen quads off them. Cleared with Placed.</summary>
     internal static readonly List<(float X, float Z, float R)> Tusks = new();
+    /// <summary>(den r19 L2, R18b item 4) The boulders alone (Placed minus the set items B6 crowns, O1, O8 tusks): the lair beams keep a clearance off the crowns and tusks, not the stones. Cleared with Placed.</summary>
+    internal static readonly List<(float X, float Z, float R)> Stones = new();
     static float PlaceBoulder(Ctx c, int pick, float x, float zz, float scale, bool big)
     {
         // (den r18 lead, r9a: a big stone stood over the start room's campfire) no stone within --den-boulder-fire-clear m of a fire past its own half width (0 off)
         float bfc = SurvivorUnchained.Args.Num("den-boulder-fire-clear", 1.5f);
         if (bfc > 0f && c.Z.Meta?.Fires is { } bfs)
             foreach (var bf in bfs) if (new Vector2((float)bf.X, (float)bf.Z).DistanceTo(new Vector2(x, zz)) < scale * (big ? 2.0f : 1.0f) + bfc) return 0f;
-        Placed.Add((x, zz, scale * (big ? 2.0f : 1.0f)));
+        Placed.Add((x, zz, scale * (big ? 2.0f : 1.0f))); Stones.Add((x, zz, scale * (big ? 2.0f : 1.0f)));
         if (Args.Has("den-log-boulders")) GD.Print($"[den-boulder] ({x:0.0}, {zz:0.0}) r {scale * (big ? 2.0f : 1.0f):0.00} big {big}");
         if (SetMode > 0 && SetIn(x, zz)) return PlaceSetBoulder(c, pick, x, zz, scale, big);   // (round 10: the painted set's O1)
         var all = Boulders().FindAll(q => q.Big == big);
