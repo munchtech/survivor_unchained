@@ -93,6 +93,15 @@ uniform float pit_cmax = 0.0;
 // angle hash; pit_fall (x: albedo off at the painting's outer edge, y: blur lod of the alpha it reads; x 0 off) a darker earth falloff
 uniform vec3 pit_gaps = vec3(0.0, 1.05, 1.3);
 uniform vec2 pit_fall = vec2(0.0, 4.0);
+// (den r19 S, R19 judge item 1: the pits inverted, the mip bleed lit the plates mid-green and left the cracks dark) pit_lines > 0:
+// the painted pit's light from its vein mask (pit_vein_tex, den_set.py veins: R the cores, G a narrow glow, B a wider one, from
+// the painting's own lime lines): pit_line_core x R + pit_line_glow x (pit_line_w.x G + pit_line_w.y B), the cores' albedo off
+// by pit_line_w.z; no lime emission and no bleed, so the plates keep the painting's dark albedo. 0: the lime and bleed path
+uniform float pit_lines = 0.0;
+uniform sampler2D pit_vein_tex : hint_default_black, filter_linear_mipmap, repeat_disable;
+uniform vec3 pit_line_core = vec3(0.3, 0.55, 0.16);
+uniform vec3 pit_line_glow = vec3(0.05, 0.11, 0.03);
+uniform vec3 pit_line_w = vec3(1.0, 0.5, 1.0);
 vec3 pit_cclamp(vec3 rgb) {
 	if (pit_cmax <= 0.0) return rgb;
 	vec3 lms = vec3(0.4122214708 * rgb.r + 0.5363325363 * rgb.g + 0.0514459929 * rgb.b,
@@ -325,6 +334,11 @@ void fragment() {
 	ALPHA *= 1.0 - smoothstep(rim_in, rim_out, 2.0 * COLOR.b);
 	if (pit_paint.x > 0.0 && COLOR.a < 0.75) {   // (den r18 P5) see pit_paint
 		float lime = smoothstep(pit_paint.z, pit_paint.w, c.g - max(c.r, c.b));
+		if (pit_lines > 0.0) {   // (den r19 S) see pit_lines: the painted lime keeps its albedo cut and grey (below), its emission and bleed off
+			vec3 pvm = texture(pit_vein_tex, UV).rgb;
+			ALBEDO *= 1.0 - pit_line_w.z * pvm.r;
+			EMISSION += (pit_line_core * pvm.r + pit_line_glow * (pit_line_w.x * pvm.g + pit_line_w.y * pvm.b)) * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
+		}
 		ALBEDO *= 1.0 - pit_paint.y * lime;
 		ALBEDO = mix(vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))), ALBEDO, mix(1.0, pit_look.x, lime));
 		vec3 pem = c.rgb * pit_paint.x * lime * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
@@ -332,7 +346,7 @@ void fragment() {
 		pem = mix(vec3(pel), pem, pit_look.x);
 		pem = pit_cclamp(pem);
 		if (pit_look.y > 0.0) pem *= min(1.0, pit_look.y / max(pel, 1e-4));
-		EMISSION += pem;
+		EMISSION += pem * step(pit_lines, 0.0);
 		float prb = smoothstep(rim_in - 0.3, rim_out, 2.0 * COLOR.b);
 		float plil = smoothstep(0.0, 0.03, min(c.r, c.b) - c.g) * smoothstep(0.75, 1.0, 2.0 * COLOR.b);
 		ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))) * vec3(1.04, 1.0, 0.9), pit_rim.y * plil);
@@ -352,7 +366,7 @@ void fragment() {
 		pit_pt = mix(1.0, pit_paint_pt, 1.0 - smoothstep(0.85, 1.05, 2.0 * COLOR.b));
 		vec3 cb1 = textureLod(paint_tex, UV, pit_bleed.y).rgb, cb2 = textureLod(paint_tex, UV, pit_bleed.y + 1.5).rgb;
 		float lbl = 0.6 * smoothstep(0.0, pit_bleed.z, cb1.g - max(cb1.r, cb1.b)) + 0.4 * smoothstep(0.0, pit_bleed.z, cb2.g - max(cb2.r, cb2.b));
-		EMISSION += pit_cclamp(pit_bleed_c * pit_bleed.x) * lbl * (1.0 - lime) * (1.0 - smoothstep(0.9, 1.05, 2.0 * COLOR.b));
+		EMISSION += pit_cclamp(pit_bleed_c * pit_bleed.x) * lbl * (1.0 - lime) * (1.0 - smoothstep(0.9, 1.05, 2.0 * COLOR.b)) * step(pit_lines, 0.0);   // (den r19 S) no bleed under pit_lines
 	} else
 	if (pit_cells > 0.0 && pit_glow > 0.0 && COLOR.a < 0.75) {   // (den r16 A, R15f item 1) see pit_cells
 		// (den r16 A2) sunken (see pit_deep): the view ray carried pit_deep.x metres down. Where it meets the pit's wall before its

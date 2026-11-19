@@ -169,6 +169,15 @@ public static partial class DungeonDress
                 var pb = V3("den-pit-bleed", new Vector3(3.5f, 6f, 0.019f));   // (den r19 V2: 3 -> 3.5, .03 -> .019, c .055,.085,.042 -> .04,.062,.032, cmax 0 -> .06, cap .1 -> .06: s11 L p50 .50 C90 .089 share .79, s23 .50/.088/.61) (den r19 V, R18b item 1: veins pastel, L p50 .63 -> .52, C90 .115 -> .097) a wide dim bleed (r18 1.2,4.5,.06), cap .35 -> .1, paint-alb .8 -> 1
                 mat.SetShaderParameter("pit_bleed", new Vector4(pb.X, pb.Y, pb.Z, 0f));
                 mat.SetShaderParameter("pit_cmax", SurvivorUnchained.Args.Num("den-pit-cmax", 0.06f));   // (den r19 V2, R18b item 1) hard OKLab chroma clamp on the veins' emissive and bleed (0 off)
+                // (den r19 S, R19 judge item 1: the pits inverted, the bleed lit the plates mid-green, the cracks dark) --den-pit-lines 1: the
+                // veins' light from H3_vein.png (den_set.py veins, the painting's own lime lines): --den-pit-line-core x its cores, plus
+                // --den-pit-line-glow x (--den-pit-line-w x its narrow glow + y its wide one), the cores' albedo off by z; no lime
+                // emission and no bleed, so the plates stay dark (den_set pit_lines). 0: the lime and bleed path (b637960e8's look)
+                mat.SetShaderParameter("pit_lines", SurvivorUnchained.Args.Num("den-pit-lines", 0f));   // default 0: the gate (R19 judge item 1) not met at s19f (W/B and cores met; green L p50, C p90 and share not), see the S report
+                mat.SetShaderParameter("pit_vein_tex", GD.Load<Texture2D>(SetDir + "H3_vein.png"));
+                mat.SetShaderParameter("pit_line_core", V3("den-pit-line-core", new Vector3(0.17f, 0.19f, 0.14f)));   // s19f
+                mat.SetShaderParameter("pit_line_glow", V3("den-pit-line-glow", new Vector3(0.031f, 0.06f, 0.02f)));
+                mat.SetShaderParameter("pit_line_w", V3("den-pit-line-w", new Vector3(0.3f, 2.4f, 1f)));
                 // (den r19 V2, R18b item 6) the crumb ring's gaps (half-width rad, the blurred alpha kept above: from, to; 0 off) and the edge's darker falloff (albedo off, alpha lod; 0 off)
                 mat.SetShaderParameter("pit_gaps", V3("den-pit-gaps", new Vector3(0.22f, 0.7f, 0.95f)));
                 mat.SetShaderParameter("pit_fall", new Vector2(SurvivorUnchained.Args.Num("den-pit-fall", 0.45f), SurvivorUnchained.Args.Num("den-pit-fall-lod", 4f)));
