@@ -894,9 +894,33 @@ public partial class ZoneView : Node3D
         leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
     }
 
+    // (--dump-near X,Z,R: once, a second in, every mesh within R m of the point: node path, class, material shader; for finding what draws a prop)
+    bool dumped;
+    void DumpNear()
+    {
+        dumped = true;
+        var v = SurvivorUnchained.Args.Get("dump-near")!.Split(',');
+        var c = new Vector3(float.Parse(v[0]), 0, float.Parse(v[1])); float r = float.Parse(v[2]);
+        void Walk(Node n)
+        {
+            if (n is MeshInstance3D vi)
+            {
+                var g = vi.GlobalTransform * vi.GetAabb().GetCenter();
+                if (new Vector2(g.X - c.X, g.Z - c.Z).Length() < r)
+                {
+                    string m = vi is GeometryInstance3D gi ? (gi.MaterialOverride ?? (vi is MeshInstance3D mi && mi.Mesh?.GetSurfaceCount() > 0 ? mi.GetActiveMaterial(0) : null)) is Material mt ? (mt is ShaderMaterial sm ? sm.Shader?.ResourcePath + "|" + sm.Shader?.GetHashCode() : mt.GetType().Name) : "none" : "";
+                    GD.Print($"DUMPNEAR {vi.GetPath()} {vi.GetClass()} at {g.X:F1},{g.Y:F1},{g.Z:F1} aabb {vi.GetAabb().Size.X:F1}x{vi.GetAabb().Size.Y:F1}x{vi.GetAabb().Size.Z:F1} mat {m}");
+                }
+            }
+            foreach (var ch in n.GetChildren()) Walk(ch);
+        }
+        Walk(GetTree().Root);
+    }
+
     public override void _Process(double delta)
     {
         time += delta;
+        if (!dumped && time > 1.0 && SurvivorUnchained.Args.Get("dump-near") != null) DumpNear();
         float t = (float)time;
         if (shareShown != FireShare) ShareFires();
         CelFires();
