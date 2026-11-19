@@ -311,7 +311,7 @@
     "_what": "(lane J art-color, 19 Nov) The world's colour per time (logic/Look/Palettes.cs): each class a ramp dark, mid, lit (sRGB) over the albedo's own value (the square root of its linear luminance, range lo-hi), taken by amount. FROM the owner's day and night reference (owner_ref_night_day_colors_19nov.webp): day autumn reds, oranges and golds, a warm sand path, warm grey stone; night indigo-violet ground, violet and teal foliage, blue-violet stone. These are albedos, not the frame: the rig's light colours them after.",
     "wild_day": {
       "value": 0.8,
-      "leaf": {"ramp": ["#3a0a08", "#e04a08", "#f0b020"], "alt": [["#2a0414", "#9e122b", "#d33e25"], ["#7a2a10", "#f0c818", "#fff050"]], "mix": [0.33, 0.35, 0.14, 0.27], "near": [0.55, 0.55, 0.95, 20], "amount": 1.0, "range": [0.12, 0.48]},
+      "leaf": {"ramp": ["#2a0606", "#e04a08", "#f8b828"], "alt": [["#1e0210", "#9e122b", "#d33e25"], ["#6a2008", "#f0a810", "#ffd040"]], "mix": [0.33, 0.35, 0.14, 0.27], "near": [0.55, 0.55, 0.95, 20], "amount": 1.0, "range": [0.12, 0.48]},
       "grass": {"ramp": ["#7a3a0c", "#d88a1c", "#ffd040"], "amount": 0.9, "range": [0.15, 0.55]},
       "ground": {"ramp": ["#442032", "#9e6d58", "#be8b6d"], "amount": 0.85, "value": 0.4, "range": [0.15, 0.55]},
       "path": {"ramp": ["#714f43", "#8c6954", "#9a7860"], "amount": 0.9, "value": 0.3, "range": [0.15, 0.55]},
@@ -325,10 +325,10 @@
     },
     "wild_night": {
       "value": 0.4,
-      "leaf": {"ramp": ["#0a3a50", "#0890b0", "#30e0f0"], "alt": [["#3a1060", "#7428b8", "#b880ff"], ["#1c1850", "#3c48b0", "#6a90e8"]], "mix": [0.45, 0.1, 0.2, 0.27], "near": [0.3, 0.55, 0.95, 20], "amount": 0.9, "range": [0.15, 0.55]},
+      "leaf": {"ramp": ["#0a3a50", "#0898b8", "#48f0ff"], "alt": [["#3a1060", "#7428b8", "#b880ff"], ["#1c1850", "#3c48b0", "#6a90e8"]], "mix": [0.42, 0.1, 0.2, 0.27], "near": [0.3, 0.55, 0.95, 20], "amount": 0.9, "range": [0.15, 0.55]},
       "grass": {"ramp": ["#103c58", "#1a8aa8", "#40c8e0"], "amount": 0.85, "range": [0.15, 0.55]},
       "ground": {"ramp": ["#181a50", "#26286e", "#343890"], "amount": 0.85, "range": [0.15, 0.55], "value": 0.2},
-      "path": {"ramp": ["#36407a", "#5a68b0", "#8490dc"], "amount": 0.95, "value": 0.1, "range": [0.15, 0.55]},
+      "path": {"ramp": ["#36407a", "#6070b8", "#94a0ec"], "amount": 0.95, "value": 0.1, "range": [0.15, 0.55]},
       "stone": {"ramp": ["#24264e", "#3c3e78", "#5e60a8"], "amount": 0.85, "value": 0.2, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#2e1a30", "#4a2a48", "#6a4060"], "amount": 0.75, "range": [0.15, 0.55]},
       "ember": {"near": 0.0, "far": 2.0, "keep": 1.0, "albedo": "#d8a8a0"},
