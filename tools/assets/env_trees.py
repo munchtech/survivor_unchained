@@ -1863,6 +1863,14 @@ def cluster_mesh(b, C, lod, isl_top, isl_under):
         nn = np.cross(ds, du); nn /= np.linalg.norm(nn) + 1e-9
         if (np.dot(nn, C['w']) < 0) != under:
             nn = -nn
+        if lod < 2 and not under:
+            # (lane J lead 7: each lobe creased along its spine: its two crown points' normals tilted +-20 degrees across
+            # it, so the facing ramp and the key band split the lobe hard along the line from the centre to its tip)
+            sg = (0.0, -1.0, 1.0)[int(round(k)) % CL_SUB]
+            if sg:
+                tg = du / (np.linalg.norm(du) + 1e-9)
+                nn = nn + tg * sg * math.sin(math.radians(50)) * min(1.0, s * 4.0)
+                nn /= np.linalg.norm(nn)
         return nn
 
     for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
