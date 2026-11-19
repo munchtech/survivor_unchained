@@ -396,12 +396,20 @@ public sealed class ZoneMeta
         MoveFloraColliders(z, doc.RootElement);
         int nextId = 0;
         foreach (var c in z.Colliders) nextId = Math.Max(nextId, c.Id + 1);
-        // "solid": [x, z, r] circles where the web game left none (H4 item 10: the cliff rocks along the hill's foot
+        // "solid": [x, z, r] circles (or [x, z, hw, hd, rot] boxes) where the web game left none (H4 item 10: the cliff rocks along the hill's foot
         // east of the Kerchiefs' camp and west of the wallow, 8-20 m masses she could walk into, hidden at the play
         // camera; each rock's footprint and the strip north of it that it hides from the south-looking camera).
         if (doc.RootElement.TryGetProperty("solid", out var solid) && solid.ValueKind == JsonValueKind.Array)
             foreach (var e in solid.EnumerateArray())
-                if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() >= 3)
+                if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() >= 5)
+                {
+                    // [x, z, hw, hd, rot]: a box (rot as the colliders', radians), a cluster's whole footprint where its
+                    // pieces stand closer than her body is wide and make a V she walks into and stops dead in (the
+                    // wagon on the Low Ford road, the owner 18 Nov: "got stuck approaching the wagon"; WalkNotchTests)
+                    double hw = e[2].GetDouble(), hd = e[3].GetDouble();
+                    z.Colliders.Add(new ColliderDef { Id = nextId++, Kind = ColliderKind.Box, X = e[0].GetDouble(), Z = e[1].GetDouble(), R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = e[4].GetDouble(), Tag = "solid" });
+                }
+                else if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() >= 3)
                 {
                     double r = e[2].GetDouble();
                     z.Colliders.Add(new ColliderDef { Id = nextId++, Kind = ColliderKind.Circle, X = e[0].GetDouble(), Z = e[1].GetDouble(), R = r, Hw = r, Hd = r, Tag = "solid" });

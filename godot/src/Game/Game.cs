@@ -148,6 +148,9 @@ public partial class Game : Node, IZoneHost
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
         controls.On(OnAction);
+        // (a click reaches a freeze callout as a key does: its answer, LMB's swing, or going on; GameTeach.TeachKey)
+        // (--old-clicks, a dev proof: the click left out, as before 18 Nov)
+        if (!Args.Has("old-clicks")) controls.Click = a => scene != null && Mode == "play" && cine == null && screens.Current == null && TeachKey(a);
         // Prompts follow the device in hand: a screen, the HUD, the draft redraw with its keys.
         controls.DeviceChanged += () => { screens.Current?.Refresh(); hud.DeviceChanged(); };
         UiArt.Cursors();
