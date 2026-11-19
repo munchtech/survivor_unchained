@@ -22,6 +22,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 #include "res://shaders/palette.gdshaderinc"
+#include "res://shaders/paint_stroke.gdshaderinc"   // (lane J lead 8: the painted stroke layer)
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -750,27 +751,19 @@ void fragment() {
 	float pal_rim = smoothstep(0.52, 0.62, pm.r) * (1.0 - smoothstep(0.62, 0.68, pm.r)) * w_soft * step(0.001, pal_path0.w);
 	if (pal_band0.z > 0.5) albedo = mix(pal_ground_px(albedo, w_pos), pal_path_px(albedo, w_pos), cel_px(pal_pe - 0.5)) * (1.0 - 0.45 * pal_rim);
 	else albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), pal_pe) * (1.0 - 0.45 * pal_rim);
-	// (lane J lead 7) painted dabs: a world cell of 0.35 m holds, half the time, one flat ellipse 3:1, a band lighter or darker,
-	// a pixel edge; on the path its long axis runs along the path (across the mask's gradient), elsewhere by hash
-	if (pal_band0.z > 0.5 && pal_ground0.w > 0.0) {
-		vec2 dq = w / 0.35;
-		vec2 dc = floor(dq);
+	// (lane J lead 7, lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the ground's crescent strokes: on the path they run
+	// along the path (across the paint mask's gradient), elsewhere along a slowly turning direction; then the hit paint over it
+	if (pal_ground0.w > 0.0) {
 		vec2 dgr = vec2(textureLod(paint_mask, zuv + vec2(1.0 / zone_size, 0.0), 1.0).r - textureLod(paint_mask, zuv - vec2(1.0 / zone_size, 0.0), 1.0).r,
 				textureLod(paint_mask, zuv + vec2(0.0, 1.0 / zone_size), 1.0).r - textureLod(paint_mask, zuv - vec2(0.0, 1.0 / zone_size), 1.0).r);
 		float dgl = length(dgr);
-		float dh = hash12(dc + 7.7);
-		float dang = dh * 3.14159;
+		float dang = 6.2832 * texture(noise_tex, w * 0.03).r;
 		vec2 dax = vec2(cos(dang), sin(dang));
 		if (dgl > 1e-4) dax = mix(dax, vec2(-dgr.y, dgr.x) / dgl, smoothstep(1e-4, 4e-4, dgl) * smoothstep(0.2, 0.5, pm.r));
-		vec2 dd = (dq - dc - 0.5 - (vec2(hash12(dc + 1.3), hash12(dc + 9.1)) - 0.5) * 0.3) * 0.35;
-		vec2 dl = vec2(dot(dd, dax), dot(dd, vec2(-dax.y, dax.x)));
-		float drl = mix(0.07, 0.13, hash12(dc + 3.9));
-		float dsd = (length(vec2(dl.x / drl, dl.y / (drl / 3.0))) - 1.0) * drl / 3.0;
-		float dfw = max(fwidth(dsd), 1e-4);
-		float dcov = (1.0 - smoothstep(-dfw, dfw, dsd)) * step(hash12(dc + 5.1), 0.55);
-		float dsg = hash12(dc + 11.7) < 0.5 ? -1.0 : 1.0;
-		albedo *= 1.0 + dcov * dsg * 0.26 * (1.0 - w_setts);
+		albedo = ps_paint(albedo, w, normalize(dax), mix(ps_cover0.z, ps_cover0.w, pal_pe) * (1.0 - w_setts), 0.0);
 	}
+	vec2 ps_hp = ps_hits(w);
+	albedo = ps_hit_paint(albedo, ps_hp);
 	albedo *= 1.0 + verge_lift * smoothstep(0.2, 0.5, pm.r) * (1.0 - smoothstep(0.78, 0.9, pm.r)) * (1.0 - smoothstep(0.05, 0.3, rut_w)) * w_soft;
 	albedo *= mix(1.0, 0.64, wet);
 	rough = mix(rough, 0.72, wet * 0.6);
@@ -872,7 +865,7 @@ void fragment() {
 	vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
 	// Only true blight glows (the Verge's paint runs to 0.55): a faint wash (Low Ford's graveyard, 0.35 at most) is dead
 	// ground, not neon veins (its few noise-tipped patches drew a hard green squiggle by the crypt; judge 2, item 6).
-	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(WORLD_TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b);
+	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(WORLD_TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b) + ps_hit_emit(ps_hp);
 
 	// E6: the river's bed (silt with river stones lying in it, under the water) and its wet bank (a darker, slicker
 	// strip above the waterline), both wobbling so the waterline never runs straight.

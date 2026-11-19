@@ -458,6 +458,94 @@ pal_line={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+ps_brush={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_tone={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_cover0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_cover1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hitc={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hite={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp0a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp0b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp1a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp1b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp2a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp2b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp3a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp3b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp4a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp4b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp5a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp5b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp6a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp6b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp7a={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_hp7b={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

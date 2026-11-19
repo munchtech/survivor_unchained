@@ -327,6 +327,18 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("pal_band0", At(SurvivorUnchained.Look.Palettes.BandAt));
         RenderingServer.GlobalShaderParameterSet("pal_band1", At(SurvivorUnchained.Look.Palettes.BandAt + 4));
         RenderingServer.GlobalShaderParameterSet("pal_line", At(SurvivorUnchained.Look.Palettes.LineAt));   // (lead 6: inner lines)
+        // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) --strokes off: no marks on surfaces; --hitpaint off: no hit paint
+        int sk = SurvivorUnchained.Look.Palettes.StrokeAt;
+        bool noStrokes = SurvivorUnchained.Args.Get("strokes") == "off";
+        Vector4 c0 = At(sk + 8), c1 = At(sk + 12);
+        if (noStrokes) { c0 = Vector4.Zero; c1.X = 0; c1.Y = 0; }
+        if (SurvivorUnchained.Args.Get("hitpaint") == "off") c1.Z = 0;
+        RenderingServer.GlobalShaderParameterSet("ps_brush", At(sk));
+        RenderingServer.GlobalShaderParameterSet("ps_tone", At(sk + 4));
+        RenderingServer.GlobalShaderParameterSet("ps_cover0", c0);
+        RenderingServer.GlobalShaderParameterSet("ps_cover1", c1);
+        RenderingServer.GlobalShaderParameterSet("ps_hitc", At(sk + 16));
+        RenderingServer.GlobalShaderParameterSet("ps_hite", At(sk + 20));
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

@@ -1504,6 +1504,13 @@ public partial class BattleFx : Node3D
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
+                    // (lane J lead 8: her blow leaves a crescent of colour across it on the ground, the terrain's hit paint)
+                    if (!Flare.HushesHitSparks)
+                    {
+                        var hpAway = new Vector3((float)e.Dx, 0, (float)e.Dz);
+                        if (hpAway.LengthSquared() < 0.01f) hpAway = Vector3.Forward;
+                        HitPaint.Add(at, hpAway.Normalized(), e.Crit, time);
+                    }
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
                     if (!hushed && e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
@@ -2232,6 +2239,7 @@ public partial class BattleFx : Node3D
     public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
+        HitPaint.Tick(now);   // (lane J lead 8: the hit paint's stamps to the terrain's globals)
         float fdt = (float)dt;
         // The hit FX's clock (VFX 10 r3): through a hitstop (the fight held at 8%, not a Flare's freeze) the sweep, the
         // sparks, the puffs and the pool run on at 60% of real time, so the held frame keeps moving (r2: f6 looked

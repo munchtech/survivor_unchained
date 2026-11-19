@@ -69,7 +69,9 @@ public static class Palettes
     // (lead 6, judge r4 cel fix 3: 2-4 inner lines a stone, 2-3 a trunk) "lines" [stone freq /m, bark freq /m, px, k]: a form's
     // inner lines, isolines of a world-space noise at a fixed screen width, broken in places (palette.gdshaderinc pal_lines)
     public const int LineAt = BandAt + 8;
-    public static int Size => LineAt + 4;
+    // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) "stroke": +0 brush [cell,len,wid,bend], +4 tone [hue,lift,inner,chroma], +8 cover[0..3], +12 cover[4,5] + hit amount, emit, +16 hit color, +20 hit edge
+    public const int StrokeAt = LineAt + 4;
+    public static int Size => StrokeAt + 24;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -133,6 +135,21 @@ public static class Palettes
         r[BandAt + 7] = e.TryGetProperty("leaf_form", out var lfm) ? lfm.GetDouble() : 0;   // (lead 6: a crown's ramp from its cards' facing, this share)
         if (e.TryGetProperty("lines", out var ln))
             for (int i = 0; i < Math.Min(4, ln.GetArrayLength()); i++) r[LineAt + i] = ln[i].GetDouble();
+        if (e.TryGetProperty("stroke", out var st))
+        {
+            double S(string k, double d) => st.TryGetProperty(k, out var v) ? v.GetDouble() : d;
+            r[StrokeAt] = S("cell", 0); r[StrokeAt + 1] = S("len", 0); r[StrokeAt + 2] = S("wid", 0); r[StrokeAt + 3] = S("bend", 0);
+            r[StrokeAt + 4] = S("hue", 0); r[StrokeAt + 5] = S("lift", 0); r[StrokeAt + 6] = S("inner", 0); r[StrokeAt + 7] = S("chroma", 1);
+            if (st.TryGetProperty("cover", out var cv))
+                for (int i = 0; i < Math.Min(6, cv.GetArrayLength()); i++) r[StrokeAt + 8 + i] = cv[i].GetDouble();
+            if (st.TryGetProperty("hit", out var ht))
+            {
+                r[StrokeAt + 14] = ht.TryGetProperty("amount", out var ha) ? ha.GetDouble() : 0;
+                r[StrokeAt + 15] = ht.TryGetProperty("emit", out var he) ? he.GetDouble() : 0;
+                if (ht.TryGetProperty("color", out var hc)) { var (R, G, B) = Atmospheres.Linear(hc.GetString()!); r[StrokeAt + 16] = R; r[StrokeAt + 17] = G; r[StrokeAt + 18] = B; }
+                if (ht.TryGetProperty("edge", out var hd)) { var (R, G, B) = Atmospheres.Linear(hd.GetString()!); r[StrokeAt + 20] = R; r[StrokeAt + 21] = G; r[StrokeAt + 22] = B; }
+            }
+        }
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts
         for (int a = 0; a < 2; a++)
             for (int i = 0; i < Row; i++) r[LeafAltAt + a * Row + i] = r[i];

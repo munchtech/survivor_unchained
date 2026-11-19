@@ -36,6 +36,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 #include "res://shaders/palette.gdshaderinc"
+#include "res://shaders/paint_stroke.gdshaderinc"   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc)
 #ifdef KIT_STAND_LEAF
 // (L1 lead 22, BUSH) The leaf MASS's tone is BAKED per cap in COLOR.r (env_trees.py BU_RING: 1 its middle, 0.86 a ring,
 // 0.6 its edge, the whole cap shifted by BU_JIT), not read from its normal: a cap is 20-30 px at the play camera and its
@@ -223,6 +224,7 @@ varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing m
 varying flat vec3 v_crown;
 #endif
 varying vec3 v_fwpos;   // (lane J: the crown's world point, for the palette's ember keep)
+varying flat vec3 v_psc;   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the copy's origin, the marks radiate from it
 // (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
 // tips may take under a low sun, sRGB degrees)
 uniform float flutter = 1.0;
@@ -631,6 +633,7 @@ void vertex() {
 #ifdef OWN_FOLIAGE
 	// (Env 23) a stump's cap (tree_caps.py) only while its tree is faded, in the w 2 fade; else nothing
 	v_fwpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;   // (lane J: the palette's ember keep reads the world position)
+	v_psc = MODEL_MATRIX[3].xyz;   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc)
 #ifdef OWN_BROADLEAF
 	v_crown = MODEL_MATRIX[3].xyz + MODEL_MATRIX[1].xyz * (0.5 * (crown_lo + crown_hi));
 #endif
@@ -1122,6 +1125,11 @@ void fragment() {
 		float pal_tip = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y, -1.0, 1.0);
 		// (lead 3: each crown on its own ramp, crimson, orange or gold, a second hash its place on it; the leaves by the lens darker)
 		ALBEDO = pal_leaf3(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5), fract(v_jit * 11.13 + 0.29), pal_tip, c_frame, c_lensd);
+		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the marks radiate from the crown's centre like leaf spines
+			vec2 rc = v_fwpos.xz - v_psc.xz;
+			vec2 fl = length(rc) > 1e-3 ? normalize(rc) : vec2(1.0, 0.0);
+			ALBEDO = ps_paint(ALBEDO, v_fwpos.xz, fl, ps_cover0.x, 0.13);
+		}
 		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.x);   // (lead 5: the crown's own contour)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
@@ -1170,6 +1178,10 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
+		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc)
+			vec4 bf = ps_frame(v_fwpos, (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz, 1.0, vec2(1.0, 0.0));
+			ALBEDO = ps_paint(ALBEDO, bf.xy, bf.zw, ps_cover1.y, 0.61);
+		}
 		// (worker C: a thin limb or stake is all contour, a black stick: its inked share falls as its normal turns within a few pixels)
 		float thin_ = smoothstep(0.06, 0.2, length(fwidth(NORMAL)));
 		ALBEDO *= 1.0 + 0.6 * thin_;
@@ -1310,6 +1322,10 @@ void fragment() {
 			fc = mix(fc, flag_moss.rgb, step(0.4, wn.y) * (1.0 - step(0.9, wn.y)) * step(0.68, st.a));
 			fc = mix(fc, flag_ink.rgb, 1.0 - step(0.4, wn.y));
 			col = mix(col, fc, flag_amount);
+		}
+		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the stones' strokes, the flagstones' too (once)
+			vec4 sf = ps_frame(v_wpos, wn, 0.0, vec2(0.8, 0.6));
+			col = ps_paint(col, sf.xy, sf.zw, ps_cover1.x, 0.37);
 		}
 		if (pal_stonem.w > 0.0 && flag_amount < 0.5) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
 			float mp = pnt ? pal_vn3(v_wpos * 2.3 + 5.1) : st.a;
