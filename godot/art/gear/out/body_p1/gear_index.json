@@ -1081,6 +1081,38 @@
    "native": true,
    "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
    "cover_count": 1687
+  },
+  {
+   "id": "sol_corset",
+   "outfit": null,
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "sol_corset.top.brownleather",
+    "sol_corset.top.claspgold",
+    "sol_corset.top.darksteel",
+    "sol_corset.top.gold",
+    "sol_corset.top.steel"
+   ],
+   "tuck": "armor_tuck/sol_corset.bin",
+   "tuck_count": 4370,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "hold": {
+    "amount": 0.55,
+    "squash": 0
+   },
+   "file": "res://art/armor/body_p1/sol_corset.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/sol_corset.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d"
   }
  ]
 }

@@ -1,0 +1,48 @@
+{
+ "id": "sol_corset",
+ "name": "Gilt Corset",
+ "slot": "top",
+ "style": "mesh",
+ "params": {
+  "file": "sol_corset.glb",
+  "bend_fit": {
+   "bones": [
+    "clavicle_",
+    "upperarm_",
+    "scap_",
+    "lat_",
+    "pec_",
+    "trap_",
+    "delt_",
+    "breast_"
+   ],
+   "offer": [
+    "spine_04",
+    "spine_05",
+    "clavicle_{s}",
+    "pec_{s}",
+    "trap_{s}",
+    "scap_{s}",
+    "delt_{s}",
+    "neck_01"
+   ],
+   "clear_mm": 3.0,
+   "veto_mm": 0.3,
+   "passes": 3
+  }
+ },
+ "covers": [
+  "top"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ },
+ "adorn": [],
+ "layer": 1,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}
