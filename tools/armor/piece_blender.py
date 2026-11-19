@@ -3555,6 +3555,8 @@ if SPEC_PIECE.get("finish"):
 # _rigid parts: the plate tops are cups on leather straps that must still lie under the pauldrons, armor 9)
 if SPEC_PIECE.get("rigid") is True or (MESH and IMPORT.get("rigid")):
     row["rigid"] = True
+if SPEC_PIECE.get("tuck_law"):
+    row["tuck_law"] = SPEC_PIECE["tuck_law"]         # (gear_tuck.rigid_tuck_law: the row's own law over its slot's)
 if SPEC_PIECE.get("replaces"):
     row["replaces"] = SPEC_PIECE["replaces"]         # (a calling row id: ArmorIndex.Calling wears this piece in its place)
 if SPEC_PIECE.get("cover_grow"):

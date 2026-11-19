@@ -204,7 +204,7 @@ def tuck_bound(sk, t, hard=None, under=None, step=None, scale=1.0, slope=None, e
     return np.clip(F, 0.0, 1.0)[gid]
 
 
-def rigid_tuck_law(slot):
+def rigid_tuck_law(slot, row=None):
     """The UNDER A RIGID PLATE rule for a slot: RIGID_FULL, RIGID_ZERO, STEP, BASE, SLOPE, or the slot's stand-off law
     (tools/armor/rigid_roles.json slots "standoff"): "tuck_full_mm" / "tuck_zero_mm" (the plate this close: the full
     depth; this far: none; a plate made to stand off her keeps its tuck that much further out, and the rule's REACH
@@ -214,20 +214,24 @@ def rigid_tuck_law(slot):
     "tuck_edge_mm" (10) in from the footprint's border; within it the ramp is SLOPE's whatever the law says.
     {full, zero, step, depth (m), slope (marks of BASE a metre), edge (m)}."""
     import gear_fit
-    law = gear_fit.standoff_law(slot) or {}
-    return {"full": law.get("tuck_full_mm", RIGID_FULL * 1000) / 1000.0,
+    # (a row's own "tuck_law" (its piece.json, piece_blender carries it), same keys, stands in for its slot's: a piece
+    # made to sit INSIDE her rest skin (a cinched corset, armor-ref 18 Nov) needs a deeper tuck than its slot's other
+    # tops; "tuck_back_mm": how far behind her a rigid face still counts as THROUGH AT REST (BACK))
+    law = (row or {}).get("tuck_law") or gear_fit.standoff_law(slot) or {}
+    return {"back": law.get("tuck_back_mm", BACK * 1000) / 1000.0,
+            "full": law.get("tuck_full_mm", RIGID_FULL * 1000) / 1000.0,
             "zero": law.get("tuck_zero_mm", RIGID_ZERO * 1000) / 1000.0, "step": law.get("tuck_step", STEP),
             "depth": law.get("tuck_depth_mm", BASE * 1000) / 1000.0,
             "slope": law["tuck_slope"] / BASE if "tuck_slope" in law else SLOPE,
             "edge": law.get("tuck_edge_mm", 10.0) / 1000.0}
 
 
-def depth_of(rigid, slot):
+def depth_of(rigid, slot, row=None):
     """A row's full scale (m): its slot's law depth when it has rigid faces, else BASE."""
-    return rigid_tuck_law(slot)["depth"] if rigid is not None and rigid.any() else BASE
+    return rigid_tuck_law(slot, row)["depth"] if rigid is not None and rigid.any() else BASE
 
 
-def tuck_of(sk, PB, TB, rigid=None, slot=None):
+def tuck_of(sk, PB, TB, rigid=None, slot=None, row=None):
     """Her skin's tuck under one piece (PB points, TB triangles, `rigid` a flag per triangle: a plate that never bends),
     per vertex of sk; how many rays grazed it; and how many points the two rules for plates raised.
 
@@ -253,7 +257,7 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     d = np.linalg.norm(loc - O[ri], axis=1)
     fn = mesh.face_normals[tri]
     cos = np.abs((fn * sk.N[cand[ri]]).sum(1))
-    law = rigid_tuck_law(slot) if rigid is not None and rigid.any() else None
+    law = rigid_tuck_law(slot, row) if rigid is not None and rigid.any() else None
     scale = law["depth"] / BASE if law else 1.0
     near0 = d <= REACH
     # (REACH follows the law: a rigid face out to tuck_zero_mm still marks her skin under it)
@@ -282,7 +286,7 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     tb, rb, lb = ray.intersects_id(sk.P[cand] + sk.N[cand] * LIFT, -sk.N[cand], multiple_hits=False, return_locations=True)
     db = np.linalg.norm(lb - (sk.P[cand[rb]] + sk.N[cand[rb]] * LIFT), axis=1)
     outer = (mesh.face_normals[tb] * sk.N[cand[rb]]).sum(1) > 0
-    mk = (db <= BACK + LIFT) & outer
+    mk = (db <= (law["back"] if law else BACK) + LIFT) & outer
     thr, tf = cand[rb[mk]], tb[mk]
     keep = ~infront[thr]
     thr, tf = thr[keep], tf[keep]
@@ -501,8 +505,8 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         c = cover_of(sc, PBc, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
         ng = 0
         if hides.get(r["id"], True):
-            tc, gz, rz = tuck_of(sc, PBc, TB, RB, r["slot"])
-            tp = tuck_of(sp, PBp, TB, RB, r["slot"])[0] if play is not None else np.zeros(0)
+            tc, gz, rz = tuck_of(sc, PBc, TB, RB, r["slot"], r)
+            tp = tuck_of(sp, PBp, TB, RB, r["slot"], r)[0] if play is not None else np.zeros(0)
             gc = np.zeros(len(close.P), bool)
             if r["slot"] in ENCLOSE_SLOTS:
                 box = ((sc.P >= PBc.min(0) - BOX) & (sc.P <= PBc.max(0) + BOX)).all(1)
@@ -528,7 +532,7 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         r["tuck"] = f"armor_tuck/{r['id']}.bin"
         r["tuck_count"] = nt
         # (DEPTH AS DATA: the record's full scale, said only when it is not the shader's 10 mm)
-        dm = round(depth_of(RB, r["slot"]) * 1000, 3) if hides.get(r["id"], True) else BASE * 1000
+        dm = round(depth_of(RB, r["slot"], r) * 1000, 3) if hides.get(r["id"], True) else BASE * 1000
         r.pop("tuck_depth_mm", None)
         if dm != BASE * 1000:
             r["tuck_depth_mm"] = dm
