@@ -337,7 +337,7 @@ void fragment() {
 		if (pit_lines > 0.0) {   // (den r19 S) see pit_lines: the painted lime keeps its albedo cut and grey (below), its emission and bleed off
 			vec3 pvm = texture(pit_vein_tex, UV).rgb;
 			ALBEDO *= 1.0 - pit_line_w.z * pvm.r;
-			EMISSION += (pit_line_core * pvm.r + pit_line_glow * (pit_line_w.x * pvm.g + pit_line_w.y * pvm.b)) * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
+			EMISSION += pit_cclamp(pit_line_core * pvm.r + pit_line_glow * (pit_line_w.x * pvm.g + pit_line_w.y * pvm.b)) * (0.92 + 0.08 * sin(TIME * 1.3 + wpos.x * 0.7));
 		}
 		ALBEDO *= 1.0 - pit_paint.y * lime;
 		ALBEDO = mix(vec3(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722))), ALBEDO, mix(1.0, pit_look.x, lime));
