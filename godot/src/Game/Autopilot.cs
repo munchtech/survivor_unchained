@@ -439,7 +439,7 @@ public sealed class Autopilot
         // (the zone ends at the town: a run begun in the Low Ford never works the table, M5 r2)
         if (g.Overlay == "maps" && GoalsOn && !(fromLowford && g.Zone?.Id == "waystation")) { Table(dt); return; }
         tableOpen = false;
-        if (g.Overlay != null) { g.CloseOverlay(); return; }
+        if (g.Overlay != null) { if (!BugReporter.Shooting) g.CloseOverlay(); return; }
         // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
         // (spare, finish), or with its first answer: a run never stalls at his knee.
         if (g.Zone?.Choice is { } choice)
