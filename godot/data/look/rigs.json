@@ -335,7 +335,7 @@
       "stone": {"ramp": ["#24264e", "#3e4278", "#7a80bc"], "amount": 0.8, "value": 0.2, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#2e1a30", "#4a2a48", "#6a4060"], "amount": 0.75, "range": [0.15, 0.55]},
       "ember": {"near": 0.0, "far": 2.0, "keep": 1.0, "albedo": "#d8a8a0"},
-      "glow": {"cap": "#22cfee", "stem": "#58d8ea", "light": "#00f0ff", "energy": 1.2, "range": 2.6, "share": 0.45, "max": 700, "caps": [2, 3], "size": [0.3, 0.5], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.4, "wood_light": 0.1, "alt_cap": "#c468ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [0, 0], "cap_emit": 1.2, "cap_ink": 0.3, "pool": [0, 0.5, 0.65, 0.25, 0.0, 0.3, 2.2], "spill": [1.5, 2.25, 3.0, 3.0, 2.2, 2.5, 0.9]},
+      "glow": {"cap": "#22cfee", "stem": "#58d8ea", "light": "#00f0ff", "energy": 1.2, "range": 2.6, "share": 0.45, "max": 700, "caps": [2, 3], "size": [0.3, 0.5], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.4, "wood_light": 0.1, "alt_cap": "#c468ff", "alt_light": "#e070ff", "alt_share": 0.3, "halo": [0, 0], "cap_emit": 1.2, "cap_ink": 0.3, "pool": [0, 0.5, 0.65, 0.25, 0.0, 0.3, 2.2], "spill": [1.5, 2.25, 3.0, 3.0, 2.0, 2.0, 0.9]},
       "ink": {"color": "#40306a", "k": 0.2, "px": 4.0, "crease": 0.6, "thin": 1.0, "lum": 12, "class": [1, 1, 0, 1], "inner": [1, 1, 0, 1], "crease_deg": 28, "depth": 0.15, "rim": [0.9, 0.9, 0.0], "rim_nv": [0.22, 0.34], "rim_color": "#22184a", "fit": 0.22, "fit_px": 24},
       "bands": [4, 0, 3, 3, 3, 3],
       "band_edge": 0.05,
