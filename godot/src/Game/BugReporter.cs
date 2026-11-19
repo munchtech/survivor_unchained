@@ -60,7 +60,16 @@ public partial class BugReporter : CanvasLayer
         autoAt = Args.Has("bug-auto-at") ? Args.Num("bug-auto-at", 5) : -1;
         boxShotPath = Args.Get("bug-box-shot");
         if (boxShotPath != null) boxShotAt = 3;
+        shotsDir = Args.Get("bug-box-shots");
+        shotsZone = Args.Get("bug-box-zone");
+        shotsFresh = Args.Has("bug-box-fresh");
     }
+
+    // --bug-box-shots <dir> [--bug-box-zone <zone>] [--bug-box-fresh]
+    string? shotsDir, shotsZone;
+    bool shotsFresh;
+    int shotsStep;
+    double shotsAt;
 
     public override void _ExitTree()
     {
@@ -149,7 +158,7 @@ public partial class BugReporter : CanvasLayer
     {
         prevPaused = GetTree().Paused;
         GetTree().Paused = true;
-        askName = tester.Trim().Length == 0;
+        askName = tester.Trim().Length == 0 || shotsFresh;
         Build();
     }
 
@@ -310,7 +319,7 @@ public partial class BugReporter : CanvasLayer
     {
         if (!Valid()) return;
         string title = titleEdit!.Text.Trim(), desc = descEdit!.Text.Trim();
-        if (nameEdit != null) { tester = nameEdit.Text.Trim(); WritePrefs(tester); }
+        if (nameEdit != null) { tester = nameEdit.Text.Trim(); if (!shotsFresh) WritePrefs(tester); }
         var img = shot; var cl = clip;
         var r = Gather(title, desc, cl);
         string root = ReportsDir();
@@ -442,6 +451,49 @@ public partial class BugReporter : CanvasLayer
             titleEdit!.Text = "Autopilot proof report";
             descEdit!.Text = "made by --bug-auto-after";
             Send(true);
+        }
+        // --bug-box-shots: the box's six states in one run (a first, b details, c Esc once, e toast, f pause menu;
+        // d, the box over play, is b and c shot in the --bug-box-zone zone). Real time: the tree is paused, this node is not.
+        if (shotsDir != null && (shotsStep > 0 || (zid == shotsZone && clock - zoneSince >= 20) || (shotsZone == null && clock >= 3)) && clock >= shotsAt)
+        {
+            void Shot(string n) { GetViewport().GetTexture().GetImage().SavePng(Path.Combine(shotsDir, n + ".png")); }
+            shotsAt = clock + 0.7;
+            switch (shotsStep++)
+            {
+                case 0:   // opened fresh, empty, the first field focused
+                    Directory.CreateDirectory(shotsDir);
+                    OpenFresh();
+                    (nameEdit ?? titleEdit)!.GrabFocus();
+                    break;
+                case 1:   // a; then name, title and three lines typed, the details field focused, caret at the end
+                    Shot("a_first_empty");
+                    if (nameEdit != null) nameEdit.Text = "Lead";
+                    titleEdit!.Text = "The sword vanishes after the second dodge";
+                    descEdit!.Text = "I was in the den.\nI dodged twice.\nThe sword was gone.";
+                    descEdit.GrabFocus();
+                    descEdit.SetCaretLine(2); descEdit.SetCaretColumn(descEdit.GetLine(2).Length);
+                    sendBtn!.Disabled = false; sendBtn.Modulate = Colors.White;
+                    break;
+                case 2:   // b; then Esc as the player presses it
+                    Shot("b_details_focus");
+                    _Input(new InputEventKey { Keycode = Key.Escape, Pressed = true });
+                    break;
+                case 3:   // c; then Send for real (the toast comes on the next frame)
+                    Shot("c_esc_once");
+                    Send(true);
+                    shotsAt = clock + 0.8;
+                    break;
+                case 4:   // e (about 0.6 s after the toast); then the pause menu as Esc in play opens it
+                    Shot("e_toast");
+                    g.Open("pause");
+                    break;
+                default:  // f; closed again
+                    Shot("f_pause_menu");
+                    g.CloseOverlay();
+                    GD.Print($"bugreport: box shots {shotsDir}");
+                    shotsDir = null;
+                    break;
+            }
         }
         if (boxShotPath != null && boxShotAt >= 0 && clock >= boxShotAt)
         {
