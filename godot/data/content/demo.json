@@ -1,0 +1,54 @@
+{
+  "about": "The demo flavor's cuts (logic/Core/Demo.cs; the owner 18 Nov 2026: 'a very straightforward demo getting to town and then the dungeon'; no arena survivor mode, no story). Read only when the build has the feature 'demo' (export preset 'Windows Demo') or a dev run passes --demo. Every entry is one guard at one choke point: empty a list or set a switch false to bring that thing back; nothing here touches the full game. A trailing * matches a prefix.",
+  "hide_interactables": [
+    "talk:*", "door:*", "board", "warehouse", "burial", "mother_grave", "garden", "maps", "gate:north", "gate:south",
+    "wreck", "ruts", "carcass", "sample", "root*", "pipe", "greymuzzle", "redcowl", "cage*", "strongbox", "crates_*", "pump", "charge",
+    "snib", "survivor", "vault*", "circlet", "petal*", "night:*", "scar:*", "enter_roost"
+  ],
+  "hide_cinematics": ["*"],
+  "hide_storybooks": ["*"],
+  "hide_talks": ["*"],
+  "hide_goals": ["table"],
+  "goals": [
+    {
+      "id": "demo_road",
+      "zone": "waystation",
+      "when": { "fact": "prologue.done", "eq": true },
+      "pin": "gate:east",
+      "title": "The Old Road",
+      "steps": [
+        { "text": "Take the Old Road out of the east gate, into Thornhollow Verge" },
+        { "text": "The Den under Wolf Hollow lies beyond", "optional": true }
+      ],
+      "label": "The Old Road",
+      "glyph": "boot",
+      "color": "#e8c070",
+      "edge": true,
+      "first": true,
+      "near": 4
+    },
+    {
+      "id": "demo_den",
+      "zone": "verge",
+      "pin": "enter_hollow",
+      "title": "The Den under Wolf Hollow",
+      "steps": [
+        { "text": "Find the Den under Wolf Hollow and clear it" },
+        { "text": "The den is different every time you go down", "optional": true }
+      ],
+      "label": "The Den",
+      "glyph": "arch",
+      "color": "#e8c070",
+      "edge": true,
+      "first": true,
+      "near": 4
+    }
+  ],
+  "dungeons": ["hollow"],
+  "freeze_clock": true,
+  "no_arenas": true,
+  "no_map_table": true,
+  "no_opening_story": true,
+  "hide_male": true,
+  "no_dev_keys": true
+}

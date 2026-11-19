@@ -77,6 +77,8 @@ public partial class Game
         if (scene == null || Mode != "play") return;
         // (bd-ui2) post:ID: a lamp-post's menu (Shots' --open ID@T comes here, not through the tour's own open).
         if (kind.StartsWith("post:")) { OpenPost(kind[5..].Split('@')[0]); return; }
+        // (the demo has no Wayfinder's table)
+        if (kind is "maps" or "atlas" && Core.Demo.NoMapTable) return;
         Overlay o = kind switch
         {
             "inventory" => new InventoryScreen(this),
@@ -390,6 +392,8 @@ public partial class Game
 
     public void Talk(string id)
     {
+        // (the demo: no story conversation opens; data/content/demo.json hide_talks)
+        if (Core.Demo.HidesTalk(id)) { GD.Print($"demo: talk {id} not opened"); return; }
         var convo = SurvivorUnchained.World.Dialogue.Find(id);
         if (convo == null || scene == null) return;
         var r = new DialogueRunner(convo, Journey.Ctx);

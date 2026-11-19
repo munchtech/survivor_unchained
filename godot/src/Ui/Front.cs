@@ -568,6 +568,8 @@ public partial class CreateScreen : Overlay
         left.AddChild(woman);
         woman.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         him.CustomMinimumSize = new Vector2(w, 0);
+        // (the demo: the male hero is untested, so not even his greyed tab shows; she stands alone, centred)
+        if (Core.Demo.HideMale) { him.QueueFree(); left.CustomMinimumSize = Vector2.Zero; var only = Style.H(0, left); only.Alignment = BoxContainer.AlignmentMode.Center; return only; }
         var row = Style.H(40, left, him);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         return row;
