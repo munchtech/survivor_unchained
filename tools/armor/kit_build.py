@@ -718,6 +718,8 @@ def dome(dm, pol, phis, psis, edge_phi, r, base):
     """A cup's designed dome: an ellipsoid on the cup's axis (axes along a, e1 up, e2 out; its centre on the axis,
     dropped along e1 by dm.drop: a full lower pole), fitted to her skin + clear inside the outline, lifted to clear
     it everywhere there (+ dm.full), eased back to her offset (base) over the outline's last part (u0..1)."""
+    if dm.get("mode") == "hull":
+        return dome_hull(dm, phis, psis, edge_phi, base)
     from scipy.optimize import least_squares
     PH, PS = np.meshgrid(phis, psis, indexing="ij")
     D = pol.dirs(PH, PS)
@@ -745,6 +747,65 @@ def dome(dm, pol, phis, psis, edge_phi, r, base):
     print("dome", np.round(p * 1000, 1).tolist(), "lift over her offset mm: p50 %.1f max %.1f" %
           (np.median((out - base)[fit]) * 1000, (out - base)[fit].max() * 1000))
     return np.where(np.isfinite(out), out, base)
+
+
+def dome_hull(dm, phis, psis, edge_phi, base):
+    """(kit-cups, 18 Nov; cup.dome "mode": "hull", body B) A cup's dome from HER worn shape, made convex and fuller.
+    The ellipsoid dome (A's design) on B's push-up hung ~28 mm under her lower pole and the ease back to her offset
+    pinched it in again: an S-bend on the lower spokes (a pouch and a crease across each cup) and lumps where her
+    skin rose over the ellipsoid. Here: her offset (base) + dm.lift (full at the apex, 0 at the rim: 1 - u^2); on each
+    spoke the convex hull, in the spoke's plane from the polar centre, of that and the rim point (her offset at the
+    edge): no S-bend, no fold, the edge stays on her; dm.iters rounds of smoothing round the cup (dm.psi_sm spokes,
+    at a fixed fraction u of each spoke) then the hull again; a last smoothing along and round (dm.u_sm of 240 steps
+    in u, the rim's last 3% kept), never under her offset."""
+    from scipy.ndimage import gaussian_filter, gaussian_filter1d
+    u = phis[:, None] / edge_phi[None, :]
+    ug = np.linspace(0, 1, 241)
+
+    def hull(cand):
+        out = base.copy()
+        for j in range(len(psis)):
+            h = spoke_hull(phis, cand[:, j], edge_phi[j], float(np.interp(edge_phi[j], phis, base[:, j])))
+            out[np.isfinite(h), j] = h[np.isfinite(h)]
+        return out
+
+    def to_u(F):
+        return np.stack([np.interp(ug * edge_phi[j], phis, F[:, j]) for j in range(len(psis))], 1)
+
+    def from_u(F, G, floor):
+        F = F.copy()
+        for j in range(len(psis)):
+            m = phis <= edge_phi[j]
+            F[m, j] = np.maximum(np.interp(phis[m] / edge_phi[j], ug, G[:, j]), floor[m, j])
+        return F
+
+    out = hull(base + dm["lift"] * np.clip(1 - u ** 2, 0, 1))
+    for _ in range(dm["iters"]):
+        out = hull(from_u(out, gaussian_filter1d(to_u(out), dm["psi_sm"], axis=1, mode="wrap"), base))
+    G = to_u(out)
+    w = np.clip((1 - ug) / 0.03, 0, 1)[:, None]
+    G = gaussian_filter(G, (dm["u_sm"], dm["psi_sm"]), mode=("nearest", "wrap")) * w + G * (1 - w)
+    out = from_u(out, G, base)
+    d = (out - base)[(u <= 1) & np.isfinite(base)]
+    print("dome hull: over her offset mm p50 %.1f max %.1f" % (np.median(d) * 1000, d.max() * 1000))
+    return np.where(np.isfinite(out), out, base)
+
+
+def spoke_hull(phis, R, edge, r_rim):
+    """r(phi) on [0, edge] (nan past it): the exit radius of the convex hull of the origin, the points (phi_i, R_i)
+    for phi_i < edge and the rim point (edge, r_rim), in the spoke's plane."""
+    from scipy.spatial import ConvexHull
+    m = phis < edge - 1e-6
+    a = np.radians(np.r_[phis[m], edge])
+    rr = np.r_[R[m], r_rim]
+    h = ConvexHull(np.vstack([[0.0, 0.0], np.c_[rr * np.sin(a), rr * np.cos(a)]]))
+    q = phis <= edge + 1e-9
+    dq = np.c_[np.sin(np.radians(phis[q])), np.cos(np.radians(phis[q]))]
+    nd = dq @ h.equations[:, :2].T
+    t = np.where(nd > 1e-9, -h.equations[:, 2][None, :] / np.where(nd > 1e-9, nd, 1.0), np.inf).min(1)
+    out = np.full(len(phis), np.nan)
+    out[q] = t
+    return out
 
 
 def shell_normals(pol, fr, PH, PS):
