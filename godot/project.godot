@@ -398,6 +398,42 @@ pal_vk1={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+pal_leafa0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafa1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafa2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafb0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafb1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafb2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafm={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leafn={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_embera={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

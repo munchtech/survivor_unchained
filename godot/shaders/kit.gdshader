@@ -1092,7 +1092,8 @@ void fragment() {
 		// (lane J: the world palette, leaf class; lead 2: a spray facing the sky climbs the ramp, so a crown's tips go gold and
 		// its depths stay crimson, as the reference's maples, on top of each tree's own place on the ramp)
 		float pal_tip = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y, -1.0, 1.0);
-		ALBEDO = pal_leaf(ALBEDO, v_fwpos, (fract(v_jit * 3.17 + 0.5) * 2.0 - 1.0) * 1.4 + pal_tip * 0.9);
+		// (lead 3: each crown on its own ramp, crimson, orange or gold, a second hash its place on it; the leaves by the lens darker)
+		ALBEDO = pal_leaf3(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5), fract(v_jit * 11.13 + 0.29), pal_tip) * pal_leaf_near(length(VERTEX));
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler

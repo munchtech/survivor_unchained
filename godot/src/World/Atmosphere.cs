@@ -311,6 +311,15 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("pal_ember", on ? new Vector4((float)pal![72], (float)pal[73], (float)pal[74], (float)pal[75]) : Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("pal_vk0", on ? new Vector4((float)pal![76], (float)pal[77], (float)pal[78], (float)pal[79]) : Vector4.Zero);   // (lead 2: each class its value keep)
         RenderingServer.GlobalShaderParameterSet("pal_vk1", on ? new Vector4((float)pal![80], (float)pal[81], 0, 0) : Vector4.Zero);
+        // (lead 3) the leaf class's two more crown ramps, their shares and shifts, the near darkening; her pool's own ground
+        bool more = on && pal!.Length >= SurvivorUnchained.Look.Palettes.Size;
+        Vector4 At(int o) => more ? new Vector4((float)pal![o], (float)pal[o + 1], (float)pal[o + 2], (float)pal[o + 3]) : Vector4.Zero;
+        for (int a = 0; a < 2; a++)
+            for (int k = 0; k < 3; k++)
+                RenderingServer.GlobalShaderParameterSet($"pal_leaf{(a == 0 ? "a" : "b")}{k}", At(SurvivorUnchained.Look.Palettes.LeafAltAt + a * 12 + k * 4));
+        RenderingServer.GlobalShaderParameterSet("pal_leafm", more ? At(SurvivorUnchained.Look.Palettes.LeafMixAt) : new Vector4(0, 0, 0.42f, 0.27f));
+        RenderingServer.GlobalShaderParameterSet("pal_leafn", At(SurvivorUnchained.Look.Palettes.LeafMixAt + 4));
+        RenderingServer.GlobalShaderParameterSet("pal_embera", At(SurvivorUnchained.Look.Palettes.EmberAlbedoAt));
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

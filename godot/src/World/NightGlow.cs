@@ -35,6 +35,14 @@ public partial class NightGlow : Node3D
         var caps = new SurfaceTool(); caps.Begin(Mesh.PrimitiveType.Triangles);
         var alts = new SurfaceTool(); alts.Begin(Mesh.PrimitiveType.Triangles);
         var stems = new SurfaceTool(); stems.Begin(Mesh.PrimitiveType.Triangles);
+        // (lead 3, judge r1 fix 3) a halo a cluster, in its source's colour (glow_halo.gdshader; "halo" [radius m, strength])
+        var halos = new SurfaceTool(); halos.Begin(Mesh.PrimitiveType.Triangles);
+        var haloAlts = new SurfaceTool(); haloAlts.Begin(Mesh.PrimitiveType.Triangles);
+        void Halo(SurfaceTool st, Vector3 c, float rad)
+        {
+            foreach (var (u, v) in new[] { (0f, 0f), (1f, 0f), (1f, 1f), (0f, 0f), (1f, 1f), (0f, 1f) })
+            { st.SetUV(new Vector2(u, v)); st.SetUV2(new Vector2(rad, 0)); st.AddVertex(c); }
+        }
         int clusters = 0, feet = 0, mush = 0, lit = 0, onPath = 0, nAlt = 0;
         // One cluster at (cx, cz), seeded by (sx, sz): its mushrooms, and a light on lightShare of them.
         void Cluster(float sx, float sz, float cx, float cz, double lightShare)
@@ -44,6 +52,7 @@ public partial class NightGlow : Node3D
             var into = alt ? alts : caps;
             int n = g.CapsMin + (int)(Hash(sx, sz, 4) * (g.CapsMax - g.CapsMin + 1));
             float cy = (float)z.HeightAt(cx, cz);
+            if (g.HaloRadius > 0) Halo(alt ? haloAlts : halos, new Vector3(cx, cy + 0.18f, cz), (float)(g.HaloRadius * (0.8 + 0.4 * Hash(sx, sz, 9))));
             for (int q = 0; q < n; q++)
             {
                 float qa = Hash(sx, sz, 10 + q) * Mathf.Tau, qd = Mathf.Sqrt(Hash(sx, sz, 30 + q)) * 0.35f;
@@ -122,6 +131,16 @@ public partial class NightGlow : Node3D
         var sm = new ShaderMaterial { Shader = shader }; sm.SetShaderParameter("stem_col", Hex(g.Stem)); sm.SetShaderParameter("is_stem", 1f);
         Surface(stems, sm);
         root.AddChild(new MeshInstance3D { Name = "GlowCaps", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        if (g.HaloRadius > 0)
+        {
+            var hmesh = new ArrayMesh();
+            var hs = GD.Load<Shader>("res://shaders/glow_halo.gdshader");
+            void HSurface(SurfaceTool st, string col) { int before = hmesh.GetSurfaceCount(); st.Commit(hmesh); if (hmesh.GetSurfaceCount() > before) { var m = new ShaderMaterial { Shader = hs }; m.SetShaderParameter("halo_col", Hex(col)); m.SetShaderParameter("halo_k", (float)g.HaloK); hmesh.SurfaceSetMaterial(before, m); } }
+            HSurface(halos, g.Cap);
+            if (nAlt > 0) HSurface(haloAlts, g.AltCap);
+            // (the quads stand at the cluster's point; their reach is the vertex shader's: a box big enough that none is culled)
+            root.AddChild(new MeshInstance3D { Name = "GlowHalos", Mesh = hmesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, ExtraCullMargin = 4f });
+        }
         root.Visible = false;
         GD.Print($"NightGlow {z.Id}: {clusters} clusters ({onPath} on paths, {nAlt} alt), {lit} lights, {mush} mushrooms from {feet} feet");
         return root;

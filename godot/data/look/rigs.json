@@ -84,7 +84,9 @@
       },
       "grade": "night",
       "exposure": 1.6,
-      "ember": 3.0, "ember_color": "#ffd09a"
+      "ember": 3.0, "ember_color": "#ffa848",
+      "ember_pool": [1.0, 0.3, 0, 0.6, 255, 150, 40, 0.35, 0.58, 255, 148, 40, 0.525, 0.45, 255, 140, 36, 0.7, 0.31, 255, 128, 34, 0.875, 0.22, 255, 118, 40, 1.05, 0.165, 250, 108, 60, 1.225, 0.135, 240, 100, 90, 1.4, 0.12, 225, 100, 120, 1.75, 0.085, 195, 110, 150, 2.1, 0.03, 165, 120, 190, 2.38, 0, 165, 120, 190],
+      "ember_give": [1.0, 0.9, 1.05, 2.28]
     },
     "arena_night": {
    "ember_pool": [0, 0, 0, 1, 255, 168, 52, 0.36, 0.95, 255, 168, 52, 0.54, 0.86, 255, 162, 48, 0.9, 0.7, 255, 146, 38, 1.26, 0.55, 255, 142, 36, 1.62, 0.36, 255, 122, 30, 1.98, 0.235, 255, 100, 30, 2.34, 0.135, 255, 80, 38, 2.7, 0.082, 255, 62, 60, 3.12, 0.05, 255, 54, 92, 3.64, 0.024, 235, 54, 120, 4.23, 0, 235, 54, 120],
@@ -328,23 +330,23 @@
     "_what": "(lane J art-color, 19 Nov) The world's colour per time (logic/Look/Palettes.cs): each class a ramp dark, mid, lit (sRGB) over the albedo's own value (the square root of its linear luminance, range lo-hi), taken by amount. FROM the owner's day and night reference (owner_ref_night_day_colors_19nov.webp): day autumn reds, oranges and golds, a warm sand path, warm grey stone; night indigo-violet ground, violet and teal foliage, blue-violet stone. These are albedos, not the frame: the rig's light colours them after.",
     "wild_day": {
       "value": 0.8,
-      "leaf": {"ramp": ["#3a0608", "#c0300e", "#f0b020"], "amount": 1.0, "range": [0.12, 0.48]},
+      "leaf": {"ramp": ["#3a0a08", "#d0480e", "#f0b020"], "alt": [["#2a0410", "#a8141c", "#e07a18"], ["#4a1a06", "#e0900e", "#f8c838"]], "mix": [0.40, 0.25, 0.14, 0.27], "near": [0.65, 11, 20], "amount": 1.0, "range": [0.12, 0.48]},
       "grass": {"ramp": ["#7a3a0c", "#d88a1c", "#ffd040"], "amount": 0.9, "range": [0.15, 0.55]},
-      "ground": {"ramp": ["#3a2028", "#8a6a28", "#b89a40"], "amount": 0.85, "value": 0.4, "range": [0.15, 0.55]},
-      "path": {"ramp": ["#7a4e2e", "#a87a48", "#c89a62"], "amount": 0.9, "value": 0.3, "range": [0.15, 0.55]},
+      "ground": {"ramp": ["#3a1c24", "#9a6a18", "#c09a38"], "amount": 0.85, "value": 0.4, "range": [0.15, 0.55]},
+      "path": {"ramp": ["#8a5c36", "#b88a58", "#d8aa72"], "amount": 0.9, "value": 0.3, "range": [0.15, 0.55]},
       "stone": {"ramp": ["#3e3634", "#7c7466", "#b0a68e"], "amount": 0.8, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#2e160e", "#5a2e1a", "#844a2a"], "amount": 0.7, "range": [0.15, 0.55]}
     },
     "wild_night": {
       "value": 0.4,
-      "leaf": {"ramp": ["#2c1260", "#7a3ccc", "#38c4c0"], "amount": 0.9, "range": [0.15, 0.55]},
+      "leaf": {"ramp": ["#2c1260", "#6a34b8", "#9a70e8"], "alt": [["#0c2440", "#1a6a88", "#40c0d8"], ["#1c1850", "#3c48b0", "#6a90e8"]], "mix": [0.45, 0.10, 0.2, 0.27], "near": [0.4, 11, 20], "amount": 0.9, "range": [0.15, 0.55]},
       "grass": {"ramp": ["#122a4c", "#1c6670", "#3cb8a6"], "amount": 0.85, "range": [0.15, 0.55]},
       "ground": {"ramp": ["#140f26", "#221c40", "#342e5c"], "amount": 0.85, "range": [0.15, 0.55]},
-      "path": {"ramp": ["#3a3c70", "#6064aa", "#8c90d8"], "amount": 0.95, "value": 0.1, "range": [0.15, 0.55]},
+      "path": {"ramp": ["#363c64", "#565e94", "#7a84bc"], "amount": 0.95, "value": 0.1, "range": [0.15, 0.55]},
       "stone": {"ramp": ["#24264e", "#3c3e78", "#5e60a8"], "amount": 0.8, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#26101e", "#40202e", "#5c3040"], "amount": 0.75, "range": [0.15, 0.55]},
-      "ember": {"near": 1.2, "far": 3.0, "keep": 0.45},
-      "glow": {"cap": "#8ff4ff", "stem": "#5fd0e0", "light": "#30ffd8", "energy": 8.0, "range": 5.0, "share": 0.45, "max": 700, "caps": [2, 5], "size": [0.12, 0.3], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [2.8, 4.4], "path_light": 0.75, "wood_light": 0.15, "alt_cap": "#dca8ff", "alt_light": "#a060ff", "alt_share": 0.25}
+      "ember": {"near": 0.8, "far": 2.1, "keep": 1.0, "albedo": "#b09070"},
+      "glow": {"cap": "#8ff4ff", "stem": "#5fd0e0", "light": "#00f0ff", "energy": 8.0, "range": 5.0, "share": 0.45, "max": 700, "caps": [2, 5], "size": [0.12, 0.3], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [1.6, 2.4], "path_light": 0.75, "wood_light": 0.15, "alt_cap": "#dca8ff", "alt_light": "#a060ff", "alt_share": 0.25, "halo": [0.9, 0.55]}
     }
   },
   "crowns": {

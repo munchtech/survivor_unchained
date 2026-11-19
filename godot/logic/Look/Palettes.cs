@@ -18,7 +18,7 @@ namespace SurvivorUnchained.Look;
 /// them and on "wood_light" of the woods' ones; "alt" a second source (cap, light colours) on "alt_share" of the clusters.)</summary>
 public sealed record PaletteGlow(string Cap, string Stem, string Light, double Energy, double Range, double Share, int Max, int CapsMin, int CapsMax, double SizeMin, double SizeMax,
     string[]? Paths = null, double Step = 4, double SideMin = 2.8, double SideMax = 4.4, double PathLight = 0.5, double WoodLight = 0.25,
-    string AltCap = "#e8c8ff", string AltLight = "#b070ff", double AltShare = 0);
+    string AltCap = "#e8c8ff", string AltLight = "#b070ff", double AltShare = 0, double HaloRadius = 0, double HaloK = 0.5);   // (lead 3: "halo" [radius m, strength], glow_halo.gdshader)
 
 public static class Palettes
 {
@@ -32,7 +32,8 @@ public static class Palettes
         var side = g.TryGetProperty("side", out var sd) ? (sd[0].GetDouble(), sd[1].GetDouble()) : (2.8, 4.4);
         string[]? paths = g.TryGetProperty("paths", out var ps) ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(ps.EnumerateArray(), x => x.GetString()!)) : null;
         return new PaletteGlow(S("cap", "#bff8ff"), S("stem", "#5fd0e0"), S("light", "#55e0ff"), D("energy", 1.6), D("range", 3.2), D("share", 0.45), (int)D("max", 40), caps.Item1, caps.Item2, size.Item1, size.Item2,
-            paths, D("step", 4), side.Item1, side.Item2, D("path_light", 0.5), D("wood_light", 0.25), S("alt_cap", "#e8c8ff"), S("alt_light", "#b070ff"), D("alt_share", 0));
+            paths, D("step", 4), side.Item1, side.Item2, D("path_light", 0.5), D("wood_light", 0.25), S("alt_cap", "#e8c8ff"), S("alt_light", "#b070ff"), D("alt_share", 0),
+            g.TryGetProperty("halo", out var hl) ? hl[0].GetDouble() : 0, g.TryGetProperty("halo", out var hk) && hk.GetArrayLength() > 1 ? hk[1].GetDouble() : 0.5);
     }
 
     /// <summary>The classes in their order (the shader's PAL_* index).</summary>
@@ -40,7 +41,17 @@ public static class Palettes
     public const int Row = 12;
     public const int EmberAt = 6 * Row;   // (ember: near m, far m, keep, 0: within near m of her light the palette is taken back by keep, none again at far m)
     public const int ValueAt = EmberAt + 4;   // (lead 2: each class its own "value", default the palette's: [leaf, grass, ground, path], [stone, bark, 0, 0])
-    public static int Size => Classes.Length * Row + 12;
+    // (lead 3, judge r1 fix 1: one ramp and a shift put 94% of the day's leaves at h 30-55; the reference's crowns are each
+    // crimson, orange or gold) the leaf class's two more ramps, a crown's own: "alt" [[3 colours], [3 colours]] (absent: the
+    // leaf ramp again), and "mix" [share of crowns on alt 1, share on alt 2, per-tree shift, sky-facing tip shift] (absent:
+    // 0, 0 and lead 2's one-ramp shifts, 0.42 and 0.27); "near" [darken, from m, to m]: the leaves by the camera that much
+    // darker (1 - darken at the lens, none past to m), after the ramp, so the frame's edges hold the darkest masses.
+    public const int LeafAltAt = ValueAt + 8;
+    public const int LeafMixAt = LeafAltAt + 2 * Row;
+    // (lead 3, judge r1 fix 4: her pool kept the ground's own brown albedo, a mud core) "ember" "albedo": the ground her pool
+    // falls on, sRGB, taken by the keep in place of the albedo as built (absent: the albedo as built, as before).
+    public const int EmberAlbedoAt = LeafMixAt + 8;
+    public static int Size => EmberAlbedoAt + 4;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -66,6 +77,33 @@ public static class Palettes
             r[EmberAt] = em.TryGetProperty("near", out var n) ? n.GetDouble() : 0;
             r[EmberAt + 1] = em.TryGetProperty("far", out var f) ? f.GetDouble() : 0;
             r[EmberAt + 2] = em.TryGetProperty("keep", out var kp) ? kp.GetDouble() : 0;
+            if (em.TryGetProperty("albedo", out var ea))
+            {
+                var (R, G, B) = Atmospheres.Linear(ea.GetString()!);
+                r[EmberAlbedoAt] = R; r[EmberAlbedoAt + 1] = G; r[EmberAlbedoAt + 2] = B; r[EmberAlbedoAt + 3] = 1;
+            }
+        }
+        // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts
+        for (int a = 0; a < 2; a++)
+            for (int i = 0; i < Row; i++) r[LeafAltAt + a * Row + i] = r[i];
+        r[LeafMixAt + 2] = 0.42; r[LeafMixAt + 3] = 0.27;
+        if (e.TryGetProperty("leaf", out var lf))
+        {
+            if (lf.TryGetProperty("alt", out var alt))
+                for (int a = 0; a < Math.Min(2, alt.GetArrayLength()); a++)
+                {
+                    if (alt[a].GetArrayLength() != 3) throw new FormatException($"rigs.json palette {name}.leaf.alt[{a}]: needs 3 colours");
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var (R, G, B) = Atmospheres.Linear(alt[a][i].GetString()!);
+                        int o = LeafAltAt + a * Row + i * 4;
+                        r[o] = R; r[o + 1] = G; r[o + 2] = B;
+                    }
+                }
+            if (lf.TryGetProperty("mix", out var mx))
+                for (int i = 0; i < Math.Min(4, mx.GetArrayLength()); i++) r[LeafMixAt + i] = mx[i].GetDouble();
+            if (lf.TryGetProperty("near", out var nr))
+                for (int i = 0; i < Math.Min(3, nr.GetArrayLength()); i++) r[LeafMixAt + 4 + i] = nr[i].GetDouble();
         }
         // (value: 0 the ramp's own value, 1 the albedo's own luminance kept and only the ramp's hue and chroma taken, so the
         // lanes' tuned values hold and only the colour turns; saturated albedos at the sun's full value clip to white)
