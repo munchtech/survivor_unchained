@@ -75,6 +75,9 @@ public sealed class Slices
 
     /// <summary>Work in steps on a worker thread, paced by the main thread's frames: once a frame's share
     /// (PacedMs) is spent, the next step waits for the next frame.</summary>
+    /// <summary>Set once, at the game's quit (QuitPath.Settle): a paced worker stops at its next step.</summary>
+    public static volatile bool Quitting;
+
     public static void Paced(IEnumerable<object?> work)
     {
         long f = System.Threading.Interlocked.Read(ref Frame);
@@ -83,13 +86,14 @@ public sealed class Slices
         string last = "start";
         foreach (var s in work)
         {
+            if (Quitting) return;   // (quit-crash: the game is quitting; nothing more is built into the engine's teardown)
             if (s is Task t) t.GetAwaiter().GetResult();
             double sms = Stopwatch.GetElapsedTime(s0).TotalMilliseconds;
             if (sms > 10 && Perf.On) GD.Print($"perf ahead worker step at {Perf.Now:0.000} {sms:0.0} ms: {last} .. {s as string ?? s?.GetType().Name ?? "-"}");
             if (s is string label) last = label;
             s0 = Stopwatch.GetTimestamp();
             if (Stopwatch.GetElapsedTime(t0).TotalMilliseconds < PacedMs) continue;
-            while (System.Threading.Interlocked.Read(ref Frame) == f) System.Threading.Thread.Sleep(1);
+            while (System.Threading.Interlocked.Read(ref Frame) == f) { if (Quitting) return; System.Threading.Thread.Sleep(1); }
             f = System.Threading.Interlocked.Read(ref Frame);
             t0 = s0 = Stopwatch.GetTimestamp();
         }

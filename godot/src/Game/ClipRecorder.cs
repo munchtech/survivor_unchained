@@ -62,6 +62,8 @@ public partial class ClipRecorder : Node
     public override void _ExitTree()
     {
         work.CompleteAdding();
+        // (quit-crash) the encoder makes Godot Images: it ends its last frames here, not inside the engine's teardown
+        worker?.Join(1000);
         if (Instance == this) Instance = null;
     }
 

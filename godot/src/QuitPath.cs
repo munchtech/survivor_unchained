@@ -69,6 +69,46 @@ public partial class QuitPath : Node
         Request(GetTree(), 0, "window close");
     }
 
+    /// <summary>The app's teardown, whatever ended it (a request above, Godot's --quit-after, a second window close):
+    /// this node sits on the root and only leaves with the tree. See <see cref="Settle"/>.</summary>
+    public override void _ExitTree() => Settle();
+
+    static bool settled;
+
+    /// <summary>Longest the quit waits for the background work to end (under <see cref="QuitGuard.Ms"/>).</summary>
+    public const int DrainMs = 1500;
+
+    /// <summary>(quit-crash, 19 Nov) The exported build died at exit, about one quit in two (access violation on a
+    /// thread Godot's crash handler doesn't watch; .NET Runtime "unhandled exception"), inside the rendering server's
+    /// teardown: work still running on .NET worker threads (a place built ahead off the tree, textures decoded and
+    /// scenes loaded ahead) made and freed Godot objects while the servers were deleted under it. So, while every
+    /// server is alive: the paced builders stop at their next step (<see cref="Slices.Quitting"/>), the quit waits for
+    /// the thread pool to go idle (at most <see cref="DrainMs"/>), and the garbage those jobs left is finalized here,
+    /// on the live engine, not on the finalizer thread inside the teardown.</summary>
+    internal static void Settle()
+    {
+        if (settled) return;
+        settled = true;
+        try
+        {
+            Slices.Quitting = true;
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            int busy = Busy();
+            while (busy > 0 && clock.ElapsedMilliseconds < DrainMs) { System.Threading.Thread.Sleep(2); busy = Busy(); }
+            GC.Collect(); GC.WaitForPendingFinalizers();
+            GD.Print($"quit: background work {(busy == 0 ? "ended" : $"still running on {busy} thread(s)")} in {clock.ElapsedMilliseconds} ms, garbage finalized");
+        }
+        catch (Exception e) { GD.PushError($"quit: settle failed ({e.Message})"); }
+    }
+
+    /// <summary>The .NET thread pool's busy workers plus its queued items.</summary>
+    static int Busy()
+    {
+        System.Threading.ThreadPool.GetAvailableThreads(out int free, out _);
+        System.Threading.ThreadPool.GetMaxThreads(out int max, out _);
+        return max - free + (int)System.Threading.ThreadPool.PendingWorkItemCount;
+    }
+
     public override void _Process(double delta)
     {
         if (!requested)
