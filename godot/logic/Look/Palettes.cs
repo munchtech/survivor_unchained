@@ -44,6 +44,9 @@ public static class Palettes
             r[EmberAt + 1] = em.TryGetProperty("far", out var f) ? f.GetDouble() : 0;
             r[EmberAt + 2] = em.TryGetProperty("keep", out var kp) ? kp.GetDouble() : 0;
         }
+        // (value: 0 the ramp's own value, 1 the albedo's own luminance kept and only the ramp's hue and chroma taken, so the
+        // lanes' tuned values hold and only the colour turns; saturated albedos at the sun's full value clip to white)
+        r[EmberAt + 3] = e.TryGetProperty("value", out var vk) ? vk.GetDouble() : 0;
         return r;
     }
 

@@ -1089,7 +1089,7 @@ void fragment() {
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
 		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
-		ALBEDO = pal_leaf(ALBEDO, v_fwpos);   // (lane J: the world palette, leaf class)
+		ALBEDO = pal_leaf(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5) * 2.0 - 1.0);   // (lane J: the world palette, leaf class)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler

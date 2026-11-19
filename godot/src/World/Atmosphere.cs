@@ -306,7 +306,7 @@ public partial class Atmosphere : Node3D
                 int o = c * 12 + k * 4;
                 RenderingServer.GlobalShaderParameterSet($"pal_{PalClasses[c]}{k}", on ? new Vector4((float)pal![o], (float)pal[o + 1], (float)pal[o + 2], (float)pal[o + 3]) : Vector4.Zero);
             }
-        RenderingServer.GlobalShaderParameterSet("pal_ember", on ? new Vector4((float)pal![72], (float)pal[73], (float)pal[74], 0) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("pal_ember", on ? new Vector4((float)pal![72], (float)pal[73], (float)pal[74], (float)pal[75]) : Vector4.Zero);
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {
