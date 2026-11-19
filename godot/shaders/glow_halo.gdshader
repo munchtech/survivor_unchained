@@ -19,7 +19,7 @@ void vertex() {
 	v_seed = fract(sin(dot(VERTEX.xz, vec2(12.9898, 78.233))) * 43758.5453);
 	vec4 c = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
 	c.xy += v_q * UV2.x;
-	c.z += 0.2 + 0.9 * UV2.x;   // (toward the lens by about its radius: the ground nearer the lens below the cluster would cut its lower half)
+	c.z += 0.2 + 0.5 * UV2.x;   // (toward the lens by about its radius: the ground nearer the lens below the cluster would cut its lower half)
 	POSITION = PROJECTION_MATRIX * c;
 }
 

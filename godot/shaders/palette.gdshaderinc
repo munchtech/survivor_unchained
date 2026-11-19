@@ -72,7 +72,7 @@ vec3 pal_leaf(vec3 a, vec3 wp, float s) { return pal_ramp(a, pal_leaf0, pal_leaf
 float pal_near_w(float dist) { return pal_leafn.x <= 0.0 ? 0.0 : 1.0 - smoothstep(pal_leafn.y, max(pal_leafn.z, pal_leafn.y + 1e-3), dist); }
 vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float dist) {
 	float nw = pal_near_w(dist);
-	float sh = pal_leafm.z * (h2 * 2.0 - 1.0) + pal_leafm.w * tip - 0.35 * nw;
+	float sh = pal_leafm.z * (h2 * 2.0 - 1.0) + pal_leafm.w * tip - 0.2 * nw;
 	vec4 d = pal_leaf0, m = pal_leaf1, l = pal_leaf2;
 	if (h < pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(pal_leafa1.rgb, pal_leaf1.w); l = vec4(pal_leafa2.rgb, pal_leaf2.w); }
 	else if (h > 1.0 - pal_leafm.y) { d = vec4(pal_leafb0.rgb, pal_leaf0.w); m = vec4(pal_leafb1.rgb, pal_leaf1.w); l = vec4(pal_leafb2.rgb, pal_leaf2.w); }
