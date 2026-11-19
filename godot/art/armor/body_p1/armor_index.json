@@ -194,7 +194,7 @@
    "sol_corset.top.steel"
   ],
   "tuck": "armor_tuck/sol_corset.bin",
-  "tuck_count": 6418,
+  "tuck_count": 7134,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "hold": {
    "amount": 0.55,
@@ -203,9 +203,18 @@
   "file": "res://art/armor/sol_corset.gltf",
   "tier": 2,
   "rigid": true,
+  "tuck_law": {
+   "tuck_depth_mm": 22,
+   "tuck_back_mm": 24,
+   "tuck_full_mm": 30,
+   "tuck_zero_mm": 40,
+   "tuck_slope": 1.0,
+   "tuck_step": 1.0
+  },
   "source": "mesh",
   "body_glb": "e37f5a0c",
   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
-  "cover_count": 4423
+  "tuck_depth_mm": 22.0,
+  "cover_count": 4514
  }
 ]
