@@ -904,11 +904,12 @@
     "kit_bodice.top.steel"
    ],
    "tuck": "armor_tuck/kit_bodice.bin",
-   "tuck_count": 5058,
+   "tuck_count": 5089,
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
-    "squash": 0
+    "squash": 0,
+    "rest": "bind"
    },
    "file": "res://art/armor/body_p1/kit_bodice.gltf",
    "tier": 2,
@@ -919,7 +920,7 @@
    "fit": "ok",
    "native": true,
    "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
-   "cover_count": 5450
+   "cover_count": 5434
   },
   {
    "id": "kit_boots",

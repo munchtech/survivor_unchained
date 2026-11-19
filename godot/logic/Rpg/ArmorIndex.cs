@@ -25,6 +25,16 @@ public sealed class ArmorHold
     [JsonIgnore] public double LiftValue => Lift ?? SupportValue;
     [JsonIgnore] public double PressValue => Press ?? SupportValue;
     [JsonIgnore] public double FillValue => Fill ?? SupportValue;
+    /// <summary>Formed plate over what it holds: B's springs of its group are held at their worn rest (P1Springs.Held),
+    /// so its rigid parts ride her rigidly. Null: squash 0 says so (plate holds its shape: it moves, it never gives).</summary>
+    [JsonPropertyName("rigid")] public bool? Rigid { get; set; }
+    [JsonIgnore] public bool RigidValue => Rigid ?? Squash <= 0;
+    /// <summary>Where a rigid hold rests her springs, the pose the piece was made to measure on: "worn" (default: the worn
+    /// rest, tools/armor/worn_rest.py; gear_fit fits and unposes a bound top's plates there, Marionette's gearbuild fits
+    /// on its posed skin, "worn_pose") or "bind" (P1Springs.HeldAtBind: her breast bones at bind; a piece built on her
+    /// bind, tools/armor/kit_build.py her_a, whose steel carries her breast weights: kit_bodice).</summary>
+    [JsonPropertyName("rest")] public string? Rest { get; set; }
+    [JsonIgnore] public bool RestsAtBind => Rest == "bind";
 }
 
 /// <summary>One spring link of a piece (PieceSprings.Link): a bone from head to tail under its parent (a body bone or
