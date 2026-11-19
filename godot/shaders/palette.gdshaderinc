@@ -101,8 +101,10 @@ float pal_bands_px(float u, float nb) {
 vec3 pal_ramp2(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb, float uf, float fs) {
 	if (d.w <= 0.0 || k <= 0.0) return albedo;
 	float v = sqrt(max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 0.0));
-	float u0 = mix(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), uf, fs);
-	float u = fs > 0.0 ? pal_bands_px(u0, nb) : pal_bands(u0, nb);
+	if (fs < 0.0) v = mix(0.5 * (m.w + l.w), v, 0.55);   // (the albedo's texture speckle held to the middle band; the macro and dabs make the steps)
+	float u0 = mix(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), uf, max(fs, 0.0));
+	// (lane J lead 7: fs < 0, the one-pixel band step on the albedo's own value: the painted ground and path)
+	float u = fs != 0.0 ? pal_bands_px(u0, nb) : pal_bands(u0, nb);
 	if (nb >= 1.5) v = m.w + u * (l.w - m.w);   // (the value kept is the band's)
 	float t = clamp(u + shift, 0.0, 1.0);
 	vec3 r = t < 0.5 ? mix(d.rgb, m.rgb, t * 2.0) : mix(m.rgb, l.rgb, t * 2.0 - 1.0);
@@ -156,6 +158,8 @@ vec3 pal_ground(vec3 a) { return pal_ramp(a, pal_ground0, pal_ground1, pal_groun
 vec3 pal_ground(vec3 a, vec3 wp) { return pal_ramp(a, pal_ground0, pal_ground1, pal_ground2, pal_keep(wp), 0.0, pal_vk0.z, pal_band0.z); }
 vec3 pal_path(vec3 a) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, 1.0, 0.0, pal_vk0.w, pal_band0.w); }
 vec3 pal_path(vec3 a, vec3 wp) { return pal_ramp(a, pal_path0, pal_path1, pal_path2, pal_keep(wp), 0.0, pal_vk0.w, pal_band0.w); }
+vec3 pal_ground_px(vec3 a, vec3 wp) { return pal_ramp2(a, pal_ground0, pal_ground1, pal_ground2, pal_keep(wp), 0.0, pal_vk0.z, pal_band0.z, 0.0, -1.0); }
+vec3 pal_path_px(vec3 a, vec3 wp) { return pal_ramp2(a, pal_path0, pal_path1, pal_path2, pal_keep(wp), 0.0, pal_vk0.w, pal_band0.w, 0.0, -1.0); }
 vec3 pal_stone(vec3 a) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, 1.0, 0.0, pal_vk1.x, pal_band1.x); }
 vec3 pal_stone(vec3 a, vec3 wp) { return pal_ramp(a, pal_stone0, pal_stone1, pal_stone2, pal_keep(wp), 0.0, pal_vk1.x, pal_band1.x); }
 vec3 pal_bark(vec3 a) { return pal_ramp(a, pal_bark0, pal_bark1, pal_bark2, 1.0, 0.0, pal_vk1.y, pal_band1.y); }

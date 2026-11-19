@@ -1,0 +1,980 @@
+{
+ "_doc": [
+  "The Verge's own over godot/data/flora_species.json.",
+  "lane J lead 7: flagstones along the road's centreline (zone.json paths.VROAD, one causeway per 4 points, ~12 m): flat stepping pieces 0.5-0.75 scale (0.6-0.8 m), tops 6 cm over the ground, so the ink pass outlines them; about 1 in 1.2 m, a third left out."
+ ],
+ "causeways": [
+  {
+   "from": [
+    -150,
+    8
+   ],
+   "to": [
+    -138.77,
+    8.97
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 1,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -138.77,
+    8.97
+   ],
+   "to": [
+    -127.5,
+    9.09
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 5,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -127.5,
+    9.09
+   ],
+   "to": [
+    -116.22,
+    8.8
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 9,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -116.22,
+    8.8
+   ],
+   "to": [
+    -105,
+    10
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 13,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -105,
+    10
+   ],
+   "to": [
+    -94.07,
+    8.06
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 17,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -94.07,
+    8.06
+   ],
+   "to": [
+    -83.05,
+    6.93
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 21,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -83.05,
+    6.93
+   ],
+   "to": [
+    -72,
+    6
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 25,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -72,
+    6
+   ],
+   "to": [
+    -60.05,
+    7.65
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 29,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -60.05,
+    7.65
+   ],
+   "to": [
+    -48.79,
+    12.09
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 33,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -48.79,
+    12.09
+   ],
+   "to": [
+    -37.06,
+    13.85
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 37,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -37.06,
+    13.85
+   ],
+   "to": [
+    -25.59,
+    11.13
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 41,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -25.59,
+    11.13
+   ],
+   "to": [
+    -13.77,
+    11.1
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 45,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -13.77,
+    11.1
+   ],
+   "to": [
+    -2.59,
+    8.05
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 49,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    -2.59,
+    8.05
+   ],
+   "to": [
+    8.38,
+    4.6
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 53,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    8.38,
+    4.6
+   ],
+   "to": [
+    19.28,
+    0.94
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 57,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    19.28,
+    0.94
+   ],
+   "to": [
+    30.11,
+    -2.0
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 61,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    30.11,
+    -2.0
+   ],
+   "to": [
+    41.22,
+    -3.17
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 65,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    41.22,
+    -3.17
+   ],
+   "to": [
+    52,
+    -6
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 69,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    52,
+    -6
+   ],
+   "to": [
+    63.64,
+    -5.25
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 73,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    63.64,
+    -5.25
+   ],
+   "to": [
+    75.23,
+    -3.84
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 77,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    75.23,
+    -3.84
+   ],
+   "to": [
+    86.92,
+    -3.71
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 81,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    86.92,
+    -3.71
+   ],
+   "to": [
+    97.95,
+    0.24
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 85,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    97.95,
+    0.24
+   ],
+   "to": [
+    109.45,
+    2.22
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 89,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    109.45,
+    2.22
+   ],
+   "to": [
+    120.96,
+    3.99
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 93,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    120.96,
+    3.99
+   ],
+   "to": [
+    132.39,
+    7.09
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 97,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    132.39,
+    7.09
+   ],
+   "to": [
+    144.21,
+    7.02
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 101,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  },
+  {
+   "from": [
+    144.21,
+    7.02
+   ],
+   "to": [
+    150,
+    8
+   ],
+   "rows": [
+    0.0
+   ],
+   "step": 0.85,
+   "jitter": 0.4,
+   "skip": 0.3,
+   "scale": [
+    0.7,
+    1.0
+   ],
+   "species": "stepping",
+   "top": 0.75,
+   "above": [
+    0.0,
+    0.02
+   ],
+   "drop": [],
+   "dry": 100000,
+   "width": 1.0,
+   "seed": 105,
+   "step_var": 0.2,
+   "clear": 0.12,
+   "tilt": [
+    0,
+    3
+   ]
+  }
+ ]
+}

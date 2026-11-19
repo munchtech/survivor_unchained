@@ -271,6 +271,9 @@ vec2 g_uv(int i, vec3 p, vec3 n, vec3 px, vec3 py, out mat3 tbn, out vec2 dx, ou
 	return p.xz * g_scale[i];
 }
 
+// (lane J lead 7, painted ground) the palette's ground in bands: every blend below is a one-pixel edge (flat colour fields), the
+// macro value two levels, the dabs painted on; 0 bands: the smooth ground as before
+float cel_px(float x) { float e = 0.5 * max(fwidth(x), 1e-4); return smoothstep(-e, e, x); }
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
 // E6c: one layer of the river bed's loose stones, the nearest to p (m): a stone in a cell of 'cell' m by chance 'dens' (x0
@@ -388,6 +391,7 @@ void fragment() {
 	// The road's centre strip: sparse grass between the ruts.
 	float cen = smoothstep(0.84, 0.96, pm.r);
 	wd *= 1.0 - cen * crown_grass;
+	if (pal_band0.z > 0.5) { wd = cel_px(wd - 0.5); ws = cel_px(ws - 0.5); wb = cel_px(wb - 0.5); wm = cel_px(wm - 0.5); }
 	// (Where trodden earth meets grass the heights decide less, so the edge ramps instead of cutting on the maps' grain.)
 	float wedge = clamp(max(wd * (1.0 - wd), wm * (1.0 - wm)) * 4.0, 0.0, 1.0) * (1.0 - step(0.02, sp.g));
 	hdp += verge_soft * wedge;
@@ -396,6 +400,10 @@ void fragment() {
 	float leafy = smoothstep(0.38, 0.82, nL.g * 0.7 + nM.a * 0.3 + leaves - 0.5);
 	// Needles and leaves under every crown (GroundPaint's sky: 2-4 m round a trunk), ragged at their rim.
 	leafy = max(leafy, smoothstep(0.82, 0.42, ex4.r + (nF.b - 0.5) * 0.25));
+	if (pal_band0.z > 0.5) {   // (the fine noise left out: it cut the edge into 3-8 px specks, not flat fields)
+		leafy = smoothstep(0.38, 0.82, nL.g * 0.7 + nM.a * 0.3 + leaves - 0.5);
+		leafy = cel_px(max(leafy, smoothstep(0.82, 0.42, ex4.r)) - 0.5);
+	}
 	float gw[NL] = float[](1.0 - leafy, leafy, 0.0, 0.0, 0.0, 0.0, 0.0);
 	// Each overlay takes its share from everything under it.
 	for (int k = 0; k < NL; k++) gw[k] *= 1.0 - wd;
@@ -527,6 +535,7 @@ void fragment() {
 
 	// Macro: colour and value drift every 30-60 m, so a field is not one colour.
 	float mv = mix(1.0, 0.8 + 0.3 * nC.r + 0.08 * (nL.r - 0.5), macro_amt);
+	if (pal_band0.z > 0.5) mv = mix(1.0, 0.94 + 0.12 * cel_px(nC.r - 0.5), macro_amt);
 	albedo *= mv;
 	// (L1 W2 ground, mark 1: the meadow's photo-era tone layers are removed, not tuned: the dry/brown/lush tints, the
 	// clump multiply, meadow_val's 4-10 m value noise and the night tufts' darkening (E3/E9e, (c) inherited) multiplied
@@ -739,7 +748,29 @@ void fragment() {
 	// (lead 2: narrower, coordinator k19 "wide"; the rim on the step's outer side)
 	float pal_pe = smoothstep(0.64, 0.72, pm.r) * w_soft;
 	float pal_rim = smoothstep(0.52, 0.62, pm.r) * (1.0 - smoothstep(0.62, 0.68, pm.r)) * w_soft * step(0.001, pal_path0.w);
-	albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), pal_pe) * (1.0 - 0.45 * pal_rim);
+	if (pal_band0.z > 0.5) albedo = mix(pal_ground_px(albedo, w_pos), pal_path_px(albedo, w_pos), cel_px(pal_pe - 0.5)) * (1.0 - 0.45 * pal_rim);
+	else albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), pal_pe) * (1.0 - 0.45 * pal_rim);
+	// (lane J lead 7) painted dabs: a world cell of 0.35 m holds, half the time, one flat ellipse 3:1, a band lighter or darker,
+	// a pixel edge; on the path its long axis runs along the path (across the mask's gradient), elsewhere by hash
+	if (pal_band0.z > 0.5 && pal_ground0.w > 0.0) {
+		vec2 dq = w / 0.35;
+		vec2 dc = floor(dq);
+		vec2 dgr = vec2(textureLod(paint_mask, zuv + vec2(1.0 / zone_size, 0.0), 1.0).r - textureLod(paint_mask, zuv - vec2(1.0 / zone_size, 0.0), 1.0).r,
+				textureLod(paint_mask, zuv + vec2(0.0, 1.0 / zone_size), 1.0).r - textureLod(paint_mask, zuv - vec2(0.0, 1.0 / zone_size), 1.0).r);
+		float dgl = length(dgr);
+		float dh = hash12(dc + 7.7);
+		float dang = dh * 3.14159;
+		vec2 dax = vec2(cos(dang), sin(dang));
+		if (dgl > 1e-4) dax = mix(dax, vec2(-dgr.y, dgr.x) / dgl, smoothstep(1e-4, 4e-4, dgl) * smoothstep(0.2, 0.5, pm.r));
+		vec2 dd = (dq - dc - 0.5 - (vec2(hash12(dc + 1.3), hash12(dc + 9.1)) - 0.5) * 0.3) * 0.35;
+		vec2 dl = vec2(dot(dd, dax), dot(dd, vec2(-dax.y, dax.x)));
+		float drl = mix(0.07, 0.13, hash12(dc + 3.9));
+		float dsd = (length(vec2(dl.x / drl, dl.y / (drl / 3.0))) - 1.0) * drl / 3.0;
+		float dfw = max(fwidth(dsd), 1e-4);
+		float dcov = (1.0 - smoothstep(-dfw, dfw, dsd)) * step(hash12(dc + 5.1), 0.55);
+		float dsg = hash12(dc + 11.7) < 0.5 ? -1.0 : 1.0;
+		albedo *= 1.0 + dcov * dsg * 0.26 * (1.0 - w_setts);
+	}
 	albedo *= 1.0 + verge_lift * smoothstep(0.2, 0.5, pm.r) * (1.0 - smoothstep(0.78, 0.9, pm.r)) * (1.0 - smoothstep(0.05, 0.3, rut_w)) * w_soft;
 	albedo *= mix(1.0, 0.64, wet);
 	rough = mix(rough, 0.72, wet * 0.6);
@@ -826,7 +857,7 @@ void fragment() {
 		float on_rd = smoothstep(0.3, 0.7, pm.r) * (1.0 - w_setts);
 		float rutk = smoothstep(0.08, 0.45, rut);
 		albedo *= 1.0 + road_night * night * on_rd * (1.0 - 0.3 * rutk) * (0.75 + 0.5 * nM.r) * (1.0 + 0.4 * cen);
-		float near_rd = textureLod(paint_mask, zuv, verge_mip).r;
+		float near_rd = textureLod(paint_mask, zuv, pal_band0.z > 0.5 ? 1.0 : verge_mip).r;
 		float off_rd = (1.0 - smoothstep(0.12, 0.45, pm.r)) * (1.0 - w_setts);
 		float band = smoothstep(0.015, 0.1, near_rd);
 		float wood = 1.0 - smoothstep(0.35, 0.85, ex4.r);
