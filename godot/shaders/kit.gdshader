@@ -643,6 +643,9 @@ void vertex() {
 #ifdef OWN_ROCK
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
+	// (lane J K, judge r6 fix 2: a flush slab is the stone scaled flat; the engine's normal matrix assumes a uniform scale, so its
+	// sloped facets read as steep sides, black. The inverse transpose of the model's own 3 x 3.)
+	if (flag_amount > 0.0) v_wnrm = normalize(transpose(inverse(mat3(MODEL_MATRIX))) * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
 #ifdef KIT_STAND
 	v_org = MODEL_MATRIX[3].xz;
@@ -1390,6 +1393,9 @@ void fragment() {
 #endif
 	}
 #endif
+
+	// (lane J lead 8: painted light, glows light the world in hard steps: stones, bark, leaves, plants; facing rims)
+	EMISSION += ps_glow_light((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), ALBEDO);
 
 	// The Flare's drain and frost (flare_world.gdshaderinc).
 	if (flare_live()) {

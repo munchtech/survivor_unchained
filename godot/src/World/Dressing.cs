@@ -504,11 +504,11 @@ public static class Dressing
                     int v = (int)(H(k + 2) * n) % n;
                     if (v == last) v = (v + 1 + r) % n;
                     last = v;
-                    float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4));
+                    float s = Mathf.Lerp(scale.X, scale.Y, H(k + 3)), sy = s * Mathf.Lerp(0.9f, 1.1f, H(k + 4)) * F("flat", 1f);   // ('flat': the height's share of the width scale, a flush slab)
                     if (placed.Any(q => q.P.DistanceTo(p) < 0.35f * (q.S + s) + clear) || cl.NearProp(p, 0.35f * s)) { t += stagger >= 0f ? step : step * Mathf.Lerp(1f - stepVar, 1f + stepVar, H(k + 9)); i++; continue; }
                     placed.Add((p, s));
                     var ab2 = H(k * 7 + 5003) < low ? lowAbove : above;
-                    float topY = Mathf.Max(water + Mathf.Lerp(ab2.X, ab2.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + 0.06f);
+                    float topY = Mathf.Max(water + Mathf.Lerp(ab2.X, ab2.Y, H(k + 5)), z.HeightAt(p.X, p.Y) + F("min_above", 0.06f));
                     float ta = H(k + 6) * Mathf.Tau;
                     var basis = new Basis(new Vector3(Mathf.Cos(ta), 0, Mathf.Sin(ta)), Mathf.DegToRad(Mathf.Lerp(tilt.X, tilt.Y, H(k + 7))))
                         * new Basis(Vector3.Up, H(k + 8) * Mathf.Tau).Scaled(new Vector3(s, sy, s));

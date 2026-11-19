@@ -2,7 +2,8 @@
  "_doc": [
   "The Verge's own over godot/data/flora_species.json.",
   "lane J lead 7: flagstones along the road's centreline (zone.json paths.VROAD, one causeway per 4 points, ~12 m): flat stepping pieces 0.5-0.75 scale (0.6-0.8 m), tops 6 cm over the ground, so the ink pass outlines them; about 1 in 1.2 m, a third left out.",
-  "lane J art-color (19 Nov, judge r5 fix 6): flagstones are this zone's own 'stepping' (the species below: no water damp, cool tint or algae), 1.0-1.3 m slabs in two staggered rows 1.2 m apart filling the road's width, flat tops 6 cm over the ground."
+  "lane J art-color (19 Nov, judge r5 fix 6): flagstones are this zone's own 'stepping' (the species below: no water damp, cool tint or algae), 1.0-1.3 m slabs in two staggered rows 1.2 m apart filling the road's width, flat tops 6 cm over the ground.",
+  "lane J art-color (19 Nov, judge r6 fix 2): laid flush: 'flat' scales each slab's height (0.15 of its width scale), 'min_above' the top's least height over the ground (2.5 cm), wider 2.3-2.9, tilt under 1 deg."
  ],
  "causeways": [
   {
@@ -22,14 +23,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -39,9 +40,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -60,14 +63,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -77,9 +80,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -98,14 +103,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -115,9 +120,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -136,14 +143,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -153,9 +160,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -174,14 +183,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -191,9 +200,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -212,14 +223,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -229,9 +240,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -250,14 +263,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -267,9 +280,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -288,14 +303,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -305,9 +320,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -326,14 +343,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -343,9 +360,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -364,14 +383,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -381,9 +400,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -402,14 +423,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -419,9 +440,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -440,14 +463,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -457,9 +480,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -478,14 +503,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -495,9 +520,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -516,14 +543,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -533,9 +560,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -554,14 +583,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -571,9 +600,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -592,14 +623,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -609,9 +640,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -630,14 +663,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -647,9 +680,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -668,14 +703,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -685,9 +720,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -706,14 +743,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -723,9 +760,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -744,14 +783,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -761,9 +800,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -782,14 +823,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -799,9 +840,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -820,14 +863,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -837,9 +880,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -858,14 +903,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -875,9 +920,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -896,14 +943,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -913,9 +960,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -934,14 +983,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -951,9 +1000,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -972,14 +1023,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -989,9 +1040,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   },
   {
    "from": [
@@ -1010,14 +1063,14 @@
    "jitter": 0.12,
    "skip": 0.1,
    "scale": [
-    1.9,
-    2.4
+    2.3,
+    2.9
    ],
    "species": "stepping",
    "top": 0.75,
    "above": [
     0.0,
-    0.02
+    0.0
    ],
    "drop": [],
    "dry": 100000,
@@ -1027,9 +1080,11 @@
    "clear": 0.05,
    "tilt": [
     0,
-    1.5
+    0.8
    ],
-   "stagger": 0.5
+   "stagger": 0.5,
+   "flat": 0.15,
+   "min_above": 0.025
   }
  ],
  "species": {
