@@ -26,6 +26,7 @@ public sealed class Autopilot
     readonly HashSet<Act> pressed = new();
     int wp = 1;
     readonly Dictionary<string, double> lampTried = new();
+    double earlyDrinkAt = -9;
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
@@ -157,6 +158,9 @@ public sealed class Autopilot
         if (!piloted) { PressPlan.Run(b, planHands); return; }
         Pilot.UsesFlare = !g.HoldFlare;
         bool drinks = !noDrink && !g.TeachWaiting("draught");
+        // (19 Nov, the demo proof, the coordinator: the test tool fights the den better, the game unchanged: a draught by its
+        // key under 40% of her life, ahead of the Pilot's 33% (the balance harness's, left as it is), as a careful player drinks)
+        if (drinks && b.Player.Alive && b.Player.Hp < b.MaxHp * 0.4 && b.Time - earlyDrinkAt > 2) { earlyDrinkAt = b.Time; Controls.Instance.Press(Act.Draught); }
         if (pilotHuman != null) pilotHuman.Act(b, g.Journey, Move.X, Move.Z, pilotBoss, drinks);
         else Pilot.Act(b, g.Journey, Move.X, Move.Z, hands: planHands, drinks: drinks);
     }
