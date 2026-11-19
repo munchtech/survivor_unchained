@@ -1170,7 +1170,11 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
 		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
-		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.z);   // (lead 5: the trunk's own contour)
+		// (worker C: a thin limb or stake is all contour, a black stick: its inked share falls as its normal turns within a few pixels)
+		float thin_ = smoothstep(0.06, 0.2, length(fwidth(NORMAL)));
+		ALBEDO *= 1.0 + 0.6 * thin_;
+		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.z * (1.0 - 0.8 * thin_));   // (lead 5: the trunk's own contour)
+		EMISSION += ALBEDO * 0.9 * max(thin_, step(0.001, v_fade));   // (worker C: a snag's limbs and a kept stump keep their own colour in the shade, not a black silhouette)
 		ALBEDO = pal_lines(ALBEDO, v_fwpos * vec3(pal_line.y, pal_line.y * 0.18, pal_line.y));   // (lead 6: 2-3 lines down a trunk)
 		ALBEDO *= mix(0.6, 1.0, open_);
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
@@ -1194,7 +1198,7 @@ void fragment() {
 			cut *= 1.0 - 0.4 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
 			// (the bark's ring round it, darker, so the lid reads as the trunk's own cut, not a disc laid on it)
 			cut *= mix(1.0, 0.6, smoothstep(0.9, 1.0, rr / rw));
-			ALBEDO = cut;
+			ALBEDO = pal_bark(cut * 2.6, v_fwpos);   // (worker C: the sawn lid on the bark ramp, not raw dark wood: it read as a black pit in shade)
 			NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 		} else if (v_fade > 0.0 && canopy_fade.w > 1.5 && FRONT_FACING) {
 			// (Env 23) the kept stump's bark, its light and dark pulled halfway to the strip's local mean: at the play
