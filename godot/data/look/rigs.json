@@ -326,7 +326,7 @@
       "leaf_form": 1.0
     },
     "wild_night": {
-      "stroke": {"frame": [72, -95, 0.08, 1.25], "cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 0, "lift": 0.0, "inner": 0.03, "chroma": 1.1, "cmin": 0.06, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#f9b214", "edge": "#ca6e06", "amount": 1, "emit": 0.7}},
+      "stroke": {"frame": [72, -75, 0.08, 1.25], "cell": 0.36, "len": 0.30, "wid": 0.13, "bend": 0.12, "hue": 0, "lift": 0.0, "inner": 0.03, "chroma": 1.1, "cmin": 0.06, "cover": [0.6, 0.4, 0.75, 0.6, 0.65, 0.6], "hit": {"color": "#f9b214", "edge": "#ca6e06", "amount": 1, "emit": 0.7}},
       "value": 0.4,
       "leaf": {"ramp": ["#0a3a50", "#0898b8", "#48f0ff"], "alt": [["#3a1060", "#6a38b0", "#48f8e8"], ["#1c1850", "#3c48b0", "#6a90e8"]], "mix": [0.42, 0.1, 0.2, 0.27], "near": [0.3, 0.55, 0.95, 20], "amount": 0.9, "range": [0.15, 0.55]},
       "grass": {"ramp": ["#103c58", "#1a8aa8", "#40c8e0"], "amount": 0.85, "range": [0.15, 0.55]},
