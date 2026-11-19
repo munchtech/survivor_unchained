@@ -157,7 +157,7 @@ public sealed class Autopilot
     {
         if (!piloted) { PressPlan.Run(b, planHands); return; }
         Pilot.UsesFlare = !g.HoldFlare;
-        bool drinks = !noDrink && !g.TeachWaiting("draught");
+        bool drinks = !noDrink && !g.TeachWaiting("draught") && g.Journey.Draughts > 0; // (none left: not pressed every step, "No draughts left x318")
         // (19 Nov, the demo proof, the coordinator: the test tool fights the den better, the game unchanged: a draught by its
         // key under 40% of her life, ahead of the Pilot's 33% (the balance harness's, left as it is), as a careful player drinks)
         if (drinks && b.Player.Alive && b.Player.Hp < b.MaxHp * 0.4 && b.Time - earlyDrinkAt > 2) { earlyDrinkAt = b.Time; Controls.Instance.Press(Act.Draught); }

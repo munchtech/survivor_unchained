@@ -14,8 +14,10 @@ GODOT="${GODOT:-$("$ROOT/tools/godot/setup.sh")}"
 export GODOT_NUPKGS="$(dirname "$GODOT")/GodotSharp/Tools/nupkgs"
 # Godot's SDK packages ship with the engine: a package source for this
 # machine (the project asks nuget.org alone, so it builds anywhere, the
-# Godot editor on another computer included).
-dotnet nuget list source 2>/dev/null | grep -qF "$GODOT_NUPKGS" || dotnet nuget add source "$GODOT_NUPKGS" --name godot-sdk >/dev/null
+# Godot editor on another computer included). On Windows the dotnet CLI
+# refuses a forward-slash path as a source, and the packages come from the
+# local cache anyway: a source not added is not a failed export.
+dotnet nuget list source 2>/dev/null | grep -qF "$GODOT_NUPKGS" || dotnet nuget add source "$GODOT_NUPKGS" --name godot-sdk >/dev/null 2>&1 || true
 cd "$ROOT/godot"
 want="${1:-all}"
 build() {
