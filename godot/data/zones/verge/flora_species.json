@@ -1051,15 +1051,23 @@
    "shadow": false,
    "wind": 0,
    "shader": {
-    "moss_amount": 0.7,
+    "moss_amount": 0,
+    "lichen_amount": 0,
     "edge_light": 0.8,
     "cavity_dark": 0.35,
     "wet_share": 0,
     "top_damp": 0,
     "damp_gloss": 0,
-    "inst_val": 0.04,
+    "inst_val": 0.02,
     "cool_share": 0,
-    "algae": 0
+    "algae": 0,
+    "flag_amount": 1,
+    "flag_lit": "#7a89a5",
+    "flag_lit_n": "#d8d6ff",
+    "flag_shade_n": "#a09cd8",
+    "flag_shade": "#586382",
+    "flag_moss": "#a89030",
+    "flag_ink": "#1a0f1c"
    }
   }
  }

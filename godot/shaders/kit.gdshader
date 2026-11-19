@@ -179,6 +179,15 @@ uniform vec3 stone_a = vec3(1.0);
 uniform vec3 stone_b = vec3(1.0);
 uniform vec3 stone_c = vec3(1.0);
 uniform float algae = 0.0;
+// (lane J worker C: flagstones) flag_amount > 0: the stone's albedo is replaced by flat flag_lit grey (tops) / flag_shade (sides),
+// hard-edged flag_moss on the baked rims only, and flag_ink on the outermost rim: no soft blotches (facets, lines, palette moss, lichen)
+uniform float flag_amount = 0.0;
+uniform vec4 flag_lit : source_color = vec4(0.5, 0.48, 0.46, 1.0);
+uniform vec4 flag_shade : source_color = vec4(0.3, 0.28, 0.34, 1.0);
+uniform vec4 flag_lit_n : source_color = vec4(0.7, 0.7, 0.9, 1.0);
+uniform vec4 flag_shade_n : source_color = vec4(0.5, 0.5, 0.7, 1.0);
+uniform vec4 flag_moss : source_color = vec4(0.5, 0.4, 0.15, 1.0);
+uniform vec4 flag_ink : source_color = vec4(0.07, 0.04, 0.08, 1.0);
 uniform vec4 algae_color : source_color = vec4(0.22, 0.2, 0.11, 1.0);
 uniform float algae_w = 0.025;
 uniform float amb_occl = 1.0;
@@ -1292,7 +1301,13 @@ void fragment() {
 			col = pal_facets(col, v_wpos, bn, 0.9);
 			col = pal_lines_in(col, v_wpos * pal_line.x, c_nv / max(fwidth(c_nv), 1e-4));
 		}
-		if (pal_stonem.w > 0.0) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
+		if (flag_amount > 0.0) {
+			vec3 fc = mix(mix(flag_shade.rgb, flag_shade_n.rgb, flora_light.x), mix(flag_lit.rgb, flag_lit_n.rgb, flora_light.x), smoothstep(0.9, 0.93, wn.y));
+			fc = mix(fc, flag_moss.rgb, step(0.4, wn.y) * (1.0 - step(0.9, wn.y)) * step(0.68, st.a));
+			fc = mix(fc, flag_ink.rgb, 1.0 - step(0.4, wn.y));
+			col = mix(col, fc, flag_amount);
+		}
+		if (pal_stonem.w > 0.0 && flag_amount < 0.5) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
 			float mp = pnt ? pal_vn3(v_wpos * 2.3 + 5.1) : st.a;
 			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * mp), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.42, 0.5, mp));
 		}
