@@ -217,6 +217,7 @@ varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing m
 #endif
 #endif
 
+varying flat vec4 v_pax;   // (lead 9) the copy's long axis (xz) and its own seed: each stone its own flow
 #ifdef OWN_FOLIAGE
 #ifdef OWN_BROADLEAF
 // (lane J lead 7, judge r5 (a)) the crown's middle (world): the near-lens darkening and slide down the ramp taken per crown
@@ -508,6 +509,8 @@ float see_through(vec2 mo) {
 }
 
 void vertex() {
+	{ vec2 ax0 = MODEL_MATRIX[0].xz, ax2 = MODEL_MATRIX[2].xz; vec2 ax = dot(ax0, ax0) >= dot(ax2, ax2) ? ax0 : ax2;
+	  v_pax = vec4(length(ax) > 1e-4 ? normalize(ax) : vec2(1.0, 0.0), fract(sin(dot(MODEL_MATRIX[3].xz, vec2(12.9898, 78.233))) * 43758.5453), 0.0); }
 	vec3 ip = MODEL_MATRIX[3].xyz;
 	// (E9c2: a copy's fade unit + 1 in its custom data's r, 0 none; ours below take theirs from its whole part too)
 	v_unit = floor(INSTANCE_CUSTOM.r);
@@ -694,6 +697,7 @@ void vertex() {
 }
 
 void fragment() {
+	float ps_code = 0.0;   // (lead 9: the stroke mark under this pixel, for the frame's hue turn; ps_tag)
 	vec2 ps_hp_k = vec2(0.0);   // (lead 8: hit paint on stone tops, set in the stone branch)
 #if defined(OWN_WALL) || defined(OWN_ROOF)
 	// (no round window: the house fade above)
@@ -1132,7 +1136,13 @@ void fragment() {
 		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the marks radiate from the crown's centre like leaf spines
 			vec2 rc = v_fwpos.xz - v_psc.xz;
 			vec2 fl = length(rc) > 1e-3 ? normalize(rc) : vec2(1.0, 0.0);
-			ALBEDO = ps_paint(ALBEDO, v_fwpos.xz, fl, ps_cover0.x, 0.13);
+			// (lead 9, judge r7 strokes fix 2: radial marks read a paisley print) along each spray's spine: COLOR.g runs 0 at
+			// its foot to 1 at its tip (env_trees.py), so its world gradient (from the screen derivatives) is the spine
+			vec2 sx = dFdx(v_fwpos.xz), sy = dFdy(v_fwpos.xz);
+			float gx = dFdx(COLOR.g), gy = dFdy(COLOR.g), sdet = sx.x * sy.y - sx.y * sy.x;
+			vec2 sg = abs(sdet) > 1e-12 ? vec2(sy.y * gx - sx.y * gy, sx.x * gy - sy.x * gx) / sdet : vec2(0.0);
+			if (dot(sg, sg) > 1e-6) fl = normalize(sg);
+			ALBEDO = ps_paint_c(ALBEDO, v_fwpos.xz, fl, ps_cover0.x, 0.13, ps_code);
 		}
 		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.x);   // (lead 5: the crown's own contour)
 		// a tier's underside (a card seen from below) in its own shade
@@ -1184,7 +1194,7 @@ void fragment() {
 		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
 		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc)
 			vec4 bf = ps_frame(v_fwpos, (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz, 1.0, vec2(1.0, 0.0));
-			ALBEDO = ps_paint(ALBEDO, bf.xy, bf.zw, ps_cover1.y, 0.61);
+			ALBEDO = ps_paint_c(ALBEDO, bf.xy, bf.zw, ps_cover1.y, 0.61, ps_code);
 		}
 		// (worker C: a thin limb or stake is all contour, a black stick: its inked share falls as its normal turns within a few pixels)
 		float thin_ = smoothstep(0.06, 0.2, length(fwidth(NORMAL)));
@@ -1328,8 +1338,8 @@ void fragment() {
 			col = mix(col, fc, flag_amount);
 		}
 		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the stones' strokes, the flagstones' too (once)
-			vec4 sf = ps_frame(v_wpos, wn, 0.0, vec2(0.8, 0.6));
-			col = ps_paint(col, sf.xy, sf.zw, ps_cover1.x, 0.37);
+			vec4 sf = ps_frame(v_wpos, wn, 0.0, v_pax.xy);
+			col = ps_paint_c(col, sf.xy, sf.zw, ps_cover1.x, 0.37 + v_pax.z, ps_code);
 			// (lead 8: hit paint on what faces up, the path's flush slabs too: on terrain alone the slabs hid it where she fights)
 			ps_hp_k = ps_hits(v_wpos.xz) * step(0.75, wn.y);
 			col = ps_hit_paint(col, ps_hp_k);
@@ -1410,6 +1420,7 @@ void fragment() {
 	}
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
+	ps_tag(ROUGHNESS, SPECULAR, ps_code);   // (lead 9: the mark's code, InkPass turns its hue in the frame)
 }
 
 #ifdef OWN_BROADLEAF

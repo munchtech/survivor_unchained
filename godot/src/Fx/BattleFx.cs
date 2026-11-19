@@ -517,6 +517,24 @@ public partial class BattleFx : Node3D
         }
     }
 
+    /// <summary>(lane J lead 9, the owner 19 Nov: "paint splatter that looks cool from physics of the attack ... basically disolving by
+    /// the time it hits the ground") The blow throws a few droplets of the palette's hit paint along it, between sparks and splatter
+    /// in scale; they arc down and are gone as they land (HitPaint keeps ground paint only where hits come dense). Off with --hitpaint off.</summary>
+    void PaintSpray(Vector3 at, Vector3 away, bool crit)
+    {
+        if (SurvivorUnchained.Args.Get("hitpaint") == "off") return;
+        int n = crit ? 9 : 6;
+        for (int i = 0; i < n; i++)
+        {
+            float a = (R() - 0.5f) * 1.1f, v = (crit ? 4.5f : 3.6f) * (0.6f + R() * 0.7f);
+            var dir = new Vector3(away.X * Mathf.Cos(a) - away.Z * Mathf.Sin(a), 0, away.X * Mathf.Sin(a) + away.Z * Mathf.Cos(a));
+            var c = R() < 0.4f ? HitPaint.Edge : HitPaint.Body;
+            float sz = (crit ? 0.085f : 0.07f) * (0.7f + R() * 0.6f);
+            // up 1.2-2.4 m/s under gravity 11: ~0.3-0.45 s in the air; the life ends about then, the size shrinking to a speck
+            Sparks.Spawn(at + Vector3.Up * 0.2f, dir * v + Vector3.Up * (1.2f + R() * 1.2f), 0.32f + R() * 0.14f, sz, c, c * 0.8f, sz * 0.25f, 11f, 0.5f);
+        }
+    }
+
     Mark Ground(double x, double z, float radius, Texture2D tex, Color color, float life, float energy = 2.5f)
     {
         Mark? m = null;
@@ -1510,6 +1528,7 @@ public partial class BattleFx : Node3D
                         var hpAway = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (hpAway.LengthSquared() < 0.01f) hpAway = Vector3.Forward;
                         HitPaint.Add(at, hpAway.Normalized(), e.Crit, time);
+                        if (!hushed) PaintSpray(at, hpAway.Normalized(), e.Crit);
                     }
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)

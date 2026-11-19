@@ -339,6 +339,8 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("ps_cover1", c1);
         RenderingServer.GlobalShaderParameterSet("ps_hitc", At(sk + 16));
         RenderingServer.GlobalShaderParameterSet("ps_hite", At(sk + 20));
+        InkPass.Turn = noStrokes ? Vector4.Zero : At(sk + 24);
+        { var hb = At(sk + 16); var he = At(sk + 20); if (hb.X + hb.Y + hb.Z > 0) { HitPaint.Body = new Color(hb.X, hb.Y, hb.Z); HitPaint.Edge = new Color(he.X, he.Y, he.Z); } }   // (lead 9: the spray's colours)   // (lead 9: the marks' hue turn in the frame, InkPass)
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

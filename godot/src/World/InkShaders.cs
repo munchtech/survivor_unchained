@@ -15,7 +15,7 @@ public static class InkShaders
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth_tex;
         layout(set = 0, binding = 2) uniform sampler2D nr_tex;
-        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; vec4 opt; vec4 wt; vec4 wo; vec4 wc; vec4 wr; vec4 wm; } mt;
+        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; vec4 opt; vec4 wt; vec4 wo; vec4 wc; vec4 wr; vec4 wm; vec4 pt; } mt;
         layout(set = 0, binding = 4) uniform sampler2D pre_tex; // the frame before the transparent pass (InkSnap; opt.x 1)
         layout(push_constant, std430) uniform P {
             vec2 size; float r_close; float r_play;
@@ -23,6 +23,32 @@ public static class InkShaders
             float fade_near; float fade_far; float dbg; float lum_cut;
             float z_close; float z_play; float crease_w; float sil_thin;
         } pc;
+
+        // (lane J lead 9) Oklab, for the stroke marks' hue turn in the frame (linear rgb in)
+        vec3 OK(vec3 c) {
+            c = max(c, vec3(0.0));
+            vec3 l = vec3(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b, 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b,
+                0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
+            l = pow(l, vec3(1.0 / 3.0));
+            return vec3(0.2104542553 * l.x + 0.7936177850 * l.y - 0.0040720468 * l.z, 1.9779984951 * l.x - 2.4285922050 * l.y + 0.4505937099 * l.z,
+                0.0259040371 * l.x + 0.7827717662 * l.y - 0.8086757660 * l.z);
+        }
+        vec3 RGB(vec3 l) {
+            vec3 q = vec3(l.x + 0.3963377774 * l.y + 0.2158037573 * l.z, l.x - 0.1055613458 * l.y - 0.0638541728 * l.z, l.x - 0.0894841775 * l.y - 1.2914855480 * l.z);
+            q = q * q * q;
+            return max(vec3(4.0767416621 * q.x - 3.3077115913 * q.y + 0.2309699292 * q.z, -1.2684380046 * q.x + 2.6097574011 * q.y - 0.3413193965 * q.z,
+                -0.0041960863 * q.x - 0.7034186147 * q.y + 1.7076147010 * q.z), vec3(0.0));
+        }
+        // The lit pixel's hue turned by deg (its value kept), its chroma times cs, at least cmin; k: the share (fog takes it back)
+        vec3 TURN(vec3 c, float deg, float cmin, float cs, float k) {
+            vec3 l = OK(c);
+            float c0 = length(l.yz);
+            float a = radians(deg * k), ca = cos(a), sa = sin(a);
+            vec2 ab = vec2(l.y * ca - l.z * sa, l.y * sa + l.z * ca);
+            float c1 = mix(c0, max(c0 * cs, cmin), k);
+            ab = (c0 > 1e-4 ? ab / c0 : vec2(cos(radians(deg)), sin(radians(deg)))) * c1;
+            return RGB(vec3(l.x, ab));
+        }
 
         const int T = 16, A = 6, S = T + 2 * A, NA = 3, NS = T + 2 * NA;
         shared vec4 sp[S * S];   // view position; w: the ink class (0-3; the raw code in dbg 3), -1 the sky
@@ -168,20 +194,38 @@ public static class InkShaders
             float lum = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
             float lc = wd ? mt.wo.w : pc.lum_cut;
             a *= 1.0 - smoothstep(lc * 0.75, lc * 1.25, lum);
-            if (pc.dbg > 3.5) { imageStore(colour, px, vec4(vec3(a), col.a)); return; } // "lines": before the effects' mask
+            if (pc.dbg > 3.5 && pc.dbg < 4.5) { imageStore(colour, px, vec4(vec3(a), col.a)); return; } // "lines": before the effects' mask
             vec3 ink = mix(vec3(1.0), wd ? mt.wt.rgb * mt.wt.w : mt.rig.rgb * mt.rig.w, a);
             vec3 outc = col.rgb * ink;
             // Under the effects (rule 8): the darkening is the opaque frame's (pre x (1 - ink)), taken off the final
             // frame, never more than today's multiply. Opaque pixels (post = pre) are as before; an additive effect is
             // exact (pre x ink + fx); her blended hair over its own solid core (post ~ pre) keeps its line.
             if (mt.opt.x > 0.5) outc = max(col.rgb - texelFetch(pre_tex, px, 0).rgb * (1.0 - ink), outc);
-            if (pc.dbg > 0.5) { // "edges": the line as drawn (the darkening's share of a full line)
+            if (pc.dbg > 0.5 && pc.dbg < 4.5) { // "edges": the line as drawn (the darkening's share of a full line)
                 float full = dot(col.rgb * (1.0 - ink), vec3(0.2126, 0.7152, 0.0722));
                 float got = dot(col.rgb - outc, vec3(0.2126, 0.7152, 0.0722));
                 imageStore(colour, px, vec4(vec3(full > 1e-6 ? a * clamp(got / full, 0.0, 1.0) : a), col.a)); return;
             }
-            if (a <= 0.0) return;
-            col.rgb = outc;
+            // (lane J lead 9, judge r7 strokes fix 1) The world's stroke marks (paint_stroke.gdshaderinc ps_tag: a static pixel's
+            // roughness code r5 0 = a + mark, 1 = a - mark) take their hue turn HERE, on the lit frame, so the turn the eye sees is
+            // the palette's ("frame" [deg +, deg -, cmin, cs]), not what light, grade and tonemap leave of an albedo turn.
+            // Under the effects as the ink is: the turn is the opaque frame's (pre), added to the final.
+            bool mk = false;
+            if (mt.pt.w > 0.0 && pc.has_nr > 0.5) {
+                uint mb = uint(round(texelFetch(nr_tex, px, 0).a * 255.0));
+                if (mb <= 127u && (mb >> 2u) <= 1u) {
+                    vec3 src = mt.opt.x > 0.5 ? texelFetch(pre_tex, px, 0).rgb : col.rgb;
+                    if (a > 0.0) src *= ink;
+                    float kf = (1.0 - clamp(fogk, 0.0, 1.0)) * (1.0 - smoothstep(pc.fade_near, pc.fade_far, dist));
+                    vec3 d = TURN(src, (mb >> 2u) == 0u ? mt.pt.x : mt.pt.y, mt.pt.z, mt.pt.w, kf) - src;
+                    if (pc.dbg > 4.5 && pc.dbg < 5.5) { imageStore(colour, px, vec4((mb >> 2u) == 0u ? vec3(1.0, 0.0, 1.0) : vec3(0.0, 1.0, 1.0), col.a)); return; }
+                    outc = (a > 0.0 ? outc : col.rgb) + d;
+                    mk = true;
+                }
+            }
+            if (pc.dbg > 4.5 && pc.dbg < 5.5) { imageStore(colour, px, vec4(col.rgb * 0.25, col.a)); return; }   // (dbg 5 "marks": magenta +, cyan -)
+            if (a <= 0.0 && !mk) return;
+            col.rgb = max(outc, vec3(0.0));
             imageStore(colour, px, col);
         }
         """;

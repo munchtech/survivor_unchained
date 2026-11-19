@@ -14,6 +14,7 @@
 // Off (all zero data, or --pal off): ps_paint returns the albedo untouched.
 #ifndef PAINT_STROKE_INC
 #define PAINT_STROKE_INC
+#define PS_BARE 0.36   // (lead 9) the share of patches left bare
 
 global uniform vec4 ps_brush;
 global uniform vec4 ps_tone;
@@ -85,14 +86,19 @@ vec4 ps_field(vec2 p2, vec2 flow2, float cover, float seed) {
 			vec2 c = base + vec2(float(i), float(j));
 			vec2 ch = c + float(layer) * 41.3;
 			float h0 = ps_h(ch);
-			if (h0 > cover) continue;
+			// (lead 9) patches of about 3.5 cells, their edges broken per cell: a share ps_brush... bare (no marks), the rest each its
+			// own density, so the field is laid by a hand in passes, not stamped (cover varies tile to tile; 30-40% bare)
+			vec2 pj = floor((c + vec2(ps_h(ch + 5.3), ps_h(ch + 9.1)) * 2.5) / 3.5);
+			float hp = ps_h(pj * 1.7 + seed * 23.0);
+			float cv = hp < PS_BARE ? 0.0 : cover * mix(0.55, 1.35, (hp - PS_BARE) / (1.0 - PS_BARE));
+			if (h0 > cv) continue;
 			float h1 = ps_h(ch + 7.7), h2 = ps_h(ch + 3.1), h3 = ps_h(ch + 11.9);
 			// (the mark's centre within a quarter cell of its cell's: with len <= 1.15 cell no mark is cut by the 2x2 search)
 			vec2 dq = (pl - (c + 0.5 + (vec2(h1, h2) - 0.5) * 0.5)) * cell;
 			// along the flow, a few degrees off, so the field reads hand-laid, not combed
 			float wob = (h3 - 0.5) * 0.35;
 			vec2 ax = normalize(fx + fy * wob), ay = vec2(-ax.y, ax.x);
-			float len = ps_brush.y * mix(0.7, 1.3, h2);
+			float len = ps_brush.y * (0.36 + 0.97 * h2 * h2 * (3.0 - 2.0 * h2));   // (lead 9: p10:p90 ~2.7, was 1.6)
 			vec2 m = ps_mark(vec2(dot(dq, ax), dot(dq, ay)), len, ps_brush.z * mix(0.8, 1.2, h1), ps_brush.w * (h3 < 0.5 ? 1.0 : -1.0));
 			if (m.x > r.x) r = vec4(m.x, m.y, h1 < 0.5 ? -1.0 : 1.0, h0);
 		}
@@ -102,11 +108,26 @@ vec4 ps_field(vec2 p2, vec2 flow2, float cover, float seed) {
 
 // The painted field: albedo with its marks laid in. cover: this surface's share of cells holding a mark (its class's
 // ps_cover). The + marks turn +deg and lift, the - marks turn -deg and sink, each by ps_tone.y; the inner band drops ps_tone.z.
-vec3 ps_paint(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed) {
+// (lead 9, judge r7 strokes fix 1: the turn measured in the FRAME; set in albedo, light, grade and tonemap pulled it to +-8..20)
+// code: +1 / -1 where a mark covers this pixel (> half), for ps_tag: InkPass turns the lit pixel's hue by the palette's
+// "frame" [deg +, deg -, chroma floor, chroma scale] (ps_tone.x, the albedo turn, is 0 when the frame turns).
+vec3 ps_paint_c(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed, inout float code) {
 	vec4 f = ps_field(p2, flow2, cover, seed);
 	if (f.x <= 0.0) return albedo;
+	if (f.x > 0.5) code = f.z;
 	vec3 mk = ps_turn(albedo, ps_tone.x * f.z, ps_tone.y * f.z - ps_tone.z * f.y, ps_tone.w);
 	return mix(albedo, mk, f.x);
+}
+vec3 ps_paint(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed) { float c = 0.0; return ps_paint_c(albedo, p2, flow2, cover, seed, c); }
+// The mark's code into ROUGHNESS (after cel_tag: n = r5 x 4 + ink class): a + mark r5 0, a - mark r5 1, no highlight (so the
+// low roughness lights as before); every other pixel r5 >= 4 (rougher than 0.13: the world is matte). Off with the strokes.
+void ps_tag(inout float rough, inout float spec, float code) {
+	if (ps_brush.x <= 0.0) return;
+	float n = round(rough * 127.0);
+	float cls = mod(n, 4.0), r5 = floor(n / 4.0);
+	r5 = code > 0.5 ? 0.0 : code < -0.5 ? 1.0 : max(r5, 4.0);
+	rough = (r5 * 4.0 + cls) / 127.0;
+	if (abs(code) > 0.5) spec = 0.0;
 }
 
 // A surface's 2D frame from its world normal: the marks across a facet (stone sides) run level, round the form; up a
@@ -134,21 +155,37 @@ global uniform vec4 ps_hp5a; global uniform vec4 ps_hp5b;
 global uniform vec4 ps_hp6a; global uniform vec4 ps_hp6b;
 global uniform vec4 ps_hp7a; global uniform vec4 ps_hp7b;
 
+// (lead 9, the owner 19 Nov: "more like splashes of blood. paint splatter that looks cool from physics of the attack ...
+// somewhere in the middle of sparks and splatter but from impact") One splat at the contact and droplets thrown along the blow:
+// a = (x, z, throw angle rad, size m), b = (step 0 fresh .. 1 gone, seed, power 1 a plain hit .. 2.5 a crit into a crowd, 0).
+// More power throws more droplets, farther. Each droplet a short streak along its throw, the two colours split among them;
+// it dies in hard steps: the far droplets drop first and the rest shrink (never holes, never alpha).
 vec2 ps_stamp(vec2 xz, vec4 a, vec4 b, vec2 r) {
 	if (a.w <= 0.0 || b.x >= 1.0) return r;
 	vec2 d = xz - a.xy;
-	if (dot(d, d) > a.w * a.w * 0.6) return r;
+	float pw = max(b.z, 1.0), reach = a.w * (0.55 + 0.8 * pw);
+	if (dot(d, d) > reach * reach) return r;
 	vec2 ax = vec2(cos(a.z), sin(a.z)), ay = vec2(-ax.y, ax.x);
-	float thin = 1.0 - 0.45 * b.x;
-	vec2 m = ps_mark(vec2(dot(d, ax), dot(d, ay)), a.w, a.w * 0.2 * thin * (1.0 + 0.25 * b.z), 0.18);
-	// two satellites flung along the swing, ahead of the head and off its convex side
-	vec2 d1 = d - ax * a.w * 0.52 - ay * a.w * 0.16, d2 = d - ax * a.w * 0.18 - ay * a.w * 0.3;
-	vec2 m1 = ps_mark(vec2(dot(d1, ax), dot(d1, ay)), a.w * 0.3, a.w * 0.07 * thin, 0.12);
-	vec2 m2 = ps_mark(vec2(dot(d2, ax), dot(d2, ay)), a.w * 0.22, a.w * 0.06 * thin, -0.1);
-	m = max(m, max(m1 * step(0.25, fract(b.y * 7.3)), m2 * step(fract(b.y * 3.9), 0.75)));
-	// holes open as it erodes: a 6 cm world cell drops out when its hash is under the erosion
-	float hole = step(b.x * 0.9, ps_h(floor(xz / 0.06) + b.y * 31.0));
-	m *= hole;
+	vec2 q = vec2(dot(d, ax), dot(d, ay));
+	float sh = 1.0 - 0.3 * floor(b.x * 3.0);   // 1, .7, .4: shrinks in hard steps
+	// the splat at the contact: a fat streak leaning into the throw
+	vec2 m = ps_mark(q - vec2(0.12 * a.w, 0.0), 0.42 * a.w * sh, 0.2 * a.w * sh, 0.08);
+	m.y = 0.0;
+	int n = 3 + int(round(2.5 * pw));
+	for (int k = 0; k < 9; k++) {
+		if (k >= n) break;
+		float hk = ps_h(vec2(b.y * 97.0, float(k) * 7.31)), hj = ps_h(vec2(float(k) * 3.7, b.y * 61.0));
+		if (hk > 1.0 - b.x * 1.1) continue;   // the far ones go first (hk: the throw's reach below)
+		float u = a.w * (0.3 + 0.75 * pw * hk);
+		float v = (hj - 0.5) * 0.55 * u;   // a cone along the throw
+		float sz = a.w * mix(0.22, 0.14, hk) * sh;
+		vec2 dq = q - vec2(u, v);
+		float an = atan(v, u);
+		vec2 dx = vec2(cos(an), sin(an));
+		vec2 dk = ps_mark(vec2(dot(dq, dx), dot(dq, vec2(-dx.y, dx.x))), sz, sz * 0.5, 0.0);
+		dk.y = hj < 0.4 ? dk.x : 0.0;   // some droplets the edge colour, the rest the body's
+		if (dk.x > m.x) m = dk;
+	}
 	return m.x > r.x ? m : r;
 }
 // (coverage, inner) of the hit paint at world xz.

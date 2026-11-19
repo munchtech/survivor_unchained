@@ -323,6 +323,7 @@ void fetch3(int k, vec2 uv, float ly, vec2 dx, vec2 dy, out vec4 a, out vec4 n, 
 }
 
 void fragment() {
+	float ps_code = 0.0;   // (lead 9: the stroke mark under this pixel, for the frame's hue turn; ps_tag)
 	vec2 w = w_pos.xz;
 	vec4 nL = texture(noise_tex, w * 0.011);           // ~90 m
 	vec4 nC = texture(noise_tex, w * 0.0213 + 0.13);   // ~47 m: the macro
@@ -760,7 +761,7 @@ void fragment() {
 		float dang = 6.2832 * texture(noise_tex, w * 0.03).r;
 		vec2 dax = vec2(cos(dang), sin(dang));
 		if (dgl > 1e-4) dax = mix(dax, vec2(-dgr.y, dgr.x) / dgl, smoothstep(1e-4, 4e-4, dgl) * smoothstep(0.2, 0.5, pm.r));
-		albedo = ps_paint(albedo, w, normalize(dax), mix(ps_cover0.z, ps_cover0.w, pal_pe) * (1.0 - w_setts), 0.0);
+		albedo = ps_paint_c(albedo, w, normalize(dax), mix(ps_cover0.z, ps_cover0.w, pal_pe) * (1.0 - w_setts), 0.0, ps_code);
 	}
 	vec2 ps_hp = ps_hits(w);
 	albedo = ps_hit_paint(albedo, ps_hp);
@@ -993,4 +994,5 @@ void fragment() {
 	}
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
+	ps_tag(ROUGHNESS, SPECULAR, ps_code);   // (lead 9: the mark's code, InkPass turns its hue in the frame)
 }

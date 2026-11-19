@@ -40,6 +40,8 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     /// thin (a shallow drop's share of the width), lum (the HDR luminance the line fades out above); the four ink classes'
     /// width scales (0 none) and crease weights; crease cos, the drop threshold's scale. Px 0: off (the figure line everywhere, as before).</summary>
     public static Vector4 WTint, WOpt, WCls, WCre, WMore;
+    /// <summary>(lane J lead 9) the stroke marks' hue turn in the frame: [deg +, deg -, chroma floor, chroma scale]; w 0 off.</summary>
+    public static Vector4 Turn;
     public static void SetWorld(double[]? w)
     {
         if (w is not { Length: >= 20 } || Args.Get("ink-world") is "off" or "0") { WOpt = Vector4.Zero; return; }
@@ -67,7 +69,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         if (V("ink-fade", 2) is [var fn, var ff]) { FadeNear = fn; FadeFar = Mathf.Max(ff, fn + 0.01f); }
         if (V("ink-dark", 1) is [var k]) Dark = k;
         if (V("ink-rig", 3) is [var r, var g, var bb]) { RigInk = new Color(r, g, bb); rigPinned = true; }
-        Dbg = Args.Get("ink-dbg") switch { "edges" => 1, "class" => 2, "code" => 3, "lines" => 4, null => 0, var x => int.TryParse(x, out var d) ? d : 0 };
+        Dbg = Args.Get("ink-dbg") switch { "edges" => 1, "class" => 2, "code" => 3, "lines" => 4, "marks" => 5, null => 0, var x => int.TryParse(x, out var d) ? d : 0 };
     }
 
     public double GpuMs = -1;
@@ -103,7 +105,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
             MinFilter = RenderingDevice.SamplerFilter.Nearest, MagFilter = RenderingDevice.SamplerFilter.Nearest,
             RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
         });
-        ubo = rd.UniformBufferCreate(208);
+        ubo = rd.UniformBufferCreate(224);
         InkRelease.Track(this);
     }
 
@@ -153,7 +155,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         // (the projection comes depth-corrected, reverse Z 0-1; NDC y taken as 2v - 1, Vulkan's, so an unflipped one is turned over)
         var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
         var inv = proj.Inverse() * flipY;
-        var m = new float[52];
+        var m = new float[56];
         Vector4[] cols = { inv.X, inv.Y, inv.Z, inv.W };
         for (int c = 0; c < 4; c++) { m[c * 4] = cols[c].X; m[c * 4 + 1] = cols[c].Y; m[c * 4 + 2] = cols[c].Z; m[c * 4 + 3] = cols[c].W; }
         var rig = RigInk;
@@ -167,6 +169,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         float sc = size.Y / 1080f;
         Vector4[] wv = { WTint, new(WOpt.X * sc, WOpt.Y, WOpt.Z, WOpt.W), WCls, WCre, new(WMore.X, WMore.Y, WMore.Z, WMore.W * sc) };
         for (int i = 0; i < 5; i++) { m[32 + i * 4] = wv[i].X; m[33 + i * 4] = wv[i].Y; m[34 + i * 4] = wv[i].Z; m[35 + i * 4] = wv[i].W; }
+        m[52] = Turn.X; m[53] = Turn.Y; m[54] = Turn.Z; m[55] = Args.Get("strokes-frame") is "off" ? 0 : Turn.W;
         rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
         float scale = size.Y / 1080f;
         bool hasN = buf.HasTexture("forward_clustered", "normal_roughness");

@@ -73,7 +73,7 @@ public static class Palettes
     public const int LineAt = BandAt + 8;
     // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) "stroke": +0 brush [cell,len,wid,bend], +4 tone [hue,lift,inner,chroma], +8 cover[0..3], +12 cover[4,5] + hit amount, emit, +16 hit color, +20 hit edge
     public const int StrokeAt = LineAt + 4;
-    public static int Size => StrokeAt + 24;
+    public static int Size => StrokeAt + 28;   // (lead 9: +24 frame [deg +, deg -, cmin, cs]: the marks' hue turn in the frame, InkPass)
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -143,6 +143,8 @@ public static class Palettes
             r[StrokeAt] = S("cell", 0); r[StrokeAt + 1] = S("len", 0); r[StrokeAt + 2] = S("wid", 0); r[StrokeAt + 3] = S("bend", 0);
             r[StrokeAt + 4] = S("hue", 0); r[StrokeAt + 5] = S("lift", 0); r[StrokeAt + 6] = S("inner", 0); r[StrokeAt + 7] = S("chroma", 1);
             r[StrokeAt + 19] = S("cmin", 0);   // (a mark's chroma floor, Oklab C: on a near-grey field, a stone, a hue turn alone shows nothing)
+            if (st.TryGetProperty("frame", out var fr))
+                for (int i = 0; i < Math.Min(4, fr.GetArrayLength()); i++) r[StrokeAt + 24 + i] = fr[i].GetDouble();
             if (st.TryGetProperty("cover", out var cv))
                 for (int i = 0; i < Math.Min(6, cv.GetArrayLength()); i++) r[StrokeAt + 8 + i] = cv[i].GetDouble();
             if (st.TryGetProperty("hit", out var ht))
