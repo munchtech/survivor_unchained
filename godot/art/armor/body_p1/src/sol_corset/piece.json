@@ -1,0 +1,50 @@
+{
+ "id": "sol_corset",
+ "name": "Gilt Corset",
+ "slot": "top",
+ "style": "mesh",
+ "params": {
+  "file": "sol_corset.glb",
+  "rigid_drop": [
+   "breast",
+   "pec_",
+   "clavicle",
+   "neck",
+   "head",
+   "upperarm",
+   "lowerarm",
+   "hand",
+   "lat_",
+   "trap_",
+   "scap_",
+   "delt_",
+   "thigh"
+  ],
+  "soft_drop": [
+   "breast"
+  ]
+ },
+ "covers": [
+  "top"
+ ],
+ "material": "steel",
+ "tint": null,
+ "tier": 2,
+ "tier_name": "gilded",
+ "hold": {
+  "amount": 0.55,
+  "squash": 0
+ },
+ "adorn": [],
+ "tuck_law": {
+  "tuck_depth_mm": 22,
+  "tuck_back_mm": 24,
+  "tuck_full_mm": 30,
+  "tuck_zero_mm": 40,
+  "tuck_slope": 1.0,
+  "tuck_step": 1.0
+ },
+ "rigid": true,
+ "layer": 1,
+ "body_sha1": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3"
+}

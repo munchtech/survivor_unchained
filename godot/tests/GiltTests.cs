@@ -25,6 +25,10 @@ public class GiltTests
     static DropCtx Ctx(Journey j, DropSource s, string dungeon, Func<double> r) =>
         new() { Ch = j.Ch, World = j.World, Source = s, Dungeon = dungeon, Level = 6, People = "pack", Tier = 1, R = r };
 
+    /// <summary>What a wear list draws on this (A's) index: the last known piece per slot (sol_corset, B-only, falls back to kit_bodice).</summary>
+    static IEnumerable<string> Shown(IEnumerable<string> wear) =>
+        wear.Where(p => ArmorIndex.Shared.Find(p) != null).GroupBy(p => ArmorIndex.Shared.SlotOf(p)).Select(g => g.Last());
+
     static IEnumerable<string> Gilt(IEnumerable<Dropped> d) => d.Where(x => x.Item != null && Pieces.Contains(x.Item.Def)).Select(x => x.Item!.Def);
 
     /// <summary>Clears until a fresh player owns all three; pieces are taken into the pack as a pickup does.</summary>
@@ -89,7 +93,7 @@ public class GiltTests
 
     [Theory]
     [InlineData("gilt_helm", EquipSlot.Head, "kit_helm")]
-    [InlineData("gilt_harness", EquipSlot.Body, "kit_pauldrons,kit_bodice,kit_brief,kit_belt,kit_vambraces,kit_gloves")]
+    [InlineData("gilt_harness", EquipSlot.Body, "kit_pauldrons,kit_bodice,sol_corset,kit_brief,kit_belt,kit_vambraces,kit_gloves")]
     [InlineData("gilt_boots", EquipSlot.Feet, "kit_boots")]
     public void Each_piece_has_its_slot_and_draws_its_kit_pieces(string id, EquipSlot slot, string wear)
     {
@@ -97,11 +101,28 @@ public class GiltTests
         Assert.Equal(slot, Items.SlotFor(def));
         Assert.Equal("hollow_gilt", def.Set);
         Assert.Equal(wear.Split(','), def.Wear);
-        Assert.Empty(Wear.Validate(def));
+        // (a piece only B's built gear knows (sol_corset) is unknown to this index (A's): Validate names it, the look leaves
+        // it off, and the slot's earlier piece draws in its place; every known piece is drawn, the last one per slot)
+        var ix = ArmorIndex.Shared;
+        var known = def.Wear!.Where(p => ix.Find(p) != null).ToList();
+        Assert.Equal(def.Wear!.Except(known), Wear.Validate(def));
         var ch = Her();
         Assert.True(Inventory.Equip(ch, Inventory.Make(ch, id, level: 6), slot));
         var drawn = Wardrobe.Drawn(ch).Values.ToHashSet();
-        foreach (var p in def.Wear!) Assert.Contains(p, drawn);
+        foreach (var p in Shown(def.Wear!)) Assert.Contains(p, drawn);
+    }
+
+    [Fact]
+    public void The_harness_draws_sol_corset_on_B_and_kit_bodice_where_the_body_has_no_sol_corset()
+    {
+        // (the coordinator, 18 Nov: the demo swap, sol_corset in kit_bodice's place on B (judge 4: swap yes, mixed look
+        // pass); kit_bodice stays built, one row back: a body without a built sol_corset (A) wears kit_bodice)
+        var wear = Items.Get("gilt_harness").Wear!;
+        string Top(ArmorIndex ix) => wear.Where(p => ix.Find(p) is { } r && r.Slot == "top").Last();
+        var b = ArmorIndex.Load(ArmorIndex.Text, "gear/out/body_p1");
+        Assert.False(b.GearMissing);
+        Assert.Equal("sol_corset", Top(b));
+        Assert.Equal("kit_bodice", Top(ArmorIndex.Load(ArmorIndex.Text)));
     }
 
     [Fact]
@@ -117,9 +138,9 @@ public class GiltTests
             for (int i = 0; i < 3; i++)
             {
                 var def = Items.Get(Pieces[i]);
-                if ((mask >> i & 1) == 1) { foreach (var p in def.Wear!) Assert.Contains(p, drawn.Values); continue; }
+                if ((mask >> i & 1) == 1) { foreach (var p in Shown(def.Wear!)) Assert.Contains(p, drawn.Values); continue; }
                 // (a worn piece hides what it covers, whichever slot: the boots hide the greaves)
-                var hidden = Enumerable.Range(0, 3).Where(k => (mask >> k & 1) == 1).SelectMany(k => Items.Get(Pieces[k]).Wear!).SelectMany(w => ArmorIndex.Shared.Find(w)!.Covers).ToHashSet();
+                var hidden = Enumerable.Range(0, 3).Where(k => (mask >> k & 1) == 1).SelectMany(k => Shown(Items.Get(Pieces[k]).Wear!)).SelectMany(w => ArmorIndex.Shared.Find(w)!.Covers).ToHashSet();
                 foreach (var vs in Wear.Group(slots[i]).Where(v => !hidden.Contains(v)))
                     Assert.Equal(baseline.GetValueOrDefault(vs), drawn.GetValueOrDefault(vs));
             }
@@ -169,7 +190,7 @@ public class GiltTests
             j = Journey.From(Json.Parse<SaveData>(text), 1);
             foreach (var id in worn) Assert.Equal(id, j.Ch.Equipment[slots[id]]?.Def);
             var kit = Wear.Of(j.Ch).Values.ToHashSet();
-            foreach (var id in worn) foreach (var w in Items.Get(id).Wear!) Assert.Contains(w, kit);
+            foreach (var id in worn) foreach (var w in Shown(Items.Get(id).Wear!)) Assert.Contains(w, kit);
             foreach (var id in worn) Assert.Contains(id, j.World.Owned);
         }
         Assert.InRange(clears, 3, 12);

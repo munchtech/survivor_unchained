@@ -2187,6 +2187,15 @@ def build_mesh():
     # Each object split by material (one material a part: the export joins a slot's parts by material); the material
     # is the game's own entry of that name (outfit_materials.json), its UVs laid out at the material's true size.
     parts, rigid_of = [], {}
+    # (params.rigid_blend "union" (armor-ref, 18 Nov: the builder's corset, a rigid steel top): every `_rigid` part rides
+    # the SAME blend, the mean of her blends over all of them (rigid_drop applied), so plate, rims, straps and gem move
+    # as one shell and never part; each on its own mean put the cups' rims and the gem on her breast springs)
+    union_m = None
+    if PRM.get("rigid_blend") == "union":
+        pts_ = [np.array([(o_.matrix_world @ v.co)[:] for v in o_.data.vertices]) for o_ in srcs
+                if _base_name(o_.name).endswith("_rigid")]
+        if pts_:
+            union_m = G["four_bones"](G["soft_weights"](np.vstack(pts_))).mean(0)
     for o in srcs:
         bname = _base_name(o.name)
         rigid = bname.endswith("_rigid")
@@ -2204,9 +2213,9 @@ def build_mesh():
         if rigid:
             # (a rigid part rides ONE blend from her skin at its centre: the mean of its points' blends, its four
             # largest shares, so it never bends; heroine_outfits' rigid_again keeps it on that blend after the helpers)
-            if wt is None:
+            if wt is None and union_m is None:
                 wt = G["four_bones"](G["soft_weights"](co))
-            m_ = wt.mean(0)
+            m_ = union_m if union_m is not None else wt.mean(0)
             k_ = [i for i in np.argsort(-m_)[:4] if m_[i] > 1e-4]
             row = [(BONES[i], float(m_[i] / sum(m_[j] for j in k_))) for i in k_]
             # (params.rigid_drop [bone prefix, ..] (body1 g4): bones left out of every rigid part's blend, the rest
@@ -2980,16 +2989,25 @@ for o in made:
 stamp("helpers split; %d rigid parts each on one blend" % n_parts)
 # (params.rigid_drop, after the helpers' split too: the split eases her wrist's weights onto the hand, and rigid_again's
 # mean put it back on the bracers (9%); each `_rigid` source's points lose those bones, the rest renormalized)
+# (params.soft_drop (armor-ref, 18 Nov: the builder's steel corset): the same for its BENDY parts. Its cups ride her
+# chest, pecs and clavicles as her skin does, but never her breast springs: the plates hold their shape with no wobble
+# inside them. On one spine blend alone her breast left the cup in the den's combat idle, where her arm moves her pec.)
 DROP_ = tuple(PRM.get("rigid_drop") or ())
-if DROP_:
+SOFT_DROP_ = tuple(PRM.get("soft_drop") or ())
+if DROP_ or SOFT_DROP_:
     nd_ = 0
     for o in made:
-        if o.type != "MESH" or not o.get("source_part", "").endswith("_rigid"):
+        if o.type != "MESH":
+            continue
+        rg_ = o.get("source_part", "").endswith("_rigid")
+        drop_now_ = DROP_ if rg_ else SOFT_DROP_
+        if not drop_now_:
             continue
         gname_ = {g.index: g.name for g in o.vertex_groups}
         for v in o.data.vertices:
-            ws_ = [(gname_[g.group], g.weight) for g in v.groups if gname_[g.group] in names]
-            keep_ = [(n_, w_) for n_, w_ in ws_ if not n_.startswith(DROP_)]
+            # (her helper bones (breast_tip_*: B's own) are not in BONE_NAMES: a dropped prefix is dropped from every group)
+            ws_ = [(gname_[g.group], g.weight) for g in v.groups if gname_[g.group] in names or gname_[g.group].startswith(drop_now_)]
+            keep_ = [(n_, w_) for n_, w_ in ws_ if not n_.startswith(drop_now_)]
             t_ = sum(w_ for _, w_ in keep_)
             if len(keep_) == len(ws_) or t_ <= 1e-6:
                 continue
@@ -2998,7 +3016,7 @@ if DROP_:
             for n_, w_ in keep_:
                 o.vertex_groups[n_].add([v.index], w_ / t_, "REPLACE")
             nd_ += 1
-    stamp("rigid_drop %s: %d points of the rigid parts reweighted" % (list(DROP_), nd_))
+    stamp("rigid_drop %s, soft_drop %s: %d points reweighted" % (list(DROP_), list(SOFT_DROP_), nd_))
 # (armor 10: a style's rigid plates (`blend_group` on each part: a plate, its rolled edge, its rivets) back on ONE common
 # blend after the helpers' split, the mean of all their points', so a plate and what is on it never part)
 BLEND_GROUPS = {}
@@ -3546,6 +3564,8 @@ if SPEC_PIECE.get("finish"):
 # _rigid parts: the plate tops are cups on leather straps that must still lie under the pauldrons, armor 9)
 if SPEC_PIECE.get("rigid") is True or (MESH and IMPORT.get("rigid")):
     row["rigid"] = True
+if SPEC_PIECE.get("tuck_law"):
+    row["tuck_law"] = SPEC_PIECE["tuck_law"]         # (gear_tuck.rigid_tuck_law: the row's own law over its slot's)
 if SPEC_PIECE.get("replaces"):
     row["replaces"] = SPEC_PIECE["replaces"]         # (a calling row id: ArmorIndex.Calling wears this piece in its place)
 if SPEC_PIECE.get("cover_grow"):

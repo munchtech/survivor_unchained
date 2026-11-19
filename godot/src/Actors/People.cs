@@ -1636,8 +1636,12 @@ public static class People
             if ((kind is 0 or 1) && metalFinishes != null && metalFinishes.TryGetValue("meshes", out var mp))
             {
                 var nm = mi.Name.ToString();
-                foreach (var (wid, wv) in mp.AsGodotDictionary())
+                var rows = mp.AsGodotDictionary();
+                foreach (var (wid, wv0) in rows)
                 {
+                    // (armor-ref, 18 Nov: a row that is a string is the row it names: "sol": "kit", one set wearing another's finish)
+                    var wv = wv0.VariantType == Variant.Type.String && rows.TryGetValue((string)wv0, out var al) ? al : wv0;
+                    if (wv.VariantType != Variant.Type.Dictionary) continue;
                     if (!nm.StartsWith((string)wid + "_") || !wv.AsGodotDictionary().TryGetValue(key, out var ov)) continue;
                     var od = ov.AsGodotDictionary();
                     if (od.TryGetValue("finish", out var of)) m.SetShaderParameter("finish", (int)of);

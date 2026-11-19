@@ -522,6 +522,8 @@ public partial class WorldScene : Node3D, IZoneLook
             ShadowLamp.Update(HerDrawn, dt);
             // (--shadowdbg) every positional light that shadows now, where, and how far from her: every 2 s
             if (SurvivorUnchained.Args.Has("dbg-key-noshadow") && GetNodeOrNull<DirectionalLight3D>("/root/Game/Atmosphere/Key") is { } dk) dk.ShadowEnabled = false;
+            // (armor-ref, 18 Nov) --dbg-unshaded: the frame drawn without light (albedo only), to see a material's own colour
+            if (SurvivorUnchained.Args.Has("dbg-unshaded")) GetViewport().DebugDraw = Viewport.DebugDrawEnum.Unshaded;
             if (SurvivorUnchained.Args.Get("dbg-hide") is string dh)
             {
                 if (dh.Contains("crowd")) Crowd.Visible = false;
