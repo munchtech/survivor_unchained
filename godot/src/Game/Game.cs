@@ -84,6 +84,8 @@ public partial class Game : Node, IZoneHost
         // The demo flavor (export feature `demo`, or --demo in a dev run): data/content/demo.json's cuts (Core.Demo).
         Core.Demo.On = OS.HasFeature("demo") || Args.Has("demo");
         if (Core.Demo.On) GD.Print("demo: the demo flavor is on (data/content/demo.json)");
+        AddChild(new ClipRecorder());
+        AddChild(new BugReporter(this));
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
         // (den r16 G, R15f item 11) --den-lair-spurs 0: the den lair as the old open bowl, no root-wall spurs from its rim.
