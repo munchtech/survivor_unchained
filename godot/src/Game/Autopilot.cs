@@ -563,7 +563,11 @@ public sealed class Autopilot
                 var m = Place("watchman");
                 double ax = c.X - m.X, az = c.Z - m.Z, al = Math.Max(0.01, Math.Sqrt(ax * ax + az * az));
                 tx = c.X + ax / al * 1.2; tz = c.Z + az / al * 1.2;
-                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < (pil ? 1.5 : 1.0) && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
+                // (18 Nov, the demo proof: she came at it from the watchman's side, the chest itself between her and that spot;
+                // pressed into it, the dead watchman's prompt was the nearer and she stood there for good: after 8 s, the chest
+                // from wherever she is; and the key whenever the chest's prompt is up, as a player presses it)
+                if (postT > 8) { tx = c.X; tz = c.Z; }
+                if (g.Prompted == "chest" && (interactT -= dt) <= 0) { interactT = 1.0; Controls.Instance.Press(Act.Interact); }
                 break;
             }
             // (M5 r2) The watch-post's lamp once the Knight is down (its prompt offered then): walked to and lit, as a player
@@ -659,9 +663,19 @@ public sealed class Autopilot
                 if (!Idle && z is Zones.Prologue pn && pn.Night is { } nn)
                 {
                     var gn = nn.Goal(_ => true, _ => null, Place("gate").X);
-                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; }
+                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; break; }
                     else if (p.Z < Place("ford").Z + 25) { tx = Place("ford").X; tz = Place("ford").Z + 12; }
                 }
+                // (18 Nov, the demo proof: the road's next point straight was into the watch-post's wall, and she leaned on it
+                // for six minutes: round what is solid to it, GroundPath, as the night's goal is (Encounters.Route))
+                routeT -= dt;
+                if (route == null || routeT <= 0 || Math.Abs(routeFor.Item1 - tx) + Math.Abs(routeFor.Item2 - tz) > 1.5)
+                {
+                    routeT = 2; routeFor = (tx, tz);
+                    route = SurvivorUnchained.Sim.GroundPath.Find(b.Collision, p.X, p.Z, tx, tz);
+                }
+                while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.9) route.RemoveAt(0);
+                if (route is { Count: > 0 }) (tx, tz) = route[0];
                 break;
             }
         }
