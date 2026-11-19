@@ -61,6 +61,21 @@ public sealed class P1Springs
     /// <summary>Held at rest (--p1-springs off, diagnostic shots): each mass sits at its rest offset (sag, press, tilt
     /// as the support has them), no swing, no squash, no colliders.</summary>
     public bool Frozen;
+    /// <summary>Held per group (creator-jiggle, 18 Nov): a formed plate over it (ArmorHold.RigidValue) rides her rigidly.
+    /// Each mass of a held group sits at the upright worn rest the plate's rigid parts were fitted to
+    /// (tools/armor/worn_rest.py spring_rest: sag, press and tilt at the support, under the skeleton's down at rest),
+    /// fixed in its parent's frame. So the plate moves with her chest, never inside it: no swing, no gravity turned with
+    /// her lean, no squash and stretch, no colliders. The owner, 18 Nov: "jiggling cups non stop" under the starter's
+    /// steel top. Support 1 stiffened the springs but never closed them, so the steel cups rode 2.5-3.6 mm a second
+    /// against her chest in the Look idle and 19 mm on the flourish.</summary>
+    public readonly Dictionary<string, bool> Held = new() { ["top"] = false, ["bottom"] = false };
+    bool IsHeld(Spring s) => !Frozen && Held.TryGetValue(s.Group, out var h) && h;
+    /// <summary>A held group's rest is her bind instead (ArmorHold.RestValue "bind"): offset 0, her breast bones where
+    /// the clip puts them, the pose a piece built on her bind (tools/armor/kit_build.py her_a: her bind with the hold's
+    /// shapes; exact-installed, its skin her weights) holds its built shape in. Its cups' points share her breast bones'
+    /// weights with her chest's, so any other rest bends the steel: at the worn rest kit_bodice's rims kinked and its
+    /// lower cups folded (the owner, 18 Nov: "thats not jiggle thats mishapen"; creator-jiggle judge round 2).</summary>
+    public readonly Dictionary<string, bool> HeldAtBind = new() { ["top"] = false, ["bottom"] = false };
     /// <summary>Where the soft stop starts, as a share of each travel limit and of the reach (stiffer and damped beyond,
     /// so the approach to a limit eases in rather than snapping).</summary>
     public double SoftStart = 0.6;
@@ -214,6 +229,19 @@ public sealed class P1Springs
         s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
              - Fm * (new P1V(-s.Side * s.Press * s.RestShows, 0, 0) + s.RestDown * (s.Sag * s.RestShows));   // the bind's own weight (rest_shows), under rest_down
         bool jump = !s.Live || (Tw - s.LastT).Len() > 0.5;
+        if (IsHeld(s))
+        {
+            // (the same rest as above with her chest's down at rest in place of the world's (a tip's too: worn_rest.py
+            // reads the skeleton's down, not its turned parent's): fixed in her chest's frame)
+            var down = (s.Of >= 0 ? Frame(Springs[s.Of], Wl) : Fm) * Down;
+            s.Eq = HeldAtBind.TryGetValue(s.Group, out var atBind) && atBind ? new P1V(0, 0, 0)
+                 : inward * (s.Press * F(s.Group, "press")) + down * (s.Sag * F(s.Group, "sag")) + (down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
+                 - Fm * (new P1V(-s.Side * s.Press * s.RestShows, 0, 0) + s.RestDown * (s.Sag * s.RestShows));
+            // (moving with its point, so a plate taken off hands the springs her motion, not a kick)
+            s.Tv = jump || dt <= 0 ? new P1V(0, 0, 0) : (Tw - s.LastT) / dt;
+            s.P = Tw + s.Eq; s.V = s.Tv; s.Live = true; s.LastT = Tw; s.X = s.Eq; s.Rel = new P1V(0, 0, 0);
+            return;
+        }
         if (Frozen)
         {
             s.P = Tw + s.Eq; s.V = new P1V(0, 0, 0); s.Tv = s.V; s.Live = true; s.LastT = Tw; s.X = s.Eq; s.Rel = new P1V(0, 0, 0);
@@ -283,17 +311,18 @@ public sealed class P1Springs
 
     void Finish(Spring s, P1M3 WlT)
     {
-        var xs = WlT * (s.X * Amount);
+        bool held = IsHeld(s);
+        var xs = WlT * (s.X * (held ? 1 : Amount));
         if (s.Shift) { s.G = s.In.WithT(s.In.T() + xs); return; }
         var from = s.In.Lin() * s.Tip; var to = from + xs;
         var R = Between(from, to);
-        double k = 1 + Math.Clamp((to.Len() - from.Len()) / Math.Max(s.ReachE, 1e-4), -1, 1) * s.Stretch * Squash;
+        double k = held ? 1 : 1 + Math.Clamp((to.Len() - from.Len()) / Math.Max(s.ReachE, 1e-4), -1, 1) * s.Stretch * Squash;
         double side = 1 / Math.Sqrt(Math.Max(k, 0.5));
         // squash and stretch across the bone (r2): the offset up (+) or down (-) from rest over that limit; firmer
         // support, less (its "squash" factor)
         double amt = s.SquashAmt * F(s.Group, "squash") * Squash * Amount;
         double lim = s.Rel.Y >= 0 ? s.LimE[2] : s.LimE[3];
-        double u = Frozen || lim <= 0 ? 0 : Math.Clamp(s.Rel.Y / lim, -1, 1);
+        double u = Frozen || held || lim <= 0 ? 0 : Math.Clamp(s.Rel.Y / lim, -1, 1);
         double qz = 1 - amt * u, qs = 1 / Math.Sqrt(qz);
         var D = s.SqAxis == 0 ? new P1M3(side * qz, 0, 0, 0, k * qs, 0, 0, 0, side * qs)
                               : new P1M3(side * qs, 0, 0, 0, k * qs, 0, 0, 0, side * qz);
@@ -370,7 +399,7 @@ public sealed class P1Springs
     /// back from her midline by the worst sample's added depth over its lever, the velocity into it taken out.</summary>
     void Collide(P1M3 Wl, P1M4[] G, P1M3 WlT, bool tips)
     {
-        foreach (var s in Springs.Where(x => tips ? x.Shift && x.Of >= 0 && Springs[x.Of].Collide : x.Collide && !x.Shift))
+        foreach (var s in Springs.Where(x => (tips ? x.Shift && x.Of >= 0 && Springs[x.Of].Collide : x.Collide && !x.Shift) && !IsHeld(x)))
         {
             var root = tips ? Springs[s.Of] : s;
             var ss = samples[root.Side];

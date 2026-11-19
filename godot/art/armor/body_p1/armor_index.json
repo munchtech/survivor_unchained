@@ -36,11 +36,12 @@
    "kit_bodice.top.steel"
   ],
   "tuck": "armor_tuck/kit_bodice.bin",
-  "tuck_count": 5058,
+  "tuck_count": 5089,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "hold": {
    "amount": 0.55,
-   "squash": 0
+   "squash": 0,
+   "rest": "bind"
   },
   "file": "res://art/armor/kit_bodice.gltf",
   "tier": 2,

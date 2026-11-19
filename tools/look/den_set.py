@@ -478,12 +478,43 @@ def check():
     return bad == 0
 
 
+# (den r19 S, R19 judge item 1: the lair pits inverted, the cells lit mid-green by the mip bleed and the cracks left dark) the
+# painted pits' vein mask, from the painting's own lime lines (lime: G over max(R, cyan x B), linear, so the teal fungus caps
+# are not veins): R the cores (the ridge a x lime + b x its white top-hat over k texels, after a sigma-"aa" blur, from lo to hi),
+# G a narrow and B a wider glow (the cores blurred at sigma g and b texels, each over its value on a typical vein ("norm", the
+# p-th percentile on the cores) and clipped at 1), so the light falls off within a few px of each vein and the plates between
+# stay dark. den_set_soft's pit_lines reads it (DungeonDress.SetMat --den-pit-lines). Built from the built sheet (same pixels,
+# same UVs): den_set.py veins (build runs it after the sheets)
+VEINS = {"H3": {"cyan": 1.6, "aa": 0.7, "a": 0.5, "b_th": 1.0, "k": 11, "lo": 0.04, "hi": 0.12, "g": 4.0, "b": 11.0, "norm": 90}}
+
+
+def veins():
+    for name, v in VEINS.items():
+        im = np.asarray(Image.open(os.path.join(OUT, name + ".png")).convert("RGBA")).astype(np.float64) / 255.0
+        s = im[..., :3]
+        lin = np.where(s <= 0.04045, s / 12.92, ((s + 0.055) / 1.055) ** 2.4)
+        lime = np.clip(lin[..., 1] - np.maximum(lin[..., 0], v["cyan"] * lin[..., 2]), 0.0, None) * im[..., 3]
+        lime = ndimage.gaussian_filter(lime, v["aa"])
+        ridge = v["a"] * lime + v["b_th"] * (lime - ndimage.grey_opening(lime, size=(v["k"], v["k"])))
+        t = np.clip((ridge - v["lo"]) / (v["hi"] - v["lo"]), 0.0, 1.0)
+        core = t * t * (3.0 - 2.0 * t)
+        chans = [core]
+        for sg in (v["g"], v["b"]):
+            gl = ndimage.gaussian_filter(core, sg)
+            chans.append(np.clip(gl / max(np.percentile(gl[core > 0.5], v["norm"]), 1e-4), 0.0, 1.0))
+        out = os.path.join(OUT, name + "_vein.png")
+        Image.fromarray((np.dstack(chans) * 255.0).round().clip(0, 255).astype(np.uint8), "RGB").save(out, optimize=True)
+        write_import(out)
+        print(f"veins {name}: cores {100.0 * (core > 0.5).mean():.2f} % of the sheet, glow (g > .1) {100.0 * (chans[1] > 0.1).mean():.2f} %, wide {100.0 * (chans[2] > 0.1).mean():.2f} %")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "build"
     if cmd == "ingest":
         ingest()
     elif cmd == "build":
         build()
+        veins()
     elif cmd == "leaves":   # (den r19 B) grade O6's leaf drifts (set.json "leaf") in place, as build does: den_set.py leaves
         import den_rocks as dr
         sh = [q for q in json.load(open(os.path.join(OUT, "set.json")))["sheets"] if q["name"] == "O6"][0]
@@ -504,6 +535,8 @@ if __name__ == "__main__":
             x0, y0, x1, y1 = bbox(a)
             save_rgba(os.path.join(OUT, name + ".png"), f[y0:y1, x0:x1], a[y0:y1, x0:x1])
             print("bank", name, "rebuilt", a[y0:y1, x0:x1].shape)
+    elif cmd == "veins":   # (den r19 S) H3's vein mask from the built H3.png (build runs it too): den_set.py veins
+        veins()
     elif cmd == "check":
         sys.exit(0 if check() else 1)
     else:
