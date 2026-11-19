@@ -265,6 +265,7 @@ public partial class Game
         foreach (var d in doublesDropped) { try { d.Wait(5000); } catch (Exception) { } if (d.IsCompletedSuccessfully) d.Result.Free(); }
         doublesDropped.Clear();
         DropCast();
+        QuitPath.EndClean();   // (quit-crash: the last of the game's exit work; the engine's teardown is skipped in an exported build)
     }
 
     /// <summary>Her double made ahead, if it is of her as she is (waited for, if it is still being made); else null.</summary>
