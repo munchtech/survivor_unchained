@@ -288,6 +288,7 @@ public partial class Game
     /// </summary>
     void PortraitLight(double dt, Vector3 eyes, Vector3 dir, float z, float ground)
     {
+        RenderingServer.GlobalShaderParameterSet("kit_her_creator", 1f);   // (armor-ref, 18 Nov: the kit steel under the creator's lights, heroine_outfit kit_her_creator)
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
         // How much of the portrait's light: none for her whole figure, all of it from head and shoulders in.
         float p = Smooth((z - 0.15f) / 0.45f);
@@ -517,6 +518,7 @@ public partial class Game
         figureBody = "";
         foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim, herFire }) l?.QueueFree();
         CelRigOff();
+        RenderingServer.GlobalShaderParameterSet("kit_her_creator", 0f);
         keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         if (figure?.Person is { } herRig) { People.HerLookRig(herRig, 0); People.HerSkinGain(herRig, 1); People.HerShadeNight(herRig, 0); }
