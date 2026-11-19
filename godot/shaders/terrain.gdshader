@@ -734,7 +734,8 @@ void fragment() {
 	albedo *= 1.0 + crown_lift * smoothstep(0.82, 0.95, pm.r) * w_soft;
 	albedo *= mix(vec3(1.0), vec3(0.84, 0.95, 1.1), clamp(rut_w * rut_cool, 0.0, 1.0));
 	// (lane J: the world palette: ground, and path where the road mask (paint R, soft-kinds weight) says road)
-	albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), road);
+	// (lane J: the palette's path a shape with an edge, not the road's soft lift: its own narrower step on the paint mask)
+	albedo = mix(pal_ground(albedo, w_pos), pal_path(albedo, w_pos), smoothstep(0.55, 0.66, pm.r) * w_soft);
 	albedo *= 1.0 + verge_lift * smoothstep(0.2, 0.5, pm.r) * (1.0 - smoothstep(0.78, 0.9, pm.r)) * (1.0 - smoothstep(0.05, 0.3, rut_w)) * w_soft;
 	albedo *= mix(1.0, 0.64, wet);
 	rough = mix(rough, 0.72, wet * 0.6);
