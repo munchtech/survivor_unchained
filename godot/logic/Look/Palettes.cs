@@ -12,8 +12,13 @@ namespace SurvivorUnchained.Look;
 /// violet and teal by night. Only the world's classes take it: her skin, hair, eyes and gear never do (lane E's skin band).
 /// Flattened per class: [dark r g b (linear), amount, mid r g b, lo, lit r g b, hi].</summary>
 /// <summary>(lane J, night glow) A palette's light sources: cap, stem and light colours (sRGB hex), the light's energy and range (m),
-/// the share of tree feet that get a cluster, the most clusters in a zone, the mushrooms a cluster [min, max], the cap radius [min, max] (m).</summary>
-public sealed record PaletteGlow(string Cap, string Stem, string Light, double Energy, double Range, double Share, int Max, int CapsMin, int CapsMax, double SizeMin, double SizeMax);
+/// the share of tree feet that get a cluster, the most clusters in a zone, the mushrooms a cluster [min, max], the cap radius [min, max] (m).
+/// (lead 2: the woods alone put no cluster in the opening frame (one a 97 m2, most under a crown): the clusters now also line the
+/// zone's walked paths, "paths" by name, one every "step" m, "side" [min, max] m off the centre line, a light on "path_light" of
+/// them and on "wood_light" of the woods' ones; "alt" a second source (cap, light colours) on "alt_share" of the clusters.)</summary>
+public sealed record PaletteGlow(string Cap, string Stem, string Light, double Energy, double Range, double Share, int Max, int CapsMin, int CapsMax, double SizeMin, double SizeMax,
+    string[]? Paths = null, double Step = 4, double SideMin = 2.8, double SideMax = 4.4, double PathLight = 0.5, double WoodLight = 0.25,
+    string AltCap = "#e8c8ff", string AltLight = "#b070ff", double AltShare = 0);
 
 public static class Palettes
 {
@@ -24,7 +29,10 @@ public static class Palettes
         string S(string k, string d) => g.TryGetProperty(k, out var v) ? v.GetString()! : d;
         var caps = g.TryGetProperty("caps", out var c) ? (c[0].GetInt32(), c[1].GetInt32()) : (3, 7);
         var size = g.TryGetProperty("size", out var z) ? (z[0].GetDouble(), z[1].GetDouble()) : (0.08, 0.22);
-        return new PaletteGlow(S("cap", "#bff8ff"), S("stem", "#5fd0e0"), S("light", "#55e0ff"), D("energy", 1.6), D("range", 3.2), D("share", 0.45), (int)D("max", 40), caps.Item1, caps.Item2, size.Item1, size.Item2);
+        var side = g.TryGetProperty("side", out var sd) ? (sd[0].GetDouble(), sd[1].GetDouble()) : (2.8, 4.4);
+        string[]? paths = g.TryGetProperty("paths", out var ps) ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(ps.EnumerateArray(), x => x.GetString()!)) : null;
+        return new PaletteGlow(S("cap", "#bff8ff"), S("stem", "#5fd0e0"), S("light", "#55e0ff"), D("energy", 1.6), D("range", 3.2), D("share", 0.45), (int)D("max", 40), caps.Item1, caps.Item2, size.Item1, size.Item2,
+            paths, D("step", 4), side.Item1, side.Item2, D("path_light", 0.5), D("wood_light", 0.25), S("alt_cap", "#e8c8ff"), S("alt_light", "#b070ff"), D("alt_share", 0));
     }
 
     /// <summary>The classes in their order (the shader's PAL_* index).</summary>

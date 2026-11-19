@@ -344,7 +344,7 @@
       "stone": {"ramp": ["#24264e", "#3c3e78", "#5e60a8"], "amount": 0.8, "range": [0.15, 0.55]},
       "bark": {"ramp": ["#26101e", "#40202e", "#5c3040"], "amount": 0.75, "range": [0.15, 0.55]},
       "ember": {"near": 1.2, "far": 3.5, "keep": 0.85},
-      "glow": {"cap": "#bff8ff", "stem": "#5fd0e0", "light": "#55e0ff", "energy": 2.2, "range": 3.6, "share": 0.45, "max": 900, "caps": [3, 7], "size": [0.08, 0.22]}
+      "glow": {"cap": "#bff8ff", "stem": "#5fd0e0", "light": "#55e0ff", "energy": 2.2, "range": 3.6, "share": 0.45, "max": 700, "caps": [3, 7], "size": [0.08, 0.22], "paths": ["VROAD", "RUTS"], "step": 3.5, "side": [2.8, 4.4], "path_light": 0.5, "wood_light": 0.15, "alt_cap": "#ecc8ff", "alt_light": "#b070ff", "alt_share": 0.3}
     }
   },
   "crowns": {
