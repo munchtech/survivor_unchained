@@ -299,13 +299,14 @@ public partial class Atmosphere : Node3D
     /// <summary>(lane J art-color) The world's palette (Palettes.cs: per class 12 doubles) to the pal_* globals; null or --pal off: amount 0, the albedo as built.</summary>
     public static void SetPalette(double[]? pal)
     {
-        bool on = pal is { Length: >= 72 } && SurvivorUnchained.Args.Get("pal") != "off";
+        bool on = pal is { Length: >= 76 } && SurvivorUnchained.Args.Get("pal") != "off";
         for (int c = 0; c < PalClasses.Length; c++)
             for (int k = 0; k < 3; k++)
             {
                 int o = c * 12 + k * 4;
                 RenderingServer.GlobalShaderParameterSet($"pal_{PalClasses[c]}{k}", on ? new Vector4((float)pal![o], (float)pal[o + 1], (float)pal[o + 2], (float)pal[o + 3]) : Vector4.Zero);
             }
+        RenderingServer.GlobalShaderParameterSet("pal_ember", on ? new Vector4((float)pal![72], (float)pal[73], (float)pal[74], 0) : Vector4.Zero);
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

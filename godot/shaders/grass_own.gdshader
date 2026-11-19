@@ -287,7 +287,7 @@ void fragment() {
 	vec4 tx = texture(atlas, uv);
 	vec3 gb = tx.rgb * v_tint;
 	gb = mix(vec3(dot(gb, vec3(0.2126, 0.7152, 0.0722))), gb, mix(sat, night_sat, flora_light.x));
-	gb = pal_grass(gb);   // (lane J: the world palette, grass class)
+	gb = pal_grass(gb, v_wp);   // (lane J: the world palette, grass class)
 	// The root in the ground: the ground's colour, darkened, up the first part of the clump.
 	gb = mix(v_ground * base, gb, smoothstep(0.0, 0.3, t));
 	// By night the moonlit tips blue-green.

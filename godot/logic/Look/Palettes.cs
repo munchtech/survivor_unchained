@@ -16,7 +16,8 @@ public static class Palettes
     /// <summary>The classes in their order (the shader's PAL_* index).</summary>
     public static readonly string[] Classes = ["leaf", "grass", "ground", "path", "stone", "bark"];
     public const int Row = 12;
-    public static int Size => Classes.Length * Row;
+    public const int EmberAt = 6 * Row;   // (ember: near m, far m, keep, 0: within near m of her light the palette is taken back by keep, none again at far m)
+    public static int Size => Classes.Length * Row + 4;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -37,6 +38,12 @@ public static class Palettes
             r[o + 7] = range.Item1;
             r[o + 11] = Math.Max(range.Item2, range.Item1 + 1e-3);
         }
+        if (e.TryGetProperty("ember", out var em))
+        {
+            r[EmberAt] = em.TryGetProperty("near", out var n) ? n.GetDouble() : 0;
+            r[EmberAt + 1] = em.TryGetProperty("far", out var f) ? f.GetDouble() : 0;
+            r[EmberAt + 2] = em.TryGetProperty("keep", out var kp) ? kp.GetDouble() : 0;
+        }
         return r;
     }
 
@@ -52,6 +59,7 @@ public static class Palettes
             double k = a == null ? t : 1 - t;
             var r = (double[])src.Clone();
             for (int c = 0; c < Classes.Length; c++) r[c * Row + 3] *= k;
+            r[EmberAt + 2] *= k;
             return r;
         }
         var m = new double[a.Length];

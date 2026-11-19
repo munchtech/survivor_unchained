@@ -208,6 +208,7 @@ varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing m
 #endif
 
 #ifdef OWN_FOLIAGE
+varying vec3 v_fwpos;   // (lane J: the crown's world point, for the palette's ember keep)
 // (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
 // tips may take under a low sun, sRGB degrees)
 uniform float flutter = 1.0;
@@ -615,6 +616,7 @@ void vertex() {
 #endif
 #ifdef OWN_FOLIAGE
 	// (Env 23) a stump's cap (tree_caps.py) only while its tree is faded, in the w 2 fade; else nothing
+	v_fwpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;   // (lane J: the palette's ember keep reads the world position)
 	v_cap = abs(COLOR.b - 0.3) < 0.08 && UV.x > 0.75 ? 1.0 : 0.0;
 	if (v_cap > 0.0 && (v_fade <= 0.0 || canopy_fade.w < 1.5)) VERTEX = vec3(0.0);
 #endif
@@ -1087,7 +1089,7 @@ void fragment() {
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
 		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
-		ALBEDO = pal_leaf(ALBEDO);   // (lane J: the world palette, leaf class)
+		ALBEDO = pal_leaf(ALBEDO, v_fwpos);   // (lane J: the world palette, leaf class)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
@@ -1134,7 +1136,7 @@ void fragment() {
 		SPECULAR = 0.12;
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
-		ALBEDO = pal_bark(ALBEDO);   // (lane J: the world palette, bark class)
+		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
 		ALBEDO *= mix(0.6, 1.0, open_);
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
@@ -1257,7 +1259,7 @@ void fragment() {
 #else
 		const bool stand = false;
 #endif
-		col = pal_stone(col);   // (lane J: the world palette, stone class)
+		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));

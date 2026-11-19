@@ -381,6 +381,10 @@ pal_bark2={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+pal_ember={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
