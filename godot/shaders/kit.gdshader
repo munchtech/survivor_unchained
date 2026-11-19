@@ -208,6 +208,11 @@ varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing m
 #endif
 
 #ifdef OWN_FOLIAGE
+#ifdef OWN_BROADLEAF
+// (lane J lead 7, judge r5 (a)) the crown's middle (world): the near-lens darkening and slide down the ramp taken per crown
+// (one value over the whole crown, a flat field), not per pixel (a soft gradient across the crown read as camouflage)
+varying flat vec3 v_crown;
+#endif
 varying vec3 v_fwpos;   // (lane J: the crown's world point, for the palette's ember keep)
 // (a species' own: its leaves' flutter in the wind, the spruce's 1; the warmest hue its sunlit
 // tips may take under a low sun, sRGB degrees)
@@ -617,6 +622,9 @@ void vertex() {
 #ifdef OWN_FOLIAGE
 	// (Env 23) a stump's cap (tree_caps.py) only while its tree is faded, in the w 2 fade; else nothing
 	v_fwpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;   // (lane J: the palette's ember keep reads the world position)
+#ifdef OWN_BROADLEAF
+	v_crown = MODEL_MATRIX[3].xyz + MODEL_MATRIX[1].xyz * (0.5 * (crown_lo + crown_hi));
+#endif
 	v_cap = abs(COLOR.b - 0.3) < 0.08 && UV.x > 0.75 ? 1.0 : 0.0;
 	if (v_cap > 0.0 && (v_fade <= 0.0 || canopy_fade.w < 1.5)) VERTEX = vec3(0.0);
 #endif
@@ -1080,6 +1088,17 @@ void fragment() {
 #endif
 	float night = flora_light.x, low_sun = flora_light.y;
 	float open_ = mix(1.0, COLOR.r, core);
+	// (lane J lead 7: a broadleaf's frame radius and lens distance at its crown's middle, flat over the crown)
+	float c_lensd = length(VERTEX);
+	float c_frame = length((SCREEN_UV - 0.5) * vec2(VIEWPORT_SIZE.x / max(VIEWPORT_SIZE.y, 1.0), 1.0));
+#ifdef OWN_BROADLEAF
+	{
+		vec3 c_cv = (VIEW_MATRIX * vec4(v_crown, 1.0)).xyz;
+		vec4 c_cc = PROJECTION_MATRIX * vec4(c_cv, 1.0);
+		c_lensd = length(c_cv);
+		c_frame = length(c_cc.xy / max(abs(c_cc.w), 1e-4) * 0.5 * vec2(VIEWPORT_SIZE.x / max(VIEWPORT_SIZE.y, 1.0), 1.0));
+	}
+#endif
 	if (UV.x < 0.75) {
 		// each tree its own green: hue within 7 degrees (olive to blue-green), value within 13% (two hashes, not one)
 		float j2 = fract(v_jit * 7.31 + 0.37);
@@ -1088,12 +1107,12 @@ void fragment() {
 		if (fract(v_jit * 13.37 + 0.11) < old_share) ALBEDO = mix(ALBEDO, vec3(dot(ALBEDO, LW)) * vec3(1.3, 1.0, 0.6), old_amt * mix(0.6, 1.0, fract(v_jit * 5.71)));
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
-		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
+		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, c_lensd)) * (1.0 - night);
 		// (lane J: the world palette, leaf class; lead 2: a spray facing the sky climbs the ramp, so a crown's tips go gold and
 		// its depths stay crimson, as the reference's maples, on top of each tree's own place on the ramp)
 		float pal_tip = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y, -1.0, 1.0);
 		// (lead 3: each crown on its own ramp, crimson, orange or gold, a second hash its place on it; the leaves by the lens darker)
-		ALBEDO = pal_leaf3(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5), fract(v_jit * 11.13 + 0.29), pal_tip, length((SCREEN_UV - 0.5) * vec2(VIEWPORT_SIZE.x / max(VIEWPORT_SIZE.y, 1.0), 1.0)), length(VERTEX));
+		ALBEDO = pal_leaf3(ALBEDO, v_fwpos, fract(v_jit * 3.17 + 0.5), fract(v_jit * 11.13 + 0.29), pal_tip, c_frame, c_lensd);
 		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.x);   // (lead 5: the crown's own contour)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
@@ -1125,7 +1144,7 @@ void fragment() {
 		// the key's tint taken back out; under the moon a third of it, deep blue-green
 		float bl = dot(ALBEDO * vec3(0.18, 0.22, 0.24) * key, LW) / dot(vec3(0.45, 1.0, 0.53), LW);
 		BACKLIGHT = mix(vec3(0.45, 1.0, 0.53) * bl / key, ALBEDO * vec3(0.04, 0.07, 0.065), night) * open_;
-		BACKLIGHT *= 1.0 - near_back * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
+		BACKLIGHT *= 1.0 - near_back * (1.0 - smoothstep(16.0, 30.0, c_lensd)) * (1.0 - night);
 		// (the crown's up-facing normals would take the whole sky's light: inside a crown most of it is
 		// shut out; at night the needles take less of the moonlit sky still)
 		// (judge E4c: at 0.36 the shaded crowns under the moon went black, below the shaded road: the moonlit
@@ -1360,12 +1379,15 @@ void light() {
 	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) { float patt = ATTENUATION; cel_pool_paint(plc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz); att = patt; }
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
-	vec3 dd = cel_on > 0.0 ? mix(vec3(d), max(cel_level(tw), vec3(0.45)), cel_on) : vec3(d);
+	// (lane J lead 7, judge r5 (a): a leaf's key band flat, no form gradient in it, its terminator one pixel wide: a painted crown's
+	// hard value bands; the band's width in n.l drew soft steps across a smooth dome)
+	bool lf_px = LIGHT_IS_DIRECTIONAL && UV.x < 0.75;
+	vec3 dd = cel_on > 0.0 ? mix(vec3(d), max(lf_px ? cel_level_px(tw) : cel_level(tw), vec3(0.45)), cel_on) : vec3(d);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) * (1.0 - flora_light.y) : 1.0;
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
 	// (B1c: under cel the light through the leaves only at the terminator's thin edge, capped: cel_trans)
-	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, tw, 0.0), cel_on);
+	vec3 tr = mix(BACKLIGHT * (1.0 - dd), lf_px ? vec3(0.0) : cel_trans(BACKLIGHT, tw, 0.0), cel_on);
 	DIFFUSE_LIGHT += plc * att * (dd * lift + tr) / PI + cel_on * cel_fill_add(plc, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 	}

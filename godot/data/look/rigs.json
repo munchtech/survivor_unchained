@@ -321,7 +321,7 @@
       "bands": [4, 0, 0, 3, 3, 3],
       "band_edge": 0.05,
       "lines": [3.5, 4.0, 2.0, 0.8],
-      "leaf_form": 0.75
+      "leaf_form": 1.0
     },
     "wild_night": {
       "value": 0.4,
@@ -337,7 +337,7 @@
       "bands": [4, 0, 0, 3, 3, 3],
       "band_edge": 0.05,
       "lines": [3.5, 4.0, 2.0, 0.8],
-      "leaf_form": 0.75
+      "leaf_form": 1.0
     }
   },
   "crowns": {

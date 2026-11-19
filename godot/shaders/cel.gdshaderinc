@@ -408,6 +408,14 @@ vec3 cel_level_mid(float c_t, vec4 c_mid) {
 	return mix(vec3(1.0), c_mid.rgb, c_mid.a * (1.0 - c_full)) * cel_lit(c_t) * mix(1.0, clamp(c_t, 0.0, 1.0), clamp(cel_form * cel_tune.w, 0.0, 1.0));
 }
 vec3 cel_level(float c_t) { return cel_level_mid(c_t, cel_mid); }
+// (lane J lead 7, judge r5 (a)) the ramp as cel_level, flat (no form gradient in the lit band) and its edges one pixel wide
+// (fwidth of n.l, not cel_band's width in n.l): painted foliage's hard value bands. Fragment/light only (derivatives).
+vec3 cel_level_px(float c_t) {
+	float c_fw = 0.5 * max(fwidth(c_t), 1e-4);
+	float c_z = cel_band.z * cel_tune.y;
+	float c_full = c_z > 0.0 ? smoothstep(cel_band.x + c_z - c_fw, cel_band.x + c_z + c_fw, c_t) : 1.0;
+	return mix(vec3(1.0), cel_mid.rgb, cel_mid.a * (1.0 - c_full)) * smoothstep(cel_band.x - c_fw, cel_band.x + c_fw, c_t);
+}
 // The light through a form (BACKLIGHT) under the cel model: a thin edge on the shade side of the terminator (CEL_TRANS_WRAP
 // of n.l past it) and the thin parts (c_thin 0..1), never across the shade band, which keeps the fill's cool tint; capped at
 // CEL_TRANS_CAP of the light. As a multiplier of the light (L1 B1c: rules 2 and 5, MB1's cool colored shade; before it the

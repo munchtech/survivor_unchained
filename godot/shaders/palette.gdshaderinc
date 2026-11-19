@@ -86,12 +86,23 @@ float pal_bands(float u, float nb) {
 	float x = u * (nb - 1.0), e = max(pal_band1.z, 0.01);
 	return (floor(x) + smoothstep(0.5 - e, 0.5 + e, fract(x))) / (nb - 1.0);
 }
+// (lane J lead 7, judge r5 (a): the crowns' camouflage) the FORM's bands (pal_ramp2's fs > 0) hard to the pixel: the step
+// one pixel wide (fwidth of the band coordinate), not a share of the value: a crown's facing turns slowly across a dome,
+// so band_edge's 0.05 of a band drew 10-20 px soft steps there
+float pal_bands_px(float u, float nb) {
+	if (nb < 1.5) return u;
+	float x = u * (nb - 1.0), e = 0.5 * max(fwidth(x), 1e-4);
+	return (floor(x) + smoothstep(0.5 - e, 0.5 + e, fract(x))) / (nb - 1.0);
+}
 // (lane J lead 6, judge r4 cel fix 4: the crowns read camouflage, the ramp's bands cut across the albedo's own speckle)
 // uf, fs: the ramp's place taken this share (fs) from the form (uf: the card's facing) instead of the albedo's value
+// (lead 7: uf the facing over the upper half only, 0 level to 1 up: the play camera sees a crown from above, so a cluster's
+// dome, tip 0.5-1, spans two or three bands (cap, flank, rim); over -1..1 it sat in one band, one flat colour per crown)
 vec3 pal_ramp2(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb, float uf, float fs) {
 	if (d.w <= 0.0 || k <= 0.0) return albedo;
 	float v = sqrt(max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 0.0));
-	float u = pal_bands(mix(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), uf, fs), nb);
+	float u0 = mix(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), uf, fs);
+	float u = fs > 0.0 ? pal_bands_px(u0, nb) : pal_bands(u0, nb);
 	if (nb >= 1.5) v = m.w + u * (l.w - m.w);   // (the value kept is the band's)
 	float t = clamp(u + shift, 0.0, 1.0);
 	vec3 r = t < 0.5 ? mix(d.rgb, m.rgb, t * 2.0) : mix(m.rgb, l.rgb, t * 2.0 - 1.0);
@@ -136,7 +147,7 @@ vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float edge, float 
 	// ramp's mid instead, amber, on its own dark stop: toward crimson it went khaki)
 	if (nw > 0.0 && h > 1.0 - pal_leafm.y) m = vec4(mix(m.rgb, pal_leaf1.rgb, nw), pal_leaf1.w);
 	else if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }
-	return pal_ramp2(a, d, m, l, pal_keep(wp), sh - pal_band1.w * pal_leafm.w * tip, pal_vk0.x, pal_band0.x, clamp(0.5 + 0.5 * tip, 0.0, 1.0), pal_band1.w) * (1.0 - pal_leafn.x * nw);
+	return pal_ramp2(a, d, m, l, pal_keep(wp), sh - pal_band1.w * pal_leafm.w * tip, pal_vk0.x, pal_band0.x, clamp(tip, 0.0, 1.0), pal_band1.w) * (1.0 - pal_leafn.x * nw);
 }
 vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x, pal_band0.x); }
 vec3 pal_grass(vec3 a) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, 1.0, 0.0, pal_vk0.y, pal_band0.y); }
