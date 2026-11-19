@@ -730,9 +730,23 @@ public partial class P1Laws : SkeletonModifier3D
         System.IO.File.AppendAllText(LawsDump, sb.ToString());
     }
 
+    // (sol cups, 19 Nov: the motion sweep's skin-in-plate count) --dbg-skin-id: her body drawn flat magenta, unlit, so
+    // skin through the armor is counted by one exact colour, not by a skin-vs-gold threshold
+    static readonly StandardMaterial3D? SkinId = Args.Has("dbg-skin-id")
+        ? new StandardMaterial3D { AlbedoColor = new Color(1, 0, 1), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded }
+        : null;
+
     public override void _Process(double delta)
     {
         if (sk == null) return;
+        if (SkinId != null)
+            foreach (var m in new[] { body, lod })
+            {
+                if (m?.Mesh == null) continue;
+                m.MaterialOverlay = null;
+                for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
+                    if (m.GetSurfaceOverrideMaterial(s) != SkinId) m.SetSurfaceOverrideMaterial(s, SkinId);
+            }
         // (a piece worn as B's whose mesh was set again since, e.g. a garment tuck laid it anew: carried again)
         foreach (var p in worn.Where(p => GodotObject.IsInstanceValid(p.Mi) && p.Mi.Mesh != p.Set).ToList())
         {
