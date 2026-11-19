@@ -45,6 +45,7 @@ public partial class BugReporter : CanvasLayer
     bool autoDone;
     string? boxShotPath;
     double boxShotAt = -1;
+    bool boxShotTyped;
 
     public BugReporter(Game game)
     {
@@ -112,7 +113,12 @@ public partial class BugReporter : CanvasLayer
         }
         else if (k.Keycode == Key.Escape && box != null)
         {
-            Cancel();
+            if (Typed() && !discardAsked)
+            {
+                discardAsked = true;
+                if (hintLabel != null) { hintLabel.Text = "Esc again to discard"; hintLabel.Visible = true; }
+            }
+            else Cancel();
             GetViewport().SetInputAsHandled();
         }
     }
@@ -169,83 +175,112 @@ public partial class BugReporter : CanvasLayer
 
     void Cancel() { if (box != null) Close(); }
 
+    static StyleBoxFlat Underline() => new() { DrawCenter = false, BorderColor = Style.Ember, BorderWidthBottom = 2 };
+
+    static void Tune(Control edit)
+    {
+        edit.AddThemeColorOverride("font_placeholder_color", Kit.Dim);
+        edit.AddThemeColorOverride("caret_color", Style.EmberHi);
+        edit.AddThemeColorOverride("selection_color", Style.Ember with { A = 0.35f });
+        edit.AddThemeColorOverride("font_selected_color", Kit.Ink);
+        edit.AddThemeConstantOverride("caret_width", 2);
+        edit.AddThemeStyleboxOverride("focus", Underline());
+    }
+
     static LineEdit Field(string placeholder, int size)
     {
-        var edit = new LineEdit { PlaceholderText = placeholder, MaxLength = 120, CustomMinimumSize = new Vector2(440, 36), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        var edit = new LineEdit { PlaceholderText = placeholder, MaxLength = 120, CustomMinimumSize = new Vector2(440, 36), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, ContextMenuEnabled = false, CaretBlink = true };
         Style.Font(edit, Style.UiBold, size, Kit.Ink, false);
-        edit.AddThemeColorOverride("font_placeholder_color", Kit.Faint);
-        edit.AddThemeColorOverride("caret_color", Style.EmberHi);
-        StyleBoxFlat Ruled(Color c) => new() { BgColor = Colors.Transparent, BorderColor = c, BorderWidthBottom = 1, ContentMarginLeft = 10, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 };
-        edit.AddThemeStyleboxOverride("normal", Ruled(Kit.Edge));
-        edit.AddThemeStyleboxOverride("focus", Ruled(Style.Ember));
+        Tune(edit);
+        edit.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Kit.Edge, BorderWidthBottom = 1, ContentMarginLeft = 10, ContentMarginRight = 2, ContentMarginTop = 4, ContentMarginBottom = 6 });
         return edit;
     }
 
+    static VBoxContainer Group(Control head, Control field) => Style.V(Style.Gap2, head, field);
+
     void Build()
     {
-        var root = new Control { MouseFilter = Control.MouseFilterEnum.Stop };
+        var root = new Control { MouseFilter = Control.MouseFilterEnum.Stop, Theme = Style.PageTheme };
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         root.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.55f), MouseFilter = Control.MouseFilterEnum.Ignore, AnchorRight = 1, AnchorBottom = 1 });
         var center = new CenterContainer { AnchorRight = 1, AnchorBottom = 1, MouseFilter = Control.MouseFilterEnum.Ignore };
         root.AddChild(center);
-        var panel = Style.Panel(Kit.Window(28, 24, 22));
+        var panel = Style.Panel(Kit.Window(Overlay.Margin, Overlay.Margin, Overlay.Margin));
         panel.CustomMinimumSize = new Vector2(500, 0);
         center.AddChild(panel);
-        var col = Style.V(Style.Gap3);
+        var col = Style.V(Style.Gap5);
         panel.AddChild(col);
         col.AddChild(new Title("Report a bug", 30, false));
         col.AddChild(Kit.RuleH());
 
         if (askName)
         {
-            col.AddChild(Style.Label("Your name", Style.UiBold, 14, Kit.HeadInk, false, HorizontalAlignment.Left, false));
-            nameEdit = Field("Your name", 18);
+            nameEdit = Field("Asked once; it signs your reports", 18);
             nameEdit.MaxLength = 24;
-            col.AddChild(nameEdit);
+            col.AddChild(Group(Kit.Head("Your name"), nameEdit));
         }
         else nameEdit = null;
 
-        col.AddChild(Style.Label("What went wrong", Style.UiBold, 14, Kit.HeadInk, false, HorizontalAlignment.Left, false));
         titleEdit = Field("In a few words", 18);
-        col.AddChild(titleEdit);
+        col.AddChild(Group(Kit.Head("What went wrong"), titleEdit));
 
-        col.AddChild(Style.Label("More (optional)", Style.UiBold, 14, Kit.HeadInk, false, HorizontalAlignment.Left, false));
-        descEdit = new TextEdit { CustomMinimumSize = new Vector2(440, 110), WrapMode = TextEdit.LineWrappingMode.Boundary, PlaceholderText = "What you did, what you saw, what you expected" };
+        descEdit = new TextEdit { CustomMinimumSize = new Vector2(440, 110), WrapMode = TextEdit.LineWrappingMode.Boundary, PlaceholderText = "What you did, what you saw, what you expected", ContextMenuEnabled = false, CaretBlink = true };
         Style.Font(descEdit, Style.UiBold, 16, Kit.Ink, false);
-        descEdit.AddThemeColorOverride("font_placeholder_color", Kit.Faint);
-        descEdit.AddThemeColorOverride("caret_color", Style.EmberHi);
-        StyleBoxFlat Boxed(Color c) => new() { BgColor = new Color(0, 0, 0, 0.25f), BorderColor = c, BorderWidthBottom = 1, BorderWidthTop = 1, BorderWidthLeft = 1, BorderWidthRight = 1, ContentMarginLeft = 8, ContentMarginRight = 8, ContentMarginTop = 6, ContentMarginBottom = 6 };
-        descEdit.AddThemeStyleboxOverride("normal", Boxed(Kit.Edge));
-        descEdit.AddThemeStyleboxOverride("focus", Boxed(Style.Ember));
-        col.AddChild(descEdit);
+        Tune(descEdit);
+        descEdit.AddThemeStyleboxOverride("normal", Kit.WellBox(10));
+        col.AddChild(Group(Kit.Head("More", "optional"), descEdit));
 
         bool withClip = clip is { Jpegs.Count: > 0 };
-        col.AddChild(Style.Label(withClip ? "The screenshot and the last 30 seconds are attached." : "Screenshot only: the clip is off.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Left, false));
-        col.AddChild(Kit.RuleH());
+        var note = Style.Label(withClip ? "The screenshot and the last 30 seconds are attached." : "Screenshot only: the clip is off.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Left, false);
+        note.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        var folder = Kit.Word("Open reports folder", OpenFolder, Kit.Ink2, 15);
+        col.AddChild(Style.H(Style.Gap4, note, folder));
 
         sendBtn = Kit.Keyed(Act.Confirm, "Send", () => Send(false), Style.EmberHi);
         var cancel = Kit.Keyed(Act.Cancel, "Cancel", Cancel);
-        var folder = Kit.Word("Open reports folder", OpenFolder, Kit.Ink2, 15);
-        var row = Style.H(Style.Gap5, sendBtn, cancel, folder);
-        col.AddChild(row);
+        // Enter sends from the one-line fields; in the description it adds a line, so the hint there says Ctrl+Enter
+        var hint = Style.Label("Ctrl+Enter sends", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Right, false);
+        hint.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        hint.MouseFilter = Control.MouseFilterEnum.Ignore;
+        hint.Visible = false;
+        hintLabel = hint;
+        var row = Style.H(0, cancel, hint, sendBtn);
+        col.AddChild(Style.V(Style.Gap3, Kit.RuleH(), row));
 
         void Refresh()
         {
             bool ok = Valid();
             sendBtn!.Disabled = !ok;
             sendBtn.Modulate = Colors.White with { A = ok ? 1f : 0.4f };
+            sendBtn.MouseDefaultCursorShape = ok ? Control.CursorShape.PointingHand : Control.CursorShape.Arrow;
         }
         titleEdit.TextChanged += _ => Refresh();
         if (nameEdit != null) nameEdit.TextChanged += _ => Refresh();
         titleEdit.TextSubmitted += _ => { if (Valid()) Send(false); };
         if (nameEdit != null) nameEdit.TextSubmitted += _ => titleEdit.GrabFocus();
+        descEdit.FocusEntered += () => { hint.Text = "Ctrl+Enter sends"; hint.Visible = true; };
+        descEdit.FocusExited += () => { if (!discardAsked) hint.Visible = false; };
+        descEdit.GuiInput += ev =>
+        {
+            if (ev is InputEventKey { Pressed: true, Echo: false } k && (k.Keycode == Key.Enter || k.Keycode == Key.KpEnter) && k.CtrlPressed)
+            {
+                descEdit.AcceptEvent();
+                if (Valid()) Send(false);
+            }
+        };
         Refresh();
 
         AddChild(root);
         box = root;
+        discardAsked = false;
         Control first = nameEdit != null && nameEdit.Text.Length == 0 ? nameEdit : titleEdit;
         first.CallDeferred(Control.MethodName.GrabFocus);
     }
+
+    bool discardAsked;
+    Label? hintLabel;
+
+    bool Typed() => (nameEdit != null && nameEdit.Text.Trim().Length > 0 && tester.Length == 0) || (titleEdit?.Text.Length ?? 0) > 0 || (descEdit?.Text.Length ?? 0) > 0;
 
     bool Valid() => titleEdit != null && titleEdit.Text.Trim().Length > 0 && (nameEdit == null || nameEdit.Text.Trim().Length > 0);
 
@@ -427,6 +462,17 @@ public partial class BugReporter : CanvasLayer
         if (boxShotPath != null && boxShotAt >= 0 && clock >= boxShotAt)
         {
             if (box == null) { OpenFresh(); boxShotAt = clock + 1; }
+            else if (!boxShotTyped)
+            {
+                boxShotTyped = true;
+                if (nameEdit != null) nameEdit.Text = "Lead";
+                titleEdit!.Text = "The sword vanishes after the second dodge";
+                descEdit!.Text = "I was in the den.\nI dodged twice.\nThe sword was gone.\nIt came back after a death.\nThe hit sound kept playing.\nThe frame rate dropped too.\nThis happened on the second room.";
+                titleEdit.GrabFocus();
+                titleEdit.CaretColumn = titleEdit.Text.Length;
+                sendBtn!.Disabled = false; sendBtn.Modulate = Colors.White;
+                boxShotAt = clock + 0.7;
+            }
             else
             {
                 GetViewport().GetTexture().GetImage().SavePng(boxShotPath);
