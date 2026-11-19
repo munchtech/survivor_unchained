@@ -25,6 +25,10 @@ window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 
+[debug]
+
+file_logging/max_log_files=50
+
 [dotnet]
 
 project/assembly_name="SurvivorUnchained"
