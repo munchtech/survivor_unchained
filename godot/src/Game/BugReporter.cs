@@ -108,7 +108,8 @@ public partial class BugReporter : CanvasLayer
         if (e is not InputEventKey { Pressed: true, Echo: false } k) return;
         if (k.Keycode == Key.F8 && box == null)
         {
-            if (g.Overlay != null) OpenFromPause(); else OpenFresh();
+            // (the pause menu up: its snapshot, the world as it was before it; any other screen: the frame as it is)
+            if (g.Overlay == "pause") OpenFromPause(); else OpenFresh();
             GetViewport().SetInputAsHandled();
         }
         else if (k.Keycode == Key.Escape && box != null)
