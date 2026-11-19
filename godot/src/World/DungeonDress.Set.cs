@@ -165,12 +165,16 @@ public static partial class DungeonDress
                 mat.SetShaderParameter("pit_paint_pt", SurvivorUnchained.Args.Num("den-pit-paint-pt", 0f));
                 // (den r18 P5, p8a: glow 1.7 % of the s11 main box against 8-12, the far wall L .20-.22 against .40) the veins' bleed
                 // (--den-pit-bleed gain, mip lod, lime-ness full; 0 off) and the painting's light x --den-pit-paint-gain
-                var pb = V3("den-pit-bleed", new Vector3(3f, 6f, 0.03f));   // (den r19 V, R18b item 1: veins pastel, L p50 .63 -> .52, C90 .115 -> .097) a wide dim bleed (r18 1.2,4.5,.06), cap .35 -> .1, paint-alb .8 -> 1
+                var pb = V3("den-pit-bleed", new Vector3(3.5f, 6f, 0.019f));   // (den r19 V2: 3 -> 3.5, .03 -> .019, c .055,.085,.042 -> .04,.062,.032, cmax 0 -> .06, cap .1 -> .06: s11 L p50 .50 C90 .089 share .79, s23 .50/.088/.61) (den r19 V, R18b item 1: veins pastel, L p50 .63 -> .52, C90 .115 -> .097) a wide dim bleed (r18 1.2,4.5,.06), cap .35 -> .1, paint-alb .8 -> 1
                 mat.SetShaderParameter("pit_bleed", new Vector4(pb.X, pb.Y, pb.Z, 0f));
-                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.055f, 0.085f, 0.042f)));
+                mat.SetShaderParameter("pit_cmax", SurvivorUnchained.Args.Num("den-pit-cmax", 0.06f));   // (den r19 V2, R18b item 1) hard OKLab chroma clamp on the veins' emissive and bleed (0 off)
+                // (den r19 V2, R18b item 6) the crumb ring's gaps (half-width rad, the blurred alpha kept above: from, to; 0 off) and the edge's darker falloff (albedo off, alpha lod; 0 off)
+                mat.SetShaderParameter("pit_gaps", V3("den-pit-gaps", new Vector3(0.22f, 0.7f, 0.95f)));
+                mat.SetShaderParameter("pit_fall", new Vector2(SurvivorUnchained.Args.Num("den-pit-fall", 0.45f), SurvivorUnchained.Args.Num("den-pit-fall-lod", 4f)));
+                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.04f, 0.062f, 0.032f)));
                 // (den r18 lead, R18 judge item 1: the veins neon, glow C50 .150 -> .076 at v9 j, den_boss .073; r18 judged: sat 1, cap 0, k 1.2, alb .5, hi .25, bleed .6/3.5 c .16,.4,.06) --den-pit-sat (saturation kept, 1 = as judged) and --den-pit-cap
                 // (the veins' emission luminance cap, linear; 0 off)
-                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 0.15f), SurvivorUnchained.Args.Num("den-pit-cap", 0.1f)));
+                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 0.15f), SurvivorUnchained.Args.Num("den-pit-cap", 0.06f)));
                 // (den r18 lead, R18 judge item 5: the rims stickers) --den-pit-rim-dark (the painting darkened toward its fade),
                 // --den-pit-rim-lilac (the lilac fringe's saturation out), the fade itself from --den-pit-rim-in to -out lip radii (H3 only)
                 mat.SetShaderParameter("pit_rim", new Vector2(SurvivorUnchained.Args.Num("den-pit-rim-dark", 0.15f), SurvivorUnchained.Args.Num("den-pit-rim-lilac", 1f)));
@@ -1330,6 +1334,8 @@ public static partial class DungeonDress
             hrot = Hash(hx, hz, 2402) * Mathf.Tau;
         }
         float sn = -CamUp.Z;   // a floor metre north draws this many metres up the camera's plane
+        // (den r19 V2, R18b item 6: the same two paintings in both seeds) an H3 painting turned a quarter by a hash of its spot (--den-pit-rot 1; 0 off)
+        float prot = sheet == "H3" && SurvivorUnchained.Args.Num("den-pit-rot", 0f) > 0f ? Mathf.Pi * 0.5f * Mathf.Floor(4f * Hash((int)(ctr.X * 7f), (int)(ctr.Y * 7f), 2208)) : 0f;
         float W = pc.Metres.X, Hr = pc.Metres.Y, ma = pc.Mouth.Z * W, mb = pc.Mouth.W * Hr / sn;
         if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
         int ob = buf.V.Count;
@@ -1362,6 +1368,7 @@ public static partial class DungeonDress
                 float g = Mathf.Clamp(FourierAt(co, th) / Mathf.Max(rp, 0.05f), 0.15f, 4f);
                 var off = new Vector2(dx, dz) * g;
                 if (hrot != 0f) off = new Vector2(off.X * Mathf.Cos(hrot) - off.Y * Mathf.Sin(hrot), off.X * Mathf.Sin(hrot) + off.Y * Mathf.Cos(hrot));
+                if (prot != 0f) off = new Vector2(off.X * Mathf.Cos(prot) - off.Y * Mathf.Sin(prot), off.X * Mathf.Sin(prot) + off.Y * Mathf.Cos(prot));   // (den r19 V2)
                 var w = ctr + off;
                 if (lairHole && SetPitCells > 0f) { while (buf.U2.Count < buf.V.Count) buf.U2.Add(Vector2.Zero); buf.U2.Add(off); }   // (den r16 A) the pit-local offset
                 buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
