@@ -45,6 +45,19 @@ public partial class NightGlow : Node3D
         poolEmit = ImageTexture.CreateFromImage(em); poolRim = ImageTexture.CreateFromImage(rim);
     }
     float last = -1;
+    // (lane J lead 8: painted light, glows light the world in hard steps) every cluster's centre and whether it is alt; the 16 nearest her
+    // go to the shader globals ps_gl0..15 (paint_stroke.gdshaderinc), r scaled to 0 by day
+    readonly List<(Vector3 P, bool Alt)> srcs = new();
+    float[] spill = [1.5f, 2.25f, 3f, 0.4f, 0.25f, 0.1f];
+    Vector4 spillCy, spillVi; Vector3 lastPos = new(1e9f, 0, 0); float lastR = -1, spillR = 1;
+    static Vector3 Lin(string hex) { var c = new Color(hex).SrgbToLinear(); return new Vector3(c.R, c.G, c.B); }
+    void SpillSet(Vector3 center, float k)
+    {
+        var sorted = srcs.OrderBy(s => s.P.DistanceSquaredTo(center)).Take(16).ToArray();
+        for (int i = 0; i < 16; i++)
+            RenderingServer.GlobalShaderParameterSet("ps_gl" + i, i < sorted.Length && k > 0.01f ? new Vector4(sorted[i].P.X, sorted[i].P.Y, sorted[i].P.Z, sorted[i].Alt ? -spillR : spillR) : Vector4.Zero);
+        lastPos = center; lastR = k;
+    }
 
     static float Hash(float x, float z, int k)
     {
@@ -81,8 +94,9 @@ public partial class NightGlow : Node3D
             var into = alt ? alts : caps;
             int n = g.CapsMin + (int)(Hash(sx, sz, 4) * (g.CapsMax - g.CapsMin + 1));
             float cy = (float)z.HeightAt(cx, cz);
+            root.srcs.Add((new Vector3(cx, cy + 0.2f, cz), alt));
             if (g.HaloRadius > 0) Halo(alt ? haloAlts : halos, new Vector3(cx, cy + 0.18f, cz), (float)(g.HaloRadius * (0.8 + 0.4 * Hash(sx, sz, 9))));
-            if (g.Pool is { Length: >= 7 } pp && SurvivorUnchained.Args.Get("glow-pools") is not ("off" or "0"))   // (--glow-pools off: none, for the perf A/B)
+            if (g.Pool is { Length: >= 7 } pp && pp[0] > 0 && SurvivorUnchained.Args.Get("glow-pools") is not ("off" or "0"))   // (--glow-pools off: none, for the perf A/B)
             {
                 if (poolEmit == null) PoolTextures(pp);
                 float pr = (float)(pp[0] * (0.85 + 0.3 * Hash(sx, sz, 12)));
@@ -186,6 +200,12 @@ public partial class NightGlow : Node3D
             // (the quads stand at the cluster's point; their reach is the vertex shader's: a box big enough that none is culled)
             root.AddChild(new MeshInstance3D { Name = "GlowHalos", Mesh = hmesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, ExtraCullMargin = 4f });
         }
+        if (g.Spill is { Length: >= 6 } spl) root.spill = spl.Select(v => (float)v).ToArray();
+        root.spillR = root.spill.Length > 6 ? root.spill[6] : 0.9f;
+        var cyl = Lin(g.SpillLight ?? g.Light); var vil = Lin(g.SpillAlt ?? g.AltLight);
+        root.spillCy = new Vector4(cyl.X, cyl.Y, cyl.Z, root.spill[3]); root.spillVi = new Vector4(vil.X, vil.Y, vil.Z, root.spill[4]);
+        RenderingServer.GlobalShaderParameterSet("ps_glc0", root.spillCy); RenderingServer.GlobalShaderParameterSet("ps_glc1", root.spillVi);
+        RenderingServer.GlobalShaderParameterSet("ps_glk", new Vector4(root.spill[0], root.spill[1], root.spill[2], root.spill[5]));
         root.Visible = false;
         GD.Print($"NightGlow {z.Id}: {clusters} clusters ({onPath} on paths, {nAlt} alt), {lit} lights, {mush} mushrooms from {feet} feet");
         return root;
@@ -194,6 +214,12 @@ public partial class NightGlow : Node3D
     public override void _Process(double delta)
     {
         float k = Atmosphere.GlowK;
+        if (k >= 0.01f && GetViewport()?.GetCamera3D() is { } cm0)
+        {
+            var c = cm0.GlobalPosition + (-cm0.GlobalBasis.Z * 8f);
+            if (lastR < 0.01f || c.DistanceSquaredTo(lastPos) > 1f) SpillSet(c, k);
+        }
+        else if (lastR >= 0.01f) SpillSet(lastPos, 0f);
         if (Mathf.IsEqualApprox(k, last)) return;
         last = k;
         Visible = k >= 0.01f;

@@ -166,4 +166,62 @@ vec3 ps_hit_paint(vec3 albedo, vec2 h) {
 	return mix(albedo, mix(ps_hitc.rgb, ps_hite.rgb, h.y), h.x);
 }
 vec3 ps_hit_emit(vec2 h) { return mix(ps_hitc.rgb, ps_hite.rgb, h.y) * h.x * ps_cover1.w; }
+// (lane J lead 8: painted light, glows light the world in hard steps) The night glows' spill: ps_gl0..15 = (x, y, z, r) the
+// nearest clusters (r > 0 the cyan light, r < 0 the alt violet, 0 none), ps_glc0 = (cyan rgb linear, step 1 strength),
+// ps_glc1 = (violet rgb, step 2 strength), ps_glk = (step radii as multiples of |r|, innermost first, step 3 strength).
+// Steps are cumulative and hard (one pixel of antialias), the edges broken by a world wobble so they read painted.
+// Returns an EMISSION add: the light's colour times the surface's own albedo (plus a floor), so it tints, not paints over.
+// n_world = vec3(0): no facing term (the ground); else a hard 0/1 rim of the faces turned to the source.
+global uniform vec4 ps_glc0;
+global uniform vec4 ps_glc1;
+global uniform vec4 ps_glk;
+global uniform vec4 ps_gl0;
+global uniform vec4 ps_gl1;
+global uniform vec4 ps_gl2;
+global uniform vec4 ps_gl3;
+global uniform vec4 ps_gl4;
+global uniform vec4 ps_gl5;
+global uniform vec4 ps_gl6;
+global uniform vec4 ps_gl7;
+global uniform vec4 ps_gl8;
+global uniform vec4 ps_gl9;
+global uniform vec4 ps_gl10;
+global uniform vec4 ps_gl11;
+global uniform vec4 ps_gl12;
+global uniform vec4 ps_gl13;
+global uniform vec4 ps_gl14;
+global uniform vec4 ps_gl15;
+
+vec3 ps_gl_one(vec4 g, vec3 wp, vec3 n, vec3 alb, float wob) {
+	float ar = abs(g.w);
+	vec3 dv = wp - g.xyz;
+	float rr = ps_glk.z * ar * 1.12;
+	float d2 = dot(dv, dv);
+	if (g.w == 0.0 || d2 > rr * rr) return vec3(0.0);
+	float d = sqrt(d2) / ar * wob;
+	float px = fwidth(d) + 1e-4;
+	float s1 = 1.0 - smoothstep(ps_glk.x - px, ps_glk.x + px, d);
+	float s2 = 1.0 - smoothstep(ps_glk.y - px, ps_glk.y + px, d);
+	float s3 = 1.0 - smoothstep(ps_glk.z - px, ps_glk.z + px, d);
+	bool cy = g.w > 0.0;
+	vec3 lc = cy ? ps_glc0.rgb : ps_glc1.rgb;
+	float face = 1.0;
+	if (dot(n, n) > 0.01) face = mix(0.35, 1.0, step(0.05, dot(n, -dv) / max(sqrt(d2), 1e-4)));
+	vec3 inner = lc * (alb * 0.4 + 0.1) * (ps_glc0.w * s1 + ps_glc1.w * s2);
+	vec3 outer = lc * (alb * 0.5 + 0.03) * ps_glk.w * s3;
+	return (inner + outer) * face;
+}
+vec3 ps_glow_light(vec3 wp, vec3 n_world, vec3 albedo) {
+	float wob = 1.0 + 0.1 * sin(wp.x * 1.9 + wp.z * 1.3) * sin(wp.z * 2.7 - wp.x * 0.9 + 1.0) + 0.05 * sin(wp.x * 5.1 - wp.z * 4.3);
+	vec3 e = vec3(0.0);
+	e += ps_gl_one(ps_gl0, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl1, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl2, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl3, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl4, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl5, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl6, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl7, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl8, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl9, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl10, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl11, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl12, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl13, wp, n_world, albedo, wob);
+	e += ps_gl_one(ps_gl14, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl15, wp, n_world, albedo, wob);
+	return e;
+}
 #endif

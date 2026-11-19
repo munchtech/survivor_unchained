@@ -458,6 +458,82 @@ pal_line={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+ps_gl0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl4={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl5={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl6={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl7={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl8={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl9={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl10={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl11={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl12={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl13={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl14={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_gl15={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_glc0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_glc1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_glk={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 ps_brush={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
