@@ -2187,6 +2187,15 @@ def build_mesh():
     # Each object split by material (one material a part: the export joins a slot's parts by material); the material
     # is the game's own entry of that name (outfit_materials.json), its UVs laid out at the material's true size.
     parts, rigid_of = [], {}
+    # (params.rigid_blend "union" (armor-ref, 18 Nov: the builder's corset, a rigid steel top): every `_rigid` part rides
+    # the SAME blend, the mean of her blends over all of them (rigid_drop applied), so plate, rims, straps and gem move
+    # as one shell and never part; each on its own mean put the cups' rims and the gem on her breast springs)
+    union_m = None
+    if PRM.get("rigid_blend") == "union":
+        pts_ = [np.array([(o_.matrix_world @ v.co)[:] for v in o_.data.vertices]) for o_ in srcs
+                if _base_name(o_.name).endswith("_rigid")]
+        if pts_:
+            union_m = G["four_bones"](G["soft_weights"](np.vstack(pts_))).mean(0)
     for o in srcs:
         bname = _base_name(o.name)
         rigid = bname.endswith("_rigid")
@@ -2204,9 +2213,9 @@ def build_mesh():
         if rigid:
             # (a rigid part rides ONE blend from her skin at its centre: the mean of its points' blends, its four
             # largest shares, so it never bends; heroine_outfits' rigid_again keeps it on that blend after the helpers)
-            if wt is None:
+            if wt is None and union_m is None:
                 wt = G["four_bones"](G["soft_weights"](co))
-            m_ = wt.mean(0)
+            m_ = union_m if union_m is not None else wt.mean(0)
             k_ = [i for i in np.argsort(-m_)[:4] if m_[i] > 1e-4]
             row = [(BONES[i], float(m_[i] / sum(m_[j] for j in k_))) for i in k_]
             # (params.rigid_drop [bone prefix, ..] (body1 g4): bones left out of every rigid part's blend, the rest
