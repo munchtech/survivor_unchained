@@ -35,6 +35,8 @@ public sealed class Settings
     public List<string> SeenCinematics = new();
     /// <summary>The tutorial's callouts on (src/Ui/Callout.cs), and which this profile has seen (each shows once).</summary>
     public bool Tips = true;
+    /// <summary>Keep the last 30 seconds in memory for a bug report (ClipRecorder).</summary>
+    public bool BugClip = true;
     /// <summary>(aim-move) Whom she faces: "always" (the cursor, standing or moving) or "skill" (her travel, the cursor only while a skill strikes). F7 toggles (FacingMode.cs).</summary>
     public string FacingMode = "always";
     public List<string> SeenTips = new();
