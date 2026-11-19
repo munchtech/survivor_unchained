@@ -528,6 +528,8 @@ uniform float back_spec = 1.0;
 // the point, shadow and its angle in (ATTENUATION times ndl, times dbg_gate), red the key's path in front of her, green
 // the soft lamps, blue the lamps behind her)
 uniform float dbg_gate = 0.0;
+// (sol cups, 19 Nov: --dbg-skin-id) her skin one flat magenta, after the tuck's discard, so skin through armor is counted exactly
+uniform float dbg_id = 0.0;
 // (four in one: Godot's 32 varyings, and the cel model's two (L1 B1b), left none to spare)
 varying vec4 shade_lse;
 #define shade_w shade_lse.x
@@ -968,6 +970,7 @@ void fragment() {
 	}
 	vec3 alb_dbg = ALBEDO / max(sky_w, 1e-3);
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
+	if (dbg_id > 0.0) { ALBEDO = vec3(1.0, 0.0, 1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = vec3(0.0); }
 	if (cool_dbg > 0.0) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.3 * vec3(step(cool_dbg * 2.0, cool_r), step(cool_dbg, cool_r) - step(cool_dbg * 2.0, cool_r), 1.0 - step(cool_dbg, cool_r)) * fract(cool_r * 4.0 + 0.5) ; }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
