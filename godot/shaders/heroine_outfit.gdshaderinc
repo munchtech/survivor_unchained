@@ -128,12 +128,12 @@ uniform float kit_dir_glint_far = 0.0;
 // v_kcurv, before kit_glint_px's cap): the flecks on her rolled edges and trim bevels (front: 7, L .85-.93, all gone with the
 // sun's close glint off, none with the rim off), while a cup's or the helm's disc keeps its full size; 0: off)
 uniform float kit_glint_minpx = 0.0;
-// (armor-D belt blot, 18 Nov: the leather's highlight (outfit_hl's kind 0 disc, 9 degrees round N.H) is cut by angle alone too,
-// so with the town sun behind the lens the near-flat back of her kit belt lay inside it whole: a pale patch, L .80 on leather at .30,
-// the only sun highlight on the band (debug_view 23 took it out, 24 kept it). hl_px: as kit_glint_px for the steel, the disc's radius
-// never past the form's own turn across that many screen pixels (v_kcurv), so a strap's roll keeps its line and a flat panel a point
-// at most; set per mesh key in metal_finishes.json; 0: off, as before)
-uniform float hl_px = 0.0;
+// (armor-D belt blot, 18 Nov: the leather's highlight is outfit_hl's kind 0 disc (9 degrees round N.H, soft 1.5, gain 0.6, the
+// light's own colour), a hard near-white cut. On the dark kit leather the town sun behind the lens put one such disc on the back
+// of her belt (L .80 on leather at .30, debug_view 23 took it out, 24 kept it: the sun alone), which read as a paint blot, not as
+// leather's sheen. hl_disc: the kind 0 disc's own numbers per mesh key in metal_finishes.json (x radius, y soft width, z gain,
+// w the light's colour (1) or its lightness (0)), so the kit's leathers take a soft low sheen; z 0: the kind's default, as before)
+uniform vec4 hl_disc = vec4(0.0);
 varying float v_kcurv;                             // (armor-D fin4: the shading normal's turn per screen pixel, degrees)
 // (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
 // and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
@@ -390,7 +390,7 @@ void fragment() {
 	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0))) || kit_plate.x > 0.0 || kit_gold.x > 0.0) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
 		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
 	v_kit_far = kit_far;
-	v_kcurv = (kit_glint_px > 0.0 || kit_glint_minpx > 0.0 || hl_px > 0.0) ? degrees(length(fwidth(NORMAL))) : 0.0;   // (armor-D fin4, see kit_glint_px)
+	v_kcurv = (kit_glint_px > 0.0 || kit_glint_minpx > 0.0) ? degrees(length(fwidth(NORMAL))) : 0.0;   // (armor-D fin4, see kit_glint_px)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -768,9 +768,8 @@ vec3 outfit_hl(vec3 n, vec3 l, vec3 v, vec3 lc, float lit_sh, float r, float mt,
 	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_sky * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
 		+ cel_spec_disc(vec4(7.0, 1.0, 1.0, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	if (kind == 0) {
-		vec4 lsp = vec4(9.0, 1.5, 0.6, 1.0);
-		if (hl_px > 0.0 && debug_view != 45) { float lr = min(lsp.x, hl_px * v_kcurv); lsp.y *= lr / lsp.x; lsp.x = lr; }   // (hl_px; dev 45: off)
-		return cel_spec_disc(lsp, lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+		vec4 lsp = (hl_disc.z > 0.0 && debug_view != 45) ? hl_disc : vec4(9.0, 1.5, 0.6, 1.0);   // (hl_disc; dev 45: the default)
+		return cel_spec_disc(lsp, mix(vec3(cel_lum(lc)), lc, lsp.w), n, l, v, lit_sh, r, mt, alb, sp, amt);
 	}
 	if (kind == 3) return cel_spec_disc(vec4(7.0, 1.0, 0.8, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	return vec3(0.0);
