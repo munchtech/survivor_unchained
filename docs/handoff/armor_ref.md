@@ -1,6 +1,11 @@
 # Armor-reference lead: state (top block is current)
 
-**Top block (18 Nov 2026):**
+**LEAD 2 (18 Nov night, spawned by coordinator #15; read this first, then the lead-1 block below for recipes and facts):**
+- Brief: r2 of sol_corset: fixes 9+2 (material/colour) first, then shapes 1,3,4,6,7,5,8 at the source; rebuild, ship, --import, shoot c2 (4 cams + chest_sun + unlit colour render + side + 1:1 back close), judge r2 (su-lead-max, always-seen, max, 150k). Pass -> mixed look at the 4 cams + judge -> coordinator swaps the corset alone. Midday 19 Nov: tell coordinator which way. Demo 20 Nov; swap deadline evening 19 Nov. Judge spawns: 1 of 3 used.
+- ROOT CAUSE fix 9 + rim colour (found): the kit look is NOT the material; it is the per-wear-id finish row "kit" in godot/art/people/metal_finishes.json "meshes" (People.cs ~l.1636: mesh name StartsWith(row + "_")): enamel gunmetal steel + kit toon params, gold dye #ffbf50, leathers #5e3a28. sol_* had no row -> steel fell to the global "steel": "blued" (navy) with its patina speckle, gold undyed (skin-tone brass). Fix: a row alias ("sol": "kit", People.cs takes a string row as the named row), so sol tracks lead 8's tuning; pattern mats buckle/gem_plate -> gold, gem -> gem_garnet (no claspgold/darksteel: no kit row for them).
+- State: IN PROGRESS (material fix).
+
+**Top block, lead 1 (18 Nov 2026):**
 - Item: armor-reference (spawned by coordinator #15, the main session; report there). First run of the EQUIPMENT BUILDER (the owner, 18 Nov: "getting the equipment builder and npcs builder going is going to be big.  as well as reuseable assets").
 - Owner quotes: 18 Nov "if the den finishes and all thats left is armor, lets pivot to building the armor as it looks in the reference with a focus on marionette integration." / 17 Nov "ok redesign it but make sure marionette can copy and paste any of these armor pieces and for \"dressing\" anyway we want you know?" / 17 Nov "do not worry about body a fallback in marionette.  we are body b forward now".
 - Reference: C:/Users/munch/Desktop/survivorsunchained_inputs/gpt_sol/kit/01_turnaround.png (worn look), 02_pieces.png (per piece, front/back), 03_tiers.png.
