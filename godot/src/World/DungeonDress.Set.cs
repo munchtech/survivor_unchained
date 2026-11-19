@@ -161,16 +161,16 @@ public static partial class DungeonDress
             if (sheet == "H3")
             {
                 mat.SetShaderParameter("pit_cells", 0f);
-                mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.7f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 0.8f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.12f)));
+                mat.SetShaderParameter("pit_paint", new Vector4(SurvivorUnchained.Args.Num("den-pit-paint-k", 1.7f), SurvivorUnchained.Args.Num("den-pit-paint-alb", 1f), SurvivorUnchained.Args.Num("den-pit-paint-lo", 0.02f), SurvivorUnchained.Args.Num("den-pit-paint-hi", 0.12f)));
                 mat.SetShaderParameter("pit_paint_pt", SurvivorUnchained.Args.Num("den-pit-paint-pt", 0f));
                 // (den r18 P5, p8a: glow 1.7 % of the s11 main box against 8-12, the far wall L .20-.22 against .40) the veins' bleed
                 // (--den-pit-bleed gain, mip lod, lime-ness full; 0 off) and the painting's light x --den-pit-paint-gain
-                var pb = V3("den-pit-bleed", new Vector3(1.2f, 4.5f, 0.06f));
+                var pb = V3("den-pit-bleed", new Vector3(3f, 6f, 0.03f));   // (den r19 V, R18b item 1: veins pastel, L p50 .63 -> .52, C90 .115 -> .097) a wide dim bleed (r18 1.2,4.5,.06), cap .35 -> .1, paint-alb .8 -> 1
                 mat.SetShaderParameter("pit_bleed", new Vector4(pb.X, pb.Y, pb.Z, 0f));
-                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.22f, 0.28f, 0.17f)));
+                mat.SetShaderParameter("pit_bleed_c", V3("den-pit-bleed-c", new Vector3(0.055f, 0.085f, 0.042f)));
                 // (den r18 lead, R18 judge item 1: the veins neon, glow C50 .150 -> .076 at v9 j, den_boss .073; r18 judged: sat 1, cap 0, k 1.2, alb .5, hi .25, bleed .6/3.5 c .16,.4,.06) --den-pit-sat (saturation kept, 1 = as judged) and --den-pit-cap
                 // (the veins' emission luminance cap, linear; 0 off)
-                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 0.15f), SurvivorUnchained.Args.Num("den-pit-cap", 0.35f)));
+                mat.SetShaderParameter("pit_look", new Vector2(SurvivorUnchained.Args.Num("den-pit-sat", 0.15f), SurvivorUnchained.Args.Num("den-pit-cap", 0.1f)));
                 // (den r18 lead, R18 judge item 5: the rims stickers) --den-pit-rim-dark (the painting darkened toward its fade),
                 // --den-pit-rim-lilac (the lilac fringe's saturation out), the fade itself from --den-pit-rim-in to -out lip radii (H3 only)
                 mat.SetShaderParameter("pit_rim", new Vector2(SurvivorUnchained.Args.Num("den-pit-rim-dark", 0.15f), SurvivorUnchained.Args.Num("den-pit-rim-lilac", 1f)));
