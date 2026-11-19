@@ -160,6 +160,9 @@ public partial class Controls : Node
                     UsingPad = false;
                     // (M4: LMB and RMB are skills; a click on the interface, or in a menu, is not a swing)
                     bool onUi = MenuMode || Captured || GetViewport()?.GuiGetHoveredControl() is { MouseFilter: Control.MouseFilterEnum.Stop };
+                    // (playtest 18 Nov: a click is offered to a callout holding the fight still first, as a key is: a press
+                    // only latched, LMB never answered "Hold LMB to swing" and no click went on from a freeze; only Esc did)
+                    if (!MenuMode && !Captured && ActsFor(mc).Any(a => Click?.Invoke(a) == true)) { down.Add(mc); taken.Add(mc); break; }
                     foreach (var a in ActsFor(mc)) if (!(onUi && KeyMap.IsSkill(a))) latched.Add(a);
                     down.Add(mc);
                     if (onUi) taken.Add(mc);
@@ -238,6 +241,10 @@ public partial class Controls : Node
     public bool Pressed(Act a) => latched.Remove(a);
 
     public void ClearLatches() => latched.Clear();
+
+    /// <summary>Offered a mouse button's press first, before it is latched as a skill's (the Game: a freeze callout). True: the
+    /// press is spent (not latched, and not held for a skill until it is let go); false: it goes on as a press.</summary>
+    public Func<Act, bool>? Click;
 
     /// <summary>A press as if the key went down (tools, the autopilot).</summary>
     public void Press(Act a)
