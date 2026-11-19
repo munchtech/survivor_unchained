@@ -101,7 +101,8 @@ public partial class BugReporter : CanvasLayer
 
     public bool IsOpen => box != null;
 
-    string ZoneId => g.Zone?.Id ?? g.Mode;
+    // (a dungeon is named for itself, "hollow", not the zone kind "map" every map shares)
+    string ZoneId => g.Zone is SurvivorUnchained.Play.Zones.MapRun { Chart.Dungeon: { Length: > 0 } dg } ? dg : g.Zone?.Id ?? g.Mode;
 
     public override void _Input(InputEvent e)
     {
@@ -459,7 +460,7 @@ public partial class BugReporter : CanvasLayer
             g.Toast(d.StartsWith("failed") ? new Toast(ToastKind.Warning, "The bug report could not be saved.") : new Toast(ToastKind.World, "Bug report saved", ToastSub(d)));
         }
         // proof runs
-        if (!autoDone && box == null && ((autoAt >= 0 && clock >= autoAt) || (autoZone != null && zid == autoZone && clock - zoneSince >= autoAfter)))
+        if (!autoDone && box == null && ((autoAt >= 0 && clock >= autoAt) || (autoZone != null && (zid == autoZone || g.Zone?.Id == autoZone) && clock - zoneSince >= autoAfter)))
         {
             autoDone = true;
             OpenFresh();
@@ -471,7 +472,7 @@ public partial class BugReporter : CanvasLayer
         }
         // --bug-box-shots: the box's six states in one run (a first, b details, c Esc once, e toast, f pause menu;
         // d, the box over play, is b and c shot in the --bug-box-zone zone). Real time: the tree is paused, this node is not.
-        if (shotsDir != null && (shotsStep > 0 || (zid == shotsZone && clock - zoneSince >= 20) || (shotsZone == null && clock >= 3)) && clock >= shotsAt)
+        if (shotsDir != null && (shotsStep > 0 || ((zid == shotsZone || g.Zone?.Id == shotsZone) && clock - zoneSince >= 20) || (shotsZone == null && clock >= 3)) && clock >= shotsAt)
         {
             void Shot(string n) { GetViewport().GetTexture().GetImage().SavePng(Path.Combine(shotsDir, n + ".png")); }
             shotsAt = clock + 0.7;
