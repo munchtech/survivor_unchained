@@ -112,7 +112,10 @@ public class RigsTests
         Assert.True(s["day_town"]!.FireShare < 0.5);
         Assert.Equal(s["day_town"]!.FireShare, s["day_wild"]!.FireShare);
         Assert.Equal(1, s["night_play"]!.FireShare);
-        Assert.Equal(s["day_town"]!.Fill.Sky, s["day_wild"]!.Fill.Sky);   // (one day fill: the sky's hue too)
+        // (lane J art-color, 19 Nov: the wild's day takes its own violet sky for the reference's violet-brown shade, the owner's
+        // day colouring; the town keeps day_town's. Was: one day fill, the sky's hue too.)
+        var (sr, sg, sb) = Atmospheres.Linear(s["day_wild"]!.Fill.Sky);
+        Assert.True(sb > sg && sr > sg, "the wild's day sky is violet");
     }
 
     [Fact]
