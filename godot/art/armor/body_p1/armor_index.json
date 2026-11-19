@@ -189,13 +189,12 @@
   ],
   "meshes": [
    "sol_corset.top.brownleather",
-   "sol_corset.top.claspgold",
-   "sol_corset.top.darksteel",
    "sol_corset.top.gold",
+   "sol_corset.top.redleather",
    "sol_corset.top.steel"
   ],
   "tuck": "armor_tuck/sol_corset.bin",
-  "tuck_count": 4370,
+  "tuck_count": 4293,
   "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
   "hold": {
    "amount": 0.55,
