@@ -327,7 +327,8 @@ def _ship_exact(pid, piece, stage, sa, body, r, text):
     res = pn.pin(gp, pre, body, B, drop=tuple(piece.get("params", {}).get("rigid_drop") or ()),
                  ride=tuple(piece.get("params", {}).get("rigid_ride") or ()),
                  authored=src0 if src0.endswith((".glb", ".gltf")) and os.path.exists(src0) else None,
-                 bend=piece.get("params", {}).get("bend_ride"), fit=_bend_fit_spec(pid, piece))
+                 bend=piece.get("params", {}).get("bend_ride"), fit=_bend_fit_spec(pid, piece),
+                 soft_drop=tuple(piece.get("params", {}).get("soft_drop") or ()))
     say(f"{pid}: exact pin: {json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in res.items()})}")
     ps_ = os.path.join(stage, "pre", pid + ".sockets.json")
     if os.path.exists(ps_):

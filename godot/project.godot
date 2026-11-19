@@ -461,6 +461,10 @@ kit_her_den_close={
 "type": "float",
 "value": 0.0
 }
+kit_her_creator={
+"type": "float",
+"value": 0.0
+}
 cel_her_den2={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
