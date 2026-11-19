@@ -295,6 +295,18 @@ public partial class Atmosphere : Node3D
     /// <summary>The sun the frost's thaw is baked for under `p` (Set: GroundPaint.SunAt), or null if it has no thaw:
     /// for baking it ahead (GroundPaint.SunAhead). (--air-old and --air-tune are not followed: a bake ahead for a
     /// sun that does not come is only wasted, and the one that does is baked as before.)</summary>
+    static readonly string[] PalClasses = { "leaf", "grass", "ground", "path", "stone", "bark" };
+    /// <summary>(lane J art-color) The world's palette (Palettes.cs: per class 12 doubles) to the pal_* globals; null or --pal off: amount 0, the albedo as built.</summary>
+    public static void SetPalette(double[]? pal)
+    {
+        bool on = pal is { Length: >= 72 } && SurvivorUnchained.Args.Get("pal") != "off";
+        for (int c = 0; c < PalClasses.Length; c++)
+            for (int k = 0; k < 3; k++)
+            {
+                int o = c * 12 + k * 4;
+                RenderingServer.GlobalShaderParameterSet($"pal_{PalClasses[c]}{k}", on ? new Vector4((float)pal![o], (float)pal[o + 1], (float)pal[o + 2], (float)pal[o + 3]) : Vector4.Zero);
+            }
+    }
     public static Vector3? ThawSun(AtmospherePreset p)
     {
         if (!(p.Frost * FrostScale > 0 && p.FrostThaw > 0)) return null;
@@ -458,6 +470,7 @@ public partial class Atmosphere : Node3D
         TownLit = Mathf.Max(moon, 1f - Mathf.SmoothStep(18f, 26f, (float)p.KeyElevation));
         RenderingServer.GlobalShaderParameterSet("town_lit", TownLit);
         RenderingServer.GlobalShaderParameterSet("water_air", new Vector4((float)p.RiverLight, (float)p.RiverSky, (float)p.RiverBend, (float)p.RiverMoon));
+        SetPalette(p.Palette);   // (lane J: the world palette per time of day, rigs.json "palettes")
         RenderingServer.GlobalShaderParameterSet("flora_lamp", SurvivorUnchained.Args.Num("grass-lamp-ochre", (float)p.GrassLampOchre));
         RenderingServer.GlobalShaderParameterSet("flora_night", new Vector4(SurvivorUnchained.Args.Num("bush-night-sat", (float)p.BushNightSat), SurvivorUnchained.Args.Num("ground-ember-ochre", (float)p.GroundEmberOchre), 0, 0));
         // Hoar frost on the ground's exposed tops (terrain and grass shaders; GroundPaint's sky exposure), thawed

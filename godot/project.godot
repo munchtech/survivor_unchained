@@ -309,6 +309,78 @@ flora_lamp={
 "type": "float",
 "value": 0.0
 }
+pal_leaf0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leaf1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_leaf2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_grass0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_grass1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_grass2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_ground0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_ground1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_ground2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_path0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_path1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_path2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_stone0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_stone1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_stone2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_bark0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_bark1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+pal_bark2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

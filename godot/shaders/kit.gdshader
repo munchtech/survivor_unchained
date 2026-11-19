@@ -35,6 +35,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #endif
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
+#include "res://shaders/palette.gdshaderinc"
 #ifdef KIT_STAND_LEAF
 // (L1 lead 22, BUSH) The leaf MASS's tone is BAKED per cap in COLOR.r (env_trees.py BU_RING: 1 its middle, 0.86 a ring,
 // 0.6 its edge, the whole cap shifted by BU_JIT), not read from its normal: a cap is 20-30 px at the play camera and its
@@ -1086,6 +1087,7 @@ void fragment() {
 		// (a tree by the camera, in the frame's foreground, a shade darker by day: in full sun the nearest spruce
 		// stood as the frame's brightest mint at roaddawn, judge E4c)
 		ALBEDO *= 1.0 - near_dim * (1.0 - smoothstep(16.0, 30.0, length(VERTEX))) * (1.0 - night);
+		ALBEDO = pal_leaf(ALBEDO);   // (lane J: the world palette, leaf class)
 		// a tier's underside (a card seen from below) in its own shade
 		if (COLOR.b > 0.5 && !FRONT_FACING) open_ *= 0.7;
 		// a low sun's warmth only at the tips: the sunlit sprays a little greyer and cooler
@@ -1132,6 +1134,7 @@ void fragment() {
 		SPECULAR = 0.12;
 		AO_LIGHT_AFFECT = 0.0;
 	} else {
+		ALBEDO = pal_bark(ALBEDO);   // (lane J: the world palette, bark class)
 		ALBEDO *= mix(0.6, 1.0, open_);
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
@@ -1254,6 +1257,7 @@ void fragment() {
 #else
 		const bool stand = false;
 #endif
+		col = pal_stone(col);   // (lane J: the world palette, stone class)
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));

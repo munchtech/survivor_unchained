@@ -45,7 +45,8 @@ public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, R
     double[]? MoonTop = null, double[]? FoeFire = null, double[]? FoeMoon = null,   // (L1 lead 12, S3: what stands in the night's light; rigs.json "moon_top", "foe_fire", "foe_moon")
     double[]? Stand = null, double[]? EmberFloor = null,   // (L1 lead 17, P: rigs.json "ember_floor", the floor's tone table under her fire)
     double[]? HeroPool = null, double[]? EmberFloorLift = null,
-    double[]? FoeDen = null, double[]? HeroDen = null)   // (demo-look r2 her: rigs.json "hero_den", her figure in the den; Zone.HeroDen)   // (demo-look lane E, item 4: rigs.json "foe_den", the den's pack; AtmospherePreset.FoeDen)   // (L1 lead 19, HER2: rigs.json "hero_pool", the hero figure in her lit pool; Zone.HeroPool)
+    double[]? FoeDen = null, double[]? HeroDen = null,
+    string? Palette = null)   // (lane J art-color: rigs.json "palette", a name in the file's "palettes": the world's colour per time, Palettes.cs)   // (demo-look r2 her: rigs.json "hero_den", her figure in the den; Zone.HeroDen)   // (demo-look lane E, item 4: rigs.json "foe_den", the den's pack; AtmospherePreset.FoeDen)   // (L1 lead 19, HER2: rigs.json "hero_pool", the hero figure in her lit pool; Zone.HeroPool)
 {
     /// <summary>(L1 lead 14, K1; docs/design/NIGHT_KIT.md; rigs.json "stand") The standing material's levels: what stands on
     /// the board (stone, leaf, bark) painted in hard steps as the rig's levels, not the albedo's luck. Four rows, flattened:
@@ -77,6 +78,8 @@ public sealed class RigSet
     public readonly Dictionary<string, LightRig> Rigs = new();
     /// <summary>Crown radius (m) and cover (0..1) per flora kind: the canopy mask's trees (CanopyMask).</summary>
     public readonly Dictionary<string, (double R, double Cover)> Crowns = new();
+    /// <summary>(lane J art-color) The world's palettes by name (rigs.json "palettes"; Palettes.cs), flattened for the shaders.</summary>
+    public readonly Dictionary<string, double[]> Palettes = new();
 
     public LightRig? this[string id] => Rigs.TryGetValue(id, out var r) ? r : null;
 
@@ -97,6 +100,9 @@ public sealed class RigSet
             return r;
         }
         foreach (var id in raw.Keys) Resolve(id, 0);
+        if (root.TryGetProperty("palettes", out var pals))
+            foreach (var p in pals.EnumerateObject())
+                if (!p.Name.StartsWith("_")) set.Palettes[p.Name] = SurvivorUnchained.Look.Palettes.Read(p.Name, p.Value);
         if (root.TryGetProperty("crowns", out var cr))
             foreach (var p in cr.EnumerateObject())
                 set.Crowns[p.Name] = (p.Value[0].GetDouble(), p.Value[1].GetDouble());
@@ -150,7 +156,7 @@ public sealed class RigSet
             A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
             e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel,
             e.TryGetProperty("ember_smooth", out var es) ? es.ValueKind == JsonValueKind.True : b?.EmberSmooth, A(e, "ember_shade", b?.EmberShade),
-            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon), A(e, "stand", b?.Stand), A(e, "ember_floor", b?.EmberFloor), A(e, "hero_pool", b?.HeroPool), A(e, "ember_floor_lift", b?.EmberFloorLift), A(e, "foe_den", b?.FoeDen), A(e, "hero_den", b?.HeroDen));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
+            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon), A(e, "stand", b?.Stand), A(e, "ember_floor", b?.EmberFloor), A(e, "hero_pool", b?.HeroPool), A(e, "ember_floor_lift", b?.EmberFloorLift), A(e, "foe_den", b?.FoeDen), A(e, "hero_den", b?.HeroDen), S(e, "palette", b?.Palette));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
     }
 }
 
@@ -187,6 +193,7 @@ public static class Rigs
             DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.OneShade ? k.Shadow ?? p.ShadowStrength : r.Dapple.Strength ?? p.DappleStrength,
             ShadowLevel = r.OneShade, DappleEdge = r.Dapple.Edge ?? p.DappleEdge, DappleClusters = r.Dapple.Clusters ?? p.DappleClusters, DappleLeaf = r.Dapple.Leaf ?? p.DappleLeaf, DappleLeaves = r.Dapple.Leaves ?? p.DappleLeaves, DappleMass = r.Dapple.Mass ?? p.DappleMass,
             DappleHeight = r.Dapple.Height ?? p.DappleHeight, DappleSize = r.Dapple.Size ?? p.DappleSize, DappleFloor = r.Dapple.Floor ?? p.DappleFloor,
+            Palette = r.Palette is { } pn ? set.Palettes.TryGetValue(pn, out var pv) ? pv : throw new FormatException($"rigs.json: no palette {pn}") : p.Palette,
             IsLit = true, CelTwin = null, Source = p,
         };
     }

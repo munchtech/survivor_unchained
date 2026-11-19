@@ -325,6 +325,9 @@ public sealed record AtmospherePreset(
     /// <summary>(L1 lead 12, F4) Leaf masses: each cluster a lobed mass this wide [narrowest, widest] m with small leaves round
     /// its rim (DappleLeaf their length, DappleLeaves the lobes a mass). Null: the fans of big leaves. CanopyCookie.Shape.</summary>
     public double[]? DappleMass { get; init; }
+    /// <summary>(lane J art-color; rigs.json "palette") The world's colour under this air, per class (Palettes.cs: leaf, grass,
+    /// ground, path, stone, bark; each a ramp of three colours over the albedo's own value, and how far it is taken). Null: none.</summary>
+    public double[]? Palette { get; init; }
     public bool IsLit { get; init; }
     public AtmospherePreset? Source { get; init; }
     /// <summary>(L1 B4) A blend's light under cel: the blend of its two presets' rigs (Atmospheres.Blend sets it).</summary>
