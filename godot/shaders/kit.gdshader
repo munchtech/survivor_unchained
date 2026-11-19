@@ -1264,6 +1264,8 @@ void fragment() {
 		const bool stand = false;
 #endif
 		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
+		if (pal_stonem.w > 0.0 && !pnt)   // (lead 4: the palette's moss on what faces up, in patches)
+			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * st.a), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.4, 0.55, st.a));
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));

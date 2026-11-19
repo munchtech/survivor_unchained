@@ -320,6 +320,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("pal_leafm", more ? At(SurvivorUnchained.Look.Palettes.LeafMixAt) : new Vector4(0, 0, 0.42f, 0.27f));
         RenderingServer.GlobalShaderParameterSet("pal_leafn", At(SurvivorUnchained.Look.Palettes.LeafMixAt + 4));
         RenderingServer.GlobalShaderParameterSet("pal_embera", At(SurvivorUnchained.Look.Palettes.EmberAlbedoAt));
+        RenderingServer.GlobalShaderParameterSet("pal_stonem", At(SurvivorUnchained.Look.Palettes.StoneMossAt));   // (lead 4: the stones' moss)
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {

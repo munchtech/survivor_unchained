@@ -67,7 +67,10 @@ public partial class NightGlow : Node3D
             // (a light on a share of the clusters; the rest glow by their caps alone, so the lights in view stay few)
             if (Hash(sx, sz, 7) < lightShare)
             {
-                var light = new OmniLight3D { Name = "GlowLight", LightColor = Hex(alt ? g.AltLight : g.Light), LightEnergy = 0, OmniRange = (float)g.Range, ShadowEnabled = false, Position = new Vector3(cx, cy + 0.35f, cz) };
+                // (lead 4, judge r2 fix 1: protected skin) the world's glow lights the world and the crowd, never people's layer (2,
+                // her and the folk) nor her own layers: under the cyan her skin went from h 49-51 to 62, green)
+                var light = new OmniLight3D { Name = "GlowLight", LightColor = Hex(alt ? g.AltLight : g.Light), LightEnergy = 0, OmniRange = (float)g.Range, ShadowEnabled = false, Position = new Vector3(cx, cy + 0.35f, cz),
+                    LightCullMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers & ~PlayerView.CastLayer };
                 root.AddChild(light); root.lights.Add((light, (float)g.Energy));
                 lit++;
             }

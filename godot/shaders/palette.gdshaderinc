@@ -42,6 +42,8 @@ global uniform vec4 pal_leafn;
 // (lead 3, judge r1 fix 4) pal_embera = (rgb linear, on): the ground her pool falls on, in place of the albedo as built that
 // pal_ember's keep brought back (its brown under her amber read as mud)
 global uniform vec4 pal_embera;
+// (lead 4, judge r2 fix 8) pal_stonem = (moss rgb linear, share): laid on the stones' tops after the ramp (kit.gdshader)
+global uniform vec4 pal_stonem;
 
 vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk) {
 	if (d.w <= 0.0 || k <= 0.0) return albedo;
@@ -82,7 +84,10 @@ vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float edge, float 
 	vec4 d = pal_leaf0, m = pal_leaf1, l = pal_leaf2;
 	if (h < pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(pal_leafa1.rgb, pal_leaf1.w); l = vec4(pal_leafa2.rgb, pal_leaf2.w); }
 	else if (h > 1.0 - pal_leafm.y) { d = vec4(pal_leafb0.rgb, pal_leaf0.w); m = vec4(pal_leafb1.rgb, pal_leaf1.w); l = vec4(pal_leafb2.rgb, pal_leaf2.w); }
-	if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }   // (by the lens toward ramp a's hue: crimson by day)
+	// (by the lens toward ramp a's hue: crimson by day, violet by night; lead 4, judge r2 fix 6: a gold crown toward the leaf
+	// ramp's mid instead, amber, on its own dark stop: toward crimson it went khaki)
+	if (nw > 0.0 && h > 1.0 - pal_leafm.y) m = vec4(mix(m.rgb, pal_leaf1.rgb, nw), pal_leaf1.w);
+	else if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }
 	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x) * (1.0 - pal_leafn.x * nw);
 }
 vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x); }

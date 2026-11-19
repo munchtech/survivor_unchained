@@ -51,7 +51,10 @@ public static class Palettes
     // (lead 3, judge r1 fix 4: her pool kept the ground's own brown albedo, a mud core) "ember" "albedo": the ground her pool
     // falls on, sRGB, taken by the keep in place of the albedo as built (absent: the albedo as built, as before).
     public const int EmberAlbedoAt = LeafMixAt + 8;
-    public static int Size => EmberAlbedoAt + 4;
+    // (lead 4, judge r2 fix 8: the reference's stones are warm grey with ochre moss on their tops) "stone" "moss" [sRGB, share]:
+    // the moss laid after the ramp on what faces up, in patches (kit.gdshader; absent: none)
+    public const int StoneMossAt = EmberAlbedoAt + 4;
+    public static int Size => StoneMossAt + 4;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -82,6 +85,11 @@ public static class Palettes
                 var (R, G, B) = Atmospheres.Linear(ea.GetString()!);
                 r[EmberAlbedoAt] = R; r[EmberAlbedoAt + 1] = G; r[EmberAlbedoAt + 2] = B; r[EmberAlbedoAt + 3] = 1;
             }
+        }
+        if (e.TryGetProperty("stone", out var sto) && sto.TryGetProperty("moss", out var mo) && mo.GetArrayLength() == 2)
+        {
+            var (R, G, B) = Atmospheres.Linear(mo[0].GetString()!);
+            r[StoneMossAt] = R; r[StoneMossAt + 1] = G; r[StoneMossAt + 2] = B; r[StoneMossAt + 3] = mo[1].GetDouble();
         }
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts
         for (int a = 0; a < 2; a++)
