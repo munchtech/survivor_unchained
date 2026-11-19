@@ -944,10 +944,10 @@ public class PrologueTests
             Run(s, 0.1, safe: true);
         }
         var c = Offered(s, "groundbreaker");
-        string key = "S";
-        Assert.Equal(("Groundbreaker", $"When Resolve is full, it heaves itself at the pack. {key}: heave now.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
-        Assert.Equal($"seat:Skill{gb.Slot + 1}", c.Target.Hud);
-        Assert.Equal($"skill{gb.Slot + 1}", c.Answer);
+        // (18 Nov: it is a kindled auto, past the four keys, with no key to name or wait for: an Arrow, never a Freeze)
+        Assert.Null(Prologue.KeyActFor(gb.Slot));
+        Assert.Equal(("Groundbreaker", "When Resolve is full, it heaves itself at the pack.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
+        Assert.Null(c.Answer);
         Assert.True(c.Target.World!().Count >= 2);
     }
     [Fact]
