@@ -130,7 +130,7 @@ public static class Palettes
         if (e.TryGetProperty("bands", out var bd))
             for (int i = 0; i < Math.Min(6, bd.GetArrayLength()); i++) r[BandAt + (i < 4 ? i : i + 0)] = bd[i].GetDouble();
         r[BandAt + 6] = e.TryGetProperty("band_edge", out var be) ? be.GetDouble() : 0.06;
-        r[BandAt + 7] = e.TryGetProperty("leaf_form", out var lf) ? lf.GetDouble() : 0;   // (lead 6: a crown's ramp from its cards' facing, this share)
+        r[BandAt + 7] = e.TryGetProperty("leaf_form", out var lfm) ? lfm.GetDouble() : 0;   // (lead 6: a crown's ramp from its cards' facing, this share)
         if (e.TryGetProperty("lines", out var ln))
             for (int i = 0; i < Math.Min(4, ln.GetArrayLength()); i++) r[LineAt + i] = ln[i].GetDouble();
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts

@@ -1269,8 +1269,10 @@ void fragment() {
 		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
 		col = pal_ink(col, NORMAL, VERTEX, pal_inkw.y);   // (lead 5: the stone's own contour)
 		col = pal_lines(col, v_wpos * pal_line.x);   // (lead 6: 2-4 inner lines a stone)
-		if (pal_stonem.w > 0.0 && !pnt)   // (lead 4: the palette's moss on what faces up, in patches)
-			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * st.a), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.4, 0.55, st.a));
+		if (pal_stonem.w > 0.0) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
+			float mp = pnt ? pal_vn3(v_wpos * 2.3 + 5.1) : st.a;
+			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * mp), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.42, 0.5, mp));
+		}
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));
