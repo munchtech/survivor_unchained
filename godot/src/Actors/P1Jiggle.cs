@@ -42,6 +42,11 @@ public partial class P1Jiggle : SkeletonModifier3D
 
     public P1Jiggle() { Name = "P1Jiggle"; }
 
+    /// <summary>The worn top is formed plate (ArmorHold.RigidValue): the top group's springs held at its worn rest
+    /// (P1Springs.Held), its rigid cups riding her chest. Not pinned by --p1-support (that flag moves the rest, not this).</summary>
+    public bool HeldTop { get => springs?.Held["top"] ?? heldTop; set { heldTop = value; if (springs != null) springs.Held["top"] = value; } }
+    bool heldTop;
+
     /// <summary>One call for the armor code: the support on her skeleton's springs, if B's springs are there.</summary>
     public static void SetSupport(Skeleton3D sk, float top, float? bottom = null) => SetSupport(sk, top, bottom, top, top, top);
 
@@ -85,7 +90,7 @@ public partial class P1Jiggle : SkeletonModifier3D
                 Enumerable.Range(0, n).Select(i => sk.GetBoneParent(i)).ToArray(),
                 Enumerable.Range(0, n).Select(i => P1Body.M(sk.GetBoneGlobalRest(i))).ToArray());
             if (Flag is float fx) { SetTop(fx); SupportBottom = supportBottom; lift = press = fill = fx; }
-            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom;
+            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom; springs.Held["top"] = heldTop;
             ApplyShapes(sk);
             g = Enumerable.Range(0, n).Select(_ => P1M4.Id).ToArray();
             if (Args.Has("p1-probe"))
@@ -128,6 +133,16 @@ public partial class P1Jiggle : SkeletonModifier3D
             var sb = new System.Text.StringBuilder($"p1: clip f {Engine.GetProcessFrames()}");
             foreach (var s in springs.Springs)
                 sb.Append(System.FormattableString.Invariant($" {s.Name} {(s.X - s.Eq).Len() * 1000:F1}/{s.Rel.Y * 1000:F1}/{s.X.Len() * 1000:F1}"));
+            // (creator-jiggle, 18 Nov: each spring's drawn point in her chest's frame (the root spring's clip parent), mm:
+            // the ride a rigid cup must hold still against her chest)
+            foreach (var s in springs.Springs)
+            {
+                int chest = s.Of >= 0 ? springs.Springs[s.Of].Parent : s.Parent;
+                var p = g[chest].Inverse() * (s.G * s.Tip);
+                sb.Append(System.FormattableString.Invariant($" ride_{s.Name} {p.X * 1000:F2},{p.Y * 1000:F2},{p.Z * 1000:F2}"));
+                var o = g[chest].Inverse() * (g[s.Bone] * s.Tip);
+                sb.Append(System.FormattableString.Invariant($" ride_own_{s.Name} {o.X * 1000:F2},{o.Y * 1000:F2},{o.Z * 1000:F2}"));
+            }
             foreach (double side in springs.Arms)
             {
                 var c = springs.ArmClip(side, g);

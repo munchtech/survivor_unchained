@@ -1,0 +1,13 @@
+# creator-jiggle (coordinator #15 lead, 18 Nov)
+
+## TOP (state; read first)
+- Owner, 18 Nov: "For the demo, lets visit character creation.  there is a big bug with jiggling cups non stop which could be part of the issue we have marked as known for the metal bra.  we didn't want to fix it because it could be a lot, but we need to fix it"
+- Branch creator-jiggle, worktree .claude/worktrees/agent-a4439e53c5291a290 (was created at the wrong base f6b35511d; switched to 5e8e9c3ff). godot/assets = junction to this worktree's public/assets (assume-unchanged); .godot/imported seeded.
+- Due: merge-ready evening 19 Nov.
+- Plan: (1) baseline numbers creator idle + rotate, starter look + kit_*, B (--p1-clip); (2) root cause; (3) fix at source; (4) after numbers creator + in-game idle/run/leap kit and bare; unit test; before/after film; suite; push; copy film to survivorsunchained_inputs\scratch_coord15\creator_jiggle\.
+- Coordinator relay, owner 18 Nov: "I SEE CHARACTER CREATION WITH THE NEW ARMOR, THE JIGGLE IS ON THE STARTING ARMOR, WHICH WE DECIDED NEEDS FIXING ANYWAY, SO WERE FIXING THAT RIGHT?" -> fix any rigid top (sol_corset inherits); no sol_*/Marionette edits.
+- CAUSE (sent to main): plate tops (warden.top, kit_bodice: hold 0.55/squash 0 -> support 1) only stiffened B's breast springs; the rigid cups are skinned to those bones, so they rode 2.5-3.6 mm/s against the chest in the Look idle even with springs frozen (rest's world-gravity turned with her sway), swing added 1.4-2.7 mm/s in the guard idle, 19 mm on the flourish. Clip's own breast pose is rigid with the chest (0.00 mm). Not a feedback loop or teleport.
+- FIX (done, uncommitted->committing): P1Springs.Held per group: mass at the upright worn rest (worn_rest.py's fit; chest's down, a tip's too) fixed in the chest frame, no swing/squash/colliders; ArmorHold.rigid (null -> squash<=0); P1Jiggle.HeldTop; HerWear sets it from the top's hold. Test godot/tests/HeldPlateTests.cs (4 pass: 22.80 mm before -> 0.0000 held; bare 50.69 mm keeps life).
+- Probe: --p1-clip lines now carry ride_<spring> and ride_own_<spring> (mm, chest frame). Scripts: scratchpad\creator_jiggle\{shoot.sh,ride.py,clip.py}; logs godot/.shots/cj/{base,base2,basevar,frozen,frozen2}.
+- Baseline numbers (60 fps, ride span per 1 s window, mm): c1 Look idle sprung 1.7-3.6 (frozen 2.2-3.6); c0 guard idle sprung 1.4-2.7, flourish 19, last 8; variable fps ran ~16 fps.
+- NEXT: after-runs creator c0/c1/spin; in-game idle/run/leap kit+bare before/after; film 1080p ~10 s before/after; full suite; push; copy film to inputs\scratch_coord15\creator_jiggle.

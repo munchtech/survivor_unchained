@@ -346,6 +346,8 @@ public static class HerWear
             P1Jiggle.SetSupport(p.Skeleton, (float)(hold?.SupportValue ?? 0), null,
                 (float)(hold?.LiftValue ?? 0), (float)(hold?.PressValue ?? 0), (float)(hold?.FillValue ?? 0));
             pj.Squash = (float)(hold?.Squash ?? 1);
+            // (formed plate: its cups ride her chest at their worn rest, never swing inside it: creator-jiggle, 18 Nov)
+            pj.HeldTop = hold?.RigidValue ?? false;
         }
 
         bool full = Wear.IsCallingSet(look, calling, ix);
