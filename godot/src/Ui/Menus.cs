@@ -313,6 +313,7 @@ public partial class PauseScreen : Overlay
 
     protected override void Build()
     {
+        if (Play.BugReporter.Instance is { } br) br.PausePanelOpen = panel != "";
         // The world stays in view, paused, the HUD stepped away as the book does it; the world shaded
         // a little toward the panel, as the book shades toward its own. A click on the world goes back.
         HideHud();

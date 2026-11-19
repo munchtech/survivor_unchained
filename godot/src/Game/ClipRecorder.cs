@@ -202,6 +202,9 @@ public partial class ClipRecorder : Node
         Frozen = false;
     }
 
+    /// <summary>Restart recording without clearing the ring.</summary>
+    public void Thaw() { acc = 0; Frozen = false; }
+
     public IReadOnlyList<double> FrameMs()
     {
         lock (statLock) return frames.ToArray();

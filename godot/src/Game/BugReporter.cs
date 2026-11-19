@@ -29,6 +29,7 @@ public partial class BugReporter : CanvasLayer
     Button? sendBtn;
     Image? shot;
     (List<byte[]> Jpegs, double Fps)? clip;
+    public bool PausePanelOpen;
     bool prevPaused, resumeClip, askName;
     string tester = "";
     readonly ConcurrentQueue<string> done = new();
@@ -110,7 +111,7 @@ public partial class BugReporter : CanvasLayer
         if (k.Keycode == Key.F8 && box == null)
         {
             // (the pause menu up: its snapshot, the world as it was before it; any other screen: the frame as it is)
-            if (g.Overlay == "pause") OpenFromPause(); else OpenFresh();
+            if (g.Overlay == "pause" && !PausePanelOpen) OpenFromPause(); else OpenFresh();
             GetViewport().SetInputAsHandled();
         }
         else if (k.Keycode == Key.Escape && box != null)
@@ -133,7 +134,7 @@ public partial class BugReporter : CanvasLayer
         {
             snapShot = GetViewport().GetTexture().GetImage();
             var rec = ClipRecorder.Instance;
-            if (rec != null && rec.Enabled) { snapClip = rec.Freeze(); rec.Resume(); }
+            if (rec != null && rec.Enabled) { snapClip = rec.Freeze(); rec.Thaw(); }
             else snapClip = null;
         }
         catch (Exception ex) { GD.PrintErr($"bugreport: snapshot failed: {ex.Message}"); }
@@ -153,7 +154,10 @@ public partial class BugReporter : CanvasLayer
     {
         if (box != null) return;
         if (snapShot == null) { OpenFresh(); return; }
-        shot = snapShot; clip = snapClip; resumeClip = false;
+        shot = snapShot; clip = snapClip;
+        var rec = ClipRecorder.Instance;
+        if (rec != null && rec.Enabled) rec.Freeze();
+        resumeClip = rec != null;
         Open();
     }
 
@@ -165,14 +169,20 @@ public partial class BugReporter : CanvasLayer
         Build();
     }
 
-    void Close()
+    void Close(bool sent = false)
     {
         box?.QueueFree();
         box = null;
         GetTree().Paused = prevPaused;
-        if (resumeClip) ClipRecorder.Instance?.Resume();
+        if (resumeClip) { if (sent) ClipRecorder.Instance?.Resume(); else ClipRecorder.Instance?.Thaw(); }
         resumeClip = false;
-        snapShot = null; snapClip = null;
+        if (g.Overlay != "pause") { snapShot = null; snapClip = null; }
+    }
+
+    static string ClipSpan((List<byte[]> Jpegs, double Fps) c)
+    {
+        int secs = (int)Math.Round(c.Jpegs.Count / c.Fps);
+        return secs <= 1 ? "the last second" : $"the last {secs} seconds";
     }
 
     void Cancel() { if (box != null) Close(); }
@@ -239,7 +249,7 @@ public partial class BugReporter : CanvasLayer
         col.AddChild(Group(Kit.Head("Details", "optional"), descEdit));
 
         bool withClip = clip is { Jpegs.Count: > 0 };
-        var note = Style.Label(withClip ? $"A screenshot and the last {(int)Math.Round(clip!.Value.Jpegs.Count / clip.Value.Fps)} seconds of play are attached." : "Only a screenshot is attached: recording is off in Settings.", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
+        var note = Style.Label(withClip ? $"A screenshot and {ClipSpan(clip!.Value)} of play are attached." : "Only a screenshot is attached: recording is off in Settings.", Style.TextItalic, 15, Kit.Dim, false, HorizontalAlignment.Left, false);
         note.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         var folder = Kit.Word("Open reports folder", OpenFolder, Kit.Ink2, 15);
         foreach (var s in new[] { "normal", "hover", "pressed", "focus", "disabled" }) folder.AddThemeStyleboxOverride(s, new StyleBoxEmpty { ContentMarginLeft = 4, ContentMarginTop = 2, ContentMarginBottom = 2 });
@@ -334,7 +344,7 @@ public partial class BugReporter : CanvasLayer
         var img = shot; var cl = clip;
         var r = Gather(title, desc, cl);
         string root = ReportsDir();
-        Close();
+        Close(true);
         void Work()
         {
             try { done.Enqueue(Write(root, r, img, cl)); }
