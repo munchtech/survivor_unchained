@@ -1,0 +1,9 @@
+{
+"_note": "HAND-PLACED regions for the standard Verge judge shots (--zone verge --time day|night --nohud, 1920x1080, fixed camera; placed on r8_vdayN / r8_vnightN, 19 Nov). Boxes [x0,y0,x1,y1]; path = polygon along the light band (slab edges outside the stone boxes stay in it). Priority stones > crowns > bark > path > ground. No bark is in view (trunks sit under the crowns). Re-place if the shot's camera or set changes.",
+"both": {
+ "ground": [[1200,300,1540,470],[20,100,200,250],[1720,420,1920,700],[720,210,1060,330],[840,960,1100,1080]],
+ "path":   [[[0,300],[880,520],[1360,725],[1920,830],[1920,940],[1360,850],[880,715],[400,590],[0,560]]],
+ "stones": [[95,420,165,520],[460,375,505,450],[695,440,760,520],[1182,642,1240,695],[1528,830,1592,895],[1105,745,1175,790]],
+ "crowns": [[1050,0,1400,240],[240,0,680,180],[100,650,700,1050],[1560,180,1780,380]]
+}
+}
