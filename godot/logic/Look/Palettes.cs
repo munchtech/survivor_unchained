@@ -103,7 +103,7 @@ public static class Palettes
             if (lf.TryGetProperty("mix", out var mx))
                 for (int i = 0; i < Math.Min(4, mx.GetArrayLength()); i++) r[LeafMixAt + i] = mx[i].GetDouble();
             if (lf.TryGetProperty("near", out var nr))
-                for (int i = 0; i < Math.Min(3, nr.GetArrayLength()); i++) r[LeafMixAt + 4 + i] = nr[i].GetDouble();
+                for (int i = 0; i < Math.Min(4, nr.GetArrayLength()); i++) r[LeafMixAt + 4 + i] = nr[i].GetDouble();
         }
         // (value: 0 the ramp's own value, 1 the albedo's own luminance kept and only the ramp's hue and chroma taken, so the
         // lanes' tuned values hold and only the colour turns; saturated albedos at the sun's full value clip to white)
