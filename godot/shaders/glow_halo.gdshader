@@ -8,7 +8,7 @@ render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabl
 global uniform float glow_k;
 uniform vec3 halo_col : source_color = vec3(0.56, 0.96, 1.0);
 uniform float halo_k = 0.5;        // the inner band's strength
-uniform vec3 bands = vec3(0.42, 1.0, 0.22);   // inner band to (share of the radius), outer band to, the outer's strength (of the inner's)
+uniform vec4 bands = vec4(0.3, 0.6, 0.35, 0.12);   // (m1: two flat bands read as stickers) the core to, the mid band to (shares of the radius), the mid's and the outer's strength (of the core's)
 uniform float lobes = 0.12;        // how far the bands' edges wander with the angle (share of the radius)
 
 varying vec2 v_q;
@@ -28,7 +28,7 @@ void fragment() {
 	float an = atan(v_q.y, v_q.x);
 	float wob = lobes * (0.6 * sin(an * 3.0 + v_seed * 6.28) + 0.4 * sin(an * 5.0 - v_seed * 11.0));
 	float rr = r + wob;
-	float a = rr < bands.x ? 1.0 : rr < bands.y ? bands.z : 0.0;
+	float a = rr < bands.x ? 1.0 : rr < bands.y ? bands.z : rr < 1.0 ? bands.w : 0.0;
 	if (a <= 0.0) discard;
 	ALBEDO = halo_col * halo_k * a * glow_k;
 }

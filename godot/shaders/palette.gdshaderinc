@@ -68,15 +68,17 @@ vec3 pal_leaf(vec3 a) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, 1.0,
 vec3 pal_leaf(vec3 a, vec3 wp, float s) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.3 * s, pal_vk0.x); }
 // (lead 3) a crown's own ramp by its hash h (0..1): the first pal_leafm.x of them on ramp a, the last pal_leafm.y on ramp b,
 // the rest on the leaf ramp; h2 (0..1) its place on it (shift pal_leafm.z), tip the spray's sky-facing (-1..1, shift pal_leafm.w)
-vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip) {
-	float sh = pal_leafm.z * (h2 * 2.0 - 1.0) + pal_leafm.w * tip;
+// dist the view-space length: by the lens (pal_leafn) the crown slides down its ramp toward its dark stop and darkens, deep not brown
+float pal_near_w(float dist) { return pal_leafn.x <= 0.0 ? 0.0 : 1.0 - smoothstep(pal_leafn.y, max(pal_leafn.z, pal_leafn.y + 1e-3), dist); }
+vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float dist) {
+	float nw = pal_near_w(dist);
+	float sh = pal_leafm.z * (h2 * 2.0 - 1.0) + pal_leafm.w * tip - 0.6 * nw;
 	vec4 d = pal_leaf0, m = pal_leaf1, l = pal_leaf2;
 	if (h < pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(pal_leafa1.rgb, pal_leaf1.w); l = vec4(pal_leafa2.rgb, pal_leaf2.w); }
 	else if (h > 1.0 - pal_leafm.y) { d = vec4(pal_leafb0.rgb, pal_leaf0.w); m = vec4(pal_leafb1.rgb, pal_leaf1.w); l = vec4(pal_leafb2.rgb, pal_leaf2.w); }
-	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x);
+	if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }   // (by the lens toward ramp a's hue: crimson by day)
+	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x) * (1.0 - pal_leafn.x * nw);
 }
-// (lead 3, judge r1 fix 5) the leaves by the lens darker: 1 - pal_leafn.x there, none past pal_leafn.z m (dist: the view-space length)
-float pal_leaf_near(float dist) { return 1.0 - pal_leafn.x * (1.0 - smoothstep(pal_leafn.y, max(pal_leafn.z, pal_leafn.y + 1e-3), dist)); }
 vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x); }
 vec3 pal_grass(vec3 a) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, 1.0, 0.0, pal_vk0.y); }
 vec3 pal_grass(vec3 a, vec3 wp) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, pal_keep(wp), 0.0, pal_vk0.y); }
