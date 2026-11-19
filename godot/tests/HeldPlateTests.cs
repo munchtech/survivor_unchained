@@ -112,6 +112,28 @@ public class HeldPlateTests
         Assert.False(new ArmorHold { Squash = 0, Rigid = false }.RigidValue);
     }
 
+    /// <summary>Round 2 (the owner, 18 Nov: "thats not jiggle thats mishapen"): a native piece (kit_bodice, built on her
+    /// bind: kit_build.py her_a) is held at her bind, offset 0, its bones exactly the clip's, so its steel keeps the shape
+    /// it was built in; the bound starter top (warden.top, fitted at the worn rest by gear_fit) keeps the worn rest.</summary>
+    [Theory]
+    [InlineData("kit_bodice", true)]
+    [InlineData("warden.top", false)]
+    public void HeldAtTheRestItWasBuiltIn(string top, bool atBind)
+    {
+        var rows = Doc("art/gear/out/body_p1/gear_index.json").GetProperty("rows");
+        var row = JsonSerializer.Deserialize<ArmorPiece>(rows.EnumerateArray().First(r => r.GetProperty("id").GetString() == top).GetRawText())!;
+        Assert.Equal(atBind, row.Hold!.RestsAtBind(row.Native));
+        var sp = new P1Springs(Doc("data/body/springs.json"), "p1", null, Names, Parent, Rest);
+        sp.Support["top"] = row.Hold.SupportValue; sp.Squash = row.Hold.Squash;
+        sp.Held["top"] = true; sp.HeldAtBind["top"] = atBind;
+        Assert.True(Ride(sp) < 1e-5, $"{top}: held cups move in her chest's frame");
+        sp.Reset(); sp.Step(P1M4.Id, Rest, 1 / 60.0, collide: false);   // (upright, the clip at her bind)
+        double off = sp.Springs.Max(s => (s.G * s.Tip - Rest[s.Bone] * s.Tip).Len());
+        log.WriteLine($"{top}: held {(atBind ? "at bind" : "at the worn rest")}, largest offset from her bind {off * 1000:F2} mm");
+        if (atBind) Assert.True(off < 1e-9, $"{top}: at bind, offset {off * 1000:F4} mm");
+        else Assert.True(off > 5e-3, $"{top}: the worn rest lifts the tips off her bind ({off * 1000:F2} mm)");
+    }
+
     [Fact]
     public void BareStillSwings()
     {

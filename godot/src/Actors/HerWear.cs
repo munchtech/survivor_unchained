@@ -333,7 +333,8 @@ public static class HerWear
         double laidMs = clock.Elapsed.TotalMilliseconds;
 
         // Her hold, from the top she wears (plate holds her: People.HerOutfit).
-        var hold = look.TryGetValue("top", out var top) ? ix.Find(top)?.Hold : null;
+        var topRow = look.TryGetValue("top", out var top) ? ix.Find(top) : null;
+        var hold = topRow?.Hold;
         if (p.Skeleton.GetNodeOrNull<HerJiggle>("HerJiggle") is HerJiggle jig)
         {
             jig.Amount = (float)(hold?.Amount ?? 1);
@@ -348,6 +349,9 @@ public static class HerWear
             pj.Squash = (float)(hold?.Squash ?? 1);
             // (formed plate: its cups ride her chest at their worn rest, never swing inside it: creator-jiggle, 18 Nov)
             pj.HeldTop = hold?.RigidValue ?? false;
+            // (at the rest its steel was built in: a native piece's her bind, a bound one's the worn rest; round 2: the
+            // owner's "mishapen" cup was kit_bodice bent at the worn rest)
+            pj.HeldTopAtBind = hold?.RestsAtBind(topRow!.Native) ?? false;
         }
 
         bool full = Wear.IsCallingSet(look, calling, ix);

@@ -70,6 +70,12 @@ public sealed class P1Springs
     /// against her chest in the Look idle and 19 mm on the flourish.</summary>
     public readonly Dictionary<string, bool> Held = new() { ["top"] = false, ["bottom"] = false };
     bool IsHeld(Spring s) => !Frozen && Held.TryGetValue(s.Group, out var h) && h;
+    /// <summary>A held group's rest is her bind instead (ArmorHold.RestValue "bind"): offset 0, her breast bones where
+    /// the clip puts them, the pose a piece built on her bind (tools/armor/kit_build.py her_a: her bind with the hold's
+    /// shapes; exact-installed, its skin her weights) holds its built shape in. Its cups' points share her breast bones'
+    /// weights with her chest's, so any other rest bends the steel: at the worn rest kit_bodice's rims kinked and its
+    /// lower cups folded (the owner, 18 Nov: "thats not jiggle thats mishapen"; creator-jiggle judge round 2).</summary>
+    public readonly Dictionary<string, bool> HeldAtBind = new() { ["top"] = false, ["bottom"] = false };
     /// <summary>Where the soft stop starts, as a share of each travel limit and of the reach (stiffer and damped beyond,
     /// so the approach to a limit eases in rather than snapping).</summary>
     public double SoftStart = 0.6;
@@ -228,7 +234,8 @@ public sealed class P1Springs
             // (the same rest as above with her chest's down at rest in place of the world's (a tip's too: worn_rest.py
             // reads the skeleton's down, not its turned parent's): fixed in her chest's frame)
             var down = (s.Of >= 0 ? Frame(Springs[s.Of], Wl) : Fm) * Down;
-            s.Eq = inward * (s.Press * F(s.Group, "press")) + down * (s.Sag * F(s.Group, "sag")) + (down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
+            s.Eq = HeldAtBind.TryGetValue(s.Group, out var atBind) && atBind ? new P1V(0, 0, 0)
+                 : inward * (s.Press * F(s.Group, "press")) + down * (s.Sag * F(s.Group, "sag")) + (down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
                  - Fm * (new P1V(-s.Side * s.Press * s.RestShows, 0, 0) + s.RestDown * (s.Sag * s.RestShows));
             // (moving with its point, so a plate taken off hands the springs her motion, not a kick)
             s.Tv = jump || dt <= 0 ? new P1V(0, 0, 0) : (Tw - s.LastT) / dt;

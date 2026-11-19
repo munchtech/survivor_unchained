@@ -49,6 +49,10 @@ public partial class P1Jiggle : SkeletonModifier3D
     /// (P1Springs.Held), its rigid cups riding her chest. Not pinned by --p1-support (that flag moves the rest, not this).</summary>
     public bool HeldTop { get => springs?.Held["top"] ?? heldTop; set { heldTop = value && !HeldOff; if (springs != null) springs.Held["top"] = heldTop; } }
     bool heldTop;
+    /// <summary>The held top rests her at bind (ArmorHold.RestsAtBind: a piece built on her bind), else at the worn rest.
+    /// --p1-held worn (before/after shots) keeps the worn rest.</summary>
+    public bool HeldTopAtBind { get => springs?.HeldAtBind["top"] ?? heldBind; set { heldBind = value && SurvivorUnchained.Args.Get("p1-held") != "worn"; if (springs != null) springs.HeldAtBind["top"] = heldBind; } }
+    bool heldBind;
     /// <summary>--p1-held off (before/after shots): a plate top's springs not held, its support only (before 18 Nov).</summary>
     public static readonly bool HeldOff = SurvivorUnchained.Args.Get("p1-held") == "off";
 
@@ -95,7 +99,7 @@ public partial class P1Jiggle : SkeletonModifier3D
                 Enumerable.Range(0, n).Select(i => sk.GetBoneParent(i)).ToArray(),
                 Enumerable.Range(0, n).Select(i => P1Body.M(sk.GetBoneGlobalRest(i))).ToArray());
             if (Flag is float fx) { SetTop(fx); SupportBottom = supportBottom; lift = press = fill = fx; }
-            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom; springs.Held["top"] = heldTop;
+            springs.Support["top"] = support; springs.Support["bottom"] = supportBottom; springs.Held["top"] = heldTop; springs.HeldAtBind["top"] = heldBind;
             ApplyShapes(sk);
             g = Enumerable.Range(0, n).Select(_ => P1M4.Id).ToArray();
             if (Args.Has("p1-probe"))
