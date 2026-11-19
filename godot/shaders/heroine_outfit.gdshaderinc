@@ -128,6 +128,12 @@ uniform float kit_dir_glint_far = 0.0;
 // v_kcurv, before kit_glint_px's cap): the flecks on her rolled edges and trim bevels (front: 7, L .85-.93, all gone with the
 // sun's close glint off, none with the rim off), while a cup's or the helm's disc keeps its full size; 0: off)
 uniform float kit_glint_minpx = 0.0;
+// (armor-D belt blot, 18 Nov: the leather's highlight (outfit_hl's kind 0 disc, 9 degrees round N.H) is cut by angle alone too,
+// so with the town sun behind the lens the near-flat back of her kit belt lay inside it whole: a pale patch, L .80 on leather at .30,
+// the only sun highlight on the band (debug_view 23 took it out, 24 kept it). hl_px: as kit_glint_px for the steel, the disc's radius
+// never past the form's own turn across that many screen pixels (v_kcurv), so a strap's roll keeps its line and a flat panel a point
+// at most; set per mesh key in metal_finishes.json; 0: off, as before)
+uniform float hl_px = 0.0;
 varying float v_kcurv;                             // (armor-D fin4: the shading normal's turn per screen pixel, degrees)
 // (finish-2 r7: kit_tones_close: at the close camera, x the mid tone's factor, y the lit tone's, z the highlights' (the reflection band's tone
 // and the glint); 0: off. kit_refl_band_close: the reflection band (centre, half width, soft) at the close camera; x 0: kit_refl_band.
@@ -384,7 +390,7 @@ void fragment() {
 	if (gold_floor_far > 0.0 || any(notEqual(paint_far, vec3(1.0))) || kit_plate.x > 0.0 || kit_gold.x > 0.0) kit_far = 1.0 - smoothstep(far_px.x, max(far_px.y, far_px.x + 0.001),
 		abs(PROJECTION_MATRIX[1][1]) * 540.0 / (PROJECTION_MATRIX[3][3] == 0.0 ? max(-VERTEX.z, 0.01) : 1.0));
 	v_kit_far = kit_far;
-	v_kcurv = (kit_glint_px > 0.0 || kit_glint_minpx > 0.0) ? degrees(length(fwidth(NORMAL))) : 0.0;   // (armor-D fin4, see kit_glint_px)
+	v_kcurv = (kit_glint_px > 0.0 || kit_glint_minpx > 0.0 || hl_px > 0.0) ? degrees(length(fwidth(NORMAL))) : 0.0;   // (armor-D fin4, see kit_glint_px)
 	float bulge = smoothstep(0.55, 0.85, conv);
 	float hollow = smoothstep(0.45, 0.2, conv);
 	// Each piece a shade of its own, and broad unevenness across it.
@@ -737,12 +743,20 @@ void fragment() {
 		ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; RIM = 0.0; NORMAL_MAP = vec3(0.5, 0.5, 1.0); v_paint = 0.0; v_kgold = 0.0; }
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, roughness before the tag, the tag, debug).
+	if (debug_view == 31) { RIM = 0.0; RIM_TINT = 0.0; }   // (dev bisect, belt blot: the material rim off)
 	CEL_FRAGMENT;
 	// (armor-D fin3: the shared hero shade (cel.gdshaderinc) swaps her shade side's emission for one tone and zeroes the light's
 	// specular, where the kit's plate and gold keep their floor and light; the kit's own pixels take their pre-macro emission and albedo back)
 	vec3 kx_em = EMISSION; vec3 kx_al = ALBEDO;
-	CEL_HERO_FRAGMENT;
+	if (debug_view != 30) CEL_HERO_FRAGMENT;   // (dev bisect, belt blot: 30 the hero shade off, here and in light())
 	if (kind == 1 && !cel_hero_abs()) { float kxm = clamp(max((kit_plate.x > 0.0 && cel_on > 0.0) ? v_paint : 0.0, (kit_gold.x > 0.0 && cel_on > 0.0) ? v_kgold : 0.0), 0.0, 1.0); EMISSION = mix(EMISSION, kx_em, kxm); ALBEDO = mix(ALBEDO, kx_al, kxm); }
+	// (dev bisect, armor-D belt blot: after the cel macros, so light() keeps their copies: debug_view 26 the
+	// ambient/reflection specular off (SPECULAR 0), 27 clearcoat off, 28 emission off, 29 albedo off)
+	if (debug_view == 26) SPECULAR = 0.0;
+	if (debug_view == 27) CLEARCOAT = 0.0;
+	if (debug_view == 28) EMISSION = vec3(0.0);
+	if (debug_view == 29) ALBEDO = vec3(0.0);
+	if (debug_view >= 40 && debug_view <= 44) { ALBEDO = vec3(0.0); SPECULAR = 0.0; EMISSION = vec3(0.0); CLEARCOAT = 0.0; }   // (light() draws them)
 }
 
 // The cel model's highlight by kind (see the header), as SPECULAR_LIGHT; lit_sh the lit band times the key's shadow.
@@ -753,7 +767,11 @@ vec3 outfit_hl(vec3 n, vec3 l, vec3 v, vec3 lc, float lit_sh, float r, float mt,
 	if (kind == 1 || kind == 3) r = OUTFIT_HL_ROUGH;
 	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_sky * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
 		+ cel_spec_disc(vec4(7.0, 1.0, 1.0, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
-	if (kind == 0) return cel_spec_disc(vec4(9.0, 1.5, 0.6, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+	if (kind == 0) {
+		vec4 lsp = vec4(9.0, 1.5, 0.6, 1.0);
+		if (hl_px > 0.0 && debug_view != 45) { float lr = min(lsp.x, hl_px * v_kcurv); lsp.y *= lr / lsp.x; lsp.x = lr; }   // (hl_px; dev 45: off)
+		return cel_spec_disc(lsp, lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+	}
 	if (kind == 3) return cel_spec_disc(vec4(7.0, 1.0, 0.8, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	return vec3(0.0);
 }
@@ -779,13 +797,24 @@ void light() {
 			if (!LIGHT_IS_DIRECTIONAL) cel_pool_paint(ob_lc, ob_att, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
 			cel_shade(NORMAL, ob_n, ob_t, LIGHT, VIEW, ob_lc, ob_att, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, r,
 				cel_mat.x, 0.0, BACKLIGHT, cel_mat.y, cel_mat.z, db, sb);
-			sb += outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(ob_t) * cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL), r,
+			if (debug_view != 23) sb += outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(ob_t) * cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL), r,
 				METALLIC, ALBEDO, cel_mat.x, SPECULAR_AMOUNT);
 		}
-		DIFFUSE_LIGHT += mix(da, db, cel_on);
-		SPECULAR_LIGHT += mix(sa, sb, cel_on);
+		// (dev bisect, armor-D belt blot: debug_view 20 no direct light, 21 its diffuse only, 22 its specular only,
+		// 23 the kind's highlight disc off (above), 24 directional lights only, 25 the others only)
+		bool ob_cut = debug_view == 20 || (debug_view >= 40 && debug_view <= 44) || (debug_view == 24 && !LIGHT_IS_DIRECTIONAL) || (debug_view == 25 && LIGHT_IS_DIRECTIONAL);
+		// (40-44: the leather disc's parts for the directional lights alone, as gray: 40 its shape round N.H, 41 its roughness
+		// gate, 42 the lit band times the shadow, 43 the N.H angle over 40 degrees, 44 the roughness it reads)
+		if (debug_view >= 40 && debug_view <= 44 && LIGHT_IS_DIRECTIONAL) {
+			float dang = degrees(acos(clamp(dot(NORMAL, normalize(VIEW + LIGHT)), -1.0, 1.0)));
+			float dg = debug_view == 40 ? 1.0 - smoothstep(7.5, 10.5, dang) : debug_view == 41 ? 1.0 - smoothstep(0.55, 0.85, r)
+				: debug_view == 42 ? cel_lit(ob_t) * cel_shadow(ATTENUATION, true) : debug_view == 43 ? clamp(dang / 40.0, 0.0, 1.0) : r;
+			SPECULAR_LIGHT += vec3(dg * 0.5);
+		}
+		if (!ob_cut && debug_view != 22) DIFFUSE_LIGHT += mix(da, db, cel_on);
+		if (!ob_cut && debug_view != 21) SPECULAR_LIGHT += mix(sa, sb, cel_on);
 	}
-	CEL_HERO_LIGHT;   // (L1 l20 her4: the base cloth too; the figure's absolute tones take no light)
+	if (debug_view != 30 && (debug_view < 40 || debug_view > 44)) CEL_HERO_LIGHT;   // (L1 l20 her4: the base cloth too; the figure's absolute tones take no light)
 }
 #endif
 
@@ -912,7 +941,7 @@ void light() {
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
 	vec3 kx_sp = SPECULAR_LIGHT;
-	CEL_HERO_LIGHT;
+	if (debug_view != 30) CEL_HERO_LIGHT;
 	if (!cel_hero_abs()) { float kxm = clamp(max((kit_plate.x > 0.0 && cel_on > 0.0) ? v_paint : 0.0, (kit_gold.x > 0.0 && cel_on > 0.0) ? v_kgold : 0.0), 0.0, 1.0); SPECULAR_LIGHT = mix(SPECULAR_LIGHT, kx_sp, kxm); }   // (armor-D fin3: see fragment)
 }
 #endif
@@ -970,6 +999,6 @@ void light() {
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
-	CEL_HERO_LIGHT;
+	if (debug_view != 30) CEL_HERO_LIGHT;
 }
 #endif
