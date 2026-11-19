@@ -73,9 +73,26 @@ vec3 pal_lines(vec3 a, vec3 p) {
 	float n = pal_vn3(p);
 	float fw = max(fwidth(n), 1e-5);
 	float cov = 1.0 - smoothstep(pal_line.z * 0.5 - 0.5, pal_line.z * 0.5 + 0.5, abs(n - 0.5) / fw);
-	cov *= smoothstep(0.32, 0.46, pal_vn3(p * 1.3 + vec3(13.1, 7.7, 3.3)));   // (a brush line lifts off: breaks)
+	cov *= smoothstep(0.42, 0.52, pal_vn3(p * 1.3 + vec3(13.1, 7.7, 3.3)));   // (a brush line lifts off: breaks)
 	cov *= 1.0 - smoothstep(0.08, 0.2, length(fwidth(p)));   // (fine as the pixels: none)
 	return mix(a, a * pal_inkc.rgb, cov * pal_line.w);
+}
+// (lane J r6 fix 1, judge r5: inner lines fade out within 8 px of the silhouette (they read as a second contour); nv_px is the
+// pixel distance to the silhouette, nv / fwidth(nv))
+vec3 pal_lines_in(vec3 a, vec3 p, float nv_px) {
+	vec3 b = pal_lines(a, p);
+	return mix(a, b, smoothstep(8.0, 14.0, nv_px));
+}
+// (lane J r6 fix 1) planar facets: a flat lit face and a flat shade face, the terminator a 1-2 px edge. Cells of about 1.1 m,
+// each its own plane (the normal leaned by a hash), lit by a fixed upper-left key; n the world normal
+vec3 pal_facets(vec3 a, vec3 p, vec3 n, float k) {
+	vec3 c = floor(p / 1.1);
+	vec3 h = vec3(pal_h3(c + 3.1), pal_h3(c + 7.7), pal_h3(c + 11.3)) * 2.0 - 1.0;
+	vec3 fn = normalize(n + 0.9 * h);
+	float d = dot(fn, normalize(vec3(-0.45, 0.75, 0.35))) - 0.28;
+	float w = max(fwidth(d), 1e-4);
+	float lit = smoothstep(-w, w, d);
+	return mix(a, a * mix(0.68, 1.1, lit), k);
 }
 // (lead 5: the reference's flat colour fields with hard edges) pal_band0 = bands for (leaf, grass, ground, path), pal_band1 =
 // (stone, bark, the band edge's half width, 0): the albedo's value on the ramp taken in that many flat steps (0/1: smooth, as before)

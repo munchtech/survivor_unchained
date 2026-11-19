@@ -1287,7 +1287,11 @@ void fragment() {
 #endif
 		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
 		col = pal_ink(col, NORMAL, VERTEX, pal_inkw.y);   // (lead 5: the stone's own contour)
-		col = pal_lines(col, v_wpos * pal_line.x);   // (lead 6: 2-4 inner lines a stone)
+		{   // (lane J r6 fix 1: planar facets, and the inner lines 8 px clear of the silhouette)
+			float c_nv = dot(normalize(NORMAL), -normalize(VERTEX));
+			col = pal_facets(col, v_wpos, bn, 0.9);
+			col = pal_lines_in(col, v_wpos * pal_line.x, c_nv / max(fwidth(c_nv), 1e-4));
+		}
 		if (pal_stonem.w > 0.0) {   // (lead 4: the palette's moss on what faces up, in patches; lead 6: the painted rocks too, their patches a world noise)
 			float mp = pnt ? pal_vn3(v_wpos * 2.3 + 5.1) : st.a;
 			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * mp), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.42, 0.5, mp));

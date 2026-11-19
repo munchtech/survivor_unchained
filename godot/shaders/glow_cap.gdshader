@@ -12,7 +12,7 @@ uniform float is_stem = 0.0;
 uniform float cap_emit = 1.0;   // (lead 2: 1.6 bloomed into soft puffs, coordinator k19)
 uniform vec3 ink_col : source_color = vec3(0.05, 0.03, 0.12);
 uniform float ink_w = 0.38;   // (lead 2: the cap's silhouette inked, as every form in the reference: where the surface turns from the eye)
-uniform float stem_emit = 0.55;
+uniform float stem_emit = 0.95;
 uniform vec2 bands = vec2(0.82, 0.42);   // the normal's up at which the core ends, and the mid band ends
 
 uniform float gills = 4.0;    // (lead 6) gill strokes a cap (0 none)
@@ -29,8 +29,11 @@ void fragment() {
 		c = stem_col * stem_emit;
 	} else {
 		float up = normalize(v_n).y;
-		vec3 core = mix(cap_col, vec3(1.0), 0.3);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through; lead 4: 0.55 still white, 0.3)
+		vec3 core = mix(cap_col, vec3(1.0), 0.12);   // (lead 2: 0.8 read as white blobs; the reference's caps are cyan through; lead 4: 0.55 still white, 0.3)
 		c = (up > bands.x ? core : up > bands.y ? mix(cap_col, core, 0.35) : cap_col) * cap_emit;
+		// (lane J r6 fix 3: a darker gill fringe just under the rim, about 3-5 px) the lowest ring of the cap
+		float fr = 1.0 - smoothstep(0.10, 0.10 + 3.5 * fwidth(up) + 0.02, up);
+		c = mix(c, ink_col * 2.0 * cap_emit + cap_col * 0.15, fr * (up > -0.5 ? 1.0 : 0.0));
 		// (lane J lead 6, judge r4 cel fix 3/7: the den's caps carry gill strokes) gills strokes from the rim toward the top,
 		// a fixed screen width (gill_px), stopping short of the core
 		if (gills > 0.5) {

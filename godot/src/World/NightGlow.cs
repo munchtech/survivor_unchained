@@ -96,8 +96,9 @@ public partial class NightGlow : Node3D
             {
                 float qa = Hash(sx, sz, 10 + q) * Mathf.Tau, qd = Mathf.Sqrt(Hash(sx, sz, 30 + q)) * 0.35f;
                 float x = cx + Mathf.Cos(qa) * qd, zz = cz + Mathf.Sin(qa) * qd;
-                float sh = 0.1f + 0.2f * Hash(sx, sz, 50 + q), sr = 0.02f + 0.02f * Hash(sx, sz, 70 + q);
+                float sh = 0.1f + 0.2f * Hash(sx, sz, 50 + q), sr = 0.03f + 0.02f * Hash(sx, sz, 70 + q);
                 float cr = (float)(g.SizeMin + (g.SizeMax - g.SizeMin) * Hash(sx, sz, 90 + q));
+                if (q > 0) { cr *= 0.45f; sh *= 0.6f; sr *= 0.6f; }   // (lane J r6 fix 3: one main cap a cluster, the rest small)
                 var tr = new Transform3D(Basis.Identity, new Vector3(x, (float)z.HeightAt(x, zz) - 0.02f, zz));
                 stems.AppendFrom(new CylinderMesh { TopRadius = sr, BottomRadius = sr, Height = sh, RadialSegments = 6, Rings = 1 }, 0, tr * new Transform3D(Basis.Identity, new Vector3(0, sh / 2, 0)));
                 into.AppendFrom(new SphereMesh { Radius = cr, Height = cr * (0.8f + 0.5f * Hash(sx, sz, 110 + q)), IsHemisphere = true, RadialSegments = 16, Rings = 6 }, 0, tr * new Transform3D(Basis.Identity, new Vector3(0, sh, 0)));
