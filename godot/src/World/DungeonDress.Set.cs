@@ -78,8 +78,8 @@ public static partial class DungeonDress
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
         // (den r14 corr, item 9) the camera-side banks (near class) are the frame's nearest roots: their lit tops read bleached
         // (seed-23 corridor L .45, room L .51 against den_room.png's foreground .33-.41): their highlights rolled off and warmed
-        if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 2f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream; (den r17 lead, R16 item 6: 0.35 -> 2) the O6 painting itself is warm grey now (S e6cebe99d), sat 1 keeps it (h 50 C .054)
-        if (sheet == "O6") { mat.SetShaderParameter("tint", V3("den-fur-tint", new Vector3(0.96f, 0.96f, 0.96f))); mat.SetShaderParameter("shade_tint", V3("den-fur-shade", new Vector3(1f, 1f, 1f))); }   // (den r16 lead, R15f item 10) the set's warm tint made the fur cream in light (C .05-.09); neutral here
+        if (sheet == "O6") mat.SetShaderParameter("sat", SetSat * SurvivorUnchained.Args.Num("den-fur-sat", 1.1f));   // (den r16 W, R15f item 10) the fur reads pale grey (C <= .03), not pink or cream; (den r17 lead, R16 item 6: 0.35 -> 2) the O6 painting itself is warm grey now (S e6cebe99d), sat 1 keeps it (h 50 C .054)
+        if (sheet == "O6") { mat.SetShaderParameter("tint", V3("den-fur-tint", new Vector3(1f, 0.97f, 0.72f))); mat.SetShaderParameter("shade_tint", V3("den-fur-shade", new Vector3(1f, 0.95f, 0.6f))); }   // (den r16 lead, R15f item 10) the set's warm tint made the fur cream in light (C .05-.09); neutral here
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
         if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
@@ -115,6 +115,7 @@ public static partial class DungeonDress
         mat.SetShaderParameter("spur_r", setSpurR);
         mat.SetShaderParameter("spur_lift", SetSpurLift);
         mat.SetShaderParameter("boss_gloom", SetBossGloom);
+        if (sheet == "O6") mat.SetShaderParameter("boss_gloom", SetBossGloom * SurvivorUnchained.Args.Num("den-fur-gloom", 0.6f));   // (den r19 BK2, R18b item 12) the lair gloom collapses a tuft to a grey and turns it blue (lilac, h 320-345): the fur takes 0.6 of it (and, same item, a warm grey-brown tint: h 60-80, C .02-.04) (--den-fur-gloom 1 = the old full gloom)
         mat.SetShaderParameter("mush_glow", SurvivorUnchained.Args.Num("den-mush-glow", 0.35f));   // (r12 judge) teal on the ground under the painted caps
         mat.SetShaderParameter("fungus_sat", SurvivorUnchained.Args.Num("den-fungus-sat", 0.4f));   // (den r14, lane E) the painted caps' cyan into its band
         if (sheet[0] == 'H')
@@ -1333,9 +1334,9 @@ public static partial class DungeonDress
             co = nc;
             hrot = Hash(hx, hz, 2402) * Mathf.Tau;
         }
-        float sn = -CamUp.Z;   // a floor metre north draws this many metres up the camera's plane
         // (den r19 V2, R18b item 6: the same two paintings in both seeds) an H3 painting turned a quarter by a hash of its spot (--den-pit-rot 1; 0 off)
         float prot = sheet == "H3" && SurvivorUnchained.Args.Num("den-pit-rot", 0f) > 0f ? Mathf.Pi * 0.5f * Mathf.Floor(4f * Hash((int)(ctr.X * 7f), (int)(ctr.Y * 7f), 2208)) : 0f;
+        float sn = -CamUp.Z;   // a floor metre north draws this many metres up the camera's plane
         float W = pc.Metres.X, Hr = pc.Metres.Y, ma = pc.Mouth.Z * W, mb = pc.Mouth.W * Hr / sn;
         if (!objBufs.TryGetValue(sheet, out var buf)) objBufs[sheet] = buf = new SetBuf();
         int ob = buf.V.Count;
@@ -1367,8 +1368,8 @@ public static partial class DungeonDress
                 float rp = ma * mb / Mathf.Sqrt(mb * mb * cs * cs + ma * ma * si * si);
                 float g = Mathf.Clamp(FourierAt(co, th) / Mathf.Max(rp, 0.05f), 0.15f, 4f);
                 var off = new Vector2(dx, dz) * g;
-                if (hrot != 0f) off = new Vector2(off.X * Mathf.Cos(hrot) - off.Y * Mathf.Sin(hrot), off.X * Mathf.Sin(hrot) + off.Y * Mathf.Cos(hrot));
                 if (prot != 0f) off = new Vector2(off.X * Mathf.Cos(prot) - off.Y * Mathf.Sin(prot), off.X * Mathf.Sin(prot) + off.Y * Mathf.Cos(prot));   // (den r19 V2)
+                if (hrot != 0f) off = new Vector2(off.X * Mathf.Cos(hrot) - off.Y * Mathf.Sin(hrot), off.X * Mathf.Sin(hrot) + off.Y * Mathf.Cos(hrot));
                 var w = ctr + off;
                 if (lairHole && SetPitCells > 0f) { while (buf.U2.Count < buf.V.Count) buf.U2.Add(Vector2.Zero); buf.U2.Add(off); }   // (den r16 A) the pit-local offset
                 buf.V.Add(new Vector3(w.X, FloorY(c, w.X, w.Y) + 0.05f, w.Y));
