@@ -66,7 +66,10 @@ public static class Palettes
     public const int InkAt = StoneMossAt + 4;
     // (lead 5) "bands" [leaf, grass, ground, path, stone, bark] (flat steps on each ramp; 0 smooth), "band_edge" (the step's half width)
     public const int BandAt = InkAt + 28;
-    public static int Size => BandAt + 8;
+    // (lead 6, judge r4 cel fix 3: 2-4 inner lines a stone, 2-3 a trunk) "lines" [stone freq /m, bark freq /m, px, k]: a form's
+    // inner lines, isolines of a world-space noise at a fixed screen width, broken in places (palette.gdshaderinc pal_lines)
+    public const int LineAt = BandAt + 8;
+    public static int Size => LineAt + 4;
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -115,6 +118,8 @@ public static class Palettes
                 r[InkAt + 12 + i] = ik.TryGetProperty("inner", out var cr) && i < cr.GetArrayLength() ? cr[i].GetDouble() : i is 0 or 3 ? 1 : 0;
             }
             r[InkAt + 16] = Math.Cos(D("crease_deg", 40) * Math.PI / 180); r[InkAt + 17] = D("depth", 1);
+            // (lead 6, judge r4 cel fix 2) "fit": the contour at most this share of the form's width across (0: no cap), "fit_px": how far it looks for the far edge
+            r[InkAt + 18] = D("fit", 0); r[InkAt + 19] = D("fit_px", 24);
             // "rim" [leaf, stone, bark weights], "rim_nv" [n.v full, n.v start]: the form's own contour (kit.gdshader pal_ink), the ink colour's
             var (Rr, Rg, Rb) = Atmospheres.Linear(ik.TryGetProperty("rim_color", out var rc) ? rc.GetString()! : "#3a2848");
             for (int i = 0; i < 3; i++) r[InkAt + 20 + i] = ik.TryGetProperty("rim", out var rw) && i < rw.GetArrayLength() ? rw[i].GetDouble() : 0;
@@ -125,6 +130,9 @@ public static class Palettes
         if (e.TryGetProperty("bands", out var bd))
             for (int i = 0; i < Math.Min(6, bd.GetArrayLength()); i++) r[BandAt + (i < 4 ? i : i + 0)] = bd[i].GetDouble();
         r[BandAt + 6] = e.TryGetProperty("band_edge", out var be) ? be.GetDouble() : 0.06;
+        r[BandAt + 7] = e.TryGetProperty("leaf_form", out var lf) ? lf.GetDouble() : 0;   // (lead 6: a crown's ramp from its cards' facing, this share)
+        if (e.TryGetProperty("lines", out var ln))
+            for (int i = 0; i < Math.Min(4, ln.GetArrayLength()); i++) r[LineAt + i] = ln[i].GetDouble();
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts
         for (int a = 0; a < 2; a++)
             for (int i = 0; i < Row; i++) r[LeafAltAt + a * Row + i] = r[i];

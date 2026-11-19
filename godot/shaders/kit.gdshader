@@ -1143,6 +1143,7 @@ void fragment() {
 	} else {
 		ALBEDO = pal_bark(ALBEDO, v_fwpos);   // (lane J: the world palette, bark class)
 		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.z);   // (lead 5: the trunk's own contour)
+		ALBEDO = pal_lines(ALBEDO, v_fwpos * vec3(pal_line.y, pal_line.y * 0.18, pal_line.y));   // (lead 6: 2-3 lines down a trunk)
 		ALBEDO *= mix(0.6, 1.0, open_);
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
@@ -1267,6 +1268,7 @@ void fragment() {
 #endif
 		col = pal_stone(col, v_wpos);   // (lane J: the world palette, stone class)
 		col = pal_ink(col, NORMAL, VERTEX, pal_inkw.y);   // (lead 5: the stone's own contour)
+		col = pal_lines(col, v_wpos * pal_line.x);   // (lead 6: 2-4 inner lines a stone)
 		if (pal_stonem.w > 0.0 && !pnt)   // (lead 4: the palette's moss on what faces up, in patches)
 			col = mix(col, pal_stonem.rgb * (0.8 + 0.4 * st.a), pal_stonem.w * smoothstep(0.45, 0.8, bn.y) * smoothstep(0.4, 0.55, st.a));
 		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);

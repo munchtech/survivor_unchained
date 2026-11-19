@@ -165,7 +165,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         InkSnap.Fresh = false;
         m[28] = hasPre ? 1 : 0;
         float sc = size.Y / 1080f;
-        Vector4[] wv = { WTint, new(WOpt.X * sc, WOpt.Y, WOpt.Z, WOpt.W), WCls, WCre, WMore };
+        Vector4[] wv = { WTint, new(WOpt.X * sc, WOpt.Y, WOpt.Z, WOpt.W), WCls, WCre, new(WMore.X, WMore.Y, WMore.Z, WMore.W * sc) };
         for (int i = 0; i < 5; i++) { m[32 + i * 4] = wv[i].X; m[33 + i * 4] = wv[i].Y; m[34 + i * 4] = wv[i].Z; m[35 + i * 4] = wv[i].W; }
         rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
         float scale = size.Y / 1080f;

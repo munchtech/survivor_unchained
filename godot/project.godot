@@ -454,6 +454,10 @@ pal_band1={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+pal_line={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flora_night={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

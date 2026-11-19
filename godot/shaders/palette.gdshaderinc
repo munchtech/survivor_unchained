@@ -56,6 +56,27 @@ vec3 pal_ink(vec3 a, vec3 n_view, vec3 vtx, float w) {
 	return mix(a, a * pal_inkc.rgb, k);
 }
 
+// (lane J lead 6, judge r4 cel fix 3: the reference draws 2-4 lines inside a stone, 2-3 down a trunk) pal_line = (stone
+// frequency /m, bark frequency /m, line px, strength): isolines of a world-space value noise at a fixed screen width, broken in
+// places (a second noise), in the ink colour (pal_inkc), faded where the noise runs finer than the pixels.
+global uniform vec4 pal_line;
+float pal_h3(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float pal_vn3(vec3 x) {
+	vec3 i = floor(x), f = fract(x);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(pal_h3(i), pal_h3(i + vec3(1, 0, 0)), f.x), mix(pal_h3(i + vec3(0, 1, 0)), pal_h3(i + vec3(1, 1, 0)), f.x), f.y),
+		mix(mix(pal_h3(i + vec3(0, 0, 1)), pal_h3(i + vec3(1, 0, 1)), f.x), mix(pal_h3(i + vec3(0, 1, 1)), pal_h3(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+// p: world position already scaled (and stretched) to the line frequency
+vec3 pal_lines(vec3 a, vec3 p) {
+	if (pal_line.w <= 0.0) return a;
+	float n = pal_vn3(p);
+	float fw = max(fwidth(n), 1e-5);
+	float cov = 1.0 - smoothstep(pal_line.z * 0.5 - 0.5, pal_line.z * 0.5 + 0.5, abs(n - 0.5) / fw);
+	cov *= smoothstep(0.32, 0.46, pal_vn3(p * 1.3 + vec3(13.1, 7.7, 3.3)));   // (a brush line lifts off: breaks)
+	cov *= 1.0 - smoothstep(0.08, 0.2, length(fwidth(p)));   // (fine as the pixels: none)
+	return mix(a, a * pal_inkc.rgb, cov * pal_line.w);
+}
 // (lead 5: the reference's flat colour fields with hard edges) pal_band0 = bands for (leaf, grass, ground, path), pal_band1 =
 // (stone, bark, the band edge's half width, 0): the albedo's value on the ramp taken in that many flat steps (0/1: smooth, as before)
 global uniform vec4 pal_band0;
@@ -65,10 +86,12 @@ float pal_bands(float u, float nb) {
 	float x = u * (nb - 1.0), e = max(pal_band1.z, 0.01);
 	return (floor(x) + smoothstep(0.5 - e, 0.5 + e, fract(x))) / (nb - 1.0);
 }
-vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb) {
+// (lane J lead 6, judge r4 cel fix 4: the crowns read camouflage, the ramp's bands cut across the albedo's own speckle)
+// uf, fs: the ramp's place taken this share (fs) from the form (uf: the card's facing) instead of the albedo's value
+vec3 pal_ramp2(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb, float uf, float fs) {
 	if (d.w <= 0.0 || k <= 0.0) return albedo;
 	float v = sqrt(max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 0.0));
-	float u = pal_bands(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), nb);
+	float u = pal_bands(mix(clamp((v - m.w) / max(l.w - m.w, 1e-3), 0.0, 1.0), uf, fs), nb);
 	if (nb >= 1.5) v = m.w + u * (l.w - m.w);   // (the value kept is the band's)
 	float t = clamp(u + shift, 0.0, 1.0);
 	vec3 r = t < 0.5 ? mix(d.rgb, m.rgb, t * 2.0) : mix(m.rgb, l.rgb, t * 2.0 - 1.0);
@@ -82,6 +105,9 @@ vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float v
 	if (pal_embera.w <= 0.0) return mix(albedo, r, d.w * k);
 	// (lead 3: within her pool the keep takes the pool's own ground, its value turned by the albedo's)
 	return mix(mix(albedo, r, d.w), pal_embera.rgb * clamp(v / 0.45, 0.6, 1.3), (1.0 - k) * d.w);
+}
+vec3 pal_ramp(vec3 albedo, vec4 d, vec4 m, vec4 l, float k, float shift, float vk, float nb) {
+	return pal_ramp2(albedo, d, m, l, k, shift, vk, nb, 0.0, 0.0);
 }
 float pal_keep(vec3 wp) {
 	if (pal_ember.z <= 0.0 || cel_ember.w <= 0.0) return 1.0;
@@ -110,7 +136,7 @@ vec3 pal_leaf3(vec3 a, vec3 wp, float h, float h2, float tip, float edge, float 
 	// ramp's mid instead, amber, on its own dark stop: toward crimson it went khaki)
 	if (nw > 0.0 && h > 1.0 - pal_leafm.y) m = vec4(mix(m.rgb, pal_leaf1.rgb, nw), pal_leaf1.w);
 	else if (nw > 0.0 && h >= pal_leafm.x) { d = vec4(pal_leafa0.rgb, pal_leaf0.w); m = vec4(mix(m.rgb, pal_leafa1.rgb, nw), pal_leaf1.w); }
-	return pal_ramp(a, d, m, l, pal_keep(wp), sh, pal_vk0.x, pal_band0.x) * (1.0 - pal_leafn.x * nw);
+	return pal_ramp2(a, d, m, l, pal_keep(wp), sh - pal_band1.w * pal_leafm.w * tip, pal_vk0.x, pal_band0.x, clamp(0.5 + 0.5 * tip, 0.0, 1.0), pal_band1.w) * (1.0 - pal_leafn.x * nw);
 }
 vec3 pal_leaf(vec3 a, vec3 wp) { return pal_ramp(a, pal_leaf0, pal_leaf1, pal_leaf2, pal_keep(wp), 0.0, pal_vk0.x, pal_band0.x); }
 vec3 pal_grass(vec3 a) { return pal_ramp(a, pal_grass0, pal_grass1, pal_grass2, 1.0, 0.0, pal_vk0.y, pal_band0.y); }

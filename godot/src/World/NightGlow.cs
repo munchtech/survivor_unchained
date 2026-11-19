@@ -21,6 +21,9 @@ public partial class NightGlow : Node3D
     // glow "pool"); the lights stay on a share, for the lit faces.
     readonly List<(Decal D, float E)> pools = new();
     static ImageTexture? poolEmit, poolRim;
+    // (lane J lead 6, judge r4 cel fix 6: the pool's band reached the decal box's side and was cut straight) the pool drawn
+    // inside 1/PoolMargin of the box, the box this much wider, and tall enough for a slope (its floor and top fade)
+    const float PoolMargin = 1.35f;
     static void PoolTextures(double[] p)
     {
         const int N = 256;
@@ -30,7 +33,7 @@ public partial class NightGlow : Node3D
         for (int y = 0; y < N; y++)
             for (int x = 0; x < N; x++)
             {
-                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1, r = Mathf.Sqrt(u * u + v * v), an = Mathf.Atan2(v, u);
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1, r = Mathf.Sqrt(u * u + v * v) * PoolMargin, an = Mathf.Atan2(v, u);
                 float wob = 0.05f * Mathf.Sin(an * 3 + 1.3f) + 0.035f * Mathf.Sin(an * 5 - 0.7f);   // (a brush's dab, not a compass circle)
                 float rr = r + wob, edge = 1 - rw;
                 float aa = 1.5f / N * 2;   // (a pixel and a half of softness on each step)
@@ -83,7 +86,7 @@ public partial class NightGlow : Node3D
             {
                 if (poolEmit == null) PoolTextures(pp);
                 float pr = (float)(pp[0] * (0.85 + 0.3 * Hash(sx, sz, 12)));
-                var dc = new Decal { Name = "GlowPool", Size = new Vector3(pr * 2, 2.4f, pr * 2), Position = new Vector3(cx, cy + 0.6f, cz),
+                var dc = new Decal { Name = "GlowPool", Size = new Vector3(pr * 2 * PoolMargin, 4.0f, pr * 2 * PoolMargin), Position = new Vector3(cx, cy + 0.4f, cz),
                     TextureEmission = poolEmit, TextureAlbedo = poolRim, Modulate = Hex(alt ? g.AltLight : g.Light), EmissionEnergy = 0, AlbedoMix = 1,
                     NormalFade = 0.35f, UpperFade = 0.2f, LowerFade = 0.3f, CullMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers & ~PlayerView.CastLayer,
                     RotationDegrees = new Vector3(0, Hash(sx, sz, 13) * 360, 0) };

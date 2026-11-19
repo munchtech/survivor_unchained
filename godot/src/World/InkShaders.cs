@@ -32,6 +32,15 @@ public static class InkShaders
         vec3 N_(ivec2 q) { return sn[q.y * NS + q.x].xyz; }
 
         const ivec2 DIRS[8] = ivec2[8](ivec2(1, 0), ivec2(-1, 0), ivec2(0, 1), ivec2(0, -1), ivec2(1, 1), ivec2(-1, 1), ivec2(1, -1), ivec2(-1, -1));
+        const int OPP[8] = int[8](1, 0, 3, 2, 7, 6, 5, 4);
+        // (lane J lead 6) a view position straight from the depth (past the tile's apron), w -1 the sky
+        vec4 VP(ivec2 p) {
+            p = clamp(p, ivec2(0), ivec2(pc.size) - 1);
+            float d = texelFetch(depth_tex, p, 0).r;
+            vec2 ndc = (vec2(p) + 0.5) / pc.size * 2.0 - 1.0;
+            vec4 v = mt.inv_proj * vec4(ndc, d, 1.0);
+            return vec4(v.xyz / v.w, d <= 0.0 ? -1.0 : 0.0);
+        }
 
         void main() {
             ivec2 isz = ivec2(pc.size);
@@ -102,9 +111,13 @@ public static class InkShaders
                 float th = max(pc.th_a, pc.th_b * z) * (wd ? mt.wm.y : 1.0);
                 float thin = wd ? mt.wo.z : pc.sil_thin;
                 int K = sil ? min(int(ceil(r + 1.0)), A) : 0;
+                // (lane J lead 6, judge r4 cel fix 2: a thin prop went solid black, both its contours meeting) the world's
+                // contour no wider than a share (wm.z) of the form's own width across, measured to its far edge (up to wm.w px)
+                bool fit = wd && mt.wm.z > 0.0;
                 // The silhouette: a neighbor behind this pixel's tangent plane (the line thicker the deeper the drop).
                 for (int j = 0; j < 8; j++) {
                     float len = j < 4 ? 1.0 : 1.41421356;
+                    float rj = r; bool probed = false;
                     for (int k = 1; k <= K; k++) {
                         float d = float(k) * len;
                         if (d > r + 1.0) break;
@@ -113,7 +126,17 @@ public static class InkShaders
                         float w = smoothstep(th, th * 1.5, gap);
                         if (w <= 0.0) continue;
                         float f = mix(thin, 1.0, smoothstep(th * 2.0, th * 12.0, gap));
-                        line = max(line, w * clamp(r * f + 1.0 - d, 0.0, 1.0));
+                        if (fit && !probed) { probed = true;   // the far edge the other way: the form's width across this line
+                            int o = OPP[j], Lm = int(mt.wm.w);
+                            float wf = 1e9;
+                            for (int m = 1; m <= Lm; m++) {
+                                vec4 t = VP(px + DIRS[o] * m);
+                                float g2 = t.w < 0.0 ? 1e9 : dot(c.xyz - t.xyz, N);
+                                if (g2 > th) { wf = (float(m) + float(k) - 1.0) * len; break; }
+                            }
+                            rj = min(r, mt.wm.z * wf);
+                        }
+                        line = max(line, w * clamp(rj * f + 1.0 - d, 0.0, 1.0));
                     }
                 }
                 // The crease (classes 0 and 3): the surface folding by more than the crease angle.

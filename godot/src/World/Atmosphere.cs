@@ -326,6 +326,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("pal_inkc", At(SurvivorUnchained.Look.Palettes.InkAt + 24));
         RenderingServer.GlobalShaderParameterSet("pal_band0", At(SurvivorUnchained.Look.Palettes.BandAt));
         RenderingServer.GlobalShaderParameterSet("pal_band1", At(SurvivorUnchained.Look.Palettes.BandAt + 4));
+        RenderingServer.GlobalShaderParameterSet("pal_line", At(SurvivorUnchained.Look.Palettes.LineAt));   // (lead 6: inner lines)
     }
     public static Vector3? ThawSun(AtmospherePreset p)
     {
