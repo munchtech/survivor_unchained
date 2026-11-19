@@ -29,7 +29,23 @@
    "clear_mm": 3.0,
    "veto_mm": 0.3,
    "passes": 3
-  }
+  },
+  "rigid_blend": "union",
+  "rigid_drop": [
+   "breast",
+   "pec_",
+   "clavicle",
+   "neck",
+   "head",
+   "upperarm",
+   "lowerarm",
+   "hand",
+   "lat_",
+   "trap_",
+   "scap_",
+   "delt_",
+   "thigh"
+  ]
  },
  "covers": [
   "top"

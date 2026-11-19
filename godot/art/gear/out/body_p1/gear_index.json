@@ -1092,13 +1092,12 @@
    ],
    "meshes": [
     "sol_corset.top.brownleather",
-    "sol_corset.top.claspgold",
-    "sol_corset.top.darksteel",
     "sol_corset.top.gold",
+    "sol_corset.top.redleather",
     "sol_corset.top.steel"
    ],
    "tuck": "armor_tuck/sol_corset.bin",
-   "tuck_count": 4370,
+   "tuck_count": 6418,
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
@@ -1106,9 +1105,11 @@
    },
    "file": "res://art/armor/body_p1/sol_corset.gltf",
    "tier": 2,
+   "rigid": true,
    "source": "mesh",
    "body_glb": "e37f5a0c",
    "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "cover_count": 4423,
    "sockets": "res://art/armor/body_p1/sol_corset.sockets.json",
    "fit": "ok",
    "native": true,
