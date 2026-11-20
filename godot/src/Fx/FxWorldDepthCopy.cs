@@ -67,7 +67,6 @@ public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
                 UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,
             }, new RDTextureView());
         }
-        // (lane K, 19 Nov: the uniforms made again only when the RIDs change)
         var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
         {
             FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, FxWorldDepth.Nearest(rd), buf.GetDepthLayer(0)),
