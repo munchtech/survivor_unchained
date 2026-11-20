@@ -800,15 +800,15 @@ public partial class Callout : Control, ICalloutView
             float fade = Freeze ? 110 : 140;
             smoke.Size = s + Vector2.One * fade * 2;
             smoke.Position = wordsAt - smoke.Size / 2;
-            smokeMat.SetShaderParameter("size", smoke.Size);
-            smokeMat.SetShaderParameter("fade", fade);
-            smokeMat.SetShaderParameter("alpha", (Freeze ? 0.32f : 0.55f) * Smooth(age / 0.25));
+            smokeMat.SetShaderParameter(Sn.Of("size"), smoke.Size);
+            smokeMat.SetShaderParameter(Sn.Of("fade"), fade);
+            smokeMat.SetShaderParameter(Sn.Of("alpha"), (Freeze ? 0.32f : 0.55f) * Smooth(age / 0.25));
         }
         else smoke.Visible = false;
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
         // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
         if (Freeze) dim.Visible = !DimHeld;
-        if (Freeze) { dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0); dimMat.SetShaderParameter("night", Night ? 1f : 0f); }
+        if (Freeze) { dimMat.SetShaderParameter(Sn.Of("old_dim"), DimOld ? 1 : 0); dimMat.SetShaderParameter(Sn.Of("night"), Night ? 1f : 0f); }
         if (dim.Visible)
         {
             var lights = new Vector4[6];
@@ -816,7 +816,7 @@ public partial class Callout : Control, ICalloutView
             // (she keeps her own light: a soft pool about one and a half times her height)
             // (1.4 times that, its fall over the whole radius: no edge, never a disc of the night's own colour)
             if (aim.Her is Rect2 hr) lights[n++] = new Vector4(hr.GetCenter().X, hr.GetCenter().Y, hr.Size.Y * 0.8f * 1.4f * 1.25f, 0);
-            dimMat.SetShaderParameter("soft_first", aim.Her is Rect2 ? 1 : 0);
+            dimMat.SetShaderParameter(Sn.Of("soft_first"), aim.Her is Rect2 ? 1 : 0);
             var marks = Marks();
             for (int i = 0; i < marks.Count && n < 6; i++)
             {
@@ -832,12 +832,12 @@ public partial class Callout : Control, ICalloutView
             if (aim.Crisp != null)
                 foreach (var cr in aim.Crisp)
                     if (cn < 4) crisp[cn++] = new Vector4(cr.X, cr.Y, cr.Z, 0);
-            dimMat.SetShaderParameter("crisp", crisp);
-            dimMat.SetShaderParameter("crisp_n", cn);
-            dimMat.SetShaderParameter("lights", lights);
-            dimMat.SetShaderParameter("count", n);
-            dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
-            dimMat.SetShaderParameter("amount", Smooth(age / 0.26) * out_);
+            dimMat.SetShaderParameter(Sn.Of("crisp"), crisp);
+            dimMat.SetShaderParameter(Sn.Of("crisp_n"), cn);
+            dimMat.SetShaderParameter(Sn.Of("lights"), lights);
+            dimMat.SetShaderParameter(Sn.Of("count"), n);
+            dimMat.SetShaderParameter(Sn.Of("canvas"), new Vector2(Canvas, CanvasH));
+            dimMat.SetShaderParameter(Sn.Of("amount"), Smooth(age / 0.26) * out_);
             if (OS.GetCmdlineUserArgs().Contains("--dim-diag") && age > 0.6 && age < 1.3)
                 GD.Print($"dimdiag age={age:0.00} words={new Rect2(wordsAt - Size2 / 2, Size2)} lights={string.Join(";", lights.Take(n).Select(l => $"{l.X:0},{l.Y:0},{l.Z:0}"))}");
         }

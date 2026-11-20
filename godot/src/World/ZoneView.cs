@@ -891,10 +891,11 @@ public partial class ZoneView : Node3D
     }
 
     /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>
+    static readonly StringName GrassCentre = "shader_parameter/centre";
     public void FollowGrass(Vector2 at)
     {
-        grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
-        leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+        grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set(GrassCentre, at);
+        leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set(GrassCentre, at);
     }
 
     public override void _Process(double delta)

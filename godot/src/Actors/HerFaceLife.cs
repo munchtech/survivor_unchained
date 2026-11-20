@@ -163,6 +163,7 @@ public partial class HerFaceLife : Node
     static class P
     {
         public static readonly StringName lit = "lit", shut = "shut", narrow = "narrow", upper_mask = "upper_mask", mask_w = "mask_w", drop_v = "drop_v", band = "band", paint = "paint", grow = "grow", lips_apart = "lips_apart", lips_narrow = "lips_narrow", fold = "fold", open_light = "open_light", head_inv = "head_inv";
+        public static readonly StringName[] Shell = { "lit", "narrow", "closed", "side_floor" };
     }
 
     /// <summary>Which of a skin's binds is on her head bone: found once per skin and skeleton (each lookup by bind name
@@ -260,7 +261,7 @@ public partial class HerFaceLife : Node
                     sm.SetShaderParameter(P.drop_v, v);
                     sm.SetShaderParameter(P.grow, ShellGrow * v.Length() / d);
                     sm.SetShaderParameter(P.band, band);
-                    foreach (var pn in new[] { "lit", "narrow", "closed", "side_floor" }) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
+                    foreach (var pn in P.Shell) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
                     foreach (var (pn, pv) in teethParams) sm.SetShaderParameter(pn, pv);
                 }
                 else if (m.NextPass != null) m.NextPass = null;
