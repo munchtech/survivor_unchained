@@ -24,7 +24,7 @@
   { "draught": "antidote", "takes": { "bitterroot": 1 }, "gold": 3, "crafter": "wenna", "say": "brew.antidote" },
   { "draught": "moonpetal_draught", "takes": { "moonpetal": 1 }, "gold": 10, "crafter": "wenna", "moment": "brew.moonpetal" }
  ],
- "flask": { "item": "wennas_flask", "draught": "health_draught", "material": "bitterroot", "per": 1, "upto": 3, "gold": 120, "crafter": "wenna" },
+ "flask": { "item": "wennas_flask", "draught": "health_draught", "material": "bitterroot", "per": 1, "upto": 3, "gold": 120, "killPerCharge": 10, "killNormal": 1, "killElite": 3, "killBoss": 10, "crafter": "wenna" },
  "_commission": "Brannoc's 'make me one': Uncommon, the material's affix at grade I, full heat, ready the next morning. Gold is what the piece would fetch.",
  "commission": {
   "crafter": "brannoc", "iron": 2, "rarity": 1, "days": 1,

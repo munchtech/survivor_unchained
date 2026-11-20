@@ -316,6 +316,23 @@ public sealed partial class Journey
         if (Expedition != null) Expedition.Hp = double.MaxValue;
     }
 
+    /// <summary>Charge points toward the next draught (the kills' fill, FlaskRules.Kill*).</summary>
+    public int FlaskPoints;
+
+    /// <summary>(the owner, 19 Nov: "we need ways to get health, our vial should refill on kills like in poe") A kill adds charge
+    /// points; KillPerCharge of them brew a draught, until the flask holds Upto; points past the cap are lost.</summary>
+    void KillFillsFlask(Enemy e)
+    {
+        var f = Crafting.Rules.Flask;
+        FlaskPoints += e.Boss ? f.KillBoss : e.Elite ? f.KillElite : f.KillNormal;
+        while (FlaskPoints >= f.KillPerCharge)
+        {
+            if (Inventory.Count(Ch, f.Draught) >= f.Upto || Inventory.Room(Ch, f.Draught) < 1) { FlaskPoints = 0; return; }
+            FlaskPoints -= f.KillPerCharge;
+            Inventory.AddToPack(Ch, Inventory.Make(Ch, f.Draught));
+        }
+    }
+
     /// <summary>A kill: the survivor grows too, more slowly than the ember;
     /// the bestiary and the weapon's mastery remember it.</summary>
     public void Killed(Enemy e, bool byPlayer)
@@ -325,6 +342,7 @@ public sealed partial class Journey
         if (e.LastWeapon != null) Ch.Mastery[e.LastWeapon] = Ch.Mastery.GetValueOrDefault(e.LastWeapon) + 1;
         World.Bestiary[e.Def.Id] = World.Bestiary.GetValueOrDefault(e.Def.Id) + 1;
         if (e.Boss) Ch.Stats.BossesSlain++;
+        KillFillsFlask(e);
         // An arena pays its experience at the end, for the time survived; a
         // fight in the story teaches as it goes, the more the stronger the foe.
         if (InArena) return;

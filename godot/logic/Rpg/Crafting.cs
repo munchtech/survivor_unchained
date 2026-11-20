@@ -78,7 +78,9 @@ public sealed class Gate { public Cond? When; public string? Line; }
 public sealed class BrewRule { public string Draught = ""; public Dictionary<string, int> Takes = new(); public int Gold; public string Crafter = "wenna"; public string? Say, Moment; }
 /// <summary>Wenna's flask: bought once at her still-room; the inn tops the survivor's draughts up to
 /// a number while they sleep, a material a draught (The Witcher's refill: no brewing chore).</summary>
-public sealed class FlaskRules { public string Item = "wennas_flask", Draught = "health_draught", Material = "bitterroot", Crafter = "wenna"; public int Per = 1, Upto = 3, Gold = 120; }
+public sealed class FlaskRules { public string Item = "wennas_flask", Draught = "health_draught", Material = "bitterroot", Crafter = "wenna"; public int Per = 1, Upto = 3, Gold = 120;
+    /// <summary>(the owner, 19 Nov: "our vial should refill on kills like in poe") Charge points a kill adds: KillPerCharge of them make one draught, up to Upto; the rest past the cap are lost.</summary>
+    public int KillPerCharge = 10, KillNormal = 1, KillElite = 3, KillBoss = 10; }
 /// <summary>A base the smith can make from nothing, and the standing it asks (Calling: the
 /// weapons of the survivor's calling).</summary>
 public sealed class Pattern { public string? Id; public bool Calling; public Cond? When; public string? Needs; }
