@@ -487,7 +487,9 @@ public partial class P1Laws : SkeletonModifier3D
     bool reorderQueued, offsetsPrinted, driveFailed;
     // (per frame without garbage: the pose buffers kept, the metas' names made once, each mesh's blend shape index by
     // name looked up once per mesh set, not as a new StringName every frame)
-    P1M4[] lBuf = System.Array.Empty<P1M4>(), gBuf = System.Array.Empty<P1M4>();
+    P1M4[] lBuf = System.Array.Empty<P1M4>(), gBuf = System.Array.Empty<P1M4>(), g2Buf = System.Array.Empty<P1M4>();
+    // (the laws' output and the correctives' weights, kept: P1Rig.DriveInto fills them each frame, no clone or dictionary made)
+    readonly Dictionary<string, double> driveW = new(), playW = new();
     static readonly StringName MetaB = "p1_b", MetaRebound = "p1_rebound", MetaPiece = "p1_piece", MetaGear = P1Body.GearMeta;
     readonly Dictionary<MeshInstance3D, (Mesh? Set, Dictionary<string, int> Index)> shapeIndex = new();
     int ShapeIndex(MeshInstance3D mi, string name)
@@ -673,7 +675,7 @@ public partial class P1Laws : SkeletonModifier3D
     {
         if (sk == null || rig == null) return;
         int n = rig.Names.Length;
-        if (lBuf.Length != n) { lBuf = new P1M4[n]; gBuf = new P1M4[n]; }
+        if (lBuf.Length != n) { lBuf = new P1M4[n]; gBuf = new P1M4[n]; g2Buf = new P1M4[n]; }
         var L = lBuf; var G = gBuf;
         foreach (int j in order)
         {
@@ -682,7 +684,7 @@ public partial class P1Laws : SkeletonModifier3D
             G[j] = p < 0 ? L[j] : G[p] * L[j];
         }
         P1M4[] G2; Dictionary<string, double> w;
-        try { (G2, w) = rig.Drive(G); }
+        try { rig.DriveInto(G, g2Buf, driveW); G2 = g2Buf; w = driveW; }
         catch (System.Exception e)
         {
             // (rig.json and P1Rig.cs out of step, e.g. a law changed before its republish: the helpers held at rest, no
@@ -718,8 +720,11 @@ public partial class P1Laws : SkeletonModifier3D
             foreach (var kv in w)
                 if (ShapeIndex(mi, kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
         if (lod is { Visible: true } && playRig != null && !driveFailed)
-            foreach (var kv in playRig.CorrectiveWeights(G2))
+        {
+            playRig.CorrectiveWeightsInto(G2, playW);
+            foreach (var kv in playW)
                 if (ShapeIndex(lod, kv.Key) is int k and >= 0) lod.SetBlendShapeValue(k, (float)kv.Value);
+        }
     }
 
     // --p1-laws-dump FILE (checks only; tools/armor/engine_check.py): every --pose-probe-every'th frame (default 30) one JSON

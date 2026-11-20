@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -28,6 +29,39 @@ public class P1RigTests
     /// (hips 0.6; p1_rig_fixture.py --hand: its baked idles' frames, her hands by and on her thighs), held the same.</summary>
     [Fact]
     public void HandClearMatchesRigDrive() => Parity("p1_rig_parity_hand.json", true);
+
+    /// <summary>Lane K (19 Nov): DriveInto into buffers kept across poses (as P1Laws does each frame) gives bit for bit what
+    /// Drive gives, weights in the same order; the input left as it was.</summary>
+    [Theory]
+    [InlineData("p1_rig_parity.json")]
+    [InlineData("p1_rig_parity_hand.json")]
+    public void DriveIntoKeptBuffersMatchesDrive(string file)
+    {
+        var fx = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "tests", "fixtures", file))).RootElement;
+        var names = fx.GetProperty("names").EnumerateArray().Select(n => n.GetString()!).ToArray();
+        var parent = fx.GetProperty("parent").EnumerateArray().Select(p => p.GetInt32()).ToArray();
+        var rest = fx.GetProperty("rest").EnumerateArray().Select(M).ToArray();
+        var rig = new P1Rig(names, parent, rest, fx.GetProperty("rig"));
+        var kept = new P1M4[names.Length];
+        var keptW = new Dictionary<string, double>();
+        int poses = 0;
+        foreach (var pose in fx.GetProperty("poses").EnumerateArray())
+        {
+            var G = pose.GetProperty("G").EnumerateArray().Select(M).ToArray();
+            var before = G.ToArray();
+            var (want, ww) = rig.Drive(G);
+            rig.DriveInto(G, kept, keptW);
+            for (int j = 0; j < G.Length; j++)
+                for (int i = 0; i < 16; i++)
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(want[j].A[i]), BitConverter.DoubleToInt64Bits(kept[j].A[i]));
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(before[j].A[i]), BitConverter.DoubleToInt64Bits(G[j].A[i]));
+                }
+            Assert.Equal(ww.Select(kv => (kv.Key, BitConverter.DoubleToInt64Bits(kv.Value))), keptW.Select(kv => (kv.Key, BitConverter.DoubleToInt64Bits(kv.Value))));
+            poses++;
+        }
+        Assert.True(poses >= 6);
+    }
 
     static void Parity(string file, bool hand)
     {

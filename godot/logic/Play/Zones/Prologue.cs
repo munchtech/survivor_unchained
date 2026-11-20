@@ -75,6 +75,8 @@ public sealed partial class Prologue : ZoneRuntime
     const string DraftTip = "Each time the ember rises, choose one: a combat skill (they fire on their own) or a passive skill. A combat skill at rank 8, with one rank of the passive it names, evolves.";
 
     public Stage Now { get; private set; } = Stage.Wake;
+    /// <summary>Debug()'s "chestOpened", read alone (the autopilot each frame: no Debug dictionary and strings made).</summary>
+    public bool ChestOpened => chestOpened;
     double stageT, cutT, dawnK, envT, deadT = -1;
     XZ checkpoint;
     readonly HashSet<string> shown = new();

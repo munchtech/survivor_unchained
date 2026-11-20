@@ -126,6 +126,7 @@ public partial class HerJoints : SkeletonModifier3D
         public int Bone;
         public Quaternion ParentRest, Rest;
         public int[][] Chains = System.Array.Empty<int[]>(); // each thigh up to the parent (one or two)
+        public double[] Sw = System.Array.Empty<double>(), Sp = System.Array.Empty<double>();   // (each frame's swing and spread, kept)
         public Vector3[] Rest0 = System.Array.Empty<Vector3>();
         public int[] Sides = System.Array.Empty<int>(); // +1 her left thigh, -1 her right (from its name)
         public double Amount, Soft, Roll, RollFrom = 2, RollSoft = 6, RollMax = 20;
@@ -600,8 +601,9 @@ public partial class HerJoints : SkeletonModifier3D
         foreach (var tg in tassets)
         {
             int n = tg.Chains.Length;
-            var sw = new double[n];
-            var sp = new double[n];
+            if (tg.Sw.Length != n) { tg.Sw = new double[n]; tg.Sp = new double[n]; }
+            var sw = tg.Sw;
+            var sp = tg.Sp;
             for (int i = 0; i < n; i++)
             {
                 var q = Quaternion.Identity;

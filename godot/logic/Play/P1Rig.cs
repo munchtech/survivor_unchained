@@ -674,6 +674,15 @@ public sealed class P1Rig
     public Dictionary<string, double> CorrectiveWeights(P1M4[] G)
     {
         var o = new Dictionary<string, double>();
+        CorrectiveWeightsInto(G, o);
+        return o;
+    }
+
+    /// <summary>CorrectiveWeights into a dictionary kept by the caller (cleared first, filled in the same order): no
+    /// dictionary made per frame (lane K, 19 Nov: the young collections).</summary>
+    public void CorrectiveWeightsInto(P1M4[] G, Dictionary<string, double> o)
+    {
+        o.Clear();
         foreach (var c in corrList ?? BuildCorrectives())
         {
             if (c.Law == 0)
@@ -725,7 +734,6 @@ public sealed class P1Rig
             }
             else o[c.Name] = LegacyWeight(c, AngleOf(G, c.J, c.On));
         }
-        return o;
     }
 
     P1M4 Local(P1M4[] G, int j) { int p = Parent[j]; return p < 0 ? G[j] : G[p].Inverse() * G[j]; }
@@ -858,7 +866,18 @@ public sealed class P1Rig
     /// input array is left as it was.</summary>
     public (P1M4[] G, Dictionary<string, double> Weights) Drive(P1M4[] input)
     {
-        var G = (P1M4[])input.Clone();
+        var G = new P1M4[input.Length];
+        var w = new Dictionary<string, double>();
+        DriveInto(input, G, w);
+        return (G, w);
+    }
+
+    /// <summary>Drive into arrays kept by the caller: <paramref name="G"/> (the input's length, not the input) gets the
+    /// driven poses, <paramref name="weights"/> the correctives' weights (lane K, 19 Nov: no clone or dictionary per frame).</summary>
+    public void DriveInto(P1M4[] input, P1M4[] G, Dictionary<string, double> weights)
+    {
+        if (G.Length != input.Length || ReferenceEquals(G, input)) throw new ArgumentException("DriveInto: G must be a separate array of the input's length");
+        Array.Copy(input, G, input.Length);
         if (rig.TryGetProperty("girdle", out _))
             for (int si = 0; si < 2; si++) { var s = LR[si]; infoA[si] = Girdle(G, s); infoA0[si] = Elevation(Rest, Gs(s)); }
         else { infoA[0] = infoA[1] = infoA0[0] = infoA0[1] = null; }
@@ -866,7 +885,7 @@ public sealed class P1Rig
             for (int side = 0; side < 2; side++) HandClear(G, hc, side);
         foreach (var h in helperList ?? BuildHelpers())
             Helper(G, h);
-        return (G, CorrectiveWeights(G));
+        CorrectiveWeightsInto(G, weights);
     }
 }
 

@@ -494,15 +494,18 @@ public sealed class Autopilot
 
     void Prologue(double dt, Battle b, ZoneRuntime z)
     {
-        var d = z.Debug();
-        var stage = d.GetValueOrDefault("stage")?.ToString() ?? "";
+        // (lane K, 19 Nov: the stage and the chest read alone in the Prologue, not its whole Debug() each frame, whose
+        // strings were the autopilot's garbage in every perf run; the same values)
+        var pz = z as Zones.Prologue;
+        var d = pz == null ? z.Debug() : null;
+        var stage = pz != null ? pz.Now.ToString() : d!.GetValueOrDefault("stage")?.ToString() ?? "";
         if (stage != lastStage) { Log.Add($"{t:0}s {stage} lvl{b.EmberLevel} hp{Math.Round(b.Player.Hp)} kills{b.KillCount}"); lastStage = stage; }
         var p = b.Player;
         if ((diagT += dt) > 3 && Godot.OS.GetCmdlineUserArgs().Contains("--teach-diag"))
         {
             diagT = 0;
             var kn = b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight");
-            var nightDiag = d.GetValueOrDefault("night");
+            var nightDiag = (d ?? z.Debug()).GetValueOrDefault("night");
             Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")} night={nightDiag}");
         }
         var meta = g.Scene!.Data.Meta;
@@ -567,7 +570,7 @@ public sealed class Autopilot
                 }
                 break;
             }
-            case "Post" when d.GetValueOrDefault("chestOpened") is false && postT < 25 && !knightUp:
+            case "Post" when (pz != null ? !pz.ChestOpened : d!.GetValueOrDefault("chestOpened") is false) && postT < 25 && !knightUp:
             {
                 // From the chest's far side from the dead watchman, so the prompt is the chest's
                 // (standing between them, the watchman's book was read over and over).
