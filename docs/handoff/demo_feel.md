@@ -1,6 +1,7 @@
 # Demo feel (lane K, coordinator #15): state
 
 <!-- TOP BLOCK: the next context reads this first -->
+- LEAD 4 (19 Nov night, coordinator #15 spawn; budget 250k; worktree ff'd to 9a08b40c9 = SU_BAKE=1 export.sh). Order: (1) create < 1 s with a click after ~3 s in the exe (PrebuildCreator untested), (2) items 1+4 warm-up bar at first launch + pipeline cache + GC trace, numbers before/after (wagon, town, Space, Flare 1st/2nd, bar cold/warm, title cold/warm); SendMessage coordinator after 1-2; (3) item 7 movement diagnosis. Item 13 -> sound lane. L4 state: starting.
 - LEAD 3 (19 Nov night, coordinator #15 spawn; budget 250k). Order: 19, 16, 1+4 (shader warm-up bar + pipeline cache + Perf CSV path), 2 (title faster: owner 19 Nov "the run ends the story dosn't - we dont need that on title bar, can also remove the heroine sitting at the fire, just the fire is fine - should help"), 6 (trees/corners), 17, 18, Resolve floor at battle start, 20 (owner 19 Nov "being able to shove the boss wherever we want is probably unintended..." / "by simply running into him": bosses+elites don't yield to her body, leashed; Warden stays in his ford), then 7, 12, 13.
 - L3 DONE 19 (a74786b5c): MapRun.ForgetFogOfOtherLayout (zone "map" fog keyed by dungeon|pin|tier|people|seed). Test MapTests.A_new_den_layout_starts... 
 - L3 group-1 message sent to coordinator (19 Nov ~19:15, demo-feel@a45455c18).

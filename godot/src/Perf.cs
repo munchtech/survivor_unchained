@@ -242,6 +242,18 @@ public partial class Perf : Node
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSurface) + Performance.GetMonitor(Performance.Monitor.PipelineCompilationsDraw) +
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSpecialization);
 
+    /// <summary>(lane K) The pipelines compiled since the last call, by kind: canvas/mesh/surface/draw/specialization. Draw ones
+    /// are the stalls (compiled where the frame needs them); surface and specialization ones are on workers.</summary>
+    static readonly double[] lastByKind = new double[5];
+    static string PipesByKind()
+    {
+        var m = new[] { Performance.Monitor.PipelineCompilationsCanvas, Performance.Monitor.PipelineCompilationsMesh, Performance.Monitor.PipelineCompilationsSurface,
+                        Performance.Monitor.PipelineCompilationsDraw, Performance.Monitor.PipelineCompilationsSpecialization };
+        var sb = new StringBuilder();
+        for (int i = 0; i < 5; i++) { double v = Performance.GetMonitor(m[i]); sb.Append(i == 0 ? "" : "/").Append((int)(v - lastByKind[i])); lastByKind[i] = v; }
+        return sb.ToString();
+    }
+
     public override void _Process(double delta)
     {
         long now = Stopwatch.GetTimestamp();
@@ -273,13 +285,14 @@ public partial class Perf : Node
             coldPipes = pipes;
             if (t >= warm)
             {
+                string warmKinds = PipesByKind();
                 recording = live = true;
                 if (allocs != null) allocs.Counting = true;
                 pauseAtStart = GC.GetTotalPauseDuration();
                 extraNames = CounterNames;
                 counters = new double[extraNames.Length];
                 nextWindow = t + window;
-                GD.Print($"perf {name}: recording from {t:0.0}s ({coldPipes:0} pipelines compiled while warming)");
+                GD.Print($"perf {name}: recording from {t:0.0}s ({coldPipes:0} pipelines compiled while warming, c/m/s/d/sp {warmKinds})");
             }
             Remember(alloc, mainAlloc, g0, g1, g2, pipes);
             Array.Clear(partMs);
@@ -312,9 +325,10 @@ public partial class Perf : Node
         Counters(counters);
         extras.AddRange(counters);
         Remember(alloc, mainAlloc, g0, g1, g2, pipes);
+        string byKind = f.Pipelines > 0 ? PipesByKind() : "";
         // A hitch: a frame well over the run's usual, with what came with it.
         if (frames.Count > 30 && ms > Math.Max(25, 2.5 * Median()))
-            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} gc {f.Gen0}/{f.Gen1}/{f.Gen2} (paused {pauseMs:0.0}) alloc {f.Alloc / 1024}KB {Note()}");
+            hitches.Add($"{t:0.00}s {ms:0.0}ms (main {f.Main:0.0}: {PartsOf(frames.Count - 1)}; render cpu {f.RenderCpu:0.0}, gpu {f.Gpu:0.0}) pipelines {f.Pipelines} (c/m/s/d/sp {byKind}) gc {f.Gen0}/{f.Gen1}/{f.Gen2} (paused {pauseMs:0.0}) alloc {f.Alloc / 1024}KB {Note()}");
         if (t >= nextWindow)
         {
             nextWindow += window;

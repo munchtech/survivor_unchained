@@ -327,7 +327,13 @@ public partial class WorldScene : Node3D, IZoneLook
                 var evs = b.Events.Drain();
                 if (evs.Count == 0) continue;
                 Perf.Begin(Perf.Part.Fx);
+                ulong fxAt = Perf.On ? Godot.Time.GetTicksUsec() : 0;
+                if (Perf.On)   // (lane K: the moments the owner named, on the perf clock beside its hitches)
+                    foreach (var pe in evs)
+                        if (pe is Ev.Dash || pe is Ev.Flare { Phase: FlarePhase.Press }) GD.Print($"perf mark {pe.GetType().Name.ToLowerInvariant()} at {Perf.Now:0.00}s");
                 Fx.Handle(evs, b);
+                if (Perf.On && Godot.Time.GetTicksUsec() - fxAt > 8000)   // (lane K: which events a slow fx frame handled)
+                    GD.Print($"perf slow fx handle {(Godot.Time.GetTicksUsec() - fxAt) / 1000.0:0.0} ms at {b.Time:0.00}: {string.Join(",", evs.Select(e => e.GetType().Name).Distinct())}");
                 Perf.End(Perf.Part.Fx);
                 Weigh(evs, b);
                 frameEvents.AddRange(evs);
@@ -473,7 +479,9 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
             Fx.SimHeld = SimPaused;
+            ulong fxuAt = Perf.On ? Godot.Time.GetTicksUsec() : 0;
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
+            if (Perf.On && Godot.Time.GetTicksUsec() - fxuAt > 8000) GD.Print($"perf slow fx update {(Godot.Time.GetTicksUsec() - fxuAt) / 1000.0:0.0} ms at {b.Time:0.00}");
             flare.Her = HerDrawn;
             // The staff in her hand (under a mount_, not one hung at her back); looked for again while there is none (the
             // arms are built after the person), at most every 30 frames. VFX 12: "arm:mage_staff" never matched (Godot's
@@ -510,7 +518,9 @@ public partial class WorldScene : Node3D, IZoneLook
                 }
             }
             flare.Blade = blade;
+            ulong flAt = Perf.On ? Godot.Time.GetTicksUsec() : 0;
             flare.Tick(FxStill ? 0 : dt, b);
+            if (Perf.On && Godot.Time.GetTicksUsec() - flAt > 8000) GD.Print($"perf slow flare tick {(Godot.Time.GetTicksUsec() - flAt) / 1000.0:0.0} ms at {b.Time:0.00}");
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             SurvivorUnchained.View.HouseFade.Her = new Vector4((float)hx, y + 1.1f, (float)hz, 1);

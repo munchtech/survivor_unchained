@@ -36,6 +36,7 @@ public partial class Game
         screens.Show(new TitleScreen(this));
         hud.Fade(0, 1.6);
         GD.Print($"load: title up {Time.GetTicksMsec() / 1000.0:0.00} s since the engine began");
+        titleUpAt = Time.GetTicksMsec();
         PreloadCreator();
         // (lane K, 19 Nov: without the stranger her ~3 s build moved onto the "Create character" click, 0.9 s -> 3.2 s) the
         // creator's default figure is built hidden once the title has been up a while (its files loaded on threads by then),
@@ -44,6 +45,7 @@ public partial class Game
     }
 
     bool figurePrebuilt;
+    ulong titleUpAt;
 
     void PrebuildCreator()
     {
@@ -766,7 +768,9 @@ public partial class Game
     void AutoFront()
     {
         if (!Settings.Current.Mature) { Settings.Current.Mature = true; screens.Current?.Refresh(); return; }
-        if (Mode == "title") NewJourney();
+        // --title-hold S: the autopilot clicks "Create character" only after the title has been up S seconds (as a player
+        // would; lane K: the creator's figure is prebuilt 2 s in, which an at-once click never exercised)
+        if (Mode == "title") { if (Time.GetTicksMsec() - titleUpAt >= Args.Num("title-hold", 0) * 1000) NewJourney(); }
         else if (Mode == "create" && draft != null) { draft.Name = "Wren"; BeginJourney(draft.Choice()); }
     }
 }
