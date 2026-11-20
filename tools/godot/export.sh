@@ -46,10 +46,10 @@ stamp() {
   git -C "$ROOT" diff --quiet HEAD -- godot ':(exclude)*.import' || sha="$sha+dirty"
   printf '{ "sha": "%s", "flavor": "%s", "date": "%s" }\n' "$sha" "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$ROOT/godot/data/build.json"
 }
-# The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.txt (tools/godot/demo_README.txt).
+# The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.(bin|txt|TXT) (tools/godot/demo_README.txt).
 demo_zip() {
   local dir="$ROOT/release/godot/windows-demo"
-  cp "$ROOT/tools/godot/demo_README.txt" "$dir/README.txt"
+  cp "$ROOT/tools/godot/demo_README.(bin|txt|TXT)" "$dir/README.txt"
   local name="SurvivorUnchained_Demo_$(date +%Y%m%d)_$(git -C "$ROOT" rev-parse --short=9 HEAD).zip"
   rm -f "$ROOT/release/godot/$name"
   python "$ROOT/tools/godot/zip_dir.py" "$dir" "$ROOT/release/godot/$name" SurvivorUnchained_Demo
