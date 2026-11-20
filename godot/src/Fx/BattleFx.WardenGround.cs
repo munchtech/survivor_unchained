@@ -50,9 +50,9 @@ public partial class BattleFx
         {
             if (wgHengeMat != null) return wgHengeMat;
             wgHengeMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fx_henge_stone.gdshader") };
-            wgHengeMat.SetShaderParameter("paint_tex", GD.Load<Texture2D>("res://art/dungeon/den/boulders_paint.png"));
+            wgHengeMat.SetShaderParameter(Sn.Of("paint_tex"), GD.Load<Texture2D>("res://art/dungeon/den/boulders_paint.png"));
             // the slab's fully painted inside (px 597, 71, 328 x 252 of the 2048 atlas; boulders.json "slab")
-            wgHengeMat.SetShaderParameter("rect", new Vector4(597f / 2048f, 71f / 2048f, 328f / 2048f, 252f / 2048f));
+            wgHengeMat.SetShaderParameter(Sn.Of("rect"), new Vector4(597f / 2048f, 71f / 2048f, 328f / 2048f, 252f / 2048f));
             return wgHengeMat;
         }
     }

@@ -111,8 +111,8 @@ public partial class PlayerView : Node3D
     void XraySet(string k, Variant v)
     {
         var fill = (ShaderMaterial)xray.NextPass;
-        fill.SetShaderParameter(k, v);
-        ((ShaderMaterial)fill.NextPass).SetShaderParameter(k, v);
+        fill.SetShaderParameter(Sn.Of(k), v);
+        ((ShaderMaterial)fill.NextPass).SetShaderParameter(Sn.Of(k), v);
     }
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
@@ -146,8 +146,8 @@ public partial class PlayerView : Node3D
         if (k == floorK && floorSent) return;
         floorK = k; floorSent = true;
         var c = FloorHue.SrgbToLinear();
-        RenderingServer.GlobalShaderParameterSet("crowd_floor", new Vector4(c.R, c.G, c.B, k * FloorStrength));
-        RenderingServer.GlobalShaderParameterSet("lip_calm", k);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("crowd_floor"), new Vector4(c.R, c.G, c.B, k * FloorStrength));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("lip_calm"), k);
     }
     float floorLookT, floorK;
     bool floorBoss, floorSent;
@@ -1555,7 +1555,7 @@ public partial class PlayerView : Node3D
         {
             float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy / PoolDen * Atmosphere.CrowdFill * CrowdEmberK : 0;
             var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
-            RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("crowd_ember"), new Vector4(at.X, at.Y, at.Z, ce));
             // (L1 lead 19, SH2) She stands on her own short shadow: the light is over her, so the cast's rule gives next to
             // nothing; a fixed short trail from her feet, away from the light's foot (the light sits a little toward the
             // camera), a little wider than her stance. Its tone is the rig's (foe_moon value 8), the shape the shader's.
@@ -1568,16 +1568,16 @@ public partial class PlayerView : Node3D
             herShadow?.Place(GlobalPosition, Visible && IsVisibleInTree());
             if (herShadow != null) HerSteel.Wear(view?.HeldMount("handslot.r"), HeroDen.SteelOn);   // (demo-look r2 her: her blade as painted steel in the den)
             var lc = Light.LightColor.SrgbToLinear();
-            RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("crowd_lamp"), new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
             // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;
             // the rig's ember_give says how much): none while her lamp is out or hidden.
             var lp = Light.GlobalPosition;
-            RenderingServer.GlobalShaderParameterSet("cel_ember", new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("cel_ember"), new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
             if (PoolLog && Mathf.Abs(Light.OmniRange - poolLogged) > 0.25f) { poolLogged = Light.OmniRange; GD.Print($"pool: her light's reach {Light.OmniRange:0.00} m, energy {Light.LightEnergy:0.00}"); }
             // (L1 lead 8, S2b) her light's color (linear, its largest channel 1) and fall (OmniAttenuation), so the cel model knows her
             // light among the others and paints its pool (cel.gdshaderinc cel_pool_band).
             float lm = Mathf.Max(lc.R, Mathf.Max(lc.G, Mathf.Max(lc.B, 1e-4f)));
-            RenderingServer.GlobalShaderParameterSet("cel_pool", new Vector4(lc.R / lm, lc.G / lm, lc.B / lm, Light.OmniAttenuation));
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("cel_pool"), new Vector4(lc.R / lm, lc.G / lm, lc.B / lm, Light.OmniAttenuation));
         }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
@@ -1594,7 +1594,7 @@ public partial class PlayerView : Node3D
         for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
             switch (m.GetActiveMaterial(s))
             {
-                case ShaderMaterial sm when sm.HasMeta("kind") && (int)sm.GetMeta("kind") == 1 || sm.Shader?.ResourcePath.Contains("metal") == true: return true;
+                case ShaderMaterial sm when sm.HasMeta(Sn.Of("kind")) && (int)sm.GetMeta(Sn.Of("kind")) == 1 || sm.Shader?.ResourcePath.Contains("metal") == true: return true;
                 case BaseMaterial3D bm when bm.Metallic >= 0.5f: return true;
             }
         return false;
@@ -1659,8 +1659,9 @@ public partial class PlayerView : Node3D
 
     void RimTagWalk(Node n)
     {
-        foreach (var c in n.GetChildren())
+        for (int ci = 0, cn = n.GetChildCount(); ci < cn; ci++)   // (lane K, 19 Nov: GetChildren made a Godot Array each call that outlived its first collection)
         {
+            var c = n.GetChild(ci);
             if (c == Reflections || c == herShadow || c == herCast) continue;
             if (c is GeometryInstance3D g && (g.Layers & 2u) != 0 && (g.Layers & HerLayers) == 0) { g.Layers |= HerLayer; rimTagged.Add(g); }
             RimTagWalk(c);
@@ -1700,8 +1701,9 @@ public partial class PlayerView : Node3D
     /// <summary>Her meshes on the world's layer alone (her weapon, her shield) moved to people's, off her ember's pool light.</summary>
     static void OffPool(Node n, List<GeometryInstance3D> moved, Node skip)
     {
-        foreach (var c in n.GetChildren())
+        for (int ci = 0, cn = n.GetChildCount(); ci < cn; ci++)   // (lane K, 19 Nov: as RimTagWalk)
         {
+            var c = n.GetChild(ci);
             if (c == skip) continue;
             if (c is GeometryInstance3D g && g.Layers == 1u) { g.Layers = 2u; moved.Add(g); }
             OffPool(c, moved, skip);
@@ -1710,8 +1712,9 @@ public partial class PlayerView : Node3D
 
     static void Relayer(Node n, bool own, List<MeshInstance3D> hair)
     {
-        foreach (var c in n.GetChildren())
+        for (int ci = 0, cn = n.GetChildCount(); ci < cn; ci++)   // (lane K, 19 Nov: as RimTagWalk)
         {
+            var c = n.GetChild(ci);
             if (c is GeometryInstance3D g)
             {
                 uint mine = !RimHair && g is MeshInstance3D mi && hair.Contains(mi) ? HerHairLayer

@@ -172,7 +172,7 @@ public partial class PersonView : Node3D, INpcView
     /// clips' "grip_tilt_l" weight, eased as the tilt is). Does nothing while the piece is sheathed.</summary>
     public void Slide(string slot, float metres, float tilt = 0f, float pocket = 0f)
     {
-        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return;
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !IsGripMount(mount)) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
         if (!seats.TryGetValue(slot, out var s) || s.piece != piece)
         {
@@ -238,7 +238,7 @@ public partial class PersonView : Node3D, INpcView
     {
         Slide(slot, metres, tilt);
         if (back == 0f && inward == 0f) return;
-        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return;
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !IsGripMount(mount)) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece || !seats.TryGetValue(slot, out var s) || s.piece != piece) return;
         if (bone == null && mount.GetParent() is not Node3D) return;
         var inv = ((bone ?? ((Node3D)mount.GetParent()).GlobalTransform) * mount.Transform).Basis.Inverse();
@@ -265,6 +265,17 @@ public partial class PersonView : Node3D, INpcView
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
     // figure in town), eased as PlayerView eases it.
     float ownSlide, ownTilt, ownSlideL, ownTiltL, ownPocketL;
+
+    // (lane K, 19 Nov: made once: Node.Name makes a new StringName on every read, which outlived its first collection; a mount is named when made)
+    static readonly System.Collections.Generic.HashSet<ulong> gripMounts = new();
+    static bool IsGripMount(Node mount)
+    {
+        var id = mount.GetInstanceId();
+        if (gripMounts.Contains(id)) return true;
+        if (!mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return false;
+        gripMounts.Add(id);
+        return true;
+    }
 
     void OwnGrip(double delta, bool snap = false)
     {

@@ -79,7 +79,7 @@ public partial class BattleFx
     {
         EnsureLoot();
         // (the den's pools cover more of its warm ground: loot_beam's den)
-        if (lootDen != InDen) { lootDen = InDen; lootMat!.SetShaderParameter("den", InDen ? 1f : 0f); }
+        if (lootDen != InDen) { lootDen = InDen; lootMat!.SetShaderParameter(Sn.Of("den"), InDen ? 1f : 0f); }
         lootLight!.Begin();
         lampsLit = 0;
     }

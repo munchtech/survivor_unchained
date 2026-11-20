@@ -77,8 +77,8 @@ public partial class BattleFx
             if (!fireLooks.TryGetValue(d.Light, out var look))
             {
                 var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fire_wall.gdshader") };
-                mat.SetShaderParameter("seed", R() * 100);
-                mat.SetShaderParameter("segs", 48f);
+                mat.SetShaderParameter(Sn.Of("seed"), R() * 100);
+                mat.SetShaderParameter(Sn.Of("segs"), 48f);
                 var mesh = new MeshInstance3D
                 {
                     Mesh = Kept("firecards48", () => FireCards(48)), MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
@@ -107,8 +107,8 @@ public partial class BattleFx
             float reachAlong = len / 2 + 0.45f, reachAcross = 0.1f;
             look.Mesh.Position = new Vector3(mid.X, Y(mid.X, mid.Z) - 0.05f, mid.Z);
             look.Mesh.Basis = new Godot.Basis(Vector3.Up, -turn) * Godot.Basis.FromScale(new Vector3(reachAlong, 0.9f + 1.9f * look.Burn, reachAcross));
-            look.Mat.SetShaderParameter("cells", Mathf.Max(8, Mathf.Round(Mathf.Tau * Mathf.Sqrt((reachAlong * reachAlong + reachAcross * reachAcross) / 2) / 0.4f)));
-            look.Mat.SetShaderParameter("burn", Mathf.Clamp(look.Burn * 1.1f, 0, 1));
+            look.Mat.SetShaderParameter(Sn.Of("cells"), Mathf.Max(8, Mathf.Round(Mathf.Tau * Mathf.Sqrt((reachAlong * reachAlong + reachAcross * reachAcross) / 2) / 0.4f)));
+            look.Mat.SetShaderParameter(Sn.Of("burn"), Mathf.Clamp(look.Burn * 1.1f, 0, 1));
             // Embers going up off the length of it.
             look.Ember += dt * 22 * look.Burn;
             while (look.Ember >= 1)

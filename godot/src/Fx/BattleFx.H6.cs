@@ -204,7 +204,7 @@ public partial class BattleFx
             m.Curtain.AddToGroup(DangerGroup);
             AddChild(m.Curtain);
         }
-        ((ShaderMaterial)m.Curtain.MaterialOverride).SetShaderParameter("col", Palette.TeleSafe * CurtainK);
+        ((ShaderMaterial)m.Curtain.MaterialOverride).SetShaderParameter(Sn.Of("col"), Palette.TeleSafe * CurtainK);
         if (!curtains.Contains(m)) curtains.Add(m);
         StepCurtain(m);
     }
@@ -221,7 +221,7 @@ public partial class BattleFx
         if (!c.Visible) return;
         c.Basis = d.Basis.Orthonormalized() * Godot.Basis.FromScale(new Vector3(d.Size.X * 0.82f, CurtainH, d.Size.Z));
         c.Position = d.Position + Vector3.Up * (CurtainH / 2 - 0.05f);
-        ((ShaderMaterial)c.MaterialOverride).SetShaderParameter("fade", Mathf.Clamp(d.Modulate.A, 0, 1));
+        ((ShaderMaterial)c.MaterialOverride).SetShaderParameter(Sn.Of("fade"), Mathf.Clamp(d.Modulate.A, 0, 1));
     }
 
     /// <summary>Each frame: the gap curtains with their marks, the barks' view of the fight.</summary>

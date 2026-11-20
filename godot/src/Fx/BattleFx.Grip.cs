@@ -204,7 +204,7 @@ public partial class BattleFx
     (Vector3 Hilt, Vector3 Tip)? GripBladeNow()
     {
         if (gripBlade is not { } bl || !IsInstanceValid(bl) || !bl.IsInsideTree()) return null;
-        float tip = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") : 1.4f;
+        float tip = bl.HasMeta(Sn.Of("tip")) ? (float)bl.GetMeta(Sn.Of("tip")) : 1.4f;
         var xf = bl.GlobalTransform;
         return (xf * new Vector3(0, tip * 0.14f, 0), xf * new Vector3(0, tip, 0));
     }
@@ -213,7 +213,7 @@ public partial class BattleFx
     Vector3? SwapGlintAt()
     {
         if (gripBlade is not { } bl || !IsInstanceValid(bl) || !bl.IsInsideTree()) return null;
-        float along = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") * 0.6f : 0.5f;
+        float along = bl.HasMeta(Sn.Of("tip")) ? (float)bl.GetMeta(Sn.Of("tip")) * 0.6f : 0.5f;
         return bl.GlobalTransform * new Vector3(0, along, 0);
     }
 
@@ -281,7 +281,7 @@ public partial class BattleFx
     void GripArm(GripTrail tr)
     {
         gripLive = tr;
-        gripMat?.SetShaderParameter("fx_stroke_seed", R() * 97f);
+        gripMat?.SetShaderParameter(Sn.Of("fx_stroke_seed"), R() * 97f);
         if (tr.Side != 0) GripLinkAsk(tr);
     }
 
@@ -369,7 +369,7 @@ public partial class BattleFx
         var mesh = new ImmediateMesh();
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>(GripShader) };
         FxCel.Apply(mat, School.Physical, FxAfter.On);
-        mat.SetShaderParameter("grip_mode", mode);
+        mat.SetShaderParameter(Sn.Of("grip_mode"), mode);
         var node = new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false, Name = name };
         AddChild(node);
         node.GlobalTransform = Transform3D.Identity;
@@ -461,11 +461,11 @@ public partial class BattleFx
         var m = new ShaderMaterial { Shader = GD.Load<Shader>(SunderRingShader) };
         FxCel.Apply(m, School.Physical, FxAfter.On);
         var tex = PaintedRingTex(key);
-        m.SetShaderParameter("ring_tex", tex[(int)(R() * 0.999f * tex.Length)]);
-        m.SetShaderParameter("ring_range", span);
-        m.SetShaderParameter("ring_r0", SunderR0);
-        m.SetShaderParameter("ring_flip", R() < 0.5f ? -1f : 1f);
-        m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+        m.SetShaderParameter(Sn.Of("ring_tex"), tex[(int)(R() * 0.999f * tex.Length)]);
+        m.SetShaderParameter(Sn.Of("ring_range"), span);
+        m.SetShaderParameter(Sn.Of("ring_r0"), SunderR0);
+        m.SetShaderParameter(Sn.Of("ring_flip"), R() < 0.5f ? -1f : 1f);
+        m.SetShaderParameter(Sn.Of("ring_core"), P7D[key + ".core_cut"]);
         p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
         var n = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "PaintedRing" };
         AddChild(n);
@@ -475,13 +475,13 @@ public partial class BattleFx
         var s = new P7Shape
         {
             N = n, M = m, Life = life + 1 / 60f,
-            Step = q =>
+            Step = q =>   // (lane K, 19 Nov: Sn.Of: a StringName from a string each frame outlived its first collection)
             {
                 float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
                 q.N.Scale = Vector3.One * reach * (from + (1 - from) * u);
-                q.M.SetShaderParameter("ring_hot", q.Age < hot ? 1f : 0f);
-                q.M.SetShaderParameter("ring_cut", Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
-                q.M.SetShaderParameter("ring_fade", 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
+                q.M.SetShaderParameter(Sn.Of("ring_hot"), q.Age < hot ? 1f : 0f);
+                q.M.SetShaderParameter(Sn.Of("ring_cut"), Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
+                q.M.SetShaderParameter(Sn.Of("ring_fade"), 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
             },
         };
         s.Step(s);
@@ -511,13 +511,13 @@ public partial class BattleFx
         var m = new ShaderMaterial { Shader = GD.Load<Shader>(SunderRingShader) };
         FxCel.Apply(m, School.Physical, FxAfter.On);
         var tex = PaintedRingTex(key);
-        m.SetShaderParameter("ring_tex", tex[(int)(R() * 0.999f * tex.Length)]);
-        m.SetShaderParameter("ring_straight", 1f);
-        m.SetShaderParameter("strip_half", len / 2);
-        m.SetShaderParameter("strip_span", (1 - SunderR0) * P7D[key + ".scale_m"]);
-        m.SetShaderParameter("strip_bow", P7D[key + ".bow"]);
-        m.SetShaderParameter("ring_flip", R() < 0.5f ? -1f : 1f);
-        m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
+        m.SetShaderParameter(Sn.Of("ring_tex"), tex[(int)(R() * 0.999f * tex.Length)]);
+        m.SetShaderParameter(Sn.Of("ring_straight"), 1f);
+        m.SetShaderParameter(Sn.Of("strip_half"), len / 2);
+        m.SetShaderParameter(Sn.Of("strip_span"), (1 - SunderR0) * P7D[key + ".scale_m"]);
+        m.SetShaderParameter(Sn.Of("strip_bow"), P7D[key + ".bow"]);
+        m.SetShaderParameter(Sn.Of("ring_flip"), R() < 0.5f ? -1f : 1f);
+        m.SetShaderParameter(Sn.Of("ring_core"), P7D[key + ".core_cut"]);
         p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
         var n = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "PaintedFront" };
         AddChild(n);
@@ -526,13 +526,13 @@ public partial class BattleFx
         var s = new P7Shape
         {
             N = n, M = m, Life = life + 1 / 60f,
-            Step = q =>
+            Step = q =>   // (lane K, 19 Nov: Sn.Of: a StringName from a string each frame outlived its first collection)
             {
                 float t = Mathf.Clamp(q.Age / run, 0, 1), u = 1 - (1 - t) * (1 - t);
-                q.M.SetShaderParameter("strip_front", len * (from + (1 - from) * u));
-                q.M.SetShaderParameter("ring_hot", q.Age < hot ? 1f : 0f);
-                q.M.SetShaderParameter("ring_cut", Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
-                q.M.SetShaderParameter("ring_fade", 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
+                q.M.SetShaderParameter(Sn.Of("strip_front"), len * (from + (1 - from) * u));
+                q.M.SetShaderParameter(Sn.Of("ring_hot"), q.Age < hot ? 1f : 0f);
+                q.M.SetShaderParameter(Sn.Of("ring_cut"), Mathf.Lerp(cool[2], cool[3], Mathf.Clamp((q.Age - cool[0]) / Mathf.Max(cool[1] - cool[0], 1e-3f), 0, 1)));
+                q.M.SetShaderParameter(Sn.Of("ring_fade"), 1.02f * Mathf.Clamp((q.Age - fade[0]) / Mathf.Max(fade[1] - fade[0], 1e-3f), 0, 1));
             },
         };
         s.Step(s);
@@ -713,47 +713,47 @@ public partial class BattleFx
         var share = P7D.All("grip.fill.share"); var vals = P7D.All(Flare.Night ? "grip.fill.values_night" : "grip.fill.values_day"); var gold = P7D.All("grip.fill.gold"); var dense = P7D.All("grip.fill.press");
         var st = P7D.All("grip.fill.streak"); var dr = P7D.All("grip.fill.dry"); var tn = P7D.All("grip.fill.tine"); var ct = P7D.All("grip.fill.cut");
         var sw = P7D.All("grip.shed_white");
-        m.SetShaderParameter("grip_total", total);
-        m.SetShaderParameter("grip_tail_u", tailU);
-        m.SetShaderParameter("grip_blade", Mathf.Max(blade, 0.05f));
-        m.SetShaderParameter("grip_head", look.Head);
-        m.SetShaderParameter("grip_point", new Vector2(pt[0], pt[1]));
-        m.SetShaderParameter("grip_cap", new Vector4(cap[0], cap[1], cap[2], cap[3]));
-        m.SetShaderParameter("grip_cap2", new Vector2(cap[4], cap[5]));
-        m.SetShaderParameter("grip_rag", new Vector3(rag[0], rag[1], rag[2]));
-        m.SetShaderParameter("grip_px", P7Px(her));
-        m.SetShaderParameter("grip_seed", seed);
-        m.SetShaderParameter("grip_narrow", P7D["grip.shed_to"]);
+        m.SetShaderParameter(Sn.Of("grip_total"), total);
+        m.SetShaderParameter(Sn.Of("grip_tail_u"), tailU);
+        m.SetShaderParameter(Sn.Of("grip_blade"), Mathf.Max(blade, 0.05f));
+        m.SetShaderParameter(Sn.Of("grip_head"), look.Head);
+        m.SetShaderParameter(Sn.Of("grip_point"), new Vector2(pt[0], pt[1]));
+        m.SetShaderParameter(Sn.Of("grip_cap"), new Vector4(cap[0], cap[1], cap[2], cap[3]));
+        m.SetShaderParameter(Sn.Of("grip_cap2"), new Vector2(cap[4], cap[5]));
+        m.SetShaderParameter(Sn.Of("grip_rag"), new Vector3(rag[0], rag[1], rag[2]));
+        m.SetShaderParameter(Sn.Of("grip_px"), P7Px(her));
+        m.SetShaderParameter(Sn.Of("grip_seed"), seed);
+        m.SetShaderParameter(Sn.Of("grip_narrow"), P7D["grip.shed_to"]);
         // leaving: the shed (the whole stroke thins) and the dry gaps (the last three drawn frames: mostly streaks at the end)
-        m.SetShaderParameter("grip_leave", age < 0 ? Vector3.Zero : new Vector3(Mathf.Clamp((age - shed[0]) / Mathf.Max(shed[1] - shed[0], 1e-4f), 0, 1), P7D.Curve("grip.dry_out", age), P7D.Curve("grip.dry_tail", age)));
-        m.SetShaderParameter("grip_fill", new Vector4(P7D["grip.fill.lanes"], share[0], share[1], P7D["grip.fill.comb"]));
-        m.SetShaderParameter("grip_gold", new Vector3(gold[0], gold[1], gold[2]));
-        m.SetShaderParameter("grip_dense", new Vector2(dense[0], dense[1]));
+        m.SetShaderParameter(Sn.Of("grip_leave"), age < 0 ? Vector3.Zero : new Vector3(Mathf.Clamp((age - shed[0]) / Mathf.Max(shed[1] - shed[0], 1e-4f), 0, 1), P7D.Curve("grip.dry_out", age), P7D.Curve("grip.dry_tail", age)));
+        m.SetShaderParameter(Sn.Of("grip_fill"), new Vector4(P7D["grip.fill.lanes"], share[0], share[1], P7D["grip.fill.comb"]));
+        m.SetShaderParameter(Sn.Of("grip_gold"), new Vector3(gold[0], gold[1], gold[2]));
+        m.SetShaderParameter(Sn.Of("grip_dense"), new Vector2(dense[0], dense[1]));
         // (take 10) the contact's place, reaches and size: the fill asks the press at each streak's centre
-        m.SetShaderParameter("grip_stamp", stamp);
+        m.SetShaderParameter(Sn.Of("grip_stamp"), stamp);
         var gv = P7D.All("grip.fill.groove");
-        m.SetShaderParameter("grip_groove", new Vector4(gv[0], gv[1], gv[2], gv[3]));
-        m.SetShaderParameter("grip_loaded", P7D["grip.press.loaded"]);
-        m.SetShaderParameter("grip_streak", new Vector4(st[0], st[1], dr[0], dr[1]));
-        m.SetShaderParameter("grip_tine", new Vector4(tn[0], tn[1], ct[0], ct[1]));
-        m.SetShaderParameter("grip_shedw", new Vector2(sw[0], sw[1]));
-        m.SetShaderParameter("grip_out", P7D["grip.splay.out"]);
+        m.SetShaderParameter(Sn.Of("grip_groove"), new Vector4(gv[0], gv[1], gv[2], gv[3]));
+        m.SetShaderParameter(Sn.Of("grip_loaded"), P7D["grip.press.loaded"]);
+        m.SetShaderParameter(Sn.Of("grip_streak"), new Vector4(st[0], st[1], dr[0], dr[1]));
+        m.SetShaderParameter(Sn.Of("grip_tine"), new Vector4(tn[0], tn[1], ct[0], ct[1]));
+        m.SetShaderParameter(Sn.Of("grip_shedw"), new Vector2(sw[0], sw[1]));
+        m.SetShaderParameter(Sn.Of("grip_out"), P7D["grip.splay.out"]);
         // (vii) the stroke's own white (sRGB in the data; the bands are linear), by day and by night
         var w = P7D.All(Flare.Night ? "grip.white.night" : "grip.white.day");
-        m.SetShaderParameter("grip_white", new Vector3(GripLin(w[0]), GripLin(w[1]), GripLin(w[2])));
+        m.SetShaderParameter(Sn.Of("grip_white"), new Vector3(GripLin(w[0]), GripLin(w[1]), GripLin(w[2])));
         // (take 8, iii) the fill's two deeper values: the white x these, in sRGB (steps the eye reads at 1:1)
-        m.SetShaderParameter("grip_val1", new Vector3(GripLin(w[0] * vals[0]), GripLin(w[1] * vals[1]), GripLin(w[2] * vals[2])));
-        m.SetShaderParameter("grip_val2", new Vector3(GripLin(w[0] * vals[3]), GripLin(w[1] * vals[4]), GripLin(w[2] * vals[5])));
+        m.SetShaderParameter(Sn.Of("grip_val1"), new Vector3(GripLin(w[0] * vals[0]), GripLin(w[1] * vals[1]), GripLin(w[2] * vals[2])));
+        m.SetShaderParameter(Sn.Of("grip_val2"), new Vector3(GripLin(w[0] * vals[3]), GripLin(w[1] * vals[4]), GripLin(w[2] * vals[5])));
         var sp = new float[48];
         int ns = Math.Min(12, Math.Min(tines, (spikes?.Length ?? 0) / 4));   // (take 10: the tines only; the flicks are their own ribbons)
         if (spikes != null) Array.Copy(spikes, sp, ns * 4);
-        m.SetShaderParameter("grip_spike", sp);
-        m.SetShaderParameter("grip_spike_n", ns);
+        m.SetShaderParameter(Sn.Of("grip_spike"), sp);
+        m.SetShaderParameter(Sn.Of("grip_spike_n"), ns);
         // (take 8, iv) a thrown flick FLIES as it is shed: its near end leaves the root, it breaks into dashes
         var fl = P7D.All("grip.throw.fly"); var da = P7D.All("grip.throw.dash");
         int sf = Math.Clamp(since, 0, fl.Length - 1);
-        m.SetShaderParameter("grip_fly", new Vector3(since < 0 ? 0 : fl[sf], since < 0 ? 1 : da[Math.Min(sf, da.Length - 1)], P7D["grip.throw.dash_m"]));
-        m.SetShaderParameter("grip_throw_gold", P7D["grip.throw.color"]);
+        m.SetShaderParameter(Sn.Of("grip_fly"), new Vector3(since < 0 ? 0 : fl[sf], since < 0 ? 1 : da[Math.Min(sf, da.Length - 1)], P7D["grip.throw.dash_m"]));
+        m.SetShaderParameter(Sn.Of("grip_throw_gold"), P7D["grip.throw.color"]);
         gripNode!.CustomAabb = new Aabb(her - new Vector3(8, 3, 8), new Vector3(16, 7, 16));
     }
 
@@ -1296,8 +1296,8 @@ public partial class BattleFx
         Quad(b - gx - gy, b + gx - gy, b - gx + gy, b + gx + gy, new Vector2(-1, -1), new Vector2(1, 1), 1);
         mesh.SurfaceEnd();
         var m = gripEdgeMat!;
-        m.SetShaderParameter("grip_size", new Vector2(w, 0));
-        m.SetShaderParameter("grip_thin", (float)step);
+        m.SetShaderParameter(Sn.Of("grip_size"), new Vector2(w, 0));
+        m.SetShaderParameter(Sn.Of("grip_thin"), (float)step);
         gripEdgeNode!.CustomAabb = new Aabb(tip - new Vector3(3, 3, 3), new Vector3(6, 6, 6));
         gripEdgeNode.Visible = true;
     }

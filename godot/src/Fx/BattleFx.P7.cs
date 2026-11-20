@@ -145,8 +145,8 @@ public partial class BattleFx
         q = Perf.Slow("p7mat new", q);
         FxCel.Apply(m, School.Physical, FxAfter.On);
         q = Perf.Slow("p7mat cel", q);
-        m.SetShaderParameter("p7_mode", mode);
-        m.SetShaderParameter("p7_seed", R() * 10);
+        m.SetShaderParameter(Sn.Of("p7_mode"), mode);
+        m.SetShaderParameter(Sn.Of("p7_seed"), R() * 10);
         P7Brush(m, 12);
         Perf.Slow("p7mat params", q);
         return m;
@@ -158,9 +158,9 @@ public partial class BattleFx
     /// stay at L1's defaults.</summary>
     void P7Brush(ShaderMaterial m, float widthPx, float tail = 0.12f)
     {
-        m.SetShaderParameter("fx_stroke_seed", R() * 97f);
-        m.SetShaderParameter("fx_bristle", new Vector4(Mathf.Clamp(widthPx / 3f, 1f, 24f), 12f, 0.55f, 0.2f));
-        if (tail != 0.12f) m.SetShaderParameter("fx_stroke_shape", new Vector4(0.72f, 0.3f, tail, 0.08f));
+        m.SetShaderParameter(Sn.Of("fx_stroke_seed"), R() * 97f);
+        m.SetShaderParameter(Sn.Of("fx_bristle"), new Vector4(Mathf.Clamp(widthPx / 3f, 1f, 24f), 12f, 0.55f, 0.2f));
+        if (tail != 0.12f) m.SetShaderParameter(Sn.Of("fx_stroke_shape"), new Vector4(0.72f, 0.3f, tail, 0.08f));
     }
 
     /// <summary>A quad mode's main stroke half-width as a share of the quad's half-size (0: the caller sizes it). The
@@ -175,7 +175,7 @@ public partial class BattleFx
         p7Quad ??= new QuadMesh { Size = new Vector2(2, 2) };
         var m = P7Mat(mode, top);
         if (P7ModeHw(mode) > 0) P7Brush(m, 2 * P7ModeHw(mode) * half / P7Px(at));
-        if (bill) m.SetShaderParameter("p7_bill", 1f);
+        if (bill) m.SetShaderParameter(Sn.Of("p7_bill"), 1f);
         long q = System.Diagnostics.Stopwatch.GetTimestamp();
         var n = new MeshInstance3D { Mesh = bill ? p7Quad : p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         n.Scale = Vector3.One * half;
@@ -452,13 +452,13 @@ public partial class BattleFx
         float half = 0.5f * px * P7Px(at);
         var s = P7Quad(1, at, half, (hold + 3 * step) / 60f, bill: bill, top: bill, step: q =>
         {
-            q.M.SetShaderParameter("p7_t", q.Age);
-            q.M.SetShaderParameter("p7_fade", P7StarLife(q.Age, hold, step));
+            q.M.SetShaderParameter(Sn.Of("p7_t"), q.Age);
+            q.M.SetShaderParameter(Sn.Of("p7_fade"), P7StarLife(q.Age, hold, step));
         });
-        s.M.SetShaderParameter("p7_count", (float)spikes);
-        s.M.SetShaderParameter("p7_streaks", (float)streaks);
-        s.M.SetShaderParameter("p7_root", 0.5f * rootPx / (0.5f * px));
-        s.M.SetShaderParameter("p7_heart", 0.5f * rootPx / (0.5f * px) * 0.8f);
+        s.M.SetShaderParameter(Sn.Of("p7_count"), (float)spikes);
+        s.M.SetShaderParameter(Sn.Of("p7_streaks"), (float)streaks);
+        s.M.SetShaderParameter(Sn.Of("p7_root"), 0.5f * rootPx / (0.5f * px));
+        s.M.SetShaderParameter(Sn.Of("p7_heart"), 0.5f * rootPx / (0.5f * px) * 0.8f);
         P7Brush(s.M, rootPx, tail);
         return s;
     }
@@ -561,7 +561,7 @@ public partial class BattleFx
         }
         mesh.SurfaceEnd();
         var s = P7OnMesh(7, mesh, Vector3.Zero, Vector3.One, cool, q =>
-            q.M.SetShaderParameter("p7_fade", q.Age < cool / 6 ? 0f : q.Age < cool / 2 ? 0.34f : 0.67f));
+            q.M.SetShaderParameter(Sn.Of("p7_fade"), q.Age < cool / 6 ? 0f : q.Age < cool / 2 ? 0.34f : 0.67f));
         s.N.GlobalTransform = Transform3D.Identity;
         P7Brush(s.M, 2 * hw[0] / P7Px(pts[0]));
     }
@@ -586,13 +586,13 @@ public partial class BattleFx
                 {
                     s.N.GlobalPosition = P7ShieldAt();
                     int f = (int)(s.Age * 60 + 1e-3f);
-                    s.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
+                    s.M.SetShaderParameter(Sn.Of("p7_fade"), f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
                 });
                 P7Brush(cr.M, 0.2f * cpx);
                 if (GetViewport()?.GetCamera3D() is { } cam && !cam.IsPositionBehind(sh0))
                 {
                     var d2 = cam.UnprojectPosition(sh0 + dir) - cam.UnprojectPosition(sh0);
-                    if (d2.LengthSquared() > 1e-4f) cr.M.SetShaderParameter("p7_dir2", d2.Normalized());
+                    if (d2.LengthSquared() > 1e-4f) cr.M.SetShaderParameter(Sn.Of("p7_dir2"), d2.Normalized());
                 }
                 P7Kick(feet, dir, P7D.Count("kick.puffs", R()), P7D["kick.life"]);
                 p7ChargeT = 0; p7ChargeDur = (float)e.Dur; p7ChargeDir = dir; p7ChargeHit = false;
@@ -712,8 +712,8 @@ public partial class BattleFx
         var s = P7Quad(5, at, reach, run + 1 / 60f, bill: bill, top: bill, step: q =>
         {
             float t = Mathf.Clamp(q.Age / run, 0, 1), prog = 1 - (1 - t) * (1 - t);
-            q.M.SetShaderParameter("p7_prog", prog);
-            q.M.SetShaderParameter("p7_fall", prog);
+            q.M.SetShaderParameter(Sn.Of("p7_prog"), prog);
+            q.M.SetShaderParameter(Sn.Of("p7_fall"), prog);
             // the front sheds dust as it passes (clusters off the arcs, riding out behind it); the last at the reach
             while (arcs != null && next < shed.Length && prog >= shed[next])
             {
@@ -721,9 +721,9 @@ public partial class BattleFx
                 P7Shed(new Vector3(at.X, at.Y - 0.06f, at.Z), reach * k, arcs, 2 * (1 - t) * reach / run, dpx[0], dpx[1]);
             }
         });
-        s.M.SetShaderParameter("p7_lead", leadPx / rpx);
-        s.M.SetShaderParameter("p7_trw", trailPx / rpx);
-        s.M.SetShaderParameter("p7_prog", 0.02f);
+        s.M.SetShaderParameter(Sn.Of("p7_lead"), leadPx / rpx);
+        s.M.SetShaderParameter(Sn.Of("p7_trw"), trailPx / rpx);
+        s.M.SetShaderParameter(Sn.Of("p7_prog"), 0.02f);
         arcs = P7Arcs(s.M, span0 + (span >= Mathf.Tau - 1e-3f ? R() * Mathf.Tau : 0), span, n, 0, 0.85f, 1.25f, 0.35f);
         P7BrushWave(s.M, rpx, leadPx);
         return s;
@@ -741,9 +741,9 @@ public partial class BattleFx
         for (int i = 0; i < n; i++)
             a[i] = new Vector4(span0 + (i + 0.5f + (R() - 0.5f) * 0.3f) * sec, 0.5f * sec * Mathf.Lerp(lo, hi, R()), (R() - 0.5f) * 2 * zk,
                 swirl != 0 ? swirl : (R() < 0.5f ? 1 : -1));
-        m.SetShaderParameter("p7_arc", a);
-        m.SetShaderParameter("p7_narc", n);
-        m.SetShaderParameter("p7_span", new Vector2(span0, span));
+        m.SetShaderParameter(Sn.Of("p7_arc"), a);
+        m.SetShaderParameter(Sn.Of("p7_narc"), n);
+        m.SetShaderParameter(Sn.Of("p7_span"), new Vector2(span0, span));
         return a[..n];
     }
 
@@ -776,9 +776,9 @@ public partial class BattleFx
     /// edges read as a brush's at 1:1. `rpx`: the reach in px at the play camera.</summary>
     void P7BrushWave(ShaderMaterial m, float rpx, float leadPx)
     {
-        m.SetShaderParameter("fx_stroke_seed", R() * 97f);
-        m.SetShaderParameter("fx_bristle", new Vector4(Mathf.Clamp(0.66f * 1.3f * leadPx, 3f, 14f), 2f, 0.75f, 0.28f));
-        m.SetShaderParameter("p7_rpx", rpx);
+        m.SetShaderParameter(Sn.Of("fx_stroke_seed"), R() * 97f);
+        m.SetShaderParameter(Sn.Of("fx_bristle"), new Vector4(Mathf.Clamp(0.66f * 1.3f * leadPx, 3f, 14f), 2f, 0.75f, 0.28f));
+        m.SetShaderParameter(Sn.Of("p7_rpx"), rpx);
     }
 
     /// <summary>The press (every move): one three-band glint at `at` (the blade's tip or the shield) and a dust kick at
@@ -796,7 +796,7 @@ public partial class BattleFx
         var g = P7Quad(4, at, 0.5f * px * P7Px(at), fr / 60f, bill: true, top: true, step: s =>
         {
             int f = (int)(s.Age * 60 + 1e-3f);
-            s.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
+            s.M.SetShaderParameter(Sn.Of("p7_fade"), f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
         });
         P7Brush(g.M, 0.2f * px);
     }
@@ -864,7 +864,7 @@ public partial class BattleFx
     {
         if (Flare.Blade is { } bl && IsInstanceValid(bl) && bl.IsInsideTree())
         {
-            float tip = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") : 1.4f;
+            float tip = bl.HasMeta(Sn.Of("tip")) ? (float)bl.GetMeta(Sn.Of("tip")) : 1.4f;
             var at = bl.GlobalTransform * new Vector3(0, Mathf.Lerp(0.25f, tip, k), 0);
             // (a blade between hands for a frame, its transform not hers yet: never draw a glint metres off her)
             if (k < 1 || at.DistanceTo(PlayerPos + Vector3.Up * 1.0f) < 2.6f) return at; // (the ribbon follows the blade into the air)
@@ -913,6 +913,8 @@ public partial class BattleFx
         p7Shadow.GlobalPosition = feet + Vector3.Up * 0.6f;
         p7Shadow.Visible = true;
     }
+    static readonly NodePath UpPath = new("..");   // (lane K, 19 Nov: made once: a NodePath each snap outlived its first collection)
+
 
     /// <summary>An afterimage: her pose this frame, in the mid band (§4: 2-3 flat afterimages that step out).</summary>
     /// <summary>A copy of her pose now (each skinned mesh on a frozen copy of its skeleton) in a P7 mode: the charge's
@@ -924,18 +926,22 @@ public partial class BattleFx
         var m = P7Mat(mode, ghost: true);
         // the afterimage's rim is ~2.6 px across (one bristle); the vow's pulse band a fifth of her height (~30 px)
         P7Brush(m, mode == 11 ? 30 : 3);
-        m.SetShaderParameter("p7_alpha", 1f);
-        m.SetShaderParameter("p7_life", life);
+        m.SetShaderParameter(Sn.Of("p7_alpha"), 1f);
+        m.SetShaderParameter(Sn.Of("p7_life"), life);
         var root = new Node3D { Name = "P7Ghost" };
         AddChild(root);
         root.GlobalTransform = Transform3D.Identity;
         var skels = new Dictionary<Skeleton3D, Skeleton3D>();
-        foreach (var node in Her3D.FindChildren("*", "MeshInstance3D", true, false))
+        // (lane K, 19 Nov: a child walk, not FindChildren: its Godot Array and each wrapper-made name outlived their first collection)
+        var snapMeshes = new List<MeshInstance3D>();
+        static void CollectMeshes(Node n, List<MeshInstance3D> into) { for (int ci = 0, cn = n.GetChildCount(); ci < cn; ci++) { var c = n.GetChild(ci); if (c is MeshInstance3D m) into.Add(m); CollectMeshes(c, into); } }
+        CollectMeshes(Her3D, snapMeshes);
+        foreach (var mi in snapMeshes)
         {
-            if (node is not MeshInstance3D mi || mi.Mesh == null || !mi.IsVisibleInTree() || mi.Name == "FxAfterHole" || (mi.Layers & FxAfter.RenderLayer) != 0) continue;
+            if (mi.Mesh == null || !mi.IsVisibleInTree() || (mi.Layers & FxAfter.RenderLayer) != 0 || mi.Name == "FxAfterHole") continue;
             if (P7SeeThrough(mi)) continue;
             var copy = new MeshInstance3D { Mesh = mi.Mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
-            if (mi.Skin != null && !mi.Skeleton.IsEmpty && mi.GetNodeOrNull(mi.Skeleton) is Skeleton3D sk)
+            if (mi.Skin != null && mi.Skeleton is { IsEmpty: false } skPath && mi.GetNodeOrNull(skPath) is Skeleton3D sk)
             {
                 if (!skels.TryGetValue(sk, out var ck))
                 {
@@ -959,7 +965,7 @@ public partial class BattleFx
                 ck.AddChild(copy);
                 copy.GlobalTransform = mi.GlobalTransform;
                 copy.Skin = mi.Skin;
-                copy.Skeleton = new NodePath("..");
+                copy.Skeleton = UpPath;
             }
             else
             {
@@ -1003,8 +1009,8 @@ public partial class BattleFx
             var g = p7Ghosts[i];
             g.Age += dt;
             if (g.Age >= g.Life) { g.Root.QueueFree(); p7Ghosts.RemoveAt(i); continue; }
-            g.M.SetShaderParameter("p7_t", g.Age);
-            g.M.SetShaderParameter("p7_dim", KillDimNow);
+            g.M.SetShaderParameter(Sn.Of("p7_t"), g.Age);
+            g.M.SetShaderParameter(Sn.Of("p7_dim"), KillDimNow);
         }
         foreach (var l in p7Lights)
         {
@@ -1095,8 +1101,8 @@ public partial class BattleFx
         bool sweep = t.Sweep != null && t.Pts2.Count == n;
         var eye = cam.GlobalPosition;
         float after = t.Age - t.Until;
-        t.M.SetShaderParameter("p7_fade", after <= 0 ? 0f : Mathf.Min(0.95f, Mathf.Floor(after / P7Sample + 1) * 0.34f));
-        t.M.SetShaderParameter("p7_dim", KillDimNow); // F1 r5: not the kill: held down in a mass kill's window
+        t.M.SetShaderParameter(Sn.Of("p7_fade"), after <= 0 ? 0f : Mathf.Min(0.95f, Mathf.Floor(after / P7Sample + 1) * 0.34f));
+        t.M.SetShaderParameter(Sn.Of("p7_dim"), KillDimNow); // F1 r5: not the kill: held down in a mass kill's window
         const int Sub = 4;
         var pa = new List<Vector3>(); var pb = new List<Vector3>(); var ag = new List<float>();
         for (int i = 0; i < n - 1; i++)

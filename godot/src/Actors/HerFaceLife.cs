@@ -231,6 +231,8 @@ public partial class HerFaceLife : Node
             }
         }
         if (upperMask == null) return;
+        // (lane K, 19 Nov: made once: the texture as a Variant each frame, six times, outlived its first collection)
+        if (!ReferenceEquals(upperMaskFor, upperMask)) { upperMaskV.Dispose(); upperMaskV = Variant.From(upperMask); upperMaskFor = upperMask; }
         float w = Mathf.Max(open >= 0 ? mouth.GetBlendShapeValue(open) : 0, snarl >= 0 ? mouth.GetBlendShapeValue(snarl) : 0);
         float d = DropMost * Mathf.SmoothStep(0.03f, 0.2f, w) * (1 - Mathf.SmoothStep(0.35f, 0.6f, w));
         int head = sk.FindBone("Head");
@@ -246,7 +248,7 @@ public partial class HerFaceLife : Node
         for (int s = 0; s < am.GetSurfaceCount(); s++)
             if (teeth.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.ResourceName == "teeth")
             {
-                m.SetShaderParameter(P.upper_mask, upperMask);
+                m.SetShaderParameter(P.upper_mask, upperMaskV);
                 m.SetShaderParameter(P.mask_w, MaskW);
                 m.SetShaderParameter(P.drop_v, v);
                 m.SetShaderParameter(P.band, band);
@@ -255,13 +257,13 @@ public partial class HerFaceLife : Node
                     shellShader ??= GD.Load<Shader>("res://shaders/heroine_teeth_shell.gdshader");
                     if (m.NextPass is not ShaderMaterial sm || sm.Shader != shellShader)
                         m.NextPass = sm = new ShaderMaterial { Shader = shellShader, ResourceName = "teeth_shell" };
-                    sm.SetShaderParameter(P.paint, m.GetShaderParameter(P.paint));
-                    sm.SetShaderParameter(P.upper_mask, upperMask);
+                    { using var paintV = m.GetShaderParameter(P.paint); sm.SetShaderParameter(P.paint, paintV); }   // (lane K, 19 Nov: the Variant let go, not left to the finalizer)
+                    sm.SetShaderParameter(P.upper_mask, upperMaskV);
                     sm.SetShaderParameter(P.mask_w, MaskW);
                     sm.SetShaderParameter(P.drop_v, v);
                     sm.SetShaderParameter(P.grow, ShellGrow * v.Length() / d);
                     sm.SetShaderParameter(P.band, band);
-                    foreach (var pn in P.Shell) sm.SetShaderParameter(pn, m.GetShaderParameter(pn));
+                    foreach (var pn in P.Shell) { using var shV = m.GetShaderParameter(pn); sm.SetShaderParameter(pn, shV); }
                     foreach (var (pn, pv) in teethParams) sm.SetShaderParameter(pn, pv);
                 }
                 else if (m.NextPass != null) m.NextPass = null;
@@ -274,6 +276,8 @@ public partial class HerFaceLife : Node
     Shader? shellShader;
     const int MaskW = 256;
     static readonly float DropMost = Args.Has("teethdrop") ? Args.Num("teethdrop", 1.5f) / 1000f : 0.0015f;
+    ImageTexture? upperMaskFor;
+    Variant upperMaskV;
     ArrayMesh? maskMesh;
     ImageTexture? upperMask;
 
@@ -449,9 +453,9 @@ public partial class HerFaceLife : Node
             {
                 float every = Args.Num("every", 1), first = Args.Num("seconds", 3);
                 int i = Mathf.Clamp((int)Mathf.Floor((float)(Shots.Clock - first + every / 2) / every), 0, cycle.Length - 1);
-                eyes.SetShaderParameter("recolour", cycle[i] == null ? 0f : 1f);
+                eyes.SetShaderParameter(Sn.Of("recolour"), cycle[i] == null ? 0f : 1f);
                 // (a dye as itself: her painted iris's own correction, the tint, left off)
-                if (cycle[i] is Color c) { eyes.SetShaderParameter("iris_colour", c); eyes.SetShaderParameter("ring_colour", c); eyes.SetShaderParameter("tint", Colors.White); }
+                if (cycle[i] is Color c) { eyes.SetShaderParameter(Sn.Of("iris_colour"), c); eyes.SetShaderParameter(Sn.Of("ring_colour"), c); eyes.SetShaderParameter(Sn.Of("tint"), Colors.White); }
             }
         }
     }

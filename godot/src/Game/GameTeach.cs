@@ -264,9 +264,11 @@ public partial class Game
                     if (g is MeshInstance3D { Mesh: { } mesh } mi && Faces(mesh) is { } tm)
                     {
                         var inv = mi.GlobalTransform.AffineInverse();
-                        if (tm.IntersectSegment(inv * from, inv * to).Count == 0) return false;
+                        using var hit = tm.IntersectSegment(inv * from, inv * to);   // (lane K, 19 Nov: let go at once: a Godot Dictionary left to its finalizer outlived its first collection)
+                        if (hit.Count == 0) return false;
                     }
-                    diagBlock = $"{g.GetPath()} box={box.Position}/{box.Size}";
+                    using var gPath = g.GetPath();   // (lane K, 19 Nov: as hit)
+                    diagBlock = $"{gPath} box={box.Position}/{box.Size}";
                     return true;
                 }
             }

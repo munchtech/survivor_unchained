@@ -183,8 +183,8 @@ public partial class BattleFx
         AddChild(n);
         n.GlobalTransform = Transform3D.Identity;
         if (FxAfter.On) FxAfter.Adopt(n);
-        m.SetShaderParameter("p7_alpha", alpha);
-        m.SetShaderParameter("p7_fade", life0);
+        m.SetShaderParameter(Sn.Of("p7_alpha"), alpha);
+        m.SetShaderParameter(Sn.Of("p7_fade"), life0);
         return new P7Smear { N = n, Mesh = mesh, M = m, Arc = arc, RadK = radK, HwK = hwK, Lag = lag, Dy = dy, Tilt = tilt, Alpha = alpha, Life0 = life0 };
     }
 
@@ -217,14 +217,14 @@ public partial class BattleFx
             var m = new ShaderMaterial { Shader = shader };
             FxCel.Apply(m, School.Physical, FxAfter.On);
             int ti = (t0 + i) % tex.Length;
-            m.SetShaderParameter("ring_tex", tex[ti]);
-            m.SetShaderParameter("ring_r0", SunderR0);
-            m.SetShaderParameter("ring_hot", 0f);
-            m.SetShaderParameter("ring_core", P7D[key + ".core_cut"]);
-            m.SetShaderParameter("ring_along", 1f);
-            m.SetShaderParameter("along_hot", P7D[key + ".head_hot"]);
-            m.SetShaderParameter("along_cut", new Vector2(cut[0], cut[1]));
-            m.SetShaderParameter("along_fade", new Vector3(fade[0], fade[1], fade[2]));
+            m.SetShaderParameter(Sn.Of("ring_tex"), tex[ti]);
+            m.SetShaderParameter(Sn.Of("ring_r0"), SunderR0);
+            m.SetShaderParameter(Sn.Of("ring_hot"), 0f);
+            m.SetShaderParameter(Sn.Of("ring_core"), P7D[key + ".core_cut"]);
+            m.SetShaderParameter(Sn.Of("ring_along"), 1f);
+            m.SetShaderParameter(Sn.Of("along_hot"), P7D[key + ".head_hot"]);
+            m.SetShaderParameter(Sn.Of("along_cut"), new Vector2(cut[0], cut[1]));
+            m.SetShaderParameter(Sn.Of("along_fade"), new Vector3(fade[0], fade[1], fade[2]));
             var node = new MeshInstance3D { Mesh = p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "StormRing" };
             AddChild(node);
             if (FxAfter.On) FxAfter.Adopt(node);
@@ -241,7 +241,7 @@ public partial class BattleFx
                         // a fresh brush each relay of the blade's turning round her
                         if (!float.IsNaN(prev)) turned += Mathf.Abs(Mathf.Wrap(p7SpinAngle - prev, -Mathf.Pi, Mathf.Pi));
                         prev = p7SpinAngle;
-                        if (turned >= relay) { turned -= relay; ti = (ti + 1) % tex.Length; q.M.SetShaderParameter("ring_tex", tex[ti]); }
+                        if (turned >= relay) { turned -= relay; ti = (ti + 1) % tex.Length; q.M.SetShaderParameter(Sn.Of("ring_tex"), tex[ti]); }
                         float span = arc * Mathf.Clamp(q.Age / 0.15f, 0.25f, 1f), dir = p7SpinDir < 0 ? -1f : 1f;
                         float head = p7SpinAngle - dir * lagI;
                         var her = PlayerPos;
@@ -249,12 +249,12 @@ public partial class BattleFx
                         q.N.GlobalPosition = her;
                         // local +X at the arc's middle; u runs with the spin, so the head is at u 1
                         q.N.Rotation = new Vector3(0, -(head - dir * span / 2), 0);
-                        q.M.SetShaderParameter("ring_range", span);
-                        q.M.SetShaderParameter("ring_flip", dir);
+                        q.M.SetShaderParameter(Sn.Of("ring_range"), span);
+                        q.M.SetShaderParameter(Sn.Of("ring_flip"), dir);
                     }
                     float t = Mathf.Clamp(q.Age / run, 0, 1), e = 1 - (1 - t) * (1 - t);
                     q.N.Scale = Vector3.One * r * radK * (from + (1 - from) * e);
-                    q.M.SetShaderParameter("ring_fade", down < 0 ? 0f : 1.02f * Mathf.Clamp((q.Age - down) / outS, 0, 1));
+                    q.M.SetShaderParameter(Sn.Of("ring_fade"), down < 0 ? 0f : 1.02f * Mathf.Clamp((q.Age - down) / outS, 0, 1));
                     if (down >= 0 && q.Age - down >= outS) q.Life = q.Age;
                 },
             };
@@ -318,7 +318,7 @@ public partial class BattleFx
             }
             s.DownAge += dt;
             float life = Mathf.Min(1, s.Life0 + (Mathf.Floor(s.DownAge / P7Sample) + 1) * 0.34f);
-            s.M.SetShaderParameter("p7_fade", life);
+            s.M.SetShaderParameter(Sn.Of("p7_fade"), life);
             if (s.DownAge > 3 * P7Sample || !IsInstanceValid(s.N)) { if (IsInstanceValid(s.N)) s.N.QueueFree(); p7Smears.RemoveAt(i); }
         }
     }
@@ -581,35 +581,35 @@ public partial class BattleFx
         m.RenderPriority = -8;
         p7Wd ??= new Texture2Drd();
         if (FxWorldDepth.Tex.IsValid && p7Wd.TextureRdRid != FxWorldDepth.Tex) p7Wd.TextureRdRid = FxWorldDepth.Tex;
-        m.SetShaderParameter("p7_wdepth", p7Wd);
-        m.SetShaderParameter("p7_wd_on", FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? 1f : 0f);
-        m.SetShaderParameter("p7_floor", P7D["storm.line.floor"]);
-        m.SetShaderParameter("p7_org", P7D["storm.line.origin"]);
-        m.SetShaderParameter("p7_ember", P7Oklch("storm.seam.ember"));
-        m.SetShaderParameter("p7_rpx", apx);
-        m.SetShaderParameter("p7_tpx", tpx);
-        m.SetShaderParameter("p7_lit", lit);
-        m.SetShaderParameter("p7_gap", P7V4("storm.line.gap"));
-        m.SetShaderParameter("p7_jag", P7V4("storm.line.jag"));
-        m.SetShaderParameter("p7_lip", P7V4("storm.line.lip"));
+        m.SetShaderParameter(Sn.Of("p7_wdepth"), p7Wd);
+        m.SetShaderParameter(Sn.Of("p7_wd_on"), FxAfter.On && FxWorldDepth.On && FxWorldDepth.Tex.IsValid ? 1f : 0f);
+        m.SetShaderParameter(Sn.Of("p7_floor"), P7D["storm.line.floor"]);
+        m.SetShaderParameter(Sn.Of("p7_org"), P7D["storm.line.origin"]);
+        m.SetShaderParameter(Sn.Of("p7_ember"), P7Oklch("storm.seam.ember"));
+        m.SetShaderParameter(Sn.Of("p7_rpx"), apx);
+        m.SetShaderParameter(Sn.Of("p7_tpx"), tpx);
+        m.SetShaderParameter(Sn.Of("p7_lit"), lit);
+        m.SetShaderParameter(Sn.Of("p7_gap"), P7V4("storm.line.gap"));
+        m.SetShaderParameter(Sn.Of("p7_jag"), P7V4("storm.line.jag"));
+        m.SetShaderParameter(Sn.Of("p7_lip"), P7V4("storm.line.lip"));
         var sm = P7D.All("storm.seam.shape");
-        m.SetShaderParameter("p7_seam", new Vector4(P7D["storm.seam.px"], sm[0], sm[1], sm[2]));
-        m.SetShaderParameter("p7_sbrk", P7V4("storm.seam.breaks"));
-        m.SetShaderParameter("p7_deep", P7Oklch("storm.line.deep"));
-        m.SetShaderParameter("p7_wall", P7Oklch("storm.line.wall"));
-        m.SetShaderParameter("p7_lipc", P7Oklch("storm.line.lip_lch"));
+        m.SetShaderParameter(Sn.Of("p7_seam"), new Vector4(P7D["storm.seam.px"], sm[0], sm[1], sm[2]));
+        m.SetShaderParameter(Sn.Of("p7_sbrk"), P7V4("storm.seam.breaks"));
+        m.SetShaderParameter(Sn.Of("p7_deep"), P7Oklch("storm.line.deep"));
+        m.SetShaderParameter(Sn.Of("p7_wall"), P7Oklch("storm.line.wall"));
+        m.SetShaderParameter(Sn.Of("p7_lipc"), P7Oklch("storm.line.lip_lch"));
         // (lane E lead 8, judge 5) its forks and broken chunks along the run on screen (logic/Look/FissureMarks.cs)
         var fk = P7D.All("storm.line.fork");
         var (forks, chunks) = SurvivorUnchained.Look.FissureMarks.Pick(vis < 0 ? apx : vis, tpx, fk, P7D.All("storm.line.chunk"), P7D.All("storm.line.gap"), R);
         for (int k = 0; k < 4; k++)
-            m.SetShaderParameter("p7_fk" + k, k < forks.Length ? new Vector4(forks[k].At, forks[k].Long, forks[k].Turn, forks[k].Root) : Vector4.Zero);
+            m.SetShaderParameter(Sn.Of("p7_fk") + k, k < forks.Length ? new Vector4(forks[k].At, forks[k].Long, forks[k].Turn, forks[k].Root) : Vector4.Zero);
         for (int k = 0; k < 3; k++)
-            m.SetShaderParameter("p7_ck" + k, k < chunks.Length ? new Vector4(chunks[k].At, chunks[k].Wide, chunks[k].Long, chunks[k].Salt) : Vector4.Zero);
-        m.SetShaderParameter("p7_ftip", fk[5]);
-        m.SetShaderParameter("p7_open", 0f);
-        m.SetShaderParameter("p7_erode", 0f);
-        m.SetShaderParameter("p7_fade", 0f);
-        m.SetShaderParameter("p7_alpha", 1f);
+            m.SetShaderParameter(Sn.Of("p7_ck") + k, k < chunks.Length ? new Vector4(chunks[k].At, chunks[k].Wide, chunks[k].Long, chunks[k].Salt) : Vector4.Zero);
+        m.SetShaderParameter(Sn.Of("p7_ftip"), fk[5]);
+        m.SetShaderParameter(Sn.Of("p7_open"), 0f);
+        m.SetShaderParameter(Sn.Of("p7_erode"), 0f);
+        m.SetShaderParameter(Sn.Of("p7_fade"), 0f);
+        m.SetShaderParameter(Sn.Of("p7_alpha"), 1f);
         var node = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(node);
         node.GlobalTransform = Transform3D.Identity;
@@ -661,27 +661,27 @@ public partial class BattleFx
             bool gone;
             s.Age += dt;
             s.Hot += dt;
-            s.M.SetShaderParameter("p7_open", Mathf.Clamp(s.Age / Mathf.Max(open, 1e-3f), 0, 1));
-            s.M.SetShaderParameter("p7_wd_on", wdOn);
+            s.M.SetShaderParameter(Sn.Of("p7_open"), Mathf.Clamp(s.Age / Mathf.Max(open, 1e-3f), 0, 1));
+            s.M.SetShaderParameter(Sn.Of("p7_wd_on"), wdOn);
             if (s.SplitAge >= 0)
             {
                 s.SplitAge += dt;
                 float t = s.SplitAge;
                 // split: the flare in heat, never in width (white-hot, then a step a stretch: gold, amber, out); the gap
                 // holds, then breaks up where it lies in steps (life[0]..life[1] s)
-                s.M.SetShaderParameter("p7_alpha", 1f);
-                s.M.SetShaderParameter("p7_cool", 0f);
+                s.M.SetShaderParameter(Sn.Of("p7_alpha"), 1f);
+                s.M.SetShaderParameter(Sn.Of("p7_cool"), 0f);
                 s.N.Visible = true;
-                s.M.SetShaderParameter("p7_fade", t < cool[0] ? 0f : t < cool[1] ? 1 / 3f : t < cool[2] ? 2 / 3f : 1f);
-                s.M.SetShaderParameter("p7_erode", P7Stepped(t, life[0], life[1]));
+                s.M.SetShaderParameter(Sn.Of("p7_fade"), t < cool[0] ? 0f : t < cool[1] ? 1 / 3f : t < cool[2] ? 2 / 3f : 1f);
+                s.M.SetShaderParameter(Sn.Of("p7_erode"), P7Stepped(t, life[0], life[1]));
                 gone = t > life[1];
             }
             else if (s.FadeAge >= 0)
             {
                 // faded (nothing dealt): the seam steps down to amber, then out; the gap breaks up over life[2] s
                 s.FadeAge += dt;
-                s.M.SetShaderParameter("p7_fade", s.FadeAge < P7Sample ? 2 / 3f : 1f);
-                s.M.SetShaderParameter("p7_erode", P7Stepped(s.FadeAge, 0, life[2]));
+                s.M.SetShaderParameter(Sn.Of("p7_fade"), s.FadeAge < P7Sample ? 2 / 3f : 1f);
+                s.M.SetShaderParameter(Sn.Of("p7_erode"), P7Stepped(s.FadeAge, 0, life[2]));
                 gone = s.FadeAge > life[2];
             }
             else
@@ -692,10 +692,10 @@ public partial class BattleFx
                 // the ember (storm.seam.ember) at pend[2], out at pend[3]; the dark crack whole to pend[4], broken up where it
                 // lies by pend[5] and hidden (kept for the split while its lines pend); a line joining it refreshes it all
                 float h = s.Hot;
-                s.M.SetShaderParameter("p7_fade", h < pend[0] ? 0f : h < pend[1] ? 1 / 3f : h < pend[3] ? 2 / 3f : 1f);
-                s.M.SetShaderParameter("p7_cool", h < pend[1] ? 0f : P7Stepped(h, pend[1], pend[2]));
-                s.M.SetShaderParameter("p7_alpha", 1f);
-                s.M.SetShaderParameter("p7_erode", P7Stepped(h, pend[4], pend[5]));
+                s.M.SetShaderParameter(Sn.Of("p7_fade"), h < pend[0] ? 0f : h < pend[1] ? 1 / 3f : h < pend[3] ? 2 / 3f : 1f);
+                s.M.SetShaderParameter(Sn.Of("p7_cool"), h < pend[1] ? 0f : P7Stepped(h, pend[1], pend[2]));
+                s.M.SetShaderParameter(Sn.Of("p7_alpha"), 1f);
+                s.M.SetShaderParameter(Sn.Of("p7_erode"), P7Stepped(h, pend[4], pend[5]));
                 s.N.Visible = h <= pend[5];
                 gone = s.Hot > 12;
             }
@@ -817,13 +817,13 @@ public partial class BattleFx
         var s = P7Quad(10, at, 0.5f * px * P7Px(at), fr / 60f, bill: true, top: true, step: x =>
         {
             int f = (int)(x.Age * 60 + 1e-3f);
-            x.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
+            x.M.SetShaderParameter(Sn.Of("p7_fade"), f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
         });
         P7Brush(s.M, 0.24f * px);
         if (GetViewport()?.GetCamera3D() is { } cam && !cam.IsPositionBehind(at))
         {
             var d = cam.UnprojectPosition(at + dir.Normalized() * 0.5f) - cam.UnprojectPosition(at);
-            if (d.LengthSquared() > 1e-4f) s.M.SetShaderParameter("p7_dir2", d.Normalized());
+            if (d.LengthSquared() > 1e-4f) s.M.SetShaderParameter(Sn.Of("p7_dir2"), d.Normalized());
         }
     }
 

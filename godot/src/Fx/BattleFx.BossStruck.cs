@@ -53,7 +53,7 @@ public partial class BattleFx
         if (FxCel.Lang["Physical"] is { } ph)
         {
             var c = SurvivorUnchained.Look.FxLanguage.Linear(BossSparkCore, FxAfter.On ? null : ph.Core.Emit);
-            s.M.SetShaderParameter("fx_core", new Vector3(c[0], c[1], c[2]) * (float)SurvivorUnchained.Args.Num("fx-gain", 1f));
+            s.M.SetShaderParameter(Sn.Of("fx_core"), new Vector3(c[0], c[1], c[2]) * (float)SurvivorUnchained.Args.Num("fx-gain", 1f));
         }
         float half = s.N.Scale.X, first = -1;
         s.Life = 0.15f;
@@ -64,8 +64,8 @@ public partial class BattleFx
             q.N.Visible = age < BossPulseFor;
             bool late = age >= BossPulsePeak;
             q.N.Scale = Vector3.One * half * (late ? BossSparkLate : 1f);
-            q.M.SetShaderParameter("p7_t", age);
-            q.M.SetShaderParameter("p7_fade", late ? 0.34f : 0f);
+            q.M.SetShaderParameter(Sn.Of("p7_t"), age);
+            q.M.SetShaderParameter(Sn.Of("p7_fade"), late ? 0.34f : 0f);
         };
     }
 }

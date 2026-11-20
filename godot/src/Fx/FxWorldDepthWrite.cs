@@ -54,7 +54,12 @@ public partial class FxWorldDepthWrite : CompositorEffect, FxWorldDepth.IRids
         }
         """;
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (failed || !FxWorldDepth.Live || !FxWorldDepth.Tex.IsValid || effectCallbackType != (int)EffectCallbackTypeEnum.PostOpaque) return;
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;

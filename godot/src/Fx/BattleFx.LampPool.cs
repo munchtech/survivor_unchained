@@ -31,8 +31,8 @@ public partial class BattleFx
         if (lampPool == null)
         {
             lampPoolMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_pool.gdshader") };
-            lampPoolMat.SetShaderParameter("fx_after", FxAfter.On ? 1f : 0f);
-            lampPoolMat.SetShaderParameter("lp_seed", R() * 10);
+            lampPoolMat.SetShaderParameter(Sn.Of("fx_after"), FxAfter.On ? 1f : 0f);
+            lampPoolMat.SetShaderParameter(Sn.Of("lp_seed"), R() * 10);
             lampPool = new MeshInstance3D { MaterialOverride = lampPoolMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "LampPoolEdge" };
             AddChild(lampPool);
             lampPool.GlobalTransform = Transform3D.Identity;
@@ -41,15 +41,15 @@ public partial class BattleFx
         if (l.X != lampPoolX || l.Z != lampPoolZ || l.Pool != lampPoolR) LampPoolBuild(b, l);
         lampPool.Visible = true;
         // the fade in steps of a quarter (the board's stepped life), never a smooth ramp
-        lampPoolMat!.SetShaderParameter("lp_alpha", Mathf.Ceil(lampPoolA * 4f) / 4f);
+        lampPoolMat!.SetShaderParameter(Sn.Of("lp_alpha"), Mathf.Ceil(lampPoolA * 4f) / 4f);
     }
 
     void LampPoolBuild(Battle b, LampMark l)
     {
         lampPoolX = l.X; lampPoolZ = l.Z; lampPoolR = l.Pool;
         float half = 0.22f;   // (round 2) the ink bed and the hand's wobble need the room: lamp_pool.gdshader lp_half
-        lampPoolMat!.SetShaderParameter("lp_half", half);
-        lampPoolMat.SetShaderParameter("lp_circ", (float)(Math.Tau * l.Pool));
+        lampPoolMat!.SetShaderParameter(Sn.Of("lp_half"), half);
+        lampPoolMat.SetShaderParameter(Sn.Of("lp_circ"), (float)(Math.Tau * l.Pool));
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
         for (int i = 0; i <= LampPoolSegs; i++)

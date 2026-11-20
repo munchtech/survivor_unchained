@@ -79,7 +79,7 @@ public partial class BattleFx
         rig.Img = Image.CreateFromData(SwapN, SwapN, false, Image.Format.Rgba8, rig.Buf);
         rig.Tex = ImageTexture.CreateFromImage(rig.Img);
         rig.Mat = new ShaderMaterial { Shader = ringShader, RenderPriority = 1 };
-        rig.Mat.SetShaderParameter("ring", rig.Tex);
+        rig.Mat.SetShaderParameter(Sn.Of("ring"), rig.Tex);
         rig.M = new MeshInstance3D { Mesh = new PlaneMesh { Size = Vector2.One }, MaterialOverride = rig.Mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false };
         AddChild(rig.M);
         return rig;
@@ -144,7 +144,7 @@ public partial class BattleFx
         g.M.Visible = true;
         g.M.Position = g.At + Vector3.Up * 0.06f;
         g.M.Scale = new Vector3(half * 2, 1, half * 2);
-        g.Mat.SetShaderParameter("fade", fade);
+        g.Mat.SetShaderParameter(Sn.Of("fade"), fade);
     }
 
     /// <summary>A crisp four-point star drawn as a camera-facing quad in screen pixels (arms a few px wide, a white core), over everything.</summary>
@@ -182,7 +182,7 @@ public partial class BattleFx
             }
             """ };
         var st = new StarQuad { Q = new QuadMesh { Size = Vector2.One }, Mat = new ShaderMaterial { Shader = starShader, RenderPriority = priority } };
-        st.Mat.SetShaderParameter("arms_col", arms);
+        st.Mat.SetShaderParameter(Sn.Of("arms_col"), arms);
         st.M = new MeshInstance3D { Mesh = st.Q, MaterialOverride = st.Mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, ExtraCullMargin = 4 };
         AddChild(st.M);
         return st;
@@ -193,12 +193,12 @@ public partial class BattleFx
         float total = armPx + 8;
         s.M.GlobalPosition = at;
         s.Q.Size = Vector2.One * total / PxPerM(at);
-        s.Mat.SetShaderParameter("total_px", total);
-        s.Mat.SetShaderParameter("arm_px", armPx);
-        s.Mat.SetShaderParameter("w_px", wPx);
-        s.Mat.SetShaderParameter("core_px", corePx);
-        s.Mat.SetShaderParameter("spin", spin);
-        s.Mat.SetShaderParameter("energy", energy);
+        s.Mat.SetShaderParameter(Sn.Of("total_px"), total);
+        s.Mat.SetShaderParameter(Sn.Of("arm_px"), armPx);
+        s.Mat.SetShaderParameter(Sn.Of("w_px"), wPx);
+        s.Mat.SetShaderParameter(Sn.Of("core_px"), corePx);
+        s.Mat.SetShaderParameter(Sn.Of("spin"), spin);
+        s.Mat.SetShaderParameter(Sn.Of("energy"), energy);
     }
 
     /// <summary>Each frame: grows the swap rings and shows the glints.</summary>

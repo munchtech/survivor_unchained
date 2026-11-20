@@ -245,7 +245,12 @@ public partial class MarkPass : CompositorEffect
         return u;
     }
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         var m = marks; int n = Math.Min(count, MaxMarks);

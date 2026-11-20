@@ -217,14 +217,14 @@ public partial class BattleFx : Node3D
         Material Glowing(float emit, float rough = 0.35f, float metal = 0)
         {
             var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/glowing.gdshader") };
-            m.SetShaderParameter("emit", emit);
-            m.SetShaderParameter("roughness", rough);
-            m.SetShaderParameter("metallic", metal);
+            m.SetShaderParameter(Sn.Of("emit"), emit);
+            m.SetShaderParameter(Sn.Of("roughness"), rough);
+            m.SetShaderParameter(Sn.Of("metallic"), metal);
             return m;
         }
         // What the survivor sends flying is drawn over the crowd it flies through.
         var over = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_over.gdshader") };
-        over.SetShaderParameter("sprites", Sprites.Array);
+        over.SetShaderParameter(Sn.Of("sprites"), Sprites.Array);
         // The dark under them, drawn first, so a light over the pale dead still shows.
         shades = Add(new Batch(new QuadMesh { Size = Vector2.One }, 600, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_shade.gdshader"), RenderPriority = -1 }));
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, over));
@@ -683,7 +683,7 @@ public partial class BattleFx : Node3D
         var t = FillTex(lane, FillStyleOf(m), size);
         if (t == m.FillNow) return;
         m.Fill.TextureEmission = m.FillNow = t;
-        if (m.OverFill is { } of && of.MaterialOverride is ShaderMaterial om) om.SetShaderParameter("lane", t);
+        if (m.OverFill is { } of && of.MaterialOverride is ShaderMaterial om) om.SetShaderParameter(Sn.Of("lane"), t);
     }
 
     static Texture2D? bedOrm;
@@ -828,20 +828,20 @@ public partial class BattleFx : Node3D
         m.Over.Rotation = d.Rotation;
         m.Over.Scale = new Vector3(d.Size.X, 1, d.Size.Z);
         var om = (ShaderMaterial)m.Over.MaterialOverride;
-        om.SetShaderParameter("roof", roof ? 1f : 0f);
-        om.SetShaderParameter("wet", wet ? 1f : 0f);
+        om.SetShaderParameter(Sn.Of("roof"), roof ? 1f : 0f);
+        om.SetShaderParameter(Sn.Of("wet"), wet ? 1f : 0f);
         if (m.Danger)
         {
             // the red line's own shape (its light, no crosshatch: over water the hatch read as a net) and its bed
-            om.SetShaderParameter("lane", d.TextureEmission);
-            om.SetShaderParameter("cover", d.TextureAlbedo);
-            om.SetShaderParameter("bed", Palette.TeleDangerGround with { A = DangerOverBed });
+            om.SetShaderParameter(Sn.Of("lane"), d.TextureEmission);
+            om.SetShaderParameter(Sn.Of("cover"), d.TextureAlbedo);
+            om.SetShaderParameter(Sn.Of("bed"), Palette.TeleDangerGround with { A = DangerOverBed });
         }
         else
         {
-            om.SetShaderParameter("lane", laneTex);
-            om.SetShaderParameter("cover", laneTex);
-            om.SetShaderParameter("bed", new Color(0, 0, 0, 0));
+            om.SetShaderParameter(Sn.Of("lane"), laneTex);
+            om.SetShaderParameter(Sn.Of("cover"), laneTex);
+            om.SetShaderParameter(Sn.Of("bed"), new Color(0, 0, 0, 0));
         }
         m.Over.Visible = true;
         if (wet && m.Danger && m.Fill != null)
@@ -851,10 +851,10 @@ public partial class BattleFx : Node3D
             m.OverFill.Rotation = m.Fill.Rotation;
             m.OverFill.Scale = new Vector3(Mathf.Max(m.Fill.Size.X, 0.01f), 1, Mathf.Max(m.Fill.Size.Z, 0.01f));
             var fm = (ShaderMaterial)m.OverFill.MaterialOverride;
-            fm.SetShaderParameter("roof", 0f);
-            fm.SetShaderParameter("wet", 1f);
-            fm.SetShaderParameter("lane", m.Fill.TextureEmission);
-            fm.SetShaderParameter("bed", new Color(0, 0, 0, 0));
+            fm.SetShaderParameter(Sn.Of("roof"), 0f);
+            fm.SetShaderParameter(Sn.Of("wet"), 1f);
+            fm.SetShaderParameter(Sn.Of("lane"), m.Fill.TextureEmission);
+            fm.SetShaderParameter(Sn.Of("bed"), new Color(0, 0, 0, 0));
             m.OverFill.Visible = true;
         }
     }
@@ -1052,9 +1052,9 @@ public partial class BattleFx : Node3D
         var z = x.Cross(y);
         m.Basis = new Godot.Basis(x * width, y * len, z * width);
         m.Visible = true;
-        mat.SetShaderParameter("color", new Vector3(color.R, color.G, color.B));
-        mat.SetShaderParameter("energy", 1f);
-        mat.SetShaderParameter("taper", 0f);
+        mat.SetShaderParameter(Sn.Of("color"), new Vector3(color.R, color.G, color.B));
+        mat.SetShaderParameter(Sn.Of("energy"), 1f);
+        mat.SetShaderParameter(Sn.Of("taper"), 0f);
         beams[nextBeam] = (m, mat, 0, life);
         nextBeam = (nextBeam + 1) % beams.Count;
     }
@@ -2290,10 +2290,10 @@ public partial class BattleFx : Node3D
                 if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (flare ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
                 var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
-                    om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
+                    om.SetShaderParameter(Sn.Of("col"), (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
                 // (the fill's copy at the fill's own light: a decal's emission is the texture x its modulate x its energy)
                 if (m.OverFill is { Visible: true } ovf0 && ovf0.MaterialOverride is ShaderMaterial fom)
-                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = TellFillNow(m) });
+                    fom.SetShaderParameter(Sn.Of("col"), (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = TellFillNow(m) });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -2638,7 +2638,7 @@ public partial class BattleFx : Node3D
         // In play's night (her ember's gain over 1) the stones glow up to 1.6 times, so a blue one still reads on the
         // moon's blue-dark ground (E1 round 3: one was lost at the camp's edge).
         float emit = Mathf.Lerp(1f, 1.6f, Mathf.Clamp((Atmosphere.EmberGain - 1) / 0.7f, 0, 1));
-        if (emberGlow != null && !Mathf.IsEqualApprox(emit, emberEmit)) { emberEmit = emit; emberGlow.SetShaderParameter("emit", emit); }
+        if (emberGlow != null && !Mathf.IsEqualApprox(emit, emberEmit)) { emberEmit = emit; emberGlow.SetShaderParameter(Sn.Of("emit"), emit); }
         embers.Begin(); emberHalos.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); gemGarnet.Begin(); gemSapphire.Begin(); gemClear.Begin(); gemBicolor.Begin(); BeginLoot();
         foreach (var p in HideLoot ? System.Linq.Enumerable.Empty<Pickup>() : b.Pickups.Living())
         {

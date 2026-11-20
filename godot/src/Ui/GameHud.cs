@@ -666,7 +666,8 @@ public partial class GameHud : CanvasLayer
             if (n is CanvasItem c && c != irons && c != bossBox) c.Modulate = new Color(1, 1, 1, 1 - 0.65f * k);
     }
 
-    public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
+    // (lane K, 19 Nov: made once: a StringName from a string each call outlived its first collection)
+    public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter(Sn.Of("amount"), v);
 
     static readonly Dictionary<ToastKind, (string Glyph, Color Color)> ToastLook = new()
     {

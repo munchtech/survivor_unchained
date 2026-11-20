@@ -190,9 +190,9 @@ public partial class BattleFx
         // Just over the ground: the dead stand in it, their feet hidden in the flame.
         fireMesh.Position = at + Vector3.Up * 0.22f;
         fireMesh.Scale = new Vector3(r * FireRoom, 1, r * FireRoom);
-        fireMat!.SetShaderParameter("seed", R() * 100);
+        fireMat!.SetShaderParameter(Sn.Of("seed"), R() * 100);
         // The front about two thirds of a metre deep, whatever its reach.
-        fireMat.SetShaderParameter("width", 0.65f / (r * FireRoom));
+        fireMat.SetShaderParameter(Sn.Of("width"), 0.65f / (r * FireRoom));
         fireMesh.Visible = true;
         // The burning edge itself: tongues of flame standing all the way round the front (fire_wall).
         if (wallMesh == null)
@@ -204,13 +204,13 @@ public partial class BattleFx
                 MaterialOverride = wallMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 CustomAabb = new Aabb(new Vector3(-1.5f, -0.5f, -1.5f), new Vector3(3, 2, 3)),
             };
-            wallMat.SetShaderParameter("segs", (float)WallCards);
+            wallMat.SetShaderParameter(Sn.Of("segs"), (float)WallCards);
             AddChild(wallMesh);
         }
         if (wallMesh != null && wallMat != null)
         {
-            wallMat.SetShaderParameter("seed", R() * 100);
-            wallMat.SetShaderParameter("cells", Mathf.Max(8, Mathf.Round(Mathf.Tau * r / WallTongue)));
+            wallMat.SetShaderParameter(Sn.Of("seed"), R() * 100);
+            wallMat.SetShaderParameter(Sn.Of("cells"), Mathf.Max(8, Mathf.Round(Mathf.Tau * r / WallTongue)));
             wallMesh.Visible = true;
         }
         fire = (at, r, time);
@@ -227,9 +227,9 @@ public partial class BattleFx
         // (Combat's Battle.RiseFront is this same curve: each body catches as the front reaches it.)
         float k = Mathf.Clamp(t / FireRun, 0, 1), ease = 1 - (1 - k) * (1 - k) * (1 - k);
         float down = Mathf.Clamp((t - FireRun) / FireDown, 0, 1);
-        fireMat.SetShaderParameter("front", (0.03f + 0.97f * ease) / FireRoom);
-        fireMat.SetShaderParameter("fade", 1 - down * down);
-        fireMat.SetShaderParameter("cool", down);
+        fireMat.SetShaderParameter(Sn.Of("front"), (0.03f + 0.97f * ease) / FireRoom);
+        fireMat.SetShaderParameter(Sn.Of("fade"), 1 - down * down);
+        fireMat.SetShaderParameter(Sn.Of("cool"), down);
         if (wallMesh != null && wallMat != null)
         {
             // The wall rides the front, rising as it runs and standing tallest where it stops,
@@ -238,7 +238,7 @@ public partial class BattleFx
             float high = WallHigh * (0.45f + 0.55f * ease) * (1 - down * down * 0.85f);
             wallMesh.Position = at - Vector3.Up * 0.05f;
             wallMesh.Scale = new Vector3(reach, high, reach);
-            wallMat.SetShaderParameter("burn", Mathf.Min(1, t / 0.04f) * (1 - down * down));
+            wallMat.SetShaderParameter(Sn.Of("burn"), Mathf.Min(1, t / 0.04f) * (1 - down * down));
         }
     }
 

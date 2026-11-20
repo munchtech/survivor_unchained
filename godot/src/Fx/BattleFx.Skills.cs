@@ -1148,10 +1148,10 @@ public partial class BattleFx
     static Material Crystal(float emit, float rim, float gloss, float facet, string name = "crystal_ice")
     {
         var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader"), ResourceName = name };
-        m.SetShaderParameter("emit", emit);
-        m.SetShaderParameter("rim", rim);
-        m.SetShaderParameter("gloss", gloss);
-        m.SetShaderParameter("facet", facet);
+        m.SetShaderParameter(Sn.Of("emit"), emit);
+        m.SetShaderParameter(Sn.Of("rim"), rim);
+        m.SetShaderParameter(Sn.Of("gloss"), gloss);
+        m.SetShaderParameter(Sn.Of("facet"), facet);
         return m;
     }
 
@@ -1449,8 +1449,8 @@ public partial class BattleFx
         }
         ring.Mesh.Visible = true;
         // Runes about half a metre across whatever the reach (an integer, so the band closes).
-        ring.Mat.SetShaderParameter("count", Mathf.Max(16, Mathf.Round(Mathf.Tau * r * 0.9f / 0.55f)));
-        ring.Mat.SetShaderParameter("lit", strength * 0.5f);
+        ring.Mat.SetShaderParameter(Sn.Of("count"), Mathf.Max(16, Mathf.Round(Mathf.Tau * r * 0.9f / 0.55f)));
+        ring.Mat.SetShaderParameter(Sn.Of("lit"), strength * 0.5f);
         ring.Mesh.Position = ground + Vector3.Up * 0.95f;
         ring.Mesh.Rotation = new Vector3(0, (float)(-now * 0.18), 0);
         ring.Mesh.Scale = new Vector3(r, 1, r);
@@ -1467,9 +1467,9 @@ public partial class BattleFx
         if (!firePatches.TryGetValue(id, out var patch))
         {
             var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fire_wall.gdshader") };
-            mat.SetShaderParameter("seed", R() * 100);
-            mat.SetShaderParameter("segs", 48f);
-            mat.SetShaderParameter("cells", Mathf.Max(6, Mathf.Round(Mathf.Tau * r * 0.8f / 0.42f)));
+            mat.SetShaderParameter(Sn.Of("seed"), R() * 100);
+            mat.SetShaderParameter(Sn.Of("segs"), 48f);
+            mat.SetShaderParameter(Sn.Of("cells"), Mathf.Max(6, Mathf.Round(Mathf.Tau * r * 0.8f / 0.42f)));
             var mesh = new MeshInstance3D
             {
                 Mesh = Kept("firecards48", () => FireCards(48)), MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
@@ -1480,7 +1480,7 @@ public partial class BattleFx
         }
         patch.Mesh.Position = ground - Vector3.Up * 0.05f;
         patch.Mesh.Scale = new Vector3(r * 0.8f, 0.75f + 0.1f * r, r * 0.8f);
-        patch.Mat.SetShaderParameter("burn", strength);
+        patch.Mat.SetShaderParameter(Sn.Of("burn"), strength);
     }
 
     /// <summary>A firepot breaking: a pot of blasting ember, not a ball of fire. The crack of it

@@ -86,7 +86,12 @@ public partial class BrushEffect : CompositorEffect
         for (int c = 0; c < 4; c++) { m[at + c * 4] = cols[c].X; m[at + c * 4 + 1] = cols[c].Y; m[at + c * 4 + 2] = cols[c].Z; m[at + c * 4 + 3] = cols[c].W; }
     }
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (Mask is not Rid mask || !mask.IsValid) return;

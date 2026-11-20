@@ -109,7 +109,9 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     /// TEXTURE_USAGE_STORAGE_BIT" errors), a release build dispatched on the null set and died, an access violation in
     /// ComputeListDispatch. Such a viewport is left as it is: the pass never ran on it in any build.)</summary>
     internal static bool Storable(RenderingDevice rd, Rid t) =>
-        t.IsValid && (rd.TextureGetFormat(t).UsageBits & RenderingDevice.TextureUsageBits.StorageBit) != 0;
+        t.IsValid && StorageBit(rd, t);
+    // (lane K, 19 Nov: the RDTextureFormat let go at once, not left to the finalizer)
+    static bool StorageBit(RenderingDevice rd, Rid t) { using var f = rd.TextureGetFormat(t); return (f.UsageBits & RenderingDevice.TextureUsageBits.StorageBit) != 0; }
 
     static RDUniform U(RenderingDevice.UniformType t, int binding, params Rid[] ids)
     {
@@ -129,7 +131,12 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     readonly byte[] pb = new byte[64];
     readonly Vector4[] cols = new Vector4[4];
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (!InkRelease.Live || failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (rd == null) { Init(); if (failed) return; }
@@ -267,7 +274,12 @@ public partial class InkSnap : CompositorEffect, InkRelease.IRids
         AccessResolvedColor = true;
     }
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (!InkRelease.Live || failed || effectCallbackType != (int)EffectCallbackTypeEnum.PreTransparent) return;
         if (rd == null)

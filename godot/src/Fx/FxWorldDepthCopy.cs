@@ -37,7 +37,12 @@ public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
         }
         """;
 
+    // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+    }
+    void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (failed || !FxWorldDepth.Live || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf) return;
@@ -62,6 +67,7 @@ public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
                 UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,
             }, new RDTextureView());
         }
+        // (lane K, 19 Nov: the uniforms made again only when the RIDs change)
         var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
         {
             FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, FxWorldDepth.Nearest(rd), buf.GetDepthLayer(0)),
