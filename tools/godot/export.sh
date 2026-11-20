@@ -26,7 +26,9 @@ build() {
   mkdir -p "$ROOT/release/godot/$dir"
   echo "exporting $preset..."
   local log="$ROOT/release/godot/$dir.log"
-  "$GODOT" --headless --path . --export-release "$preset" "$ROOT/release/godot/$dir/$file" >"$log" 2>&1 || true
+  # SU_BAKE=1 exports with a rendering device, so the demo presets' shader baker runs (a --headless export skips it silently).
+  local hl=--headless; [ "${SU_BAKE:-}" = 1 ] && hl=
+  "$GODOT" $hl --path . --export-release "$preset" "$ROOT/release/godot/$dir/$file" >"$log" 2>&1 || true
   grep -E "ERROR|WARNING" "$log" | grep -v "RID allocations\|resources still in use" || true
   # A failed C# build still leaves an executable behind: that is no build.
   if grep -q "Failed to build project" "$log" || [ ! -e "$ROOT/release/godot/$dir/$file" ]; then
