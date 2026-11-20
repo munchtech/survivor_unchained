@@ -100,6 +100,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         foreach (var r in new[] { shader, sampler, ubo })
             if (r.IsValid) dev.FreeRid(r);
         shader = pipe = sampler = ubo = default;
+        viewSets.Clear();
         rd = null;
     }
 
@@ -116,6 +117,17 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         foreach (var id in ids) u.AddId(id);
         return u;
     }
+
+    // (made once: the uniform array and its RDUniforms per view, rebuilt only when a RID they hold changes; the byte and float
+    // arrays reused; the buffer names as StringNames. Each is a Godot disposable that otherwise survives every young GC.)
+    static readonly StringName FwdClustered = "forward_clustered", NormalRough = "normal_roughness";
+    sealed class ViewSet { public Rid C, D, N, P, Smp, Ubo; public Godot.Collections.Array<RDUniform>? Arr; }
+    readonly System.Collections.Generic.List<ViewSet> viewSets = new();
+    readonly float[] m = new float[32];
+    readonly byte[] ubb = new byte[128];
+    readonly float[] push = new float[16];
+    readonly byte[] pb = new byte[64];
+    readonly Vector4[] cols = new Vector4[4];
 
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
@@ -140,8 +152,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         // (the projection comes depth-corrected, reverse Z 0-1; NDC y taken as 2v - 1, Vulkan's, so an unflipped one is turned over)
         var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
         var inv = proj.Inverse() * flipY;
-        var m = new float[32];
-        Vector4[] cols = { inv.X, inv.Y, inv.Z, inv.W };
+        cols[0] = inv.X; cols[1] = inv.Y; cols[2] = inv.Z; cols[3] = inv.W;
         for (int c = 0; c < 4; c++) { m[c * 4] = cols[c].X; m[c * 4 + 1] = cols[c].Y; m[c * 4 + 2] = cols[c].Z; m[c * 4 + 3] = cols[c].W; }
         var rig = RigInk;
         m[16] = rig.R; m[17] = rig.G; m[18] = rig.B; m[19] = Dark;
@@ -151,31 +162,36 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
         bool hasPre = Mask && InkSnap.Fresh && buf.HasTexture(InkSnap.Ctx, InkSnap.Name) && InkSnap.Size == size;
         InkSnap.Fresh = false;
         m[28] = hasPre ? 1 : 0;
-        rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
+        MemoryMarshal.AsBytes(m.AsSpan()).CopyTo(ubb);
+        rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), ubb);
         float scale = size.Y / 1080f;
-        bool hasN = buf.HasTexture("forward_clustered", "normal_roughness");
-        var push = new float[]
-        {
-            size.X, size.Y, RClose * scale, RPlay * scale,
-            ThA, ThB, Mathf.Cos(Mathf.DegToRad(CreaseDeg)), hasN ? 1 : 0,
-            FadeNear, FadeFar, Dbg, LumCut,
-            ZClose, ZPlay, CreaseW, SilThin,
-        };
-        var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
+        bool hasN = buf.HasTexture(FwdClustered, NormalRough);
+        push[0] = size.X; push[1] = size.Y; push[2] = RClose * scale; push[3] = RPlay * scale;
+        push[4] = ThA; push[5] = ThB; push[6] = Mathf.Cos(Mathf.DegToRad(CreaseDeg)); push[7] = hasN ? 1 : 0;
+        push[8] = FadeNear; push[9] = FadeFar; push[10] = Dbg; push[11] = LumCut;
+        push[12] = ZClose; push[13] = ZPlay; push[14] = CreaseW; push[15] = SilThin;
+        MemoryMarshal.AsBytes(push.AsSpan()).CopyTo(pb);
         for (uint v = 0, nv = buf.GetViewCount(); v < nv; v++)
         {
             Rid colour = buf.GetColorLayer(v), depth = buf.GetDepthLayer(v);
-            Rid nr = hasN ? buf.GetTextureSlice("forward_clustered", "normal_roughness", v, 0, 1, 1) : depth;
+            Rid nr = hasN ? buf.GetTextureSlice(FwdClustered, NormalRough, v, 0, 1, 1) : depth;
             Rid pre = hasPre ? buf.GetTextureSlice(InkSnap.Ctx, InkSnap.Name, v, 0, 1, 1) : depth;
             if (!Storable(rd, colour)) continue;
-            var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+            while (viewSets.Count <= (int)v) viewSets.Add(new ViewSet());
+            var vs = viewSets[(int)v];
+            if (vs.Arr == null || vs.C != colour || vs.D != depth || vs.N != nr || vs.P != pre || vs.Smp != sampler || vs.Ubo != ubo)
             {
-                U(RenderingDevice.UniformType.Image, 0, colour),
-                U(RenderingDevice.UniformType.SamplerWithTexture, 1, sampler, depth),
-                U(RenderingDevice.UniformType.SamplerWithTexture, 2, sampler, nr),
-                U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
-                U(RenderingDevice.UniformType.SamplerWithTexture, 4, sampler, pre),
-            });
+                vs.C = colour; vs.D = depth; vs.N = nr; vs.P = pre; vs.Smp = sampler; vs.Ubo = ubo;
+                vs.Arr = new Godot.Collections.Array<RDUniform>
+                {
+                    U(RenderingDevice.UniformType.Image, 0, colour),
+                    U(RenderingDevice.UniformType.SamplerWithTexture, 1, sampler, depth),
+                    U(RenderingDevice.UniformType.SamplerWithTexture, 2, sampler, nr),
+                    U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
+                    U(RenderingDevice.UniformType.SamplerWithTexture, 4, sampler, pre),
+                };
+            }
+            var set = UniformSetCacheRD.GetCache(shader, 0, vs.Arr);
             if (!set.IsValid) continue;
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
@@ -196,7 +212,7 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
             var sb = rd.StorageBufferCreate(bytes);
             var pset = rd.UniformSetCreate(new Godot.Collections.Array<RDUniform>
             {
-                U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampler, buf.GetTextureSlice("forward_clustered", "normal_roughness", 0, 0, 1, 1)),
+                U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampler, buf.GetTextureSlice(FwdClustered, NormalRough, 0, 0, 1, 1)),
                 U(RenderingDevice.UniformType.StorageBuffer, 1, sb),
             }, psh, 0);
             var pp = MemoryMarshal.AsBytes(new float[] { size.X, size.Y, 0, 0 }.AsSpan()).ToArray();
@@ -241,6 +257,9 @@ public partial class InkSnap : CompositorEffect, InkRelease.IRids
     RenderingDevice? rd;
     Rid shader, pipe;
     bool failed;
+    // (made once per view, rebuilt only when a RID changes)
+    sealed class ViewSet { public Rid C, P; public Godot.Collections.Array<RDUniform>? Arr; }
+    readonly System.Collections.Generic.List<ViewSet> viewSets = new();
 
     public InkSnap()
     {
@@ -284,12 +303,21 @@ public partial class InkSnap : CompositorEffect, InkRelease.IRids
         for (uint v = 0; v < nv; v++)
         {
             // (a colour that cannot be a storage image: left alone, InkPass.Storable)
-            if (!InkPass.Storable(rd, buf.GetColorLayer(v))) continue;
-            var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+            Rid colour = buf.GetColorLayer(v);
+            if (!InkPass.Storable(rd, colour)) continue;
+            Rid slice = buf.GetTextureSlice(Ctx, Name, v, 0, 1, 1);
+            while (viewSets.Count <= (int)v) viewSets.Add(new ViewSet());
+            var vs = viewSets[(int)v];
+            if (vs.Arr == null || vs.C != colour || vs.P != slice)
             {
-                new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 0, }.With(buf.GetColorLayer(v)),
-                new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 1, }.With(buf.GetTextureSlice(Ctx, Name, v, 0, 1, 1)),
-            });
+                vs.C = colour; vs.P = slice;
+                vs.Arr = new Godot.Collections.Array<RDUniform>
+                {
+                    new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 0, }.With(colour),
+                    new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 1, }.With(slice),
+                };
+            }
+            var set = UniformSetCacheRD.GetCache(shader, 0, vs.Arr);
             if (!set.IsValid) continue;
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
@@ -306,6 +334,7 @@ public partial class InkSnap : CompositorEffect, InkRelease.IRids
     {
         if (shader.IsValid) dev.FreeRid(shader);
         shader = pipe = default;
+        viewSets.Clear();
         rd = null;
     }
 }

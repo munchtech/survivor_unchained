@@ -11,6 +11,10 @@ public partial class FxWorldDepthWrite : CompositorEffect, FxWorldDepth.IRids
     Rid shader, pipe, fb, fbDepth;
     long fbFormat = -1;
     bool failed;
+    readonly float[] pc = new float[8];
+    readonly byte[] pb = new byte[32];
+    Godot.Collections.Array<RDUniform>? setArr;
+    Rid setSampler, setTex;
 
     public FxWorldDepthWrite()
     {
@@ -21,7 +25,7 @@ public partial class FxWorldDepthWrite : CompositorEffect, FxWorldDepth.IRids
     {
         if (fb.IsValid && rd.FramebufferIsValid(fb)) rd.FreeRid(fb);
         if (shader.IsValid) rd.FreeRid(shader); // (its pipelines and cached uniform sets go with it)
-        fb = default; shader = default; pipe = default; fbDepth = default; fbFormat = -1;
+        fb = default; shader = default; pipe = default; fbDepth = default; fbFormat = -1; setArr = null;
         this.rd = null;
     }
 
@@ -86,12 +90,19 @@ public partial class FxWorldDepthWrite : CompositorEffect, FxWorldDepth.IRids
             }
         }
         var p = data.GetCamProjection();
-        var pc = new float[] { p.Z.Z, p.W.Z, p.Z.W, p.W.W, FxWorldDepth.BiasRel, FxWorldDepth.BiasAbs, 0, 0 };
-        var pb = MemoryMarshal.AsBytes(pc.AsSpan()).ToArray();
-        var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+        pc[0] = p.Z.Z; pc[1] = p.W.Z; pc[2] = p.Z.W; pc[3] = p.W.W; pc[4] = FxWorldDepth.BiasRel; pc[5] = FxWorldDepth.BiasAbs; pc[6] = 0; pc[7] = 0;
+        MemoryMarshal.AsBytes(pc.AsSpan()).CopyTo(pb);
+        // (the uniform array made once, rebuilt only when the sampler or the texture RID changes)
+        Rid nearest = FxWorldDepth.Nearest(rd), tex = FxWorldDepth.Tex;
+        if (setArr == null || setSampler != nearest || setTex != tex)
         {
-            FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, FxWorldDepth.Nearest(rd), FxWorldDepth.Tex),
-        });
+            setSampler = nearest; setTex = tex;
+            setArr = new Godot.Collections.Array<RDUniform>
+            {
+                FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, nearest, tex),
+            };
+        }
+        var set = UniformSetCacheRD.GetCache(shader, 0, setArr);
         long dl = rd.DrawListBegin(fb, RenderingDevice.DrawFlags.DefaultAll);
         rd.DrawListBindRenderPipeline(dl, pipe);
         rd.DrawListBindUniformSet(dl, set, 0);
