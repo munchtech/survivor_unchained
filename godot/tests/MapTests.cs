@@ -10,6 +10,7 @@ using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
+using SurvivorUnchained.World;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;

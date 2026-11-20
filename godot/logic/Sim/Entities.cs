@@ -250,6 +250,11 @@ public sealed class Enemy : Pooled
     /// <summary>A boss's stagger bar (0..1), filled by what would lock a lesser creature;
     /// held while staggered, and resisting it for a while after.</summary>
     public double Stagger, StaggeredT, StaggerResistT;
+    /// <summary>(the owner, 19 Nov: "why do some monsters block nonstop? they take forever to kill") An Ironbound
+    /// champion's iron (Def.IronSkin): the blows it has turned since it last hardened, and how long it stays cracked
+    /// (no cut, no "blocked") after a heavy blow, a critical, a stagger or IronHolds blows broke it (Battle.IronBites).</summary>
+    public int IronTurned;
+    public double IronDownT;
     /// <summary>The firing (skill slot and cast) that last laid a warden Hand's Stone on it: one a firing.</summary>
     public long HandStoneKey;
     /// <summary>Lamps v2 (Sim/BoardRules.cs): when blue.poachers_mercy last doubled its bleed.</summary>

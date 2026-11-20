@@ -975,6 +975,29 @@ public sealed partial class Battle
         return m;
     }
 
+    /// <summary>Blows an Ironbound champion's iron turns before it cracks; how long it stays cracked.</summary>
+    public const int IronHolds = 3;
+    public const double IronDown = 4.5;
+
+    /// <summary>(the owner, 19 Nov: "why do some monsters block nonstop? they take forever to kill" / "I don't know what
+    /// causes things to block but time to kill on those is really bizzare") The Ironbound sign took 40% of every blow,
+    /// every blow called "blocked", all fight, with no tell and no answer: a den champion took about 1.6x as long. Now its
+    /// iron turns IronHolds blows, then cracks (at once to a heavy blow, a critical or a stagger) for IronDown seconds,
+    /// shown ("Iron cracked!", "Iron holds") and heard (the clink only while it holds): up about a third of a fight.
+    /// True while the hit is to be cut (the map's Oath of Iron keeps cutting through the crack: Rules.IronSkin).</summary>
+    bool IronBites(Enemy e, bool heavy)
+    {
+        if (e.Def.IronSkin <= 0 || e.IronDownT > 0) return Rules.IronSkin > 0;
+        if (heavy || e.StaggeredT > 0 || ++e.IronTurned >= IronHolds) { CrackIron(e); return Rules.IronSkin > 0; }
+        return true;
+    }
+
+    void CrackIron(Enemy e)
+    {
+        e.IronTurned = 0; e.IronDownT = IronDown;
+        Events.Emit(new Ev.Floater { X = e.X, Z = e.Z, Up = 2.6, Text = "Iron cracked!" });
+    }
+
     /// <summary>(SU-089) A gated creature (a boss's phase mark, HpFloor) stops at its floor whoever struck it. Returns
     /// what went past the floor (her blows bank it as the Break; a rival's is simply lost).</summary>
     internal static double HoldAtFloor(Enemy e)
@@ -1092,7 +1115,9 @@ public sealed partial class Battle
             dmg += bonus;
         }
         else if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
-        else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { double f = 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); dmg *= f; taken *= f; blocked = true; }
+        else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile && IronBites(e, o.Heavy))
+        { double f = 1 - Math.Max(Rules.IronSkin, e.IronDownT > 0 ? 0 : e.Def.IronSkin); dmg *= f; taken *= f; blocked = f < 0.7; }
+        if (crit && e.Def.IronSkin > 0 && e.IronDownT <= 0 && !o.Dot) CrackIron(e);
         // (SU-078) her side of it, for the procs it sets off: the target's share out (taken), her crit kept
         double her = taken > 1e-9 ? dmg / taken : 0;
         dmg = Math.Max(0.5 * cw, dmg);
@@ -1588,6 +1613,8 @@ public sealed partial class Battle
         }
         if (e.ThawT > 0) e.ThawT -= dt;
         if (e.StaggeredT > 0) e.StaggeredT -= dt;
+        if (e.IronDownT > 0 && (e.IronDownT -= dt) <= 0 && e.Alive && e.State != EnemyState.Dying)
+            Events.Emit(new Ev.Floater { X = e.X, Z = e.Z, Up = 2.6, Text = "Iron holds" });
         if (e.StaggerResistT > 0) e.StaggerResistT -= dt;
     }
 
@@ -2061,6 +2088,7 @@ public sealed partial class Battle
         e.Level = lvl;
         e.X = x; e.Z = z; e.Vx = e.Vz = e.Kbx = e.Kbz = 0;
         e.Edge = e.Fell = e.AtBrink = false; e.KbBy = null;
+        e.IronTurned = 0; e.IronDownT = 0;
         e.Facing = Math.Atan2(Player.Z - z, Player.X - x);
         e.Radius = def.Radius;
         e.Mass = def.Mass ?? 1;
