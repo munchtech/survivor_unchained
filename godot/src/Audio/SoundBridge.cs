@@ -27,6 +27,8 @@ public sealed class SoundBridge
     readonly Synth a;
     public readonly Ambience Ambience;
     public readonly Music Music;
+    /// <summary>The title's recorded song, streamed (TitleSong); the synth title mood plays only if it cannot.</summary>
+    public readonly TitleSong Song;
     /// <summary>The den's recorded sound (pits, far pack, score, creatures' voices; DenAudio).</summary>
     public readonly DenAudio Den;
     readonly DenSound.HerVoice her = new();
@@ -51,6 +53,7 @@ public sealed class SoundBridge
         this.a = a;
         Ambience = new Ambience(a);
         Music = new Music(a);
+        Song = new TitleSong(a);
         Den = new DenAudio(a);
     }
 
@@ -260,7 +263,9 @@ public sealed class SoundBridge
         hostilesNear += (hostile - hostilesNear) * Math.Min(1, dt * (hostile > hostilesNear ? 2 : 0.35));
         Den.Update(dt, s, hostile);
         Mood mood;
-        if (s.Mode is "title" or "create") mood = Mood.Title;
+        bool onTitle = s.Mode is "title" or "create";
+        if (a.Live) Song.Update(dt, onTitle);
+        if (onTitle) mood = Song.Holds ? Mood.Silence : Mood.Title;
         else if (s.Boss) mood = Mood.Boss;
         else if (hostilesNear > 4) mood = Mood.Combat;
         else if (s.MusicMood?.Invoke(s.Px, s.Pz) != null) mood = Mood.Mystery;
