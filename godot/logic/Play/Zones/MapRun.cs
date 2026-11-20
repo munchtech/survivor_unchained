@@ -141,6 +141,19 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     }
 
     public override string Id => "map";
+
+    /// <summary>Every map and dungeon shares the zone id "map", so its fog ("seen") outlived the run: the owner, 19 Nov
+    /// ("entering den a second time minimap shows the explored previous map"). The fog is kept only for the same layout
+    /// (the same dungeon or map and seed: a fall inside wakes her in the run as she left it and never comes back here; a
+    /// reload of the same run keeps it); a new layout starts dark.</summary>
+    public static void ForgetFogOfOtherLayout(WorldState world, Chart chart)
+    {
+        var zs = world.Zone("map");
+        string layout = $"{chart.Dungeon}|{chart.Pinned}|{chart.Tier}|{chart.People}|{chart.Seed}";
+        if (zs.TryGetValue("layout", out var f) && f.Str == layout) return;
+        zs.Remove("seen");
+        zs["layout"] = layout;
+    }
     public override string SoundZone => map.DungeonTheme == "den" ? "den" : "map";
     public override (float[] Field, int Res, double Half, double Step)? SoundHoles =>
         map.DungeonTheme == "den" && map.HoleField is { } hf ? (hf, map.Meta.Res, map.Meta.Size / 2, map.Meta.Size / (map.Meta.Res - 1)) : null;
@@ -203,6 +216,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        ForgetFogOfOtherLayout(G.Journey.World, Chart);
         b.Rules = Chart.Rules();
         b.InBounds = map.CanStand;
         // What the gear inscribes works here, and only here (the scars' kit carries coals).

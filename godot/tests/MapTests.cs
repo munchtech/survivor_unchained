@@ -209,6 +209,31 @@ public class MapTests
         Assert.Null(r.Host.TravelledTo);
     }
 
+    /// <summary>The owner, 19 Nov: "entering den a second time minimap shows the explored previous map". Her walked fog
+    /// is kept through a fall inside the run, and a new den (a new seed: a new layout) starts dark.</summary>
+    [Fact]
+    public void A_new_den_layout_starts_with_its_fog_dark_and_a_fall_keeps_it()
+    {
+        var den = SurvivorUnchained.Maps.Chart.ForDungeon(DungeonGen.Get("hollow")!, 1, 6, "verge", 3, 4, 0);
+        var r = Open(den, level: 6);
+        var world = r.J.World;
+        static int Lit(WorldState w) => w.Zone("map").TryGetValue("seen", out var f) && f.Str is { } s ? s.Count(c => c == '1') : 0;
+        Assert.Equal(0, Lit(world));
+        r.J.Walk("map", 200, r.B.Player.X, r.B.Player.Z);
+        int walked = Lit(world);
+        Assert.True(walked > 0);
+        r.B.Player.Hp = 0;
+        Assert.False(r.B.Hooks.OnPlayerDeath!(null));
+        Assert.True(r.Zone.OnDeath("test"));
+        r.Host.Pass(MapRun.RiseAfter + 0.1);
+        Assert.Equal(walked, Lit(world));
+        // The same run begun again (a reload) keeps it; the next den, on a new seed, is dark.
+        MapRun.ForgetFogOfOtherLayout(world, den);
+        Assert.Equal(walked, Lit(world));
+        MapRun.ForgetFogOfOtherLayout(world, SurvivorUnchained.Maps.Chart.ForDungeon(DungeonGen.Get("hollow")!, 2, 6, "verge", 3, 4, 0));
+        Assert.Equal(0, Lit(world));
+    }
+
     [Fact]
     public void Cold_Then_Not_gets_her_up_on_a_map_before_the_fall_counts()
     {
