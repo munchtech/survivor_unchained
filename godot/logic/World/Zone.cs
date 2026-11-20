@@ -381,6 +381,7 @@ public sealed class ZoneMeta
     {
         var z = Json.Parse<ZoneMeta>(DataFiles.Text($"zones/{id}/zone.json"));
         AddPropColliders(z, id);
+        ZoneWood.Apply(z, id);
         return z;
     }
 
