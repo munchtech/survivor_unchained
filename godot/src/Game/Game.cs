@@ -177,6 +177,13 @@ public partial class Game : Node, IZoneHost
         else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Get("storybook") is string sbId) StoryAlone(sbId);
         else if (Args.Has("quick") || Args.Has("zone")) Quick();
+        else if (BootCard)
+        {
+            // (lane K, the owner 19 Nov: "a compiling shaders load bar when we open the game" / "make the title screen much
+            // faster") the opening behind a moving bar from the first frame: GameFront.Boot
+            booting = true;
+            AddChild(new BootLoad(Boot(), () => booting = false));
+        }
         else
         {
             ShowTitle();

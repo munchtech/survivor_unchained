@@ -138,11 +138,17 @@ public partial class BattleFx
 
     ShaderMaterial P7Mat(int mode, bool top = false, bool ghost = false)
     {
-        var m = new ShaderMaterial { Shader = GD.Load<Shader>(ghost ? P7GhostShader : top ? P7TopShader : P7Shader) };
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();
+        var sh = GD.Load<Shader>(ghost ? P7GhostShader : top ? P7TopShader : P7Shader);
+        q = Perf.Slow("p7mat load", q);
+        var m = new ShaderMaterial { Shader = sh };
+        q = Perf.Slow("p7mat new", q);
         FxCel.Apply(m, School.Physical, FxAfter.On);
+        q = Perf.Slow("p7mat cel", q);
         m.SetShaderParameter("p7_mode", mode);
         m.SetShaderParameter("p7_seed", R() * 10);
         P7Brush(m, 12);
+        Perf.Slow("p7mat params", q);
         return m;
     }
 
@@ -170,17 +176,23 @@ public partial class BattleFx
         var m = P7Mat(mode, top);
         if (P7ModeHw(mode) > 0) P7Brush(m, 2 * P7ModeHw(mode) * half / P7Px(at));
         if (bill) m.SetShaderParameter("p7_bill", 1f);
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();
         var n = new MeshInstance3D { Mesh = bill ? p7Quad : p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         n.Scale = Vector3.One * half;
+        q = Perf.Slow("p7quad new", q);
         AddChild(n);
+        q = Perf.Slow("p7quad add", q);
         n.GlobalPosition = at;
+        Perf.Slow("p7quad place", q);
         if (Args.Has("clip") && (GetViewport()?.GetCamera3D() is { } c3) && !c3.IsPositionBehind(at))
         {
             // (for the px self-check: where it lands on screen and its half-size in px at the play camera)
             var sp = c3.UnprojectPosition(at) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
             GD.Print($"p7px mode {mode} screen {sp.X:F0},{sp.Y:F0} half {half / P7Px(at):F1}px frame {Engine.GetFramesDrawn()}");
         }
+        long qa = System.Diagnostics.Stopwatch.GetTimestamp();
         if (FxAfter.On) FxAfter.Adopt(n);
+        Perf.Slow("p7quad adopt", qa);
         var s = new P7Shape { N = n, M = m, Life = life, Step = step };
         p7Shapes.Add(s);
         return s;

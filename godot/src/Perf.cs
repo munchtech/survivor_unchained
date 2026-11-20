@@ -237,6 +237,17 @@ public partial class Perf : Node
                  $"window {DisplayServer.WindowGetSize()}, screen {DisplayServer.ScreenGetSize()}, {RenderingServer.GetVideoAdapterName()} ({RenderingServer.GetVideoAdapterApiVersion()})");
     }
 
+    /// <summary>(lane K) A line when the section begun at `from` (Stopwatch ticks) took more than `ms` (--perf only).</summary>
+    public static long Slow(string what, long from, double ms = 4)
+    {
+        long now = Stopwatch.GetTimestamp();
+        if (On && (now - from) * TickMs > ms) GD.Print($"perf slow {what} {(now - from) * TickMs:0.0} ms");
+        return now;
+    }
+
+    /// <summary>Every pipeline compiled so far, of every kind (the opening's warm-up waits for it to settle).</summary>
+    public static double PipesNow() => Pipes();
+
     static double Pipes() =>
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsCanvas) + Performance.GetMonitor(Performance.Monitor.PipelineCompilationsMesh) +
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSurface) + Performance.GetMonitor(Performance.Monitor.PipelineCompilationsDraw) +

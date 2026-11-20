@@ -47,6 +47,49 @@ public partial class Game
     bool figurePrebuilt;
     ulong titleUpAt;
 
+    /// <summary>The opening under the card (BootLoad) while it runs: the autopilot waits for it.</summary>
+    bool booting;
+
+    /// <summary>The opening goes behind the card unless a tool asks for something else (--new, --shot, --no-boot-card).</summary>
+    static bool BootCard => !Args.Has("new") && !Args.Has("shot") && !Args.Has("no-boot-card");
+
+    /// <summary>The opening's steps, a frame drawn between each (BootLoad): every shader held (ShaderKeep), the title's place
+    /// built, the creator's figure dressed (so neither the title nor "Create character" stalls on her), and on a first launch
+    /// (BootLoad.FirstLaunch) frames drawn with her in view until the renderer's pipeline compiles settle; the card then fades
+    /// onto the title.</summary>
+    System.Collections.Generic.IEnumerable<BootLoad.Step> Boot()
+    {
+        bool first = BootLoad.FirstLaunch || Args.Has("boot-warm");
+        string say = first ? "Compiling shaders (first launch only)" : "Waking the world";
+        yield return new(say, 0.02f);
+        foreach (var f in SurvivorUnchained.View.ShaderKeep.Load(6)) yield return new(say, 0.02f + 0.2f * f);
+        yield return new("Building the Low Ford", 0.24f);
+        ShowTitle();
+        yield return new("Dressing the survivor", 0.55f);
+        PrebuildCreator();
+        foreach (var f in SurvivorUnchained.View.ShaderKeep.Ready()) yield return new(say, 0.6f + 0.1f * f);
+        if (first)
+        {
+            ulong from = Time.GetTicksUsec();
+            if (figure != null) figure.Visible = true;
+            double last = -1; int still = 0, frames = 0;
+            while (true)
+            {
+                double p = Perf.PipesNow();
+                still = p == last ? still + 1 : 0;
+                last = p;
+                frames++;
+                double secs = (Time.GetTicksUsec() - from) / 1e6;
+                if (frames >= 20 && still >= 12 || secs > 8) break;
+                yield return new("Compiling shaders (first launch only)", 0.7f + 0.28f * (float)Math.Min(1, secs / 4));
+            }
+            if (figure != null && figurePrebuilt) figure.Visible = false;
+            BootLoad.MarkWarm();
+            GD.Print($"load: first-launch warm-up {(Time.GetTicksUsec() - from) / 1e6:0.00} s, {frames} frames, {Perf.PipesNow():0} pipelines so far");
+        }
+        yield return new("", 1f);
+    }
+
     void PrebuildCreator()
     {
         if (Mode != "title" || figure != null) return;
@@ -767,6 +810,7 @@ public partial class Game
     /// <summary>The autopilot at the title: through the notice, and a new journey.</summary>
     void AutoFront()
     {
+        if (booting) return;
         if (!Settings.Current.Mature) { Settings.Current.Mature = true; screens.Current?.Refresh(); return; }
         // --title-hold S: the autopilot clicks "Create character" only after the title has been up S seconds (as a player
         // would; lane K: the creator's figure is prebuilt 2 s in, which an at-once click never exercised)
