@@ -767,7 +767,11 @@ public partial class P1Laws : SkeletonModifier3D
             worn.RemoveAt(i--);
             p.Mi.RemoveMeta(MetaPiece);
         }
-        foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
+        // (the skeleton's mesh children as they stand now, into a list kept: no Godot Array made per frame; the loop may
+        // change the children, so it walks this snapshot as the Array was)
+        frameMeshes.Clear();
+        for (int ci = 0, cn = sk.GetChildCount(); ci < cn; ci++) if (sk.GetChild(ci) is MeshInstance3D cm) frameMeshes.Add(cm);
+        foreach (var mi in frameMeshes)
         {
             if (mi.HasMeta(MetaB) || mi.HasMeta(MetaRebound) || mi.HasMeta(MetaPiece) || mi.Skin == null) continue;
             // (a piece of B's built gear (P1Body.GearMeta): B's own skin; it rides its tier's body's shapes)
@@ -776,18 +780,25 @@ public partial class P1Laws : SkeletonModifier3D
                 string n = mi.Name.ToString();
                 bool playTier = n.StartsWith("lod_") || n.StartsWith("her_merge") || n.Contains("_lod1_") || n.EndsWith("_shadow");
                 Wear(mi, playTier);
-                mi.SetMeta("p1_piece", playTier ? "play" : "close");
+                mi.SetMeta(MetaPiece, playTier ? "play" : "close");
                 continue;
             }
             // (her hair and a head piece rebound; A's skin-tight pieces (the ink slot) worn as B's carries of them; A's
             // other outfit pieces are cut from A's surface and stay off B till P1's refit)
-            bool hair = mi.GetChildren().OfType<HairSway>().Any(), head = mi.Name.ToString().Contains("_head_");
+            bool hair = HasHairSway(mi), head = mi.Name.ToString().Contains("_head_");
             if (hair || head) P1Body.Rebind(sk, mi);
             else if (P1Body.Piece(sk, mi) is string tier) Wear(mi, tier == "play");
             else if (mi.Visible) { mi.Visible = false; if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} (A's) left off B"); }
         }
         PlaySwitch();
         if (Args.Has("p1-probe") && lastG != null && Engine.GetProcessFrames() % 120 == 0) Probe(lastG);
+    }
+
+    readonly List<MeshInstance3D> frameMeshes = new();
+    static bool HasHairSway(Node n)
+    {
+        for (int i = 0, c = n.GetChildCount(); i < c; i++) if (n.GetChild(i) is HairSway) return true;
+        return false;
     }
 
     void Wear(MeshInstance3D mi, bool play)
