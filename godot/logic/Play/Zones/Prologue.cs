@@ -108,6 +108,19 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
     readonly XZ wardenHome;
+    /// <summary>(lane K, the owner 19 Nov: "are they blocking or something? they eventually die") A named champion's teaching floor (the Knight's, the Grave-Caller's 20%) holds at most this many seconds once it is reached: then it falls.</summary>
+    public const double ChampionFloorHold = 2.5;
+    /// <summary>When the Knight and the Grave-Caller first stood at their floors (game seconds, -1 not yet).</summary>
+    double knightFloorAt = -1, callerFloorAt = -1;
+
+    /// <summary>True once the champion has stood at its floor ChampionFloorHold s: its lesson is had, it may fall (the
+    /// Knight held at 20% for 40 s under a spin that kept him from winding up, 19 Nov).</summary>
+    bool FloorHeld(Enemy e, ref double at)
+    {
+        if (e.HpFloor <= 0 || e.Hp > e.HpFloor + 0.5) return false;
+        if (at < 0) at = B!.Time;
+        return B!.Time - at >= ChampionFloorHold;
+    }
     /// <summary>Metres east of his fight's home where he lies asleep, clear of the causeway.</summary>
     public const double SleepEast = 5.5;
     /// <summary>Metres he lies below the waterline asleep (his chest and face just break the surface).</summary>
@@ -1386,7 +1399,7 @@ public sealed partial class Prologue : ZoneRuntime
                     bool winding = kn.State == EnemyState.Windup;
                     if (knightWinding && !winding) knightWindups++;
                     knightWinding = winding;
-                    if (knightWindups >= 2 || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
+                    if (knightWindups >= 2 || stageT > 48 || FloorHeld(kn, ref knightFloorAt)) { knightRan = true; kn.HpFloor = 0; }
                 }
                 // (the chest tip comes 4 s after the elite one; the E belongs to the prompt)
                 if (knight == null && !chestOpened && eliteAt >= 0 && B.Time - eliteAt >= 4)
@@ -1409,7 +1422,7 @@ public sealed partial class Prologue : ZoneRuntime
                     barrowLineSaid = true;
                     Words(() => G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6));
                 }
-                if (caller is { HpFloor: > 0 } cf && (G.Taught("raiser") || B.Time - callerAt > 30)) cf.HpFloor = 0;
+                if (caller is { HpFloor: > 0 } cf && (G.Taught("raiser") || B.Time - callerAt > 30 || FloorHeld(cf, ref callerFloorAt))) cf.HpFloor = 0;
                 // (M5: no top-up; its own Raise does the raising. It rests till she comes, and its F8 hold counts from then.)
                 if (caller is { Roused: false }) callerAt = B.Time;
                 if (caller == null && stageT > 1)

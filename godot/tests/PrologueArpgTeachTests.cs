@@ -254,4 +254,43 @@ public class PrologueArpgTeachTests
         Assert.Single(c.Target.Ring!());
         Assert.DoesNotContain(s.Host.Asked, c => c.Id is "art" or "red_line" or "day_hover");
     }
+
+    /// <summary>(lane K, the owner 19 Nov: "Ser aldric is unkillable now?" / "same with nan sallow?" / "are they blocking or
+    /// something? they eventually die") Struck steadily, a named champion's teaching floor holds a few seconds at most:
+    /// seconds from the first blow to its death, and seconds it stood at its floor.</summary>
+    static (double Kill, double AtFloor) Beat(Setup s, Enemy e, double perHit)
+    {
+        double t = 0, atFloor = 0;
+        while (e.Alive && t < 120)
+        {
+            Stand(s, e.X + 1.2, e.Z);
+            s.B.HitEnemy(e, perHit, School.Physical, Array.Empty<Tag>());
+            if (e.HpFloor > 0 && e.Hp <= e.HpFloor + 0.5) atFloor += 0.25;
+            Run(s, 0.25);
+            t += 0.25;
+        }
+        return (t, atFloor);
+    }
+
+    [Fact]
+    public void The_named_champions_floor_holds_a_few_seconds_at_most_under_steady_blows()
+    {
+        var s = Make();
+        ToThePost(s);
+        s.Host.TaughtIds.Add("dash");
+        var knight = s.B.Enemies.Living().Single(e => e.Tag == "knight");
+        Run(s, 1);
+        var k = Beat(s, knight, knight.MaxHp / 24);
+        if ((knight.Alive)) Assert.Fail($"knight alive after {k.Kill:0.0} s (hp {knight.Hp:0}/{knight.MaxHp:0}, floor {knight.HpFloor:0})");
+        if (!(k.AtFloor <= Prologue.ChampionFloorHold + 0.5)) Assert.Fail($"Ser Aldric: killed in {k.Kill:0.0} s, {k.AtFloor:0.0} s of it held at his floor (max hp {knight.MaxHp:0})");
+        Run(s, 0.1);
+        Stand(s, 0, 18);
+        Run(s, 0.1);
+        if (!(Prologue.Stage.Barrow == s.Zone.Now)) Assert.Fail($"stage {s.Zone.Now}; Ser Aldric: killed in {k.Kill:0.0} s, {k.AtFloor:0.0} s at his floor");
+        var caller = s.B.Enemies.Living().Single(e => e.Tag == "caller");
+        for (int i = 0; i < 100 && !caller.Roused; i++) { Stand(s, caller.X + 3, caller.Z); Run(s, 0.1); }
+        var c = Beat(s, caller, caller.MaxHp / 24);
+        if ((caller.Alive)) Assert.Fail($"caller alive after {c.Kill:0.0} s");
+        if (!(c.AtFloor <= Prologue.ChampionFloorHold + 0.5)) Assert.Fail($"Nan Sallow: killed in {c.Kill:0.0} s, {c.AtFloor:0.0} s of it held at her floor (max hp {caller.MaxHp:0})");
+    }
 }
