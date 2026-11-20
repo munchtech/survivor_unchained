@@ -75,6 +75,7 @@ public sealed class ResolveMeter
 
     readonly Queue<(double T, double D)> recent = new();
     double told;
+    bool seeded;
 
     void Trim() { while (recent.Count > 0 && recent.Peek().T < b.Time - 1) recent.Dequeue(); }
 
@@ -138,6 +139,8 @@ public sealed class ResolveMeter
     /// <summary>Each step: out of a fight it fades.</summary>
     internal void Tick(double dt)
     {
+        // A new battle starts at the fade floor, not at 0, so a Bladestorm can begin in the first fight (the owner, 19 Nov).
+        if (On && !seeded) { seeded = true; if (Value < FadeFloor) Set(FadeFloor); }
         if (!On || Value <= FadeFloor) return;
         if (!OutOfFight(b)) return;
         Add(-Math.Min(FadeRate * dt, Value - FadeFloor), ResolveReason.Faded);

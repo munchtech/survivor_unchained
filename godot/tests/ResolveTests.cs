@@ -76,7 +76,7 @@ public sealed class ResolveTests
         // Held at the pack: one swing, three struck: 12 + 3 + 3 a written blow. (sw1) Sunder is chained: the swing is
         // one cut of the blow, its share 0.70 / 1.6 = 0.4375 of that.
         // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): this one weighs 1, so 18 x 1.
-        const double cut = 18 * 1.0;
+        double cut = ResolveMeter.FadeFloor + 18 * 1.0;   // (a battle starts at the fade floor)
         Assert.Equal(0.70 / 1.6, w.BlowWeight, 12);
         b.HoldSkill(w.Slot, true, 2, 0);
         var evs = Run(b, Land, () => Pin(b, es, at));
@@ -102,7 +102,7 @@ public sealed class ResolveTests
         bool hurt = false;
         Run(b, 8, () => { if (b.Player.Hp < hp0) hurt = true; b.Player.Hp = b.MaxHp; });
         Assert.True(hurt, "the crowd struck her");
-        Assert.Equal(0, b.Resolve.Value, 9);
+        Assert.Equal(ResolveMeter.FadeFloor, b.Resolve.Value, 9);
         // Swinging in it: the taken fill stays within half the landed (a third of the whole), always.
         b.HoldSkill(w.Slot, true, 1.6, 0);
         bool held = true;
@@ -310,7 +310,7 @@ public sealed class ResolveTests
         Run(b, Land, () => Pin(b, [e], at));
         // (sw1) the half is Sunder's shipped record, chained: one cut builds its weight's part of the blow's 12.
         // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): weight 1, so 12 x 1.
-        Assert.Equal(12 * 1.0, b.Resolve.Value, 6);
+        Assert.Equal(ResolveMeter.FadeFloor + 12 * 1.0, b.Resolve.Value, 6);
         Assert.True(e.Hp < e.MaxHp);
     }
 
