@@ -297,6 +297,63 @@ public static partial class DungeonDress
         setRoom = z.Rooms[0];
         foreach (var r in z.Rooms) if (r.Kind == "Start") { setRoom = r; break; }
         setLayer = 0; setCov.Clear(); surfCache.Clear(); foreach (var d in smCache) d.Clear(); objBufs.Clear(); hulls.Clear();
+        SurfGrid(z);
+    }
+
+    // (lane K, 19 Nov: the owner's "god the den load time is insane": the den took 61 s cold and 91 s from the Verge, 47 s of
+    // it in SurfBank's five dictionaries and the closures each call made) The same lazily filled lattices, held in flat
+    // arrays over the map and 16 m round it (NaN: not yet worked out). Every value is worked out as before, in the same
+    // order of sums, so the set is laid exactly as it was; a lattice point past the arrays takes the dictionaries.
+    const float SurfQ = 0.25f;
+    const int SurfPad = 64;
+    static float[][] surfGrid = System.Array.Empty<float[]>();
+    static int surfN, surfO;
+
+    static void SurfGrid(ZoneData z)
+    {
+        int n = 2 * (Mathf.CeilToInt(z.Half / SurfQ) + SurfPad) + 1;
+        if (surfGrid.Length != 5 || surfN != n) { surfN = n; surfGrid = new float[5][]; for (int k = 0; k < 5; k++) surfGrid[k] = new float[n * n]; }
+        surfO = Mathf.CeilToInt(z.Half / SurfQ) + SurfPad;
+        foreach (var g in surfGrid) System.Array.Fill(g, float.NaN);
+    }
+
+    /// <summary>Lattice (i, j)'s cell in the flat arrays, or -1 past them.</summary>
+    static int SurfCell(int i, int j)
+    {
+        int a = i + surfO, b = j + surfO;
+        return (uint)a < (uint)surfN && (uint)b < (uint)surfN ? a * surfN + b : -1;
+    }
+
+    static float SurfRaw(Ctx c, int i, int j)
+    {
+        int cell = SurfCell(i, j);
+        if (cell >= 0 && !float.IsNaN(surfGrid[0][cell])) return surfGrid[0][cell];
+        long k = ((long)i << 32) ^ (uint)j;
+        if (cell < 0 && surfCache.TryGetValue(k, out float v)) return v;
+        float px = i * SurfQ, pz = j * SurfQ;
+        float s = -Wall(c, px, pz);
+        float bank = SetProxy > 0f ? DungeonWalls.BankHoldY(c.Z, px, pz) : DungeonWalls.BankY(c.Z, px, pz);
+        v = Mathf.Max(H(c, px, pz), bank + 0.3f * SetSm(0.05f, 0.6f, s));
+        if (cell >= 0) surfGrid[0][cell] = v; else surfCache[k] = v;
+        return v;
+    }
+
+    // The four blur passes (den r12): 1 Bz over the raw, 2 Bx over 1, 3 Bz over 2, 4 Bx over 3 (smCache[0..3] as before).
+    static float SurfPass(Ctx c, int pass, int i, int j, int r)
+    {
+        if (pass == 0) return SurfRaw(c, i, j);
+        int cell = SurfCell(i, j);
+        var grid = surfGrid[pass];
+        if (cell >= 0 && !float.IsNaN(grid[cell])) return grid[cell];
+        long k = ((long)i << 32) ^ (uint)j;
+        var cache = smCache[pass - 1];
+        if (cell < 0 && cache.TryGetValue(k, out float v)) return v;
+        float acc = 0f;
+        bool alongZ = pass == 1 || pass == 3;
+        for (int d = -r; d <= r; d++) acc += alongZ ? SurfPass(c, pass - 1, i, j + d, r) : SurfPass(c, pass - 1, i + d, j, r);
+        v = acc / (2 * r + 1);
+        if (cell >= 0) grid[cell] = v; else cache[k] = v;
+        return v;
     }
 
     static float SetSm(float a, float b, float x) { float t = Mathf.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
@@ -305,43 +362,15 @@ public static partial class DungeonDress
     // lumps, cached on a 0.25 m lattice and read bilinear.
     static float SurfBank(Ctx c, float x, float zz)
     {
-        const float q = 0.25f;
+        const float q = SurfQ;
         float fx = x / q, fz = zz / q;
         int ix = Mathf.FloorToInt(fx), iz = Mathf.FloorToInt(fz);
         float tx = fx - ix, tz = fz - iz;
-        static long K(int i, int j) => ((long)i << 32) ^ (uint)j;
-        float Raw(int i, int j)
-        {
-            long k = K(i, j);
-            if (surfCache.TryGetValue(k, out float v)) return v;
-            float px = i * q, pz = j * q;
-            float s = -Wall(c, px, pz);
-            float bank = SetProxy > 0f ? DungeonWalls.BankHoldY(c.Z, px, pz) : DungeonWalls.BankY(c.Z, px, pz);
-            v = Mathf.Max(H(c, px, pz), bank + 0.3f * SetSm(0.05f, 0.6f, s));
-            surfCache[k] = v;
-            return v;
-        }
         // (den r12) the proxy box-blurred twice over +-SetSmooth metres (separable): no crease left for a card to span
         int r = SetProxy > 0f ? Mathf.RoundToInt(SetSmooth / q) : 0;
-        float Bz(int i, int j, Dictionary<long, float> cache, System.Func<int, int, float> f)
-        {
-            long k = K(i, j);
-            if (cache.TryGetValue(k, out float v)) return v;
-            float acc = 0f;
-            for (int d = -r; d <= r; d++) acc += f(i, j + d);
-            v = acc / (2 * r + 1); cache[k] = v; return v;
-        }
-        float Bx(int i, int j, Dictionary<long, float> cache, System.Func<int, int, float> f)
-        {
-            long k = K(i, j);
-            if (cache.TryGetValue(k, out float v)) return v;
-            float acc = 0f;
-            for (int d = -r; d <= r; d++) acc += f(i + d, j);
-            v = acc / (2 * r + 1); cache[k] = v; return v;
-        }
-        float L1(int i, int j) => Bx(i, j, smCache[1], (a, b) => Bz(a, b, smCache[0], Raw));
-        float L(int i, int j) => r <= 0 ? Raw(i, j) : Bx(i, j, smCache[3], (a, b) => Bz(a, b, smCache[2], L1));
-        return Mathf.Lerp(Mathf.Lerp(L(ix, iz), L(ix + 1, iz), tx), Mathf.Lerp(L(ix, iz + 1), L(ix + 1, iz + 1), tx), tz);
+        int top = r <= 0 ? 0 : 4;
+        if (surfGrid.Length != 5) SurfGrid(c.Z);
+        return Mathf.Lerp(Mathf.Lerp(SurfPass(c, top, ix, iz, r), SurfPass(c, top, ix + 1, iz, r), tx), Mathf.Lerp(SurfPass(c, top, ix, iz + 1, r), SurfPass(c, top, ix + 1, iz + 1, r), tx), tz);
     }
     static readonly float SetLiftAdd = SurvivorUnchained.Args.Num("den-set-lift", 0f);   // (r12 diagnosis) every bank card pulled this much more toward the camera
     static readonly float SetKeepAll = SurvivorUnchained.Args.Num("den-set-keepall", 0f);   // (r12 diagnosis)
@@ -519,15 +548,21 @@ public static partial class DungeonDress
                     }
                 }
         }
+        Perf.Lap("set: room rings");
         if (SetLanes > 0f && SetMode >= 2) SetLaneRings(c, bufs, ref modules, ref runs, ref spills);
+        Perf.Lap("set: lane rings");
         if (SetAlcoveK > 0f && c.Z.WalkField != null && c.Z.WalkField != c.Z.WallField) SetAlcoves(c);
+        Perf.Lap("set: alcoves");
         setBossC = Vector3.Zero; lairPits = 0;
         foreach (var rb in c.Z.Rooms) if (rb.Kind == "Boss") setBossC = new Vector3(rb.X, rb.Z, rb.R);
         System.Array.Clear(setSpurSeg); System.Array.Clear(setSpurR);   // (den r16 G2) the lair's spurs for its gloom (radius 0: none)
         for (int i = 0; i < c.Z.Spurs.Count && i < setSpurSeg.Length; i++) { setSpurSeg[i] = c.Z.Spurs[i].Seg; setSpurR[i] = c.Z.Spurs[i].R; }
         if (SetOpenK > 0f) SetOpen(c, rooms.FindAll(q => q.Kind != "Bend"));
+        Perf.Lap("set: open");
         if (SetFurK > 0f) SetFur(c);
+        Perf.Lap("set: fur");
         LitterOffCrowns(c);   // (den r19 B, R18b item 5)
+        Perf.Lap("set: litter off crowns");
         int tris = 0;
         foreach (var (name, b) in bufs)
         {
@@ -563,6 +598,7 @@ public static partial class DungeonDress
             }
             c.Root.AddChild(new MeshInstance3D { Name = "SetObjShadows", Mesh = SetMesh(hb), CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly });
         }
+        Perf.Lap("set: meshes");
         c.Count["set modules"] = modules; c.Count["set tris"] = tris; c.Count["set corners"] = corners; c.Count["set spills"] = spills;
         laidHollows.Clear();
         GD.Print($"DenSet: mode {SetMode}, {rooms.Count} rooms, {runs} runs, {modules} modules, {corners} corners, {spills} spills, {tris} bank tris, {otris} object tris, {bufs.Count + objBufs.Count + (hulls.Count > 0 ? 1 : 0)} draws");

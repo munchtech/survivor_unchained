@@ -56,8 +56,10 @@ public static partial class DungeonDress
             int s = i + 1;
             if (den) Den(c, r, s); else Ravine(c, r, s);
         }
-        if (den) { DenCaps.Clear(); DenDecals(c); DenBankDecals(c); DenFloorDecals(c); DenOpenTaken(c); }   // (den r17 D) DenOpen's ground taken for the set's open pieces
+        Perf.Lap("dress: rooms");
+        if (den) { DenCaps.Clear(); DenDecals(c); Perf.Lap("dress: decals"); DenBankDecals(c); Perf.Lap("dress: bank decals"); DenFloorDecals(c); Perf.Lap("dress: floor decals"); DenOpenTaken(c); Perf.Lap("dress: open taken"); }   // (den r17 D) DenOpen's ground taken for the set's open pieces
         if (den && SetMode > 0) DenSet(c);
+        Perf.Lap("dress: the set");
         if (c.Clusters > 0) Flush(c, c.Shrooms, "Fungus", FungMat());   // (den r15 C) was an unshaded flat colour: caps read as flat polygons
         if (c.BoneCount > 0) Flush(c, c.Bones, "Bones", new StandardMaterial3D { AlbedoColor = new Color(0.56f, 0.5f, 0.41f), Roughness = 1f });
         // Poles (palisade, tents, banners) in one mesh in bark; canvas (vertex-coloured per tent) and banner cloth in one each.
@@ -67,6 +69,7 @@ public static partial class DungeonDress
         var parts = new List<string>();
         foreach (var kv in c.Count) parts.Add($"{kv.Key} {kv.Value}");
         GD.Print($"DungeonDress {z.DungeonTheme}: {string.Join(", ", parts)} over {z.Rooms.Count} rooms");
+        Perf.Lap("dress: flushed");
         return c.Root;
     }
 

@@ -81,14 +81,18 @@ public partial class ZoneView : Node3D
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
+        Perf.Lap("ground: the ground");
         if (DungeonWalls.Build(z) is Node3D walls && !(Args.Get("den-hide") ?? "").Contains("walls")) AddChild(walls);   // (--den-hide walls: a diagnosis toggle)
+        Perf.Lap("ground: dungeon walls");
         if (DungeonDress.Build(z) is Node3D dress) AddChild(dress);   // (den r18 L3, R17 item 3) the dress first: the light sees its list
+        Perf.Lap("ground: dungeon dress");
         if (DungeonLight.Build(z) is Node3D shafts) AddChild(shafts);
+        Perf.Lap("ground: dungeon light");
         yield return "ground";
         AddChild(Water.Build(z));
         yield return "water";
         if (MistLayers.Build(z) is { } mist) AddChild(mist);
-        Perf.Lap("ground and water");
+        Perf.Lap("ground and water: water and mist");
         yield return "mist";
         // (The den grows nothing under its roof: DungeonDress lays its fungus and bones by rule.)
         var flora = z.DungeonTheme == "den" ? new Node3D { Name = "Flora" } : Dressing.Flora(z);
