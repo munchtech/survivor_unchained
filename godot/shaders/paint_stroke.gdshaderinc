@@ -209,8 +209,9 @@ vec2 ps_stamp(vec2 xz, vec4 a, vec4 b, vec2 r) {
 	vec2 q = vec2(dot(d, ax), dot(d, ay));
 	float sh = 1.0 - 0.3 * floor(b.x * 3.0);   // 1, .7, .4: shrinks in hard steps
 	// the splat at the contact: a fat streak leaning into the throw
+	// (lead 10: its own look, apart from the world's marks: a dark crimson body with a bright core, round drops, one streak)
 	vec2 m = ps_mark(q - vec2(0.12 * a.w, 0.0), 0.42 * a.w * sh, 0.2 * a.w * sh, 0.08);
-	m.y = 0.0;
+	m.y = ps_mark(q - vec2(0.15 * a.w, 0.0), 0.26 * a.w * sh, 0.09 * a.w * sh, 0.08).x;
 	int n = 3 + int(round(2.5 * pw));
 	for (int k = 0; k < 9; k++) {
 		if (k >= n) break;
@@ -220,10 +221,9 @@ vec2 ps_stamp(vec2 xz, vec4 a, vec4 b, vec2 r) {
 		float v = (hj - 0.5) * 0.55 * u;   // a cone along the throw
 		float sz = a.w * mix(0.22, 0.14, hk) * sh;
 		vec2 dq = q - vec2(u, v);
-		float an = atan(v, u);
-		vec2 dx = vec2(cos(an), sin(an));
-		vec2 dk = ps_mark(vec2(dot(dq, dx), dot(dq, vec2(-dx.y, dx.x))), sz, sz * 0.5, 0.0);
-		dk.y = hj < 0.4 ? dk.x : 0.0;   // some droplets the edge colour, the rest the body's
+		// a round drop, its core bright (lead 10)
+		float dd = length(dq), fw = max(fwidth(dd), 1e-5);
+		vec2 dk = vec2(1.0 - smoothstep(0.32 * sz - fw, 0.32 * sz + fw, dd), 1.0 - smoothstep(0.15 * sz - fw, 0.15 * sz + fw, dd));
 		if (dk.x > m.x) m = dk;
 	}
 	return m.x > r.x ? m : r;
@@ -243,10 +243,11 @@ vec2 ps_hits(vec2 xz) {
 	return r * ps_cover1.z;
 }
 // The ground with the hit paint laid on: returns (albedo, emission rgb add) packed as albedo; emission via ps_hit_emit.
+// (lead 10) h.x the paint (the dark crimson edge colour, ps_hite), h.y its bright core (ps_hitc); only the core glows.
 vec3 ps_hit_paint(vec3 albedo, vec2 h) {
-	return mix(albedo, mix(ps_hitc.rgb, ps_hite.rgb, h.y), h.x);
+	return mix(albedo, mix(ps_hite.rgb, ps_hitc.rgb, h.y), h.x);
 }
-vec3 ps_hit_emit(vec2 h) { return mix(ps_hitc.rgb, ps_hite.rgb, h.y) * h.x * ps_cover1.w; }
+vec3 ps_hit_emit(vec2 h) { return ps_hitc.rgb * h.y * h.x * ps_cover1.w; }
 // (lane J lead 8: painted light, glows light the world in hard steps) The night glows' spill: ps_gl0..15 = (x, y, z, r) the
 // nearest clusters (r > 0 the cyan light, r < 0 the alt violet, 0 none), ps_glc0 = (cyan rgb linear, step 1 strength),
 // ps_glc1 = (violet rgb, step 2 strength), ps_glk = (step radii as multiples of |r|, innermost first, step 3 strength).

@@ -32,27 +32,29 @@ public static class HitPaint
     public static Color Body = new(0.43f, 0.005f, 0.045f), Edge = new(1f, 0.64f, 0.05f);
 
     /// <summary>A hit at (at) with the blow going away along (away) (xz): paint on the ground if the hits there are dense.</summary>
-    public static void Add(Vector3 at, Vector3 away, bool crit, double now)
+    /// (lead 10) Returns the cluster: the hits within 1.3 m in the last 1.6 s, this one and a blow's other foes counted (the spray scales by it).
+    public static int Add(Vector3 at, Vector3 away, bool crit, double now)
     {
-        if (Off) return;
+        if (Off) return 1;
         RT[rn] = now; RX[rn] = at.X; RZ[rn] = at.Z; rn = (rn + 1) % RecentN;
+        int count = 0;
+        for (int i = 0; i < RecentN; i++)
+            if (now - RT[i] < 1.6 && now >= RT[i] && (RX[i] - at.X) * (RX[i] - at.X) + (RZ[i] - at.Z) * (RZ[i] - at.Z) < 1.69f) count++;
         // one blow, a second foe: the cluster throws more (from the splat laid, or from the blow's first hit, laid now)
         if (now - lastAdd < 0.08)
         {
             if (lastK >= 0 && Live[lastK]) Power[lastK] = MathF.Min(Power[lastK] + 0.4f, 2.5f);
             else if (now - pendT < 0.08) { Lay(pendAt, pendAway, pendCrit ? 1.8f : 1.4f, now); pendT = -1e9; }
-            return;
+            return count;
         }
         lastAdd = now; lastK = -1;
-        int count = 0;
-        for (int i = 0; i < RecentN; i++)
-            if (now - RT[i] < 1.6 && now >= RT[i] && (RX[i] - at.X) * (RX[i] - at.X) + (RZ[i] - at.Z) * (RZ[i] - at.Z) < 1.69f) count++;
-        if (count < 3) { pendAt = at; pendAway = away; pendCrit = crit; pendT = now; return; }
+        if (count < 3) { pendAt = at; pendAway = away; pendCrit = crit; pendT = now; return count; }
         // a live splat near: it builds up and lives on
         for (int i = 0; i < N; i++)
             if (Live[i] && (X[i] - at.X) * (X[i] - at.X) + (Z[i] - at.Z) * (Z[i] - at.Z) < 0.64f)
-            { Power[i] = MathF.Min(Power[i] + 0.35f, 2.5f); Born[i] = now; lastK = i; return; }
+            { Power[i] = MathF.Min(Power[i] + 0.35f, 2.5f); Born[i] = now; lastK = i; return count; }
         Lay(at, away, MathF.Min(1f + 0.25f * (count - 3) + (crit ? 0.5f : 0f), 2.5f), now);
+        return count;
     }
 
     static void Lay(Vector3 at, Vector3 away, float power, double now)

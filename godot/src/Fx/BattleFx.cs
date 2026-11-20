@@ -520,18 +520,37 @@ public partial class BattleFx : Node3D
     /// <summary>(lane J lead 9, the owner 19 Nov: "paint splatter that looks cool from physics of the attack ... basically disolving by
     /// the time it hits the ground") The blow throws a few droplets of the palette's hit paint along it, between sparks and splatter
     /// in scale; they arc down and are gone as they land (HitPaint keeps ground paint only where hits come dense). Off with --hitpaint off.</summary>
-    void PaintSpray(Vector3 at, Vector3 away, bool crit)
+    // (lead 10, judge r8: the spray stood too close to the world's marks, too small, scaled by crit alone) Its own look: each drop a
+    // dark crimson body (the alpha batch, Smoke) with a bright core (the additive batch) riding it, and on a harder blow a short
+    // streak along the blow (a line of drops, biggest first). It scales by the blow: damage share of the foe's life, crit, and
+    // the cluster (hits near in the last 1.6 s, HitPaint.Add). power 1 a plain hit .. ~3 a heavy crit into a crowd.
+    void PaintSpray(Vector3 at, Vector3 away, bool crit, double amount, double maxHp, int cluster)
     {
         if (SurvivorUnchained.Args.Get("hitpaint") == "off") return;
-        int n = crit ? 9 : 6;
+        float share = maxHp > 0 ? Mathf.Clamp((float)(amount / maxHp) * 4f, 0f, 1f) : 0.3f;
+        float p = 1f + 0.6f * share + (crit ? 0.6f : 0f) + 0.15f * Mathf.Min(cluster - 1, 5);
+        int n = Mathf.RoundToInt(3 + 2.2f * p);
+        Color body = HitPaint.Edge, core = HitPaint.Body * 1.6f;   // (Edge = the dark crimson, Body = the bright core: rigs "hit")
+        var up = Vector3.Up * 0.2f;
+        void Drop(Vector3 v, float life, float sz)
+        {
+            Smoke.Spawn(at + up, v, life, sz, body * 1.3f, body, sz * 0.3f, 11f, 0.5f, sprite: -1);
+            Sparks.Spawn(at + up, v, life, sz * 0.55f, core, core * 0.7f, sz * 0.15f, 11f, 0.5f);
+        }
+        float scale = 0.85f + 0.2f * p;
         for (int i = 0; i < n; i++)
         {
-            float a = (R() - 0.5f) * 1.1f, v = (crit ? 4.5f : 3.6f) * (0.6f + R() * 0.7f);
+            float a = (R() - 0.5f) * 1.2f, v = 3.4f * (0.6f + R() * 0.7f) * (0.9f + 0.12f * p);
             var dir = new Vector3(away.X * Mathf.Cos(a) - away.Z * Mathf.Sin(a), 0, away.X * Mathf.Sin(a) + away.Z * Mathf.Cos(a));
-            var c = (R() < 0.4f ? HitPaint.Edge : HitPaint.Body) * 2.2f;   // (lit paint: the palette's linear colour lifted to read in the air)
-            float sz = (crit ? 0.14f : 0.11f) * (0.7f + R() * 0.6f);
             // up 1.2-2.4 m/s under gravity 11: ~0.3-0.45 s in the air; the life ends about then, the size shrinking to a speck
-            Sparks.Spawn(at + Vector3.Up * 0.2f, dir * v + Vector3.Up * (1.2f + R() * 1.2f), 0.32f + R() * 0.14f, sz, c, c * 0.8f, sz * 0.25f, 11f, 0.5f);
+            Drop(dir * v + Vector3.Up * (1.2f + R() * 1.2f), 0.32f + R() * 0.14f, 0.19f * scale * (0.7f + R() * 0.6f));
+        }
+        if (p > 1.35f)   // the streak: 3-5 drops on one line along the blow, the lead one biggest
+        {
+            int m = p > 2.2f ? 5 : p > 1.7f ? 4 : 3;
+            float v0 = 4.6f + 0.6f * p, lift = 1.5f + R() * 0.4f;
+            for (int k = 0; k < m; k++)
+                Drop(away * (v0 * (1f - 0.13f * k)) + Vector3.Up * lift, 0.36f, 0.23f * scale * (1f - 0.15f * k));
         }
     }
 
@@ -1527,8 +1546,8 @@ public partial class BattleFx : Node3D
                     {
                         var hpAway = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (hpAway.LengthSquared() < 0.01f) hpAway = Vector3.Forward;
-                        HitPaint.Add(at, hpAway.Normalized(), e.Crit, time);
-                        if (!hushed) PaintSpray(at, hpAway.Normalized(), e.Crit);
+                        int hpN = HitPaint.Add(at, hpAway.Normalized(), e.Crit, time);
+                        if (!hushed) PaintSpray(at, hpAway.Normalized(), e.Crit, e.Amount, e.MaxHp, hpN);
                     }
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
