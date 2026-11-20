@@ -21,8 +21,9 @@ public partial class ClipRecorder : Node
     public const double Seconds = 30;
     const int RingMax = (int)(Seconds * Fps);
 
-    /// <summary>On while the setting is on (and --no-bug-clip is not given).</summary>
-    public bool Enabled => !Args.Has("no-bug-clip") && Settings.Current.BugClip;
+    /// <summary>On while the setting is on (and --no-bug-clip is not given). Off in the demo flavor unless --bug-clip is given
+    /// (the owner, 19 Nov: "TURN IT OFF FOR DEMO BUILD": its 2 MB readback 15 times a second cost a large-object GC about every 10 s).</summary>
+    public bool Enabled => !Args.Has("no-bug-clip") && Settings.Current.BugClip && (!SurvivorUnchained.Core.Demo.On || Args.Has("bug-clip"));
 
     bool Frozen;
     SubViewport? sub;
