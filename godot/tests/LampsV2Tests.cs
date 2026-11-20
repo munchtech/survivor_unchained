@@ -282,7 +282,7 @@ public sealed class LampsV2Tests
             b.Lamps.Night = night;
             var e = Dummy(b);
             if (chilled) e.Status.Ensure(StatusKind.Chill, 5, 1, 0, 0);
-            b.Tick(1 / 60.0, moving ? 1 : 0, 0);
+            b.Tick(1 / 60.0, moving ? -1 : 0, 0);
             return b.HitEnemy(e, 100, School.Frost, [Tag.Frost, Tag.Spell], new HitOpts { NoCrit = true, Weapon = b.Weapons[0] });
         }
         double plain = Hit(false, false, false);

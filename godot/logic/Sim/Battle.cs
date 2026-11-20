@@ -692,6 +692,7 @@ public sealed partial class Battle
             p.Z += p.Vz * dt;
         }
         Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+        PushOutOfBodies(wasX, wasZ);
         // Pressed against a wall or the well, she moves only as far as it lets her: her speed is what she
         // made, so she stands (or runs along it) instead of running on the spot into it.
         if (dt > 0)

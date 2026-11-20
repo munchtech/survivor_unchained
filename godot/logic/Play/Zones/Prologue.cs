@@ -1108,9 +1108,18 @@ public sealed partial class Prologue : ZoneRuntime
         traceMode = ai.Mode;
     }
 
+    /// <summary>Where the Warden was set at his fight's start, and how far he may be from it: his ford (a leash, the owner 19 Nov:
+    /// the Warden "shoved all the way down the river").</summary>
+    const double WardenLeash = 30;
+
     bool WardenTick(Enemy e, double dt)
     {
         if (B == null) return true;
+        {
+            var wh = wardenHome;
+            double lx = e.X - wh.X, lz = e.Z - wh.Z, ld = Math.Sqrt(lx * lx + lz * lz);
+            if (ld > WardenLeash) { e.X = wh.X + lx / ld * WardenLeash; e.Z = wh.Z + lz / ld * WardenLeash; }
+        }
         var p = B.Player;
         TraceMode(e);
         // (B1 judge) Cues on a mode's change, once: the charge's tell put away when the charge is over (it stood 0.4 s into the
