@@ -2859,7 +2859,7 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
                 {
-                    var c = (m.HasMeta("su_tone0") ? m.GetMeta("su_tone0").AsColor() : m.GetShaderParameter("tone").AsColor()).SrgbToLinear();
+                    var c = (m.HasMeta(Sn.Of("su_tone0")) ? m.GetMeta(Sn.Of("su_tone0")).AsColor() : m.GetShaderParameter(Sn.Of("tone")).AsColor()).SrgbToLinear();
                     return Mathf.Clamp((0.4f - (0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B)) / 0.36f, 0, 1);
                 }
         return 0;

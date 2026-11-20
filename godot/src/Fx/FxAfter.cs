@@ -253,9 +253,9 @@ void fragment() {
         if (marks)
         {
             maskTex ??= new Texture2Drd();
-            if (maskTex.TextureRdRid != MarkPass.Mask) { maskTex.TextureRdRid = MarkPass.Mask; comp.SetShaderParameter("marks", maskTex); }
+            if (maskTex.TextureRdRid != MarkPass.Mask) { maskTex.TextureRdRid = MarkPass.Mask; comp.SetShaderParameter(Sn.Of("marks"), maskTex); }
         }
-        comp.SetShaderParameter("marks_on", marks ? 1f : 0f);
+        comp.SetShaderParameter(Sn.Of("marks_on"), marks ? 1f : 0f);
         DebugStroke(main);
     }
 
