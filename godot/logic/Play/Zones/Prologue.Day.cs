@@ -114,9 +114,45 @@ public sealed partial class Prologue
         var steps = new List<Step> { new(gateAsk ? GateTask : "Walk up the road to the Waystation") };
         if (DayBeat("post") is { Post: { } pid } && Lamps.V2) steps.Add(new("Relight the road lamp", true, LampBook.PostLit(W, pid)));
         if (day != null && DayBeat("strongbox") != null) steps.Add(new("Find the Kerchiefs' strongbox", true, day.Done("strongbox")));
-        if (day != null && DayBeat("wallow") != null) steps.Add(new("Drive the boars from the west wallow", true, day.Done("wallow")));
+        if (day != null && DayBeat("wallow") != null) steps.Add(new(WallowLine(), true, day.Done("wallow")));
         roadStep = !gateAsk;
         G.SetObjectives([new Tracked("pro", "The Road North", TrackTone.Tutorial, steps)]);
+    }
+
+    int wallowLeft = -1;
+    bool strayTold;
+    /// <summary>Past this from her, with two or fewer left, the last boars are said to have strayed.</summary>
+    public const double StrayFar = 40;
+
+    /// <summary>The wallow's line, with the count still to drive while any are up.</summary>
+    public string WallowLine()
+    {
+        int n = day?.Left("wallow") ?? 0;
+        return n > 0 ? $"Drive the boars from the west wallow ({n} left)" : "Drive the boars from the west wallow";
+    }
+
+    /// <summary>The boars still to drive from the wallow, live: the quest's marks on the minimap and the map.</summary>
+    public List<MapMark> WallowMarks()
+    {
+        var marks = new List<MapMark>();
+        if (day == null || DayBeat("wallow") == null || day.Done("wallow")) return marks;
+        foreach (var e in day.Standing("wallow")) marks.Add(new(Math.Round(e.X / 3) * 3, Math.Round(e.Z / 3) * 3, "Boar", MarkKind.Quest));   // (snapped to 3 m: a mark never creeps, it steps)
+        return marks;
+    }
+
+    /// <summary>Each tick: the line follows the count; with 1-2 left and one far off, a one-time word.</summary>
+    void WallowWatch()
+    {
+        if (day == null || B == null || DayBeat("wallow") == null || day.Done("wallow")) return;
+        int n = day.Left("wallow");
+        if (n != wallowLeft) { wallowLeft = n; DayObjective(); }
+        if (strayTold || n is < 1 or > 2) return;
+        var p = B.Player;
+        if (day.Standing("wallow").Any(e => Dist(e.X, e.Z, p.X, p.Z) > StrayFar))
+        {
+            strayTold = true;
+            G.Toast(new Toast(ToastKind.World, "The last boars have strayed: see the map"));
+        }
     }
 
     /// <summary>The day's words and lessons wait for calm: no fight on, none about to start (a resting pack within
@@ -209,6 +245,7 @@ public sealed partial class Prologue
     {
         if (day == null || B == null) return;
         day.Tick(dt);
+        WallowWatch();
         Ranks(day);
         DayGate(dt);
         // The strongbox, once the cinematic's gather has been (it would have brought it to her feet).

@@ -256,6 +256,16 @@ public sealed class Encounters
     /// <summary>The pack's foes still standing.</summary>
     public List<Enemy> Standing(string beat) => Packs.TryGetValue(beat, out var l) ? l.Where(Live).Select(f => f.E).ToList() : new();
 
+    /// <summary>How many of a pack are still to put down: those standing, and the waves still to come out of the trees
+    /// (so the count only falls). 0 once the pack is down, or when it is not laid.</summary>
+    public int Left(string beat)
+    {
+        if (DownAt.ContainsKey(beat) || !Packs.ContainsKey(beat) || S.Get(beat) is not { } bt) return 0;
+        int n = Standing(beat).Count;
+        for (int i = Sent(beat); i < bt.Waves.Count; i++) n += bt.Waves[i].Foes.Sum(f => f.N) + (bt.Waves[i].Elite != null ? 1 : 0);
+        return n;
+    }
+
     /// <summary>The beat's champion while it stands.</summary>
     public Enemy? Captain(string beat) => Captains.TryGetValue(beat, out var c) && Live(c) ? c.E : null;
 

@@ -206,6 +206,25 @@ public class EncountersTests
     }
 
     [Fact]
+    public void The_wallow_counts_its_boars_down_and_they_stay_on_its_ground()
+    {
+        var b = Road(12);
+        var s = Encounters.For("lowford")!;
+        var d = new Encounters(s, b, new Dictionary<string, Fact>(), 2, 1);
+        d.Place();
+        var wl = s.Get("wallow")!;
+        Assert.Equal(8, d.Left("wallow"));   // 3 boars + 2 slurry (listed + captain), and the wave of 3 still to come
+        var live = d.Standing("wallow");
+        Assert.Equal(5, live.Count);
+        foreach (var e in live) Assert.InRange(System.Math.Sqrt((e.X - wl.X) * (e.X - wl.X) + (e.Z - wl.Z) * (e.Z - wl.Z)), 0, wl.Spread + 0.1);
+        b.KillEnemy(live[0], true, null);
+        Assert.Equal(7, d.Left("wallow"));
+        Assert.Equal(4, d.Standing("wallow").Count);   // the marks are these, live
+        b.KillEnemy(live[1], true, null);
+        Assert.Equal(6, d.Left("wallow"));
+    }
+
+    [Fact]
     public void Packs_down_today_stay_down_and_the_rest_rest_until_she_comes()
     {
         var b = Road(11);
