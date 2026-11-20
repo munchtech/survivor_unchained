@@ -777,7 +777,7 @@ public sealed partial class Journey
     }
 
     /// <summary>The Flare is out for the story (taken at the Low Ford's dawn, not yet lit at the Waystation).</summary>
-    bool FlareOut => World.Fact(Zones.Prologue.FlareOutFact).Truthy && !World.Fact(Zones.Prologue.FlareLitFact).Truthy;
+    bool FlareOut => false; // the owner, 19 Nov: "flare not being useable in day felt bad": the dawn no longer takes the Flare (was: flare.out until the Waystation lamp)
 
     /* -------------------------------------------------------------- arts -- */
 

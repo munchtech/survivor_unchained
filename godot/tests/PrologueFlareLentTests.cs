@@ -114,52 +114,37 @@ public class PrologueFlareLentTests
         for (int i = 0; i < 400 && s.Host.Stories.Count == 0; i++) Run(s, 0.1);
         Assert.True(s.Zone.Now >= Prologue.Stage.Dawn);
         Assert.Equal("sb_dawn", Assert.Single(s.Host.Stories));
-        Assert.Null(s.B.Flare);
-        Assert.Equal(0, s.B.FlareMeter);
-        Assert.True(s.J.World.Fact(Prologue.FlareOutFact).Truthy);
+        // (the owner, 19 Nov: "flare not being useable in day felt bad") the dawn keeps it: no banner, not taken.
+        Assert.NotNull(s.B.Flare);
+        Assert.False(s.J.World.Fact(Prologue.FlareOutFact).Truthy);
         Run(s, 4);
-        var ban = Assert.Single(s.Host.Announced, a => a.Title == "The Flare goes out");
-        Assert.Equal("Lent for the night. It burns again at the Waystation's lamp.", ban.Sub);
+        Assert.DoesNotContain(s.Host.Announced, a => a.Title == "The Flare goes out");
         // (the dawn card, Douse's "The ember goes out" and the level banner's traits are retired)
         Assert.Empty(s.Host.Dawns);
         Assert.DoesNotContain(s.Host.Announced, a => a.Title == "The ember goes out" || (a.Sub ?? "").Contains("trait"));
         Run(s, 12);
-        Assert.Null(s.B.Flare);
-        // The next battle on the road (a reload at the Low Ford) still has none until the lamp.
+        Assert.NotNull(s.B.Flare);
+        // The next battle on the road (a reload at the Low Ford) carries it too.
         var j = s.J;
         var meta = ZoneMeta.Load("lowford");
         var b2 = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, 0, 0, 0, 5);
-        Assert.Null(b2.Flare);
+        Assert.NotNull(b2.Flare);
     }
 
     [Fact]
-    public void The_square_s_lamp_lights_it_for_good()
+    public void An_old_save_s_flare_out_fact_no_longer_withholds_it_and_it_fires_by_day()
     {
         var j = NewJourney();
         j.World.Facts["prologue.done"] = true;
         j.World.Facts[Prologue.FlareOutFact] = true;
-        var meta = ZoneMeta.Load("waystation");
-        var host = new FakeHost(j, meta);
-        var zone = new Waystation(host, meta);
-        var at = zone.ArrivalFrom(null);
-        var b = j.StartBattle(false, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 3);
-        host.Battle = b;
-        zone.Begin(b);
-        Assert.Null(b.Flare);
-        var post = LampPosts.Get("waystation.square")!;
-        b.Player.X = post.X + 10; b.Player.Z = post.Z;
-        zone.Frame(1 / 30.0);
-        Assert.Null(b.Flare);
-        Assert.False(j.World.Fact(Prologue.FlareLitFact).Truthy);
-        b.Player.X = post.X + Waystation.FlareLampReach - 0.5;
-        zone.Frame(1 / 30.0);
-        Assert.True(j.World.Fact(Prologue.FlareLitFact).Truthy);
-        Assert.NotNull(b.Flare);
-        var ban = Assert.Single(host.Announced, a => a.Title == "The Flare");
-        Assert.Equal("Lit for good. F", ban.Sub);
-        // Every later battle carries it.
         var lf = ZoneMeta.Load("lowford");
-        Assert.NotNull(j.StartBattle(true, lf.Collision(), Heightfield.Load(lf).HeightAt, 0, 0, 0, 5).Flare);
+        var b = j.StartBattle(true, lf.Collision(), Heightfield.Load(lf).HeightAt, 0, 0, 0, 5);
+        // (the owner, 19 Nov: "flare not being useable in day felt bad")
+        Assert.NotNull(b.Flare);
+        Assert.False(b.Night);
+        b.FlareMeter = Battle.FlareFull;
+        Assert.True(b.UseFlare(1, 0));
+        Assert.True(b.FlareMeter < Battle.FlareFull);
     }
 
     [Fact]

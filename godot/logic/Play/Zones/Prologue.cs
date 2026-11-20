@@ -2064,16 +2064,13 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>The dawn page (A12) takes it back: no Flare on the day stretch.</summary>
     void TakeFlare()
     {
-        W.Facts[FlareOutFact] = true;
-        if (B == null) return;
-        B.Flare = null;
-        B.FlareMeter = 0;
+        // (the owner, 19 Nov: "flare not being useable in day felt bad") the dawn no longer takes the Flare.
     }
 
     /// <summary>As play resumes at dawn: the Flare's banner (TUTORIAL_COPY.md "The dawn page").</summary>
     void FlareOutBanner()
     {
-        if (flareBannerShown) return;
+        if (flareBannerShown || true) return; // no banner: the Flare is not taken at dawn any more (19 Nov)
         flareBannerShown = true;
         G.Announce(new Announcement("The Flare goes out", "Lent for the night. It burns again at the Waystation's lamp.", "boon", 4.5));
     }
@@ -2169,7 +2166,7 @@ public sealed partial class Prologue : ZoneRuntime
         // prologue keeps hers.
         lentFlare = b.Flare ?? Content.Lamps.Flare(LampBook.Carried(G.Journey.Ch));
         if (!F("prologue.done").Truthy) { b.Flare = null; b.FlareMeter = 0; }
-        if (DayStart && !F("prologue.done").Truthy) { W.Facts[FlareOutFact] = true; BeginDay(b); return; }
+        if (DayStart && !F("prologue.done").Truthy) { BeginDay(b); return; }
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
