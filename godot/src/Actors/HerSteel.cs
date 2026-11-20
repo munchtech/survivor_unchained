@@ -17,8 +17,10 @@ public static class HerSteel
     public static void Wear(Node? mount, bool on)
     {
         if (mount == null) return;
-        foreach (var c in mount.GetChildren())
+        // (by index, no Godot Array made: same children, same order)
+        for (int ci = 0, cn = mount.GetChildCount(); ci < cn; ci++)
         {
+            var c = mount.GetChild(ci);
             if (c is MeshInstance3D { Mesh: { } mesh } mi && mi.MaterialOverride == null)
                 for (int s = 0; s < mesh.GetSurfaceCount(); s++)
                 {
