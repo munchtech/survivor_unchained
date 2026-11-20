@@ -949,15 +949,29 @@ public partial class Callout : Control, ICalloutView
         /// <summary>A stroke along the points, w0 wide at the start, w1 at the end (u runs 0 to r
         /// along it): a strip of triangles, each drawn as it is (a polygon is triangulated, and one
         /// squeezed thin by the arrow's first frames fails to; a triangle never does).</summary>
+        // (lane K, 19 Nov: the strokes' working lists and each triangle's arrays kept, not made per stroke and triangle;
+        // DrawPrimitive copies them into the canvas's own)
+        readonly List<Vector2> strokePts = new();
+        Vector2[] strokeL = Array.Empty<Vector2>(), strokeR = Array.Empty<Vector2>();
+        Color[] strokeC = Array.Empty<Color>();
+        readonly Vector2[] triP = new Vector2[3];
+        readonly Color[] triC = new Color[3];
+        void Tri(Vector2 a, Vector2 b, Vector2 c, Color ca, Color cb, Color cc)
+        {
+            triP[0] = a; triP[1] = b; triP[2] = c; triC[0] = ca; triC[1] = cb; triC[2] = cc;
+            DrawPrimitive(triP, triC, Array.Empty<Vector2>());
+        }
+
         void Stroke(List<Vector2> raw, float w0, float w1, Func<float, Color> col, float r)
         {
-            var pts = new List<Vector2>(raw.Count);
+            var pts = strokePts; pts.Clear();
             foreach (var q in raw) if (pts.Count == 0 || pts[^1].DistanceSquaredTo(q) > 0.1f) pts.Add(q);
             int n = pts.Count;
             if (n < 2) return;
-            var left = new Vector2[n];
-            var right = new Vector2[n];
-            var cols = new Color[n];
+            if (strokeL.Length < n) { strokeL = new Vector2[n]; strokeR = new Vector2[n]; strokeC = new Color[n]; }
+            var left = strokeL;
+            var right = strokeR;
+            var cols = strokeC;
             for (int i = 0; i < n; i++)
             {
                 var dir = (pts[Math.Min(n - 1, i + 1)] - pts[Math.Max(0, i - 1)]).Normalized();
@@ -970,8 +984,8 @@ public partial class Callout : Control, ICalloutView
             }
             for (int i = 1; i < n; i++)
             {
-                DrawPrimitive([left[i - 1], left[i], right[i]], [cols[i - 1], cols[i], cols[i]], []);
-                DrawPrimitive([left[i - 1], right[i], right[i - 1]], [cols[i - 1], cols[i], cols[i - 1]], []);
+                Tri(left[i - 1], left[i], right[i], cols[i - 1], cols[i], cols[i]);
+                Tri(left[i - 1], right[i], right[i - 1], cols[i - 1], cols[i], cols[i - 1]);
             }
         }
 
@@ -979,7 +993,7 @@ public partial class Callout : Control, ICalloutView
         /// fading to nothing at both its edges (a texture across it, so no edge shows).</summary>
         void Soft(List<Vector2> raw, float w0, float w1, Func<float, Color> col, float r)
         {
-            var pts = new List<Vector2>(raw.Count);
+            var pts = strokePts; pts.Clear();
             foreach (var q in raw) if (pts.Count == 0 || pts[^1].DistanceSquaredTo(q) > 0.1f) pts.Add(q);
             int n = pts.Count;
             if (n < 2) return;
