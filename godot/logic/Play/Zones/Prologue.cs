@@ -59,6 +59,10 @@ public sealed partial class Prologue : ZoneRuntime
     {
         public string Mode = "sleep";
         public double Hold, T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, ChannelOver, RaiseT, ContactT, HitX, HitZ;
+        /// <summary>(lane K) Blows landed on him in the present channel (by their weight, Battle.HitW, at most 1 each).</summary>
+        public double ChannelBlows;
+        /// <summary>(lane K) Seconds he has backed off for a run at the lamp beside her.</summary>
+        public double BackT;
         public List<double> Thresholds = [0.7, 0.4];
         /// <summary>(M3) The cleave's and the charge lane's marked blows (Battle.EnemyBlow, OwnMark): the hands read them.</summary>
         public Battle.EnemyBlow? Cleave, Lane;
@@ -164,6 +168,8 @@ public sealed partial class Prologue : ZoneRuntime
             OnKill = OnKill,
             OnBossStagger = e => { if (e.Tag == "warden") WardenStaggered(e); },
             OnBossInterrupt = e => { if (e.Tag == "warden") WardenInterrupted(e); },
+            // (lane K, the owner 19 Nov: "how do you break his channel": blows break it, ChannelBreakBlows of them)
+            OnBossHit = (e, _, _) => { if (e.Tag == "warden" && ai.Mode == "channel" && B != null) ai.ChannelBlows += Math.Min(1, B.HitW); },
             // (M5-B, ARPG 7.1: a pack's captain is its carrier, a champion carries more; Encounters.Carried)
             OnLoot = e => [.. night?.Carried(e, G.Journey.Drops) ?? [], .. day?.Carried(e, G.Journey.Drops) ?? []],
             OnPickup = OnDayPickup,
@@ -333,8 +339,8 @@ public sealed partial class Prologue : ZoneRuntime
         // without it, the beating)
         bool flare = B is { Flare: not null, FlareReady: true };
         Tip("channel", "Break his spell", flare
-            ? $"The Warden is raising the drowned.{NL}Break it: use your Flare.{NL}If he finishes, a lamp lights again."
-            : $"The Warden is raising the drowned.{NL}Hurt him hard enough and it breaks.{NL}If he finishes, a lamp lights again.",
+            ? $"The Warden is raising the drowned.{NL}Strike him five times, or use your Flare, to break it.{NL}If he finishes, a lamp lights again."
+            : $"The Warden is raising the drowned.{NL}Strike him five times to break it.{NL}If he finishes, a lamp lights again.",
             flare ? [Key("flare")] : null, 10);
         return true;
     }
@@ -533,7 +539,7 @@ public sealed partial class Prologue : ZoneRuntime
         // (F6 the volley's dash, F7 the red line and F8 the art at the Grave-Caller retired: A7, A8 and A10, ArpgCallouts)
         // F9: the lamps, 3 s after C02 hands back.
         if (Now == Stage.Boss && stageT > 3 && warden is { Alive: true } && LitCount > 0)
-            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nPut them out: break them, or lure his charge into one.",
+            Teach("lamps", CalloutKind.Freeze, "The lamps", "Three lamps guard the Warden. While they burn, he barely feels a blow.\nFight beside one: his charge smashes it and stuns him. Or break them.",
                 new Aim { World = () => pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList(), Each = true, Radius = 0.25,
                     Cold = true, WordsNear = (0.24, 0.7), ShunBig = true });
         // A11b: 3 s after A11 closes, the Flare lent at C02's hand-back and its meter full: its key and the nearest lit lamp.
@@ -1031,6 +1037,44 @@ public sealed partial class Prologue : ZoneRuntime
 
     /// <summary>Whether a lit lamp-pylon stands in the charge's first 4 m along the lane from where he is (B1 judge: a charge
     /// bumped a lamp 4 frames in and stunned him): no run starts into one. A lamp further out is a lure that still works.</summary>
+    /// <summary>His charge's windup down (dirX, dirZ) for len metres: the red lane, its marked blow, the tell.</summary>
+    void StartCharge(Enemy e, double dirX, double dirZ, double len)
+    {
+        ai.Mode = "chargeWind"; ai.T = 0; e.AnimT = 0; ai.DirX = dirX; ai.DirZ = dirZ;
+        double laneHalf = e.Radius + 0.3;
+        B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 2, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len, Radius = 0, Width = 2 * laneHalf, Duration = 1.3, Hostile = true, Boss = true });
+        ai.Travelled = len;
+        // (M3: the lane, a marked blow of no damage of its own held for the windup and the run, so the hands read it; the
+        // run's touch still hurts)
+        ai.Lane = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len,
+            Width = 2 * laneHalf, Delay = 1.3 + len / 17, Source = "The Ford-Warden", From = e });
+        wardenView.SetPose("charge-windup");
+        B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = ChargeTell, Boss = true });
+        ai.TellUp = true;
+    }
+
+    /// <summary>(lane K) The lit lamp nearest her within LampByR; null when none.</summary>
+    int? LampBy(double x, double z)
+    {
+        int? best = null; double bd = LampByR;
+        for (int i = 0; i < pylons.Count; i++)
+        {
+            if (!litPylons[i]) continue;
+            double d = Dist(pylons[i].X, pylons[i].Z, x, z);
+            if (d < bd) { bd = d; best = i; }
+        }
+        return best;
+    }
+
+    /// <summary>(lane K) The run-up his charge at a lamp wants (metres from his edge to the lamp).</summary>
+    public const double ChargeRunUp = 5.5;
+
+    /// <summary>(lane K) How near a lamp she must stand for his charge to come at it (metres).</summary>
+    public const double LampByR = 5;
+    /// <summary>(lane K, the owner 19 Nov: "how do you break his channel") Blows that break his channel (a swing 1, a spin's
+    /// or a chained cut's share less; the Flare or a stagger break it outright, a heavy beating too, as before).</summary>
+    public const double ChannelBreakBlows = 5;
+
     bool LampInLane(Enemy e, double dx, double dz)
     {
         for (int i = 0; i < pylons.Count; i++)
@@ -1115,7 +1159,7 @@ public sealed partial class Prologue : ZoneRuntime
                 if ((th is double t0 && hpK < t0) || ai.ChannelCd <= 0)
                 {
                     if (th is double t1 && hpK < t1) ai.Thresholds.RemoveAt(0);
-                    ai.Mode = "channel"; ai.T = 0; e.AnimT = 0; ai.ChannelHp = e.Hp; ai.ChannelOver = e.Overflow; ai.ChannelCd = 34; ai.RaiseT = 0.6;
+                    ai.Mode = "channel"; ai.T = 0; e.AnimT = 0; ai.ChannelHp = e.Hp; ai.ChannelOver = e.Overflow; ai.ChannelCd = 34; ai.RaiseT = 0.6; ai.ChannelBlows = 0;
                     wardenView.SetPose("channel");
                     B.Events.Emit(new Ev.Sound { Id = "ford.channel", X = e.X, Z = e.Z });
                     // (the tip comes first when it shows, and his cry a beat after it settles, so the two never
@@ -1123,6 +1167,26 @@ public sealed partial class Prologue : ZoneRuntime
                     riseBarkIn = ChannelTip() ? 1.3 : 0;
                     if (riseBarkIn <= 0) RiseBark(e);
                     return true;
+                }
+                // (lane K, the owner 19 Nov: "warden just kept cleaving when I'm fighting him not dousing lamps with charge" / "why
+                // isn't he charging the lamps") With a lit lamp beside her, his charge comes from any distance and runs at her
+                // through that lamp: the lamp breaks and he reels (the charge case). In the open, close in, he cleaves as before.
+                if (ai.ChargeCd <= 0 && LampBy(p.X, p.Z) is int li)
+                {
+                    double lx = pylons[li].X - e.X, lz = pylons[li].Z - e.Z, ld = Math.Max(0.1, Math.Sqrt(lx * lx + lz * lz));
+                    if (ld >= ChargeRunUp + e.Radius) { ai.BackT = 0; StartCharge(e, lx / ld, lz / ld, Math.Min(24, ld + 4)); return true; }
+                    // Too near the lamp for a run at it: he backs off for his run-up (a readable beat, his face to her), at most 2.5 s.
+                    if ((ai.BackT += dt) < 2.5)
+                    {
+                        e.Facing = Math.Atan2(lz, lx);
+                        double bs = e.Speed * 1.1, bx0 = e.X, bz0 = e.Z;
+                        e.Vx = -lx / ld * bs; e.Vz = -lz / ld * bs;
+                        e.X += e.Vx * dt; e.Z += e.Vz * dt;
+                        B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+                        wardenView.SetPose("walk");
+                        if (Dist(e.X, e.Z, bx0, bz0) > 0.2 * bs * dt) return true;
+                    }
+                    ai.BackT = 0; ai.ChargeCd = 3;
                 }
                 if (dist < 5.2 && ai.CleaveCd <= 0)
                 {
@@ -1142,17 +1206,7 @@ public sealed partial class Prologue : ZoneRuntime
                 if (dist > 6.5 && ai.ChargeCd <= 0 && (!LaneClear(e, dx / dist, dz / dist) || LampInLane(e, dx / dist, dz / dist))) ai.ChargeCd = 1.5;
                 if (dist > 6.5 && ai.ChargeCd <= 0)
                 {
-                    ai.Mode = "chargeWind"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
-                    double len = Math.Min(24, dist + 8), laneHalf = e.Radius + 0.3;
-                    B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 2, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len, Radius = 0, Width = 2 * laneHalf, Duration = 1.3, Hostile = true, Boss = true });
-                    ai.Travelled = len;
-                    // (M3: the lane, a marked blow of no damage of its own held for the windup and the run, so the hands read it; the
-                    // run's touch still hurts)
-                    ai.Lane = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len,
-                        Width = 2 * laneHalf, Delay = 1.3 + len / 17, Source = "The Ford-Warden", From = e });
-                    wardenView.SetPose("charge-windup");
-                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = ChargeTell, Boss = true });
-                    ai.TellUp = true;
+                    StartCharge(e, dx / dist, dz / dist, Math.Min(24, dist + 8));
                     return true;
                 }
                 if (dist > e.Radius + 1.2)
@@ -1239,9 +1293,10 @@ public sealed partial class Prologue : ZoneRuntime
                 return true;
             case "channel":
             {
-                double k = ai.T / 6;
+
                 if (riseBarkIn > 0 && (riseBarkIn -= dt) <= 0) RiseBark(e);
-                if (bar != null) Bar(bar with { Channel = ("Raising the drowned: break it!", Math.Min(1, k)) });
+                // (lane K: the bar fills with her blows toward the break, so what breaks it is what she sees)
+                if (bar != null) Bar(bar with { Channel = ("Raising the drowned: strike him to break it!", Math.Min(1, ai.ChannelBlows / ChannelBreakBlows)) });
                 ai.RaiseT -= dt;
                 if (ai.RaiseT <= 0)
                 {
@@ -1255,7 +1310,7 @@ public sealed partial class Prologue : ZoneRuntime
                 }
                 // Hurt it badly enough and the channel breaks.
                 // (what a floor held back counts: at a floor his life does not move)
-                if (ai.ChannelHp - e.Hp + e.Overflow - ai.ChannelOver > e.MaxHp * 0.09)
+                if (ai.ChannelBlows >= ChannelBreakBlows || ai.ChannelHp - e.Hp + e.Overflow - ai.ChannelOver > e.MaxHp * 0.09)
                 {
                     ai.Mode = "stun"; ai.T = 0; e.AnimT = 0;
                     wardenView.SetPose("stunned");
