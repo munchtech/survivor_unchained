@@ -1142,7 +1142,7 @@ void fragment() {
 			float gx = dFdx(COLOR.g), gy = dFdy(COLOR.g), sdet = sx.x * sy.y - sx.y * sy.x;
 			vec2 sg = abs(sdet) > 1e-12 ? vec2(sy.y * gx - sx.y * gy, sx.x * gy - sy.x * gx) / sdet : vec2(0.0);
 			if (dot(sg, sg) > 1e-6) fl = normalize(sg);
-			ALBEDO = ps_paint_c(ALBEDO, v_fwpos.xz, fl, ps_cover0.x, 0.13, ps_code);
+			ALBEDO = ps_paint_k(ALBEDO, v_fwpos.xz, fl, ps_cover0.x, 0.13, 2.0, ps_code);   // (lead 10: veined leaves)
 		}
 		ALBEDO = pal_ink(ALBEDO, NORMAL, VERTEX, pal_inkw.x);   // (lead 5: the crown's own contour)
 		// a tier's underside (a card seen from below) in its own shade
@@ -1339,7 +1339,7 @@ void fragment() {
 		}
 		{   // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) the stones' strokes, the flagstones' too (once)
 			vec4 sf = ps_frame(v_wpos, wn, 0.0, v_pax.xy);
-			col = ps_paint_c(col, sf.xy, sf.zw, ps_cover1.x, 0.37 + v_pax.z, ps_code);
+			col = ps_paint_k(col, sf.xy * 0.72, sf.zw, ps_cover1.x, 0.37 + v_pax.z, 3.0, ps_code);   // (lead 10: cracks, at 1.4x the brush)
 			// (lead 8: hit paint on what faces up, the path's flush slabs too: on terrain alone the slabs hid it where she fights)
 			ps_hp_k = ps_hits(v_wpos.xz) * step(0.75, wn.y);
 			col = ps_hit_paint(col, ps_hp_k);

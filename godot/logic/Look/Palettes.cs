@@ -73,7 +73,7 @@ public static class Palettes
     public const int LineAt = BandAt + 8;
     // (lane J lead 8: the painted stroke layer, paint_stroke.gdshaderinc) "stroke": +0 brush [cell,len,wid,bend], +4 tone [hue,lift,inner,chroma], +8 cover[0..3], +12 cover[4,5] + hit amount, emit, +16 hit color, +20 hit edge
     public const int StrokeAt = LineAt + 4;
-    public static int Size => StrokeAt + 28;   // (lead 9: +24 frame [deg +, deg -, cmin, cs]: the marks' hue turn in the frame, InkPass)
+    public static int Size => StrokeAt + 48;   // (lead 10: +28..47 the ground objects, ps_ob0..4)   // (lead 9: +24 frame [deg +, deg -, cmin, cs]: the marks' hue turn in the frame, InkPass)
 
     public static double[] Read(string name, JsonElement e)
     {
@@ -153,6 +153,19 @@ public static class Palettes
                 r[StrokeAt + 15] = ht.TryGetProperty("emit", out var he) ? he.GetDouble() : 0;
                 if (ht.TryGetProperty("color", out var hc)) { var (R, G, B) = Atmospheres.Linear(hc.GetString()!); r[StrokeAt + 16] = R; r[StrokeAt + 17] = G; r[StrokeAt + 18] = B; }
                 if (ht.TryGetProperty("edge", out var hd)) { var (R, G, B) = Atmospheres.Linear(hd.GetString()!); r[StrokeAt + 20] = R; r[StrokeAt + 21] = G; r[StrokeAt + 22] = B; }
+            }
+            // (lead 10, frozen spec: saturated colour in objects) "objects": {"a": [hex, hex], "b": hex, "ink": hex, "kind": 0 maple | 1 moss,
+            // "dens": [A, B] per cell on the path's edge, "off": density share off the edge, "size": m, "emit", "tips": 0/1}
+            if (st.TryGetProperty("objects", out var ob))
+            {
+                double O(string k, double d) => ob.TryGetProperty(k, out var v) ? v.GetDouble() : d;
+                void C(string hex, int at) { var (R, G, B) = Atmospheres.Linear(hex); r[at] = R; r[at + 1] = G; r[at + 2] = B; }
+                if (ob.TryGetProperty("a", out var oa)) { C(oa[0].GetString()!, StrokeAt + 28); C(oa[oa.GetArrayLength() - 1].GetString()!, StrokeAt + 32); }
+                if (ob.TryGetProperty("b", out var obb)) C(obb.GetString()!, StrokeAt + 36);
+                if (ob.TryGetProperty("ink", out var oi)) C(oi.GetString()!, StrokeAt + 40);
+                if (ob.TryGetProperty("dens", out var od)) { r[StrokeAt + 31] = od[0].GetDouble(); r[StrokeAt + 35] = od[1].GetDouble(); }
+                r[StrokeAt + 39] = O("size", 0); r[StrokeAt + 43] = O("kind", 0);
+                r[StrokeAt + 44] = O("emit", 0); r[StrokeAt + 45] = O("tips", 0); r[StrokeAt + 46] = O("off", 0.15);
             }
         }
         // (lead 3) the leaf class's crowns: two more ramps (each its dark, mid, lit; amount and range the leaf ramp's), their shares, the shifts

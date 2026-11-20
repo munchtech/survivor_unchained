@@ -761,7 +761,17 @@ void fragment() {
 		float dang = 6.2832 * texture(noise_tex, w * 0.03).r;
 		vec2 dax = vec2(cos(dang), sin(dang));
 		if (dgl > 1e-4) dax = mix(dax, vec2(-dgr.y, dgr.x) / dgl, smoothstep(1e-4, 4e-4, dgl) * smoothstep(0.2, 0.5, pm.r));
-		albedo = ps_paint_c(albedo, w, normalize(dax), mix(ps_cover0.z, ps_cover0.w, pal_pe) * (1.0 - w_setts), 0.0, ps_code);
+		albedo = ps_paint_k(albedo, w, normalize(dax), mix(ps_cover0.z, ps_cover0.w, pal_pe) * (1.0 - w_setts), 0.0, 1.0, ps_code);   // (lead 10: broken dabs)
+	}
+	// (lead 10, frozen spec: the saturated colour in objects) leaves and tufts on the ground, thick along the path's edges
+	vec3 ps_obe = vec3(0.0);
+	if (ps_ob2.w > 0.0) {
+		float ob_edge = smoothstep(0.22, 0.42, pm.r) * (1.0 - smoothstep(0.6, 0.68, pm.r));
+		vec4 ob = ps_objects(w, ob_edge);
+		ob.a *= (1.0 - smoothstep(0.66, 0.72, pm.r)) * (1.0 - w_setts);
+		albedo = mix(albedo, ob.rgb, ob.a);
+		if (ob.a > 0.5) ps_code = 0.0;
+		ps_obe = ob.rgb * ob.a * ps_ob4.x;
 	}
 	vec2 ps_hp = ps_hits(w);
 	albedo = ps_hit_paint(albedo, ps_hp);
@@ -866,7 +876,7 @@ void fragment() {
 	vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
 	// Only true blight glows (the Verge's paint runs to 0.55): a faint wash (Low Ford's graveyard, 0.35 at most) is dead
 	// ground, not neon veins (its few noise-tipped patches drew a hard green squiggle by the crypt; judge 2, item 6).
-	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(WORLD_TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b) + ps_hit_emit(ps_hp)
+	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(WORLD_TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b) + ps_hit_emit(ps_hp) + ps_obe
 		+ ps_glow_light(vec3(w_pos.x, w_pos.y, w_pos.z), vec3(0.0), albedo);   // (lane J lead 8: painted light, glows light the world in hard steps)
 
 	// E6: the river's bed (silt with river stones lying in it, under the water) and its wet bank (a darker, slicker

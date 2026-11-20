@@ -73,8 +73,39 @@ vec2 ps_mark(vec2 q, float len, float wid, float bend) {
 	return vec2(cov, inn);
 }
 
+// (lead 10, frozen spec docs/design/look_spec_ref_19nov.md: one mark kind per material, value-led) kind 0 the crescent (bark),
+// 1 a broken dab (ground, path: short, round-ended, split in two by a gap now and then), 2 a veined leaf (crowns: an almond
+// with its midrib as the inner band), 3 a crack (stones: thin, kinked, always the dark sign). Returns (coverage, inner).
+vec2 ps_mark_k(vec2 q, float len, float wid, float bend, float kind, float h) {
+	if (kind < 0.5) return ps_mark(q, len, wid, bend);
+	float t = q.x / len + 0.5;
+	if (t < -0.05 || t > 1.05) return vec2(0.0);
+	float tc = clamp(t, 0.0, 1.0);
+	float hw, vc, inn_w;
+	if (kind < 1.5) {        // dab: a fat capsule, its ends round, a gap across it in 40% of dabs
+		hw = 0.5 * wid * sqrt(clamp(1.0 - pow(2.0 * tc - 1.0, 2.0), 0.0, 1.0)) * mix(0.8, 1.15, h);
+		vc = bend * len * 0.3 * (1.0 - 4.0 * (tc - 0.5) * (tc - 0.5));
+		if (h > 0.6 && abs(tc - mix(0.35, 0.65, fract(h * 7.3))) < 0.06) hw = 0.0;
+		inn_w = 0.0;
+	} else if (kind < 2.5) { // leaf: an almond, pointed both ends, the midrib its inner band
+		hw = 0.5 * wid * pow(sin(3.14159 * tc), 0.75);
+		vc = bend * len * (1.0 - 4.0 * (tc - 0.5) * (tc - 0.5));
+		inn_w = 0.16;
+	} else {                 // crack: thin, two kinks, tapering to points
+		hw = 0.5 * wid * 0.3 * sqrt(sin(3.14159 * tc));
+		vc = len * 0.09 * (abs(fract(tc * 1.5 + h) - 0.5) * 4.0 - 1.0);
+		inn_w = 0.0;
+	}
+	float d = q.y - vc;
+	float sd = abs(d) - hw;
+	float fw = max(fwidth(sd), 1e-5);
+	float cov = hw > 0.0 ? 1.0 - smoothstep(-fw, fw, sd) : 0.0;
+	float inn = inn_w > 0.0 ? (1.0 - smoothstep(-fw, fw, abs(d) - max(hw * inn_w, 0.6 * fw))) * cov * step(0.12, tc) * step(tc, 0.9) : 0.0;
+	return vec2(cov, inn);
+}
+
 // The strokes at p2 (metres) running along flow2: (coverage, inner, sign +-1 of the mark on top, the mark's hash).
-vec4 ps_field(vec2 p2, vec2 flow2, float cover, float seed) {
+vec4 ps_field_k(vec2 p2, vec2 flow2, float cover, float seed, float kind) {
 	vec4 r = vec4(0.0);
 	if (cover <= 0.0 || ps_brush.x <= 0.0) return r;
 	float cell = ps_brush.x;
@@ -99,25 +130,32 @@ vec4 ps_field(vec2 p2, vec2 flow2, float cover, float seed) {
 			float wob = (h3 - 0.5) * 0.35;
 			vec2 ax = normalize(fx + fy * wob), ay = vec2(-ax.y, ax.x);
 			float len = ps_brush.y * (0.36 + 0.97 * h2 * h2 * (3.0 - 2.0 * h2));   // (lead 9: p10:p90 ~2.7, was 1.6)
-			vec2 m = ps_mark(vec2(dot(dq, ax), dot(dq, ay)), len, ps_brush.z * mix(0.8, 1.2, h1), ps_brush.w * (h3 < 0.5 ? 1.0 : -1.0));
-			if (m.x > r.x) r = vec4(m.x, m.y, h1 < 0.5 ? -1.0 : 1.0, h0);
+			// (lead 10) each kind its own proportions of the one brush: dabs short and fat, leaves the brush, cracks long and thin
+			float kl = kind < 0.5 ? 1.0 : kind < 1.5 ? 0.8 : kind < 2.5 ? 0.95 : 1.12;
+			float kw = kind < 0.5 ? 1.0 : kind < 1.5 ? 1.15 : kind < 2.5 ? 1.1 : 1.0;
+			vec2 m = ps_mark_k(vec2(dot(dq, ax), dot(dq, ay)), len * kl, ps_brush.z * kw * mix(0.8, 1.2, h1), ps_brush.w * (h3 < 0.5 ? 1.0 : -1.0), kind, h3);
+			if (m.x > r.x) r = vec4(m.x, m.y, kind > 2.5 ? -1.0 : h1 < 0.5 ? -1.0 : 1.0, h0);
 		}
 	}
 	return r;
 }
+vec4 ps_field(vec2 p2, vec2 flow2, float cover, float seed) { return ps_field_k(p2, flow2, cover, seed, 0.0); }
 
 // The painted field: albedo with its marks laid in. cover: this surface's share of cells holding a mark (its class's
 // ps_cover). The + marks turn +deg and lift, the - marks turn -deg and sink, each by ps_tone.y; the inner band drops ps_tone.z.
 // (lead 9, judge r7 strokes fix 1: the turn measured in the FRAME; set in albedo, light, grade and tonemap pulled it to +-8..20)
 // code: +1 / -1 where a mark covers this pixel (> half), for ps_tag: InkPass turns the lit pixel's hue by the palette's
 // "frame" [deg +, deg -, chroma floor, chroma scale] (ps_tone.x, the albedo turn, is 0 when the frame turns).
-vec3 ps_paint_c(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed, inout float code) {
-	vec4 f = ps_field(p2, flow2, cover, seed);
+// (lead 10) kind: see ps_mark_k. A crack sinks 1.8x the lift (a line, not a tone).
+vec3 ps_paint_k(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed, float kind, inout float code) {
+	vec4 f = ps_field_k(p2, flow2, cover, seed, kind);
 	if (f.x <= 0.0) return albedo;
 	if (f.x > 0.5) code = f.z;
-	vec3 mk = ps_turn(albedo, ps_tone.x * f.z, ps_tone.y * f.z - ps_tone.z * f.y, ps_tone.w);
+	float dl = ps_tone.y * f.z * (kind > 2.5 ? 1.8 : 1.0) - ps_tone.z * f.y;
+	vec3 mk = ps_turn(albedo, ps_tone.x * f.z, dl, ps_tone.w);
 	return mix(albedo, mk, f.x);
 }
+vec3 ps_paint_c(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed, inout float code) { return ps_paint_k(albedo, p2, flow2, cover, seed, 0.0, code); }
 vec3 ps_paint(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed) { float c = 0.0; return ps_paint_c(albedo, p2, flow2, cover, seed, c); }
 // The mark's code into ROUGHNESS (after cel_tag: n = r5 x 4 + ink class): a + mark r5 0, a - mark r5 1, no highlight (so the
 // low roughness lights as before); every other pixel r5 >= 4 (rougher than 0.13: the world is matte). Off with the strokes.
@@ -272,5 +310,84 @@ vec3 ps_glow_light(vec3 wp, vec3 n_world, vec3 albedo) {
 		e += ps_gl_one(ps_gl14, wp, n_world, albedo, wob); e += ps_gl_one(ps_gl15, wp, n_world, albedo, wob);
 	}
 	return e;
+}
+// (lead 10, frozen spec: "saturated colour lives in OBJECTS, not in marks") The ground's painted objects, each inked round its
+// own edge: kind A a maple leaf (day: red / orange) or a moss clump (night: teal, lighter spots); kind B a tuft of blades
+// (day gold grass; night violet sprigs, a dot at each tip). Laid flat on the ground, world-anchored, thick along the path's
+// edges (edge 0..1 from the caller) and sparse elsewhere. Data (rigs.json palettes "stroke" "objects", blended by the clock):
+//   ps_ob0 = (A colour 1 rgb linear, A density per cell), ps_ob1 = (A colour 2, B density), ps_ob2 = (B colour, size m),
+//   ps_ob3 = (ink rgb, kind A: 0 maple, 1 moss), ps_ob4 = (emission share, B tip dots 0/1, off-edge density share, 0).
+// Off: size 0. Returns (rgb, alpha); the emission is ps_ob4.x x rgb x alpha (the caller adds it). Cost: one 2x2 cell search.
+global uniform vec4 ps_ob0;
+global uniform vec4 ps_ob1;
+global uniform vec4 ps_ob2;
+global uniform vec4 ps_ob3;
+global uniform vec4 ps_ob4;
+float ps_seg(vec2 p, vec2 a, vec2 b, out float t) { vec2 pa = p - a, ba = b - a; t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * t); }
+vec4 ps_objects(vec2 xz, float edge) {
+	vec4 r = vec4(0.0);
+	float sz = ps_ob2.w;
+	if (sz <= 0.0) return r;
+	float cell = sz * 2.4;
+	float dens = mix(ps_ob4.z, 1.0, clamp(edge, 0.0, 1.0));
+	float dA = ps_ob0.w * dens, dB = ps_ob1.w * dens;
+	if (dA + dB <= 0.0) return r;
+	vec2 pl = xz / cell;
+	vec2 base = floor(pl - 0.5);
+	for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) {
+		vec2 c = base + vec2(float(i), float(j)) + 211.0;
+		float h0 = ps_h(c), h1 = ps_h(c + 3.7), h2 = ps_h(c + 8.3), h3 = ps_h(c + 13.1);
+		bool isA = h0 < dA;
+		if (!isA && h0 >= dA + dB) continue;
+		vec2 q = (pl - (c - 211.0 + 0.5 + (vec2(h1, h2) - 0.5) * 0.4)) * cell / (sz * mix(0.75, 1.2, h3));   // ~ -0.5..0.5
+		float ang = h1 * 6.2832, ca = cos(ang), sa = sin(ang);
+		q = vec2(q.x * ca - q.y * sa, q.x * sa + q.y * ca);
+		float sd, vein = 0.0, tip = 0.0;
+		vec3 fill;
+		if (isA && ps_ob3.w < 0.5) {   // maple leaf: five pointed lobes, a little serrated, its five veins
+			float th = atan(q.y, q.x), rr = length(q);
+			float lobe = pow(0.5 + 0.5 * cos(5.0 * th), 1.6);
+			float R = 0.17 + 0.27 * lobe + 0.018 * cos(25.0 * th);
+			sd = rr - R;
+			float an = (floor(th / 1.2566 + 0.5)) * 1.2566;
+			vein = (1.0 - smoothstep(0.012, 0.03, abs(rr * sin(th - an)))) * step(rr, R * 0.8);
+			fill = mix(ps_ob0.rgb, ps_ob1.rgb, step(0.5, h2));
+		} else if (isA) {              // moss clump: four lobes, lighter spots
+			sd = 1e9;
+			for (int k = 0; k < 4; k++) {
+				float a = float(k) * 1.65 + h2 * 3.0;
+				vec2 o = vec2(cos(a), sin(a)) * (k == 0 ? 0.0 : 0.2);
+				sd = min(sd, length(q - o) - (k == 0 ? 0.24 : 0.17));
+			}
+			fill = ps_ob0.rgb;
+			vec2 sp = fract(q * 9.0 + h3) - 0.5;
+			tip = (1.0 - smoothstep(0.16, 0.26, length(sp))) * step(sd, -0.06);
+		} else {                       // tuft: 5-7 blades fanned from one foot, each tapering to its tip
+			sd = 1e9;
+			float nb = 5.0 + floor(h2 * 3.0);
+			vec2 foot = vec2(0.0, -0.3);
+			for (int k = 0; k < 7; k++) {
+				if (float(k) >= nb) break;
+				float a = 1.5708 + (float(k) / (nb - 1.0) - 0.5) * 2.1 + (ps_h(c + float(k)) - 0.5) * 0.25;
+				vec2 tp = foot + vec2(cos(a), sin(a)) * mix(0.55, 0.8, ps_h(c + float(k) * 1.7));
+				float t;
+				float d = ps_seg(q, foot, tp, t) - 0.055 * (1.0 - t * 0.85);
+				sd = min(sd, d);
+				if (ps_ob4.y > 0.5) { float dt = length(q - tp) - 0.07; sd = min(sd, dt); tip = max(tip, 1.0 - smoothstep(-0.01, 0.01, dt)); }
+			}
+			fill = ps_ob2.rgb;
+		}
+		float fw = max(fwidth(sd), 1e-4);
+		float cov = 1.0 - smoothstep(-fw, fw, sd);
+		if (cov <= 0.0) continue;
+		// the ink: a band inside the edge (about 2-3 px at the game camera), the veins in the leaf's own dark
+		float ink = 1.0 - smoothstep(-0.085 - fw, -0.085 + fw, sd);
+		vec3 col = fill;
+		col = mix(col, fill * 1.45 + 0.04, tip);
+		col = mix(col, fill * 0.45, vein);
+		col = mix(ps_ob3.rgb, col, ink);
+		if (cov > r.w) r = vec4(col, cov);
+	}
+	return r;
 }
 #endif

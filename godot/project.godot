@@ -558,6 +558,26 @@ ps_hite={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+ps_ob0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_ob1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_ob2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_ob3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+ps_ob4={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 ps_hp0a={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
