@@ -2411,14 +2411,24 @@ public partial class BattleFx : Node3D
             markPass.SetGrade(env.TonemapExposure, env.TonemapMode == Godot.Environment.ToneMapper.Agx, env.AdjustmentEnabled,
                 env.AdjustmentBrightness, env.AdjustmentContrast, env.AdjustmentSaturation, markLutRd);
         }
-        if (cam.Compositor == null) cam.Compositor = markComp;
-        else if (cam.Compositor != markComp && !cam.Compositor.CompositorEffects.Contains(markPass))
+        // (lane K, 19 Nov: read once per compositor and hook write, as FxAfter.HookWorldDepth)
+        var comp = cam.Compositor;
+        if (comp == null) cam.Compositor = markComp;
+        else if (comp != markComp && !(comp == markHooked && markHookedAt == CompositorHooks.Writes))
         {
-            var fx = cam.Compositor.CompositorEffects.Duplicate();
-            fx.Insert(0, markPass);
-            cam.Compositor.CompositorEffects = fx;
+            var have = comp.CompositorEffects;
+            if (!have.Contains(markPass))
+            {
+                var fx = have.Duplicate();
+                fx.Insert(0, markPass);
+                comp.CompositorEffects = fx;
+                CompositorHooks.Writes++;
+            }
+            markHooked = comp; markHookedAt = CompositorHooks.Writes;
         }
     }
+    static Compositor? markHooked;
+    static int markHookedAt;
 
     float artT;
     /// <summary>A boss is up: her own grounds are drawn at half (the eye goes to his marks).</summary>

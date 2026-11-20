@@ -904,6 +904,9 @@ public partial class BattleFx
     /// slow frames at the swing's end stay, the head is the blade), the blade's path splined between frames (the hilt's
     /// place and the blade's direction, so the blade keeps its length through a fast turn), a linked cut's thread before
     /// it, the whole capped at the look's length and run up toward the head as it leaves.</summary>
+    float runSlow; int runSide;
+    Func<int, bool>? runCutting, runStill; Func<int, double>? runSweep;
+
     void GripDraw()
     {
         if (gripLive is not { } tr || gripMesh == null || gripNode == null || !IsInstanceValid(gripNode)) return;
@@ -920,8 +923,13 @@ public partial class BattleFx
         // her, and its start kept from then on (a segment was drawn on one frame and dropped on the next)
         int from = -1;
         if (tr.From >= 0) { from = lo; while (from < n - 1 && gripRing[from].At < tr.From - 1e-6) from++; }
-        var (i0, hi, any) = GripPaint.Run(lo, n, from, age >= 0, tr.Side != 0, P7D["grip.birth_sweep"],
-            k => GripCutting(k, slow, tr.Side), k => GripStill(k, slow), k => GripSweep(k) * tr.Side);
+        // (lane K, 19 Nov: the three tests made once, reading this frame's slow and side from fields: no closure and
+        // delegates per frame; Run calls them before it returns, so they see the values a fresh closure would)
+        runSlow = slow; runSide = tr.Side;
+        runCutting ??= k => GripCutting(k, runSlow, runSide);
+        runStill ??= k => GripStill(k, runSlow);
+        runSweep ??= k => GripSweep(k) * runSide;
+        var (i0, hi, any) = GripPaint.Run(lo, n, from, age >= 0, tr.Side != 0, P7D["grip.birth_sweep"], runCutting, runStill, runSweep);
         if (any && tr.From < 0)
         {
             tr.From = gripRing[i0].At;

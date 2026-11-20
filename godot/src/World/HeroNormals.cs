@@ -70,6 +70,22 @@ public static class HeroNormals
     }
     static int nBaked, nLeft, nVerts, nMerged; static float msBake; static readonly System.Diagnostics.Stopwatch wall = new();
 
+    /// <summary>Instances that do not read the bake, by instance id: the signature (Sig) they had when found so.</summary>
+    static readonly Dictionary<ulong, ulong> plain = new();
+
+    /// <summary>A mesh instance's mesh, its surfaces' active materials and their shaders, as one number (FNV over the ids).</summary>
+    static ulong Sig(MeshInstance3D mi, ArrayMesh am)
+    {
+        ulong h = (1469598103934665603UL ^ am.GetInstanceId()) * 1099511628211UL;
+        for (int s = 0, n = am.GetSurfaceCount(); s < n; s++)
+        {
+            var m = mi.GetActiveMaterial(s);
+            h = (h ^ (m?.GetInstanceId() ?? 0UL)) * 1099511628211UL;
+            if (m is ShaderMaterial sm) h = (h ^ (sm.Shader?.GetInstanceId() ?? 0UL)) * 1099511628211UL;
+        }
+        return h;
+    }
+
     public static void Visit(MeshInstance3D mi)
     {
         if (mi.Mesh is not ArrayMesh am) return;
@@ -79,6 +95,10 @@ public static class HeroNormals
         if (outs.Contains(id)) return;
         if (made.TryGetValue(id, out var copy)) { if (copy != null) mi.Mesh = copy; return; }
         if (jobs.ContainsKey(id)) { if (!waiting.Contains(mi)) waiting.Add(mi); Hide(mi); return; }
+        // (lane K, 19 Nov: an instance found not to read the bake, with the same mesh, materials and shaders as then, is
+        // not looked over again each frame: its per-frame strings, meta names and arrays were young garbage)
+        ulong sig = Sig(mi, am);
+        if (plain.TryGetValue(mi.GetInstanceId(), out var was) && was == sig) return;
         var vt = System.Diagnostics.Stopwatch.StartNew();
         // (CACHE, lead 25) an import-time bake (tools_scenes/HeroNormalsImport.cs) whose key's parameters match: nothing to do
         // (no readback, no copy, no hold); a stale one (another radius or bake version) is baked over by the runtime path
@@ -110,7 +130,7 @@ public static class HeroNormals
         // (~950 ms of worker on norm2b_01); per instance, so a twin never blocks the source mesh's own bake
         bool reads = false;
         for (int s = 0; s < n && !reads; s++) reads = mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh2 } && ReadsBake(sh2);
-        if (!reads) return;
+        if (!reads) { plain[mi.GetInstanceId()] = sig; return; }
         // (BAKE) the copy's inputs read here (the main thread); the conversion, the bake and the copy itself run on a worker
         int nShapes = am.GetBlendShapeCount(); var shapeNames = new StringName[nShapes];
         for (int k = 0; k < nShapes; k++) shapeNames[k] = am.GetBlendShapeName(k);

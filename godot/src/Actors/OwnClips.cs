@@ -81,7 +81,7 @@ public sealed class OwnClips
     /// <summary>The clip's mean pelvis [x, y, z, w] (meta "pelvis_mean", on a built `_run` clip), or null for none.</summary>
     public System.Numerics.Quaternion? PelvisMean(string clip)
     {
-        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        clip = Bare(clip);
         var v = Meta(clip, "pelvis_mean");
         double[]? a = v.VariantType switch
         {
@@ -99,9 +99,19 @@ public sealed class OwnClips
 
     /// <summary>How far the piece in her right hand sits along its shaft inside her fist while the clip plays, in
     /// metres (meta "grip_slide", animation 47); 0 for none. Takes the clip with or without this library's prefix.</summary>
+    /// <summary>The clip without this library's prefix, each cut made once (lane K, 19 Nov: the grip reads ran ~20 times a
+    /// frame, a Substring each).</summary>
+    string Bare(string clip)
+    {
+        if (!clip.StartsWith(Prefix, System.StringComparison.Ordinal)) return clip;
+        if (!bare.TryGetValue(clip, out var b)) bare[clip] = b = clip.Substring(Prefix.Length);
+        return b;
+    }
+    readonly System.Collections.Generic.Dictionary<string, string> bare = new();
+
     public float GripSlide(string clip)
     {
-        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        clip = Bare(clip);
         var v = Meta(clip, "grip_slide");
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
@@ -110,7 +120,7 @@ public sealed class OwnClips
     /// hangs from a fist gripped higher up its haft); 0 for none. Takes the clip with or without this library's prefix.</summary>
     public float GripSlideL(string clip)
     {
-        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        clip = Bare(clip);
         var v = Meta(clip, "grip_slide_l");
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
@@ -120,7 +130,7 @@ public sealed class OwnClips
     /// Takes the clip with or without this library's prefix.</summary>
     public float GripTilt(string clip)
     {
-        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        clip = Bare(clip);
         var v = Meta(clip, "grip_tilt");
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
@@ -130,7 +140,7 @@ public sealed class OwnClips
     /// or without this library's prefix.</summary>
     public float GripTiltL(string clip)
     {
-        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        clip = Bare(clip);
         var v = Meta(clip, "grip_tilt_l");
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }

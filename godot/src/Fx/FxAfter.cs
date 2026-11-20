@@ -299,12 +299,32 @@ void fragment() {
     /// <summary>The world-depth copy on the play camera (first, beside whatever compositor it has; again if one replaced it).</summary>
     static void HookWorldDepth(Camera3D main)
     {
-        if (main.Compositor == null) main.Compositor = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { worldCopy } };
-        else if (!main.Compositor.CompositorEffects.Contains(worldCopy))
+        // (lane K, 19 Nov: the effects list read once per compositor and hook write, not each frame: each read was a Godot
+        // Array, a disposable that outlives its first collection. Only the two hooks (this and BattleFx's mark pass) set
+        // an existing compositor's effects; a compositor set anew is a different one, so it is read again.)
+        var comp = main.Compositor;
+        if (comp != null && comp == worldHooked && worldHookedAt == CompositorHooks.Writes) return;
+        if (comp == null) main.Compositor = comp = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { worldCopy } };
+        else
         {
-            var fx = main.Compositor.CompositorEffects.Duplicate();
-            fx.Add(worldCopy);
-            main.Compositor.CompositorEffects = fx;
+            var have = comp.CompositorEffects;
+            if (!have.Contains(worldCopy))
+            {
+                var fx = have.Duplicate();
+                fx.Add(worldCopy);
+                comp.CompositorEffects = fx;
+                CompositorHooks.Writes++;
+            }
         }
+        worldHooked = comp; worldHookedAt = CompositorHooks.Writes;
     }
+    static Compositor? worldHooked;
+    static int worldHookedAt;
+}
+
+/// <summary>Writes to an existing compositor's effects list by the per-frame hooks (FxAfter.HookWorldDepth, BattleFx's
+/// mark pass): a hook that saw a compositor at the same count need not read its list again.</summary>
+static class CompositorHooks
+{
+    public static int Writes;
 }
