@@ -471,7 +471,9 @@ public partial class Perf : Node
                      $"promoted {gi.PromotedBytes / 1024} KB, heap {gi.HeapSizeBytes / 1048576} MB, by generation (MB before/after) " +
                      string.Join(" ", gi.GenerationInfo.ToArray().Select((g, i) => $"g{i} {g.SizeBeforeBytes / 1048576.0:0.0}/{g.SizeAfterBytes / 1048576.0:0.0}")) +
                      $", pinned {gi.PinnedObjectsCount}, concurrent {gi.Concurrent}");
-        var dir = ProjectSettings.GlobalizePath("res://.shots/perf");
+        // (lane K, 19 Nov) In an exported build res:// is the pck, which globalizes to nowhere writable: the summary and the
+        // frames go beside the exe there (EXE_DIR/perf), and to godot/.shots/perf from the editor.
+        var dir = OS.HasFeature("editor") ? ProjectSettings.GlobalizePath("res://.shots/perf") : OS.GetExecutablePath().GetBaseDir() + "/perf";
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var ms = frames.Select(x => x.Ms).OrderBy(x => x).ToList();
         double mean = ms.Average();
