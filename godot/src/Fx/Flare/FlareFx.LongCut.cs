@@ -112,8 +112,8 @@ public partial class FlareFx
         var p = Her + Vector3.Up * 1.2f;
         LcLightsMake();
         foreach (var l in new[] { lcHandLight!, lcSweepL[0]! }) { l.GlobalPosition = p; l.LightEnergy = 0.001f; l.Visible = true; }
-        lcBladeMat!.SetShaderParameter("col", new Color(0, 0, 0, 0));
-        lcColumnMat!.SetShaderParameter("col", new Color(0, 0, 0, 0));
+        lcBladeMat!.SetShaderParameter(Sn.Of("col"), new Color(0, 0, 0, 0));
+        lcColumnMat!.SetShaderParameter(Sn.Of("col"), new Color(0, 0, 0, 0));
         LcStripDraw(lcBladeMesh!, lcBladeMat, p, p + Vector3.Up * 0.01f, 0.005f);
         LcStripDraw(lcColumnMesh!, lcColumnMat, p, p + Vector3.Up * 0.01f, 0.005f);
         lcBladeFx!.Visible = lcColumnFx!.Visible = true;
@@ -345,10 +345,10 @@ public partial class FlareFx
         float cyc = (float)(fo.SparkTime + fo.SparkGap), u = (float)(t - fo.SparkFrom);
         float head = -100, sl = 0;
         if (u >= 0) { float ph = u % cyc; if (ph <= fo.SparkTime) { head = ph / (float)fo.SparkTime * (float)s.Length; sl = (float)fl.SparkLight; } }
-        RenderingServer.GlobalShaderParameterSet("flare_seam", new Vector4((float)s.X, (float)s.Z, (float)s.Angle, (float)s.Length));
-        RenderingServer.GlobalShaderParameterSet("flare_seam_t", new Vector4(-1, FuseSpeed, 1, Night ? 1 : 0));
-        RenderingServer.GlobalShaderParameterSet("flare_fore", new Vector4((float)fl.Light * k, head, sl * k, (float)fo.Heat));
-        RenderingServer.GlobalShaderParameterSet("flare_fore_k", new Vector4((float)fo.Blur, (float)fo.Wander, (float)fo.SparkTail, 0));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam"), new Vector4((float)s.X, (float)s.Z, (float)s.Angle, (float)s.Length));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam_t"), new Vector4(-1, FuseSpeed, 1, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_fore"), new Vector4((float)fl.Light * k, head, sl * k, (float)fo.Heat));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_fore_k"), new Vector4((float)fo.Blur, (float)fo.Wander, (float)fo.SparkTail, 0));
         if (!foreOn && Args.Has("clip")) GD.Print($"flare foreshadow {id}: crack {s.Length:0.#} m at {Mathf.RadToDeg((float)s.Angle):0} deg");
         foreOn = true;
         return true;
@@ -357,7 +357,7 @@ public partial class FlareFx
     void LcForeshadowOff()
     {
         foreOn = false;
-        RenderingServer.GlobalShaderParameterSet("flare_fore", Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_fore"), Vector4.Zero);
     }
 
     static float H1(float x) { float s = Mathf.Sin(x * 127.1f + 311.7f) * 43758.5453f; return s - Mathf.Floor(s); }
@@ -428,14 +428,14 @@ public partial class FlareFx
             }
         }
         if (lcSweepT < 0) { spendLight.LightEnergy = 0; spendLight.Visible = SpendLightOld; }
-        RenderingServer.GlobalShaderParameterSet("flare_sweep", new Vector4(SweepLead(), sweepK, reach, lcSweepFrom));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_sweep"), new Vector4(SweepLead(), sweepK, reach, lcSweepFrom));
         // (night: the core's emission capped, so the line wins by its shape and value and the lights carry the glow)
-        RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, LcBandGain));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_lc"), new Vector4(1, wash, 1.6f, LcBandGain));
 
         if (lcCleaveT >= 0 && lcLen > 0) { if (foreOn) LcForeshadowOff(); SeamTick(dt); }
         else
         {
-            if (!LcForeshadow()) RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
+            if (!LcForeshadow()) RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam"), Vector4.Zero);
             if (lcHerLight != null) lcHerLight.Visible = false;
         }
         ChunksStep(dt);
@@ -561,7 +561,7 @@ public partial class FlareFx
         float front = TearFront(s);
         var tipK = Content.FlareFamily.Of(id).Peak;
         var brT = Content.FlareFamily.Band;
-        RenderingServer.GlobalShaderParameterSet("flare_tear", Tear ? new Vector4((float)brT.Reach, (float)brT.Time, (float)brT.Ease, (float)tipK.Tip * (LessFlash ? 0.6f : 1f) * (1 - Mathf.SmoothStep(run, run + 0.1f, s))) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_tear"), Tear ? new Vector4((float)brT.Reach, (float)brT.Time, (float)brT.Ease, (float)tipK.Tip * (LessFlash ? 0.6f : 1f) * (1 - Mathf.SmoothStep(run, run + 0.1f, s))) : Vector4.Zero);
         // (r3: light and embers rising out of the crack as it tears, the most at her)
         if (Tear && front > lcEmberTo && lcEmberN < EmberMax)
         {
@@ -580,8 +580,8 @@ public partial class FlareFx
             lcEmberTo = front;
         }
         float fade = 1 - Mathf.SmoothStep(4.4f, 6.0f, s);
-        RenderingServer.GlobalShaderParameterSet("flare_seam", new Vector4(lcO.X, lcO.Y, Mathf.Atan2(lcDir.Y, lcDir.X), lcLen));
-        RenderingServer.GlobalShaderParameterSet("flare_seam_t", new Vector4(s, FuseSpeed, fade, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam"), new Vector4(lcO.X, lcO.Y, Mathf.Atan2(lcDir.Y, lcDir.X), lcLen));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam_t"), new Vector4(s, FuseSpeed, fade, Night ? 1 : 0));
         float flash = LessFlash ? 0.6f : 1;
         // The seam's heat at the line's middle (its lights cool with it): gold, red by ~1.8 s, dark by ~2.8 s.
         float heat = 1 - Mathf.SmoothStep(0.5f, 2.8f, s - run * 0.5f);
@@ -909,13 +909,13 @@ public partial class FlareFx
 
     void LongClear()
     {
-        lcSweepT = lcCleaveT = -1; RenderingServer.GlobalShaderParameterSet("flare_tear", Vector4.Zero);
+        lcSweepT = lcCleaveT = -1; RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_tear"), Vector4.Zero);
         lcCleaveRt = -1;
         lcLen = 0;
         LcForeshadowOff();
-        RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("flare_sweep", Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("flare_lc", Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_seam"), Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_sweep"), Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_lc"), Vector4.Zero);
         if (headLight != null) headLight.LightColor = new Color(1f, 0.55f, 0.2f);
         if (spendLight != null) spendLight.ShadowEnabled = true;
         foreach (var l in new[] { lcTrailA, lcTrailB, lcHerLight }) if (l != null) { l.LightEnergy = 0; l.Visible = false; }

@@ -938,10 +938,11 @@ public partial class BattleFx
         CollectMeshes(Her3D, snapMeshes);
         foreach (var mi in snapMeshes)
         {
-            if (mi.Mesh == null || !mi.IsVisibleInTree() || (mi.Layers & FxAfter.RenderLayer) != 0 || mi.Name == "FxAfterHole") continue;
+            if (mi.Mesh == null || !mi.IsVisibleInTree() || (mi.Layers & FxAfter.RenderLayer) != 0 || FxAfter.IsHole(mi)) continue;
             if (P7SeeThrough(mi)) continue;
             var copy = new MeshInstance3D { Mesh = mi.Mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
-            if (mi.Skin != null && mi.Skeleton is { IsEmpty: false } skPath && mi.GetNodeOrNull(skPath) is Skeleton3D sk)
+            using var skPath = mi.Skeleton; // (lane K, 20 Nov: the NodePath read once and let go)
+            if (mi.Skin != null && !skPath.IsEmpty && mi.GetNodeOrNull(skPath) is Skeleton3D sk)
             {
                 if (!skels.TryGetValue(sk, out var ck))
                 {

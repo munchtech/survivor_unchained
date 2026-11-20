@@ -45,8 +45,8 @@ public partial class FlareFx
         lcArtSet = true;
         if (task.IsFaulted) { GD.PrintErr($"longcut art: {task.Exception?.GetBaseException().Message}"); return; }
         lcArt = task.Result;
-        RenderingServer.GlobalShaderParameterSet("flare_crack_a", ImageTexture.CreateFromImage(lcArt.A));
-        RenderingServer.GlobalShaderParameterSet("flare_crack_b", ImageTexture.CreateFromImage(lcArt.B));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_crack_a"), ImageTexture.CreateFromImage(lcArt.A));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_crack_b"), ImageTexture.CreateFromImage(lcArt.B));
         if (Args.Has("shot")) GD.Print($"longcut art: strip {(lcArt.Baked ? "baked" : "stand-in")} {lcArt.A.GetWidth()}x{lcArt.A.GetHeight()}");
     }
 

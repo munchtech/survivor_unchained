@@ -131,16 +131,18 @@ public partial class InkPass : CompositorEffect, InkRelease.IRids
     readonly byte[] pb = new byte[64];
     readonly Vector4[] cols = new Vector4[4];
 
+    RenderSceneDataRD? sceneData;
     // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); sceneData?.Dispose(); sceneData = null; }
     }
     void RenderCb(int effectCallbackType, RenderData renderData)
     {
         if (!InkRelease.Live || failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (rd == null) { Init(); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
+        sceneData = data; // (lane K, 20 Nov: a new native wrapper each frame; let go in _RenderCallback's finally)
         var size = buf.GetInternalSize();
         if (size.X <= 0 || size.Y <= 0) return;
         if (Time)
@@ -432,7 +434,9 @@ public partial class Ink : Node
                 d.Insert(0, effect);
                 if (InkPass.Mask) d.Insert(1, snap);
                 comp.CompositorEffects = d;
+                ((Godot.Collections.Array)d).Dispose();
             }
+            ((Godot.Collections.Array)fx).Dispose(); // (lane K, 20 Nov: a new Godot array each call; let go here)
         }
         var env = cam.Environment ?? cam.GetWorld3D()?.Environment;
         if (env != null && env.FogEnabled)

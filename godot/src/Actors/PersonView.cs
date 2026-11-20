@@ -252,14 +252,15 @@ public partial class PersonView : Node3D, INpcView
     /// <summary>(warden-move, the side carry: SideCarry) A held piece's grip point (the fist's fitted pocket, else its own
     /// origin) and tip in the world as it sits in its mount now, the mount taken from `bone` (the hand bone's drawn pose in
     /// the world) else its attachment as it stands; null if the slot holds no piece with a tip.</summary>
+    static readonly StringName MetaTip = new("tip"); // (lane K, 20 Nov: made once)
     public (Vector3 Grip, Vector3 Tip)? HeldBlade(string slot, Transform3D? bone = null)
     {
         if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount)) return null;
-        if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece || !piece.HasMeta("tip")) return null;
+        if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece || !piece.HasMeta(MetaTip)) return null;
         if (bone == null && mount.GetParent() is not Node3D) return null;
         var m = (bone ?? ((Node3D)mount.GetParent()).GlobalTransform) * mount.Transform;
         var pv = seats.TryGetValue(slot, out var s) && s.piece == piece ? s.pivot ?? piece.Transform.Origin : piece.Transform.Origin;
-        return (m * pv, m * (piece.Transform * new Vector3(0, (float)piece.GetMeta("tip"), 0)));
+        return (m * pv, m * (piece.Transform * new Vector3(0, (float)piece.GetMeta(MetaTip), 0)));
     }
 
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a

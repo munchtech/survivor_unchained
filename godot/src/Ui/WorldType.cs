@@ -20,15 +20,15 @@ public static partial class WorldType
     public static Label Lettering(string text, Font font, int size, Color colour)
     {
         var l = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
-        l.AddThemeFontOverride("font", font);
-        l.AddThemeFontSizeOverride("font_size", size);
-        l.AddThemeColorOverride("font_color", colour);
-        l.AddThemeColorOverride("font_outline_color", new Color(0.03f, 0.02f, 0.02f, 0.82f));
-        l.AddThemeConstantOverride("outline_size", Math.Max(4, size / 4));
-        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.6f));
-        l.AddThemeConstantOverride("shadow_offset_x", 0);
-        l.AddThemeConstantOverride("shadow_offset_y", 2);
-        l.AddThemeConstantOverride("shadow_outline_size", Math.Max(6, size / 3));
+        l.AddThemeFontOverride(Sn.Of("font"), font);
+        l.AddThemeFontSizeOverride(Sn.Of("font_size"), size);
+        l.AddThemeColorOverride(Sn.Of("font_color"), colour);
+        l.AddThemeColorOverride(Sn.Of("font_outline_color"), new Color(0.03f, 0.02f, 0.02f, 0.82f));
+        l.AddThemeConstantOverride(Sn.Of("outline_size"), Math.Max(4, size / 4));
+        l.AddThemeColorOverride(Sn.Of("font_shadow_color"), new Color(0, 0, 0, 0.6f));
+        l.AddThemeConstantOverride(Sn.Of("shadow_offset_x"), 0);
+        l.AddThemeConstantOverride(Sn.Of("shadow_offset_y"), 2);
+        l.AddThemeConstantOverride(Sn.Of("shadow_outline_size"), Math.Max(6, size / 3));
         return l;
     }
 

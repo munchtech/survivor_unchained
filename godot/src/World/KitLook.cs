@@ -217,7 +217,7 @@ public static class KitLook
         canopyOn = play;
         var v = CanopyFade;
         if (!play) v.W = 0;
-        RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("canopy_fade"), v);
     }
 
     /// <summary>The canopy fade's tunables (kit.gdshader OWN_FOLIAGE, global canopy_fade; project.godot holds the defaults):
@@ -240,7 +240,7 @@ public static class KitLook
                 if (float.TryParse(p[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) v[i] = f;
         }
         canopyArg = v;
-        RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("canopy_fade"), v);
     }
 
     /// <summary>Our own town walls (kit.gdshader's OWN_WALL, OwnWalls): the trim sheet, each house's plaster and

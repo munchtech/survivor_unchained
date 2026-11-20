@@ -56,7 +56,7 @@ public partial class FlareFx
         if (lcSweepHaze == null)
         {
             lcHazeMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_haze.gdshader"), RenderPriority = -100 };
-            lcHazeMat.SetShaderParameter("sweep", 1f);
+            lcHazeMat.SetShaderParameter(Sn.Of("sweep"), 1f);
             lcSweepHaze = new MeshInstance3D
             {
                 Mesh = new PlaneMesh { Size = new Vector2(2, 2) },
@@ -84,7 +84,7 @@ public partial class FlareFx
     {
         mesh = new ImmediateMesh();
         mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_streak.gdshader") };
-        mat.SetShaderParameter("column", column ? 1f : 0f);
+        mat.SetShaderParameter(Sn.Of("column"), column ? 1f : 0f);
         var n = new MeshInstance3D
         {
             Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Visible = false,
@@ -156,7 +156,7 @@ public partial class FlareFx
             lcBladeLate = false;
             if (on)
             {
-                lcBladeMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.58f, BladeHdr * core * flash));
+                lcBladeMat.SetShaderParameter(Sn.Of("col"), new Color(1f, 0.86f, 0.58f, BladeHdr * core * flash));
                 // (drawn just before the frame is drawn, LcStripsLate: drawn here, from the hand's pose before this frame's
                 // animation, it trailed the swinging steel by a frame)
                 lcBladeLate = true;
@@ -201,12 +201,12 @@ public partial class FlareFx
                 float y = (float)HeightAt(at.X, at.Z);
                 lcSweepHaze.GlobalPosition = new Vector3(at.X, y + 0.05f, at.Z);
                 lcSweepHaze.Scale = new Vector3(reach + 2, 1, reach + 2);
-                lcHazeMat.SetShaderParameter("center", at);
-                lcHazeMat.SetShaderParameter("radius", reach);
-                lcHazeMat.SetShaderParameter("lead", a);
-                lcHazeMat.SetShaderParameter("swept", a - lcSweepFrom);
-                lcHazeMat.SetShaderParameter("strength", sweepK * 0.8f);
-                lcHazeMat.SetShaderParameter("age", (float)t);
+                lcHazeMat.SetShaderParameter(Sn.Of("center"), at);
+                lcHazeMat.SetShaderParameter(Sn.Of("radius"), reach);
+                lcHazeMat.SetShaderParameter(Sn.Of("lead"), a);
+                lcHazeMat.SetShaderParameter(Sn.Of("swept"), a - lcSweepFrom);
+                lcHazeMat.SetShaderParameter(Sn.Of("strength"), sweepK * 0.8f);
+                lcHazeMat.SetShaderParameter(Sn.Of("age"), (float)t);
             }
         }
     }
@@ -237,7 +237,7 @@ public partial class FlareFx
         var toEye = EyeAt() - foot;
         toEye.Y = 0;
         if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * 0.45f;
-        lcColumnMat.SetShaderParameter("col", new Color(1f, 0.84f, 0.55f, a * flash));
+        lcColumnMat.SetShaderParameter(Sn.Of("col"), new Color(1f, 0.84f, 0.55f, a * flash));
         LcStripDraw(lcColumnMesh, lcColumnMat, foot, foot + Vector3.Up * h, 0.3f);
         // (the pictures: a frame of the Spend's first two, each taken once the next is drawn)
         if (Args.Has("shot"))

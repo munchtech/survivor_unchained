@@ -245,10 +245,11 @@ public partial class MarkPass : CompositorEffect
         return u;
     }
 
+    RenderSceneDataRD? sceneData;
     // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); sceneData?.Dispose(); sceneData = null; }
     }
     void RenderCb(int effectCallbackType, RenderData renderData)
     {
@@ -257,6 +258,7 @@ public partial class MarkPass : CompositorEffect
         if (m == null || n <= 0) return;
         if (rd == null) { Init(); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
+        sceneData = data; // (lane K, 20 Nov: a new native wrapper each frame; let go in _RenderCallback's finally)
         var size = buf.GetInternalSize();
         if (size.X <= 0 || size.Y <= 0) return;
         if (Time)

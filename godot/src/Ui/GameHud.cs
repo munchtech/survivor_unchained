@@ -2313,8 +2313,8 @@ public partial class GameHud : CanvasLayer
             else
             {
                 var vs = GetViewport().GetVisibleRect().Size;
-                pullMat.SetShaderParameter("aspect", vs.X / Math.Max(1, vs.Y));
-                pullMat.SetShaderParameter("progress", (float)veil.PullProgress);
+                pullMat.SetShaderParameter(Sn.Of("aspect"), vs.X / Math.Max(1, vs.Y));
+                pullMat.SetShaderParameter(Sn.Of("progress"), (float)veil.PullProgress);
             }
         }
         fade.Color = new Color(0, 0, 0, (float)veil.Alpha);

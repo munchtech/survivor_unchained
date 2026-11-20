@@ -76,15 +76,15 @@ public partial class FlareMarksView : MultiMeshInstance3D
     {
         if (mat == null) return;
         var mr = FlareFamily.Marks;
-        mat.SetShaderParameter("cap", (float)mr.Of(night).Cap);
-        mat.SetShaderParameter("floor_light", (float)mr.Of(night).Floor);
-        mat.SetShaderParameter("main_cap", (float)mr.Main);
-        mat.SetShaderParameter("pool_k", (float)mr.Falloff);
-        mat.SetShaderParameter("core", (float)mr.Core);
-        mat.SetShaderParameter("core_gain", (float)mr.CoreGain);
-        mat.SetShaderParameter("warm", (float)mr.Warm);
-        mat.SetShaderParameter("seam_core", (float)(mr.SeamCore / SeamHalf));
-        mat.SetShaderParameter("seam_glow", (float)(mr.SeamGlow / SeamHalf));
+        mat.SetShaderParameter(Sn.Of("cap"), (float)mr.Of(night).Cap);
+        mat.SetShaderParameter(Sn.Of("floor_light"), (float)mr.Of(night).Floor);
+        mat.SetShaderParameter(Sn.Of("main_cap"), (float)mr.Main);
+        mat.SetShaderParameter(Sn.Of("pool_k"), (float)mr.Falloff);
+        mat.SetShaderParameter(Sn.Of("core"), (float)mr.Core);
+        mat.SetShaderParameter(Sn.Of("core_gain"), (float)mr.CoreGain);
+        mat.SetShaderParameter(Sn.Of("warm"), (float)mr.Warm);
+        mat.SetShaderParameter(Sn.Of("seam_core"), (float)(mr.SeamCore / SeamHalf));
+        mat.SetShaderParameter(Sn.Of("seam_glow"), (float)(mr.SeamGlow / SeamHalf));
     }
 
     /// <summary>The path seam's strip half-width (m): its glow's falloff fits inside.</summary>

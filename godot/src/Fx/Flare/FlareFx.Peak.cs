@@ -60,7 +60,7 @@ public partial class FlareFx
         // (warm: one frame drawn at no light, in view)
         if (peakColumnMat != null && peakColumnMesh != null)
         {
-            peakColumnMat.SetShaderParameter("col", new Color(0, 0, 0, 0));
+            peakColumnMat.SetShaderParameter(Sn.Of("col"), new Color(0, 0, 0, 0));
             LcStripDraw(peakColumnMesh, peakColumnMat, Her, Her + Vector3.Up * 0.1f, 0.01f);
             peakColumnFx!.Visible = true;
         }
@@ -158,8 +158,8 @@ public partial class FlareFx
             var sh = FlareFamily.Of(id).Peak;
             if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * (float)sh.ColumnToEye;
             float h = peakColumn * Mathf.Clamp(0.45f + 0.55f * (f + 1) / 2f, 0, 1);
-            peakColumnMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.6f, (float)pl.Column * gain * (float)sh.ColumnGain * env));
-            peakColumnMat.SetShaderParameter("crown", (float)sh.CrownLight);
+            peakColumnMat.SetShaderParameter(Sn.Of("col"), new Color(1f, 0.86f, 0.6f, (float)pl.Column * gain * (float)sh.ColumnGain * env));
+            peakColumnMat.SetShaderParameter(Sn.Of("crown"), (float)sh.CrownLight);
             LcStripDraw(peakColumnMesh, peakColumnMat, foot, foot + Vector3.Up * h, (float)sh.ColumnHalf, (float)(sh.ColumnHalf * sh.Crown));
             peakColumnFx.Visible = true;
         }

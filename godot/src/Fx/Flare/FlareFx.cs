@@ -112,8 +112,8 @@ public partial class FlareFx : Node3D
         BoomReady();
         marksImg = Image.CreateEmpty(32, 2, false, Image.Format.Rgbaf);
         marksTex = ImageTexture.CreateFromImage(marksImg);
-        RenderingServer.GlobalShaderParameterSet("flare_marks", marksTex);
-        RenderingServer.GlobalShaderParameterSet("flare_hue", new Vector4(1f, 0.42f, 0.1f, 1));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_marks"), marksTex);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_hue"), new Vector4(1f, 0.42f, 0.1f, 1));
         Clear();
     }
 
@@ -191,9 +191,9 @@ public partial class FlareFx : Node3D
         LeadRate = b.FlareKey / freezeLen;
         Frozen = !e.Stand && Motion > 0;
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
-        RenderingServer.GlobalShaderParameterSet("flare_at", new Vector4(at.X, at.Y, at.Z, reach));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_at"), new Vector4(at.X, at.Y, at.Z, reach));
         // (a: night, for the glaze's value: by day the sky's reflection on it turned the field to snow)
-        RenderingServer.GlobalShaderParameterSet("flare_hue", calling == "warden" ? new Vector4(1f, 0.72f, 0.32f, Night ? 1 : 0) : new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_hue"), calling == "warden" ? new Vector4(1f, 0.72f, 0.32f, Night ? 1 : 0) : new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
         float kind = id == "burns_twice" ? (b.Lamps.FlareMods.Contains("burns.black_ice") ? 2 : 1) : 0;
         look = new Vector4(0, 0, 0, kind);
         web = new Vector4(0, 1, 0, R() * 10);
@@ -306,10 +306,10 @@ public partial class FlareFx : Node3D
             if (!IsLongCut) spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
             if (!IsLongCut) spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
             if (sl > 0.6f) spendLightT = -1;
-            RenderingServer.GlobalShaderParameterSet("flare_look", look);
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_look"), look);
             // (flare_web: the Draw's web is gone (H7 r2); it carries Burns Twice's char heat and the frost's seed)
-            RenderingServer.GlobalShaderParameterSet("flare_web", web);
-            RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_web"), web);
+            RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_frost"), frost);
             UploadMarks();
             // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)
             // (Again at the ring's end +0.3 s and +0.55 s, while the fireball burns over the bodies: judge 7 (1).)
@@ -438,9 +438,9 @@ public partial class FlareFx : Node3D
         look = web = frost = Vector4.Zero;
         FamilyClear();
         SetDip(1);
-        RenderingServer.GlobalShaderParameterSet("flare_look", look);
-        RenderingServer.GlobalShaderParameterSet("flare_web", web);
-        RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_look"), look);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_web"), web);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_frost"), frost);
         if (Cam != null) { Cam.FlarePush = 0; Cam.FlarePitch = 0; }
         HudDim(0); LabelsAlpha(1);
         if (marksImg != null) UploadMarks();

@@ -87,7 +87,7 @@ public partial class FlareFx
         // (r3, judge r2 fix 6: the struck rims as the band crosses them are gold, the marks' hue handed over on the blow)
         var rc = Color.FromHtml(FlareFamily.Band.RimColor).SrgbToLinear();
         float rcm = Mathf.Max(rc.R, Mathf.Max(rc.G, rc.B));
-        RenderingServer.GlobalShaderParameterSet("flare_mark_rim", new Vector4(rc.R / rcm, rc.G / rcm, rc.B / rcm, 1));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_mark_rim"), new Vector4(rc.R / rcm, rc.G / rcm, rc.B / rcm, 1));
         Cue("boom", cueAt, 1);
         Rumble(1, 0.6f, 0.14f);
         // The plain Strikes' Spend (its light, the world's ring) on this same frame (FLARE_LOOK §1.2), sized with the

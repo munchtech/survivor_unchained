@@ -63,7 +63,7 @@ public partial class FlareFx
         var g = Palette.Of(school).Glow;
         float gm = Mathf.Max(g.R, Mathf.Max(g.G, g.B));
         RenderingServer.GlobalShaderParameterSet(MarkRimParam, new Vector4(g.R / gm, g.G / gm, g.B / gm, 1));
-        RenderingServer.GlobalShaderParameterSet("flare_mark_lift", (float)FlareFamily.Marks.Lift);
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_mark_lift"), (float)FlareFamily.Marks.Lift);
     }
 
     /// <summary>A real-time step of the family: the hush, the grade and its lights, the marks.</summary>

@@ -86,10 +86,11 @@ public partial class BrushEffect : CompositorEffect
         for (int c = 0; c < 4; c++) { m[at + c * 4] = cols[c].X; m[at + c * 4 + 1] = cols[c].Y; m[at + c * 4 + 2] = cols[c].Z; m[at + c * 4 + 3] = cols[c].W; }
     }
 
+    RenderSceneDataRD? sceneData;
     // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); }
+        try { RenderCb(effectCallbackType, renderData); } finally { renderData.Dispose(); sceneData?.Dispose(); sceneData = null; }
     }
     void RenderCb(int effectCallbackType, RenderData renderData)
     {
@@ -97,6 +98,7 @@ public partial class BrushEffect : CompositorEffect
         if (Mask is not Rid mask || !mask.IsValid) return;
         if (rd == null) { Init(); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
+        sceneData = data; // (lane K, 20 Nov: a new native wrapper each frame; let go in _RenderCallback's finally)
         var size = buf.GetInternalSize();
         if (size.X <= 0 || size.Y <= 0) return;
         TargetSize = buf.GetTargetSize();

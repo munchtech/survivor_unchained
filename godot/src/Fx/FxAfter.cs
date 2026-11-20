@@ -58,6 +58,9 @@ void fragment() {
 
     public static readonly bool FigureOn = SurvivorUnchained.Args.Get("fx-after-occlude") != "off";
     const string HoleName = "FxAfterHole";
+    static readonly StringName HoleSn = new(HoleName);
+    /// <summary>(lane K, 20 Nov: a node's name read and let go here, and compared with the one made-once name, not a new StringName from the text each time)</summary>
+    public static bool IsHole(Node n) { using var nm = n.Name; return nm == HoleSn; }
     static readonly System.Collections.Generic.List<Node3D> figures = new();
     static readonly System.Collections.Generic.List<(MeshInstance3D src, MeshInstance3D twin)> pairs = new();
     static bool hooked;
@@ -88,7 +91,7 @@ void fragment() {
 
     static void OnNodeAdded(Node n)
     {
-        if (n is not MeshInstance3D mi || one == null || !IsInstanceValid(one) || mi.Name == HoleName) return;
+        if (n is not MeshInstance3D mi || one == null || !IsInstanceValid(one) || IsHole(mi)) return;
         foreach (var f in figures)
             if (IsInstanceValid(f) && f.IsAncestorOf(mi)) { Callable.From(() => TwinMesh(mi)).CallDeferred(); return; }
     }
@@ -112,8 +115,8 @@ void fragment() {
 
     static bool TwinMesh(MeshInstance3D mi)
     {
-        if (!IsInstanceValid(mi) || mi.Mesh == null || mi.Name == HoleName || (mi.Layers & RenderLayer) != 0) return false;
-        foreach (var c in mi.GetChildren()) if (c.Name == HoleName) return false;
+        if (!IsInstanceValid(mi) || mi.Mesh == null || IsHole(mi) || (mi.Layers & RenderLayer) != 0) return false;
+        for (int ci = 0, cn = mi.GetChildCount(); ci < cn; ci++) if (IsHole(mi.GetChild(ci))) return false;
         hole ??= MakeHole();
         skipMat ??= new ShaderMaterial { Shader = new Shader { Code = "shader_type spatial; void fragment() { discard; }" } };
         var twin = new MeshInstance3D { Mesh = mi.Mesh, Layers = RenderLayer, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = HoleName };

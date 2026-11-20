@@ -81,7 +81,8 @@ public partial class HerFaceLife : Node
     static System.Numerics.Vector2 N(Vector2 v) => new(v.X, v.Y);
 
     /// <summary>A scripted head look (HeadTurn with a point and a want) owns her head: her eyes then turn alone.</summary>
-    bool HeadOwned() => GetParent()?.GetNodeOrNull<HeadTurn>("HeadTurn") is { Want: > 0, Target: not null };
+    static readonly NodePath HeadTurnPath = new("HeadTurn"); // (lane K, 20 Nov: made once: a NodePath each frame outlived its first collection)
+    bool HeadOwned() => GetParent()?.GetNodeOrNull<HeadTurn>(HeadTurnPath) is { Want: > 0, Target: not null };
 
     readonly RandomNumberGenerator rng = new();
     readonly System.Collections.Generic.List<(MeshInstance3D Mesh, int L, int R)> lids = new();

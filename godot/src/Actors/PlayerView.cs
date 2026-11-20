@@ -58,6 +58,7 @@ public partial class PlayerView : Node3D
     static readonly StringName P_move_aWalkSeek_seek_request = "parameters/move/aWalkSeek/seek_request";
     static readonly StringName P_move_aRunSeek_seek_request = "parameters/move/aRunSeek/seek_request";
     static readonly StringName P_upper_current_position = "parameters/upper/current_position";
+    static readonly StringName P_full_current_position = "parameters/full/current_position"; // (lane K, 20 Nov: made once for CoilStep)
     static readonly StringName P_move_dFA_blend_amount = "parameters/move/dFA/blend_amount";
     static readonly StringName P_move_dFB_blend_amount = "parameters/move/dFB/blend_amount";
     static readonly StringName P_move_dBA_blend_amount = "parameters/move/dBA/blend_amount";
@@ -2695,12 +2696,13 @@ public partial class PlayerView : Node3D
     void CoilStep()
     {
         if (coilAt < 0 && !coilCatchOn) return;
-        string sc = coilFull ? "parameters/fullScale/scale" : "parameters/upperScale/scale";
-        bool live = (bool)tree.Get(coilFull ? "parameters/fullShot/active" : "parameters/upperShot/active") || coilN == 0;
+        // (lane K, 20 Nov: the AnimationTree parameter names made once, not a StringName from text every frame)
+        StringName sc = coilFull ? P_fullScale_scale : P_upperScale_scale;
+        bool live = (bool)tree.Get(coilFull ? P_fullShot_active : P_upperShot_active) || coilN == 0;
         string now = coilFull ? fullClip : upperClip;
         if (!live || now != coilClip) { coilAt = -1; coilCatchOn = false; return; }
         // (the shot fired this frame starts on the next Advance: the position read now is the last clip's)
-        double pos = coilN == 0 && coilAt >= 0 ? 0 : (float)tree.Get(coilFull ? "parameters/full/current_position" : "parameters/upper/current_position");
+        double pos = coilN == 0 && coilAt >= 0 ? 0 : (float)tree.Get(coilFull ? P_full_current_position : P_upper_current_position);
         double contact = SurvivorUnchained.Content.HerEvents.Contact(coilClip) ?? 0.25;
         float f = (float)(probeDt * 30);
         if (coilAt >= 0)

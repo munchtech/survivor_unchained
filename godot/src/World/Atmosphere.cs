@@ -738,7 +738,7 @@ public partial class Atmosphere : Node3D
         var d = toFootWorld.Normalized();
         if (d.DistanceSquaredTo(heroToFoot) < 1e-8f) return;
         heroToFoot = d;
-        RenderingServer.GlobalShaderParameterSet("cel_hero", new Vector4(d.X, d.Y, heroSide, 1));
+        RenderingServer.GlobalShaderParameterSet(Sn.Of("cel_hero"), new Vector4(d.X, d.Y, heroSide, 1)); // (lane K, 20 Nov: name made once)
     }
 
     /// <summary>(L1 lead 17, P) The floor's tone table from a rig's ember_floor (Zone.EmberFloor: [the floor's lit tone, its

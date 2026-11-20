@@ -37,6 +37,7 @@ public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
         }
         """;
 
+    Rid setRid, setDepth, setSamp, setTex;
     // (lane K, 19 Nov: the RenderData is a new native object each frame; its wrapper let go here, not left to the finalizer)
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
@@ -67,11 +68,18 @@ public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
                 UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,
             }, new RDTextureView());
         }
-        var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+        // (lane K, 20 Nov: the uniform set and its inputs kept; GetCache and its array only when an input RID changed or the set went stale)
+        Rid depthIn = buf.GetDepthLayer(0), sampIn = FxWorldDepth.Nearest(rd), texIn = FxWorldDepth.Tex;
+        if (!setRid.IsValid || depthIn != setDepth || sampIn != setSamp || texIn != setTex || !rd.UniformSetIsValid(setRid))
         {
-            FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, FxWorldDepth.Nearest(rd), buf.GetDepthLayer(0)),
-            FxWorldDepth.U(RenderingDevice.UniformType.Image, 1, FxWorldDepth.Tex),
-        });
+            setDepth = depthIn; setSamp = sampIn; setTex = texIn;
+            setRid = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+            {
+                FxWorldDepth.U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampIn, depthIn),
+                FxWorldDepth.U(RenderingDevice.UniformType.Image, 1, texIn),
+            });
+        }
+        var set = setRid;
         var pc = new float[] { size.X, size.Y, 0, 0 };
         var pb = MemoryMarshal.AsBytes(pc.AsSpan()).ToArray();
         long l = rd.ComputeListBegin();

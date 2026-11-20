@@ -214,11 +214,12 @@ public partial class Controls : Node
     // (The pads plugged in, asked of the engine once a frame: each ask is a new tracked Godot array, and Held asks per
     // binding, many times a frame; they outlived the young collection.)
     static int[] pads = System.Array.Empty<int>();
-    static ulong padsFrame = ulong.MaxValue;
+    static bool padsStale = true, padsHooked;
     static int[] Pads()
     {
-        ulong f = Engine.GetProcessFrames();
-        if (f != padsFrame) { padsFrame = f; var a = Input.GetConnectedJoypads(); pads = a.Count == pads.Length ? Fill(a, pads) : Fill(a, new int[a.Count]); }
+        // (lane K, 20 Nov: the list read from the engine once, then again only when a pad is plugged or unplugged: the signal marks it stale)
+        if (!padsHooked) { padsHooked = true; Input.JoyConnectionChanged += (_, _) => padsStale = true; }
+        if (padsStale) { padsStale = false; var a = Input.GetConnectedJoypads(); pads = a.Count == pads.Length ? Fill(a, pads) : Fill(a, new int[a.Count]); ((Godot.Collections.Array)a).Dispose(); }
         return pads;
         static int[] Fill(Godot.Collections.Array<int> a, int[] into) { for (int k = 0; k < into.Length; k++) into[k] = a[k]; return into; }
     }
