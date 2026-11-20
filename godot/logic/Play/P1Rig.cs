@@ -36,7 +36,7 @@ public sealed class P1Rig
 
     public P1Rig(string[] names, int[] parent, P1M4[] rest, JsonElement rig)
     {
-        Names = names; Parent = parent; Rest = rest; this.rig = rig;
+        Names = names; Parent = parent; Rest = rest; this.rig = rig; keepBuf = new P1M4[names.Length];
         ShrugDriven = rig.TryGetProperty("girdle", out var g0) && g0.TryGetProperty("clavicle_by", out var cb) && cb.GetString() == "shrug";
         ClavicleRollNeutral = rig.TryGetProperty("girdle", out var g1) && g1.TryGetProperty("clavicle_roll", out var cr) && cr.GetString() == "neutral";
         Index = new Dictionary<string, int>();
@@ -139,11 +139,82 @@ public sealed class P1Rig
     static double Deg(double r) => r * 180.0 / Math.PI;
     static double Rad(double d) => d * Math.PI / 180.0;
 
-    double Elevation(P1M4[] G, string s)
+    // Everything the rows read out of rig.json is read once into these records (built lazily on first use, the rig
+    // being fixed), so Drive and CorrectiveWeights walk arrays and make no strings per frame. One thread at a time.
+    static readonly string[] LR = { "l", "r" };
+    static readonly string[] NoSide = { "" };
+
+    /// <summary>One side's girdle readings (rig.json "girdle"): the base for the elevation, the rest on first use of the
+    /// girdle rows and of the clavicle law.</summary>
+    sealed class GSide
     {
+        public double Sg; public int Arm, End, Torso; public P1V Down, Front;
+        public bool GirdleReady; public int Cl, Sc; public P1V Side, ScapAxis; public P1Rows ScapUp = null!, ScapTilt = null!; public double GlideM;
+        public int[]? RollKeep;
+        public bool ClavReady; public P1V Up; public P1Rows ClavElev = null!, ClavRetract = null!; public double Protract; public RetractC? Retract;
+    }
+
+    sealed class RetractC { public double F0, F1; public P1Rows ByReach = null!; }
+
+    readonly Dictionary<string, GSide> gsides = new();
+    readonly P1M4[] keepBuf;
+
+    GSide Gs(string s)
+    {
+        if (gsides.TryGetValue(s, out var g)) return g;
         var gd = rig.GetProperty("girdle");
-        int j = Index[Sub(gd.GetProperty("arm"), s)], c = Index[Sub(gd.GetProperty("arm_end"), s)];
-        var down = Turn(G, Index[gd.GetProperty("torso").GetString()!]) * Vec(gd.GetProperty("down"));
+        g = new GSide
+        {
+            Sg = s == "l" ? 1 : -1,
+            Arm = Index[Sub(gd.GetProperty("arm"), s)], End = Index[Sub(gd.GetProperty("arm_end"), s)],
+            Torso = Index[gd.GetProperty("torso").GetString()!], Down = Vec(gd.GetProperty("down")), Front = Vec(gd.GetProperty("front")),
+        };
+        gsides[s] = g;
+        return g;
+    }
+
+    GSide GirdleOf(string s)
+    {
+        var g = Gs(s);
+        if (g.GirdleReady) return g;
+        var gd = rig.GetProperty("girdle");
+        g.Cl = Index[Sub(gd.GetProperty("clavicle"), s)]; g.Sc = Index[Sub(gd.GetProperty("scap"), s)];
+        g.Side = Vec(gd.GetProperty("side"));
+        g.ScapUp = P1Rows.From(gd.GetProperty("scap_up")); g.ScapTilt = P1Rows.From(gd.GetProperty("scap_tilt"));
+        g.ScapAxis = Vec(gd.GetProperty("scap_axis"));
+        g.GlideM = gd.GetProperty("glide_m").GetDouble();
+        if (gd.TryGetProperty("clavicle_roll_keep", out var rk))
+        {
+            var l = new List<int>();
+            foreach (var e in rk.EnumerateArray())
+                if (Index.TryGetValue(e.GetString()!.Replace("{s}", s), out var j)) l.Add(j);
+            g.RollKeep = l.ToArray();
+        }
+        g.GirdleReady = true;
+        return g;
+    }
+
+    GSide ClavOf(string s)
+    {
+        var g = Gs(s);
+        if (g.ClavReady) return g;
+        var gd = rig.GetProperty("girdle");
+        g.Up = Vec(gd.GetProperty("up"));
+        g.ClavElev = P1Rows.From(gd.GetProperty("clav_elev")); g.ClavRetract = P1Rows.From(gd.GetProperty("clav_retract"));
+        g.Protract = gd.GetProperty("protract_per_reach").GetDouble();
+        if (gd.TryGetProperty("retract_plane", out var rp))
+        {
+            var fd = rp.GetProperty("fade");
+            g.Retract = new RetractC { F0 = fd[0].GetDouble(), F1 = fd[1].GetDouble(), ByReach = P1Rows.From(rp.GetProperty("by_reach")) };
+        }
+        g.ClavReady = true;
+        return g;
+    }
+
+    double Elevation(P1M4[] G, GSide gs)
+    {
+        int j = gs.Arm, c = gs.End;
+        var down = Turn(G, gs.Torso) * gs.Down;
         var d = N(Head(G, c) - Head(G, j));
         return Deg(Math.Acos(Math.Clamp(P1V.Dot(d, down), -1, 1)));
     }
@@ -164,26 +235,19 @@ public sealed class P1Rig
     // ------------------------------------------------------------- helpers --
     /// <summary>rig_drive.table: a table's monotone C1 curve at x (Hermite cubics, Fritsch-Butland slopes, 0 slope at
     /// the end nodes, held flat past them).</summary>
-    public static double Table(double x, JsonElement T)
+    public static double Table(double x, JsonElement T) => Table(x, P1Rows.From(T));
+
+    /// <summary>Table over rows read once (P1Rows.From): the same arithmetic as Table(x, JsonElement).</summary>
+    public static double Table(double x, P1Rows r)
     {
-        var rows = T.EnumerateArray().Select(r => (X: r[0].GetDouble(), Y: r[1].GetDouble())).ToArray();
-        int n = rows.Length;
-        if (x <= rows[0].X) return rows[0].Y;
-        if (x >= rows[n - 1].X) return rows[n - 1].Y;
-        var h = new double[n - 1]; var dl = new double[n - 1];
-        for (int k = 0; k < n - 1; k++) { h[k] = rows[k + 1].X - rows[k].X; dl[k] = (rows[k + 1].Y - rows[k].Y) / h[k]; }
-        var m = new double[n];
-        for (int k = 1; k < n - 1; k++)
-            if (dl[k - 1] * dl[k] > 0)
-            {
-                double w1 = 2 * h[k] + h[k - 1], w2 = h[k] + 2 * h[k - 1];
-                m[k] = (w1 + w2) / (w1 / dl[k - 1] + w2 / dl[k]);
-            }
+        int n = r.N;
+        if (x <= r.X[0]) return r.Y[0];
+        if (x >= r.X[n - 1]) return r.Y[n - 1];
         int i = 0;
-        while (x > rows[i + 1].X) i++;
-        double t = (x - rows[i].X) / h[i], t2 = t * t, t3 = t2 * t;
-        return (2 * t3 - 3 * t2 + 1) * rows[i].Y + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * rows[i + 1].Y
-            + (t3 - t2) * h[i] * m[i + 1];
+        while (x > r.X[i + 1]) i++;
+        double t = (x - r.X[i]) / r.H[i], t2 = t * t, t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * r.Y[i] + (t3 - 2 * t2 + t) * r.H[i] * r.M[i] + (-2 * t3 + 3 * t2) * r.Y[i + 1]
+            + (t3 - t2) * r.H[i] * r.M[i + 1];
     }
 
     /// <summary>rig_drive.retract_plane: the retraction table's scale by the arm's forward reach beyond the rest
@@ -197,6 +261,14 @@ public sealed class P1Rig
         return 1.0 + g * (Table(reach, rp.GetProperty("by_reach")) - 1.0);
     }
 
+    static double RetractPlane(double A, double reach, RetractC? rp)
+    {
+        if (rp == null) return 1.0;
+        double g = Smooth((A - rp.F0) / (rp.F1 - rp.F0));
+        if (g <= 0) return 1.0;
+        return 1.0 + g * (Table(reach, rp.ByReach) - 1.0);
+    }
+
     /// <summary>rig_drive.share_amount: `amount` above the rest elevation, below.amount under it, smoothstep-blended
     /// over A0 -+ band.</summary>
     public static double ShareAmount(JsonElement h, double? A, double? A0)
@@ -204,6 +276,12 @@ public sealed class P1Rig
         double a = Num(h, "amount", 0);
         if (!h.TryGetProperty("below", out var b) || A is not double av || A0 is not double a0) return a;
         double band = b.GetProperty("band").GetDouble(), ab = b.GetProperty("amount").GetDouble();
+        return ShareAmount(a, band, ab, av, a0);
+    }
+
+    static double ShareAmount(double a, double band, double ab, double? A, double? A0)
+    {
+        if (A is not double av || A0 is not double a0) return a;
         double t = Smooth((av - (a0 - band)) / (2.0 * band));
         return ab + t * (a - ab);
     }
@@ -214,19 +292,23 @@ public sealed class P1Rig
     public P1M3? ClavicleTurn(P1M4[] G, string s)
     {
         if (ShrugDriven) return null;
-        var gd = rig.GetProperty("girdle");
-        double sg = s == "l" ? 1 : -1;
-        int arm = Index[Sub(gd.GetProperty("arm"), s)], end = Index[Sub(gd.GetProperty("arm_end"), s)];
-        double A = Elevation(G, s), A0 = Elevation(Rest, s);
-        var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
-        var front = Rt * Vec(gd.GetProperty("front"));
-        var up = Rt * Vec(gd.GetProperty("up"));
+        return ClavicleTurn(G, ClavOf(s));
+    }
+
+    P1M3? ClavicleTurn(P1M4[] G, GSide gs)
+    {
+        double sg = gs.Sg;
+        int arm = gs.Arm, end = gs.End;
+        double A = Elevation(G, gs), A0 = Elevation(Rest, gs);
+        var Rt = Turn(G, gs.Torso);
+        var front = Rt * gs.Front;
+        var up = Rt * gs.Up;
         var d = N(Head(G, end) - Head(G, arm));
         var d0 = N(Head(Rest, end) - Head(Rest, arm));
         double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
-        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
-        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
-            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
+        double the = Table(A, gs.ClavElev) - Table(A0, gs.ClavElev);
+        double thr = RetractPlane(A, reach, gs.Retract) * (Table(A, gs.ClavRetract) - Table(A0, gs.ClavRetract))
+            - gs.Protract * reach;
         if (Math.Abs(the) <= 1e-9 && Math.Abs(thr) <= 1e-9) return null;
         return Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
     }
@@ -236,19 +318,19 @@ public sealed class P1Rig
     double Girdle(P1M4[] G, string s)
     {
         var R0 = Rest;
-        var gd = rig.GetProperty("girdle");
-        double sg = s == "l" ? 1 : -1;
-        int cl = Index[Sub(gd.GetProperty("clavicle"), s)], sc = Index[Sub(gd.GetProperty("scap"), s)], arm = Index[Sub(gd.GetProperty("arm"), s)];
-        int end = Index[Sub(gd.GetProperty("arm_end"), s)];
-        double A = Elevation(G, s), A0 = Elevation(R0, s);
-        var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
-        var front = Rt * Vec(gd.GetProperty("front"));
-        var side = Rt * Vec(gd.GetProperty("side"));
+        var gs = GirdleOf(s);
+        double sg = gs.Sg;
+        int cl = gs.Cl, sc = gs.Sc, arm = gs.Arm;
+        int end = gs.End;
+        double A = Elevation(G, gs), A0 = Elevation(R0, gs);
+        var Rt = Turn(G, gs.Torso);
+        var front = Rt * gs.Front;
+        var side = Rt * gs.Side;
         var d = N(Head(G, end) - Head(G, arm));
         var d0 = N(Head(R0, end) - Head(R0, arm));
         double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
         var armOld = G[arm];
-        if (ClavicleTurn(G, s) is P1M3 Rc)
+        if (!ShrugDriven && ClavicleTurn(G, ClavOf(s)) is P1M3 Rc)
         {
             Apply(G, cl, About(Head(G, cl), Rc));
             // the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
@@ -263,62 +345,142 @@ public sealed class P1Rig
             double ang = Roll(Turn(G, cl) * Turn(G, Parent[cl]).T(), y);
             if (Math.Abs(ang) >= 1e-12)
             {
-                var keep = subtree[arm].ToDictionary(k => k, k => G[k]);
                 // (P1 R1 round 30) girdle "clavicle_roll_keep": helpers under the clavicle that keep the clip's roll
                 // (their world kept): the trapezius, A's top of the shoulder riding A's clavicle roll (rig_drive.girdle)
-                if (gd.TryGetProperty("clavicle_roll_keep", out var rk))
-                    foreach (var e in rk.EnumerateArray())
-                        if (Index.TryGetValue(e.GetString()!.Replace("{s}", s), out var j)) keep[j] = G[j];
+                var sub = subtree[arm];
+                foreach (var k in sub) keepBuf[k] = G[k];
+                if (gs.RollKeep != null) foreach (var k in gs.RollKeep) keepBuf[k] = G[k];
                 Apply(G, cl, About(Head(G, cl), Expm(y * -ang)));
-                foreach (var kv in keep) G[kv.Key] = kv.Value;
+                foreach (var k in sub) G[k] = keepBuf[k];
+                if (gs.RollKeep != null) foreach (var k in gs.RollKeep) G[k] = keepBuf[k];
             }
         }
-        double thu = Table(A, gd.GetProperty("scap_up")) - Table(A0, gd.GetProperty("scap_up"));
-        double thp = Table(A, gd.GetProperty("scap_tilt")) - Table(A0, gd.GetProperty("scap_tilt"));
+        double thu = Table(A, gs.ScapUp) - Table(A0, gs.ScapUp);
+        double thp = Table(A, gs.ScapTilt) - Table(A0, gs.ScapTilt);
         if (Math.Abs(thu) > 1e-9 || Math.Abs(thp) > 1e-9)
         {
-            var ax = Vec(gd.GetProperty("scap_axis"));
+            var ax = gs.ScapAxis;
             var n = Rt * N(new P1V(ax.X * sg, ax.Y, ax.Z));
             var Rs = Expm(side * (-Rad(thp))) * Expm(n * (sg * Rad(thu)));
             Apply(G, sc, About(Head(G, sc), Rs));
         }
-        double glide = gd.GetProperty("glide_m").GetDouble() * reach;
+        double glide = gs.GlideM * reach;
         if (Math.Abs(glide) > 1e-12) Apply(G, sc, P1M4.From(P1M3.Id, front * glide));
         return A;
     }
 
     P1M3 RelTurn(P1M4[] G, int j, int p) => Turn(G, p).T() * Turn(G, j);
 
-    void Helper(P1M4[] G, JsonElement h, string s, Dictionary<string, double> info)
+    enum HK { Unroll, Aim, CounterTwist, Twist, Share, Point, Unknown }
+
+    /// <summary>One helper row for one side (rig.json "helpers"), read once. J &lt; 0: the bone is absent, the row is skipped.</summary>
+    sealed class HelperC
+    {
+        public int J = -1, SideIdx = -1; public bool Left; public HK Kind; public string KindName = "";
+        public int Ch, On, F;
+        public bool ReadHip; public int HipTorso; public P1V HipDown; public string HipEnd = "";
+        public double Ar0, Ar1; public string? OnEnd; public double AimM, Turn, Sp, Sa; public bool HasOff; public P1V Off;
+        public bool HasBelow; public double Amount, Band, Ab;
+        public double Crease, Pivot, Bulge, BulgeMax, TurnPivot;
+        public string F0 = "", F1 = "", F2 = ""; public double From, To, Push;
+    }
+
+    HelperC[]? helperList;
+
+    HelperC[] BuildHelpers()
+    {
+        var list = new List<HelperC>();
+        if (rig.TryGetProperty("helpers", out var hs))
+            foreach (var h in hs.EnumerateArray())
+                foreach (var s in Sides(h.GetProperty("name").GetString()!))
+                    list.Add(BuildHelper(h, s));
+        return helperList = list.ToArray();
+    }
+
+    HelperC BuildHelper(JsonElement h, string s)
+    {
+        var c = new HelperC { Left = s == "l", SideIdx = s == "l" ? 0 : s == "r" ? 1 : -1 };
+        if (!Index.TryGetValue(Sub(h.GetProperty("name"), s), out int j)) return c;
+        c.J = j;
+        var kind = h.GetProperty("kind").GetString();
+        c.KindName = kind ?? "";
+        if (kind == "unroll") { c.Kind = HK.Unroll; c.Ch = Index[Sub(h.GetProperty("child"), s)]; return c; }
+        if (kind == "aim")
+        {
+            c.Kind = HK.Aim;
+            c.On = Index[Sub(h.GetProperty("on"), s)];
+            if (h.TryGetProperty("read", out var rd) && rd.GetString() == "hip")
+            {
+                c.ReadHip = true;
+                c.HipTorso = Index[h.GetProperty("torso").GetString()!];
+                c.HipDown = Vec(h.GetProperty("down"));
+                c.HipEnd = Sub(h.GetProperty("on_end"), s);
+            }
+            var Ar = h.GetProperty("A");
+            c.Ar0 = Ar[0].GetDouble(); c.Ar1 = Ar[1].GetDouble();
+            c.OnEnd = h.TryGetProperty("on_end", out var oe) && Sub(oe, s) is { Length: > 0 } oes ? oes : null;
+            c.AimM = Num(h, "aim_m", 0);
+            c.Turn = Num(h, "turn", 0); c.Sp = Num(h, "sp", 0); c.Sa = Num(h, "sa", 0);
+            if (h.TryGetProperty("off", out var off)) { c.HasOff = true; c.Off = Vec(off); }
+            return c;
+        }
+        c.F = Index[Sub(h.GetProperty("follow"), s)];
+        c.HasBelow = h.TryGetProperty("below", out var b);
+        c.Amount = Num(h, "amount", 0);
+        if (c.HasBelow) { c.Band = b.GetProperty("band").GetDouble(); c.Ab = b.GetProperty("amount").GetDouble(); }
+        if (kind is "counter_twist" or "twist") { c.Kind = kind == "twist" ? HK.Twist : HK.CounterTwist; return c; }
+        if (kind is "share" or "point")
+        {
+            c.Kind = kind == "point" ? HK.Point : HK.Share;
+            c.Crease = Num(h, "crease", 1); c.Pivot = Num(h, "pivot", 0); c.Bulge = Num(h, "bulge", 0);
+            c.BulgeMax = Num(h, "bulge_max", 1); c.TurnPivot = Num(h, "turn_pivot", 0);
+            if (kind == "point")
+            {
+                var fl = h.GetProperty("flex");
+                c.F0 = Sub(fl[0], s); c.F1 = Sub(fl[1], s); c.F2 = Sub(fl[2], s);
+                c.From = h.GetProperty("from").GetDouble(); c.To = h.GetProperty("to").GetDouble(); c.Push = h.GetProperty("push").GetDouble();
+            }
+            return c;
+        }
+        c.Kind = HK.Unknown;
+        return c;
+    }
+
+    // the girdle's A and the rest's A0 per side ("l", "r") for the helper rows; null without the girdle
+    readonly double?[] infoA = new double?[2], infoA0 = new double?[2];
+
+    void Helper(P1M4[] G, HelperC h)
     {
         var R0 = Rest;
-        if (!Index.TryGetValue(Sub(h.GetProperty("name"), s), out int j)) return;
-        var kind = h.GetProperty("kind").GetString();
-        if (kind == "unroll")
+        if (h.J < 0) return;
+        int j = h.J;
+        var kind = h.Kind;
+        double? infA = h.SideIdx >= 0 ? infoA[h.SideIdx] : null, infA0 = h.SideIdx >= 0 ? infoA0[h.SideIdx] : null;
+        if (kind == HK.Unroll)
         {
-            int ch = Index[Sub(h.GetProperty("child"), s)];
+            int ch = h.Ch;
             int p = Parent[j];
             var y = Unit(G[j]).Col(1);
             double ang = Roll(Turn(G, j) * Turn(G, p).T(), y);
             if (Math.Abs(ang) < 1e-12) return;
-            var keep = subtree[ch].ToDictionary(k => k, k => G[k]);
+            var sub = subtree[ch];
+            foreach (var k in sub) keepBuf[k] = G[k];
             Apply(G, j, About(Head(G, j), Expm(y * -ang)));
-            foreach (var kv in keep) G[kv.Key] = kv.Value;
+            foreach (var k in sub) G[k] = keepBuf[k];
             return;
         }
-        if (kind == "aim")
+        if (kind == HK.Aim)
         {
             int p = Parent[j];
-            int on = Index[Sub(h.GetProperty("on"), s)];
-            double? A = info.TryGetValue("A" + s, out var av) ? av : null;
-            if (h.TryGetProperty("read", out var rd) && rd.GetString() == "hip") A = FlexionFromDown(G, on, h, s);
-            var Ar = h.GetProperty("A");
-            double g = A is double a ? Smooth((a - Ar[0].GetDouble()) / (Ar[1].GetDouble() - Ar[0].GetDouble())) : 0;
+            int on = h.On;
+            double? A = infA;
+            if (h.ReadHip) A = FlexionFromDown(G, on, h);
+            double g = A is double a ? Smooth((a - h.Ar0) / (h.Ar1 - h.Ar0)) : 0;
             if (g <= 0) return;
             var Gc = G[j];
             var hj = Head(G, j);
-            string? onEnd = h.TryGetProperty("on_end", out var oe) && Sub(oe, s) is { Length: > 0 } oes ? oes : null;
-            double aimM = Num(h, "aim_m", 0);
+            string? onEnd = h.OnEnd;
+            double aimM = h.AimM;
             var end = ChildHead(G, on, onEnd);
             var aim = Head(G, on) + N(end - Head(G, on)) * aimM;
             // the same aim at rest, carried by the helper's parent: its swing since rest
@@ -327,32 +489,30 @@ public sealed class P1Rig
             var Cp = G[p] * R0[p].Inverse();
             var aim0w = Cp * aim0;
             var Rsw = Arc(N(aim0w - hj), N(aim - hj));
-            var R = Expm(RotVec(Rsw) * (g * Num(h, "turn", 0)));
+            var R = Expm(RotVec(Rsw) * (g * h.Turn));
             var y = R * Unit(Gc).Col(1);
-            double sp = Num(h, "sp", 0), sa = Num(h, "sa", 0);
+            double sp = h.Sp, sa = h.Sa;
             var Sc = P1M3.Id * (1 + g * sp) + P1M3.Outer(y, y) * (g * (sa - sp));
             var M = About(hj, Sc * R);
-            var o = h.TryGetProperty("off", out var off) ? Vec(off) * g : new P1V(0, 0, 0);
-            o = new P1V(o.X * (s == "l" ? 1 : -1), o.Y, o.Z);
+            var o = h.HasOff ? h.Off * g : new P1V(0, 0, 0);
+            o = new P1V(o.X * (h.Left ? 1 : -1), o.Y, o.Z);
             M = M.WithT(M.T() + Cp.Lin() * o);
             G[j] = M * Gc;
             return;
         }
-        int f = Index[Sub(h.GetProperty("follow"), s)];
+        int f = h.F;
         int pj = Parent[j];
-        double amt = h.TryGetProperty("below", out _)
-            ? ShareAmount(h, info.TryGetValue("A" + s, out var shA) ? shA : null, info.TryGetValue("A0" + s, out var shA0) ? shA0 : null)
-            : Num(h, "amount", 0);
-        if (kind is "counter_twist" or "twist")
+        double amt = h.HasBelow ? ShareAmount(h.Amount, h.Band, h.Ab, infA, infA0) : h.Amount;
+        if (kind is HK.CounterTwist or HK.Twist)
         {
             var y = Unit(G[j]).Col(1);
-            double ang = kind == "counter_twist"
+            double ang = kind == HK.CounterTwist
                 ? -amt * Roll(Turn(G, f) * Turn(G, Parent[f]).T(), y)
                 : amt * Roll(Turn(G, f) * Turn(G, pj).T(), y);
             if (Math.Abs(ang) > 1e-12) Apply(G, j, About(Head(G, j), Expm(y * ang)));
             return;
         }
-        if (kind is "share" or "point")
+        if (kind is HK.Share or HK.Point)
         {
             var Gc = Carried(G, j);                  // the share as its parent carries it
             G[j] = Gc;
@@ -360,33 +520,30 @@ public sealed class P1Rig
             var Rrel = RelTurn(G, f, pj);
             var rv = RotVec(Rrel);
             var Rh = Rp * Expm(rv * amt) * Rp.T();     // the half turn, in the world
-            var z = Rp * (Unit(R0[f]).Col(2) * Num(h, "crease", 1));
-            var c = Head(G, j) + z * Num(h, "pivot", 0);
+            var z = Rp * (Unit(R0[f]).Col(2) * h.Crease);
+            var c = Head(G, j) + z * h.Pivot;
             double b = Deg(rv.Len());
-            double k = Math.Min(1 + Num(h, "bulge", 0) * (1 - Math.Cos(Rad(Math.Min(b, 180)) / 2)), Num(h, "bulge_max", 1));
+            double k = Math.Min(1 + h.Bulge * (1 - Math.Cos(Rad(Math.Min(b, 180)) / 2)), h.BulgeMax);
             var zz = Rh * z;
             var Sw = P1M3.Id + P1M3.Outer(zz, zz) * (k - 1);
-            var tp = Head(G, j) + z * Num(h, "turn_pivot", 0);
+            var tp = Head(G, j) + z * h.TurnPivot;
             var M = About(c, Sw) * About(tp, Rh);
-            if (kind == "point")
+            if (kind == HK.Point)
             {
-                var fl = h.GetProperty("flex");
-                double F = Flexion(G, Sub(fl[0], s), Sub(fl[1], s), Sub(fl[2], s));
-                double from = h.GetProperty("from").GetDouble(), to = h.GetProperty("to").GetDouble();
-                double push = h.GetProperty("push").GetDouble() * Smooth((F - from) / (to - from));
+                double F = Flexion(G, h.F0, h.F1, h.F2);
+                double push = h.Push * Smooth((F - h.From) / (h.To - h.From));
                 M = M.WithT(M.T() - zz * push);
             }
             G[j] = M * Gc;
             return;
         }
-        throw new ArgumentException($"unknown helper kind {kind}");
+        throw new ArgumentException($"unknown helper kind {h.KindName}");
     }
 
-    double FlexionFromDown(P1M4[] G, int on, JsonElement h, string s)
+    double FlexionFromDown(P1M4[] G, int on, HelperC h)
     {
-        int p = Index[h.GetProperty("torso").GetString()!];
-        var down = Turn(G, p) * Vec(h.GetProperty("down"));
-        int end = Index[Sub(h.GetProperty("on_end"), s)];
+        var down = Turn(G, h.HipTorso) * h.HipDown;
+        int end = Index[h.HipEnd];
         var d = N(Head(G, end) - Head(G, on));
         return Deg(Math.Acos(Math.Clamp(P1V.Dot(d, down), -1, 1)));
     }
@@ -394,107 +551,179 @@ public sealed class P1Rig
     // --------------------------------------------------------- correctives --
     public static double[] FlexWeights(double F, IReadOnlyList<double> keys)
     {
-        var w = new double[keys.Count];
+        var k = keys as double[] ?? keys.ToArray();
+        var w = new double[k.Length];
+        FlexInto(F, k, w);
+        return w;
+    }
+
+    static void FlexInto(double F, double[] keys, double[] w)
+    {
         if (F <= keys[0]) w[0] = 1;
         else if (F >= keys[^1]) w[^1] = 1;
         else
         {
             int i = 0;
-            while (i + 1 < keys.Count && keys[i + 1] <= F) i++;   // (searchsorted right, minus one)
+            while (i + 1 < keys.Length && keys[i + 1] <= F) i++;   // (searchsorted right, minus one)
             double t = Smooth((F - keys[i]) / (keys[i + 1] - keys[i]));
             w[i] = 1 - t; w[i + 1] = t;
         }
-        return w;
     }
 
-    static double[] RbfPhi(P1V d, P1V[] K, double sigma)
+    static void RbfPhi(P1V d, P1V[] K, double sigma, double[] o)
     {
-        var o = new double[K.Length];
         for (int i = 0; i < K.Length; i++)
         {
             double ang = Deg(Math.Acos(Math.Clamp(P1V.Dot(K[i], d), -1, 1)));
             o[i] = Math.Exp(-(ang / sigma) * (ang / sigma));
         }
-        return o;
     }
 
     static P1V[] Keys(JsonElement k) => k.EnumerateArray().Select(Vec).ToArray();
 
-    static double[] ArcWeights(P1V d, P1V[] K, double g0, double g1)
+    static double ArcTh(P1V v, P1V e1, P1V e2) => Deg(Math.Atan2(P1V.Dot(v, e2), P1V.Dot(v, e1)));
+
+    /// <summary>One corrective row for one side (rig.json "correctives"), read once. Law: 0 flex, 1 rbf, 2 arc, 3 legacy.</summary>
+    sealed class CorrC
     {
-        var a = N(P1V.Cross(K[0], K[^1]));
-        var e1 = N(K[0] - a * P1V.Dot(K[0], a));
-        var e2 = P1V.Cross(a, e1);
-        double Th(P1V v) => Deg(Math.Atan2(P1V.Dot(v, e2), P1V.Dot(v, e1)));
-        var tk = K.Select(Th).ToArray();
-        tk[0] = 0;
-        var w = FlexWeights(Th(d), tk).Skip(1).ToArray();
-        double beta = Math.Abs(Deg(Math.Asin(Math.Clamp(P1V.Dot(d, a), -1, 1))));
-        double gate = 1 - Smooth((beta - g0) / (g1 - g0));
-        for (int i = 0; i < w.Length; i++) w[i] *= gate;
-        return w;
+        public int Law;
+        public string[] Bones = Array.Empty<string>(); public double[] Keys = Array.Empty<double>(); public double[] W = Array.Empty<double>();
+        public string?[] Shapes = Array.Empty<string?>();
+        public string Bone = "", End = "", Frame = "";
+        public double Sigma; public P1V[] K = Array.Empty<P1V>(); public double[][] M = Array.Empty<double[]>(); public int Ns; public double[] Phi = Array.Empty<double>();
+        public P1V ArcA, E1, E2; public double[] Tk = Array.Empty<double>(); public double G0, G1;
+        public int J; public string On = "swing"; public string Name = "";
+        public bool HasKeys, Sm; public double Lo, At, Hi, From, To;
+    }
+
+    CorrC[]? corrList;
+
+    CorrC[] BuildCorrectives()
+    {
+        var list = new List<CorrC>();
+        if (rig.TryGetProperty("correctives", out var cs))
+            foreach (var c in cs.EnumerateArray())
+            {
+                string law = c.TryGetProperty("law", out var l) ? l.GetString() ?? "" : "";
+                foreach (var s in c.GetRawText().Contains("{s}") ? LR : NoSide)
+                {
+                    string sub(string x) => x.Replace("{s}", s);
+                    string side = s == "" ? "l" : s;
+                    var o = new CorrC();
+                    if (law == "flex")
+                    {
+                        var bones = c.GetProperty("bones").EnumerateArray().Select(b => sub(b.GetString()!)).ToArray();
+                        if (bones.Any(b => !Index.ContainsKey(b))) continue;
+                        o.Law = 0; o.Bones = bones;
+                        o.Keys = c.GetProperty("keys").EnumerateArray().Select(x => x.GetDouble()).ToArray();
+                        o.W = new double[o.Keys.Length];
+                        o.Shapes = c.GetProperty("shapes").EnumerateArray().Select(nm => nm.ValueKind == JsonValueKind.String ? sub(nm.GetString()!) : null).ToArray();
+                    }
+                    else if (law is "rbf" or "arc")
+                    {
+                        if (!Index.ContainsKey(sub(c.GetProperty("bone").GetString()!))) continue;
+                        o.Bone = sub(c.GetProperty("bone").GetString()!); o.End = sub(c.GetProperty("end").GetString()!); o.Frame = sub(c.GetProperty("frame").GetString()!);
+                        o.K = Keys(c.GetProperty("keys").GetProperty(side));
+                        o.Shapes = c.GetProperty("shapes").EnumerateArray().Select(nm => (string?)sub(nm.GetString()!)).ToArray();
+                        if (law == "rbf")
+                        {
+                            o.Law = 1;
+                            o.Sigma = c.GetProperty("sigma_deg").GetDouble();
+                            o.M = c.GetProperty("M").GetProperty(side).EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetDouble()).ToArray()).ToArray();
+                            o.Ns = o.M[0].Length;
+                            o.W = new double[o.Ns];
+                            o.Phi = new double[o.K.Length];
+                        }
+                        else
+                        {
+                            o.Law = 2;
+                            var gd = c.GetProperty("gate_deg");
+                            o.G0 = gd[0].GetDouble(); o.G1 = gd[1].GetDouble();
+                            var K = o.K;
+                            o.ArcA = N(P1V.Cross(K[0], K[^1]));
+                            o.E1 = N(K[0] - o.ArcA * P1V.Dot(K[0], o.ArcA));
+                            o.E2 = P1V.Cross(o.ArcA, o.E1);
+                            o.Tk = new double[K.Length];
+                            for (int i = 0; i < K.Length; i++) o.Tk[i] = ArcTh(K[i], o.E1, o.E2);
+                            o.Tk[0] = 0;
+                            o.W = new double[K.Length];
+                        }
+                    }
+                    else if (c.TryGetProperty("bone", out var bn) && Index.TryGetValue(sub(bn.GetString()!), out int j))
+                    {
+                        o.Law = 3; o.J = j;
+                        o.On = c.TryGetProperty("on", out var oo) ? oo.GetString()! : "swing";
+                        o.Name = sub(c.GetProperty("name").GetString()!);
+                        if (c.TryGetProperty("keys", out var k))
+                        {
+                            o.HasKeys = true; o.Lo = k[0].GetDouble(); o.At = k[1].GetDouble(); o.Hi = k[2].GetDouble();
+                        }
+                        else
+                        {
+                            o.From = c.GetProperty("from").GetDouble(); o.To = c.GetProperty("to").GetDouble();
+                            o.Sm = !c.TryGetProperty("smoothstep", out var ss) || ss.GetBoolean();
+                        }
+                    }
+                    else continue;
+                    list.Add(o);
+                }
+            }
+        return corrList = list.ToArray();
     }
 
     public Dictionary<string, double> CorrectiveWeights(P1M4[] G)
     {
         var o = new Dictionary<string, double>();
-        if (!rig.TryGetProperty("correctives", out var cs)) return o;
-        foreach (var c in cs.EnumerateArray())
+        foreach (var c in corrList ?? BuildCorrectives())
         {
-            string law = c.TryGetProperty("law", out var l) ? l.GetString() ?? "" : "";
-            foreach (var s in Sides(c.GetRawText()))
+            if (c.Law == 0)
             {
-                string sub(string x) => x.Replace("{s}", s);
-                string side = s == "" ? "l" : s;
-                if (law == "flex")
+                Array.Clear(c.W);
+                FlexInto(Flexion(G, c.Bones[0], c.Bones[1], c.Bones[2]), c.Keys, c.W);
+                var w = c.W;
+                int i = 0;
+                foreach (var nm in c.Shapes)
                 {
-                    var bones = c.GetProperty("bones").EnumerateArray().Select(b => sub(b.GetString()!)).ToArray();
-                    if (bones.Any(b => !Index.ContainsKey(b))) continue;
-                    var w = FlexWeights(Flexion(G, bones[0], bones[1], bones[2]), c.GetProperty("keys").EnumerateArray().Select(x => x.GetDouble()).ToArray());
-                    int i = 0;
-                    foreach (var nm in c.GetProperty("shapes").EnumerateArray())
-                    {
-                        if (nm.ValueKind == JsonValueKind.String) o[sub(nm.GetString()!)] = w[i];
-                        i++;
-                    }
-                }
-                else if (law is "rbf" or "arc")
-                {
-                    if (!Index.ContainsKey(sub(c.GetProperty("bone").GetString()!))) continue;
-                    var d = Direction(G, sub(c.GetProperty("bone").GetString()!), sub(c.GetProperty("end").GetString()!), sub(c.GetProperty("frame").GetString()!));
-                    var K = Keys(c.GetProperty("keys").GetProperty(side));
-                    double[] w;
-                    if (law == "rbf")
-                    {
-                        var phi = RbfPhi(d, K, c.GetProperty("sigma_deg").GetDouble());
-                        var M = c.GetProperty("M").GetProperty(side);
-                        int ns = M[0].GetArrayLength();
-                        w = new double[ns];
-                        for (int q = 0; q < ns; q++)
-                        {
-                            double acc = 0;
-                            for (int r = 0; r < phi.Length; r++) acc += phi[r] * M[r][q].GetDouble();
-                            w[q] = Math.Clamp(acc, 0, 1);
-                        }
-                    }
-                    else
-                    {
-                        var gd = c.GetProperty("gate_deg");
-                        w = ArcWeights(d, K, gd[0].GetDouble(), gd[1].GetDouble());
-                    }
-                    int i = 0;
-                    foreach (var nm in c.GetProperty("shapes").EnumerateArray())
-                    {
-                        o[sub(nm.GetString()!)] = w[i] < 1e-5 ? 0 : w[i];   // exactly 0 at the rest key
-                        i++;
-                    }
-                }
-                else if (c.TryGetProperty("bone", out var bn) && Index.TryGetValue(sub(bn.GetString()!), out int j))
-                {
-                    string on = c.TryGetProperty("on", out var oo) ? oo.GetString()! : "swing";
-                    o[sub(c.GetProperty("name").GetString()!)] = LegacyWeight(c, AngleOf(G, j, on));
+                    if (nm != null) o[nm] = w[i];
+                    i++;
                 }
             }
+            else if (c.Law is 1 or 2)
+            {
+                var d = Direction(G, c.Bone, c.End, c.Frame);
+                double[] w;
+                int off = 0;
+                if (c.Law == 1)
+                {
+                    RbfPhi(d, c.K, c.Sigma, c.Phi);
+                    var phi = c.Phi; var M = c.M;
+                    w = c.W;
+                    for (int q = 0; q < c.Ns; q++)
+                    {
+                        double acc = 0;
+                        for (int r = 0; r < phi.Length; r++) acc += phi[r] * M[r][q];
+                        w[q] = Math.Clamp(acc, 0, 1);
+                    }
+                }
+                else
+                {
+                    w = c.W;
+                    Array.Clear(w);
+                    FlexInto(ArcTh(d, c.E1, c.E2), c.Tk, w);
+                    double beta = Math.Abs(Deg(Math.Asin(Math.Clamp(P1V.Dot(d, c.ArcA), -1, 1))));
+                    double gate = 1 - Smooth((beta - c.G0) / (c.G1 - c.G0));
+                    for (int i = 1; i < w.Length; i++) w[i] *= gate;
+                    off = 1;
+                }
+                int ix = 0;
+                foreach (var nm in c.Shapes)
+                {
+                    double wi = w[ix + off];
+                    o[nm!] = wi < 1e-5 ? 0 : wi;   // exactly 0 at the rest key
+                    ix++;
+                }
+            }
+            else o[c.Name] = LegacyWeight(c, AngleOf(G, c.J, c.On));
         }
         return o;
     }
@@ -512,20 +741,19 @@ public sealed class P1Rig
         return Deg(Math.Acos(Math.Clamp(y.Y, -1, 1)));
     }
 
-    static double LegacyWeight(JsonElement c, double deg)
+    static double LegacyWeight(CorrC c, double deg)
     {
-        if (c.TryGetProperty("keys", out var k))
+        if (c.HasKeys)
         {
-            double lo = k[0].GetDouble(), at = k[1].GetDouble(), hi = k[2].GetDouble();
+            double lo = c.Lo, at = c.At, hi = c.Hi;
             if (deg <= lo) return 0;
             if (deg < at) return (deg - lo) / (at - lo);
             if (hi <= at) return 1;
             return Math.Max(0, 1 - (deg - at) / (hi - at));
         }
-        double from = c.GetProperty("from").GetDouble(), to = c.GetProperty("to").GetDouble();
+        double from = c.From, to = c.To;
         double t = Math.Clamp((deg - from) / (to - from), 0, 1);
-        bool sm = !c.TryGetProperty("smoothstep", out var ss) || ss.GetBoolean();
-        return sm ? t * t * (3 - 2 * t) : t;
+        return c.Sm ? t * t * (3 - 2 * t) : t;
     }
 
     // ------------------------------------------------------- hand clearance --
@@ -544,8 +772,14 @@ public sealed class P1Rig
         return (1 - fx) * ((1 - fy) * D[i][j0] + fy * D[i][j1]) + fx * ((1 - fy) * D[i + 1][j0] + fy * D[i + 1][j1]);
     }
 
-    sealed record HandSide(int Thigh, int Arm, int[] Palm, int[] Points, P1V Axis, P1V E1, P1V E2, double Length, double[][] R, double[][] Dr);
+    sealed record HandSide(int Thigh, int Arm, int[] Palm, int[] Points, P1V Axis, P1V E1, P1V E2, double Length, double[][] R, double[][] Dr)
+    {
+        // per-frame scratch (one slot a point, and the palm)
+        public readonly double[] Gs = new double[Points.Length + 1], Drs = new double[Points.Length + 1], W = new double[Points.Length + 1];
+        public readonly P1V[] Dirs = new P1V[Points.Length + 1];
+    }
     HandSide?[]? hands;
+    bool hcRead; double hcT0, hcDt, hcSoft, hcNear, hcFar;
 
     static double[][] Grid(JsonElement e) => e.EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetDouble()).ToArray()).ToArray();
 
@@ -567,35 +801,50 @@ public sealed class P1Rig
         hands ??= new[] { HandOf(hc, "l"), HandOf(hc, "r") };
         var h = hands[side];
         if (h == null || h.Palm.Length == 0) return;
+        if (!hcRead)
+        {
+            hcT0 = hc.GetProperty("t0").GetDouble(); hcDt = hc.GetProperty("dt").GetDouble();
+            hcSoft = hc.GetProperty("soft_m").GetDouble(); hcNear = hc.GetProperty("near_m").GetDouble(); hcFar = hc.GetProperty("far_m").GetDouble();
+            hcRead = true;
+        }
         var R = Unit(G[h.Thigh]); var o = Head(G, h.Thigh);
-        double t0 = hc.GetProperty("t0").GetDouble(), dt = hc.GetProperty("dt").GetDouble();
+        double t0 = hcT0, dt = hcDt;
         var palm = new P1V(0, 0, 0);
         foreach (var k in h.Palm) palm += Head(G, k);
         palm /= h.Palm.Length;
-        var P = h.Points.Select(k => Head(G, k)).Append(palm);
-        var gs = new List<double>(); var drs = new List<double>(); var dirs = new List<P1V>();
-        foreach (var p in P)
+        var gs = h.Gs; var drs = h.Drs; var dirs = h.Dirs; int cnt = 0;
+        int np = h.Points.Length;
+        for (int pi = 0; pi <= np; pi++)
         {
+            var p = pi < np ? Head(G, h.Points[pi]) : palm;
             var q = R.T() * (p - o);
             var rho = q - h.Axis * P1V.Dot(q, h.Axis);
             double d = rho.Len();
             if (d < 1e-9) continue;
             double t = P1V.Dot(q, h.Axis) / h.Length, ang = Math.Atan2(P1V.Dot(rho, h.E2), P1V.Dot(rho, h.E1));
             double dr = GridAt(h.Dr, t, ang, t0, dt);
-            gs.Add(d - (GridAt(h.R, t, ang, t0, dt) - dr));
-            drs.Add(dr);
-            dirs.Add(R * (rho / d));
+            gs[cnt] = d - (GridAt(h.R, t, ang, t0, dt) - dr);
+            drs[cnt] = dr;
+            dirs[cnt] = R * (rho / d);
+            cnt++;
         }
-        if (gs.Count == 0) return;
-        double soft = hc.GetProperty("soft_m").GetDouble(), near = hc.GetProperty("near_m").GetDouble(), far = hc.GetProperty("far_m").GetDouble();
-        double gm = gs.Min();
-        var w = gs.Select(g => Math.Exp(-(g - gm) / soft)).ToArray();
-        double sw = 0; foreach (var x in w) sw += x;
+        if (cnt == 0) return;
+        double soft = hcSoft, near = hcNear, far = hcFar;
+        double gm = gs[0];
+        for (int i = 1; i < cnt; i++)
+        {
+            double v0 = gs[i];
+            if (v0 < gm) gm = v0;
+            else if (double.IsNaN(v0)) { gm = v0; break; }
+        }
+        var w = h.W;
+        for (int i = 0; i < cnt; i++) w[i] = Math.Exp(-(gs[i] - gm) / soft);
+        double sw = 0; for (int i = 0; i < cnt; i++) sw += w[i];
         double gsoft = gm - soft * Math.Log(sw);
         double kp = 1.0 - Smooth((gsoft - near) / (far - near));
         if (kp <= 0.0) return;
         double drm = 0; var dir = new P1V(0, 0, 0);
-        for (int i = 0; i < w.Length; i++) { drm += w[i] * drs[i]; dir += dirs[i] * w[i]; }
+        for (int i = 0; i < cnt; i++) { drm += w[i] * drs[i]; dir += dirs[i] * w[i]; }
         drm /= sw;
         var v = N(dir) * (kp * drm);
         if (v.Len() < 1e-9) return;
@@ -610,16 +859,42 @@ public sealed class P1Rig
     public (P1M4[] G, Dictionary<string, double> Weights) Drive(P1M4[] input)
     {
         var G = (P1M4[])input.Clone();
-        var info = new Dictionary<string, double>();
         if (rig.TryGetProperty("girdle", out _))
-            foreach (var s in new[] { "l", "r" }) { info["A" + s] = Girdle(G, s); info["A0" + s] = Elevation(Rest, s); }
+            for (int si = 0; si < 2; si++) { var s = LR[si]; infoA[si] = Girdle(G, s); infoA0[si] = Elevation(Rest, Gs(s)); }
+        else { infoA[0] = infoA[1] = infoA0[0] = infoA0[1] = null; }
         if (rig.TryGetProperty("hand_clear", out var hc))   // (P1 R1 sliders: after the girdle, before the rows; absent on the ref body)
             for (int side = 0; side < 2; side++) HandClear(G, hc, side);
-        if (rig.TryGetProperty("helpers", out var hs))
-            foreach (var h in hs.EnumerateArray())
-                foreach (var s in Sides(h.GetProperty("name").GetString()!))
-                    Helper(G, h, s, info);
+        foreach (var h in helperList ?? BuildHelpers())
+            Helper(G, h);
         return (G, CorrectiveWeights(G));
+    }
+}
+
+/// <summary>A rig.json table's rows read once (x, y, the Hermite slopes), for P1Rig.Table.</summary>
+public sealed class P1Rows
+{
+    public readonly int N;
+    public readonly double[] X, Y, H, M;
+
+    P1Rows(double[] x, double[] y)
+    {
+        X = x; Y = y; N = x.Length;
+        int n = N, n1 = Math.Max(n - 1, 0);
+        H = new double[n1]; M = new double[n];
+        var dl = new double[n1];
+        for (int k = 0; k < n - 1; k++) { H[k] = X[k + 1] - X[k]; dl[k] = (Y[k + 1] - Y[k]) / H[k]; }
+        for (int k = 1; k < n - 1; k++)
+            if (dl[k - 1] * dl[k] > 0)
+            {
+                double w1 = 2 * H[k] + H[k - 1], w2 = H[k] + 2 * H[k - 1];
+                M[k] = (w1 + w2) / (w1 / dl[k - 1] + w2 / dl[k]);
+            }
+    }
+
+    public static P1Rows From(JsonElement T)
+    {
+        var rows = T.EnumerateArray().Select(r => (X: r[0].GetDouble(), Y: r[1].GetDouble())).ToArray();
+        return new P1Rows(rows.Select(r => r.X).ToArray(), rows.Select(r => r.Y).ToArray());
     }
 }
 
