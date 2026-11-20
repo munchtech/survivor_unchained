@@ -29,7 +29,7 @@ public static class CelLib
     /// <summary>Whether the library and the loader act: not at --cel off (nor --cel-lib off, the loader alone off, for measuring its cost).</summary>
     public static readonly bool On = SurvivorUnchained.Args.Get("cel") != "off" && SurvivorUnchained.Args.Get("cel-lib") != "off";
     static readonly bool Audit = SurvivorUnchained.Args.Has("cel-audit");
-    const string Meta = "cel_class";
+    static readonly StringName Meta = "cel_class";   // (StringNames, made once: from a string each call they are Godot disposables that outlive their young GC)
 
     /// <summary>The class of a material of an adopting shader: the first rule that matches, else the shader's default class.</summary>
     public static string ClassOf(string shader, string? material, string? asset) =>
@@ -290,19 +290,20 @@ public static class CelLib
     }
 
     /// <summary>(L1 lead 19, HER3) A hero's held piece (cel.gdshaderinc CEL_HERO_ARM): its material's own variant.</summary>
-    const string HeroMeta = "cel_hero_arm";
+    static readonly StringName HeroMeta = "cel_hero_arm", FloorYName = "floor_y";
     static string KeyOf(BaseMaterial3D b) => StdCelCode.Key(b) + (b.HasMeta(HeroMeta) ? "|hero" : "");
 
     /// <summary>(L1 lead 19, HER3) The standard materials of a mesh under the player's view (her shield, her blade) become
     /// HER OWN copies, marked for the hero's variant: a body in her lit pool (the rig's hero_pool), as they were without
     /// the row. A surface that has her own copy already (PlayerView.WeaponClose's) is marked; any other gets a copy as a
     /// surface override. Other holders of the same weapon keep the shared material.</summary>
+    static readonly StringName HerGroupSn = Brush.HerGroup;
     static void Hero(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return;
         Node? n = g;
         bool mirror = false;   // (HER5: her reflection's copies are placed by their own vertex code: no line, as PlayerView.Gather leaves them out)
-        while (n != null && !n.IsInGroup(Brush.HerGroup)) { mirror |= n is global::SurvivorUnchained.View.Reflections; n = n.GetParent(); }
+        while (n != null && !n.IsInGroup(HerGroupSn)) { mirror |= n is global::SurvivorUnchained.View.Reflections; n = n.GetParent(); }
         if (n == null) return;
         if (!mirror && n is Node3D her && lineIds.Add(mi.GetInstanceId())) lined.Add((mi, her));
         if (!mirror) HeroNormals.Visit(mi);   // (L1 lead 22, P1NORM: her smoothed shading normals, baked once a mesh)
@@ -535,7 +536,7 @@ public static class CelLib
         {
             float y = at.GlobalPosition.Y;
             foreach (var first in liveChains)
-                for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter("floor_y", y);
+                for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter(FloorYName, y);
         }
     }
 
