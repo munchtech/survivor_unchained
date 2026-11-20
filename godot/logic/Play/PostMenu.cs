@@ -121,6 +121,8 @@ public static class PostMenu
     /// act runs, so walking off or a foe coming closes it.</summary>
     public static bool EditsOpen(WorldState? w, string? zone, Battle? b) =>
         b is not { Combat: true }
+        // (lane K, the owner 19 Nov: "anywhere. respecs can be at lamp posts as you say") lamps light anywhere out of a fight
+        || ResolveMeter.OutOfFight(b)
         || w != null && LampBook.Bench?.Invoke(w) is { } id && LampPosts.Get(id) is { } at && at.Zone == zone && AtBench(w, b, at);
 
     public enum Option { Rest, Travel, Tier, Lamps, Unions, Leave, Road }

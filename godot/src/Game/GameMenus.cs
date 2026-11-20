@@ -56,7 +56,7 @@ public partial class Game
             // (M7a: while a lamp offer's card is up, the key lights its lamp; the lamps board is for when none is)
             case Act.Lamps when hud.LampOfferUp is { } offer && Journey.LightHeld(offer.Skill, Battle) != null: hud.LampOfferLit(offer); return true;
             case Act.Lamps when LampsScreen.On:
-                LampsTeach.Used(Journey.World);   // (she found the tree herself: the prompt is never owed; its hint comes down)
+                LampsTeach.Used(Journey.World, Journey.Ch);   // (she found the tree herself: the prompt is never owed; its hint comes down)
                 if (CurrentHint?.Id == "unlock." + LampsTeach.Id) SetHint(null);
                 Open("lamps"); return true;
             case Act.Journal: Open("journal"); return true;

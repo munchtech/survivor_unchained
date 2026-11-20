@@ -136,7 +136,7 @@ Each skill's header lists its strands, the suggested strand (*Light my way*) and
 9. **The Lamps screen and wick panel** (UI lead):
    - an ember lamp is drawn as an ember (ember color, a slow flicker), an oil lamp burns steady, a dark lamp is dark;
    - no points are shown or spent during a run, and an ember lamp reads "until first light";
-   - points are lit only at a lamp-post, and the lamp-post glows the dawn's suggestion;
+   - points are lit anywhere out of a fight (the owner, 19 Nov 2026: "anywhere.  respecs can be at lamp posts as you say"); putting lamps out (a respec) stays at a lamp-post, and the lamp-post glows the dawn's suggestion;
    - a skill's rank reads as the points burning, and its hit as a number;
    - the card's keywords and its Turn lines (§2).
 10. **The dawn card** (`DawnCard.Build`): H8's words are re-worded to §3 ("The ember takes" becomes the ember's lamps by name), plus the memory line and the price line. `CharacterData` gains each lamp's runs lit in a row and the last run.

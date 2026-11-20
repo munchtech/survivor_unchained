@@ -22,7 +22,7 @@ public sealed class LampsTeachTests
     }
 
     [Fact]
-    public void Fires_once_at_the_first_held_point()
+    public void Fires_at_the_first_held_point_and_again_for_each_new_lamp()
     {
         var ch = Warden(6);
         var w = new WorldState { Time = TimeOfDay.Day };
@@ -30,8 +30,9 @@ public sealed class LampsTeachTests
         Assert.True(LampsTeach.Take(ch, w, false));
         Assert.False(LampsTeach.Take(ch, w, false));
         ch.Level = 7;
+        Assert.True(LampsTeach.Take(ch, w, false));
         Assert.False(LampsTeach.Take(ch, w, false));
-        Assert.Equal("Press *L* to open your Lamps and spend the point you hold.", LampsTeach.TextFor(_ => "L"));
+        Assert.Equal("Lamp ready: *L*. Light it out of a fight.", LampsTeach.TextFor(_ => "L"));
     }
 
     [Fact]
@@ -61,8 +62,8 @@ public sealed class LampsTeachTests
     [Fact]
     public void ThePromptCountsThePointsSheHolds()
     {
-        Assert.Equal("Press *L* to open your Lamps and spend the point you hold.", LampsTeach.TextFor(_ => "L", 1));
-        Assert.Equal("Press *L* to open your Lamps and spend the point you hold.", LampsTeach.TextFor(_ => "L", 0));
-        Assert.Equal("Press *L* to open your Lamps and spend the 6 points you hold.", LampsTeach.TextFor(_ => "L", 6));
+        Assert.Equal("Lamp ready: *L*. Light it out of a fight.", LampsTeach.TextFor(_ => "L", 1));
+        Assert.Equal("Lamp ready: *L*. Light it out of a fight.", LampsTeach.TextFor(_ => "L", 0));
+        Assert.Equal("6 lamps ready: *L*. Light them out of a fight.", LampsTeach.TextFor(_ => "L", 6));
     }
 }
