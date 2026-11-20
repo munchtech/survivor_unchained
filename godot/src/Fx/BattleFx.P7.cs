@@ -653,7 +653,14 @@ public partial class BattleFx
         var dir = new Vector3((float)(e.X1 - e.X0), 0, (float)(e.Z1 - e.Z0));
         dir = dir.LengthSquared() > 1e-4f ? dir.Normalized() : Vector3.Forward;
         var feet = V(e.X0, Y(e.X0, e.Z0), e.Z0);
-        P7Press(P7BladeAt(1), feet, dir);
+        long pt0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var bladeAt = P7BladeAt(1);
+        long pt1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        P7Glint(bladeAt, P7D["glint.px"]);
+        long pt2 = System.Diagnostics.Stopwatch.GetTimestamp();
+        P7Kick(feet, dir, P7D.Count("kick.puffs", R()), P7D["kick.life"]);
+        long pt3 = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (Perf.On) GD.Print($"perf p7 dash: blade {System.Diagnostics.Stopwatch.GetElapsedTime(pt0, pt1).TotalMilliseconds:0.0} glint {System.Diagnostics.Stopwatch.GetElapsedTime(pt1, pt2).TotalMilliseconds:0.0} kick {System.Diagnostics.Stopwatch.GetElapsedTime(pt2, pt3).TotalMilliseconds:0.0} ms");
         P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.5f * P7D["dash.ribbon.head_px"] * P7Px(feet), 0.24f, P7D["dash.ribbon.life"]);
         p7ChargeT = 0; p7ChargeDur = 0.0f; p7ChargeDir = dir;
         p7GhostDue.Clear();
@@ -901,6 +908,7 @@ public partial class BattleFx
     void P7Snap(int mode = 3, float life = 0.15f, Action<P7Ghost>? init = null)
     {
         if (Her3D == null || !IsInstanceValid(Her3D)) return;
+        long snapAt = System.Diagnostics.Stopwatch.GetTimestamp();
         var m = P7Mat(mode, ghost: true);
         // the afterimage's rim is ~2.6 px across (one bristle); the vow's pulse band a fifth of her height (~30 px)
         P7Brush(m, mode == 11 ? 30 : 3);
@@ -949,6 +957,7 @@ public partial class BattleFx
             for (int bs = 0; bs < mi.GetBlendShapeCount(); bs++) copy.SetBlendShapeValue(bs, mi.GetBlendShapeValue(bs));
             if (FxAfter.On) FxAfter.Adopt(copy);
         }
+        if (Perf.On) GD.Print($"perf p7 snap: {System.Diagnostics.Stopwatch.GetElapsedTime(snapAt).TotalMilliseconds:0.0} ms, {root.GetChildCount()} roots, {skels.Count} skeletons");
         var g = new P7Ghost { Root = root, M = m, Life = life };
         init?.Invoke(g);
         p7Ghosts.Add(g);
