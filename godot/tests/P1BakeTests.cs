@@ -34,13 +34,15 @@ public class P1BakeTests
     static P1M4[] Pose(string[] names, int[] parent, P1M4[] rest, Dictionary<string, P1V> turns)
     {
         var G = new P1M4[names.Length];
+        var have = new bool[G.Length];
         P1M4 Get(int j)
         {
-            if (G[j] != null) return G[j];
+            if (have[j]) return G[j];
             int p = parent[j];
             var local = p < 0 ? rest[j] : rest[p].Inverse() * rest[j];
             if (turns.TryGetValue(names[j], out var v)) local = local * P1M4.From(P1Rig.Expm(v), new P1V(0, 0, 0));
-            return G[j] = p < 0 ? local : Get(p) * local;
+            G[j] = p < 0 ? local : Get(p) * local; have[j] = true;
+            return G[j];
         }
         for (int j = 0; j < names.Length; j++) Get(j);
         return G;
@@ -94,11 +96,11 @@ public class P1BakeTests
         int c = rig.Index["clavicle_l"], u = rig.Index["upperarm_l"];
         // once: the line after the laws is the held (mapped) line turned by the law's lift, nothing else on it
         var pre = G[u].T() - G[c].T();
-        var want = lift! * pre;
+        var want = lift!.Value * pre;
         var got = D2[u].T() - D2[c].T();
         double deg = Math.Acos(Math.Clamp(P1V.Dot(want, got) / (want.Len() * got.Len()), -1, 1)) * 180 / Math.PI;
         Assert.True(deg < 1e-4, $"clavicle line {deg:F4} deg off the held line lifted once by B's law");
-        Assert.True(P1Rig.RotVec(lift).Len() > 1e-3, "the arm high: the law lifts");
+        Assert.True(P1Rig.RotVec(lift!.Value).Len() > 1e-3, "the arm high: the law lifts");
         Assert.True(Ang(P1Retarget.Rot(D2[u]), P1Retarget.Rot(bake.Map.Map(a)[u])) < 1e-4, "the upper arm's world turn moved");
         Assert.True(Diff(bake.Frame(a).Local[rig.Index["scap_l"]], bake.RestLocal(rig.Index["scap_l"])) < 1e-9);
     }

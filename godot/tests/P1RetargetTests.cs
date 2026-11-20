@@ -27,13 +27,15 @@ public class P1RetargetTests
     {
         int n = names.Length;
         var G = new P1M4[n];
+        var have = new bool[G.Length];
         P1M4 Get(int j)
         {
-            if (G[j] != null) return G[j];
+            if (have[j]) return G[j];
             int p = parent[j];
             var local = p < 0 ? rest[j] : rest[p].Inverse() * rest[j];
             if (turns.TryGetValue(names[j], out var v)) local = local * P1M4.From(P1Rig.Expm(v), new P1V(0, 0, 0));
-            return G[j] = p < 0 ? local : Get(p) * local;
+            G[j] = p < 0 ? local : Get(p) * local; have[j] = true;
+            return G[j];
         }
         for (int j = 0; j < n; j++) Get(j);
         return G;

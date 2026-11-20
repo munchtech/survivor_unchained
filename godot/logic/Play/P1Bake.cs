@@ -124,7 +124,7 @@ public sealed class P1Bake
         return n == "clavicle_l" ? "l" : n == "clavicle_r" ? "r" : null;
     }
 
-    static P1M4 Compose(P1M4? parent, P1M4 local) => parent == null ? local : parent * local;
+    static P1M4 Compose(P1M4? parent, P1M4 local) => parent is P1M4 pm ? pm * local : local;
 
     /// <summary>The foot lock's contact rule: a foot is planted where A's ball is within this of A's lowest ball in the clip, m.</summary>
     public const double ContactBand = 0.02;

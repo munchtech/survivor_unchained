@@ -636,14 +636,30 @@ public readonly record struct P1V(double X, double Y, double Z)
     public double this[int i] => i == 0 ? X : i == 1 ? Y : Z;
 }
 
-/// <summary>A 3x3 in doubles, row-major.</summary>
-public sealed class P1M3
+/// <summary>Nine doubles inline (P1M3's storage: no array on the heap).</summary>
+[System.Runtime.CompilerServices.InlineArray(9)]
+public struct P1D9 { double e0; }
+
+/// <summary>Sixteen doubles inline (P1M4's storage).</summary>
+[System.Runtime.CompilerServices.InlineArray(16)]
+public struct P1D16 { double e0; }
+
+/// <summary>A 3x3 in doubles, row-major. A value (a struct of nine inline doubles, copied on assignment): the rig's
+/// per-frame algebra makes no garbage (it was a class over a double[9]: two heap objects a product, about 75 MB/s in
+/// play, the main cause of the young collections). Nothing wrote into a matrix it did not just make, so copying
+/// rather than sharing changes no number (godot/tests' parity holds bit for bit).</summary>
+public struct P1M3
 {
-    public readonly double[] A = new double[9];
-    public P1M3() { }
-    public P1M3(params double[] v) { Array.Copy(v, A, 9); }
+    P1D9 a;
+    /// <summary>The nine numbers, row-major (a view of this matrix: write through it only on a variable).</summary>
+    [System.Diagnostics.CodeAnalysis.UnscopedRef] public Span<double> A => a;
+    public P1M3(params double[] v) { for (int i = 0; i < 9; i++) a[i] = v[i]; }
+    public P1M3(double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8)
+    {
+        a[0] = a0; a[1] = a1; a[2] = a2; a[3] = a3; a[4] = a4; a[5] = a5; a[6] = a6; a[7] = a7; a[8] = a8;
+    }
     public static P1M3 Id => new(1, 0, 0, 0, 1, 0, 0, 0, 1);
-    public double this[int r, int c] { get => A[r * 3 + c]; set => A[r * 3 + c] = value; }
+    public double this[int r, int c] { readonly get => a[r * 3 + c]; set => a[r * 3 + c] = value; }
     public static P1M3 operator *(P1M3 a, P1M3 b)
     {
         var o = new P1M3();
@@ -651,29 +667,31 @@ public sealed class P1M3
         return o;
     }
     public static P1V operator *(P1M3 a, P1V v) => new(a[0, 0] * v.X + a[0, 1] * v.Y + a[0, 2] * v.Z, a[1, 0] * v.X + a[1, 1] * v.Y + a[1, 2] * v.Z, a[2, 0] * v.X + a[2, 1] * v.Y + a[2, 2] * v.Z);
-    public static P1M3 operator *(P1M3 a, double k) { var o = new P1M3(); for (int i = 0; i < 9; i++) o.A[i] = a.A[i] * k; return o; }
-    public static P1M3 operator +(P1M3 a, P1M3 b) { var o = new P1M3(); for (int i = 0; i < 9; i++) o.A[i] = a.A[i] + b.A[i]; return o; }
-    public P1M3 T() { var o = new P1M3(); for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) o[r, c] = this[c, r]; return o; }
-    public P1V Col(int c) => new(this[0, c], this[1, c], this[2, c]);
+    public static P1M3 operator *(P1M3 a, double k) { var o = new P1M3(); for (int i = 0; i < 9; i++) o.a[i] = a.a[i] * k; return o; }
+    public static P1M3 operator +(P1M3 a, P1M3 b) { var o = new P1M3(); for (int i = 0; i < 9; i++) o.a[i] = a.a[i] + b.a[i]; return o; }
+    public readonly P1M3 T() { var o = new P1M3(); for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) o[r, c] = this[c, r]; return o; }
+    public readonly P1V Col(int c) => new(this[0, c], this[1, c], this[2, c]);
     public static P1M3 Outer(P1V a, P1V b) { var o = new P1M3(); for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) o[r, c] = a[r] * b[c]; return o; }
 }
 
-/// <summary>A 4x4 affine in doubles, row-major ([r,3] the translation).</summary>
-public sealed class P1M4
+/// <summary>A 4x4 affine in doubles, row-major ([r,3] the translation). A value, as P1M3.</summary>
+public struct P1M4
 {
-    public readonly double[] A = new double[16];
-    public double this[int r, int c] { get => A[r * 4 + c]; set => A[r * 4 + c] = value; }
+    P1D16 a;
+    /// <summary>The sixteen numbers, row-major (a view of this matrix: write through it only on a variable).</summary>
+    [System.Diagnostics.CodeAnalysis.UnscopedRef] public Span<double> A => a;
+    public double this[int r, int c] { readonly get => a[r * 4 + c]; set => a[r * 4 + c] = value; }
     public static P1M4 Id { get { var m = new P1M4(); m[0, 0] = m[1, 1] = m[2, 2] = m[3, 3] = 1; return m; } }
-    public static P1M4 FromRows(IReadOnlyList<double> v) { var m = new P1M4(); for (int i = 0; i < 16; i++) m.A[i] = v[i]; return m; }
+    public static P1M4 FromRows(IReadOnlyList<double> v) { var m = new P1M4(); for (int i = 0; i < 16; i++) m.a[i] = v[i]; return m; }
     public static P1M4 From(P1M3 l, P1V t)
     {
         var m = Id;
         for (int r = 0; r < 3; r++) { for (int c = 0; c < 3; c++) m[r, c] = l[r, c]; m[r, 3] = t[r]; }
         return m;
     }
-    public P1M3 Lin() { var o = new P1M3(); for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) o[r, c] = this[r, c]; return o; }
-    public P1V T() => new(this[0, 3], this[1, 3], this[2, 3]);
-    public P1M4 WithT(P1V t) { var m = new P1M4(); Array.Copy(A, m.A, 16); m[0, 3] = t.X; m[1, 3] = t.Y; m[2, 3] = t.Z; return m; }
+    public readonly P1M3 Lin() { var o = new P1M3(); for (int r = 0; r < 3; r++) for (int c = 0; c < 3; c++) o[r, c] = this[r, c]; return o; }
+    public readonly P1V T() => new(this[0, 3], this[1, 3], this[2, 3]);
+    public readonly P1M4 WithT(P1V t) { var m = this; m[0, 3] = t.X; m[1, 3] = t.Y; m[2, 3] = t.Z; return m; }
     public static P1M4 operator *(P1M4 a, P1M4 b)
     {
         var o = new P1M4();
@@ -682,7 +700,7 @@ public sealed class P1M4
     }
     public static P1V operator *(P1M4 a, P1V p) => a.Lin() * p + a.T();
     /// <summary>The affine inverse (the linear part by its adjugate: any invertible 3x3, scaled or not).</summary>
-    public P1M4 Inverse()
+    public readonly P1M4 Inverse()
     {
         var m = Lin();
         double a = m[0, 0], b = m[0, 1], c = m[0, 2], d = m[1, 0], e = m[1, 1], f = m[1, 2], g = m[2, 0], h = m[2, 1], i = m[2, 2];

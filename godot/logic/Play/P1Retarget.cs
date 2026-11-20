@@ -319,7 +319,7 @@ public sealed class P1Retarget
     public P1M4[] Map(P1M4[] aPose, ICollection<int>? aKeyed = null)
     {
         int n = b.Names.Length;
-        var delta = new P1M3[aPose.Length];
+        var delta = new P1M3?[aPose.Length];
         P1M3 D(int a) => delta[a] ??= Rot(aPose[a]) * aRestRot[a].T();
         P1M3 Turn(int j) => kind[j] == Kind.Direct ? D(src0[j]) : Slerp(D(src0[j]), D(src1[j]), frac[j]);
         var G = new P1M4[n];
