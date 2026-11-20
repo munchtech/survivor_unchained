@@ -306,7 +306,15 @@ public partial class WorldScene : Node3D, IZoneLook
                 // direction held then (S-05): the dash is where timing lives, and a dropped press
                 // cost most exactly when it mattered.
                 if (Pressed(Act.Dash)) dashHeld = Buffer;
-                if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
+                if (dashHeld > 0)
+                {
+                    // (lane K, the owner 19 Nov: "which direction dash goes is very bizarre. I don't know hwo to target my dash
+                    // directioni") With the mouse she dashes toward the cursor, as she aims everything else; a pad (no cursor),
+                    // the autopilot, or the cursor on her: the stick, else her facing (Battle.Dash).
+                    var (ddx, ddz) = (mx, mz);
+                    if (FacePointer() is var (cx, cz) && (cx - b.Player.X) * (cx - b.Player.X) + (cz - b.Player.Z) * (cz - b.Player.Z) > 0.36) { ddx = cx - b.Player.X; ddz = cz - b.Player.Z; }
+                    dashHeld = b.Dash(ddx, ddz) ? 0 : dashHeld - Step;
+                }
                 if (Pressed(Act.Flare)) artHeld = Buffer;
                 if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
                 Skills(b);
