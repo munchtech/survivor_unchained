@@ -37,6 +37,21 @@ public partial class Game
         hud.Fade(0, 1.6);
         GD.Print($"load: title up {Time.GetTicksMsec() / 1000.0:0.00} s since the engine began");
         PreloadCreator();
+        // (lane K, 19 Nov: without the stranger her ~3 s build moved onto the "Create character" click, 0.9 s -> 3.2 s) the
+        // creator's default figure is built hidden once the title has been up a while (its files loaded on threads by then),
+        // so the click finds her ready; a click before it builds her then, as before.
+        Wait(2.0, PrebuildCreator);
+    }
+
+    bool figurePrebuilt;
+
+    void PrebuildCreator()
+    {
+        if (Mode != "title" || figure != null) return;
+        ulong t = Time.GetTicksUsec();
+        DressFigure(new CreationDraft());
+        if (figure != null) { figure.Visible = false; figurePrebuilt = true; }
+        GD.Print($"load: creator's figure built hidden at the title in {(Time.GetTicksUsec() - t) / 1e6:0.00} s");
     }
 
     /// <summary>The title no longer seats the stranger, whose loads warmed the heroine's files for creation: ask for the creator's
@@ -68,6 +83,7 @@ public partial class Game
         figure?.QueueFree();
         figure = null;
         figureKey = "";
+        figurePrebuilt = false;
     }
 
     /// <summary>Someone on the log beside the fire, facing into it.</summary>
@@ -116,8 +132,10 @@ public partial class Game
         figure.Place(x, scene.HeightAt(x, z), z, FigureHeading + figTurnNow, true);
         figure.Loop(guardIdle = lo.Arms.Idle, 0);
         onLook = false;
-        if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
+        if (changedBody) Flourish(d.Archetype);
     }
+
+    void Flourish(string archetype) => figure?.Flourish(archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
 
     string figureBody = "";
     const double FigureHeading = Math.PI * 0.08;
@@ -622,7 +640,11 @@ public partial class Game
         if (Args.Get("eyes") is string ey) draft.Eyes = ey;
         // --paint ID: the paint on her face (Lore.Hero's paints: none, kohl, woad...).
         if (Args.Get("paint") is string pa) draft.Paint = pa;
+        bool prebuilt = figurePrebuilt && figure != null && draft.LookKey == figureKey;
+        figurePrebuilt = false;
         DressFigure(draft);
+        if (figure != null) figure.Visible = true;
+        if (prebuilt) Flourish(draft.Archetype);
         PoseCreate();
         // --look-time day|dawn|dusk: the Look in that light, not the fire's night (pictures of her hair by day).
         if (Args.Get("look-time") is string lt && lt != "night" && scene != null)
@@ -649,7 +671,8 @@ public partial class Game
         draft = null;
         air.Set(Atmospheres.Title);
         EndCreate();
-        RemoveFigure();   // (the owner, 19 Nov: just the fire at the title)
+        RemoveFigure();
+        Wait(2.0, PrebuildCreator);   // (the owner, 19 Nov: just the fire at the title)
         PoseTitle();
         screens.Show(new TitleScreen(this));
     }
