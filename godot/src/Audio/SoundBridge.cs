@@ -89,7 +89,7 @@ public sealed class SoundBridge
                 case Ev.Brink lb: Sfx.Cue("ledge_brink", At(lb.X, lb.Z)); break;
                 case Ev.ShieldHit sh: Sfx.Blocked(); if (sh.Broke) Sfx.Shatter(); break;
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
-                case Ev.PlayerDeath: Sfx.Death(); break;
+                case Ev.PlayerDeath: Synth.Instance?.StopClips("skill_bladestorm"); Sfx.Death(); break;
                 case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
                 case Ev.Nova n: Sfx.Nova(n.School, n.Art); break;
                 // Each skill in its own voice (Sfx.Skills), the school's where it has none.
@@ -108,6 +108,10 @@ public sealed class SoundBridge
                 // The owner's recording of the storm (6 s, 16 Nov) plays at the spin's start and carries its own whir; the chained
                 // whir returns once it has run out (a spin held past 5.5 s) and stands alone where the recording is not banked.
                 case Ev.Spin { Phase: SpinPhase.Start } ss when SoundBank.Has("skill.bladestorm.spin"): spinAt = now; Sfx.Cue("skill.bladestorm.spin", At(ss.X, ss.Z)); break;
+                // (lane K, the owner 19 Nov: "bladestorm sound continues even if its not casting") The 6 s recording was never
+                // cut: a tap, release, Resolve out or a break left it playing to its end. It fades out when the channel ends.
+                case Ev.Spin { Phase: SpinPhase.End }: Synth.Instance?.StopClips("skill_bladestorm"); break;
+                case Ev.Channel { On: false, Weapon: "bladestorm" }: Synth.Instance?.StopClips("skill_bladestorm"); break;
                 case Ev.Spin sn when sn.Phase is SpinPhase.Start or SpinPhase.Tick:
                     if (now - spinAt > 5.5) Sfx.Cue("art.bladestorm.whir", At(sn.X, sn.Z));
                     break;
@@ -115,7 +119,7 @@ public sealed class SoundBridge
                 // of the two (16 Nov), under what the swing and the heave already play.
                 case Ev.Cast { Weapon: "sunder", Heavy: true }: Sfx.Cue("skill.sunder.heavy", At(px, pz)); break;
                 case Ev.Cast { Weapon: "groundbreaker" }: Sfx.Cue("skill.groundbreaker.crack", At(px, pz)); break;
-                case Ev.Spin { Phase: SpinPhase.Break } sb: Sfx.Cue("art.bladestorm.break", At(sb.X, sb.Z)); break;
+                case Ev.Spin { Phase: SpinPhase.Break } sb: Synth.Instance?.StopClips("skill_bladestorm"); Sfx.Cue("art.bladestorm.break", At(sb.X, sb.Z)); break;
                 case Ev.SpinLine { Phase: SpinLinePhase.Split } sl: Sfx.Cue("art.bladestorm.split", At((sl.X0 + sl.X1) / 2, (sl.Z0 + sl.Z1) / 2)); break;
                 case Ev.Brace { Phase: BracePhase.Start } bs: Sfx.Cue("art.iron_vow.brace", At(bs.X, bs.Z)); break;
                 case Ev.Brace { Phase: BracePhase.Store } bt: Sfx.Cue("art.iron_vow.store", At(bt.X, bt.Z)); break;

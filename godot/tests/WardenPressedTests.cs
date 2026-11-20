@@ -231,6 +231,33 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Bladestorm_spins_with_no_foe_anywhere_and_walks_toward_the_cursor_unless_wasd_is_held()
+    {
+        var (b, w) = Storm();
+        var p = b.Player;
+        b.Resolve.Set(60);
+        foreach (var e in b.Enemies.Items.ToArray()) e.Hp = 0;
+        b.CursorIsMouse = true;
+        b.AimSkills(p.X + 8, p.Z);
+        b.HoldSkill(w.Slot, true);
+        Assert.True(b.PressSkill(w.Slot, p.X + 8, p.Z));
+        Assert.True(w.Channeling);
+        double x0 = p.X;
+        for (int i = 0; i < 30; i++) { b.HoldSkill(w.Slot, true); b.Tick(Dt, 0, 0); }
+        Assert.True(p.X > x0 + 1, $"moved {p.X - x0}");
+        // WASD wins: a held key moves her its own way.
+        double z0 = p.Z;
+        for (int i = 0; i < 30; i++) { b.HoldSkill(w.Slot, true); b.Tick(Dt, 0, 1); }
+        Assert.True(p.Z > z0 + 1);
+        // A pad (no mouse): no steering.
+        b.CursorIsMouse = false;
+        b.AimSkills(p.X + 8, p.Z);
+        double x1 = p.X;
+        for (int i = 0; i < 20; i++) { b.HoldSkill(w.Slot, true); b.Tick(Dt, 0, 0); }
+        Assert.True(Math.Abs(p.X - x1) < 0.5);
+    }
+
+    [Fact]
     public void Bladestorm_held_spins_and_ticks_and_released_ends_with_its_cooldown()
     {
         var (b, w) = Storm();

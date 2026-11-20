@@ -279,6 +279,23 @@ public sealed partial class Battle
 
     /* --------------------------------------------------------- bladestorm -- */
 
+    /// <summary>True when the view says the cursor is a real mouse point (not a pad, not the autopilot): set each step by WorldScene.</summary>
+    public bool CursorIsMouse;
+
+    /// <summary>While a spin channels with the mouse and no move key held, she walks toward the cursor's ground point (the spin's
+    /// pace follows in the walk); within 0.6 m of it she stops. A held WASD wins.</summary>
+    bool SpinSteerOnCursor(PlayerState p, ref double mx, ref double mz)
+    {
+        if (!CursorIsMouse || SkillAim is not { } a || mx * mx + mz * mz > 1e-6 || !p.Alive) return false;
+        bool spinning = false;
+        foreach (var w in Weapons) if (w.Channeling && w.Behavior == WeaponBehavior.Spin) { spinning = true; break; }
+        if (!spinning) return false;
+        double dx = a.X - p.X, dz = a.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        if (d <= 0.6) return false;
+        mx = dx / d; mz = dz / d;
+        return true;
+    }
+
     /// <summary>Her pace while a spin runs (its Pace share; 1 otherwise): she steers freely, a little slower.</summary>
     double SpinPace()
     {

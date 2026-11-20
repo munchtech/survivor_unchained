@@ -577,6 +577,8 @@ public sealed partial class Battle
     void UpdatePlayer(double dt, double mx, double mz)
     {
         var p = Player;
+        // (lane K, the owner 19 Nov: "having to wasd during bladestorm feels bad, should just move towards where cursor is")
+        SpinSteerOnCursor(p, ref mx, ref mz);
         p.StickX = mx; p.StickZ = mz;
         if (!p.Alive) return;
         var st = Stats;

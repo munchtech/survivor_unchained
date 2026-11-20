@@ -34,6 +34,7 @@ public partial class WorldScene : Node3D, IZoneLook
     {
         // The pointer each step (with none, her facing ahead): a held skill (the grips, campaign) repeats at it.
         var pt = Pointer();
+        b.CursorIsMouse = pt != null && FacePointer() != null;
         if (Pressed(Act.Swap)) b.Swap();
         {
             var p0 = b.Player;

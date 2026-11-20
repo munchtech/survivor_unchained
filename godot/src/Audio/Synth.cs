@@ -271,6 +271,9 @@ public partial class Synth : Node
 
     /// <summary>Sounds asked for since the mixer last looked (the mixer runs on its own thread).</summary>
     readonly ConcurrentQueue<Voice> incoming = new();
+    readonly ConcurrentQueue<string> stopClips = new();
+    /// <summary>Fade out every playing recording of this take family (a held sound whose cause has ended).</summary>
+    public void StopClips(string of) { if (Live) stopClips.Enqueue(of); }
     readonly ConcurrentQueue<Bed> bedsIn = new();
     Thread? worker;
     volatile bool running;
@@ -303,6 +306,8 @@ public partial class Synth : Node
         ulong t0 = Time.GetTicksUsec();
         if (cut) { cut = false; voices.Clear(); incoming.Clear(); }
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
+        // (lane K, the owner 19 Nov: "bladestorm sound continues even if its not casting") a recording asked to stop fades out now
+        while (stopClips.TryDequeue(out var sc)) foreach (var v in voices) if (v is ClipVoice cv && cv.Of == sc) cv.StopNow(Now);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
         if (!crowdRead) { crowdRead = true; CrowdDuck = SoundBank.Duck("lead", "sfx", 0.5f); CrowdDuckDeep = SoundBank.Duck("lead", "sfxDeep", CrowdDuck); CrowdVoicesLo = SoundBank.Duck("lead", "sfxVoicesLo", 4); CrowdVoicesHi = SoundBank.Duck("lead", "sfxVoicesHi", 12); LeadHold = SoundBank.Duck("lead", "seconds", 0.09f); }
         float dt = (float)(1 / Rate);
@@ -636,8 +641,12 @@ public partial class Synth : Node
         readonly Biquad? lp, lpR;
         readonly double lpf;
         double pos;
-        readonly double cut = double.MaxValue;
+        double cut = double.MaxValue;
         const double CutFade = 0.12, TailFade = 0.03;
+        public readonly string Of;
+
+        /// <summary>Fade out from t over the cut fade and end.</summary>
+        public void StopNow(double t) { if (t + CutFade < cut) { cut = t + CutFade; End = cut + 0.01; } }
 
         readonly float[]? right;
         double fadeIn = double.MinValue;
@@ -667,6 +676,7 @@ public partial class Synth : Node
         public ClipVoice(Synth s, Clip o, Recordings.Take take)
         {
             data = take.Data;
+            Of = o.Of;
             if (o.Stereo && take.Left != null && take.Right != null) { data = take.Left; right = take.Right; }
             double pitch = o.Pitch ?? 1;
             step = take.Rate / s.Rate * pitch;
