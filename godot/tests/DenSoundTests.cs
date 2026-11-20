@@ -40,12 +40,12 @@ public class DenSoundTests
         var l = new DenSound.VoiceLimiter();
         Assert.True(l.Admit("wolf", "lunge", 0));
         Assert.False(l.Admit("wolf", "lunge", 0.5));   // inside the per-kind cooldown
-        Assert.True(l.Admit("wolf", "lunge", 1.0));    // outside it
-        Assert.True(l.Admit("boar", "bite", 1.0));
-        Assert.True(l.Admit("wolfb", "hurt", 1.05));
-        Assert.True(l.Admit("yearling", "lunge", 1.05)); // four held now
-        Assert.False(l.Admit("yearling", "bite", 1.1)); // a fifth is refused
-        Assert.True(l.Admit("yearling", "death", 1.1)); // a death is always heard
+        Assert.False(l.Admit("wolf", "bite", 1.0));    // and one of a kind per KindGap whatever the moment
+        Assert.True(l.Admit("wolf", "lunge", 1.3));    // outside both
+        Assert.True(l.Admit("boar", "bite", 1.3));
+        Assert.True(l.Admit("wolfb", "hurt", 1.35));   // three held now
+        Assert.False(l.Admit("yearling", "lunge", 1.4)); // a fourth is refused
+        Assert.True(l.Admit("yearling", "death", 1.4)); // a death is always heard
         Assert.True(l.Admit("packmother", "arrival", 1.1));
         Assert.True(l.Admit("packmother", "arrival", 1.11));
     }

@@ -23,7 +23,11 @@ public static class DenSound
     /// <summary>The numbers, picked from a 5-wolf pack fight's log (DenSoundTests.PackFight; docs/team/den_sound_events.md):
     /// at most MaxVoices creature voices at once; one voice of a kind and moment per Cooldown seconds; and a pack's
     /// notices never closer than NoticeGap whatever the kind (a pack that wakes together is one howl, then the next).</summary>
-    public const int MaxVoices = 4;
+    public const int MaxVoices = 3;
+    /// <summary>(the owner, 19 Nov: "some monsters make noises way too often, boars mostly") One voice from a given foe at most every
+    /// FoeGap s (idle chatter, if a creature ever has any, IdleGap), and one of a kind every KindGap s, whatever its moment.
+    /// A death is always heard.</summary>
+    public const double FoeGap = 4, IdleGap = 8, KindGap = 1.2;
     public const double NoticeGap = 0.45, MaxHearing = 30;
     public static double Cooldown(string moment) => moment switch { "notice" => 1.6, "bite" => 0.55, "lunge" => 0.9, "hurt" => 0.3, "death" => 0.18, _ => 1 };
     /// <summary>How long a voice of this moment holds one of the MaxVoices.</summary>
@@ -33,19 +37,28 @@ public static class DenSound
     public sealed class VoiceLimiter
     {
         readonly Dictionary<string, double> last = new();
+        readonly Dictionary<int, double> lastFoe = new();
+        readonly Dictionary<string, double> lastKind = new();
         readonly List<double> ends = new();
         double lastNotice = -99;
         public int Played, Dropped;
 
-        public bool Admit(string kind, string moment, double now)
+        public bool Admit(string kind, string moment, double now, int enemy = -1)
         {
             if (Unlimited(kind)) { Played++; return true; }
             ends.RemoveAll(e => e <= now);
             string key = kind + "." + moment;
             if (last.TryGetValue(key, out var t) && now - t < Cooldown(moment)) { Dropped++; return false; }
             if (ends.Count >= MaxVoices && moment != "death") { Dropped++; return false; }
+            if (moment != "death")
+            {
+                if (enemy >= 0 && lastFoe.TryGetValue(enemy, out var tf) && now - tf < (moment == "idle" ? IdleGap : FoeGap)) { Dropped++; return false; }
+                if (lastKind.TryGetValue(kind, out var tk) && now - tk < KindGap) { Dropped++; return false; }
+            }
             if (moment == "notice") { if (now - lastNotice < NoticeGap) { Dropped++; return false; } lastNotice = now; }
             last[key] = now;
+            lastKind[kind] = now;
+            if (enemy >= 0) lastFoe[enemy] = now;
             ends.Add(now + Holds(moment));
             Played++;
             return true;
@@ -129,7 +142,7 @@ public static class DenSound
     }
 
     /// <summary>One creature voice the sim asks for this frame.</summary>
-    public readonly record struct Want(string Kind, string Moment, double X, double Z, double Dist);
+    public readonly record struct Want(string Kind, string Moment, double X, double Z, double Dist, int Enemy = -1);
 
     /// <summary>The voices a frame's events ask for, nearest first: Ev.Voice (notice, bite, lunge), a hit that did not kill (hurt),
     /// a kill (death); a creature with no voice kind asks for nothing. Her Pack-Mother's moves are Ev.Sound ids, not here.</summary>
@@ -143,11 +156,11 @@ public static class DenSound
             switch (e)
             {
                 case Ev.Voice v when KindOf(v.Def) is { } k1:
-                    res.Add(new(k1, v.Moment, v.X, v.Z, D(v.X, v.Z))); break;
+                    res.Add(new(k1, v.Moment, v.X, v.Z, D(v.X, v.Z), v.Enemy)); break;
                 case Ev.Hit h when !h.Dot && !h.Blocked && h.Target >= 0 && h.Def != null && KindOf(h.Def) is { } k2 && killed?.Contains(h.Target) != true:
-                    res.Add(new(k2, "hurt", h.X, h.Z, D(h.X, h.Z))); break;
+                    res.Add(new(k2, "hurt", h.X, h.Z, D(h.X, h.Z), h.Target)); break;
                 case Ev.Kill kl when kl.Def != "mirror" && KindOf(kl.Def) is { } k3:
-                    res.Add(new(k3, "death", kl.X, kl.Z, D(kl.X, kl.Z))); break;
+                    res.Add(new(k3, "death", kl.X, kl.Z, D(kl.X, kl.Z), kl.Enemy)); break;
             }
         res.RemoveAll(w => w.Dist > MaxHearing && !Unlimited(w.Kind));
         res.Sort((a, b) => a.Dist.CompareTo(b.Dist));
