@@ -449,8 +449,8 @@ public static class P1Body
     public static P1M4 M(Transform3D t)
     {
         var m = P1M4.Id;
-        var c = new[] { t.Basis.Column0, t.Basis.Column1, t.Basis.Column2 };
-        for (int k = 0; k < 3; k++) { m[0, k] = c[k].X; m[1, k] = c[k].Y; m[2, k] = c[k].Z; }
+        var b = t.Basis;   // (the columns read in place: no array a call, this runs per bone per frame)
+        for (int k = 0; k < 3; k++) { var c = k == 0 ? b.Column0 : k == 1 ? b.Column1 : b.Column2; m[0, k] = c.X; m[1, k] = c.Y; m[2, k] = c.Z; }
         m[0, 3] = t.Origin.X; m[1, 3] = t.Origin.Y; m[2, 3] = t.Origin.Z;
         return m;
     }
@@ -485,6 +485,18 @@ public partial class P1Laws : SkeletonModifier3D
     P1M4[]? lastG;
     Dictionary<string, double> weights = new();
     bool reorderQueued, offsetsPrinted, driveFailed;
+    // (per frame without garbage: the pose buffers kept, the metas' names made once, each mesh's blend shape index by
+    // name looked up once per mesh set, not as a new StringName every frame)
+    P1M4[] lBuf = System.Array.Empty<P1M4>(), gBuf = System.Array.Empty<P1M4>();
+    static readonly StringName MetaB = "p1_b", MetaRebound = "p1_rebound", MetaPiece = "p1_piece", MetaGear = P1Body.GearMeta;
+    readonly Dictionary<MeshInstance3D, (Mesh? Set, Dictionary<string, int> Index)> shapeIndex = new();
+    int ShapeIndex(MeshInstance3D mi, string name)
+    {
+        var set = mi.Mesh;
+        if (!shapeIndex.TryGetValue(mi, out var e) || e.Set != set) shapeIndex[mi] = e = (set, new Dictionary<string, int>());
+        if (!e.Index.TryGetValue(name, out int k)) e.Index[name] = k = mi.FindBlendShapeByName(name);
+        return k;
+    }
 
     public P1Laws() { Name = "P1Laws"; }
 
@@ -661,7 +673,8 @@ public partial class P1Laws : SkeletonModifier3D
     {
         if (sk == null || rig == null) return;
         int n = rig.Names.Length;
-        var L = new P1M4[n]; var G = new P1M4[n];
+        if (lBuf.Length != n) { lBuf = new P1M4[n]; gBuf = new P1M4[n]; }
+        var L = lBuf; var G = gBuf;
         foreach (int j in order)
         {
             L[j] = rig.Helpers.Contains(j) ? restLocal[j] : Local(sk, j);
@@ -703,10 +716,10 @@ public partial class P1Laws : SkeletonModifier3D
         }
         foreach (var mi in closeMeshes)
             foreach (var kv in w)
-                if (mi.FindBlendShapeByName(kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
+                if (ShapeIndex(mi, kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
         if (lod is { Visible: true } && playRig != null && !driveFailed)
             foreach (var kv in playRig.CorrectiveWeights(G2))
-                if (lod.FindBlendShapeByName(kv.Key) is int k and >= 0) lod.SetBlendShapeValue(k, (float)kv.Value);
+                if (ShapeIndex(lod, kv.Key) is int k and >= 0) lod.SetBlendShapeValue(k, (float)kv.Value);
     }
 
     // --p1-laws-dump FILE (checks only; tools/armor/engine_check.py): every --pose-probe-every'th frame (default 30) one JSON
@@ -747,16 +760,18 @@ public partial class P1Laws : SkeletonModifier3D
                         sm.SetShaderParameter("dbg_id", 1.0f);
             }
         // (a piece worn as B's whose mesh was set again since, e.g. a garment tuck laid it anew: carried again)
-        foreach (var p in worn.Where(p => GodotObject.IsInstanceValid(p.Mi) && p.Mi.Mesh != p.Set).ToList())
+        for (int i = 0; i < worn.Count; i++)
         {
-            worn.Remove(p);
-            p.Mi.RemoveMeta("p1_piece");
+            var p = worn[i];
+            if (!GodotObject.IsInstanceValid(p.Mi) || p.Mi.Mesh == p.Set) continue;
+            worn.RemoveAt(i--);
+            p.Mi.RemoveMeta(MetaPiece);
         }
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
-            if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.HasMeta("p1_piece") || mi.Skin == null) continue;
+            if (mi.HasMeta(MetaB) || mi.HasMeta(MetaRebound) || mi.HasMeta(MetaPiece) || mi.Skin == null) continue;
             // (a piece of B's built gear (P1Body.GearMeta): B's own skin; it rides its tier's body's shapes)
-            if (mi.HasMeta(P1Body.GearMeta))
+            if (mi.HasMeta(MetaGear))
             {
                 string n = mi.Name.ToString();
                 bool playTier = n.StartsWith("lod_") || n.StartsWith("her_merge") || n.Contains("_lod1_") || n.EndsWith("_shadow");

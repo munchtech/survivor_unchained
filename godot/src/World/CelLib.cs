@@ -122,7 +122,7 @@ public static class CelLib
                 if (GodotObject.IsInstanceValid(g) && g.IsInsideTree() && g.GetViewport() == tree!.Root)
                 {
                     Hero(g);
-                    foreach (var (m, _) in Slots(g)) Visit(m, g);
+                    Mats(g, mats); foreach (var m in mats) Visit(m, g);
                     var id = g.GetInstanceId();
                     if (tracked.Add(id)) young.Add((g, id, YoungFrames));
                 }
@@ -131,7 +131,7 @@ public static class CelLib
         {
             var (g, id, left) = young[i];
             if (!GodotObject.IsInstanceValid(g)) { young.RemoveAt(i); tracked.Remove(id); continue; }
-            if (g.IsInsideTree()) { Hero(g); foreach (var (m, _) in Slots(g)) Visit(m, g); }
+            if (g.IsInsideTree()) { Hero(g); Mats(g, mats); foreach (var m in mats) Visit(m, g); }
             if (left > 1) young[i] = (g, id, left - 1);
             else { young.RemoveAt(i); watch.Add((g, id)); }
         }
@@ -140,7 +140,7 @@ public static class CelLib
             watchAt = (watchAt + 1) % watch.Count;
             var (g, id) = watch[watchAt];
             if (!GodotObject.IsInstanceValid(g)) { tracked.Remove(id); watch[watchAt] = watch[^1]; watch.RemoveAt(watch.Count - 1); continue; }
-            if (g.IsInsideTree() && g.IsVisibleInTree()) { Hero(g); foreach (var (m, _) in Slots(g)) Visit(m, g); }
+            if (g.IsInsideTree() && g.IsVisibleInTree()) { Hero(g); Mats(g, mats); foreach (var m in mats) Visit(m, g); }
         }
         // (a converted material whose feature set changed since: the engine bound its own shader for the new set)
         for (int i = 0; i < 4 && live.Count > 0; i++)
@@ -167,7 +167,8 @@ public static class CelLib
         foreach (var (g, _) in lined)
         {
             if (!GodotObject.IsInstanceValid(g) || !g.IsInsideTree()) continue;
-            foreach (var (m, _) in Slots(g))
+            Mats(g, mats);
+            foreach (var m in mats)
                 for (Material? p = m; p != null; p = p.NextPass)
                 {
                     if (p is not ShaderMaterial { Shader: { } sh } sm || heroClasses.ContainsKey(p.GetInstanceId())) continue;
@@ -208,6 +209,26 @@ public static class CelLib
             else if (mesh.SurfaceGetMaterial(s) is { } sm) yield return (sm, $"surface {s}");
         }
     }
+
+    /// <summary>Slots' materials alone, in its order, into a list (cleared first): the every-frame walks' form (no iterator,
+    /// no slot names made). Nothing that runs inside those walks takes it again.</summary>
+    static void Mats(GeometryInstance3D g, List<Material> into)
+    {
+        into.Clear();
+        if (g.MaterialOverride is { } o) into.Add(o);
+        if (g.MaterialOverlay is { } ov) into.Add(ov);
+        if (g.MaterialOverride != null) return;
+        var mi = g as MeshInstance3D;
+        var mesh = mi != null ? mi.Mesh : (g as MultiMeshInstance3D)?.Multimesh?.Mesh;
+        if (mesh == null) return;
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+        {
+            var so = mi != null && s < mi.GetSurfaceOverrideMaterialCount() ? mi.GetSurfaceOverrideMaterial(s) : null;
+            if (so != null) into.Add(so);
+            else if (mesh.SurfaceGetMaterial(s) is { } sm) into.Add(sm);
+        }
+    }
+    static readonly List<Material> mats = new();
 
     static void Visit(Material m, GeometryInstance3D g)
     {
