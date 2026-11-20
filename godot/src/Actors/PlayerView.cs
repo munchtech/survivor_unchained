@@ -32,11 +32,57 @@ public partial class PlayerView : Node3D
     readonly AnimationTree tree;
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName BlendPosition = "parameters/move/blend_position";
+    // (the AnimationTree paths, each made once: a StringName from a string per frame is a Godot disposable that outlives its young GC)
+    static readonly StringName P_upperScale_scale = "parameters/upperScale/scale";
+    static readonly StringName P_upperShot_request = "parameters/upperShot/request";
+    static readonly StringName P_fullScale_scale = "parameters/fullScale/scale";
+    static readonly StringName P_fullShot_request = "parameters/fullShot/request";
+    static readonly StringName P_fullShot_active = "parameters/fullShot/active";
+    static readonly StringName P_fullOldScale_scale = "parameters/fullOldScale/scale";
+    static readonly StringName P_fullOldSeek_seek_request = "parameters/fullOldSeek/seek_request";
+    static readonly StringName P_fullX_blend_amount = "parameters/fullX/blend_amount";
+    static readonly StringName P_upperShot_active = "parameters/upperShot/active";
+    static readonly StringName P_move_backBlend_blend_amount = "parameters/move/backBlend/blend_amount";
+    static readonly StringName P_move_backScale_scale = "parameters/move/backScale/scale";
+    static readonly StringName P_move_blendW_blend_amount = "parameters/move/blendW/blend_amount";
+    static readonly StringName P_move_blend_blend_amount = "parameters/move/blend/blend_amount";
+    static readonly StringName P_move_fast_blend_amount = "parameters/move/fast/blend_amount";
+    static readonly StringName P_move_walkSeek_seek_request = "parameters/move/walkSeek/seek_request";
+    static readonly StringName P_move_runSeek_seek_request = "parameters/move/runSeek/seek_request";
+    static readonly StringName P_move_idleSeek_seek_request = "parameters/move/idleSeek/seek_request";
+    static readonly StringName P_move_aIdleSeek_seek_request = "parameters/move/aIdleSeek/seek_request";
+    static readonly StringName P_move_arms_blend_amount = "parameters/move/arms/blend_amount";
+    static readonly StringName P_move_aBlendW_blend_amount = "parameters/move/aBlendW/blend_amount";
+    static readonly StringName P_move_aFast_blend_amount = "parameters/move/aFast/blend_amount";
+    static readonly StringName P_move_aBlend_blend_amount = "parameters/move/aBlend/blend_amount";
+    static readonly StringName P_move_aWalkSeek_seek_request = "parameters/move/aWalkSeek/seek_request";
+    static readonly StringName P_move_aRunSeek_seek_request = "parameters/move/aRunSeek/seek_request";
+    static readonly StringName P_upper_current_position = "parameters/upper/current_position";
+    static readonly StringName P_move_dFA_blend_amount = "parameters/move/dFA/blend_amount";
+    static readonly StringName P_move_dFB_blend_amount = "parameters/move/dFB/blend_amount";
+    static readonly StringName P_move_dBA_blend_amount = "parameters/move/dBA/blend_amount";
+    static readonly StringName P_move_dBB_blend_amount = "parameters/move/dBB/blend_amount";
+    static readonly StringName P_move_dirSet_blend_amount = "parameters/move/dirSet/blend_amount";
+    static readonly StringName P_move_dir_blend_amount = "parameters/move/dir/blend_amount";
     readonly AnimationNodeAnimation upper, full;
+    // The upper node's clip, fetched once per set of its Animation (the getter and GetAnimation each make a Godot object)
+    Animation? upperAnim;
+    Animation? UpperAnim() => upperAnim ??= person.Anim.GetAnimation(upper.Animation);
     /// <summary>The whole-body clip she was in, held on at its place for a crossfade out of it (FullHerFrom).</summary>
     readonly AnimationNodeAnimation fullOld;
     readonly AnimationNodeOneShot fullShotNode, upperShotNode;
     readonly AnimationNodeAnimation? idleNode, runNode;
+    // The clip names the four nodes play, as strings (SyncAn, at every place a node's Animation is set): the getter makes a
+    // StringName each call, and a string passed on as a StringName makes one more.
+    string? idleAn, runAn, sprintAn, walkAn;
+    StringName? idleSn;
+    Animation? idleAnimRes;
+    void SyncAn()
+    {
+        idleAn = idleNode?.Animation.ToString(); runAn = runNode?.Animation.ToString();
+        sprintAn = sprintNode?.Animation.ToString(); walkAn = walkNode?.Animation.ToString();
+        idleSn = idleAn == null ? null : new StringName(idleAn); idleAnimRes = null;
+    }
     public readonly OmniLight3D Light;
     /// <summary>Her carried light on people (Rendering 2, judge r1 D1): <see cref="Light"/> lights the ground round her and
     /// not people, and this one, higher and softer, lights her and the folk near her. From a hand over her head the pool's
@@ -349,6 +395,7 @@ public partial class PlayerView : Node3D
             // Her walk (if she has one for this calling and state) and her run are each seeked every frame to the shared
             // stride phase, so they stay on the same foot through the blend.
             walkNode = new AnimationNodeAnimation { Animation = run };
+            SyncAn();
             mv.AddNode("walk", walkNode, new Vector2(0, 100));
             mv.AddNode("walkSeek", new AnimationNodeTimeSeek(), new Vector2(200, 100));
             mv.AddNode("runSeek", new AnimationNodeTimeSeek(), new Vector2(400, 300));
@@ -434,6 +481,7 @@ public partial class PlayerView : Node3D
                 }
                 var two = new AnimationNodeBlendSpace2D { MinSpace = new Vector2(-Mathf.Max(runSpeed, sprintSpeed), -Mathf.Max(runSpeed, sprintSpeed)), MaxSpace = new Vector2(Mathf.Max(runSpeed, sprintSpeed), Mathf.Max(runSpeed, sprintSpeed)), Sync = true };
                 walkNode = new AnimationNodeAnimation { Animation = own.Prefix + wb };
+                SyncAn();
                 two.AddBlendPoint(idleNode, new Vector2(0, 0));
                 two.AddBlendPoint(walkNode, new Vector2(0, vw));
                 two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_back" }, new Vector2(0, -vb));
@@ -647,13 +695,13 @@ public partial class PlayerView : Node3D
     void Upper(string clip, double speed)
     {
         upperClip = clip;
-        upper.Animation = People.Clip(person, clip);
+        upper.Animation = People.Clip(person, clip); upperAnim = null;
         upperNative = upper.Animation.ToString().StartsWith(own.Prefix);
         upperHeld = float.NaN;
-        tree.Set("parameters/upperScale/scale", speed);
+        tree.Set(P_upperScale_scale, speed);
         upperRate = speed; upperRelease = -1;
         if (person.Counter != null) person.Counter.Mean = null;
-        tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        tree.Set(P_upperShot_request, (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
 
     /// <summary>One of her own clips on her upper body, by its own name.</summary>
@@ -665,13 +713,13 @@ public partial class PlayerView : Node3D
         // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
         // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
         if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
-        upper.Animation = own.Prefix + RunVariant(clip);
+        upper.Animation = own.Prefix + RunVariant(clip); upperAnim = null;
         upperNative = true;
         upperHeld = float.NaN;
-        tree.Set("parameters/upperScale/scale", speed);
+        tree.Set(P_upperScale_scale, speed);
         upperRate = speed; upperRelease = -1;
         if (person.Counter != null) person.Counter.Mean = own.PelvisMean(RunVariant(clip));
-        tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        tree.Set(P_upperShot_request, (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
     }
 
@@ -687,8 +735,8 @@ public partial class PlayerView : Node3D
         full.Animation = People.Clip(person, clip);
         fullNative = full.Animation.ToString().StartsWith(own.Prefix);
         fullSoft = fullGaveWay = false;
-        tree.Set("parameters/fullScale/scale", speed);
-        tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        tree.Set(P_fullScale_scale, speed);
+        tree.Set(P_fullShot_request, (int)AnimationNodeOneShot.OneShotRequest.Fire);
         FullBlendIn(mine && fullNative ? full.Animation.ToString()[own.Prefix.Length..] : null);
         if (mine && fullNative) IdleSyncLater(full.Animation.ToString()[own.Prefix.Length..], speed);
     }
@@ -714,8 +762,8 @@ public partial class PlayerView : Node3D
         fullNative = true;
         IdleSyncLater(clip, speed);
         fullSoft = soft; fullGaveWay = false;
-        tree.Set("parameters/fullScale/scale", speed);
-        tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        tree.Set(P_fullScale_scale, speed);
+        tree.Set(P_fullShot_request, (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
     }
 
@@ -730,7 +778,7 @@ public partial class PlayerView : Node3D
     bool FullHerFrom(string clip, double speed, bool soft, double xfade)
     {
         if (!mine || !HasHer(clip)) return false;
-        bool live = (bool)tree.Get("parameters/fullShot/active");
+        bool live = (bool)tree.Get(P_fullShot_active);
         var oldAnim = full.Animation;
         double oldAt = (time - fullStart) * fullSpeed;
         float oldSpeed = fullSpeed;
@@ -738,9 +786,9 @@ public partial class PlayerView : Node3D
         if (live)
         {
             fullOld.Animation = oldAnim;
-            tree.Set("parameters/fullOldScale/scale", oldSpeed);
-            tree.Set("parameters/fullOldSeek/seek_request", oldAt);
-            tree.Set("parameters/fullX/blend_amount", 1.0);
+            tree.Set(P_fullOldScale_scale, oldSpeed);
+            tree.Set(P_fullOldSeek_seek_request, oldAt);
+            tree.Set(P_fullX_blend_amount, 1.0);
             // (the restarted shot comes in at once: its live pose is the held clip, eased out below)
             fullShotNode.FadeInTime = 0;
         }
@@ -754,17 +802,17 @@ public partial class PlayerView : Node3D
     {
         if (xfadeFrom < 0) return;
         double k = System.Math.Clamp((time - xfadeFrom) / System.Math.Max(1e-4, xfadeLen), 0, 1);
-        tree.Set("parameters/fullX/blend_amount", 1 - k * k * (3 - 2 * k));
+        tree.Set(P_fullX_blend_amount, 1 - k * k * (3 - 2 * k));
         // (the shot's lengthened fade in is left as it is until its next fire: the shot's own clock runs a frame or two
         // behind this one, and putting it back at 0.05 here cut the last of its fade in a frame, the f7 jump of r1)
-        if (k >= 1) { xfadeFrom = -1; tree.Set("parameters/fullX/blend_amount", 0.0); UpperLetGo(); }
+        if (k >= 1) { xfadeFrom = -1; tree.Set(P_fullX_blend_amount, 0.0); UpperLetGo(); }
     }
 
     /// <summary>The held blow under a crossfade let go on at its own pace (hidden under the whole-body shot by then).</summary>
     void UpperLetGo()
     {
         if (float.IsNaN(upperHeld)) return;
-        tree.Set("parameters/upperScale/scale", upperHeld);
+        tree.Set(P_upperScale_scale, upperHeld);
         upperHeld = float.NaN;
     }
 
@@ -774,7 +822,7 @@ public partial class PlayerView : Node3D
         fullShotNode.FadeInTime = FullFadeIn;
         if (xfadeFrom < 0) return;
         xfadeFrom = -1;
-        tree.Set("parameters/fullX/blend_amount", 0.0);
+        tree.Set(P_fullX_blend_amount, 0.0);
         fullShotNode.FadeInTime = FullFadeIn;
     }
 
@@ -783,9 +831,9 @@ public partial class PlayerView : Node3D
     void ArtTail(float sp)
     {
         if (artTail < 0 || time < artTail) return;
-        if (sp > 0.6f && (bool)tree.Get("parameters/fullShot/active"))
-            tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
-        if (sp > 0.6f || !(bool)tree.Get("parameters/fullShot/active")) artTail = -1;
+        if (sp > 0.6f && (bool)tree.Get(P_fullShot_active))
+            tree.Set(P_fullShot_request, (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+        if (sp > 0.6f || !(bool)tree.Get(P_fullShot_active)) artTail = -1;
     }
 
     double artTail = -1;
@@ -802,10 +850,10 @@ public partial class PlayerView : Node3D
     public void OnSwingRelease(Ev.SwingRelease e)
     {
         if (!mine || dead) return;
-        bool full = (bool)tree.Get("parameters/fullShot/active") && HasHer(fullClip);
-        bool up = (bool)tree.Get("parameters/upperShot/active");
+        bool full = (bool)tree.Get(P_fullShot_active) && HasHer(fullClip);
+        bool up = (bool)tree.Get(P_upperShot_active);
         if (SwingRecover.Fade(full ? fullClip : up ? upperClip : null, e.Recover) is not double fade) return;
-        var (node, path) = full ? (fullShotNode, "parameters/fullShot/request") : (upperShotNode, "parameters/upperShot/request");
+        var (node, path) = full ? (fullShotNode, P_fullShot_request) : (upperShotNode, P_upperShot_request);
         node.FadeOutTime = fade;
         if (!full) upperRelease = time;
         tree.Set(path, (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
@@ -826,8 +874,8 @@ public partial class PlayerView : Node3D
         FlareClipEnd();
         if (GripProbe)
         {
-            bool live = (bool)tree.Get("parameters/fullShot/active");
-            GD.Print($"grip probe press: full shot {(live ? $"{fullClip} at {(time - fullStart) * fullSpeed:0.000} s (soft {fullSoft})" : "none")}, upper {((bool)tree.Get("parameters/upperShot/active") ? upperClip : "-")}");
+            bool live = (bool)tree.Get(P_fullShot_active);
+            GD.Print($"grip probe press: full shot {(live ? $"{fullClip} at {(time - fullStart) * fullSpeed:0.000} s (soft {fullSoft})" : "none")}, upper {((bool)tree.Get(P_upperShot_active) ? upperClip : "-")}");
             probeN = 0; probeTipLocal = null; probeVisN = -1;
         }
         gripShowAt = -1;
@@ -835,24 +883,24 @@ public partial class PlayerView : Node3D
         if (def.Grip != null && view != null && view.FlareGrip(def.Grip) && view.FlareGripNode is { } gn) { gn.Visible = false; gripShowAt = time + FlareXfade + GripSettle; }
         if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;
         // (from her live pose over 0.1 s, 3 of the clip's frames: no swing dropped in a frame)
-        bool wasLive = (bool)tree.Get("parameters/fullShot/active");
+        bool wasLive = (bool)tree.Get(P_fullShot_active);
         if (!FullHerFrom(clip, 1, false, FlareXfade)) { gripShowAt = -1; flareYawAt = -1; view?.FlareGripEnd(); return; }
         // The blow on her arms (the upper shot) is held at the pose she was drawn in at the press while the Flare's clip fades
         // in over it, then let go on (hidden): r2's swing ran on under the fade, 0.2-0.35 m of wrist a frame.
-        if ((bool)tree.Get("parameters/upperShot/active"))
+        if ((bool)tree.Get(P_upperShot_active))
         {
-            upperHeld = (float)tree.Get("parameters/upperScale/scale");
-            tree.Set("parameters/upperScale/scale", 0f);
+            upperHeld = (float)tree.Get(P_upperScale_scale);
+            tree.Set(P_upperScale_scale, 0f);
         }
         // The shot's fade from the layers under starts on the press's own frame: the tree takes the request and its fade's first
         // step now, with the Flare's clip and the held blow still (a one-shot takes the fire on one advance and draws its fade's first step at no weight on the next,
         // and r2's press held her two frames, then caught up). The layers under step a frame of their own idle, unseen.
         if (!wasLive)
         {
-            tree.Set("parameters/fullScale/scale", 0f);
+            tree.Set(P_fullScale_scale, 0f);
             tree.Advance(0);   // (the fire taken: the fade's clock set)
             tree.Advance(1.0 / 60);   // (its first step, which a one-shot draws at no weight)
-            tree.Set("parameters/fullScale/scale", 1f);
+            tree.Set(P_fullScale_scale, 1f);
         }
         flareClipName = clip; flareClipStart = time; flareClipSeen = false;
         artTail = time + def.ClipFree;
@@ -891,7 +939,7 @@ public partial class PlayerView : Node3D
         Vector3 B(string n) => inv * (skel.GlobalTransform * skel.GetBoneGlobalPose(skel.FindBone(n)).Origin);
         var fl = B("foot_l"); var fr = B("foot_r");
         float stance = new Vector2(fl.X - fr.X, fl.Z - fr.Z).Length();
-        return $"body: steps world/local mm {sb}(max {maxW:0}/{maxL:0}), pelvis {B("pelvis").Y:0.000} m, stance {stance:0.000} m, dt {probeDt * 1000:0.0} ms, fight {probeFight:0.000}, upper {((bool)tree.Get("parameters/upperShot/active") ? upperClip : "-")}, full {((bool)tree.Get("parameters/fullShot/active") ? fullClip : "-")}";
+        return $"body: steps world/local mm {sb}(max {maxW:0}/{maxL:0}), pelvis {B("pelvis").Y:0.000} m, stance {stance:0.000} m, dt {probeDt * 1000:0.0} ms, fight {probeFight:0.000}, upper {((bool)tree.Get(P_upperShot_active) ? upperClip : "-")}, full {((bool)tree.Get(P_fullShot_active) ? fullClip : "-")}";
     }
 
     void Probe()
@@ -934,7 +982,7 @@ public partial class PlayerView : Node3D
             GD.Print($"grip seat f{probeN}: hand turn {Mathf.RadToDeg((hq.Inverse() * probeHq).GetAngle()):0.0} deg;"
             + $" f{probeN}: vis {gm.Visible} local {gm.Transform.Origin} eul {gm.Transform.Basis.GetEuler() * 57.2958f} rel-hand {rel.Origin} eul {rel.Basis.GetEuler() * 57.2958f}");
         }
-        bool fullOn = (bool)tree.Get("parameters/fullShot/active");
+        bool fullOn = (bool)tree.Get(P_fullShot_active);
         GD.Print($"grip probe f{probeN}: hand_r {hand} step {(probeN > 0 ? (hand - probeHand).Length() * 1000 : 0):0} mm"
             + (tip is { } tp ? $", tip {tp} step {(probeN > probeVisN ? (tp - probeTip).Length() * 1000 : 0):0} mm" : "")
             + (probeN == probeVisN ? " (first visible grip frame)" : "")
@@ -969,12 +1017,12 @@ public partial class PlayerView : Node3D
     void FlareClipWatch()
     {
         if (flareClipName == null) return;
-        bool on = (bool)tree.Get("parameters/fullShot/active") && fullClip == flareClipName;
+        bool on = (bool)tree.Get(P_fullShot_active) && fullClip == flareClipName;
         if (on) { flareClipSeen = true; return; }
         if (flareClipSeen || time - flareClipStart > 0.5) FlareClipEnd();
     }
 
-    bool Busy => (bool)tree.Get("parameters/upperShot/active") || (bool)tree.Get("parameters/fullShot/active");
+    bool Busy => (bool)tree.Get(P_upperShot_active) || (bool)tree.Get(P_fullShot_active);
 
     public void LevelFlare() => flare = 1;
 
@@ -1003,6 +1051,7 @@ public partial class PlayerView : Node3D
         idleNode.Animation = People.Clip(person, loadout.Arms.Idle, sheathed);
         var run = People.Clip(person, "Jog_Fwd_Loop", sheathed);
         runNode.Animation = run;
+        SyncAn();
         runSpeed = run.StartsWith(own.Prefix) ? Spd(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
         GaitClips(run, sheathed);
         // (warden-move) The directional set's forward clip is the run just mounted (her town run sheathed, the armed run
@@ -1013,6 +1062,7 @@ public partial class PlayerView : Node3D
         var sprint = run.StartsWith(own.Prefix + "run_") ? "sprint" + run[(own.Prefix.Length + 3)..] : "";
         if (own.Has(sprint)) { sprintNode.Animation = own.Prefix + sprint; sprintSpeed = Spd(sprint) * person.Root.Scale.X; }
         else { sprintNode.Animation = run; sprintSpeed = runSpeed; }
+        SyncAn();
         ArmClips();
     }
 
@@ -1033,6 +1083,7 @@ public partial class PlayerView : Node3D
         var w = own.Walk(person.Calling, person.Kind, sheathed);
         hasWalk = w != null && person.Anim.HasAnimation(w);
         walkNode.Animation = hasWalk ? w! : run;
+        SyncAn();
         walkSpeed = hasWalk ? Spd(w![own.Prefix.Length..]) * person.Root.Scale.X : 0;
         if (walkSpeed <= 0.05f) hasWalk = false;
         walkLen = person.Anim.HasAnimation(walkNode.Animation) ? (float)person.Anim.GetAnimation(walkNode.Animation).Length : 1;
@@ -1069,7 +1120,7 @@ public partial class PlayerView : Node3D
         var clip = person.Kind switch { "crossbow" => "crossbow_shoot", "wand" => "cast_flick", "staff" => "cast_bolt", "daggers" => "throw", _ => "" };
         // (Several weapons may loose at once: one gesture at a time, and
         // never over a dash or a fall.)
-        if (clip == "" || time - lastMuzzle < 0.4 || (bool)tree.Get("parameters/fullShot/active")) return;
+        if (clip == "" || time - lastMuzzle < 0.4 || (bool)tree.Get(P_fullShot_active)) return;
         if (UpperHer(clip, 1.5)) { Strike(angle); lastMuzzle = time; }
     }
 
@@ -1169,8 +1220,8 @@ public partial class PlayerView : Node3D
             var st = b.StanceNow;
             stanceCarry.Carry = st?.CarryL;
             stanceCarry.On = st?.CarryL != null && !sheath.Sheathed && !dead && p.Alive && Content.Stances.Piece(st, "handslot.l", loadout.Arms.Left) != null
-                && !(bool)tree.Get("parameters/upperShot/active") && !(bool)tree.Get("parameters/fullShot/active");
-            if (CarryLog && st != null && (int)(time * 10) != carryLogT) { carryLogT = (int)(time * 10); GD.Print($"carry t {time:0.00} stance {st.Id} sheathed {sheath.Sheathed} upper {(bool)tree.Get("parameters/upperShot/active")} full {(bool)tree.Get("parameters/fullShot/active")} on {stanceCarry.On} W {stanceCarry.W:0.00}"); }
+                && !(bool)tree.Get(P_upperShot_active) && !(bool)tree.Get(P_fullShot_active);
+            if (CarryLog && st != null && (int)(time * 10) != carryLogT) { carryLogT = (int)(time * 10); GD.Print($"carry t {time:0.00} stance {st.Id} sheathed {sheath.Sheathed} upper {(bool)tree.Get(P_upperShot_active)} full {(bool)tree.Get(P_fullShot_active)} on {stanceCarry.On} W {stanceCarry.W:0.00}"); }
         }
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
@@ -1766,8 +1817,10 @@ public partial class PlayerView : Node3D
     /// <summary>(idleAt) The idle clip's length (s), 0 with none.</summary>
     double IdleLen()
     {
-        var n = idleNode?.Animation.ToString();
-        return !string.IsNullOrEmpty(n) && tree.HasAnimation(n) ? tree.GetAnimation(n).Length : 0;
+        // (the Animation fetched once per name, while it is there to fetch: a missing one is asked for each frame, as before)
+        if (idleSn == null || string.IsNullOrEmpty(idleAn)) return 0;
+        if (idleAnimRes == null) { if (!tree.HasAnimation(idleSn)) return 0; idleAnimRes = tree.GetAnimation(idleSn); }
+        return idleAnimRes.Length;
     }
 
     /// <summary>(idleAt) A whole-body shot (a stop, a skill) ends on the idle's frame 0: the idle set to come round to it
@@ -1800,15 +1853,15 @@ public partial class PlayerView : Node3D
     void Rest(Battle b, double dt, float sp)
     {
         var p = b.Player;
-        if (fullSoft && sp > 0.6 && (bool)tree.Get("parameters/fullShot/active"))
+        if (fullSoft && sp > 0.6 && (bool)tree.Get(P_fullShot_active))
         {
-            tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+            tree.Set(P_fullShot_request, (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
             fullSoft = false; fullGaveWay = true;
         }
         if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
         if (sp > 0.3 || (pivot && PivotHeld(p.StickX, p.StickZ))) { stillT = 0; return; }   // (a 180's reversal is not a stop)
         // Pulling up out of a run: onto whichever foot was coming down.
-        if (runT > 0.4 && !(bool)tree.Get("parameters/fullShot/active"))
+        if (runT > 0.4 && !(bool)tree.Get(P_fullShot_active))
         {
             float phase = stride;
             var stop = Sheath.Pick(sheath.Sheathed, $"stop_{person.Calling}", phase >= 0.25f && phase < 0.75f ? "_r" : "_l", own.Has);
@@ -1881,8 +1934,8 @@ public partial class PlayerView : Node3D
                 backFy = aimFacing ? Mathf.Lerp(backFy, fyT, k) : fyT;
                 spd = Mathf.Max(backFy, 0);
                 backBlendNow = Mathf.Lerp(backBlendNow, backFy < -0.05f ? 1f : 0f, 1 - Mathf.Exp(-dt / 0.15f));
-                tree.Set("parameters/move/backBlend/blend_amount", backBlendNow);
-                tree.Set("parameters/move/backScale/scale", SurvivorUnchained.Play.LowerTurn.BackScale(backFy, backVb));
+                tree.Set(P_move_backBlend_blend_amount, backBlendNow);
+                tree.Set(P_move_backScale_scale, SurvivorUnchained.Play.LowerTurn.BackScale(backFy, backVb));
                 move2dPos = new Vector2(backBlendNow, backFy);
             }
         }
@@ -1904,13 +1957,13 @@ public partial class PlayerView : Node3D
         if (dirChain) DirFrame(dt, w);
         if (!move2D)
         {
-        tree.Set("parameters/move/blendW/blend_amount", wWalk);
-        tree.Set("parameters/move/blend/blend_amount", w);
+        tree.Set(P_move_blendW_blend_amount, wWalk);
+        tree.Set(P_move_blend_blend_amount, w);
         }
         // Into the sprint as she goes past her run's own speed; the pair
         // played at the rate the blend of their speeds asks.
         float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0;
-        if (!move2D) tree.Set("parameters/move/fast/blend_amount", fast);
+        if (!move2D) tree.Set(P_move_fast_blend_amount, fast);
         float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
         // One stride phase for both gaits; a walk starts on the left heel after she has stood a moment.
         standT = spd < 0.05f ? standT + dt : 0;
@@ -1938,19 +1991,19 @@ public partial class PlayerView : Node3D
         backWas = backpedal;
         if (!move2D)
         {
-            tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
-            tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
+            tree.Set(P_move_walkSeek_seek_request, stride * walkLen);
+            tree.Set(P_move_runSeek_seek_request, stride * runLen);
             // (idleAt) her idle on its own clock
             double il = IdleLen();
             if (il > 0)
             {
                 IdleSyncDue(il);
                 idleAt = ((idleAt + dt) % il + il) % il;
-                tree.Set("parameters/move/idleSeek/seek_request", idleAt);
-                if (layered) tree.Set("parameters/move/aIdleSeek/seek_request", idleAt);
+                tree.Set(P_move_idleSeek_seek_request, idleAt);
+                if (layered) tree.Set(P_move_aIdleSeek_seek_request, idleAt);
             }
         }
-        if (dirChain) for (int i = 0; i < 6; i++) tree.Set($"parameters/move/dSeek_{DirId[i]}/seek_request", stride * dirLen[i]);
+        if (dirChain) for (int i = 0; i < 6; i++) tree.Set(DSeek[i], stride * dirLen[i]);
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
         // On P1's B there is no arm-hold layer at all (ArmHold.Layered: no HerArmHold, no arms' copy; the owner, 5 Nov):
@@ -1961,9 +2014,9 @@ public partial class PlayerView : Node3D
         if (armNow && !armOn) armHold.Reset(w);
         if (armNow) armHold.Step(w, dt);
         armOn = armNow;
-        if (AnimLog) GD.Print($"animlog f {Engine.GetProcessFrames()} w {w:0.000} wWalk {wWalk:0.000} armNow {armNow} run {armHold.Run} E {armHold.E:0.00} fading {armHold.Fading} upper {(bool)tree.Get("parameters/upperShot/active")} full {(bool)tree.Get("parameters/fullShot/active")}");
+        if (AnimLog) GD.Print($"animlog f {Engine.GetProcessFrames()} w {w:0.000} wWalk {wWalk:0.000} armNow {armNow} run {armHold.Run} E {armHold.E:0.00} fading {armHold.Fading} upper {(bool)tree.Get(P_upperShot_active)} full {(bool)tree.Get(P_fullShot_active)}");
         // Mid-fade (and nothing laid over her arms: a blow, a roll), HerArmHold lays her arms between the two holds.
-        bool fadeNow = armNow && armHold.Fading && !(bool)tree.Get("parameters/fullShot/active") && !(bool)tree.Get("parameters/upperShot/active");
+        bool fadeNow = armNow && armHold.Fading && !(bool)tree.Get(P_fullShot_active) && !(bool)tree.Get(P_upperShot_active);
         if (fadeNow && armMod != null)
         {
             if (armMod.AxisR == Vector3.Zero && armMod.AxisL == Vector3.Zero && view != null) { armMod.AxisR = view.PieceAxis("handslot.r"); armMod.AxisL = view.PieceAxis("handslot.l"); }
@@ -1971,24 +2024,24 @@ public partial class PlayerView : Node3D
             armFade = (true, armHold.E, A(walkNode?.Animation), A(runNode?.Animation), A(sprintNode?.Animation), stride * walkLen, stride * runLen, fast);
         }
         else armFade = default;
-        if (layered && !move2D) tree.Set("parameters/move/arms/blend_amount", armNow ? 1f : 0f);
+        if (layered && !move2D) tree.Set(P_move_arms_blend_amount, armNow ? 1f : 0f);
         if (armNow)
         {
-            tree.Set("parameters/move/aBlendW/blend_amount", wWalk);
-            tree.Set("parameters/move/aFast/blend_amount", fast);
-            tree.Set("parameters/move/aBlend/blend_amount", armHold.Run ? 1f : 0f);
-            tree.Set("parameters/move/aWalkSeek/seek_request", stride * walkLen);
-            tree.Set("parameters/move/aRunSeek/seek_request", stride * runLen);
+            tree.Set(P_move_aBlendW_blend_amount, wWalk);
+            tree.Set(P_move_aFast_blend_amount, fast);
+            tree.Set(P_move_aBlend_blend_amount, armHold.Run ? 1f : 0f);
+            tree.Set(P_move_aWalkSeek_seek_request, stride * walkLen);
+            tree.Set(P_move_aRunSeek_seek_request, stride * runLen);
         }
         // Her corrective layer stands down for whichever half plays hers.
-        bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
+        bool fullOn = (bool)tree.Get(P_fullShot_active), upperOn = (bool)tree.Get(P_upperShot_active);
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.
         if (grips && idleNode != null && runNode != null)
         {
             float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), wWalk, w,
-                own.GripSlide(idleNode.Animation), own.GripSlide((walkNode ?? idleNode).Animation), own.GripSlide(runNode.Animation));
+                own.GripSlide(idleAn!), own.GripSlide((walkNode != null ? walkAn! : idleAn!)), own.GripSlide(runAn!));
             float toT = GripSlide.Target(fullOn, own.GripTilt(fullClip), upperOn, own.GripTilt(upperClip), wWalk, w,
-                own.GripTilt(idleNode.Animation), own.GripTilt((walkNode ?? idleNode).Animation), own.GripTilt(runNode.Animation));
+                own.GripTilt(idleAn!), own.GripTilt((walkNode != null ? walkAn! : idleAn!)), own.GripTilt(runAn!));
             slide = GripSlide.Ease(slide, to, dt);
             tilt = GripSlide.Ease(tilt, toT, dt);
             // (warden-move) the side carry's tilt on top (SideCarry), stepped on her drawn pose (CarryPosed); none at no weight
@@ -1996,14 +2049,14 @@ public partial class PlayerView : Node3D
             carryDt += dt;
             if (!carryHooked && person.Skeleton is { } csk && view != null) { carryHooked = true; csk.SkeletonUpdated += CarryPosed; }
             float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), wWalk, w,
-                own.GripSlideL(idleNode.Animation), own.GripSlideL((walkNode ?? idleNode).Animation), own.GripSlideL(runNode.Animation));
+                own.GripSlideL(idleAn!), own.GripSlideL((walkNode != null ? walkAn! : idleAn!)), own.GripSlideL(runAn!));
             slideL = GripSlide.Ease(slideL, toL, dt);
             // The left tilt (animation 58), and the weight that eases a piece without a fitted left pocket onto the tilt's.
             float toTL = GripSlide.Target(fullOn, own.GripTiltL(fullClip), upperOn, own.GripTiltL(upperClip), wWalk, w,
-                own.GripTiltL(idleNode.Animation), own.GripTiltL((walkNode ?? idleNode).Animation), own.GripTiltL(runNode.Animation));
+                own.GripTiltL(idleAn!), own.GripTiltL((walkNode != null ? walkAn! : idleAn!)), own.GripTiltL(runAn!));
             static float On(float t) => t != 0 ? 1 : 0;
             float toPL = GripSlide.Target(fullOn, On(own.GripTiltL(fullClip)), upperOn, On(own.GripTiltL(upperClip)), wWalk, w,
-                On(own.GripTiltL(idleNode.Animation)), On(own.GripTiltL((walkNode ?? idleNode).Animation)), On(own.GripTiltL(runNode.Animation)));
+                On(own.GripTiltL(idleAn!)), On(own.GripTiltL((walkNode != null ? walkAn! : idleAn!))), On(own.GripTiltL(runAn!)));
             tiltL = GripSlide.Ease(tiltL, toTL, dt);
             pocketL = GripSlide.Ease(pocketL, toPL, dt);
             view?.Slide("handslot.l", slideL, tiltL, pocketL);
@@ -2014,9 +2067,9 @@ public partial class PlayerView : Node3D
         if (person.Counter is { } pc)
         {
             float cw = 0;
-            if (upperOn && !fullOn && pc.Mean != null && upper.Animation is { } ua && person.Anim.GetAnimation(ua) is { } uanim)
+            if (upperOn && !fullOn && pc.Mean != null && UpperAnim() is { } uanim)
             {
-                double pace = System.Math.Max(upperRate, 1e-3), pos = (float)tree.Get("parameters/upper/current_position");
+                double pace = System.Math.Max(upperRate, 1e-3), pos = (float)tree.Get(P_upper_current_position);
                 cw = SurvivorUnchained.Play.PelvisCounter.Weight(pos / pace, (uanim.Length - pos) / pace, upperShotNode.FadeInTime, upperShotNode.FadeOutTime,
                     upperRelease >= 0 ? time - upperRelease : -1, upperShotNode.FadeOutTime);
             }
@@ -2285,7 +2338,7 @@ public partial class PlayerView : Node3D
         // (the plant lock works where she stands without the pelvis ease, SmoothStep; it is put back after)
         Position -= smoothOff; f[0] -= smoothOff; f[1] -= smoothOff;
         for (int i = 0; i < 2; i++) plantH[i] = f[i].Y - (float)plantGround(f[i].X, f[i].Z);
-        bool legsFree = !(bool)tree.Get("parameters/fullShot/active");
+        bool legsFree = !(bool)tree.Get(P_fullShot_active);
         Vector3 shift = Vector3.Zero;
         if (pivotSeg > 0)
         {
@@ -2351,7 +2404,7 @@ public partial class PlayerView : Node3D
         var raw = new Vector3(pw.X, 0, pw.Z);   // (PlantStep took the ease off Position)
         float dt = plantDt;
         var rawV = smoothHave ? (raw - smoothRawPrev) / dt : Vector3.Zero;
-        bool want = !SmoothOffFlag && (pivot || pivotSeg > 0 || backpedal && SmoothBack) && !(bool)tree.Get("parameters/fullShot/active");
+        bool want = !SmoothOffFlag && (pivot || pivotSeg > 0 || backpedal && SmoothBack) && !(bool)tree.Get(P_fullShot_active);
         if (!smoothOn && want && smoothHave) { smoothOn = true; smoothP = smoothRawPrev; smoothV = smoothRawV; }
         if (smoothOn)
         {
@@ -2409,7 +2462,7 @@ public partial class PlayerView : Node3D
     /// PivotStanceIn of a phase past mid-stance), else the one coming down next.</summary>
     void PivotStart()
     {
-        if (PivotPlanOff || TurnOld || TurnSnap || (bool)tree.Get("parameters/fullShot/active")) return;
+        if (PivotPlanOff || TurnOld || TurnSnap || (bool)tree.Get(P_fullShot_active)) return;
         float rl = Rel(stride, PivotMidL), rr = Rel(stride, PivotMidR), plantRel = -PivotAheadM / PivotK;
         // (a stance foot: from its landing, a quarter phase before mid-stance at most, to PivotStanceIn past it)
         bool inL = rl > -0.11f && rl <= PivotStanceIn, inR = rr > -0.11f && rr <= PivotStanceIn;
@@ -2597,7 +2650,7 @@ public partial class PlayerView : Node3D
     /// <summary>This frame's stride phase while a 180's plan runs (Carry): `natural` is the phase the run's own pace would give.</summary>
     float PivotStride(float natural, float dt, float period)
     {
-        if (!pivot || (bool)tree.Get("parameters/fullShot/active")) { pivotSeg = 0; pivotFoot = -1; return natural; }
+        if (!pivot || (bool)tree.Get(P_fullShot_active)) { pivotSeg = 0; pivotFoot = -1; return natural; }
         float normal = dt / Mathf.Max(period, 0.1f), plantRel = -PivotAheadM / PivotK;
         if (pivotSeg == 1)
         {
@@ -2676,6 +2729,7 @@ public partial class PlayerView : Node3D
     // ---- (aim-move) the directional legs and the two facing modes ----
     static readonly bool DirLegsOff = SurvivorUnchained.Args.Get("dir-legs") == "off";
     static readonly string[] DirId = { "f", "fl", "fr", "b", "bl", "br" };
+    static readonly StringName[] DSeek = DirId.Select(d => new StringName($"parameters/move/dSeek_{d}/seek_request")).ToArray();
     static readonly float DirTurnRate = SurvivorUnchained.Args.Num("dir-turn-rate", 840f);
     /// <summary>Her six run clips (f, fl, fr, b, bl, br) are in the graph (her library has them all).</summary>
     bool dirChain, dirBack;
@@ -2731,13 +2785,13 @@ public partial class PlayerView : Node3D
         if (person.Turn != null) person.Turn.Delta = DirOn ? dirDelta : 0;
         float Mix(float a, float b) => a + b > 1e-4f ? b / (a + b) : 0;
         float sf = dirW[0] + dirW[1] + dirW[2], sb = dirW[3] + dirW[4] + dirW[5];
-        tree.Set("parameters/move/dFA/blend_amount", Mix(dirW[2], dirW[0]));
-        tree.Set("parameters/move/dFB/blend_amount", sf > 1e-4f ? dirW[1] / sf : 0f);
-        tree.Set("parameters/move/dBA/blend_amount", Mix(dirW[5], dirW[3]));
-        tree.Set("parameters/move/dBB/blend_amount", sb > 1e-4f ? dirW[4] / sb : 0f);
-        tree.Set("parameters/move/dirSet/blend_amount", dirBackW);
+        tree.Set(P_move_dFA_blend_amount, Mix(dirW[2], dirW[0]));
+        tree.Set(P_move_dFB_blend_amount, sf > 1e-4f ? dirW[1] / sf : 0f);
+        tree.Set(P_move_dBA_blend_amount, Mix(dirW[5], dirW[3]));
+        tree.Set(P_move_dBB_blend_amount, sb > 1e-4f ? dirW[4] / sb : 0f);
+        tree.Set(P_move_dirSet_blend_amount, dirBackW);
         dirBlend = DirOn ? w : 0;
-        tree.Set("parameters/move/dir/blend_amount", dirBlend);
+        tree.Set(P_move_dir_blend_amount, dirBlend);
     }
 
     /// <summary>(aim-move) Her facing under the directional legs. Always (a cursor): the cursor, standing or moving. Skill, or no
@@ -2747,7 +2801,7 @@ public partial class PlayerView : Node3D
     {
         // (judge r5) a soft full shot (a stop, a fidget: it gives way the moment she moves) does not hold her facing: under
         // one the old chain faced her travel, so a backpedal or strafe began turned to the run and pivoted to the cursor ~7 f in.
-        if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get("parameters/fullShot/active") && !fullSoft && !fullGaveWay)) return false;
+        if (!p.Alive || p.Leap != null || p.DashT > 0 || ((bool)tree.Get(P_fullShot_active) && !fullSoft && !fullGaveWay)) return false;
         float? goal = null;
         var ptr = Pointer?.Invoke();
         // (warden-move) Sheathed in town there is nothing to aim at: she faces her travel, so her town run (the set's forward
@@ -2831,7 +2885,7 @@ public partial class PlayerView : Node3D
         var cam = GetViewport()?.GetCamera3D();
         var pv = B("pelvis");
         var s = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
-        bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
+        bool up = (bool)tree.Get(P_upperShot_active), fu = (bool)tree.Get(P_fullShot_active);
         if (!feetHooked) { feetHooked = true; sk.SkeletonUpdated += FeetCache; RenderingServer.FramePreDraw += Scr2; }
         GD.Print(System.FormattableString.Invariant($"TURN2 {t:0.0000} face {Mathf.RadToDeg(Rotation.Y):0.0} waist {carriage?.Aim ?? 0:0.0} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} scr {s.X:0.0} {s.Y:0.0} anim {speed:0.00} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} coil {(coilAt >= 0 ? 1 : 0)} ph {stride:0.000} spd {logSpd:0.00} w {logW:0.00} ww {logWWalk:0.00} bl {feetW[0].X:0.000} {feetW[0].Y:0.000} {feetW[0].Z:0.000} br {feetW[1].X:0.000} {feetW[1].Y:0.000} {feetW[1].Z:0.000} pos {GlobalPosition.X - plantOff.X - smoothOff.X:0.000} {GlobalPosition.Z - plantOff.Z - smoothOff.Z:0.000} pl {plantFoot} off {plantOff.X + smoothOff.X:0.000} {plantOff.Z + smoothOff.Z:0.000} hl {plantH[0]:0.000} hr {plantH[1]:0.000} pp {pivotSeg} {pivotFoot} pz {B("pelvis").Y - GlobalPosition.Y:0.000} tilt {carriage?.Tilt ?? 0:0.0} pw {pelvW.X:0.000} {pelvW.Z:0.000} ppm {(cam != null ? (cam.UnprojectPosition(pv + Vector3.Right) - s).Length() : 0):0.0} sm {(smoothOn ? 1 : 0)} {smoothOff.Length():0.000} {smoothCalls} kn {legBend[0]:0} {legBend[1]:0} th {legThigh[0]:0} {legThigh[1]:0} dl {dirDelta:0.0} dw {dirW[0]:0.00} {dirW[1]:0.00} {dirW[2]:0.00} {dirW[3]:0.00} {dirW[4]:0.00} {dirW[5]:0.00} dir {dirBlend:0.00} al {dirAlpha:0.0} pel {PelYaw():0.0}"));
         smoothCalls = 0;
