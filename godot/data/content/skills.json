@@ -1553,7 +1553,7 @@
       "school": "physical",
       "behavior": "spin",
       "cast": "channel",
-      "press": { "kind": "channel", "aim": "self", "wait": 0, "drain": 12 },
+      "press": { "kind": "channel", "aim": "self", "wait": 0, "drain": 12, "builds": 1.5, "buildsEach": 0.5, "buildsMost": 1 },
       "tags": ["melee", "steel", "physical", "area", "heavy"],
       "bossDamage": 1.6,
       "art": "slash_spin",

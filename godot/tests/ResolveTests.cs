@@ -128,19 +128,61 @@ public sealed class ResolveTests
         b.Resolve.Set(50);
         Run(b, 4, () => Pin(b, [e], at));
         Assert.Equal(50, b.Resolve.Value, 9);
-        // Nothing within 12 m, no blow for 3 s: 10 a second.
+        // Nothing within 12 m, no blow for 3 s: 1 a second, very slowly (the owner, 19 Nov).
         at[0] = (40, 0);
         Run(b, 1, () => Pin(b, [e], at));
-        Assert.InRange(b.Resolve.Value, 39.5, 40.5);
+        Assert.InRange(b.Resolve.Value, 48.9, 49.1);
         Assert.Equal(ResolveReason.Faded, b.Resolve.LastReason);
-        Assert.True(b.Resolve.Rate < -9 && b.Resolve.Rate > -11);
+        Assert.True(b.Resolve.Rate < -0.9 && b.Resolve.Rate > -1.1);
         // A blow just given: no fade for 3 s.
         b.FightAt = b.Time;
         double v = b.Resolve.Value;
         Run(b, 2.9, () => Pin(b, [e], at));
         Assert.Equal(v, b.Resolve.Value, 9);
         Run(b, 1, () => Pin(b, [e], at));
-        Assert.True(b.Resolve.Value < v - 5);
+        Assert.True(b.Resolve.Value < v - 0.5);
+    }
+
+    /// <summary>(lane K, the owner 19 Nov: "it shouldn't build out of a fight but it should only drain out of combat very slowly and
+    /// leave enough to at least start a bladestorm cast") The fade stops at its floor, and the floor starts a Bladestorm.</summary>
+    [Fact]
+    public void The_fade_stops_where_a_Bladestorm_can_still_start_and_nothing_fills_out_of_a_fight()
+    {
+        var b = Warden(("bladestorm", 1));
+        var w = b.Weapons.Single();
+        b.Resolve.Set(10);
+        Run(b, 30);
+        Assert.Equal(ResolveMeter.FadeFloor, b.Resolve.Value, 6);
+        Assert.True(ResolveMeter.FadeFloor >= w.Press!.Drain!.Value * w.ChannelEvery, "the floor starts the spin");
+        // Below it (a storm spent to nothing) nothing fills it out of a fight.
+        b.Resolve.Set(0);
+        Run(b, 10);
+        Assert.Equal(0, b.Resolve.Value, 9);
+    }
+
+    /// <summary>(lane K, the owner 19 Nov: "resolve should still build while bladestorming - it should not be enough to run
+    /// permanently unless built that way") The spin's cuts fill some back, less than it drains.</summary>
+    [Fact]
+    public void Bladestorm_cutting_foes_fills_some_back_but_still_drains()
+    {
+        double Spun(bool foes)
+        {
+            var b = Warden(("sunder", 8), ("bladestorm", 8));
+            var w = b.Weapons.Single(x => x.Id == "bladestorm");
+            w.Timer = 0;
+            var es = new List<Enemy>(); var at = new List<(double, double)>();
+            if (foes) foreach (var (x, z) in new[] { (1.2, 0.0), (-1.2, 0.0), (0.0, 1.2) }) { es.Add(Dummy(b, x, z)); at.Add((x, z)); }
+            if (!foes) Dummy(b, 7, 0);   // (in a fight, out of the spin's reach: no fade)
+            b.Resolve.Set(60);
+            b.HoldSkill(w.Slot, true);
+            Assert.True(b.PressSkill(w.Slot, 1, 0));
+            Run(b, 3, () => { b.HoldSkill(w.Slot, true); foreach (var e in es) e.Hp = e.MaxHp; Pin(b, es, at); });
+            Assert.True(w.Channeling);
+            return b.Resolve.Value;
+        }
+        double alone = Spun(false), amid = Spun(true);
+        Assert.True(amid > alone + 3, $"cutting three foes filled some back: {amid:0.0} against {alone:0.0} alone");
+        Assert.True(amid < 60 - 5, $"and still drained: {amid:0.0} from 60");
     }
 
     [Fact]
@@ -184,8 +226,9 @@ public sealed class ResolveTests
         var b = Warden(("sunder", 8), ("bladestorm", 8));
         var w = b.Weapons.Single(x => x.Id == "bladestorm");
         w.Timer = 0;
-        // Within 12 m (in a fight: no fade), out of the spin's reach.
-        var e = Dummy(b, 7, 0);
+        // Within 12 m (in a fight: no fade), out of the spin's reach and its lines' (the spin's cuts fill now, 19 Nov).
+        var e = Dummy(b, 11.5, 0);
+        e.Speed = 0;   // (it stands: a foe walked into the spin fills it)
         return (b, w);
     }
 
@@ -221,7 +264,7 @@ public sealed class ResolveTests
         var w = b.Weapons.Single();
         w.Timer = 0;
         Assert.Equal(-1, b.BreakSlot(w));
-        Dummy(b, 7, 0);
+        Dummy(b, 11.5, 0).Speed = 0;   // (it stands: a foe walked into the spin fills it)
         b.Resolve.Set(100);
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, 1, 0));

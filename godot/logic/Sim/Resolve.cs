@@ -28,7 +28,10 @@ namespace SurvivorUnchained.Sim;
  *     BuildsEach for each foe past the first (at most BuildsMost), times HeavyMul on a heavy swing. Blows taken (1 for
  *     each 2% of max health lost, after armor) and blocks (4 each) fill too, but never past a third of the fill: a taken
  *     or block gain is allowed only up to 0.5 * LandedFill - TakenFill this fight. She fills by going in, never by standing.
- *   - Fade: out of a fight (no hostile within 12 m and no blow given or taken for 3 s) it falls 10 a second; never in one.
+ *   - Fade: out of a fight (no hostile within 12 m and no blow given or taken for 3 s) it falls 1 a second, never below
+ *     FadeFloor (4: Bladestorm can always start, its drain times one gap being 3.6); never in one. (lane K, the owner 19 Nov)
+ *   - Bladestorm's spin is a builder too (its press's builds, 19 Nov): each turn that cuts a foe gives a little back, less than
+ *     it drains (1.5 to 2 a 0.3 s turn against 3.6), so a fight lengthens the storm but never keeps it up unless the build does.
  *   - Spend: Battle.CostOf, read by Firing.Press and the kindled spenders. A channel with a Drain drains it while held
  *     and ends at 0. (M3) A kindled spender whose key heaves (press "now") fires itself only at SelfAt of the cap (full)
  *     and spends all of it; its key heaves at full strength from its cost and with what she has from half its cost.
@@ -39,7 +42,7 @@ namespace SurvivorUnchained.Sim;
 /// <summary>The meter's numbers (data/content/resolve.json).</summary>
 public sealed class ResolveDef
 {
-    public double Cap = 100, TakenPer = 0.02, BlockGain = 4, FadeRate = 10, FadeAfter = 3, FightRadius = 12, SelfAt = 1;
+    public double Cap = 100, TakenPer = 0.02, BlockGain = 4, FadeRate = 1, FadeFloor = 4, FadeAfter = 3, FightRadius = 12, SelfAt = 1;
     static ResolveDef? def;
     public static ResolveDef Data => def ??= JsonSerializer.Deserialize<ResolveDef>(Json.ReadContent("resolve.json"), Json.Options)!;
 }
@@ -53,7 +56,7 @@ public sealed class ResolveMeter
 
     /// <summary>The numbers, from data/content/resolve.json (M3: were constants; the same names, types and values).</summary>
     public static readonly double Cap = ResolveDef.Data.Cap, TakenPer = ResolveDef.Data.TakenPer, BlockGain = ResolveDef.Data.BlockGain,
-        FadeRate = ResolveDef.Data.FadeRate, FadeAfter = ResolveDef.Data.FadeAfter, FightRadius = ResolveDef.Data.FightRadius,
+        FadeRate = ResolveDef.Data.FadeRate, FadeFloor = ResolveDef.Data.FadeFloor, FadeAfter = ResolveDef.Data.FadeAfter, FightRadius = ResolveDef.Data.FightRadius,
         SelfAt = ResolveDef.Data.SelfAt;
 
     public bool On => b.Campaign && b.Calling == "warden";
@@ -127,14 +130,17 @@ public sealed class ResolveMeter
         Add(-d, ResolveReason.Drained);
     }
 
+    /// <summary>Out of a fight: no blow given or taken for FadeAfter s and no hostile within FightRadius of her (the Lamps
+    /// light then too: PostMenu.EditsOpen).</summary>
+    public static bool OutOfFight(Battle b) =>
+        b.Time - b.FightAt >= FadeAfter && b.NearestHostile(b.Player.X, b.Player.Z, FightRadius) == null;
+
     /// <summary>Each step: out of a fight it fades.</summary>
     internal void Tick(double dt)
     {
-        if (!On || Value <= 0) return;
-        if (b.Time - b.FightAt < FadeAfter) return;
-        var p = b.Player;
-        if (b.NearestHostile(p.X, p.Z, FightRadius) != null) return;
-        Add(-FadeRate * dt, ResolveReason.Faded);
+        if (!On || Value <= FadeFloor) return;
+        if (!OutOfFight(b)) return;
+        Add(-Math.Min(FadeRate * dt, Value - FadeFloor), ResolveReason.Faded);
     }
 }
 
