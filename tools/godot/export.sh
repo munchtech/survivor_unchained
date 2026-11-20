@@ -29,7 +29,7 @@ build() {
   # SU_BAKE=1 exports with a rendering device, so the demo presets' shader baker runs (a --headless export skips it silently).
   local hl=--headless; [ "${SU_BAKE:-}" = 1 ] && hl=
   "$GODOT" $hl --path . --export-release "$preset" "$ROOT/release/godot/$dir/$file" >"$log" 2>&1 || true
-  grep -E "ERROR|WARNING" "$log" | grep -v "RID allocations\|resources still in use\|No loader found for resource: res://.*\.\(bin\|txt\)\|Condition \"res.is_null()\" is true. Returning: p_path" || true
+  grep -E "ERROR|WARNING" "$log" | grep -v "RID allocations\|resources still in use\|No loader found for resource: res://.*\.\(bin\|txt\|TXT\)\|Condition \"res.is_null()\" is true. Returning: p_path" || true
   # A failed C# build still leaves an executable behind: that is no build.
   if grep -q "Failed to build project" "$log" || [ ! -e "$ROOT/release/godot/$dir/$file" ]; then
     echo "no $preset build (see release/godot/$dir.log)" >&2; exit 1
@@ -46,10 +46,10 @@ stamp() {
   git -C "$ROOT" diff --quiet HEAD -- godot ':(exclude)*.import' || sha="$sha+dirty"
   printf '{ "sha": "%s", "flavor": "%s", "date": "%s" }\n' "$sha" "$1" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$ROOT/godot/data/build.json"
 }
-# The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.(bin|txt|TXT) (tools/godot/demo_README.txt).
+# The demo's zip: the exe, the .pck, the .NET data folder, the licences, README.txt (tools/godot/demo_README.txt).
 demo_zip() {
   local dir="$ROOT/release/godot/windows-demo"
-  cp "$ROOT/tools/godot/demo_README.(bin|txt|TXT)" "$dir/README.txt"
+  cp "$ROOT/tools/godot/demo_README.txt" "$dir/README.txt"
   local name="SurvivorUnchained_Demo_$(date +%Y%m%d)_$(git -C "$ROOT" rev-parse --short=9 HEAD).zip"
   rm -f "$ROOT/release/godot/$name"
   python "$ROOT/tools/godot/zip_dir.py" "$dir" "$ROOT/release/godot/$name" SurvivorUnchained_Demo
