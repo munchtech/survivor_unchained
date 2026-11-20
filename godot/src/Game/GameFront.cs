@@ -31,11 +31,28 @@ public partial class Game
         // protections, in NewJourney)
         air.Set(Atmospheres.Title);
         s.View.SetNight(true);
-        Seat(Stranger());
+        RemoveFigure();   // (the owner, 19 Nov: just the fire at the title, no heroine)
         PoseTitle(true);
         screens.Show(new TitleScreen(this));
         hud.Fade(0, 1.6);
         GD.Print($"load: title up {Time.GetTicksMsec() / 1000.0:0.00} s since the engine began");
+        PreloadCreator();
+    }
+
+    /// <summary>The title no longer seats the stranger, whose loads warmed the heroine's files for creation: ask for the creator's
+    /// default figure's scene files on worker threads now, so "Create character" finds them cached.</summary>
+    static void PreloadCreator()
+    {
+        int asked = 0;
+        try
+        {
+            var d = new CreationDraft();
+            var ch = Character.Create(d.Choice() is var c && c.Name == "" ? WithName(c) : c);
+            foreach (var f in People.Files(Loadouts.Of(ch).Person).Distinct())
+                if (ResourceLoader.Exists(f) && !ResourceLoader.HasCached(f) && ResourceLoader.LoadThreadedRequest(f) == Error.Ok) asked++;
+        }
+        catch (Exception e) { GD.Print($"load: title preload failed: {e.Message}"); }
+        GD.Print($"load: title preload asked {asked} files");
     }
 
     /// <summary>The stranger at the title's fire: a ranger, bare-headed (her face and hair are the point; Loadout gives her no hood), unarmed.</summary>
@@ -632,7 +649,7 @@ public partial class Game
         draft = null;
         air.Set(Atmospheres.Title);
         EndCreate();
-        Seat(Stranger());
+        RemoveFigure();   // (the owner, 19 Nov: just the fire at the title)
         PoseTitle();
         screens.Show(new TitleScreen(this));
     }

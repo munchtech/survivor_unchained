@@ -69,7 +69,6 @@ public partial class TitleScreen : Overlay
         // The house's rule under the name: gold running out from an ember stone at either end.
         brand.AddChild(Style.Gap(4));
         brand.AddChild(new Plaque("", 14, 182));
-        brand.AddChild(Style.Label("The run ends. The story doesn't.", Style.TextItalic, 23, new Color("#e8dcc6")));
         if (panel == "") AddChild(brand);
 
         var slots = G.Saves.Slots();
