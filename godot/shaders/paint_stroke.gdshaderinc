@@ -14,7 +14,7 @@
 // Off (all zero data, or --pal off): ps_paint returns the albedo untouched.
 #ifndef PAINT_STROKE_INC
 #define PAINT_STROKE_INC
-#define PS_BARE 0.36   // (lead 9) the share of patches left bare
+#define PS_BARE (ps_hite.w > 0.0 ? ps_hite.w : 0.36)   // (lead 9) the share of patches left bare (lead 10: per palette, "bare"; night ~.1 by the spec)
 
 global uniform vec4 ps_brush;
 global uniform vec4 ps_tone;
@@ -75,7 +75,7 @@ vec2 ps_mark(vec2 q, float len, float wid, float bend) {
 
 // (lead 10, frozen spec docs/design/look_spec_ref_19nov.md: one mark kind per material, value-led) kind 0 the crescent (bark),
 // 1 a broken dab (ground, path: short, round-ended, split in two by a gap now and then), 2 a veined leaf (crowns: an almond
-// with its midrib as the inner band), 3 a crack (stones: thin, kinked, always the dark sign). Returns (coverage, inner).
+// with its midrib as the inner band), 3 a crack (stones: thin, kinked; the dark sign; the light sign is a lit facet chip). Returns (coverage, inner).
 vec2 ps_mark_k(vec2 q, float len, float wid, float bend, float kind, float h) {
 	if (kind < 0.5) return ps_mark(q, len, wid, bend);
 	float t = q.x / len + 0.5;
@@ -131,10 +131,12 @@ vec4 ps_field_k(vec2 p2, vec2 flow2, float cover, float seed, float kind) {
 			vec2 ax = normalize(fx + fy * wob), ay = vec2(-ax.y, ax.x);
 			float len = ps_brush.y * (0.36 + 0.97 * h2 * h2 * (3.0 - 2.0 * h2));   // (lead 9: p10:p90 ~2.7, was 1.6)
 			// (lead 10) each kind its own proportions of the one brush: dabs short and fat, leaves the brush, cracks long and thin
-			float kl = kind < 0.5 ? 1.0 : kind < 1.5 ? 0.8 : kind < 2.5 ? 0.95 : 1.12;
-			float kw = kind < 0.5 ? 1.0 : kind < 1.5 ? 1.15 : kind < 2.5 ? 1.1 : 1.0;
-			vec2 m = ps_mark_k(vec2(dot(dq, ax), dot(dq, ay)), len * kl, ps_brush.z * kw * mix(0.8, 1.2, h1), ps_brush.w * (h3 < 0.5 ? 1.0 : -1.0), kind, h3);
-			if (m.x > r.x) r = vec4(m.x, m.y, kind > 2.5 ? -1.0 : h1 < 0.5 ? -1.0 : 1.0, h0);
+			// (stones: the light marks are lit facet chips, a dab's shape wider; the dark ones the cracks)
+			float kd = kind > 2.5 && h1 >= 0.5 ? 1.0 : kind;
+			float kl = kind < 0.5 ? 1.0 : kind < 1.5 ? 0.8 : kind < 2.5 ? 0.95 : kd < 1.5 ? 0.75 : 1.12;
+			float kw = kind < 0.5 ? 1.0 : kind < 1.5 ? 1.15 : kind < 2.5 ? 1.1 : kd < 1.5 ? 1.7 : 1.0;
+			vec2 m = ps_mark_k(vec2(dot(dq, ax), dot(dq, ay)), len * kl, ps_brush.z * kw * mix(0.8, 1.2, h1), ps_brush.w * (h3 < 0.5 ? 1.0 : -1.0), kd, h3);
+			if (m.x > r.x) r = vec4(m.x, m.y, h1 < 0.5 ? -1.0 : 1.0, h0);
 		}
 	}
 	return r;
@@ -151,7 +153,7 @@ vec3 ps_paint_k(vec3 albedo, vec2 p2, vec2 flow2, float cover, float seed, float
 	vec4 f = ps_field_k(p2, flow2, cover, seed, kind);
 	if (f.x <= 0.0) return albedo;
 	if (f.x > 0.5) code = f.z;
-	float dl = ps_tone.y * f.z * (kind > 2.5 ? 1.8 : 1.0) - ps_tone.z * f.y;
+	float dl = ps_tone.y * f.z * (kind > 2.5 && f.z < 0.0 ? 1.8 : 1.0) - ps_tone.z * f.y;
 	vec3 mk = ps_turn(albedo, ps_tone.x * f.z, dl, ps_tone.w);
 	return mix(albedo, mk, f.x);
 }
@@ -371,7 +373,7 @@ vec4 ps_objects(vec2 xz, float edge) {
 				float a = 1.5708 + (float(k) / (nb - 1.0) - 0.5) * 2.1 + (ps_h(c + float(k)) - 0.5) * 0.25;
 				vec2 tp = foot + vec2(cos(a), sin(a)) * mix(0.55, 0.8, ps_h(c + float(k) * 1.7));
 				float t;
-				float d = ps_seg(q, foot, tp, t) - 0.055 * (1.0 - t * 0.85);
+				float d = ps_seg(q, foot, tp, t) - 0.1 * (1.0 - t * 0.8);
 				sd = min(sd, d);
 				if (ps_ob4.y > 0.5) { float dt = length(q - tp) - 0.07; sd = min(sd, dt); tip = max(tip, 1.0 - smoothstep(-0.01, 0.01, dt)); }
 			}
@@ -381,7 +383,8 @@ vec4 ps_objects(vec2 xz, float edge) {
 		float cov = 1.0 - smoothstep(-fw, fw, sd);
 		if (cov <= 0.0) continue;
 		// the ink: a band inside the edge (about 2-3 px at the game camera), the veins in the leaf's own dark
-		float ink = 1.0 - smoothstep(-0.085 - fw, -0.085 + fw, sd);
+		float ib = isA ? 0.085 : 0.04;
+		float ink = 1.0 - smoothstep(-ib - fw, -ib + fw, sd);
 		vec3 col = fill;
 		col = mix(col, fill * 1.45 + 0.04, tip);
 		col = mix(col, fill * 0.45, vein);

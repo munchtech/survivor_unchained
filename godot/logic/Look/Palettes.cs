@@ -142,7 +142,7 @@ public static class Palettes
             double S(string k, double d) => st.TryGetProperty(k, out var v) ? v.GetDouble() : d;
             r[StrokeAt] = S("cell", 0); r[StrokeAt + 1] = S("len", 0); r[StrokeAt + 2] = S("wid", 0); r[StrokeAt + 3] = S("bend", 0);
             r[StrokeAt + 4] = S("hue", 0); r[StrokeAt + 5] = S("lift", 0); r[StrokeAt + 6] = S("inner", 0); r[StrokeAt + 7] = S("chroma", 1);
-            r[StrokeAt + 19] = S("cmin", 0);   // (a mark's chroma floor, Oklab C: on a near-grey field, a stone, a hue turn alone shows nothing)
+            r[StrokeAt + 19] = S("cmin", 0); r[StrokeAt + 23] = S("bare", 0.36);   // (lead 10: bare patch share, ps_hite.w)   // (a mark's chroma floor, Oklab C: on a near-grey field, a stone, a hue turn alone shows nothing)
             if (st.TryGetProperty("frame", out var fr))
                 for (int i = 0; i < Math.Min(4, fr.GetArrayLength()); i++) r[StrokeAt + 24 + i] = fr[i].GetDouble();
             if (st.TryGetProperty("cover", out var cv))
