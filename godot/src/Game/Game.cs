@@ -1021,6 +1021,9 @@ public partial class Game : Node, IZoneHost
         if (inTransit) return;
         inTransit = true;
         from ??= zone?.Id;
+        // (lane K: every travel's wall time from the ask to her control, in every build's log: the owner's "LONG loading into the den")
+        ulong askedAt = Time.GetTicksUsec();
+        string leg = $"{from ?? "-"} -> {to}";
         Journey.Capture(Battle);
         if (scene != null) scene.SimPaused = true;
         controls.Captured = true;
@@ -1028,8 +1031,10 @@ public partial class Game : Node, IZoneHost
         else hud.Fade(1, 0.8, caption, sub);
         Wait(pull ? 1.15 : 0.85, () => WhenBuilt(to, () =>
         {
+            ulong darkAt = Time.GetTicksUsec();
             EnterZone(to, from, at);
             Save("travel");
+            ulong builtAt = Time.GetTicksUsec();
             // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
             // only once the frames come smooth again, so no hitch shows through the fade-in)
             Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
@@ -1038,6 +1043,8 @@ public partial class Game : Node, IZoneHost
                 controls.Captured = false;
                 controls.ClearLatches();
                 inTransit = false;
+                ulong now = Time.GetTicksUsec();
+                GD.Print($"load: {leg}: control {(now - askedAt) / 1e6:0.00} s after the ask (dark {(darkAt - askedAt) / 1e6:0.00} s, the place stood up and saved in {(builtAt - darkAt) / 1e6:0.00} s, then {(now - builtAt) / 1e6:0.00} s to smooth frames)");
                 fadingIn = true;
                 Wait(1.4, () => fadingIn = false);
             }));

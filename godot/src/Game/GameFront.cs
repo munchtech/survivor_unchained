@@ -35,6 +35,7 @@ public partial class Game
         PoseTitle(true);
         screens.Show(new TitleScreen(this));
         hud.Fade(0, 1.6);
+        GD.Print($"load: title up {Time.GetTicksMsec() / 1000.0:0.00} s since the engine began");
     }
 
     /// <summary>The stranger at the title's fire: a ranger, bare-headed (her face and hair are the point; Loadout gives her no hood), unarmed.</summary>
@@ -561,6 +562,7 @@ public partial class Game
 
     public void NewJourney(int? replace)
     {
+        ulong askedAt = Time.GetTicksUsec();
         replaceSlot = replace;
         Mode = "create";
         // A new journey teaches again (the owner's demo-arpg1 profile had the callouts marked seen by test runs).
@@ -620,6 +622,7 @@ public partial class Game
         // --zoom Z: framed so near (0 all of her, 0.55 head and shoulders, 1 her face), in the portrait's light from
         // head and shoulders in (pictures of her skin at the bust).
         if (Args.Has("zoom")) figZoom = Mathf.Clamp(Args.Num("zoom", figZoom), 0, 1);
+        GD.Print($"load: create character opened in {(Time.GetTicksUsec() - askedAt) / 1e6:0.00} s");
     }
 
     public void CancelCreation()
@@ -640,12 +643,14 @@ public partial class Game
         if (Mode != "create" || beginning) return;
         // The storybook first, when there is one (GameStory).
         if (OpensOnStory) { BeginWithStory(c); return; }
+        ulong askedAt = Time.GetTicksUsec();
         EndCreate();
         Begin(c);
         draft = null;
         screens.Close();
         EnterZone("lowford", null, new Arrival(Fire.X + 1.4, Fire.Y + 1.0, Math.PI * 0.08));
         Save("new");
+        GD.Print($"load: begin journey stood up in {(Time.GetTicksUsec() - askedAt) / 1e6:0.00} s");
     }
 
     public void Continue(int slot)

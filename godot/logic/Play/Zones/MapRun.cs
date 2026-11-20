@@ -755,12 +755,12 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     /* ------------------------------------------------------------- falls -- */
 
-    /// <summary>A fall: half of what was picked up here is spilled. While falls remain (none, since the
-    /// owner's rule) she is up again where she was last safe (the last altar she lit, or the map's
-    /// start); the last closes the map.</summary>
+    /// <summary>A fall on a Wayfinder's map: half of what was picked up here is spilled. While falls remain (none,
+    /// since the owner's rule) she is up again where she was last safe (the last altar she lit, or the map's
+    /// start); the last closes the map. A dungeon's fall is handed on: she falls, and OnDeath wakes her.</summary>
     bool OnFall(Enemy? killer)
     {
-        if (B == null || over) return false;
+        if (B == null || over || IsDungeon) return false;
         falls++;
         Spill();
         if (falls >= FallsAllowed) return false;
@@ -791,11 +791,33 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         }
     }
 
+    /// <summary>Her death: a Wayfinder's map closes. A dungeon closes nothing (the owner, 19 Nov: "dying dosn't put us at
+    /// the front of the dungeon, it puts us outside, and makes the dungeon start all over - that seems bad"): she falls as
+    /// she does out on the Verge, and gets up whole at its mouth, inside (LampRise.Stand, the Verge's own rise), the
+    /// dungeon as she left it: its dead stay dead, its loot lies where it fell, its caches stay open, nothing is spilled.
+    /// What she had roused goes back to rest, and its ruler and champions are whole again, as out on the Verge.</summary>
     public override bool OnDeath(string killer)
     {
+        if (IsDungeon && B is { } battle && !over)
+        {
+            falls++;
+            G.After(RiseAfter, () =>
+            {
+                if (over || B != battle) return;
+                foreach (var e in battle.Enemies.Living())
+                    if (e.Disposition == Disposition.Hostile && !e.Boss && e.Wake > 0) { e.Roused = false; e.X = e.HomeX; e.Z = e.HomeZ; }
+                LampRise.Stand(G, battle, map.Start.X, map.Start.Z);
+                G.Announce(new Announcement("You fall", "You wake at the mouth. What you cleared stays cleared.", "danger", 3.2));
+                Objectives();
+            });
+            return true;
+        }
         if (!over) Finish();
         return true;
     }
+
+    /// <summary>A dungeon's fall: seconds on the ground before she gets up at its mouth (the Verge's 2.6).</summary>
+    public const double RiseAfter = 2.6;
 
     public void Leave()
     {
@@ -832,7 +854,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             : bossUp ? new Step($"{people.BossName} has come: beat it")
             : new Step($"Find {people.BossName} at the end of the way"),
             new Step($"Altars lit: {altars.Count(a => a.Lit)} of {altars.Count}", Optional: true, Done: altars.All(a => a.Lit)),
-            new Step(FallsAllowed > 1 ? $"Falls: {falls} of {FallsAllowed}" : "A fall ends the map", Optional: true),
+            IsDungeon ? new Step(falls > 0 ? $"Falls: {falls} (each wakes you at the mouth)" : "A fall wakes you at the mouth", Optional: true)
+            : new Step(FallsAllowed > 1 ? $"Falls: {falls} of {FallsAllowed}" : "A fall ends the map", Optional: true),
         };
         foreach (var m in Chart.Rolled) steps.Add(new Step($"{m.Name}: {m.Says.ToLowerInvariant()}", Optional: true));
         G.SetObjectives([new Tracked("map", Chart.Name, TrackTone.Main, steps)]);

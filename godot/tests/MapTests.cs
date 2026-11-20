@@ -174,33 +174,39 @@ public class MapTests
         Assert.Equal(4, r.J.Ch.Materials.GetValueOrDefault("bone_dust"));
     }
 
-    /// <summary>(19 Nov, the owner: "the character died, so its doing nothing now", the demo proof in the den) Her HP at
-    /// nought in the den closes it as a fall: the battle's hook hands the death on (false), the zone's death ends the map
-    /// (true), its result is the page the game shows (MapOver), and she is taken back to the den's mouth on the Verge. No
-    /// demo cut stands on this path (MapRun, Game.OnDeath, MapOver, MapResultScreen: none reads Demo); what stranded her was
-    /// the autopilot closing the result page as an unknown screen (Autopilot: "mapresult" is now read, then Confirm).</summary>
+    /// <summary>(19 Nov, the owner: "dying dosn't put us at the front of the dungeon, it puts us outside, and makes the
+    /// dungeon start all over - that seems bad") Her fall in the den closes nothing: the battle hands the death on, the
+    /// zone takes it (true), and after the fall's seconds she is whole at the den's mouth, inside, its dead stay dead and
+    /// nothing she picked up is spilled; no travel, no result page. Again and again: a dungeon has no last fall.</summary>
     [Fact]
-    public void Her_fall_in_the_den_ends_it_on_its_result_page_and_takes_her_back_to_the_verge()
+    public void Her_fall_in_the_den_wakes_her_whole_at_its_mouth_with_the_den_as_she_left_it()
     {
         var den = SurvivorUnchained.Maps.Chart.ForDungeon(DungeonGen.Get("hollow")!, 1, 6, "verge", 3, 4, 0);
         var r = Open(den, level: 6);
-        r.B.Player.Hp = 0;
-        Assert.False(r.B.Hooks.OnPlayerDeath!(null));
-        Assert.True(r.Zone.OnDeath("test"));
-        Assert.True(r.Zone.Over);
-        Assert.NotNull(r.Zone.Result);
-        Assert.False(r.Zone.Result!.Cleared);
-        Assert.Equal(1, r.Zone.Result.Falls);
+        var start = r.Zone.ArrivalFrom(null);
+        r.B.Hooks.OnPickup!(new Pickup(0) { Kind = PickupKind.Material, Ref = "bone_dust", Value = 8 });
+        Step(r, 1);
+        var foe = r.B.Enemies.Living().First(e => !e.Boss);
+        foe.Hp = 0; foe.Alive = false;
+        int living = r.B.Enemies.Living().Count();
+        for (int i = 1; i <= 3; i++)
+        {
+            r.B.Player.X += 40; r.B.Player.Hp = 0;
+            Assert.False(r.B.Hooks.OnPlayerDeath!(null));
+            Assert.True(r.Zone.OnDeath("test"));
+            r.Host.Pass(MapRun.RiseAfter + 0.1);
+            Assert.False(r.Zone.Over);
+            Assert.Null(r.Zone.Result);
+            Assert.Equal(i, r.Zone.Falls);
+            Assert.Equal(r.B.MaxHp, r.B.Player.Hp, 6);
+            Assert.Equal(start.X, r.B.Player.X, 6);
+            Assert.Equal(start.Z, r.B.Player.Z, 6);
+        }
+        Assert.Equal(living, r.B.Enemies.Living().Count());
+        Assert.False(foe.Alive);
+        Assert.Equal(8, r.J.Ch.Materials.GetValueOrDefault("bone_dust"));
+        r.Host.Pass(3);
         Assert.Null(r.Host.TravelledTo);
-        // (as the battle leaves her when the zone takes the death, and as the game's Travel captures her wounds)
-        r.B.Player.Hp = 1;
-        r.J.Capture(r.B);
-        r.Host.Pass(2.3);
-        Assert.Equal("verge", r.Host.TravelledTo);
-        // (the coordinator, 19 Nov: she arrives whole, not at the fall's 1 HP among the Verge's foes)
-        var at = r.Zone.ArrivalFrom(null);
-        var verge = r.J.StartBattle(true, r.Map.Meta.Collision(), r.Map.Ground.HeightAt, at.X, at.Z, at.Facing, 3);
-        Assert.Equal(verge.MaxHp, verge.Player.Hp, 6);
     }
 
     [Fact]
