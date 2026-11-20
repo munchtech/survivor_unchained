@@ -77,8 +77,20 @@ public static class Demo
     }
 
     /// <summary>Whether a list cuts this id: an exact entry, "*", or a "prefix*" entry.</summary>
-    public static bool Listed(IEnumerable<string> list, string id) =>
-        list.Any(e => e == "*" || e == id || (e.EndsWith('*') && id.StartsWith(e[..^1], StringComparison.Ordinal)));
+    public static bool Listed(IEnumerable<string> list, string id)
+    {
+        // (lane K, 19 Nov: asked each frame by the prompts; walked without a closure, an enumerator or a cut string each)
+        if (list is IReadOnlyList<string> l)
+        {
+            for (int i = 0; i < l.Count; i++) if (ListedOne(l[i], id)) return true;
+            return false;
+        }
+        foreach (var e in list) if (ListedOne(e, id)) return true;
+        return false;
+    }
+
+    static bool ListedOne(string e, string id) =>
+        e == "*" || e == id || (e.EndsWith('*') && id.AsSpan().StartsWith(e.AsSpan(0, e.Length - 1), StringComparison.Ordinal));
 
     /// <summary>In the demo, whether this interactable is not offered.</summary>
     public static bool HidesInteractable(string id) => On && Listed(Data.Interactables, id);
