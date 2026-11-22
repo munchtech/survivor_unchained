@@ -428,6 +428,20 @@ All paths below were checked to exist on 21 Nov unless marked. Heavy runs go thr
 
 Order: 1 and 2 were started on 21 Nov (the owner's go-ahead). 3 and 5 can start next. 6 waits on the owner's pick. 4 follows 3. The body test (decision 14) was started on 21 Nov in the Marionette session (shape, rings and rig first; its paint follows 6). The Godot 4.7.2 trial (decision 16) starts when task 1's baseline is in. Added 21 Nov from a workflow the owner sent (a Godot developer's zone-building loop, r/TopologyAI; its videos were not viewed): when the task 6 painting of a den room is approved, cut each prop out of it as a clean reference image and keep the painting as the placement target at the same camera. This costs no credits. Turning those references into meshes waits for the environment bake-off after the slice.
 
+**Task 1's baseline is in (22 Nov) [O, measured by the task 1 lead; not re-run].** Branch `move-baseline` @ `998aa9f48`, not merged; table, reading and an 87 s film in `survivorsunchained_inputs\scratch_devplan\task1_move_baseline\` (`TABLE.md`, `READING.md`, `move_baseline_film.mp4`). Frames are 60 fps; her top speed is 5.15 m/s. Against the PoE2 reference:
+
+| What | Ours | PoE2 (public clips) |
+|---|---|---|
+| Start | 90% of top speed in 9 frames, 99% in 19 | Full speed in 1 to 3 frames, no ramp |
+| Stop | 19 frames over 0.26 m | 2 to 3 frames, no slide |
+| Camera | Leads her by 1.52 m at a run; after a stop it scrolls on for 0.95 s to 90% and creeps to 2.0 s (1.58 m, 117 px); after a quarter turn it is still moving 100 frames later | Keeps her mid-frame, no lead or trail |
+| Reversal | Turned in 3 frames, full speed in 12, overshoot 0.02 m | No reading |
+| Dash | Starts on the press, 11 frames, 5.5 m; on keyboard and mouse it always goes to the cursor, never the keys; on a pad it follows the left stick | A roll from rest: about 0.45 s, about 4.7 heights (one clip) |
+| Strafe, backpedal | Full forward speed, no penalty | No reading |
+| Swing while moving | Slows her to 0.70x | No reading |
+
+What this changes: the camera is the largest gap and is fixed first in task 3, then the start and stop ramps (both several times slower than the reference). The dash reading confirms decision 3 (it ignores the held direction today). Open: shot 12 (the hit-stop slide, 0.3 to 0.55 m in the 19 Nov diagnosis) has no numbers, because the harness's stand-in foe vanishes a tick after it spawns; task 3 starts by taking that shot in a den room with a real pack. Not measured: foot slide, the 164 Hz screen, the shipping export.
+
 **The PoE2 reference is closed (21 Nov).** Public footage is used up after two passes, and the owner cannot record ("i don't have poe2 so I can't do that for you"). Nobody asks the owner for a PoE2 recording again. Movement targets for tasks 3 to 5: start, stop and camera lock use the measured numbers in `docs/design/POE2_MOVE_REF.md` (two clips agree); the roll from rest uses the single-clip number as a starting value; the other eight shots (reversal, quarter turn, strafe, backpedal, circle, roll at run, roll across the aim, heavy hit while moving) get our own targets, derived from the measured ones and marked as inferences (example: a reversal takes no longer than a stop plus a start, 6 frames, with no slide). The owner's play on a controller and on keyboard with mouse is the gate for those eight. 7 to 9 are paper work that can fill gaps without touching the critical lane's files.
 
 ---

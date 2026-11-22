@@ -68,8 +68,13 @@ reference is closed". State file: C:\Users\munch\Desktop\survivorsunchained_inpu
 Evidence you start from:
 - Our baseline: task 1's table (branch move-baseline, harness flag --moves12, tools/motion/move_baseline.py;
   its state file is survivorsunchained_inputs\scratch_devplan\task1_move_baseline\STATE.md). The 12 shots are
-  in survivorsunchained_inputs\scratch_devplan\moves12.md. The 19 Nov diagnosis to confirm against it: about
-  1 s of camera scroll after a stop, and a 0.3 to 0.55 m slide during hit-stop.
+  in survivorsunchained_inputs\scratch_devplan\moves12.md. The baseline is in (branch move-baseline at
+  998aa9f48; TABLE.md, READING.md and the film are in that state file's folder; the plan's section G has the
+  table against PoE2). It confirms the camera: it leads her by 1.52 m and scrolls on for about 1 s after a
+  stop. Start (9 frames to 90%) and stop (19 frames) are several times slower than the reference. The dash
+  always goes to the cursor on keyboard and mouse. Shot 12 (the 0.3 to 0.55 m hit-stop slide) has no numbers:
+  the harness's stand-in foe vanishes a tick after it spawns. Your first step: take shot 12 in a den room with
+  a real pack.
 - The target: docs/design/POE2_MOVE_REF.md. Measured from public clips: start reaches full speed in 1 to 3
   frames with no ramp, stop takes 2 to 3 frames with no slide, the camera keeps her mid-frame with no lead or
   trail (two clips agree); a roll from rest is about 0.45 s and about 4.7 of her heights (one clip). The other
