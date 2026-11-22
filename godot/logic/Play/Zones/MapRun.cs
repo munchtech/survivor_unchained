@@ -161,6 +161,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public override string? Region => map.Dungeon is { } dl ? $"{dl.Def.Region} · held by {people.Name}" : $"Tier {Chart.Tier} · {people.Name}";
     /// <summary>A dungeon (DungeonGen), not a Wayfinder's map: its caches, its way out past the ruler, no mark on the atlas.</summary>
     public bool IsDungeon => map.Dungeon != null;
+    /// <summary>(P3) Whether a woken pack's foes cast the kit's shared charge (PackKit.Tells): a Wayfinder's map only,
+    /// never a dungeon (DEN_ROSTER.md section 3, "the fix that matters, first").</summary>
+    public bool KitCharges => !IsDungeon;
     public override bool Combat => true;
     public override IReadOnlyList<string> Creatures =>
         Charts.Kinds(people, Chart.Tier).Select(k => k.Def)
@@ -382,7 +385,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     /// <summary>A roused pack presses as a story fight's does (PackKit): its foes on foot (not its leader, nor an archer) charge
     /// with the kit's charge at the story pack's waits x the tier's kitEvery, and the stand clock sends a roused pack's foe at a
-    /// stander. Campaign only (a map is a campaign fight: Journey.StartBattle).</summary>
+    /// stander. Campaign only (a map is a campaign fight: Journey.StartBattle).
+    /// (P3, DEN_ROSTER.md, the owner 22 Nov "I approve den roster") Not in a dungeon: there no foe casts the kit's shared
+    /// charge, and each foe keeps only its own move (the boar's charge is the den's one ordinary lane). Arena nights and
+    /// story fights (Encounters) keep the kit; a Wayfinder's map keeps it too.</summary>
     void Press(double dt)
     {
         if (press == null || B == null || !B.Campaign) return;
@@ -391,6 +397,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             if (!k.Placed || k.Cleared) continue;
             var up = k.Members.Where(Live).ToList();
             if (k.Woke < 0) { if (up.Any(m => m.E.Roused)) k.Woke = B.Time; else continue; }
+            if (!KitCharges) continue;
             press.Tells("charge", up, k.Woke, PackKit.FirstAfter, PackKit.Every, e => !e.Elite && e.Def.Ranged == null, null, null);
         }
         press.Stand(dt, null, () =>
