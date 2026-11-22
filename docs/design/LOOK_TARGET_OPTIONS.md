@@ -20,6 +20,8 @@ The brief's fallback applies: "stop at the screenshots plus a written descriptio
 
 **Later on 22 Nov:** a second lead tried the one route left, ChatGPT's image edit, and spent the third and last judged round on it. It also failed, all three options, but it is the closest result so far and its faults are named. See "The ChatGPT image-edit route" below. The sheets are kept marked "did not pass"; none is offered as a pick.
 
+**Afternoon of 22 Nov:** the owner picked C ("C: cool shade, warm light (Recommended)") and allowed one more judged round on its fixed frames. A third lead started round 4 and was stopped by ChatGPT's image limit after one frame. That frame is not judged and the round is not spent. See "Round 4 on option C" below.
+
 **The screenshots** (the game today: 1:1, game camera 62 degrees down, 24 m, FOV 34, 1920x1080, HUD off; she is about 70 px tall):
 - `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\den_frame_1.png` is a Clearing with a pack on her.
 - `den_frame_2.png` is a second Clearing with a pack.
@@ -117,15 +119,52 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 - Provenance (prompt, date, source frame, tool, chat) and the full log: the top block of `...\scratch_look\STATE.md`; the prompts in full: `...\gpt\prompts.md`.
 - The judge's scripts and output: `...\gpt\judge\`.
 
+## Round 4 on option C (third lead, 22 Nov): stopped at ChatGPT's image limit after one frame; not judged
+
+**The owner's answers (22 Nov 2026, word for word).**
+- Look direction: "C: cool shade, warm light (Recommended)"
+- How the next paint-over is made and judged: "Fix it, one more judged round (Recommended)". This allows a fourth judged round on this item: one round, no more.
+- How foes read on option C: "Dark, pale rim, ink line (Recommended)". The option's text: wolves stay near-black charcoal with a thin pale rim light and an ink outline; she and the danger marks are the light, warm things; the rule gets rewritten to say so. The ruling is also recorded under D3 in `docs/team/GAME_PLAN.md`.
+
+**What the owner was not asked.** Whether floor light pools may be brighter than the heroine, and hard-edged cut light against a soft glow (questions 4 and 5 below). Round 4 works to the third judge's fix: pools darker than her, with cut edges. That is the judge's fix, not the owner's ruling.
+
+**What happened.** One picture was made, frame 1, and then ChatGPT refused the next request. The page said: "You're out of image creations for now. Try again at 6:42 PM." It offered an upgrade, which was not touched. Nothing was retried and no other route was used. Frames 2 and 3 were not made. **The judged round was not spent**, since only one of the three frames exists. It is still the one round the owner allowed.
+
+**Frame 1 (`C4_f1_v1`), not judged.** Measured with the third judge's own script, against round 3's frame 1:
+
+| Fault the judge named | Round 3 | Round 4 | Target | Met |
+|---|---|---|---|---|
+| Light pools brighter than her (floor lightness p95 against her lightness) | 51 against 38 | 40.7 against 41.1 | below hers | barely |
+| Mauve-pink floor at the pool edges | 5.5% | 0.8% | near 0% | yes |
+| Floor detail at wolf scale, the 10-30 px band (source 5.7) | 7.2 | 6.3 | at or below 5.7 | no |
+| The glowing spot at (1025, 925) | shrunk to a dot | a clear burst, lightness 95, the brightest thing on the floor | the brightest point | yes (my reading) |
+| Paint missing at an edge after the fit | does not apply to frame 1 | 0.00% | 0% | yes |
+
+- Also measured: layout drift median 1.4 px, with 4% of matched patches past 6 px; no color outside the reference (0.0% past the judge's limit); foes at lightness 9 against a floor at 16.
+- The fine grain of the floor is above the source (9.5 against 7.3 by my own gate; 6.8 against 6.1 in the shade).
+- My reading at 1:1, not a verdict: two large cut pools in dusky ochre with clean edges, the pack and the heroine in place and shape, wolves near-black with a thin pale rim and an ink line, the pit still a pit.
+- What is left on frame 1: the pool sits only just below her, and the 10-30 px band is above the source. One correction was written for both (pools darker and duller, same shapes). It was sent and not generated.
+- Not checked: frames 2 and 3, since they do not exist. So nothing here says whether frame 3's left edge or frame 2's top-edge roots are fixed. The padding that removes the edge fill is proven on frame 1 only.
+
+**Where it is kept** (reference pictures only, never shipped, nothing built from them):
+- The one-row sheet, source beside paint at 1:1: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\sheets4\look_option_C_r4_C4_f1_v1_NOT_JUDGED.png`.
+- The picture: `...\scratch_look\gpt\fit4\C4_f1_v1.png`. As downloaded: `...\gpt\raw4\`. Uploads: `...\gpt\up4\`.
+- Nothing was added to `...\gpt\options\` or `...\gpt\closest\`, because there is no verdict.
+- Provenance, the log and how to resume: the top block of `...\scratch_look\STATE.md`. The prompt "C v3" and its correction: `...\gpt\prompts.md`. Round 4's scripts: `...\gpt\scripts4\`.
+
+**What the rest of round 4 costs.** About five more images in the same chat once the limit resets: frame 1's correction, frames 2 and 3, and one correction each if needed. Then a few minutes of measures, the sheet, and the one judged round. Every script is written and has run on frame 1. The limit is the cost that is new. Known: the second lead made ten pictures this morning, this round made one, and the next request was refused. Not known: how many pictures the allowance holds, or what else used it. My reading, not checked: a full option set should start on a fresh allowance.
+
 ## Questions for the owner (yes/no)
 
-1. May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)
+1. **Answered 22 Nov: "Dark, pale rim, ink line (Recommended)".** May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)
 2. Is the written direction enough to pick now (A, B or C), with the paintings made after the pick?
 3. May the paint-over be made by hand, or from a painted floor set, since the local route did not reach the bar?
 4. (From the third judge.) May light pools on the floor be brighter than the heroine, or do they count as ground and stay darker than her?
 5. (From the third judge.) Is the den's light hard-edged cut patches, as the reference paints sun on its path, and not a soft glow?
-6. (From the third judge.) With its listed faults fixed, is C's direction (cool shade, warm light, inked walls) the game?
-7. Do you want to look at C's three frames as the closest result even though they failed, and may one more judged round be spent after the fixes? (The cap of three is used up.)
+6. **Answered 22 Nov: "C: cool shade, warm light (Recommended)".** (From the third judge.) With its listed faults fixed, is C's direction (cool shade, warm light, inked walls) the game?
+7. **Answered 22 Nov: "Fix it, one more judged round (Recommended)".** Do you want to look at C's three frames as the closest result even though they failed, and may one more judged round be spent after the fixes? (The cap of three is used up.) That round is not spent yet: see "Round 4 on option C" above.
+
+Questions 4 and 5 are still open. Questions 2 and 3 were not put to the owner on 22 Nov.
 
 ## After the pick (not started)
 
@@ -142,6 +181,8 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 - One judged round of three is left on this item. The cap was not raised.
 
 **The second lead's note, 22 Nov (later).** The two notes above are now out of date: ChatGPT's image edit has been tried (the section "The ChatGPT image-edit route"), and the third judged round is spent. No judged round is left on this item.
+
+**The third lead's note, 22 Nov (afternoon).** The owner picked C and allowed one more judged round ("Fix it, one more judged round (Recommended)"). That round is not spent: round 4 stopped at ChatGPT's image limit after one frame (the section "Round 4 on option C").
 
 **What the next one costs on the ChatGPT route.** One image takes about a minute to generate and about three tool calls to drive, in the owner's Chrome with the extension connected; a one-thing correction in the same chat costs the same. Reusable as they are, in `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`: the prompts (`prompts.md`), the padding and reference cuts (`scripts\prep_up.py`), the registration back onto the game frame (`scripts\register.py`), the gates (`scripts\gates.py`), the sheet builder (`scripts\sheets.py`) and the judge's measures (`judge\measure.py`). So a fixed C is about three images and a few minutes of checks. What it does not have is a judged round.
 
