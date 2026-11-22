@@ -33,8 +33,7 @@ namespace SurvivorUnchained.Sim;
  *   - Bladestorm's spin is a builder too (its press's builds, 19 Nov): each turn that cuts a foe gives a little back, less than
  *     it drains (1.5 to 2 a 0.3 s turn against 3.6), so a fight lengthens the storm but never keeps it up unless the build does.
  *   - Spend: Battle.CostOf, read by Firing.Press and the kindled spenders. A channel with a Drain drains it while held
- *     and ends at 0. (M3) A kindled spender whose key heaves (press "now") fires itself only at SelfAt of the cap (full)
- *     and spends all of it; its key heaves at full strength from its cost and with what she has from half its cost.
+ *     and ends at 0.
  *   - (bd-keys) Pacing is per skill, in its press record (skills.json): a builder fills (the basic attack, Sunder), a
  *     spender spends (Dawnpulse, Groundbreaker), and the rest run on their own cooldowns with no cost (Heroic Leap,
  *     Shield Charge). A stance changes no cost; its blows fill as any blow does. KeyBarTests.Resolve_pacing_is_per_skill holds the mix.
@@ -182,11 +181,6 @@ public sealed partial class Battle
     /// <summary>A press's Resolve cost, if Resolve counts (0 otherwise: a cost never blocks a skill with no resource).</summary>
     internal double CostOf(WeaponInst w) => Resolve.On ? (w.Press?.Resolve ?? 0) * RulePayMul(w) : 0;
 
-    /// <summary>Her riposte is readied until (Rebuke's kindled press): the next blow that reaches her is blocked and answered.</summary>
-    public double RiposteUntil = double.NegativeInfinity;
-    /// <summary>Ripostes taken this fight (tests, the harness).</summary>
-    public int Ripostes;
-
     /// <summary>The cursor's point each step (WorldScene; on a pad, her facing times the skill's reach): what a held skill
     /// aims at as it repeats.</summary>
     public void AimSkills(double x, double z) => SkillAim = (x, z);
@@ -252,109 +246,5 @@ public sealed partial class Battle
             if (al > 1e-6) { p.CastAimX = adx / al; p.CastAimZ = adz / al; }
         }
         Events.Emit(new Ev.Cast { Weapon = w.Id, Slot = w.Slot, Walk = walk, Time = t, Plant = plant, Heavy = w.WasOwnHeavy, X = at.X, Z = at.Z });
-    }
-
-    public const double RiposteFor = 2, FlareFor = 3, FlareDamage = 1.25, FlareArea = 1.3;
-
-    /// <summary>A kindled skill's key (campaign): now fires it (its condition skipped; a spender with what she has, at
-    /// least half its cost, its damage scaled by Value/cost and capped at 1, spending that); riposte readies one for 2 s;
-    /// flare an aura's x1.3 radius and x1.25 damage for 3 s; command a summon's (the hook: the warden has none). The
-    /// riposte, flare and command then wait their key's wait (the kindled record's Wait, else the skill's cooldown).</summary>
-    internal bool KindledPress(WeaponInst w)
-    {
-        if (w.DisabledT > 0) return false;
-        var mode = w.KindleKey;
-        double keyWait = w.Press?.Kindled?.Wait ?? w.Def.Base.Cooldown ?? 1;
-        switch (mode)
-        {
-            case KindlePress.Now:
-            {
-                if (w.Timer > 0 && !w.Relooking || BlowPending(w)) return false;
-                double cost = CostOf(w), mul = 1;
-                if (cost > 0)
-                {
-                    if (Resolve.Value < cost / 2) return false;
-                    mul = Math.Min(1, Resolve.Value / cost);
-                }
-                var (aim0, fm) = (CastAt, w.FireMul);
-                CastAt = AimFor(w);
-                w.FireMul = fm * mul;
-                bool fired;
-                // (campaign: the heave lands on its clip's contact, at this press's strength: Sim/Contact.cs)
-                try { fired = DeferBlow(w, mul) || Firing.CastNow(this, w); }
-                finally { (CastAt, w.FireMul) = (aim0, fm); }
-                if (!fired) return false;
-                if (cost > 0) Resolve.Spend(Math.Min(cost, Resolve.Value));
-                CastPose(w);
-                Events.Emit(new Ev.KindlePress { Weapon = w.Id, Slot = w.Slot, Mode = mode, Until = Time });
-                return true;
-            }
-            case KindlePress.Riposte:
-                if (w.PressWait > 0) return false;
-                RiposteUntil = Time + RiposteFor;
-                w.PressWait = keyWait;
-                Events.Emit(new Ev.KindlePress { Weapon = w.Id, Slot = w.Slot, Mode = mode, Until = RiposteUntil });
-                return true;
-            case KindlePress.Flare:
-                if (w.PressWait > 0) return false;
-                w.FlareUntil = Time + FlareFor;
-                w.AuraMul = FlareDamage;
-                w.AuraArea = FlareArea;
-                w.PressWait = keyWait;
-                // It goes off on its next steps if its condition holds: the flare is seen at once.
-                if (w.Timer > 0.05) w.Timer = 0.05;
-                Events.Emit(new Ev.KindlePress { Weapon = w.Id, Slot = w.Slot, Mode = mode, Until = w.FlareUntil });
-                return true;
-            case KindlePress.Command:
-                if (w.PressWait > 0 || !CommandSummons(w)) return false;
-                w.PressWait = keyWait;
-                Events.Emit(new Ev.KindlePress { Weapon = w.Id, Slot = w.Slot, Mode = mode, Until = Time });
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>A summon's key (kindled press "command"): the hook for the callings that raise things (the warden has
-    /// none yet). False: nothing to command.</summary>
-    internal bool CommandSummons(WeaponInst w) => false;
-
-    /// <summary>A blow reaching her inside a readied riposte (HurtPlayer, after the dodge's checks): it is blocked (a block
-    /// for Rebuke and Resolve) and Rebuke answers it at once. True when it took the blow.</summary>
-    bool TryRiposte(double amount, School school, string source, Enemy? from)
-    {
-        if (Time > RiposteUntil) return false;
-        RiposteUntil = double.NegativeInfinity;
-        var p = Player;
-        p.Iframes = Math.Max(p.Iframes, 0.25);
-        Ripostes++;
-        Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
-        Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
-        RebukeAnswerNow();
-        OnBlocked(amount, from);
-        return true;
-    }
-
-    /// <summary>A carried skill's form (taught_builds.json "cast", or where she put it; campaign only). (bd-keys) It moves
-    /// to where that form runs: a key when pressed, an auto slot when kindled. False: not carried, no record, a form its
-    /// record does not allow, or a pressed form with no key free (nothing changes).</summary>
-    public bool SetForm(string id, string cast)
-    {
-        if (WeaponById(id) is not { } w) return false;
-        if (w.Press == null && Campaign)
-        {
-            // (bd-keys) No press record: no form to take, only its place (a key, or an auto slot when "kindle").
-            bool had = Kindles.Contains(id);
-            if (cast == "kindle") Kindles.Add(id); else Kindles.Remove(id);
-            if (Reslot(w)) return true;
-            if (had) Kindles.Add(id); else Kindles.Remove(id);
-            return false;
-        }
-        bool was = w.KindledForm;
-        if (!w.SetForm(cast)) return false;
-        if (cast == "kindle") Kindles.Add(id); else Kindles.Remove(id);
-        if (Reslot(w)) return true;
-        w.KindledForm = was;
-        if (was) Kindles.Add(id); else Kindles.Remove(id);
-        return false;
     }
 }

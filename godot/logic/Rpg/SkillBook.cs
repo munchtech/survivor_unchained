@@ -14,7 +14,7 @@ namespace SurvivorUnchained.Rpg;
  * reward), from the survivor's calling as they grow (every third level it
  * teaches one of its own kind they have seen), or worn (gear that grants a
  * skill needs no learning, and goes with the gear). Learned skills are
- * carried by day in a few keys and auto slots (more as the survivor grows), at a rank
+ * carried by day in a few keys (more as the survivor grows), at a rank
  * that grows with them; each asks something of the one who uses it (a
  * spell asks wits, a blade might, a thrown thing finesse, a prayer or a
  * living thing resolve), and one the survivor no longer measures up to
@@ -47,7 +47,7 @@ public static class SkillBook
     /// build teaches always does: the calling put it in her hands, so a taught key never lies idle (Dawnpulse leans on wits,
     /// which a warden has three of).</summary>
     public static bool Meets(CharacterData ch, string id) => Have(ch, Attribute(id)) >= Need
-        || TaughtBuilds.Of(ch.Archetype) is { } t && (t.Keys.Exists(s => s.Skill == id) || t.Autos.Exists(s => s.Skill == id));
+        || TaughtBuilds.Of(ch.Archetype) is { } t && (t.Keys.Exists(s => s.Skill == id));
 
     public static bool Knows(CharacterData ch, string id) => ch.Skills.Contains(id);
 
@@ -66,86 +66,45 @@ public static class SkillBook
         return true;
     }
 
-    /* (bd-keys, docs/design/BUILD_DIRECTION.md rounds 7-8, BUILD_UNLOCKS.md) Her bar: four keys, the basic attack in the
-     * first, and three auto slots that run themselves; each opens at its level on the ladder. Every carried skill is in
-     * ch.Slotted (the keys in key order, the autos among them) and its place is its own: a skill that is only ever
-     * pressed takes a key, one that only runs itself an auto slot, and one offered both ways (a kindled option) a key
-     * unless she runs it kindled (ch.AutoForm). A union takes two keys. Skills her gear grants that run themselves stack
-     * beside the three with no cap (Character.Bar). */
+    /* (bd-keys, docs/design/SKILL_KINDS.md) Her bar: four keys, all pressed, the basic attack held in the first; a union
+     * takes two keys; the keys open at levels 1, 4, 5 and 9. Every carried skill is in ch.Slotted, in key order. A skill
+     * that only ever runs itself (Weapons.AutoOnly) is never slotted. Skills her gear grants that run themselves stack
+     * beside the keys with no cap (Character.Bar). */
 
     /// <summary>The keys open at a level (BUILD_UNLOCKS.md): the basic attack's at the first, then the fourth, fifth and ninth.</summary>
     public static int KeysAt(int level) => level >= 9 ? 4 : level >= 5 ? 3 : level >= 4 ? 2 : 1;
 
-    /// <summary>Her own auto slots open at a level (BUILD_UNLOCKS.md): the first, the seventh and the tenth.</summary>
-    public static int AutosAt(int level) => level >= 10 ? 3 : level >= 7 ? 2 : 1;
+    /// <summary>How many learned skills she carries by day: the keys open at her level.</summary>
+    public static int Slots(CharacterData ch) => KeysAt(ch.Level);
 
-    /// <summary>How many learned skills she carries by day, keys and auto slots together: two from the start (the basic
-    /// attack and an auto), then three at the fourth level, four at the fifth, five at the seventh, six at the ninth and
-    /// seven at the tenth.</summary>
-    public static int Slots(CharacterData ch) => SlotsAt(ch.Level);
-    public static int SlotsAt(int level) => KeysAt(level) + AutosAt(level);
+    /// <summary>The old keys-plus-autos ladder (keys 1/4/5/9 plus autos 1/7/10), kept only so map and harness scaling hold
+    /// (MapRun's DayMul, the arena and day-sim harnesses); flagged for a re-tune. Two from the start, three at the fourth
+    /// level, four at the fifth, five at the seventh, six at the ninth, seven at the tenth.</summary>
+    public static int OldBarSlotsAt(int level) => KeysAt(level) + (level >= 10 ? 3 : level >= 7 ? 2 : 1);
 
-    /// <summary>Does this carried skill sit in an auto slot (it runs itself) rather than a key?</summary>
-    public static bool IsAuto(CharacterData ch, string id) =>
-        Weapons.AutoOnly(id) || (!Weapons.KeyOnly(id) && !Weapons.IsUnion(id) && ch.AutoForm.Contains(id));
+    /// <summary>The keys her carried skills take (a union two).</summary>
+    public static int KeysUsed(CharacterData ch) => ch.Slotted.Where(id => Weapons.All.ContainsKey(id)).Sum(Weapons.SlotCost);
 
-    /// <summary>The keys her carried keyed skills take (a union two), and her auto slots in use (eligible or not: a slot
-    /// holds what she put in it).</summary>
-    public static int KeysUsed(CharacterData ch) => ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && !IsAuto(ch, id)).Sum(Weapons.SlotCost);
-    public static int AutosUsed(CharacterData ch) => ch.Slotted.Count(id => Weapons.All.ContainsKey(id) && IsAuto(ch, id));
-
-    /// <summary>Room for it where it goes (its keys, or an auto slot) at her level.</summary>
+    /// <summary>Room for it among the keys at her level. A skill that only runs itself is never slotted.</summary>
     public static bool HasRoom(CharacterData ch, string id) => HasRoom(ch, id, ch.Level);
-    public static bool HasRoom(CharacterData ch, string id, int level) => IsAuto(ch, id)
-        ? AutosUsed(ch) < AutosAt(level)
-        : KeysUsed(ch) + Weapons.SlotCost(id) <= KeysAt(level);
+    public static bool HasRoom(CharacterData ch, string id, int level) => !Weapons.AutoOnly(id) && KeysUsed(ch) + Weapons.SlotCost(id) <= KeysAt(level);
 
-    /// <summary>A skill just come into her hands goes where it fits: a key or an auto slot by its place; one offered both
-    /// ways that finds its place full goes to the other when that has room. False when there is no room (it waits learned).</summary>
+    /// <summary>A skill just come into her hands takes a free key. False when there is none (it waits learned).</summary>
     public static bool TakeUp(CharacterData ch, string id)
     {
-        if (ch.Slotted.Contains(id) || !Weapons.All.ContainsKey(id)) return false;
-        if (!HasRoom(ch, id) && Both(id))
-        {
-            bool was = IsAuto(ch, id);
-            SetAuto(ch, id, !was);
-            if (!HasRoom(ch, id)) SetAuto(ch, id, was);
-        }
-        if (!HasRoom(ch, id)) return false;
+        if (ch.Slotted.Contains(id) || !Weapons.All.ContainsKey(id) || !HasRoom(ch, id)) return false;
         ch.Slotted.Add(id);
         return true;
     }
 
-    /// <summary>Offered both ways: pressed in a key, or kindled in an auto slot.</summary>
-    public static bool Both(string id) => Weapons.All.ContainsKey(id) && !Weapons.AutoOnly(id) && !Weapons.KeyOnly(id) && !Weapons.IsUnion(id);
-
-    /// <summary>Run a skill offered both ways kindled (an auto slot) or pressed (a key). False when it has only one way, or
-    /// when it is carried and the other place has no room (nothing changes).</summary>
-    public static bool SetAuto(CharacterData ch, string id, bool auto)
-    {
-        if (!Both(id)) return false;
-        if (IsAuto(ch, id) == auto) return true;
-        int at = ch.Slotted.IndexOf(id);
-        if (at >= 0) ch.Slotted.RemoveAt(at);
-        if (auto) ch.AutoForm.Add(id); else ch.AutoForm.Remove(id);
-        if (at < 0) return true;
-        bool room = HasRoom(ch, id);
-        if (!room) { if (auto) ch.AutoForm.Remove(id); else ch.AutoForm.Add(id); }
-        ch.Slotted.Insert(at, id);
-        return room;
-    }
-
     /// <summary>Put one carried skill down and another in its place (the basic attack's key holds whatever she puts in it:
-    /// the key keeps its number). The new one takes the old one's way (a key for a key, an auto slot for an auto slot),
-    /// must be hers to carry, and known or worn.</summary>
+    /// the key keeps its number). The new one must be hers to carry, known or worn, and fit the keys.</summary>
     public static bool Swap(CharacterData ch, string from, string to)
     {
         int i = ch.Slotted.IndexOf(from);
-        if (i < 0 || ch.Slotted.Contains(to) || !Weapons.All.ContainsKey(to) || !(Knows(ch, to) || Character.Worn(ch, to)) || !Carries(ch, to)) return false;
-        bool auto = IsAuto(ch, from);
-        if (IsAuto(ch, to) != auto && !(Both(to) && SetAuto(ch, to, auto))) return false;
+        if (i < 0 || ch.Slotted.Contains(to) || !Weapons.All.ContainsKey(to) || !(Knows(ch, to) || Character.Worn(ch, to)) || !Carries(ch, to) || Weapons.AutoOnly(to)) return false;
         ch.Slotted[i] = to;
-        if (!auto && KeysUsed(ch) > KeysAt(ch.Level)) { ch.Slotted[i] = from; return false; }
+        if (KeysUsed(ch) > KeysAt(ch.Level)) { ch.Slotted[i] = from; return false; }
         return true;
     }
 
@@ -192,8 +151,7 @@ public static class SkillBook
         return true;
     }
 
-    /// <summary>Carry a skill she knows (or her gear grants: it goes with the gear) where it goes, a key or an auto slot,
-    /// if that has room.</summary>
+    /// <summary>Carry a skill she knows (or her gear grants: it goes with the gear) in a key, if one is free.</summary>
     public static bool Slot(CharacterData ch, string id)
     {
         if (!(Knows(ch, id) || Character.Worn(ch, id)) || !Carries(ch, id) || ch.Slotted.Contains(id) || !Weapons.All.ContainsKey(id) || !HasRoom(ch, id)) return false;
@@ -204,20 +162,20 @@ public static class SkillBook
     public static void Unslot(CharacterData ch, string id) => ch.Slotted.Remove(id);
 
     /// <summary>What is carried by day and can be used: slotted, learned, measured up to, the calling's to carry (one that
-    /// is not lies idle, as one not measured up to does: an old save keeps it, unused), within the keys and the auto slots
+    /// is not lies idle, as one not measured up to does: an old save keeps it, unused), within the keys
     /// open at her level, in ch.Slotted's order (the keys in key order). Its rank is WickBook.DayRank (Rank when nothing is
     /// held). A worn skill she put in a key is Character.Bar's, not this.</summary>
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch)
     {
-        int keys = KeysAt(ch.Level), autos = AutosAt(ch.Level);
+        int keys = KeysAt(ch.Level);
         foreach (var id in ch.Slotted.ToList())
         {
             if (!Weapons.All.ContainsKey(id) || !Carries(ch, id)) continue;
             // (a worn skill she put in a key holds it, though Character.Bar, not this, takes it up)
             bool use = Knows(ch, id) && Meets(ch, id);
             if (!use && (Knows(ch, id) || !Character.Worn(ch, id))) continue;
-            if (IsAuto(ch, id)) { if (autos-- > 0 && use) yield return (id, WickBook.DayRank(ch, id)); }
-            else if (Weapons.SlotCost(id) <= keys) { keys -= Weapons.SlotCost(id); if (use) yield return (id, WickBook.DayRank(ch, id)); }
+            if (Weapons.AutoOnly(id)) continue;
+            if (Weapons.SlotCost(id) <= keys) { keys -= Weapons.SlotCost(id); if (use) yield return (id, WickBook.DayRank(ch, id)); }
         }
     }
 

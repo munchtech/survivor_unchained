@@ -19,7 +19,7 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class Socket
 {
-    public enum SeatKind : byte { Pressed, Channeled, Kindled }
+    public enum SeatKind : byte { Pressed, Channeled }
 
     /// <summary>What GameHud feeds a campaign seat each frame.</summary>
     public struct SeatState
@@ -145,11 +145,6 @@ public partial class Socket
     {
         briefWait = false;
         levelRiseT = -1;
-        if (!keyed || st.Kind != SeatKind.Kindled) return;
-        flareT = 0;
-        briefWait = waitSecs >= 0 && waitSecs <= BriefWait;
-        // (--slots-trace: a frame of the flare is picked by this line: the well is at the mid band for 0.25 s from here)
-        if (Trace) GD.Print($"seat {Index}: {Id} flare begins (kindled, fired itself) frame {Engine.GetFramesDrawn()}");
     }
 
     int tracedWait = -1;
@@ -185,7 +180,7 @@ public partial class Socket
     /// only; nothing redrawn, nothing built).</summary>
     void SeatTick(double dt)
     {
-        bool kindled = keyed && filled && st.Kind == SeatKind.Kindled;
+        bool kindled = false;   // (no seat is kindled now: the lantern below is dead, left for a later sweep)
         if (kindled && lantern == null) lantern = Fx(SeatFx.Mode.Lantern);
         if (lantern != null)
         {

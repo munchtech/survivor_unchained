@@ -29,12 +29,6 @@ public static class SeatCost
      * Below the floor: the short look. From the floor to the cost: the fourth look, "it fires, not at full": the glyph
      * lit, no veil, the amber arc kept as the strength, an ink tick on the groove at the floor, no warm well. */
 
-    /// <summary>A kindled "now" key's press floor as a share of its cost.</summary>
-    public const float KindledFloor = 0.5f;
-
-    /// <summary>The press floor as a share of the cost (1: the full cost).</summary>
-    public static float FloorShare(bool kindledNow) => kindledNow ? KindledFloor : 1f;
-
     /// <summary>Short of the press floor: a press does nothing (a cost of 0 or less never is).</summary>
     public static bool ShortOfFloor(double value, double cost, float floorShare) => cost > 0 && value < cost * Floor(floorShare);
 

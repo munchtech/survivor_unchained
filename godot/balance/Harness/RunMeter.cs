@@ -179,7 +179,6 @@ public sealed class RunMeter
                     { string k = (tl.Caught ? "caught " : "missed ") + kind; taken["#" + k] = taken.GetValueOrDefault("#" + k) + 1; if (tl.Caught) recent.Enqueue((t, "CAUGHT " + kind)); } break;
                 case Ev.Leap { Phase: LeapPhase.Takeoff } lp: recent.Enqueue((t, $"LEAP {Math.Sqrt((lp.X1 - lp.X0) * (lp.X1 - lp.X0) + (lp.Z1 - lp.Z0) * (lp.Z1 - lp.Z0)):0}m")); break;
                 case Ev.Cast c when c.Weapon is not ("sunder" or "oathblade"): recent.Enqueue((t, "cast " + c.Weapon)); break;
-                case Ev.KindlePress kp: recent.Enqueue((t, "key " + kp.Weapon)); break;
             }
         }
         if (p.Alive) low = Math.Min(low, p.Hp / Math.Max(1, b.MaxHp));

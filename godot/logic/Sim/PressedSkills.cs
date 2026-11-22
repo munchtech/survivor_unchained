@@ -29,8 +29,8 @@ public sealed partial class Battle
     /// <summary>(bd-keys) The keys this fight has: the campaign's four (MaxKeys), the arena's six self-firing slots (MaxWeapons).</summary>
     public int KeyCount => Campaign ? Content.Weapons.MaxKeys : Content.Weapons.MaxWeapons;
 
-    /// <summary>(bd-keys) The skills this fight runs kindled where they are offered both ways (the campaign: they go to an
-    /// auto slot, not a key). Set before they come in (BattleSetup.Kindled; Journey on a refresh).</summary>
+    /// <summary>(bd-keys) The skills this fight runs itself though they have no press record (the campaign: gear-granted
+    /// autos; they go to a slot past the keys). Set before they come in (BattleSetup.Kindled; Journey on a refresh).</summary>
     public readonly HashSet<string> Kindles = new();
 
     /// <summary>(bd-keys) A skill coming into this fight would run itself (an auto slot, campaign only).</summary>
@@ -39,7 +39,7 @@ public sealed partial class Battle
         if (!Campaign || !Content.Weapons.All.TryGetValue(id, out var d)) return false;
         // No press record yet: an auto slot's when this fight runs it there (Kindles), else a key's while one is free.
         if (d.Press is not { } r) return Kindles.Contains(id) || SlotsUsed + Content.Weapons.SlotCost(id) > KeyCount;
-        return r.Kind == Content.PressKind.Kindle || (r.Kindled != null && Kindles.Contains(id));
+        return r.Kind == Content.PressKind.Kindle;
     }
 
     /// <summary>Keys in use (a union counts two): what KeyCount is measured against. Auto slots are not counted.</summary>
@@ -69,24 +69,6 @@ public sealed partial class Battle
         return free;
     }
 
-    /// <summary>(bd-keys) Move a campaign weapon to where its form now runs (a key when pressed, an auto slot when it runs
-    /// itself). False when it should go to a key and none is free (it stays where it was).</summary>
-    internal bool Reslot(WeaponInst w)
-    {
-        if (!Campaign) return true;
-        // (one with no press record runs itself anywhere: it moves only when this fight's Kindles say)
-        bool auto = w.Press == null ? Kindles.Contains(w.Id) : !w.Pressed, onAuto = w.Slot >= KeyCount;
-        if (auto == onAuto) return true;
-        int cost = Content.Weapons.SlotCost(w.Id);
-        int[] old = [w.Slot, w.Slot2];
-        w.Slot = -1; w.Slot2 = -1;
-        var free = FreeSlots(cost, auto);
-        if (free.Count < cost) { (w.Slot, w.Slot2) = (old[0], old[1]); return false; }
-        w.Slot = free[0];
-        if (cost > 1) w.Slot2 = free[1];
-        return true;
-    }
-
     bool HeldOn(int slot) => slot >= 0 && slot < heldSlots.Length && heldSlots[slot];
 
     /// <summary>The key on a slot pressed, aimed at a point on the ground: a press skill fires once if ready, a
@@ -95,8 +77,7 @@ public sealed partial class Battle
     {
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
         if (OnSlot(slot) is not { } w) return false;
-        // A kindled skill's key (campaign): its live press (now, riposte, flare, command).
-        if (!w.Pressed) { if (!w.KindledNow) return false; SkillAim = (aimX, aimZ); return KindledPress(w); }
+        if (!w.Pressed) return false;
         SkillAim = (aimX, aimZ);
         // A spin union (none in data since 13 Nov 2026; Bladestorm is now the Warden's own skill, below): its first key spins; its second,
         // fresh in the storm or within its BreakWindow after, breaks it (a grip held, or a press buffered, from before the

@@ -203,7 +203,7 @@ public sealed class BattleSetup
     /// <summary>The campaign (ARPG.md 3.1): skills set off by their press records, the warden on Resolve. False (the
     /// arena, the probes, tests' own fights): every skill as it always was.</summary>
     public bool Campaign;
-    /// <summary>(bd-keys) Campaign: the skills offered both ways that run kindled, in an auto slot (Character.Bar's autos).</summary>
+    /// <summary>(bd-keys) Campaign: the skills that run themselves though they have no press record: gear-granted autos (Character.Bar).</summary>
     public HashSet<string>? Kindled;
     /// <summary>(bd-keys) Campaign: her second weapon set's stance (data/content/stances.json; SkillBook.StanceOf), null
     /// before it opens; and her calling (set A's swap strike).</summary>
@@ -1708,8 +1708,6 @@ public sealed partial class Battle
             Fire(TriggerEvent.Dodge, new ProcCtx { X = p.X, Z = p.Z });
             return 0;
         }
-        // Rebuke's riposte (campaign): the blow is blocked and answered.
-        if (TryRiposte(amount, school, source, from)) return 0;
         if (RuleShieldBlock(amount, school, source, from)) return 0;
         // (bd-sockets) a Block gem on a skill she is playing may turn a blow
         foreach (var sw in Weapons)
@@ -3083,9 +3081,8 @@ public sealed partial class Battle
         var slots = FreeSlots(Content.Weapons.SlotCost(id), auto);
         var w = new WeaponInst(id, rank, slots[0]);
         if (slots.Count > 1) w.Slot2 = slots[1];
-        // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says. One offered both
-        // ways that this fight runs kindled (Kindles) comes in kindled.
-        if (Campaign) { w.Press = w.Def.Press; if (auto && Kindles.Contains(id)) w.SetForm("kindle"); }
+        // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says.
+        if (Campaign) w.Press = w.Def.Press;
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
         RewearSupport(w);

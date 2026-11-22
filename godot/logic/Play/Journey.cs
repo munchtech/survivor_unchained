@@ -215,8 +215,8 @@ public sealed partial class Journey
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.Calling = Ch.Archetype;
-        // (bd-keys) The campaign runs each carried skill in the form its place gives it (Character.Bar: a key pressed, an
-        // auto slot kindled), set as it came in (BattleSetup.Kindled), no longer the taught build's over her choice.
+        // (bd-keys) The campaign runs each carried skill as its press record sets it off (Character.Bar: a key pressed); the
+        // gear's auto skills run themselves, set as they came in (BattleSetup.Kindled).
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.
@@ -453,13 +453,11 @@ public sealed partial class Journey
             int slot = -1;
             if (b != null && b.Campaign && !b.Weapons.Exists(w => w.Id == s.Skill))
             {
-                // (bd-keys) a kindled one comes into an auto slot (never full); a pressed one into a key, a worn key the
-                // build does not name giving it up when the keys are full
-                if (s.Cast == "kindle") b.Kindles.Add(s.Skill); else b.Kindles.Remove(s.Skill);
+                // (bd-keys) a taught skill comes into a key, a worn key the build does not name giving it up when the keys are full
                 if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
                     && b.Weapons.LastOrDefault(w => w.Slot < b.KeyCount && t.Slots.All(x => x.Skill != w.Id)) is { } spare)
                     b.RemoveWeapon(spare.Id);
-                if (b.AddWeapon(s.Skill, WickBook.DayRank(Ch, s.Skill)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
+                if (b.AddWeapon(s.Skill, WickBook.DayRank(Ch, s.Skill)) is { } w) slot = w.Slot;
             }
             b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
         }
@@ -754,10 +752,7 @@ public sealed partial class Journey
         GearWeapons = kitIds;
         if (b.Campaign && learns)
         {
-            // Where each runs now (she moved one between a key and an auto slot): the autos first, so a key they free
-            // is free for one moving the other way.
-            foreach (var w in b.Weapons.Where(w => wantIds.Contains(w.Id)).OrderBy(w => kit.Autos.Contains(w.Id) ? 0 : 1).ToList())
-                b.SetForm(w.Id, kit.Autos.Contains(w.Id) ? "kindle" : (w.Def.Press?.Kind ?? Content.PressKind.Press).ToString().ToLowerInvariant());
+            // The gear's auto skills run themselves (they take no key).
             b.Kindles.Clear();
             b.Kindles.UnionWith(kit.Autos);
         }

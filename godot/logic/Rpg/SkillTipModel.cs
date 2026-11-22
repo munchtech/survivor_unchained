@@ -53,7 +53,6 @@ public static class SkillTipModel
         {
             w = WickBook.Weapon(ch, skill, WickBook.RankIn(ch, skill, false), false);
             w.Press = def.Press;
-            if (w.Press != null) w.SetForm(cast);
         }
         var unresolved = new List<string>();
         double cooldown = live ? Firing.CooldownOf(b!, w) : Firing.CampaignCooldownOf(w, resolveOn, StatMul(ch));
@@ -88,8 +87,7 @@ public static class SkillTipModel
             return s;
         });
 
-        string how = cast == "kindle" && rec?.Kindled is { } k ? Fill(k)
-            : rec?.How is { } h && h.TryGetValue(cast, out var ho) ? ho : SkillTips.How(cast);
+        string how = rec?.How is { } h && h.TryGetValue(cast, out var ho) ? ho : SkillTips.How(cast);
         string line;
         var rows = new List<(string, string)>();
         if (rec != null)
@@ -177,7 +175,7 @@ public static class SkillTipModel
                 _ => null,
             };
             if (pick == null) return null;
-            double? r = Find(w.Press?.Kindled?.Condition(), pick) ?? Find(w.Def.Kindle, pick);
+            double? r = Find(w.Def.Kindle, pick);
             return r == null ? null : Plain(r.Value);
         }
         return null;

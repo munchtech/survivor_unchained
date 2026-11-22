@@ -10,8 +10,6 @@ public sealed class SkillTipRec
     public string Line = "";
     /// <summary>Rows of [label, value template].</summary>
     public string[][] Numbers = System.Array.Empty<string[]>();
-    /// <summary>The small line when she carries it kindled.</summary>
-    public string? Kindled;
     /// <summary>Overrides of the shared "how" by cast form.</summary>
     public Dictionary<string, string>? How;
     /// <summary>By lit calling lamp id: its own words, replacing this record's line (and rows, when it has any) while that calling is lit,

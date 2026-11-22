@@ -25,8 +25,10 @@ public partial class StanceBlock : Control
     /// <summary>(bd-ui W14: 7 px further right, 15, so the back disc moved 7 px right clears it) (bd-ui W13) The Swap chip sits 8 px right and 6 px down of where it was: the back disc's strike ring was hidden under it.</summary>
     public const float SwapDX = 15, SwapDY = 6;
     static readonly Vector2 Back = new(AutoRowModel.StanceBack.X, AutoRowModel.StanceBack.Y);
-    /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
-    public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
+    /// <summary>The row's top above the key seats (AutoRowModel.RowTop at the instrument's own numbers).</summary>
+    public static float RowTop => AutoRowModel.RowTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
+    /// <summary>The front disc's middle: on the row's line (the row's centre).</summary>
+    public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, RowTop + AutoRowModel.Tile / 2);
     static Vector2 Front => FrontAt;
 
     /// <summary>A stance's color: set II's bezel and tint (set I: the plate's bronze).</summary>
@@ -193,7 +195,7 @@ public partial class StanceBlock : Control
             // (bd-ui W13: on a dark pill, black 55%, 5 x 2 px padding, 3 px corners; its bottom starts 4 px above the status row's top, then rises)
             float tw = NameFont.GetStringSize(nameText, HorizontalAlignment.Left, -1, NameSize).X;
             float asc = NameFont.GetAscent(NameSize), desc = NameFont.GetDescent(NameSize);
-            float bottom = AutoRowModel.ShelfTop(AutoRow.RowTop) - 4 - rise;
+            float bottom = AutoRowModel.ShelfTop(RowTop) - 4 - rise;
             var pill = new Rect2(Front.X - tw / 2 - 5, bottom - (asc + desc + 4), tw + 10, asc + desc + 4);
             var sb = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.55f * fade) };
             sb.SetCornerRadiusAll(3);

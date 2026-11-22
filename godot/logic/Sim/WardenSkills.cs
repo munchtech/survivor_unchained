@@ -181,9 +181,6 @@ public sealed partial class Battle
     /// if it stands within reach of her, and the three nearest it; a missile's (no striker near), the three nearest her.
     /// At most once in its cooldown (0.5 s, shortened as any cooldown is): from blocks alone it struck twice a minute,
     /// 0.3-0.8% of her night (P6b).</summary>
-    /// <summary>A riposte: Rebuke answers the blow it took at once, whatever its gap.</summary>
-    void RebukeAnswerNow() => rebukeAt = double.NegativeInfinity;
-
     void RebukeOnBlow(Enemy? from)
     {
         if (WeaponById("rebuke") is not { DisabledT: <= 0 } w) return;

@@ -125,9 +125,7 @@ public sealed class KindleDef
 /// <summary>The ARPG press record (skills.json "press"; ARPG.md 3.1): how a skill is set off in the campaign
 /// (Battle.Campaign; the arena keeps "cast"/"kindle" and never reads this). Every field optional:
 ///   kind: hold (fires whenever ready while its key is held: the grips), press (once a press; the default), channel
-///     (runs while held), kindle (fires itself on its kindle condition; its key does `kindled.press`);
-///   kindled: the kindled OPTION (a slot may run the skill in either form, WeaponInst.SetForm): its condition (KindleDef
-///     fields; none, the skill's own "kindle") and what its key does then (now | riposte | flare | command);
+///     (runs while held), kindle (fires itself on its kindle condition; no key: item-granted skills, later the auto gem);
 ///   aim: hover (the foe nearest the aim point within 1.5 m of it and within reach; else the point clamped to reach; the
 ///     default), point (the point clamped to reach), self; reach (m; absent, the skill's range/reach); pad: stick | facing (M4);
 ///   walk: her pace while the cast plays (0.7), castTime (s, 0.35), plant (s she stands, at most 0.3: the heavy commits);
@@ -139,7 +137,6 @@ public sealed class KindleDef
 public sealed class PressDef
 {
     public PressKind? Kind;
-    public PressKindled? Kindled;
     public PressAim? Aim;
     public double? Reach;
     public PadAim? Pad;
@@ -174,29 +171,9 @@ public sealed class ChainDef
     public double? Answer;
 }
 
-/// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own
-/// "kindle", else its wait alone) and its key's live press.</summary>
-public sealed class PressKindled
-{
-    public string? When;
-    public bool? Big;
-    public double? Radius, Within, Below;
-    public int? Count;
-    public KindleDef[]? Any;
-    public KindlePress? Press;
-    /// <summary>Its key's own wait in the kindled form (riposte, flare, command; absent: the skill's base cooldown).</summary>
-    public double? Wait;
-
-    /// <summary>The condition as a KindleDef, or null when it names none.</summary>
-    public KindleDef? Condition() => When == null && Any is not { Length: > 0 } ? null
-        : new KindleDef { When = When, Big = Big, Radius = Radius, Within = Within, Below = Below, Count = Count, Any = Any };
-}
-
 public enum PressKind { Press, Hold, Channel, Kindle }
 public enum PressAim { Hover, Point, Self }
 public enum PadAim { Stick, Facing }
-/// <summary>A kindled skill's key: fire now (its condition skipped), ready a riposte (2 s), flare an aura (3 s), command a summon.</summary>
-public enum KindlePress { Now, Riposte, Flare, Command }
 
 public sealed class Evolution
 {
@@ -255,14 +232,11 @@ public static class Weapons
 {
     public const int MaxRank = 8;
     /// <summary>The arena's skill slots (the night's ember drafts six, every one self-firing), not weapons: a union holds
-    /// two (SlotCost). The campaign's are MaxKeys and AutoSlots (docs/design/BUILD_DIRECTION.md rounds 7-8).</summary>
+    /// two (SlotCost). The campaign's is MaxKeys (docs/design/SKILL_KINDS.md).</summary>
     public const int MaxWeapons = 6;
     /// <summary>(bd-keys) The campaign's keys: four a weapon set, the basic attack in one (a pad's four face buttons). The
     /// dash, the Flare and the swap are never among them. A union takes two.</summary>
     public const int MaxKeys = 4;
-    /// <summary>(bd-keys) Her own auto slots, always on through a stance change: kindled skills, auras, summons, triggers.
-    /// Skills her gear grants that run themselves (item auto skills) stack beside them with no cap.</summary>
-    public const int AutoSlots = 3;
     public const double DamageStep = 0.2, AreaStep = 0.04, DurationStep = 0.06;
     public const int ProjRankA = 4, ProjRankB = 7;
 
@@ -313,8 +287,8 @@ public static class Weapons
     /// <summary>(bd-keys) No press record yet: it runs itself, on a key or in an auto slot.</summary>
     public static bool Unpressed(string id) => All.TryGetValue(id, out var d) && d.Press == null;
 
-    /// <summary>(bd-keys) Only ever pressed in the campaign (a hold, press or channel record with no kindled option): a key's.</summary>
-    public static bool KeyOnly(string id) => All.TryGetValue(id, out var d) && d.Press is { } r && r.Kind != PressKind.Kindle && r.Kindled == null;
+    /// <summary>(bd-keys) Only ever pressed in the campaign (a hold, press or channel record): a key's.</summary>
+    public static bool KeyOnly(string id) => All.TryGetValue(id, out var d) && d.Press is { } r && r.Kind != PressKind.Kindle;
 
     /// <summary>The slots a list of weapons takes.</summary>
     public static int SlotsOf(IEnumerable<string> ids) => ids.Sum(SlotCost);

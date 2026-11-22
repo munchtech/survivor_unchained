@@ -9,11 +9,11 @@
   //   {cooldown}   the wait the seat shows (Firing.CooldownOf in a fight)
   //   {resolve}    the Resolve a press costs; {drain} the Resolve a second a channel drains
   //   {base.X}     skills.json base.X as written; {base.X:%} as a percent (0.15 -> 15%)
-  //   {kindle.X}   the kindle rule's X (count, radius), from press.kindled or the skill's "kindle"
+  //   {kindle.X}   the kindle rule's X (count, radius), from the skill's "kindle"
   // Numbers print without trailing zeros (1.5, 8, 0.6). A placeholder that resolves to nothing is a test failure.
   //
   // Per skill: "line" (one plain sentence or two, under ~130 characters), "numbers" (rows of [label, value], at
-  // most four), and "kindled" (the small line under the name when she carries it kindled). "how" overrides the
+  // most four). "how" overrides the
   // small line for a cast form. A skill missing here falls back to its skills.json description's first sentence
   // and its damage and cooldown rows (no skill is ever without a card), but every skill in the demo has its own.
 
@@ -42,8 +42,7 @@
     },
     "groundbreaker": {
       "line": "A crack runs from your blade to the nearest pack, and the ground heaves under it, stunning them all.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "up to {base.range} m" ], [ "Stun", "{base.stun} s within {base.radius} m" ] ],
-      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "up to {base.range} m" ], [ "Stun", "{base.stun} s within {base.radius} m" ] ]
     },
     "heroic_leap": {
       "line": "Leap where you aim and land blade first, knocking down all around. Untouchable in the air.",
@@ -59,18 +58,15 @@
     },
     "iron_vow": {
       "line": "Plant your feet: for {base.brace} s, blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
-      "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ],
-      "kindled": "Lights up when a big blow winds up on you, or a crowd closes in: press it then"
+      "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ]
     },
     "watch_bell": {
       "line": "Toll the bell: all near are drawn in to face you, each one shielding you for {base.barrier:%} of your health.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Draws", "{base.drawMost} within {base.range} m" ], [ "Shield cap", "{base.barrierCap:%} of health" ] ],
-      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
+      "numbers": [ [ "Damage", "{damage}" ], [ "Draws", "{base.drawMost} within {base.range} m" ], [ "Shield cap", "{base.barrierCap:%} of health" ] ]
     },
     "dawnpulse": {
       "line": "A ring of light bursts out from you and throws back what it touches. The dead hate it.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ],
-      "kindled": "Fires itself with {kindle.count} or more enemies within {kindle.radius} m"
+      "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ]
     },
     "bladestorm": {
       "line": "Hold to spin, cutting all around you. A fresh press of Sunder's key ends it in one great blow.",
@@ -78,8 +74,7 @@
     },
     "rebuke": {
       "line": "Your shield blocks more, and each blow that reaches you smites its source and the {base.others} nearest with holy light.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "{base.radius} m" ], [ "Block", "+{base.block:%}" ] ],
-      "kindled": "Fires itself when a blow reaches you, at most every {base.cooldown} s"
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "{base.radius} m" ], [ "Block", "+{base.block:%}" ] ]
     }
   }
 }

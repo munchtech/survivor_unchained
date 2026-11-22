@@ -77,7 +77,6 @@ public partial class Instrument : Control
     /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives;
     /// <summary>bd-ui W3 (campaign only): her auto tiles left of the coin, the stance block right of it.</summary>
-    public readonly AutoRow Autos = new();
     public readonly StanceBlock Stance = new();
     /// <summary>UI 28: what is on her, buffs and debuffs (StatusRow: the shelf over the bar, or beside the orb).</summary>
     public readonly StatusRow Statuses;
@@ -118,9 +117,7 @@ public partial class Instrument : Control
         PlacePassives();
         Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
-        AddChild(Autos);
         AddChild(Stance);
-        Autos.Visible = false;
         Statuses = new StatusRow { ZIndex = 2 };
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
@@ -179,7 +176,6 @@ public partial class Instrument : Control
         if (four == DgPanel.Four) return;
         BuildSeats(four);
         PlacePassives();
-        Autos.Visible = four;
         Keys();
     }
 
@@ -255,7 +251,7 @@ public partial class Instrument : Control
         Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
         Passives.Modulate = For(false) with { A = slots };
-        Autos.Modulate = Stance.Modulate = For(false) with { A = slots };
+        Stance.Modulate = For(false) with { A = slots };
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
     }
 
@@ -658,7 +654,7 @@ public partial class Socket : Control
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
         bool cooling = filled && ready < 0.98 && !Fast;
         // (bd-ui W7: a pressed or channeled key coming back keeps its icon under a wipe, not a black disc: it must not read as locked)
-        bool wiped = cooling && keyed && st.Kind != SeatKind.Kindled;
+        bool wiped = cooling && keyed;
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
