@@ -753,7 +753,7 @@ void Dungeons()
     Console.WriteLine(md);
 }
 
-// (P3) The den's clear feel (Harness/DenFeel.cs): --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
+// (P3) The den's clear feel (Harness/DenFeel.cs): [--opener: each run again with the opener variant, measuring only] --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
 void DenFeelRuns()
 {
     var id = opt.Get("dungeon", "hollow");
@@ -767,12 +767,12 @@ void DenFeelRuns()
     var sw = Stopwatch.StartNew();
     Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 12) }, spec =>
     {
-        try { results.Add(DenFeel.Play(spec)); }
+        try { results.Add(DenFeel.Play(spec)); if (opt.Has("opener")) results.Add(DenFeel.Play(spec, opener: true)); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
     });
     Console.Error.WriteLine($"{specs.Count} den runs in {sw.Elapsed:mm\\:ss}");
     foreach (var r in results.OrderBy(r => r.R.Spec.Key))
-        Console.WriteLine($"{r.R.Spec.Key}: {(r.R.Cleared ? $"cleared {r.R.Minutes:0.0}" : $"{(r.R.Closed ? "closed" : "walking")} {r.R.Minutes:0.0} ({r.R.KilledBy})")} packs {r.R.PacksCleared}/{r.R.Packs} room fight {r.RoomFight:0}s lanes {r.Lanes} circles {r.Circles}");
+        Console.WriteLine($"{r.R.Spec.Key}: {(r.R.Cleared ? $"cleared {r.R.Minutes:0.0}" : $"{(r.R.Closed ? "closed" : "walking")} {r.R.Minutes:0.0} ({r.R.KilledBy})")} packs {r.R.PacksCleared}/{r.R.Packs} room fight {r.RoomFight:0}s lanes {r.Lanes} circles {r.Circles} opened {r.Opened} {r.Label}");
     var md = DenFeel.Report(results.ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "denfeel.md"), md);
     Console.WriteLine(md);

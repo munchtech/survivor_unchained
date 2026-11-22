@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Balance;
 /// `dotnet run --project godot/balance -- denfeel --bots deft --seeds 3 [--seed0 1] [--level 6] [--gear 1] [--cap 8]`.</summary>
 public static class DenFeel
 {
-    public const double AreaR = 3.5, Window = 1.5, SeenR = 20;
+    public const double AreaR = 3.5, Window = 1.5, SeenR = 20, LeapAt = 9;
 
     public sealed class PackRow
     {
@@ -38,6 +38,8 @@ public static class DenFeel
         /// <summary>(diagnostic) The first blow's melee members, and the share of them inside AreaR of her 1 s after it (-1: not yet).</summary>
         /// <summary>(diagnostic) At the wake: a wall between her and the pack's home (it comes round or through a door).</summary>
         public bool Walled;
+        /// <summary>The opener variant pressed its opener on this pack ('L' leap, 'S' spin; '-' not).</summary>
+        public char Opener = '-';
         /// <summary>(diagnostic) The most of its live melee members inside AreaR of her on any step before the first of it fell, and
         /// the share of its melee members that a blow of hers has already reached by its first area blow.</summary>
         public double Peak = -1, HitBefore = -1;
@@ -47,20 +49,44 @@ public static class DenFeel
     public sealed class Run
     {
         public MapRunResult R = null!;
+        /// <summary>The bot, with "+open" for the opener variant.</summary>
+        public string Label = "";
+        public int Opened;
         public readonly List<PackRow> Packs = new();
         public double RoomFight, LaneSecOver1;
         public int Lanes, Circles, MaxLanes;
     }
 
-    public static Run Play(MapRunSpec spec)
+    /// <summary>`opener` (measuring only, the coordinator 22 Nov): before the bot's hands act, a fresh roused pack (none of it hit or
+    /// fallen) is opened with Heroic Leap at its melee's middle when that is within LeapAt m and none of it is yet in her
+    /// reach, else with Bladestorm once one of it is inside AreaR of her. The default bots and the shipped plan are untouched.</summary>
+    public static Run Play(MapRunSpec spec, bool opener = false)
     {
-        var run = new Run();
+        var run = new Run { Label = spec.Bot + (opener ? "+open" : "") };
         MapRun? zone = null;
         var rows = new Dictionary<object, PackRow>();
         var dead = new HashSet<(Enemy, double)>();
         var lanes = new List<double>();
         bool spinning = false;
         MapSim.ZoneTap = z => zone = z;
+        if (opener) MapSim.PreAct = b =>
+        {
+            var p = b.Player;
+            if (zone == null || !p.Alive || p.Leap != null || b.Weapons.Any(w => w.Channeling)) return;
+            var leap = b.Weapons.FirstOrDefault(w => w.Id == "heroic_leap");
+            var storm = b.Weapons.FirstOrDefault(w => w.Id == "bladestorm");
+            foreach (var (_, _, members) in zone.PackLives)
+            {
+                var live = members.Where(m => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying).Select(m => m.E).ToList();
+                var melee = live.Where(e => Melee(e.Def)).ToList();
+                if (melee.Count == 0 || live.Count < members.Count || !live.Any(e => e.Roused) || live.Any(e => e.Hp < e.MaxHp)) continue;
+                double cx = melee.Average(e => e.X), cz = melee.Average(e => e.Z);
+                double near = melee.Min(e => Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) - e.Radius);
+                double mid = Math.Sqrt((cx - p.X) * (cx - p.X) + (cz - p.Z) * (cz - p.Z));
+                if (leap != null && leap.Timer <= 0 && mid <= LeapAt && near > 2.5 && b.PressSkill(leap.Slot, cx, cz)) { run.Opened++; if (rows.TryGetValue(members, out var ro)) ro.Opener = 'L'; return; }
+                if (storm != null && storm.Timer <= 0 && near < AreaR && b.PressSkill(storm.Slot, p.X, p.Z)) { run.Opened++; if (rows.TryGetValue(members, out var ro)) ro.Opener = 'S'; return; }
+            }
+        };
         MapSim.Tap = (t, evs, b, bossUp) =>
         {
             if (zone == null) return;
@@ -142,7 +168,7 @@ public static class DenFeel
             if (lanes.Count > 1) run.LaneSecOver1 += 1 / 60.0;
         };
         try { run.R = MapSim.Play(spec); }
-        finally { MapSim.Tap = null; MapSim.ZoneTap = null; }
+        finally { MapSim.Tap = null; MapSim.ZoneTap = null; MapSim.PreAct = null; }
         run.Packs.AddRange(rows.Values.Where(r => r.Woke >= 0));
         return run;
     }
@@ -162,7 +188,7 @@ public static class DenFeel
         var sb = new StringBuilder();
         sb.AppendLine("| bot | runs | packs woke/killed | TTK wake p25/p50/p75 s | TTK first blow p25/p50/p75 | recipe-1 TTK blow p50 (n) | in 6-10 s (blow) | inside 3.5 m p50 / >=50% | together 1.5 s p50 / >=40% | lanes / 8 s | max lanes / s >1 lane | circle marks / min | pack gap s |");
         sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
-        foreach (var g in runs.GroupBy(r => r.R.Spec.Bot).OrderBy(g => g.Key))
+        foreach (var g in runs.GroupBy(r => r.Label).OrderBy(g => g.Key))
         {
             var ps = g.SelectMany(r => r.Packs).ToList();
             var k = ps.Where(p => p.Killed).ToList();
@@ -176,7 +202,7 @@ public static class DenFeel
             sb.AppendLine($"| {g.Key} | {g.Count()} | {ps.Count}/{k.Count} | {Q(wake, .25):0.0}/{Q(wake, .5):0.0}/{Q(wake, .75):0.0} | {Q(blow, .25):0.0}/{Q(blow, .5):0.0}/{Q(blow, .75):0.0} | {Q(r1, .5):0.0} ({r1.Count}) | {pct(blow.Count(x => x >= 6 && x <= 10), blow.Count)} | {Q(inside, .5):0.00} / {pct(inside.Count(x => x >= 0.5), inside.Count)} | {Q(tog, .5):0.00} / {pct(tog.Count(x => x >= 0.4), tog.Count)} | {(fight > 0 ? g.Sum(r => r.Lanes) / fight * 8 : 0):0.00} | {g.Max(r => r.MaxLanes)} / {g.Sum(r => r.LaneSecOver1):0.0} | {(mins > 0 ? g.Sum(r => r.Circles) / mins : 0):0.0} | {Q(g.Select(r => r.R.PackGap).Where(x => x > 0), .5):0.0} |");
         }
         sb.AppendLine();
-        foreach (var g in runs.GroupBy(r => r.R.Spec.Bot).OrderBy(g => g.Key))
+        foreach (var g in runs.GroupBy(r => r.Label).OrderBy(g => g.Key))
         {
             var ps = g.SelectMany(r => r.Packs).Where(p => p.Inside >= 0).ToList();
             sb.AppendLine($"{g.Key} first area blow: leap {ps.Count(p => p.FirstKind == 'L')}, spin {ps.Count(p => p.FirstKind == 'S')}; inside if leap p50 {Q(ps.Where(p => p.FirstKind == 'L').Select(p => p.Inside), .5):0.00}, if spin {Q(ps.Where(p => p.FirstKind == 'S').Select(p => p.Inside), .5):0.00}; s after wake p50 {Q(ps.Select(p => p.FirstLag), .5):0.0}; best any blow p50 {Q(ps.Select(p => p.Best), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Best >= 0.5) / Math.Max(1, ps.Count):0}%); 1 s after it, of those still up, inside 3.5 m of her p50 {Q(ps.Where(p => p.Inside1 >= 0).Select(p => p.Inside1), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Inside1 >= 0.5) / Math.Max(1, ps.Count(p => p.Inside1 >= 0)):0}%); first spin's whole channel p50 {Q(ps.Where(p => p.SpinWhole >= 0).Select(p => p.SpinWhole), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.SpinWhole >= 0.5) / Math.Max(1, ps.Count(p => p.SpinWhole >= 0)):0}%)");
@@ -189,6 +215,11 @@ public static class DenFeel
         {
             var ps = runs.SelectMany(r => r.Packs).Where(p => p.Inside >= 0).ToList();
             sb.AppendLine($"peak crowd inside 3.5 m of her before the first death p50 {Q(ps.Where(p => p.Peak >= 0).Select(p => p.Peak), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Peak >= 0.5) / Math.Max(1, ps.Count):0}%); members already hit by the first area blow p50 {Q(ps.Select(p => p.HitBefore), .5):0.00}; packs with a death before the first area blow {100.0 * ps.Count(p => p.Deaths.Count > 0 && p.Deaths.Min() < p.Woke + p.FirstLag) / Math.Max(1, ps.Count):0}%");
+        }
+        foreach (var g in runs.Where(r => r.Label.EndsWith("+open")).GroupBy(r => r.Label).OrderBy(g => g.Key))
+        {
+            var op = g.SelectMany(r => r.Packs).Where(p => p.Opener != '-' && p.Inside >= 0).ToList();
+            sb.AppendLine($"{g.Key}: packs opened {op.Count} of {g.SelectMany(r => r.Packs).Count()} (leap {op.Count(p => p.Opener == 'L')}, spin {op.Count(p => p.Opener == 'S')}); of those, inside 3.5 m at the first landing p50 {Q(op.Select(p => p.Inside), .5):0.00} (>=50%: {100.0 * op.Count(p => p.Inside >= 0.5) / Math.Max(1, op.Count):0}%); leap-opened p50 {Q(op.Where(p => p.Opener == 'L').Select(p => p.Inside), .5):0.00} (>=50%: {100.0 * op.Count(p => p.Opener == 'L' && p.Inside >= 0.5) / Math.Max(1, op.Count(p => p.Opener == 'L')):0}%)");
         }
         sb.AppendLine("At the first area blow, by kind (all bots): share inside, edge distance p25/p50/p75 m:");
         foreach (var g in runs.SelectMany(r => r.Packs).SelectMany(p => p.AtFirst).GroupBy(x => x.Def).OrderBy(g => g.Key))
