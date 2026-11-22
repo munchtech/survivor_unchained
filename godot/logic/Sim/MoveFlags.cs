@@ -18,6 +18,19 @@ public static class MoveFlags
     /// <summary>She leaves a dash moving the way the keys are held (still, if none are) instead of along the dash.</summary>
     public static bool DashExit;
 
+    /// <summary>The roll (its own switch, --move-roll, not part of --move-new: the reference is one clip, and the owner picks
+    /// it): seconds it lasts (0: the old dash, 0.2 s at one speed) and metres it covers (0: the dash's own 5.5).</summary>
+    public static double RollTime, RollLength;
+
+    /// <summary>The roll's speed over this step: a straight fall from its opening speed to her run speed at its end (the shape
+    /// the reference clip shows), covering length in RollTime. left: seconds of roll left after this step.</summary>
+    public static double Roll(double length, double left, double dt, double run)
+    {
+        double mean = length / RollTime, end = Math.Min(run, mean), first = 2 * mean - end;
+        double u = Math.Clamp((RollTime - left - dt / 2) / RollTime, 0, 1);
+        return first + (end - first) * u;
+    }
+
     /// <summary>Every fix on (--move-new) or off.</summary>
     public static void All(bool on)
     {

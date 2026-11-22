@@ -647,6 +647,9 @@ public sealed partial class Battle
         {
             p.DashT -= dt;
             double dsp = Abilities.Dash.Distance * DashLength() / Abilities.Dash.Time;
+            // (MoveFlags.RollTime: a roll instead, fast off the mark and down to her run speed by its end)
+            if (MoveFlags.RollTime > 0)
+                dsp = MoveFlags.Roll((MoveFlags.RollLength > 0 ? MoveFlags.RollLength : Abilities.Dash.Distance) * DashLength(), p.DashT, dt, Stats.Get(Stat.MoveSpeed));
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             // Over a gap in the ground (a crack, a sinkhole) a dash carries her; walls still stop it.
@@ -754,7 +757,6 @@ public sealed partial class Battle
 
     public double MaxHp => Math.Max(1, Stats.Get(Stat.MaxHealth));
 
-    /// <summary>Space: a short, invulnerable burst of movement.</summary>
     /// <summary>Seconds her feet are still held by a hit-stop on her (HoldFeet).</summary>
     public double FeetHeld;
 
@@ -762,6 +764,7 @@ public sealed partial class Battle
     /// pose). Only with MoveFlags.StopHold; a fight with no view never calls it.</summary>
     public void HoldFeet(double seconds) { if (MoveFlags.StopHold && seconds > 0) FeetHeld = Math.Max(FeetHeld, seconds); }
 
+    /// <summary>Space: a short, invulnerable burst of movement.</summary>
     public bool Dash(double dirX, double dirZ)
     {
         var p = Player;
@@ -770,7 +773,8 @@ public sealed partial class Battle
         if (Len(dx, dz) < 0.1) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); }
         double m = Len(dx, dz);
         p.DashDX = dx / m; p.DashDZ = dz / m;
-        p.DashT = Abilities.Dash.Time;
+        // (MoveFlags.RollTime: the roll lasts that long; a hair under, so 0.45 s is 27 steps, not 28)
+        p.DashT = MoveFlags.RollTime > 0 ? MoveFlags.RollTime - 1e-9 : Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
         p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1) * StalkerDodgeWindow();
         p.WakeX = p.X; p.WakeZ = p.Z;

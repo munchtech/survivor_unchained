@@ -172,6 +172,10 @@ def dash(d, key):
     if pr["ptr_x"] != "": r["cursor_dir_deg"] = ang(pr["ptr_x"] - pr["x"], pr["ptr_z"] - pr["z"])
     if hyp(pr["mx"], pr["mz"]) > 0.05: r["keys_dir_deg"] = ang(pr["mx"], pr["mz"])
     r["facing_before_deg"] = f[at_frame(f, fp)]["face_deg"]
+    r["dash_ticks"] = ke - ks + 1   # the rows ks..ke all move her (row ke is the one that ends it)
+    r["first_tick_speed_ms"] = hyp(t[ks]["x"] - t[ks - 1]["x"], t[ks]["z"] - t[ks - 1]["z"]) * FPS
+    r["last_tick_speed_ms"] = hyp(t[ke]["x"] - t[ke - 1]["x"], t[ke]["z"] - t[ke - 1]["z"]) * FPS
+    r["_ks"] = ks
     r["_ke"] = ke
     return r
 
@@ -179,7 +183,7 @@ def dash(d, key):
 def dash_out(d, key, top):
     t = d["t"]
     r = dash(d, key)
-    ke = r.pop("_ke")
+    ke = r.pop("_ke"); r.pop("_ks")
     k95 = next((k for k in range(ke, len(t)) if t[k]["speed"] >= 0.95 * top), None)
     r["exit_speed_ms"] = t[ke]["speed"]
     r["exit_vel_dir_deg"] = ang(t[ke]["vx"], t[ke]["vz"])
@@ -297,8 +301,39 @@ def circle(d, c_off=(0, -5)):
     return out
 
 
+DASH_TAKES = [("s08", "Space down"), ("s09", "Space down"), ("s10a", "Space down"), ("s10b", "Space down"), ("s10c", "Space down"),
+              ("s10d", "Space down"), ("s10e", "Space down"), ("p08", "LB down"), ("p08b", "LB down"), ("p10a", "LB down"), ("p10b", "LB down")]
+
+
+def dash_rule():
+    """Dash rule (decision 3): the dash goes where the keys / the stick are held (input length > 0.1); nothing held: kbm to the
+    pointer's ground point, pad along her facing. Input from the dash's first tick, position, pointer and facing from the tick before."""
+    out = ["", "Dash rule (decision 3)"]
+    ok = n = 0
+    for tk, key in DASH_TAKES:
+        d = load(tk)
+        if not d: continue
+        try:
+            r = dash(d, key); ks = r["_ks"]
+            t = d["t"]; row, prev = t[ks], t[ks - 1]
+            mx, mz = row["mx"], row["mz"]
+            if hyp(mx, mz) > 0.1: exp, why = ang(mx, mz), f"input ({mx:.2f}, {mz:.2f})"
+            elif tk.startswith("p"): exp, why = prev["sim_facing_deg"], f"nothing, so facing {prev['sim_facing_deg']:.1f}"
+            elif isinstance(prev["ptr_x"], float): exp, why = ang(prev["ptr_x"] - prev["x"], prev["ptr_z"] - prev["z"]), f"nothing, so the pointer"
+            else: out.append(f"{tk}: no input, no pointer on the tick: cannot say"); continue
+            got = r["dash_dir_deg"]; err = abs(adiff(got, exp)); good = err <= 5
+            n += 1; ok += good
+            ptr = f"{prev['ptr_x']:.1f},{prev['ptr_z']:.1f}" if isinstance(prev["ptr_x"], float) else "null"
+            out.append(f"{tk}: held {why}; pointer {ptr}; expected {exp:.1f} deg, measured {got:.1f} deg, error {err:.1f} deg: {'PASS' if good else 'FAIL'}"
+                       f" | dash {r['dash_ticks']} ticks, {r['dash_m']:.2f} m, first tick {r['first_tick_speed_ms']:.2f} m/s, last tick {r['last_tick_speed_ms']:.2f} m/s")
+        except (StopIteration, KeyError, TypeError, IndexError) as e:
+            out.append(f"{tk}: no dash found ({type(e).__name__})")
+    out.append(f"{ok} of {n} follow the rule")
+    return out
+
+
 def main():
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+    out = Path(sys.argv[1]) if len(sys.argv) > 1 else D / "TABLE.md"
     res = {}
     s01 = load("s01"); top = top_speed(s01["t"]) if s01 else 4.5   # (without s01 in the folder: 4.5 m/s, her run)
     for tk, on, off in [("s01", "D down", "D up"), ("p01", "stick on", "stick off")]:
@@ -328,10 +363,15 @@ def main():
     if d: res["s07"] = circle(d)
     for tk, key in [("s08", "Space down"), ("p08", "LB down")]:
         d = load(tk)
-        if d: r = dash(d, key); r.pop("_ke"); res[tk] = r
-    for tk, key in [("s09", "Space down"), ("s10a", "Space down"), ("s10b", "Space down"), ("p10a", "LB down"), ("p10b", "LB down")]:
+        if d:
+            try: r = dash(d, key); r.pop("_ke"); r.pop("_ks"); res[tk] = r
+            except StopIteration: res[tk] = {"error": "no dash found"}
+    for tk, key in [("s09", "Space down"), ("s10a", "Space down"), ("s10b", "Space down"), ("s10c", "Space down"), ("s10d", "Space down"),
+                    ("s10e", "Space down"), ("p08b", "LB down"), ("p10a", "LB down"), ("p10b", "LB down")]:
         d = load(tk)
-        if d: res[tk] = dash_out(d, key, top)
+        if d:
+            try: res[tk] = dash_out(d, key, top)
+            except StopIteration: res[tk] = {"error": "no dash found"}
     d = load("s11")
     if d: res["s11"] = strike(d, top)
     d = load("s12")
@@ -348,6 +388,7 @@ def main():
             for x in stops: lines.append(f"{k} stop: " + ", ".join(f"{a}={b}" for a, b in x.items()))
             continue
         lines.append(f"{k}: " + ", ".join(f"{a}={(round(b, 3) if isinstance(b, float) else b)}" for a, b in v.items()))
+    lines += dash_rule()
     txt = "\n".join(lines)
     print(txt)
     if out: out.write_text(txt + "\n", encoding="utf-8")

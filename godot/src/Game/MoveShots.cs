@@ -72,6 +72,9 @@ public sealed partial class MoveShots : Node
         ["s09"] = new() { Title = "9 DASH AT A RUN", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("SPACE", 1.5, 1.6)] },
         ["s10a"] = new() { Title = "10 DASH ACROSS THE AIM", End = 4.5, Screen = new(960, 300), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s10b"] = new() { Title = "10 DASH AGAINST THE AIM", End = 4.5, Screen = new(640, 540), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
+        ["s10c"] = new() { Title = "10 DASH, TWO KEYS HELD", End = 4.5, Screen = new(960, 800), Btns = [B("W", 0, 3.0), B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
+        ["s10d"] = new() { Title = "10 DASH, NOTHING HELD, CURSOR DOWN-LEFT", End = 3.0, Screen = new(500, 700), Btns = [B("SPACE", 0.5, 0.6)] },
+        ["s10e"] = new() { Title = "10 DASH, S HELD, CURSOR RIGHT", End = 4.5, Screen = new(1280, 540), Btns = [B("S", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s11"] = new() { Title = "11 STRIKE WHILE MOVING", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("LMB", 1.5, 1.58)] },
         ["s12"] = new() { Title = "12 HEAVY HIT WHILE MOVING", End = 4.0, World = new(5.0f, -0.3f), Wolf = true,
             Btns = [B("D", 0, 2.5), B("LMB", 0.75, 0.83), B("LMB", 1.2, 1.28), B("LMB", 1.65, 1.73)] },
@@ -83,6 +86,7 @@ public sealed partial class MoveShots : Node
         ["p03"] = new() { Title = "PAD 3 REVERSAL", End = 5.0, Pad = true,
             Stick = [new(0, 0, 0), new(R3, 1, 0), new(1.5, 1, 0), new(1.5 + R4, -1, 0), new(3.0, -1, 0), new(3.0 + R2, 0, 0)] },
         ["p08"] = new() { Title = "PAD 8 DASH FROM REST", End = 3.0, Pad = true, Stick = Ramp(0.5, 0.8, 0.707f, -0.707f), Btns = [B("LB", 0.55, 0.65)] },
+        ["p08b"] = new() { Title = "PAD 8 DASH, STICK AT REST", End = 3.0, Pad = true, Look = Ramp(0, 2.0, 0, -1), Btns = [B("LB", 1.0, 1.1)] },
         ["p10a"] = new() { Title = "PAD 10 DASH ACROSS THE AIM", End = 4.5, Pad = true, Stick = Ramp(0, 3.0, 1, 0), Look = Ramp(1.0, 3.0, 0, -1), Btns = [B("LB", 1.5, 1.6)] },
         ["p10b"] = new() { Title = "PAD 10 DASH AGAINST THE AIM", End = 4.5, Pad = true, Stick = Ramp(0, 3.0, 1, 0), Look = Ramp(1.0, 3.0, -1, 0), Btns = [B("LB", 1.5, 1.6)] },
     };

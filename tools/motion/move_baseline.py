@@ -20,9 +20,9 @@ FPS = 60
 # --at-off DX,DZ: metres from the clearing's middle, where she stands at S0. Change here.
 START_OFF = {
     "s01": (-8, 0), "s03": (-5, 0), "s04": (-6, 5), "s05": (-4, 3), "s06": (0, -4), "s07": (0, 4), "s08": (-3, 3), "s09": (-9, 0),
-    "s10a": (-7, 4), "s10b": (-7, 0), "s11": (-9, 0), "s12": (-6, 0),
+    "s10a": (-7, 4), "s10b": (-7, 0), "s10c": (-7, 4), "s10d": (0, -2), "s10e": (0, -8), "s11": (-9, 0), "s12": (-6, 0),
     "s13": (-5, 0), "s12d": None,
-    "p01": (-8, 0), "p03": (-5, 0), "p08": (-3, 3), "p10a": (-7, 4), "p10b": (-7, 0),
+    "p01": (-8, 0), "p03": (-5, 0), "p08": (-3, 3), "p08b": (-3, 3), "p10a": (-7, 4), "p10b": (-7, 0),
 }
 # Takes in a den room with foes on (not boss-mid, no --no-foes, no --at-off): her start is --at X,Z beside a pack.
 # env S12D_AT=default boots at the den's own arrival (with --moves12-foes, to list where the packs stand).

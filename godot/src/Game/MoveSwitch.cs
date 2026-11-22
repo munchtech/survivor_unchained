@@ -21,16 +21,30 @@ public static class MoveSwitch
         if (Args.Has("move-stop-hold")) MoveFlags.StopHold = true;
         if (Args.Has("move-dash-held")) MoveFlags.DashHeld = true;
         if (Args.Has("move-dash-exit")) MoveFlags.DashExit = true;
+        rollTime = Args.Has("move-roll") ? Args.Num("move-roll", 0.45f) : 0;
+        rollLen = Args.Num("move-roll-len", 0f);
+        MoveFlags.RollTime = rollTime; MoveFlags.RollLength = rollLen;
         ab = Args.Has("move-ab");
         on = MoveFlags.CamLock;
     }
 
-    /// <summary>Once a frame (the camera's update): F9 swaps new and old while --move-ab is given.</summary>
+    static double rollTime, rollLen;
+    static bool rollWasDown;
+
+    /// <summary>Once a frame (the camera's update), while --move-ab is given: F9 swaps all new and all old; F10 swaps the
+    /// roll (--move-roll's seconds, or 0.45) and the old dash.</summary>
     public static void Poll()
     {
         if (!ab) return;
         bool down = Input.IsKeyPressed(Key.F9);
         if (down && !wasDown) { on = !on; MoveFlags.All(on); GD.Print($"MOVE AB: {(on ? "new" : "old")}"); }
         wasDown = down;
+        bool roll = Input.IsKeyPressed(Key.F10);
+        if (roll && !rollWasDown)
+        {
+            MoveFlags.RollTime = MoveFlags.RollTime > 0 ? 0 : rollTime > 0 ? rollTime : 0.45;
+            GD.Print($"MOVE AB roll: {(MoveFlags.RollTime > 0 ? "on" : "off")}");
+        }
+        rollWasDown = roll;
     }
 }

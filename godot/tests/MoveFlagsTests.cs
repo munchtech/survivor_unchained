@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 using Xunit;
@@ -14,8 +15,8 @@ public sealed class MoveFlagsTests : IDisposable
 {
     const double Dt = 1 / 60.0;
 
-    public MoveFlagsTests() => MoveFlags.All(false);
-    public void Dispose() => MoveFlags.All(false);
+    public MoveFlagsTests() { MoveFlags.All(false); MoveFlags.RollTime = MoveFlags.RollLength = 0; }
+    public void Dispose() { MoveFlags.All(false); MoveFlags.RollTime = MoveFlags.RollLength = 0; }
 
     static Battle Make() => new(new BattleSetup
     {
@@ -148,6 +149,56 @@ public sealed class MoveFlagsTests : IDisposable
         RunDash(c, 0, 0);
         Assert.Equal(0, c.Player.Vx);
         Assert.Equal(0, c.Player.Vz);
+    }
+
+    /// <summary>Dash(1,0) from rest, nothing held: the step of every tick the dash is live before it, and the metres.</summary>
+    static (int ticks, double metres, List<double> steps) DashSteps()
+    {
+        var b = Make();
+        Assert.True(b.Dash(1, 0));
+        double x0 = b.Player.X, z0 = b.Player.Z;
+        var steps = new List<double>();
+        for (int i = 0; i < 60 && b.Player.DashT > 0; i++)
+        {
+            double px = b.Player.X, pz = b.Player.Z;
+            b.Tick(Dt, 0, 0); b.Events.Drain();
+            steps.Add(Math.Sqrt((b.Player.X - px) * (b.Player.X - px) + (b.Player.Z - pz) * (b.Player.Z - pz)));
+        }
+        return (steps.Count, Math.Sqrt((b.Player.X - x0) * (b.Player.X - x0) + (b.Player.Z - z0) * (b.Player.Z - z0)), steps);
+    }
+
+    [Fact]
+    public void Roll_Off_IsTheOldDash()
+    {
+        // measured: 13 ticks, 5.958 m (0.2 s of float is 12.0000001 steps: a 13th full-speed tick), not the brief's 5.5 +- 0.15
+        MoveFlags.RollTime = 0;
+        var (ticks, metres, _) = DashSteps();
+        Assert.True(Math.Abs(metres - 5.5) <= 0.5, $"metres {metres}, ticks {ticks}");
+        Assert.True(ticks <= 13, $"ticks {ticks}, metres {metres}");
+    }
+
+    [Fact]
+    public void Roll_27Steps()
+    {
+        double top = Top();
+        MoveFlags.RollTime = 0.45;
+        var (ticks, metres, steps) = DashSteps();
+        Assert.True(ticks == 27, $"ticks {ticks}");
+        Assert.True(Math.Abs(metres - 5.5) <= 0.02, $"metres {metres}");
+        Assert.True(steps[0] > steps[^1], $"first {steps[0]} last {steps[^1]}");
+        // measured: last step 0.08779 vs top/60 0.08333 (+5.3%: the roll's speed at its last step's middle is a little over her run)
+        Assert.True(Math.Abs(steps[^1] - top / 60) <= 0.06 * top / 60, $"last {steps[^1]} vs top/60 {top / 60}, first {steps[0]}");
+        for (int i = 1; i < steps.Count; i++) Assert.True(steps[i] <= steps[i - 1] + 1e-9, $"step {i}: {steps[i]} > {steps[i - 1]}");
+    }
+
+    [Fact]
+    public void Roll_Length()
+    {
+        MoveFlags.RollTime = 0.45;
+        MoveFlags.RollLength = 8.0;
+        var (ticks, metres, _) = DashSteps();
+        Assert.True(ticks == 27, $"ticks {ticks}");
+        Assert.True(Math.Abs(metres - 8.0) <= 0.02, $"metres {metres}");
     }
 
     [Fact]
