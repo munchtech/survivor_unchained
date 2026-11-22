@@ -206,6 +206,7 @@ public partial class BattleFx : Node3D
         wallTex ??= GroundTexture(5);
         laneFillTex ??= GroundTexture(6);
         if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
+        if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
         {
@@ -1136,7 +1137,7 @@ public partial class BattleFx : Node3D
                 a = Mathf.Clamp(a, 0, 1);
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return ImageTexture.CreateFromImage(img);
+        return Kept(img);
     }
 
     /// <summary>The next Ground mark's style, set by the telegraph and taken by Ground: 1 an elite's or a boss's blow
@@ -1177,8 +1178,24 @@ public partial class BattleFx : Node3D
         bool ring = tex == ringTex;
         int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
         if (dangerTex.TryGetValue((tex, style, bucket), out var t)) return t;
+        long q = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         var (alb, em) = DangerImages(tex, style, bucket);
-        return dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        if (Perf.On) q = Perf.Slow($"danger bytes {style} {bucket}", q, 1);
+        var made = dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        if (Perf.On) Perf.Slow($"danger upload {style} {bucket}", q, 1);
+        return made;
+    }
+
+    /// <summary>The pixels of the textures this file draws (RGBA8, no mips), kept on the CPU when made: DangerOf reads
+    /// them here, not by Texture2D.GetImage, which reads the texture back from the GPU (P2 task 5: my reading, a stall of
+    /// the frames in flight in an export build).</summary>
+    static readonly Dictionary<Texture2D, (int W, int H, byte[] Px)> keptPx = new();
+
+    static Texture2D Kept(Image img)
+    {
+        var t = ImageTexture.CreateFromImage(img);
+        keptPx[t] = (img.GetWidth(), img.GetHeight(), img.GetData());
+        return t;
     }
 
     /// <summary>Image.SetPixel's float to byte for RGBA8 (Godot 4.5: uint8_t(CLAMP(c * 255.0, 0, 255)), truncating).</summary>
@@ -1190,13 +1207,19 @@ public partial class BattleFx : Node3D
     {
         bool lane = tex == laneTex, ring = tex == ringTex;
         bool danger = style == 1;
-        var src = tex.GetImage();
-        int w = lane || ring ? 512 : src.GetWidth(), h = lane || ring ? 512 : src.GetHeight();
+        int w = 512, h = 512;
         byte[]? sa = null;
+        // (the lane's and the ring's are drawn here: their source is never read)
         if (!lane && !ring)
         {
-            if (src.GetFormat() != Image.Format.Rgba8) { if (src.IsCompressed()) src.Decompress(); src.Convert(Image.Format.Rgba8); }
-            sa = src.GetData();
+            if (keptPx.TryGetValue(tex, out var kp)) (w, h, sa) = kp;
+            else
+            {
+                var src = tex.GetImage();
+                if (src.GetFormat() != Image.Format.Rgba8) { if (src.IsCompressed()) src.Decompress(); src.Convert(Image.Format.Rgba8); }
+                w = src.GetWidth(); h = src.GetHeight(); sa = src.GetData();
+                keptPx[tex] = (w, h, sa);
+            }
         }
         var emB = new byte[w * h * 4];
         var albB = new byte[w * h * 4];
@@ -1359,7 +1382,7 @@ public partial class BattleFx : Node3D
                 }
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return coneTex[arc] = ImageTexture.CreateFromImage(img);
+        return coneTex[arc] = Kept(img);
     }
 
     /// <summary>A band: the ground between two circles filled, edged at both, and the
@@ -1385,7 +1408,7 @@ public partial class BattleFx : Node3D
                 }
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return bandTex[innerPct] = ImageTexture.CreateFromImage(img);
+        return bandTex[innerPct] = Kept(img);
     }
 
     void BandMark(double x, double z, double inner, float outer, Color color, float life, int? key = null)

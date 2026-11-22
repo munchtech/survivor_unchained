@@ -199,6 +199,20 @@ public partial class MarkPass : CompositorEffect
     /// <summary>The marks' ground heights (Grid x Grid per slot) after one changed.</summary>
     public void SetHeights(float[] h) => heights = h;
 
+    /// <summary>(P2 task 5) The pass's shader compiled behind the load: Init (GLSL to SPIR-V, the pipeline) cost 12 ms
+    /// on the frame of the first red mark. Queued on the render thread, as the render callback would run it.</summary>
+    public void Warm()
+    {
+        if (rd != null || failed) return;
+        RenderingServer.CallOnRenderThread(Callable.From(() =>
+        {
+            if (rd != null || failed) return;
+            long q = System.Diagnostics.Stopwatch.GetTimestamp();
+            Init();
+            Perf.Slow("markpass warm", q, 1);
+        }));
+    }
+
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
