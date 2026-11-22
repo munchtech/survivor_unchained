@@ -31,9 +31,11 @@ public static class DenRoster
 
         var ironback = Enemies.Get("boar_ironback").Clone();
         ironback.Slam = new SlamSpec(3, 5, 1.3, 2.8, 1.5);
+        ironback.Health = 180;                             // (session 2) 300 held a tusker pack past 25 s; the heavy, not a wall
 
         var alpha = Enemies.Get("wolf_alpha").Clone();     // magic pack leader, no line
         alpha.Lunge = null;
+        alpha.Health = 300;                                // (session 2) 520 held a magic pack past 20 s
 
         return new Dictionary<string, EnemyDef>
         {
