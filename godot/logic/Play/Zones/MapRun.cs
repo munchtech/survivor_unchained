@@ -467,7 +467,14 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         {
             if (!k.Placed || k.Cleared) continue;
             var up = k.Members.Where(Live).ToList();
-            if (k.Woke < 0) { if (up.Any(m => m.E.Roused)) k.Woke = B.Time; else continue; }
+            if (k.Woke < 0)
+            {
+                if (!up.Any(m => m.E.Roused)) continue;
+                k.Woke = B.Time;
+                // (P3) A den recipe pack wakes as one: Battle.Rouse wakes only its own faction, and a recipe mixes the Pack's wolves
+                // with the wild boars (measured 22 Nov: its boars woke late and came in strung out behind the wolves).
+                if (k.Recipe != "") foreach (var m in up) if (!m.E.Roused) B.Rouse(m.E);
+            }
             if (!KitCharges) continue;
             press.Tells("charge", up, k.Woke, PackKit.FirstAfter, PackKit.Every, e => !e.Elite && e.Def.Ranged == null, null, null);
         }

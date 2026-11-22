@@ -19,6 +19,9 @@ public static class DungeonFights
         public double Elites = 1;
         /// <summary>The ruler's health, over MapRun.BossHealth.</summary>
         public double BossHealth = 1;
+        /// <summary>(P3) Its biters' bite (the den's wolves and runners, Content/DenRoster.cs Biters), over the table's: the threat
+        /// that is not a mark (DEN_ROSTER.md: "add foe damage before adding any tells").</summary>
+        public double Bite = 1;
     }
 
     sealed class File { public Dictionary<string, Row> Dungeons = new(); }

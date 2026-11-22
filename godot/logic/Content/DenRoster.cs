@@ -18,8 +18,12 @@ public static class DenRoster
     /// <summary>The den's kinds that differ from the table's, as fresh copies (Battle.Roster).</summary>
     public static Dictionary<string, EnemyDef> Cuts()
     {
+        double bite = DungeonFights.Of("hollow").Bite;
         var runner = Enemies.Get("wolf_runner").Clone();   // fodder swarm, dies to one cut
-        runner.Behavior = Behavior.Chase; runner.Health = 14; runner.Lunge = null;
+        runner.Behavior = Behavior.Chase; runner.Health = 14; runner.Lunge = null; runner.Damage *= bite;
+
+        var wolf = Enemies.Get("wolf").Clone();            // the pack's weight: its bite is the den's threat
+        wolf.Damage *= bite;
 
         var sick = Enemies.Get("wolf_blighted").Clone();   // coughs slurry, no ground left
         sick.Behavior = Behavior.Ranged;
@@ -33,7 +37,7 @@ public static class DenRoster
 
         return new Dictionary<string, EnemyDef>
         {
-            ["wolf_runner"] = runner, ["wolf_blighted"] = sick, ["boar_ironback"] = ironback, ["wolf_alpha"] = alpha,
+            ["wolf"] = wolf, ["wolf_runner"] = runner, ["wolf_blighted"] = sick, ["boar_ironback"] = ironback, ["wolf_alpha"] = alpha,
         };
     }
 
