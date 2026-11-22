@@ -69,11 +69,40 @@ Tooltips come from `skill_tips.json` (built by `logic/Rpg/SkillTipModel.cs`). Wh
 
 ## 4. What the game-camera films show
 
-(Filled from the den films shot for this page: see the paths below.)
+Three films were shot in the current build, seed 11, at the game camera, 1920x1080 at 30 fps, with the HUD on and the autopilot fighting:
+- `lk_film1`: the Start room;
+- `lk_film2`: a Clearing at (-109.4, -54.0);
+- `lk_film3`: the ruler's clearing.
+
+The films (`.mp4`), the strips (a frame every 2 s) and the strip sheets are in the worktree's `godot/.shots/look/` (git-ignored). The sheet I read is `lk_film2_sheet.jpg`. The stills are `godot/.shots/lk_{r1,r2,r3,boss}_*.png`.
+
+**These are my reading of the strips at contact-sheet size, not measurements. Each item names the strip frame that shows it.** Film 2 also logs runtime errors: "Texture (binding: 1, index 0) is not a valid texture" and "Parameter "us" is null". Their cause was not looked into.
+
+| # | What a player cannot read | Seen in |
+|---|---|---|
+| C1 | **Live foes and corpses look alike.** Both are near-black wolf shapes on the brown floor, so after a kill the room looks just as full | film 2 f_006-f_008 |
+| C2 | **She disappears under the pack.** A full pack sits on her as one dark star, and the 70 px heroine is not findable in it | stills lk_r2_00-05, lk_r3_00-05 |
+| C3 | **The danger mark sits in the blood's color.** The charge lane is a faint translucent red rectangle on a red-brown floor that is also spattered with red blood decals | film 2 f_013, f_017, f_021; stills lk_r2_01, lk_r3_05 |
+| C4 | **Her own swing outshines every danger.** The thick yellow-orange arc ring is the brightest thing on screen and crosses the foes and the lanes, the reverse of D3 (danger marks must survive the blur test) | film 2 f_003-f_005, f_009, f_016, f_018, f_022 |
+| C5 | **Damage numbers are small, thin and low in contrast** against the floor | film 2 f_006, f_009, f_012 |
+| C6 | **The light shafts' pools are as bright as she is**, so the eye goes to the pools | film 2 f_010-f_014 |
+| C7 | **The zone title covers the fight's top third on entry**, and the objective lines on the right are tiny at 1080p | film 2 f_001-f_002, all frames |
+| C8 | **The boss room's world text** (the ruler's name, the "BREAK" numbers) shows even with the HUD off and sits over the fight | stills lk_boss_00-05 |
 
 ## 5. The open list, ordered for M2
 
-(Written after section 4.)
+This ordering is the lead's. M2 is the slice's combat clarity, and the look work waits on the owner's pick in `LOOK_TARGET_OPTIONS.md`.
+
+1. **Dash and Bladestorm explained** (notes 4 and 5, section 2). Each key gets a card or tip that says what it does, and the dash gets a proof frame.
+2. **The Flare's card** (section 2). It is the signature move, and nothing explains it.
+3. **Danger marks own their color** (C3, C4, section 3). Blood decals stay out of the danger hue, the danger marks get brighter than the floor, and her swing arc gets dimmer than they are. Give the burst, poison and howl their own tells, or confirm by a frame that they have one.
+4. **Corpses read as dead** (C1). They fade, sink or desaturate within a second or two.
+5. **She is findable in a pack** (C2, D3's greyscale test). This is the look target's job: a rim on her and a quieter, darker ground under her. It waits for the pick.
+6. **What a lit lamp changes** (note 14). The player must see it happen.
+7. **Light pools and on-screen text** (C6, C7, C8). Quieter pools, which is again the look target's job. A shorter zone title and larger objective lines are the UI lead's.
+8. **Damage numbers** (C5). This one goes to the UI lead.
+9. **Hitches** (note 3). This one goes to P2 task 5.
+10. **The equip sounds** (note 13). These go to the sound lane, or wait for the owner's answer in section 6.
 
 ## 6. Yes/no questions for the owner
 
