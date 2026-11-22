@@ -23,7 +23,7 @@ public partial class Game
     (double X, double Z)? FacePointer()
     {
         if (auto != null || scene == null) return null;
-        if (Args.Tool && !Args.Has("press") && !Args.Has("dirrun")) return null;
+        if (Args.Tool && !Args.Has("press") && !Args.Has("dirrun") && !Args.Has("moves12")) return null;
         return scene.Pointer();
     }
 }

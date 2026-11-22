@@ -14,7 +14,7 @@ public partial class Game
 {
     sealed class ProfileMemory : ITeachMemory
     {
-        public bool Tips => Settings.Current.Tips;
+        public bool Tips => Settings.Current.Tips && !Args.Has("moves12");   // (--moves12: no callout freezes the measured moves)
         public bool Seen(string id) => Settings.Current.SeenTips.Contains(id);
         public void Mark(string id) { if (!Seen(id)) { Settings.Current.SeenTips.Add(id); Settings.Current.Save(); } }
     }
