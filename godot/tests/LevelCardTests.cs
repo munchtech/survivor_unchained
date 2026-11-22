@@ -25,12 +25,16 @@ public sealed class LevelCardTests
     }
 
     [Fact]
-    public void The_keys_open_at_4_5_7_and_9_say_so_and_level_10_opens_nothing()
+    public void The_keys_open_at_4_5_and_9_say_so_and_levels_7_and_10_open_nothing()
     {
         static int SlotOf(string id) => id switch { "heroic_leap" => 1, "bladestorm" => 2, "iron_vow" => 3, "shield_charge" => 4, _ => -1 };
-        foreach (var l in new[] { 4, 5, 7, 9 }) Assert.Equal(LevelCardKind.NewKey, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
-        // (no auto slots since 22 Nov: level 10 is a plain card)
-        foreach (var l in new[] { 10 }) Assert.Equal(LevelCardKind.Plain, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
+        foreach (var l in new[] { 4, 5, 9 }) Assert.Equal(LevelCardKind.NewKey, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
+        // (the ninth teaches two keys: Iron Vow's card, then Shield Charge's)
+        var nine = LevelCards.CardsFor(9, Warden, SlotOf, 0);
+        Assert.Equal(["iron_vow", "shield_charge"], nine.Select(c => c.Skill).ToArray());
+        Assert.All(nine, c => Assert.Equal(LevelCardKind.NewKey, c.Kind));
+        // (no auto slots since 22 Nov: levels 7 and 10 are plain cards)
+        foreach (var l in new[] { 7, 10 }) Assert.Equal(LevelCardKind.Plain, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
     }
 
     [Fact]

@@ -52,11 +52,11 @@ public sealed class HandsRuleTests
         }
         Assert.Equal(t.Slots.Count, t.Slots.Select(s => s.Skill).Distinct().Count());
         // Every slot at the ladder's level (BUILD_UNLOCKS.md): the n-th key when the n-th key opens, 
-        for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(i + 1, SkillBook.KeysAt(t.Keys[i].Level));
-        for (int i = 0; i < t.Keys.Count; i++) Assert.True(t.Keys[i].Level == 1 || SkillBook.KeysAt(t.Keys[i].Level - 1) == i, t.Keys[i].Skill);
-        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Iron Vow key 4 (level 7) and Shield Charge key 5 (level 9, 22 Nov Round 10); Dawnpulse is offered later; Falling Wall is the first union (both halves are keys).
+        // (key n's level is the first level at which KeysAt reaches n: the ninth opens keys 4 and 5)
+        for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(Enumerable.Range(1, 30).First(l => SkillBook.KeysAt(l) >= i + 1), t.Keys[i].Level);
+        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Iron Vow key 4 and Shield Charge key 5 (both level 9, 22 Nov Round 10); Dawnpulse is offered later; Falling Wall is the first union (both halves are keys).
         Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge"], t.Keys.Select(k => k.Skill).ToArray());
-        Assert.Equal([1, 4, 5, 7, 9], t.Keys.Select(k => k.Level).ToArray());
+        Assert.Equal([1, 4, 5, 9, 9], t.Keys.Select(k => k.Level).ToArray());
         Assert.Equal("channel", t.Keys[2].Cast);
         Assert.Equal(["dawnpulse"], t.Later);
         Assert.Equal("falling_wall", t.Union?.Id);

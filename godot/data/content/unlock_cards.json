@@ -9,10 +9,10 @@
       "teach": { "when": "next_fight", "title": "Bladestorm", "text": "*Hold* {key} to spin, cutting all around you. Press Sunder's key to break the storm with one great blow.", "key": "Skill3" } },
     { "level": 6, "kind": "road", "id": "road", "lands": "lamp-post", "title": "A ROAD TO WALK", "line": "Walk one at a lamp-post: each changes how you fight.", "icon": "roads",
       "teach": { "when": "none", "title": "", "text": "", "key": "" } },
-    { "level": 7, "kind": "key", "id": "iron_vow", "lands": "key 4", "title": "A NEW KEY", "line": "Brace: for 2 s blows land at half, then burst back in a ring.", "icon": "",
-      "teach": { "when": "next_fight", "title": "Iron Vow", "text": "Press *{key}* to brace: for 2 s every blow on you lands at half, then bursts back out in a ring.", "key": "Skill4" } },
     { "level": 8, "kind": "stance", "id": "stance", "lands": "swap", "title": "A SECOND WEAPON", "line": "Swap to a second weapon: every swap lands a strike.", "icon": "",
       "teach": { "when": "next_fight", "title": "Shieldwall", "text": "Press *{key}* to swap to Shieldwall: every swap lands a strike.", "key": "Swap" } },
+    { "level": 9, "kind": "key", "id": "iron_vow", "lands": "key 4", "title": "A NEW KEY", "line": "Brace: for 2 s blows land at half, then burst back in a ring.", "icon": "",
+      "teach": { "when": "next_fight", "title": "Iron Vow", "text": "Press *{key}* to brace: for 2 s every blow on you lands at half, then bursts back out in a ring.", "key": "Skill4" } },
     { "level": 9, "kind": "key", "id": "shield_charge", "lands": "key 5", "title": "A NEW KEY", "line": "Charge 8 m behind your shield; gain a barrier of 15% of your health.", "icon": "",
       "teach": { "when": "next_fight", "title": "Shield Charge", "text": "Press *{key}* to charge behind your shield: what stands in the way is struck and thrown aside.", "key": "Skill5" } }
   ]

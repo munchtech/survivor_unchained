@@ -10,7 +10,7 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>The auto slots and the kindled option are gone (docs/design/SKILL_KINDS.md, 22 Nov): the old counts stay pinned
-/// for the harness, an old save still loads, and its bar is re-cut to the five taught keys (BUILD_DIRECTION.md Round 10, 22 Nov: five keys, opening at 1, 4, 5, 7 and 9).</summary>
+/// for the harness, an old save still loads, and its bar is re-cut to the five taught keys (BUILD_DIRECTION.md Round 10, 22 Nov: five keys, opening at 1, 4, 5 and 9, two at the ninth).</summary>
 public sealed class FiveKeyBarTests
 {
     [Theory]
@@ -38,11 +38,11 @@ public sealed class FiveKeyBarTests
     [InlineData(4, 2)]
     [InlineData(5, 3)]
     [InlineData(6, 3)]
-    [InlineData(7, 4)]
-    [InlineData(8, 4)]
+    [InlineData(7, 3)]
+    [InlineData(8, 3)]
     [InlineData(9, 5)]
     [InlineData(15, 5)]
-    public void The_keys_open_at_levels_1_4_5_7_and_9(int level, int keys) => Assert.Equal(keys, SkillBook.KeysAt(level));
+    public void The_keys_open_at_levels_1_4_5_and_9_two_at_the_ninth(int level, int keys) => Assert.Equal(keys, SkillBook.KeysAt(level));
 
     [Fact]
     public void The_campaign_has_five_keys() => Assert.Equal(5, Weapons.MaxKeys);

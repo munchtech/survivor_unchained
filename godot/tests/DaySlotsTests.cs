@@ -23,8 +23,8 @@ public class DaySlotsTests
 
     [Theory]
     [InlineData(1, 1)] [InlineData(3, 1)] [InlineData(4, 2)] [InlineData(5, 3)] [InlineData(6, 3)]
-    [InlineData(7, 4)] [InlineData(8, 4)] [InlineData(9, 5)] [InlineData(10, 5)] [InlineData(30, 5)]
-    public void Slots_are_the_five_keys_opening_at_1_4_5_7_and_9(int level, int slots)
+    [InlineData(7, 3)] [InlineData(8, 3)] [InlineData(9, 5)] [InlineData(10, 5)] [InlineData(30, 5)]
+    public void Slots_are_the_five_keys_opening_at_1_4_5_and_9(int level, int slots)
     {
         var ch = Make();
         ch.Level = level;

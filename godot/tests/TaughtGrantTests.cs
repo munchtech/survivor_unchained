@@ -26,7 +26,6 @@ public sealed class TaughtGrantTests
     [InlineData(1, new[] { "sunder" })]
     [InlineData(4, new[] { "sunder", "heroic_leap" })]
     [InlineData(5, new[] { "sunder", "heroic_leap", "bladestorm" })]
-    [InlineData(7, new[] { "sunder", "heroic_leap", "bladestorm", "iron_vow" })]
     [InlineData(9, new[] { "sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge" })]
     [InlineData(10, new[] { "sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge" })]
     public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys)

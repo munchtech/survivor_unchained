@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
@@ -21,7 +22,7 @@ public sealed class UnlockCardTests
     }
 
     [Fact]
-    public void Every_layer_level_has_exactly_one_row_and_no_row_is_extra()
+    public void Every_layer_has_one_row_per_taught_key_and_no_row_is_extra()
     {
         var want = new List<(int Level, string Id)>();
         foreach (var s in Warden.Keys) want.Add((s.Level, s.Skill));
@@ -44,9 +45,10 @@ public sealed class UnlockCardTests
     }
 
     [Fact]
-    public void No_level_has_two_rows_but_the_starting_kit()
+    public void A_level_has_a_row_per_key_it_teaches_and_one_otherwise_but_the_starting_kit()
     {
-        foreach (var g in UnlockCards.Rows("warden").Where(r => !r.Start).GroupBy(r => r.Level)) Assert.Single(g);
+        foreach (var g in UnlockCards.Rows("warden").Where(r => !r.Start).GroupBy(r => r.Level))
+            Assert.Equal(Math.Max(1, Warden.Keys.Count(k => k.Level == g.Key && k.Level > 1)), g.Count());
         Assert.All(UnlockCards.Rows("warden").Where(r => r.Start), r => Assert.Equal(1, r.Level));
         Assert.Equal(1, UnlockCards.Rows("warden").Count(r => r.Start));
     }
@@ -57,10 +59,12 @@ public sealed class UnlockCardTests
         for (int l = 2; l <= 10; l++)
         {
             var cards = LevelCards.CardsFor(l, Warden, SlotOf, 0, null, roadRaised: l == LampBook.RoadLevel);
-            var card = Assert.Single(cards);
+            Assert.Equal(Math.Max(1, Warden.Keys.Count(k => k.Level == l)), cards.Count);
+            var card = cards[0];
             Assert.NotEqual(LevelCardKind.NewSkill, card.Kind);
             Assert.Equal(l, card.Level);
             var row = UnlockCards.At("warden", l);
+            if (l == 9) Assert.Equal(["iron_vow", "shield_charge"], cards.Select(c => c.Skill).ToArray());
             if (row == null) { Assert.Equal(LevelCardKind.Plain, card.Kind); Assert.Equal($"LEVEL {l}", LevelCards.Header(card)); continue; }
             var kind = row.Kind switch { "key" => LevelCardKind.NewKey, "stance" => LevelCardKind.NewStance, _ => LevelCardKind.NewRoad };
             Assert.Equal(kind, card.Kind);
@@ -79,11 +83,11 @@ public sealed class UnlockCardTests
     [Fact]
     public void The_callings_skill_never_shares_a_layers_level_and_waits_for_a_quiet_moment()
     {
-        // (levels 6 and 9 with a calling skill taught: still one card, and no new skill among it)
+        // (levels 6 and 9 with a calling skill taught: one card a taught key, and no new skill among it)
         foreach (var l in new[] { 6, 9 })
         {
             var cards = LevelCards.CardsFor(l, Warden, SlotOf, 0, null, roadRaised: l == 6);
-            Assert.Single(cards);
+            Assert.Equal(l == 9 ? 2 : 1, cards.Count);
             Assert.DoesNotContain(cards, c => c.Kind == LevelCardKind.NewSkill);
         }
         var skill = LevelCards.NewSkill(0, "dawnpulse");

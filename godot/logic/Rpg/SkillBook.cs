@@ -67,12 +67,12 @@ public static class SkillBook
     }
 
     /* (bd-keys, docs/design/SKILL_KINDS.md) Her bar: five keys, all pressed, the basic attack held in the first; a union
-     * takes two keys; the keys open at levels 1, 4, 5, 7 and 9. Every carried skill is in ch.Slotted, in key order. A skill
+     * takes two keys; the keys open at levels 1, 4, 5 and 9, the ninth opening two (Iron Vow and Shield Charge). Every carried skill is in ch.Slotted, in key order. A skill
      * that only ever runs itself (Weapons.AutoOnly) is never slotted. Skills her gear grants that run themselves stack
      * beside the keys with no cap (Character.Bar). */
 
-    /// <summary>The keys open at a level (BUILD_UNLOCKS.md, BUILD_DIRECTION.md Round 10): the basic attack's at the first, then the fourth, fifth, seventh and ninth.</summary>
-    public static int KeysAt(int level) => level >= 9 ? 5 : level >= 7 ? 4 : level >= 5 ? 3 : level >= 4 ? 2 : 1;
+    /// <summary>The keys open at a level (BUILD_UNLOCKS.md, BUILD_DIRECTION.md Round 10): the basic attack's at the first, then the fourth, fifth and ninth (two keys at the ninth: Iron Vow and Shield Charge).</summary>
+    public static int KeysAt(int level) => level >= 9 ? 5 : level >= 5 ? 3 : level >= 4 ? 2 : 1;
 
     /// <summary>How many learned skills she carries by day: the keys open at her level.</summary>
     public static int Slots(CharacterData ch) => KeysAt(ch.Level);

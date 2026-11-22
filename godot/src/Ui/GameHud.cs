@@ -1741,7 +1741,7 @@ public partial class GameHud : CanvasLayer
             {
                 if (card.Kind == LevelCardKind.NewRoad) roadAt = -1;
                 LevelCard(card);
-                if (card.Kind is LevelCardKind.NewKey or LevelCardKind.NewStance && UnlockCards.At(ch?.Archetype, l) is { } row) Lessons()?.Opened(row);
+                if (card.Kind is LevelCardKind.NewKey or LevelCardKind.NewStance && (card.Kind == LevelCardKind.NewKey ? UnlockCards.Of(ch?.Archetype, card.Skill) : UnlockCards.At(ch?.Archetype, l)) is { } row) Lessons()?.Opened(row);
             }
             // (the calling's own skill is not on a level's card: it waits for a quiet moment, UnlockTick)
             if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught) { callingCarded = taught; callingWait = taught; }
