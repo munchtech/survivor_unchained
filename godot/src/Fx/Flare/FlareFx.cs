@@ -296,13 +296,16 @@ public partial class FlareFx : Node3D
         rt += dt;
         if (Stop > 0) { Stop = Math.Max(0, Stop - dt); if (Stop <= 0) hitstopRuns = false; }
         if (!Frozen && ramp < 1) ramp = Math.Min(1, ramp + dt / 0.08 * 0.92);
+        long pq = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;   // (P2 task 5 probes: the first tick of a Flare 8.7-10 ms)
         if (b != null && !Active) Ready(b, fdt);
         LcWarmStep();
+        if (Perf.On) pq = Perf.Slow("flare tick warm", pq, 1);
         if (Active)
         {
             t += Stop > 0 && !hitstopRuns ? dt * 0.1 : dt;
             Envelope();
             BlowTick();
+            if (Perf.On) pq = Perf.Slow("flare tick blow", pq, 1);
             // (--clip: the HUD's count as it steps, against the sim's and the band's hold: judge r2's "10 to 26" check)
             if (b != null && Args.Has("clip") && rt - pressRt < 2.5 && b.KillCount - KillsHeld != hudKillsLogged)
             {
@@ -312,6 +315,7 @@ public partial class FlareFx : Node3D
             if (id == "burns_twice") BurnsTick(fdt);
             else if (IsLongCut) LongTick(fdt);
             else Plain();
+            if (Perf.On) pq = Perf.Slow("flare tick kind", pq, 1);
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
             float sl = spendLightT < 0 ? 0 : (float)((spendLightReal ? rt : t) - spendLightT);
             // (the Long Cut rides its light itself: FlareFx.LongCut)
@@ -323,6 +327,7 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_web"), web);
             RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_frost"), frost);
             UploadMarks();
+            if (Perf.On) pq = Perf.Slow("flare tick marks", pq, 1);
             // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)
             // (Again at the ring's end +0.3 s and +0.55 s, while the fireball burns over the bodies: judge 7 (1).)
             if (lastAt > 0 && audited < 3 && id == "burns_twice" && t >= lastAt + RingTime(ringMax) + 6 / 60.0 + AuditAfter[audited])
@@ -343,11 +348,14 @@ public partial class FlareFx : Node3D
                 Clear();
             }
         }
+        if (Perf.On) pq = Perf.Slow("flare tick rest", pq, 1);
         FamilyTick(dt, b);
+        if (Perf.On) pq = Perf.Slow("flare tick family", pq, 1);
         glow.Step(fdt, HeightAt);
         bed.Step(fdt, HeightAt);
         scars.Step(fdt, HeightAt);
         shards.Step(fdt, HeightAt);
+        if (Perf.On) Perf.Slow("flare tick steps", pq, 1);
     }
 
     bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : IsLongCut ? lcCleaveT >= 0 && t > lcCleaveT + 6.2 || t > 12
