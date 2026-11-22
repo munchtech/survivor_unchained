@@ -256,7 +256,7 @@ public partial class MarkPass : CompositorEffect
         if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         var m = marks; int n = Math.Min(count, MaxMarks);
         if (m == null || n <= 0) return;
-        if (rd == null) { Init(); if (failed) return; }
+        if (rd == null) { long q = System.Diagnostics.Stopwatch.GetTimestamp(); Init(); Perf.Slow("markpass init", q, 1); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
         sceneData = data; // (lane K, 20 Nov: a new native wrapper each frame; let go in _RenderCallback's finally)
         var size = buf.GetInternalSize();

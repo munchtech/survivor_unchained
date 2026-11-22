@@ -1764,8 +1764,11 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Telegraph e when e.Phase == TellPhase.Warn:
                 {
+                    long tq = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
                     if (WayOut(e) || DigMark(e)) break;
+                    tq = Perf.Slow("tele wayout/dig", tq, 2);
                     Winded(e);
+                    tq = Perf.Slow("tele winded", tq, 2);
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
                     // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
                     // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
@@ -1803,6 +1806,7 @@ public partial class BattleFx : Node3D
                     styleNext = danger ? 1 : amber ? 2 : 0;
                     patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
                     raisingNext = raising;
+                    tq = Perf.Slow("tele read+pattern", tq, 2);
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
@@ -1864,8 +1868,10 @@ public partial class BattleFx : Node3D
                         Bind(e.Id, Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration));
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
+                    tq = Perf.Slow($"tele shape {e.Shape}", tq, 2);
                     // (a red circle, cone or band over water: its copy on the surface; a lane's is made above)
                     if (danger && e.Shape != TelegraphShape.Line && keyed.TryGetValue(e.Id, out var dm) && dm.Danger) Over(dm, false);
+                    tq = Perf.Slow("tele over", tq, 2);
                     styleNext = 0; raisingNext = false;
                     // A boss's move, named over the boss for as long as its mark stands: who is doing
                     // it, where the eye already is (over the mark, it sat on the survivor's head).
@@ -1874,6 +1880,7 @@ public partial class BattleFx : Node3D
                         double lx = e.ByX ?? e.X, lz = e.ByZ ?? e.Z;
                         Hits.Word(V(lx, Y(lx, lz) + 4.4, lz), label.ToUpperInvariant(), WordColour(col), 70, (float)Math.Min(2.5, e.Duration + 0.3));
                     }
+                    Perf.Slow("tele label", tq, 2);
                     break;
                 }
                 case Ev.Break br:
