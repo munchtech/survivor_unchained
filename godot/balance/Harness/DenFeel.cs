@@ -44,6 +44,8 @@ public static class DenFeel
         /// the share of its melee members that a blow of hers has already reached by its first area blow.</summary>
         public double Peak = -1, HitBefore = -1;
         public List<Enemy>? Base1; public double Due1 = -1, Inside1 = -1;
+        /// <summary>(first-blow item) Its spread, arrivals and leap landing: DenCause.</summary>
+        public readonly DenCause.Row C = new();
     }
 
     public sealed class Run
@@ -113,6 +115,11 @@ public static class DenFeel
                     }
                     else if (dead.Add((m.E, m.Seed))) row.Deaths.Add(t);
                 }
+                if (row.Woke >= 0 && anyLive)
+                {
+                    var ml = members.Where(m => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying && Melee(m.E.Def)).Select(m => m.E).ToList();
+                    if (ml.Count > 0) DenCause.Step(row.C, t, row.Woke, ml, p, evs, row.Deaths.Count > 0);
+                }
                 if (areas.Count > 0 && anyLive)
                     foreach (var a in areas)
                     {
@@ -125,6 +132,7 @@ public static class DenFeel
                         if (row.Inside >= 0) continue;
                         row.Inside = share; row.FirstKind = a.K; row.FirstLag = row.Woke >= 0 ? t - row.Woke : -1;
                         row.Base1 = melee.Select(m => m.E).ToList(); row.Due1 = t + 1;
+                        DenCause.AtBlow(row.C, t, row.Base1, a.X, a.Z, a.K);
                         row.HitBefore = (double)melee.Count(m => m.E.Hp < m.E.MaxHp) / melee.Count;
                         if (a.K == 'S') { row.SpinBase = melee.Select(m => m.E).ToHashSet(); row.SpinCaught = new(); }
                         foreach (var m in melee) row.AtFirst.Add((m.E.Def.Id, Math.Sqrt((m.E.X - a.X) * (m.E.X - a.X) + (m.E.Z - a.Z) * (m.E.Z - a.Z)) - m.E.Radius));
@@ -228,6 +236,7 @@ public static class DenFeel
         sb.AppendLine("By recipe (all bots): | recipe/grade | killed | TTK blow p50 | inside p50 | together p50 |");
         foreach (var g in runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0).GroupBy(p => $"{p.Recipe}/{p.Grade}").OrderBy(g => g.Key))
             sb.AppendLine($"| {g.Key} | {g.Count()} | {Q(g.Select(p => p.LastDeath - p.FirstHit), .5):0.0} | {Q(g.Where(p => p.Inside >= 0).Select(p => p.Inside), .5):0.00} | {Q(g.Select(p => p.Together), .5):0.00} |");
+        sb.Append(DenCause.Report(runs));
         return sb.ToString();
     }
 }
