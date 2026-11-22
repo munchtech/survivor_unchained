@@ -10,7 +10,7 @@ Read first, in this order: CLAUDE.md (repo root), docs/team/README.md, docs/team
 sections your brief names in docs/team/GAME_PLAN.md. Never read a file over about 400 lines whole: grep, then
 read ranges.
 - Work in your own worktree (count .claude/worktrees first: cap 8) on your own branch. Commit as you go.
-  Never push, never merge to the integration branch: hand back the branch and its sha.
+  Never push, never merge to the integration branch: hand back the branch name and its latest commit id (its sha).
 - Keep a state file from your first step (path in your brief): what is done, what is left, numbers, decisions
   with their why, failed attempts. A later session must be able to continue from it alone.
 - The owner's rulings in the plan are quoted word for word. Do not reinterpret them. If the spec looks wrong,
@@ -20,7 +20,7 @@ read ranges.
 - Round cap: 3 rounds on any judged item. You never raise it. At the cap, report what failed and stop.
 - Heavy Godot or Blender runs go through tools/turn.py. Shoot output goes in the worktree's godot/.shots/.
 - No downloads, installs, purchases or credit spend unless your brief says so. Nothing deleted permanently.
-- Report: what is now true, the numbers, what is not done or not verified, the branch and sha.
+- Report: what is now true, the numbers, what is not done or not verified, the branch name and its latest commit id (sha).
 ```
 
 ## P1. Godot 4.7.2 upgrade trial (Opus lead, one session)
@@ -42,7 +42,7 @@ Do, in a trial worktree only:
 2. Bump the SDK pin (Godot.NET.Sdk/4.5.1 in the csproj), open the project in 4.7.2, fix the build.
 3. Run the test suite (baseline: 3081 passed on 4.5.1).
 4. Measure the den on both engines: the perf trace, and the 12-shot movement harness (--moves12, from branch
-   move-baseline; ask the orchestrator or owner whether it is merged yet). Same takes, same seed.
+   move-baseline, merged into the integration branch at a710f612c). Same takes, same seed.
 5. Film the den at the game camera on both engines and compare the look side by side. Expect to re-tune glow
    and fog; say what you changed.
 Optional tools, only after reading their code: api_lookup.py and migrate_scan.py from
@@ -66,9 +66,9 @@ Spec: docs/team/GAME_PLAN.md section G tasks 3, 4 and 5, criteria D1, decision 3
 direction; nothing held, it goes to the cursor; on a stick, to her facing), and the paragraph "The PoE2
 reference is closed". State file: C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_move\STATE.md
 Evidence you start from:
-- Our baseline: task 1's table (branch move-baseline, harness flag --moves12, tools/motion/move_baseline.py;
+- Our baseline: task 1's table (merged at a710f612c; harness flag --moves12, tools/motion/move_baseline.py;
   its state file is survivorsunchained_inputs\scratch_devplan\task1_move_baseline\STATE.md). The 12 shots are
-  in survivorsunchained_inputs\scratch_devplan\moves12.md. The baseline is in (branch move-baseline at
+  in survivorsunchained_inputs\scratch_devplan\moves12.md. The baseline is in (per-shot CSVs in raw\; measured at
   998aa9f48; TABLE.md, READING.md and the film are in that state file's folder; the plan's section G has the
   table against PoE2). It confirms the camera: it leads her by 1.52 m and scrolls on for about 1 s after a
   stop. Start (9 frames to 90%) and stop (19 frames) are several times slower than the reference. The dash

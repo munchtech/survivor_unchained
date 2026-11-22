@@ -428,7 +428,7 @@ All paths below were checked to exist on 21 Nov unless marked. Heavy runs go thr
 
 Order: 1 and 2 were started on 21 Nov (the owner's go-ahead). 3 and 5 can start next. 6 waits on the owner's pick. 4 follows 3. The body test (decision 14) was started on 21 Nov in the Marionette session (shape, rings and rig first; its paint follows 6). The Godot 4.7.2 trial (decision 16) starts when task 1's baseline is in. Added 21 Nov from a workflow the owner sent (a Godot developer's zone-building loop, r/TopologyAI; its videos were not viewed): when the task 6 painting of a den room is approved, cut each prop out of it as a clean reference image and keep the painting as the placement target at the same camera. This costs no credits. Turning those references into meshes waits for the environment bake-off after the slice.
 
-**Task 1's baseline is in (22 Nov) [O, measured by the task 1 lead; not re-run].** Branch `move-baseline` @ `998aa9f48`, not merged; table, reading and an 87 s film in `survivorsunchained_inputs\scratch_devplan\task1_move_baseline\` (`TABLE.md`, `READING.md`, `move_baseline_film.mp4`). Frames are 60 fps; her top speed is 5.15 m/s. Against the PoE2 reference:
+**Task 1's baseline is in (22 Nov) [O, measured by the task 1 lead; not re-run].** Branch `move-baseline` @ `998aa9f48`, merged into the integration branch at `a710f612c` (the owner, 22 Nov: "Yes, merge it"; the game builds and 3081 tests pass after the merge); the per-shot CSVs are in `raw\` beside the table, reading and an 87 s film in `survivorsunchained_inputs\scratch_devplan\task1_move_baseline\` (`TABLE.md`, `READING.md`, `move_baseline_film.mp4`). Frames are 60 fps; her top speed is 5.15 m/s. Against the PoE2 reference:
 
 | What | Ours | PoE2 (public clips) |
 |---|---|---|
