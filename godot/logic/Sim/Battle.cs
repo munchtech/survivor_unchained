@@ -2076,11 +2076,15 @@ public sealed partial class Battle
     /// <summary>The world tier's scale on the foes spawned from now (Journey.StartBattle; ARPG.md 7.3).</summary>
     public double WorldHealth = 1, WorldDamage = 1;
 
+    /// <summary>A zone's own cut of the table's kinds (the den's, Content/DenRoster.cs): a spawn of a kind named here takes
+    /// this def instead of the table's. Null: the table.</summary>
+    public Dictionary<string, Content.EnemyDef>? Roster;
+
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
     {
         if (NoSpawn) return null;
         o ??= new SpawnOpts();
-        var def = Content.Enemies.Get(defId);
+        var def = Roster != null && Roster.TryGetValue(defId, out var cut) ? cut : Content.Enemies.Get(defId);
         var e = Enemies.Spawn();
         if (e == null) return null;
         int lvl = o.Level;

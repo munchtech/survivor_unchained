@@ -53,6 +53,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         public required Denizens People;
         public bool Placed, Cleared;
         public int Grade;
+        /// <summary>(P3) The den's recipe id this pack was built from ("" elsewhere).</summary>
+        public string Recipe = "";
         /// <summary>(M3) When the first of it was roused (B.Time; -1: resting).</summary>
         public double Woke = -1;
         public readonly List<(Enemy E, double Seed)> Members = new();
@@ -168,7 +170,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public override IReadOnlyList<string> Creatures =>
         Charts.Kinds(people, Chart.Tier).Select(k => k.Def)
             .Concat(rival != null ? Charts.Kinds(rival, Chart.Tier).Select(k => k.Def) : [])
-            .Concat(Charts.Guardians(people, Chart.Tier)).Append(people.Champion).Append(people.Boss).Distinct().ToList();
+            .Concat(Charts.Guardians(people, Chart.Tier)).Append(people.Champion).Append(people.Boss)
+            .Concat(DenRoster.For(Chart.Dungeon) ? DenRoster.Kinds : []).Distinct().ToList();
     /// <summary>By day: the maps are the day's build in the day's world, and a pack must be read
     /// before it is woken (at dusk the way was black past the start's fire).</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Day;
@@ -197,6 +200,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public int PackCount => packs.Count;
     /// <summary>The placed packs' grades (0 plain, 1 magic, 2 rare), for probes of what a chart's oaths field.</summary>
     public IEnumerable<int> PackGrades => packs.Where(p => p.Placed).Select(p => p.Grade);
+    /// <summary>(P3) The placed packs' recipe, grade and members' def ids (probes and tests of the den's roster).</summary>
+    public IEnumerable<(string Recipe, int Grade, IReadOnlyList<string> Defs)> PackMakeup =>
+        packs.Where(p => p.Placed).Select(p => (p.Recipe, p.Grade, (IReadOnlyList<string>)p.Members.Select(m => m.E.Def.Id).ToList()));
     /// <summary>Whether this very creature carries gear here (a pack's leader, a keeper; SU-086: by lifetime).</summary>
     public bool Carries(Enemy e) => carriers.ContainsKey(Lifetime.Of(e));
     /// <summary>Every pack and altar set down now, wherever she is (ClearNow; probes).</summary>
@@ -219,6 +225,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        if (DenRoster.For(Chart.Dungeon)) b.Roster = DenRoster.Cuts();
         ForgetFogOfOtherLayout(G.Journey.World, Chart);
         b.Rules = Chart.Rules();
         b.InBounds = map.CanStand;
@@ -304,6 +311,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// ten rare (two or three Signs, and an escort).</summary>
     void Place(Pack k)
     {
+        if (DenRoster.For(Chart.Dungeon) && k.People == people) { PlaceRecipe(k); return; }
         k.Placed = true;
         var s = k.Spot;
         string main = PickKind(k.People), mix = PickKind(k.People);
@@ -331,12 +339,71 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         }
     }
 
+    /// <summary>(P3, DEN_ROSTER.md section 3) A den pack built from one of the recipes, not from the people's kinds.</summary>
+    void PlaceRecipe(Pack k)
+    {
+        // Seam: a story beat may later replace one room's pack; the recipe pick below is the one place to swap.
+        k.Placed = true;
+        var s = k.Spot;
+        double roll = R();
+        double el = Chart.Elites;
+        k.Grade = roll < 0.1 * el ? 2 : roll < 0.35 * el ? 1 : 0;
+        var rec = k.Grade == 2 ? DenRoster.Recipes[R() < 0.5 ? 0 : 2] : DenRoster.Recipes[Math.Min(3, (int)(R() * 4))];
+        k.Recipe = rec.Id;
+        bool hardened = Chart.Has("hardened");
+        bool tusker = rec.Id == "tusker";
+        // The leader's kind: the recipe's own Ironback, or a champion added to it.
+        string? added = null;
+        if (k.Grade == 2) { string pick = R() < 0.5 ? "boar_ironback" : "wolf_alpha"; if (!(tusker && pick == "boar_ironback")) added = pick; }
+        else if ((k.Grade == 1 || hardened) && !tusker) added = "wolf_alpha";
+        bool leads = k.Grade > 0 || hardened;
+
+        double f = s.Size * Chart.PackSize / Content.DungeonFights.Of(Chart.Dungeon).PackSize;
+        var walk = new List<string>();
+        int tele = 0;
+        foreach (var p in rec.Parts)
+        {
+            if (p.Telegraphed) { tele += p.Count; continue; }
+            int c = Math.Max(1, (int)Math.Round(p.Count * f));
+            for (int i = 0; i < c; i++) walk.Add(p.Def);
+        }
+        if (added == "boar_ironback") tele++;
+        string pad = rec.Id == "called" ? "wolf_runner" : "wolf";
+        while (walk.Count < 2 * tele) walk.Add(pad);
+        int room = Math.Max(0, 14 - tele - (added != null && added != "boar_ironback" ? 1 : 0));
+        if (walk.Count > room) walk.RemoveRange(room, walk.Count - room);
+
+        Enemy? lead = null;
+        foreach (var p in rec.Parts)
+        {
+            if (!p.Telegraphed) continue;
+            for (int i = 0; i < p.Count; i++)
+            {
+                bool ironLead = tusker && p.Def == "boar_ironback";
+                if (Put(p.Def, s.X, s.Z, (s.X, s.Z), elite: ironLead) is not { } e) continue;
+                k.Members.Add((e, e.Seed));
+                if (ironLead) lead = e;
+            }
+        }
+        foreach (var d in walk)
+            if (Put(d, s.X, s.Z, (s.X, s.Z)) is { } e) k.Members.Add((e, e.Seed));
+        if (added != null && Put(added, s.X, s.Z, (s.X, s.Z), elite: true, levelUp: 1) is { } c2)
+        {
+            k.Members.Add((c2, c2.Seed));
+            lead = c2;
+        }
+        if (!leads || lead == null) return;
+        int signs = k.Grade switch { 2 => 2 + (R() < 0.5 ? 1 : 0), 1 => 1, _ => 0 } + (Chart.Has("signed") && k.Grade > 0 ? 1 : 0);
+        Sign(lead, k.People, Math.Max(signs, hardened ? 1 : 0), hardened ? k.People.Signs.FirstOrDefault() : null);
+        if (k.Grade > 0) carriers[Lifetime.Of(lead)] = k.Grade;
+    }
+
     /// <summary>An altar's keepers: one of the people's minibosses open at this tier (two under the
     /// twin guardians), wearing the map's Signs. Put down, it lights the altar.</summary>
     void Place(Altar a)
     {
         a.Placed = true;
-        var pool = Charts.Guardians(people, Chart.Tier);
+        var pool = DenRoster.For(Chart.Dungeon) ? DenRoster.Guardians.ToList() : Charts.Guardians(people, Chart.Tier);
         int n = Chart.Has("twin") ? 2 : 1;
         for (int i = 0; i < n; i++)
         {
