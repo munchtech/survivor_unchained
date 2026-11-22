@@ -209,6 +209,7 @@ public partial class BattleFx : Node3D
         if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));   // (dev: every weapon's make as numbers, Arms.Check)
         if (Args.Has("glyphs-check")) Callable.From(() => { GD.Print(SurvivorUnchained.Fx.GlyphsCheck.Run(Args.Get("glyphs-check") == "full")); GetTree().Quit(); }).CallDeferred();   // (dev: glyph textures as hashes and a call's cost, GlyphsCheck)
         if (Args.Get("glyphs-arrow") is string arrowPng) Callable.From(() => SurvivorUnchained.Fx.GlyphsCheck.Arrow(this, arrowPng)).CallDeferred();   // (dev: the edge arrows' picture)
+        if (!P7Off) _ = WgHengeMat;   // (henge: the stones' material and its two files made at load: 43 ms at the first Heroic Leap landing with the Henge lit)
         if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
