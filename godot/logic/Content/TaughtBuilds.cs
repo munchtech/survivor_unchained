@@ -70,13 +70,13 @@ public static class TaughtBuilds
     /// <summary>A build's pressed keys: its keys whose cast is press or channel (the basic attack, a hold, is not counted).</summary>
     public static int PressedSlots(TaughtBuild t) => t.Keys.Count(s => s.Skill != t.Grip && s.Cast is "press" or "channel");
 
-    /// <summary>The bar's shape this code carries (CharacterData.Bar): four pressed keys (2 was four keys and three auto slots).</summary>
-    public const int BarShape = 3;
+    /// <summary>The bar's shape this code carries (CharacterData.Bar): five pressed keys (3 was four pressed keys; 2 was four keys and three auto slots).</summary>
+    public const int BarShape = 4;
 
     /// <summary>(M3; bd-keys) What a campaign survivor carries: each taught key of a level up to `level` and
     /// past the levels already granted (CharacterData.TaughtUpTo) is learned and goes into the next free key, unless she
     /// already carries it (a skill she took off or swapped out later is not put back). A save from an older bar is re-cut
-    /// once: her carried skills and every layout's are cleared and the build is granted again into the four keys. The
+    /// once: her carried skills and every layout's are cleared and the build is granted again into the five keys. The
     /// skills newly carried, with their taught form.</summary>
     public static List<TaughtSlot> Grant(CharacterData ch, int level)
     {

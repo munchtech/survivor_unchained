@@ -234,9 +234,9 @@ public static class Weapons
     /// <summary>The arena's skill slots (the night's ember drafts six, every one self-firing), not weapons: a union holds
     /// two (SlotCost). The campaign's is MaxKeys (docs/design/SKILL_KINDS.md).</summary>
     public const int MaxWeapons = 6;
-    /// <summary>(bd-keys) The campaign's keys: four a weapon set, the basic attack in one (a pad's four face buttons). The
+    /// <summary>(bd-keys) The campaign's keys: five a weapon set, the basic attack in one (a pad's four face buttons and a trigger). The
     /// dash, the Flare and the swap are never among them. A union takes two.</summary>
-    public const int MaxKeys = 4;
+    public const int MaxKeys = 5;
     public const double DamageStep = 0.2, AreaStep = 0.04, DurationStep = 0.06;
     public const int ProjRankA = 4, ProjRankB = 7;
 

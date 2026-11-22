@@ -164,7 +164,7 @@ public sealed class CharacterData
     /// opens at the ladder's level (SkillBook.StanceOf).</summary>
     public string Stance = "";
     /// <summary>(bd-keys) The bar this save was carried under: 0 the six keys, 2 four keys and three auto slots, 3 four
-    /// pressed keys (an older save is cut again once into the new bar: Content/TaughtBuilds.Grant, World/Save).</summary>
+    /// pressed keys, 4 five pressed keys (an older save is cut again once into the new bar: Content/TaughtBuilds.Grant, World/Save).</summary>
     public int Bar;
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();

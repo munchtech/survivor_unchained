@@ -66,21 +66,21 @@ public static class SkillBook
         return true;
     }
 
-    /* (bd-keys, docs/design/SKILL_KINDS.md) Her bar: four keys, all pressed, the basic attack held in the first; a union
-     * takes two keys; the keys open at levels 1, 4, 5 and 9. Every carried skill is in ch.Slotted, in key order. A skill
+    /* (bd-keys, docs/design/SKILL_KINDS.md) Her bar: five keys, all pressed, the basic attack held in the first; a union
+     * takes two keys; the keys open at levels 1, 4, 5, 7 and 9. Every carried skill is in ch.Slotted, in key order. A skill
      * that only ever runs itself (Weapons.AutoOnly) is never slotted. Skills her gear grants that run themselves stack
      * beside the keys with no cap (Character.Bar). */
 
-    /// <summary>The keys open at a level (BUILD_UNLOCKS.md): the basic attack's at the first, then the fourth, fifth and ninth.</summary>
-    public static int KeysAt(int level) => level >= 9 ? 4 : level >= 5 ? 3 : level >= 4 ? 2 : 1;
+    /// <summary>The keys open at a level (BUILD_UNLOCKS.md, BUILD_DIRECTION.md Round 10): the basic attack's at the first, then the fourth, fifth, seventh and ninth.</summary>
+    public static int KeysAt(int level) => level >= 9 ? 5 : level >= 7 ? 4 : level >= 5 ? 3 : level >= 4 ? 2 : 1;
 
     /// <summary>How many learned skills she carries by day: the keys open at her level.</summary>
     public static int Slots(CharacterData ch) => KeysAt(ch.Level);
 
-    /// <summary>The old keys-plus-autos ladder (keys 1/4/5/9 plus autos 1/7/10), kept only so map and harness scaling hold
+    /// <summary>The old keys-plus-autos ladder (four keys 1/4/5/9 plus autos 1/7/10; before the five-key bar), kept only so map and harness scaling hold
     /// (MapRun's DayMul, the arena and day-sim harnesses); flagged for a re-tune. Two from the start, three at the fourth
     /// level, four at the fifth, five at the seventh, six at the ninth, seven at the tenth.</summary>
-    public static int OldBarSlotsAt(int level) => KeysAt(level) + (level >= 10 ? 3 : level >= 7 ? 2 : 1);
+    public static int OldBarSlotsAt(int level) => level >= 10 ? 7 : level >= 9 ? 6 : level >= 7 ? 5 : level >= 5 ? 4 : level >= 4 ? 3 : 2;
 
     /// <summary>The keys her carried skills take (a union two).</summary>
     public static int KeysUsed(CharacterData ch) => ch.Slotted.Where(id => Weapons.All.ContainsKey(id)).Sum(Weapons.SlotCost);
