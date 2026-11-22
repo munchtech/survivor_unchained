@@ -1,0 +1,43 @@
+# The den's story beat: three pitches
+
+**Status: three pitches, awaiting the owner's pick**
+
+The slice gets one beat for the den and the camp at its mouth (GAME_PLAN decision 12, task 9). The owner: "I want a rich story with genuine emotional impact." and "Do not assume expensive close-up cinematics are necessary." The beat is told in play at the game camera, with no close-up and no camera move. The cast is the slice's own: the camp's one NPC and its lamp-post, the den's foes, the Pack-Mother. No beat depends on the miniboss, because it changes from run to run. It is not the toll, and nothing the bible keeps for a later act is said out loud. The model is the Ford-Warden's death: one small, tired thing at the end that turns the whole fight over. The armor set drops over several clears, so each pitch also says what happens on later clears.
+
+## 1. She lies down across the way in (the boss's last act)
+
+Maeca, the Watch's tracker, keeps the camp. She is not there for the bounty. The Pack-Mother has the slurry's green in her mouth, and Maeca asks you for the one thing a hunter can give: "Make it clean." Inside, the boss fight is the one the den already has, with one change you only understand at the end: every Drive herds you away from the same side of her room, where there is a black hollow under the roots. When she goes down she does not die where she falls. She drags herself on her front legs to the hollow and lies down across it. In the dark behind her, small eyes catch your light and do not come out. At the camp Maeca asks where she lay down. You tell her, and she says, "...Course she did." Why it should move you: one image turns the fight over. She was never hunting you. She was keeping you off them, and with the last of her strength she put her body between you and them. It also rhymes with the bible. Maeca's own built line at the Blind is that the old gray wolf once "lay down across the way in" to keep her alive.
+
+- Where: the camp before and after, and the boss's room at the run's end. The whole beat plays on the first clear. On later clears the Pack-Mother still goes to the hollow, and Maeca says there is always another.
+- Build: about 6 lines (Maeca 4, 2 barks). A prop: a root hollow at the room's edge, with eye-shine. A trigger: her death script (down, drag, lie across; Greymuzzle's night already has a lie-down script), the Drive aimed away from the hollow, and the music dropping to silence.
+- Feel: sorrow and respect. You did the kind thing, and it still cost something.
+
+## 2. They lie down around you (a thing seen in the den, turned on you)
+
+Old Wenna, the rude herbalist, keeps the camp. Halfway down the den you come on a dead wolf lying on its side, with three more lying around it, noses to its flank. They lift their heads at your light and do not get up: that is how they keep their dead. You fight on and kill the Pack-Mother. Then the den's last wolves come out of the dark, walk past her body and lie down around you, facing you, and they stay down. Nothing on screen explains it. When you come out, some of them have followed you and lie at the edge of the camp's light, facing you. Wenna looks at them a long while. Then she takes your hand, holds it a moment too long, lets it go and says: "Get by the lamp, child." Why it should move you: the gentlest thing in the den, a family keeping its dead, is done to you, and the one person who might know why will not say. It plants two answers the bible keeps for later acts, what she is and what she carries, and gives neither. Each clear, one more wolf waits at the edge of the light. That is the bible's own rule: the more she carries, the more come.
+
+- Where: a hall in the den's first half (the mourners), the boss's death (the ring), and the camp on the way out (one more wolf at the light's edge each clear, up to about six).
+- Build: about 5 lines (Wenna 3, 2 barks). A prop: one hall pack placed as mourners around a dead wolf, waking only if struck. Triggers: on her death, the den's remaining wolves walk in and lie down around the heroine (built on Greymuzzle's ring that lies down), and the music drops to silence. The camp places lying wolves at the edge of its light by clear count.
+- Feel: a chill. The animals know something about you that you do not, and nobody will tell you.
+
+## 3. "Did they drink?" (a line from someone at the camp)
+
+Old Wenna keeps the camp, and she has a secret the town would not forgive. Every evening she carries well water into the den, because the stream is what is killing the wolves. Before you go in she says one thing: "There's bowls in there. Mine. Leave them be." Just inside you find them: six chipped kitchen bowls on a flat stone beside a green seep, two of them licked dry, her tallow lamp gone cold, wolf prints all around. Then the wolves come for you anyway, because they are sick and go for anything now. You kill them, and then the Pack-Mother. When you come out, Wenna is filling the bowls again by the lamp-post, and she asks the only thing she wants to know: "Did they drink?" You answer "They drank." or "They're dead." Tell her the truth, and she sets the bowls down and says, "Then I'll want my bowls back." Lie, and she nods. The next time you go in, the bowls are full, and when you come out she asks again. Why it should move you: a rude old woman has one tenderness, and you decide what she gets to know. The lie gets heavier every clear, and it ends only when you tell her.
+
+- Where: the camp before and after, and the first room inside (the bowls). The question comes back after every clear until you tell her.
+- Build: about 7 lines (Wenna 5 including both replies, an inspect line on the bowls, one later-clear line). A prop: the stone with six bowls, a cold lamp and a green seep. A trigger: the camp question after a clear, asked through the game's existing on-screen choice, saving one fact (lied or told) that sets the bowls full or gone.
+- Feel: guilt you chose. A hard, kind woman asks a plain question, and the answer is yours to give or keep.
+
+## Checked against the bible
+
+- None uses the toll (rule 6), and the bible is unchanged. There is no close-up and no camera move: everything is a creature's movement, a world line (bark), a dialogue box or a sound.
+- Pitch 1 tells nothing of Maeca's past beyond the Pack's habit. Her Act 2 (Gale, the ladder, ninety-two) is untouched. Pitch 2 states nothing: the ring is a question, and Wenna's hand is a touch, not a word. Pitch 3 is the Act 1 truth the town already argues about ("Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down."). Greymuzzle is not on screen in any of them.
+- The quoted lines are drafts for the script session. I believe Maeca and Wenna are among the ten built NPC models, but that is not checked in the build.
+
+## After your pick
+
+Next come the script (at most 40 lines) and its staging, then one session to wire it (GAME_PLAN task 9). If the built beat does not land: one rewrite, then the narrator fallback (a narrator line over play at the boss's death).
+
+My bet is pitch 2. It is the most ours and the one you would still be thinking about the next day. It is cheap to build on what Greymuzzle's night already does, and it grows with each clear. If you want the surest lump in the throat, take pitch 1. Pitches 2 and 3 share Wenna, but I would not join them: one beat lands cleaner than two.
+
+Sources: `docs/STORY_BIBLE.md` 30-31 (the model), 51-80 (the rules; rule 6 is the toll), 343 and 366 (what she is, and ember: later acts), 383 (the Pack), 446-452 (Wenna), 619-622 (kindness from the wrong people), 665-670 (the Beast Problem), 1288-1297 (everything that has lost a light comes to her, never said); `godot/data/content/dialogue.json` (`maeca` blind_morning, built, and Rook's wolves line); `docs/bosses/SURVIVORS_BOSSES.md` 228-233 (the Pack-Mother herds you away from the den); `docs/design/DEN_ROSTER.md` (the den as approved); `godot/logic/Play/Bosses/Greymuzzle.cs` 553-593 (the lie-down and the ring).
