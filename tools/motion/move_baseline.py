@@ -35,7 +35,7 @@ def main():
     ov = ROOT / "godot" / "override.cfg"
     if ov.exists():
         ov.unlink()
-    label = "task1: moves12"
+    label = os.environ.get("TURN_LABEL", "task1: moves12")
     subprocess.run([sys.executable, TURN, "take", "godot", label, "--wait", "1800"], check=True)
     try:
         for t in takes:
@@ -45,7 +45,7 @@ def main():
 
 
 def run_take(t):
-    out = ROOT / "godot" / ".shots" / "move_baseline" / t
+    out = ROOT / "godot" / ".shots" / os.environ.get("MOVES_OUT", "move_baseline") / t
     out.mkdir(parents=True, exist_ok=True)
     for old in ("ticks.csv", "frames.csv", "clip.mp4", "movie.avi"):
         (out / old).unlink(missing_ok=True)
