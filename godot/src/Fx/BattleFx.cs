@@ -746,7 +746,9 @@ public partial class BattleFx : Node3D
         float body = style == 1 ? DangerFillBody : style == 3 ? 0 : AmberFillBody;
         int W = lane ? 32 : 256, H = lane ? 512 : 256;
         var data = new byte[W * H * 4];
-        System.Threading.Tasks.Parallel.For(0, H, y =>
+        // (these two loops optimised at their first call: a ring's bytes took 8.3 ms early in a run and 4.3 ms later, the
+        // same work; my reading, the first calls ran tier-0 code)
+        System.Threading.Tasks.Parallel.For(0, H, [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)] (y) =>
         {
             for (int x = 0; x < W; x++)
             {
@@ -1232,7 +1234,7 @@ public partial class BattleFx : Node3D
         // (2x + 1 - 512) / 512, exact in float, so the mirrored texel's u is exactly -u: the same bytes, a quarter of the work)
         bool quarter = (lane || ring) && w == 512 && h == 512;
         int hy = quarter ? h / 2 : h, wx = quarter ? w / 2 : w;
-        System.Threading.Tasks.Parallel.For(0, hy, y =>
+        System.Threading.Tasks.Parallel.For(0, hy, [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)] (y) =>
         {
             for (int x = 0; x < wx; x++)
             {
