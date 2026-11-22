@@ -51,6 +51,10 @@ public partial class Perf : Node
     static readonly long[] partAlloc = new long[Parts], partAllocFrom = new long[Parts];
     static bool live;
     static readonly double TickMs = 1000.0 / Stopwatch.Frequency;
+    // (P2 task 5) What the runtime spent compiling methods met for the first time on the main thread (System.Runtime.JitInfo:
+    // counters, no garbage), by frame and by part: a first-of-its-kind stall with no cost of its own is the JIT's.
+    static readonly double[] partJit = new double[Parts];
+    static readonly TimeSpan[] partJitFrom = new TimeSpan[Parts];
     /// <summary>The frame's first process callback (Start), on the stopwatch's clock.</summary>
     static long frameFrom;
 
@@ -59,6 +63,7 @@ public partial class Perf : Node
         if (!live) return;
         partFrom[(int)p] = Stopwatch.GetTimestamp();
         partAllocFrom[(int)p] = GC.GetAllocatedBytesForCurrentThread();
+        partJitFrom[(int)p] = System.Runtime.JitInfo.GetCompilationTime(true);
     }
 
     public static void End(Part p)
@@ -66,6 +71,8 @@ public partial class Perf : Node
         if (!live) return;
         partMs[(int)p] += (Stopwatch.GetTimestamp() - partFrom[(int)p]) * TickMs;
         partAlloc[(int)p] += GC.GetAllocatedBytesForCurrentThread() - partAllocFrom[(int)p];
+        partJit[(int)p] += (System.Runtime.JitInfo.GetCompilationTime(true) - partJitFrom[(int)p]).TotalMilliseconds;
+        if (queueProbe) partMarks[(int)p].CallDeferred();
     }
 
     static long lapFrom;
@@ -92,7 +99,7 @@ public partial class Perf : Node
     sealed partial class Start : Node
     {
         public override void _Ready() { ProcessPriority = int.MinValue; ProcessPhysicsPriority = int.MinValue; ProcessMode = ProcessModeEnum.Always; }
-        public override void _Process(double delta) { frameFrom = Stopwatch.GetTimestamp(); physThis = physFrom; physFrom = 0; }
+        public override void _Process(double delta) { frameFrom = Stopwatch.GetTimestamp(); physThis = physFrom; physFrom = 0; qOpen = false; }
         // (the first physics callback of the frame: where its physics steps begin, if any ran)
         public override void _PhysicsProcess(double delta) { if (physFrom == 0) physFrom = Stopwatch.GetTimestamp(); }
     }
@@ -102,11 +109,83 @@ public partial class Perf : Node
     // skeletons), the renderer's draw (frame_pre_draw to frame_post_draw) and what follows it (the swap, input).
     static long physFrom, physThis, preDraw, postDraw, lastEnd, deferAt;
     // (a deferred call queued last in the frame: the message queue's work queued before it, skeletons' poses among it, ends there)
-    static readonly Callable Deferred = Callable.From(() => deferAt = Stopwatch.GetTimestamp());
+    static readonly Callable Deferred = Callable.From(() => { deferAt = Stopwatch.GetTimestamp(); if (queueProbe) QHit("queued after the last part"); });
+
+    // --perf-queue (P2 task 5): what the stretch from the last process callback to the frame's draw (the cut's "tail": the
+    // message queue's deferred calls, canvas redraws, skeletons' poses and modifiers, then timers and tweens) is spent
+    // on. Each hook in that stretch takes the time since the hook before it for its key: a skeleton's update
+    // (skeleton_updated), a canvas item's draw, a marker queued at each part's End (what was queued before the part ended
+    // ran before it), the frame's own last marker, and the draw's start. Each window's line is followed by its costliest
+    // keys. The hooks are found by a walk of the whole tree every 5 s (a stall of its own): a probe's run, not a measure's.
+    static bool queueProbe, qOpen;
+    static long qMark;
+    static readonly Dictionary<string, (double Ms, int N)> qMs = new();
+    static Callable[] partMarks = Array.Empty<Callable>();
+    readonly HashSet<ulong> qHooked = new();
+    double nextQHook;
+
+    static void QHit(string key)
+    {
+        long now = Stopwatch.GetTimestamp();
+        if (qOpen) { var v = qMs.GetValueOrDefault(key); qMs[key] = (v.Ms + (now - qMark) * TickMs, v.N + 1); }
+        qMark = now;
+    }
+
+    /// <summary>The nearest node above `n` that is one of the game's own (a C# type of ours), by its type and name.</summary>
+    static string OwnerOf(Node n)
+    {
+        for (var a = n.GetParent(); a != null; a = a.GetParent())
+            if (a.GetType().Namespace?.StartsWith("SurvivorUnchained") == true) return $"{a.GetType().Name} '{a.Name}'";
+        return n.GetPath().ToString();
+    }
+
+    void HookQueue()
+    {
+        foreach (var n in GetTree().Root.FindChildren("*", "Skeleton3D", true, false))
+        {
+            if (!qHooked.Add(n.GetInstanceId())) continue;
+            string key = $"skeleton {n.Name} of {OwnerOf(n)}";
+            ((Skeleton3D)n).SkeletonUpdated += () => QHit(key);
+        }
+        foreach (var n in GetTree().Root.FindChildren("*", "CanvasItem", true, false))
+        {
+            if (!qHooked.Add(n.GetInstanceId())) continue;
+            var ci = (CanvasItem)n;
+            string key = $"draw of {ci.GetParent()?.Name}/{ci.Name} ({ci.GetType().Name})";
+            ci.Draw += () => QHit(key);
+        }
+    }
+
+    /// <summary>--perf-jit: the methods the main thread compiled, by name, for the frames the JIT held (the runtime's
+    /// MethodLoadVerbose events; a probe's run: the events themselves cost).</summary>
+    sealed class JitNames : System.Diagnostics.Tracing.EventListener
+    {
+        public long MainOs;
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> Names = new();
+
+        protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource source)
+        {
+            if (source.Name == "Microsoft-Windows-DotNETRuntime")
+                EnableEvents(source, System.Diagnostics.Tracing.EventLevel.Verbose, (System.Diagnostics.Tracing.EventKeywords)0x10);
+        }
+
+        protected override void OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs e)
+        {
+            if (e.EventName?.StartsWith("MethodLoadVerbose") != true || e.OSThreadId != MainOs || e.PayloadNames == null || e.Payload == null) return;
+            int ns = e.PayloadNames.IndexOf("MethodNamespace"), nm = e.PayloadNames.IndexOf("MethodName");
+            if (ns >= 0 && nm >= 0 && Names.Count < 4096) Names.Enqueue($"{e.Payload[ns]}.{e.Payload[nm]}");
+        }
+    }
+
+    JitNames? jitNames;
+    TimeSpan lastJit;
+    int lastJitN;
+    readonly List<string> jits = new();
 
     struct Frame
     {
-        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu, Tail, Queue, Draw, After, PhysW;
+        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu, Tail, Queue, Draw, After, PhysW, Jit;
+        public int JitN;
         public long Alloc, MainAlloc, Primitives;
         public int Draws, Objects, ShadowDraws, ShadowObjects, CanvasDraws, Pipelines, Gen0, Gen1, Gen2;
     }
@@ -214,6 +293,12 @@ public partial class Perf : Node
         GD.Print($"perf runtime {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, server gc {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, gc config: " +
                  string.Join(" ", GC.GetConfigurationVariables().OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}={kv.Value}")));
         if (Args.Has("perf-allocs")) allocs = new AllocSamples { MainOs = OperatingSystem.IsWindows() ? GetCurrentThreadId() : -1 };
+        if (Args.Has("perf-jit")) jitNames = new JitNames { MainOs = OperatingSystem.IsWindows() ? GetCurrentThreadId() : -1 };
+        if (Args.Has("perf-queue"))
+        {
+            partMarks = Enumerable.Range(0, Parts).Select(i => { string k = $"queued by {PartNames[i]}"; return Callable.From(() => QHit(k)); }).ToArray();
+            queueProbe = true;
+        }
         name = Args.Get("perf") is { } n && n != "1" ? n : "perf";
         warm = Args.Num("perf-warm", 8);
         span = Args.Num("perf-for", 30);
@@ -223,7 +308,7 @@ public partial class Perf : Node
         ProcessPriority = int.MaxValue;
         // (Process order is by priority across the tree, wherever the node sits.)
         AddChild(new Start());
-        RenderingServer.FramePreDraw += () => preDraw = Stopwatch.GetTimestamp();
+        RenderingServer.FramePreDraw += () => { preDraw = Stopwatch.GetTimestamp(); if (queueProbe) { QHit("to the draw's start"); qOpen = false; } };
         RenderingServer.FramePostDraw += () => postDraw = Stopwatch.GetTimestamp();
         if (!Args.Has("perf-vsync"))
         {
@@ -278,6 +363,12 @@ public partial class Perf : Node
         Deferred.CallDeferred();
         drawMark = now;
         if (Args.Has("perf-draws") && t >= nextHook) { nextHook = t + 5; HookDraws(); }
+        if (queueProbe && t >= nextQHook) { nextQHook = t + 5; HookQueue(); }
+        var jit = System.Runtime.JitInfo.GetCompilationTime(true);
+        int jitN = (int)System.Runtime.JitInfo.GetCompiledMethodCount(true);
+        double jitMs = (jit - lastJit).TotalMilliseconds;
+        int jitCount = jitN - lastJitN;
+        lastJit = jit; lastJitN = jitN;
         last = now;
         t += delta;
         Now = t;
@@ -307,6 +398,8 @@ public partial class Perf : Node
             }
             Remember(alloc, mainAlloc, g0, g1, g2, pipes);
             Array.Clear(partMs);
+            Array.Clear(partJit);
+            if (jitNames != null) while (jitNames.Names.TryDequeue(out _)) { }
             return;
         }
         var f = new Frame
@@ -315,7 +408,7 @@ public partial class Perf : Node
             Physics = Performance.GetMonitor(Performance.Monitor.TimePhysicsProcess) * 1000,
             // (the engine's process step and navigation: Godot keeps these as the worst frame of each second, not this frame)
             Proc = Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000,
-            Tail = tail, Queue = queue, Draw = draw, After = after, PhysW = physW,
+            Tail = tail, Queue = queue, Draw = draw, After = after, PhysW = physW, Jit = jitMs, JitN = jitCount,
             Nav = Performance.GetMonitor(Performance.Monitor.TimeNavigationProcess) * 1000,
             RenderCpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp),
             Setup = RenderingServer.GetFrameSetupTimeCpu(),
@@ -332,7 +425,17 @@ public partial class Perf : Node
         };
         frames.Add(f);
         parts.AddRange(partMs);
+        // A frame the JIT held: how long, how many methods, in which parts (and, --perf-jit, which methods). Told at the end.
+        if (jitMs > 2 && jits.Count < 400)
+        {
+            var named = new StringBuilder();
+            if (jitNames != null) { int k = 0; while (jitNames.Names.TryDequeue(out var mn)) if (k++ < 40) named.Append(' ').Append(mn); if (k > 40) named.Append($" (+{k - 40} more)"); }
+            jits.Add(($"{t:0.00}s frame {ms:0.0} ms (main {main:0.0}): jit {jitMs:0.0} ms, {jitCount} methods; by part: " +
+                $"{string.Join(" ", Enumerable.Range(0, Parts).Where(i => partJit[i] > 0.2).Select(i => $"{PartNames[i]} {partJit[i]:0.0}"))};{named}"));
+        }
+        else if (jitNames != null) while (jitNames.Names.TryDequeue(out _)) { }
         Array.Clear(partMs);
+        Array.Clear(partJit);
         Counters(counters);
         extras.AddRange(counters);
         Remember(alloc, mainAlloc, g0, g1, g2, pipes);
@@ -344,10 +447,18 @@ public partial class Perf : Node
         {
             nextWindow += window;
             var line = $"[{t,6:0.0}s] {Summary(windowFrom, frames.Count)} | {Note()}";
+            int windowN = frames.Count - windowFrom;
             windowFrom = frames.Count;
             windows.Add(line);
             GD.Print($"perf {line}");
+            if (queueProbe)
+            {
+                GD.Print(($"perf queue [{t,6:0.0}s] ms/frame (calls/frame): " +
+                    string.Join("; ", qMs.OrderByDescending(kv => kv.Value.Ms).Take(12).Select(kv => $"{kv.Key} {kv.Value.Ms / Math.Max(1, windowN):0.000} ({(double)kv.Value.N / Math.Max(1, windowN):0.0})"))));
+                qMs.Clear();
+            }
         }
+        if (queueProbe) { qMark = Stopwatch.GetTimestamp(); qOpen = true; }
         if (t >= warm + span || Done()) Finish();
     }
 
@@ -479,6 +590,10 @@ public partial class Perf : Node
             foreach (var (dk, dv) in drawMs.OrderByDescending(kv => kv.Value).Take(25))
                 GD.Print($"perf draws {dv / Math.Max(1, frames.Count):0.000} ms/frame {dk}");
         live = false;
+        queueProbe = false;
+        foreach (var jl in jits) GD.Print($"perf jit {jl}");
+        GD.Print(($"perf {name} jit on the main thread while recording: {frames.Sum(x => x.Jit):0} ms, {frames.Sum(x => x.JitN)} methods, {jits.Count} frames it held over 2 ms"));
+        jitNames?.Dispose();
         if (allocs != null)
         {
             allocs.Counting = false;
@@ -566,14 +681,14 @@ public partial class Perf : Node
         j.Append("}\n");
         using (var f = FileAccess.Open($"{dir}/{name}.json", FileAccess.ModeFlags.Write)) f?.StoreString(j.ToString());
 
-        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines,tail,queue,draw,after,phys_wall");
+        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines,tail,queue,draw,after,phys_wall,jit,jit_n");
         foreach (var p in PartNames) c.Append(',').Append(p);
         foreach (var e in extraNames) c.Append(',').Append(e);
         c.Append('\n');
         for (int fi = 0; fi < frames.Count; fi++)
         {
             var x = frames[fi];
-            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines},{x.Tail:0.000},{x.Queue:0.000},{x.Draw:0.000},{x.After:0.000},{x.PhysW:0.000}"));
+            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines},{x.Tail:0.000},{x.Queue:0.000},{x.Draw:0.000},{x.After:0.000},{x.PhysW:0.000},{x.Jit:0.000},{x.JitN}"));
             for (int i = 0; i < Parts; i++) c.Append(',').Append(parts[fi * Parts + i].ToString("0.###", inv));
             for (int i = 0; i < k; i++) c.Append(',').Append(extras[fi * k + i].ToString("0.##", inv));
             c.Append('\n');

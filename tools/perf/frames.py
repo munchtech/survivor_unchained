@@ -48,6 +48,9 @@ def cause(r):
         tags.append("gc" + "".join(g for g, k in (("0", "gen0"), ("1", "gen1"), ("2", "gen2")) if num(r, k)))
     if pipes:
         tags.append(f"pipes{pipes}")
+    # (session 2: the JIT's time on the main thread in this frame, where the trace has the column)
+    if r.get("jit") and float(r["jit"]) >= 1:
+        tags.append(f"jit{float(r['jit']):.1f}ms/{int(float(r.get('jit_n') or 0))}")
     return what, tags, cuts
 
 
