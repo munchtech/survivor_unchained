@@ -205,6 +205,7 @@ public partial class BattleFx : Node3D
         dashTex ??= GroundTexture(4);
         wallTex ??= GroundTexture(5);
         laneFillTex ??= GroundTexture(6);
+        if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
         {
@@ -744,6 +745,37 @@ public partial class BattleFx : Node3D
         float body = style == 1 ? DangerFillBody : style == 3 ? 0 : AmberFillBody;
         int W = lane ? 32 : 256, H = lane ? 512 : 256;
         var data = new byte[W * H * 4];
+        System.Threading.Tasks.Parallel.For(0, H, y =>
+        {
+            for (int x = 0; x < W; x++)
+            {
+                float u = (x + 0.5f) / W * 2 - 1, v = (y + 0.5f) / H * 2 - 1, dm, lat;
+                if (lane) { dm = (1 - Mathf.Abs(v)) * S / 2; lat = Mathf.Clamp((0.86f - Mathf.Abs(u)) / 0.04f, 0, 1); }
+                else { dm = (0.97f - Mathf.Sqrt(u * u + v * v)) * S; lat = 1; }
+                float a = 0;
+                if (dm > 0)
+                {
+                    float f = tail > 0
+                        ? Mathf.Lerp(1, 0.5f * Mathf.Pow(1 - Mathf.Clamp((dm - front) / tail, 0, 1), 2), Mathf.SmoothStep(front * 0.5f, front * 1.5f, dm))
+                        : 1 - Mathf.SmoothStep(0.05f, front + 0.02f, dm);
+                    a = Mathf.Clamp(dm / 0.012f, 0, 1) * lat * Mathf.Max(f, body);
+                }
+                byte g = (byte)Mathf.RoundToInt(Mathf.Pow(Mathf.Clamp(a, 0, 1), 1 / 2.2f) * 255);
+                int o = (y * W + x) * 4;
+                data[o] = data[o + 1] = data[o + 2] = g; data[o + 3] = 255;
+            }
+        });
+        return fillTex[(lane, style, b)] = ImageTexture.CreateFromImage(Image.CreateFromData(W, H, false, Image.Format.Rgba8, data));
+    }
+
+    static byte[] FillRef(bool lane, int style, int b)
+    {
+        float S = Mathf.Pow(2, b / 2f);
+        float front = style == 1 ? DangerFrontM : style == 3 ? RaiseFrontM : AmberFrontM;
+        float tail = style == 1 ? 0 : style == 3 ? RaiseTailM : AmberTailM;
+        float body = style == 1 ? DangerFillBody : style == 3 ? 0 : AmberFillBody;
+        int W = lane ? 32 : 256, H = lane ? 512 : 256;
+        var data = new byte[W * H * 4];
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
             {
@@ -762,7 +794,7 @@ public partial class BattleFx : Node3D
                 int o = (y * W + x) * 4;
                 data[o] = data[o + 1] = data[o + 2] = g; data[o + 3] = 255;
             }
-        return fillTex[(lane, style, b)] = ImageTexture.CreateFromImage(Image.CreateFromData(W, H, false, Image.Format.Rgba8, data));
+        return data;
     }
 
     static Shader? overShader;
@@ -1142,9 +1174,113 @@ public partial class BattleFx : Node3D
     /// in metres, so a big ring's rim is as crisp as a small one's).</summary>
     (Texture2D, Texture2D) DangerOf(Texture2D tex, int style, float radius = 1)
     {
-        bool lane = tex == laneTex, ring = tex == ringTex;
+        bool ring = tex == ringTex;
         int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
         if (dangerTex.TryGetValue((tex, style, bucket), out var t)) return t;
+        var (alb, em) = DangerImages(tex, style, bucket);
+        return dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+    }
+
+    /// <summary>Image.SetPixel's float to byte for RGBA8 (Godot 4.5: uint8_t(CLAMP(c * 255.0, 0, 255)), truncating).</summary>
+    static byte Px(float c) => (byte)Math.Clamp(c * 255.0, 0.0, 255.0);
+
+    /// <summary>DangerOfRef's pixels, built in bytes, rows in parallel (no Godot object inside the loop): the same math,
+    /// the same float to byte. (P2 task 5: the SetPixel loop was 23-42 ms on the main thread.)</summary>
+    (Image, Image) DangerImages(Texture2D tex, int style, int bucket)
+    {
+        bool lane = tex == laneTex, ring = tex == ringTex;
+        bool danger = style == 1;
+        var src = tex.GetImage();
+        int w = lane || ring ? 512 : src.GetWidth(), h = lane || ring ? 512 : src.GetHeight();
+        byte[]? sa = null;
+        if (!lane && !ring)
+        {
+            if (src.GetFormat() != Image.Format.Rgba8) { if (src.IsCompressed()) src.Decompress(); src.Convert(Image.Format.Rgba8); }
+            sa = src.GetData();
+        }
+        var emB = new byte[w * h * 4];
+        var albB = new byte[w * h * 4];
+        var hot = danger ? new Color(RankBoss.Color) : CrowdHue;
+        var bed = danger ? Palette.TeleDangerGround : CrowdBed;
+        float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
+        float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
+        byte bedR = Px(bed.R), bedG = Px(bed.G), bedB = Px(bed.B);
+        System.Threading.Tasks.Parallel.For(0, h, y =>
+        {
+            for (int x = 0; x < w; x++)
+            {
+                float a, cover;
+                float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1;
+                if (lane)
+                {
+                    float e = Mathf.Abs(u), d = Mathf.Abs(e - 0.9f);
+                    float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1);
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), (danger ? 0.5f : 0.3f) * Mathf.Exp(-d / (danger ? 0.05f : 0.028f)));
+                    float inner = danger ? DangerBedGlow + 0.45f * Mathf.Pow(Mathf.SmoothStep(0.55f, 0.9f, e), 2) : glowIn + 0.04f * e * e;
+                    a = Mathf.Max(edge, e < 0.9f ? inner : 0) * ends;
+                    cover = (e < 0.9f ? inside + (1 - inside) * Mathf.SmoothStep(0.6f, 0.9f, e) : Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1)) * ends;
+                }
+                else if (ring)
+                {
+                    float r = Mathf.Sqrt(u * u + v * v), d = r - 0.93f;
+                    float rim = Mathf.Clamp(1 - Mathf.Max(Mathf.Abs(d) - core, 0) / (core * 0.6f + 0.003f), 0, 1);
+                    float fall = d < 0 ? 0.35f * Mathf.Exp(d / (core * 4 + 0.01f)) : 0.25f * Mathf.Exp(-d / (core * 1.2f + 0.004f));
+                    float inner = danger ? DangerBedGlow + 0.4f * Mathf.Pow(Mathf.SmoothStep(0.6f, 0.93f, r), 2) : glowIn * 0.8f;
+                    a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? inner : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
+                    cover = r < 0.93f ? inside : rim;
+                }
+                else
+                {
+                    float s = (float)(sa![(y * w + x) * 4 + 3] / 255.0);
+                    cover = Mathf.Clamp(s * 2.2f, 0, 1) * (danger ? 0.85f : 0.5f);
+                    a = Mathf.Max(s * s, Mathf.Min(s, danger ? 0.06f : 0.12f));
+                }
+                a = Mathf.Clamp(a, 0, 1);
+                float al = Mathf.Pow(a, 1 / 2.2f);
+                int o = (y * w + x) * 4;
+                emB[o] = Px(hot.R * al); emB[o + 1] = Px(hot.G * al); emB[o + 2] = Px(hot.B * al); emB[o + 3] = 255;
+                albB[o] = bedR; albB[o + 1] = bedG; albB[o + 2] = bedB; albB[o + 3] = Px(Mathf.Clamp(cover, 0, 1));
+            }
+        });
+        return (Image.CreateFromData(w, h, false, Image.Format.Rgba8, albB), Image.CreateFromData(w, h, false, Image.Format.Rgba8, emB));
+    }
+
+    /// <summary>--fx-tex-check: every texture DangerOf/FillTex build, the new bytes against the old SetPixel/serial ones.</summary>
+    void TexCheck()
+    {
+        int n = 0, diff = 0, maxd = 0; var firsts = new List<string>();
+        void Cmp(string name, byte[] o, byte[] nw)
+        {
+            n++;
+            if (o.Length != nw.Length) { diff++; if (firsts.Count < 5) firsts.Add($"{name} length {o.Length} vs {nw.Length}"); return; }
+            for (int i = 0; i < o.Length; i++)
+                if (o[i] != nw[i]) { diff++; maxd = Math.Max(maxd, Math.Abs(o[i] - nw[i])); if (firsts.Count < 5) firsts.Add($"{name} [{i}] old {o[i]} new {nw[i]}"); }
+        }
+        var texes = new (string, Texture2D)[] { ("ring", ringTex!), ("disc", discTex!), ("lane", laneTex!), ("hatch", hatchTex!), ("dash", dashTex!), ("wall", wallTex!), ("laneFill", laneFillTex!), ("glow", glowTex!), ("cone60", ConeTexture(60)), ("band50", BandTexture(50)) };
+        foreach (var (nm, tex) in texes)
+            for (int style = 1; style <= 3; style++)
+                for (int bk = tex == ringTex ? -4 : 0; bk <= (tex == ringTex ? 10 : 0); bk++)
+                {
+                    float radius = Mathf.Pow(2, bk / 2f);
+                    var (oa, oe) = DangerOfRef(tex, style, radius);
+                    var (na, ne) = DangerImages(tex, style, bk);
+                    Cmp($"{nm} s{style} b{bk} alb", oa.GetData(), na.GetData());
+                    Cmp($"{nm} s{style} b{bk} em", oe.GetData(), ne.GetData());
+                }
+        foreach (var lane in new[] { true, false })
+            for (int style = 1; style <= 3; style++)
+                for (int b = -6; b <= 12; b++)
+                    Cmp($"fill {(lane ? "lane" : "disc")} s{style} b{b}", FillRef(lane, style, b), MakeFillTex(lane, style, b).GetImage().GetData());
+        GD.Print($"fx-tex-check: {n} variants, {diff} differing bytes, max diff {maxd}");
+        foreach (var f in firsts) GD.Print("  " + f);
+        GetTree().Quit();
+    }
+
+    /// <summary>The old SetPixel build, kept for --fx-tex-check only.</summary>
+    (Image, Image) DangerOfRef(Texture2D tex, int style, float radius = 1)
+    {
+        bool lane = tex == laneTex, ring = tex == ringTex;
+        int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
         bool danger = style == 1;
         var src = tex.GetImage();
         int w = lane || ring ? 512 : src.GetWidth(), h = lane || ring ? 512 : src.GetHeight();
@@ -1198,7 +1334,7 @@ public partial class BattleFx : Node3D
                 em.SetPixel(x, y, new Color(hot.R * al, hot.G * al, hot.B * al, 1));
                 alb.SetPixel(x, y, new Color(bed.R, bed.G, bed.B, Mathf.Clamp(cover, 0, 1)));
             }
-        return dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        return (alb, em);
     }
 
     /// <summary>A cone pointing along the texture's v, apex at the centre, `arc` degrees wide.</summary>

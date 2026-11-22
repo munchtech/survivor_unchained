@@ -99,6 +99,7 @@ public partial class FlareFx : Node3D
 
     public override void _Ready()
     {
+        _ = Content.FlareFamily.StopOf("", "warden", false, false);   // (P2 task 5) flare_family.json is parsed on first use: 14-15 ms at the first Flare press; read here, behind the load
         AddChild(scars);
         AddChild(bed);
         AddChild(glow);
