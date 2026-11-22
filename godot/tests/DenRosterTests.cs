@@ -62,6 +62,29 @@ public class DenRosterTests
         Assert.True(seen > 0);
     }
 
+    /// <summary>(P3 session 2) A recipe pack wakes as one: Battle.Rouse wakes only a foe's own people, and a recipe mixes the Pack's
+    /// wolves with the wild boars (measured 22 Nov: its boars woke late and came in behind the wolves).</summary>
+    [Fact]
+    public void A_recipe_pack_wakes_as_one_though_its_boars_are_another_people()
+    {
+        int mixed = 0;
+        for (int seed = 1; seed <= 4; seed++)
+        {
+            var r = Den(seed);
+            foreach (var (recipe, _, members) in r.Zone.PackLives)
+            {
+                var live = members.Where(m => m.E.Alive && m.E.Seed == m.Seed).Select(m => m.E).ToList();
+                if (live.Select(e => e.Faction).Distinct().Count() < 2 || live.Any(e => e.Roused)) continue;
+                mixed++;
+                r.B.Rouse(live.First(e => e.Faction == Faction.Pack));
+                Assert.Contains(live, e => !e.Roused);   // the battle's own rouse leaves the other people asleep
+                r.Zone.Step(1 / 60.0);
+                Assert.All(live, e => Assert.True(e.Roused, $"seed {seed} {recipe}: {e.Def.Id} slept on"));
+            }
+        }
+        Assert.True(mixed > 0, "no mixed recipe pack met");
+    }
+
     [Fact]
     public void Over_six_dens_every_kind_of_the_roster_is_fielded()
     {
