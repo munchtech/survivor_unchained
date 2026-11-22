@@ -26,7 +26,7 @@ public static class LevelCardPlace
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
     /// from this too, so card and seat cannot drift).</summary>
-    public static Act CapAct(int slot) => KeyMap.Skills[KeyMap.SeatSlot[KeyMap.SeatOf(slot)]];
+    public static Act CapAct(int slot) => KeyMap.SeatOf(slot) is int seat and >= 0 ? KeyMap.Skills[KeyMap.SeatSlot[seat]] : KeyMap.Skills[Math.Clamp(slot, 0, KeyMap.Skills.Length - 1)];   // (the fifth key has no seat until the HUD is redrawn)
 
     /// <summary>The card's left x, top y, the tail's x (card space; the card's own centre when no target) and its length
     /// below the card (0 when the target is not below it).</summary>
