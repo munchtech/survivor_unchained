@@ -30,6 +30,10 @@ public static class DenCause
         /// <summary>A first area blow that was a leap: the aim's distance from the pack's middle at takeoff, how far that middle
         /// moved while she was in the air, and the landing against the middle and the front along her line (+ = past it).</summary>
         public bool Leap; public double AimOff, MidMoved, PastMid, PastFront;
+        /// <summary>Her first landing after the wake, whether or not it caught any of the pack: the share of its live melee members
+        /// inside AreaR of it (0: none), the nearest member's edge distance, the aim's distance from the pack's middle at takeoff,
+        /// how far the middle moved in the air, and the leap's length.</summary>
+        public double Land1 = -1, Land1Near, Land1Aim, Land1Moved, Land1Len, Land1Off;
     }
 
     static double D(double x, double z, double x1, double z1) => Math.Sqrt((x - x1) * (x - x1) + (z - z1) * (z - z1));
@@ -60,7 +64,7 @@ public static class DenCause
     }
 
     /// <summary>One step of a woken pack with a live melee member.</summary>
-    public static void Step(Row r, double t, double woke, List<Enemy> melee, PlayerState p, IReadOnlyList<CombatEvent> evs, bool anyDeath)
+    public static void Step(Row r, double t, double woke, List<Enemy> melee, PlayerState p, IReadOnlyList<CombatEvent> evs, bool anyDeath, List<Enemy>? fell = null)
     {
         if (!r.Wake.Set)
         {
@@ -89,6 +93,18 @@ public static class DenCause
             double best = BestCircle(melee);
             if (best > r.PeakBest) { r.PeakBest = best; r.PeakBestAt = t - woke; }
         }
+        foreach (var ev in evs)
+            if (ev is Ev.Leap { Phase: LeapPhase.Land } ld && r.Takeoff is { } tk && r.Land1 < 0)
+            {
+                // The pack as it stood when she landed: the members the landing felled are counted.
+                var at = fell == null || fell.Count == 0 ? melee : melee.Concat(fell).ToList();
+                r.Land1 = (double)at.Count(e => D(e.X, e.Z, ld.X1, ld.Z1) < DenFeel.AreaR + e.Radius) / at.Count;
+                r.Land1Near = at.Min(e => D(e.X, e.Z, ld.X1, ld.Z1) - e.Radius);
+                r.Land1Off = D(ld.X1, ld.Z1, at.Average(e => e.X), at.Average(e => e.Z));
+                r.Land1Aim = D(ld.X1, ld.Z1, tk.MidX, tk.MidZ);
+                r.Land1Moved = D(melee.Average(e => e.X), melee.Average(e => e.Z), tk.MidX, tk.MidZ);
+                r.Land1Len = D(ld.X0, ld.Z0, ld.X1, ld.Z1);
+            }
         foreach (var ev in evs)
             if (ev is Ev.Leap { Phase: LeapPhase.Takeoff } lp)
                 r.Takeoff = (lp.X0, lp.Z0, lp.X1, lp.Z1, melee.Average(e => e.X), melee.Average(e => e.Z));
@@ -129,9 +145,9 @@ public static class DenCause
         {
             var all = g0.SelectMany(r => r.Packs).Where(p => p.C.Wake.Set).ToList();
             groups.Add((g0.Key, all));
-            if (!g0.Key.EndsWith("+open")) continue;
-            groups.Add((g0.Key + ", opened with Leap", all.Where(p => p.Opener == 'L' && p.Inside >= 0).ToList()));
-            groups.Add((g0.Key + ", opened with Bladestorm", all.Where(p => p.Opener == 'S' && p.Inside >= 0).ToList()));
+            if (!g0.Key.EndsWith("+open") && !g0.Key.EndsWith("+lead")) continue;
+            groups.Add((g0.Key + ", opened with Leap", all.Where(p => p.Opener == 'L' && (p.Inside >= 0 || p.InsideAll >= 0 || p.C.Land1 >= 0)).ToList()));
+            groups.Add((g0.Key + ", opened with Bladestorm", all.Where(p => p.Opener == 'S' && (p.Inside >= 0 || p.InsideAll >= 0)).ToList()));
         }
         foreach (var g in groups)
         {
@@ -161,6 +177,8 @@ public static class DenCause
             sb.AppendLine($"Best 3.5 m circle anywhere, at its peak before the first death: p50 {Q(ps.Select(p => p.C.PeakBest), .5):0.00} (packs >=50%: {Pct(ps.Select(p => p.C.PeakBest >= 0.5))}), {Q3(ps.Select(p => p.C.PeakBestAt))} s after the wake.");
             var lp = ps.Where(p => p.C.Leap).ToList();
             sb.AppendLine($"Leap as the first area blow ({lp.Count}): aim to the pack's middle at takeoff {Q3(lp.Select(p => p.C.AimOff))} m; the middle moved while she was in the air {Q3(lp.Select(p => p.C.MidMoved))} m; landing past the middle along her line {Q3(lp.Select(p => p.C.PastMid))} m (minus = short of it); landing past the front {Q3(lp.Select(p => p.C.PastFront))} m; landed beyond the front by more than 3.5 m in {Pct(lp.Select(p => p.C.PastFront > DenFeel.AreaR))}.");
+            var l1 = ps.Where(p => p.C.Land1 >= 0 && (!g.Key.Contains("opened with") || p.Opener == 'L')).ToList();
+            sb.AppendLine($"Her first landing after the wake, a miss counted as 0, the felled counted ({l1.Count}): share inside {Q3(l1.Select(p => p.C.Land1))} (as .0: {Q(l1.Select(p => p.C.Land1), .25):0.00}/{Q(l1.Select(p => p.C.Land1), .5):0.00}/{Q(l1.Select(p => p.C.Land1), .75):0.00}), packs >=50%: {Pct(l1.Select(p => p.C.Land1 >= 0.5))}, caught none: {Pct(l1.Select(p => p.C.Land1 == 0))}; nearest member to the landing {Q3(l1.Select(p => p.C.Land1Near))} m; landing off the middle at takeoff {Q3(l1.Select(p => p.C.Land1Aim))} m; middle moved in the air {Q3(l1.Select(p => p.C.Land1Moved))} m; leap length {Q3(l1.Select(p => p.C.Land1Len))} m; landing off the pack's middle as she lands {Q3(l1.Select(p => p.C.Land1Off))} m.");
             sb.AppendLine("Run-in by kind (wake to inside 3.5 m of her): | kind | n | came in, s after wake p25/p50/p75 | closing speed m/s p50 | ground speed m/s p50 |");
             foreach (var k in ps.SelectMany(p => p.C.Arrived).GroupBy(a => a.Def).OrderBy(k => k.Key))
                 sb.AppendLine($"| {k.Key} | {k.Count()} | {Q3(k.Select(a => a.At))} | {Q(k.Select(a => a.Close), .5):0.0} | {Q(k.Select(a => a.Ground), .5):0.0} |");

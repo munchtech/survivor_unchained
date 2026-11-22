@@ -24,6 +24,10 @@ public static class DenFeel
         public bool Killed;
         /// <summary>Share of its live melee members within AreaR of the first area blow that reached any of it (-1: none did).</summary>
         public double Inside = -1;
+        /// <summary>(den first blow, 22 Nov) The same share over the pack as it stood when the blow landed: the members the blow
+        /// itself felled are counted (Inside drops them from the pack and from the count, so a landing that kills what it
+        /// catches reads as catching little or nothing). Fell1: the melee members that fell on that step. KindAll: 'L' / 'S'.</summary>
+        public double InsideAll = -1; public int Fell1; public char KindAll = '-';
         /// <summary>(diagnostic) The first area blow's kind ('L' leap, 'S' spin), its seconds after the wake, and the best share any area blow caught.</summary>
         public char FirstKind = '-'; public double FirstLag = -1, Best = -1;
         /// <summary>The most of the pack that fell inside one Window (a share of its size).</summary>
@@ -62,16 +66,22 @@ public static class DenFeel
     /// <summary>`opener` (measuring only, the coordinator 22 Nov): before the bot's hands act, a fresh roused pack (none of it hit or
     /// fallen) is opened with Heroic Leap at its melee's middle when that is within LeapAt m and none of it is yet in her
     /// reach, else with Bladestorm once one of it is inside AreaR of her. The default bots and the shipped plan are untouched.</summary>
-    public static Run Play(MapRunSpec spec, bool opener = false)
+    /// <summary>`lead` (measuring only, the coordinator 22 Nov): the opener, but its Leap aims where the pack's middle will be when
+    /// she lands (its middle's speed over LeapAir s), as a player leading with the cursor would: it separates "the pack cannot
+    /// be caught" from "the bot aims late". Her skill is untouched.</summary>
+    public const double LeapAir = 0.62;
+    public static Run Play(MapRunSpec spec, bool opener = false, bool lead = false)
     {
-        var run = new Run { Label = spec.Bot + (opener ? "+open" : "") };
+        var run = new Run { Label = spec.Bot + (lead ? "+lead" : opener ? "+open" : "") };
+        var last = new Dictionary<object, (double X, double Z, double T)>();
+        var vel = new Dictionary<object, (double X, double Z)>();
         MapRun? zone = null;
         var rows = new Dictionary<object, PackRow>();
         var dead = new HashSet<(Enemy, double)>();
         var lanes = new List<double>();
         bool spinning = false;
         MapSim.ZoneTap = z => zone = z;
-        if (opener) MapSim.PreAct = b =>
+        if (opener || lead) MapSim.PreAct = b =>
         {
             var p = b.Player;
             if (zone == null || !p.Alive || p.Leap != null || b.Weapons.Any(w => w.Channeling)) return;
@@ -85,7 +95,9 @@ public static class DenFeel
                 double cx = melee.Average(e => e.X), cz = melee.Average(e => e.Z);
                 double near = melee.Min(e => Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) - e.Radius);
                 double mid = Math.Sqrt((cx - p.X) * (cx - p.X) + (cz - p.Z) * (cz - p.Z));
-                if (leap != null && leap.Timer <= 0 && mid <= LeapAt && near > 2.5 && b.PressSkill(leap.Slot, cx, cz)) { run.Opened++; if (rows.TryGetValue(members, out var ro)) ro.Opener = 'L'; return; }
+                double ax = cx, az = cz;
+                if (lead && vel.TryGetValue(members, out var v)) { ax += v.X * LeapAir; az += v.Z * LeapAir; mid = Math.Sqrt((ax - p.X) * (ax - p.X) + (az - p.Z) * (az - p.Z)); }
+                if (leap != null && leap.Timer <= 0 && mid <= LeapAt && (!lead || mid >= 3) && near > 2.5 && b.PressSkill(leap.Slot, ax, az)) { run.Opened++; if (rows.TryGetValue(members, out var ro)) ro.Opener = 'L'; return; }
                 if (storm != null && storm.Timer <= 0 && near < AreaR && b.PressSkill(storm.Slot, p.X, p.Z)) { run.Opened++; if (rows.TryGetValue(members, out var ro)) ro.Opener = 'S'; return; }
             }
         };
@@ -104,6 +116,7 @@ public static class DenFeel
                 if (!rows.TryGetValue(members, out var row)) rows[members] = row = new PackRow { Recipe = recipe, Grade = grade, Size = members.Count };
                 if (row.Killed) continue;
                 bool anyLive = false;
+                var fell = new List<Enemy>();
                 foreach (var m in members)
                 {
                     bool live = m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying;
@@ -113,17 +126,34 @@ public static class DenFeel
                         if (row.Woke < 0 && m.E.Roused) { row.Woke = t; row.Walled = b.Collision.Raycast(p.X, p.Z, m.E.HomeX, m.E.HomeZ, 0.3) != null; }
                         if (row.FirstHit < 0 && m.E.Hp < m.E.MaxHp) row.FirstHit = t;
                     }
-                    else if (dead.Add((m.E, m.Seed))) row.Deaths.Add(t);
+                    else if (dead.Add((m.E, m.Seed))) { row.Deaths.Add(t); if (m.E.Seed == m.Seed && Melee(m.E.Def)) fell.Add(m.E); }
                 }
                 if (row.Woke >= 0 && anyLive)
                 {
                     var ml = members.Where(m => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying && Melee(m.E.Def)).Select(m => m.E).ToList();
-                    if (ml.Count > 0) DenCause.Step(row.C, t, row.Woke, ml, p, evs, row.Deaths.Count > 0);
+                    if (ml.Count > 0)
+                    {
+                        DenCause.Step(row.C, t, row.Woke, ml, p, evs, row.Deaths.Count > 0, fell);
+                        // The middle's speed (smoothed), for the lead-aim opener.
+                        double mx = ml.Average(e => e.X), mz = ml.Average(e => e.Z);
+                        if (last.TryGetValue(members, out var q) && t > q.T)
+                        {
+                            double vx = (mx - q.X) / (t - q.T), vz = (mz - q.Z) / (t - q.T);
+                            vel[members] = vel.TryGetValue(members, out var v0) ? (v0.X * 0.75 + vx * 0.25, v0.Z * 0.75 + vz * 0.25) : (vx, vz);
+                        }
+                        last[members] = (mx, mz, t);
+                    }
                 }
-                if (areas.Count > 0 && anyLive)
+                if (areas.Count > 0 && (anyLive || fell.Count > 0))
                     foreach (var a in areas)
                     {
                         var melee = members.Where(m => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying && Melee(m.E.Def)).ToList();
+                        if (row.InsideAll < 0 && melee.Count + fell.Count > 0)
+                        {
+                            int inAll = melee.Count(m => Math.Sqrt((m.E.X - a.X) * (m.E.X - a.X) + (m.E.Z - a.Z) * (m.E.Z - a.Z)) < AreaR + m.E.Radius)
+                                + fell.Count(e => Math.Sqrt((e.X - a.X) * (e.X - a.X) + (e.Z - a.Z) * (e.Z - a.Z)) < AreaR + e.Radius);
+                            if (inAll > 0) { row.InsideAll = (double)inAll / (melee.Count + fell.Count); row.Fell1 = fell.Count; row.KindAll = a.K; }
+                        }
                         if (melee.Count == 0) break;
                         int inR = melee.Count(m => Math.Sqrt((m.E.X - a.X) * (m.E.X - a.X) + (m.E.Z - a.Z) * (m.E.Z - a.Z)) < AreaR + m.E.Radius);
                         if (inR == 0) continue;
@@ -224,7 +254,14 @@ public static class DenFeel
             var ps = runs.SelectMany(r => r.Packs).Where(p => p.Inside >= 0).ToList();
             sb.AppendLine($"peak crowd inside 3.5 m of her before the first death p50 {Q(ps.Where(p => p.Peak >= 0).Select(p => p.Peak), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Peak >= 0.5) / Math.Max(1, ps.Count):0}%); members already hit by the first area blow p50 {Q(ps.Select(p => p.HitBefore), .5):0.00}; packs with a death before the first area blow {100.0 * ps.Count(p => p.Deaths.Count > 0 && p.Deaths.Min() < p.Woke + p.FirstLag) / Math.Max(1, ps.Count):0}%");
         }
-        foreach (var g in runs.Where(r => r.Label.EndsWith("+open")).GroupBy(r => r.Label).OrderBy(g => g.Key))
+        sb.AppendLine("Counting the members the blow itself felled (the pack as it stood when the blow landed; `Inside` above drops them):");
+        foreach (var g in runs.GroupBy(r => r.Label).OrderBy(g => g.Key))
+        {
+            var ps = g.SelectMany(r => r.Packs).Where(p => p.InsideAll >= 0).ToList();
+            string line(IEnumerable<PackRow> q0) { var q = q0.ToList(); return $"p50 {Q(q.Select(p => p.InsideAll), .5):0.00} (>=50%: {100.0 * q.Count(p => p.InsideAll >= 0.5) / Math.Max(1, q.Count):0}%, n {q.Count})"; }
+            sb.AppendLine($"FELLED {g.Key}: first area blow {line(ps)}; if leap {line(ps.Where(p => p.KindAll == 'L'))}; if spin {line(ps.Where(p => p.KindAll == 'S'))}; fell on that step mean {ps.Select(p => (double)p.Fell1).DefaultIfEmpty().Average():0.00} (if leap {ps.Where(p => p.KindAll == 'L').Select(p => (double)p.Fell1).DefaultIfEmpty().Average():0.00}); opened with leap {line(ps.Where(p => p.Opener == 'L'))}; opened with spin {line(ps.Where(p => p.Opener == 'S'))}");
+        }
+        foreach (var g in runs.Where(r => r.Label.EndsWith("+open") || r.Label.EndsWith("+lead")).GroupBy(r => r.Label).OrderBy(g => g.Key))
         {
             var op = g.SelectMany(r => r.Packs).Where(p => p.Opener != '-' && p.Inside >= 0).ToList();
             sb.AppendLine($"{g.Key}: packs opened {op.Count} of {g.SelectMany(r => r.Packs).Count()} (leap {op.Count(p => p.Opener == 'L')}, spin {op.Count(p => p.Opener == 'S')}); of those, inside 3.5 m at the first landing p50 {Q(op.Select(p => p.Inside), .5):0.00} (>=50%: {100.0 * op.Count(p => p.Inside >= 0.5) / Math.Max(1, op.Count):0}%); leap-opened p50 {Q(op.Where(p => p.Opener == 'L').Select(p => p.Inside), .5):0.00} (>=50%: {100.0 * op.Count(p => p.Opener == 'L' && p.Inside >= 0.5) / Math.Max(1, op.Count(p => p.Opener == 'L')):0}%)");

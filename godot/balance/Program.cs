@@ -753,7 +753,7 @@ void Dungeons()
     Console.WriteLine(md);
 }
 
-// (P3) The den's clear feel (Harness/DenFeel.cs): [--opener: each run again with the opener variant, measuring only] --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
+// (P3) The den's clear feel (Harness/DenFeel.cs): [--opener: each run again with the opener variant, measuring only] [--lead: and again with the opener's Leap aimed where the pack's middle will be as she lands] --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
 void DenFeelRuns()
 {
     var id = opt.Get("dungeon", "hollow");
@@ -767,7 +767,7 @@ void DenFeelRuns()
     var sw = Stopwatch.StartNew();
     Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 12) }, spec =>
     {
-        try { results.Add(DenFeel.Play(spec)); if (opt.Has("opener")) results.Add(DenFeel.Play(spec, opener: true)); }
+        try { results.Add(DenFeel.Play(spec)); if (opt.Has("opener")) results.Add(DenFeel.Play(spec, opener: true)); if (opt.Has("lead")) results.Add(DenFeel.Play(spec, opener: true, lead: true)); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
     });
     Console.Error.WriteLine($"{specs.Count} den runs in {sw.Elapsed:mm\\:ss}");
