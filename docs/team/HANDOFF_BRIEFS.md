@@ -91,7 +91,7 @@ graph, stop and bring the evidence first: no rebuild before its central assumpti
 Deliverable: the branch, a before/after table for all 12 shots on both inputs, and a short film per shot.
 ```
 
-## P3. Den roster re-cut (Opus lead, two sessions; needs the owner's approval of the page)
+## P3. Den roster re-cut (Opus lead, two sessions; the page is approved: the owner, 22 Nov, "I approve den roster")
 
 ```
 Goal: clearing the den is fun. The owner: "the way the mobs are now is too derivative of when we were a
@@ -170,20 +170,26 @@ Pass: after playing, the owner can say what happened in the den's story beat and
 Stop: if the built beat does not land, rewrite it once. Do not rebuild the system.
 ```
 
-## P7. Gear on body B (in the Marionette session; already running)
+## P7. Body and gear (owned by the Marionette session; already running, do not start it elsewhere)
 
 ```
-Body B stays. The simple-body test (worktree C:\Users\munch\Desktop\Marionette_body0, branch body0-1) stopped
-at gate 1 on the owner's verdict on 22 Nov, given in the Marionette session. Do not restart it.
-Paste this only to continue the gear work in a new session there. Repo: C:\Users\munch\Desktop\Marionette
-(read its HANDOFF.md "Start here" first). The body test's state, kept for its measuring method:
-C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body0\STATE.md
-Spec: the game repo's docs/team/GAME_PLAN.md decision 14 (closed: its fallback is now the path).
-Do: measure B herself: her named rings (bust, waist, hip, limbs) at rest, and how each ring moves over her
-clips. Build armor to those numbers. The Warden set is the first end-to-end piece: fitted with zero hand
-patches, checked over the 12 movement shots with no pokes or deformation faults, judged at the game camera
-only. The 124-bone rig is unchanged.
-Pass: the set fits with no hand patches and reads right in a 1:1 game-camera film.
+This package is owned by the Marionette session (repo C:\Users\munch\Desktop\Marionette; read its HANDOFF.md
+"Start here" and its audit state file first). Paste this only to continue it in a new session there.
+What is open, on the owner's words of 22 Nov: the body, the skeleton and the clip set are all candidates for
+replacement. "well I wasn't against completely changing our body...not trying to look the same." and "it
+might need a new skeleton and new animations.  thats the whole reason were doing these audits.  if we have a
+bad foundation we need to change it". Never write "B stays" or "the rig is fixed": neither was ruled.
+What was judged: the first test body (a low-detail copy of B) lost on looks at the game camera ("eh - b looks
+a lot better."). That is a verdict on that build, not on a new body. A new body need not look like B.
+Decided: "the face obviously no matter what dosn't need to be extensive anymore".
+Running there (that session's own report, not checked from the game side): a proving session (a new body on
+the current skeleton without helpers, in motion beside B, an engine frame, the corset carried to other body
+shapes with no refit), and the measuring of B's named rings at rest and over her clips so armor is built to
+numbers.
+Rules: report every result as measured, the lead's reading, or unknown. Show the owner a sheet early; looks
+decide, not vertex counts. Say what each piece (body, skeleton, helpers, clips) costs to keep and to replace;
+the owner picks. Judged at the game camera only. Gear is the first end-to-end route (the owner: "gear first,
+but we may be changing our body still I believe") and re-fits on whichever body wins.
 Nothing is edited or committed in the game checkout.
 ```
 
@@ -209,7 +215,7 @@ Deliverable: a page in Marionette's docs with the verdict, the breaks, and both 
 You coordinate the packages in docs/team/GAME_PLAN.md section H. You do not design: every package has a
 spec, a limit and a pass test. Read CLAUDE.md, docs/team/README.md, docs/team/RESUME.md, then the plan's
 sections A and H, and docs/team/HANDOFF_BRIEFS.md.
-Order: P1 first. Then P2 as the one critical lane, with P3 beside it once the owner has approved
+Order: P1 first. Then P2 as the one critical lane, with P3 beside it now that the owner has approved (22 Nov)
 docs/design/DEN_ROSTER.md. P4's page, P5's paint-overs and P6's pitches are paper and each stops at an
 owner's pick. P7 and P8 belong to the Marionette session: do not start them here.
 Rules: at most two build lanes at once, and only when they share no files. Count worktrees before each spawn

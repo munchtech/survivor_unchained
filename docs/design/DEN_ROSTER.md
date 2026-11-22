@@ -1,6 +1,6 @@
 # The den's roster: what it does, how the genre does it, the re-cut (21 November 2026)
 
-The owner, 21 Nov: "the way the mobs are now is too derivative of when we were a survivors roguelike.  everything just charges and it gets annoying.  clear speeds feel unfun.  its a fun effect sometimes, but its like all our stuff does over and over". Tests GAME_PLAN decision 17. Labels: **[O]** observed in code, **[D]** documented by a public source, **[I]** inference, **[R]** recommendation. Paper only: nothing built or measured.
+The owner, 21 Nov: "the way the mobs are now is too derivative of when we were a survivors roguelike.  everything just charges and it gets annoying.  clear speeds feel unfun.  its a fun effect sometimes, but its like all our stuff does over and over". Tests GAME_PLAN decision 17. Labels: **[O]** observed in code, **[D]** documented by a public source, **[I]** inference, **[R]** recommendation. Paper only: nothing built or measured. **Approved by the owner, 22 Nov: "I approve den roster".** The build is package P3 in `docs/team/HANDOFF_BRIEFS.md`.
 
 ## 1. Today (observed from code)
 
