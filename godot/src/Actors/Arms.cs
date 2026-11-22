@@ -174,6 +174,51 @@ public static class Arms
         return holder;
     }
 
+    /// <summary>--arms-check (dev; hosted by BattleFx beside --fx-tex-check): every weapon made twice, and each make's every
+    /// number (each node's name, class and transform as its bits, each mesh's vertex counts, the holder's metas) as one hash
+    /// a line. A change to Make, or to a weapon's file, shows as a changed line against an earlier run's; a second make
+    /// that differs from the first shows in the count. `full`: the numbers themselves too.</summary>
+    public static string Check(bool full = false)
+    {
+        var sb = new System.Text.StringBuilder();
+        int n = 0, differ = 0;
+        var ids = new List<string>(All.Keys);
+        ids.Sort(StringComparer.Ordinal);
+        foreach (var id in ids)
+        {
+            string a, b;
+            try { a = Numbers(Make(id)); b = Numbers(Make(id)); }
+            catch (Exception e) { sb.Append($"arms-check {id} FAILED {e.GetType().Name}\n"); continue; }
+            n++;
+            if (a != b) differ++;
+            string Sha(string s) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(s)))[..16];
+            sb.Append($"arms-check {id} first {Sha(a)} second {Sha(b)} {(a == b ? "same" : "DIFFERS")}, {a.Split('\n').Length} lines\n");
+            if (full) sb.Append(a).Append('\n');
+        }
+        sb.Append($"arms-check: {n} ids, {differ} whose second make differs from the first");
+        return sb.ToString();
+    }
+
+    static string Numbers(Node3D holder)
+    {
+        var sb = new System.Text.StringBuilder();
+        static string X(float f) => BitConverter.SingleToInt32Bits(f).ToString("x8");
+        static string V(Vector3 v) => $"{X(v.X)} {X(v.Y)} {X(v.Z)}";
+        void Walk(Node n, string path)
+        {
+            sb.Append(path).Append(' ').Append(n.GetType().Name);
+            if (n is Node3D n3) sb.Append($" {V(n3.Transform.Basis.X)} {V(n3.Transform.Basis.Y)} {V(n3.Transform.Basis.Z)} {V(n3.Transform.Origin)} vis {n3.Visible}");
+            if (n is MeshInstance3D mi && mi.Mesh != null)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++) sb.Append($" s{s}:{(mi.Mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : -1)}");
+            sb.Append('\n');
+            foreach (var c in n.GetChildren()) Walk(c, path + "/" + c.Name);
+        }
+        Walk(holder, holder.Name);
+        sb.Append($"sheath {V((Vector3)holder.GetMeta("sheath"))} tip {X((float)holder.GetMeta("tip"))} kind {(int)holder.GetMeta("kind")} anchored {holder.HasMeta("anchored")}");
+        holder.Free();
+        return sb.ToString();
+    }
+
     /// <summary>Principal axes of a point cloud, longest spread first, each
     /// signed to agree with the file axis it lies nearest.</summary>
     static (Vector3[] Axes, Vector3 Mean) Principal(List<Vector3> pts)

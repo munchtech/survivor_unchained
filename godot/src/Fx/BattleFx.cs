@@ -206,6 +206,7 @@ public partial class BattleFx : Node3D
         wallTex ??= GroundTexture(5);
         laneFillTex ??= GroundTexture(6);
         if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
+        if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));   // (dev: every weapon's make as numbers, Arms.Check)
         if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
@@ -1277,6 +1278,13 @@ public partial class BattleFx : Node3D
             }
         });
         return (Image.CreateFromData(w, h, false, Image.Format.Rgba8, albB), Image.CreateFromData(w, h, false, Image.Format.Rgba8, emB));
+    }
+
+    /// <summary>--arms-check [full]: Arms.Check's lines, then quits.</summary>
+    void ArmsCheck()
+    {
+        GD.Print(Arms.Check(Args.Get("arms-check") == "full"));
+        GetTree().Quit();
     }
 
     /// <summary>--fx-tex-check: every texture DangerOf/FillTex build, the new bytes against the old SetPixel/serial ones.</summary>
