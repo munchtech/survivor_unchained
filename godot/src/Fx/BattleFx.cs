@@ -207,6 +207,8 @@ public partial class BattleFx : Node3D
         laneFillTex ??= GroundTexture(6);
         if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
         if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));   // (dev: every weapon's make as numbers, Arms.Check)
+        if (Args.Has("glyphs-check")) Callable.From(() => { GD.Print(SurvivorUnchained.Fx.GlyphsCheck.Run(Args.Get("glyphs-check") == "full")); GetTree().Quit(); }).CallDeferred();   // (dev: glyph textures as hashes and a call's cost, GlyphsCheck)
+        if (Args.Get("glyphs-arrow") is string arrowPng) Callable.From(() => SurvivorUnchained.Fx.GlyphsCheck.Arrow(this, arrowPng)).CallDeferred();   // (dev: the edge arrows' picture)
         if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)

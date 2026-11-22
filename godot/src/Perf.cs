@@ -630,6 +630,9 @@ public partial class Perf : Node
     {
         if (queueProbe) GD.Print("perf labels: GroundLabels body, ms a frame by names drawn: " + LabelTable());
         if (Fx.PreJit.Report.Length > 0) GD.Print("perf pre-JIT: " + Fx.PreJit.Report);
+        // What the process holds at the end (the pre-JIT's cost in memory shows against a --no-prejit leg of the same exe).
+        using (var me = Process.GetCurrentProcess())
+            GD.Print($"perf memory: private {me.PrivateMemorySize64 / 1048576.0:0} MB, working set {me.WorkingSet64 / 1048576.0:0} MB; compiled {System.Runtime.JitInfo.GetCompiledMethodCount()} methods, {System.Runtime.JitInfo.GetCompiledILBytes() / 1024} KB of IL, on every thread");
         SetProcess(false);
         if (drawMs.Count > 0)
             foreach (var (dk, dv) in drawMs.OrderByDescending(kv => kv.Value).Take(25))

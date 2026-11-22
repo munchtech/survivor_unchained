@@ -39,7 +39,15 @@ public static class Glyphs
         // Full-colour paintings (icons/glyph_color/KEY.png) keep their colours; asked for in a
         // dim tint (not ready, not known), they are greyed and darkened instead. line: the drawn
         // glyph only, so a set of them reads as one hand where only some are painted.
-        if (!line && UiArt.Icon("glyph_color", paint) is { } colour) return color.Luminance < 0.5f || color.A < 0.6f ? Tinted(paint + "|dim", Grey(colour), color.Lightened(0.6f)) : colour;
+        if (!line && UiArt.Icon("glyph_color", paint) is { } colour)
+        {
+            if (!(color.Luminance < 0.5f || color.A < 0.6f)) return colour;
+            // (P2 task 5) The kept tint first, the grey copy only when it is not kept yet. Grey was made anew at every call
+            // and thrown away (Tinted returned the kept one): a 256 px painting read back and walked pixel by pixel, 6 ms
+            // on every frame the boss's arrow showed (EdgeMarks asks per mark per frame; BloodHi counts as dim).
+            var dim = color.Lightened(0.6f);
+            return tinted.TryGetValue($"{paint}|dim|{dim.ToHtml()}", out var kept) ? kept : Tinted(paint + "|dim", Grey(colour), dim);
+        }
         if (!line && UiArt.Icon("glyph", paint) is { } painted) return Tinted(paint, painted, color);
         var ck = $"{key}|{size}|{color.ToHtml()}|{stroke}";
         if (cache.TryGetValue(ck, out var t)) return t;
