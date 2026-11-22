@@ -67,6 +67,9 @@ SCENARIOS = {
     "title": ([], 8, 20),
     # The style frames' 09 (tools/style/frames.py lk_shaw): the Deep Shaw at tier 1, 8.5 minutes in, the pack streaming at her.
     "shaw_horde": (HER + ["--zone", "arena", "--offer", "0", "--tier", "1", "--minute", "8.5", "--auto"], 15, 25),
+    # The demo's den (the hollow dungeon on a test map, seed 1), from its mouth with its foes, the autopilot fighting
+    # through (the Godot 4.7 trial's A/B: the same takes on both engines).
+    "den": (HER + ["--zone", "map", "--dungeon", "hollow", "--seed", "1", "--auto", "human"], 15, 40),
 }
 
 
