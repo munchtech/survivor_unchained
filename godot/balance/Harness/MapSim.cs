@@ -82,6 +82,8 @@ public static class MapSim
     /// <summary>A listener on every frame of a run (the run clock, its drained events, the battle, whether a ruler is up): the sound
     /// lane's den log (tests/DenSoundRunTests.cs). Null: none. Per thread, so a parallel test's runs never reach it.</summary>
     [ThreadStatic] public static Action<double, IReadOnlyList<CombatEvent>, Battle, bool>? Tap;
+    /// <summary>(P3) The run's zone, once begun (DenFeel reads its packs). Per thread, as Tap.</summary>
+    [ThreadStatic] public static Action<MapRun>? ZoneTap;
 
     /// <summary>A survivor at a level, as a player would have dressed them by then: the calling's own
     /// path's skills at the day's rank, as many as the level's slots hold, the points in the calling's attribute, and plain gear
@@ -155,6 +157,7 @@ public static class MapSim
         };
         host.Battle = b;
         zone.Begin(b);
+        ZoneTap?.Invoke(zone);
         // (M3) --grant / --grant-union / --dash-steps: the game's dev grants (Sim/DevGrants.cs), carried from the start. A grant
         // the keys cannot hold takes the last key that is not the grip's nor the union's part.
         if (Grant != null || GrantUnion != null) GiveGrants(b, spec);

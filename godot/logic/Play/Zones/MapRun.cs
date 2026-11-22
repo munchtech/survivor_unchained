@@ -203,6 +203,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>(P3) The placed packs' recipe, grade and members' def ids (probes and tests of the den's roster).</summary>
     public IEnumerable<(string Recipe, int Grade, IReadOnlyList<string> Defs)> PackMakeup =>
         packs.Where(p => p.Placed).Select(p => (p.Recipe, p.Grade, (IReadOnlyList<string>)p.Members.Select(m => m.E.Def.Id).ToList()));
+    /// <summary>(P3, measuring) Each placed pack's recipe, grade and members with their lifetimes (balance/Harness/DenFeel.cs:
+    /// a pack's time to kill, how tight it stands under an area skill, how many fall together).</summary>
+    public IEnumerable<(string Recipe, int Grade, IReadOnlyList<(Enemy E, double Seed)> Members)> PackLives =>
+        packs.Where(p => p.Placed).Select(p => (p.Recipe, p.Grade, (IReadOnlyList<(Enemy E, double Seed)>)p.Members));
     /// <summary>Whether this very creature carries gear here (a pack's leader, a keeper; SU-086: by lifetime).</summary>
     public bool Carries(Enemy e) => carriers.ContainsKey(Lifetime.Of(e));
     /// <summary>Every pack and altar set down now, wherever she is (ClearNow; probes).</summary>
