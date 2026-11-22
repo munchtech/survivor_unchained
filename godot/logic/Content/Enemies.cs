@@ -129,6 +129,9 @@ public sealed class EnemyDef
     /// <summary>The champion Signs it wears (Content/Signs.cs), if any.</summary>
     public string[] Signs = [];
 
+    /// <summary>(den first blow; set only on the den's cuts, Content/DenRoster.cs) The side of the box it mills in at rest round
+    /// its home, in metres (Ai.Idle); 0: the leash's 0.6.</summary>
+    public double Roam;
     /// <summary>A copy to change (a signed champion's own def).</summary>
     public EnemyDef Clone() => (EnemyDef)MemberwiseClone();
 }

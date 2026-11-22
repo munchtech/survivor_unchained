@@ -118,6 +118,39 @@ public class DenRosterTests
         Assert.Equal(2.8, live.First(e => e.Def.Id == "boar_ironback").Def.Slam!.Radius);
     }
 
+    /// <summary>(den first blow, 22 Nov) The den row's `roam` (dungeon_fights.json) is the side of the box a resting pack mills in
+    /// round its spot; 0, the shipped value, is the leash's 0.6 (14.4 m), as a map's packs. It rides the den's own copies of
+    /// its kinds (every recipe kind has one), never the table's rows. Measured 22 Nov: at 4 a pack is 2.0 m from its middle at
+    /// the wake against 5.8 m, and all of it reaches her inside 0.8 s against 2.2 s.</summary>
+    [Fact]
+    public void A_resting_den_pack_mills_in_the_rows_roam_box_and_the_table_carries_none()
+    {
+        var kinds = DenRoster.Recipes.SelectMany(x => x.Parts.Select(p => p.Def)).ToHashSet();
+        foreach (var id in kinds) Assert.Equal(0, Enemies.Get(id).Roam);
+        double Farthest(double roam)
+        {
+            var r = Den(2);
+            var cuts = r.B.Roster!;
+            // Every recipe kind has a den copy carrying the row's roam (so a den number reaches it), never the table's own row.
+            foreach (var id in kinds)
+            {
+                Assert.NotSame(Enemies.Get(id), cuts[id]);
+                Assert.Equal(DungeonFights.Of("hollow").Roam, cuts[id].Roam);
+            }
+            // (A signed champion's def is Signs.Wear's, made once for the whole process: not this battle's, so left alone here.)
+            var rest = r.B.Enemies.Living().Where(e => e.Wake > 0 && !e.Roused && cuts.TryGetValue(e.Def.Id, out var c) && ReferenceEquals(c, e.Def)).ToList();
+            Assert.NotEmpty(rest);
+            foreach (var d in cuts.Values) d.Roam = roam;                         // this battle's own copies
+            for (int k = 0; k < 40 * 30; k++) { r.Zone.Step(1 / 30.0); r.Zone.Frame(1 / 30.0); r.B.Tick(1 / 30.0, 0, 0); }
+            var still = rest.Where(e => e.Alive && !e.Roused).ToList();
+            Assert.NotEmpty(still);
+            return still.Max(e => Math.Sqrt((e.X - e.HomeX) * (e.X - e.HomeX) + (e.Z - e.HomeZ) * (e.Z - e.HomeZ)));
+        }
+        double tight = Farthest(4), loose = Farthest(0);
+        Assert.True(tight <= 3.8, $"a 4 m box: the farthest stands {tight:0.0} m from its spot");
+        Assert.True(loose > 4.5, $"the leash's box: the farthest stands {loose:0.0} m from its spot");
+    }
+
     [Fact]
     public void Only_the_den_battle_carries_a_roster()
     {

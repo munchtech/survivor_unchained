@@ -764,7 +764,7 @@ public static class Ai
         if (e.StateT <= 0)
         {
             e.StateT = 3 + b.Rng.Next() * 4;
-            double r = e.Leash != 0 ? e.Leash * 0.6 : 5;
+            double r = e.Def.Roam > 0 ? e.Def.Roam : e.Leash != 0 ? e.Leash * 0.6 : 5;
             e.LungeX = e.HomeX + (b.Rng.Next() - 0.5) * r;
             e.LungeZ = e.HomeZ + (b.Rng.Next() - 0.5) * r;
         }

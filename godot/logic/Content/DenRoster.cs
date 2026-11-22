@@ -37,10 +37,18 @@ public static class DenRoster
         alpha.Lunge = null;
         alpha.Health = 300;                                // (session 2) 520 held a magic pack past 20 s
 
-        return new Dictionary<string, EnemyDef>
+        var cuts = new Dictionary<string, EnemyDef>
         {
             ["wolf"] = wolf, ["wolf_runner"] = runner, ["wolf_blighted"] = sick, ["boar_ironback"] = ironback, ["wolf_alpha"] = alpha,
         };
+        // (first blow) How wide a den pack mills at rest (dungeon_fights.json "roam"; 0, as shipped: a map's 14.4 m box): on
+        // every recipe kind, so the kinds the den leaves as the table has them get a den copy too, and the next den-only
+        // number reaches the whole pack. (A signed champion's def is Signs.Wear's, made once per process: not reached.)
+        var row = DungeonFights.Of("hollow");
+        foreach (var id in Recipes.SelectMany(r => r.Parts.Select(p => p.Def)).Distinct())
+            if (!cuts.ContainsKey(id)) cuts[id] = Enemies.Get(id).Clone();
+        foreach (var d in cuts.Values) d.Roam = row.Roam;
+        return cuts;
     }
 
     public static readonly Recipe[] Recipes =
