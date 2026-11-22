@@ -35,6 +35,13 @@ public static class DenFeel
         /// at any time while that spin channelled (a spin catches what walks into it; -1: the first blow was a leap or none).</summary>
         public double SpinWhole = -1;
         public HashSet<Enemy>? SpinBase, SpinCaught;
+        /// <summary>(diagnostic) The first blow's melee members, and the share of them inside AreaR of her 1 s after it (-1: not yet).</summary>
+        /// <summary>(diagnostic) At the wake: a wall between her and the pack's home (it comes round or through a door).</summary>
+        public bool Walled;
+        /// <summary>(diagnostic) The most of its live melee members inside AreaR of her on any step before the first of it fell, and
+        /// the share of its melee members that a blow of hers has already reached by its first area blow.</summary>
+        public double Peak = -1, HitBefore = -1;
+        public List<Enemy>? Base1; public double Due1 = -1, Inside1 = -1;
     }
 
     public sealed class Run
@@ -75,7 +82,7 @@ public static class DenFeel
                     if (live)
                     {
                         anyLive = true;
-                        if (row.Woke < 0 && m.E.Roused) row.Woke = t;
+                        if (row.Woke < 0 && m.E.Roused) { row.Woke = t; row.Walled = b.Collision.Raycast(p.X, p.Z, m.E.HomeX, m.E.HomeZ, 0.3) != null; }
                         if (row.FirstHit < 0 && m.E.Hp < m.E.MaxHp) row.FirstHit = t;
                     }
                     else if (dead.Add((m.E, m.Seed))) row.Deaths.Add(t);
@@ -91,9 +98,21 @@ public static class DenFeel
                         row.Best = Math.Max(row.Best, share);
                         if (row.Inside >= 0) continue;
                         row.Inside = share; row.FirstKind = a.K; row.FirstLag = row.Woke >= 0 ? t - row.Woke : -1;
+                        row.Base1 = melee.Select(m => m.E).ToList(); row.Due1 = t + 1;
+                        row.HitBefore = (double)melee.Count(m => m.E.Hp < m.E.MaxHp) / melee.Count;
                         if (a.K == 'S') { row.SpinBase = melee.Select(m => m.E).ToHashSet(); row.SpinCaught = new(); }
                         foreach (var m in melee) row.AtFirst.Add((m.E.Def.Id, Math.Sqrt((m.E.X - a.X) * (m.E.X - a.X) + (m.E.Z - a.Z) * (m.E.Z - a.Z)) - m.E.Radius));
                     }
+                if (row.Woke >= 0 && row.Deaths.Count == 0 && anyLive)
+                {
+                    int n = 0, inn = 0;
+                    foreach (var m in members)
+                        if (m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying && Melee(m.E.Def))
+                        { n++; if (Math.Sqrt((m.E.X - p.X) * (m.E.X - p.X) + (m.E.Z - p.Z) * (m.E.Z - p.Z)) < AreaR + m.E.Radius) inn++; }
+                    if (n > 0) row.Peak = Math.Max(row.Peak, (double)inn / n);
+                }
+                if (row.Base1 != null && row.Inside1 < 0 && t >= row.Due1)
+                    row.Inside1 = (double)row.Base1.Count(e => e.Alive && e.State != EnemyState.Dying && Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) < AreaR + e.Radius) / Math.Max(1, row.Base1.Count(e => e.Alive && e.State != EnemyState.Dying));
                 if (row.SpinBase != null && row.SpinWhole < 0)
                 {
                     foreach (var e in row.SpinBase)
@@ -160,7 +179,16 @@ public static class DenFeel
         foreach (var g in runs.GroupBy(r => r.R.Spec.Bot).OrderBy(g => g.Key))
         {
             var ps = g.SelectMany(r => r.Packs).Where(p => p.Inside >= 0).ToList();
-            sb.AppendLine($"{g.Key} first area blow: leap {ps.Count(p => p.FirstKind == 'L')}, spin {ps.Count(p => p.FirstKind == 'S')}; inside if leap p50 {Q(ps.Where(p => p.FirstKind == 'L').Select(p => p.Inside), .5):0.00}, if spin {Q(ps.Where(p => p.FirstKind == 'S').Select(p => p.Inside), .5):0.00}; s after wake p50 {Q(ps.Select(p => p.FirstLag), .5):0.0}; best any blow p50 {Q(ps.Select(p => p.Best), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Best >= 0.5) / Math.Max(1, ps.Count):0}%); first spin's whole channel p50 {Q(ps.Where(p => p.SpinWhole >= 0).Select(p => p.SpinWhole), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.SpinWhole >= 0.5) / Math.Max(1, ps.Count(p => p.SpinWhole >= 0)):0}%)");
+            sb.AppendLine($"{g.Key} first area blow: leap {ps.Count(p => p.FirstKind == 'L')}, spin {ps.Count(p => p.FirstKind == 'S')}; inside if leap p50 {Q(ps.Where(p => p.FirstKind == 'L').Select(p => p.Inside), .5):0.00}, if spin {Q(ps.Where(p => p.FirstKind == 'S').Select(p => p.Inside), .5):0.00}; s after wake p50 {Q(ps.Select(p => p.FirstLag), .5):0.0}; best any blow p50 {Q(ps.Select(p => p.Best), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Best >= 0.5) / Math.Max(1, ps.Count):0}%); 1 s after it, of those still up, inside 3.5 m of her p50 {Q(ps.Where(p => p.Inside1 >= 0).Select(p => p.Inside1), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Inside1 >= 0.5) / Math.Max(1, ps.Count(p => p.Inside1 >= 0)):0}%); first spin's whole channel p50 {Q(ps.Where(p => p.SpinWhole >= 0).Select(p => p.SpinWhole), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.SpinWhole >= 0.5) / Math.Max(1, ps.Count(p => p.SpinWhole >= 0)):0}%)");
+        }
+        foreach (var w in new[] { false, true })
+        {
+            var ps = runs.SelectMany(r => r.Packs).Where(p => p.Inside >= 0 && p.Walled == w).ToList();
+            sb.AppendLine($"woke {(w ? "through a wall" : "in sight")}: {ps.Count} packs, inside first blow p50 {Q(ps.Select(p => p.Inside), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Inside >= 0.5) / Math.Max(1, ps.Count):0}%), s after wake p50 {Q(ps.Select(p => p.FirstLag), .5):0.0}");
+        }
+        {
+            var ps = runs.SelectMany(r => r.Packs).Where(p => p.Inside >= 0).ToList();
+            sb.AppendLine($"peak crowd inside 3.5 m of her before the first death p50 {Q(ps.Where(p => p.Peak >= 0).Select(p => p.Peak), .5):0.00} (>=50%: {100.0 * ps.Count(p => p.Peak >= 0.5) / Math.Max(1, ps.Count):0}%); members already hit by the first area blow p50 {Q(ps.Select(p => p.HitBefore), .5):0.00}; packs with a death before the first area blow {100.0 * ps.Count(p => p.Deaths.Count > 0 && p.Deaths.Min() < p.Woke + p.FirstLag) / Math.Max(1, ps.Count):0}%");
         }
         sb.AppendLine("At the first area blow, by kind (all bots): share inside, edge distance p25/p50/p75 m:");
         foreach (var g in runs.SelectMany(r => r.Packs).SelectMany(p => p.AtFirst).GroupBy(x => x.Def).OrderBy(g => g.Key))
