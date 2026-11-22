@@ -1228,9 +1228,13 @@ public partial class BattleFx : Node3D
         float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
         float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
         byte bedR = Px(bed.R), bedG = Px(bed.G), bedB = Px(bed.B);
-        System.Threading.Tasks.Parallel.For(0, h, y =>
+        // (the lane and the ring read only |u|, |v| (u*u, v*v): one quarter is made and mirrored. At 512 a texel's u is
+        // (2x + 1 - 512) / 512, exact in float, so the mirrored texel's u is exactly -u: the same bytes, a quarter of the work)
+        bool quarter = (lane || ring) && w == 512 && h == 512;
+        int hy = quarter ? h / 2 : h, wx = quarter ? w / 2 : w;
+        System.Threading.Tasks.Parallel.For(0, hy, y =>
         {
-            for (int x = 0; x < w; x++)
+            for (int x = 0; x < wx; x++)
             {
                 float a, cover;
                 float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1;
@@ -1260,9 +1264,14 @@ public partial class BattleFx : Node3D
                 }
                 a = Mathf.Clamp(a, 0, 1);
                 float al = Mathf.Pow(a, 1 / 2.2f);
-                int o = (y * w + x) * 4;
-                emB[o] = Px(hot.R * al); emB[o + 1] = Px(hot.G * al); emB[o + 2] = Px(hot.B * al); emB[o + 3] = 255;
-                albB[o] = bedR; albB[o + 1] = bedG; albB[o + 2] = bedB; albB[o + 3] = Px(Mathf.Clamp(cover, 0, 1));
+                byte er = Px(hot.R * al), eg = Px(hot.G * al), eb = Px(hot.B * al), ca = Px(Mathf.Clamp(cover, 0, 1));
+                for (int k = 0; k < (quarter ? 4 : 1); k++)
+                {
+                    int px = (k & 1) == 0 ? x : w - 1 - x, py = (k & 2) == 0 ? y : h - 1 - y;
+                    int o = (py * w + px) * 4;
+                    emB[o] = er; emB[o + 1] = eg; emB[o + 2] = eb; emB[o + 3] = 255;
+                    albB[o] = bedR; albB[o + 1] = bedG; albB[o + 2] = bedB; albB[o + 3] = ca;
+                }
             }
         });
         return (Image.CreateFromData(w, h, false, Image.Format.Rgba8, albB), Image.CreateFromData(w, h, false, Image.Format.Rgba8, emB));
