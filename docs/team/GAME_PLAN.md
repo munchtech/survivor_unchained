@@ -236,6 +236,7 @@ All numbers are proposals. Assumed rig [A]: your PC (RTX 5080 16 GB, 32 GB RAM, 
 - Greyscale test: the heroine's average brightness differs from the ground around her (3 body widths) by at least the margin measured on the approved paint-over, in 90 % of sampled frames.
 - No new `--den-*` flags. A second room theme reaches the same result with none (milestone 5).
 - The gate: in a blind A/B of 10 s films, you choose the new frame.
+- The owner's ruling, 22 Nov 2026, on how foes read on look option C: "Dark, pale rim, ink line (Recommended)". The option's text: wolves stay near-black charcoal with a thin pale rim light and an ink outline; she and the danger marks are the light, warm things; the rule gets rewritten to say so. (Recorded here; the first bullet above is not rewritten yet.)
 
 **D4. VFX**
 - The existing budget in `docs/design/FX_LANGUAGE.md` holds (at most two hues per effect; hit brightness and bright-pixel limits).
