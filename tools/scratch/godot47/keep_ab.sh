@@ -11,6 +11,8 @@ others() { echo "[$(date +%T)] running before $1:"; tasklist //FO CSV //NH | gre
 perf() {  # exe tag
   others "perf $2"
   python $TURN take godot "p1-godot47: perf $2" --wait 1800 --stale-ok
+  # The hold's own cost (what a player's opening card pays), twice: the second with the disk shader cache warm.
+  for k in 1 2; do "$1" --path godot --resolution 1280x720 --audio-driver Dummy --quit-after 300 -- --quick warden --zone map --dungeon hollow --seed 1 --no-foes --keep-shaders 2>&1 | grep -E "^load:" | cut -c1-300; done
   GODOT="$1" python tools/perf/run.py den --tag "$2" --repeat 4 -- --keep-shaders
   python $TURN give godot "p1-godot47: perf $2"
 }
