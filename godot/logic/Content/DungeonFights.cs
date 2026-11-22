@@ -19,6 +19,12 @@ public static class DungeonFights
         public double Elites = 1;
         /// <summary>The ruler's health, over MapRun.BossHealth.</summary>
         public double BossHealth = 1;
+        /// <summary>(P3) Its biters' bite (the den's wolves and runners, Content/DenRoster.cs Biters), over the table's: the threat
+        /// that is not a mark (DEN_ROSTER.md: "add foe damage before adding any tells").</summary>
+        public double Bite = 1;
+        /// <summary>(den first blow) The side of the box a resting pack mills in round its spot, in metres (EnemyDef.Roam, Ai.Idle); 0: the
+        /// leash's 0.6 (14.4 m), as a map's packs.</summary>
+        public double Roam;
     }
 
     sealed class File { public Dictionary<string, Row> Dungeons = new(); }

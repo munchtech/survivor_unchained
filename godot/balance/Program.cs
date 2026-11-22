@@ -144,6 +144,7 @@ switch (cmd)
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
     case "dungeon": Dungeons(); break;
+    case "denfeel": DenFeelRuns(); break;
     case "story": Story(); break;
     case "verge-day": VergeDay(); break;
     case "lowford-day": LowfordDay(); break;
@@ -749,6 +750,31 @@ void Dungeons()
             Console.WriteLine($"{r.Spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : $"closed {r.Minutes:0.0} ({r.KilledBy}) in {r.DeathRoom}/{r.DeathPlan} ruler {r.DeathBossPhase}")} fight {r.FightSec:0}s marks {r.MarksRoom}+{r.MarksBoss} boss {(r.BossTtk is double bt ? $"{bt:0}s" : "-")} xp {r.XpGained:0} L{r.LevelStart}->{r.LevelEnd}");
     var md = DungeonSim.Report(results.ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "dungeon.md"), md);
+    Console.WriteLine(md);
+}
+
+// (P3) The den's clear feel (Harness/DenFeel.cs): [--opener: each run again with the opener variant, measuring only] [--lead: and again with the opener's Leap aimed where the pack's middle will be as she lands] --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
+void DenFeelRuns()
+{
+    var id = opt.Get("dungeon", "hollow");
+    var def = SurvivorUnchained.Maps.DungeonGen.Get(id) ?? throw new ArgumentException($"no dungeon {id}");
+    int seeds = opt.Int("seeds", 3), seed0 = opt.Int("seed0", 1);
+    var specs = new List<MapRunSpec>();
+    foreach (var bot in opt.List("bots", "deft,human"))
+        for (int s = 0; s < seeds; s++)
+            specs.Add(new MapRunSpec(seed0 + s, "warden", 1, def.People, opt.Int("level", 6), opt.Int("gear", 1), [], bot, opt.Double("cap", 8), id));
+    var results = new ConcurrentBag<DenFeel.Run>();
+    var sw = Stopwatch.StartNew();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 12) }, spec =>
+    {
+        try { results.Add(DenFeel.Play(spec)); if (opt.Has("opener")) results.Add(DenFeel.Play(spec, opener: true)); if (opt.Has("lead")) results.Add(DenFeel.Play(spec, opener: true, lead: true)); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
+    });
+    Console.Error.WriteLine($"{specs.Count} den runs in {sw.Elapsed:mm\\:ss}");
+    foreach (var r in results.OrderBy(r => r.R.Spec.Key))
+        Console.WriteLine($"{r.R.Spec.Key}: {(r.R.Cleared ? $"cleared {r.R.Minutes:0.0}" : $"{(r.R.Closed ? "closed" : "walking")} {r.R.Minutes:0.0} ({r.R.KilledBy})")} packs {r.R.PacksCleared}/{r.R.Packs} room fight {r.RoomFight:0}s lanes {r.Lanes} circles {r.Circles} opened {r.Opened} {r.Label}");
+    var md = DenFeel.Report(results.ToList());
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "denfeel.md"), md);
     Console.WriteLine(md);
 }
 

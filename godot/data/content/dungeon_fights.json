@@ -1,7 +1,7 @@
 {
   "about": "How hard each dungeon fights (logic/Content/DungeonFights.cs). Measured by `dotnet run --project godot/balance -- dungeon --seeds 50` at the dungeon's entry level (hollow 6, roost 7, gear 1). Targets (the owner 15 Nov: a playable demo of two dungeons; DEMO_PLAN H6 'the player must move'): stand-still bot falls in 80%+ of runs; the late-reacting human clears 70-90%; the deft bot 95%+; something to dodge every 45-60 s of fighting; median run 6-12 min; Bladestorm 20-35% of her damage. Retuned 15 Nov on the merged tree (castMove off, warden-turn): hollow human 88/88%, roost 86/84% on seeds 1-50 / 51-100.",
   "dungeons": {
-    "hollow": { "foeUp": 1, "packSize": 0.85, "elites": 1.1, "bossHealth": 0.9 },
+    "hollow": { "foeUp": 1, "packSize": 0.85, "elites": 1.1, "bossHealth": 0.9, "bite": 1, "roam": 0 },
     "roost":  { "foeUp": 1, "packSize": 1.12, "elites": 1, "bossHealth": 1.05 }
   }
 }
