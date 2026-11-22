@@ -1,6 +1,6 @@
 # The den's story beat: three pitches
 
-**Status: three pitches, awaiting the owner's pick**
+**Status: pitch 2 picked, 22 Nov 2026, by the coordinator on the owner's word ("no like...you can pick, I trust you"). The owner may overrule it before the wiring session; only the script would be redone.** Why 2: what happens is plain at the game camera (bodies lying in a ring read at her size; pitch 1's eye-shine in a hollow is the smallest thing on screen); it grows with each clear, which is the slice's replay loop; it stands on Greymuzzle's built lie-down ring and does not need the Pack-Mother's Drive, which the den re-cut may cut first; and it is the least familiar of the three. Risk to test in play: the owner must be able to say what happened (D7) though nothing explains why.
 
 The slice gets one beat for the den and the camp at its mouth (GAME_PLAN decision 12, task 9). The owner: "I want a rich story with genuine emotional impact." and "Do not assume expensive close-up cinematics are necessary." The beat is told in play at the game camera, with no close-up and no camera move. The cast is the slice's own: the camp's one NPC and its lamp-post, the den's foes, the Pack-Mother. No beat depends on the miniboss, because it changes from run to run. It is not the toll, and nothing the bible keeps for a later act is said out loud. The model is the Ford-Warden's death: one small, tired thing at the end that turns the whole fight over. The armor set drops over several clears, so each pitch also says what happens on later clears.
 
