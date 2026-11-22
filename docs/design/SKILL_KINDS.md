@@ -1,6 +1,6 @@
 # Skill kinds: what each skill becomes (22 November 2026)
 
-**Status: proposal, awaiting the owner's approval.** Paper only; no code changes until you approve it (P4 part 2).
+**Status: approved by the owner, 22 Nov 2026 ("Approve as written"; on the two readings marked below: "I confirm the readings as well").** The three recommendations stand as written. P4 part 2 (the code) builds from this page.
 
 Basis: your words of 21 Nov in `BUILD_DIRECTION.md` Round 9 and `GAME_PLAN.md` decision 15. Every skill below comes from the game's data (`godot/data/content/skills.json`: 34 skills and 10 Unions) and the bar code (`godot/logic/Rpg/SkillBook.cs`). Labels: **[O]** seen in our code or data this session, **[D]** checked in a public source this session, **[I]** inference or memory, not checked. This page covers the campaign only. The arena's drafts, which fire themselves and are not in the demo, are untouched.
 
