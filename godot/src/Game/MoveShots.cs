@@ -51,6 +51,8 @@ public sealed partial class MoveShots : Node
         public bool Wolf;
         /// <summary>s12d: the cursor follows the nearest living foe (its drawn spot, re-projected every frame).</summary>
         public bool Follow;
+        /// <summary>f01 / f02 (MoveShots.Flare.cs): eight Long Cut presses, the cursor on a new bearing each.</summary>
+        public bool Flare;
     }
 
     static Btn B(string k, double a, double b) => new(k, a, b);
@@ -82,6 +84,8 @@ public sealed partial class MoveShots : Node
         ["s12d"] = new() { Title = "12 HEAVY HIT WHILE MOVING (den pack)", End = 6.0, Follow = true,
             Btns = [B("W", 0, 5.5), .. Taps(5.2)] },
         ["s13"] = new() { Title = "13 STILL MOUSE", End = 5.5, Screen = new(1100, 560), Btns = [B("D", 0, 1.5), B("A", 1.5, 3.0), B("W", 3.0, 4.0)] },
+        ["f01"] = new() { Title = "FLARE FACING, MOVING", End = 0.5 + 4.0 * 8, Flare = true },
+        ["f02"] = new() { Title = "FLARE FACING, STANDING", End = 0.5 + 4.0 * 8, Flare = true },
         ["p01"] = new() { Title = "PAD 1+2 START / STOP", End = 5.0, Pad = true, Stick = Ramp(0, 2.0, 1, 0) },
         ["p03"] = new() { Title = "PAD 3 REVERSAL", End = 5.0, Pad = true,
             Stick = [new(0, 0, 0), new(R3, 1, 0), new(1.5, 1, 0), new(1.5 + R4, -1, 0), new(3.0, -1, 0), new(3.0 + R2, 0, 0)] },
@@ -132,6 +136,7 @@ public sealed partial class MoveShots : Node
         outDir = ProjectSettings.GlobalizePath(outDir);
         OnTick = Tick;
         OnDraw = Draw;
+        if (take.Flare) FlareInit();
     }
 
     public override void _Ready()
@@ -208,6 +213,7 @@ public sealed partial class MoveShots : Node
         var want = new HashSet<string>();
         if (take.Circle) { if (t < 6.0) CircleKeys(b, want); }
         else foreach (var btn in take.Btns) if (t >= btn.A && t < btn.B) want.Add(btn.K);
+        if (take.Flare) FlareStep(b, t, want);
         foreach (var k in new List<string>(held)) if (!want.Contains(k)) Set(k, false, t);
         foreach (var k in want) if (!held.Contains(k)) Set(k, true, t);
         // a held key that Controls dropped (focus-out clears them) is pressed again
@@ -287,6 +293,7 @@ public sealed partial class MoveShots : Node
     Vector2 CursorAt(double t, WorldScene sc)
     {
         Vector2 pos;
+        if (take.Flare) return FlareCursor(t, sc);
         if (take.Follow) pos = FoePixel(sc) ?? lastFoePx;
         else if (take.World is { } w)
         {
@@ -325,6 +332,7 @@ public sealed partial class MoveShots : Node
     void Tick(Battle b, double mx, double mz, List<CombatEvent> evs)
     {
         tick++; stepsThisFrame++;
+        if (take.Flare) FlareTick(b, mx, mz, evs);
         var p = b.Player;
         var ptr = getScene()?.Pointer();
         var sb = new StringBuilder();
@@ -347,6 +355,7 @@ public sealed partial class MoveShots : Node
         var sc = getScene(); var b = getBattle();
         if (sc == null || b == null) return;
         var p = b.Player;
+        if (take.Flare) FlareDraw(sc);
         var cam = getCam(); var camera = getCamera();
         var ptr = sc.Pointer();
         double face = sc.Player != null ? Mathf.RadToDeg(sc.Player.Rotation.Y) : 0;
