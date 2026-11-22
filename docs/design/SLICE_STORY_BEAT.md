@@ -41,3 +41,5 @@ Next come the script (at most 40 lines) and its staging, then one session to wir
 My bet is pitch 2. It is the most ours and the one you would still be thinking about the next day. It is cheap to build on what Greymuzzle's night already does, and it grows with each clear. If you want the surest lump in the throat, take pitch 1. Pitches 2 and 3 share Wenna, but I would not join them: one beat lands cleaner than two.
 
 Sources: `docs/STORY_BIBLE.md` 30-31 (the model), 51-80 (the rules; rule 6 is the toll), 343 and 366 (what she is, and ember: later acts), 383 (the Pack), 446-452 (Wenna), 619-622 (kindness from the wrong people), 665-670 (the Beast Problem), 1288-1297 (everything that has lost a light comes to her, never said); `godot/data/content/dialogue.json` (`maeca` blind_morning, built, and Rook's wolves line); `docs/bosses/SURVIVORS_BOSSES.md` 228-233 (the Pack-Mother herds you away from the den); `docs/design/DEN_ROSTER.md` (the den as approved); `godot/logic/Play/Bosses/Greymuzzle.cs` 553-593 (the lie-down and the ring).
+
+The script, staging and wiring list for pitch 2: `docs/design/SLICE_STORY_BEAT_SCRIPT.md` (22 Nov; not yet read by the owner).
