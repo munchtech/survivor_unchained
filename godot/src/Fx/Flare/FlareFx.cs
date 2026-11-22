@@ -183,6 +183,7 @@ public partial class FlareFx : Node3D
         if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
         id = e.Id;
         pressWorld = b.Time;
+        pressAngle = (float)e.Angle;
         dropLogged = false;
         t = 0;
         at = new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z);
@@ -562,6 +563,8 @@ public partial class FlareFx : Node3D
     /// <summary>The Return's end (Flare time after the BOOM): a fresh drop's light comes up to full over these.</summary>
     const float DropDimFrom = 3.4f, DropDimTo = 4.3f, DropDim = 0.3f, DropSettle = 0.1f;
     double pressWorld;
+    /// <summary>The press's angle (atan2(z, x)): where the Long Cut's sweep starts off (its own Blow event carries none).</summary>
+    float pressAngle;
 
     /// <summary>For BattleFx.Pickups, after Burns Twice's BOOM: a drop born since the press (bornWorld: Battle.Time at its
     /// birth) is drawn at this scale (0.35 to 1 over 0.3 s from the ring passing it) and this light (0.35 of its own

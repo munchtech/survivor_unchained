@@ -28,6 +28,17 @@ public partial class WorldScene : Node3D, IZoneLook
     public Battle? Battle;
     readonly FollowCamera cam;
     public bool SimPaused;
+    /// <summary>The Flare's press aims where a pressed skill aims: at the cursor her view faces (FacePointer: none under the autopilot,
+    /// a pad, or a tool's run without a scripted cursor), set as the battle's Aim for the press only, as the Pilot does. With none, as
+    /// before: the held direction, else her facing. (the owner, 22 Nov: "flare seems to face character direction instead of cursor")</summary>
+    bool FlareAt(Battle b, double mx, double mz)
+    {
+        if (FacePointer() is not { } pt) return b.UseFlare(mx, mz);
+        var was = b.Aim;
+        b.Aim = pt;
+        try { return b.UseFlare(mx, mz); }
+        finally { b.Aim = was; }
+    }
     /// <summary>The skill keys, one sim step: held state to each slot (a channel runs while held), and a press kept for
     /// the Buffer, fired toward the cursor's ground point, or with none her facing times the skill's range.</summary>
     void Skills(Battle b)
@@ -320,7 +331,7 @@ public partial class WorldScene : Node3D, IZoneLook
                     dashHeld = b.Dash(ddx, ddz) ? 0 : dashHeld - Step;
                 }
                 if (Pressed(Act.Flare)) artHeld = Buffer;
-                if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
+                if (artHeld > 0) artHeld = FlareAt(b, mx, mz) ? 0 : artHeld - Step;
                 Skills(b);
                 Hands?.Invoke(b);
                 OnStep(Step);
