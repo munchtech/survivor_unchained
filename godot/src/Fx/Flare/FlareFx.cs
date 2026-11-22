@@ -172,7 +172,9 @@ public partial class FlareFx : Node3D
 
     void Press(Ev.Flare e, Battle b)
     {
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5: --perf names the press's slow steps)
         Clear();
+        q = Perf.Slow("flare press clear", q, 2);
         if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)} kills {b.KillCount} {PressCount(e, b)}");
         // (--perf: the beats on the recording's clock, for tools/fx/flare_gpu.py --live)
         if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
@@ -199,6 +201,7 @@ public partial class FlareFx : Node3D
         web = new Vector4(0, 1, 0, R() * 10);
         frost = Vector4.Zero;
         // Frame 1 answers: the staff flares, the missiles near her burst into ember, the confirm, the pad's tick.
+        q = Perf.Slow("flare press setup", q, 2);
         var head = Head();
         if (IsLongCut) LongPress();
         else for (int i = 0; i < 26; i++)
@@ -208,12 +211,17 @@ public partial class FlareFx : Node3D
             for (int i = 0; i < 10; i++) glow.Spawn(FlareBits.Kind.Mote, m, Rand3() * 2.5f, 0.35f + R() * 0.3f, 0.05f, new Color(1.2f, 0.5f, 0.12f), new Color(0.6f, 0.1f, 0.02f), drag: 3, lift: 1);
             bed.Spawn(FlareBits.Kind.Puff, m, Vector3.Up * 0.6f, 0.9f, 0.35f, new Color(0.1f, 0.09f, 0.08f, 0.5f), sizeEnd: 0.9f, drag: 1);
         }
+        q = Perf.Slow("flare press motes", q, 2);
         Cue("confirm", Her, 1);
         Cue("inhale", Her, (float)freezeLen);
         Rumble(0, 0.5f, 0.04f);
+        q = Perf.Slow("flare press cues", q, 2);
         HudDim(1); LabelsAlpha(0);
+        q = Perf.Slow("flare press hud", q, 2);
         FamilyPress(e, b, calling);
+        q = Perf.Slow("flare press family", q, 2);
         PeakMake();
+        Perf.Slow("flare press peak", q, 2);
         if (Args.Has("clip") && GetViewport()?.GetCamera3D() is { } pc)
         {
             var vs = GetViewport().GetVisibleRect().Size;

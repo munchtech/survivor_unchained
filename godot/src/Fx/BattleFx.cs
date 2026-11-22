@@ -1427,8 +1427,11 @@ public partial class BattleFx : Node3D
         WgLineSwings(events);
         P7Pre(events);
         HitSparkBudget(events, b);
+        // (P2 task 5: --perf names each event whose handling took over 3 ms, timed from one event's start to the next's)
+        long evAt = 0; CombatEvent? evPrev = null;
         foreach (var ev in events)
         {
+            if (Perf.On) { SlowEv(evPrev, evAt); evPrev = ev; evAt = System.Diagnostics.Stopwatch.GetTimestamp(); }
             switch (ev)
             {
                 // The Flare's moments, and its hits and kills, are its own (no spell's bursts, no gore).
@@ -2020,6 +2023,23 @@ public partial class BattleFx : Node3D
                     break;
             }
         }
+        if (Perf.On) SlowEv(evPrev, evAt);
+    }
+
+    /// <summary>(P2 task 5, --perf only) A line for an event that took over 3 ms to handle: its kind and its name.</summary>
+    static void SlowEv(CombatEvent? ev, long from)
+    {
+        if (ev == null) return;
+        double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - from) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        if (ms < 3) return;
+        string what = ev switch
+        {
+            Ev.Telegraph t => $"Telegraph {t.Tell}/{t.Phase}/{t.Shape}/{t.Kind}{(t.Boss ? "/boss" : "")}",
+            Ev.Flare f => $"Flare {f.Phase}",
+            Ev.Ability a => $"Ability {a.Id}",
+            _ => ev.GetType().Name,
+        };
+        GD.Print($"perf slow fx ev {what} {ms:0.0} ms at {Perf.Now:0.00}s");
     }
 
     static readonly Color GlassCore = new(1.6f, 2.2f, 2.8f), GlassGlow = new(0.6f, 1.3f, 2.2f), EchoGlow = new(1.3f, 0.8f, 2.6f), WraithGlow = new(0.9f, 0.5f, 2.2f), Chain = new(1.5f, 1.35f, 1.1f);
