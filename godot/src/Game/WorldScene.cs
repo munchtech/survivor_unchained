@@ -427,7 +427,7 @@ public partial class WorldScene : Node3D, IZoneLook
     {
         bool got = stops.Ask(a.Body, a.Seconds, onScreen, a.Dx, a.Dz);
         // (MoveFlags.StopHold: her stop holds her feet in the fight too, for what the view holds her pose)
-        if (got && a.Body == SurvivorUnchained.Look.HitStops.Her) Battle?.HoldFeet(stops.Left(a.Body));
+        if (got && a.Body == SurvivorUnchained.Look.HitStops.Her) Battle?.HoldFeet(stops.Left(a.Body) - Step);
         if (got && a.Body == SurvivorUnchained.Look.HitStops.Her && AaBeats)
             GD.Print($"[aa-beats] local hitstop {a.Seconds:F3} s at frame {Engine.GetFramesDrawn()}");
         else if (StopTrace && a.Body == SurvivorUnchained.Look.HitStops.Her && stops.Held(a.Body))
@@ -446,6 +446,9 @@ public partial class WorldScene : Node3D, IZoneLook
     int staffLook, bladeLook;
 
 
+    /// <summary>Where she was drawn when a hit-stop took hold of her (MoveFlags.StopHold), kept for its length.</summary>
+    (double X, double Z)? herPin;
+
     void Draw(double dt, double fightDt)
     {
         var b = Battle;
@@ -454,6 +457,15 @@ public partial class WorldScene : Node3D, IZoneLook
             var p = b.Player;
             // Where she is drawn: between the last two steps (Interp), as everything else is.
             var (hx, hz, leap) = Drawn.Her(b);
+            // (MoveFlags.StopHold) While a hit-stop holds her pose she is drawn where it found her: 0 m under a frozen pose.
+            // The fight holds her feet one step less than the view (GiveStop): the drawing trails the fight by a step, so
+            // she is off again on the frame her pose is.
+            if (SurvivorUnchained.Sim.MoveFlags.StopHold && stops.Held(SurvivorUnchained.Look.HitStops.Her))
+            {
+                if (herPin is var (pinX, pinZ)) { hx = pinX; hz = pinZ; }
+                else herPin = (hx, hz);
+            }
+            else herPin = null;
             CrowdView.Project ??= v => cam.Camera.UnprojectPosition(v);
             float y = (float)HeightAt(hx, hz);
             HerDrawn = new Vector3((float)hx, y, (float)hz);

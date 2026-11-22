@@ -259,6 +259,10 @@ def heavy_den(d, moving_ms=1.0):
         row = next((r for r in t if r["frame"] >= fr0), t[-1])
         det.append(dict(onset_s=round(f[h[0]]["t_shot"], 3), frames=len(h), speed_ms=round(row["speed"], 2),
                         drawn_m=round(hyp(f[b]["dx"] - f[a]["dx"], f[b]["dz"] - f[a]["dz"]), 3),
+                        # her travel under the FROZEN pose only: first held frame to last (drawn_m also counts the step into the first)
+                        frozen_m=round(hyp(f[b]["dx"] - f[h[0]]["dx"], f[b]["dz"] - f[h[0]]["dz"]), 3),
+                        # frames she stands still after the pose is free again (the fight still holding her feet)
+                        still_after_f=next((n for n in range(0, 12) if b + 1 + n >= len(f) or hyp(f[b + 1 + n]["dx"] - f[b]["dx"], f[b + 1 + n]["dz"] - f[b]["dz"]) > 0.005), 12),
                         sim_m=round(hyp(f[b]["x"] - f[a]["x"], f[b]["z"] - f[a]["z"]), 3),
                         cam_m=round(hyp(f[b]["look_x"] - f[a]["look_x"], f[b]["look_z"] - f[a]["look_z"]), 3),
                         her_px=round(hyp(f[b]["her_px_x"] - f[a]["her_px_x"], f[b]["her_px_y"] - f[a]["her_px_y"]), 1), cause=cause))
@@ -269,7 +273,9 @@ def heavy_den(d, moving_ms=1.0):
         out.update(drawn_slide_mean_m=round(sum(x["drawn_m"] for x in mv) / len(mv), 3), drawn_slide_max_m=max(x["drawn_m"] for x in mv),
                    frames_mean=round(sum(x["frames"] for x in mv) / len(mv), 2), frames_max=max(x["frames"] for x in mv),
                    cam_travel_mean_m=round(sum(x["cam_m"] for x in mv) / len(mv), 3), cam_travel_max_m=max(x["cam_m"] for x in mv),
-                   her_px_mean=round(sum(x["her_px"] for x in mv) / len(mv), 1), her_px_max=max(x["her_px"] for x in mv))
+                   her_px_mean=round(sum(x["her_px"] for x in mv) / len(mv), 1), her_px_max=max(x["her_px"] for x in mv),
+                   frozen_slide_mean_m=round(sum(x["frozen_m"] for x in mv) / len(mv), 3), frozen_slide_max_m=max(x["frozen_m"] for x in mv),
+                   still_after_max_f=max(x["still_after_f"] for x in mv))
     out["stops"] = det
     return out
 
