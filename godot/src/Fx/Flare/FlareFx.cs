@@ -189,13 +189,16 @@ public partial class FlareFx : Node3D
         bankShots = b.FlareFullBankShots;
         var calling = b.Flare?.Calling ?? "arcanist";
         // (H7: the stop's real seconds are the family's data, per calling and Flare: flare_family.json "stop")
+        q = Perf.Slow("flare press before stop", q, 1);
         freezeLen = Content.FlareFamily.StopOf(e.Id, calling, clutch, banked);
+        q = Perf.Slow("flare press stop", q, 1);
         LeadRate = b.FlareKey / freezeLen;
         Frozen = !e.Stand && Motion > 0;
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
         RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_at"), new Vector4(at.X, at.Y, at.Z, reach));
         // (a: night, for the glaze's value: by day the sky's reflection on it turned the field to snow)
         RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_hue"), calling == "warden" ? new Vector4(1f, 0.72f, 0.32f, Night ? 1 : 0) : new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
+        q = Perf.Slow("flare press globals", q, 1);
         float kind = id == "burns_twice" ? (b.Lamps.FlareMods.Contains("burns.black_ice") ? 2 : 1) : 0;
         look = new Vector4(0, 0, 0, kind);
         web = new Vector4(0, 1, 0, R() * 10);

@@ -732,6 +732,12 @@ public partial class BattleFx : Node3D
     {
         int b = Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(size, 0.1f)) / Mathf.Log(2) * 2), -6, 12);
         if (fillTex.TryGetValue((lane, style, b), out var t)) return t;
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
+        try { return MakeFillTex(lane, style, b); } finally { Perf.Slow($"fx filltex {(lane ? "lane" : "disc")} {style} {b}", q, 1); }
+    }
+
+    static Texture2D MakeFillTex(bool lane, int style, int b)
+    {
         float S = Mathf.Pow(2, b / 2f);
         float front = style == 1 ? DangerFrontM : style == 3 ? RaiseFrontM : AmberFrontM;
         float tail = style == 1 ? 0 : style == 3 ? RaiseTailM : AmberTailM;
@@ -768,6 +774,12 @@ public partial class BattleFx : Node3D
     /// through it lies under the water line (a figure standing in the river keeps its body above it), with its bed near
     /// opaque. The fill gets its own copy over water. roof: the lane's roof copy (the old OverLane).</summary>
     void Over(Mark m, bool roof)
+    {
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
+        try { OverIn(m, roof); } finally { Perf.Slow("fx over", q, 1); }
+    }
+
+    void OverIn(Mark m, bool roof)
     {
         overShader ??= new Shader
         {
