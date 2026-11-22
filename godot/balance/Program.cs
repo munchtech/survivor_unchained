@@ -737,6 +737,8 @@ void Dungeons()
                 specs.Add(new MapRunSpec(seed0 + s, "warden", 1, def.People, level, opt.Int("gear", 1), [], bot, opt.Double("cap", 25), id, atBoss));
     }
     if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
+    // --lamps sunder.stroke.1-4 (harness only): those lamps lit on her before the fight (a range of one strand, or a single id; comma list), her skill ranked up to hold them.
+    if (opt.Has("lamps")) SurvivorUnchained.Balance.MapSim.ForceLamps = opt.Get("lamps", "");
     var results = new ConcurrentBag<MapRunResult>();
     var sw = Stopwatch.StartNew();
     Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 12) }, spec =>
