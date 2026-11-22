@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -46,7 +47,7 @@ public sealed partial class MoveShots : Node
         public Pt[] Stick = [], Look = [];
         /// <summary>s07: the keyboard circle round the world cursor, radius 5, counter-clockwise, for 6 s.</summary>
         public bool Circle;
-        /// <summary>s12: a dummy wolf at her S0 spot + (5, -1.3), spawned 1.5 s before S0.</summary>
+        /// <summary>s12: a dummy wolf at her S0 spot + (5, -0.3), spawned 1.5 s before S0.</summary>
         public bool Wolf;
     }
 
@@ -60,15 +61,15 @@ public sealed partial class MoveShots : Node
         ["s03"] = new() { Title = "3 REVERSAL", End = 5.0, Screen = new(1280, 540), Sweeps = [new(1.5, 0.1, new(640, 540))], Btns = [B("D", 0, 1.5), B("A", 1.5, 3.0)] },
         ["s04"] = new() { Title = "4 QUARTER TURN", End = 5.0, Screen = new(1280, 540), Sweeps = [new(1.5, 0.1, new(960, 300))], Btns = [B("D", 0, 1.5), B("W", 1.5, 3.0)] },
         ["s05"] = new() { Title = "5 STRAFE (aim fixed)", End = 4.5, World = new(0, -9), Btns = [B("D", 0, 1.5), B("A", 1.5, 3.0)] },
-        ["s06"] = new() { Title = "6 BACKPEDAL", End = 3.5, World = new(0, -9), Btns = [B("S", 0, 1.5)] },
+        ["s06"] = new() { Title = "6 BACKPEDAL", End = 3.5, World = new(0, -5), Btns = [B("S", 0, 1.5)] },
         ["s07"] = new() { Title = "7 CIRCLE THE AIM", End = 7.5, World = new(0, -5), Circle = true },
         ["s08"] = new() { Title = "8 DASH FROM REST", End = 3.0, Screen = new(1300, 360), Btns = [B("SPACE", 0.5, 0.6)] },
         ["s09"] = new() { Title = "9 DASH AT A RUN", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("SPACE", 1.5, 1.6)] },
         ["s10a"] = new() { Title = "10 DASH ACROSS THE AIM", End = 4.5, Screen = new(960, 300), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s10b"] = new() { Title = "10 DASH AGAINST THE AIM", End = 4.5, Screen = new(640, 540), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s11"] = new() { Title = "11 STRIKE WHILE MOVING", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("LMB", 1.5, 1.58)] },
-        ["s12"] = new() { Title = "12 HEAVY HIT WHILE MOVING", End = 4.0, World = new(5.0f, -1.3f), Wolf = true,
-            Btns = [B("D", 0, 2.5), B("LMB", 0.55, 0.63), B("LMB", 1.0, 1.08), B("LMB", 1.45, 1.53)] },
+        ["s12"] = new() { Title = "12 HEAVY HIT WHILE MOVING", End = 4.0, World = new(5.0f, -0.3f), Wolf = true,
+            Btns = [B("D", 0, 2.5), B("LMB", 0.75, 0.83), B("LMB", 1.2, 1.28), B("LMB", 1.65, 1.73)] },
         ["p01"] = new() { Title = "PAD 1+2 START / STOP", End = 5.0, Pad = true, Stick = Ramp(0, 2.0, 1, 0) },
         ["p03"] = new() { Title = "PAD 3 REVERSAL", End = 5.0, Pad = true,
             Stick = [new(0, 0, 0), new(R3, 1, 0), new(1.5, 1, 0), new(1.5 + R4, -1, 0), new(3.0, -1, 0), new(3.0 + R2, 0, 0)] },
@@ -93,7 +94,7 @@ public sealed partial class MoveShots : Node
     readonly string name, outDir;
     readonly bool pad;
     readonly double at;
-    bool started, ended, flushed, wolfDone;
+    bool started, ended, flushed, wolfDone, wolfGone; Enemy? wolfE;
     double t0, tNow, quitAt;
     (double X, double Z) anchor;
     readonly HashSet<string> held = new();
@@ -147,15 +148,15 @@ public sealed partial class MoveShots : Node
             if (b.Time - t0 >= quitAt) { Flush(); GetTree().Quit(); }
             return;
         }
-        if (take.Wolf && !wolfDone && b.Time >= at - 1.5)
+        if (take.Wolf && !wolfDone && b.Time >= at - 0.05)
         {
             wolfDone = true;
             bool was = b.NoSpawn;
             b.NoSpawn = false;
-            var e = b.SpawnEnemy("wolf", b.Player.X + 5.0, b.Player.Z - 1.3);
+            var e = b.SpawnEnemy("wolf", b.Player.X + 5.0, b.Player.Z - 0.3);
             b.NoSpawn = was;
             if (e == null) GD.Print("MOVES12 ERROR: the dummy wolf did not spawn");
-            else { e.Speed = 0; e.AttackT = e.RangedT = 99; e.MaxHp = 1; e.Hp = 1e6; GD.Print($"MOVES12 dummy wolf at ({e.X:0.00}, {e.Z:0.00})"); }
+            else { wolfE = e; e.Speed = 0; e.AttackT = e.RangedT = 99; e.MaxHp = 1e6; e.Hp = 1e6; e.Provoked = true; e.Wake = 0; e.Roused = true; e.Elite = true; GD.Print($"MOVES12 dummy wolf at ({e.X:0.00}, {e.Z:0.00})"); }
         }
         if (!started)
         {
@@ -282,7 +283,9 @@ public sealed partial class MoveShots : Node
             if (sb.Length > 0) sb.Append('|');
             sb.Append(e.GetType().Name);
             if (e is Ev.Hit h && LeadRule.Heavy(h)) sb.Append(":heavy");
+            if (e is Ev.Slash sl) sb.Append(":struck" + sl.Struck + ":reach" + sl.Reach.ToString("0.00", CultureInfo.InvariantCulture) + ":wolf" + string.Join("", b.Enemies.Items.Where(en => en.MaxHp > 1e5).Select(en => en.Hp.ToString("0") + "_" + en.Alive + en.State + en.Disposition + en.Provoked + en.Wake + en.Roused + b.LampHush)));
         }
+        if (wolfE != null && !wolfGone && !wolfE.Alive) { wolfGone = true; if (sb.Length > 0) sb.Append('|'); sb.Append("WOLFGONE:hp" + wolfE.Hp.ToString("0") + ":" + wolfE.State); }
         tickRows.Add((b.Time, [tick.ToString(CultureInfo.InvariantCulture), Engine.GetFramesDrawn().ToString(CultureInfo.InvariantCulture), F(b.Time), "",
             F(p.X), F(p.Z), F(p.Vx), F(p.Vz), F(Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz)), F(mx), F(mz), F(Deg(p.Facing), "0.00"),
             F(p.DashT), F(p.DashDX, "0.000"), F(p.DashDZ, "0.000"), F(p.CastT), F(p.Iframes),
