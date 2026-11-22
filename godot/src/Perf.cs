@@ -333,6 +333,14 @@ public partial class Perf : Node
         warm = Args.Num("perf-warm", 8);
         span = Args.Num("perf-for", 30);
         window = Args.Num("perf-window", 10);
+        // --perf-den S: S seconds in, into the Hollow's den from where she stands, by the map table's own call (Game.EnterMap), so the
+        // log's "load: a -> map: control N s after the ask" is the click-to-control time of a den entered in play (P2 task 5).
+        if (Args.Has("perf-den") && GetParent() is SurvivorUnchained.Play.Game host && SurvivorUnchained.Maps.DungeonGen.Get("hollow") is { } denDef)
+            GetTree().CreateTimer(Args.Num("perf-den", 12)).Timeout += () =>
+            {
+                GD.Print("perf den: asked for the den now");
+                host.EnterMap(SurvivorUnchained.Maps.Chart.ForDungeon(denDef, (int)Args.Num("seed", 1), host.Journey.Ch.Level));
+            };
         ProcessMode = ProcessModeEnum.Always;
         // Last in the frame, so its clock brackets everything else.
         ProcessPriority = int.MaxValue;
