@@ -21,9 +21,13 @@ FPS = 60
 START_OFF = {
     "s01": (-8, 0), "s03": (-5, 0), "s04": (-6, 5), "s05": (-4, 3), "s06": (0, -4), "s07": (0, 4), "s08": (-3, 3), "s09": (-9, 0),
     "s10a": (-7, 4), "s10b": (-7, 0), "s11": (-9, 0), "s12": (-6, 0),
+    "s13": (-5, 0), "s12d": None,
     "p01": (-8, 0), "p03": (-5, 0), "p08": (-3, 3), "p10a": (-7, 4), "p10b": (-7, 0),
 }
-EXTRA_ARGS = {}   # per take: extra game flags, e.g. {"s01": ["--moves12-at", "5"]}
+# Takes in a den room with foes on (not boss-mid, no --no-foes, no --at-off): her start is --at X,Z beside a pack.
+# env S12D_AT=default boots at the den's own arrival (with --moves12-foes, to list where the packs stand).
+DEN_AT = {"s12d": "58,106"}   # a pack of 5 wolves stands near (58, 89) at seed 1, 16-19 m up-screen (-Z, key W) of this spot at S0
+EXTRA_ARGS = {"s12d": ["--moves12-at", "2"]}   # s12d: S0 at fight time 2 s, while the arrival pack still stands 7-9 m off   # per take: extra game flags, e.g. {"s01": ["--moves12-at", "5"]}
 
 
 def main():
@@ -51,13 +55,20 @@ def run_take(t):
         (out / old).unlink(missing_ok=True)
     avi = out / "movie.avi"
     inp = "pad" if t.startswith("p") else "kbm"
-    dx, dz = START_OFF[t]
+    flags = os.environ.get("MOVES_FLAGS", "").split()
+    if t in DEN_AT:
+        at = os.environ.get("S12D_AT", DEN_AT[t])
+        place = [] if at in ("default", "DISCOVER") else ["--at", at]
+        boot = ["--quick", "warden", "--zone", "map", "--dungeon", "hollow", "--seed", "1"] + place + ["--facing-mode", "always", "--nocine"]
+        boot += ["--moves12-foes"]   # lists the living foes at S0-2 s and S0 in log.txt
+    else:
+        dx, dz = START_OFF[t]
+        boot = ["--quick", "warden", "--zone", "map", "--dungeon", "hollow", "--seed", "1", "--at", "boss-mid", "--at-off", f"{dx},{dz}",
+                "--no-foes", "--facing-mode", "always", "--nocine"]
     gargs = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi),
-             "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", "9000", "--",
-             "--quick", "warden", "--zone", "map", "--dungeon", "hollow", "--seed", "1", "--at", "boss-mid", "--at-off", f"{dx},{dz}",
-             "--no-foes", "--facing-mode", "always", "--nocine", "--moves12", t, "--moves12-input", inp,
-             "--moves12-out", str(out)] + EXTRA_ARGS.get(t, [])
-    print("RUN", " ".join(gargs), flush=True)
+             "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", "9000", "--"] + boot + [
+             "--moves12", t, "--moves12-input", inp, "--moves12-out", str(out)] + EXTRA_ARGS.get(t, []) + flags
+    print("RUN", " ".join(gargs), "| MOVES_FLAGS:", " ".join(flags) or "(none)", flush=True)
     with open(out / "log.txt", "w", encoding="utf-8", errors="replace") as lf:
         r = subprocess.run(gargs, stdout=lf, stderr=subprocess.STDOUT)
     log = (out / "log.txt").read_text(encoding="utf-8", errors="replace")

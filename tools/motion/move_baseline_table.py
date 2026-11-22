@@ -233,6 +233,55 @@ def heavy(d):
     return out
 
 
+def heavy_den(d, moving_ms=1.0):
+    """s12d: every hit-stop on HER (a run of frames with her_held = 1): onset time, frames held, her sim speed at onset, her DRAWN travel
+    (dx,dz), sim travel (x,z), camera look-point travel and her on-screen travel over the held frames, and what caused it (read from
+    the sim events of the ticks at the onset: a hit on her / her own heavy hit / a kill). Summary over the stops that began while her
+    sim speed was above moving_ms."""
+    t, f = d["t"], d["f"]
+    holds, cur = [], []
+    for k, r in enumerate(f):
+        if r["her_held"] == 1: cur.append(k)
+        elif cur: holds.append(cur); cur = []
+    if cur: holds.append(cur)
+    det = []
+    for h in holds:
+        a, b = max(h[0] - 1, 0), h[-1]
+        fr0 = f[h[0]]["frame"]
+        evs = [str(r["ev"]) for r in t if fr0 - 3 <= r["frame"] <= fr0]
+        ev = "|".join(e for e in evs if e)
+        cause = ("a hit on her" if "Knockdown" in ev or "PlayerHit" in ev else "her own heavy hit" if "heavy" in ev else "a kill" if "Kill" in ev
+                 else "her art" if any(w in ev for w in ("Ability", "Charge", "Leap", "Spin", "Brace")) else "?")
+        row = next((r for r in t if r["frame"] >= fr0), t[-1])
+        det.append(dict(onset_s=round(f[h[0]]["t_shot"], 3), frames=len(h), speed_ms=round(row["speed"], 2),
+                        drawn_m=round(hyp(f[b]["dx"] - f[a]["dx"], f[b]["dz"] - f[a]["dz"]), 3),
+                        sim_m=round(hyp(f[b]["x"] - f[a]["x"], f[b]["z"] - f[a]["z"]), 3),
+                        cam_m=round(hyp(f[b]["look_x"] - f[a]["look_x"], f[b]["look_z"] - f[a]["look_z"]), 3),
+                        her_px=round(hyp(f[b]["her_px_x"] - f[a]["her_px_x"], f[b]["her_px_y"] - f[a]["her_px_y"]), 1), cause=cause))
+    mv = [x for x in det if x["speed_ms"] > moving_ms]
+    out = dict(stops_total=len(det), stops_while_moving=len(mv), moving_threshold_ms=moving_ms)
+    if mv:
+        out.update(drawn_slide_mean_m=round(sum(x["drawn_m"] for x in mv) / len(mv), 3), drawn_slide_max_m=max(x["drawn_m"] for x in mv),
+                   frames_mean=round(sum(x["frames"] for x in mv) / len(mv), 2), frames_max=max(x["frames"] for x in mv),
+                   cam_travel_mean_m=round(sum(x["cam_m"] for x in mv) / len(mv), 3), her_px_mean=round(sum(x["her_px"] for x in mv) / len(mv), 1))
+    out["stops"] = det
+    return out
+
+
+def still_mouse(d):
+    """s13: the mouse never moves; facing (drawn, face_deg) from S0 to the end."""
+    f = [r for r in d["f"] if r["t_shot"] >= 0]
+    f0 = f[0]["face_deg"]
+    dev = [adiff(r["face_deg"], f0) for r in f]
+    step = [abs(adiff(f[i]["face_deg"], f[i - 1]["face_deg"])) for i in range(1, len(f))]
+    cross = sum(1 for i in range(1, len(dev)) if abs(dev[i]) > 90 and abs(dev[i - 1]) <= 90)
+    px = [r["ptr_x"] - r["x"] for r in f if isinstance(r["ptr_x"], float)]
+    pz = [r["ptr_z"] - r["z"] for r in f if isinstance(r["ptr_z"], float)]
+    return dict(face_range_deg=round(max(dev) - min(dev), 2), face_max_step_deg=round(max(step), 2), crossings_over_90=cross,
+                ptr_dx_range_m=round(max(px) - min(px), 2), ptr_dz_range_m=round(max(pz) - min(pz), 2),
+                mouse_px=(f[0]["mouse_x"], f[0]["mouse_y"]), mouse_moved=len({(r["mouse_x"], r["mouse_y"]) for r in f}) > 1)
+
+
 def circle(d, c_off=(0, -5)):
     t, f = d["t"], d["f"]
     s0 = next(r for r in t if r["t_shot"] >= 0)
@@ -249,7 +298,7 @@ def circle(d, c_off=(0, -5)):
 def main():
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else None
     res = {}
-    s01 = load("s01"); top = top_speed(s01["t"])
+    s01 = load("s01"); top = top_speed(s01["t"]) if s01 else 4.5   # (without s01 in the folder: 4.5 m/s, her run)
     for tk, on, off in [("s01", "D down", "D up"), ("p01", "stick on", "stick off")]:
         d = load(tk)
         if d: res[tk + " start"] = shot_start(d, on); res[tk + " stop"] = shot_stop(d, off); res[tk + " stop"]["errs"] = d["errs"]
@@ -285,8 +334,17 @@ def main():
     if d: res["s11"] = strike(d, top)
     d = load("s12")
     if d: res["s12"] = heavy(d)
+    d = load("s12d")
+    if d: res["s12d"] = heavy_den(d)
+    d = load("s13")
+    if d: res["s13"] = still_mouse(d)
     lines = []
     for k, v in res.items():
+        if k == "s12d":
+            stops = v.pop("stops")
+            lines.append(f"{k}: " + ", ".join(f"{a}={b}" for a, b in v.items()))
+            for x in stops: lines.append(f"{k} stop: " + ", ".join(f"{a}={b}" for a, b in x.items()))
+            continue
         lines.append(f"{k}: " + ", ".join(f"{a}={(round(b, 3) if isinstance(b, float) else b)}" for a, b in v.items()))
     txt = "\n".join(lines)
     print(txt)
