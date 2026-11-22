@@ -19,6 +19,9 @@ public sealed partial class MoveShots
     const double FlareWin0 = 0.5, FlareWinLen = 4.0;
     const int FlarePresses = 8;
     const int FlareReadFrames = 3;
+    /// <summary>The dummies' distance from her. 18 m (the brief's) is the ruler's clearing's rim (r 17.8 at boss-mid): a foe spawned there is gone
+    /// within a step (measured 22 Nov), so 14 m: beyond the sweep's 12 m, inside the clearing, on the cleave's 24 m line.</summary>
+    const double FoeAt = 14;
 
     sealed class FlarePress
     {
@@ -28,6 +31,7 @@ public sealed partial class MoveShots
         public long CleaveFrame, SweepFrame;
         public Enemy? WolfC, WolfT;
         public bool Metered, Spawned, Done;
+        public readonly HashSet<string> Seen = new();
     }
 
     readonly FlarePress[] fl = Enumerable.Range(0, FlarePresses).Select(_ => new FlarePress()).ToArray();
@@ -35,7 +39,7 @@ public sealed partial class MoveShots
 
     static double Bearing(double dx, double dz) => (Deg(Math.Atan2(dx, dz)) % 360 + 360) % 360;
     /// <summary>An atan2(z, x) angle (the sim's and the view's) as a bearing in the harness's convention.</summary>
-    static double BearingOfAngle(double a) => Bearing(Math.Sin(a), Math.Cos(a));
+    static double BearingOfAngle(double a) => Bearing(Math.Cos(a), Math.Sin(a));
     static string Bd(double v) => double.IsNaN(v) ? "-" : F(v, "0.0");
 
     void FlareInit()
@@ -90,9 +94,11 @@ public sealed partial class MoveShots
         {
             f.Spawned = true;
             double c = Math.PI / 4 * i, tr = c + 3 * Math.PI / 4;
-            f.WolfC = FlareDummy(b, b.Player.X + 18 * Math.Sin(c), b.Player.Z + 18 * Math.Cos(c));
-            f.WolfT = FlareDummy(b, b.Player.X + 18 * Math.Sin(tr), b.Player.Z + 18 * Math.Cos(tr));
+            f.WolfC = FlareDummy(b, b.Player.X + FoeAt * Math.Sin(c), b.Player.Z + FoeAt * Math.Cos(c));
+            f.WolfT = FlareDummy(b, b.Player.X + FoeAt * Math.Sin(tr), b.Player.Z + FoeAt * Math.Cos(tr));
         }
+        foreach (var (nm, e) in new[] { ("C", f.WolfC), ("T", f.WolfT) })
+            if (e != null && !f.Seen.Contains(nm) && (!e.Alive || e.State != EnemyState.Active)) { f.Seen.Add(nm); GD.Print($"FLAREDUMMY i={i} {nm} u {u:0.00} alive {e.Alive} state {e.State} at ({e.X:0.0}, {e.Z:0.0}) hp {e.Hp:0}"); }
         if (u >= 0.7 && u < 0.78) want.Add("Q");
         if (u >= 3.6) FlareClose(b, i);
     }
@@ -114,6 +120,8 @@ public sealed partial class MoveShots
         var f = fl[i];
         if (f.Done) return;
         f.Done = true;
+        foreach (var (nm, e) in new[] { ("C", f.WolfC), ("T", f.WolfT) })
+            if (e != null) GD.Print($"FLAREDUMMY i={i} {nm} at ({e.X:0.0}, {e.Z:0.0}) from her ({b.Player.X:0.0}, {b.Player.Z:0.0}) hp {e.Hp:0} alive {e.Alive} state {e.State}");
         f.HitC = f.WolfC != null ? 1e6 - f.WolfC.Hp : -1;
         f.HitT = f.WolfT != null ? 1e6 - f.WolfT.Hp : -1;
         foreach (var e in new[] { f.WolfC, f.WolfT }) if (e != null && e.Alive) b.Enemies.Release(e);
@@ -148,21 +156,39 @@ public sealed partial class MoveShots
         }
     }
 
+    FlareFx? flareFx;
+    static readonly System.Reflection.BindingFlags Priv = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+    static T? Field<T>(object o, string n) => (T?)o.GetType().GetField(n, Priv)?.GetValue(o);
+
+    static FlareFx? FindFx(Node n)
+    {
+        if (n is FlareFx fx) return fx;
+        foreach (var c in n.GetChildren()) if (FindFx(c) is { } r) return r;
+        return null;
+    }
+
+    /// <summary>The seam's and the sweep's angles as the view holds them (FlareFx.lcDir / lcLen / lcCleaveT / lcSweepT / lcSweepFrom, the values it publishes
+    /// as the shader globals flare_seam.Z and flare_sweep.W): RenderingServer.GlobalShaderParameterGet returns nothing outside the editor.</summary>
     void FlareDraw(WorldScene sc)
     {
         long now = (long)Engine.GetFramesDrawn();
+        if (flareFx == null || !GodotObject.IsInstanceValid(flareFx)) flareFx = FindFx(GetTree().Root);
+        if (flareFx == null) return;
         foreach (var f in fl)
         {
-            if (f.Cleaved && !f.SeamRead && now >= f.CleaveFrame + FlareReadFrames)
+            // (the view drains the sim's events after the press's stop: read at the first drawn frame, no sooner than FlareReadFrames after the event,
+            // where the view holds the cleave (cleave time >= 0, a line) or the sweep (sweep time >= 0))
+            if (f.Cleaved && !f.SeamRead && now >= f.CleaveFrame + FlareReadFrames && Field<double>(flareFx, "lcCleaveT") >= 0 && Field<float>(flareFx, "lcLen") > 0)
             {
                 f.SeamRead = true;
-                f.Seam = BearingOfAngle(((Vector4)RenderingServer.GlobalShaderParameterGet("flare_seam")).Z);
+                var d = Field<Vector2>(flareFx, "lcDir");
+                f.Seam = BearingOfAngle(Mathf.Atan2(d.Y, d.X));
                 f.Body = (Mathf.RadToDeg(sc.Player.Rotation.Y) % 360 + 360) % 360;
             }
-            if (f.Swept && !f.SweepRead && now >= f.SweepFrame + FlareReadFrames)
+            if (f.Swept && !f.SweepRead && now >= f.SweepFrame + FlareReadFrames && Field<double>(flareFx, "lcSweepT") >= 0)
             {
                 f.SweepRead = true;
-                f.Sweep = BearingOfAngle(((Vector4)RenderingServer.GlobalShaderParameterGet("flare_sweep")).W - 0.4);
+                f.Sweep = BearingOfAngle(Field<float>(flareFx, "lcSweepFrom") - 0.4);
             }
         }
     }
