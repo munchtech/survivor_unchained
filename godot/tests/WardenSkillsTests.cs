@@ -458,7 +458,7 @@ public sealed class WardenSkillsTests
         Assert.Equal(StrandKind.Calling, Wicks.Strand("sunder", "sunder.stroke")!.Kind);
         Assert.Equal(StrandKind.Calling, Wicks.Strand("groundbreaker", "groundbreaker.aftershock")!.Kind);
         Assert.Null(Wicks.Strand("oathblade", "sunder.stroke"));
-        Assert.StartsWith("Splitting Stroke:", Wicks.Text("sunder", "sunder.stroke.4"));
+        Assert.StartsWith("Groundbreaker:", Wicks.Text("sunder", "sunder.stroke.4"));
         Assert.StartsWith("Aftershock:", Wicks.Text("groundbreaker", "groundbreaker.aftershock.4"));
         Assert.Equal("+10% damage", Wicks.Text("sunder", "sunder.stroke.1"));
         var gb = Weapons.Get("groundbreaker");
@@ -467,22 +467,71 @@ public sealed class WardenSkillsTests
         Assert.False(Wicks.Suits(Wicks.Strand("groundbreaker", "pulse")!, WeaponBehavior.Crack, gb.Tags, gb.School, false));
     }
 
+    /// <summary>A pack far off (6 m) and a foe at her side: the Groundbreaker Turn's crack runs to the far pack.</summary>
+    static readonly (double, double)[] NearAndPack = [(1.5, 0), (6, 0), (6.8, 0)];
+
     [Fact]
-    public void Splitting_stroke_makes_every_second_swing_heavy_and_swings_slower()
+    public void Groundbreaker_makes_every_third_swing_heavy_and_breaks_the_ground_instead_of_the_line()
     {
         var b = Fight("sunder", 4, plan: Strand("sunder.stroke"));
         var w = b.Weapons[0];
         Assert.Equal(["sunder.stroke"], w.Wick!.Turns);
-        var es = Dummies(b, NearAndFar);
-        FireOnce(b, w, es, NearAndFar);
+        Assert.Equal(3, Firing.HeavyEveryOf(b, w));
+        var es = Dummies(b, NearAndPack);
+        for (int i = 0; i < 2; i++) FireOnce(b, w, es, NearAndPack);
+        Assert.Equal(0, b.Heaves);
+        Assert.False(Hurt(es[1]));
+        FireOnce(b, w, es, NearAndPack);
+        // one heave where the crack ends (the far pack), no line, the pack stunned by the earth
+        Assert.Equal(1, b.Heaves);
         Assert.Equal(0, b.LinesStruck);
-        FireOnce(b, w, es, NearAndFar);
-        Assert.Equal(1, b.LinesStruck);
-        FireOnce(b, w, es, NearAndFar);
-        FireOnce(b, w, es, NearAndFar);
-        Assert.Equal(2, b.LinesStruck);
+        Assert.True(Hurt(es[1]) && Hurt(es[2]));
+        Assert.True(es[1].Status.Has(StatusKind.Stun) && es[2].Status.Has(StatusKind.Stun));
+        var evs = b.Events.Drain();
+        Assert.Contains(evs, x => x is Ev.Beam { Art: "slash_quake_crack" });
+        Assert.Contains(evs, x => x is Ev.Explosion { Art: "slash_quake_heave" });
+        Assert.DoesNotContain(evs, x => x is Ev.Beam { Art: "slash_heavy_line" });
+        for (int i = 0; i < 3; i++) FireOnce(b, w, es, NearAndPack);
+        Assert.Equal(2, b.Heaves);
+        Assert.Equal(0, b.LinesStruck);
         var bare = Fight("sunder", 4);
         Assert.Equal(1.15 * 0.92, Firing.CooldownOf(b, w) / Firing.CooldownOf(bare, bare.Weapons[0]), 6);
+    }
+
+    [Fact]
+    public void Without_the_groundbreaker_turn_sunder_is_unchanged_a_heavy_line_every_fourth_and_no_heave()
+    {
+        var b = Fight("sunder", 4);
+        var w = b.Weapons[0];
+        Assert.Null(w.Wick?.Groundbreak);
+        Assert.Equal(4, Firing.HeavyEveryOf(b, w));
+        var es = Dummies(b, NearAndPack);
+        for (int i = 0; i < 3; i++) FireOnce(b, w, es, NearAndPack);
+        Assert.Equal(0, b.LinesStruck);
+        FireOnce(b, w, es, NearAndPack);
+        Assert.Equal(1, b.LinesStruck);
+        Assert.Equal(0, b.Heaves);
+    }
+
+    [Fact]
+    public void Groundbreaker_adds_no_third_count_the_hands_stays_every_sixth()
+    {
+        var b = Fight("sunder", 4, plan: Strand("sunder.stroke"));
+        b.Calling = "warden";
+        var w = b.Weapons[0];
+        var es = Dummies(b, NearAndPack);
+        var heavy = new List<int>();
+        for (int i = 1; i <= 12; i++)
+        {
+            int before = b.HandHeavies;
+            FireOnce(b, w, es, NearAndPack);
+            if (b.HandHeavies > before) heavy.Add(i);
+        }
+        // its own count (3) nests the Hand's (6): the heavy swings are the multiples of 3, and no others
+        Assert.Equal([3, 6, 9, 12], heavy);
+        Assert.Equal(4, b.Heaves);
+        Assert.Equal(0, b.LinesStruck);
+        Assert.Equal(6, System.Math.Max(1, b.HW.Every));
     }
 
     [Fact]

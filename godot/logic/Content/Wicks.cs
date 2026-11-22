@@ -24,6 +24,13 @@ public sealed class WickLeadIn
     public double VsChampion;
 }
 
+/// <summary>A Turn's groundbreak: the crack runs up to Range m, strikes along it at Trail of the blow, and the heave (Radius m)
+/// strikes whole, stunning Stun seconds (never a boss) and throwing back Knockback.</summary>
+public sealed class GroundbreakSpec
+{
+    public double Range = 10, Radius = 2.5, Stun = 0.6, Trail = 0.5, Knockback;
+}
+
 /// <summary>A Turn: how it transforms the skill. Multipliers default to 1, counts to 0.</summary>
 public sealed class TurnDef
 {
@@ -45,6 +52,9 @@ public sealed class TurnDef
     public double OnKillGap = 0.5, OnKillDamage = 0.6;
     /// <summary>Its own heavy count becomes every this many firings (the skill's HeavyEvery; 0 leaves it).</summary>
     public int HeavyEvery;
+    /// <summary>Its own heavy swing groundbreaks (a crack to the pack aimed at, the earth heaving where it ends) instead of
+    /// throwing its line: Sunder's Groundbreaker. Null: it does not.</summary>
+    public GroundbreakSpec? Groundbreak;
     /// <summary>Again: its blow lands again on the same spot Again seconds later, at AgainDamage (0: never).</summary>
     public double Again, AgainDamage = 0.6;
     /// <summary>Its strike leaves her a barrier of BarrierEach of max health for each creature struck, at most

@@ -236,7 +236,7 @@ public class SkillTipTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_lit_splitting_stroke_speaks_in_its_own_words_and_slows_the_swing()
+    public void A_lit_groundbreaker_speaks_in_its_own_words_and_slows_the_swing()
     {
         var j = Warden();
         LevelTo(j, 15);
@@ -246,9 +246,9 @@ public class SkillTipTests(ITestOutputHelper output)
         string lit = Line(out var e1);
         output.WriteLine($"{unlit} | {e0} // {lit} | {e1}");
         Assert.Contains("Every 6 s", unlit);
-        Assert.Equal("Cut everything in front of you while you hold. Every 2nd swing is heavy and splits the ground.", lit);
+        Assert.Equal("Cut everything in front of you while you hold. Every 3rd swing is heavy and groundbreaks: a crack runs to the pack you aim at and the earth heaves, stunning it.", lit);
         double Ev(string r) => double.Parse(r.Split("every ")[1].Replace(" s", ""), System.Globalization.CultureInfo.InvariantCulture);
-        // the period reads the lit wick's own cooldown (Splitting Stroke's 15% slower less the lamps' quickening): the Lamps sum line's
+        // the period reads the lit wick's own cooldown (Groundbreaker's 15% slower less the lamps' quickening): the Lamps sum line's
         Assert.NotEqual(Ev(e0), Ev(e1));
         Assert.Equal(System.Math.Round(WickBook.Sum(j.Ch, "sunder", false)!.Every!.Value, 2), Ev(e1));
         Assert.True(Wicks.Turn("sunder.stroke").Cooldown > 1);

@@ -1194,8 +1194,10 @@ public static partial class Firing
             double da = Wrap(Math.Atan2(c.Z - p.Z, c.X - p.X) - a);
             if (Math.Abs(da) <= arc / 2 + 0.3) b.Hooks.OnHitProp?.Invoke(c.Tag, c.Id, w.School, w.Damage, c.X, c.Z);
         }
-        // Its own heavy swing splits the ground ahead (Sunder's line).
-        if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
+        // Its own heavy swing splits the ground ahead (Sunder's line); under the Groundbreaker Turn it breaks it instead:
+        // a crack to the pack she aims at and the earth heaves, no line.
+        if (w.OwnHeavy && w.Wick?.Groundbreak is { } gb) Groundbreak(b, w, p.X, p.Z, a, gb);
+        else if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
         // Linger: the swing leaves its ground where the arc's middle fell.
         // (M3 J12b) Under a chain: one ground per WRITTEN blow, at the blow's size (LaysGround), not one per cut at its share.
         if (w.Wick?.Ground is { } g && LaysGround(b, w))

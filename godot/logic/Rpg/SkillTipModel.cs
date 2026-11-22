@@ -64,7 +64,7 @@ public static class SkillTipModel
         {
             every = period;
             cut = dmg * period / (w.Press.Wait ?? def.Base.Cooldown ?? 1);
-            // a lit wick that slows or quickens the swing (Splitting Stroke's 15% slower, a lamp's 8% less) stretches the period (as the Lamps sum line reads it)
+            // a lit wick that slows or quickens the swing (Groundbreaker's 15% slower, a lamp's 8% less) stretches the period (as the Lamps sum line reads it)
             every = period * (w.Wick?.Cooldown ?? 1);
         }
 
