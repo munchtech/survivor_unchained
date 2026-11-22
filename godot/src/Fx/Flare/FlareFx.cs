@@ -100,6 +100,8 @@ public partial class FlareFx : Node3D
     public override void _Ready()
     {
         _ = Content.FlareFamily.StopOf("", "warden", false, false);   // (P2 task 5) flare_family.json is parsed on first use: 14-15 ms at the first Flare press; read here, behind the load
+        // (P2 task 5) and the blade a Flare forms in her hand (FlareDef.Grip) is measured here, not at its first press (Arms.Warm: the read-back of its meshes)
+        foreach (var f in Content.Lamps.Flares.Values) if (f.Grip is { } grip) Arms.Warm(grip);
         AddChild(scars);
         AddChild(bed);
         AddChild(glow);
