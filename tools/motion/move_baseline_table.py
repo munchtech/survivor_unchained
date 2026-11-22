@@ -259,11 +259,13 @@ def heavy_den(d, moving_ms=1.0):
                         cam_m=round(hyp(f[b]["look_x"] - f[a]["look_x"], f[b]["look_z"] - f[a]["look_z"]), 3),
                         her_px=round(hyp(f[b]["her_px_x"] - f[a]["her_px_x"], f[b]["her_px_y"] - f[a]["her_px_y"]), 1), cause=cause))
     mv = [x for x in det if x["speed_ms"] > moving_ms]
-    out = dict(stops_total=len(det), stops_while_moving=len(mv), moving_threshold_ms=moving_ms)
+    out = dict(note="crits forced by the harness (stat buff moves12_crit); stop rule and movement as in play; not reproducible run to run",
+               stops_total=len(det), stops_while_moving=len(mv), moving_threshold_ms=moving_ms)
     if mv:
         out.update(drawn_slide_mean_m=round(sum(x["drawn_m"] for x in mv) / len(mv), 3), drawn_slide_max_m=max(x["drawn_m"] for x in mv),
                    frames_mean=round(sum(x["frames"] for x in mv) / len(mv), 2), frames_max=max(x["frames"] for x in mv),
-                   cam_travel_mean_m=round(sum(x["cam_m"] for x in mv) / len(mv), 3), her_px_mean=round(sum(x["her_px"] for x in mv) / len(mv), 1))
+                   cam_travel_mean_m=round(sum(x["cam_m"] for x in mv) / len(mv), 3), cam_travel_max_m=max(x["cam_m"] for x in mv),
+                   her_px_mean=round(sum(x["her_px"] for x in mv) / len(mv), 1), her_px_max=max(x["her_px"] for x in mv))
     out["stops"] = det
     return out
 

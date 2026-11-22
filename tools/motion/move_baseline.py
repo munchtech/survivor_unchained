@@ -26,7 +26,7 @@ START_OFF = {
 }
 # Takes in a den room with foes on (not boss-mid, no --no-foes, no --at-off): her start is --at X,Z beside a pack.
 # env S12D_AT=default boots at the den's own arrival (with --moves12-foes, to list where the packs stand).
-DEN_AT = {"s12d": "58,106"}   # a pack of 5 wolves stands near (58, 89) at seed 1, 16-19 m up-screen (-Z, key W) of this spot at S0
+DEN_AT = {"s12d": "58,104"}   # a pack of 5 wolves stands near (58, 89) at seed 1; at S0 (fight time 2 s) they are 5-9 m up-screen (-Z, key W) of this spot
 EXTRA_ARGS = {"s12d": ["--moves12-at", "2"]}   # s12d: S0 at fight time 2 s, while the arrival pack still stands 7-9 m off   # per take: extra game flags, e.g. {"s01": ["--moves12-at", "5"]}
 
 

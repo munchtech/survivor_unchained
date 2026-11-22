@@ -77,7 +77,7 @@ public sealed partial class MoveShots : Node
             Btns = [B("D", 0, 2.5), B("LMB", 0.75, 0.83), B("LMB", 1.2, 1.28), B("LMB", 1.65, 1.73)] },
         // s12d: shot 12 in a den room with a real pack (foes on): the mouse tracks the nearest foe, she runs at the pack, tapping LMB.
         ["s12d"] = new() { Title = "12 HEAVY HIT WHILE MOVING (den pack)", End = 6.0, Follow = true,
-            Btns = [B("W", 0, 4.0), .. Taps(5.2)] },
+            Btns = [B("W", 0, 5.5), .. Taps(5.2)] },
         ["s13"] = new() { Title = "13 STILL MOUSE", End = 5.5, Screen = new(1100, 560), Btns = [B("D", 0, 1.5), B("A", 1.5, 3.0), B("W", 3.0, 4.0)] },
         ["p01"] = new() { Title = "PAD 1+2 START / STOP", End = 5.0, Pad = true, Stick = Ramp(0, 2.0, 1, 0) },
         ["p03"] = new() { Title = "PAD 3 REVERSAL", End = 5.0, Pad = true,
@@ -89,8 +89,7 @@ public sealed partial class MoveShots : Node
 
     static readonly Dictionary<string, (Key Key, string Code)> KeyInfo = new()
     {
-        ["W"] = (Key.W, "KeyW"), ["A"] = (Key.A, "KeyA"), ["S"] = (Key.S, "KeyS"), ["D"] = (Key.D, "KeyD"), ["SPACE"] = (Key.Space, "Space"), ["1"] = (Key.Key1, "Digit1"), ["2"] = (Key.Key2, "Digit2"),
-    };
+        ["W"] = (Key.W, "KeyW"), ["A"] = (Key.A, "KeyA"), ["S"] = (Key.S, "KeyS"), ["D"] = (Key.D, "KeyD"), ["SPACE"] = (Key.Space, "Space"),    };
 
     /* ------------------------------------------------------------------------------------------- state -- */
 
@@ -176,6 +175,8 @@ public sealed partial class MoveShots : Node
                 started = true;
                 t0 = b.Time;
                 anchor = (b.Player.X, b.Player.Z);
+                // s12d only: every landing strike crits (a stat buff through the sim's own route), so her heavy-hit stops can be sampled
+                if (name == "s12d") { b.AddBuff("moves12_crit", Stat.CritChance, 5.0, ModKind.Flat, take.End + 1, 1); GD.Print("MOVES12 crits forced: moves12_crit +500% critChance"); }
                 GD.Print($"MOVES12 S0 frame {Engine.GetFramesDrawn()} t {b.Time:0.000} at ({anchor.X:0.000}, {anchor.Z:0.000})");
             }
             else anchor = (b.Player.X, b.Player.Z);
@@ -230,8 +231,6 @@ public sealed partial class MoveShots : Node
             controls._Input(new InputEventKey { PhysicalKeycode = ki.Key, Keycode = ki.Key, Pressed = on });
         else if (k == "LMB")
             controls._Input(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = on, Position = Mouse ?? new Vector2(960, 540) });
-        else if (k == "RMB")
-            controls._Input(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = on, Position = Mouse ?? new Vector2(960, 540) });
         else if (k == "LB")
             controls._Input(new InputEventJoypadButton { ButtonIndex = JoyButton.LeftShoulder, Pressed = on });
         GD.Print($"MOVES12 in {t:0.000} frame {Engine.GetFramesDrawn()} {k} {(on ? "down" : "up")}");
