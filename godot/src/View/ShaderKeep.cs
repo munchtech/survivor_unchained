@@ -17,6 +17,9 @@ public static class ShaderKeep
     /// <summary>Loads `perStep` shaders a step (each yield: the share done, 0..1) and holds them.</summary>
     public static IEnumerable<float> Load(int perStep = 8)
     {
+        // (P2 task 5) The game's methods are compiled ahead on a worker from here on (Fx.PreJit): the first press of a
+        // skill no longer waits for the JIT on the main thread.
+        SurvivorUnchained.Fx.PreJit.Start();
         var files = new List<string>();
         foreach (var root in new[] { "res://shaders", "res://art" }) Find(root, files);
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();

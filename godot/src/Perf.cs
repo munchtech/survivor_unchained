@@ -124,11 +124,41 @@ public partial class Perf : Node
     readonly HashSet<ulong> qHooked = new();
     double nextQHook;
 
-    static void QHit(string key)
+    // (session 2, corrected) A canvas item's draw signal comes BEFORE its _Draw body runs. So the stretch after a draw
+    // hook is that item's (its body, and whatever unhooked ran before the next hook), and a "draw of X" key is X's own
+    // body. The first reading of this probe gave it to the next item drawn and named the wrong one.
+    static string? qBody;
+    static bool qBodyLabels, qLabelHit;
+    static double qLabelMs;
+    static long qLabelSum;
+    static int qLabelMax, qLabelFrames;
+    static readonly SortedDictionary<int, (double Ms, int N)> labelBins = new();
+
+    static void QHit(string key, bool draws = false)
     {
         long now = Stopwatch.GetTimestamp();
-        if (qOpen) { var v = qMs.GetValueOrDefault(key); qMs[key] = (v.Ms + (now - qMark) * TickMs, v.N + 1); }
+        if (qOpen)
+        {
+            string k = qBody ?? (draws ? "before a draw (unhooked)" : key);
+            double ms = (now - qMark) * TickMs;
+            var v = qMs.GetValueOrDefault(k); qMs[k] = (v.Ms + ms, v.N + 1);
+            if (qBodyLabels) { qLabelMs += ms; qLabelHit = true; }
+        }
         qMark = now;
+        qBody = draws ? key : null;
+        qBodyLabels = draws && key.EndsWith("(GroundLabels)", StringComparison.Ordinal);
+    }
+
+    /// <summary>The loot labels' own draw (Ui.GroundLabels._Draw's body) by how many names it drew: ms a frame, frames.</summary>
+    static string LabelTable()
+    {
+        var by = new SortedDictionary<int, (double Ms, int N)>();
+        foreach (var (count, v) in labelBins)
+        {
+            int k = count < 10 ? count : count < 40 ? count / 5 * 5 : count / 10 * 10;
+            var a = by.GetValueOrDefault(k); by[k] = (a.Ms + v.Ms, a.N + v.N);
+        }
+        return string.Join("; ", by.Select(kv => $"{kv.Key}{(kv.Key < 10 ? "" : kv.Key < 40 ? $"-{kv.Key + 4}" : $"-{kv.Key + 9}")}: {kv.Value.Ms / kv.Value.N:0.000} ms ({kv.Value.N} frames)"));
     }
 
     /// <summary>The nearest node above `n` that is one of the game's own (a C# type of ours), by its type and name.</summary>
@@ -152,7 +182,7 @@ public partial class Perf : Node
             if (!qHooked.Add(n.GetInstanceId())) continue;
             var ci = (CanvasItem)n;
             string key = $"draw of {ci.GetParent()?.Name}/{ci.Name} ({ci.GetType().Name})";
-            ci.Draw += () => QHit(key);
+            ci.Draw += () => QHit(key, true);
         }
     }
 
@@ -456,9 +486,22 @@ public partial class Perf : Node
                 GD.Print(($"perf queue [{t,6:0.0}s] ms/frame (calls/frame): " +
                     string.Join("; ", qMs.OrderByDescending(kv => kv.Value.Ms).Take(12).Select(kv => $"{kv.Key} {kv.Value.Ms / Math.Max(1, windowN):0.000} ({(double)kv.Value.N / Math.Max(1, windowN):0.0})"))));
                 qMs.Clear();
+                GD.Print($"perf labels [{t,6:0.0}s] loot names drawn: {(double)qLabelSum / Math.Max(1, qLabelFrames):0.0} a frame over {qLabelFrames} frames that drew them (most {qLabelMax})");
+                qLabelSum = 0; qLabelMax = qLabelFrames = 0;
             }
         }
-        if (queueProbe) { qMark = Stopwatch.GetTimestamp(); qOpen = true; }
+        if (queueProbe)
+        {
+            // The frame before this one: the labels' body time, by how many names stood drawn (GroundLabels.Drawn).
+            if (qLabelHit)
+            {
+                int lc = Ui.GroundLabels.Drawn.Count;
+                var v = labelBins.GetValueOrDefault(lc); labelBins[lc] = (v.Ms + qLabelMs, v.N + 1);
+                qLabelSum += lc; qLabelMax = Math.Max(qLabelMax, lc); qLabelFrames++;
+            }
+            qLabelMs = 0; qLabelHit = false; qBody = null; qBodyLabels = false;
+            qMark = Stopwatch.GetTimestamp(); qOpen = true;
+        }
         if (t >= warm + span || Done()) Finish();
     }
 
@@ -585,6 +628,8 @@ public partial class Perf : Node
 
     void Finish()
     {
+        if (queueProbe) GD.Print("perf labels: GroundLabels body, ms a frame by names drawn: " + LabelTable());
+        if (Fx.PreJit.Report.Length > 0) GD.Print("perf pre-JIT: " + Fx.PreJit.Report);
         SetProcess(false);
         if (drawMs.Count > 0)
             foreach (var (dk, dv) in drawMs.OrderByDescending(kv => kv.Value).Take(25))
