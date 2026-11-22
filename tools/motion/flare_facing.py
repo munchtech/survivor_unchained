@@ -3,7 +3,7 @@
   python tools/motion/flare_facing.py [TAG] [--exe PATH]
 
 Three legs, one godot turn (tools/turn.py) given back in a finally: f01 with --move-new, f02 with --move-new, f01 without it (the old
-movement). Each runs the game in her den (Warden, hollow dungeon on a test map, boss-mid, no foes, facing mode always, no cinematics),
+movement). Each runs the game in her den (Warden, hollow dungeon on a test map, boss-mid, no foes (cleared once by the harness: --no-foes also releases the dummies every frame), facing mode always, no cinematics),
 8 Long Cut presses with the cursor on bearing 45 i deg and (f01) the keys held toward that bearing + 135. Logs: godot/.shots/flare_facing/TAG/LEG/log.txt
 (git-ignored). Env FLARE_EXTRA adds game flags (e.g. "--facing-mode skill", which overrides the boot's `--facing-mode always`).
 --exe PATH runs an exported SurvivorUnchained.exe instead of the editor binary (same flags, no --path). Bearings: atan2(dx, dz) in
@@ -52,7 +52,7 @@ def run_leg(tag, exe, leg, take, move_new):
     out = ROOT / "godot" / ".shots" / "flare_facing" / tag / leg
     out.mkdir(parents=True, exist_ok=True)
     boot = ["--quick", "warden", "--zone", "map", "--dungeon", "hollow", "--seed", "1", "--at", "boss-mid", "--at-off", "0,0",
-            "--no-foes", "--facing-mode", "always", "--nocine", "--flare", "the_long_cut"]
+            "--facing-mode", "always", "--nocine", "--flare", "the_long_cut"]
     if move_new:
         boot.append("--move-new")
     boot += os.environ.get("FLARE_EXTRA", "").split()

@@ -35,6 +35,7 @@ public sealed partial class MoveShots
     }
 
     readonly FlarePress[] fl = Enumerable.Range(0, FlarePresses).Select(_ => new FlarePress()).ToArray();
+    bool flareCleared;
     int flareWin = -1;   // the window the clock is in now (-1: none)
 
     static double Bearing(double dx, double dz) => (Deg(Math.Atan2(dx, dz)) % 360 + 360) % 360;
@@ -66,6 +67,14 @@ public sealed partial class MoveShots
         var b = getBattle(); var (i, _) = FlareClock(t);
         double c = Math.PI / 4 * Math.Max(i, 0);
         if (b == null) return new Vector2(960, 540);
+        if (!flareCleared)
+        {
+            // --no-foes would release every foe every frame (Game.Tour), the dummies with them: the harness clears the den once instead
+            // (the dungeon's packs released, nothing else spawns) and the dummies are the only foes.
+            flareCleared = true;
+            foreach (var e in b.Enemies.Living().ToList()) b.Enemies.Release(e);
+            b.NoSpawn = true;
+        }
         double wx = b.Player.X + 6 * Math.Sin(c), wz = b.Player.Z + 6 * Math.Cos(c);
         var cam = getCamera();
         var v = new Vector3((float)wx, (float)sc.HeightAt(wx, wz), (float)wz);
@@ -110,6 +119,7 @@ public sealed partial class MoveShots
         var e = b.SpawnEnemy("wolf", x, z);
         b.NoSpawn = was;
         if (e == null) { GD.Print($"MOVES12 ERROR: the dummy wolf did not spawn at ({x:0.0}, {z:0.0})"); return null; }
+        GD.Print($"FLAREDUMMY spawned id {e.Id} alive {e.Alive} state {e.State} time {b.Time:0.000} frame {Engine.GetFramesDrawn()}");
         e.Speed = 0; e.AttackT = e.RangedT = 99; e.MaxHp = 1e6; e.Hp = 1e6; e.Provoked = true; e.Wake = 0; e.Roused = true; e.Elite = true;
         return e;
     }
