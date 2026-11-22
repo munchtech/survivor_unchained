@@ -151,6 +151,51 @@ public class DenRosterTests
         Assert.True(loose > 4.5, $"the leash's box: the farthest stands {loose:0.0} m from its spot");
     }
 
+    /// <summary>(den first blow, 22 Nov) A champion's Sign is worn on the def it was given. The den's cut of a kind and the
+    /// table's row share an id and are two kinds; Signs.Wear kept what it made by id for the whole process, so whichever was
+    /// signed first won: after a den, an arena night's Ironbound runner was the den's (14 health, no lunge), or, the other way
+    /// round, the den's champion was the table's. Both orders here: the den first, then the table first.</summary>
+    [Fact]
+    public void A_champions_sign_is_worn_on_the_def_it_was_given_den_first_or_table_first()
+    {
+        static void Carries(EnemyDef from, EnemyDef worn)
+        {
+            Assert.Equal(from.Id, worn.Id);
+            Assert.Equal(from.Health, worn.Health);
+            Assert.Equal(from.Behavior, worn.Behavior);
+            Assert.Same(from.Lunge, worn.Lunge);
+            Assert.Same(from.Slam, worn.Slam);
+            Assert.Equal(0.4, worn.IronSkin);                                     // and it wears the Sign
+            Assert.Equal(new[] { "ironbound" }, worn.Signs);
+            Assert.Empty(from.Signs);                                             // the kind itself is untouched
+        }
+        string[] sign = ["ironbound"];
+        var cuts = Den(1).B.Roster!;                                              // a den battle's own kinds
+        Assert.Null(Open(new Chart { Tier = 1, People = "pack", Seed = 1234, Mods = new List<string>(), Name = "The Test Map" }).B.Roster);   // outside the den: the table's rows
+
+        // The den first: a den champion, then the same kind signed the same way outside the den.
+        EnemyDef cut = cuts["wolf_runner"], row = Enemies.Get("wolf_runner");
+        Assert.NotEqual(row.Health, cut.Health);
+        var den = Signs.Wear(cut, sign);
+        var outside = Signs.Wear(row, sign);
+        Assert.NotSame(den, outside);
+        Carries(cut, den);
+        Carries(row, outside);
+
+        // The table first: a champion outside the den, then the den's.
+        cut = cuts["boar_ironback"]; row = Enemies.Get("boar_ironback");
+        Assert.NotEqual(row.Health, cut.Health);
+        outside = Signs.Wear(row, sign);
+        den = Signs.Wear(cut, sign);
+        Assert.NotSame(den, outside);
+        Carries(row, outside);
+        Carries(cut, den);
+
+        // Kept: the same kind signed the same way again is the same def, each side.
+        Assert.Same(den, Signs.Wear(cut, sign));
+        Assert.Same(outside, Signs.Wear(row, sign));
+    }
+
     [Fact]
     public void Only_the_den_battle_carries_a_roster()
     {

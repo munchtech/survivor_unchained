@@ -88,17 +88,20 @@ public static class Signs
         return Get(sign).Apply(d) != null;
     }
 
-    static readonly Dictionary<string, EnemyDef> made = new();
+    // Kept by the def it was given, never by its id: a den's cut of a kind (Content/DenRoster.cs) and the table's row share an id
+    // and are two kinds. (22 Nov: kept by id, whichever was signed first in the process gave its numbers to the other's champions.)
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<EnemyDef, Dictionary<string, EnemyDef>> made = new();
 
-    /// <summary>A kind wearing these Signs, in order (made once and kept). Its id stays its
+    /// <summary>A kind wearing these Signs, in order (made once for that def and kept while it lives). Its id stays its
     /// kind's, so the bestiary, the drops and the kills count it as what it is.</summary>
     public static EnemyDef Wear(EnemyDef kind, IReadOnlyList<string> signs)
     {
         if (signs.Count == 0) return kind;
-        string key = kind.Id + "+" + string.Join("+", signs);
-        lock (made)
+        string key = string.Join("+", signs);
+        var mine = made.GetOrCreateValue(kind);
+        lock (mine)
         {
-            if (made.TryGetValue(key, out var have)) return have;
+            if (mine.TryGetValue(key, out var have)) return have;
             var d = kind;
             var tint = kind.Tint ?? (1, 1, 1);
             double glow = kind.Glow ?? 0;
@@ -114,7 +117,7 @@ public static class Signs
             d.Name = string.Join(", ", signs.Select(s => Get(s).Name)) + " " + kind.Name;
             d.Tint = tint;
             d.Glow = glow;
-            made[key] = d;
+            mine[key] = d;
             return d;
         }
     }
