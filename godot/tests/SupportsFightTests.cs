@@ -141,8 +141,6 @@ public class SupportsFightTests
         var j = AtFifteen();
         Assert.Contains(u.A, j.Ch.Slotted);
         Assert.Contains(u.B, j.Ch.Slotted);
-        Assert.False(SkillBook.IsAuto(j.Ch, u.A));
-        Assert.False(SkillBook.IsAuto(j.Ch, u.B));
         Assert.True(UnionJoin.TurnBurning(j.Ch, u.A), u.A);
         Assert.True(UnionJoin.TurnBurning(j.Ch, u.B), u.B);
         Assert.Contains(UnionJoin.Offered(j.Ch), o => o.Id == Wall);

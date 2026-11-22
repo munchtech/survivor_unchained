@@ -34,7 +34,7 @@ public class SkillTipTests(ITestOutputHelper output)
         var set = new List<(string, string)>();
         void Add(string s, string cast) { if (set.All(x => x.Item1 != s)) set.Add((s, cast)); }
         foreach (var s in t.Slots) Add(s.Skill, s.Cast);
-        foreach (var s in t.Later) Add(s, "kindle");
+        foreach (var s in t.Later) Add(s, Cast(s));
         if (t.Union != null)
         {
             var un = Unions.Find(t.Union.Id)!;
@@ -58,7 +58,6 @@ public class SkillTipTests(ITestOutputHelper output)
                 b.RemoveWeapon(b.Weapons.Last(x => x.Slot < b.KeyCount && x.Id != "sunder" && x.Id != skill).Id); // (bd-keys) a key freed: an auto slot never runs out
             Assert.NotNull(w);
         }
-        w.SetForm(cast);
         return w;
     }
 
@@ -121,7 +120,6 @@ public class SkillTipTests(ITestOutputHelper output)
     {
         var w = WickBook.Weapon(ch, skill, WickBook.RankIn(ch, skill, false), false);
         w.Press = Weapons.All[skill].Press;
-        if (w.Press != null) w.SetForm(cast);
         return w;
     }
 

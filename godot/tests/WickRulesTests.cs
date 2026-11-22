@@ -290,7 +290,7 @@ public sealed class WickRulesTests(ITestOutputHelper output)
         foreach (var t in new[] { 0.8, 1.2, 1.6, 2.0 })
             s.At(t, () =>
             {
-                if (v == "blocks") s.B.RiposteUntil = s.B.Time + 0.05;
+                if (v == "blocks") { s.B.Stats.Add(new StatMod(Stat.Block, ModKind.Flat, 1)); s.B.Player.BlockT = 0; } // (a Warding light block; the riposte window that made it is gone)
                 s.B.HurtPlayer(30, School.Physical, "test", st);
             });
         if (v == "walk") { s.At(0.25, () => s.MoveZ = -1); s.At(2.0, () => s.MoveZ = 0); }

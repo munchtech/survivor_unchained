@@ -549,7 +549,7 @@ public partial class Socket : Control
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
-        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; FiredItself(); }
+        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; }
         else if (waiting && ready >= 0.98)
         {
             // Ready again: a short wait is not cued (a fast attack stays lit); a longer one gets the envelope, and a
@@ -691,7 +691,6 @@ public partial class Socket : Control
                 else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
-            // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
             if (wiped) DrawWipe(c, hr);
             else if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }

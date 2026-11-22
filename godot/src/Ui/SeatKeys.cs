@@ -9,12 +9,11 @@ namespace SurvivorUnchained.Ui;
 /// actually presses"). Each seat wears its key cap at 12 o'clock (a KeyTag chip, a child so a callout's dimming takes it
 /// too); GameHud feeds it a SeatState each frame (values only, nothing built). The kinds at a glance:
 ///   pressed and hold: a bright cap; channeled: a bright cap on a gold underline, a gold arc turning in the ring while it
-///   runs; kindled: the cap at half, the well lit like a lantern (breathing; when it fires itself the lantern catches:
-///   a radial flare, hot at the well's middle, the glyph in dark ink over it, settling back).
+///   runs. Every seat is a pressed key now (no auto slots, SKILL_KINDS.md, 22 Nov).
 /// A spender short of Resolve: a gold arc fills clockwise from 12 o'clock as Value / cost. A union: both rings' inner
 /// edges gold, a clasp across the gap of adjacent seats (linked rings at 10:30 otherwise), the second key breathing
 /// gold while the bond is live. Empty: locked = no cap; open = the cap at 30%. A seat that wears a cap draws no rank chip (lead 4).
-/// What moves by the clock (the lantern, the turning arc, the bond's breath) is a small child changed by its
+/// What moves by the clock (the turning arc, the bond's breath) is a small child changed by its
 /// Modulate or Rotation, never a redraw of the seat.
 /// </summary>
 public partial class Socket
@@ -50,9 +49,7 @@ public partial class Socket
     SeatState st = new() { Cost = -1 };
     bool keyed, locked;
     float costShown = -1;
-    double flareT = -1;
-    SeatFx? lantern, spinner, bond, flare, ink, press, heldRing;
-    string inkKey = "";
+    SeatFx? spinner, bond, press, heldRing;
     Color capShown = new(-1, -1, -1, -1);
     bool capVisible = true;
 
@@ -108,44 +105,8 @@ public partial class Socket
     /// <summary>Under its full cost (the arc shows): short, or the fourth look (fires, not at full strength).</summary>
     bool BelowCost => keyed && filled && st.Cost >= 0;
 
-    /// <summary>The lantern catching, by the seconds since a kindled seat fired itself (M4 §1, lead 6: the flat mid-band
-    /// disc lost the glyph). Light: how much of the flare shows (whole for FlareHold, then gone over FlareSettle);
-    /// Swell: the flare's size (it catches from FlareFrom of the well to all of it in FlareCatch).</summary>
-    public const double FlareHold = 0.25, FlareSettle = 0.3, FlareCatch = 0.06;
-    public const float FlareFrom = 0.6f;
-    public static float FlareLight(double t) => t < 0 || t >= FlareHold + FlareSettle ? 0
-        : t <= FlareHold ? 1 : 1 - Mathf.SmoothStep(0, 1, (float)((t - FlareHold) / FlareSettle));
-    public static float FlareSwell(double t)
-    {
-        float k = (float)Math.Clamp(t / FlareCatch, 0, 1);
-        return FlareFrom + (1 - FlareFrom) * (1 - (1 - k) * (1 - k));
-    }
-
-    /// <summary>The wait's level and the lantern's flare (M4 lead 5). The level's surface is a straight line across the
-    /// well (DgMeters.Level), and it showed through the flare as the flare settled: a square-cornered lighter box
-    /// climbing the lit disc (a short wait's level runs the whole well in the settle's 0.3 s). So under the flare the
-    /// well holds no level: all of it dark, a round shade the lantern dims down to; when the flare has gone the level
-    /// rises from the foot to where the wait stands in LevelRise. A wait known to be over about when the flare is
-    /// (BriefWait) shows no level at all, as a fast cycle shows none.</summary>
-    public const double LevelRise = 0.15, BriefWait = FlareHold + FlareSettle + 0.25;
-    double levelRiseT = -1;
-    bool briefWait;
-
-    /// <summary>The level the well draws while it waits (0 all dark .. 1); -1: none drawn.</summary>
-    float WaitLevel()
-    {
-        if (briefWait && waiting) return -1;
-        if (flareT >= 0) return 0;
-        float r = (float)ready;
-        return levelRiseT >= 0 ? r * Mathf.SmoothStep(0, 1, (float)(levelRiseT / LevelRise)) : r;
-    }
-
-    /// <summary>A kindled seat that fired itself (its wait began): the lantern catches.</summary>
-    void FiredItself()
-    {
-        briefWait = false;
-        levelRiseT = -1;
-    }
+    /// <summary>The level the well draws while it waits (0 all dark .. 1).</summary>
+    float WaitLevel() => (float)ready;
 
     int tracedWait = -1;
 
@@ -166,9 +127,6 @@ public partial class Socket
         if (hr <= 0) hr = Size.X * 0.34f;
         var f = new SeatFx(m, Size, hr) { Visible = false };
         AddChild(f);
-        // (the lantern's own light under the flare, the glyph's ink over it)
-        if (lantern != null && m != SeatFx.Mode.Lantern) MoveChild(lantern, 0);
-        if (ink != null && m != SeatFx.Mode.Ink) MoveChild(ink, -1);
         // (fix A2: the held ring stays above every added layer)
         if (heldRing != null && m != SeatFx.Mode.Held) MoveChild(heldRing, -1);
         // (the lights under the cap: the cap stays on top)
@@ -176,65 +134,10 @@ public partial class Socket
         return f;
     }
 
-    /// <summary>Each frame: the lantern, the turning arc, the bond's breath and the cap's light (Modulate and Rotation
+    /// <summary>Each frame: the turning arc, the bond's breath and the cap's light (Modulate and Rotation
     /// only; nothing redrawn, nothing built).</summary>
     void SeatTick(double dt)
     {
-        bool kindled = false;   // (no seat is kindled now: the lantern below is dead, left for a later sweep)
-        if (kindled && lantern == null) lantern = Fx(SeatFx.Mode.Lantern);
-        if (lantern != null)
-        {
-            if (lantern.Visible != kindled) lantern.Visible = kindled;
-            if (kindled)
-            {
-                // lit and watching: edge amber at about 0.35, breathing 15% over 2.5 s; firing itself, the lantern
-                // catches for 0.25 s (SeatFx.Flare: hot core, mid band, amber rim; the glyph in ink over it), then
-                // settles back over 0.3 s
-                float br = 1 + 0.15f * Mathf.Sin((float)(t * Mathf.Tau / 2.5));
-                var col = Edge with { A = 0.35f * br };
-                if (flareT >= 0)
-                {
-                    flareT += dt;
-                    float k = FlareLight(flareT);
-                    flare ??= Fx(SeatFx.Mode.Flare);
-                    flare.Visible = k > 0;
-                    flare.Modulate = new Color(1, 1, 1, k);
-                    flare.Scale = Vector2.One * FlareSwell(flareT);
-                    if (glyphKey != "")
-                    {
-                        ink ??= Fx(SeatFx.Mode.Ink);
-                        if (inkKey != glyphKey)
-                        {
-                            inkKey = glyphKey;
-                            int gi = (int)Mathf.Round(Mathf.Min(38, lantern.Hr * 2 * 0.80f));
-                            ink.Glyph = Glyphs.Texture(glyphKey, gi * 2, Colors.White, 2.1f, line: true);
-                            ink.GlyphSize = gi;
-                            ink.QueueRedraw();
-                        }
-                        ink.Visible = k > 0;
-                        ink.Modulate = new Color(1, 1, 1, k);
-                    }
-                    // (its own amber spills a little further over the bezel while it burns)
-                    col = col.Lerp(Edge with { A = 0.62f }, k);
-                    // (the flare gone: the wait's level, held dark under it, rises from the foot: WaitLevel)
-                    if (k <= 0) { flareT = -1; levelRiseT = 0; dirty = true; }
-                }
-                lantern.Modulate = col;
-            }
-            else if (flareT >= 0 || (flare?.Visible ?? false))
-            {
-                flareT = -1;
-                dirty = true;
-                if (flare != null) flare.Visible = false;
-                if (ink != null) ink.Visible = false;
-            }
-        }
-        if (levelRiseT >= 0)
-        {
-            levelRiseT += dt;
-            if (levelRiseT >= LevelRise) levelRiseT = -1;
-            dirty = true;
-        }
         // (fix A, 6: a key down, whatever the seat's kind: the ring lit, the well warm, and the bright head turning on
         // the arc, so held is never quieter than invited)
         bool held = keyed && filled && st.Held;
@@ -279,7 +182,7 @@ public partial class Socket
         Color c = !filled ? new Color(1, 1, 1, CapAlphaOpen)
             : Colors.White;   // (M4 lead 9: no bond tint over 1.0 here: it pushed the bone cap's fill to pale yellow; the bond ring breathes)
         if (c != capShown) { capShown = c; Cap.Modulate = c; }
-        if (Cap.Quiet != (kindled && !bd)) Cap.Quiet = kindled && !bd;
+        if (Cap.Quiet) Cap.Quiet = false;
         if (Cap.Down != held) Cap.Down = held;
         bool ul = filled && st.Kind == SeatKind.Channeled;
         if (Cap.Underline != ul) Cap.Underline = ul;
@@ -445,13 +348,11 @@ public partial class Socket
     }
 }
 
-/// <summary>A seat's light that moves by the clock (M4 §1): the kindled well's lantern (a soft disc, added), the
-/// lantern catching (Flare: the well's disc, hot #ffe9a8 at its middle through the mid band #f9b214 to the lit amber
-/// #ca6e06 at its rim, laid over the well; Ink: the skill's line glyph in dark ink #1a1410 over the flare), the
+/// <summary>A seat's light that moves by the clock (M4 §1): the
 /// channel's turning arc, the bond's breathing gold ring. Drawn once; the seat changes its Modulate, Scale or Rotation.</summary>
 public partial class SeatFx : Control
 {
-    public enum Mode { Lantern, Spinner, Bond, Flare, Ink, Press, Held }
+    public enum Mode { Spinner, Bond, Press, Held }
     readonly Mode mode;
     /// <summary>The held ring stood out past an ink gap, plain (held under the cost: judge r3c S6).</summary>
     public bool Wide;
@@ -459,41 +360,9 @@ public partial class SeatFx : Control
     public float Pulse;
     readonly float hr;
     public float Hr => hr;
-    /// <summary>Ink: the glyph's white shape and the px it is shown across (the seat's gold inlay's).</summary>
-    public Texture2D? Glyph;
-    public int GlyphSize;
     static readonly Color Head = new("#fbf1d8"), Spin = new("#f9b214");
     /// <summary>M4 lead 9: the held ring's gold (#ffcd5a) and its head bead (#fff4d6).</summary>
     static readonly Color HeldGold = new("#ffcd5a"), HeldBead = new("#fff4d6");
-    public static readonly Color FlareCore = new("#ffe9a8"), FlareMid = new("#f9b214"), FlareRim = new("#ca6e06"), InkDark = new("#1a1410");
-
-    /// <summary>The flare's colour at d of the well's radius (0 its middle .. 1 its rim): the hot core held to 0.18,
-    /// the mid band at 0.6, the lit amber at the rim.</summary>
-    public static Color FlareAt(float d)
-    {
-        d = Mathf.Clamp(d, 0, 1);
-        return d <= 0.6f ? FlareCore.Lerp(FlareMid, Mathf.SmoothStep(0.18f, 0.6f, d)) : FlareMid.Lerp(FlareRim, Mathf.SmoothStep(0.6f, 1f, d));
-    }
-
-    static ImageTexture? flareTex;
-    /// <summary>The flare's disc (128 px, drawn at the well's size): FlareAt across it, its last 8% easing to nothing.</summary>
-    static Texture2D FlareTex
-    {
-        get
-        {
-            if (flareTex != null) return flareTex;
-            const int n = 128;
-            var im = Image.CreateEmpty(n, n, false, Image.Format.Rgba8);
-            for (int y = 0; y < n; y++)
-                for (int x = 0; x < n; x++)
-                {
-                    float d = new Vector2(x + 0.5f - n / 2f, y + 0.5f - n / 2f).Length() / (n / 2f);
-                    im.SetPixel(x, y, FlareAt(d) with { A = 1 - Mathf.SmoothStep(0.92f, 1f, d) });
-                }
-            im.GenerateMipmaps();
-            return flareTex = ImageTexture.CreateFromImage(im);
-        }
-    }
 
     public SeatFx(Mode mode, Vector2 size, float hr)
     {
@@ -502,9 +371,8 @@ public partial class SeatFx : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = size;
         PivotOffset = size / 2;
-        // (added light: the lantern in the well; the turning arc and the bond's breath read over the union's gold edge.
-        // The flare and its ink are laid over, not added: added to a lit well the flare was a flat disc with no glyph)
-        if (mode != Mode.Flare && mode != Mode.Ink && mode != Mode.Held) Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
+        // (added light: the turning arc and the bond's breath read over the union's gold edge)
+        if (mode != Mode.Held) Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
     }
 
     public override void _Draw()
@@ -512,15 +380,6 @@ public partial class SeatFx : Control
         var c = Size / 2;
         switch (mode)
         {
-            case Mode.Lantern:
-                DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.1f, Vector2.One * hr * 2.2f), false);
-                break;
-            case Mode.Flare:
-                DrawTextureRect(FlareTex, new Rect2(c - Vector2.One * hr, Vector2.One * hr * 2), false);
-                break;
-            case Mode.Ink:
-                if (Glyph != null) DrawTextureRect(Glyph, new Rect2(c - Vector2.One * GlyphSize / 2f, Vector2.One * GlyphSize), false, InkDark);
-                break;
             case Mode.Spinner:
                 // a white-gold head with a fading gold tail, turning clockwise in the bezel just outside the gold edge
                 for (int i = 0; i < 6; i++)

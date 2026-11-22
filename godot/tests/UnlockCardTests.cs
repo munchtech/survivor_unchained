@@ -14,35 +14,31 @@ public sealed class UnlockCardTests
 {
     static TaughtBuild Warden => TaughtBuilds.Of("warden")!;
 
-    /// <summary>Every taught skill on its taught slot: the keys 0-3, the autos from MaxKeys.</summary>
+    /// <summary>Every taught skill on its taught slot: the keys 0-3.</summary>
     static int SlotOf(string id)
     {
-        int k = Warden.Keys.FindIndex(s => s.Skill == id);
-        if (k >= 0) return k;
-        int a = Warden.Autos.FindIndex(s => s.Skill == id);
-        return a >= 0 ? Weapons.MaxKeys + a : -1;
+        return Warden.Keys.FindIndex(s => s.Skill == id);
     }
 
     [Fact]
     public void Every_layer_level_has_exactly_one_row_and_no_row_is_extra()
     {
         var want = new List<(int Level, string Id)>();
-        foreach (var s in Warden.Keys.Concat(Warden.Autos)) want.Add((s.Level, s.Skill));
+        foreach (var s in Warden.Keys) want.Add((s.Level, s.Skill));
         want.Add((Warden.Stance!.Level, "stance"));
         want.Add((LampBook.RoadLevel, "road"));
         var have = UnlockCards.Rows("warden").Select(r => (r.Level, r.Id)).ToList();
         Assert.Equal(want.OrderBy(x => x.Level).ThenBy(x => x.Id), have.OrderBy(x => x.Level).ThenBy(x => x.Id));
         foreach (var r in UnlockCards.Rows("warden"))
         {
-            Assert.Contains(r.Kind, new[] { "key", "auto", "stance", "road" });
+            Assert.Contains(r.Kind, new[] { "key", "stance", "road" });
             Assert.NotEqual("", r.Line);
             Assert.NotEqual("", r.Title);
             Assert.NotEqual("", r.Lands);
-            // (a key row's skill is a key of the build, an auto row's an auto)
+            // (a key row's skill is a key of the build)
             if (r.Kind == "key") Assert.Contains(Warden.Keys, s => s.Skill == r.Id);
-            if (r.Kind == "auto") Assert.Contains(Warden.Autos, s => s.Skill == r.Id);
-            // (a key and a stance lesson teach with a key's name; the road and the autos teach nothing)
-            if (r.Kind is "road" or "auto") Assert.False(r.Teach.NextFight, r.Id);
+            // (a key and a stance lesson teach with a key's name; the road teaches nothing)
+            if (r.Kind is "road") Assert.False(r.Teach.NextFight, r.Id);
             if (r.Teach.NextFight) { Assert.NotEqual("", r.Teach.Text); Assert.NotEqual("", r.Teach.Key); }
         }
     }

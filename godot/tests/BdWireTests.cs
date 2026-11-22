@@ -20,13 +20,12 @@ public class BdWireTests
     [InlineData(10)]
     [InlineData(12)]
     [InlineData(30)]
-    public void The_harness_survivor_fills_every_key_and_auto_slot_the_level_opens(int level)
+    public void The_harness_survivor_fills_every_key_the_level_opens(int level)
     {
         var ch = Warden(level).Ch;
         Assert.Equal(SkillBook.KeysAt(level), SkillBook.KeysUsed(ch));
-        Assert.Equal(SkillBook.AutosAt(level), SkillBook.AutosUsed(ch));
         var kit = Character.Kit(ch);
-        Assert.Equal(SkillBook.SlotsAt(level), kit.Bar.Count(w => ch.Slotted.Contains(w.Id)));
+        Assert.Equal(SkillBook.KeysAt(level), kit.Bar.Count(w => ch.Slotted.Contains(w.Id)));
     }
 
     [Fact]
@@ -45,24 +44,23 @@ public class BdWireTests
     }
 
     [Fact]
-    public void A_worn_auto_unique_puts_its_skill_in_the_bar_running_itself_with_her_auto_slots_full()
+    public void A_worn_auto_unique_puts_its_skill_in_the_bar_running_itself_beside_her_four_keys()
     {
         var ch = Warden(12).Ch;
-        Assert.Equal(SkillBook.AutosAt(12), SkillBook.AutosUsed(ch));
         Assert.DoesNotContain(Character.Kit(ch).Bar, w => w.Id == "thornbloom");
         ch.Equipment[EquipSlot.Head] = Inventory.Make(ch, "thornwreath");
         var kit = Character.Kit(ch);
         Assert.Contains(("thornbloom", 2), kit.AutoSkills);
         Assert.Contains(("thornbloom", 2), kit.Bar);
         Assert.Contains("thornbloom", kit.Autos);
-        // Her own three still run; the keys are untouched.
-        Assert.Equal(SkillBook.AutosAt(12), kit.Bar.Count(w => kit.Autos.Contains(w.Id) && ch.Slotted.Contains(w.Id)));
+        // She has no autos of her own now; the keys are untouched.
+        Assert.Equal(0, kit.Bar.Count(w => kit.Autos.Contains(w.Id) && ch.Slotted.Contains(w.Id)));
         Assert.Equal(SkillBook.KeysUsed(ch), kit.Bar.Count(w => !kit.Autos.Contains(w.Id)));
         Assert.Contains(Character.DaySkills(ch), w => w.Id == "thornbloom");
     }
 
     [Fact]
-    public void Two_auto_uniques_stack_past_her_three_auto_slots()
+    public void Two_auto_uniques_stack_beside_her_keys()
     {
         var ch = Warden(12).Ch;
         ch.Equipment[EquipSlot.Head] = Inventory.Make(ch, "thornwreath");
@@ -70,7 +68,7 @@ public class BdWireTests
         var kit = Character.Kit(ch);
         Assert.Contains("thornbloom", kit.Autos);
         Assert.Contains("firepot", kit.Autos);
-        Assert.Equal(SkillBook.AutosAt(12) + 2, kit.Autos.Count);
+        Assert.Equal(2, kit.Autos.Count);
     }
 
     [Fact]
@@ -137,22 +135,5 @@ public class BdWireTests
         ch.Equipment[EquipSlot.Offhand] = Inventory.Make(ch, "storm_totem");
         Assert.Null(SkillBook.WornStance(ch));
         Assert.Equal("mace", SkillBook.StanceOf(ch));
-    }
-
-    [Fact]
-    public void An_old_save_without_the_kindled_form_loads_with_the_taught_autos_kindled()
-    {
-        var j = Warden(12);
-        var node = JsonNode.Parse(Json.Write(j.ToSave(new SaveLocation { Zone = "waystation" })))!;
-        var c = node["character"]!.AsObject();
-        Assert.True(c.ContainsKey("autoForm"));
-        c.Remove("autoForm");
-        c.Remove("bar");
-        var back = Saves.Migrate(Json.Parse<SaveData>(node.ToJsonString())).Character;
-        var kindled = TaughtBuilds.Of("warden")!.Slots.Where(s => s.Cast == "kindle" && back.Slotted.Contains(s.Skill)).ToList();
-        Assert.NotEmpty(kindled);
-        Assert.NotEmpty(back.AutoForm);
-        foreach (var s in kindled) Assert.True(SkillBook.IsAuto(back, s.Skill), s.Skill);
-        Assert.True(SkillBook.KeysUsed(back) <= SkillBook.KeysAt(back.Level));
     }
 }
