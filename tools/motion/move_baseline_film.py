@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 D = ROOT / "godot/.shots/move_baseline"
 FFMPEG = "C:/Users/munch/AppData/Roaming/Python/Python314/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe"
-ORDER = ["s01", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10a", "s10b", "s11", "s12", "p01", "p03", "p08", "p10a", "p10b"]
+ORDER = ["s01", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10a", "s10b", "s10c", "s10d", "s10e", "s11", "s12", "p01", "p03", "p08", "p08b", "p10a", "p10b"]
 
 out = Path(sys.argv[1])
 clips = [D / t / "clip.mp4" for t in ORDER if (D / t / "clip.mp4").exists()]

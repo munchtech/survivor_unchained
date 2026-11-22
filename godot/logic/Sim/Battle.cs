@@ -626,6 +626,8 @@ public sealed partial class Battle
         if (TickArt(dt)) return;
         // A Strike holds the controls while it plays (the Flare, CLASSES.md §3.3).
         if (FlareHold > 0) { p.Vx = p.Vz = 0; p.Moving = false; return; }
+        // (MoveFlags.StopHold) A hit-stop on her holds her where she is: her speed is kept, so she is off again at its end.
+        if (FeetHeld > 0) { FeetHeld -= dt; return; }
 
         // Leaping: an arc through the air, untouchable until landing.
         if (p.Leap is { } leap)
@@ -645,6 +647,9 @@ public sealed partial class Battle
         {
             p.DashT -= dt;
             double dsp = Abilities.Dash.Distance * DashLength() / Abilities.Dash.Time;
+            // (MoveFlags.RollTime: a roll instead, fast off the mark and down to her run speed by its end)
+            if (MoveFlags.RollTime > 0)
+                dsp = MoveFlags.Roll((MoveFlags.RollLength > 0 ? MoveFlags.RollLength : Abilities.Dash.Distance) * DashLength(), p.DashT, dt, Stats.Get(Stat.MoveSpeed));
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             // Over a gap in the ground (a crack, a sinkhole) a dash carries her; walls still stop it.
@@ -655,8 +660,10 @@ public sealed partial class Battle
             {
                 AddBuff("momentum", Stat.MoveSpeed, Abilities.Dash.MomentumSpeed, ModKind.Inc, Abilities.Dash.Momentum, 1);
                 dashEnded = Time;
-                p.Vx = p.DashDX * Stats.Get(Stat.MoveSpeed);
-                p.Vz = p.DashDZ * Stats.Get(Stat.MoveSpeed);
+                // (MoveFlags.DashExit: out of it she moves the way the keys are held, or stands: along the dash she curved
+                // back to the keys over the next steps, 0.83 m off their line on a dash across them)
+                p.Vx = (MoveFlags.DashExit ? mx : p.DashDX) * Stats.Get(Stat.MoveSpeed);
+                p.Vz = (MoveFlags.DashExit ? mz : p.DashDZ) * Stats.Get(Stat.MoveSpeed);
                 DashLanded();
             }
             return;
@@ -675,9 +682,13 @@ public sealed partial class Battle
         }
         if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
         double targetVX = mx * speed, targetVZ = mz * speed;
-        double accel = 1 - Math.Exp(-dt * 14);
-        p.Vx += (targetVX - p.Vx) * accel;
-        p.Vz += (targetVZ - p.Vz) * accel;
+        // (MoveFlags: a fixed ramp of a few steps, the PoE2 benchmark's start and stop; off, the eased ramp as it was)
+        if (!MoveFlags.Step(ref p.Vx, ref p.Vz, targetVX, targetVZ, speed, dt))
+        {
+            double accel = 1 - Math.Exp(-dt * 14);
+            p.Vx += (targetVX - p.Vx) * accel;
+            p.Vz += (targetVZ - p.Vz) * accel;
+        }
         // Rooted (the kit's ring): her feet are held; only a dash frees them.
         if (p.RootT > 0) { p.Vx = p.Vz = 0; p.DriftX = p.DriftZ = 0; }
         // Iron Vow's plant: her walk is held (a drag still moves her).
@@ -746,6 +757,13 @@ public sealed partial class Battle
 
     public double MaxHp => Math.Max(1, Stats.Get(Stat.MaxHealth));
 
+    /// <summary>Seconds her feet are still held by a hit-stop on her (HoldFeet).</summary>
+    public double FeetHeld;
+
+    /// <summary>The view's hit-stop on her, told to the fight: for its length she does not move (0 m of slide under a frozen
+    /// pose). Only with MoveFlags.StopHold; a fight with no view never calls it.</summary>
+    public void HoldFeet(double seconds) { if (MoveFlags.StopHold && seconds > 0) FeetHeld = Math.Max(FeetHeld, seconds); }
+
     /// <summary>Space: a short, invulnerable burst of movement.</summary>
     public bool Dash(double dirX, double dirZ)
     {
@@ -755,7 +773,8 @@ public sealed partial class Battle
         if (Len(dx, dz) < 0.1) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); }
         double m = Len(dx, dz);
         p.DashDX = dx / m; p.DashDZ = dz / m;
-        p.DashT = Abilities.Dash.Time;
+        // (MoveFlags.RollTime: the roll lasts that long; a hair under, so 0.45 s is 27 steps, not 28)
+        p.DashT = MoveFlags.RollTime > 0 ? MoveFlags.RollTime - 1e-9 : Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
         p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1) * StalkerDodgeWindow();
         p.WakeX = p.X; p.WakeZ = p.Z;

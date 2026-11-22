@@ -49,11 +49,16 @@ public sealed partial class MoveShots : Node
         public bool Circle;
         /// <summary>s12: a dummy wolf at her S0 spot + (5, -0.3), spawned 1.5 s before S0.</summary>
         public bool Wolf;
+        /// <summary>s12d: the cursor follows the nearest living foe (its drawn spot, re-projected every frame).</summary>
+        public bool Follow;
     }
 
     static Btn B(string k, double a, double b) => new(k, a, b);
     const float R3 = 3 / 60f, R2 = 2 / 60f, R4 = 4 / 60f;   // pad ramps: up over 3 frames, down over 2
     static Pt[] Ramp(double a, double b, float x, float y) => [new(a, 0, 0), new(a + R3, x, y), new(b, x, y), new(b + R2, 0, 0)];
+
+    /// <summary>LMB taps every 0.45 s from 0.3 s to `to` (0.08 s each).</summary>
+    static Btn[] Taps(double to) { var l = new List<Btn>(); for (double t = 0.3; t < to; t += 0.45) l.Add(B("LMB", t, t + 0.08)); return l.ToArray(); }
 
     static readonly Dictionary<string, Take> Takes = new()
     {
@@ -67,21 +72,28 @@ public sealed partial class MoveShots : Node
         ["s09"] = new() { Title = "9 DASH AT A RUN", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("SPACE", 1.5, 1.6)] },
         ["s10a"] = new() { Title = "10 DASH ACROSS THE AIM", End = 4.5, Screen = new(960, 300), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s10b"] = new() { Title = "10 DASH AGAINST THE AIM", End = 4.5, Screen = new(640, 540), Btns = [B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
+        ["s10c"] = new() { Title = "10 DASH, TWO KEYS HELD", End = 4.5, Screen = new(960, 800), Btns = [B("W", 0, 3.0), B("D", 0, 3.0), B("SPACE", 1.5, 1.6)] },
+        ["s10d"] = new() { Title = "10 DASH, NOTHING HELD, CURSOR DOWN-LEFT", End = 3.0, Screen = new(500, 700), Btns = [B("SPACE", 0.5, 0.6)] },
+        ["s10e"] = new() { Title = "10 DASH, S HELD, CURSOR RIGHT", End = 4.5, Screen = new(1280, 540), Btns = [B("S", 0, 3.0), B("SPACE", 1.5, 1.6)] },
         ["s11"] = new() { Title = "11 STRIKE WHILE MOVING", End = 5.0, Screen = new(1280, 540), Btns = [B("D", 0, 3.5), B("LMB", 1.5, 1.58)] },
         ["s12"] = new() { Title = "12 HEAVY HIT WHILE MOVING", End = 4.0, World = new(5.0f, -0.3f), Wolf = true,
             Btns = [B("D", 0, 2.5), B("LMB", 0.75, 0.83), B("LMB", 1.2, 1.28), B("LMB", 1.65, 1.73)] },
+        // s12d: shot 12 in a den room with a real pack (foes on): the mouse tracks the nearest foe, she runs at the pack, tapping LMB.
+        ["s12d"] = new() { Title = "12 HEAVY HIT WHILE MOVING (den pack)", End = 6.0, Follow = true,
+            Btns = [B("W", 0, 5.5), .. Taps(5.2)] },
+        ["s13"] = new() { Title = "13 STILL MOUSE", End = 5.5, Screen = new(1100, 560), Btns = [B("D", 0, 1.5), B("A", 1.5, 3.0), B("W", 3.0, 4.0)] },
         ["p01"] = new() { Title = "PAD 1+2 START / STOP", End = 5.0, Pad = true, Stick = Ramp(0, 2.0, 1, 0) },
         ["p03"] = new() { Title = "PAD 3 REVERSAL", End = 5.0, Pad = true,
             Stick = [new(0, 0, 0), new(R3, 1, 0), new(1.5, 1, 0), new(1.5 + R4, -1, 0), new(3.0, -1, 0), new(3.0 + R2, 0, 0)] },
         ["p08"] = new() { Title = "PAD 8 DASH FROM REST", End = 3.0, Pad = true, Stick = Ramp(0.5, 0.8, 0.707f, -0.707f), Btns = [B("LB", 0.55, 0.65)] },
+        ["p08b"] = new() { Title = "PAD 8 DASH, STICK AT REST", End = 3.0, Pad = true, Look = Ramp(0, 2.0, 0, -1), Btns = [B("LB", 1.0, 1.1)] },
         ["p10a"] = new() { Title = "PAD 10 DASH ACROSS THE AIM", End = 4.5, Pad = true, Stick = Ramp(0, 3.0, 1, 0), Look = Ramp(1.0, 3.0, 0, -1), Btns = [B("LB", 1.5, 1.6)] },
         ["p10b"] = new() { Title = "PAD 10 DASH AGAINST THE AIM", End = 4.5, Pad = true, Stick = Ramp(0, 3.0, 1, 0), Look = Ramp(1.0, 3.0, -1, 0), Btns = [B("LB", 1.5, 1.6)] },
     };
 
     static readonly Dictionary<string, (Key Key, string Code)> KeyInfo = new()
     {
-        ["W"] = (Key.W, "KeyW"), ["A"] = (Key.A, "KeyA"), ["S"] = (Key.S, "KeyS"), ["D"] = (Key.D, "KeyD"), ["SPACE"] = (Key.Space, "Space"),
-    };
+        ["W"] = (Key.W, "KeyW"), ["A"] = (Key.A, "KeyA"), ["S"] = (Key.S, "KeyS"), ["D"] = (Key.D, "KeyD"), ["SPACE"] = (Key.Space, "Space"),    };
 
     /* ------------------------------------------------------------------------------------------- state -- */
 
@@ -94,7 +106,7 @@ public sealed partial class MoveShots : Node
     readonly string name, outDir;
     readonly bool pad;
     readonly double at;
-    bool started, ended, flushed, wolfDone, wolfGone; Enemy? wolfE;
+    bool started, ended, flushed, wolfDone, wolfGone, foes2, foes0; Enemy? wolfE;
     double t0, tNow, quitAt;
     (double X, double Z) anchor;
     readonly HashSet<string> held = new();
@@ -102,6 +114,7 @@ public sealed partial class MoveShots : Node
     int tick, stepsThisFrame;
     readonly List<(double Tf, string[] C)> tickRows = new(), frameRows = new();
     Overlay? overlay;
+    Vector2 lastFoePx = new(960, 540);
 
     const string TickHead = "tick,frame,t_fight,t_shot,x,z,vx,vz,speed,mx,mz,sim_facing_deg,dashT,dash_dx,dash_dz,castT,iframes,ptr_x,ptr_z,ev";
     const string FrameHead = "frame,dt,t_fight,t_shot,steps,x,z,dx,dz,face_deg,aim_deg,ptr_x,ptr_z,look_x,look_y,look_z,campos_x,campos_y,campos_z,her_px_x,her_px_y,her_rate,her_held,anim,keys,lmb,mouse_x,mouse_y,stick_x,stick_y,slook_x,slook_y,using_pad,interp_on,cam_pitch_deg,cam_dist,fov";
@@ -166,12 +179,19 @@ public sealed partial class MoveShots : Node
                 started = true;
                 t0 = b.Time;
                 anchor = (b.Player.X, b.Player.Z);
+                // s12d only: every landing strike crits (a stat buff through the sim's own route), so her heavy-hit stops can be sampled
+                if (name == "s12d") { b.AddBuff("moves12_crit", Stat.CritChance, 5.0, ModKind.Flat, take.End + 1, 1); GD.Print("MOVES12 crits forced: moves12_crit +500% critChance"); }
                 GD.Print($"MOVES12 S0 frame {Engine.GetFramesDrawn()} t {b.Time:0.000} at ({anchor.X:0.000}, {anchor.Z:0.000})");
             }
             else anchor = (b.Player.X, b.Player.Z);
         }
         double t = started ? b.Time - t0 : b.Time - at;   // before S0 the clock is negative (she stands still)
         tNow = t;
+        if (Args.Has("moves12-foes"))
+        {
+            if (!foes2 && t >= -2) { foes2 = true; LogFoes(b, "S0-2s"); }
+            if (!foes0 && started) { foes0 = true; LogFoes(b, "S0"); }
+        }
         if (!pad) Mouse = CursorAt(t, sc);
         if (!started) return;
 
@@ -236,10 +256,39 @@ public sealed partial class MoveShots : Node
         if (kz < 0) want.Add("W"); else if (kz > 0) want.Add("S");
     }
 
+    void LogFoes(Battle b, string when)
+    {
+        foreach (var e in b.Enemies.Items)
+        {
+            if (!e.Alive || e.State == EnemyState.Dying) continue;
+            double d = Math.Sqrt((e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z));
+            GD.Print($"MOVES12 FOE {when} def={e.Def.Id} x={F(e.X, "0.00")} z={F(e.Z, "0.00")} elite={e.Elite} boss={e.Boss} dist={F(d, "0.00")}");
+        }
+    }
+
+    /// <summary>The nearest living foe's drawn spot on the screen (null: none).</summary>
+    Vector2? FoePixel(WorldScene sc)
+    {
+        var b = getBattle(); if (b == null) return null;
+        Enemy? best = null; double bd = double.MaxValue;
+        foreach (var e in b.Enemies.Items)
+        {
+            if (!e.Alive || e.State == EnemyState.Dying) continue;
+            double d = (e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z);
+            if (d < bd) { bd = d; best = e; }
+        }
+        if (best == null) return null;
+        var (ex, ez) = sc.Drawn.Of(best);
+        var cam = getCamera();
+        var v = new Vector3((float)ex, (float)sc.HeightAt(ex, ez), (float)ez);
+        return cam.IsPositionBehind(v) ? null : cam.UnprojectPosition(v);
+    }
+
     Vector2 CursorAt(double t, WorldScene sc)
     {
         Vector2 pos;
-        if (take.World is { } w)
+        if (take.Follow) pos = FoePixel(sc) ?? lastFoePx;
+        else if (take.World is { } w)
         {
             double wx = anchor.X + w.X, wz = anchor.Z + w.Y;
             var cam = getCamera();
@@ -247,6 +296,7 @@ public sealed partial class MoveShots : Node
             pos = cam.IsPositionBehind(v) ? new Vector2(960, 540) : cam.UnprojectPosition(v);
         }
         else pos = take.Screen ?? new Vector2(960, 540);
+        if (take.Follow) lastFoePx = pos;
         foreach (var s in take.Sweeps)
         {
             if (t <= s.T) break;
