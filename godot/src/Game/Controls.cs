@@ -305,6 +305,11 @@ public partial class Controls : Node
         if (heldT >= RepeatDelay) { heldT -= RepeatEvery; Fire(now.Value); }
     }
 
+    /// <summary>(--moves12, MoveShots) a scripted left and right stick (x right, y down = +Z), through the real deadzones; null = none.</summary>
+    public static Vector2? ScriptStick, ScriptLook;
+    /// <summary>(--moves12) Whether this key code is held now.</summary>
+    public bool IsDown(string code) => down.Contains(code);
+
     /// <summary>Movement from the keys and the left stick.</summary>
     void Poll()
     {
@@ -325,6 +330,18 @@ public partial class Controls : Node
                 UsingPad = true;
             }
         }
+        if (ScriptStick is { } ss)
+        {
+            float ax = ss.X, az = ss.Y;
+            float m = Mathf.Sqrt(ax * ax + az * az);
+            if (m > 0.18f)
+            {
+                float s = Mathf.Min(1, (m - 0.18f) / 0.72f) / m;
+                x += ax * s;
+                z += az * s;
+                UsingPad = true;
+            }
+        }
         float len = Mathf.Sqrt(x * x + z * z);
         if (len > 1) { x /= len; z /= len; }
         MoveX = Captured ? 0 : x;
@@ -335,6 +352,11 @@ public partial class Controls : Node
             var r = new Vector2(Input.GetJoyAxis(dev, JoyAxis.RightX), Input.GetJoyAxis(dev, JoyAxis.RightY));
             float m = r.Length();
             if (m > 0.2f) { look += r / m * Mathf.Min(1, (m - 0.2f) / 0.7f); UsingPad = true; }
+        }
+        if (ScriptLook is { } sl)
+        {
+            float m = sl.Length();
+            if (m > 0.2f) { look += sl / m * Mathf.Min(1, (m - 0.2f) / 0.7f); UsingPad = true; }
         }
         Look = look.LimitLength(1);
         if (Look != Vector2.Zero || x != 0 || z != 0) Touched = true;

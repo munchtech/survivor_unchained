@@ -167,6 +167,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk", Stand = Args.Get("auto") == "stand" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
+        // --moves12 TAKE: the movement baseline's scripted input and logs (dev, shots only; MoveShots)
+        if (Args.Has("moves12")) AddChild(new MoveShots(() => Battle, () => scene, () => camera, () => cam, controls));
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
         if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()} bt {Battle?.Time ?? 0:0.000}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
             // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him
@@ -1936,7 +1938,7 @@ public partial class Game : Node, IZoneHost
     {
         if (Battle is not { } b || scene == null || controls.UsingPad) return null;
         var vp = GetViewport();
-        var m = vp.GetMousePosition();
+        var m = MoveShots.Mouse ?? vp.GetMousePosition();
         if (!vp.GetVisibleRect().HasPoint(m)) return null;
         var o = camera.ProjectRayOrigin(m);
         var d = camera.ProjectRayNormal(m);

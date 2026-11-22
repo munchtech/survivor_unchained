@@ -325,6 +325,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 b.Tick(Step, mx, mz);
                 Perf.End(Perf.Part.Sim);
                 var evs = b.Events.Drain();
+                MoveShots.OnTick?.Invoke(b, mx, mz, evs);
                 if (evs.Count == 0) continue;
                 Perf.Begin(Perf.Part.Fx);
                 ulong fxAt = Perf.On ? Godot.Time.GetTicksUsec() : 0;
@@ -467,6 +468,7 @@ public partial class WorldScene : Node3D, IZoneLook
             // (--act-rigid, shots only: the view carried with her root, as it stands over her at rest: no follow lag on a travelling act)
             if (SurvivorUnchained.View.PlayerView.ActRigid && Player?.ActAt is Vector3 carried)
                 cam.Camera.GlobalPosition += carried + new Vector3(0, 0.8f, 0) - cam.LookAt;
+            MoveShots.OnDraw?.Invoke(dt, fightDt, hx, hz);
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
