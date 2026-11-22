@@ -122,7 +122,8 @@ public sealed class FollowCamera
         return (Mathf.DegToRad(Mathf.Lerp(m.Pitch, n.Pitch, u)), d, Mathf.Lerp(m.Height, n.Height, u));
     }
 
-    float overrideBlend, leadX, leadZ, shakeT;
+    float overrideBlend, leadX, leadZ, shakeT, lastX, lastZ;
+    bool hadLast;
     Vector3 look;
     /// <summary>Where the view looks now (its eased aim).</summary>
     public Vector3 LookAt => look;
@@ -133,7 +134,7 @@ public sealed class FollowCamera
     /// <summary>(--camlog: a line a frame of the near view's closeness, room, lens and distance) what its room ray last hit.</summary>
     public string? RoomHit;
 
-    public FollowCamera(Camera3D camera) { Camera = camera; }
+    public FollowCamera(Camera3D camera) { Camera = camera; MoveSwitch.FromArgs(); }
 
     /// <summary>Where the camera is looking (for shadows, grass and sound).</summary>
     public Vector3 Focus => look;
@@ -208,6 +209,7 @@ public sealed class FollowCamera
         look = new Vector3(x, y + 0.8f, z);
         Distance = TargetDistance;
         initialised = true;
+        hadLast = false;   // (a snap is not her own motion: the lock carries nothing across it)
         Place();
     }
 
@@ -225,6 +227,7 @@ public sealed class FollowCamera
     public void Update(float dt, float x, float y, float z, float vx, float vz)
     {
         if (!initialised) Snap(x, y, z);
+        MoveSwitch.Poll();
         closeNow = Damp(closeNow, Close, CloseRate, dt);
         orbitNow = Damp(orbitNow, Orbit, CloseRate, dt);
         // (near, the lead is the street ahead in a smaller frame: a quarter of it keeps her in view)
@@ -236,6 +239,9 @@ public sealed class FollowCamera
         float ldx = lx - leadX, ldz = lz - leadZ, ld = Mathf.Sqrt(ldx * ldx + ldz * ldz), lmax = LeadRate * dt;
         if (LeadRate > 0 && ld > lmax) { lx = leadX + ldx * lmax / ld; lz = leadZ + ldz * lmax / ld; }
         leadX = lx; leadZ = lz;
+        // (MoveFlags.CamLock, the PoE2 benchmark: she stays mid-frame, no lead ahead of a run)
+        bool locked = SurvivorUnchained.Sim.MoveFlags.CamLock;
+        if (locked) leadX = leadZ = 0;
         float wx = 0, wz = 0;
         bool leaning = false;
         if (Toward is Vector3 tw)
@@ -256,7 +262,11 @@ public sealed class FollowCamera
         var t = new Vector3(x + leadX + towardX, y + 0.8f, z + leadZ + towardZ);
         overrideBlend = Damp(overrideBlend, FocusOverride.HasValue ? 1 : 0, 2.5f, dt);
         var f = FocusOverride is Vector3 o ? t.Lerp(o, overrideBlend) : t;
-        look = new Vector3(Damp(look.X, f.X, 7, dt), Damp(look.Y, f.Y, 4, dt), Damp(look.Z, f.Z, 7, dt));
+        // Locked, the look is carried by her own motion one for one (it starts and stops with her, within the frame), and only
+        // what else moved its aim (a boss's lean, a cutscene's focus handed back, the lock switched on) eases in as before.
+        float carryX = locked && hadLast ? x - lastX : 0, carryZ = locked && hadLast ? z - lastZ : 0;
+        lastX = x; lastZ = z; hadLast = true;
+        look = new Vector3(Damp(look.X + carryX, f.X, 7, dt), Damp(look.Y, f.Y, 4, dt), Damp(look.Z + carryZ, f.Z, 7, dt));
         Distance = Damp(Distance, TargetDistance, 1.6f, dt);
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
         kickT += dt;
