@@ -1,5 +1,9 @@
 # Where we are: read this after README.md, before your handoff
 
+## 22 Nov 2026: THE GAME PLAN IS THE START (written by the plan session; the blocks below are history)
+
+The 21 Nov audit produced `docs/team/GAME_PLAN.md`. It overrides the blocks below where they differ. Its section H splits the work into packages P1 to P8, each with a spec, a pass test, a limit and a recommended model; `docs/team/HANDOFF_BRIEFS.md` holds a ready-to-paste brief for each and for an Opus orchestrator. The owner starts each package in its own session (22 Nov: "we need the plan and then begin implementing in other session(s)"). The plan session built nothing in the game. Its state file: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_devplan\STATE.md`.
+
 ## 16 Nov 2026: COORDINATOR #15 STARTS HERE (Opus; written by #14 at its close; #14's block below is history and detail)
 
 The owner's start prompt for you is in `docs/team/DEMO_PLAN.md` (top section, "Start prompt"). Run that plan. This block is the state it starts from.
