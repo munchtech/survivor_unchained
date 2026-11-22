@@ -296,19 +296,21 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     void Sign(Enemy e, Denizens d, int n, string? first = null)
     {
         var open = Charts.Signs(d, Chart.Tier);
-        // (the owner, 22 Nov, "Keep, no blocking") The den's champions turn no blow: it never lets one wear Ironbound (the roll is
-        // drawn as before, so a den's other rolls do not move; the Sign's slot goes to the next sign that fits, or none). The Sign
-        // stays for the arena and the Wayfinder's maps (their Oath of Iron too).
+        // (the owner, 22 Nov, "Keep, no blocking": the champion stays as a plain tougher foe) The den's champions turn no blow:
+        // a den champion's Ironbound roll is drawn as before and its slot spent, but the sign is not worn (no other sign in its
+        // place, nothing added), so the den's other rolls do not move. The Sign stays for the arena and the Wayfinder's maps
+        // (their Oath of Iron too).
         bool den = DenRoster.For(Chart.Dungeon);
         var worn = new List<string>();
-        if (first != null && !(den && first == "ironbound") && Signs.Fits(e.Def, first, worn)) worn.Add(first);
-        while (worn.Count < n)
+        int slots = 0;
+        if (first != null && Signs.Fits(e.Def, first, worn)) { slots++; if (!(den && first == "ironbound")) worn.Add(first); }
+        while (slots < n)
         {
-            var fit = open.Where(s => Signs.Fits(e.Def, s, worn)).ToList();
+            var fit = open.Where(s => Signs.Fits(e.Def, s, worn) && !(den && s == "ironbound" && slots > worn.Count)).ToList();
             if (fit.Count == 0) break;
             string pick = fit[(int)(R() * fit.Count)];
-            if (den && pick == "ironbound") { pick = fit.FirstOrDefault(s => s != "ironbound")!; if (pick == null) break; }
-            worn.Add(pick);
+            slots++;
+            if (!(den && pick == "ironbound")) worn.Add(pick);
         }
         if (worn.Count == 0) return;
         double was = e.Def.Speed;
