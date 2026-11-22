@@ -178,7 +178,17 @@ public partial class Game : Node, IZoneHost
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
         else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Get("storybook") is string sbId) StoryAlone(sbId);
-        else if (Args.Has("quick") || Args.Has("zone")) Quick();
+        else if (Args.Has("quick") || Args.Has("zone"))
+        {
+            // --keep-shaders: the opening's shader hold and readying (ShaderKeep, done behind the card in a real start) run here
+            // first, all at once, so a tool's quick start measures play as a player's start would (the Godot 4.7 trial).
+            if (Args.Has("keep-shaders"))
+            {
+                foreach (var _ in SurvivorUnchained.View.ShaderKeep.Load(1 << 20)) { }
+                foreach (var _ in SurvivorUnchained.View.ShaderKeep.Ready(1e9)) { }
+            }
+            Quick();
+        }
         else if (BootCard)
         {
             // (lane K, the owner 19 Nov: "a compiling shaders load bar when we open the game" / "make the title screen much
