@@ -10,7 +10,7 @@ import csv, math, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-D = ROOT / "godot/.shots/move_baseline"
+D = ROOT / "godot/.shots" / __import__("os").environ.get("MOVES_OUT", "move_baseline")  # the takes' folder, as move_baseline.py
 BODY = 1.70
 FPS = 60
 
