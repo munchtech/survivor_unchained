@@ -28,11 +28,11 @@ public sealed class KeyBarTests
     [InlineData(3, 1)]
     [InlineData(4, 2)]
     [InlineData(5, 3)]
-    [InlineData(7, 3)]
-    [InlineData(8, 3)]
-    [InlineData(9, 4)]
-    [InlineData(10, 4)]
-    [InlineData(30, 4)]
+    [InlineData(7, 4)]
+    [InlineData(8, 4)]
+    [InlineData(9, 5)]
+    [InlineData(10, 5)]
+    [InlineData(30, 5)]
     public void Keys_open_on_the_ladder(int level, int keys)
     {
         Assert.Equal(keys, SkillBook.KeysAt(level));
@@ -98,14 +98,14 @@ public sealed class KeyBarTests
         var bar = Character.Bar(j.Ch, worn, autos);
         Assert.Equal(worn.Count, autos.Count);
         Assert.All(worn, w => Assert.Contains(w.Id, autos));
-        // In a fight: her four keys as they were, six running themselves beyond them.
+        // In a fight: her five keys as they were, six running themselves beyond them.
         var b = new Battle(new BattleSetup
         {
             Seed = 3, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
             Weapons = bar, Kindled = autos, Calling = "warden", Ability = AbilityKind.ShieldBash,
         });
         Assert.Equal(bar.Count, b.Weapons.Count);
-        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(5, b.SlotsUsed);
         Assert.Equal(6, b.Weapons.Count(w => w.Slot >= Weapons.MaxKeys && w.Cast == CastMode.Auto));
     }
 
@@ -126,7 +126,7 @@ public sealed class KeyBarTests
         SkillBook.Unslot(j9.Ch, "heroic_leap");
         j9.Ch.Discovered.Add("cleaver");
         SkillBook.Learn(j9.Ch, "cleaver");
-        Assert.Equal(4, SkillBook.KeysUsed(j9.Ch));
+        Assert.Equal(5, SkillBook.KeysUsed(j9.Ch));
         var bar9 = Character.Bar(j9.Ch, [("heroic_leap", 3)], autos);
         Assert.DoesNotContain(bar9, x => x.Id == "heroic_leap");
     }
@@ -140,20 +140,20 @@ public sealed class KeyBarTests
         var b = new Battle(new BattleSetup
         {
             Seed = 3, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
-            Weapons = [("axe_gyre", 8), ("cleaver", 8), ("heroic_leap", 1), ("shield_charge", 1)],
+            Weapons = [("axe_gyre", 8), ("cleaver", 8), ("heroic_leap", 1), ("shield_charge", 1), ("iron_vow", 1)],
             Calling = "warden", Ability = AbilityKind.ShieldBash,
         });
-        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(5, b.SlotsUsed);
         var u = b.GrantUnion("butchers_wheel")!;
         Assert.NotNull(u);
         Assert.Equal((0, 1), (u.Slot, u.Slot2));
-        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(5, b.SlotsUsed);
         Assert.False(b.HasRoomFor("dawnpulse"));
-        // In her book: with three keys used, a union has no room; with two, it has.
+        // In her book: with four of five keys used, a union has no room; with three, it has.
         var j = New(9);
         Fight(j);
         SkillBook.Unslot(j.Ch, "iron_vow");
-        Assert.Equal(3, SkillBook.KeysUsed(j.Ch));
+        Assert.Equal(4, SkillBook.KeysUsed(j.Ch));
         Assert.False(SkillBook.HasRoom(j.Ch, "butchers_wheel"));
         Assert.True(SkillBook.HasRoom(j.Ch, "dawnpulse")); // (one key: it fits)
         SkillBook.Unslot(j.Ch, "heroic_leap");
@@ -161,7 +161,7 @@ public sealed class KeyBarTests
     }
 
     [Fact]
-    public void An_old_save_is_re_cut_to_the_four_keys_once()
+    public void An_old_save_is_re_cut_to_the_five_keys_once()
     {
         var j = New(10);
         var ch = j.Ch;
@@ -174,8 +174,8 @@ public sealed class KeyBarTests
         ch.Slotted.AddRange(old);
         var b = Fight(j);
         Assert.Equal(TaughtBuilds.BarShape, ch.Bar);
-        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow"], Enumerable.Range(0, 4).Select(i => b.OnSlot(i)?.Id).ToArray());
-        Assert.Equal(4, b.Weapons.Count);
+        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge"], Enumerable.Range(0, 5).Select(i => b.OnSlot(i)?.Id).ToArray());
+        Assert.Equal(5, b.Weapons.Count);
         // Once: a skill she then takes off stays off.
         SkillBook.Unslot(ch, "heroic_leap");
         Assert.DoesNotContain(Fight(j).Weapons, w => w.Id == "heroic_leap");

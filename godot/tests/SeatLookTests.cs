@@ -10,8 +10,9 @@ public class SeatLookTests
     [InlineData(0, 1)]
     [InlineData(1, 4)]
     [InlineData(2, 5)]
-    [InlineData(3, 9)]
-    public void A_locked_key_opens_at_the_first_level_that_has_it(int slot, int level) => Assert.Equal(level, SeatLook.OpensAt(slot, 4));
+    [InlineData(3, 7)]
+    [InlineData(4, 9)]
+    public void A_locked_key_opens_at_the_first_level_that_has_it(int slot, int level) => Assert.Equal(level, SeatLook.OpensAt(slot, 5));
 
     [Theory]
     [InlineData(1.0, 0f)]

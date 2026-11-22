@@ -7,7 +7,7 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>The hands rule (BUILD_DIRECTION.md round 8, the owner's 13 November interview; it replaces the six slots of
-/// 9 November): four keys, the basic attack held in the first and at most three pressed beside it (the dash, the Flare and
+/// 9 November): five keys (22 Nov, Round 10), the basic attack held in the first and at most four pressed beside it (the dash, the Flare and
 /// the swap are not keys), every key at its ladder level, and no auto slots (SKILL_KINDS.md). data/content/taught_builds.json and skills.json's press records.</summary>
 public sealed class HandsRuleTests
 {
@@ -42,7 +42,7 @@ public sealed class HandsRuleTests
         Assert.Equal(Weapons.MaxKeys, t.Keys.Count);
         Assert.Equal(t.Grip, t.Keys[0].Skill);
         Assert.Equal("hold", t.Keys[0].Cast);
-        Assert.True(TaughtBuilds.PressedSlots(t) <= 3, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
+        Assert.True(TaughtBuilds.PressedSlots(t) <= 4, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
         Assert.All(t.Keys.Skip(1), s => Assert.NotEqual("kindle", s.Cast));
         foreach (var s in t.Slots)
         {
@@ -54,11 +54,11 @@ public sealed class HandsRuleTests
         // Every slot at the ladder's level (BUILD_UNLOCKS.md): the n-th key when the n-th key opens, 
         for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(i + 1, SkillBook.KeysAt(t.Keys[i].Level));
         for (int i = 0; i < t.Keys.Count; i++) Assert.True(t.Keys[i].Level == 1 || SkillBook.KeysAt(t.Keys[i].Level - 1) == i, t.Keys[i].Skill);
-        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Iron Vow key 4 (level 9, 22 Nov); Shield Charge and Dawnpulse are offered later; the first union is left as written (Falling Wall).
-        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow"], t.Keys.Select(k => k.Skill).ToArray());
-        Assert.Equal([1, 4, 5, 9], t.Keys.Select(k => k.Level).ToArray());
+        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Iron Vow key 4 (level 7) and Shield Charge key 5 (level 9, 22 Nov Round 10); Dawnpulse is offered later; Falling Wall is the first union (both halves are keys).
+        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge"], t.Keys.Select(k => k.Skill).ToArray());
+        Assert.Equal([1, 4, 5, 7, 9], t.Keys.Select(k => k.Level).ToArray());
         Assert.Equal("channel", t.Keys[2].Cast);
-        Assert.Equal(["shield_charge", "dawnpulse"], t.Later);
+        Assert.Equal(["dawnpulse"], t.Later);
         Assert.Equal("falling_wall", t.Union?.Id);
     }
 
@@ -75,8 +75,8 @@ public sealed class HandsRuleTests
         Assert.Equal(0, b.Weapons.First(x => x.Id == "sunder").Slot);
         Assert.Equal(CastMode.Press, b.Weapons.First(x => x.Id == "heroic_leap").Cast);
         Assert.All(b.Weapons, w => Assert.NotEqual(CastMode.Auto, w.Cast));
-        // The keys she actually presses beside the grip: three.
-        Assert.Equal(3, b.Weapons.Count(w => w.Pressed && !w.Hold));
+        // The keys she actually presses beside the grip: four.
+        Assert.Equal(4, b.Weapons.Count(w => w.Pressed && !w.Hold));
         Assert.Equal(Weapons.MaxKeys, b.SlotsUsed);
         // Every key does something.
         Assert.All(b.Weapons, w => Assert.True(w.Keyed, w.Id));

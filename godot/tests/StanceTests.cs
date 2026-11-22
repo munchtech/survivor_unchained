@@ -52,11 +52,11 @@ public sealed class StanceTests
 
     [Theory]
     [MemberData(nameof(Offered))]
-    public void Every_stance_flavors_all_four_keys_and_turns_none_off(string stance)
+    public void Every_stance_flavors_all_five_keys_and_turns_none_off(string stance)
     {
         var b = Fight(12, stance);
         var keys = Enumerable.Range(0, Weapons.MaxKeys).Select(i => b.OnSlot(i)!).ToList();
-        Assert.Equal(4, keys.Distinct().Count());
+        Assert.Equal(Weapons.MaxKeys, keys.Distinct().Count());
         var shape = keys.Select(w => (w.Id, w.Slot, w.Cast, w.Pressed, w.Hold)).ToList();
         var e = Dummy(b, 1.5, 0);
         // In set A nothing flavors.
@@ -64,7 +64,7 @@ public sealed class StanceTests
         Assert.Equal(0, b.StanceFlavored);
         Assert.True(b.Swap());
         Assert.Equal(stance, b.StanceNow!.Id);
-        // Same four keys, same forms: nothing turned off.
+        // Same five keys, same forms: nothing turned off.
         Assert.Equal(shape, Enumerable.Range(0, Weapons.MaxKeys).Select(i => b.OnSlot(i)!).Select(w => (w.Id, w.Slot, w.Cast, w.Pressed, w.Hold)).ToList());
         Assert.All(keys, w => Assert.True(w.Keyed, w.Id));
         // Each key's blow carries the stance; a status tick's does not.
