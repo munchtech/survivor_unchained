@@ -83,8 +83,10 @@ public static class TaughtBuilds
         var got = new List<TaughtSlot>();
         if (Of(ch.Archetype) is not { } t) return got;
         bool recut = false;
+        var had = new HashSet<string>();
         if (ch.Bar < BarShape)
         {
+            had.UnionWith(ch.Slotted);
             ch.Slotted.Clear();
             if (ch.Lamps?.Layouts is { } layouts) foreach (var l in layouts) l.Carried = new();
             ch.TaughtUpTo = 0;
@@ -101,7 +103,7 @@ public static class TaughtBuilds
             if (ch.Slotted.Contains(s.Skill)) continue;
             if (!SkillBook.HasRoom(ch, s.Skill, level)) continue;
             ch.Slotted.Add(s.Skill);
-            got.Add(s);
+            if (!had.Contains(s.Skill)) got.Add(s);   // (a skill she carried before the re-cut is carried again, not newly taught)
         }
         ch.TaughtUpTo = level;
         if (first) Order(ch, t);

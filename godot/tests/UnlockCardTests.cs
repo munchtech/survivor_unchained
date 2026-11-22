@@ -48,7 +48,7 @@ public sealed class UnlockCardTests
     {
         foreach (var g in UnlockCards.Rows("warden").Where(r => !r.Start).GroupBy(r => r.Level)) Assert.Single(g);
         Assert.All(UnlockCards.Rows("warden").Where(r => r.Start), r => Assert.Equal(1, r.Level));
-        Assert.Equal(2, UnlockCards.Rows("warden").Count(r => r.Start));
+        Assert.Equal(1, UnlockCards.Rows("warden").Count(r => r.Start));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class UnlockCardTests
             Assert.Equal(l, card.Level);
             var row = UnlockCards.At("warden", l);
             if (row == null) { Assert.Equal(LevelCardKind.Plain, card.Kind); Assert.Equal($"LEVEL {l}", LevelCards.Header(card)); continue; }
-            var kind = row.Kind switch { "key" => LevelCardKind.NewKey, "auto" => LevelCardKind.NewAuto, "stance" => LevelCardKind.NewStance, _ => LevelCardKind.NewRoad };
+            var kind = row.Kind switch { "key" => LevelCardKind.NewKey, "stance" => LevelCardKind.NewStance, _ => LevelCardKind.NewRoad };
             Assert.Equal(kind, card.Kind);
             Assert.Equal(row.Line, card.Line);
             Assert.Equal($"LEVEL {l} · {row.Title}", LevelCards.Header(card));
@@ -73,7 +73,7 @@ public sealed class UnlockCardTests
         // (a layer's level never takes the road's card, raised or not)
         Assert.Equal(LevelCardKind.NewKey, LevelCards.CardsFor(9, Warden, SlotOf, 0, null, true)[0].Kind);
         // (the skill's own line is its row's, as the key card draws it)
-        Assert.Equal(UnlockCards.Of("warden", "shield_charge")!.Line, LevelCards.Line("shield_charge", Weapons.All["shield_charge"].Description));
+        Assert.Equal(UnlockCards.Of("warden", "iron_vow")!.Line, LevelCards.Line("iron_vow", Weapons.All["iron_vow"].Description));
     }
 
     [Fact]
@@ -141,18 +141,18 @@ public sealed class UnlockCardTests
         Assert.Same(Row("stance"), lessons.Tick(true, 1.1));
         Assert.True(lessons.Used("stance"));
         // (used before the fight: owed no more)
-        lessons.Opened(Row("shield_charge"));
-        Assert.False(lessons.Used("shield_charge"));
+        lessons.Opened(Row("iron_vow"));
+        Assert.False(lessons.Used("iron_vow"));
         Assert.Null(lessons.Tick(false)); Assert.Null(lessons.Tick(true));
-        Assert.Contains("shield_charge", done);
+        Assert.Contains("iron_vow", done);
     }
 
     [Fact]
-    public void An_auto_the_road_and_the_starting_kit_never_teach()
+    public void The_road_and_the_starting_kit_never_teach()
     {
         var done = new HashSet<string>();
         var lessons = new UnlockLessons(done.Contains, id => done.Add(id));
-        foreach (var id in new[] { "iron_vow", "watch_bell", "road", "sunder", "groundbreaker" })
+        foreach (var id in new[] { "road", "sunder" })
         {
             lessons.Opened(Row(id));
             Assert.Null(lessons.Tick(false));
@@ -174,6 +174,6 @@ public sealed class UnlockCardTests
             shown++;
         }
         Assert.True(shown >= 4);
-        Assert.Equal("Press *[Skill4]* to charge behind your shield: what stands in the way is struck and thrown aside.", UnlockLessons.TextFor(UnlockCards.ForSkill("shield_charge")!, k => "[" + k + "]"));
+        Assert.Equal("Press *[Skill4]* to brace: for 2 s every blow on you lands at half, then bursts back out in a ring.", UnlockLessons.TextFor(UnlockCards.ForSkill("iron_vow")!, k => "[" + k + "]"));
     }
 }

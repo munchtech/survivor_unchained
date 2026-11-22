@@ -86,10 +86,10 @@ public sealed class SocketPanelTests
     [Fact]
     public void More_room_comes_where_the_ladder_grows()
     {
-        Assert.Equal(new[] { 4, 5, 7, 9, 10 }, SocketModel.MoreRoom(1));
-        Assert.Equal(new[] { 9, 10 }, SocketModel.MoreRoom(8));
-        Assert.Equal("More room comes at the ninth and the tenth level.", SocketModel.MoreRoomLine(8));
-        Assert.Equal("More room comes at the seventh, the ninth and the tenth level.", SocketModel.MoreRoomLine(5));
+        Assert.Equal(new[] { 4, 5, 9 }, SocketModel.MoreRoom(1));
+        Assert.Equal(new[] { 9 }, SocketModel.MoreRoom(8));
+        Assert.Equal("More room comes at the ninth level.", SocketModel.MoreRoomLine(8));
+        Assert.Equal("More room comes at the fifth and the ninth level.", SocketModel.MoreRoomLine(4));
         Assert.Equal("", SocketModel.MoreRoomLine(12));
     }
 

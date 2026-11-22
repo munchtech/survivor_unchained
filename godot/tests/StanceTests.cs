@@ -67,7 +67,7 @@ public sealed class StanceTests
         // Same four keys, same forms: nothing turned off.
         Assert.Equal(shape, Enumerable.Range(0, Weapons.MaxKeys).Select(i => b.OnSlot(i)!).Select(w => (w.Id, w.Slot, w.Cast, w.Pressed, w.Hold)).ToList());
         Assert.All(keys, w => Assert.True(w.Keyed, w.Id));
-        // Each key's blow carries the stance; an auto's and a status tick's do not.
+        // Each key's blow carries the stance; a status tick's does not.
         foreach (var w in keys)
         {
             int n = b.StanceFlavored;
@@ -75,8 +75,6 @@ public sealed class StanceTests
             Assert.Equal(n + 1, b.StanceFlavored);
         }
         int k = b.StanceFlavored;
-        var auto = b.Weapons.First(w => w.Slot >= Weapons.MaxKeys);
-        b.HitEnemy(e, 5, School.Physical, [Tag.Melee], new HitOpts { Weapon = auto });
         b.HitEnemy(e, 5, School.Physical, [Tag.Melee], new HitOpts { Weapon = keys[0], Dot = true });
         Assert.Equal(k, b.StanceFlavored);
     }

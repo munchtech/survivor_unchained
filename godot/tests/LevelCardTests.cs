@@ -25,14 +25,12 @@ public sealed class LevelCardTests
     }
 
     [Fact]
-    public void The_keys_open_at_4_5_and_9_and_the_autos_at_7_and_10_say_so()
+    public void The_keys_open_at_4_5_and_9_say_so_and_levels_7_and_10_open_nothing()
     {
-        static int SlotOf(string id) => id switch { "heroic_leap" => 1, "bladestorm" => 2, "shield_charge" => 3, "iron_vow" => 5, "watch_bell" => 6, _ => -1 };
+        static int SlotOf(string id) => id switch { "heroic_leap" => 1, "bladestorm" => 2, "iron_vow" => 3, _ => -1 };
         foreach (var l in new[] { 4, 5, 9 }) Assert.Equal(LevelCardKind.NewKey, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
-        var auto = LevelCards.ForCampaignLevel(7, Warden, SlotOf, 0);
-        Assert.Equal((LevelCardKind.NewAuto, "iron_vow", 5), (auto.Kind, auto.Skill, auto.Slot));
-        Assert.Equal("LEVEL 7 · AN AUTO SKILL", LevelCards.Header(auto));
-        Assert.Equal(LevelCardKind.NewAuto, LevelCards.ForCampaignLevel(10, Warden, SlotOf, 0).Kind);
+        // (no auto slots since 22 Nov: levels 7 and 10 are plain cards)
+        foreach (var l in new[] { 7, 10 }) Assert.Equal(LevelCardKind.Plain, LevelCards.ForCampaignLevel(l, Warden, SlotOf, 0).Kind);
     }
 
     [Fact]
@@ -315,6 +313,6 @@ public sealed class LevelCardPlaceTests
             // (UI sans 16 measured at no more than 6.5 px a character over these rows; the room is the card's width less the well's column)
             Assert.True(row.Line.Length * LevelCardPlace.PxPerChar <= LevelCardPlace.LineRoom + 10, $"{row.Id} would wrap");
         }
-        Assert.Equal("Charge 8 m behind your shield; gain a barrier of 15% of your health.", SurvivorUnchained.Content.UnlockCards.ForSkill("shield_charge")!.Line);
+        Assert.Equal("Brace: for 2 s blows land at half, then burst back in a ring.", SurvivorUnchained.Content.UnlockCards.ForSkill("iron_vow")!.Line);
     }
 }

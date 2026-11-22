@@ -23,27 +23,26 @@ public sealed class TaughtGrantTests
     static string? Key(Battle b, int slot) => b.OnSlot(slot)?.Id;
 
     [Theory]
-    [InlineData(1, new[] { "sunder" }, new[] { "groundbreaker" })]
-    [InlineData(4, new[] { "sunder", "heroic_leap" }, new[] { "groundbreaker" })]
-    [InlineData(5, new[] { "sunder", "heroic_leap", "bladestorm" }, new[] { "groundbreaker" })]
-    [InlineData(9, new[] { "sunder", "heroic_leap", "bladestorm", "shield_charge" }, new[] { "groundbreaker", "iron_vow" })]
-    [InlineData(10, new[] { "sunder", "heroic_leap", "bladestorm", "shield_charge" }, new[] { "groundbreaker", "iron_vow", "watch_bell" })]
-    public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys, string[] autos)
+    [InlineData(1, new[] { "sunder" })]
+    [InlineData(4, new[] { "sunder", "heroic_leap" })]
+    [InlineData(5, new[] { "sunder", "heroic_leap", "bladestorm" })]
+    [InlineData(9, new[] { "sunder", "heroic_leap", "bladestorm", "iron_vow" })]
+    [InlineData(10, new[] { "sunder", "heroic_leap", "bladestorm", "iron_vow" })]
+    public void A_new_warden_carries_the_taught_build_of_her_level(int level, string[] keys)
     {
         var j = New();
         j.Ch.Level = level;
         var b = Fight(j);
         Assert.True(b.Campaign);
-        // (bd-keys) Her keys in key order, the grip on the first; her auto slots beyond them, in the order they opened.
-        Assert.Equal(keys.Concat(autos).OrderBy(x => x), j.Ch.Slotted.OrderBy(x => x));
+        // (bd-keys) Her keys in key order, the grip on the first; no auto slots beyond them.
+        Assert.Equal(keys.OrderBy(x => x), j.Ch.Slotted.OrderBy(x => x));
         for (int i = 0; i < keys.Length; i++) Assert.Equal(keys[i], Key(b, i));
-        Assert.Equal(autos, b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).OrderBy(w => w.Slot).Select(w => w.Id).ToArray());
+        Assert.Empty(b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys));
         var t = TaughtBuilds.Of("warden")!;
         foreach (var s in t.Slots.Where(s => s.Level <= level))
         {
             var w = b.Weapons.First(x => x.Id == s.Skill);
             if (s.Cast == "hold") Assert.True(w.Hold, s.Skill);
-            else if (s.Cast == "kindle") Assert.Equal(CastMode.Auto, w.Cast);
             else if (s.Cast == "channel") Assert.Equal(CastMode.Channel, w.Cast);
             else Assert.Equal(CastMode.Press, w.Cast);
         }

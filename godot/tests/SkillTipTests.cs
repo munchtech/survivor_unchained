@@ -73,7 +73,7 @@ public class SkillTipTests(ITestOutputHelper output)
     public void The_demo_set_has_its_own_cards_with_the_sims_numbers_at_levels_1_9_15()
     {
         var demo = Demo();
-        Assert.True(demo.Count >= 9);
+        Assert.True(demo.Count >= 8);
         foreach (int level in new[] { 1, 9, 15 })
         {
             var j = Warden();

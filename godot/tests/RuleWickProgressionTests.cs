@@ -41,8 +41,8 @@ public class RuleWickProgressionTests
     }
 
     /// <summary>Level 7 reached mid-fight: the three are taught into it with wicks; Far Spring planned and its held point
-    /// lit, the very next leap reaches 13 m, not 9. Shield Charge's Headlong and Iron Vow's Steadfast, planned and lit
-    /// the same way, are lit in the fight's lamps.</summary>
+    /// lit, the very next leap reaches 13 m, not 9. Iron Vow's Steadfast (Shield Charge is no longer taught, 22 Nov), planned and lit
+    /// the same way, is lit in the fight's lamps.</summary>
     [Fact]
     public void Taught_leap_charge_and_vow_light_their_planned_lamps_into_the_fight()
     {
@@ -52,7 +52,7 @@ public class RuleWickProgressionTests
 
         j.Ch.Level = 9;
         var taught = j.Teach(b).Select(s => s.Skill).ToHashSet();
-        foreach (var s in new[] { "heroic_leap", "shield_charge", "iron_vow" })
+        foreach (var s in new[] { "heroic_leap", "iron_vow" })
         {
             Assert.Contains(s, taught);
             Assert.Contains(b.Weapons, w => w.Id == s);
@@ -68,7 +68,6 @@ public class RuleWickProgressionTests
         foreach (var (skill, lamp, rule) in new[]
         {
             ("heroic_leap", "heroic_leap.flight.1", "heroic_leap.far_spring"),
-            ("shield_charge", "shield_charge.drive.1", "shield_charge.headlong"),
             ("iron_vow", "iron_vow.brace.1", "iron_vow.steadfast"),
         })
         {
@@ -92,7 +91,7 @@ public class RuleWickProgressionTests
 
         // a fresh campaign fight lights the same lamps from the day path
         var b2 = Campaign(j);
-        foreach (var rule in new[] { "heroic_leap.far_spring", "shield_charge.headlong", "iron_vow.steadfast" })
+        foreach (var rule in new[] { "heroic_leap.far_spring", "iron_vow.steadfast" })
             Assert.True(b2.Lamps.Has(rule), $"{rule} lit in the next fight");
     }
 

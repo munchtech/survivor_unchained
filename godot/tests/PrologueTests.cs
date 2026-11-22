@@ -922,35 +922,6 @@ public class PrologueTests
     }
 
     [Fact]
-    public void A4b_groundbreaker_waits_for_its_cost_two_in_reach_and_2_s_after_A4()
-    {
-        var s = Make();
-        var gb = s.B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") ?? s.B.AddWeapon("groundbreaker")!;
-        LandOnTheThree(s);
-        s.Host.TaughtIds.Add("resolve");
-        // (Resolve held at its cost, under ResolveMeter.SelfAt of the cap: at full, Groundbreaker heaves itself at the pack
-        // she stands on (Weapons selfHeave) and the three are down before the 2 s pass; the callout is for the window
-        // between its cost and full, when her key can heave it)
-        double cost = s.B.CostOf(gb);
-        Assert.True(cost < ResolveMeter.SelfAt * s.B.Resolve.Max);
-        s.B.Resolve.Set(cost);
-        Away(s, "n_three", 25, 1.0);   // (A4 seen under 2 s ago, and she is out of reach)
-        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "groundbreaker");
-        for (int i = 0; i < 30 && !s.Host.Asked.Any(c => c.Id == "groundbreaker"); i++)
-        {
-            var three = s.Zone.Night!.Standing("n_three");
-            s.B.Player.X = three.Average(e => e.X); s.B.Player.Z = three.Average(e => e.Z) + 1;
-            s.B.Resolve.Set(cost);
-            Run(s, 0.1, safe: true);
-        }
-        var c = Offered(s, "groundbreaker");
-        // (18 Nov: it is a kindled auto, past the four keys, with no key to name or wait for: an Arrow, never a Freeze)
-        Assert.Null(Prologue.KeyActFor(gb.Slot));
-        Assert.Equal(("Groundbreaker", "When Resolve is full, it heaves itself at the pack.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
-        Assert.Null(c.Answer);
-        Assert.True(c.Target.World!().Count >= 2);
-    }
-    [Fact]
     public void Laid_bare_no_backstop_holds_him()
     {
         // (B1: all three lamps broken by 19 s, the 60 s backstop then held him at 5% for 32 s under "laid bare")
