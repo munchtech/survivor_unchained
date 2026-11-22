@@ -101,4 +101,9 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 - The painting is kept as the placement target at the same camera.
 - Meshes wait for the environment bake-off after the slice.
 
+**The coordinator's notes, 22 Nov (after the lane closed).**
+- The lane's worktree was removed at the merge. The 1:1 option sheets the two judges saw (r3, r6), the two unjudged builds (r7, r8) and each round's overview sheet are kept in `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\evidence\paint_sheets\`. None passed, so none is offered as a pick.
+- Not tried: ChatGPT's image edit (the team's other image route). It needs the owner's Chrome with the Claude extension connected, and no browser was connected overnight. My reading, not tested: it is the next thing to try before a hand painter, since an edit model keeps a frame's layout far better than the local repaint did.
+- One judged round of three is left on this item. The cap was not raised.
+
 **What the next one costs.** The colour pre-grade, the masks-by-value step and the gates (edge sharpness, the blur-8 margin, the brightest share, the palette gamut) are reusable, and they measure any future paint-over in minutes. The figure masks would become exact and free with an actors-only render pass. The floor is the one piece that needs a painter, or a model we don't have.

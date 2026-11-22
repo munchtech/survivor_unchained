@@ -76,6 +76,8 @@ Three films were shot in the current build, seed 11, at the game camera, 1920x10
 
 The films (`.mp4`), the strips (a frame every 2 s) and the strip sheets are in the worktree's `godot/.shots/look/` (git-ignored). The sheet I read is `lk_film2_sheet.jpg`. The stills are `godot/.shots/lk_{r1,r2,r3,boss}_*.png`.
 
+**Where these are kept (the coordinator, 22 Nov):** the lane's worktree was removed at the merge. The three films, their sheets, film 2's strip (the `f_0xx` frames named below) and the stills are in `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\evidence\` (`films\`, `films\lk_film2_strip\`, `stills\`).
+
 **These are my reading of the strips at contact-sheet size, not measurements. Each item names the strip frame that shows it.** Film 2 also logs runtime errors: "Texture (binding: 1, index 0) is not a valid texture" and "Parameter "us" is null". Their cause was not looked into.
 
 | # | What a player cannot read | Seen in |
