@@ -39,8 +39,8 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parent.parent.parent
 # Where Marionette lives (its tools/motion is the core). One constant, overridable by env MARIONETTE_DIR; the
-# motion-a1 worktree for now, Marionette's main checkout once the core is merged there.
-MARIONETTE = os.environ.get("MARIONETTE_DIR", "C:/Users/munch/Desktop/Marionette_motion")
+# default is Marionette's main checkout (the motion core was merged there, 21 Nov 2026).
+MARIONETTE = os.environ.get("MARIONETTE_DIR", "C:/Users/munch/Desktop/Marionette")
 sys.path.insert(0, str(Path(MARIONETTE) / "tools"))
 from motion import clip as MC  # noqa: E402
 from motion import footlock, measures, paths, retarget, soma  # noqa: E402

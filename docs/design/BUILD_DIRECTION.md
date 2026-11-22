@@ -60,3 +60,16 @@ Six rounds of questions against PoE2, Last Epoch, Diablo 3/4 and Grim Dawn. **Wh
 - **Slots:** belt, legs, cloak and bracers are removed, and the relic is cut. Body armor covers the whole body except the head, like a matching set. The cloak may come back later as something she customizes, never as a drop. Left: weapon, offhand, head, body, shoulders, hands, feet, amulet, two rings (10).
 - **Slots (settled):** shoulders and hands go too, and boots stay. That leaves **8: weapon, offhand, head, body, boots, amulet, two rings.**
 - **Weapon gates in a stance (the owner: "I want fun different combos to exist"). The coordinator's default, until the owner overrides:** a stance never turns her skills off. The stance weapon flavors the same skills instead. Under a shield stance her blows block and stun; under twin blades they come faster and bleed; under a mace they stagger. The fun is skills times stances: 4 skills and a few stance weapons give many combos, with no dead keys. A build's real choice is which stance it leans on, and what the stance costs (slower, less damage, less defense).
+
+## Round 9 (the owner, 21 November): overrides the auto-slot lines above
+The owner, word for word:
+- "I think our hybrid auto skill and non hybrid skill is probably too confusing.  we can make an auto support gem but we should just copy normal arpg skills probably - there are some auto things and auras but maybe not a key thing.  stances and unions are already things that set us apart"
+- "groundbreaker would be like a node you know? every 3rd attack groundbreaks."
+- "i mean not every single one.  just mirror what others do.  auras can exist etc"
+
+What it means (the plan session's reading, design only, nothing built):
+- **Skills work as in other ARPGs.** Most are pressed. Auras, summons and triggered effects exist the way the genre has them.
+- **Gone:** a skill offered both ways (pressed or "kindled"), and the three auto-only slots as a separate layer of the bar. Auto skills from items become plain effects written on the item.
+- **"Auto" lives in two ordinary places:** a support gem (socket it and the skill fires itself, at a cost), and tree nodes that add a trigger to a pressed skill. Groundbreaker is the first node: every 3rd attack groundbreaks.
+- **What sets the game apart:** stances and Unions (with the Wicks and the Lamps).
+- **Open, for a one-page proposal before any code:** each current skill's new kind (pressed, aura, node, or cut); where an aura sits and what it costs (the plan session's lean: no key, paid by reserving a resource, as Path of Exile does); the bar rule in `godot/logic/Rpg/SkillBook.cs` (lines 69-74), the taught builds and their tests.

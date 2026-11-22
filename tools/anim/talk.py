@@ -39,7 +39,7 @@ def keyed_curve():
     so `from motion import fit` would find that instead. MARIONETTE_DIR as p4.py's."""
     name = "marionette_motion"
     if name not in sys.modules:
-        d = Path(os.environ.get("MARIONETTE_DIR", "C:/Users/munch/Desktop/Marionette_motion")) / "tools" / "motion"
+        d = Path(os.environ.get("MARIONETTE_DIR", "C:/Users/munch/Desktop/Marionette")) / "tools" / "motion"
         if not (d / "fit.py").exists():
             raise SystemExit(f"talk.py: Marionette's motion core is not at {d} (set MARIONETTE_DIR)")
         spec = importlib.util.spec_from_file_location(name, d / "__init__.py", submodule_search_locations=[str(d)])
