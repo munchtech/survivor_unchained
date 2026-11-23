@@ -145,6 +145,7 @@ switch (cmd)
     case "map": Maps(); break;
     case "dungeon": Dungeons(); break;
     case "denfeel": DenFeelRuns(); break;
+    case "bosstrace": BossTrace(); break;
     case "story": Story(); break;
     case "verge-day": VergeDay(); break;
     case "lowford-day": LowfordDay(); break;
@@ -756,6 +757,24 @@ void Dungeons()
 }
 
 // (P3) The den's clear feel (Harness/DenFeel.cs): [--opener: each run again with the opener variant, measuring only] [--lead: and again with the opener's Leap aimed where the pack's middle will be as she lands] --bots deft,human --seeds 3 --seed0 1 --level 6 --gear 1 --cap 8 [--dungeon hollow] [--out PATH.md]
+// (P3 re-tune, measuring only) One den run from the ruler's door, the ruler's state every `every` seconds of her fight.
+void BossTrace()
+{
+    var def = SurvivorUnchained.Maps.DungeonGen.Get(opt.Get("dungeon", "hollow"))!;
+    var spec = new MapRunSpec(opt.Int("seed", 1), "warden", 1, def.People, opt.Int("level", 6), opt.Int("gear", 1), [], opt.Get("bot", "deft"), opt.Double("cap", 10), def.Id, true);
+    SurvivorUnchained.Play.Zones.MapRun? zone = null; double next = 0, every = opt.Double("every", 10);
+    SurvivorUnchained.Balance.MapSim.ZoneTap = z => zone = z;
+    SurvivorUnchained.Balance.MapSim.Tap = (t, evs, b, up) =>
+    {
+        if (t < next || zone?.BossScript is not { } s || s.E == null) return;
+        next = t + every;
+        var e = s.E; var p = b.Player;
+        Console.WriteLine($"t {t:0} phase {s.PhaseIx} hp {e.Hp / Math.Max(1, e.MaxHp):0.00} floor {e.HpFloor / Math.Max(1, e.MaxHp):0.00} state {e.State} alive {e.Alive} d {Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)):0.0} her hp {p.Hp:0} up {up} wake {e.Wake:0} roused {e.Roused} leash {e.Leash:0} home {Math.Sqrt((e.HomeX - p.X) * (e.HomeX - p.X) + (e.HomeZ - p.Z) * (e.HomeZ - p.Z)):0} foes {b.Enemies.Items.Count(x => x.Alive)}");
+    };
+    var r = SurvivorUnchained.Balance.MapSim.Play(spec);
+    Console.WriteLine($"{(r.Cleared ? "cleared" : "not cleared")} {r.Minutes:0.0} min");
+}
+
 void DenFeelRuns()
 {
     var id = opt.Get("dungeon", "hollow");

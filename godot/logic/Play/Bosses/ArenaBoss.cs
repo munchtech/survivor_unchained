@@ -28,6 +28,9 @@ public interface IBossArena
     /// <summary>The horde comes back when the boss grows wild (the table's); a map or a story night keeps it off,
     /// so the words must not promise it.</summary>
     bool HordeReturns => true;
+    /// <summary>(P3, DEN_ROSTER.md) The den's own cut of its ruler (MapRun in the hollow): arena nights and story fights keep the
+    /// table's fight, so this is false everywhere else.</summary>
+    bool DenCut => false;
     /// <summary>The fight is won (Grimtunnel goes back down rather than dying).</summary>
     void Won(double x, double z);
 }

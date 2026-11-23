@@ -682,6 +682,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     int IBossArena.Tier => BossTier;
     string IBossArena.BossName => people.BossName;
     bool IBossArena.Spare => false;
+    bool IBossArena.DenCut => DenRoster.For(Chart.Dungeon);
     bool IBossArena.Sworn(string oath) => Chart.Has(oath);
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style)
