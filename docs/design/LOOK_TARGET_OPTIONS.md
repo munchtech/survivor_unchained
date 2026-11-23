@@ -317,6 +317,47 @@ The two measures of her disagree on what the game does. `measure5.py`'s box puts
 - Pictures as downloaded: `raw5\`. Fitted: `fit5\`. Every prompt as sent: `prompts.md` and `prompts5\`. Scripts: `scripts5\`. Prop-by-prop tiles: `props5\`.
 - State and the wording lessons: the top block of `...\scratch_look\STATE.md`.
 
+## Round 6 on option C, scripted local fixes (sixth lead, 22-23 Nov night): three judged rounds, none passed
+
+Branch `look-target-6`. The owner, 22 Nov night, on the open questions: "yes, plain, scripted local fixes". So: a light pool may be brighter than her, the floor stays plain, and round 5's last set (`fit5\C5_f1_v5w.png`, `C5_f2_v8w.png`, `C5_f3_v6w.png`) is repaired in place by Python scripts, region by region. No picture was regenerated. ChatGPT was not used and its lock was never taken.
+
+**The verdict.** Three sets were built. Each went to a fresh max-effort judge who was not told the owner's reactions or any earlier verdict. All three said FAIL. The cap was three rounds, so the lane stopped. **No paint-over is shown: none passed the judge.**
+
+The checklist had ten lines, with the landing boxes and value targets fixed as numbers before round 1: 1 finished painted cel; 2 heroine first read (her warm median L at least 46); 3 pools land where the game's beams land and read as light; 4 bands; 5 nothing floats; 6 foes; 7 true to the game frame; 8 floor plain; 9 glows; 10 the frames agree.
+
+| Judged round | Set | Verdict | What failed |
+|---|---|---|---|
+| 1 | `fit6\C6_fN_v1.png` | FAIL | every number passed; the five pools read as flat ochre mats; frame 2 had a warm halo round her and wolves rimmed all round; glows too small; band tops cut hard; small faults |
+| 2 | `fit6\C6_fN_v2.png` | FAIL | the shade side passed in all three frames (floor, roots, rocks, foe bodies, palette, ink, wolf blobs); the pools still read as beige mats; frame 3 had four dropped or ghosted bone groups; frame 1's band top; lamp glows a flat disc with a muddy ring; frame 2's rims |
+| 3 | `fit6\C6_fN_v3.png` | FAIL | lines 1, 3, 6 (frame 3), 7 (one smear), 9, 10. Passed: 4 bands, 5 nothing floats, 8 floor, pool placement and every pool number, her numbers (median L 48.0 / 47.9 / 47.9), frames 1 and 2's rims |
+
+**What round 3's judge found** (its file marks each point measured, reading or could not tell):
+- Blocks: all five pools read as "a beige sand mat with a pink glow round it". Measured by the judge: the inside is 3 to 8 times busier than the shade floor round it, and a magenta ring sits 10 to 20 px outside each edge.
+- Blocks: frame 3's pool outline is a lumpy traced contour (frame 2's pool B, milder).
+- Blocks: frame 3's big wolf has its pale rim round 67% of its outline (frames 1 and 2 keep it on the light-facing edges).
+- Blocks: frame 2's lamp is a flat orange disc in a magenta wash. Should fix: frame 1's lamp (a ragged brown spray in a maroon ring), frame 3's campfire (barely lights its floor), a see-through smear in frame 1 at x 1135-1180, y 555-605, and frame 3's heroine is not the first read.
+
+**The wall, stated plainly.** The pools failed all three rounds, and the three judges asked for opposite repairs:
+- Round 1: the outline is a noisy traced contour and the fill has sponge spots. Make it clean.
+- Round 2: the fill is constant and flatter than the floor, the outline is a smooth regular blob. Give it texture (inside at least as busy as the floor) and an irregular outline with shade bites.
+- Round 3: the inside is busier than the floor and reads as another material. Keep the floor plain inside the pool, carry it with a smooth gradient (core L 50-54 down to about 40 at the edge), smooth the outline to two or three broad lobes, and use one 4 to 8 px falloff with no ring.
+
+The lead's reading (not a ruling, not measured): an opaque warm shape with a hard edge, laid on a floor that is plain by choice, has nothing of the floor's own to carry through it, so a fresh eye reads it as a thing lying on the floor whatever its texture or outline. Round 3's judge points to the one handling not yet tried here: a plain inside with a smooth value gradient and a single short falloff. That is a cheap next try, but it is a fourth recipe for the same shape, and the owner's rule applies first ("remember when we keep hitting walls to see how successful games have done it"): the next brief should start from how shipped cel-look games light a floor (the lead's understanding, not checked against footage in this lane: light added over a floor that keeps its own features, so the same marks run through light and shade).
+
+**The owner's two points, where they stand.**
+- *"some things appear to be floating"*: **fixed by the judges' reading in rounds 2 and 3.** Every wolf has a blob under it (measured: the floor under each is 5.0 to 9.1 L and 49 to 65% darker than the floor further out); things in the pools cast cool shadows; props sit on the floor. Round 3's judge notes the blob reads slightly as an even dark halo on the loose wolves.
+- *"a little more detail perhaps in the floor?"*: answered by the owner ("plain"). The floor is plain and passed line 8 in rounds 2 and 3.
+
+**What was tried on the pools and failed (do not retry).** Three flat tones cut from the game's ground detail (sponge spots). The landing's half-max contour traced as it comes (a map outline). The contour opened with a big disc and blurred (a regular blob). A constant fill with low grain (flatter than the floor). Chroma 30 to 34 (sand). Long horizontal dry-brush streaks (wood plank). Short sparse strokes plus the game's ground forms (round 3: another material). A two-step falloff ring in rose and plum (round 3: a pink glow round a sticker). A fresh solver's route, not judged: the game's own ground repainted as strokes (sponge or camouflage by the lead's reading at 1:1). On the glows: a lift with no radius limit (flattened the floor's grain over the frame), a colour weight by the lift's square root (a disc edge), a straight blend from warm to violet (a muddy grey ring), and a blend through magenta (round 3: a magenta wash).
+
+**What the next one costs.** The scripts rebuild all three frames from round 5's set in about two minutes and measure them in one: `s0_props.py`, `masks6.py`, `s1_pools.py`, `s2_figs.py v3`, then `measure6.py v3 <folder>`, `sheet6.py`, `tiles6.py` (18 tiles at 1:1, game beside paint). The figure and wolf masks, the landing boxes, the band fits, the blob, rim, bone and glow steps are reusable as they are, and the shade side has passed two judges, so a next lane touches only the light: the pool fill and edge in `s1_pools.py` (one function), the lamp and campfire profile in `s2_figs.py` (one block), frame 3's rim (the frame-2 rim rule applied to frame 3's wolf), and one smear. `measure6.py` measures the pools on the builder's own masks, so it cannot say whether a pool reads as light: only a judge's eye does.
+
+**Where it is kept** (under `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`):
+- Sets: `fit6\C6_f1_v1.png` to `C6_f3_v3.png`. Sheets, each with a half-size copy: `sheets6\C6_r1_sheet.png`, `C6_r2_sheet.png`, `C6_r3_sheet.png`.
+- The judges' findings, numbers and tiles: `judge6_r1\round1_findings.md`, `judge6_r2\round2_findings.md`, `judge6_r3\round3_findings.md`; `numbers.txt` and `tiles\` in each folder; `judge6_r1\landing_boxes.json` and `bands.json`.
+- Scripts: `scripts6\` (the judged round-1 and round-2 versions are kept as `*_v1.py` and `s1_pools_v2.py`; the one-off patch scripts `_patch_r2*.py` and `_patch_r3a.py` to `_patch_r3e.py` record each step).
+- State: the top block of `...\scratch_look\STATE.md` (down to `=== END SIXTH ===`).
+
 ## Questions for the owner (yes/no)
 
 1. **Answered 22 Nov: "Dark, pale rim, ink line (Recommended)".** May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)
