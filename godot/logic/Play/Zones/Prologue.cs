@@ -656,7 +656,7 @@ public sealed partial class Prologue : ZoneRuntime
         }
         // A3b: the first ember landed (her first experience), 0.6 s after A3 closes (when A3 was asked); the coin's ring.
         if (Now < Stage.Intro && (ch.Xp > xpAtStart || ch.Level > levelAtStart || B.EmberXp > 0 || B.EmberLevel > 1))
-            Teach("ember_ring", CalloutKind.Arrow, "Your level", "Ember fills this ring. When it's full, you rise a level.", Aim.At("chain_fill"),
+            Teach("ember_ring", CalloutKind.Arrow, "Your level", "Ember fills this bar. When it's full, you rise a level.", Aim.At("chain_fill"),
                 after: emberGroundAsked || B.HeldStone != null ? "ember_ground" : null, gap: 0.6, overHint: true);
         // A4: the three on the road, her first landed swing on them (Resolve's Landed fill grows once they are up); her hair.
         // (M6 l3: her first landed blows on anything, after the swing's lesson: the three's waited on them waking awake,

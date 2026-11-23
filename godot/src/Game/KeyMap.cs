@@ -205,9 +205,10 @@ public static class KeyMap
 
     /* -------------------------------------------------------------- seats -- */
 
-    /// <summary>M4 §1: the bar's seats left to right, [1][2] (coin) [LMB][RMB]: seat k shows slot SeatSlot[k] (the
+    /// <summary>M4 §1: the bar's seats: [1][2] [5th, in the old coin's place] [LMB][RMB] on the plate (seat indices
+    /// 0, 1, 4, 2, 3: the fifth key's seat is the last index, DgPanel.CoinSeat). Seat k shows slot SeatSlot[k] (the
     /// keyboard's keys on the left, the mouse's on the right). A view only: slots stay stable.</summary>
-    public static readonly int[] SeatSlot = [2, 3, 0, 1];
+    public static readonly int[] SeatSlot = [2, 3, 0, 1, 4];
 
     /// <summary>The seat a slot shows on (SeatSlot's inverse).</summary>
     public static int SeatOf(int slot) => Array.IndexOf(SeatSlot, slot);

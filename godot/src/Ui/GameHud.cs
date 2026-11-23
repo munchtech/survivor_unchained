@@ -967,7 +967,7 @@ public partial class GameHud : CanvasLayer
         }
         // (pictures: the card only where a pin asks for it, whatever the pointer is over)
         bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
-        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
+        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.XpBarRect.Position.Y) : mouse;   // (the XP bar's top middle)
         // (its lines are written only while it shows: they were four strings a frame for a hidden card)
         river.Card.Set(show, anchor, show ? XpLight.Lines(!day, lv, have, need, xpLast && day) : default, f, day);
     }
@@ -1848,9 +1848,9 @@ public partial class GameHud : CanvasLayer
             s.Show(shown.Id, SeatIcon.For(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
             double cost = b.CostOf(shown);
             int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
-            // (side by side: not across the coin, which stands between seats 1 and 2)
-            bool adjacent = other >= 0 && Math.Abs(other - k) == 1 && Math.Min(other, k) != 1;
-            bool bondNow = second ? w.Channeling || b.Time < w.BreakUntil : b.BreaksAStorm(w);
+            // (side by side: not across the fifth seat, which stands between seats 1 and 2; it clasps to neither)
+            bool adjacent = other >= 0 && other != DgPanel.CoinSeat && k != DgPanel.CoinSeat && Math.Abs(other - k) == 1 && Math.Min(other, k) != 1;
+            bool bondNow = second ? w.Channeling || b.Time < w.BreakUntil : b.BreakReadyOn(w);   // (skills-five) Sunder's bond lights once the storm's break is ready (breakAfter): the cue for the big hit
             // (bd-ui W9: once on change, under --dev-log or --press: does the seat get its Bond?)
             if (bondLogged[k] != bondNow && (Args.Has("dev-log") || Args.Has("press"))) { bondLogged[k] = bondNow; GD.Print($"seat {k} ({shown.Id}): bond {bondNow} t={b.Time:0.00}"); }
             s.Feed(new Socket.SeatState

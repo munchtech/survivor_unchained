@@ -30,7 +30,7 @@ public partial class Instrument : Control
     public static Vector2 ArtAt => DgPanel.GlassAt;
     public static Vector2 DraughtAt => DgPanel.FlaskAt;
     public static Vector2 DashAt => DgPanel.DashAt;
-    /// <summary>The coin's experience ring: what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
+    /// <summary>The XP bar and its level (was the coin's ring): what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
     /// river's crest).</summary>
     public static Rect2 ChainFill => DgPanel.RingRect;
     /// <summary>The key chips' top (R and SPACE, from the geo).</summary>
@@ -68,7 +68,7 @@ public partial class Instrument : Control
     /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
     public readonly DgKeeper Keeper;
     public readonly Vessel Art;
-    /// <summary>bd-ui W3: the campaign's four seats (the keys) or the arena's six (SetFour).</summary>
+    /// <summary>bd-ui W3: the campaign's five seats (the keys; the fifth where the coin was) or the arena's six (SetFour).</summary>
     public Socket[] Sockets = [];
     public readonly Round Draught, Dash;
     /// <summary>The plate in the middle (the bar).</summary>
@@ -177,7 +177,7 @@ public partial class Instrument : Control
         BuildSeats(four);
         PlacePassives();
         Keys();
-    }
+    }   // (SetFour: "four" is the campaign's mode, which now has five seats; the name stays)
 
     void BuildSeats(bool four)
     {
@@ -206,8 +206,10 @@ public partial class Instrument : Control
     void PlacePassives()
     {
         if (Passives == null) return;
-        int last = DgPanel.SeatCount - 1;
-        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(last).X) / 2, w = DgPanel.Seat(last).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
+        // (the leftmost and rightmost seats: in the campaign the fifth seat's index is the middle's, not the last's)
+        float x0 = float.MaxValue, x1 = float.MinValue;
+        for (int i = 0; i < DgPanel.SeatCount; i++) { x0 = Math.Min(x0, DgPanel.Seat(i).X); x1 = Math.Max(x1, DgPanel.Seat(i).X); }
+        float mid = (x0 + x1) / 2, w = x1 - x0 + 2 * DgPanel.SeatR;
         Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
         Passives.Size = new Vector2(w, 28);
     }

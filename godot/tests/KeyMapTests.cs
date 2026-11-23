@@ -140,12 +140,12 @@ public class KeyMapTests
     [Fact]
     public void TheSeatsShowTheKeyboardLeftAndTheMouseRight()
     {
-        Assert.Equal(new[] { 2, 3, 0, 1 }, KeyMap.SeatSlot);
+        Assert.Equal(new[] { 2, 3, 0, 1, 4 }, KeyMap.SeatSlot);
         // a permutation: every slot on one seat, and SeatOf its inverse
-        Assert.Equal(Enumerable.Range(0, 4), KeyMap.SeatSlot.OrderBy(x => x));
-        for (int s = 0; s < 4; s++) Assert.Equal(s, KeyMap.SeatSlot[KeyMap.SeatOf(s)]);
-        // seats 0-1 left of the coin hold 1 and 2 (Skill3, Skill4); then LMB and RMB right of it
-        Assert.Equal(new[] { "Digit1", "Digit2", "Mouse0", "Mouse2" }, KeyMap.SeatSlot.Select(s => KeyMap.Defaults[KeyMap.Skills[s]].Single()));
+        Assert.Equal(Enumerable.Range(0, 5), KeyMap.SeatSlot.OrderBy(x => x));
+        for (int s = 0; s < 5; s++) Assert.Equal(s, KeyMap.SeatSlot[KeyMap.SeatOf(s)]);
+        // seats 0-1 left of the middle hold 1 and 2 (Skill3, Skill4); LMB and RMB right of it; the fifth (3) stands in the middle
+        Assert.Equal(new[] { "Digit1", "Digit2", "Mouse0", "Mouse2", "Digit3" }, KeyMap.SeatSlot.Select(s => KeyMap.Defaults[KeyMap.Skills[s]].Single()));
     }
 
     [Fact]

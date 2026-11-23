@@ -88,12 +88,12 @@ public class AutoRowTests
     }
 
     [Fact]
-    public void The_row_bottom_stands_12_px_above_the_key_caps_top_edge()
+    public void The_row_bottom_stands_20_px_above_the_key_caps_top_edge()
     {
         float capTop = AutoRowModel.CapTop(TopY, SeatY, SeatR, Chip);
         float top = AutoRowModel.RowTop(TopY, SeatY, SeatR, Chip);
         Assert.True(top + AutoRowModel.Tile < capTop);
-        Assert.Equal(capTop - 12, top + AutoRowModel.Tile, 0.001f);
+        Assert.Equal(capTop - 20, top + AutoRowModel.Tile, 0.001f);
         // (the shorter key chips (16 tall) are cleared too)
         Assert.True(top + AutoRowModel.Tile < AutoRowModel.CapTop(TopY, SeatY, SeatR, 16));
     }

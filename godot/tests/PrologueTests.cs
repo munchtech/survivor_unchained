@@ -888,7 +888,7 @@ public class PrologueTests
         s.Host.TaughtIds.Add("ember_ground");
         Run(s, 1.5);
         var c = Offered(s, "ember_ring");
-        Assert.Equal(("Your level", "Ember fills this ring. When it's full, you rise a level.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
+        Assert.Equal(("Your level", "Ember fills this bar. When it's full, you rise a level.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
         Assert.Equal("chain_fill", c.Target.Hud);
     }
 

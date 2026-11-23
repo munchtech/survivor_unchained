@@ -165,18 +165,9 @@ public partial class ControlsPanel : VBoxContainer
         col.AddChild(head);
         var bar = Style.H(4);
         bar.AddChild(new Control { CustomMinimumSize = new Vector2(150 + Style.Gap4 - 4, 0) });
-        for (int k = 0; k < KeyMap.SeatSlot.Length; k++)
+        // (the plate's order: [1][2] [fifth, where the coin was] [LMB][RMB])
+        foreach (int k in new[] { 0, 1, DgPanel.CoinSeat, 2, 3 })
         {
-            if (k == 2)
-            {
-                // the coin between the hands' keys
-                var coin = new Panel { CustomMinimumSize = new Vector2(18, 18), SizeFlagsVertical = SizeFlags.ShrinkBegin, MouseFilter = MouseFilterEnum.Ignore };
-                coin.AddThemeStyleboxOverride("panel", Style.Box(new Color("#16120e"), Style.GoldDim, 1, 9, 0));
-                var hold = new MarginContainer();
-                hold.AddThemeConstantOverride("margin_top", 6);
-                hold.AddChild(coin);
-                bar.AddChild(hold);
-            }
             var act = Controls.Skills[KeyMap.SeatSlot[k]];
             var seat = Style.V(3);
             var capHold = new Control { CustomMinimumSize = new Vector2(44, 22), MouseFilter = MouseFilterEnum.Ignore };
