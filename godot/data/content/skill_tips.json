@@ -57,8 +57,8 @@
       "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
     },
     "iron_vow": {
-      "line": "Plant your feet: for {base.brace} s, blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
-      "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ]
+      "line": "Plant your feet and call the lesser foes to you: for {base.brace} s blows land at half, a fifth kept, then it bursts.",
+      "numbers": [ [ "Damage", "{damage} + what you stored (at least x{base.floor})" ], [ "Ring", "{base.radius} m" ], [ "Calls", "lesser foes within {base.goad} m" ] ]
     },
     "watch_bell": {
       "line": "Toll the bell: all near are drawn in to face you, each one shielding you for {base.barrier:%} of your health.",
