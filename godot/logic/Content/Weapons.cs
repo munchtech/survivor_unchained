@@ -96,6 +96,10 @@ public sealed class WeaponStats
     /// BreakGrow at BreakSpent (100), linearly. BreakFloor (bd-storm; default x1): what a break of a storm that spent none
     /// makes of its damage, so a tapped spin breaks small and a held one great (its radius never shrinks below x1).</summary>
     public double? BreakSpent, BreakFloor;
+    /// <summary>Spin (skills-five, 22 Nov; the owner: "if channeling for x time" then it does the big hit): the seconds a storm
+    /// must spin before Sunder's fresh press breaks it; a shorter storm cancels instead (its lines fade) and Sunder swings as
+    /// itself. None or 0: it breaks at once.</summary>
+    public double? BreakAfter;
     /// <summary>Brace (Iron Vow): she plants Plant seconds (no walking), then braces Brace seconds; blows on her while it
     /// holds land at Halve, and Store of each (before the halving) is stored; it ends in a burst of Radius for Damage plus
     /// the store times StoreMul, Knockback outward, a lesser foe stunned Stun seconds.</summary>

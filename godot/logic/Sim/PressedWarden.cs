@@ -367,6 +367,20 @@ public static partial class Firing
         return floor + (most - floor) * Math.Clamp(resolve / at, 0, 1);
     }
 
+    /// <summary>(skills-five) The storm has spun long enough for its break (BreakAfter seconds; skills.json "breakAfter"): a
+    /// fresh press of Sunder's key breaks it now. Before, the same press cancels it (CancelStorm) and Sunder swings.</summary>
+    public static bool BreakReady(Battle b, WeaponInst w) =>
+        InStorm(b, w) && (w.Channeling ? w.ChannelT : w.StormT) >= (w.Num(s => s.BreakAfter) ?? 0) - 1e-9;
+
+    /// <summary>(skills-five) A storm too short to break, cancelled by Sunder's fresh press: it ends as a release ends it (its
+    /// cooldown starts), its pending lines fade unsplit, and nothing is left to break.</summary>
+    public static void CancelStorm(Battle b, WeaponInst w)
+    {
+        if (w.Channeling) EndChannel(b, w);
+        w.BreakUntil = -1;
+        FadeLines(b, w);
+    }
+
     /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
     public static bool InStorm(Battle b, WeaponInst w) => w.Channeling || (w.BreakUntil >= 0 && b.Time <= w.BreakUntil);
 

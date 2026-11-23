@@ -69,8 +69,8 @@
       "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ]
     },
     "bladestorm": {
-      "line": "Hold to spin, cutting all around you. A fresh press of Sunder's key ends it in one great blow.",
-      "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "up to x{base.breakGrow}" ] ]
+      "line": "Hold to spin, cutting all around you. Once you have spun {base.breakAfter} s, a fresh press of Sunder's key ends it in one great blow; sooner, Sunder just swings.",
+      "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "after {base.breakAfter} s, up to x{base.breakGrow}" ] ]
     },
     "rebuke": {
       "line": "Your shield blocks more, and each blow that reaches you smites its source and the {base.others} nearest with holy light.",

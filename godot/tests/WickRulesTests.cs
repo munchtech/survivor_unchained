@@ -245,7 +245,9 @@ public sealed class WickRulesTests(ITestOutputHelper output)
         // Five that the landing kills ("again": one, so a kill opens the bound and restless's five don't ready it).
         int k = 0;
         foreach (var (dx, dz) in new[] { (-1.5, 0.0), (-0.8, 1.5), (-0.8, -1.4), (0.6, 1.8), (1.6, -1.2) }) s.Foe("w" + dx + dz, lx + dx, dz, hp: v == "again" && k++ > 0 ? 1e7 : 1);
-        var o = s.Foe("O", lx + 7.5, 0, pin: false);
+        // (skills-five: 10 m, was 7.5: it walked to about 4.5 m of the landing by the time she came down, so it was inside
+        // the ring and only Ninepins' old throw, past the stones, had walled it out)
+        var o = s.Foe("O", lx + 10, 0, pin: false);
         double landAt = double.NaN;
         s.Outsider = () => !double.IsNaN(landAt) && s.B.Time >= landAt + 0.1 ? (s.X0 + lx, s.Z0) : (double.NaN, double.NaN);
         if (v == "walk") s.At(0.45, () => { s.B.Player.SlowT = 3; s.B.Player.SlowF = 0.5; });
