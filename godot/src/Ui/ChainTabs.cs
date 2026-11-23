@@ -387,19 +387,19 @@ public partial class ChainTabs : Control
         if (k == 0 && on >= 0)
         {
             DrawCircle(new Vector2(0, 3), 7, new Color(1, 0.5f, 0.15f, 0.2f * a));
-            DrawArc(Vector2.Zero, 9, 1.9f, 1.9f + Mathf.Tau - 0.9f, 20, new Color("#d0915a") with { A = a }, 2.4f, true);
+            DrawArc(Vector2.Zero, 9, 1.9f, 1.9f + Mathf.Tau - 0.9f, 20, new Color("#d0915a") with { A = a }, Aa.W(2.4f), true);
             DrawCircle(new Vector2(0, 7), 2.4f, Style.Ember with { A = a });
         }
         else if (face)
         {
             var pts = new Vector2[17];
             for (int i = 0; i <= 16; i++) pts[i] = new Vector2(Mathf.Cos(i * Mathf.Tau / 16) * 11, Mathf.Sin(i * Mathf.Tau / 16) * 6);
-            DrawPolyline(pts, iron, 2.4f, true);
+            DrawPolyline(pts, iron, Aa.W(2.4f), true);
         }
         else
         {
-            DrawLine(new Vector2(-10, 0), new Vector2(10, 0), iron.Darkened(0.12f), 3.4f, true);
-            DrawLine(new Vector2(-9, -1.2f), new Vector2(9, -1.2f), new Color(1, 0.93f, 0.8f, 0.22f * a), 1, true);
+            DrawLine(new Vector2(-10, 0), new Vector2(10, 0), iron.Darkened(0.12f), Aa.W(3.4f), true);
+            DrawLine(new Vector2(-9, -1.2f), new Vector2(9, -1.2f), new Color(1, 0.93f, 0.8f, 0.22f * a), Aa.W(1), true);
         }
     }
 }
@@ -476,16 +476,16 @@ public partial class Title : Control
                 {
                     // The link at the name, sprung open toward it, the ember in the gap.
                     float from = side > 0 ? Mathf.Pi + 0.8f : 0.8f;
-                    DrawArc(new Vector2(lx, y), 6.5f, from, from + Mathf.Tau - 1.6f, 14, new Color("#c9a46c"), 2, true);
+                    DrawArc(new Vector2(lx, y), 6.5f, from, from + Mathf.Tau - 1.6f, 14, new Color("#c9a46c"), Aa.W(2), true);
                     DrawCircle(new Vector2(lx - side * 5, y), 2.2f, Style.Ember);
                 }
                 else if (k % 2 == 1)
                 {
                     var pts = new Vector2[13];
                     for (int i = 0; i <= 12; i++) pts[i] = new Vector2(lx + Mathf.Cos(i * Mathf.Tau / 12) * 6.5f, y + Mathf.Sin(i * Mathf.Tau / 12) * 3.8f);
-                    DrawPolyline(pts, iron, 1.8f, true);
+                    DrawPolyline(pts, iron, Aa.W(1.8f), true);
                 }
-                else DrawLine(new Vector2(lx - 5.5f, y), new Vector2(lx + 5.5f, y), iron.Darkened(0.1f), 2.6f, true);
+                else DrawLine(new Vector2(lx - 5.5f, y), new Vector2(lx + 5.5f, y), iron.Darkened(0.1f), Aa.W(2.6f), true);
             }
         }
     }

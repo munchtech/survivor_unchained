@@ -123,7 +123,7 @@ public partial class Minimap : Control
             else
             {
                 // (M4 lead 11: a ring, from r+4 to r+Band+3 about a centre 4 px low, never over the lens)
-                DrawArc(c + new Vector2(0, 4), r + 4 + (Band - 1) / 2f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.35f), Band - 1, true);
+                DrawArc(c + new Vector2(0, 4), r + 4 + (Band - 1) / 2f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.35f), Aa.W(Band - 1), true);
                 Cuff.Band(this, c, r, Band);
             }
             // North: a small ember notch on the iron's top.
@@ -147,8 +147,8 @@ public partial class Minimap : Control
                     var col = ink;
                     if (b == 3 && late && !passed) col = col.Lerp(new Color("#c8ccd8"), (float)((s0 - DayClock.NudgeAt) / (DayClock.NightEnds - DayClock.NudgeAt)) * 0.7f);
                     float a = passed ? 0.28f : lit ? 1f : 0.5f;
-                    DrawLine(At(c, pr, s0), At(c, pr, s1), new Color(0, 0, 0, 0.55f * dim), lit && !passed ? 5.5f : 4.5f, true);
-                    DrawLine(At(c, pr, s0), At(c, pr, s1), col with { A = a * dim }, lit && !passed ? 3.2f : 2.2f, true);
+                    DrawLine(At(c, pr, s0), At(c, pr, s1), new Color(0, 0, 0, 0.55f * dim), Aa.W(lit && !passed ? 5.5f : 4.5f), true);
+                    DrawLine(At(c, pr, s0), At(c, pr, s1), col with { A = a * dim }, Aa.W(lit && !passed ? 3.2f : 2.2f), true);
                 }
                 if (b > 0) DrawCircle(At(c, pr, from), 1.6f, new Color(0.9f, 0.85f, 0.75f, 0.5f * dim));
             }
@@ -360,10 +360,10 @@ public partial class Minimap : Control
             DrawCircle(c, 7.4f, new Color("#e8dcc4"), true, -1, true);
             // the arch: two posts and a round head, the way out
             float w = 3.2f, top = -0.6f, foot = 4.6f;
-            DrawLine(c + new Vector2(-w, foot), c + new Vector2(-w, top), ink, 2.1f, true);
-            DrawLine(c + new Vector2(w, foot), c + new Vector2(w, top), ink, 2.1f, true);
-            DrawArc(c + new Vector2(0, top), w, Mathf.Pi, Mathf.Tau, 12, ink, 2.1f, true);
-            DrawLine(c + new Vector2(-w - 1.6f, foot), c + new Vector2(w + 1.6f, foot), ink, 1.6f, true);
+            DrawLine(c + new Vector2(-w, foot), c + new Vector2(-w, top), ink, Aa.W(2.1f), true);
+            DrawLine(c + new Vector2(w, foot), c + new Vector2(w, top), ink, Aa.W(2.1f), true);
+            DrawArc(c + new Vector2(0, top), w, Mathf.Pi, Mathf.Tau, 12, ink, Aa.W(2.1f), true);
+            DrawLine(c + new Vector2(-w - 1.6f, foot), c + new Vector2(w + 1.6f, foot), ink, Aa.W(1.6f), true);
         }
     }
 
@@ -382,8 +382,8 @@ public partial class Minimap : Control
             var d = new[] { c + new Vector2(0, -7), c + new Vector2(7, 0), c + new Vector2(0, 7), c + new Vector2(-7, 0) };
             var closed = new[] { d[0], d[1], d[2], d[3], d[0] };
             DrawColoredPolygon(d, new Color(0.03f, 0.02f, 0.01f, 0.55f));
-            DrawPolyline(closed, new Color("#241c12"), 5.5f, true);
-            DrawPolyline(closed, new Color("#e8dcc4"), 2.4f, true);
+            DrawPolyline(closed, new Color("#241c12"), Aa.W(5.5f), true);
+            DrawPolyline(closed, new Color("#e8dcc4"), Aa.W(2.4f), true);
         }
     }
 

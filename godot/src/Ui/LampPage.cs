@@ -911,7 +911,7 @@ public static class LampInk
         var c = RimGold with { A = a };
         var z = RimGold with { A = 0 };
         y += 0.5f;
-        ci.DrawPolylineColors([new(x0, y), new(x0 + 30, y), new(x1 - 30, y), new(x1, y)], [z, c, c, z], 1f, true);
+        ci.DrawPolylineColors([new(x0, y), new(x0 + 30, y), new(x1 - 30, y), new(x1, y)], [z, c, c, z], Aa.W(1f), true);
     }
 
     /// <summary>Words broken greedily to fit maxw.</summary>
@@ -1077,7 +1077,7 @@ public partial class LampHeader : Control
         {
             var r = ItemRect(f);
             var col = LampInk.Focus with { A = Focused >= 0 ? 1f : 0.6f };
-            if (f < 3) DrawArc(r.GetCenter(), 20, 0, Mathf.Tau, 64, col, 1.5f, true);
+            if (f < 3) DrawArc(r.GetCenter(), 20, 0, Mathf.Tau, 64, col, Aa.W(1.5f), true);
             else DrawStyleBox(new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = col, CornerDetail = 6, AntiAliasing = true,
                 BorderWidthBottom = 1, BorderWidthTop = 1, BorderWidthLeft = 1, BorderWidthRight = 1, CornerRadiusBottomLeft = 4,
                 CornerRadiusBottomRight = 4, CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4 }, r);
@@ -1093,14 +1093,14 @@ public partial class LampHeader : Control
             for (int k = 6; k >= 1; k--) ci.DrawCircle(c, R + k * 2.2f, new Color("#ffb04a") with { A = 0.022f }, true, -1, true);
             ci.DrawCircle(c, R, new Color("#2c2112"), true, -1, true);
             ci.DrawCircle(c + new Vector2(-3, -4), R * 0.62f, new Color("#5b4526") with { A = 0.55f }, true, -1, true);
-            ci.DrawArc(c, R - 0.9f, 0, Mathf.Tau, 64, new Color("#e8c27a"), 1.8f, true);
-            ci.DrawArc(c, R - 3.2f, 0, Mathf.Tau, 64, new Color("#a8823e") with { A = 0.6f }, 0.8f, true);
+            ci.DrawArc(c, R - 0.9f, 0, Mathf.Tau, 64, new Color("#e8c27a"), Aa.W(1.8f), true);
+            ci.DrawArc(c, R - 3.2f, 0, Mathf.Tau, 64, new Color("#a8823e") with { A = 0.6f }, Aa.W(0.8f), true);
         }
         else
         {
             ci.DrawCircle(c, R, new Color("#1a150d") with { A = 0.92f }, true, -1, true);
             ci.DrawCircle(c + new Vector2(-3, -4), R * 0.6f, new Color("#2d2418") with { A = 0.5f }, true, -1, true);
-            ci.DrawArc(c, R - 0.6f, 0, Mathf.Tau, 64, new Color("#6b5532") with { A = 0.85f }, 1.2f, true);
+            ci.DrawArc(c, R - 0.6f, 0, Mathf.Tau, 64, new Color("#6b5532") with { A = 0.85f }, Aa.W(1.2f), true);
         }
         LampInk.Text(ci, LampInk.F("cinzel-700"), 14, c.X + 0.5f, c.Y + 5, numeral, on ? new Color("#ffe2a6") : new Color("#7d6a4c"), 0);
     }
@@ -1218,11 +1218,11 @@ public partial class WickTabs : Control
             if (Chosen >= 0 && Chosen < Centers.Count - 1)
             {
                 var c = Centers[Chosen];
-                for (int k = 4; k >= 1; k--) DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, 2 + k * 2.5f, true);
-                DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus, 2f, true);
+                for (int k = 4; k >= 1; k--) DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, Aa.W(2 + k * 2.5f), true);
+                DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus, Aa.W(2f), true);
             }
             if (Focused >= 0 && Focused < Centers.Count)
-                DrawArc(Centers[Focused], R(Focused) + 4, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, 1.5f, true);
+                DrawArc(Centers[Focused], R(Focused) + 4, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, Aa.W(1.5f), true);
             return;
         }
         float cy = Size.Y / 2;
@@ -1238,11 +1238,11 @@ public partial class WickTabs : Control
         if (Chosen >= 0 && Chosen < Centers.Count)
         {
             var c = Centers[Chosen];
-            for (int k = 4; k >= 1; k--) DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, 2 + k * 2.5f, true);
-            DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus, 2f, true);
+            for (int k = 4; k >= 1; k--) DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, Aa.W(2 + k * 2.5f), true);
+            DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus, Aa.W(2f), true);
         }
         if (Focused >= 0 && Focused < Centers.Count)
-            DrawArc(Centers[Focused], 34f, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, 1.5f, true);
+            DrawArc(Centers[Focused], 34f, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, Aa.W(1.5f), true);
     }
 
     /// <summary>A tab's seat as the HUD lights it (C_day.png's tabs): the HUD's bronze ring, lifted toward lit bronze; a
@@ -1274,10 +1274,10 @@ public partial class WickTabs : Control
         // (p5b: the mock's tab ring, foot.py seat_ring as C_day.png draws it: a clean bronze band lit up and left, a dark
         // seat line inside; the HUD's ornate ring read dark and blotchy at the tab's size)
         float rr = hr + 4.5f;
-        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#1a120a") with { A = 0.85f }, 7.5f, true);
-        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#8c6a3c"), 4.2f, true);
-        ci.DrawArc(c, rr + 0.6f, Mathf.Pi * 0.95f, Mathf.Pi * 1.75f, 40, new Color("#e8c98a") with { A = 0.5f }, 1.6f, true);
-        ci.DrawArc(c, rr - 0.4f, -Mathf.Pi * 0.05f, Mathf.Pi * 0.75f, 40, new Color("#4a3418") with { A = 0.8f }, 1.6f, true);
+        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#1a120a") with { A = 0.85f }, Aa.W(7.5f), true);
+        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#8c6a3c"), Aa.W(4.2f), true);
+        ci.DrawArc(c, rr + 0.6f, Mathf.Pi * 0.95f, Mathf.Pi * 1.75f, 40, new Color("#e8c98a") with { A = 0.5f }, Aa.W(1.6f), true);
+        ci.DrawArc(c, rr - 0.4f, -Mathf.Pi * 0.05f, Mathf.Pi * 0.75f, 40, new Color("#4a3418") with { A = 0.8f }, Aa.W(1.6f), true);
         ci.DrawCircle(c, hr + 1, new Color("#0b0a0c"), true, -1, true);
         // (the mock's seats, foot.py paint_seat: the school's glass lit from the middle, up and left, to a dark rim. p5b:
         // the glass filled in a deep shade of the school's color first, so the tint shows across the well as C_day.png's,
@@ -1288,7 +1288,7 @@ public partial class WickTabs : Control
             (school * new Color(0.62f, 0.62f, 0.62f)) with { A = 0.85f * fa });
         ci.DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 0.7f + new Vector2(-hr * 0.2f, -hr * 0.26f), Vector2.One * hr * 1.4f), false,
             school.Lightened(0.3f) with { A = art != null ? 0.22f : 0.10f });
-        ci.DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0, 0, 0, 0.45f * fa), 3f, true);
+        ci.DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0, 0, 0, 0.45f * fa), Aa.W(3f), true);
         if (art != null && art != "")
         {
             int gi = (int)Mathf.Round(hr * 2 * 0.62f);

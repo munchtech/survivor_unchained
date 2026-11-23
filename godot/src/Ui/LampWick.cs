@@ -553,7 +553,7 @@ public partial class LampWick : Control
             var c = rc.Position + new Vector2(14, rc.Size.Y / 2);
             WickTabs.Seat(ci, c, 26, i % 6, art, ItemViews.SchoolColors[Weapons.All[learned[i]].School]);
             LampInk.Text(ci, fn, 17, c.X + 22, c.Y + 6, Weapons.All[learned[i]].Name, i == listI ? LampInk.Ink : LampInk.Body with { A = 0.85f });
-            if (i == listI) ci.DrawArc(c, 16, 0, Mathf.Tau, 48, LampInk.Focus, 1.5f, true);
+            if (i == listI) ci.DrawArc(c, 16, 0, Mathf.Tau, 48, LampInk.Focus, Aa.W(1.5f), true);
         }
     }
 
@@ -609,9 +609,9 @@ public partial class LampWick : Control
             pts.Add(knot);
         }
         var arr = pts.ToArray();
-        ci.DrawPolyline(arr, Ember with { A = 0.10f }, 8, true);
-        ci.DrawPolyline(arr, Ember with { A = 0.22f }, 4.5f, true);
-        ci.DrawPolyline(arr, LampInk.Focus, 2, true);
+        ci.DrawPolyline(arr, Ember with { A = 0.10f }, Aa.W(8), true);
+        ci.DrawPolyline(arr, Ember with { A = 0.22f }, Aa.W(4.5f), true);
+        ci.DrawPolyline(arr, LampInk.Focus, Aa.W(2), true);
     }
 
     static void Arc(List<Vector2> pts, Vector2 c, float r, float a0, float a1)
@@ -637,8 +637,8 @@ public partial class LampWick : Control
                 float t = k / 32f, u = 1 - t;
                 pts[k] = u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d;
             }
-            if (kinds[r] == 0) ci.DrawPolyline(pts, Ember with { A = 0.16f }, 6, true);
-            ci.DrawPolyline(pts, Col(kinds[r]) with { A = kinds[r] == 2 ? 0.75f : 0.95f }, 2, true);
+            if (kinds[r] == 0) ci.DrawPolyline(pts, Ember with { A = 0.16f }, Aa.W(6), true);
+            ci.DrawPolyline(pts, Col(kinds[r]) with { A = kinds[r] == 2 ? 0.75f : 0.95f }, Aa.W(2), true);
         }
         const float A = 3.9f, step = 3.6f, plen = 8f, sw = 3f;
         int n = (int)((x1b - plen - x0b) / step) + 1;
@@ -649,12 +649,12 @@ public partial class LampWick : Control
             var pa = new Vector2(x, up ? knot.Y - A : knot.Y + A);
             var pb = new Vector2(x + plen, up ? knot.Y + 1.4f : knot.Y - 1.4f);
             var col = Col(kinds[new[] { 0, 2, 1 }[k % 3]]);
-            ci.DrawLine(pa, pb, LampInk.Dark with { A = 0.9f }, sw + 1.6f, true);
-            ci.DrawLine(pa, pb, col * new Color(0.78f, 0.78f, 0.78f), sw, true);
-            ci.DrawLine(pa.Lerp(pb, 0.25f), pa.Lerp(pb, 0.75f), col.Lightened(0.25f), 1.1f, true);
+            ci.DrawLine(pa, pb, LampInk.Dark with { A = 0.9f }, Aa.W(sw + 1.6f), true);
+            ci.DrawLine(pa, pb, col * new Color(0.78f, 0.78f, 0.78f), Aa.W(sw), true);
+            ci.DrawLine(pa.Lerp(pb, 0.25f), pa.Lerp(pb, 0.75f), col.Lightened(0.25f), Aa.W(1.1f), true);
         }
         ci.DrawCircle(knot, 3.4f, LitRim, true, -1, true);
-        ci.DrawArc(knot, 3.4f, 0, Mathf.Tau, 24, new Color("#7a5a26") with { A = 0.6f }, 0.8f, true);
+        ci.DrawArc(knot, 3.4f, 0, Mathf.Tau, 24, new Color("#7a5a26") with { A = 0.6f }, Aa.W(0.8f), true);
     }
 
     /// <summary>A road between two nodes: lit (gold, glowing), the plan's (gold dashes) or cold (thin silver).</summary>
@@ -662,16 +662,16 @@ public partial class LampWick : Control
     {
         if (kind == 0)
         {
-            ci.DrawLine(a, b, Ember with { A = 0.18f }, 7, true);
-            ci.DrawLine(a, b, StrandGold, 2.6f, true);
+            ci.DrawLine(a, b, Ember with { A = 0.18f }, Aa.W(7), true);
+            ci.DrawLine(a, b, StrandGold, Aa.W(2.6f), true);
         }
         else if (kind == 1)
         {
             float len = a.DistanceTo(b);
             var u = (b - a) / Math.Max(len, 1);
-            for (float t = 0; t < len; t += 9) ci.DrawLine(a + u * t, a + u * Math.Min(len, t + 5), StrandPlan, 2.4f, true);
+            for (float t = 0; t < len; t += 9) ci.DrawLine(a + u * t, a + u * Math.Min(len, t + 5), StrandPlan, Aa.W(2.4f), true);
         }
-        else ci.DrawLine(a, b, StrandSilver with { A = 0.38f }, 1.4f, true);
+        else ci.DrawLine(a, b, StrandSilver with { A = 0.38f }, Aa.W(1.4f), true);
     }
 
     void DrawOver(Control ci)

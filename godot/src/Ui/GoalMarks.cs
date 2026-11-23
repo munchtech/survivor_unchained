@@ -115,8 +115,8 @@ public partial class GoalMarks : Control
     {
         var c = m.Color with { A = a };
         DrawCircle(p, DiscR, new Color(0.04f, 0.03f, 0.05f, 0.9f * a));
-        DrawArc(p, DiscR - 0.75f, 0, Mathf.Tau, 36, c, 1.5f, true);
-        DrawArc(p, DiscR + 1.5f, 0, Mathf.Tau, 40, Bronze with { A = a }, 3, true);
+        DrawArc(p, DiscR - 0.75f, 0, Mathf.Tau, 36, c, Aa.W(1.5f), true);
+        DrawArc(p, DiscR + 1.5f, 0, Mathf.Tau, 40, Bronze with { A = a }, Aa.W(3), true);
         DrawTextureRect(Glyphs.Texture(m.Glyph, 56, m.Color), new Rect2(p - new Vector2(14, 14), new Vector2(28, 28)), false, Colors.White with { A = a });
     }
 

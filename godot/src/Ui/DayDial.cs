@@ -74,8 +74,8 @@ public partial class DayDial : Control
                 if (b == 3 && late && !passed) c = c.Lerp(new Color("#c8ccd8"), (float)((s0 - DayClock.NudgeAt) / (DayClock.NightEnds - DayClock.NudgeAt)) * 0.7f);
                 float a = passed ? 0.26f : lit ? 1f : 0.5f;
                 // (a dark line under each stroke, so it reads over sunlit ground as well as night)
-                DrawLine(At(s0) + new Vector2(0, 1), At(s1) + new Vector2(0, 1), new Color(0, 0, 0, 0.5f * dim), lit && !passed ? 5 : 4, true);
-                DrawLine(At(s0), At(s1), c with { A = a * dim }, lit && !passed ? 3.5f : 2.2f, true);
+                DrawLine(At(s0) + new Vector2(0, 1), At(s1) + new Vector2(0, 1), new Color(0, 0, 0, 0.5f * dim), Aa.W(lit && !passed ? 5 : 4), true);
+                DrawLine(At(s0), At(s1), c with { A = a * dim }, Aa.W(lit && !passed ? 3.5f : 2.2f), true);
             }
             // a fine notch where one band gives way to the next
             if (b > 0) DrawCircle(At(from), 1.6f, new Color(0.9f, 0.85f, 0.75f, 0.45f * dim));

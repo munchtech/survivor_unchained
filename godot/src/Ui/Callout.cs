@@ -1054,7 +1054,7 @@ public partial class Callout : Control, ICalloutView
             Barb(Shape(3.2f * k), [Iron, Iron, Iron, Iron]);
             Barb(Shape(0), [White, Deep, Hot, Deep]);
             // A bright ridge down its middle, the way a hot blade shows its edge.
-            DrawLine(tip - dir * 2 * k, tip - dir * L * 0.6f, White with { A = 0.85f }, 1.6f * k, true);
+            DrawLine(tip - dir * 2 * k, tip - dir * L * 0.6f, White with { A = 0.85f }, Aa.W(1.6f * k), true);
         }
 
         /// <summary>A thing off the screen: a ring at the screen's edge holding a small lamp flame, its
@@ -1074,12 +1074,12 @@ public partial class Callout : Control, ICalloutView
             var b1 = at + (dir * Mathf.Cos(0.42f) + n * Mathf.Sin(0.42f)) * (R - 1 * k);
             var b2 = at + (dir * Mathf.Cos(0.42f) - n * Mathf.Sin(0.42f)) * (R - 1 * k);
             Vector2[] tip = [apex, b1, b2];
-            DrawPolyline([apex, b1, b2, apex], Iron with { A = Iron.A * reach }, 5f * k, true);
-            DrawArc(at, R, 0, Mathf.Tau, 48, Iron with { A = Iron.A * reach }, 6f * k, true);
+            DrawPolyline([apex, b1, b2, apex], Iron with { A = Iron.A * reach }, Aa.W(5f * k), true);
+            DrawArc(at, R, 0, Mathf.Tau, 48, Iron with { A = Iron.A * reach }, Aa.W(6f * k), true);
             // (the ring's dark heart, so the flame reads on snow or lamplight)
             DrawCircle(at, R - 2 * k, Deep with { A = 0.55f * reach });
             DrawColoredPolygon(tip, Hot.Lerp(White, 0.2f * breathe) with { A = reach });
-            DrawArc(at, R, 0, Mathf.Tau, 48, Hot.Lerp(White, 0.25f) with { A = (0.85f + 0.15f * breathe) * reach }, 2.4f * k, true);
+            DrawArc(at, R, 0, Mathf.Tau, 48, Hot.Lerp(White, 0.25f) with { A = (0.85f + 0.15f * breathe) * reach }, Aa.W(2.4f * k), true);
             // The lamp: a small flame over its cup.
             var f0 = at + new Vector2(0, 5.5f * k);
             var flame = new List<Vector2>(20);
@@ -1096,16 +1096,16 @@ public partial class Callout : Control, ICalloutView
             DrawColoredPolygon(fl, Hot.Lerp(White, 0.15f + 0.2f * breathe) with { A = reach });
             var core = fl.Select(q => f0 + (q - f0) * 0.5f + new Vector2(0, 0.5f * k)).ToArray();
             DrawColoredPolygon(core, White with { A = 0.9f * reach });
-            DrawLine(at + new Vector2(-6.5f * k, 8.5f * k), at + new Vector2(6.5f * k, 8.5f * k), Hot with { A = reach }, 2.2f * k, true);
-            DrawLine(at + new Vector2(-4f * k, 11.5f * k), at + new Vector2(4f * k, 11.5f * k), Hot with { A = 0.8f * reach }, 1.8f * k, true);
+            DrawLine(at + new Vector2(-6.5f * k, 8.5f * k), at + new Vector2(6.5f * k, 8.5f * k), Hot with { A = reach }, Aa.W(2.2f * k), true);
+            DrawLine(at + new Vector2(-4f * k, 11.5f * k), at + new Vector2(4f * k, 11.5f * k), Hot with { A = 0.8f * reach }, Aa.W(1.8f * k), true);
         }
 
         /// <summary>The arrow's tail where it leaves the words: one link of the chain, end on.</summary>
         void Link(Vector2 at, Vector2 dir, float k)
         {
             var c = at + dir * 2 * k;
-            DrawArc(c, 6.2f * k, 0, Mathf.Tau, 20, Iron, 4.6f * k, true);
-            DrawArc(c, 6.2f * k, 0, Mathf.Tau, 20, Deep.Lerp(Hot, 0.35f), 1.8f * k, true);
+            DrawArc(c, 6.2f * k, 0, Mathf.Tau, 20, Iron, Aa.W(4.6f * k), true);
+            DrawArc(c, 6.2f * k, 0, Mathf.Tau, 20, Deep.Lerp(Hot, 0.35f), Aa.W(1.8f * k), true);
         }
 
         /// <summary>The mark where it lands: a ring round a point, brackets at an area's corners;
@@ -1129,8 +1129,8 @@ public partial class Callout : Control, ICalloutView
                     Soft(ring, 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1);
                     return;
                 }
-                DrawArc(m.C, rr, a0, a1, segs, Iron, 7f * k, true);
-                DrawArc(m.C, rr, a0, a1, segs, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
+                DrawArc(m.C, rr, a0, a1, segs, Iron, Aa.W(7f * k), true);
+                DrawArc(m.C, rr, a0, a1, segs, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, Aa.W(2.6f * k), true);
                 return;
             }
             var b = m.Box.Grow(grow);
@@ -1139,8 +1139,8 @@ public partial class Callout : Control, ICalloutView
             {
                 var p = new[] { corner + new Vector2(sx * arm, 0), corner, corner + new Vector2(0, sy * arm) };
                 if (light) { Soft([.. p], 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1); continue; }
-                DrawPolyline(p, Iron, 7f * k, true);
-                DrawPolyline(p, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
+                DrawPolyline(p, Iron, Aa.W(7f * k), true);
+                DrawPolyline(p, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, Aa.W(2.6f * k), true);
             }
         }
     }

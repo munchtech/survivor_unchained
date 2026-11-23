@@ -133,7 +133,7 @@ public partial class FilterPanel : PanelContainer
         {
             DrawRect(new Rect2(1, 1, 16, 16), Kit.Tile);
             DrawRect(new Rect2(1, 1, 16, 16), on ? Style.Ember : new Color("#5a565c"), false, 1.5f);
-            if (on) DrawPolyline(new[] { new Vector2(4.5f, 9), new Vector2(7.5f, 12.5f), new Vector2(13.5f, 5) }, Style.EmberHi, 2.2f, true);
+            if (on) DrawPolyline(new[] { new Vector2(4.5f, 9), new Vector2(7.5f, 12.5f), new Vector2(13.5f, 5) }, Style.EmberHi, Aa.W(2.2f), true);
         }
     }
 }

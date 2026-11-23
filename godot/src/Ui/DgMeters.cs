@@ -121,7 +121,7 @@ public static partial class DgMeters
         ci.DrawStyleBox(sb, new Rect2(r.Position + new Vector2(0.8f, 0.6f), new Vector2(w - 1.6f, h * 0.62f)));
         sb.BgColor = hot ? new Color(0.80f, 0.60f, 0.30f) : new Color(0.384f, 0.303f, 0.196f);
         ci.DrawStyleBox(sb, new Rect2(r.Position + new Vector2(0.8f, h * 0.40f), new Vector2(w - 1.6f, h * 0.52f)));
-        ci.DrawLine(r.Position + new Vector2(3, 0.7f), r.Position + new Vector2(w - 3, 0.7f), hot ? new Color(1f, 0.92f, 0.72f, 0.7f) : new Color(0.86f, 0.74f, 0.54f, 0.6f), 1, true);
+        ci.DrawLine(r.Position + new Vector2(3, 0.7f), r.Position + new Vector2(w - 3, 0.7f), hot ? new Color(1f, 0.92f, 0.72f, 0.7f) : new Color(0.86f, 0.74f, 0.54f, 0.6f), Aa.W(1), true);
         // the figure cut into it: the lit lower wall, then the cut
         var p = new Vector2(Mathf.Round(at.X - ts.X / 2), Mathf.Round(at.Y + 0.36f * size));
         ci.DrawString(f, p + new Vector2(0, 1.0f), s, HorizontalAlignment.Left, -1, size, hot ? new Color(1f, 0.90f, 0.66f, 0.9f) : new Color(0.80f, 0.68f, 0.48f, 0.85f));
@@ -179,12 +179,12 @@ public static partial class DgMeters
             // bronze, Engrave's tablet: its dark ground, a lit upper face, a darker lower one and a hair of light on
             // top, wide enough to read as metal round the glass)
             DrawTextureRect(Disc, new Rect2(c + new Vector2(1.0f, 2.4f) - Vector2.One * (R + 3.5f), Vector2.One * (2 * R + 7)), false, new Color(0, 0, 0, 0.55f));
-            DrawArc(c, R + 1.6f, 0, Mathf.Pi, 24, new Color(0, 0, 0, 0.6f), 1.0f, true);   // (UI 23: the contact line round its lower half)
+            DrawArc(c, R + 1.6f, 0, Mathf.Pi, 24, new Color(0, 0, 0, 0.6f), Aa.W(1.0f), true);   // (UI 23: the contact line round its lower half)
             DrawCircle(c + new Vector2(-0.6f, -0.4f), R + 1.0f, new Color(0, 0, 0, 0.55f), true, -1, true);
             DrawCircle(c, R, new Color(0.280f, 0.221f, 0.138f), true, -1, true);
-            DrawArc(c, R - 1.9f, 0, Mathf.Tau, 40, new Color(0.384f, 0.303f, 0.196f), 3.0f, true);
-            DrawArc(c, R - 1.9f, Mathf.DegToRad(165), Mathf.DegToRad(375), 32, new Color(0.451f, 0.363f, 0.239f), 3.0f, true);
-            DrawArc(c, R - 0.7f, Mathf.DegToRad(200), Mathf.DegToRad(320), 20, new Color(0.86f, 0.74f, 0.54f, 0.6f), 1.0f, true);
+            DrawArc(c, R - 1.9f, 0, Mathf.Tau, 40, new Color(0.384f, 0.303f, 0.196f), Aa.W(3.0f), true);
+            DrawArc(c, R - 1.9f, Mathf.DegToRad(165), Mathf.DegToRad(375), 32, new Color(0.451f, 0.363f, 0.239f), Aa.W(3.0f), true);
+            DrawArc(c, R - 0.7f, Mathf.DegToRad(200), Mathf.DegToRad(320), 20, new Color(0.86f, 0.74f, 0.54f, 0.6f), Aa.W(1.0f), true);
             // the glass: an inner shadow ring cut into the bronze, then the dark river glass
             DrawCircle(c, R - 3.4f, new Color(0.06f, 0.045f, 0.03f), true, -1, true);
             DrawCircle(c, R - 4.2f, new Color(0.02f, 0.045f, 0.05f), true, -1, true);
@@ -195,8 +195,8 @@ public static partial class DgMeters
             DrawTextureRect(glow, gr, false, new Color(1f, 0.62f, 0.24f, 0.32f));
             DrawTextureRect(gold, gr, false);
             // the dome's glint and a cool rim of sky low on the glass
-            DrawArc(c, R - 5.4f, Mathf.DegToRad(200), Mathf.DegToRad(250), 10, new Color(0.85f, 0.95f, 1f, 0.45f), 1.1f, true);
-            DrawArc(c, R - 4.8f, Mathf.DegToRad(30), Mathf.DegToRad(120), 14, new Color(0.45f, 0.75f, 0.70f, 0.18f), 1.0f, true);
+            DrawArc(c, R - 5.4f, Mathf.DegToRad(200), Mathf.DegToRad(250), 10, new Color(0.85f, 0.95f, 1f, 0.45f), Aa.W(1.1f), true);
+            DrawArc(c, R - 4.8f, Mathf.DegToRad(30), Mathf.DegToRad(120), 14, new Color(0.45f, 0.75f, 0.70f, 0.18f), Aa.W(1.0f), true);
             // its rank engraved on a bronze tablet at its lower right, as the seats' ranks are
             if (rank >= 0) Engrave(this, c + new Vector2(R + 0.5f, R - 3.5f), rank.ToString(), 14, false);
         }

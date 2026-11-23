@@ -299,8 +299,8 @@ public sealed partial class HerLight : Control
         {
             if (k <= 0.01f) return;
             var col = StepCore with { A = k };
-            DrawLine(c - new Vector2(len, 0), c + new Vector2(len, 0), col, heart ? 1.2f : 1f, true);
-            DrawLine(c - new Vector2(0, len), c + new Vector2(0, len), col, heart ? 1.2f : 1f, true);
+            DrawLine(c - new Vector2(len, 0), c + new Vector2(len, 0), col, Aa.W(heart ? 1.2f : 1f), true);
+            DrawLine(c - new Vector2(0, len), c + new Vector2(0, len), col, Aa.W(heart ? 1.2f : 1f), true);
             DrawCircle(c, heart ? 2.2f : 1.2f, col);
             if (heart) DrawCircle(c, 4.5f, StepCore with { A = 0.25f * k });
         }

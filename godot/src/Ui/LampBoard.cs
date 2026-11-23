@@ -1795,13 +1795,13 @@ public partial class BoardInk : Control
             }
             DrawString(w.F, at, w.Text, HorizontalAlignment.Left, -1, w.Px, w.C with { A = w.C.A * w.A });
         }
-        if (Focus is { } f) DrawArc(new Vector2(f.X, f.Y), f.Z, 0, Mathf.Tau, 40, new Color("#e8c87a"), 1.5f, true);
+        if (Focus is { } f) DrawArc(new Vector2(f.X, f.Y), f.Z, 0, Mathf.Tau, 40, new Color("#e8c87a"), Aa.W(1.5f), true);
         if (Hold is { } h)
         {
             // the hold: a smoke-dark track and the ember filling it clockwise from twelve
             var c = new Vector2(h.X, h.Y);
-            DrawArc(c, h.Z, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.45f), 3.5f, true);
-            if (h.W > 0.001f) DrawArc(c, h.Z, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * h.W, Math.Max(4, (int)(48 * h.W)), new Color("#ff9a3c"), 2.5f, true);
+            DrawArc(c, h.Z, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.45f), Aa.W(3.5f), true);
+            if (h.W > 0.001f) DrawArc(c, h.Z, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * h.W, Math.Max(4, (int)(48 * h.W)), new Color("#ff9a3c"), Aa.W(2.5f), true);
         }
     }
 }

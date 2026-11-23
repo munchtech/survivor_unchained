@@ -1403,8 +1403,8 @@ public partial class GradeBadge : Control
             // Cut into the page: a dark stroke with the light catching its lower edge.
             foreach (var (off, ink) in new[] { (new Vector2(0, 1), new Color(1, 1, 1, 0.12f)), (Vector2.Zero, new Color(0, 0, 0, 0.75f)) })
             {
-                DrawLine(c + off + new Vector2(-9, 0), c + off + new Vector2(9, 0), ink, 2.2f, true);
-                DrawLine(c + off + new Vector2(0, -9), c + off + new Vector2(0, 9), ink, 2.2f, true);
+                DrawLine(c + off + new Vector2(-9, 0), c + off + new Vector2(9, 0), ink, Aa.W(2.2f), true);
+                DrawLine(c + off + new Vector2(0, -9), c + off + new Vector2(0, 9), ink, Aa.W(2.2f), true);
             }
             return;
         }

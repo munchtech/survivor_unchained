@@ -221,11 +221,11 @@ public partial class LifeLamp : Control
             float a0 = -Mathf.Pi / 2 - half, a1 = -Mathf.Pi / 2 + half;
             int n = Math.Max(6, (int)(96 * f));
             // the glow, then the glass ring: a dark seat, the silver, a bright thread on its outer edge
-            DrawArc(c, r, a0, a1, n, col with { A = 0.10f }, 9 * k, true);
-            DrawArc(c, r, a0, a1, n, col with { A = 0.22f }, 5.5f * k, true);
-            DrawArc(c, r, a0, a1, n, new Color(0.03f, 0.05f, 0.08f, 0.55f), 3.6f * k, true);
-            DrawArc(c, r, a0, a1, n, col with { A = 0.95f }, 2.6f * k, true);
-            DrawArc(c, r + 0.9f * k, a0, a1, n, new Color("#eef4fa") with { A = 0.75f }, 0.9f * k, true);
+            DrawArc(c, r, a0, a1, n, col with { A = 0.10f }, Aa.W(9 * k), true);
+            DrawArc(c, r, a0, a1, n, col with { A = 0.22f }, Aa.W(5.5f * k), true);
+            DrawArc(c, r, a0, a1, n, new Color(0.03f, 0.05f, 0.08f, 0.55f), Aa.W(3.6f * k), true);
+            DrawArc(c, r, a0, a1, n, col with { A = 0.95f }, Aa.W(2.6f * k), true);
+            DrawArc(c, r + 0.9f * k, a0, a1, n, new Color("#eef4fa") with { A = 0.75f }, Aa.W(0.9f * k), true);
         }
     }
 

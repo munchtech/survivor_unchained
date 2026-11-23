@@ -111,7 +111,7 @@ public static partial class WorldType
             {
                 float a = i * Mathf.Tau / 8 + 0.4f, r0 = Size.X * 0.15f + k * Size.X * 0.3f;
                 var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                DrawLine(c + d * r0, c + d * (r0 + 5), Style.Ember with { A = 1 - k }, 1.5f, true);
+                DrawLine(c + d * r0, c + d * (r0 + 5), Style.Ember with { A = 1 - k }, Aa.W(1.5f), true);
             }
         }
     }
@@ -142,8 +142,8 @@ public static partial class WorldType
             var at = new Vector2(width * (0.08f + 0.84f * k), 0);
             var c = tint.Lightened(0.6f) with { A = a };
             if (star != null) { var s = star.GetSize() * (0.7f + 0.3f * a); DrawTextureRect(star, new Rect2(at - s / 2, s), false, c); return; }
-            DrawLine(at - new Vector2(9 * a, 0), at + new Vector2(9 * a, 0), c, 1.5f, true);
-            DrawLine(at - new Vector2(0, 6 * a), at + new Vector2(0, 6 * a), c, 1.5f, true);
+            DrawLine(at - new Vector2(9 * a, 0), at + new Vector2(9 * a, 0), c, Aa.W(1.5f), true);
+            DrawLine(at - new Vector2(0, 6 * a), at + new Vector2(0, 6 * a), c, Aa.W(1.5f), true);
         }
     }
 }

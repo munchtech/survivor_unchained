@@ -113,8 +113,8 @@ public partial class CinemaBars : CanvasLayer
         {
             if (K <= 0) return;
             var c = new Vector2(22, 22);
-            DrawArc(c, 16, 0, Mathf.Tau, 48, new Color(1, 1, 1, 0.18f), 3, true);
-            DrawArc(c, 16, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(K, 0, 1), 48, new Color("#e8c890"), 3, true);
+            DrawArc(c, 16, 0, Mathf.Tau, 48, new Color(1, 1, 1, 0.18f), Aa.W(3), true);
+            DrawArc(c, 16, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(K, 0, 1), 48, new Color("#e8c890"), Aa.W(3), true);
             DrawString(Style.UiBold, new Vector2(-84, 28), "SKIP", HorizontalAlignment.Right, 76, 15, new Color(1, 1, 1, 0.55f));
         }
     }

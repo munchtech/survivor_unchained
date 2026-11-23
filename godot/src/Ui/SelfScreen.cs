@@ -746,7 +746,7 @@ public partial class Arrow : Control
 
     public override void _Draw()
     {
-        DrawLine(new Vector2(1, 6), new Vector2(11, 6), colour, 2.2f, true);
+        DrawLine(new Vector2(1, 6), new Vector2(11, 6), colour, Aa.W(2.2f), true);
         DrawColoredPolygon(new[] { new Vector2(15, 6), new Vector2(9, 1.5f), new Vector2(9, 10.5f) }, colour);
     }
 }
@@ -820,7 +820,7 @@ public partial class TraitTrack : Control
     {
         if (nodes.Count == 0) return;
         float y = top;
-        DrawLine(new Vector2(nodes[0].X, y), new Vector2(nodes[^1].X, y), Kit.Rule.Lightened(0.15f), 1.5f, true);
+        DrawLine(new Vector2(nodes[0].X, y), new Vector2(nodes[^1].X, y), Kit.Rule.Lightened(0.15f), Aa.W(1.5f), true);
         var font = Style.Display;
         foreach (var (x, lv, t, state) in nodes)
         {
@@ -829,13 +829,13 @@ public partial class TraitTrack : Control
             else if (state == 0)
             {
                 DrawCircle(new Vector2(x, y), 17, new Color("#3a3128"));
-                DrawArc(new Vector2(x, y), 17, 0, Mathf.Tau, 32, new Color("#c8b48a"), 2, true);
+                DrawArc(new Vector2(x, y), 17, 0, Mathf.Tau, 32, new Color("#c8b48a"), Aa.W(2), true);
             }
             else if (state == 1)
             {
                 DrawCircle(new Vector2(x, y), 22, new Color(1, 0.45f, 0.12f, 0.12f));
                 DrawCircle(new Vector2(x, y), 17, new Color("#26180f"));
-                DrawArc(new Vector2(x, y), 17, 0, Mathf.Tau, 32, Style.Ember, 2.5f, true);
+                DrawArc(new Vector2(x, y), 17, 0, Mathf.Tau, 32, Style.Ember, Aa.W(2.5f), true);
             }
             else DrawCircle(new Vector2(x, y), 5, new Color("#4a464c"));
             if (state == 2) continue;

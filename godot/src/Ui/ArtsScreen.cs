@@ -730,7 +730,7 @@ public partial class FacetMark : Control
     {
         var c = new Vector2(12, 12);
         if (on) { DrawCircle(c, 10, Style.Ember with { A = 0.25f }); DrawCircle(c, 5, Style.Ember); }
-        DrawArc(c, 8, 0, Mathf.Tau, 24, on ? Style.EmberHi : open ? Style.GoldHi : Kit.Faint, 2, true);
+        DrawArc(c, 8, 0, Mathf.Tau, 24, on ? Style.EmberHi : open ? Style.GoldHi : Kit.Faint, Aa.W(2), true);
     }
 }
 
@@ -755,8 +755,8 @@ public partial class RoadTrack : Control
     public override void _Draw()
     {
         float x0 = 40, x1 = Size.X - 40, y = 20, step = (x1 - x0) / 4;
-        DrawLine(new Vector2(x0, y), new Vector2(x1, y), Kit.Rule.Lightened(0.15f), 1.5f, true);
-        if (rank >= 1) DrawLine(new Vector2(x0, y), new Vector2(x0 + step * (rank - 1 + (rank < 5 ? toNext : 0)), y), Style.Ember with { A = 0.8f }, 2.5f, true);
+        DrawLine(new Vector2(x0, y), new Vector2(x1, y), Kit.Rule.Lightened(0.15f), Aa.W(1.5f), true);
+        if (rank >= 1) DrawLine(new Vector2(x0, y), new Vector2(x0 + step * (rank - 1 + (rank < 5 ? toNext : 0)), y), Style.Ember with { A = 0.8f }, Aa.W(2.5f), true);
         var font = Style.Display;
         for (int k = 1; k <= 5; k++)
         {
@@ -764,7 +764,7 @@ public partial class RoadTrack : Control
             bool reached = k <= rank, here = k == rank;
             if (here) DrawCircle(p, 20, Style.Ember with { A = 0.15f });
             DrawCircle(p, 15, reached ? new Color("#2a1a10") : new Color("#16131a"));
-            DrawArc(p, 15, 0, Mathf.Tau, 32, here ? Style.Ember : reached ? Style.Gold : Kit.Faint, here ? 2.5f : 1.5f, true);
+            DrawArc(p, 15, 0, Mathf.Tau, 32, here ? Style.Ember : reached ? Style.Gold : Kit.Faint, Aa.W(here ? 2.5f : 1.5f), true);
             string n = ArtsScreen.Numerals[k - 1];
             var sz = font.GetStringSize(n, HorizontalAlignment.Left, -1, 14);
             DrawString(font, p + new Vector2(-sz.X / 2, 5), n, HorizontalAlignment.Left, -1, 14, here ? Style.EmberHi : reached ? Style.GoldHi : Kit.Faint);
@@ -782,8 +782,8 @@ public partial class XMark : Control
     {
         var c = new Vector2(7, Size.Y / 2f);
         var ink = Kit.Ink2;
-        DrawLine(c + new Vector2(-6, -6), c + new Vector2(6, 6), ink, 1.5f, true);
-        DrawLine(c + new Vector2(6, -6), c + new Vector2(-6, 6), ink, 1.5f, true);
+        DrawLine(c + new Vector2(-6, -6), c + new Vector2(6, 6), ink, Aa.W(1.5f), true);
+        DrawLine(c + new Vector2(6, -6), c + new Vector2(-6, 6), ink, Aa.W(1.5f), true);
     }
 }
 

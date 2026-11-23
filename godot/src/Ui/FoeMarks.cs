@@ -242,7 +242,7 @@ public partial class FoeMarks : Control
             dia[2] = diaEdge[2] = c + new Vector2(0, ry);
             dia[3] = diaEdge[3] = c + new Vector2(-rx, 0);
             DrawColoredPolygon(dia, new Color(Snuff, 0.9f));
-            DrawPolyline(diaEdge, Ink, 3f * s, true);
+            DrawPolyline(diaEdge, Ink, Aa.W(3f * s), true);
         }
         if (ring)
         {
@@ -253,8 +253,8 @@ public partial class FoeMarks : Control
                 float t = i / (float)(ringPts.Length - 1) * Mathf.Tau;
                 ringPts[i] = ringAt + new Vector2(Mathf.Cos(t) * rx, Mathf.Sin(t) * ry);
             }
-            DrawPolyline(ringPts, new Color(Ink, 0.85f), 4.5f * s, true);
-            DrawPolyline(ringPts, new Color(Bone, 0.65f + 0.3f * pulse), 2.5f * s, true);
+            DrawPolyline(ringPts, new Color(Ink, 0.85f), Aa.W(4.5f * s), true);
+            DrawPolyline(ringPts, new Color(Bone, 0.65f + 0.3f * pulse), Aa.W(2.5f * s), true);
         }
     }
 }
