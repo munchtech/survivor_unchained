@@ -45,6 +45,10 @@ public static partial class FxWarm
         host.AddChild(new Run(why));
     }
 
+    /// <summary>True while a place's warm-up is drawing (the travel's black waits for it: Game.WhenSmooth).</summary>
+    public static bool Busy => running > 0;
+    static int running;
+
     sealed partial class Run : Node3D
     {
         readonly string why;
@@ -56,6 +60,9 @@ public static partial class FxWarm
         Node3D? mirror;
 
         public Run(string why) { this.why = why; Name = "FxWarm"; }
+
+        public override void _EnterTree() => running++;
+        public override void _ExitTree() => running--;
 
         public override void _Ready()
         {

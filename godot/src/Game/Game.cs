@@ -1076,12 +1076,13 @@ public partial class Game : Node, IZoneHost
         }));
     }
 
-    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
+    /// the place's effect warm-up still draws (FxWarm.Busy, at most 15 s).</summary>
     void WhenSmooth(Action fn, int calm = 0, double waited = 0)
     {
         double dt = GetProcessDeltaTime();
         calm = dt < 0.04 ? calm + 1 : 0;
-        if (calm >= 2 || waited > 2) fn();
+        if ((calm >= 2 || waited > 2) && (!SurvivorUnchained.Fx.FxWarm.Busy || waited > 15)) fn();
         else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
     }
 
