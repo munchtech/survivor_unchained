@@ -140,11 +140,12 @@ public sealed class IronVowWarcryTests(ITestOutputHelper output)
         var bursts = new List<(int Seed, double Stored, int Hit, double Dmg)>();
         int presses = 0;
         var ratios = new List<double>();
+        var diag = new List<(int Near, double Stored, double Lost)>();
         var gate = new object();
         Parallel.ForEach(seeds, seed =>
         {
             double lastBy = 0;
-            int pressed = 0;
+            int pressed = 0, nearAt = 0; double hpAt = 0;
             var mine = new List<(int, double, int, double)>();
             var pending = new List<(double Stored, int Hit)>();
             MapSim.Tap = (t, evs, b, boss) =>
@@ -152,7 +153,8 @@ public sealed class IronVowWarcryTests(ITestOutputHelper output)
                 double by = b.DamageBy.GetValueOrDefault("iron_vow");
                 foreach (var ev in evs)
                 {
-                    if (ev is Ev.Brace { Phase: BracePhase.Start }) pressed++;
+                    if (ev is Ev.Brace { Phase: BracePhase.Start }) { pressed++; nearAt = b.HostilesInRadius(b.Player.X, b.Player.Z, 6).Count(e => !e.Elite && !e.Boss); hpAt = b.Player.Hp; }
+                    if (ev is Ev.Brace { Phase: BracePhase.Burst } bz) lock (gate) diag.Add((nearAt, bz.Stored, hpAt - b.Player.Hp));
                     if (ev is Ev.Brace { Phase: BracePhase.Burst } br) pending.Add((br.Stored, br.Hit));
                     if (ev is Ev.Brace { Phase: BracePhase.Burst } bq && b.Weapons.FirstOrDefault(w => w.Id == "iron_vow") is { } vw) lock (gate) ratios.Add(1 + bq.Stored * (vw.Num(s => s.StoreMul) ?? 3) / vw.Damage);
                 }
@@ -173,6 +175,8 @@ public sealed class IronVowWarcryTests(ITestOutputHelper output)
         }
         else output.WriteLine($"L{level}: presses {presses}, no bursts");
         if (ratios.Count > 0) { var rr = ratios.OrderBy(x => x).ToList(); output.WriteLine($"L{level}: burst over its base (1 + stored x storeMul / damage) p25/p50/p75/p90/max {rr[rr.Count / 4]:0.00}/{rr[rr.Count / 2]:0.00}/{rr[rr.Count * 3 / 4]:0.00}/{rr[rr.Count * 9 / 10]:0.00}/{rr[^1]:0.00}; mean {rr.Average():0.00}"); }
+        foreach (var g in diag.GroupBy(d => d.Stored > 0).OrderBy(g => g.Key))
+            output.WriteLine($"L{level}: {(g.Key ? "stored" : "nothing stored")} {g.Count()}: lesser within 6 m at the press mean {g.Average(d => d.Near):0.0} (none {g.Count(d => d.Near == 0)}); her life over the brace {g.Average(d => d.Lost):0.0}");
         var runs = seeds.AsParallel().Select(seed => DenFeel.Play(new MapRunSpec(seed, "warden", 1, DungeonGen.Get("hollow")!.People, level, 1, [], "deft", 8, "hollow"))).ToList();
         var packs = runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0).ToList();
         var normal = packs.Where(p => p.Grade == 0).Select(p => p.LastDeath - p.FirstHit).OrderBy(x => x).ToList();
