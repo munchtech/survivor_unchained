@@ -947,6 +947,8 @@ public partial class Game : Node, IZoneHost
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;
         else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
+        // (P2 task 5, session 3) a load, not play: the first-draw check rests until the next place's warm-up arms it
+        Perf.DisarmFirstDraws($"leaving for {id}");
         ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
@@ -1008,6 +1010,10 @@ public partial class Game : Node, IZoneHost
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
         RehearseDraft(b);
+        // (P2 task 5, session 3) every kind of drawable the census saw first drawn in play, drawn once now behind the load
+        // (FxWarm); --fx-census: the census itself, watching this play.
+        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}");
+        if (SurvivorUnchained.Fx.FxWarm.CensusNode() is { } census) AddChild(census);
     }
 
     void HookBattle(Battle b)
@@ -1070,12 +1076,13 @@ public partial class Game : Node, IZoneHost
         }));
     }
 
-    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
+    /// the place's effect warm-up still draws (FxWarm.Busy, at most 15 s).</summary>
     void WhenSmooth(Action fn, int calm = 0, double waited = 0)
     {
         double dt = GetProcessDeltaTime();
         calm = dt < 0.04 ? calm + 1 : 0;
-        if (calm >= 2 || waited > 2) fn();
+        if ((calm >= 2 || waited > 2) && (!SurvivorUnchained.Fx.FxWarm.Busy || waited > 15)) fn();
         else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
     }
 
