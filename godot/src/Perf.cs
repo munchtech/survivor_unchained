@@ -254,8 +254,15 @@ public partial class Perf : Node
     {
         if (!On || firstDrawArmed) return;
         firstDrawArmed = true;
-        firstDrawWhy = why;
+        firstDrawWhy = firstDrawWhy.Length == 0 ? why : $"{firstDrawWhy}; {why}";
         GD.Print($"perf first draws: watched from {Now:0.00}s ({why})");
+    }
+    /// <summary>A place is left (Game.EnterZone): its load is not play. The next place's warm-up arms the check again.</summary>
+    public static void DisarmFirstDraws(string why)
+    {
+        if (!On || !firstDrawArmed) return;
+        firstDrawArmed = false;
+        GD.Print($"perf first draws: not watched from {Now:0.00}s ({why})");
     }
     readonly double[] fdLast = new double[5], fdNow = new double[5];
     static readonly Performance.Monitor[] FdKinds = { Performance.Monitor.PipelineCompilationsCanvas, Performance.Monitor.PipelineCompilationsMesh,
@@ -307,7 +314,7 @@ public partial class Perf : Node
             var p = n.GetPath().ToString();
             int cut = p.Length;
             for (int k = 0; k < 3 && cut > 0; k++) cut = p.LastIndexOf('/', cut - 1);
-            string line = $"{n.GetClass()} {(cut > 0 ? p[(cut + 1)..] : p)} [{what}]";
+            string line = $"{n.GetClass()} {(cut > 0 ? p[(cut + 1)..] : p)} [{what}] {{{Fx.FxWarm.Tag(n)}}}";
             if (!said.Contains(line)) said.Add(line);
             if (said.Count >= 12) break;
         }
@@ -323,7 +330,7 @@ public partial class Perf : Node
 
     void FirstDrawsVerdict()
     {
-        if (!firstDrawArmed) { GD.Print("perf first draws: NOT ARMED (no warm-up ran or it never finished): no verdict"); return; }
+        if (firstDrawWhy.Length == 0) { GD.Print("perf first draws: NOT ARMED (no warm-up ran or it never finished): no verdict"); return; }
         GD.Print($"perf first draws: {fdFrames} frames in play compiled {fdPipes} pipelines after the warm-up ({firstDrawWhy}), {fdOver} of them over 16.7 ms, worst {fdWorst:0.0} ms: {(fdFrames == 0 ? "PASS" : "FAIL")}");
     }
 

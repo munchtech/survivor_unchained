@@ -49,10 +49,11 @@ public static partial class FxWarm
     {
         readonly string why;
         long t0;
-        int frames, still, entries, skipped;
+        int frames, drawn, still, entries, skipped;
         double lastPipes = -1, pipes0;
         CanvasLayer? canvas;
         Camera3D? cam;
+        Node3D? mirror;
 
         public Run(string why) { this.why = why; Name = "FxWarm"; }
 
@@ -82,6 +83,12 @@ public static partial class FxWarm
                 else AddChild(k);
                 if (k is Node3D n3) n3.Transform = Transform3D.Identity;
                 if (k is GpuParticles3D gp) { gp.Emitting = true; gp.Amount = 1; }
+                // (a mirrored copy too: a negative-scale instance draws with the other cull mode, its own pipeline)
+                if (k is Node3D && !Args.Has("fx-warm-flat"))
+                {
+                    if (mirror == null) AddChild(mirror = new Node3D { Name = "Mirrored", Scale = new Vector3(-1, 1, 1) });
+                    mirror.AddChild((Node)k.Duplicate());
+                }
                 entries++;
             }
             root.QueueFree();
@@ -98,21 +105,40 @@ public static partial class FxWarm
             GlobalTransform = new Transform3D(t.Basis.Scaled(Vector3.One * 0.0005f), t.Origin - t.Basis.Z * (cam.Near * 4 + 0.05f));
         }
 
+        // Counted in frames, not seconds (the editor's first frames are seconds long: a 3 s cap ended check1's after 2 frames):
+        // the stand-ins in view for at least 4 frames and until the counters stand still 3 (cap 600); then, the stand-ins
+        // gone, the place's own first frames until 10 stand still (cap 600), and only then the check is armed.
+        string end = "";
+        double warmSecs;
+        int settle;
         public override void _Process(double delta)
         {
-            Follow();
             frames++;
             double p = Perf.PipesNow();
             still = p == lastPipes ? still + 1 : 0;
             lastPipes = p;
-            double secs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
-            if (frames >= 4 && still >= 3 || secs > 3) Done(secs > 3 ? "the 3 s cap" : "the pipelines settled");
+            if (end.Length == 0)
+            {
+                Follow();
+                if (cam != null) drawn++;
+                if (drawn >= 4 && still >= 3 || frames >= 600)
+                {
+                    end = frames >= 600 ? "the 600-frame cap" : "the pipelines settled";
+                    warmSecs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
+                    foreach (var k in GetChildren()) k.QueueFree();
+                    still = 0;
+                }
+                return;
+            }
+            if (++settle >= 600 || still >= 10) Done(settle >= 600 ? "the place still compiling (600-frame cap)" : "the place settled");
         }
 
-        void Done(string end)
+        void Done(string placeEnd)
         {
             double secs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
-            Report = $"{entries} stand-ins drawn ({skipped} warmed before), {Perf.PipesNow() - pipes0:0} pipelines compiled, {frames} frames, {secs:0.00} s, ended by {end}";
+            if (end.Length == 0) { end = placeEnd; warmSecs = secs; }
+            Report = $"{entries} stand-ins drawn ({skipped} warmed before), {Perf.PipesNow() - pipes0:0} pipelines compiled, {drawn} frames in view, " +
+                     $"{warmSecs:0.00} s, ended by {end}; then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd}";
             GD.Print($"load: fx warm-up ({why}): {Report}");
             SetProcess(false);
             QueueFree();
@@ -152,10 +178,30 @@ public static partial class FxWarm
         double next, nextSave = 20, t;
         bool dirty;
 
+        // (what the 0.25 s walk misses: a node that lives or shows for less, e.g. fx_p7_top, never seen by census1) every
+        // drawable added to the tree, or shown, is looked at in the next frame or two, once it is made up.
+        readonly List<Node> fresh = new(), later = new();
+        readonly HashSet<ulong> hooked = new();
+        void Fresh(Node n)
+        {
+            if (n is not (GeometryInstance3D or CanvasItem)) return;
+            fresh.Add(n);
+            if (!hooked.Add(n.GetInstanceId())) return;
+            if (n is Node3D n3) n3.VisibilityChanged += () => { if (IsInstanceValid(n3) && n3.IsVisibleInTree()) fresh.Add(n3); };
+            else if (n is CanvasItem c) c.VisibilityChanged += () => { if (IsInstanceValid(c) && c.IsVisibleInTree()) fresh.Add(c); };
+        }
+        void Look(Node n)
+        {
+            if (!IsInstanceValid(n) || !n.IsInsideTree() || n is Node3D { } a && !a.IsVisibleInTree() || n is CanvasItem { } b && !b.IsVisibleInTree()) return;
+            for (var p = n; p != null; p = p.GetParent()) if (p is FxWarm.Run) return;
+            if (Drawable(n)) Consider(n, false);
+        }
+
         public override void _Ready()
         {
             Name = "FxCensus";
             ProcessMode = ProcessModeEnum.Always;
+            GetTree().NodeAdded += Fresh;
             if (ResourceLoader.Exists(Library) && GD.Load<PackedScene>(Library)?.Instantiate() is { } old)
             {
                 foreach (var k in old.GetChildren().ToList())
@@ -168,6 +214,15 @@ public static partial class FxWarm
         public override void _Process(double delta)
         {
             t += delta;
+            if (walks > 0)
+            {
+                var now = fresh.ToArray();
+                fresh.Clear();
+                foreach (var n in later) Look(n);
+                later.Clear();
+                later.AddRange(now);
+                foreach (var n in now) Look(n);
+            }
             if (t < next) return;
             next = t + 0.25;
             bool first = walks++ == 0;
@@ -185,30 +240,25 @@ public static partial class FxWarm
             if (n is FxWarm.Run || n == this) return;
             if (n is CanvasItem ci0 && !ci0.Visible) return;
             if (n is Node3D n30 && !n30.Visible) return;
-            if (Drawable(n))
-            {
-                string? sig = Signature(n);
-                if (sig != null)
-                {
-                    if (first) atLoad.Add(sig);
-                    else if (!atLoad.Contains(sig) && !lib.ContainsKey(sig))
-                    {
-                        Node? stand = null;
-                        try { stand = StandIn(n); } catch (Exception e) { GD.PrintErr($"fx census: {n.GetPath()}: {e.Message}"); }
-                        if (stand == null) refused++;
-                        else
-                        {
-                            stand.SetMeta(SigMeta, sig);
-                            stand.Name = $"k{lib.Count:0000}";
-                            lib[sig] = stand;
-                            added++;
-                            dirty = true;
-                            GD.Print($"fx census: +{n.GetClass()} {n.GetPath()} :: {sig}");
-                        }
-                    }
-                }
-            }
+            if (Drawable(n)) Consider(n, first);
             foreach (var k in n.GetChildren()) Walk(k, first);
+        }
+
+        void Consider(Node n, bool first)
+        {
+            string? sig = Signature(n);
+            if (sig == null) return;
+            if (first) { atLoad.Add(sig); return; }
+            if (atLoad.Contains(sig) || lib.ContainsKey(sig)) return;
+            Node? stand = null;
+            try { stand = StandIn(n); } catch (Exception e) { GD.PrintErr($"fx census: {n.GetPath()}: {e.Message}"); }
+            if (stand == null) { refused++; return; }
+            stand.SetMeta(SigMeta, sig);
+            stand.Name = $"k{lib.Count:0000}";
+            lib[sig] = stand;
+            added++;
+            dirty = true;
+            GD.Print($"fx census: +{n.GetClass()} {n.GetPath()} :: {sig}");
         }
 
         void Save()
@@ -230,6 +280,28 @@ public static partial class FxWarm
             GD.Print($"fx census: library written: {lib.Count} kinds ({added} new this run, {refused} refused), {err2}");
         }
     }
+
+    /// <summary>(the first-draw check's words for a node drawn new) "lib": its kind is in the library, so the warm-up drew a
+    /// stand-in for it and missed anyway (a fidelity miss); "NEW": the census never saw its kind (a coverage miss);
+    /// ",mirrored": a negative-scale instance; ",L20": on FxAfter's layer (drawn by its own camera and viewport).</summary>
+    public static string Tag(Node n)
+    {
+        string? sig = null;
+        try { sig = Signature(n); } catch (Exception) { }
+        if (sig == null) return "no kind";
+        if (librarySigs == null)
+        {
+            librarySigs = new HashSet<string>();
+            if (ResourceLoader.Exists(Library) && GD.Load<PackedScene>(Library)?.Instantiate() is { } r)
+            {
+                foreach (var k in r.GetChildren()) if (k.HasMeta(SigMeta)) librarySigs.Add(k.GetMeta(SigMeta).AsString());
+                r.Free();
+            }
+        }
+        return (librarySigs.Contains(sig) ? "lib" : "NEW") + (n is Node3D a && a.GlobalTransform.Basis.Determinant() < 0 ? ",mirrored" : "") +
+               (n is VisualInstance3D v && (v.Layers & SurvivorUnchained.View.FxAfter.RenderLayer) != 0 ? ",L20" : "");
+    }
+    static HashSet<string>? librarySigs;
 
     static bool Drawable(Node n) => n switch
     {

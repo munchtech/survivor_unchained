@@ -947,6 +947,8 @@ public partial class Game : Node, IZoneHost
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;
         else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
+        // (P2 task 5, session 3) a load, not play: the first-draw check rests until the next place's warm-up arms it
+        Perf.DisarmFirstDraws($"leaving for {id}");
         ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
