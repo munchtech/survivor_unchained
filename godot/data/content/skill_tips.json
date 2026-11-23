@@ -69,7 +69,7 @@
       "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ]
     },
     "bladestorm": {
-      "line": "Hold to spin, cutting all around you. Once you have spun {base.breakAfter} s, a fresh press of Sunder's key ends it in one great blow; sooner, Sunder just swings.",
+      "line": "Hold to spin, cutting all around you. After {base.breakAfter} s spun, a fresh Sunder press ends it in one great blow.",
       "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "after {base.breakAfter} s, up to x{base.breakGrow}" ] ]
     },
     "rebuke": {

@@ -368,9 +368,11 @@ public static partial class Firing
     }
 
     /// <summary>(skills-five) The storm has spun long enough for its break (BreakAfter seconds; skills.json "breakAfter"): a
-    /// fresh press of Sunder's key breaks it now. Before, the same press cancels it (CancelStorm) and Sunder swings.</summary>
+    /// fresh press of Sunder's key breaks it now. Before, the same press cancels it (CancelStorm) and Sunder swings. Only
+    /// where the storm drains Resolve (the campaign, whose break grows by what it spent from BreakFloor): the arena's break
+    /// already grows by time from x1 (BreakGrowth), and the owner's ruling was on the campaign's.</summary>
     public static bool BreakReady(Battle b, WeaponInst w) =>
-        InStorm(b, w) && (w.Channeling ? w.ChannelT : w.StormT) >= (w.Num(s => s.BreakAfter) ?? 0) - 1e-9;
+        InStorm(b, w) && (!(b.Resolve.On && w.Press?.Drain is > 0) || (w.Channeling ? w.ChannelT : w.StormT) >= (w.Num(s => s.BreakAfter) ?? 0) - 1e-9);
 
     /// <summary>(skills-five) A storm too short to break, cancelled by Sunder's fresh press: it ends as a release ends it (its
     /// cooldown starts), its pending lines fade unsplit, and nothing is left to break.</summary>
