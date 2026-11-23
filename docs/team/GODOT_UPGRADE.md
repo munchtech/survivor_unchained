@@ -1,9 +1,49 @@
-# Godot 4.5.1 to 4.7.2: the upgrade session (22-23 Nov 2026), after the trial (GODOT_UPGRADE_TRIAL.md)
+# Godot 4.5.1 to 4.7.2: the upgrade sessions (22-23 Nov 2026), after the trial (GODOT_UPGRADE_TRIAL.md)
 
 Branch `worktree-agent-a73cef575840655d2` (from integration 873f32817). State file: `survivorsunchained_inputs\scratch_godot47\STATE.md` (top block).
 The owner, 21 Nov: "we shouldn't be planning on never upgrading our blender or godot as they will continue to update and we don't want to be trapped not updating".
 
-**Verdict: NOT MERGE-READY in this session.** The build, the suite and a new break are done; the pipeline compile cost is handed to the frame-pacing lead with evidence; the look and the pacing numbers are not finished. Measured unless marked.
+**Verdict after session 2 (23 Nov): ready to merge on the build, the suite and the movement numbers; two bars of the brief are NOT met and are the main session's and the owner's to rule on, not this lane's to waive.** (1) The look match went to its three judged rounds and none passed: one mark is left, the shape of the glow halo round one light point. By the README's finish line it closes as known at the cap. (2) Uncapped, 4.7.2's den frame time is 2% longer (median 5.21 ms against 5.11). Everything else below is equal or at the baseline. Measured unless marked.
+
+## Session 2 (23 Nov 2026, Fable lead; the owner, 23 Nov: "your picks are good")
+
+Commits on `worktree-agent-a73cef575840655d2`: eb122b6ff (the look match), 915e5199a (`Ui/Aa.cs`), ab9de03ce (glow numbers), b7342051a (Upgrade Project Files), then this page.
+
+**What the engine changed in the picture, and what now undoes it (4.7 only; on 4.5.1 none of this code runs, so the 4.5.1 picture is untouched).**
+- AgX is a new curve since 4.6 (read from the 4.7.2 tag: tonemap.glsl and environment_storage.cpp). Its two dials (contrast, white) cannot reproduce the old curve: measured, contrast 1.20 trades a -0.009 mid dip for +0.0065 lifted darks, white 64 changes nothing. Do not retry dials. `Atmosphere.GradeLut` now folds the exact map (new curve undone, old curve applied) into every grade LUT. Glow off, what is left is a flat +0.0013 to +0.0026 display in every tone bin, about half an 8-bit level. Its source is unknown (my reading: a rounding difference in the render or movie-writer path).
+- Soft-light glow still blends after the tonemap (session 1's "before" was wrong for soft light), but on linear values where 4.5 used sRGB-encoded ones, which lifted a faint glow about twelvefold. No single number is exact for both the broad bloom and the hot halos. `Atmosphere.SetGlow` scales intensity x3 and bloom x2 on 4.7: whole frame +0.46 levels of 255 against 4.5.1 (was -4.6% to -5.1% luma before any fix), mean absolute difference about 1.5 levels.
+- Antialiased 2D lines are drawn wider since 4.6. `Ui/Aa.W(width)` inverts the engine's own formula; 206 calls in 36 files go through it. Two judges found the HUD the same after it. `Fx/Ribbons.cs` has its own line helper and was left alone.
+- Dev flag `--look47 map=0,glow=1,bloom=1` shows the engine's raw picture; `glow=` and `bloom=` take other multipliers.
+
+**The judge (three fresh su-lead-max rounds, 1:1 den frames at the play camera, both engines side by side, bar "no visible change in the look").**
+- Round 1 FAIL: tone lobes and thicker HUD lines. Round 2 FAIL: every pair passed except the halo round the light point at pixel (361,500) of take s01, clip second 0.5 (wider and redder on 4.7.2, picked blind 10 of 11). Round 3 FAIL, same place only: after glow x3 / x2 the halo is darker 10-16 px out (red -4.6 to -7.0 levels) and pinker 20-36 px out (red +1 to +2.2, blue +1.5 to +2.9); picked blind 19 of 24. Every other checklist line in round 3 reads "same": exposure, hue, darks, fog and shafts, her outline, foes and hit paint by kind, HUD.
+- Not supplied to any round, so not judged: a telegraph ring on 4.7.2 (the take with foes, s12d, is not frame-matched across engines; its 4.7.2 hit frames held no ring) and a lit lamp or fire prop near the camera (none found in the den that a take can place). Take s12 never draws its dummy wolf; s11 draws no swing trail.
+- Logged, not failing: a soft patch above her, +4 to +9 red levels on 4.7.2, picked at chance.
+- Frames: `godot/.shots/godot47up/judge`, `judge2`, `judge3` in the worktree, copied to `survivorsunchained_inputs\scratch_godot47\judged` with the 4.5.1 reference clips (a 4.5.1 editor run from this tree is no longer safe after the Upgrade Project Files commit).
+- What the next attempt costs: one solver burst. The round 3 judge proposed scaling the glow levels separately; that was already tried and does almost nothing on 4.7 (levels changed by 30-50% moved the rings by 0.4 levels or less, sweep m1-m4), so start by reading how 4.6+ composes its glow levels (the 4.7.2 glow shaders) before fitting. A try is 65 seconds: `tools/scratch/godot47/look_sweep.sh TAG:glow=..,bloom=..` then `halo.py` (ring by ring against the kept 4.5.1 frame).
+
+**Numbers (pass = equal or better).**
+- Movement, `move_baseline.py`, 23 takes on each engine at eb122b6ff: the two tables are identical, 0 differing lines of 43 (`godot/.shots/godot47up/TABLE_g45s2.md`, `TABLE_g47s2.md`). Taken before the scene re-save; my reading is that the re-save cannot change them (one header line per scene changed).
+- Den perf legs, exports, uncapped, 15 minutes each, all four CLEAN (`tools/scratch/pacing4/i2.sh next8`, `godot/.shots/pacing4/i2_summary.txt`):
+
+| leg | engine | fps | median ms | mean ms | 1% ms | 0.1% ms | frames over 16.7 ms | hitches | fx warm-up |
+|---|---|---|---|---|---|---|---|---|---|
+| s2a | 4.5.1 next4 | 193 | 5.11 | 5.19 | 7.7 | 9.8 | 1 of 172453 | 0 | 4.02 s |
+| s2b | 4.7.2 next8 | 185 | 5.27 | 5.41 | 15.2 | 82.5 | 5 of 124292 | 4 | 5.21 s |
+| s2c | 4.7.2 next8 | 190 | 5.21 | 5.28 | 7.9 | 10.2 | 3 of 169601 | 1 | 6.64 s |
+| s2d | 4.5.1 next4 | 193 | 5.11 | 5.18 | 7.8 | 10.1 | 2 of 172576 | 1 | 4.36 s |
+
+  s2b alone reached the den's own load inside its window (one 9.0 s load frame at 685 s, then the leg ends), which is what its 1%, 0.1% and hitch numbers show; s2c is the like-for-like leg. So: median +0.10 ms (+2%), 3 fps of 193, on 4.7.2; under a 60 fps cap nothing separates them (1 to 5 frames over 16.7 ms in about 170,000). NOT "equal or better" uncapped. Where the 0.10 ms goes is unknown (not traced). The warm-up read 5.21 s and 6.64 s against 4.02 s and 4.36 s; the owner accepted 5.5 s on 23 Nov; why s2c read 6.64 s is unknown (one reading).
+- Suite on b7342051a: 3147 pass, 1 fail (the known den one, `DungeonFightTests.The_den_clears_inside_the_pages_feel_targets`), 12 skip: the baseline.
+
+**Upgrade Project Files (b7342051a):** engine-written only, 336 files: `project.godot`, `.import` and `.uid` files, and `game.tscn` and `slice.tscn` re-saved by 4.7.2 (`tools/scratch/godot47/resave_scenes.gd`; one header line each).
+
+**Play build:** `release\godot\next8` in the worktree (exe 109 MB, pck 3.69 GB), made with `tools/scratch/godot47/export47.sh next8` (the "Windows Demo (proof)" preset, windowed so the shader baker runs; `tools/godot/export.sh` cannot name a folder), start check passed (`start47.sh next8`: level 9, warm-up done, 1767 pipelines, no error outside the known exit leaks). next5, next6 and next7 are in the Recycle Bin.
+`& "C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-a73cef575840655d2\release\godot\next8\SurvivorUnchained.exe" -- --quick warden --sex female --zone map --dungeon hollow --veteran 9 --move-new --move-ab`
+
+## Session 1 (22-23 Nov), as written then
+
+**Session 1's verdict: NOT MERGE-READY in this session.** The build, the suite and a new break are done; the pipeline compile cost is handed to the frame-pacing lead with evidence; the look and the pacing numbers are not finished. Measured unless marked.
 
 ## Done
 - **Trial merged** (c3e29b259) without its churn commit 1ebd656c3: that commit deleted the tracked `godot/assets` link and copied 1346 asset files under it. The `.uid`/`.import` churn comes back with the upgrade's own project-files commit, written by 4.7.2.
