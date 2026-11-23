@@ -7,7 +7,7 @@ Six rounds of questions against PoE2, Last Epoch, Diablo 3/4 and Grim Dawn. **Wh
 **The model:** Last Epoch. Each skill's own tree (the Wicks) transforms it, beside a passive board. Power is split: the tree and wicks set the plan, gear adds twists. Respec stays free at any lamp-post.
 
 **Keys (replaces six keys):**
-- **4 keys per weapon set,** and the basic attack takes one of them (Diablo-style, so it maps to a pad's four face buttons).
+- **4 keys per weapon set** (superseded: five pressed keys, Round 10, 22 November), and the basic attack takes one of them (Diablo-style, so it maps to a pad's four face buttons).
 - **Two weapon sets; the swap changes the whole bar.** Set A is a calling weapon; set B may be off-calling. Weapons gate skills (sword skills need a sword).
 - **What the swap is for:** situations, chaining buffs, movement, single target to AoE, and other creative uses. Every swap is also a strike, with an internal cooldown so it can't be spammed.
 - **3 auto-only slots,** hers and always on through a swap: auras, summons and kindled triggers, opening by level. Auto skills granted by items stack on top of the three.
@@ -62,6 +62,7 @@ Six rounds of questions against PoE2, Last Epoch, Diablo 3/4 and Grim Dawn. **Wh
 - **Weapon gates in a stance (the owner: "I want fun different combos to exist"). The coordinator's default, until the owner overrides:** a stance never turns her skills off. The stance weapon flavors the same skills instead. Under a shield stance her blows block and stun; under twin blades they come faster and bleed; under a mace they stagger. The fun is skills times stances: 4 skills and a few stance weapons give many combos, with no dead keys. A build's real choice is which stance it leans on, and what the stance costs (slower, less damage, less defense).
 
 ## Round 9 (the owner, 21 November): overrides the auto-slot lines above
+(Superseded in part by Round 10, 22 November: the bar this round led to, four keys with Groundbreaker a node, is now **five** pressed keys; the rest of Round 9 stands.)
 The owner, word for word:
 - "I think our hybrid auto skill and non hybrid skill is probably too confusing.  we can make an auto support gem but we should just copy normal arpg skills probably - there are some auto things and auras but maybe not a key thing.  stances and unions are already things that set us apart"
 - "groundbreaker would be like a node you know? every 3rd attack groundbreaks."
@@ -73,3 +74,22 @@ What it means (the plan session's reading, design only, nothing built):
 - **"Auto" lives in two ordinary places:** a support gem (socket it and the skill fires itself, at a cost), and tree nodes that add a trigger to a pressed skill. Groundbreaker is the first node: every 3rd attack groundbreaks.
 - **What sets the game apart:** stances and Unions (with the Wicks and the Lamps).
 - **Open, for a one-page proposal before any code:** each current skill's new kind (pressed, aura, node, or cut); where an aura sits and what it costs (the plan session's lean: no key, paid by reserving a resource, as Path of Exile does); the bar rule in `godot/logic/Rpg/SkillBook.cs` (lines 69-74), the taught builds and their tests.
+
+## Round 10 (the owner, 22 November): five keys; overrides the four-key bar above
+The owner, word for word, after playing P4 part 2 (the four-key bar):
+- "what causes heroic leap to make a circle boundary? looks cool but hitches sometimes - it also pushes the mosnter outside the barrier idk if thats intended - also the bladesttorm -> sunder cancel big hit is super strong to just keep bladestorm -> instantly sunder -> repeat which could totally be a build but as a default its weird.  strongboxes load in before they appear causing an invisible wall.  bladestorm sunder is really cool an easy fix is "if channeling for x time" then it does the big hit.  it does feel good to do just not spamming"
+- "for build b lets make it 5 abilities not 4.  iron vow dosn't feel great yet (it can maybe) and not having shield charge was less fun.  were gonna redesign the bottom ui I think so don't worry about messing with it too much, just swap the level circle for an ability circle and put a normal basic thin exp bar"
+- "we def had some hitches here and there but big improvements all around"
+
+What changed (branch skills-five):
+- **Five pressed keys:** Sunder, Heroic Leap, Bladestorm, Iron Vow, Shield Charge. `Weapons.MaxKeys` 5; keys open at levels 1, 4, 5, 9, 9 (`SkillBook.KeysAt`; Iron Vow stays at 9: at 7 the level-6 den run levels her mid-run and the den's numbers move, which would be a re-tune). The fifth key is Skill5: 3 (R in the Q/E layout, RT on a pad). Falling Wall (Heroic Leap + Shield Charge) works again. Older saves re-cut by `TaughtBuilds.BarShape` 4.
+- **HUD:** the level coin is the fifth key's seat; a plain thin XP bar with "Lv N" runs over the key caps. No polish: the bottom UI is to be redesigned.
+- **Bladestorm into Sunder:** the great blow only once the storm has spun `breakAfter` seconds (1.8 s, skills.json, where the break first reaches x1); a sooner Sunder press ends the storm and Sunder swings. Sunder's seat lights when the break is ready (the existing bond cue). Measured at level 9, --veteran gear, 20 s from Resolve 50, on a pack of six / one foe: the loop "Bladestorm, at once Sunder, repeat" was 3039 / 458 dps, now 1365 / 212; holding Bladestorm to 1.8 s then breaking 1985 / 297; Sunder held 447 / 58 (`BladestormBreakTests`).
+- **Later node, not built:** the spam loop as a build, a tree node such as "Bladestorm breaks at once" (breakAfter 0), as the owner allowed ("could totally be a build but as a default its weird").
+- **The Henge** (Heroic Leap, Quake 4): the landing's throw (Ninepins) now stops at the stones, so a lesser foe thrown by the landing stays inside; an elite inside at the landing is left be (`HengeThrowTests`). The Henge's hitch is the play-fixes lane's.
+
+Open (paper only, nothing built): three ways to make Iron Vow feel better as a pressed skill, each with its build cost:
+- **A. A warcry vow** (as the genre's warcries): the press also goads lesser foes within 6 m to her for the 2 s brace, so the burst always has blows to store, and it has a floor. Cost: small. The goad already exists (`WardenWicks` goaded, used by Ai); one call on the press, one floor number, a test, a den bot re-run.
+- **B. A timed vow** (a parry, as PoE2's shield skills and many action games): pressed within about 0.4 s before a big blow lands, the blow is turned whole and the burst goes at once, larger; pressed early, it is today's brace. Cost: medium. A window check on the hit path, a "perfect" cue from existing effects, tests; the bots already read big wind-ups (iron_vow's old kindle rule `windup big within 0.6`).
+- **C. A held vow:** the brace lasts while the key is held (up to 6 s, Resolve drained), and letting go bursts, larger the longer held. This is the Unyielding node (iron_vow.brace.4) made the base, so the code exists. Cost: small in code, but the Brace strand needs a new fourth node, and the held pose needs an animation check.
+- My reading (not measured): A is the cheapest and makes every press pay; B feels best in hand but costs most.
