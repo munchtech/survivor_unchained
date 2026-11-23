@@ -278,7 +278,14 @@ public partial class Perf : Node
         {
             fdHooked = true;
             for (int i = 0; i < 5; i++) fdLast[i] = Performance.GetMonitor(FdKinds[i]);
-            GetTree().NodeAdded += n => { if (fdAdded.Count < 256 && (n is GeometryInstance3D || n is CanvasItem ci && ci.Material != null)) fdAdded.Add(n); };
+            // (a pooled node shown again is told too: its visibility_changed, hooked when it entered the tree)
+            GetTree().NodeAdded += n =>
+            {
+                if (!(n is GeometryInstance3D || n is CanvasItem ci && ci.Material != null)) return;
+                if (fdAdded.Count < 256) fdAdded.Add(n);
+                if (n is Node3D n3) n3.VisibilityChanged += () => { if (fdAdded.Count < 256 && IsInstanceValid(n3) && n3.IsVisibleInTree()) fdAdded.Add(n3); };
+                else if (n is CanvasItem c2) c2.VisibilityChanged += () => { if (fdAdded.Count < 256 && IsInstanceValid(c2) && c2.IsVisibleInTree()) fdAdded.Add(c2); };
+            };
             return;
         }
         // (the counters read here hold what the last frame's draw compiled: the nodes it drew new are those added before it)
@@ -318,7 +325,7 @@ public partial class Perf : Node
             if (!said.Contains(line)) said.Add(line);
             if (said.Count >= 12) break;
         }
-        return said.Count == 0 ? "nothing added (a node shown or re-materialed, not added)" : string.Join("; ", said);
+        return said.Count == 0 ? "nothing added or shown (a node re-materialed or re-emitted?)" : string.Join("; ", said);
     }
 
     static string FdMat(Material? m) => m switch

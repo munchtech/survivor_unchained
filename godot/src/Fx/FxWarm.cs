@@ -92,7 +92,8 @@ public static partial class FxWarm
                 entries++;
             }
             root.QueueFree();
-            if (entries == 0) { Done("everything already warmed"); return; }
+            // (nothing new to draw: the place's own first frames still settle before the check arms)
+            if (entries == 0) { end = "everything already warmed"; return; }
             Follow();
         }
 
@@ -165,7 +166,7 @@ public static partial class FxWarm
     // ---------------------------------------------------------------- the census
 
     /// <summary>--fx-census: the watcher, put under the game's root at the start of play. Every 0.25 s it walks the tree for
-    /// drawables in view; what was in view at its first walk is the place itself (drawn at load, not counted); every kind
+    /// drawables in view (the place's own kinds too: drawn at load, they can be drawn again into another framebuffer); every kind
     /// seen after that is added to the library (merged with what the library already holds), written every 20 s and at exit.</summary>
     public static Node? CensusNode() => Args.Has("fx-census") && !censusMade && (censusMade = true) ? new Census() : null;
     static bool censusMade;
@@ -173,7 +174,6 @@ public static partial class FxWarm
     sealed partial class Census : Node
     {
         readonly Dictionary<string, Node> lib = new();
-        readonly HashSet<string> atLoad = new();
         int walks, added, refused;
         double next, nextSave = 20, t;
         bool dirty;
@@ -248,8 +248,9 @@ public static partial class FxWarm
         {
             string? sig = Signature(n);
             if (sig == null) return;
-            if (first) { atLoad.Add(sig); return; }
-            if (atLoad.Contains(sig) || lib.ContainsKey(sig)) return;
+            // (what was in view at the first walk is kept too: a kind drawn at load can be drawn again in play into another
+            // framebuffer, e.g. the page backdrop, check2 498.96 s, 86 ms; warming a kind already drawn costs nothing)
+            if (lib.ContainsKey(sig)) return;
             Node? stand = null;
             try { stand = StandIn(n); } catch (Exception e) { GD.PrintErr($"fx census: {n.GetPath()}: {e.Message}"); }
             if (stand == null) { refused++; return; }
@@ -323,6 +324,8 @@ public static partial class FxWarm
         {
             case GeometryInstance3D g:
                 sb.Append("|sh").Append((int)g.CastShadow).Append(g.Transparency > 0 ? "|tr" : "");
+                // (FxAfter's layer is drawn by its own camera into its own viewport, another framebuffer: another pipeline)
+                if ((g.Layers & SurvivorUnchained.View.FxAfter.RenderLayer) != 0) sb.Append("|L20");
                 sb.Append("|o:").Append(MatKey(g.MaterialOverride)).Append("|ov:").Append(MatKey(g.MaterialOverlay));
                 switch (g)
                 {
