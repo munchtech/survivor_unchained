@@ -133,7 +133,13 @@ public static class Pilot
         else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; took = "stone"; }
         // (M3: in the campaign the engage distance is to its edge: a boss's girth is not walked into, where his touch hurts;
         // the arena keeps the center, byte-same)
-        else if (nearest != null && !inReach) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; took = "close"; }
+        else if (nearest != null && !inReach)
+        {
+            mx = nearest.X - p.X; mz = nearest.Z - p.Z; took = "close";
+            // (P3, the den's ruler) On a walk, a foe behind rock is gone round to, as a player does: the bot walked straight at the
+            // Pack-Mother into the den's stone and stood there for minutes (hollow seeds 1, 3).
+            if (onward != null && RoundTo(b, nearest) is var (rx, rz)) { mx = rx; mz = rz; took = "close-round"; }
+        }
         // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
         else if (nearest != null && wall) { mx = 0; mz = 0; took = "wall"; }
         else if (nearest != null && feet != null)
@@ -158,7 +164,8 @@ public static class Pilot
         {
             // On a story night's way: the nearest turn that is clear, either hand, or straight on and
             // let the wall slide her (a quarter turn left, always, pressed her into a wall's corner).
-            if (goal != null) (mx, mz) = Clearest(b, mx, mz);
+            // (P3) On a walk, as on a story night's way: a quarter turn left held her in the den's rock corners and crevices.
+            if (goal != null || onward != null) (mx, mz) = Clearest(b, mx, mz);
             else (mx, mz) = (-mz, mx);
         }
         // The boss's own fight, read last: it overrules the crowd.
@@ -701,6 +708,21 @@ public static class Pilot
         BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz, goal, strikes, first);
 
     /// <summary>The way on nearest the one wanted that a step down it is clear; straight on if none is.</summary>
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Battle, FlowField> toFoe = new();
+    /// <summary>How far (cells) the way to a foe behind cover is looked for.</summary>
+    public const int RoundReach = 32;
+
+    /// <summary>The way to a foe the straight line to which is blocked by solid ground: downhill on a flood from the foe (a
+    /// field of its own, re-flooded as the foe changes cell). Null with the line clear, or no way known (then the straight line).</summary>
+    static (double X, double Z)? RoundTo(Battle b, Enemy e)
+    {
+        var p = b.Player;
+        if (b.Collision.Raycast(p.X, p.Z, e.X, e.Z, 0.3) == null) return null;
+        var f = toFoe.GetValue(b, bb => new FlowField(bb.Collision, RoundReach));
+        f.Update(e.X, e.Z);
+        return f.Dir(p.X, p.Z, out double fx, out double fz) ? (fx, fz) : null;
+    }
+
     static (double X, double Z) Clearest(Battle b, double mx, double mz)
     {
         var p = b.Player;
