@@ -225,3 +225,36 @@ has spent one honest session without passing, or when the spec itself is in doub
 the same approach. The owner's gates are theirs: a judge's pass does not replace the owner's play.
 Keep a state file with every branch and sha, each package's state, and the owner's words, word for word.
 ```
+
+## Orchestrator #17 (Opus): the start prompt (written by #16 at its close, 22 Nov 2026, night)
+
+You are orchestrator #17 for Survivor Unchained, on Opus. Orchestrator #16 closed on 22 Nov 2026 at night and you start from its handoff. Nothing is running: no lanes, no agents, no worktrees of ours.
+
+**Read first, in this order:** `CLAUDE.md`; `docs/team/README.md`; the top block of `docs/team/RESUME.md` ("22 Nov 2026, night: ORCHESTRATOR #16 CLOSED"); `docs/team/GAME_PLAN.md` sections A and H; `docs/team/HANDOFF_BRIEFS.md` ("Common rules" and "Orchestrator"). #16's state file has the owner's words, word for word, and every sha: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord16\STATE.md` (read its last three blocks, grep the rest). Start your own state file at `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord17\STATE.md` in your first turn.
+
+**Your job** is the standing "Orchestrator" brief in `HANDOFF_BRIEFS.md`: you coordinate packages and do not design. At most two build lanes at once, and only when they share no files. Count worktrees before each spawn (cap 8) and remove a worktree in the turn its branch merges. Merge only what passed its test and the owner's gate. Never raise a round cap or a session limit without the owner's word. P7 and P8 belong to the Marionette session.
+
+**Where things stand**
+- Integration is the local branch `claude/vigilant-galileo-l6jqyx`; nothing is pushed. All of 22 Nov's build work is merged (`ba97e1e98`): slice-base, the den roster, five pressed skills, feel, frame pacing 1-3, the Bladestorm re-hold fix.
+- Suite: 3147 pass, 1 fail, 12 skip. The fail is `DungeonFightTests.The_den_clears_inside_the_pages_feel_targets` (pack fights 10.0 s against a 6-10 s target).
+- The owner's play build is `release\godot\next4` in the main checkout (the command is in RESUME). Every play build for the owner starts with `--veteran 9`.
+
+**Work** (RESUME's top block has the details and the smaller follow-ups)
+1. Den re-tune, so the red feel test passes.
+2. Godot 4.7.2 upgrade. The owner picked it as the "First task after the slice"; the trial is `godot47-trial@291fb2172`.
+3. Frame pacing, session four. The owner granted it on 22 Nov ("we could try more?", then "yes"). D1's numbers are not met. Left over: about 15 boss-fight draw frames of 17-27 ms a run (cause unknown) and one 48-65 ms frame at the den's end. The "before" build is `release\godot\next2`, the "after" is `next4`. #16's recommendation, yours to settle: run it after the engine upgrade, since a new engine changes what there is to profile. Measure only when no other session's Godot run overlaps: session three's numbers were spoiled that way. No fifth session without the owner's word.
+4. Parked items: P6 pitch 2 wiring (the owner: "Keep pitch 2, wire it"), Resolve shown on her, equip and pick-up sounds, the den load (half build-ahead, and moving the 3.5 s warm-up to the Verge's load).
+5. Waiting on the owner. Ask all of it in one table, never one at a time: the Iron Vow pick (A warcry, B timed parry, C held; #16's pick is A), roll or dash, and for the look target: may a light pool be brighter than her, plain or detailed floor, and the route (#16's pick: scripted local fixes on round 3's set).
+
+**Two rules the owner added on 22 Nov, word for word**
+- "remember when we keep hitting walls to see how successful games have done it". A lane that failed twice or more on the same kind of fault starts its next brief with how shipped, successful games solve that exact problem, and says which of those it copies. This applies now to frame pacing and to the look target.
+- "it will be opus orchestrated - it should know if things aren't working to give fable lead a try". When an Opus lead has spent one honest session without passing, or the spec itself is in doubt, the package goes to a Fable lead with a changed approach. Never spend more rounds on the same approach. Two packages are already at that point, so their next leads are Fable leads: frame pacing (three sessions, numbers not met) and the look target (round 5: three judged rounds, none passed, whole-picture remakes stopped converging).
+
+**Traps**
+- Godot runs go through `tools/turn.py` or `tools/quiet.py`. Another session's shoots share the turn lock (labels `game_frame: gf_*`): wait for it, never touch it. No export or windowed run while a game the owner started is running.
+- Never `git add -A`. Engine churn (`.import`, `.uid`, `project.godot`) and a few untracked leftovers in the main checkout are not ours. Commit exact paths.
+- The owner's gates are theirs: a judge's pass does not replace their play. A reaction is not a ruling: record their words word for word and mark your readings as readings.
+- The look lane's ChatGPT image limit is separate from weekly usage. A lead that hits it stops; there is no workaround.
+- Disk: C: has about 90 GB free. RESUME lists what the last sweep left behind and why.
+
+**Reports to the owner:** short, result first; play commands in a `powershell` block; open decisions in one table.
