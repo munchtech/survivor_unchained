@@ -1008,6 +1008,10 @@ public partial class Game : Node, IZoneHost
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
         RehearseDraft(b);
+        // (P2 task 5, session 3) every kind of drawable the census saw first drawn in play, drawn once now behind the load
+        // (FxWarm); --fx-census: the census itself, watching this play.
+        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}");
+        if (SurvivorUnchained.Fx.FxWarm.CensusNode() is { } census) AddChild(census);
     }
 
     void HookBattle(Battle b)

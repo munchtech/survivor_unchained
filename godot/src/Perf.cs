@@ -243,6 +243,90 @@ public partial class Perf : Node
 
     public static bool On => Args.Has("perf");
 
+    // ---- (P2 task 5, session 3) The first-draw check: once the place's warm-up is done (FxWarm, ArmFirstDraws), every frame
+    // that still compiled a pipeline (canvas, mesh, surface or draw: the kinds a frame can wait for; specialization runs on
+    // workers) is a first draw in play the warm-up did not cover. Each is told with the drawables that entered the tree in
+    // the frame it drew, and the end of the run says PASS (none) or FAIL. Before arming, such frames are told as "loading".
+    static bool firstDrawArmed;
+    static string firstDrawWhy = "";
+    /// <summary>From now on a pipeline compiled in a frame counts against the warm-up (FxWarm calls it when its frames are done).</summary>
+    public static void ArmFirstDraws(string why)
+    {
+        if (!On || firstDrawArmed) return;
+        firstDrawArmed = true;
+        firstDrawWhy = why;
+        GD.Print($"perf first draws: watched from {Now:0.00}s ({why})");
+    }
+    readonly double[] fdLast = new double[5], fdNow = new double[5];
+    static readonly Performance.Monitor[] FdKinds = { Performance.Monitor.PipelineCompilationsCanvas, Performance.Monitor.PipelineCompilationsMesh,
+        Performance.Monitor.PipelineCompilationsSurface, Performance.Monitor.PipelineCompilationsDraw, Performance.Monitor.PipelineCompilationsSpecialization };
+    List<Node> fdAdded = new(), fdDrawn = new();
+    int fdFrames, fdOver, fdLines, fdPipes;
+    double fdWorst;
+    bool fdHooked;
+
+    void FirstDraws(double ms)
+    {
+        if (!fdHooked)
+        {
+            fdHooked = true;
+            for (int i = 0; i < 5; i++) fdLast[i] = Performance.GetMonitor(FdKinds[i]);
+            GetTree().NodeAdded += n => { if (fdAdded.Count < 256 && (n is GeometryInstance3D || n is CanvasItem ci && ci.Material != null)) fdAdded.Add(n); };
+            return;
+        }
+        // (the counters read here hold what the last frame's draw compiled: the nodes it drew new are those added before it)
+        (fdDrawn, fdAdded) = (fdAdded, fdDrawn);
+        fdAdded.Clear();
+        double waitable = 0;
+        for (int i = 0; i < 5; i++) { double v = Performance.GetMonitor(FdKinds[i]); fdNow[i] = v - fdLast[i]; fdLast[i] = v; if (i < 4) waitable += fdNow[i]; }
+        if (waitable <= 0) return;
+        if (firstDrawArmed)
+        {
+            fdFrames++;
+            fdPipes += (int)waitable;
+            if (ms > 16.7) fdOver++;
+            fdWorst = Math.Max(fdWorst, ms);
+        }
+        if (fdLines++ > 400) return;
+        GD.Print($"perf first draw {(firstDrawArmed ? "in play" : "loading")} {Now:0.00}s frame {ms:0.0} ms, pipelines c/m/s/d/sp {string.Join("/", fdNow.Select(v => (int)v))}; new: {FdDescribe(fdDrawn)}");
+    }
+
+    static string FdDescribe(List<Node> nodes)
+    {
+        var said = new List<string>();
+        foreach (var n in nodes)
+        {
+            if (!IsInstanceValid(n) || !n.IsInsideTree()) continue;
+            string what = n switch
+            {
+                GeometryInstance3D g => FdMat(g.MaterialOverride ?? (g is MeshInstance3D mi && mi.Mesh != null && mi.Mesh.GetSurfaceCount() > 0 ? mi.GetActiveMaterial(0) : null)) +
+                                        (g is GpuParticles3D gp ? $" process {FdMat(gp.ProcessMaterial)}" : ""),
+                CanvasItem c => FdMat(c.Material),
+                _ => "",
+            };
+            var p = n.GetPath().ToString();
+            int cut = p.Length;
+            for (int k = 0; k < 3 && cut > 0; k++) cut = p.LastIndexOf('/', cut - 1);
+            string line = $"{n.GetClass()} {(cut > 0 ? p[(cut + 1)..] : p)} [{what}]";
+            if (!said.Contains(line)) said.Add(line);
+            if (said.Count >= 12) break;
+        }
+        return said.Count == 0 ? "nothing added (a node shown or re-materialed, not added)" : string.Join("; ", said);
+    }
+
+    static string FdMat(Material? m) => m switch
+    {
+        null => "no material",
+        ShaderMaterial sm => sm.Shader is { } sh ? (sh.ResourcePath.Length > 0 ? sh.ResourcePath[(sh.ResourcePath.LastIndexOf('/') + 1)..] : "code shader") : "no shader",
+        _ => m.GetClass(),
+    };
+
+    void FirstDrawsVerdict()
+    {
+        if (!firstDrawArmed) { GD.Print("perf first draws: NOT ARMED (no warm-up ran or it never finished): no verdict"); return; }
+        GD.Print($"perf first draws: {fdFrames} frames in play compiled {fdPipes} pipelines after the warm-up ({firstDrawWhy}), {fdOver} of them over 16.7 ms, worst {fdWorst:0.0} ms: {(fdFrames == 0 ? "PASS" : "FAIL")}");
+    }
+
     /// <summary>--perf-allocs: the runtime's allocation samples (one every
     /// 100 KB or so, named by the type that crossed the line) counted by type
     /// and by thread (the main thread or another) over the recording, to find
@@ -413,6 +497,7 @@ public partial class Perf : Node
         // How long from launch to the first frame drawn (the engine's clock starts with the process).
         if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();
+        FirstDraws(ms);
         long alloc = GC.GetTotalAllocatedBytes(false), mainAlloc = GC.GetAllocatedBytesForCurrentThread();
         var pause = GC.GetTotalPauseDuration();
         double pauseMs = (pause - lastPause).TotalMilliseconds;
@@ -638,6 +723,7 @@ public partial class Perf : Node
     {
         if (queueProbe) GD.Print("perf labels: GroundLabels body, ms a frame by names drawn: " + LabelTable());
         if (Fx.PreJit.Report.Length > 0) GD.Print("perf pre-JIT: " + Fx.PreJit.Report);
+        FirstDrawsVerdict();
         // What the process holds at the end (the pre-JIT's cost in memory shows against a --no-prejit leg of the same exe).
         using (var me = Process.GetCurrentProcess())
             GD.Print($"perf memory: private {me.PrivateMemorySize64 / 1048576.0:0} MB, working set {me.WorkingSet64 / 1048576.0:0} MB; compiled {System.Runtime.JitInfo.GetCompiledMethodCount()} methods, {System.Runtime.JitInfo.GetCompiledILBytes() / 1024} KB of IL, on every thread");

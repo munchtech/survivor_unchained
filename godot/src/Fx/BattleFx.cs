@@ -2449,6 +2449,7 @@ public partial class BattleFx : Node3D
     /// the blows they warn of are not counting down (SU-008: a pause past a warning's life let the blow land unwarned).</summary>
     public bool SimHeld;
 
+    long fxSt;
     public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
@@ -2531,8 +2532,9 @@ public partial class BattleFx : Node3D
                 }
             }
         }
-        RedMarks();
-        StepH6();
+        fxSt = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 s3: --perf names a step over 4 ms)
+        RedMarks(); fxSt = Perf.Slow("fx step RedMarks", fxSt);
+        StepH6(); fxSt = Perf.Slow("fx step StepH6", fxSt);
         for (int i = 0; i < beams.Count; i++)
         {
             var (m, mat, t, life) = beams[i];
@@ -2549,36 +2551,36 @@ public partial class BattleFx : Node3D
             if (e.Boss) bossUp = true;
             if (e.Def.CarriedLight != null) Aura(e, fdt);
         }
-        StepAuras(fdt);
-        Zones(b, now);
-        ArtTrails(b, fdt);
-        StepRise(b, fdt);
-        StepDig(fdt);
-        StepDeadfalls(fdt);
-        StepPanting(fdt);
-        StepTellStreaks(b, fdt);
-        Projectiles(b, fdt, now);
-        Pickups(b, now);
-        LampPool(b, fdt);
+        StepAuras(fdt); fxSt = Perf.Slow("fx step StepAuras", fxSt);
+        Zones(b, now); fxSt = Perf.Slow("fx step Zones", fxSt);
+        ArtTrails(b, fdt); fxSt = Perf.Slow("fx step ArtTrails", fxSt);
+        StepRise(b, fdt); fxSt = Perf.Slow("fx step StepRise", fxSt);
+        StepDig(fdt); fxSt = Perf.Slow("fx step StepDig", fxSt);
+        StepDeadfalls(fdt); fxSt = Perf.Slow("fx step StepDeadfalls", fxSt);
+        StepPanting(fdt); fxSt = Perf.Slow("fx step StepPanting", fxSt);
+        StepTellStreaks(b, fdt); fxSt = Perf.Slow("fx step StepTellStreaks", fxSt);
+        Projectiles(b, fdt, now); fxSt = Perf.Slow("fx step Projectiles", fxSt);
+        Pickups(b, now); fxSt = Perf.Slow("fx step Pickups", fxSt);
+        LampPool(b, fdt); fxSt = Perf.Slow("fx step LampPool", fxSt);
         if (levelHeld > 0 && !Flare.HoldsFrame && !P7MarkHolds) { levelHeld = 0; LevelLight(); }
-        StepFronts(fdt);
-        StepWardenHoly(fdt);
+        StepFronts(fdt); fxSt = Perf.Slow("fx step StepFronts", fxSt);
+        StepWardenHoly(fdt); fxSt = Perf.Slow("fx step StepWardenHoly", fxSt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
-        Blades.Step(fdt);
-        OathBlades.Step(hsw);
-        LogSweep(hsw, stopped);
-        StepOathPools(hsw);
-        Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
-        StepSpikes(fdt);
-        StepWardenGround(fdt);
-        StepP7(hfx, b);
-        Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
-        Sparks.Step(hfx);
-        Books.Step(fdt);
-        Scars.Step(fdt);
-        Waves.Step(fdt);
-        Smoke.Step(hfx);
-        Gore.Step(fdt);
+        Blades.Step(fdt); fxSt = Perf.Slow("fx step Blades.Step", fxSt);
+        OathBlades.Step(hsw); fxSt = Perf.Slow("fx step OathBlades.Step", fxSt);
+        LogSweep(hsw, stopped); fxSt = Perf.Slow("fx step LogSweep", fxSt);
+        StepOathPools(hsw); fxSt = Perf.Slow("fx step StepOathPools", fxSt);
+        Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null); fxSt = Perf.Slow("fx step Hits.Flush", fxSt);
+        StepSpikes(fdt); fxSt = Perf.Slow("fx step StepSpikes", fxSt);
+        StepWardenGround(fdt); fxSt = Perf.Slow("fx step StepWardenGround", fxSt);
+        StepP7(hfx, b); fxSt = Perf.Slow("fx step StepP7", fxSt);
+        Ribbons.Step(fdt, GetViewport()?.GetCamera3D()); fxSt = Perf.Slow("fx step Ribbons.Step", fxSt);
+        Sparks.Step(hfx); fxSt = Perf.Slow("fx step Sparks.Step", fxSt);
+        Books.Step(fdt); fxSt = Perf.Slow("fx step Books.Step", fxSt);
+        Scars.Step(fdt); fxSt = Perf.Slow("fx step Scars.Step", fxSt);
+        Waves.Step(fdt); fxSt = Perf.Slow("fx step Waves.Step", fxSt);
+        Smoke.Step(hfx); fxSt = Perf.Slow("fx step Smoke.Step", fxSt);
+        Gore.Step(fdt); fxSt = Perf.Slow("fx step Gore.Step", fxSt);
     }
 
     /// <summary>The red marks handed to MarkPass for this frame (their decals hidden: they are its data), new ones'
@@ -2748,16 +2750,16 @@ public partial class BattleFx : Node3D
         gone.Clear();
         foreach (var (id, m) in zoneMarks) if (!alive.Contains(id)) { m.Active = false; m.Decal.Visible = false; gone.Add(id); }
         foreach (var id in gone) zoneMarks.Remove(id);
-        GroundsGone(alive);
+        GroundsGone(alive); fxSt = Perf.Slow("fx step GroundsGone", fxSt);
     }
 
     void Projectiles(Battle b, float dt, double now)
     {
         celBolts?.Begin();
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
-        DiscsBegin();
-        StunGlints(b);
-        Buffs(b);
+        DiscsBegin(); fxSt = Perf.Slow("fx step DiscsBegin", fxSt);
+        StunGlints(b); fxSt = Perf.Slow("fx step StunGlints", fxSt);
+        Buffs(b); fxSt = Perf.Slow("fx step Buffs", fxSt);
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;
