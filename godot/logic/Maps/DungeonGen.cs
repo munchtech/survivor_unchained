@@ -53,7 +53,13 @@ public sealed record RoomPlan(string Id, RoomRole Role, Lobe[] Shape, Lobe[] Hol
 }
 
 /// <summary>A dungeon kind: who holds it, its look, its lowest level, and its rooms.</summary>
-public sealed record DungeonDef(string Id, string Name, string People, string Theme, int Floor, string Region, RoomPlan[] Rooms);
+public sealed record DungeonDef(string Id, string Name, string People, string Theme, int Floor, string Region, RoomPlan[] Rooms)
+{
+    /// <summary>(den-wall, 22 Nov) Whether a dungeon of this theme draws the map's flora: the den grows nothing under its roof
+    /// (the view leaves its flora out: src/World/ZoneView.cs "The den grows nothing"). Where none is drawn, no flora stands
+    /// solid: nothing she cannot see blocks her (MapGen's altar ring; tests/DenWallTests.cs).</summary>
+    public static bool GrowsFlora(string? theme) => theme != "den";
+}
 
 /// <summary>A room as laid: its area's index, its plan, its cell, where it hangs from, its shape in the world.</summary>
 public sealed record DungeonRoom(int Area, RoomPlan Plan, int Ci, int Cj, int Parent, bool OnRoute, double X, double Z, double Rot, bool Mirror, double Scale,
