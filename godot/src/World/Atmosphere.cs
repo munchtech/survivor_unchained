@@ -238,15 +238,15 @@ public partial class Atmosphere : Node3D
     //     that, so the grade's table is fed the colour 4.5.1 would have shown (Agx45, exact): every look tuned on 4.5.1
     //     keeps its tones.
     // (2) Soft-light glow is now blended on linear values with a linear glow; 4.5 blended sRGB-encoded values with an
-    //     sRGB-encoded glow, which lifted a faint glow about twelvefold. Nothing puts that back exactly; intensity x4.7
-    //     and bloom x1.3 give the same added light by tone (measured, den take s01). Glow set anywhere goes through SetGlow.
+    //     sRGB-encoded glow, which lifted a faint glow about twelvefold. Nothing puts that back exactly; intensity x3
+    //     and bloom x2 give the same added light over the frame and the same halo ring by ring round a light point (measured, den take s01, tools/scratch/godot47/halo.py; x4.7 and x1.3 matched by tone but left the halo wider and redder). Glow set anywhere goes through SetGlow.
     // (Set by name, not by property, so the file still builds against 4.5.1 for an A/B.)
     // --look47 map=0,glow=1,bloom=1: the engine's own picture, or other numbers to try (tools/scratch/godot47/look_sweep.sh).
     static readonly bool Engine46 = Engine.GetVersionInfo() is { } ev && ((int)ev["major"] > 4 || (int)ev["minor"] >= 6);
     static readonly Dictionary<string, float> Look47 = (SurvivorUnchained.Args.Get("look47") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
         .Select(kv => kv.Split('=')).ToDictionary(kv => kv[0], kv => float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture));
     static float L47(string key, float tuned) => Look47.TryGetValue(key, out float v) ? v : tuned;
-    static readonly float GlowIntensityScale = Engine46 ? L47("glow", 4.7f) : 1f, GlowBloomScale = Engine46 ? L47("bloom", 1.3f) : 1f;
+    static readonly float GlowIntensityScale = Engine46 ? L47("glow", 3f) : 1f, GlowBloomScale = Engine46 ? L47("bloom", 2f) : 1f;
     /// <summary>The engine's own AgX defaults, which Agx47Back undoes: set outright so a later engine's defaults cannot move them.</summary>
     const double Agx47Contrast = 1.25, Agx47White = 16.29;
     static readonly bool AgxMap = Engine46 && L47("map", 1f) > 0;
