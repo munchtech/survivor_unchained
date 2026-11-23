@@ -380,6 +380,7 @@ public static partial class Firing
     {
         if (w.Channeling) EndChannel(b, w);
         w.BreakUntil = -1;
+        w.ResumeHeld = w.Held;
         FadeLines(b, w);
     }
 
@@ -463,6 +464,7 @@ public static partial class Firing
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = p.X, Z = p.Z });
         }
         w.BreakUntil = -1;
+        w.ResumeHeld = w.Held;
         // In the campaign with Resolve, the break grows with the Resolve the storm spent; elsewhere with its seconds.
         double grow = b.Resolve.On && w.Press?.Drain is > 0 ? BreakGrowthSpent(w, b.Resolve.SpentInStorm) : BreakGrowth(w, spent);
         double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * Math.Max(1, grow), dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;

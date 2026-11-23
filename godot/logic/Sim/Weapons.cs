@@ -80,6 +80,9 @@ public sealed class WeaponInst
     /// with it). A spin union's second key held (Held2), and its other part (Sunder, at the union's rank, on its own cooldown,
     /// never in Weapons): what that key swings outside a storm (Battle.PressSkill, Firing.TickPressed).</summary>
     public double StormAt = double.NegativeInfinity, StormT;
+    /// <summary>(the owner, 22 Nov) Its storm was ended by Sunder's key (the break, or cut short) while its own key was
+    /// still held: it starts again once it is ready, with no new press (Firing.TickPressed). Gone on release.</summary>
+    public bool ResumeHeld;
     public bool Held2;
     public WeaponInst? Half;
     /// <summary>For beams and orbits: active until.</summary>
@@ -621,6 +624,12 @@ public static partial class Firing
             if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w);
             // Hold to repeat (campaign, the grips): ready while held, it fires again at the current aim.
             if (w.Hold && w.Held && w.Timer <= 0 && w.DisabledT <= 0 && !b.BreaksAStorm(w)) b.PressHeld(w);
+            // (the owner, 22 Nov) A storm Sunder's key ended with its own key still held starts again once ready: no new press.
+            if (w.ResumeHeld)
+            {
+                if (!w.Held) w.ResumeHeld = false;
+                else if (w.Timer <= 0 && w.DisabledT <= 0) b.PressHeld(w);
+            }
             return;
         }
         w.Timer = 0;
@@ -663,6 +672,7 @@ public static partial class Firing
             b.Resolve.SpentInStorm = 0;
             b.CastPose(w);
             w.Channeling = true;
+            w.ResumeHeld = false;
             w.ChannelT = 0;
             w.ChannelNext = w.ChannelEvery;
             w.SpinTicks = 0;

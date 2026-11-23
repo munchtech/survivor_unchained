@@ -127,6 +127,7 @@ public sealed class BladestormBreakTests
         var (b, storm, sunder, e) = Spun(after * 0.5);
         Assert.False(Firing.BreakReady(b, storm));
         Assert.False(b.BreakReadyOn(sunder), "the HUD's ready bond shows before the break is ready");
+        b.HoldSkill(storm.Slot, false);   // (her storm key let go: held, the storm starts again, the test below)
         var evs = PressSunder(b, sunder, e, out bool went);
         Assert.True(went);
         Assert.DoesNotContain(evs, x => x is Ev.Spin { Phase: SpinPhase.Break });
@@ -144,6 +145,38 @@ public sealed class BladestormBreakTests
         var evs = PressSunder(b, sunder, e, out bool went);
         Assert.True(went);
         Assert.Single(evs.OfType<Ev.Spin>().Where(x => x.Phase == SpinPhase.Break));
+    }
+
+    /// <summary>(the owner, 22 Nov: "if we keep holding the bladestorm button it dosn't start again until we press it again")
+    /// Sunder's key ends the storm (the break when ready, the cancel when not): with Bladestorm's key still held the storm
+    /// starts again once it is ready, with no new press of its key; let go, it does not.</summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void A_storm_Sunders_key_ended_starts_again_only_while_its_own_key_is_held(bool broken, bool held)
+    {
+        double after = Content.Weapons.All["bladestorm"].Base.BreakAfter ?? 0;
+        var (b, storm, sunder, e) = Spun(broken ? after + 0.1 : after * 0.5);
+        var p = b.Player;
+        if (!held) b.HoldSkill(storm.Slot, false);
+        b.HoldSkill(sunder.Slot, true, e.X, e.Z);
+        Assert.True(b.PressSkill(sunder.Slot, e.X, e.Z));
+        Assert.False(storm.Channeling, "Sunder's key did not end the storm");
+        bool again = false;
+        for (double t = 0; t < 8 && !again; t += Dt)
+        {
+            e.X = p.X + 1.6; e.Z = p.Z;
+            b.Resolve.Set(100);
+            b.HoldSkill(sunder.Slot, false);
+            b.HoldSkill(storm.Slot, held);
+            b.Tick(Dt, 0, 0);
+            again = storm.Channeling;
+        }
+        Assert.Equal(held, again);
+        // The new storm is its own: its break is not ready at once.
+        if (again) Assert.False(Firing.BreakReady(b, storm), "the storm that started again can be broken at once");
     }
 
     /// <summary>The owner's loop, "Bladestorm, at once Sunder, repeat", is no better than holding Bladestorm (held its
