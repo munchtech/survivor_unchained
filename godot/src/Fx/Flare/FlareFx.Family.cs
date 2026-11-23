@@ -45,21 +45,27 @@ public partial class FlareFx
         familyOn = false;
         if (e.Stand) return;
         familyOn = true;
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
         BlowPress();
+        q = Perf.Slow("flare family blowpress", q, 1);
         hushing = true; hushNow = 1;
         gradeRoot = GetParent()?.GetParent();
         GradeLightsTake();
+        q = Perf.Slow("flare family gradelights", q, 1);
         if (marksView == null)
         {
             marksView = new FlareMarksView { HeightAt = HeightAt, BandRt = BandReachesRt, BlowRt = () => BlowAtRt, ReleaseRt = () => releaseRt };
             AddChild(marksView);
         }
+        q = Perf.Slow("flare family marksview made", q, 1);
         releaseRt = -1;
         var def = Content.Lamps.Flare(e.Id);
         var school = def?.School ?? School.Holy;
         marksView.Press(b, school, Night, Her, rt, n => Cue("mark", Her, n), FlareFamily.Of(e.Id).Path != "crack");
+        q = Perf.Slow("flare family marks press", q, 1);
         DustPress();
         FxDim(1);
+        Perf.Slow("flare family dust+dim", q, 1);
         var g = Palette.Of(school).Glow;
         float gm = Mathf.Max(g.R, Mathf.Max(g.G, g.B));
         RenderingServer.GlobalShaderParameterSet(MarkRimParam, new Vector4(g.R / gm, g.G / gm, g.B / gm, 1));

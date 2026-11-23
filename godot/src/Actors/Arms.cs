@@ -79,10 +79,58 @@ public static class Arms
             if (s.Build == null && s.File.StartsWith("res://") && seen.Add(s.File) && ResourceLoader.Exists(s.File)) yield return s.File;
     }  // art/weapons/weapons.json: weapons of a known kind as data
 
-    /// <summary>A weapon, normalised (a new node each call).</summary>
+    /// <summary>A weapon, normalised (a new node each call): its model, placed by its fit.</summary>
     public static Node3D Make(string id)
     {
         var spec = All[id];
+        var model = Model(spec);
+        var fit = FitOf(id, spec, model);
+        var inner = new Node3D { Name = "inner" };
+        model.Position = -fit.Centre;
+        inner.AddChild(model);
+        inner.Basis = fit.Turn;
+        inner.Position = fit.At;
+        var holder = new Node3D { Name = GripSlide.ArmNode(id) };
+        holder.AddChild(inner);
+        holder.SetMeta("sheath", fit.Sheath);
+        holder.SetMeta("tip", fit.Tip);
+        holder.SetMeta("kind", fit.Kind);
+        if (fit.Anchored) holder.SetMeta("anchored", true);
+        return holder;
+    }
+
+    /// <summary>What Make reads off a weapon's model, the same for every copy of it: where its bounds' middle is (Centre),
+    /// the turn and scale that bring it to the convention (Turn), where that puts it so the grip is the origin (At), its
+    /// sheath point, its tip's height, its kind (the asset's tag, else the Spec's) and whether an anchor_grip seats it.
+    /// Measured once per id and kept (P2 task 5: reading the meshes back from the GPU and walking every vertex cost
+    /// 6-8 ms on every Flare press and about 16 ms on the first, about 790 KB a press), for the Spec it was measured
+    /// with: a row replaced in All is measured again. --arms-check holds the numbers (Check).</summary>
+    sealed record Fit(Spec Spec, Vector3 Centre, Basis Turn, Vector3 At, Vector3 Sheath, float Tip, int Kind, bool Anchored);
+    static readonly Dictionary<string, Fit> fits = new();
+
+    /// <summary>The fit of `id` (measured on `model` if it is not kept yet, else on a model made for it and freed).</summary>
+    static Fit FitOf(string id, Spec spec, Node3D? model = null)
+    {
+        // (locked: her cinematic double is made on a worker thread, Game.DoubleAhead. Measured outside the lock, so the
+        // main thread never waits on a worker's measure: at worst two threads measure the same numbers once.)
+        lock (fits)
+            if (fits.TryGetValue(id, out var kept) && ReferenceEquals(kept.Spec, spec)) return kept;
+        var on = model ?? Model(spec);
+        var fit = Measure(spec, on);
+        if (model == null) on.Free();
+        lock (fits) fits[id] = fit;
+        return fit;
+    }
+
+    /// <summary>Measures the weapons a load knows it will make (a Flare's grip), so their first make in play is a kept one.</summary>
+    public static void Warm(string id)
+    {
+        if (All.TryGetValue(id, out var spec)) FitOf(id, spec);
+    }
+
+    /// <summary>A weapon's model as its file or its builder gives it (a new node each call).</summary>
+    static Node3D Model(Spec spec)
+    {
         var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>(WeaponsData.ResPath(spec.File)).Instantiate<Node3D>();
         if (spec.Node != null)
         {
@@ -99,6 +147,11 @@ public static class Arms
             }
             Keep(model, false);
         }
+        return model;
+    }
+
+    static Fit Measure(Spec spec, Node3D model)
+    {
         var pts = new List<Vector3>();
         Transform3D? aGrip = null, aSheath = null;
         var tag = WeaponKind.None;
@@ -158,20 +211,58 @@ public static class Arms
         }
         else if (spec.Roll != 0) turn = new Basis(Vector3.Up, spec.Roll) * turn;
         float k = spec.Length / (hi[1] - lo[1]);
-        var inner = new Node3D { Name = "inner" };
-        model.Position = -centre;
-        inner.AddChild(model);
-        inner.Basis = turn.Scaled(Vector3.One * k);
         // The grip is the origin: the anchor if the asset has one, else the Spec's Grip along the long axis.
-        inner.Position = aGrip is { } g ? -(turn * (g.Origin - centre)) * k : new Vector3(0, spec.Length * (0.5f - spec.Grip), 0);
-        var holder = new Node3D { Name = GripSlide.ArmNode(id) };
-        holder.AddChild(inner);
+        var at = aGrip is { } g ? -(turn * (g.Origin - centre)) * k : new Vector3(0, spec.Length * (0.5f - spec.Grip), 0);
         // The sheath point (where the piece hangs from; the grip when there is no anchor for it) and the tip's height on the shaft.
-        holder.SetMeta("sheath", aSheath is { } sa ? turn * (sa.Origin - centre) * k + inner.Position : Vector3.Zero);
-        holder.SetMeta("tip", inner.Position.Y + spec.Length / 2);
-        holder.SetMeta("kind", (int)(tag != WeaponKind.None ? tag : spec.Kind));
-        if (aGrip != null) holder.SetMeta("anchored", true);
-        return holder;
+        return new Fit(spec, centre, turn.Scaled(Vector3.One * k), at,
+            aSheath is { } sa ? turn * (sa.Origin - centre) * k + at : Vector3.Zero,
+            at.Y + spec.Length / 2, (int)(tag != WeaponKind.None ? tag : spec.Kind), aGrip != null);
+    }
+
+    /// <summary>--arms-check (dev; hosted by BattleFx beside --fx-tex-check): every weapon made twice, and each make's every
+    /// number (each node's name, class and transform as its bits, each mesh's vertex counts, the holder's metas) as one hash
+    /// a line. A change to Make, or to a weapon's file, shows as a changed line against an earlier run's; a second make
+    /// that differs from the first shows in the count. `full`: the numbers themselves too.</summary>
+    public static string Check(bool full = false)
+    {
+        var sb = new System.Text.StringBuilder();
+        int n = 0, differ = 0;
+        var ids = new List<string>(All.Keys);
+        ids.Sort(StringComparer.Ordinal);
+        foreach (var id in ids)
+        {
+            string a, b;
+            try { a = Numbers(Make(id)); b = Numbers(Make(id)); }
+            catch (Exception e) { sb.Append($"arms-check {id} FAILED {e.GetType().Name}\n"); continue; }
+            n++;
+            if (a != b) differ++;
+            string Sha(string s) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(s)))[..16];
+            sb.Append($"arms-check {id} first {Sha(a)} second {Sha(b)} {(a == b ? "same" : "DIFFERS")}, {a.Split('\n').Length} lines\n");
+            if (full) sb.Append(a).Append('\n');
+        }
+        sb.Append($"arms-check: {n} ids, {differ} whose second make differs from the first");
+        return sb.ToString();
+    }
+
+    static string Numbers(Node3D holder)
+    {
+        var sb = new System.Text.StringBuilder();
+        static string X(float f) => BitConverter.SingleToInt32Bits(f).ToString("x8");
+        static string V(Vector3 v) => $"{X(v.X)} {X(v.Y)} {X(v.Z)}";
+        void Walk(Node n, string path)
+        {
+            sb.Append(path).Append(' ').Append(n.GetType().Name);
+            if (n is Node3D n3) sb.Append($" {V(n3.Transform.Basis.X)} {V(n3.Transform.Basis.Y)} {V(n3.Transform.Basis.Z)} {V(n3.Transform.Origin)} vis {n3.Visible}");
+            if (n is MeshInstance3D mi && mi.Mesh != null)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++) sb.Append($" s{s}:{(mi.Mesh is ArrayMesh am ? am.SurfaceGetArrayLen(s) : -1)}");
+            sb.Append('\n');
+            // (a node nobody named gets a counted name, "@Node3D@1604", new each make: its place among its siblings instead)
+            foreach (var c in n.GetChildren()) Walk(c, path + "/" + (c.Name.ToString().StartsWith('@') ? $"#{c.GetIndex()}" : c.Name.ToString()));
+        }
+        Walk(holder, holder.Name);
+        sb.Append($"sheath {V((Vector3)holder.GetMeta("sheath"))} tip {X((float)holder.GetMeta("tip"))} kind {(int)holder.GetMeta("kind")} anchored {holder.HasMeta("anchored")}");
+        holder.Free();
+        return sb.ToString();
     }
 
     /// <summary>Principal axes of a point cloud, longest spread first, each
@@ -400,23 +491,8 @@ public static class Arms
     /// <summary>What a piece is: its tag in the asset if it has one, else the Spec's Kind.</summary>
     public static WeaponKind KindOf(string id) => (WeaponKind)Info(id).Kind;
 
-    sealed record Facts(int Kind, Vector3 Sheath, float Tip);
-    static readonly Dictionary<string, Facts> facts = new();
-
-    static Facts Info(string id)
-    {
-        // (locked: her cinematic double is made on a worker thread, Game.DoubleAhead)
-        lock (facts)
-        {
-            if (!facts.TryGetValue(id, out var m))
-            {
-                var w = Make(id);
-                facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
-                w.Free();
-            }
-            return m;
-        }
-    }
+    /// <summary>A piece's kept numbers (its kind, sheath point and tip), measured if they are not kept yet.</summary>
+    static Fit Info(string id) => FitOf(id, All[id]);
 
     /// <summary>The bones' rest poses in skeleton space (heroine, tools/anim/data/heroine_skeleton.json): the
     /// origin and the turn about X; the hero's pelvis and spine differ by a few degrees.</summary>

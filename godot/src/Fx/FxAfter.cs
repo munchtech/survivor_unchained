@@ -248,6 +248,14 @@ void fragment() {
 
     public override void _Process(double delta)
     {
+        if (!Perf.On) { Step(); return; }
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();
+        Step();
+        Perf.Slow("fxafter process", q, 2);   // (P2 task 5 probe: main time outside the parts)
+    }
+
+    void Step()
+    {
         if (Follow() is not { } main) return;
         FollowFigures();
         if (FxWorldDepth.On) HookWorldDepth(main);

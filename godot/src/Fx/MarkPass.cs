@@ -199,6 +199,20 @@ public partial class MarkPass : CompositorEffect
     /// <summary>The marks' ground heights (Grid x Grid per slot) after one changed.</summary>
     public void SetHeights(float[] h) => heights = h;
 
+    /// <summary>(P2 task 5) The pass's shader compiled behind the load: Init (GLSL to SPIR-V, the pipeline) cost 12 ms
+    /// on the frame of the first red mark. Queued on the render thread, as the render callback would run it.</summary>
+    public void Warm()
+    {
+        if (rd != null || failed) return;
+        RenderingServer.CallOnRenderThread(Callable.From(() =>
+        {
+            if (rd != null || failed) return;
+            long q = System.Diagnostics.Stopwatch.GetTimestamp();
+            Init();
+            Perf.Slow("markpass warm", q, 1);
+        }));
+    }
+
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
@@ -256,7 +270,7 @@ public partial class MarkPass : CompositorEffect
         if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         var m = marks; int n = Math.Min(count, MaxMarks);
         if (m == null || n <= 0) return;
-        if (rd == null) { Init(); if (failed) return; }
+        if (rd == null) { long q = System.Diagnostics.Stopwatch.GetTimestamp(); Init(); Perf.Slow("markpass init", q, 1); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
         sceneData = data; // (lane K, 20 Nov: a new native wrapper each frame; let go in _RenderCallback's finally)
         var size = buf.GetInternalSize();

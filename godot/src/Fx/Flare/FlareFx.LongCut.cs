@@ -198,8 +198,9 @@ public partial class FlareFx
     void LongSweep(Ev.Flare e)
     {
         lcSweepT = t;
-        // The sweep comes round to the line's side; it starts a little past the aim so it ends on it.
-        lcSweepFrom = (float)e.Angle + 0.4f;
+        // The sweep comes round to the line's side; it starts a little past the aim so it ends on it. (The sweep's own event carries
+        // no angle, Angle 0: the aim is the press's, kept in Press.)
+        lcSweepFrom = pressAngle + 0.4f;
         spendAt = t;
         LcSpend();
         Cam?.Jolt(Vector3.Up, 0.25f * Motion);
