@@ -234,6 +234,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         ForgetFogOfOtherLayout(G.Journey.World, Chart);
         b.Rules = Chart.Rules();
         b.InBounds = map.CanStand;
+        // (P3, the den's ruler) A dungeon is rock: a pack's foe (its ruler too) held up by stone on its way to its slot round her
+        // goes round by the flow field (Battle.PackRoundCover, as the arena's director has it). Without it the Pack-Mother stood
+        // pressed into the rock 7 m from her for minutes (hollow seed 1), the flow field leading round it 8 m.
+        if (IsDungeon) b.PackRoundCover = true;
         // What the gear inscribes works here, and only here (the scars' kit carries coals).
         var kit = Character.Kit(G.Journey.Ch);
         b.Wear(kit.Marks, kit.SkillMods);

@@ -762,14 +762,72 @@ void BossTrace()
 {
     var def = SurvivorUnchained.Maps.DungeonGen.Get(opt.Get("dungeon", "hollow"))!;
     var spec = new MapRunSpec(opt.Int("seed", 1), "warden", 1, def.People, opt.Int("level", 6), opt.Int("gear", 1), [], opt.Get("bot", "deft"), opt.Double("cap", 10), def.Id, true);
-    SurvivorUnchained.Play.Zones.MapRun? zone = null; double next = 0, every = opt.Double("every", 10);
+    SurvivorUnchained.Play.Zones.MapRun? zone = null; double next = 0, every = opt.Double("every", 10); bool mapped = false;
     SurvivorUnchained.Balance.MapSim.ZoneTap = z => zone = z;
     SurvivorUnchained.Balance.MapSim.Tap = (t, evs, b, up) =>
     {
-        if (t < next || zone?.BossScript is not { } s || s.E == null) return;
+        if (zone?.BossScript is not { } s || s.E == null) return;
+        // (--her A-B) every step from A to B seconds: where she is, how she moves, and what of hers fired (her own events).
+        if (opt.Has("her") && opt.Get("her", "0-0").Split('-') is [var ha, var hb] && t >= double.Parse(ha, System.Globalization.CultureInfo.InvariantCulture) && t <= double.Parse(hb, System.Globalization.CultureInfo.InvariantCulture))
+            Console.WriteLine($"     {t:0.00} her ({b.Player.X:0.00},{b.Player.Z:0.00}) v ({b.Player.Vx:0.0},{b.Player.Vz:0.0}) blocked {b.Collision.Blocked(b.Player.X, b.Player.Z, 0.01)} | {string.Join(" ", evs.Select(v => v.GetType().Name).Distinct().Take(8))}");
+        if (t < next) return;
         next = t + every;
         var e = s.E; var p = b.Player;
         Console.WriteLine($"t {t:0} phase {s.PhaseIx} hp {e.Hp / Math.Max(1, e.MaxHp):0.00} floor {e.HpFloor / Math.Max(1, e.MaxHp):0.00} state {e.State} alive {e.Alive} d {Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)):0.0} her hp {p.Hp:0} up {up} wake {e.Wake:0} roused {e.Roused} leash {e.Leash:0} home {Math.Sqrt((e.HomeX - p.X) * (e.HomeX - p.X) + (e.HomeZ - p.Z) * (e.HomeZ - p.Z)):0} foes {b.Enemies.Items.Count(x => x.Alive)}");
+        // (--map T) at T seconds, the nav grid round the two: # blocked, . reached by the flow to her, o open but not reached, B the ruler, P her, h the ruler's home.
+        if (opt.Has("map") && t >= opt.Double("map", 0) && !mapped)
+        {
+            mapped = true;
+            var w = b.Collision; double h = w.Half;
+            int r0 = opt.Int("mapr", 30);
+            double cx = (e.X + p.X) / 2, cz = (e.Z + p.Z) / 2;
+            int ci = (int)Math.Floor(cx + h), cj = (int)Math.Floor(cz + h);
+            int Cell(double v) => (int)Math.Floor(v + h);
+            Console.WriteLine($"   map centre ({cx:0},{cz:0}), x from {ci - r0 - h:0} rightwards, z from {cj - r0 - h:0} downwards");
+            for (int j = cj - r0; j <= cj + r0; j++)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int i = ci - r0; i <= ci + r0; i++)
+                {
+                    double x = -h + i + 0.5, z = -h + j + 0.5;
+                    char ch = w.IsNavBlocked(i, j) ? '#' : double.IsInfinity(b.Flow.DistanceAt(x, z)) ? 'o' : '.';
+                    if (i == Cell(e.HomeX) && j == Cell(e.HomeZ)) ch = 'h';
+                    if (i == Cell(e.X) && j == Cell(e.Z)) ch = 'B';
+                    if (i == Cell(p.X) && j == Cell(p.Z)) ch = 'P';
+                    sb.Append(ch);
+                }
+                Console.WriteLine("   " + sb);
+            }
+            // (--fmap R) the real ground at half a metre: # solid at the point, + within her body (0.5 m) of it, space free.
+            if (opt.Has("fmap"))
+            {
+                int fr = opt.Int("fmap", 20);
+                Console.WriteLine($"   fine map centre ({cx:0},{cz:0}) half-metre cells, x from {cx - fr * 0.5:0} rightwards, z from {cz - fr * 0.5:0} downwards");
+                for (int j = -fr; j <= fr; j++)
+                {
+                    var sb = new System.Text.StringBuilder();
+                    for (int i = -fr; i <= fr; i++)
+                    {
+                        double x = cx + i * 0.5, z = cz + j * 0.5;
+                        char ch = w.Blocked(x, z, 0.01) ? '#' : w.Blocked(x, z, 0.5) ? '+' : ' ';
+                        if (Math.Abs(x - e.X) < 0.25 && Math.Abs(z - e.Z) < 0.25) ch = 'B';
+                        if (Math.Abs(x - p.X) < 0.25 && Math.Abs(z - p.Z) < 0.25) ch = 'P';
+                        sb.Append(ch);
+                    }
+                    Console.WriteLine("   |" + sb + "|");
+                }
+            }
+            string Cs(double x, double z) => string.Join("; ", w.Within(x, z, 1.5).Select(c => $"{c.Kind} {c.Tag} ({c.X:0.0},{c.Z:0.0}) r {c.R:0.0} hw {c.Hw:0.0} hd {c.Hd:0.0} rot {c.Rot:0.00}{(c.Soft ? " soft" : "")}{(c.Drop ? " drop" : "")}{(c.Gap ? " gap" : "")}{(c.PlayerOnly ? " playerOnly" : "")}"));
+            Console.WriteLine($"   at her: {Cs(p.X, p.Z)}");
+            Console.WriteLine($"   at the ruler: {Cs(e.X, e.Z)}");
+        }
+        // (--fine) where each is and how it moves: the ruler's way to her (the flow field, a ray) and hers.
+        if (opt.Has("fine"))
+        {
+            bool fl = b.Flow.Dir(e.X, e.Z, out double fx, out double fz);
+            var hit = b.Collision.Raycast(e.X, e.Z, p.X, p.Z, 0.3);
+            Console.WriteLine($"   boss ({e.X:0.0},{e.Z:0.0}) v ({e.Vx:0.0},{e.Vz:0.0}) anim {e.Anim} hold {Math.Max(0, e.HoldUntil - b.Time):0.0} tgt {e.Target} steer {e.Steer} flowUntil {Math.Max(0, e.FlowUntil - b.Time):0.0} flow {(fl ? $"({fx:0.0},{fz:0.0})" : "none")} path {b.Flow.DistanceAt(e.X, e.Z):0.0} ray {(hit == null ? "clear" : "blocked")} slot {e.Slot:0.00} | her ({p.X:0.0},{p.Z:0.0}) v ({p.Vx:0.0},{p.Vz:0.0}) | near {string.Join(" ", b.Enemies.Items.Where(x => x.Alive && x != e).OrderBy(x => (x.X - p.X) * (x.X - p.X) + (x.Z - p.Z) * (x.Z - p.Z)).Take(3).Select(x => $"{x.Def.Id}@{Math.Sqrt((x.X - p.X) * (x.X - p.X) + (x.Z - p.Z) * (x.Z - p.Z)):0}{(x.Wake > 0 && !x.Roused ? "z" : "")}"))}");
+        }
     };
     var r = SurvivorUnchained.Balance.MapSim.Play(spec);
     Console.WriteLine($"{(r.Cleared ? "cleared" : "not cleared")} {r.Minutes:0.0} min");

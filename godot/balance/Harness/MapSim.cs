@@ -129,7 +129,7 @@ public static class MapSim
         var zone = new MapRun(host, map, chart);
         var at = zone.ArrivalFrom(null);
         // (dungeon-fights) --at boss, as the game's: on the edge of the ruler's clearing, nothing else met.
-        if (spec.AtBoss) { var bc = map.Boss; at = new Arrival(bc.X, bc.Z - bc.R + 1, 0); }
+        if (spec.AtBoss) { var (ax, az) = map.BossEdge(map.Meta.Collision()); at = new Arrival(ax, az, 0); }
         // (worldTier false, as the game starts a map: Game.cs; its press is the chart tier's row, set in MapRun.Begin)
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, worldTier: false);
         // As the game wires it: what is picked up goes into the pack (charts and materials); gear is

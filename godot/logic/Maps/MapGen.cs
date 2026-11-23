@@ -133,6 +133,28 @@ public sealed class MapBuild
     public Area Boss => Areas[^1];
     public IEnumerable<Area> Altars => Areas.Where(a => a.Kind == AreaKind.Altar);
 
+    /// <summary>The dev arrival "at the ruler" (the game's and the harness's --at boss): the south edge of its clearing, a metre
+    /// in, moved to the nearest open standing ground that leads to the clearing's middle. The plain edge point lay inside the
+    /// den's rock (hollow seed 1: she walked through 6 m of stone and out of the clearing, and the ruler never reached her).</summary>
+    public (double X, double Z) BossEdge(CollisionWorld w, double body = 0.6)
+    {
+        var bc = Boss;
+        double x0 = bc.X, z0 = bc.Z - bc.R + 1;
+        var flow = new FlowField(w, (int)Math.Ceiling(bc.R + 8));
+        flow.Update(bc.X, bc.Z, true);
+        bool Ok(double x, double z) => CanStand(x, z) && !w.Blocked(x, z, body) && !double.IsPositiveInfinity(flow.DistanceAt(x, z));
+        if (Ok(x0, z0)) return (x0, z0);
+        for (double r = 0.5; r <= bc.R; r += 0.5)
+            for (int k = 0, n = Math.Max(8, (int)(r * 12)); k < n; k++)
+            {
+                // (nearest the clearing's middle first, at each ring: into the clearing, not round its back)
+                double a = Math.PI / 2 + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) * Math.PI * 2 / n;
+                double x = x0 + Math.Cos(a) * r, z = z0 + Math.Sin(a) * r;
+                if (Ok(x, z)) return (x, z);
+            }
+        return (bc.X, bc.Z);
+    }
+
     public bool CanStand(double x, double z)
     {
         int res = Meta.Res;
