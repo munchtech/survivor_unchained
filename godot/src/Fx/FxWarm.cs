@@ -255,7 +255,8 @@ public static partial class FxWarm
                 switch (g)
                 {
                     case MeshInstance3D mi:
-                        if (mi.Skin != null || !mi.Skeleton.IsEmpty) return null;
+                        // (a skinned one, her Henge ghost: deformed by compute before it is drawn; its stand-in is the unskinned mesh)
+                        if (mi.Skin != null || !mi.Skeleton.IsEmpty) sb.Append("|sk");
                         if (!MeshKey(mi.Mesh!, s => g.MaterialOverride ?? mi.GetActiveMaterial(s), sb)) return null;
                         break;
                     case MultiMeshInstance3D mm:
@@ -293,7 +294,6 @@ public static partial class FxWarm
         {
             var d = RenderingServer.MeshGetSurface(rid, s);
             ulong format = d.TryGetValue("format", out var f) ? f.AsUInt64() : 0;
-            if ((format & (ulong)(Mesh.ArrayFormat.FormatBones | Mesh.ArrayFormat.FormatWeights)) != 0) return false;
             long prim = d.TryGetValue("primitive", out var p) ? p.AsInt64() : -1;
             sb.Append($"|s{format:x}p{prim}:").Append(MatKey(mat(s)));
         }
@@ -459,11 +459,12 @@ public static partial class FxWarm
             for (int a = 0; a < (int)Mesh.ArrayType.Max; a++)
             {
                 var v = arrays[a];
+                if (a == (int)Mesh.ArrayType.Bones || a == (int)Mesh.ArrayType.Weights) { cut.Add(default(Variant)); continue; }
                 if (a == (int)Mesh.ArrayType.Index) { cut.Add(v.VariantType == Variant.Type.Nil ? v : Enumerable.Range(0, keep).ToArray()); continue; }
                 cut.Add(Cut(v, nv, keep));
             }
             // (the format's flags beyond the arrays themselves: custom channel formats, 2D vertices, compression)
-            ulong flags = format & 0x3FFFE000UL;
+            ulong flags = format & 0x3FFFE000UL & ~(ulong)Mesh.ArrayFormat.FlagUse8BoneWeights;
             o.AddSurfaceFromArrays(prim, cut, null, null, (Mesh.ArrayFormat)flags);
             var m = mesh.SurfaceGetMaterial(s);
             if (m != null) o.SurfaceSetMaterial(o.GetSurfaceCount() - 1, (Material)Scrub(m, memo));
