@@ -55,6 +55,9 @@ public static partial class FxWarm
         long t0;
         int frames, drawn, still, entries, skipped;
         double lastPipes = -1, pipes0;
+        double[] kinds0 = new double[5];
+        double worstMs;
+        long lastTick;
         CanvasLayer? canvas;
         Camera3D? cam;
         Node3D? mirror;
@@ -68,6 +71,7 @@ public static partial class FxWarm
         {
             t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             pipes0 = Perf.PipesNow();
+            kinds0 = Perf.PipesKinds();
             var lib = GD.Load<PackedScene>(Library);
             var root = lib?.Instantiate();
             if (root == null) { Done("library did not load"); return; }
@@ -122,6 +126,9 @@ public static partial class FxWarm
         public override void _Process(double delta)
         {
             frames++;
+            long tick = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (lastTick != 0) worstMs = Math.Max(worstMs, System.Diagnostics.Stopwatch.GetElapsedTime(lastTick, tick).TotalMilliseconds);
+            lastTick = tick;
             double p = Perf.PipesNow();
             still = p == lastPipes ? still + 1 : 0;
             lastPipes = p;
@@ -145,8 +152,9 @@ public static partial class FxWarm
         {
             double secs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
             if (end.Length == 0) { end = placeEnd; warmSecs = secs; }
+            var k1 = Perf.PipesKinds();
             Report = $"{entries} stand-ins drawn ({skipped} warmed before), {Perf.PipesNow() - pipes0:0} pipelines compiled, {drawn} frames in view, " +
-                     $"{warmSecs:0.00} s, ended by {end}; then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd}";
+                     $"{warmSecs:0.00} s, ended by {end}; then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd} (canvas/mesh/surface/draw/specialization {(int)(k1[0] - kinds0[0])}/{(int)(k1[1] - kinds0[1])}/{(int)(k1[2] - kinds0[2])}/{(int)(k1[3] - kinds0[3])}/{(int)(k1[4] - kinds0[4])}; worst frame {worstMs:0} ms)";
             GD.Print($"load: fx warm-up ({why}): {Report}");
             SetProcess(false);
             QueueFree();
