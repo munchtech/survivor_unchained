@@ -13,7 +13,7 @@ namespace SurvivorUnchained.Sim;
 public sealed partial class Battle
 {
     /// <summary>A blow swung and not yet landed: the skill, when it lands, the aim fixed at the press, its damage
-    /// scale (a kindled heave's), and when it was pressed (its cooldown runs from the press).</summary>
+    /// scale, and when it was pressed (its cooldown runs from the press).</summary>
     internal struct PendingBlow
     {
         public WeaponInst W;
@@ -61,7 +61,7 @@ public sealed partial class Battle
         return true;
     }
 
-    /// <summary>The press of a blow that lands on its contact (Firing.Press, KindledPress, SwingHalf; CastAt is the
+    /// <summary>The press of a blow that lands on its contact (Firing.Press, SwingHalf; CastAt is the
     /// press's aim): her clip starts now, the blow is queued. False: it lands now, as before (the caller casts it).</summary>
     internal bool DeferBlow(WeaponInst w, double mul = 1)
     {

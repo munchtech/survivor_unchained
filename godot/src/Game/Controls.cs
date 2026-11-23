@@ -260,7 +260,7 @@ public partial class Controls : Node
         if (MenuMode) MenuPoll(delta); else { heldDir = null; PlayTriggers(); }
     }
 
-    /// <summary>In play (M4): LT and RT pressed are their play actions' presses (the Flare, Skill4).</summary>
+    /// <summary>In play (M4): LT and RT pressed are their play actions' presses (the Flare, Skill5).</summary>
     void PlayTriggers()
     {
         bool l = false, r = false;

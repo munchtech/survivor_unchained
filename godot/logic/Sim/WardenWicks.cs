@@ -224,7 +224,7 @@ public sealed partial class Battle
     double warPaceUntil = double.NegativeInfinity, warPace = 1, unshackledUntil = double.NegativeInfinity, unshackled = 1;
     double boundUntil = double.NegativeInfinity, boundSaved, cometHung;
     int boundChain;
-    (double X, double Z, double R, double Until, HashSet<Lifetime> Inside)? henge;  // (SU-053) the ring's captives by lifetime
+    (double X, double Z, double R, double Until, HashSet<Lifetime> Inside, HashSet<Lifetime> Free)? henge;  // (SU-053) the ring's captives by lifetime; (skills-five) Free: an elite or boss inside at the landing, which the stones leave be
 
     /// <summary>The leap's reach (far_spring 13 m; a bound of unending_bound 9 m at most).</summary>
     internal double RuleLeapRange(WeaponInst w, double range)
@@ -292,6 +292,13 @@ public sealed partial class Battle
         double x = leap.X1, z = leap.Z1;
         if (Wk(w, "heroic_leap.aftershock"))
             ScheduleHeave(w, x, z, leap.Radius, dmg * Wn("heroic_leap.aftershock", "againDamage", 0.4), Wn("heroic_leap.aftershock", "again", 1));
+        // (skills-five, 22 Nov) The Henge takes its captives where the landing found them, before Ninepins throws them: a lesser
+        // thing the landing throws stops at the stones and stays inside (it used to fly past them first and be walled out).
+        bool henged = Wk(w, "heroic_leap.henge");
+        double hr = Wn("heroic_leap.henge", "radius", 6);
+        var inside = new HashSet<Lifetime>();
+        var free = new HashSet<Lifetime>();
+        if (henged) foreach (var e in HostilesInRadius(x, z, hr)) (e.Elite || e.Boss ? free : inside).Add(Lifetime.Of(e));
         if (Wk(w, "heroic_leap.ninepins"))
         {
             double fly = Wn("heroic_leap.ninepins", "throw", 6), share = Wn("heroic_leap.ninepins", "damage", 0.5);
@@ -299,18 +306,17 @@ public sealed partial class Battle
             foreach (var e in ring)
             {
                 if (!e.Alive || e.State == EnemyState.Dying || e.Elite || e.Boss) continue;
-                Shove(e, x, z, fly);
+                double d = fly;
+                if (henged && inside.Contains(Lifetime.Of(e))) d = Math.Min(fly, hr - e.Radius - Len(e.X - x, e.Z - z));
+                Shove(e, x, z, Math.Max(0, d));
                 foreach (var o in HostilesInRadius(e.X, e.Z, e.Radius + 1))
                     if (o != e && hit.Add(o.Id)) HitEnemy(o, dmg * share, w.School, w.Tags, new HitOpts { Weapon = w, DirX = o.X - x, DirZ = o.Z - z, Knockback = 1 });
             }
         }
-        if (Wk(w, "heroic_leap.henge"))
+        if (henged)
         {
-            double r = Wn("heroic_leap.henge", "radius", 6);
-            var inside = new HashSet<Lifetime>();
-            foreach (var e in HostilesInRadius(x, z, r)) if (!e.Elite && !e.Boss) inside.Add(Lifetime.Of(e));
-            henge = (x, z, r, Time + Wn("heroic_leap.henge", "seconds", 4), inside);
-            Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = School.Physical, Duration = Wn("heroic_leap.henge", "seconds", 4), Rings = 1, Art = "heroic_leap_henge" });
+            henge = (x, z, hr, Time + Wn("heroic_leap.henge", "seconds", 4), inside, free);
+            Events.Emit(new Ev.Nova { X = x, Z = z, Radius = hr, School = School.Physical, Duration = Wn("heroic_leap.henge", "seconds", 4), Rings = 1, Art = "heroic_leap_henge" });
         }
         int kills = 0;
         foreach (var e in ring) if (!e.Alive || e.State == EnemyState.Dying) kills++;
@@ -578,7 +584,7 @@ public sealed partial class Battle
             else
                 foreach (var e in Enemies.Items)
                 {
-                    if (!e.Alive || e.State == EnemyState.Dying || e.Boss) continue;
+                    if (!e.Alive || e.State == EnemyState.Dying || e.Boss || h.Free.Contains(Lifetime.Of(e))) continue;
                     double dx = e.X - h.X, dz = e.Z - h.Z, d = Len(dx, dz);
                     if (d < 0.01) continue;
                     if (h.Inside.Contains(Lifetime.Of(e))) { double most = h.R - e.Radius; if (d > most) { e.X = h.X + dx / d * most; e.Z = h.Z + dz / d * most; } }

@@ -8,10 +8,9 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>(bd-keys) Four keys and three auto slots (docs/design/BUILD_DIRECTION.md round 8; the ladder in
-/// BUILD_UNLOCKS.md): keys open at levels 1/4/5/9, auto slots at 1/7/10; the basic attack is a real skill in the first key
-/// (it ranks, and she may put another in its place); the auto slots run kindled through a stance change; gear's auto skills
-/// stack beside them uncapped; a Union still takes two keys. SkillBook (the slots), Character.Bar (the bar a fight keys).</summary>
+/// <summary>(bd-keys; no auto slots since 22 Nov, SKILL_KINDS.md) Four pressed keys (the ladder in BUILD_UNLOCKS.md): keys
+/// open at levels 1/4/5/9; the basic attack is a real skill in the first key (it ranks, and she may put another in its
+/// place); gear's auto skills run beside them uncapped; a Union still takes two keys. SkillBook (the slots), Character.Bar (the bar a fight keys).</summary>
 public sealed class KeyBarTests
 {
     internal static Journey New(int level = 1, uint seed = 7)
@@ -25,21 +24,20 @@ public sealed class KeyBarTests
     internal static Battle Fight(Journey j) => j.StartBattle(true, new CollisionWorld(120), (_, _) => 0, 0, 0, 0, 3);
 
     [Theory]
-    [InlineData(1, 1, 1)]
-    [InlineData(3, 1, 1)]
-    [InlineData(4, 2, 1)]
-    [InlineData(5, 3, 1)]
-    [InlineData(7, 3, 2)]
-    [InlineData(8, 3, 2)]
-    [InlineData(9, 4, 2)]
-    [InlineData(10, 4, 3)]
-    [InlineData(30, 4, 3)]
-    public void Keys_and_auto_slots_open_on_the_ladder(int level, int keys, int autos)
+    [InlineData(1, 1)]
+    [InlineData(3, 1)]
+    [InlineData(4, 2)]
+    [InlineData(5, 3)]
+    [InlineData(7, 3)]
+    [InlineData(8, 3)]
+    [InlineData(9, 5)]
+    [InlineData(10, 5)]
+    [InlineData(30, 5)]
+    public void Keys_open_on_the_ladder(int level, int keys)
     {
         Assert.Equal(keys, SkillBook.KeysAt(level));
-        Assert.Equal(autos, SkillBook.AutosAt(level));
-        Assert.Equal(keys + autos, SkillBook.SlotsAt(level));
-        Assert.True(keys <= Weapons.MaxKeys && autos <= Weapons.AutoSlots);
+        Assert.Equal(keys, SkillBook.Slots(New(level).Ch));
+        Assert.True(keys <= Weapons.MaxKeys);
     }
 
     [Theory]
@@ -56,18 +54,11 @@ public sealed class KeyBarTests
         var b = Fight(j);
         var t = TaughtBuilds.Of("warden")!;
         var keys = t.Keys.Where(s => s.Level <= level).Select(s => s.Skill).ToArray();
-        var autos = t.Autos.Where(s => s.Level <= level).Select(s => s.Skill).ToArray();
         Assert.Equal(SkillBook.KeysAt(level), keys.Length);
-        Assert.Equal(SkillBook.AutosAt(level), autos.Length);
         for (int i = 0; i < keys.Length; i++) Assert.Equal(keys[i], b.OnSlot(i)?.Id);
         Assert.Equal(keys.Length, b.SlotsUsed);
-        foreach (var id in autos)
-        {
-            var w = b.Weapons.Single(x => x.Id == id);
-            Assert.True(w.Slot >= Weapons.MaxKeys, $"{id} on {w.Slot}");
-            Assert.Equal(CastMode.Auto, w.Cast);
-        }
-        Assert.Equal(keys.Length + autos.Length, b.Weapons.Count);
+        Assert.Equal(keys.Length, b.Weapons.Count);
+        Assert.All(b.Weapons, w => Assert.NotEqual(CastMode.Auto, w.Cast));
     }
 
     [Fact]
@@ -96,68 +87,26 @@ public sealed class KeyBarTests
     }
 
     [Fact]
-    public void A_skill_offered_both_ways_moves_between_a_key_and_an_auto_slot()
-    {
-        var j = New(9);
-        Fight(j);
-        Assert.True(SkillBook.IsAuto(j.Ch, "groundbreaker"));
-        // The keys are full (four): it cannot come off its auto slot onto one; nothing changes.
-        Assert.False(SkillBook.SetAuto(j.Ch, "groundbreaker", false));
-        Assert.True(SkillBook.IsAuto(j.Ch, "groundbreaker"));
-        // A key freed, it can.
-        SkillBook.Unslot(j.Ch, "shield_charge");
-        Assert.True(SkillBook.SetAuto(j.Ch, "groundbreaker", false));
-        var b = Fight(j);
-        var gb = b.Weapons.Single(w => w.Id == "groundbreaker");
-        Assert.True(gb.Slot < Weapons.MaxKeys);
-        Assert.Equal(CastMode.Press, gb.Cast);
-        // Keyed only, never auto; auto only, never keyed.
-        Assert.False(SkillBook.SetAuto(j.Ch, "heroic_leap", true));
-        Assert.False(SkillBook.SetAuto(j.Ch, "rebuke", false));
-    }
-
-    [Fact]
-    public void The_auto_slots_survive_a_stance_change()
-    {
-        var j = New(10);
-        var b = Fight(j);
-        Assert.NotNull(b.StanceB);
-        var before = b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).Select(w => (w.Id, w.Slot, w.Cast)).OrderBy(x => x.Slot).ToList();
-        Assert.Equal(3, before.Count);
-        Assert.True(b.Swap());
-        Assert.True(b.OnB);
-        Assert.Equal(before, b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).Select(w => (w.Id, w.Slot, w.Cast)).OrderBy(x => x.Slot).ToList());
-        Assert.True(b.Swap());
-        Assert.False(b.OnB);
-        Assert.Equal(before, b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).Select(w => (w.Id, w.Slot, w.Cast)).OrderBy(x => x.Slot).ToList());
-        // And when she changes the stance itself between fights.
-        Assert.True(SkillBook.SetStance(j.Ch, "mace"));
-        var b2 = Fight(j);
-        Assert.Equal("mace", b2.StanceB!.Id);
-        Assert.Equal(before.Select(x => x.Id), b2.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).OrderBy(w => w.Slot).Select(w => w.Id));
-    }
-
-    [Fact]
-    public void Gear_auto_skills_stack_beside_her_auto_slots_with_no_cap()
+    public void Gear_auto_skills_stack_beside_her_keys_with_no_cap()
     {
         var j = New(10);
         Fight(j);
         // Six auto skills worn (each runs itself, or is offered both ways), none of them hers.
-        var worn = new List<(string Id, int Rank)> { ("rebuke", 2), ("judgement_disc", 2), ("hallowed_ring", 2), ("volley", 2), ("firepot", 2), ("arcweb", 2) };
+        var worn = new List<(string Id, int Rank)> { ("rebuke", 2), ("volley", 2), ("firepot", 2), ("arcweb", 2), ("thornbloom", 2), ("spirit_herd", 2) };
         foreach (var (id, _) in worn) Assert.False(Weapons.KeyOnly(id), id);
         var autos = new HashSet<string>();
         var bar = Character.Bar(j.Ch, worn, autos);
-        Assert.Equal(3 + worn.Count, autos.Count);
+        Assert.Equal(worn.Count, autos.Count);
         Assert.All(worn, w => Assert.Contains(w.Id, autos));
-        // In a fight: her four keys as they were, nine running themselves beyond them.
+        // In a fight: her five keys as they were, six running themselves beyond them.
         var b = new Battle(new BattleSetup
         {
             Seed = 3, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
             Weapons = bar, Kindled = autos, Calling = "warden", Ability = AbilityKind.ShieldBash,
         });
         Assert.Equal(bar.Count, b.Weapons.Count);
-        Assert.Equal(4, b.SlotsUsed);
-        Assert.Equal(9, b.Weapons.Count(w => w.Slot >= Weapons.MaxKeys && w.Cast == CastMode.Auto));
+        Assert.Equal(5, b.SlotsUsed);
+        Assert.Equal(6, b.Weapons.Count(w => w.Slot >= Weapons.MaxKeys && w.Cast == CastMode.Auto));
     }
 
     [Fact]
@@ -177,7 +126,7 @@ public sealed class KeyBarTests
         SkillBook.Unslot(j9.Ch, "heroic_leap");
         j9.Ch.Discovered.Add("cleaver");
         SkillBook.Learn(j9.Ch, "cleaver");
-        Assert.Equal(4, SkillBook.KeysUsed(j9.Ch));
+        Assert.Equal(5, SkillBook.KeysUsed(j9.Ch));
         var bar9 = Character.Bar(j9.Ch, [("heroic_leap", 3)], autos);
         Assert.DoesNotContain(bar9, x => x.Id == "heroic_leap");
     }
@@ -191,20 +140,20 @@ public sealed class KeyBarTests
         var b = new Battle(new BattleSetup
         {
             Seed = 3, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
-            Weapons = [("axe_gyre", 8), ("cleaver", 8), ("heroic_leap", 1), ("shield_charge", 1), ("groundbreaker", 1)],
-            Kindled = ["groundbreaker"], Calling = "warden", Ability = AbilityKind.ShieldBash,
+            Weapons = [("axe_gyre", 8), ("cleaver", 8), ("heroic_leap", 1), ("shield_charge", 1), ("iron_vow", 1)],
+            Calling = "warden", Ability = AbilityKind.ShieldBash,
         });
-        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(5, b.SlotsUsed);
         var u = b.GrantUnion("butchers_wheel")!;
         Assert.NotNull(u);
         Assert.Equal((0, 1), (u.Slot, u.Slot2));
-        Assert.Equal(4, b.SlotsUsed);
+        Assert.Equal(5, b.SlotsUsed);
         Assert.False(b.HasRoomFor("dawnpulse"));
-        // In her book: with three keys used, a union has no room; with two, it has.
+        // In her book: with four of five keys used, a union has no room; with three, it has.
         var j = New(9);
         Fight(j);
-        SkillBook.Unslot(j.Ch, "shield_charge");
-        Assert.Equal(3, SkillBook.KeysUsed(j.Ch));
+        SkillBook.Unslot(j.Ch, "iron_vow");
+        Assert.Equal(4, SkillBook.KeysUsed(j.Ch));
         Assert.False(SkillBook.HasRoom(j.Ch, "butchers_wheel"));
         Assert.True(SkillBook.HasRoom(j.Ch, "dawnpulse")); // (one key: it fits)
         SkillBook.Unslot(j.Ch, "heroic_leap");
@@ -212,38 +161,23 @@ public sealed class KeyBarTests
     }
 
     [Fact]
-    public void An_old_save_is_re_cut_to_keys_and_auto_slots_once()
+    public void An_old_save_is_re_cut_to_the_five_keys_once()
     {
         var j = New(10);
         var ch = j.Ch;
-        // A six-slot save: the taught build granted through the ninth, kindled ones on keys.
+        // A seven-slot save (keys and autos): the old build granted through the tenth.
         ch.Bar = 0;
-        ch.TaughtUpTo = 9;
-        ch.AutoForm.Clear();
-        ch.Skills.AddRange(new[] { "sunder", "groundbreaker", "heroic_leap", "shield_charge", "iron_vow", "watch_bell" }.Where(s => !ch.Skills.Contains(s)));
+        ch.TaughtUpTo = 10;
+        var old = new[] { "sunder", "groundbreaker", "heroic_leap", "iron_vow", "bladestorm", "shield_charge", "watch_bell" };
+        ch.Skills.AddRange(old.Where(s => !ch.Skills.Contains(s)));
         ch.Slotted.Clear();
-        ch.Slotted.AddRange(["sunder", "groundbreaker", "heroic_leap", "shield_charge", "iron_vow", "watch_bell"]);
+        ch.Slotted.AddRange(old);
         var b = Fight(j);
         Assert.Equal(TaughtBuilds.BarShape, ch.Bar);
-        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "shield_charge"], Enumerable.Range(0, 4).Select(i => b.OnSlot(i)?.Id).ToArray());
-        Assert.Equal(["groundbreaker", "iron_vow", "watch_bell"], b.Weapons.Where(w => w.Slot >= Weapons.MaxKeys).OrderBy(w => w.Slot).Select(w => w.Id).ToArray());
+        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge"], Enumerable.Range(0, 5).Select(i => b.OnSlot(i)?.Id).ToArray());
+        Assert.Equal(5, b.Weapons.Count);
         // Once: a skill she then takes off stays off.
         SkillBook.Unslot(ch, "heroic_leap");
         Assert.DoesNotContain(Fight(j).Weapons, w => w.Id == "heroic_leap");
-    }
-
-    [Fact]
-    public void Resolve_pacing_is_per_skill()
-    {
-        // The basic attack builds; Dawnpulse and Groundbreaker spend; the leap and the charge run on their cooldowns.
-        Assert.True(Weapons.Get("sunder").Press!.Builds > 0);
-        Assert.True(Weapons.Get("dawnpulse").Press!.Resolve > 0);
-        Assert.True(Weapons.Get("groundbreaker").Press!.Resolve > 0);
-        foreach (var id in new[] { "heroic_leap", "shield_charge" })
-        {
-            Assert.True((Weapons.Get(id).Press!.Resolve ?? 0) == 0, id);
-            Assert.True((Weapons.Get(id).Press!.Builds ?? 0) == 0, id);
-            Assert.True(Weapons.Get(id).Base.Cooldown > 0, id);
-        }
     }
 }

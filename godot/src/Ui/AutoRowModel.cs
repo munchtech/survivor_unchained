@@ -22,7 +22,7 @@ public static class AutoRowModel
     /// <summary>bd-ui W8, the HUD's tiers above the key caps, bottom up (design px, one place): the tile + stance row's bottom
     /// CapGap above the caps' top edge; the status shelf (marks ShelfH tall) with its bottom ShelfGap above the row's top; the
     /// level cards' bottom CardGap above the shelf's top.</summary>
-    public const float CapGap = 12, ShelfGap = 6, ShelfH = 30, CardGap = 8;
+    public const float CapGap = 20, ShelfGap = 6, ShelfH = 30, CardGap = 8;
     /// <summary>The status shelf's marks are 30 px round centred on y 950: its bottom edge.</summary>
     public const float ShelfBottom = 950 + 15;
 
@@ -48,6 +48,11 @@ public static class AutoRowModel
     /// <summary>The key caps' top edge: each cap's chip is centred on the seat's 12 o'clock, midway between the plate's top
     /// line and the ring's top (SeatKeys.Socket.SetCap), chipH tall (the tallest chip drawn: the mouse glyph's).</summary>
     public static float CapTop(float plateTopY, float seatY, float seatR, float chipH) => (plateTopY + seatY - seatR) / 2 - chipH / 2;
+
+    /// <summary>The plain XP bar (the owner, 22 Nov): BarH tall, its bottom XpBarGap above the key caps' top edge, so it runs
+    /// in the gap under the tile + stance row (CapGap leaves room for the stance disc's ring), from XpBarX0 to XpBarX1 (design px).</summary>
+    public const float XpBarH = 5, XpBarGap = 4, XpBarX0 = 716, XpBarX1 = 1204;
+    public static float XpBarTop(float capTop) => capTop - XpBarGap - XpBarH;
 
     /// <summary>The tile row's top: its bottom CapGap above the caps' top edge.</summary>
     public static float RowTop(float plateTopY, float seatY, float seatR, float chipH) => CapTop(plateTopY, seatY, seatR, chipH) - CapGap - Tile;

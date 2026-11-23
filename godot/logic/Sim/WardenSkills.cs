@@ -13,7 +13,7 @@ namespace SurvivorUnchained.Sim;
 public static partial class Firing
 {
     /// <summary>Its own heavy count, every this many firings (0: none): the skill's HeavyEvery, its lamp's every 3rd
-    /// (third_blow), a Turn's (Splitting Stroke); the shortest wins.</summary>
+    /// (third_blow), a Turn's (Sunder's Groundbreaker: every 3rd); the shortest wins.</summary>
     public static int HeavyEveryOf(Battle b, WeaponInst w)
     {
         int n = (int)(w.Num(s => s.HeavyEvery) ?? 0);
@@ -45,27 +45,35 @@ public static partial class Firing
         b.LinesStruck++;
     }
 
+    /// <summary>Where a crack runs: the pack under the cursor (the hover foe's), else the densest pack within range, else
+    /// (a campaign press with no foe) the point aimed at. Its end, its angle from her and its length, clamped to 1.5 m..range;
+    /// false when there is nothing to aim at. <paramref name="radius"/> is the pack's reach (the heave's).</summary>
+    static bool CrackAim(Battle b, double px, double pz, double range, double radius, out double cx, out double cz, out double a, out double len, double fallbackAngle)
+    {
+        cx = cz = a = len = 0;
+        var t = b.CastAt is { } ca ? ca.Foe : b.DensestHostile(px, pz, range, radius);
+        if (t == null && b.CastAt == null) return false;
+        if (t != null)
+        {
+            // The pack's center: the middle of what stands round the densest one.
+            var pack = b.HostilesInRadius(t.X, t.Z, radius);
+            foreach (var e in pack) { cx += e.X; cz += e.Z; }
+            if (pack.Count > 0) { cx /= pack.Count; cz /= pack.Count; } else { cx = t.X; cz = t.Z; }
+        }
+        else (cx, cz) = (b.CastAt!.Value.X, b.CastAt.Value.Z);
+        double d = Dist(cx, cz, px, pz);
+        a = d > 0.01 ? Math.Atan2(cz - pz, cx - px) : t != null ? Math.Atan2(t.Z - pz, t.X - px) : fallbackAngle;
+        len = Math.Clamp(d, 1.5, range);
+        return true;
+    }
+
     /// <summary>Groundbreaker: a crack runs from her to the densest pack's center within its range (fault_line: 14 m)
     /// and the ground heaves where it ends (twin: two cracks, splayed either side). Strikes at once.</summary>
     static bool FireCrack(Battle b, WeaponInst w)
     {
         var p = At(b);
         double range = b.CrackRangeOf(w);
-        // A campaign press: the crack runs to the pack under the cursor (the hover foe's), else to the point.
-        var t = b.CastAt is { } ca ? ca.Foe : b.DensestHostile(p.X, p.Z, range, 2.5);
-        if (t == null && b.CastAt == null) return false;
-        double cx = 0, cz = 0;
-        if (t != null)
-        {
-            // The pack's center: the middle of what stands round the densest one.
-            var pack = b.HostilesInRadius(t.X, t.Z, 2.5);
-            foreach (var e in pack) { cx += e.X; cz += e.Z; }
-            if (pack.Count > 0) { cx /= pack.Count; cz /= pack.Count; } else { cx = t.X; cz = t.Z; }
-        }
-        else (cx, cz) = (b.CastAt!.Value.X, b.CastAt.Value.Z);
-        double d = Dist(cx, cz, p.X, p.Z);
-        double a = d > 0.01 ? Math.Atan2(cz - p.Z, cx - p.X) : t != null ? Math.Atan2(t.Z - p.Z, t.X - p.X) : Math.Atan2(Math.Cos(b.Player.Facing), Math.Sin(b.Player.Facing));
-        double len = Math.Clamp(d, 1.5, range);
+        if (!CrackAim(b, p.X, p.Z, range, 2.5, out _, out _, out double a, out double len, Math.Atan2(Math.Cos(b.Player.Facing), Math.Sin(b.Player.Facing)))) return false;
         if (b.SkillRule(w, "twin"))
         {
             double splay = b.SkillFull(w, "twin", "splay", Math.PI / 6);
@@ -75,6 +83,18 @@ public static partial class Firing
         else CrackOne(b, w, p.X, p.Z, a, len);
         if (!b.Refiring && !b.Landing) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, true);
         return true;
+    }
+
+    /// <summary>A Turn's groundbreak (Sunder's Groundbreaker): its own heavy swing cracks the ground toward her aim and
+    /// the earth heaves where it ends, in place of the line. The numbers are the Turn's (wicks.json "groundbreak"); the
+    /// crack and the heave are Groundbreaker's own (CrackOne, Heave), drawn as its art. Strikes at the written blow's
+    /// whole damage (the line's rule). <paramref name="swing"/> is the swing's own angle, the crack's way with no aim.</summary>
+    static void Groundbreak(Battle b, WeaponInst w, double x, double z, double swing, GroundbreakSpec gb)
+    {
+        double range = AreaOf(b, w, gb.Range), r = AreaOf(b, w, gb.Radius);
+        if (!CrackAim(b, x, z, range, r, out _, out _, out double a, out double len, swing)) { a = swing; len = Math.Min(range, 5); }
+        var c0 = w.CutW; w.CutW = 1;
+        try { CrackOne(b, w, x, z, a, len, gb); } finally { w.CutW = c0; }
     }
 
     /// <summary>Rebuke never fires on its timer (Firing.Tick passes it by): a blow that reaches her strikes it (Battle.RebukeOnBlow).
@@ -94,19 +114,21 @@ public static partial class Firing
     /// <summary>Oath and Bell's toll, owed by a stagger: rung now, not a cast (no Hand blow), its own timer untouched.</summary>
     internal static bool TollNow(Battle b, WeaponInst w) => FireToll(b, w);
 
-    static void CrackOne(Battle b, WeaponInst w, double x0, double z0, double a, double len)
+    static void CrackOne(Battle b, WeaponInst w, double x0, double z0, double a, double len, GroundbreakSpec? gb = null)
     {
+        // A Turn's groundbreak brings its own numbers and Groundbreaker's art; Groundbreaker itself reads its skill's.
+        string art = gb != null ? "slash_quake" : w.Art;
         double x1 = x0 + Math.Cos(a) * len, z1 = z0 + Math.Sin(a) * len;
-        double width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2), r = b.CrackRadiusOf(w);
-        b.Events.Emit(new Ev.Beam { X0 = x0, Z0 = z0, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.35, Art = w.Art + "_crack", Rank = w.Rank });
-        double dmg = w.Damage, trail = dmg * (w.Num(s => s.Trail) ?? 0.5);
+        double width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2), r = gb != null ? AreaOf(b, w, gb.Radius) : b.CrackRadiusOf(w);
+        b.Events.Emit(new Ev.Beam { X0 = x0, Z0 = z0, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.35, Art = art + "_crack", Rank = w.Rank });
+        double dmg = w.Damage, trail = dmg * (gb?.Trail ?? w.Num(s => s.Trail) ?? 0.5);
         // Along the crack, at the trail's share; what stands where it heaves is the heave's.
         b.ForEachHostileNearSegment(x0, z0, x1, z1, width, e =>
         {
             if (Dist(e.X, e.Z, x1, z1) <= r + e.Radius) return;
             b.HitEnemy(e, trail, w.School, w.Tags, new HitOpts { Weapon = w, BossDamage = w.Def.BossDamage, Status = StatusWith(b, w) });
         });
-        b.Heave(w, x1, z1, r, dmg);
+        b.Heave(w, x1, z1, r, dmg, gb?.Stun, gb?.Knockback, art + "_heave");
         // Aftershock: the same spot heaves again.
         if (w.Wick is { Again: > 0 } fx) b.ScheduleHeave(w, x1, z1, r, dmg * fx.AgainDamage, fx.Again);
         // Linger: the heave leaves its ground.
@@ -142,11 +164,11 @@ public sealed partial class Battle
     /// <summary>The ground heaves (Groundbreaker's crack's end, and its Aftershock): everything in it struck heavy, and
     /// stunned (not a boss: the Hand's stagger is a boss's); upheaval: a lesser thing is thrown up, unable to move or
     /// strike, and takes more while it is.</summary>
-    internal void Heave(WeaponInst w, double x, double z, double r, double dmg)
+    internal void Heave(WeaponInst w, double x, double z, double r, double dmg, double? stunOver = null, double? knockOver = null, string? art = null)
     {
         Heaves++;
-        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = w.School, Power = Math.Min(2, dmg / 40), Art = w.Art + "_heave", Rank = w.Rank });
-        double stun = w.Num(s => s.Stun) ?? 0.6, kb = w.Num(s => s.Knockback) ?? 0;
+        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = w.School, Power = Math.Min(2, dmg / 40), Art = art ?? w.Art + "_heave", Rank = w.Rank });
+        double stun = stunOver ?? w.Num(s => s.Stun) ?? 0.6, kb = knockOver ?? w.Num(s => s.Knockback) ?? 0;
         bool up = SkillRule(w, "upheaval");
         double air = up ? SkillFull(w, "upheaval", "seconds", 0.8) : 0, more = up ? SkillFull(w, "upheaval", "more", 0.3) : 0;
         var status = Firing.StatusWith(this, w);
@@ -181,9 +203,6 @@ public sealed partial class Battle
     /// if it stands within reach of her, and the three nearest it; a missile's (no striker near), the three nearest her.
     /// At most once in its cooldown (0.5 s, shortened as any cooldown is): from blocks alone it struck twice a minute,
     /// 0.3-0.8% of her night (P6b).</summary>
-    /// <summary>A riposte: Rebuke answers the blow it took at once, whatever its gap.</summary>
-    void RebukeAnswerNow() => rebukeAt = double.NegativeInfinity;
-
     void RebukeOnBlow(Enemy? from)
     {
         if (WeaponById("rebuke") is not { DisabledT: <= 0 } w) return;

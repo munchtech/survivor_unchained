@@ -23,12 +23,12 @@ public enum Act
     Experience,
     /// <summary>The day's book's Lamps tab (L): the board and the wicks (docs/design/LAMPS_SCREEN_BRIEF.md §10).</summary>
     Lamps,
-    /// <summary>The four skill keys (LMB, RMB, 1 2; or LMB, RMB, Q E): a pressed or channelled skill on that
+    /// <summary>The five skill keys (LMB, RMB, 1 2 3; or LMB, RMB, Q E R; the pad's RT is the fifth): a pressed or channelled skill on that
     /// slot goes off (Battle.PressSkill, HoldSkill); an auto skill ignores them. The draft's Pick1-4 share Digit1-4: a
     /// press a menu takes is never also a skill's (Down), and WorldScene drops any kept through a pause.</summary>
-    Skill1, Skill2, Skill3, Skill4,
-    /// <summary>Retired with the six-key bar (kept so old saves read): no longer bound, listed or pressed.</summary>
-    Skill5, Skill6,
+    Skill1, Skill2, Skill3, Skill4, Skill5,
+    /// <summary>Retired with the six-key bar (kept so old saves read): no longer bound, listed or pressed. (The fifth key came back as Skill5, 22 Nov, BUILD_DIRECTION Round 10.)</summary>
+    Skill6,
     /// <summary>Swap to the second weapon set (level 8; shares KeyX with the draft's Reroll, a menu).</summary>
     Swap,
 }
@@ -52,17 +52,17 @@ public static class KeyMap
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
         [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey], [Act.Lamps] = ["KeyL"],
-        [Act.Skill1] = ["Mouse0"], [Act.Skill2] = ["Mouse2"], [Act.Skill3] = ["Digit1"], [Act.Skill4] = ["Digit2"], [Act.Swap] = ["KeyX"],
+        [Act.Skill1] = ["Mouse0"], [Act.Skill2] = ["Mouse2"], [Act.Skill3] = ["Digit1"], [Act.Skill4] = ["Digit2"], [Act.Skill5] = ["Digit3"], [Act.Swap] = ["KeyX"],
     };
 
     /// <summary>The skill slots' keys in slot order (slot i is Skills[i]).</summary>
-    public static readonly Act[] Skills = [Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4];
+    public static readonly Act[] Skills = [Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5];
 
-    public static bool IsSkill(Act a) => a >= Act.Skill1 && a <= Act.Skill4;
+    public static bool IsSkill(Act a) => a >= Act.Skill1 && a <= Act.Skill5;
 
     /// <summary>What the controls page lets a player move (a key means one of these at most).</summary>
     public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Lamps, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience,
-        Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Swap];
+        Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5, Act.Swap];
     /// <summary>Keys no rebind may take (the menus' own). The digits are the draft's, but a skill, the Flare or the Draught
     /// may sit on one (the draft is a menu: a press it takes is never also theirs).</summary>
     public static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
@@ -70,7 +70,7 @@ public static class KeyMap
 
     /// <summary>What a player presses in play (a key here means one of these only).</summary>
     public static readonly Act[] PlayActs = [Act.Up, Act.Down, Act.Left, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Journal, Act.Map,
-        Act.Pause, Act.Arts, Act.Lamps, Act.Answer, Act.Experience, Act.Expand, Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Swap];
+        Act.Pause, Act.Arts, Act.Lamps, Act.Answer, Act.Experience, Act.Expand, Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5, Act.Swap];
 
     /* ------------------------------------------------------------ presets -- */
 
@@ -79,8 +79,8 @@ public static class KeyMap
 
     /// <summary>What a preset puts where (LMB and RMB are the same in both and are not touched).</summary>
     public static Dictionary<Act, string[]> PresetKeys(int preset) => preset == 1
-        ? new() { [Act.Skill3] = ["KeyQ"], [Act.Skill4] = ["KeyE"], [Act.Swap] = ["KeyX"], [Act.Flare] = ["Digit1"], [Act.Draught] = ["Digit2"], [Act.Interact] = ["KeyG"] }
-        : new() { [Act.Skill3] = ["Digit1"], [Act.Skill4] = ["Digit2"], [Act.Swap] = ["KeyX"], [Act.Flare] = ["KeyQ"], [Act.Draught] = ["KeyR"], [Act.Interact] = ["KeyE", "KeyF"] };
+        ? new() { [Act.Skill3] = ["KeyQ"], [Act.Skill4] = ["KeyE"], [Act.Skill5] = ["KeyR"], [Act.Swap] = ["KeyX"], [Act.Flare] = ["Digit1"], [Act.Draught] = ["Digit2"], [Act.Interact] = ["KeyG"] }
+        : new() { [Act.Skill3] = ["Digit1"], [Act.Skill4] = ["Digit2"], [Act.Skill5] = ["Digit3"], [Act.Swap] = ["KeyX"], [Act.Flare] = ["KeyQ"], [Act.Draught] = ["KeyR"], [Act.Interact] = ["KeyE", "KeyF"] };
 
     /// <summary>A fresh copy of the defaults.</summary>
     public static Dictionary<Act, string[]> Fresh() => Defaults.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
@@ -170,13 +170,13 @@ public static class KeyMap
     /* ---------------------------------------------------------------- pad -- */
 
     /// <summary>The pad (M4 §1): the grip on A (the thumb holds the swing while the index fires the pressed movement skills
-    /// on RB and RT), Skill2 X, Skill3 Y, Skill4 B (four face buttons); the swap RB; the dash LB, the Flare LT, the draught d-pad
+    /// on RB and RT), Skill2 X, Skill3 Y, Skill4 B (four face buttons), Skill5 RT (a trigger, in play only); the swap RB; the dash LB, the Flare LT, the draught d-pad
     /// up; Interact shares A out of a fight (Controls.Fighting); the level's card held on d-pad down. In a menu A
     /// confirms, B goes back, X and Y act on what has focus, LB and RB turn the book's tabs, LT and RT a screen's pages.
     /// In play the d-pad does not move her (Controls.Poll): it holds the draught and the card.</summary>
     public static readonly Dictionary<Act, string[]> Pad = new()
     {
-        [Act.Skill1] = ["A"], [Act.Skill2] = ["X"], [Act.Skill3] = ["Y"], [Act.Skill4] = ["B"], [Act.Swap] = ["RB"],
+        [Act.Skill1] = ["A"], [Act.Skill2] = ["X"], [Act.Skill3] = ["Y"], [Act.Skill4] = ["B"], [Act.Skill5] = ["RT"], [Act.Swap] = ["RB"],
         [Act.Dash] = ["LB"], [Act.Flare] = ["LT"], [Act.Draught] = ["D-pad up"], [Act.Interact] = ["A"], [Act.Experience] = ["D-pad down"],
         [Act.Confirm] = ["A"], [Act.Cancel] = ["B"], [Act.Inventory] = ["View"], [Act.Pause] = ["Menu"],
         [Act.Up] = ["D-pad up"], [Act.Down] = ["D-pad down"], [Act.Left] = ["D-pad left"], [Act.Right] = ["D-pad right"],
@@ -205,9 +205,10 @@ public static class KeyMap
 
     /* -------------------------------------------------------------- seats -- */
 
-    /// <summary>M4 §1: the bar's seats left to right, [1][2] (coin) [LMB][RMB]: seat k shows slot SeatSlot[k] (the
+    /// <summary>M4 §1: the bar's seats: [1][2] [5th, in the old coin's place] [LMB][RMB] on the plate (seat indices
+    /// 0, 1, 4, 2, 3: the fifth key's seat is the last index, DgPanel.CoinSeat). Seat k shows slot SeatSlot[k] (the
     /// keyboard's keys on the left, the mouse's on the right). A view only: slots stay stable.</summary>
-    public static readonly int[] SeatSlot = [2, 3, 0, 1];
+    public static readonly int[] SeatSlot = [2, 3, 0, 1, 4];
 
     /// <summary>The seat a slot shows on (SeatSlot's inverse).</summary>
     public static int SeatOf(int slot) => Array.IndexOf(SeatSlot, slot);
@@ -225,6 +226,9 @@ public static class KeyMap
             if (saved.TryGetValue(SaveKey(a), out var v) && Ok(v)) keys[a] = v!.ToArray()!;
             else if (a == Act.Flare && saved.TryGetValue("ability", out var oldArt) && Ok(oldArt)) keys[a] = oldArt!.ToArray()!;
             else if (a == Act.Draught && saved.TryGetValue("ultimate", out var old) && Ok(old)) keys[a] = old!.ToArray()!;
-        return saved.TryGetValue("preset", out var pr) && Ok(pr) && int.TryParse(pr![0], out var pi) ? pi : null;
+        int? layout = saved.TryGetValue("preset", out var pr) && Ok(pr) && int.TryParse(pr![0], out var pi) ? pi : null;
+        // (a file saved before the fifth key: it has no skill5, so the layout's own key for it, unless that key is taken)
+        if (!saved.ContainsKey(SaveKey(Act.Skill5)) && layout == 1 && !keys.Any(kv => kv.Key != Act.Skill5 && kv.Value.Contains("KeyR"))) keys[Act.Skill5] = ["KeyR"];
+        return layout;
     }
 }

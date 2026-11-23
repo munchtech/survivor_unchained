@@ -26,7 +26,7 @@ public static class LevelCardPlace
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
     /// from this too, so card and seat cannot drift).</summary>
-    public static Act CapAct(int slot) => KeyMap.Skills[KeyMap.SeatSlot[KeyMap.SeatOf(slot)]];
+    public static Act CapAct(int slot) => KeyMap.SeatOf(slot) is int seat and >= 0 ? KeyMap.Skills[KeyMap.SeatSlot[seat]] : KeyMap.Skills[Math.Clamp(slot, 0, KeyMap.Skills.Length - 1)];   // (the fifth key has no seat until the HUD is redrawn)
 
     /// <summary>The card's left x, top y, the tail's x (card space; the card's own centre when no target) and its length
     /// below the card (0 when the target is not below it).</summary>
@@ -169,8 +169,9 @@ public static class LevelCards
     public static string PromptFor(int traitPicks) => traitPicks > 0 ? "Choose a new trait" : "Attribute points to spend";
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
-    /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
-    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false)
+    /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt. nth: which of
+    /// the keys taught at that level (the ninth teaches two), in key order.</summary>
+    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false, int nth = 0)
     {
         string? calling = ch?.Archetype ?? Content.TaughtBuilds.CallingOf(build);
         var spec = new LevelCardSpec { Level = level, PromptKey = Act.Character, PromptText = PromptFor(traitPicks) };
@@ -179,6 +180,7 @@ public static class LevelCards
             if (s.Level != level) continue;
             int slot = slotOf(s.Skill);
             if (slot < 0) continue;
+            if (nth-- > 0) continue;
             spec.Kind = slot >= Content.Weapons.MaxKeys ? LevelCardKind.NewAuto : LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
             if (Content.UnlockCards.Of(calling, s.Skill) is { } row) { spec.Title = row.Title; if (row.Line != "") spec.Line = row.Line; }
             break;
@@ -209,10 +211,16 @@ public static class LevelCards
         return names.Count > 0 ? string.Join(" or ", names) : "Your road";
     }
 
-    /// <summary>The cards one campaign level makes (always one: a level that teaches a layer teaches nothing else, and the
-    /// calling's own skill is queued apart, at a quiet moment: CallingDue).</summary>
-    public static List<LevelCardSpec> CardsFor(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false) =>
-        [ForCampaignLevel(level, build, slotOf, traitPicks, ch, roadRaised)];
+    /// <summary>The cards one campaign level makes: one per carried key taught at that level, in key order (the ninth teaches
+    /// two), else one; the calling's own skill is queued apart, at a quiet moment: CallingDue.</summary>
+    public static List<LevelCardSpec> CardsFor(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null, bool roadRaised = false)
+    {
+        int keys = 0;
+        foreach (var t in (IEnumerable<Content.TaughtSlot>?)build?.Slots ?? Array.Empty<Content.TaughtSlot>()) if (t.Level == level && slotOf(t.Skill) >= 0) keys++;
+        var cards = new List<LevelCardSpec>();
+        for (int n = 0; n < Math.Max(1, keys); n++) cards.Add(ForCampaignLevel(level, build, slotOf, traitPicks, ch, roadRaised, n));
+        return cards;
+    }
 
     /// <summary>The calling's skill waits until nothing else is up: its card is made when no card shows or waits and no foe
     /// has been near her for QuietFor seconds.</summary>

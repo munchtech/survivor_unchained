@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using SurvivorUnchained.Balance;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Maps;
@@ -8,7 +10,9 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>The dungeons' fight numbers (data/content/dungeon_fights.json; dungeon-fights lane, 15 Nov). The 50-seed bands live in
 /// the harness (`dotnet run --project godot/balance -- dungeon --seeds 50`): hollow human 88% deft 98% standing 0%, roost human 86%
-/// deft 98% standing 0% (seeds 1-50; 51-100: 88/98, 84/98; castMove off). Here the rule in three seeds: a bot that never moves falls, the deft one clears.</summary>
+/// deft 98% standing 0% (seeds 1-50; 51-100: 88/98, 84/98; castMove off). Here the rule in three seeds: a bot that never moves falls, the deft one clears.
+/// (P3, 22 Nov, the den's own roster, DEN_ROSTER.md) hollow seeds 1-50 at den-roster eb0a397c7: human 96% deft 100% standing 2% (the human's
+/// 96% predates P3: 96% at 0c62da9bb); its clear feel by `denfeel --seeds 20`: a normal pack p50 11-13 s, the hunting pack 6.4-6.9 s.</summary>
 public class DungeonFightTests
 {
     readonly ITestOutputHelper _out;
@@ -44,6 +48,24 @@ public class DungeonFightTests
         var r = MapSim.Play(new MapRunSpec(seed, "warden", 1, def.People, level, 1, [], "standing", 25, id));
         _out.WriteLine($"{id} {seed}: {(r.Cleared ? "cleared" : "fell")} {r.Minutes:0.0} min, {r.KilledBy}, in {r.DeathRoom}");
         Assert.False(r.Cleared, $"{id} seed {seed}: standing still cleared it");
+    }
+
+    /// <summary>(P3, DEN_ROSTER.md "Clear-feel targets") The den clears as the page asks, in three seeds of the deft bot (the 20-seed
+    /// numbers in the class summary): a normal pack goes down within 10 s of her first blow on it (median), most packs drop
+    /// 40% of themselves inside one 1.5 s window, and a red lane comes no more than once in 8 s of room fighting.</summary>
+    [Fact]
+    public void The_den_clears_inside_the_pages_feel_targets()
+    {
+        var runs = Enumerable.Range(1, 3).Select(seed => DenFeel.Play(new MapRunSpec(seed, "warden", 1, DungeonGen.Get("hollow")!.People, 6, 1, [], "deft", 8, "hollow"))).ToList();
+        var packs = runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0).ToList();
+        var normal = packs.Where(p => p.Grade == 0).Select(p => p.LastDeath - p.FirstHit).OrderBy(x => x).ToList();
+        double ttk = normal[normal.Count / 2], together = packs.Count(p => p.Together >= 0.4) / (double)packs.Count;
+        double lanes = runs.Sum(r => r.Lanes) / Math.Max(1, runs.Sum(r => r.RoomFight)) * 8;
+        _out.WriteLine($"{packs.Count} packs killed; normal TTK p50 {ttk:0.0} s ({normal.Count}); together >=40% {together:P0}; lanes {lanes:0.00} per 8 s");
+        Assert.True(normal.Count >= 20, $"only {normal.Count} normal packs killed");
+        Assert.True(ttk <= 10, $"a normal pack takes {ttk:0.0} s");
+        Assert.True(together >= 0.7, $"{together:P0} of packs fall together");
+        Assert.True(lanes <= 1, $"{lanes:0.00} lanes per 8 s");
     }
 
     /// <summary>Roost seed 16, deft (15 Nov): the Red Hand jammed in the Boss camp's 2.0 m door (his body is 2.2 m across), nothing

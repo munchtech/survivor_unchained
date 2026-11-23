@@ -99,7 +99,7 @@ public static class SocketModel
     public static List<int> MoreRoom(int level, int upTo = 30)
     {
         var l = new List<int>();
-        for (int x = Math.Max(2, level + 1); x <= upTo; x++) if (SkillBook.SlotsAt(x) > SkillBook.SlotsAt(x - 1)) l.Add(x);
+        for (int x = Math.Max(2, level + 1); x <= upTo; x++) if (SkillBook.KeysAt(x) > SkillBook.KeysAt(x - 1)) l.Add(x);
         return l;
     }
 

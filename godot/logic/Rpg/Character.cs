@@ -160,14 +160,11 @@ public sealed class CharacterData
     /// <summary>(M3) The taught build's levels granted so far (Content/TaughtBuilds.Grant): a slot the player took off
     /// is not put back.</summary>
     public int TaughtUpTo;
-    /// <summary>(bd-keys) Skills offered both ways (pressed or kindled) that she runs in an auto slot (Rpg/SkillBook.IsAuto);
-    /// every other skill's place is its own record's.</summary>
-    public List<string> AutoForm = new();
     /// <summary>(bd-keys) Her second weapon set's stance (data/content/stances.json), or "" for her calling's taught one; it
     /// opens at the ladder's level (SkillBook.StanceOf).</summary>
     public string Stance = "";
-    /// <summary>(bd-keys) The bar this save was carried under: 0 the six keys, 2 four keys and three auto slots (an older
-    /// save's taught build is granted again into the new bar: Content/TaughtBuilds.Grant).</summary>
+    /// <summary>(bd-keys) The bar this save was carried under: 0 the six keys, 2 four keys and three auto slots, 3 four
+    /// pressed keys, 4 five pressed keys (an older save is cut again once into the new bar: Content/TaughtBuilds.Grant, World/Save).</summary>
     public int Bar;
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
@@ -672,11 +669,11 @@ public sealed class CombatKit
     public List<(string Id, int Rank)> Weapons = new();
     /// <summary>Learned skills carried by day (not into the night's arenas: the ember starts from nothing).</summary>
     public List<(string Id, int Rank)> Learned = new();
-    /// <summary>The auto skills her gear grants (ItemDef.Auto), each at its rank: on top of her auto slots, no limit, whatever her
+    /// <summary>The auto skills her gear grants (ItemDef.Auto), each at its rank: beside her keys, no limit, whatever her
     /// calling may carry (13 Nov build direction; the Battle runs them).</summary>
     public List<(string Id, int Rank)> AutoSkills = new();
     /// <summary>(bd-keys) A campaign fight's skills in the order the battle takes them up (Character.Bar): her keys in key
-    /// order, her auto slots, then the auto skills her gear grants (no cap); and those that run themselves (kindled).</summary>
+    /// order, then the auto skills her gear grants (no cap); Autos holds those that run themselves (kindled).</summary>
     public List<(string Id, int Rank)> Bar = new();
     public HashSet<string> Autos = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
@@ -960,7 +957,7 @@ public static class Character
     static void GearSkills(CharacterData ch, ItemInstance it, ItemDef def, EquipSlot s, List<(string Id, int Rank)> into)
     {
         // Skills the gear grants (bd-keys: no cap here; Character.Bar puts a pressed one in a free key, and an auto one
-        // runs beside her three auto slots, as many as she wears).
+        // runs beside her keys, as many as she wears).
         foreach (var ar in it.Affixes)
             if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g))
                 into.Add((g, 1 + ar.Tier / 2));
@@ -981,13 +978,13 @@ public static class Character
             if (Content.Weapons.All.ContainsKey(skill) && into.All(w => w.Id != skill)) into.Add((skill, rank));
     }
 
-    /// <summary>(bd-wire) Can run itself as an item's auto skill: anything but a pressed-only record (a key's, with no
-    /// kindled option) or a Union (two keys' worth). Such a grant lies idle.</summary>
+    /// <summary>(bd-wire) Can run itself as an item's auto skill: anything but a pressed-only record (a key's)
+    /// or a Union (two keys' worth). Such a grant lies idle.</summary>
     public static bool RunsAsItemAuto(string id) =>
         Content.Weapons.All.ContainsKey(id) && !Content.Weapons.KeyOnly(id) && !Content.Weapons.IsUnion(id);
 
-    /// <summary>The skills she fights with by day, in the order the fight takes them up (Character.Bar: her keys, her auto
-    /// slots, her gear's auto skills), each at its rank: the Battle's Weapons before any draft.</summary>
+    /// <summary>The skills she fights with by day, in the order the fight takes them up (Character.Bar: her keys, her gear's
+    /// auto skills), each at its rank: the Battle's Weapons before any draft.</summary>
     /// <param name="gearOnly">Only the gear's, every one (by night these come in at their ranks; the rest the ember drafts).</param>
     public static List<(string Id, int Rank)> DaySkills(CharacterData ch, bool gearOnly = false)
     {
@@ -1012,10 +1009,10 @@ public static class Character
 
     /// <summary>(bd-keys, BUILD_DIRECTION.md rounds 7-8) Her bar for a campaign fight, in the order the battle takes it up:
     /// the keys open at her level in key order (ch.Slotted's: learned skills, and worn ones she put in a key), a pressed
-    /// skill her gear grants in a key still free, her auto slots open at her level, then every auto skill her gear grants
+    /// skill her gear grants in a key still free, then every auto skill her gear grants
     /// (item auto skills stack with no cap). A skill learned and worn takes its learned rank. `autos` gets what runs itself.</summary>
-    /// <param name="itemAutos">(bd-wire) The auto skills her great pieces grant (CombatKit.AutoSkills): each runs itself after
-    /// her auto slots, never takes a key, whatever her calling may carry; one already on her bar stays where it is, and one she
+    /// <param name="itemAutos">(bd-wire) The auto skills her great pieces grant (CombatKit.AutoSkills): each runs itself
+    /// beside her keys, never takes a key, whatever her calling may carry; one already on her bar stays where it is, and one she
     /// has learned runs at its learned rank. A pressed-only skill or a Union cannot run itself and lies idle (RunsAsItemAuto).</param>
     public static List<(string Id, int Rank)> Bar(CharacterData ch, List<(string Id, int Rank)> gear, HashSet<string> autos,
         List<(string Id, int Rank)>? itemAutos = null)
@@ -1024,10 +1021,9 @@ public static class Character
         foreach (var (id, rank) in SkillBook.Carried(ch)) learned[id] = rank;
         var worn = new Dictionary<string, int>();
         foreach (var (id, rank) in gear) if (!worn.ContainsKey(id) && Content.Weapons.All.ContainsKey(id)) worn[id] = rank;
-        int keys = SkillBook.KeysAt(ch.Level), mine = SkillBook.AutosAt(ch.Level);
+        int keys = SkillBook.KeysAt(ch.Level);
         var keyed = new List<(string Id, int Rank)>();
-        var auto = new List<(string Id, int Rank)>();
-        bool On(string id) => keyed.Exists(w => w.Id == id) || auto.Exists(w => w.Id == id);
+        bool On(string id) => keyed.Exists(w => w.Id == id);
         foreach (var id in ch.Slotted.ToList())
         {
             if (On(id) || !SkillBook.Carries(ch, id)) continue;
@@ -1035,8 +1031,8 @@ public static class Character
             if (learned.TryGetValue(id, out var lr)) rank = lr;
             else if (!SkillBook.Knows(ch, id) && worn.TryGetValue(id, out var wr)) rank = wr;
             else continue;
-            if (SkillBook.IsAuto(ch, id)) { if (mine-- > 0) auto.Add((id, rank)); }
-            else if (Content.Weapons.SlotCost(id) <= keys) { keys -= Content.Weapons.SlotCost(id); keyed.Add((id, rank)); }
+            if (Content.Weapons.AutoOnly(id)) continue;
+            if (Content.Weapons.SlotCost(id) <= keys) { keys -= Content.Weapons.SlotCost(id); keyed.Add((id, rank)); }
         }
         var items = new List<(string Id, int Rank)>();
         foreach (var (id, rank) in worn)
@@ -1055,8 +1051,8 @@ public static class Character
             items.Add((id, learned.TryGetValue(id, out var lr) ? lr : rank));
         }
         autos.Clear();
-        foreach (var (id, _) in auto.Concat(items)) autos.Add(id);
-        return keyed.Concat(auto).Concat(items).ToList();
+        foreach (var (id, _) in items) autos.Add(id);
+        return keyed.Concat(items).ToList();
     }
 
     static void Kindle(CombatKit kit, string key)

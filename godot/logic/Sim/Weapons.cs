@@ -39,7 +39,7 @@ public sealed class WeaponInst
     Evolution? evolution;
     public double Timer;
     /// <summary>(M3) The timer is only a kindled skill's look-again (its condition did not hold, or nothing was in range),
-    /// not a wait: her key may still heave it (Battle.KindledPress, the press plan).</summary>
+    /// not a wait: the press plan treats it as ready.</summary>
     public bool Relooking;
     public readonly WeaponMods Mods = new();
     /// <summary>Burst shots still to go, and when.</summary>
@@ -80,6 +80,9 @@ public sealed class WeaponInst
     /// with it). A spin union's second key held (Held2), and its other part (Sunder, at the union's rank, on its own cooldown,
     /// never in Weapons): what that key swings outside a storm (Battle.PressSkill, Firing.TickPressed).</summary>
     public double StormAt = double.NegativeInfinity, StormT;
+    /// <summary>(the owner, 22 Nov) Its storm was ended by Sunder's key (the break, or cut short) while its own key was
+    /// still held: it starts again once it is ready, with no new press (Firing.TickPressed). Gone on release.</summary>
+    public bool ResumeHeld;
     public bool Held2;
     public WeaponInst? Half;
     /// <summary>For beams and orbits: active until.</summary>
@@ -200,45 +203,20 @@ public sealed class WeaponInst
     public CastMode Cast => CastSet ?? CampaignCast ?? evolution?.Cast ?? Def.Cast;
     /// <summary>Set by hand over data (a test, later a toggle): press or kindle this one regardless of its skill.</summary>
     public CastMode? CastSet;
-    /// <summary>An auto skill's kindle condition (the evolution's, else the skill's): null fires on the wait alone. In its
-    /// kindled form in the campaign, its record's kindled condition first.</summary>
-    public KindleDef? Kindle => Unkindled ? null : (KindledNow ? Press!.Kindled?.Condition() : null) ?? evolution?.Kindle ?? Def.Kindle;
+    /// <summary>An auto skill's kindle condition (the evolution's, else the skill's): null fires on the wait alone.</summary>
+    public KindleDef? Kindle => Unkindled ? null : evolution?.Kindle ?? Def.Kindle;
 
     /// <summary>Its press record (WeaponDef.Press), set only in the campaign (Battle.AddWeapon when Battle.Campaign): null
     /// everywhere else, and the skill is set off as "cast" says.</summary>
     public PressDef? Press;
-    /// <summary>The campaign slot runs its kindled option (WeaponInst.SetForm "kindle"): it fires itself on its kindled
-    /// condition, and its key does the kindled press.</summary>
-    public bool KindledForm;
-    /// <summary>Kindled now: a kind-kindle skill, or one set to its kindled form (campaign only).</summary>
-    public bool KindledNow => Press != null && (KindledForm || Press.Kind == PressKind.Kindle);
+    /// <summary>Kindled now: a kind-kindle skill (campaign only): it runs itself and has no key.</summary>
+    public bool KindledNow => Press != null && Press.Kind == PressKind.Kindle;
     /// <summary>How the record sets it off in the campaign: kindled, by itself; else hold and press on the key, channel held.</summary>
     CastMode? CampaignCast => Press == null ? null : KindledNow ? CastMode.Auto : Press.Kind == PressKind.Channel ? CastMode.Channel : CastMode.Press;
     /// <summary>A hold skill (the grips): fires whenever ready while its key is held, at the moving aim.</summary>
     public bool Hold => Press?.Kind == PressKind.Hold && !KindledNow;
-    /// <summary>Its key does something: pressed, or kindled with a live press (campaign).</summary>
-    public bool Keyed => Pressed || KindledNow;
-    /// <summary>What a kindled skill's key does (its record's; now if unsaid).</summary>
-    public KindlePress KindleKey => Press?.Kindled?.Press ?? KindlePress.Now;
-    /// <summary>The skill is offered kindled: kind kindle, or a kindled option.</summary>
-    public static bool OfferedKindled(WeaponDef d) => d.Press is { } r && (r.Kind == PressKind.Kindle || r.Kindled != null);
-    /// <summary>The cast forms a record allows (taught_builds.json "cast"): its kind, and kindle when offered kindled.</summary>
-    public static bool Allows(WeaponDef d, string cast)
-    {
-        if (d.Press is not { } r) return cast == "auto";
-        string kind = (r.Kind ?? PressKind.Press).ToString().ToLowerInvariant();
-        return cast == kind || (cast == "kindle" && OfferedKindled(d));
-    }
-    /// <summary>Runs the slot as the record's kind or its kindled option ("kindle"; any other its kind): false when the
-    /// record does not allow it (nothing changes).</summary>
-    public bool SetForm(string cast)
-    {
-        if (Press == null || !Allows(Def, cast)) return false;
-        KindledForm = cast == "kindle" && Press.Kind != PressKind.Kindle;
-        return true;
-    }
-    /// <summary>A kindled key's own wait (riposte, flare, command), and an aura's flare: until when, and its multipliers.</summary>
-    public double PressWait, FlareUntil = -1, AuraMul = 1, AuraArea = 1;
+    /// <summary>Its key does something (campaign): a kindled skill has no key.</summary>
+    public bool Keyed => Pressed;
     /// <summary>The last cast was its own heavy one (read by the cast pose after CastOnce).</summary>
     public bool WasOwnHeavy;
     /// <summary>Fires on its wait alone whatever its data says (tests that fire a skill by hand).</summary>
@@ -290,7 +268,7 @@ public sealed class WeaponInst
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             if (wick != null) d *= wick.Damage;
-            return d * FireMul * AuraMul * CutW;
+            return d * FireMul * CutW;
         }
     }
 
@@ -316,8 +294,7 @@ public static partial class Firing
     }
 
     /// <summary>Its cooldown before the multipliers: the campaign record's wait for a pressed skill (a spender's only
-    /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
-    /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
+    /// while a resource pays for it), else its base cooldown.</summary>
     static double BaseCooldown(Battle b, WeaponInst w) => BaseCooldownFor(w, b.Resolve.On);
 
     /// <summary>The wait the seat shows with no Battle (the skill tooltips, U1): CooldownOf's rule on the weapon's own
@@ -335,7 +312,7 @@ public static partial class Firing
         // (M3 MR 3) a chained cut with a period waits its period: a share of the blow, as its weight is
         w.Chained && w.Press!.Chain!.Period is > 0 and var p ? p :
         w.Press is { Wait: { } wait } r && (w.Pressed && (resolveOn || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
-            || w.KindledNow && w.KindleKey == KindlePress.Now && resolveOn && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
+            ) ? wait : w.Def.Base.Cooldown ?? 1;
 
     public static double AreaOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -346,7 +323,7 @@ public static partial class Firing
         a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags) + b.StormReach(w);
         // The reaver's Hand: hurt below half, her areas reach wider.
         a *= b.HandAreaMul(w);
-        return a * w.AuraArea;
+        return a;
     }
 
     /// <summary>bulwark.skill.reach: metres of reach a skill's lamp adds (Oathblade, 1.5).</summary>
@@ -394,9 +371,6 @@ public static partial class Firing
     public static void Tick(Battle b, WeaponInst w, double dt)
     {
         if (w.DisabledT > 0) { w.DisabledT -= dt; return; }
-        // A kindled key's own wait, and an aura's flare running out (campaign only: both stay at rest elsewhere).
-        if (w.PressWait > 0) w.PressWait = Math.Max(0, w.PressWait - dt);
-        if (w.FlareUntil >= 0 && b.Time > w.FlareUntil) { w.FlareUntil = -1; w.AuraMul = w.AuraArea = 1; }
         // Rebuke never fires on its timer: a blow that reaches her strikes it (Battle.RebukeOnBlow).
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
@@ -438,17 +412,13 @@ public static partial class Firing
         if (w.Pressed) { TickPressed(b, w, dt); return; }
         if (w.Timer > 0) return;
         // Kindled: wait over is not enough; look again in a tenth of a second (read only when ready, so a crowd costs nothing).
-        // A kindled spender (campaign, Resolve): it waits for the whole cost too (ready all the while: its key may heave
-        // with less), and spends it on firing. (M3) One whose key heaves (kindled press "now": Groundbreaker, the Disc)
-        // fires itself only when Resolve is full (ResolveMeter.SelfAt of the cap) and the heave takes all of it: her key
-        // heaves from its cost (from half, at what she has), so a hand that presses spends ~2.5x as often as one that waits.
+        // A kindled spender (campaign, Resolve): it waits for the whole cost too, and spends it on firing.
         double cost = b.CostOf(w);
-        bool selfHeave = cost > 0 && w.KindledNow && w.KindleKey == KindlePress.Now;
-        if (cost > 0 && b.Resolve.Value < (selfHeave ? ResolveMeter.SelfAt * b.Resolve.Max : cost)) { w.Timer = 0; return; }
+        if (cost > 0 && b.Resolve.Value < cost) { w.Timer = 0; return; }
         if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; w.Relooking = true; return; }
         int kills0 = w.Kills, key0 = w.BlowN;
         bool fired = CastOnce(b, w);
-        if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
+        if (fired && cost > 0) b.Resolve.Spend(cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         Rearm(b, w, fired, kills0, key0);
         // (M3 MR 3 clock) the next wait runs from the instant this one ran out, not from the step's end
@@ -654,6 +624,12 @@ public static partial class Firing
             if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w);
             // Hold to repeat (campaign, the grips): ready while held, it fires again at the current aim.
             if (w.Hold && w.Held && w.Timer <= 0 && w.DisabledT <= 0 && !b.BreaksAStorm(w)) b.PressHeld(w);
+            // (the owner, 22 Nov) A storm Sunder's key ended with its own key still held starts again once ready: no new press.
+            if (w.ResumeHeld)
+            {
+                if (!w.Held) w.ResumeHeld = false;
+                else if (w.Timer <= 0 && w.DisabledT <= 0) b.PressHeld(w);
+            }
             return;
         }
         w.Timer = 0;
@@ -696,6 +672,7 @@ public static partial class Firing
             b.Resolve.SpentInStorm = 0;
             b.CastPose(w);
             w.Channeling = true;
+            w.ResumeHeld = false;
             w.ChannelT = 0;
             w.ChannelNext = w.ChannelEvery;
             w.SpinTicks = 0;
@@ -727,16 +704,6 @@ public static partial class Firing
             if (cost > 0) b.Resolve.Spend(cost);
             b.CastPose(w);
         }
-        return fired;
-    }
-
-    /// <summary>A kindled skill's "now" (Battle.KindledPress): one cast as its timer would fire it, its condition skipped,
-    /// then its wait. True when it went off.</summary>
-    internal static bool CastNow(Battle b, WeaponInst w)
-    {
-        int kills0 = w.Kills, key0 = w.BlowN;
-        bool fired = CastOnce(b, w);
-        if (fired) Rearm(b, w, true, kills0, key0);
         return fired;
     }
 
@@ -1237,8 +1204,10 @@ public static partial class Firing
             double da = Wrap(Math.Atan2(c.Z - p.Z, c.X - p.X) - a);
             if (Math.Abs(da) <= arc / 2 + 0.3) b.Hooks.OnHitProp?.Invoke(c.Tag, c.Id, w.School, w.Damage, c.X, c.Z);
         }
-        // Its own heavy swing splits the ground ahead (Sunder's line).
-        if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
+        // Its own heavy swing splits the ground ahead (Sunder's line); under the Groundbreaker Turn it breaks it instead:
+        // a crack to the pack she aims at and the earth heaves, no line.
+        if (w.OwnHeavy && w.Wick?.Groundbreak is { } gb) Groundbreak(b, w, p.X, p.Z, a, gb);
+        else if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
         // Linger: the swing leaves its ground where the arc's middle fell.
         // (M3 J12b) Under a chain: one ground per WRITTEN blow, at the blow's size (LaysGround), not one per cut at its share.
         if (w.Wick?.Ground is { } g && LaysGround(b, w))

@@ -56,14 +56,6 @@ public sealed class StormShotRecipeTests
     }
 
     [Fact]
-    public void A_full_meter_set_by_hand_feeds_the_kindled_heave_and_the_storm_is_refused()
-    {
-        var (res, ticks, _) = Shoot(100);
-        Assert.Equal(0, res, 6);
-        Assert.Equal(0, ticks);
-    }
-
-    [Fact]
     public void A_meter_short_of_full_waits_for_the_storm_and_key_three_held_spins()
     {
         var (res, ticks, spun) = Shoot(95);

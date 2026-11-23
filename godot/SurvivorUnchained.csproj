@@ -6,6 +6,11 @@
     <LangVersion>12</LangVersion>
     <RootNamespace>SurvivorUnchained</RootNamespace>
   </PropertyGroup>
+  <!-- (P2 task 5, session 3) The exported game's own code and the Godot binding precompiled (ReadyToRun): no first-call
+       JIT in play. Exports only (the editor build stays IL for hot reload). Needs the Crossgen2 pack in the NuGet cache. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'ExportRelease' Or '$(Configuration)' == 'ExportDebug'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
   <ItemGroup>
     <!-- The logic's tests are their own project (tests/Tests.csproj). -->
     <Compile Remove="tests/**" />

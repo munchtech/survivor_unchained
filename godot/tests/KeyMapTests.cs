@@ -8,20 +8,21 @@ namespace SurvivorUnchained.Tests;
 public class KeyMapTests
 {
     [Fact]
-    public void TheDefaultsPutTheSkillsOnTheMouseAndOneToFour()
+    public void TheDefaultsPutTheSkillsOnTheMouseAndOneToThree()
     {
         var k = KeyMap.Defaults;
         Assert.Equal(new[] { "Mouse0" }, k[Act.Skill1]);
         Assert.Equal(new[] { "Mouse2" }, k[Act.Skill2]);
-        Assert.Equal(new[] { "Digit1", "Digit2" }, KeyMap.Skills[2..].Select(s => k[s].Single()));
+        Assert.Equal(new[] { "Digit1", "Digit2", "Digit3" }, KeyMap.Skills[2..].Select(s => k[s].Single()));
         // the Flare gave RMB up and keeps Q
         Assert.Equal(new[] { "KeyQ" }, k[Act.Flare]);
         foreach (var s in KeyMap.Skills) Assert.Contains(s, KeyMap.Rebindable);
-        // four keys; the old fifth and sixth are retired (kept in the enum for saves, never bound or listed)
-        Assert.Equal(4, KeyMap.Skills.Length);
-        Assert.DoesNotContain(Act.Skill5, KeyMap.Rebindable);
+        // five keys (the fifth came back 22 Nov); the old sixth is retired (kept in the enum for saves, never bound or listed)
+        Assert.Equal(5, KeyMap.Skills.Length);
+        Assert.Contains(Act.Skill5, KeyMap.Rebindable);
         Assert.DoesNotContain(Act.Skill6, KeyMap.PlayActs);
-        Assert.False(KeyMap.IsSkill(Act.Skill5));
+        Assert.True(KeyMap.IsSkill(Act.Skill5));
+        Assert.False(KeyMap.IsSkill(Act.Skill6));
         // the swap sits on X and shares it with the draft's reroll (a menu): not a collision
         Assert.Equal(new[] { "KeyX" }, k[Act.Swap]);
         Assert.Equal(new[] { "KeyX" }, k[Act.Reroll]);
@@ -59,7 +60,7 @@ public class KeyMapTests
     {
         var k = KeyMap.Fresh();
         KeyMap.ApplyPreset(k, 1);
-        Assert.Equal(new[] { "KeyQ", "KeyE" }, KeyMap.Skills[2..].Select(s => k[s].Single()));
+        Assert.Equal(new[] { "KeyQ", "KeyE", "KeyR" }, KeyMap.Skills[2..].Select(s => k[s].Single()));
         Assert.Equal(new[] { "Mouse0" }, k[Act.Skill1]);
         Assert.Equal(new[] { "Mouse2" }, k[Act.Skill2]);
         Assert.Equal(new[] { "Digit1" }, k[Act.Flare]);
@@ -127,7 +128,7 @@ public class KeyMapTests
     public void ThePadIsTheDesignsLayout()
     {
         var p = KeyMap.Pad;
-        Assert.Equal(new[] { "A", "X", "Y", "B" }, KeyMap.Skills.Select(s => p[s].Single()));
+        Assert.Equal(new[] { "A", "X", "Y", "B", "RT" }, KeyMap.Skills.Select(s => p[s].Single()));
         Assert.Equal("RB", p[Act.Swap].Single());
         Assert.Equal("LB", p[Act.Dash].Single());
         Assert.Equal("LT", p[Act.Flare].Single());
@@ -139,12 +140,12 @@ public class KeyMapTests
     [Fact]
     public void TheSeatsShowTheKeyboardLeftAndTheMouseRight()
     {
-        Assert.Equal(new[] { 2, 3, 0, 1 }, KeyMap.SeatSlot);
+        Assert.Equal(new[] { 2, 3, 0, 1, 4 }, KeyMap.SeatSlot);
         // a permutation: every slot on one seat, and SeatOf its inverse
-        Assert.Equal(Enumerable.Range(0, 4), KeyMap.SeatSlot.OrderBy(x => x));
-        for (int s = 0; s < 4; s++) Assert.Equal(s, KeyMap.SeatSlot[KeyMap.SeatOf(s)]);
-        // seats 0-1 left of the coin hold 1 and 2 (Skill3, Skill4); then LMB and RMB right of it
-        Assert.Equal(new[] { "Digit1", "Digit2", "Mouse0", "Mouse2" }, KeyMap.SeatSlot.Select(s => KeyMap.Defaults[KeyMap.Skills[s]].Single()));
+        Assert.Equal(Enumerable.Range(0, 5), KeyMap.SeatSlot.OrderBy(x => x));
+        for (int s = 0; s < 5; s++) Assert.Equal(s, KeyMap.SeatSlot[KeyMap.SeatOf(s)]);
+        // seats 0-1 left of the middle hold 1 and 2 (Skill3, Skill4); LMB and RMB right of it; the fifth (3) stands in the middle
+        Assert.Equal(new[] { "Digit1", "Digit2", "Mouse0", "Mouse2", "Digit3" }, KeyMap.SeatSlot.Select(s => KeyMap.Defaults[KeyMap.Skills[s]].Single()));
     }
 
     [Fact]

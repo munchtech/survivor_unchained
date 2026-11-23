@@ -456,12 +456,17 @@ public static class MapGen
         foreach (var a in areas.Where(a => a.Kind == AreaKind.Altar))
         {
             // A ring of standing stones round a cold hearth (lit when the altar is woken).
+            // (den-wall; the owner, 22 Nov: "strongboxes load in before they appear causing an invisible wall") Where the
+            // dungeon draws no flora (the den) the stones are never seen, so they hold nothing: no collider. The id is still
+            // spent, so every later piece keeps its id. tests/DenWallTests.cs.
+            bool solid = DungeonDef.GrowsFlora(lay?.Def.Theme);
             for (int n = 0; n < 6; n++)
             {
                 double ang = n * Math.PI / 3 + 0.3;
                 double x = a.X + Math.Cos(ang) * 6.2, z = a.Z + Math.Sin(ang) * 6.2;
                 Put("cliff", x, z, 0.32, 0.4);
-                colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = x, Z = z, R = 0.9, Hw = 0.9, Hd = 0.9 });
+                int id = cid++;
+                if (solid) colliders.Add(new ColliderDef { Id = id, Kind = ColliderKind.Circle, X = x, Z = z, R = 0.9, Hw = 0.9, Hd = 0.9 });
             }
             Fire(a.X, a.Z, 1.0, 16, "#8ab4ff");
             lights[^1].On = false;

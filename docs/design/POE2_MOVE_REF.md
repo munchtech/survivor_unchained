@@ -56,6 +56,22 @@ Rule: usable only when two clips agree within 2 frames (about 0.035 s). Times ar
 
 Steady walk speed (a side reading, not one of the 12), unit her heights per second: mX8 about 436 px per s at 1920 wide (about 3.7 heights per s at 0.11 frame height). JMs9 about 336 px per s at 1920 wide (about 3.5 heights per s at 0.09). They differ because the camera zoom, character and any speed modifiers are different. Not a usable number; the order of magnitude is 3 to 4 heights per second. Low confidence.
 
+## Our targets where footage gave no reading (inferences, 22 November)
+
+None of these is a PoE2 measurement. Each is derived from the readings above (start 1 to 3 ticks, stop 2 to 3 ticks with no slide, camera locked to her) or from the owner's decision 3, and is marked so. A real reading replaces it when one exists.
+
+| # | shot | our target | derived from | kind |
+|---|---|---|---|---|
+| 3 | Reversal | Full speed the new way within 6 ticks of the key change; under 0.1 m past the turn point; she stays mid-frame | stop (2 to 3) plus start (1 to 3) | inference |
+| 4 | Quarter turn | Full speed on the new heading within 3 to 6 ticks; under 0.1 m of overshoot along the old heading; the camera never keeps the old way | start and stop readings; the locked camera | inference |
+| 5, 6 | Strafe, backpedal | Same start and stop ticks as shot 1; facing holds the aim. Speed against forward: unknown, ours stays 1.00x | shot 1 and 2 readings | inference; the speed is unknown |
+| 7 | Circle the aim | Constant speed; facing tracks the aim with no flip; she stays mid-frame | the locked camera | inference |
+| 9 | Roll at a run, and out | The roll of shot 8; out of it at run speed with no dip, along the held keys | shot 8 (single clip) | inference on a single clip |
+| 10 | Roll across or against the aim | The roll goes where the keys or the stick are held; nothing held, to the cursor; on a stick, her facing. After it, under 0.1 m off the keys' line and never under run speed | the owner's decision 3 (21 November), not footage | decision |
+| 12 | Heavy hit while moving | 0 m of travel while her pose is held; at full speed again within 3 ticks of the hold's end | criterion D1; shot 1 | inference |
+
+Where ours stands against these and against the usable readings (harness takes at a fixed 60 per second, old against `--move-new`): `tools/motion/move_matrix.py` runs the takes and writes the tables; the numbers of 22 November are in the lane's state file (`survivorsunchained_inputs/scratch_move/STATE.md`).
+
 ## Camera
 
 - Locked to her: usable (two clips). In mX8XgeX0VYk she stays at about 0.49 of frame width and 0.39 of frame height through walking and swinging. In JMs9JutejRU she is at about the middle of the frame (about 0.5 across, 0.4 to 0.45 down) at rest, during the run and during the roll. No lead or trail on start, stop or the roll burst was visible: the scroll starts and stops with her, within a tick at the pixel step I could resolve.

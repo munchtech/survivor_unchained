@@ -8,8 +8,9 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>
 /// M4 (docs/design/M4_HUD.md §1, the judge's build): --slots "sunder:hold,cleaver:channel,heroic_leap:press,..." puts
-/// those skills on the slots in that order (slot 1 = LMB, 2 = RMB, 3-6 = the keys 1-4) in the form each names, through
-/// the sim's public API (RemoveWeapon, AddWeapon, SetForm), once in each campaign fight. With --grant-union U it then
+/// those skills on the slots in that order (slot 1 = LMB, 2 = RMB, 3-6 = the keys 1-4; the form after the colon is no longer
+/// applied: a skill runs as its press record says), through
+/// the sim's public API (RemoveWeapon, AddWeapon), once in each campaign fight. With --grant-union U it then
 /// makes the union from its carried parts (Battle.GrantUnion; an id that is a skill, as Bladestorm is since 13 Nov 2026, is granted as that skill), so
 /// the union sits on the keys --slots gave its parts whichever of the two runs first. GameHud.Frame ticks it.
 /// </summary>
@@ -92,10 +93,7 @@ public static class DevSlots
             while (resolveNext < ResolveAt.Length && b.Time >= ResolveAt[resolveNext].T)
             {
                 b.Resolve.Set(ResolveAt[resolveNext].V);
-                // (lane B, 16 Nov) full is a kindled heave's trigger (Groundbreaker fires itself at SelfAt of the cap and
-                // spends all of it, with a crowd near): a storm's fuel set full is gone before its press. Ask 95.
-                var heave = b.Resolve.Value >= ResolveMeter.SelfAt * b.Resolve.Max ? b.Weapons.Find(w => w.KindledNow && w.Press?.Resolve > 0) : null;
-                GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}{(heave != null ? $" (FULL: kindled {heave.Id} fires itself at full and spends it all; a storm's fuel asks 95)" : "")}");
+                GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}");
                 resolveNext++;
             }
         }
@@ -131,8 +129,7 @@ public static class DevSlots
             string id = parts[0], cast = parts.Length > 1 ? parts[1] : "";
             var w = b.AddWeapon(id, Math.Min(Content.Weapons.MaxRank, ranks.TryGetValue(id, out var r) ? r : top));
             if (w == null) { said.Add($"slots: {id} not added (unknown, or no slot free)"); continue; }
-            bool formed = cast == "" || b.SetForm(id, cast);
-            said.Add($"slots: {id} on slot {w.Slot + 1}{(cast == "" ? "" : formed ? $" as {cast}" : $" ({cast} refused by its record)")}");
+            said.Add($"slots: {id} on slot {w.Slot + 1}{(cast == "" ? "" : $" ({cast} not applied: a skill runs as its record says)")}");
         }
         if (!string.IsNullOrWhiteSpace(union))
         {

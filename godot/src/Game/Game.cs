@@ -178,7 +178,17 @@ public partial class Game : Node, IZoneHost
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
         else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Get("storybook") is string sbId) StoryAlone(sbId);
-        else if (Args.Has("quick") || Args.Has("zone")) Quick();
+        else if (Args.Has("quick") || Args.Has("zone"))
+        {
+            // --keep-shaders: the opening's shader hold and readying (ShaderKeep, done behind the card in a real start) run here
+            // first, all at once, so a tool's quick start measures play as a player's start would (the Godot 4.7 trial).
+            if (Args.Has("keep-shaders"))
+            {
+                foreach (var _ in SurvivorUnchained.View.ShaderKeep.Load(1 << 20)) { }
+                foreach (var _ in SurvivorUnchained.View.ShaderKeep.Ready(1e9)) { }
+            }
+            Quick();
+        }
         else if (BootCard)
         {
             // (lane K, the owner 19 Nov: "a compiling shaders load bar when we open the game" / "make the title screen much
@@ -937,6 +947,8 @@ public partial class Game : Node, IZoneHost
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;
         else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
+        // (P2 task 5, session 3) a load, not play: the first-draw check rests until the next place's warm-up arms it
+        Perf.DisarmFirstDraws($"leaving for {id}");
         ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
@@ -998,6 +1010,10 @@ public partial class Game : Node, IZoneHost
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
         RehearseDraft(b);
+        // (P2 task 5, session 3) every kind of drawable the census saw first drawn in play, drawn once now behind the load
+        // (FxWarm); --fx-census: the census itself, watching this play.
+        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}");
+        if (SurvivorUnchained.Fx.FxWarm.CensusNode() is { } census) AddChild(census);
     }
 
     void HookBattle(Battle b)
@@ -1060,12 +1076,13 @@ public partial class Game : Node, IZoneHost
         }));
     }
 
-    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
+    /// the place's effect warm-up still draws (FxWarm.Busy, at most 15 s).</summary>
     void WhenSmooth(Action fn, int calm = 0, double waited = 0)
     {
         double dt = GetProcessDeltaTime();
         calm = dt < 0.04 ? calm + 1 : 0;
-        if (calm >= 2 || waited > 2) fn();
+        if ((calm >= 2 || waited > 2) && (!SurvivorUnchained.Fx.FxWarm.Busy || waited > 15)) fn();
         else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
     }
 
@@ -2099,7 +2116,7 @@ public partial class Game : Node, IZoneHost
             }
             Texture2D? giftGlyph = null;
             if (tier == LootTier.Legendary && p.Payload is ItemInstance giftIt && b.Calling is { } gcall && Drops.GiftSkill(giftIt, gcall) is { } gsk && Content.Weapons.All.TryGetValue(gsk, out var gdef))
-                giftGlyph = Ui.AutoRow.LineGlyph(Ui.SeatIcon.For(gsk, gdef.Art), 64, Colors.White);
+                giftGlyph = Ui.SeatIcon.LineGlyph(Ui.SeatIcon.For(gsk, gdef.Art), 64, Colors.White);
             o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set, tier == LootTier.Gem, gemDef != null ? GemLook.Of(gemDef) : null, giftGlyph));
             labelNear.Add(d2);
         }

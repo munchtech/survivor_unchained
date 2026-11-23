@@ -37,6 +37,7 @@ public sealed class WickFx
     public double OnKillGap, OnKillDamage = 1;
     /// <summary>Its own heavy count, every this many firings (0: the skill's own); Again: its blow lands again.</summary>
     public int HeavyEvery;
+    public GroundbreakSpec? Groundbreak;
     public double Again, AgainDamage;
     /// <summary>A barrier for each creature its strike strikes (Shield of Morning); Stones each firing lays (Stone Bell).</summary>
     public double BarrierEach, BarrierMost;
@@ -131,6 +132,7 @@ public static class Turns
             if (t.Pulses > 1) { fx.Pulses = t.Pulses; fx.PulseGap = t.PulseGap; }
             if (t.OnKill) { fx.OnKill = true; fx.OnKillGap = t.OnKillGap; fx.OnKillDamage = t.OnKillDamage; }
             if (t.HeavyEvery > 0) fx.HeavyEvery = fx.HeavyEvery > 0 ? Math.Min(fx.HeavyEvery, t.HeavyEvery) : t.HeavyEvery;
+            if (t.Groundbreak != null) fx.Groundbreak = t.Groundbreak;
             if (t.Again > 0) { fx.Again = t.Again; fx.AgainDamage = t.AgainDamage; }
             if (t.BarrierEach > 0) { fx.BarrierEach = t.BarrierEach; fx.BarrierMost = t.BarrierMost; }
             if (t.Stones > 0 || t.StonesChampion > 0) { fx.Stones = t.Stones; fx.StonesChampion = t.StonesChampion; }

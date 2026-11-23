@@ -7,9 +7,8 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>The hands rule (BUILD_DIRECTION.md round 8, the owner's 13 November interview; it replaces the six slots of
-/// 9 November): four keys, the basic attack held in the first and at most three pressed beside it (the dash, the Flare and
-/// the swap are not keys), three auto slots that run kindled, and each calling's kit offers at least half its skills
-/// kindled. data/content/taught_builds.json and skills.json's press records.</summary>
+/// 9 November): five keys (22 Nov, Round 10), the basic attack held in the first and at most four pressed beside it (the dash, the Flare and
+/// the swap are not keys), every key at its ladder level, and no auto slots (SKILL_KINDS.md). data/content/taught_builds.json and skills.json's press records.</summary>
 public sealed class HandsRuleTests
 {
     /// <summary>The warden's kit in the ARPG (ARPG.md 3.2), its unions apart.</summary>
@@ -36,66 +35,48 @@ public sealed class HandsRuleTests
     }
 
     [Fact]
-    public void At_least_half_the_warden_kit_is_offered_kindled()
-    {
-        int kindled = WardenKit.Count(id => WeaponInst.OfferedKindled(Weapons.Get(id)));
-        Assert.True(kindled * 2 >= WardenKit.Length, $"{kindled} of {WardenKit.Length}");
-        Assert.True(kindled >= 7);
-    }
-
-    [Fact]
     public void The_taught_warden_build_keeps_the_hands_rule()
     {
         var t = TaughtBuilds.Of("warden")!;
         Assert.Equal("sunder", t.Grip);
         Assert.Equal(Weapons.MaxKeys, t.Keys.Count);
-        Assert.Equal(Weapons.AutoSlots, t.Autos.Count);
         Assert.Equal(t.Grip, t.Keys[0].Skill);
         Assert.Equal("hold", t.Keys[0].Cast);
-        Assert.True(TaughtBuilds.PressedSlots(t) <= 3, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
+        Assert.True(TaughtBuilds.PressedSlots(t) <= 4, $"{TaughtBuilds.PressedSlots(t)} pressed beside the grip");
         Assert.All(t.Keys.Skip(1), s => Assert.NotEqual("kindle", s.Cast));
-        Assert.All(t.Autos, s => Assert.Equal("kindle", s.Cast));
         foreach (var s in t.Slots)
         {
             Assert.True(Weapons.CanCarry("warden", s.Skill), s.Skill);
-            Assert.True(WeaponInst.Allows(Weapons.Get(s.Skill), s.Cast), $"{s.Skill} as {s.Cast}");
+            Assert.NotEqual("kindle", s.Cast);
+            Assert.Equal(s.Cast, Weapons.Get(s.Skill).Press!.Kind.ToString().ToLowerInvariant());
         }
         Assert.Equal(t.Slots.Count, t.Slots.Select(s => s.Skill).Distinct().Count());
-        // Every slot at the ladder's level (BUILD_UNLOCKS.md): the n-th key when the n-th key opens, the same for autos.
-        for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(i + 1, SkillBook.KeysAt(t.Keys[i].Level));
-        for (int i = 0; i < t.Keys.Count; i++) Assert.True(t.Keys[i].Level == 1 || SkillBook.KeysAt(t.Keys[i].Level - 1) == i, t.Keys[i].Skill);
-        for (int i = 0; i < t.Autos.Count; i++) Assert.Equal(i + 1, SkillBook.AutosAt(t.Autos[i].Level));
-        for (int i = 0; i < t.Autos.Count; i++) Assert.True(t.Autos[i].Level == 1 || SkillBook.AutosAt(t.Autos[i].Level - 1) == i, t.Autos[i].Skill);
-        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Shield Charge key 4 (level 9); Dawnpulse is offered later; the first union is Falling Wall (Heroic Leap + Shield Charge, two of her keys).
-        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "shield_charge"], t.Keys.Select(k => k.Skill).ToArray());
-        Assert.Equal([1, 4, 5, 9], t.Keys.Select(k => k.Level).ToArray());
+        // Every slot at the ladder's level (BUILD_UNLOCKS.md): the n-th key when the n-th key opens, 
+        // (key n's level is the first level at which KeysAt reaches n: the ninth opens keys 4 and 5)
+        for (int i = 0; i < t.Keys.Count; i++) Assert.Equal(Enumerable.Range(1, 30).First(l => SkillBook.KeysAt(l) >= i + 1), t.Keys[i].Level);
+        // (13 Nov 2026) Bladestorm is key 3's own skill (a channel, level 5), Iron Vow key 4 and Shield Charge key 5 (both level 9, 22 Nov Round 10); Dawnpulse is offered later; Falling Wall is the first union (both halves are keys).
+        Assert.Equal(["sunder", "heroic_leap", "bladestorm", "iron_vow", "shield_charge"], t.Keys.Select(k => k.Skill).ToArray());
+        Assert.Equal([1, 4, 5, 9, 9], t.Keys.Select(k => k.Level).ToArray());
         Assert.Equal("channel", t.Keys[2].Cast);
         Assert.Equal(["dawnpulse"], t.Later);
         Assert.Equal("falling_wall", t.Union?.Id);
     }
 
     [Fact]
-    public void The_taught_forms_go_on_a_campaign_fight()
+    public void The_taught_keys_go_on_a_campaign_fight()
     {
         var t = TaughtBuilds.Of("warden")!;
         var b = new Battle(new BattleSetup
         {
             Seed = 2, Collision = new CollisionWorld(120), Combat = true, Campaign = true,
             Stats = BattleTests.BaseStats(), Weapons = t.Slots.Select(s => (s.Skill, 1)).ToList(), Ability = AbilityKind.ShieldBash,
-            Kindled = t.Autos.Select(s => s.Skill).ToHashSet(), Calling = "warden",
+            Calling = "warden",
         });
-        Assert.Equal(t.Slots.Count, TaughtBuilds.Apply(b, "warden").Count);
-        Assert.True(b.Weapons.First(x => x.Id == "sunder").Hold);
         Assert.Equal(0, b.Weapons.First(x => x.Id == "sunder").Slot);
-        foreach (var s in t.Autos)
-        {
-            var w = b.Weapons.First(x => x.Id == s.Skill);
-            Assert.Equal(CastMode.Auto, w.Cast);
-            Assert.True(w.Slot >= Weapons.MaxKeys, s.Skill);
-        }
         Assert.Equal(CastMode.Press, b.Weapons.First(x => x.Id == "heroic_leap").Cast);
-        // The keys she actually presses beside the grip: three.
-        Assert.Equal(3, b.Weapons.Count(w => w.Pressed && !w.Hold));
+        Assert.All(b.Weapons, w => Assert.NotEqual(CastMode.Auto, w.Cast));
+        // The keys she actually presses beside the grip: four.
+        Assert.Equal(4, b.Weapons.Count(w => w.Pressed && !w.Hold));
         Assert.Equal(Weapons.MaxKeys, b.SlotsUsed);
         // Every key does something.
         Assert.All(b.Weapons, w => Assert.True(w.Keyed, w.Id));

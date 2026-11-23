@@ -32,6 +32,8 @@
   // "onKill": a kill by its own hit fires it once more from the corpse at "onKillDamage", at most once every
   // "onKillGap" seconds; an echo's kills never echo.
   // "heavyEvery": its own heavy count becomes every that many firings (a skill with a count of its own: Sunder).
+  // "groundbreak": its own heavy swing cracks the ground toward the aim and the earth heaves, instead of the line
+  // (range m, radius m, stun s, trail = the crack's share of the blow, knockback; Sunder's Groundbreaker).
   // "again": its blow lands again on the same spot that many seconds later, at "againDamage" (Groundbreaker's heave).
   // A calling skill's bespoke Turn is named for its strand ("sunder.stroke").
   "turns": {
@@ -44,7 +46,7 @@
     "fire":   { "name": "Fire",   "text": "It becomes fire: it burns, and strikes 10% harder.", "damage": 1.1, "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
     "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
     "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } },
-    "sunder.stroke":            { "name": "Splitting Stroke", "text": "Every 2nd swing is heavy and splits the ground; swings 15% slower.", "heavyEvery": 2, "cooldown": 1.15 },
+    "sunder.stroke":            { "name": "Groundbreaker", "text": "Every 3rd swing is heavy and groundbreaks: a crack runs to the pack you aim at and the earth heaves, stunning it; swings 15% slower.", "heavyEvery": 3, "cooldown": 1.15, "groundbreak": { "range": 10, "radius": 2.5, "stun": 0.6, "trail": 0.5, "knockback": 0.4 } },
     "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 35%, stunning again.", "again": 0.8, "againDamage": 0.35 },
     "rebuke.morning":           { "name": "Shield of Morning", "text": "Each rebuke strike leaves you a barrier of 0.1% of health for each creature it strikes.", "barrierEach": 0.001, "barrierMost": 0.004 },
     "watch_bell.stone":         { "name": "Stone Bell", "text": "Each toll lays two stones, and each champion it draws lays one more.", "stones": 2, "stonesChampion": 1 },

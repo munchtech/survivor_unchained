@@ -161,16 +161,11 @@ public static class PressPlan
             var rule = d.For(w.Id);
             if (rule.Aim == "storm") { if (Storm(b, h, w, rule, full, ignore)) return; continue; }
             double cost = b.CostOf(w);
-            bool ready = w.KindledNow
-                ? w.KindleKey == KindlePress.Now ? (w.Timer <= 0 || w.Relooking) && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost / 2) : w.PressWait <= 0
-                : w.Timer <= 0 && !w.Channeling && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost);
+            bool ready = w.Timer <= 0 && !w.Channeling && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost);
             if (!ready) { h.Clear(w); continue; }
-            var when = rule.When ?? (w.KindledNow ? w.Kindle : null);
+            var when = rule.When;
             bool cond = ignore || when == null || (reads || !NeedsReading(when)) && b.Kindled(when);
-            // A kindled "now" spender fires itself only when Resolve is full (and takes all of it): the plan heaves it
-            // from its whole cost as soon as its condition holds, and always before Resolve would cap.
-            if (w.KindledNow && w.KindleKey == KindlePress.Now && cost > 0 && !ignore) cond = full || cond && b.Resolve.Value >= cost;
-            else if (cost > 0 && full) cond = true;
+            if (cost > 0 && full) cond = true;
             // Full: the spender goes at what there is (a pack if one stands in reach, else the nearest foe), never wasted.
             if (!cond || (AimOf(b, w, rule) ?? (cost > 0 && full ? AimOf(b, w, d.Default) : null)) is not var (ax, az)) { h.Clear(w); continue; }
             if (!h.Due(w, b.Time)) continue;
@@ -225,7 +220,7 @@ public static class PressPlan
             b.HoldSkill(w.Slot, held >= thin || full && held > 0);
             return false;
         }
-        // Started on its crowd only (bd-storm): full Resolve is no reason to spin on a lone foe (the kindled spenders take it
+        // Started on its crowd only (bd-storm): full Resolve is no reason to spin on a lone foe (a spender takes it
         // there, far better spent); a hand ignoring the condition spins on as few as it holds for (ThinBelow).
         // (bd-storm) Never on a near-empty Resolve (StartResolve): a spin that breaks the next step is a tap, not a storm.
         bool pays = !b.Resolve.On || b.Resolve.Value >= (r.StartResolve ?? 0);

@@ -17,6 +17,9 @@ public static class ShaderKeep
     /// <summary>Loads `perStep` shaders a step (each yield: the share done, 0..1) and holds them.</summary>
     public static IEnumerable<float> Load(int perStep = 8)
     {
+        // (P2 task 5) The game's methods are compiled ahead on a worker from here on (Fx.PreJit): the first press of a
+        // skill no longer waits for the JIT on the main thread.
+        SurvivorUnchained.Fx.PreJit.Start();
         var files = new List<string>();
         foreach (var root in new[] { "res://shaders", "res://art" }) Find(root, files);
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -27,8 +30,16 @@ public static class ShaderKeep
             if (++n % perStep == 0) yield return (float)n / files.Count;
         }
         GD.Print($"load: {held.Count} shaders held for the run, loaded in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
+        // (P2 task 5) The weapons a Flare forms in her hand (The Long Cut's Sunderer: LampIron.SunderBlade) were loaded cold
+        // at the first press, about 13-15 ms and 6 mesh pipelines on the main thread (measured in the proof exe). Held here,
+        // the press finds them in the cache.
+        var arms = new List<string>();
+        Find("res://art/weapons", arms, ".glb");
+        foreach (var f in arms) if (ResourceLoader.Load(f) is PackedScene p) scenes.Add(p);
         yield return 1;
     }
+
+    static readonly List<PackedScene> scenes = new();
 
     /// <summary>A material made for each held shader (and held with it), at most `budgetMs` a step. A shader's first material
     /// is where Godot readies it for drawing: 20-23 ms on the main thread for each of the Warden's dash shaders at the first
@@ -52,16 +63,16 @@ public static class ShaderKeep
         yield return 1;
     }
 
-    static void Find(string dir, List<string> into)
+    static void Find(string dir, List<string> into, string ext = ".gdshader")
     {
         using var d = DirAccess.Open(dir);
         if (d == null) return;
-        foreach (var sub in d.GetDirectories()) Find($"{dir}/{sub}", into);
+        foreach (var sub in d.GetDirectories()) Find($"{dir}/{sub}", into, ext);
         foreach (var file in d.GetFiles())
         {
-            // (an export may list a resource under its .remap)
-            string name = file.EndsWith(".remap") ? file[..^6] : file;
-            if (name.EndsWith(".gdshader") && !into.Contains($"{dir}/{name}")) into.Add($"{dir}/{name}");
+            // (an export may list a resource under its .remap, an imported one under its .import)
+            string name = file.EndsWith(".remap") ? file[..^6] : file.EndsWith(".import") ? file[..^7] : file;
+            if (name.EndsWith(ext) && !into.Contains($"{dir}/{name}")) into.Add($"{dir}/{name}");
         }
     }
 }

@@ -57,11 +57,15 @@ public partial class DgPanel : Control
         var l = new Vector2[n];
         var a = Part("panel").TryGetValue(key, out var v) && v.VariantType == Variant.Type.Array ? v.AsGodotArray() : new Godot.Collections.Array();
         for (int i = 0; i < l.Length; i++)
-            l[i] = i < a.Count && a[i].AsGodotArray() is { Count: 2 } p ? new Vector2((float)p[0].AsDouble(), (float)p[1].AsDouble())
+            l[i] = four && i == CoinSeat ? V(A(Part("panel", "coin"), "center"), new Vector2(960, 1042))   // (the fifth key's seat stands where the level coin did)
+                : i < a.Count && a[i].AsGodotArray() is { Count: 2 } p ? new Vector2((float)p[0].AsDouble(), (float)p[1].AsDouble())
                 : four ? new Vector2(761 + 99 * i + (i >= 2 ? 101 : 0), 1042) : new Vector2(733 + 75 * i + (i >= 3 ? 79 : 0), 1042);
         return l;
     }
-    /// <summary>bd-ui W3: the campaign's bar has four seats (the keys: [1][2] (coin) [LMB][RMB], panel4.png and the geo's
+    /// <summary>The campaign's seat index of the fifth key (Skill5): the middle of the plate, where the level coin was (the
+    /// owner, 22 Nov); the geo's seats4 holds the four around it, the fifth is the coin's centre.</summary>
+    public const int CoinSeat = 4;
+    /// <summary>bd-ui W3 (now five): the campaign's bar has five seats (the keys: [1][2] [fifth] [LMB][RMB], panel4.png and the geo's
     /// seats4); the arena's keeps six. Set by Instrument.SetFour; every seat reader below follows it.</summary>
     public static bool Four;
     /// <summary>How many seats the bar has in this mode.</summary>
@@ -127,10 +131,20 @@ public partial class DgPanel : Control
     public static readonly Color LevelDay = C255(A(Part("panel", "coin", "level_number"), "day"), new Color(214 / 255f, 234 / 255f, 1f));
     public static readonly Color LevelNight = C255(A(Part("panel", "coin", "level_number"), "night"), new Color(232 / 255f, 222 / 255f, 1f));
 
-    /// <summary>The pointer on the coin or its ring (the numbers' card shows).</summary>
-    public static bool OnCoin(Vector2 p) => p.DistanceTo(Coin) <= ArchR;
-    /// <summary>The ring's bounds: what "chain" and "chain_fill" bracket in a callout.</summary>
-    public static Rect2 RingRect => new(Coin - Vector2.One * (RingR1 + 2), Vector2.One * 2 * (RingR1 + 2));
+    /// <summary>The plain XP bar's rect (the owner, 22 Nov: it replaced the coin's ring) in the bar's design space: it runs in
+    /// the gap above the key caps (AutoRowModel.XpBarTop); the level number sits left of it (LevelLabel).</summary>
+    public static Rect2 XpBarRect
+    {
+        get
+        {
+            float y = AutoRowModel.XpBarTop(AutoRowModel.CapTop(TopY, Seat(0).Y, SeatR, KeyTag.MouseChip));
+            return new Rect2(AutoRowModel.XpBarX0, y, AutoRowModel.XpBarX1 - AutoRowModel.XpBarX0, AutoRowModel.XpBarH);
+        }
+    }
+    /// <summary>The pointer on the bar or its level number (the numbers' card shows).</summary>
+    public static bool OnCoin(Vector2 p) => XpBarRect.Grow(5).Expand(new Vector2(XpBarRect.Position.X - 40, XpBarRect.Position.Y)).HasPoint(p);
+    /// <summary>The bar and its number: what "chain" and "chain_fill" bracket in a callout.</summary>
+    public static Rect2 RingRect => XpBarRect.Expand(new Vector2(XpBarRect.Position.X - 40, XpBarRect.Position.Y)).Grow(4);
     /// <summary>The band a foe or a mark is "behind the plate" in.</summary>
     public static Rect2 BandRect => Rect;
 
@@ -156,7 +170,7 @@ public partial class DgPanel : Control
     /// alone fades as her figure does (LifeLamp's times); the seats, the coin's ring and the numbers stay at full.</summary>
     public bool Behind;
     float alpha = 1, clearFor = 99;
-    public readonly Ring XpRing = new();
+    public readonly XpBar XpRing = new();   // (the plain bar; the field keeps its old name)
     public readonly Marks Numbers;
     public readonly XpCard Card = new();
     public readonly LevelTitle Title = new();
@@ -198,51 +212,47 @@ public partial class DgPanel : Control
             f = Mathf.Clamp(t, 0, 1);
             boost = Math.Max(boost, Pulse * (1 - Mathf.SmoothStep(1.0f, 1.25f, t)) * (float)XpLight.RingLook.Game.GainBoost);
         }
-        XpRing.Set(f, boost, whole, day);
+        XpRing.Set(f, level, day);
         Numbers.Set(level, day);
     }
 
-    /// <summary>The coin's experience ring (mock7.py medallion(): the lit filament in the coin's bronze rim, filling
-    /// clockwise from the gold tick at 12 o'clock; blue by day, violet by night). One quad, one shader; it sends only
-    /// what changed.</summary>
-    public partial class Ring : ColorRect
+    /// <summary>The plain XP bar (the owner, 22 Nov: "a normal basic thin exp bar"): a dark track over XpBarRect with a flat
+    /// fill of the level's progress (blue by day, violet by night) and the level, "Lv 9", at its left end. No art, no
+    /// shader. It sends a redraw only when its fraction, level or time of day changed.</summary>
+    public partial class XpBar : Control
     {
-        readonly ShaderMaterial mat;
-        float sf = -1, sb = -1, sw = -1;
-        int sd = -1;
-        static readonly StringName UF = "frac", UB = "boost", UW = "whole", UH = "hue", UC = "core";
-        public Ring()
+        float frac = -1;
+        int level = -1;
+        bool day, inited;
+        static readonly Color Track = new(0.04f, 0.035f, 0.03f, 0.88f), Edge = new(0.02f, 0.015f, 0.01f, 0.95f);
+        public XpBar()
         {
             MouseFilter = MouseFilterEnum.Ignore;
-            float m = RingR1 + 6;
-            Position = (Coin - Vector2.One * m).Floor();
-            Size = (Coin + Vector2.One * m).Ceil() - Position;
-            mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_xpring.gdshader") };
-            mat.SetShaderParameter("at", Position);
-            mat.SetShaderParameter("size", Size);
-            mat.SetShaderParameter("c", Coin);
-            mat.SetShaderParameter("r0", RingR0);
-            mat.SetShaderParameter("r1", RingR1);
-            mat.SetShaderParameter("sigma", F(RingGeo, "core_sigma", 1.9f));
-            mat.SetShaderParameter("track", F(RingGeo, "track_tint", 0.22f));
-            mat.SetShaderParameter("lip", F(RingGeo, "lip", 0.35f));
-            var hg = A(RingGeo, "head_glint");
-            mat.SetShaderParameter("glint", hg.Length == 2 ? new Vector2(hg[0], hg[1]) : new Vector2(2.6f, 0.9f));
-            Material = mat;
+            Position = Vector2.Zero;
+            Size = new Vector2(1920, 1080);
         }
-        public void Set(float f, float boost, float whole, bool day)
+        public void Set(float f, int level, bool day)
         {
-            if (f != sf) { sf = f; mat.SetShaderParameter(UF, f); }
-            if (boost != sb) { sb = boost; mat.SetShaderParameter(UB, boost); }
-            if (whole != sw) { sw = whole; mat.SetShaderParameter(UW, whole); }
-            if (sd != (day ? 1 : 0))
-            {
-                sd = day ? 1 : 0;
-                var h = day ? DayHue : NightHue;
-                var c = day ? DayCore : NightCore;
-                mat.SetShaderParameter(UH, new Vector3(h.R, h.G, h.B));
-                mat.SetShaderParameter(UC, new Vector3(c.R, c.G, c.B));
-            }
+            f = Mathf.Clamp(f, 0, 1);
+            if (inited && Mathf.IsEqualApprox(f, frac) && level == this.level && day == this.day) return;
+            inited = true; frac = f; this.level = level; this.day = day;
+            QueueRedraw();
+        }
+        public override void _Draw()
+        {
+            var r = XpBarRect;
+            DrawRect(r.Grow(1), Edge, true);
+            DrawRect(r, Track, true);
+            DrawRect(new Rect2(r.Position, new Vector2(r.Size.X * Math.Max(0, frac), r.Size.Y)), day ? DayHue : NightHue, true);
+            if (level < 0) return;
+            var f = Style.Display;
+            int fs = HudBottom.KeepFont(15);
+            string s = "Lv " + level;
+            float w = f.GetStringSize(s, HorizontalAlignment.Left, -1, fs).X;
+            var p = new Vector2(r.Position.X - 6 - w, r.GetCenter().Y + (f.GetAscent(fs) - f.GetDescent(fs)) / 2);
+            var ink = day ? LevelDay : LevelNight;
+            DrawStringOutline(f, p, s, HorizontalAlignment.Left, -1, fs, 2, new Color(8 / 255f, 12 / 255f, 18 / 255f));
+            DrawString(f, p, s, HorizontalAlignment.Left, -1, fs, ink);
         }
     }
 
@@ -289,14 +299,7 @@ public partial class DgPanel : Control
         public override void _Draw()
         {
             var o = Position;
-            if (level >= 0)
-            {
-                var f = Style.Display;
-                string s = level.ToString();
-                var p = Mid(f, s, LevelSize, LevelAt) - o;
-                DrawStringOutline(f, p, s, HorizontalAlignment.Left, -1, LevelSize, 2, new Color(8 / 255f, 12 / 255f, 18 / 255f));
-                DrawString(f, p, s, HorizontalAlignment.Left, -1, LevelSize, day ? LevelDay : LevelNight);
-            }
+            // (the level now reads on the XP bar, XpBar; here the flask's count only)
             if (count != int.MinValue) Chip(this, CountAt - o, Math.Max(0, count).ToString());
         }
     }

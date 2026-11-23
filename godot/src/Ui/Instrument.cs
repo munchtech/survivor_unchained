@@ -30,7 +30,7 @@ public partial class Instrument : Control
     public static Vector2 ArtAt => DgPanel.GlassAt;
     public static Vector2 DraughtAt => DgPanel.FlaskAt;
     public static Vector2 DashAt => DgPanel.DashAt;
-    /// <summary>The coin's experience ring: what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
+    /// <summary>The XP bar and its level (was the coin's ring): what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
     /// river's crest).</summary>
     public static Rect2 ChainFill => DgPanel.RingRect;
     /// <summary>The key chips' top (R and SPACE, from the geo).</summary>
@@ -68,7 +68,7 @@ public partial class Instrument : Control
     /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
     public readonly DgKeeper Keeper;
     public readonly Vessel Art;
-    /// <summary>bd-ui W3: the campaign's four seats (the keys) or the arena's six (SetFour).</summary>
+    /// <summary>bd-ui W3: the campaign's five seats (the keys; the fifth where the coin was) or the arena's six (SetFour).</summary>
     public Socket[] Sockets = [];
     public readonly Round Draught, Dash;
     /// <summary>The plate in the middle (the bar).</summary>
@@ -77,7 +77,6 @@ public partial class Instrument : Control
     /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives;
     /// <summary>bd-ui W3 (campaign only): her auto tiles left of the coin, the stance block right of it.</summary>
-    public readonly AutoRow Autos = new();
     public readonly StanceBlock Stance = new();
     /// <summary>UI 28: what is on her, buffs and debuffs (StatusRow: the shelf over the bar, or beside the orb).</summary>
     public readonly StatusRow Statuses;
@@ -118,9 +117,7 @@ public partial class Instrument : Control
         PlacePassives();
         Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
-        AddChild(Autos);
         AddChild(Stance);
-        Autos.Visible = false;
         Statuses = new StatusRow { ZIndex = 2 };
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
@@ -179,9 +176,8 @@ public partial class Instrument : Control
         if (four == DgPanel.Four) return;
         BuildSeats(four);
         PlacePassives();
-        Autos.Visible = four;
         Keys();
-    }
+    }   // (SetFour: "four" is the campaign's mode, which now has five seats; the name stays)
 
     void BuildSeats(bool four)
     {
@@ -210,8 +206,10 @@ public partial class Instrument : Control
     void PlacePassives()
     {
         if (Passives == null) return;
-        int last = DgPanel.SeatCount - 1;
-        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(last).X) / 2, w = DgPanel.Seat(last).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
+        // (the leftmost and rightmost seats: in the campaign the fifth seat's index is the middle's, not the last's)
+        float x0 = float.MaxValue, x1 = float.MinValue;
+        for (int i = 0; i < DgPanel.SeatCount; i++) { x0 = Math.Min(x0, DgPanel.Seat(i).X); x1 = Math.Max(x1, DgPanel.Seat(i).X); }
+        float mid = (x0 + x1) / 2, w = x1 - x0 + 2 * DgPanel.SeatR;
         Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
         Passives.Size = new Vector2(w, 28);
     }
@@ -255,7 +253,7 @@ public partial class Instrument : Control
         Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
         Passives.Modulate = For(false) with { A = slots };
-        Autos.Modulate = Stance.Modulate = For(false) with { A = slots };
+        Stance.Modulate = For(false) with { A = slots };
         foreach (var s in Sockets) s.Modulate = For(keep == "socket:" + s.Id && s.Id != "") with { A = slots };
     }
 
@@ -553,7 +551,7 @@ public partial class Socket : Control
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
-        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; FiredItself(); }
+        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; }
         else if (waiting && ready >= 0.98)
         {
             // Ready again: a short wait is not cued (a fast attack stays lit); a longer one gets the envelope, and a
@@ -658,7 +656,7 @@ public partial class Socket : Control
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
         bool cooling = filled && ready < 0.98 && !Fast;
         // (bd-ui W7: a pressed or channeled key coming back keeps its icon under a wipe, not a black disc: it must not read as locked)
-        bool wiped = cooling && keyed && st.Kind != SeatKind.Kindled;
+        bool wiped = cooling && keyed;
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
@@ -695,7 +693,6 @@ public partial class Socket : Control
                 else DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
-            // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
             if (wiped) DrawWipe(c, hr);
             else if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }

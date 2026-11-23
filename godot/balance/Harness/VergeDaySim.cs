@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Balance;
 
 /// <summary>One Verge day fight: a calling at a character level, against one of the Verge's day packs at the
 /// level the Verge spawns it (Verge.Level: 1 + (level + day) / 2), with the day loadout a real Act 1 player has
-/// by then. Setup: "old" (1/2/3 day slots at 1/4/8, Hands off), "new" (SkillBook.SlotsAt: her keys and auto slots, Hands on), "swap" (new, swapping sets every 4 s once the stance opens), "nohand"
+/// by then. Setup: "old" (1/2/3 day slots at 1/4/8, Hands off), "new" (SkillBook.OldBarSlotsAt: the old keys-plus-autos ladder, Hands on), "swap" (new, swapping sets every 4 s once the stance opens), "nohand"
 /// (new slots, Hands off). Learned: how many skills she has learned by day (the calling's own first, as
 /// SkillBook.Calling picks them); the slots decide how many she carries.</summary>
 public sealed record VergeDaySpec(int Seed, string Calling, int Level, int Day, string Pack, string Setup, int Learned, bool Deft = false)
@@ -74,7 +74,7 @@ public static class VergeDaySim
             .Select(w => w.Id).OrderByDescending(Own).ThenBy(id => id).Take(spec.Learned).ToList();
         ch.Discovered.AddRange(learn);
         ch.Skills.AddRange(learn);
-        int slots = spec.Setup == "old" ? OldSlots(spec.Level) : SkillBook.SlotsAt(spec.Level);
+        int slots = spec.Setup == "old" ? OldSlots(spec.Level) : SkillBook.OldBarSlotsAt(spec.Level);
         ch.Slotted.AddRange(learn.Take(slots));
 
         var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)spec.Seed);

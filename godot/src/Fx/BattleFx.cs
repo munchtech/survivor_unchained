@@ -205,6 +205,12 @@ public partial class BattleFx : Node3D
         dashTex ??= GroundTexture(4);
         wallTex ??= GroundTexture(5);
         laneFillTex ??= GroundTexture(6);
+        if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
+        if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));   // (dev: every weapon's make as numbers, Arms.Check)
+        if (Args.Has("glyphs-check")) Callable.From(() => { GD.Print(SurvivorUnchained.Fx.GlyphsCheck.Run(Args.Get("glyphs-check") == "full")); GetTree().Quit(); }).CallDeferred();   // (dev: glyph textures as hashes and a call's cost, GlyphsCheck)
+        if (Args.Get("glyphs-arrow") is string arrowPng) Callable.From(() => SurvivorUnchained.Fx.GlyphsCheck.Arrow(this, arrowPng)).CallDeferred();   // (dev: the edge arrows' picture)
+        if (!P7Off) _ = WgHengeMat;   // (henge: the stones' material and its two files made at load: 43 ms at the first Heroic Leap landing with the Henge lit)
+        if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
         for (int i = 0; i < 20; i++)
         {
@@ -732,6 +738,45 @@ public partial class BattleFx : Node3D
     {
         int b = Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(size, 0.1f)) / Mathf.Log(2) * 2), -6, 12);
         if (fillTex.TryGetValue((lane, style, b), out var t)) return t;
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
+        try { return MakeFillTex(lane, style, b); } finally { Perf.Slow($"fx filltex {(lane ? "lane" : "disc")} {style} {b}", q, 1); }
+    }
+
+    static Texture2D MakeFillTex(bool lane, int style, int b)
+    {
+        float S = Mathf.Pow(2, b / 2f);
+        float front = style == 1 ? DangerFrontM : style == 3 ? RaiseFrontM : AmberFrontM;
+        float tail = style == 1 ? 0 : style == 3 ? RaiseTailM : AmberTailM;
+        float body = style == 1 ? DangerFillBody : style == 3 ? 0 : AmberFillBody;
+        int W = lane ? 32 : 256, H = lane ? 512 : 256;
+        var data = new byte[W * H * 4];
+        // (these two loops optimised at their first call: a ring's bytes took 8.3 ms early in a run and 4.3 ms later, the
+        // same work; my reading, the first calls ran tier-0 code)
+        System.Threading.Tasks.Parallel.For(0, H, [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)] (y) =>
+        {
+            for (int x = 0; x < W; x++)
+            {
+                float u = (x + 0.5f) / W * 2 - 1, v = (y + 0.5f) / H * 2 - 1, dm, lat;
+                if (lane) { dm = (1 - Mathf.Abs(v)) * S / 2; lat = Mathf.Clamp((0.86f - Mathf.Abs(u)) / 0.04f, 0, 1); }
+                else { dm = (0.97f - Mathf.Sqrt(u * u + v * v)) * S; lat = 1; }
+                float a = 0;
+                if (dm > 0)
+                {
+                    float f = tail > 0
+                        ? Mathf.Lerp(1, 0.5f * Mathf.Pow(1 - Mathf.Clamp((dm - front) / tail, 0, 1), 2), Mathf.SmoothStep(front * 0.5f, front * 1.5f, dm))
+                        : 1 - Mathf.SmoothStep(0.05f, front + 0.02f, dm);
+                    a = Mathf.Clamp(dm / 0.012f, 0, 1) * lat * Mathf.Max(f, body);
+                }
+                byte g = (byte)Mathf.RoundToInt(Mathf.Pow(Mathf.Clamp(a, 0, 1), 1 / 2.2f) * 255);
+                int o = (y * W + x) * 4;
+                data[o] = data[o + 1] = data[o + 2] = g; data[o + 3] = 255;
+            }
+        });
+        return fillTex[(lane, style, b)] = ImageTexture.CreateFromImage(Image.CreateFromData(W, H, false, Image.Format.Rgba8, data));
+    }
+
+    static byte[] FillRef(bool lane, int style, int b)
+    {
         float S = Mathf.Pow(2, b / 2f);
         float front = style == 1 ? DangerFrontM : style == 3 ? RaiseFrontM : AmberFrontM;
         float tail = style == 1 ? 0 : style == 3 ? RaiseTailM : AmberTailM;
@@ -756,7 +801,7 @@ public partial class BattleFx : Node3D
                 int o = (y * W + x) * 4;
                 data[o] = data[o + 1] = data[o + 2] = g; data[o + 3] = 255;
             }
-        return fillTex[(lane, style, b)] = ImageTexture.CreateFromImage(Image.CreateFromData(W, H, false, Image.Format.Rgba8, data));
+        return data;
     }
 
     static Shader? overShader;
@@ -768,6 +813,12 @@ public partial class BattleFx : Node3D
     /// through it lies under the water line (a figure standing in the river keeps its body above it), with its bed near
     /// opaque. The fill gets its own copy over water. roof: the lane's roof copy (the old OverLane).</summary>
     void Over(Mark m, bool roof)
+    {
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
+        try { OverIn(m, roof); } finally { Perf.Slow("fx over", q, 1); }
+    }
+
+    void OverIn(Mark m, bool roof)
     {
         overShader ??= new Shader
         {
@@ -1092,7 +1143,7 @@ public partial class BattleFx : Node3D
                 a = Mathf.Clamp(a, 0, 1);
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return ImageTexture.CreateFromImage(img);
+        return Kept(img);
     }
 
     /// <summary>The next Ground mark's style, set by the telegraph and taken by Ground: 1 an elite's or a boss's blow
@@ -1130,9 +1181,151 @@ public partial class BattleFx : Node3D
     /// in metres, so a big ring's rim is as crisp as a small one's).</summary>
     (Texture2D, Texture2D) DangerOf(Texture2D tex, int style, float radius = 1)
     {
-        bool lane = tex == laneTex, ring = tex == ringTex;
+        bool ring = tex == ringTex;
         int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
         if (dangerTex.TryGetValue((tex, style, bucket), out var t)) return t;
+        long q = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+        var (alb, em) = DangerImages(tex, style, bucket);
+        if (Perf.On) q = Perf.Slow($"danger bytes {style} {bucket}", q, 1);
+        var made = dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        if (Perf.On) Perf.Slow($"danger upload {style} {bucket}", q, 1);
+        return made;
+    }
+
+    /// <summary>The pixels of the textures this file draws (RGBA8, no mips), kept on the CPU when made: DangerOf reads
+    /// them here, not by Texture2D.GetImage, which reads the texture back from the GPU (P2 task 5: my reading, a stall of
+    /// the frames in flight in an export build).</summary>
+    static readonly Dictionary<Texture2D, (int W, int H, byte[] Px)> keptPx = new();
+
+    static Texture2D Kept(Image img)
+    {
+        var t = ImageTexture.CreateFromImage(img);
+        keptPx[t] = (img.GetWidth(), img.GetHeight(), img.GetData());
+        return t;
+    }
+
+    /// <summary>Image.SetPixel's float to byte for RGBA8 (Godot 4.5: uint8_t(CLAMP(c * 255.0, 0, 255)), truncating).</summary>
+    static byte Px(float c) => (byte)Math.Clamp(c * 255.0, 0.0, 255.0);
+
+    /// <summary>DangerOfRef's pixels, built in bytes, rows in parallel (no Godot object inside the loop): the same math,
+    /// the same float to byte. (P2 task 5: the SetPixel loop was 23-42 ms on the main thread.)</summary>
+    (Image, Image) DangerImages(Texture2D tex, int style, int bucket)
+    {
+        bool lane = tex == laneTex, ring = tex == ringTex;
+        bool danger = style == 1;
+        int w = 512, h = 512;
+        byte[]? sa = null;
+        // (the lane's and the ring's are drawn here: their source is never read)
+        if (!lane && !ring)
+        {
+            if (keptPx.TryGetValue(tex, out var kp)) (w, h, sa) = kp;
+            else
+            {
+                var src = tex.GetImage();
+                if (src.GetFormat() != Image.Format.Rgba8) { if (src.IsCompressed()) src.Decompress(); src.Convert(Image.Format.Rgba8); }
+                w = src.GetWidth(); h = src.GetHeight(); sa = src.GetData();
+                keptPx[tex] = (w, h, sa);
+            }
+        }
+        var emB = new byte[w * h * 4];
+        var albB = new byte[w * h * 4];
+        var hot = danger ? new Color(RankBoss.Color) : CrowdHue;
+        var bed = danger ? Palette.TeleDangerGround : CrowdBed;
+        float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
+        float rr = Mathf.Pow(2, bucket / 2f), core = Mathf.Clamp((style == 3 ? RaiseCoreM : RingCoreM) / rr, 0.004f, 0.06f);
+        byte bedR = Px(bed.R), bedG = Px(bed.G), bedB = Px(bed.B);
+        // (the lane and the ring read only |u|, |v| (u*u, v*v): one quarter is made and mirrored. At 512 a texel's u is
+        // (2x + 1 - 512) / 512, exact in float, so the mirrored texel's u is exactly -u: the same bytes, a quarter of the work)
+        bool quarter = (lane || ring) && w == 512 && h == 512;
+        int hy = quarter ? h / 2 : h, wx = quarter ? w / 2 : w;
+        System.Threading.Tasks.Parallel.For(0, hy, [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)] (y) =>
+        {
+            for (int x = 0; x < wx; x++)
+            {
+                float a, cover;
+                float u = (x + 0.5f) / w * 2 - 1, v = (y + 0.5f) / h * 2 - 1;
+                if (lane)
+                {
+                    float e = Mathf.Abs(u), d = Mathf.Abs(e - 0.9f);
+                    float ends = Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1);
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1), (danger ? 0.5f : 0.3f) * Mathf.Exp(-d / (danger ? 0.05f : 0.028f)));
+                    float inner = danger ? DangerBedGlow + 0.45f * Mathf.Pow(Mathf.SmoothStep(0.55f, 0.9f, e), 2) : glowIn + 0.04f * e * e;
+                    a = Mathf.Max(edge, e < 0.9f ? inner : 0) * ends;
+                    cover = (e < 0.9f ? inside + (1 - inside) * Mathf.SmoothStep(0.6f, 0.9f, e) : Mathf.Clamp(1 - Mathf.Max(d - 0.012f, 0) / 0.014f, 0, 1)) * ends;
+                }
+                else if (ring)
+                {
+                    float r = Mathf.Sqrt(u * u + v * v), d = r - 0.93f;
+                    float rim = Mathf.Clamp(1 - Mathf.Max(Mathf.Abs(d) - core, 0) / (core * 0.6f + 0.003f), 0, 1);
+                    float fall = d < 0 ? 0.35f * Mathf.Exp(d / (core * 4 + 0.01f)) : 0.25f * Mathf.Exp(-d / (core * 1.2f + 0.004f));
+                    float inner = danger ? DangerBedGlow + 0.4f * Mathf.Pow(Mathf.SmoothStep(0.6f, 0.93f, r), 2) : glowIn * 0.8f;
+                    a = Mathf.Max(Mathf.Max(rim, fall), r < 0.93f ? inner : 0) * Mathf.Clamp((0.995f - r) / 0.01f, 0, 1);
+                    cover = r < 0.93f ? inside : rim;
+                }
+                else
+                {
+                    float s = (float)(sa![(y * w + x) * 4 + 3] / 255.0);
+                    cover = Mathf.Clamp(s * 2.2f, 0, 1) * (danger ? 0.85f : 0.5f);
+                    a = Mathf.Max(s * s, Mathf.Min(s, danger ? 0.06f : 0.12f));
+                }
+                a = Mathf.Clamp(a, 0, 1);
+                float al = Mathf.Pow(a, 1 / 2.2f);
+                byte er = Px(hot.R * al), eg = Px(hot.G * al), eb = Px(hot.B * al), ca = Px(Mathf.Clamp(cover, 0, 1));
+                for (int k = 0; k < (quarter ? 4 : 1); k++)
+                {
+                    int px = (k & 1) == 0 ? x : w - 1 - x, py = (k & 2) == 0 ? y : h - 1 - y;
+                    int o = (py * w + px) * 4;
+                    emB[o] = er; emB[o + 1] = eg; emB[o + 2] = eb; emB[o + 3] = 255;
+                    albB[o] = bedR; albB[o + 1] = bedG; albB[o + 2] = bedB; albB[o + 3] = ca;
+                }
+            }
+        });
+        return (Image.CreateFromData(w, h, false, Image.Format.Rgba8, albB), Image.CreateFromData(w, h, false, Image.Format.Rgba8, emB));
+    }
+
+    /// <summary>--arms-check [full]: Arms.Check's lines, then quits.</summary>
+    void ArmsCheck()
+    {
+        GD.Print(Arms.Check(Args.Get("arms-check") == "full"));
+        GetTree().Quit();
+    }
+
+    /// <summary>--fx-tex-check: every texture DangerOf/FillTex build, the new bytes against the old SetPixel/serial ones.</summary>
+    void TexCheck()
+    {
+        int n = 0, diff = 0, maxd = 0; var firsts = new List<string>();
+        void Cmp(string name, byte[] o, byte[] nw)
+        {
+            n++;
+            if (o.Length != nw.Length) { diff++; if (firsts.Count < 5) firsts.Add($"{name} length {o.Length} vs {nw.Length}"); return; }
+            for (int i = 0; i < o.Length; i++)
+                if (o[i] != nw[i]) { diff++; maxd = Math.Max(maxd, Math.Abs(o[i] - nw[i])); if (firsts.Count < 5) firsts.Add($"{name} [{i}] old {o[i]} new {nw[i]}"); }
+        }
+        var texes = new (string, Texture2D)[] { ("ring", ringTex!), ("disc", discTex!), ("lane", laneTex!), ("hatch", hatchTex!), ("dash", dashTex!), ("wall", wallTex!), ("laneFill", laneFillTex!), ("glow", glowTex!), ("cone60", ConeTexture(60)), ("band50", BandTexture(50)) };
+        foreach (var (nm, tex) in texes)
+            for (int style = 1; style <= 3; style++)
+                for (int bk = tex == ringTex ? -4 : 0; bk <= (tex == ringTex ? 10 : 0); bk++)
+                {
+                    float radius = Mathf.Pow(2, bk / 2f);
+                    var (oa, oe) = DangerOfRef(tex, style, radius);
+                    var (na, ne) = DangerImages(tex, style, bk);
+                    Cmp($"{nm} s{style} b{bk} alb", oa.GetData(), na.GetData());
+                    Cmp($"{nm} s{style} b{bk} em", oe.GetData(), ne.GetData());
+                }
+        foreach (var lane in new[] { true, false })
+            for (int style = 1; style <= 3; style++)
+                for (int b = -6; b <= 12; b++)
+                    Cmp($"fill {(lane ? "lane" : "disc")} s{style} b{b}", FillRef(lane, style, b), MakeFillTex(lane, style, b).GetImage().GetData());
+        GD.Print($"fx-tex-check: {n} variants, {diff} differing bytes, max diff {maxd}");
+        foreach (var f in firsts) GD.Print("  " + f);
+        GetTree().Quit();
+    }
+
+    /// <summary>The old SetPixel build, kept for --fx-tex-check only.</summary>
+    (Image, Image) DangerOfRef(Texture2D tex, int style, float radius = 1)
+    {
+        bool lane = tex == laneTex, ring = tex == ringTex;
+        int bucket = ring ? Mathf.Clamp(Mathf.RoundToInt(Mathf.Log(Mathf.Max(radius, 0.25f)) / Mathf.Log(2) * 2), -4, 10) : 0;
         bool danger = style == 1;
         var src = tex.GetImage();
         int w = lane || ring ? 512 : src.GetWidth(), h = lane || ring ? 512 : src.GetHeight();
@@ -1186,7 +1379,7 @@ public partial class BattleFx : Node3D
                 em.SetPixel(x, y, new Color(hot.R * al, hot.G * al, hot.B * al, 1));
                 alb.SetPixel(x, y, new Color(bed.R, bed.G, bed.B, Mathf.Clamp(cover, 0, 1)));
             }
-        return dangerTex[(tex, style, bucket)] = (ImageTexture.CreateFromImage(alb), ImageTexture.CreateFromImage(em));
+        return (alb, em);
     }
 
     /// <summary>A cone pointing along the texture's v, apex at the centre, `arc` degrees wide.</summary>
@@ -1211,7 +1404,7 @@ public partial class BattleFx : Node3D
                 }
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return coneTex[arc] = ImageTexture.CreateFromImage(img);
+        return coneTex[arc] = Kept(img);
     }
 
     /// <summary>A band: the ground between two circles filled, edged at both, and the
@@ -1237,7 +1430,7 @@ public partial class BattleFx : Node3D
                 }
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
-        return bandTex[innerPct] = ImageTexture.CreateFromImage(img);
+        return bandTex[innerPct] = Kept(img);
     }
 
     void BandMark(double x, double z, double inner, float outer, Color color, float life, int? key = null)
@@ -1427,8 +1620,11 @@ public partial class BattleFx : Node3D
         WgLineSwings(events);
         P7Pre(events);
         HitSparkBudget(events, b);
+        // (P2 task 5: --perf names each event whose handling took over 3 ms, timed from one event's start to the next's)
+        long evAt = 0; CombatEvent? evPrev = null;
         foreach (var ev in events)
         {
+            if (Perf.On) { SlowEv(evPrev, evAt); evPrev = ev; evAt = System.Diagnostics.Stopwatch.GetTimestamp(); }
             switch (ev)
             {
                 // The Flare's moments, and its hits and kills, are its own (no spell's bursts, no gore).
@@ -1749,8 +1945,11 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Telegraph e when e.Phase == TellPhase.Warn:
                 {
+                    long tq = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 probe)
                     if (WayOut(e) || DigMark(e)) break;
+                    tq = Perf.Slow("tele wayout/dig", tq, 2);
                     Winded(e);
+                    tq = Perf.Slow("tele winded", tq, 2);
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
                     // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
                     // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
@@ -1788,6 +1987,7 @@ public partial class BattleFx : Node3D
                     styleNext = danger ? 1 : amber ? 2 : 0;
                     patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
                     raisingNext = raising;
+                    tq = Perf.Slow("tele read+pattern", tq, 2);
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
@@ -1849,8 +2049,10 @@ public partial class BattleFx : Node3D
                         Bind(e.Id, Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration));
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
+                    tq = Perf.Slow($"tele shape {e.Shape}", tq, 2);
                     // (a red circle, cone or band over water: its copy on the surface; a lane's is made above)
                     if (danger && e.Shape != TelegraphShape.Line && keyed.TryGetValue(e.Id, out var dm) && dm.Danger) Over(dm, false);
+                    tq = Perf.Slow("tele over", tq, 2);
                     styleNext = 0; raisingNext = false;
                     // A boss's move, named over the boss for as long as its mark stands: who is doing
                     // it, where the eye already is (over the mark, it sat on the survivor's head).
@@ -1859,6 +2061,7 @@ public partial class BattleFx : Node3D
                         double lx = e.ByX ?? e.X, lz = e.ByZ ?? e.Z;
                         Hits.Word(V(lx, Y(lx, lz) + 4.4, lz), label.ToUpperInvariant(), WordColour(col), 70, (float)Math.Min(2.5, e.Duration + 0.3));
                     }
+                    Perf.Slow("tele label", tq, 2);
                     break;
                 }
                 case Ev.Break br:
@@ -2020,6 +2223,23 @@ public partial class BattleFx : Node3D
                     break;
             }
         }
+        if (Perf.On) SlowEv(evPrev, evAt);
+    }
+
+    /// <summary>(P2 task 5, --perf only) A line for an event that took over 3 ms to handle: its kind and its name.</summary>
+    static void SlowEv(CombatEvent? ev, long from)
+    {
+        if (ev == null) return;
+        double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - from) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        if (ms < 3) return;
+        string what = ev switch
+        {
+            Ev.Telegraph t => $"Telegraph {t.Tell}/{t.Phase}/{t.Shape}/{t.Kind}{(t.Boss ? "/boss" : "")}",
+            Ev.Flare f => $"Flare {f.Phase}",
+            Ev.Ability a => $"Ability {a.Id}",
+            _ => ev.GetType().Name,
+        };
+        GD.Print($"perf slow fx ev {what} {ms:0.0} ms at {Perf.Now:0.00}s");
     }
 
     static readonly Color GlassCore = new(1.6f, 2.2f, 2.8f), GlassGlow = new(0.6f, 1.3f, 2.2f), EchoGlow = new(1.3f, 0.8f, 2.6f), WraithGlow = new(0.9f, 0.5f, 2.2f), Chain = new(1.5f, 1.35f, 1.1f);
@@ -2229,6 +2449,7 @@ public partial class BattleFx : Node3D
     /// the blows they warn of are not counting down (SU-008: a pause past a warning's life let the blow land unwarned).</summary>
     public bool SimHeld;
 
+    long fxSt;
     public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
@@ -2311,8 +2532,9 @@ public partial class BattleFx : Node3D
                 }
             }
         }
-        RedMarks();
-        StepH6();
+        fxSt = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5 s3: --perf names a step over 4 ms)
+        RedMarks(); fxSt = Perf.Slow("fx step RedMarks", fxSt);
+        StepH6(); fxSt = Perf.Slow("fx step StepH6", fxSt);
         for (int i = 0; i < beams.Count; i++)
         {
             var (m, mat, t, life) = beams[i];
@@ -2329,36 +2551,36 @@ public partial class BattleFx : Node3D
             if (e.Boss) bossUp = true;
             if (e.Def.CarriedLight != null) Aura(e, fdt);
         }
-        StepAuras(fdt);
-        Zones(b, now);
-        ArtTrails(b, fdt);
-        StepRise(b, fdt);
-        StepDig(fdt);
-        StepDeadfalls(fdt);
-        StepPanting(fdt);
-        StepTellStreaks(b, fdt);
-        Projectiles(b, fdt, now);
-        Pickups(b, now);
-        LampPool(b, fdt);
+        StepAuras(fdt); fxSt = Perf.Slow("fx step StepAuras", fxSt);
+        Zones(b, now); fxSt = Perf.Slow("fx step Zones", fxSt);
+        ArtTrails(b, fdt); fxSt = Perf.Slow("fx step ArtTrails", fxSt);
+        StepRise(b, fdt); fxSt = Perf.Slow("fx step StepRise", fxSt);
+        StepDig(fdt); fxSt = Perf.Slow("fx step StepDig", fxSt);
+        StepDeadfalls(fdt); fxSt = Perf.Slow("fx step StepDeadfalls", fxSt);
+        StepPanting(fdt); fxSt = Perf.Slow("fx step StepPanting", fxSt);
+        StepTellStreaks(b, fdt); fxSt = Perf.Slow("fx step StepTellStreaks", fxSt);
+        Projectiles(b, fdt, now); fxSt = Perf.Slow("fx step Projectiles", fxSt);
+        Pickups(b, now); fxSt = Perf.Slow("fx step Pickups", fxSt);
+        LampPool(b, fdt); fxSt = Perf.Slow("fx step LampPool", fxSt);
         if (levelHeld > 0 && !Flare.HoldsFrame && !P7MarkHolds) { levelHeld = 0; LevelLight(); }
-        StepFronts(fdt);
-        StepWardenHoly(fdt);
+        StepFronts(fdt); fxSt = Perf.Slow("fx step StepFronts", fxSt);
+        StepWardenHoly(fdt); fxSt = Perf.Slow("fx step StepWardenHoly", fxSt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
-        Blades.Step(fdt);
-        OathBlades.Step(hsw);
-        LogSweep(hsw, stopped);
-        StepOathPools(hsw);
-        Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
-        StepSpikes(fdt);
-        StepWardenGround(fdt);
-        StepP7(hfx, b);
-        Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
-        Sparks.Step(hfx);
-        Books.Step(fdt);
-        Scars.Step(fdt);
-        Waves.Step(fdt);
-        Smoke.Step(hfx);
-        Gore.Step(fdt);
+        Blades.Step(fdt); fxSt = Perf.Slow("fx step Blades.Step", fxSt);
+        OathBlades.Step(hsw); fxSt = Perf.Slow("fx step OathBlades.Step", fxSt);
+        LogSweep(hsw, stopped); fxSt = Perf.Slow("fx step LogSweep", fxSt);
+        StepOathPools(hsw); fxSt = Perf.Slow("fx step StepOathPools", fxSt);
+        Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null); fxSt = Perf.Slow("fx step Hits.Flush", fxSt);
+        StepSpikes(fdt); fxSt = Perf.Slow("fx step StepSpikes", fxSt);
+        StepWardenGround(fdt); fxSt = Perf.Slow("fx step StepWardenGround", fxSt);
+        StepP7(hfx, b); fxSt = Perf.Slow("fx step StepP7", fxSt);
+        Ribbons.Step(fdt, GetViewport()?.GetCamera3D()); fxSt = Perf.Slow("fx step Ribbons.Step", fxSt);
+        Sparks.Step(hfx); fxSt = Perf.Slow("fx step Sparks.Step", fxSt);
+        Books.Step(fdt); fxSt = Perf.Slow("fx step Books.Step", fxSt);
+        Scars.Step(fdt); fxSt = Perf.Slow("fx step Scars.Step", fxSt);
+        Waves.Step(fdt); fxSt = Perf.Slow("fx step Waves.Step", fxSt);
+        Smoke.Step(hfx); fxSt = Perf.Slow("fx step Smoke.Step", fxSt);
+        Gore.Step(fdt); fxSt = Perf.Slow("fx step Gore.Step", fxSt);
     }
 
     /// <summary>The red marks handed to MarkPass for this frame (their decals hidden: they are its data), new ones'
@@ -2528,16 +2750,16 @@ public partial class BattleFx : Node3D
         gone.Clear();
         foreach (var (id, m) in zoneMarks) if (!alive.Contains(id)) { m.Active = false; m.Decal.Visible = false; gone.Add(id); }
         foreach (var id in gone) zoneMarks.Remove(id);
-        GroundsGone(alive);
+        GroundsGone(alive); fxSt = Perf.Slow("fx step GroundsGone", fxSt);
     }
 
     void Projectiles(Battle b, float dt, double now)
     {
         celBolts?.Begin();
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
-        DiscsBegin();
-        StunGlints(b);
-        Buffs(b);
+        DiscsBegin(); fxSt = Perf.Slow("fx step DiscsBegin", fxSt);
+        StunGlints(b); fxSt = Perf.Slow("fx step StunGlints", fxSt);
+        Buffs(b); fxSt = Perf.Slow("fx step Buffs", fxSt);
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;

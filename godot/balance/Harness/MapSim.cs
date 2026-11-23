@@ -82,6 +82,10 @@ public static class MapSim
     /// <summary>A listener on every frame of a run (the run clock, its drained events, the battle, whether a ruler is up): the sound
     /// lane's den log (tests/DenSoundRunTests.cs). Null: none. Per thread, so a parallel test's runs never reach it.</summary>
     [ThreadStatic] public static Action<double, IReadOnlyList<CombatEvent>, Battle, bool>? Tap;
+    /// <summary>(P3) The run's zone, once begun (DenFeel reads its packs). Per thread, as Tap.</summary>
+    [ThreadStatic] public static Action<MapRun>? ZoneTap;
+    /// <summary>(P3, measuring only) Called each step before the hands act (DenFeel's opener variant presses there). Null: none.</summary>
+    [ThreadStatic] public static Action<Battle>? PreAct;
 
     /// <summary>A survivor at a level, as a player would have dressed them by then: the calling's own
     /// path's skills at the day's rank, as many as the level's slots hold, the points in the calling's attribute, and plain gear
@@ -155,6 +159,8 @@ public static class MapSim
         };
         host.Battle = b;
         zone.Begin(b);
+        if (ForceLamps != null) LightForced(b);
+        ZoneTap?.Invoke(zone);
         // (M3) --grant / --grant-union / --dash-steps: the game's dev grants (Sim/DevGrants.cs), carried from the start. A grant
         // the keys cannot hold takes the last key that is not the grip's nor the union's part.
         if (Grant != null || GrantUnion != null) GiveGrants(b, spec);
@@ -248,6 +254,7 @@ public static class MapSim
                 double ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
                 (mx, mz) = (mx / ml, mz / ml);
             }
+            PreAct?.Invoke(b);
             bool quaff = human != null ? human.Act(b, j, mx, mz, zone.BossScript)
                 : spec.Bot == "standing" ? Pilot.Act(b, j, mx, mz, null, lunges: false, aimsFlare: true, rooted: false, crush: false, hands: hands)
                 : Pilot.Act(b, j, mx, mz, hands: hands);
@@ -356,6 +363,29 @@ public static class MapSim
 
     /// <summary>(M3) --grant id[:rank],... / --grant-union id: what every map starts carrying (as ArenaSim's).</summary>
     public static string? Grant, GrantUnion;
+    /// <summary>--lamps "sunder.stroke.1-4,leap.x.1": lamps lit before the fight (harness only; null = the default build).</summary>
+    public static string? ForceLamps;
+
+    static void LightForced(Battle b)
+    {
+        var bySkill = new Dictionary<string, List<string>>();
+        foreach (var item in ForceLamps!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = item.Split('.');
+            if (parts.Length < 3) throw new ArgumentException($"--lamps {item}: skill.strand.n or skill.strand.a-b");
+            var range = parts[^1].Split('-');
+            int lo = int.Parse(range[0]), hi = range.Length > 1 ? int.Parse(range[1]) : lo;
+            string skill = parts[0], strand = string.Join('.', parts[1..^1]);
+            if (!bySkill.TryGetValue(skill, out var l)) bySkill[skill] = l = new();
+            for (int n = lo; n <= hi; n++) l.Add($"{skill}.{strand}.{n}");
+        }
+        foreach (var (skill, ids) in bySkill)
+        {
+            var path = SurvivorUnchained.Rpg.WickBook.Path(ids, skill);
+            var w = b.Weapons.Find(x => x.Id == skill) ?? throw new ArgumentException($"--lamps: {skill} is not on her bar");
+            b.LightHeld(skill, Math.Max(w.Rank, ids.Count), path);
+        }
+    }
     static int grantSaid, herSaid;
     /// <summary>MAP_SIG=1: one line per map that changes if its rooms, its walkable cells, its packs or its solid pieces change (to compare two builds of the generator).</summary>
     static string Signature(MapRunSpec spec, MapBuild map)

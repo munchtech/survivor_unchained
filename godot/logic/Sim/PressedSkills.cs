@@ -6,10 +6,10 @@ using SurvivorUnchained.Content;
 namespace SurvivorUnchained.Sim;
 
 /* Pressed skills (the ARPG turn, the owner 8 Nov): a skill whose "cast" is press or channel waits for its key
- * (Act.Skill1..4, its slot) instead of firing itself; auto skills fire on their cooldown as they always have. The
+ * (Act.Skill1..5, its slot) instead of firing itself; auto skills fire on their cooldown as they always have. The
  * slots are counted, not the weapons: a union holds both its parts' slots and answers either key.
- * (bd-keys, BUILD_DIRECTION.md rounds 7-8) The campaign's slots: keys 0-3 (MaxKeys; the basic attack on the first), then
- * the auto slots from MaxKeys on with no cap (her three and her gear's auto skills: the character caps hers, Character.Bar).
+ * (bd-keys, BUILD_DIRECTION.md rounds 7-8) The campaign's slots: keys 0-4 (MaxKeys, five since Round 10, 22 Nov; the basic attack on the first),
+ * then her gear's auto skills from MaxKeys on with no cap (Character.Bar).
  * The arena keeps its six self-firing slots (MaxWeapons). */
 public sealed partial class Battle
 {
@@ -26,11 +26,11 @@ public sealed partial class Battle
     /// or a press buffered, from before.</summary>
     readonly double[] downAt = Enumerable.Repeat(double.NaN, Content.Weapons.MaxWeapons).ToArray();
 
-    /// <summary>(bd-keys) The keys this fight has: the campaign's four (MaxKeys), the arena's six self-firing slots (MaxWeapons).</summary>
+    /// <summary>(bd-keys) The keys this fight has: the campaign's five (MaxKeys), the arena's six self-firing slots (MaxWeapons).</summary>
     public int KeyCount => Campaign ? Content.Weapons.MaxKeys : Content.Weapons.MaxWeapons;
 
-    /// <summary>(bd-keys) The skills this fight runs kindled where they are offered both ways (the campaign: they go to an
-    /// auto slot, not a key). Set before they come in (BattleSetup.Kindled; Journey on a refresh).</summary>
+    /// <summary>(bd-keys) The skills this fight runs itself though they have no press record (the campaign: gear-granted
+    /// autos; they go to a slot past the keys). Set before they come in (BattleSetup.Kindled; Journey on a refresh).</summary>
     public readonly HashSet<string> Kindles = new();
 
     /// <summary>(bd-keys) A skill coming into this fight would run itself (an auto slot, campaign only).</summary>
@@ -39,7 +39,7 @@ public sealed partial class Battle
         if (!Campaign || !Content.Weapons.All.TryGetValue(id, out var d)) return false;
         // No press record yet: an auto slot's when this fight runs it there (Kindles), else a key's while one is free.
         if (d.Press is not { } r) return Kindles.Contains(id) || SlotsUsed + Content.Weapons.SlotCost(id) > KeyCount;
-        return r.Kind == Content.PressKind.Kindle || (r.Kindled != null && Kindles.Contains(id));
+        return r.Kind == Content.PressKind.Kindle;
     }
 
     /// <summary>Keys in use (a union counts two): what KeyCount is measured against. Auto slots are not counted.</summary>
@@ -69,24 +69,6 @@ public sealed partial class Battle
         return free;
     }
 
-    /// <summary>(bd-keys) Move a campaign weapon to where its form now runs (a key when pressed, an auto slot when it runs
-    /// itself). False when it should go to a key and none is free (it stays where it was).</summary>
-    internal bool Reslot(WeaponInst w)
-    {
-        if (!Campaign) return true;
-        // (one with no press record runs itself anywhere: it moves only when this fight's Kindles say)
-        bool auto = w.Press == null ? Kindles.Contains(w.Id) : !w.Pressed, onAuto = w.Slot >= KeyCount;
-        if (auto == onAuto) return true;
-        int cost = Content.Weapons.SlotCost(w.Id);
-        int[] old = [w.Slot, w.Slot2];
-        w.Slot = -1; w.Slot2 = -1;
-        var free = FreeSlots(cost, auto);
-        if (free.Count < cost) { (w.Slot, w.Slot2) = (old[0], old[1]); return false; }
-        w.Slot = free[0];
-        if (cost > 1) w.Slot2 = free[1];
-        return true;
-    }
-
     bool HeldOn(int slot) => slot >= 0 && slot < heldSlots.Length && heldSlots[slot];
 
     /// <summary>The key on a slot pressed, aimed at a point on the ground: a press skill fires once if ready, a
@@ -95,8 +77,7 @@ public sealed partial class Battle
     {
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
         if (OnSlot(slot) is not { } w) return false;
-        // A kindled skill's key (campaign): its live press (now, riposte, flare, command).
-        if (!w.Pressed) { if (!w.KindledNow) return false; SkillAim = (aimX, aimZ); return KindledPress(w); }
+        if (!w.Pressed) return false;
         SkillAim = (aimX, aimZ);
         // A spin union (none in data since 13 Nov 2026; Bladestorm is now the Warden's own skill, below): its first key spins; its second,
         // fresh in the storm or within its BreakWindow after, breaks it (a grip held, or a press buffered, from before the
@@ -110,11 +91,16 @@ public sealed partial class Battle
         }
         // Bladestorm as the Warden's own skill (no union, Slot2 < 0): a fresh press of the key holding Sunder breaks the storm; a
         // stale (held-from-before) key does nothing, and Sunder never swings while a storm runs. Out of a storm Sunder swings as itself.
+        // (skills-five, 22 Nov) The break only once the storm has spun its BreakAfter (Firing.BreakReady): a fresh press before
+        // that cancels the storm and Sunder swings as itself.
         foreach (var s in Weapons)
         {
             if (s.Behavior != WeaponBehavior.Spin || s.Slot2 >= 0 || BreakSlot(s) != slot || !Firing.InStorm(this, s)) continue;
             bool fresh = slot >= downAt.Length || double.IsNaN(downAt[slot]) || downAt[slot] >= s.StormAt;
-            return fresh && Firing.SpinBreak(this, s);
+            if (!fresh) return false;
+            if (Firing.BreakReady(this, s)) return Firing.SpinBreak(this, s);
+            Firing.CancelStorm(this, s);
+            break;
         }
         return Firing.Press(this, w);
     }
@@ -130,6 +116,15 @@ public sealed partial class Battle
         if (spin.Slot2 >= 0) return spin.Slot2;
         var s = Weapons.Find(x => x.Id == StormBreaker && x.Keyed && x.Slot >= 0 && x.Slot < KeyCount);
         return s?.Slot ?? -1;
+    }
+
+    /// <summary>(skills-five) Whether a skill's key would break a storm now (BreaksAStorm, and the storm has spun its
+    /// BreakAfter): the HUD's bond on Sunder's seat, the cue that the big hit is ready.</summary>
+    public bool BreakReadyOn(WeaponInst w)
+    {
+        foreach (var s in Weapons)
+            if (s.Behavior == WeaponBehavior.Spin && s.Slot2 < 0 && !ReferenceEquals(s, w) && w.Keyed && BreakSlot(s) == w.Slot && Firing.BreakReady(this, s)) return true;
+        return false;
     }
 
     /// <summary>Whether a skill is the break key's skill of a spin weapon that is in its storm: it does not swing then (held or not).</summary>

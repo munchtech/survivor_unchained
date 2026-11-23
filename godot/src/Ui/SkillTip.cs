@@ -42,7 +42,7 @@ public partial class SkillTip : Control
     }
 
     /// <summary>A weapon's cast as the taught build writes it (the card's How line): kindle, channel, hold, press or auto.</summary>
-    public static string CastOf(WeaponInst w) => w.KindledNow ? "kindle" : w.Cast == CastMode.Channel ? "channel" : w.Hold ? "hold" : w.Pressed ? "press" : "auto";
+    public static string CastOf(WeaponInst w) => w.Cast == CastMode.Channel ? "channel" : w.Hold ? "hold" : w.Pressed ? "press" : "auto";
 
     /// <summary>A skill's card where a fight may or may not run: the fight's own weapon (its key, its form) when it carries
     /// it; else the taught build's form (or its press's own kind) and the key of fallbackSlot.</summary>

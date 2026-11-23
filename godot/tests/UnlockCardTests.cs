@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
@@ -14,45 +15,42 @@ public sealed class UnlockCardTests
 {
     static TaughtBuild Warden => TaughtBuilds.Of("warden")!;
 
-    /// <summary>Every taught skill on its taught slot: the keys 0-3, the autos from MaxKeys.</summary>
+    /// <summary>Every taught skill on its taught slot: the keys 0-3.</summary>
     static int SlotOf(string id)
     {
-        int k = Warden.Keys.FindIndex(s => s.Skill == id);
-        if (k >= 0) return k;
-        int a = Warden.Autos.FindIndex(s => s.Skill == id);
-        return a >= 0 ? Weapons.MaxKeys + a : -1;
+        return Warden.Keys.FindIndex(s => s.Skill == id);
     }
 
     [Fact]
-    public void Every_layer_level_has_exactly_one_row_and_no_row_is_extra()
+    public void Every_layer_has_one_row_per_taught_key_and_no_row_is_extra()
     {
         var want = new List<(int Level, string Id)>();
-        foreach (var s in Warden.Keys.Concat(Warden.Autos)) want.Add((s.Level, s.Skill));
+        foreach (var s in Warden.Keys) want.Add((s.Level, s.Skill));
         want.Add((Warden.Stance!.Level, "stance"));
         want.Add((LampBook.RoadLevel, "road"));
         var have = UnlockCards.Rows("warden").Select(r => (r.Level, r.Id)).ToList();
         Assert.Equal(want.OrderBy(x => x.Level).ThenBy(x => x.Id), have.OrderBy(x => x.Level).ThenBy(x => x.Id));
         foreach (var r in UnlockCards.Rows("warden"))
         {
-            Assert.Contains(r.Kind, new[] { "key", "auto", "stance", "road" });
+            Assert.Contains(r.Kind, new[] { "key", "stance", "road" });
             Assert.NotEqual("", r.Line);
             Assert.NotEqual("", r.Title);
             Assert.NotEqual("", r.Lands);
-            // (a key row's skill is a key of the build, an auto row's an auto)
+            // (a key row's skill is a key of the build)
             if (r.Kind == "key") Assert.Contains(Warden.Keys, s => s.Skill == r.Id);
-            if (r.Kind == "auto") Assert.Contains(Warden.Autos, s => s.Skill == r.Id);
-            // (a key and a stance lesson teach with a key's name; the road and the autos teach nothing)
-            if (r.Kind is "road" or "auto") Assert.False(r.Teach.NextFight, r.Id);
+            // (a key and a stance lesson teach with a key's name; the road teaches nothing)
+            if (r.Kind is "road") Assert.False(r.Teach.NextFight, r.Id);
             if (r.Teach.NextFight) { Assert.NotEqual("", r.Teach.Text); Assert.NotEqual("", r.Teach.Key); }
         }
     }
 
     [Fact]
-    public void No_level_has_two_rows_but_the_starting_kit()
+    public void A_level_has_a_row_per_key_it_teaches_and_one_otherwise_but_the_starting_kit()
     {
-        foreach (var g in UnlockCards.Rows("warden").Where(r => !r.Start).GroupBy(r => r.Level)) Assert.Single(g);
+        foreach (var g in UnlockCards.Rows("warden").Where(r => !r.Start).GroupBy(r => r.Level))
+            Assert.Equal(Math.Max(1, Warden.Keys.Count(k => k.Level == g.Key && k.Level > 1)), g.Count());
         Assert.All(UnlockCards.Rows("warden").Where(r => r.Start), r => Assert.Equal(1, r.Level));
-        Assert.Equal(2, UnlockCards.Rows("warden").Count(r => r.Start));
+        Assert.Equal(1, UnlockCards.Rows("warden").Count(r => r.Start));
     }
 
     [Fact]
@@ -61,12 +59,14 @@ public sealed class UnlockCardTests
         for (int l = 2; l <= 10; l++)
         {
             var cards = LevelCards.CardsFor(l, Warden, SlotOf, 0, null, roadRaised: l == LampBook.RoadLevel);
-            var card = Assert.Single(cards);
+            Assert.Equal(Math.Max(1, Warden.Keys.Count(k => k.Level == l)), cards.Count);
+            var card = cards[0];
             Assert.NotEqual(LevelCardKind.NewSkill, card.Kind);
             Assert.Equal(l, card.Level);
             var row = UnlockCards.At("warden", l);
+            if (l == 9) Assert.Equal(["iron_vow", "shield_charge"], cards.Select(c => c.Skill).ToArray());
             if (row == null) { Assert.Equal(LevelCardKind.Plain, card.Kind); Assert.Equal($"LEVEL {l}", LevelCards.Header(card)); continue; }
-            var kind = row.Kind switch { "key" => LevelCardKind.NewKey, "auto" => LevelCardKind.NewAuto, "stance" => LevelCardKind.NewStance, _ => LevelCardKind.NewRoad };
+            var kind = row.Kind switch { "key" => LevelCardKind.NewKey, "stance" => LevelCardKind.NewStance, _ => LevelCardKind.NewRoad };
             Assert.Equal(kind, card.Kind);
             Assert.Equal(row.Line, card.Line);
             Assert.Equal($"LEVEL {l} · {row.Title}", LevelCards.Header(card));
@@ -77,17 +77,17 @@ public sealed class UnlockCardTests
         // (a layer's level never takes the road's card, raised or not)
         Assert.Equal(LevelCardKind.NewKey, LevelCards.CardsFor(9, Warden, SlotOf, 0, null, true)[0].Kind);
         // (the skill's own line is its row's, as the key card draws it)
-        Assert.Equal(UnlockCards.Of("warden", "shield_charge")!.Line, LevelCards.Line("shield_charge", Weapons.All["shield_charge"].Description));
+        Assert.Equal(UnlockCards.Of("warden", "iron_vow")!.Line, LevelCards.Line("iron_vow", Weapons.All["iron_vow"].Description));
     }
 
     [Fact]
     public void The_callings_skill_never_shares_a_layers_level_and_waits_for_a_quiet_moment()
     {
-        // (levels 6 and 9 with a calling skill taught: still one card, and no new skill among it)
+        // (levels 6 and 9 with a calling skill taught: one card a taught key, and no new skill among it)
         foreach (var l in new[] { 6, 9 })
         {
             var cards = LevelCards.CardsFor(l, Warden, SlotOf, 0, null, roadRaised: l == 6);
-            Assert.Single(cards);
+            Assert.Equal(l == 9 ? 2 : 1, cards.Count);
             Assert.DoesNotContain(cards, c => c.Kind == LevelCardKind.NewSkill);
         }
         var skill = LevelCards.NewSkill(0, "dawnpulse");
@@ -145,18 +145,18 @@ public sealed class UnlockCardTests
         Assert.Same(Row("stance"), lessons.Tick(true, 1.1));
         Assert.True(lessons.Used("stance"));
         // (used before the fight: owed no more)
-        lessons.Opened(Row("shield_charge"));
-        Assert.False(lessons.Used("shield_charge"));
+        lessons.Opened(Row("iron_vow"));
+        Assert.False(lessons.Used("iron_vow"));
         Assert.Null(lessons.Tick(false)); Assert.Null(lessons.Tick(true));
-        Assert.Contains("shield_charge", done);
+        Assert.Contains("iron_vow", done);
     }
 
     [Fact]
-    public void An_auto_the_road_and_the_starting_kit_never_teach()
+    public void The_road_and_the_starting_kit_never_teach()
     {
         var done = new HashSet<string>();
         var lessons = new UnlockLessons(done.Contains, id => done.Add(id));
-        foreach (var id in new[] { "iron_vow", "watch_bell", "road", "sunder", "groundbreaker" })
+        foreach (var id in new[] { "road", "sunder" })
         {
             lessons.Opened(Row(id));
             Assert.Null(lessons.Tick(false));
@@ -178,6 +178,6 @@ public sealed class UnlockCardTests
             shown++;
         }
         Assert.True(shown >= 4);
-        Assert.Equal("Press *[Skill4]* to charge behind your shield: what stands in the way is struck and thrown aside.", UnlockLessons.TextFor(UnlockCards.ForSkill("shield_charge")!, k => "[" + k + "]"));
+        Assert.Equal("Press *[Skill4]* to brace: for 2 s every blow on you lands at half, then bursts back out in a ring.", UnlockLessons.TextFor(UnlockCards.ForSkill("iron_vow")!, k => "[" + k + "]"));
     }
 }

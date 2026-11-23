@@ -34,7 +34,7 @@ public class SkillTipTests(ITestOutputHelper output)
         var set = new List<(string, string)>();
         void Add(string s, string cast) { if (set.All(x => x.Item1 != s)) set.Add((s, cast)); }
         foreach (var s in t.Slots) Add(s.Skill, s.Cast);
-        foreach (var s in t.Later) Add(s, "kindle");
+        foreach (var s in t.Later) Add(s, Cast(s));
         if (t.Union != null)
         {
             var un = Unions.Find(t.Union.Id)!;
@@ -58,7 +58,6 @@ public class SkillTipTests(ITestOutputHelper output)
                 b.RemoveWeapon(b.Weapons.Last(x => x.Slot < b.KeyCount && x.Id != "sunder" && x.Id != skill).Id); // (bd-keys) a key freed: an auto slot never runs out
             Assert.NotNull(w);
         }
-        w.SetForm(cast);
         return w;
     }
 
@@ -74,7 +73,7 @@ public class SkillTipTests(ITestOutputHelper output)
     public void The_demo_set_has_its_own_cards_with_the_sims_numbers_at_levels_1_9_15()
     {
         var demo = Demo();
-        Assert.True(demo.Count >= 9);
+        Assert.True(demo.Count >= 8);
         foreach (int level in new[] { 1, 9, 15 })
         {
             var j = Warden();
@@ -121,7 +120,6 @@ public class SkillTipTests(ITestOutputHelper output)
     {
         var w = WickBook.Weapon(ch, skill, WickBook.RankIn(ch, skill, false), false);
         w.Press = Weapons.All[skill].Press;
-        if (w.Press != null) w.SetForm(cast);
         return w;
     }
 
@@ -238,7 +236,7 @@ public class SkillTipTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_lit_splitting_stroke_speaks_in_its_own_words_and_slows_the_swing()
+    public void A_lit_groundbreaker_speaks_in_its_own_words_and_slows_the_swing()
     {
         var j = Warden();
         LevelTo(j, 15);
@@ -248,9 +246,9 @@ public class SkillTipTests(ITestOutputHelper output)
         string lit = Line(out var e1);
         output.WriteLine($"{unlit} | {e0} // {lit} | {e1}");
         Assert.Contains("Every 6 s", unlit);
-        Assert.Equal("Cut everything in front of you while you hold. Every 2nd swing is heavy and splits the ground.", lit);
+        Assert.Equal("Cut everything in front of you while you hold. Every 3rd swing is heavy and groundbreaks: a crack runs to the pack you aim at and the earth heaves, stunning it.", lit);
         double Ev(string r) => double.Parse(r.Split("every ")[1].Replace(" s", ""), System.Globalization.CultureInfo.InvariantCulture);
-        // the period reads the lit wick's own cooldown (Splitting Stroke's 15% slower less the lamps' quickening): the Lamps sum line's
+        // the period reads the lit wick's own cooldown (Groundbreaker's 15% slower less the lamps' quickening): the Lamps sum line's
         Assert.NotEqual(Ev(e0), Ev(e1));
         Assert.Equal(System.Math.Round(WickBook.Sum(j.Ch, "sunder", false)!.Every!.Value, 2), Ev(e1));
         Assert.True(Wicks.Turn("sunder.stroke").Cooldown > 1);

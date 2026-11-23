@@ -138,7 +138,7 @@ public partial class LevelCard : Control
             // (bd-ui W8: the seat's own icon source, Instrument.Socket.Show: the skill's painting, else its gold line glyph)
             string gk = SeatIcon.For(s.Skill, wd.Art);
             // (bd-ui W9: a NewAuto card shows its tile's drawing, the line glyph in the tile's colour, not the painting)
-            glyph = s.Kind == LevelCardKind.NewAuto ? AutoRow.LineGlyph(gk, 78, ItemViews.SchoolColors[wd.School])
+            glyph = s.Kind == LevelCardKind.NewAuto ? SeatIcon.LineGlyph(gk, 78, ItemViews.SchoolColors[wd.School])
                 : s.Kind == LevelCardKind.NewKey ? SeatPicture.Gold(LevelCards.PictureKey(s.Skill))
                 : Glyphs.Texture(gk, 80, GlyphGold, line: true);
             if (s.Kind == LevelCardKind.NewKey && Args.Get("level-card") != null) GD.Print($"level-card picture: key {gk} = DgGold gold line glyph {SeatPicture.CardPx} px (card)");

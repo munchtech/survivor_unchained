@@ -95,7 +95,7 @@ public static class GlyphPaths
 /// <summary>(bd-ui W9) The one place a skill's icon key is chosen: the seat, the level card and the auto tile all call it, so
 /// they can never differ. By skill, from its BASE art: an evolved skill's art (Pile Driver's shield_charge_slam) has no glyph
 /// and drew the neutral four-point star on the seat while its card showed the shield.</summary>
-public static class SeatIcon
+public static partial class SeatIcon
 {
     public static string For(string id, string art) =>
         GlyphPaths.ForSkill(id, Content.Weapons.All.TryGetValue(id, out var d) && d.Art.Length > 0 ? d.Art : art);

@@ -349,6 +349,14 @@ public partial class Hits : Node3D
 
     public override void _Process(double delta)
     {
+        if (!Perf.On) { Step(delta); return; }
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();
+        Step(delta);
+        Perf.Slow("hits process", q, 2);   // (P2 task 5 probe: main time outside the parts)
+    }
+
+    void Step(double delta)
+    {
         StepTally(delta);
         float dt = (float)delta;
         bool live = false;

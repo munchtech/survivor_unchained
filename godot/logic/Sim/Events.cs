@@ -185,8 +185,6 @@ public static class Ev
     /// <summary>A campaign press went off (Battle.CastPose): her walk at Walk for Time seconds, her feet planted Plant
     /// seconds first (a heavy commit), aimed at (X, Z); Heavy, its own heavy swing.</summary>
     public sealed class Cast : CombatEvent { public string Weapon = ""; public int Slot; public double Walk, Time, Plant, X, Z; public bool Heavy; }
-    /// <summary>A kindled skill's key pressed (Battle.KindledPress): what it did (now, riposte, flare, command) and until when.</summary>
-    public sealed class KindlePress : CombatEvent { public string Weapon = ""; public int Slot; public Content.KindlePress Mode; public double Until; }
     /// <summary>(bd-keys) A weapon swap: the set taken up (0 A, 1 B), its stance (empty in set A), and the swap strike fired (empty when it was cooling).</summary>
     public sealed class Swap : CombatEvent { public int Set; public string Stance = "", Strike = ""; public double X, Z; }
     public sealed class Channel : CombatEvent { public string Weapon = ""; public int Slot; public bool On; public double X, Z; }

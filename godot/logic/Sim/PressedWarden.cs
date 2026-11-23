@@ -367,6 +367,23 @@ public static partial class Firing
         return floor + (most - floor) * Math.Clamp(resolve / at, 0, 1);
     }
 
+    /// <summary>(skills-five) The storm has spun long enough for its break (BreakAfter seconds; skills.json "breakAfter"): a
+    /// fresh press of Sunder's key breaks it now. Before, the same press cancels it (CancelStorm) and Sunder swings. Only
+    /// where the storm drains Resolve (the campaign, whose break grows by what it spent from BreakFloor): the arena's break
+    /// already grows by time from x1 (BreakGrowth), and the owner's ruling was on the campaign's.</summary>
+    public static bool BreakReady(Battle b, WeaponInst w) =>
+        InStorm(b, w) && (!(b.Resolve.On && w.Press?.Drain is > 0) || (w.Channeling ? w.ChannelT : w.StormT) >= (w.Num(s => s.BreakAfter) ?? 0) - 1e-9);
+
+    /// <summary>(skills-five) A storm too short to break, cancelled by Sunder's fresh press: it ends as a release ends it (its
+    /// cooldown starts), its pending lines fade unsplit, and nothing is left to break.</summary>
+    public static void CancelStorm(Battle b, WeaponInst w)
+    {
+        if (w.Channeling) EndChannel(b, w);
+        w.BreakUntil = -1;
+        w.ResumeHeld = w.Held;
+        FadeLines(b, w);
+    }
+
     /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
     public static bool InStorm(Battle b, WeaponInst w) => w.Channeling || (w.BreakUntil >= 0 && b.Time <= w.BreakUntil);
 
@@ -447,6 +464,7 @@ public static partial class Firing
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = p.X, Z = p.Z });
         }
         w.BreakUntil = -1;
+        w.ResumeHeld = w.Held;
         // In the campaign with Resolve, the break grows with the Resolve the storm spent; elsewhere with its seconds.
         double grow = b.Resolve.On && w.Press?.Drain is > 0 ? BreakGrowthSpent(w, b.Resolve.SpentInStorm) : BreakGrowth(w, spent);
         double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * Math.Max(1, grow), dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;

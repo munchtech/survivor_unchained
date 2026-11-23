@@ -720,7 +720,7 @@ public partial class GameHud : CanvasLayer
         if (p.InvisibleT > 0) Status("smoke", "smoke", p.InvisibleT, true);
         if (b.WorldRate < 1) Status("world", "hourglass", b.WorldRateT, true);
         foreach (var (id, bf) in b.Buffs) Status("buff:" + id, id == "warcry" ? "howl" : id, bf.T, true, bf.Stacks);
-        StatusRow.Raise = b.Campaign && irons.Autos.Visible ? AutoRowModel.ShelfRaise(AutoRow.RowTop) : 0;
+        StatusRow.Raise = b.Campaign && !lampsWide ? AutoRowModel.ShelfRaise(StanceBlock.RowTop) : 0;
         irons.Statuses.Show(HudPin.Status ?? (IReadOnlyList<StatusShelf.Entry>)statusNow);
 
         // The chain: the ember while it burns; by day, the survivor's own growing.
@@ -765,12 +765,8 @@ public partial class GameHud : CanvasLayer
         irons.SetFour(b.Campaign);   // (bd-ui W3: four seats in the campaign, six in the arena; a no-op unless the mode changed)
         if (b.Campaign)
         {
-            ItemAutosTick(b);
-            irons.Autos.Visible = !lampsWide;
             irons.Stance.Feed(b, (GetParent() as Game)?.Journey.Ch);
             if (lampsWide) irons.Stance.Visible = false;
-            irons.Autos.StanceRight = irons.Stance.Visible ? irons.Stance.SwapRight : null;
-            irons.Autos.Feed(b, level.Level, itemAutoRarity);
         }
         SkillTipTick(b, b.Campaign && !(lampsWide && lampsSeats != null));
         AutoTipTick(b, b.Campaign && !lampsWide);
@@ -971,7 +967,7 @@ public partial class GameHud : CanvasLayer
         }
         // (pictures: the card only where a pin asks for it, whatever the pointer is over)
         bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
-        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
+        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.XpBarRect.Position.Y) : mouse;   // (the XP bar's top middle)
         // (its lines are written only while it shows: they were four strings a frame for a hidden card)
         river.Card.Set(show, anchor, show ? XpLight.Lines(!day, lv, have, need, xpLast && day) : default, f, day);
     }
@@ -1040,23 +1036,7 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>The seat (0-3 in the campaign, 0-5 in the arena) whose ring holds p (global), or -1.</summary>
-    /// <summary>bd-ui W3: the skills her worn gear grants as autos (ItemDef.Auto), by the granting piece's rarity: read again
-    /// when the build changes, not each frame.</summary>
-    readonly Dictionary<string, int> itemAutoRarity = new(StringComparer.Ordinal);
-    string itemAutoStamp = "\u0001";
-    void ItemAutosTick(Battle b)
-    {
-        string stamp = b.BuildStamp.ToString();
-        if (stamp == itemAutoStamp) return;
-        itemAutoStamp = stamp;
-        itemAutoRarity.Clear();
-        if ((GetParent() as Game)?.Journey.Ch is not { } ch) return;
-        foreach (var es in SurvivorUnchained.Rpg.Items.EquipSlots)
-            if (ch.Equipment[es] is { } it && SurvivorUnchained.Rpg.Items.Get(it.Def) is { Auto: { } au } def)
-                foreach (var id in au.Keys) itemAutoRarity[id] = Math.Max(itemAutoRarity.GetValueOrDefault(id, 0), def.Rarity);
-    }
-
-    /* ---- bd-ui W3: the auto tiles' and the stance block's hover cards ---- */
+    /* ---- bd-ui W3: the stance block's hover card ---- */
     PlainTip? plainTip;
     string autoTipFor = "";
     int autoTipHit = int.MinValue;
@@ -1072,40 +1052,24 @@ public partial class GameHud : CanvasLayer
         var c = Controls.Instance;
         bool captured = c == null || c.Captured || c.MenuMode;
         string? pin = HudPin.Tip;
-        (string Id, int Slot, bool More, Rect2 Rect)? tile = null;
         int disc = -1;
         Vector2 discTop = default;
         if (on && !cardRead && ch != null && skillTip is not { Visible: true })
         {
-            if (pin != null && pin.StartsWith("tile:") && int.TryParse(pin[5..], out var tk)) tile = irons.Autos.TileNo(tk);
-            else if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * (StanceBlock.FrontAt - new Vector2(0, StanceBlock.R)); }
+            if (pin != null && pin.StartsWith("stance:") && int.TryParse(pin[7..], out var ds)) { disc = ds; discTop = irons.Stance.GetGlobalTransform() * (StanceBlock.FrontAt - new Vector2(0, StanceBlock.R)); }
             else if (!HudPin.Active && !captured && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition()))
             {
                 var mp = play.GetGlobalMousePosition();
-                tile = irons.Autos.TileAt(mp);
-                if (tile == null && irons.Stance.Under(mp) is { } u) { disc = u.Set; discTop = u.Top; }
+                if (irons.Stance.Under(mp) is { } u) { disc = u.Set; discTop = u.Top; }
             }
         }
-        int hit = tile is { } t0 ? 100 + t0.Slot + (t0.More ? 50 : 0) + (t0.Id.GetHashCode() & 0xff) * 1000 : disc >= 0 ? disc : int.MinValue;
-        if (tile is { Id: "", More: false } || (tile == null && disc < 0)) hit = int.MinValue;
+        int hit = disc >= 0 ? disc : int.MinValue;
         if (hit != autoTipHit) { autoTipHit = hit; autoTipSince = Time.GetTicksMsec(); autoTipFor = ""; }
         bool show = hit != int.MinValue && (pin != null || Time.GetTicksMsec() - autoTipSince >= 150);
         if (!show) { plainTip?.Set(false, default, null); if (autoTipView != null) { autoTipView = null; if (skillTip is { Visible: true }) skillTip.Set(false, default, null); } return; }
-        if (tile is { More: false } t && t.Id != "" && b.Weapons.Find(x => x.Id == t.Id) is { } w)
-        {
-            plainTip?.Set(false, default, null);
-            string f = $"tile|{w.Id}|{w.Rank}|{b.BuildStamp}";
-            if (f != autoTipFor) { autoTipFor = f; autoTipView = SurvivorUnchained.Rpg.SkillTipModel.Build(ch!, b, w.Id, SkillTip.CastOf(w), null); }
-            float top = t.Rect.Position.Y;
-            var (capL, capR) = CapSpan.Of(top - 14 - 164, top - 14);
-            Tip().SetSeat(true, t.Rect.GetCenter().X, top, autoTipView, capL, capR);
-            return;
-        }
         Tip();
         plainTip ??= tipLayer!.GetChildren().OfType<PlainTip>().FirstOrDefault() ?? NewPlainTip();
-        if (tile is { More: true } m)
-            plainTip.Set(true, new Vector2(m.Rect.GetCenter().X, m.Rect.Position.Y), irons.Autos.HiddenNames.Select(n => (n, 1)).Prepend(("Also on her gear, firing by themselves", 4)).ToList());
-        else if (disc >= 0)
+        if (disc >= 0)
             plainTip.Set(true, discTop, irons.Stance.Tip(b, disc));
     }
 
@@ -1777,7 +1741,7 @@ public partial class GameHud : CanvasLayer
             {
                 if (card.Kind == LevelCardKind.NewRoad) roadAt = -1;
                 LevelCard(card);
-                if (card.Kind is LevelCardKind.NewKey or LevelCardKind.NewStance && UnlockCards.At(ch?.Archetype, l) is { } row) Lessons()?.Opened(row);
+                if (card.Kind is LevelCardKind.NewKey or LevelCardKind.NewStance && (card.Kind == LevelCardKind.NewKey ? UnlockCards.Of(ch?.Archetype, card.Skill) : UnlockCards.At(ch?.Archetype, l)) is { } row) Lessons()?.Opened(row);
             }
             // (the calling's own skill is not on a level's card: it waits for a quiet moment, UnlockTick)
             if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught) { callingCarded = taught; callingWait = taught; }
@@ -1819,7 +1783,6 @@ public partial class GameHud : CanvasLayer
     {
         // (bd-ui W4: a stance card folds into the stance block's front disc, an auto card into the tile that opened)
         if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) return irons.Stance.DiscRect(AutoRowModel.CardSet).GetCenter();
-        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return tr.GetCenter();
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return irons.GetGlobalTransform() * DgPanel.Coin;
         return irons.Sockets[k].GetGlobalRect().GetCenter();
@@ -1831,12 +1794,11 @@ public partial class GameHud : CanvasLayer
     {
         var l = new List<Rect2>();
         if (!campaignNow) return l;
-        if (irons.Autos.Visible) l.AddRange(irons.Autos.GlobalRects());
         if (irons.Stance.Visible) { l.Add(irons.Stance.DiscRect(0)); l.Add(irons.Stance.DiscRect(1)); }
         return l;
     }
 
-    float? CardRowTop() => campaignNow && irons.Autos.Visible ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(AutoRow.RowTop))).Y : null;
+    float? CardRowTop() => campaignNow && !lampsWide ? (irons.GetGlobalTransform() * new Vector2(0, AutoRowModel.ShelfTop(StanceBlock.RowTop))).Y : null;
 
     /// <summary>(judged 15 Nov at 1:1) the stance disc's blue ring is drawn ~3 px outside its rect (4: the 2 px gap kept); the tile's bezel starts 1 px inside its rect: the tail aims at what is drawn.</summary>
     const float DiscRingOut = 4, TileBezelIn = 1;
@@ -1846,7 +1808,6 @@ public partial class GameHud : CanvasLayer
     {
         if (!campaignNow) return null;
         if (s.Kind == LevelCardKind.NewStance && irons.Stance.Visible) { var d = irons.Stance.DiscRect(AutoRowModel.CardSet); return new Vector2(d.GetCenter().X, d.Position.Y - DiscRingOut); }
-        if (s.Kind == LevelCardKind.NewAuto && irons.Autos.Visible && irons.Autos.TileOfSlot(s.Slot) is var ti && ti >= 0 && irons.Autos.TileRect(ti) is { } tr) return new Vector2(tr.GetCenter().X, tr.Position.Y + TileBezelIn);
         int k = SeatFor(s);
         if (k < 0 || k >= irons.Sockets.Length) return null;
         float capTop = AutoRowModel.CapTop(DgPanel.TopY, DgPanel.Seat(0).Y, DgPanel.SeatR, KeyTag.MouseChip);
@@ -1856,7 +1817,6 @@ public partial class GameHud : CanvasLayer
     void CardFolded(LevelCardSpec s)
     {
         if (s.Kind == LevelCardKind.NewStance) { irons.Stance.Opened(); return; }
-        if (s.Kind == LevelCardKind.NewAuto) { irons.Autos.Opened(irons.Autos.TileOfSlot(s.Slot)); return; }
         int k = SeatFor(s);
         if (k >= 0 && k < irons.Sockets.Length) irons.Sockets[k].Opened();
     }
@@ -1870,7 +1830,7 @@ public partial class GameHud : CanvasLayer
     {
         var socks = irons.Sockets;
         // (bd-keys) The keys open at her level (slots 0-3), then her auto slots (from MaxKeys on): a seat past them is locked.
-        int keysOpen = SurvivorUnchained.Rpg.SkillBook.KeysAt(Math.Max(1, level)), autosOpen = SurvivorUnchained.Rpg.SkillBook.AutosAt(Math.Max(1, level));
+        int keysOpen = SurvivorUnchained.Rpg.SkillBook.KeysAt(Math.Max(1, level));
         var resolve = b.Resolve;
         int pointed = levelCard?.HoldingKey is { } hk ? SeatFor(hk) : -1;   // (bd-ui W14: the seat the holding card points at pulses)
         for (int q = 0; q < socks.Length; q++) socks[q].Target = q == pointed;
@@ -1880,30 +1840,26 @@ public partial class GameHud : CanvasLayer
             int slot = KeyMap.SeatSlot[k];
             var s = socks[k];
             var w = b.OnSlot(slot);
-            if (w == null) { bool lk = slot < Weapons.MaxKeys ? slot >= keysOpen : slot - Weapons.MaxKeys >= autosOpen; s.Empty(lk, lk ? SeatLook.OpensAt(slot, Weapons.MaxKeys) : 0); s.Feed(new Socket.SeatState { Cost = -1, Tint = tint }); continue; }
+            if (w == null) { bool lk = slot >= keysOpen; s.Empty(lk, lk ? SeatLook.OpensAt(slot, Weapons.MaxKeys) : 0); s.Feed(new Socket.SeatState { Cost = -1, Tint = tint }); continue; }
             bool second = w.Slot2 == slot;
             var shown = second && w.Half != null ? w.Half : w;
             // (a channel running keeps its well lit)
             double ready = w.Channeling && !second ? 1 : b.WeaponReady(shown);
             s.Show(shown.Id, SeatIcon.For(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
-            // (M4 lead 14, r3c M3: a kindled key's riposte, flare or command spends nothing: no arc; its "now" heaves from
-            // half the cost: the floor)
-            bool now = w.KindledNow && w.KindleKey == KindlePress.Now;
-            double cost = w.KindledNow && !now ? 0 : b.CostOf(shown);
+            double cost = b.CostOf(shown);
             int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
-            // (side by side: not across the coin, which stands between seats 1 and 2)
-            bool adjacent = other >= 0 && Math.Abs(other - k) == 1 && Math.Min(other, k) != 1;
-            bool bondNow = second ? w.Channeling || b.Time < w.BreakUntil : b.BreaksAStorm(w);
+            // (side by side: not across the fifth seat, which stands between seats 1 and 2; it clasps to neither)
+            bool adjacent = other >= 0 && other != DgPanel.CoinSeat && k != DgPanel.CoinSeat && Math.Abs(other - k) == 1 && Math.Min(other, k) != 1;
+            bool bondNow = second ? w.Channeling || b.Time < w.BreakUntil : b.BreakReadyOn(w);   // (skills-five) Sunder's bond lights once the storm's break is ready (breakAfter): the cue for the big hit
             // (bd-ui W9: once on change, under --dev-log or --press: does the seat get its Bond?)
             if (bondLogged[k] != bondNow && (Args.Has("dev-log") || Args.Has("press"))) { bondLogged[k] = bondNow; GD.Print($"seat {k} ({shown.Id}): bond {bondNow} t={b.Time:0.00}"); }
             s.Feed(new Socket.SeatState
             {
-                Kind = w.KindledNow ? Socket.SeatKind.Kindled : !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
+                Kind = !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
                 Channeling = w.Channeling && !second,
                 Held = second ? w.Held2 : w.Held,
                 // (M4 lead 13, r3b M1: one rule on the one Resolve the hair reads: SeatCost)
                 Cost = HudPin.CostSeat is { } pc && pc.Seat == k ? SeatCost.Shown(pc.Fraction) : SeatCost.Arc(resolve.Value, cost),
-                Floor = SeatCost.FloorShare(now),
                 Union = w.Slot2 >= 0,
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,

@@ -25,14 +25,11 @@ public static class SeatLook
         return (l + (r - l) * keep, l + (g - l) * keep, l + (b - l) * keep);
     }
 
-    /// <summary>The first level at which key slot (0-based) is open (KeysAt(L) &gt; slot); for an auto slot, the first
-    /// level AutosAt(L) &gt; its index among the autos. 0 when none (never).</summary>
+    /// <summary>The first level at which key slot (0-based) is open (KeysAt(L) &gt; slot). 0 when none (never).</summary>
     public static int OpensAt(int slot, int maxKeys)
     {
-        bool auto = slot >= maxKeys;
-        int need = auto ? slot - maxKeys : slot;
         for (int lv = 1; lv <= 99; lv++)
-            if ((auto ? SkillBook.AutosAt(lv) : SkillBook.KeysAt(lv)) > need) return lv;
+            if (SkillBook.KeysAt(lv) > slot) return lv;
         return 0;
     }
 }

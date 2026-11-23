@@ -398,7 +398,10 @@ public partial class BattleFx
     /// feet): no light, no glow. Sound: P7Ev("leap_henge") as they rise, P7Ev("leap_henge_sink") as they sink.</summary>
     void P7Henge(Ev.Nova e)
     {
+        long hq = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
         P7Ev("leap_henge");
+        if (Perf.On) hq = Perf.Slow("henge sound", hq, 0.5);
+        if (Perf.On) GD.Print($"perf mark henge at {Perf.Now:0.000}s");   // (frame pacing) the landing's time on the perf csv's clock
         float r = (float)e.Radius, secs = (float)Math.Max(1.0, e.Duration);
         var len = P7D.All("leap.henge.len");
         var tilt = P7D.All("leap.henge.tilt_deg");
@@ -408,6 +411,7 @@ public partial class BattleFx
         int n = Math.Max(8, (int)Mathf.Round(Mathf.Tau * r / Mathf.Max(0.3f, P7D["leap.henge.pitch"])));
         float a0 = R() * Mathf.Tau;
         var feet = new List<(Vector3 P, Vector3 O)>();
+        if (Perf.On) { _ = WgHengeMat; hq = Perf.Slow("henge material", hq, 0.5); }
         for (int i = 0; i < n; i++)
         {
             float a = a0 + (i + (R() - 0.5f) * 0.08f) / n * Mathf.Tau, d = r * (1 + (R() - 0.5f) * 0.03f), delay = late * R();
@@ -416,7 +420,9 @@ public partial class BattleFx
                     Mathf.Lerp(wide[0], wide[1], R()), secs - delay - 0.59f, most, thick, WgHengeMat)) continue;
             feet.Add((V(x, Y(x, z), z), new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a))));
         }
+        if (Perf.On) hq = Perf.Slow("henge stones", hq, 0.5);
         P7HengeDust(feet, dpx[0], dpx[1], 1f, 0.25f);
+        if (Perf.On) hq = Perf.Slow("henge dust", hq, 0.5);
         WgLater(secs - 0.35f, () => { P7Ev("leap_henge_sink"); P7HengeDust(feet, dpx[0], dpx[1], 0.7f, 0.1f); });
         if (GripSayAll && GetViewport()?.GetCamera3D() is { } cam)
         {

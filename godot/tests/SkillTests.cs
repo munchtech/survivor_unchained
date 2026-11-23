@@ -26,6 +26,7 @@ public class SkillTests
     public void A_tome_teaches_only_what_has_been_seen_burning()
     {
         var j = Make("arcanist");
+        j.Ch.Level = 4; // (two keys open: one is her first skill, the other takes the tome's)
         j.GiveItem(SkillBook.Tome("seeking_motes"));
         var tome = j.Ch.Satchel.First(p => p.Def == SkillBook.Tome("seeking_motes"));
         // Never seen in an arena: the words mean nothing yet.
@@ -44,6 +45,8 @@ public class SkillTests
     public void A_skill_asks_something_of_you_and_lies_idle_until_you_measure_up()
     {
         var j = Make("warden");
+        j.Ch.Level = 4;
+        j.Ch.Bar = SurvivorUnchained.Content.TaughtBuilds.BarShape; j.Ch.TaughtUpTo = 4; // (the taught build is already granted: Heroic Leap would fill the second key)
         j.Ch.Discovered.Add("seeking_motes");
         Assert.Equal("Wits", SkillBook.Attribute("seeking_motes"));
         Assert.Equal("Might", SkillBook.Attribute("cleaver"));
@@ -61,6 +64,7 @@ public class SkillTests
     public void Skills_learned_for_the_day_stay_out_of_the_nights_arenas()
     {
         var j = Make("arcanist");
+        j.Ch.Level = 4;
         j.Ch.Discovered.Add("rimeshard");
         SkillBook.Learn(j.Ch, "rimeshard");
         Assert.Contains(Day(j).Weapons, w => w.Id == "rimeshard");
@@ -72,7 +76,7 @@ public class SkillTests
     public void Slots_and_ranks_grow_with_the_survivor_and_the_calling_teaches_its_own()
     {
         var j = Make("stalker");
-        Assert.Equal(2, SkillBook.Slots(j.Ch));
+        Assert.Equal(1, SkillBook.Slots(j.Ch));
         Assert.Equal(1, SkillBook.Rank(j.Ch));
         foreach (var id in new[] { "volley", "knifestorm", "rimeshard" }) j.Ch.Discovered.Add(id);
         while (j.Ch.Level < 3) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
@@ -82,7 +86,7 @@ public class SkillTests
         Assert.True(SkillBook.Knows(j.Ch, taught!));
         Assert.Contains(Weapons.All[taught!].Tags, Callings.Archetype("stalker").Favours.Contains);
         while (j.Ch.Level < 8) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
-        Assert.Equal(5, SkillBook.Slots(j.Ch));
+        Assert.Equal(3, SkillBook.Slots(j.Ch));
         Assert.Equal(4, SkillBook.Rank(j.Ch)); // M7a: one point every second level (1 + 7 / 2)
     }
 

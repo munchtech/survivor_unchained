@@ -22,9 +22,9 @@ public class DaySlotsTests
     }
 
     [Theory]
-    [InlineData(1, 2)] [InlineData(3, 2)] [InlineData(4, 3)] [InlineData(5, 4)] [InlineData(6, 4)]
-    [InlineData(7, 5)] [InlineData(8, 5)] [InlineData(9, 6)] [InlineData(10, 7)] [InlineData(30, 7)]
-    public void Slots_grow_to_seven_by_the_tenth_level(int level, int slots)
+    [InlineData(1, 1)] [InlineData(3, 1)] [InlineData(4, 2)] [InlineData(5, 3)] [InlineData(6, 3)]
+    [InlineData(7, 3)] [InlineData(8, 3)] [InlineData(9, 5)] [InlineData(10, 5)] [InlineData(30, 5)]
+    public void Slots_are_the_five_keys_opening_at_1_4_5_and_9(int level, int slots)
     {
         var ch = Make();
         ch.Level = level;
@@ -97,6 +97,8 @@ public class DaySlotsTests
         }, seed: 7);
     }
 
+    // (skills lane, 22 Nov: no auto slots) A start whose road skill runs only by itself (the bulwark's Rebuke, a kindle
+    // record waiting for its Lamps-board node, SKILL_KINDS.md) carries it unslotted: the owner's open question. The rest carry one.
     [Fact]
     public void Every_start_carries_two_skills_by_day_at_level_one()
     {
@@ -107,7 +109,7 @@ public class DaySlotsTests
                 {
                     var ch = MakeWith(a.Id, road.Id, w);
                     var got = SkillBook.Carried(ch).Select(c => c.Id).ToList();
-                    if (ch.Skills.Count != 1 || got.Count != 1) bad.Add($"{a.Id}/{road.Id}/{w}: skills [{string.Join(",", ch.Skills)}] carried [{string.Join(",", got)}]");
+                    if (ch.Skills.Count != 1 || got.Count != (SurvivorUnchained.Content.Weapons.AutoOnly(ch.Skills[0]) ? 0 : 1)) bad.Add($"{a.Id}/{road.Id}/{w}: skills [{string.Join(",", ch.Skills)}] carried [{string.Join(",", got)}]");
                 }
         Assert.True(bad.Count == 0, string.Join(" | ", bad));
     }

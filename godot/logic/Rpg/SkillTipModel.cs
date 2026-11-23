@@ -53,7 +53,6 @@ public static class SkillTipModel
         {
             w = WickBook.Weapon(ch, skill, WickBook.RankIn(ch, skill, false), false);
             w.Press = def.Press;
-            if (w.Press != null) w.SetForm(cast);
         }
         var unresolved = new List<string>();
         double cooldown = live ? Firing.CooldownOf(b!, w) : Firing.CampaignCooldownOf(w, resolveOn, StatMul(ch));
@@ -65,7 +64,7 @@ public static class SkillTipModel
         {
             every = period;
             cut = dmg * period / (w.Press.Wait ?? def.Base.Cooldown ?? 1);
-            // a lit wick that slows or quickens the swing (Splitting Stroke's 15% slower, a lamp's 8% less) stretches the period (as the Lamps sum line reads it)
+            // a lit wick that slows or quickens the swing (Groundbreaker's 15% slower, a lamp's 8% less) stretches the period (as the Lamps sum line reads it)
             every = period * (w.Wick?.Cooldown ?? 1);
         }
 
@@ -88,8 +87,7 @@ public static class SkillTipModel
             return s;
         });
 
-        string how = cast == "kindle" && rec?.Kindled is { } k ? Fill(k)
-            : rec?.How is { } h && h.TryGetValue(cast, out var ho) ? ho : SkillTips.How(cast);
+        string how = rec?.How is { } h && h.TryGetValue(cast, out var ho) ? ho : SkillTips.How(cast);
         string line;
         var rows = new List<(string, string)>();
         if (rec != null)
@@ -177,7 +175,7 @@ public static class SkillTipModel
                 _ => null,
             };
             if (pick == null) return null;
-            double? r = Find(w.Press?.Kindled?.Condition(), pick) ?? Find(w.Def.Kindle, pick);
+            double? r = Find(w.Def.Kindle, pick);
             return r == null ? null : Plain(r.Value);
         }
         return null;

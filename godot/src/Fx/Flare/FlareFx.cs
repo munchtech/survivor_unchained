@@ -99,6 +99,9 @@ public partial class FlareFx : Node3D
 
     public override void _Ready()
     {
+        _ = Content.FlareFamily.StopOf("", "warden", false, false);   // (P2 task 5) flare_family.json is parsed on first use: 14-15 ms at the first Flare press; read here, behind the load
+        // (P2 task 5) and the blade a Flare forms in her hand (FlareDef.Grip) is measured here, not at its first press (Arms.Warm: the read-back of its meshes)
+        foreach (var f in Content.Lamps.Flares.Values) if (f.Grip is { } grip) Arms.Warm(grip);
         AddChild(scars);
         AddChild(bed);
         AddChild(glow);
@@ -172,12 +175,15 @@ public partial class FlareFx : Node3D
 
     void Press(Ev.Flare e, Battle b)
     {
+        long q = System.Diagnostics.Stopwatch.GetTimestamp();   // (P2 task 5: --perf names the press's slow steps)
         Clear();
+        q = Perf.Slow("flare press clear", q, 2);
         if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)} kills {b.KillCount} {PressCount(e, b)}");
         // (--perf: the beats on the recording's clock, for tools/fx/flare_gpu.py --live)
         if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
         id = e.Id;
         pressWorld = b.Time;
+        pressAngle = (float)e.Angle;
         dropLogged = false;
         t = 0;
         at = new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z);
@@ -187,18 +193,22 @@ public partial class FlareFx : Node3D
         bankShots = b.FlareFullBankShots;
         var calling = b.Flare?.Calling ?? "arcanist";
         // (H7: the stop's real seconds are the family's data, per calling and Flare: flare_family.json "stop")
+        q = Perf.Slow("flare press before stop", q, 1);
         freezeLen = Content.FlareFamily.StopOf(e.Id, calling, clutch, banked);
+        q = Perf.Slow("flare press stop", q, 1);
         LeadRate = b.FlareKey / freezeLen;
         Frozen = !e.Stand && Motion > 0;
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
         RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_at"), new Vector4(at.X, at.Y, at.Z, reach));
         // (a: night, for the glaze's value: by day the sky's reflection on it turned the field to snow)
         RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_hue"), calling == "warden" ? new Vector4(1f, 0.72f, 0.32f, Night ? 1 : 0) : new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
+        q = Perf.Slow("flare press globals", q, 1);
         float kind = id == "burns_twice" ? (b.Lamps.FlareMods.Contains("burns.black_ice") ? 2 : 1) : 0;
         look = new Vector4(0, 0, 0, kind);
         web = new Vector4(0, 1, 0, R() * 10);
         frost = Vector4.Zero;
         // Frame 1 answers: the staff flares, the missiles near her burst into ember, the confirm, the pad's tick.
+        q = Perf.Slow("flare press setup", q, 2);
         var head = Head();
         if (IsLongCut) LongPress();
         else for (int i = 0; i < 26; i++)
@@ -208,12 +218,17 @@ public partial class FlareFx : Node3D
             for (int i = 0; i < 10; i++) glow.Spawn(FlareBits.Kind.Mote, m, Rand3() * 2.5f, 0.35f + R() * 0.3f, 0.05f, new Color(1.2f, 0.5f, 0.12f), new Color(0.6f, 0.1f, 0.02f), drag: 3, lift: 1);
             bed.Spawn(FlareBits.Kind.Puff, m, Vector3.Up * 0.6f, 0.9f, 0.35f, new Color(0.1f, 0.09f, 0.08f, 0.5f), sizeEnd: 0.9f, drag: 1);
         }
+        q = Perf.Slow("flare press motes", q, 2);
         Cue("confirm", Her, 1);
         Cue("inhale", Her, (float)freezeLen);
         Rumble(0, 0.5f, 0.04f);
+        q = Perf.Slow("flare press cues", q, 2);
         HudDim(1); LabelsAlpha(0);
+        q = Perf.Slow("flare press hud", q, 2);
         FamilyPress(e, b, calling);
+        q = Perf.Slow("flare press family", q, 2);
         PeakMake();
+        Perf.Slow("flare press peak", q, 2);
         if (Args.Has("clip") && GetViewport()?.GetCamera3D() is { } pc)
         {
             var vs = GetViewport().GetVisibleRect().Size;
@@ -284,13 +299,16 @@ public partial class FlareFx : Node3D
         rt += dt;
         if (Stop > 0) { Stop = Math.Max(0, Stop - dt); if (Stop <= 0) hitstopRuns = false; }
         if (!Frozen && ramp < 1) ramp = Math.Min(1, ramp + dt / 0.08 * 0.92);
+        long pq = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;   // (P2 task 5 probes: the first tick of a Flare 8.7-10 ms)
         if (b != null && !Active) Ready(b, fdt);
         LcWarmStep();
+        if (Perf.On) pq = Perf.Slow("flare tick warm", pq, 1);
         if (Active)
         {
             t += Stop > 0 && !hitstopRuns ? dt * 0.1 : dt;
             Envelope();
             BlowTick();
+            if (Perf.On) pq = Perf.Slow("flare tick blow", pq, 1);
             // (--clip: the HUD's count as it steps, against the sim's and the band's hold: judge r2's "10 to 26" check)
             if (b != null && Args.Has("clip") && rt - pressRt < 2.5 && b.KillCount - KillsHeld != hudKillsLogged)
             {
@@ -300,6 +318,7 @@ public partial class FlareFx : Node3D
             if (id == "burns_twice") BurnsTick(fdt);
             else if (IsLongCut) LongTick(fdt);
             else Plain();
+            if (Perf.On) pq = Perf.Slow("flare tick kind", pq, 1);
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
             float sl = spendLightT < 0 ? 0 : (float)((spendLightReal ? rt : t) - spendLightT);
             // (the Long Cut rides its light itself: FlareFx.LongCut)
@@ -311,6 +330,7 @@ public partial class FlareFx : Node3D
             RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_web"), web);
             RenderingServer.GlobalShaderParameterSet(Sn.Of("flare_frost"), frost);
             UploadMarks();
+            if (Perf.On) pq = Perf.Slow("flare tick marks", pq, 1);
             // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)
             // (Again at the ring's end +0.3 s and +0.55 s, while the fireball burns over the bodies: judge 7 (1).)
             if (lastAt > 0 && audited < 3 && id == "burns_twice" && t >= lastAt + RingTime(ringMax) + 6 / 60.0 + AuditAfter[audited])
@@ -331,11 +351,14 @@ public partial class FlareFx : Node3D
                 Clear();
             }
         }
+        if (Perf.On) pq = Perf.Slow("flare tick rest", pq, 1);
         FamilyTick(dt, b);
+        if (Perf.On) pq = Perf.Slow("flare tick family", pq, 1);
         glow.Step(fdt, HeightAt);
         bed.Step(fdt, HeightAt);
         scars.Step(fdt, HeightAt);
         shards.Step(fdt, HeightAt);
+        if (Perf.On) Perf.Slow("flare tick steps", pq, 1);
     }
 
     bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : IsLongCut ? lcCleaveT >= 0 && t > lcCleaveT + 6.2 || t > 12
@@ -540,6 +563,8 @@ public partial class FlareFx : Node3D
     /// <summary>The Return's end (Flare time after the BOOM): a fresh drop's light comes up to full over these.</summary>
     const float DropDimFrom = 3.4f, DropDimTo = 4.3f, DropDim = 0.3f, DropSettle = 0.1f;
     double pressWorld;
+    /// <summary>The press's angle (atan2(z, x)): where the Long Cut's sweep starts off (its own Blow event carries none).</summary>
+    float pressAngle;
 
     /// <summary>For BattleFx.Pickups, after Burns Twice's BOOM: a drop born since the press (bornWorld: Battle.Time at its
     /// birth) is drawn at this scale (0.35 to 1 over 0.3 s from the ring passing it) and this light (0.35 of its own
