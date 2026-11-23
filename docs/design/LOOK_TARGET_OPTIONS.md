@@ -154,6 +154,63 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 
 **What the rest of round 4 costs.** About five more images in the same chat once the limit resets: frame 1's correction, frames 2 and 3, and one correction each if needed. Then a few minutes of measures, the sheet, and the one judged round. Every script is written and has run on frame 1. The limit is the cost that is new. Known: the second lead made ten pictures this morning, this round made one, and the next request was refused. Not known: how many pictures the allowance holds, or what else used it. My reading, not checked: a full option set should start on a fresh allowance.
 
+## Round 5 on option C (fourth lead, 22 Nov): stopped at ChatGPT's image limit before any picture; not judged
+
+**The owner's words (22 Nov 2026, word for word).**
+- Look direction: "C: cool shade, warm light (Recommended)". Foes: "Dark, pale rim, ink line (Recommended)".
+- On round 4's first frame (`C4_f1_v1`), when shown: "that frame you just showed me looks great!!!"
+- Later the same day: "reviewing c again for the painted overlay, it still wasn't perfect.  you may continue work on that till you pass it.  a little more detail perhaps in the floor? not sure, some things appear to be floating - ANYWAY the images should work again it reset usage"
+
+**How those words are read here (the coordinator's reading, not the owner's words).**
+- "till you pass it" lifts the old limit of one judged round on this item.
+- "some things appear to be floating" is a fault to fix.
+- "a little more detail perhaps in the floor? not sure" is a lean, not a ruling. It gets its own version of frame 1, shown beside one without it.
+- Still not ruled by the owner: whether floor light pools may be brighter than her, and hard-edged cut light against a soft glow (questions 4 and 5 below).
+
+**What happened.** No picture was made. The first request of the round was refused about six minutes in. The page said: "You're out of image creations for now. Try again at 6:42 PM." It offered "Upgrade to Pro", which was not touched. The model's reply: "You've hit the Plus plan limit for image generations requests. You can create more images when the limit resets in 1 hour." So the allowance had not reset at 5:22 PM (measured: the page's own words). Nothing was retried and no other route was used. **No judged round was spent and no judge was spawned.** There is no round-5 sheet.
+
+**What floats in `C4_f1_v1` (the "before"), looked at 1:1.** My reading, by kind:
+
+| Thing on the floor | Shadow where it meets the floor | Floats |
+|---|---|---|
+| Bones: ribs, the jawbone, bone bits (about 12) | none | yes |
+| Feather tufts (about 7) | none | yes |
+| Orange leaf piles (about 14) | none; they read as stickers | yes |
+| Stone stakes (about 12) | none on the dark floor; a thin dark side on the lit patch | yes |
+| The antler skull by the pit | a few ink marks, no shadow shape | yes |
+| Wolves: the ring of about 12 and the three at the bottom | none under body or paws; clearest on the lit patch | yes |
+| The woman | none at her feet (she is small from this camera) | yes, least visible |
+| The fallen log on the left | none under it | yes |
+| The small pale carcass, and the pale lump at the right wall | none | yes |
+| Sticks and twigs | thin and dark, they read flat on the ground | no |
+| The pit, the root walls, the mushrooms | inked into the ground; the pit is darker inside | no |
+
+**The same fault, measured.** A new check (`ground5.py`) counts each thing in the game frame that is much darker or lighter than the floor. A thing counts as grounded when the floor just off its lower-right side is clearly darker than the floor a little further out.
+
+| Frame | The game frame itself | Round 3's paint | Round 4's paint |
+|---|---|---|---|
+| 1 | 77 of 140 grounded (55%) | 58 of 140 (41%) | 50 of 140 (36%) |
+| 2 | 61 of 104 (59%) | 46 of 104 (44%) | not made |
+| 3 | 41 of 115 (36%) | 33 of 115 (29%) | not made |
+
+- On frame 1 the game grounds 62 of its 96 dark things. Round 4's paint grounds 28 of them.
+- My reading: the game draws a soft dark blob under each wolf, and the paint-over drops it. That fits "some things appear to be floating".
+- The check is crude: small dark specks by the walls count as things. It is a gate beside the 1:1 list, not in place of it.
+- Round 5's own gate, mine and not a judge's: each frame at or above the game frame's share, and every row of the list above answered "no".
+
+**What is ready and not yet sent** (in full in `...\scratch_look\gpt\prompts.md` under "Round 5"):
+- **Frame 1:** one correction to `C4_f1_v1` in the same chat, so the picture the owner reacted to is kept. It asks for a short dark contact shadow under every thing named in the list above, the light patches slightly darker, and her slightly lighter. This is the request that was refused.
+- **Frames 2 and 3:** round 4's recipe with the same contact-shadow block. Frame 2 also names the top-edge roots and the boulder as fixed in place. Frame 3 is uploaded with the four-side pad, and the fit script refuses any fill.
+- **Frame 1 with more floor detail:** a one-thing edit of the new frame 1, so the pair differs in the floor only.
+
+**Floor detail against the third judge's gate (my reading, not checked on a picture).** The judge wanted the floor no busier than the game frame at wolf scale (the 10-30 px band). In round 4 the shaded floor is quieter than the game frame at that scale (4.1 against 4.9), and the lit patches push the whole-floor number over (6.3 against 5.7). So there is room for more detail in the shade before that gate is crossed. If the detailed version crosses it, the page will say so and keep both versions: the owner's lean is why the version exists.
+
+**Not checked.** Whether any of the four prompts works: none produced a picture. Whether short contact shadows show on a near-black wolf over a dark floor. How many pictures the allowance holds after the reset.
+
+**Where it is kept.** Nothing new goes to the owner from this round: no picture exists. The 1:1 crops behind the list: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\peek5\r4f1_*.png`. The per-thing lists: `...\gpt\peek5\ground_*.txt`. Scripts: `...\gpt\scripts5\`. State and how to resume: the top block of `...\scratch_look\STATE.md`.
+
+**What the rest costs.** Four pictures make the set (frame 1, 2, 3, and frame 1 with floor detail), about 90 seconds each, plus one correction each if a named fault is left. Then one command per measure, the sheet, and a judged round. The prompts and every script are written; the grounding check has run on rounds 3 and 4. Unknown: the size of the allowance. Known: ten pictures this morning, one at 2 PM, then refusals at 2:08 PM and 5:22 PM.
+
 ## Questions for the owner (yes/no)
 
 1. **Answered 22 Nov: "Dark, pale rim, ink line (Recommended)".** May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)
