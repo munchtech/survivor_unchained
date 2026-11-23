@@ -22,6 +22,8 @@ The brief's fallback applies: "stop at the screenshots plus a written descriptio
 
 **Afternoon of 22 Nov:** the owner picked C ("C: cool shade, warm light (Recommended)") and allowed one more judged round on its fixed frames. A third lead started round 4 and was stopped by ChatGPT's image limit after one frame. That frame is not judged and the round is not spent. See "Round 4 on option C" below.
 
+**Evening of 22 Nov:** the owner allowed work on C "till you pass it". A fourth lead was stopped by the image limit before any picture. A fifth lead then made 22 pictures on a fresh allowance and spent three judged rounds, each with a fresh judge. All three failed, so C is still not passed and no frame is offered as a pick. The third set is the closest so far and its faults are named. See "Round 5 on option C, made and judged" below.
+
 **The screenshots** (the game today: 1:1, game camera 62 degrees down, 24 m, FOV 34, 1920x1080, HUD off; she is about 70 px tall):
 - `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\den_frame_1.png` is a Clearing with a pack on her.
 - `den_frame_2.png` is a second Clearing with a pack.
@@ -211,6 +213,110 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 
 **What the rest costs.** Four pictures make the set (frame 1, 2, 3, and frame 1 with floor detail), about 90 seconds each, plus one correction each if a named fault is left. Then one command per measure, the sheet, and a judged round. The prompts and every script are written; the grounding check has run on rounds 3 and 4. Unknown: the size of the allowance. Known: ten pictures this morning, one at 2 PM, then refusals at 2:08 PM and 5:22 PM.
 
+## Round 5 on option C, made and judged (fifth lead, 22 Nov evening): three judged rounds, none passed
+
+**The verdict.** Three sets were made. Each went to a fresh max-effort judge who was not told the owner's reactions or any earlier verdict. All three said FAIL. No frame is offered as a pick. `C4_f1_v1`, the frame the owner reacted to, is on disk unchanged as the before.
+
+The checklist had ten lines: 1 frame kept; 2 figures kept; 3 nothing floats; 4 a dark blob under every wolf; 5 warm light reads as light, in cut cel shapes; 6 values (she is the lightest); 7 foes; 8 floor; 9 walls, mushrooms, pits; 10 one look.
+
+| Judged round | Pictures on the sheet | Verdict | Lines failed |
+|---|---|---|---|
+| 1 | `C5_f1_v3` (plain floor), `C5_f1_d1` (more floor detail), `C5_f2_v1`, `C5_f3_v3` | FAIL | frame 1: 1, 4, 5, 6 (the detailed floor also 8); frame 2: 1, 5, 6; frame 3: 3, 5, 6, 7; the set: 10 |
+| 2 | `C5_f1_v4`, `C5_f2_v5p2`, `C5_f3_v4` | FAIL | every frame: 1, 5, 6, 10; frames 1 and 2: 4; frame 2: 9; line 3 not certified |
+| 3 | `C5_f1_v5w`, `C5_f2_v8w`, `C5_f3_v6w` | FAIL | frame 1: 3, 4, 5, 6; frame 2: 1, 4, 5, 6; frame 3: 1, 4, 5, 6, 7; the set: 10 |
+
+Lines the judges left unchecked, so they count as neither pass nor fail: round 1, line 3 on frames 1 and 2 and line 4 on frame 2; round 3, line 1 on frame 1 (three small leaf and twig bits not confirmed) and line 2 on frame 2 (the wolves not counted one by one).
+
+**The owner's two points, where they stand.**
+- *"some things appear to be floating"*: **not fixed.** Every prompt asked for a contact shadow under each kind of prop and a dark blob under every wolf.
+  - Props (the round-3 judge, by eye at 1:1, prop by prop): frames 2 and 3 pass. Frame 1 has three curved bones with no contact shadow, at (510,795), (538,867) and (1196,825).
+  - Wolves (the round-3 judge, measured): the floor just outside a wolf against the floor a little further out, in CIE L. At nine places the game darkens by 2.5 to 17.8 and the paint by -4.7 to +2.3: frame 1's three bottom wolves and two places in its ring, three wolves in frame 2, and frame 3's big wolf (+0.8 against the game's +6.8). Other wolves keep a strong blob (frame 1 (845,575) +10.1, frame 2 (891,576) +7.7).
+  - The crude count of grounded things (`ground5.py`), measured:
+
+    | Frame | The game | Before (`C4_f1_v1`) | Round 1 | Round 2 | Round 3 |
+    |---|---|---|---|---|---|
+    | 1 | 77 of 140 | 50 | 52 (detailed floor: 63) | 52 | 53 |
+    | 2 | 61 of 104 | not made | 56 | 43 | 44 |
+    | 3 | 41 of 115 | not made | 47 | 54 | 33 |
+
+    The count and the judge's eye disagree on frame 3 (lowest count, passes by eye), so the count is a hint and no more.
+- *"a little more detail perhaps in the floor? not sure"*: made once as its own version of frame 1 (`C5_f1_d1`), beside the plain floor (`C5_f1_v3`), both on the round-1 sheet. The round-1 judge preferred the plain floor: the detailed floor's crack web (cells of 30-60 px) competes with the wolf ring. Rounds 2 and 3 kept the plain floor, and the floor line passed on all three frames in round 3. The pair is there for the owner to look at; this stays the owner's call.
+
+**The spend (measured).** 22 pictures over 21 requests in the same chat, 18:50 to 20:47 (one request returned two pictures). No limit notice, refusal or upgrade offer appeared at any point. So the allowance held at least 22 pictures in this window. Its size is still unknown. The route's lock was released at 20:51.
+
+**Measures, frame 1** (all measured by the scripts in `...\scratch_look\gpt\scripts5\`):
+
+| | The game | Before `C4_f1_v1` | Round 1 `C5_f1_v3` | Round 1 `C5_f1_d1` | Round 2 `C5_f1_v4` | Round 3 `C5_f1_v5w` |
+|---|---|---|---|---|---|---|
+| Frame patches moved over 6 px | - | 4% | 5% | 4% | 14% | 4% |
+| Floor, median / 95th percentile L | 29 / 45 | 16 / 41 | 15 / 37 | 18 / 38 | 11 / 42 | 14 / 27 |
+| Floor pixels brighter than her | - | 4.7% | 7.7% | 4.6% | 6.0% | 2.0% |
+| Pinkish floor | - | 0.8% | 3.0% | 3.3% | 1.3% | 1.0% |
+| Floor detail at 10-30 px, whole / shade | 5.7 / 5.2 | 6.3 / 4.1 | 7.1 / 5.1 | 6.5 / 4.8 | 7.3 / 4.9 | 5.0 / 3.6 |
+| Burst near (1025,925): pixels above L 60 | 352 | 1651 | 942 | 1006 | 748 | 227 |
+| Pixels above L 80, whole frame | 584 | not measured | not measured | not measured | 9132 | 2169 |
+| Light patches, L and chroma | - | RGB 108,75,66 and 151,104,73 | RGB 97,58,49 | RGB 109,66,61 | L 45-46, C 47-49 | L 29 C 26 and L 26 C 22 |
+| Her box, L (`measure5.py`) | 48 | 41 | 33 | 39 | 39 | 36 |
+| Her warm pixels, median L (`patch7.py`) | 38 | not measured | not measured | not measured | 36 | 37 |
+
+**Measures, frames 2 and 3** (no "before": round 4 made frame 1 only):
+
+| | Frame 2: the game | Round 1 | Round 2 | Round 3 | Frame 3: the game | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|---|---|---|---|---|
+| Frame patches moved over 6 px | - | 7% | 17% | 7% | - | 8% | 7% | 11% |
+| Floor, median / 95th percentile L | 31 / 44 | 15 / 34 | 13 / 23 | 12 / 21 | 26 / 44 | 15 / 36 | 13 / 31 | 11 / 19 |
+| Pinkish floor | - | 5.1% | 1.9% | 0.4% | - | 1.2% | 0.8% | 0.2% |
+| Floor detail at 10-30 px, whole / shade | 5.2 / 4.8 | 5.4 / 3.3 | 5.9 / 3.4 | 4.8 / 3.1 | 4.2 / 3.6 | 6.5 / 4.4 | 6.4 / 4.1 | 4.3 / 2.9 |
+| Pixels above L 80, whole frame | 249 | not measured | 2108 | 1731 | 460 | not measured | 5678 | 548 |
+| Light patches | - | RGB 107,63,47 | L 45-46, C 50 | L 28, C 30, hue 50 | - | L 33-34, a ribbon | L 41, 2.2 times the game's landing | L 30, C 29, hue 69 |
+| Her warm pixels, median L (`patch7.py`) | 38 | not measured | 36 | 39 | 40 | not measured | 33 | 32 |
+| Foes, L | - | not measured | 15 | 14 | 10 | 16 | 10 | 12 |
+| Glow near (1024,759): pixels above L 60 | 224 | 147 (round-1 judge) | 219, core 21 px low | 149, core in place | - | - | - | - |
+
+The two measures of her disagree on what the game does. `measure5.py`'s box puts her at L 48 in the game's frame 1 and 36 in round 3's paint. `patch7.py`'s warm pixels put her at 38 and 37. The round-3 judge used the first. Not known: which matches how she reads.
+
+**What three rounds settled** (judged, with the measures above):
+- The floor passes on all three frames in round 3: dark, blue-violet, painted, no busier than the game at wolf scale, pinkish share 1% or less.
+- The walls, mushrooms and pits pass in all three rounds.
+- The beams are hard-edged bands with no pink (rounds 2 and 3). The patches are hard-edged, four-sided, and darker than her (round 3).
+- The frame's structure holds in round 3: frame 1's recess is a hollow again, its gully, trunk and boulder are the game's, and frame 2's top edge sits at a median shift of 0 px.
+- The glows sit in the game's places. They are now smaller than the game's (227 against 352 pixels above L 60 in frame 1, 149 against 224 in frame 2), and the round-3 judge wants the game's warm haze back round them.
+- Near-white pixels came down from round 2 in frames 1 and 3 (4 times and 10 times). Frame 2 barely moved (2108 to 1731, against the game's 249).
+
+**What no round solved.**
+1. **The blob under the wolves (line 4).** It failed in all three rounds. No picture of the 22 kept it under every wolf.
+2. **The patch reads as a mat, not as light (line 5).** Round 1 called it "a brown dirt path", round 2 "orange mats", round 3 "flat mats". Nothing standing in a patch is lit by it or casts a cool shadow.
+3. **Her values (line 6).** Each round asked for her lighter. She came back at 32 to 39 (warm pixels), and the teal mushrooms and rim spots have more near-white pixels than she does (frame 2's bottom-left caps: 420 above L 80 against her 353; the game has none there).
+4. **One look (line 10).** It failed in every round. In round 3 the cause is frame 3: its patch is ochre (hue 69 against 50) and its wolf has the floor's value (both L 11).
+5. Small redraws keep appearing: round 3 turned frame 2's leaf pile at (1320-1365, 955-995) into grey stones and frame 3's campfire into a ring of pale stones about 35% wider.
+
+**Where the three judges pull apart** (measured from their written findings; the choice between them is not mine):
+- **How light the patch is.** Round 1 wanted it lighter and more golden, toward the day panel's lit ground (L 67, C 67), though still under her. Round 2 wanted L 35 or less and C 35 or less. Round 3 got patches at L 26-30 and asked for *her* to go up to the game's L 46-48. Owner question 4 below would settle this.
+- **How big the game's landing is.** For frame 3, round 2 measured about 175x110 px at (644-819, 441-553). Round 3 read about 250x200 at (600-850, 420-640). For frame 1's lower beam, round 2 gave (1148-1220, 806-877) and round 3 about (1060-1290, 620-900). The game's light is soft, so "the game's landing" is not one number. Round 3's patches were sized to round 2's boxes, and round 3's judge found them too small.
+- **Where they agree:** the patch must be the floor itself, lit, with the floor's texture showing through; things standing in it are lit and cast a cool shadow; one handling in all three frames.
+
+**What the route did over 22 pictures.**
+- Measured: each request repaints the whole picture, and in round 3 a remake that fixed one named fault broke another three times running on frame 3. `v6` fixed the wolf and the patch and moved the layout (11% of patches over 6 px). `v7` thickened the rim to near-white. `v8` turned the roots mauve and lifted the patch to L 44.
+- Measured: making each picture from the game frame keeps the layout far better than editing the last picture in the chat. An opener that says the last picture was right, then lists the faults, keeps most of a picture.
+- Measured: a patch described as "a slanted four-sided shape with straight hard edges, like the light of a window lying on a floor" comes back hard-edged. Asked at RGB 100,58,25 it comes back at L 26-30.
+- The fit to the game frame is scripted (`register7.py`: one smooth warp, no fill). Frame 3 needed the most stretch (0.844 to 1.106, tightest at the top-left corner).
+- My reading, not tested: the faults left are local (blobs, cast shadows, a few bright caps, her value, two props). A whole-picture remake is the wrong tool for a local fault.
+
+**What the next lead needs.**
+1. **An answer to owner question 4**, and the landing boxes fixed as numbers in the checklist before any picture. Without them the painter and each new judge aim at different patches.
+2. **A way to fix a local fault without repainting the picture.** Not tried, each one my suggestion:
+   - a scripted pass over the round-3 set: carry the game frame's own darkening under each wolf onto the paint, cap the mushroom caps and rim spots under her, and build each patch as the paint's own floor lit inside a cut shape. It is a script, so it is reproducible. Whether such a pass may count as the look target is the coordinator's call;
+   - a hand painter or a painted floor set (owner question 3, not yet put to the owner).
+3. **The starting point:** round 3's three pictures and their prompts (`P1k`, `P2n`, `P3n`), and the round-3 judge's eight fixes.
+
+**What another round costs.** A picture is about three minutes with its fit. The measures and the sheet are one command each. A judge is about twelve minutes. All scripts are written. The cost that matters is that whole-picture remakes stopped converging in round 3 (measured on frame 3, three remakes).
+
+**Where it is kept** (under `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`):
+- Sheets, each with a half-size copy: `sheets5\look_option_C_r5_round1.png`, `look_option_C_r5_round2.png`, `look_option_C_r5_round3.png`. Frame 1 before and after: `sheets5\look_option_C_r5_frame1_before_after.png` (round 1), `..._r2.png`, `..._r3.png`.
+- The judges' findings: `judge5\round1_findings.md`, `judge5_r2\round2_findings.md`, `judge5_r3\round3_findings.md`.
+- Pictures as downloaded: `raw5\`. Fitted: `fit5\`. Every prompt as sent: `prompts.md` and `prompts5\`. Scripts: `scripts5\`. Prop-by-prop tiles: `props5\`.
+- State and the wording lessons: the top block of `...\scratch_look\STATE.md`.
+
 ## Questions for the owner (yes/no)
 
 1. **Answered 22 Nov: "Dark, pale rim, ink line (Recommended)".** May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)
@@ -222,6 +328,8 @@ No account, key or credits were used. The scripts are backed up in `survivorsunc
 7. **Answered 22 Nov: "Fix it, one more judged round (Recommended)".** Do you want to look at C's three frames as the closest result even though they failed, and may one more judged round be spent after the fixes? (The cap of three is used up.) That round is not spent yet: see "Round 4 on option C" above.
 
 Questions 4 and 5 are still open. Questions 2 and 3 were not put to the owner on 22 Nov.
+
+Round 5's three judges pulled the patch's lightness three ways (see "Where the three judges pull apart" above). Question 4 is the one that settles it.
 
 ## After the pick (not started)
 
