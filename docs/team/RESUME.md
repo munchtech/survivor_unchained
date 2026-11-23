@@ -1,5 +1,36 @@
 # Where we are: read this after README.md, before your handoff
 
+## 22 Nov 2026, night: ORCHESTRATOR #16 CLOSED; THE NEXT SESSION STARTS HERE (written by #16 at its close)
+
+The owner, 22 Nov, word for word: "no more lanes besides these (and their followups or things they need) lets look to close loop and eventually start a new session". Every lane of #16 has finished. Nothing is running. Nothing is pushed.
+
+**Read first:** the tail of `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_coord16\STATE.md` (every owner quote of 22 Nov word for word, every branch and sha, each lane's report). The job is still `docs/team/GAME_PLAN.md` section H, by the "Orchestrator" brief in `docs/team/HANDOFF_BRIEFS.md`.
+
+**State:**
+- Integration: local `claude/vigilant-galileo-l6jqyx` (tip: this commit). It holds the day's paper (plan edits, `docs/design/LOOK_TARGET_OPTIONS.md` through round 5) and NO build work of 22 Nov.
+- Staging: `slice-next@d23138d91`, worktree `.claude/worktrees/agent-ae78923964b5c7216` (git-locked by its finished agent: `git worktree unlock` before `wt_remove.ps1`). It holds EVERY build branch of the day: `slice-base`, `den-roster`, `den-firstblow`, `move-poe2`, `skills-code`, `skills-five`, `frame-pacing`, `frame-pacing-3`, `play-fixes`, `den-wall`. Suite on it: 3143 pass, 1 fail, 12 skip. The one failure is `DungeonFightTests.The_den_clears_inside_the_pages_feel_targets` (a normal pack takes 10.0 s against the page's 6-10): the den re-tune's job, not a bug in the merge.
+- **Not merged into integration:** it waits for the owner's play of `next3` and their word (the brief: "Merge only what passed its test and the owner's gate"). When they say yes: merge `slice-next`, remove the staging worktree in the same turn.
+- The play build, level 9: `& "C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-ae78923964b5c7216\release\godot\next3\SurvivorUnchained.exe" -- --quick warden --sex female --zone map --dungeon hollow --veteran 9 --move-new --move-ab`. Start check passed (level 9, 0 real errors, warm-up 257 kinds in 3.55 s, ReadyToRun in). `next2` beside it is the same kit without the warm-up and ReadyToRun (the "before"); `next1` is superseded. An export takes about 90 s: `survivorsunchained_inputs\scratch_coord16\export_next.sh <name>`, then `start_check.sh <name>`.
+- Parked branches, not merged: `godot47-trial@291fb2172` (P1's trial; the owner: the upgrade is the "First task after the slice").
+- Disk: C: 75 GB free (guard 20). Worktrees on disk: staging, plus two app-session ones that are not ours.
+
+**Packages (my summary; the state file is the record):**
+| Package | State |
+|---|---|
+| P1 Godot 4.7.2 | Trial done, not possible in one session; the owner picked it as the first task after the slice. |
+| P2 feel (movement, first blow, frame pacing) | Built and in staging; the owner played two rounds and gave notes, all acted on. Frame pacing used its 3 sessions (the owner: "Yes, third session"): D1's numbers are still not met; **no fourth session without the owner's word.** What is left: about 15 boss-fight frames of 17-27 ms a run, cause unknown (needs profiling); the page at the den's end, 48-65 ms once. A clean before/after run is owed (`next2` against `next3`, about 11 minutes each with no other Godot running; the measuring chain is `scratch_pacing\p3legs2.sh`, logs of the third session in `scratch_pacing\logs3\`). |
+| P3 den roster | Built and in staging. The re-tune (pack time, the bots' bars) has not started. |
+| P4 skills | Five pressed keys (the owner, 22 Nov), in staging. Iron Vow's feel is open: options A, B, C in `docs/design/BUILD_DIRECTION.md` Round 10 (on `slice-next`). |
+| P5 look target | Option C picked by the owner; five rounds on the ChatGPT image-edit route, none passed a judge. The owner: "you may continue work on that till you pass it". **Do not spend more rounds on whole-picture remakes:** they stopped converging (measured). The next lead starts from round 3's set with a local route: see LOOK_TARGET_OPTIONS.md "Round 5 on option C, made and judged" and `scratch_look\STATE.md`. |
+| P6 story pitch | The owner: "Keep pitch 2, wire it". Wiring not started; it waits for the den merge. |
+| P7, P8 | The Marionette session's. Not started here. |
+
+**Open with the owner (one table, do not ask one at a time):** merge `slice-next` after their play of `next3`; D1 ("buttery", their word, unprompted by numbers); a fourth frame-pacing session for profiling; the Iron Vow pick (A warcry, B timed parry, C held); roll or dash (so far a lean: "roll feels better I think but honestly not sure"); the look target: may a light pool be brighter than her, plain or detailed floor, and the route (a scripted local pass, or a hand painter).
+
+**Next session's list, in order (none started):** the den re-tune (turns the red test green); P6 pitch-2 wiring; Resolve shown on her; new equip and pick-up sounds; the half build-ahead den load (and moving the 3.5 s warm-up to the Verge's load); the Iron Vow pick, built; the look target's local route; Godot 4.7.2. Small follow-ups: `ZoneView.cs:98` should share `DungeonDef.GrowsFlora`; the Ironbound blow-turning outside the den; whether the den draws the altar stones (an art choice); the Bladestorm-Sunder loop as a node; the level-up title's position and the XP fill colour on the new bar (not checked); 25 new export-log errors while packing `godot/data/fx_warm/warm.scn` (none at runtime); code-made shaders and script-drawn canvas items are not warmed (a shared registry, about one worker session).
+
+**Lessons of the day:** play builds for the owner start levelled (`--veteran 9`). ChatGPT's image creations are a separate counter from weekly usage; after a reset it gave 22 pictures with no limit notice. The shared Godot turn lock is also used by another session's shoots (labels `game_frame: gf_*`): wait, never touch; their runs overlapped the third pacing session's measurements. Agent worktrees can stay git-locked after the agent ends.
+
 ## 22 Nov 2026: THE GAME PLAN IS THE START (written by the plan session; the blocks below are history)
 
 The 21 Nov audit produced `docs/team/GAME_PLAN.md`. It overrides the blocks below where they differ. Its section H splits the work into packages P1 to P8, each with a spec, a pass test, a limit and a recommended model; `docs/team/HANDOFF_BRIEFS.md` holds a ready-to-paste brief for each and for an Opus orchestrator. The owner starts each package in its own session (22 Nov: "we need the plan and then begin implementing in other session(s)"). The plan session built nothing in the game. Its state file: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_devplan\STATE.md`.
