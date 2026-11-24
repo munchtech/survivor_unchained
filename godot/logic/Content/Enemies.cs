@@ -132,6 +132,9 @@ public sealed class EnemyDef
     /// <summary>(den first blow; set only on the den's cuts, Content/DenRoster.cs) The side of the box it mills in at rest round
     /// its home, in metres (Ai.Idle); 0: the leash's 0.6.</summary>
     public double Roam;
+    /// <summary>(den re-tune; set only on the den's cuts) How far a Ranged or Caster foe with no shot of its own keeps from its
+    /// target, in metres (Ai, Behavior.Ranged); 0: 8, as the table's callers keep.</summary>
+    public double KeepOff;
     /// <summary>A copy to change (a signed champion's own def).</summary>
     public EnemyDef Clone() => (EnemyDef)MemberwiseClone();
 }

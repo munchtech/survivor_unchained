@@ -19,6 +19,11 @@ public static class DungeonFights
         public double Elites = 1;
         /// <summary>The ruler's health, over MapRun.BossHealth.</summary>
         public double BossHealth = 1;
+        /// <summary>(P3) The ruler's blows (its bites and its marked moves, all off its Damage; not the Drive's kit charge, a share of her
+        /// life), over its people's champion's: MapRun.Ruler.</summary>
+        public double BossDamage = 1;
+        /// <summary>(P3) The ruler's kit tells (the Pack-Mother's Drive: a share of her life), over the table's: IBossArena.KitMul.</summary>
+        public double BossKit = 1;
         /// <summary>(P3) Its biters' bite (the den's wolves and runners, Content/DenRoster.cs Biters), over the table's: the threat
         /// that is not a mark (DEN_ROSTER.md: "add foe damage before adding any tells").</summary>
         public double Bite = 1;

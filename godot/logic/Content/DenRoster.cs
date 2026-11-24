@@ -31,15 +31,24 @@ public static class DenRoster
 
         var ironback = Enemies.Get("boar_ironback").Clone();
         ironback.Slam = new SlamSpec(3, 5, 1.3, 2.8, 1.5);
-        ironback.Health = 180;                             // (session 2) 300 held a tusker pack past 25 s; the heavy, not a wall
+        ironback.Health = 100; ironback.Speed = 3.0;       // (session 2) 300 held a tusker pack past 25 s; (session 3) 180 still 15 s, it walked in last
 
         var alpha = Enemies.Get("wolf_alpha").Clone();     // magic pack leader, no line
         alpha.Lunge = null;
         alpha.Health = 300;                                // (session 2) 520 held a magic pack past 20 s
 
+        // (re-tune, session 3) The howler hangs back and calls, but one she can reach: at the table's 4.0 it backed off at 3.6 m/s
+        // from 4.4 m, so a called pack's last 12 s were a chase after it alone (measured: last to die in 113 of 124 called packs).
+        var howler = Enemies.Get("wolf_howler").Clone();
+        howler.Speed = 2.8; howler.Health = 36; howler.KeepOff = 5;   // backs off only inside 2.75 m: in reach of a Leap on its pack
+
+        var sow = Enemies.Get("boar_slurry").Clone();      // slow area-denial, walks in last; not a second wall
+        sow.Health = 55;
+
         var cuts = new Dictionary<string, EnemyDef>
         {
             ["wolf"] = wolf, ["wolf_runner"] = runner, ["wolf_blighted"] = sick, ["boar_ironback"] = ironback, ["wolf_alpha"] = alpha,
+            ["wolf_howler"] = howler, ["boar_slurry"] = sow,
         };
         // (first blow) How wide a den pack mills at rest (dungeon_fights.json "roam"; 0, as shipped: a map's 14.4 m box): on
         // every recipe kind, so the kinds the den leaves as the table has them get a den copy too, and the next den-only

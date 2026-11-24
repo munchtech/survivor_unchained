@@ -470,4 +470,31 @@ public class BossTests
                 evs => { foreach (var ev in evs) if (ev is Ev.Telegraph { Phase: TellPhase.Warn, Tell: "charge" }) phases.Add(s.PhaseIx); });
         Assert.Equal(3, phases.Count);
     }
+
+    /// <summary>(P3, a4fdfb286) The late human bot keys a foe's windup by now + StateT, so a den ruler's hold must carry its time left, not a stale -0.02.</summary>
+    [Fact]
+    public void The_den_rulers_hold_says_when_it_ends()
+    {
+        MapRun? zone = null;
+        MapSim.ZoneTap = z => zone = z;
+        var held = new System.Collections.Generic.List<double>();
+        MapSim.Tap = (t, evs, b, up) =>
+        {
+            var e = zone?.Boss;
+            held.Add(e != null && e.State == EnemyState.Windup && zone!.BossScript is PackMother ? e.StateT : double.NaN);
+        };
+        try { MapSim.Play(new MapRunSpec(1, "warden", 1, DungeonGen.Get("hollow")!.People, 6, 1, [], "deft", 12, "hollow", AtBoss: true)); }
+        finally { MapSim.Tap = null; MapSim.ZoneTap = null; }
+        // Every two frames in a row of one hold: its time left falls by a tick (a stale value sits still; a new hold starts higher).
+        int pairs = 0;
+        for (int k = 1; k < held.Count; k++)
+        {
+            double a = held[k - 1], c = held[k];
+            if (double.IsNaN(a) || double.IsNaN(c) || c > a) continue;
+            pairs++;
+            Assert.True(a > 0 || c == 0, $"her hold's StateT is {a:0.000} (stale), not the time left");
+            Assert.True(a - c is > 0.005 and < 1 / 60.0 + 0.05, $"her hold's StateT went {a:0.000} -> {c:0.000} in one tick (stale: it should fall by about dt)");
+        }
+        Assert.True(pairs >= 10, $"the Pack-Mother held a windup for only {pairs} ticks of 12 s of her den fight");
+    }
 }

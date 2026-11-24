@@ -97,6 +97,12 @@ public sealed class PackMother : ArenaBoss
                     Ring("wolf", 12, p.X, p.Z, 14);
                 }
                 if (d < 5.5 && shakeT <= 0) { shakeT = 6 * Cadence; Hold(1.0); Cone(5, 120, 1.0, 1.8, "Shake"); return true; }
+                // (P3, the den's cut, DEN_ROSTER.md) No chained lunges in the den: its last phase keeps Shake and Hamstring.
+                if (A.DenCut)
+                {
+                    if (d < 6 && biteT <= 0) { biteT = 5 * Cadence; Hamstring(); return true; }
+                    return false;
+                }
                 if (lungeT <= 0) { lungeT = (Hard ? 3 : 7) * Cadence; Chain(3); return true; }
                 return false;
         }
@@ -124,7 +130,7 @@ public sealed class PackMother : ArenaBoss
         Signature(He ? "He drops his head: the Drive!" : "She drops her head: the Drive!", SignatureLead, () =>
         {
             var pp = B.Player;
-            if (B.Tell("charge", E, pp.X, pp.Z, DriveScale) != null) HoldForCharge();
+            if (B.Tell("charge", E, pp.X, pp.Z, DriveScale, damageMul: A.KitMul) != null) HoldForCharge();
         });
     }
     /// <summary>The Drive's size over the kit's charge.</summary>
@@ -157,6 +163,13 @@ public sealed class PackMother : ArenaBoss
                 nextLane += 1.6;
                 var p = B.Player;
                 double a = A.R() * Math.PI * 2;
+                // (P3, the den's cut) In the den her dead do not run lanes: slurry drops from the dark, a circle near her feet.
+                if (A.DenCut)
+                {
+                    double off = A.R() * 1.5;
+                    Circle(p.X + Math.Cos(a) * off, p.Z + Math.Sin(a) * off, 1.8, 1.2, 1.5, "Slurry", School.Nature);
+                    return true;
+                }
                 double x0 = p.X + Math.Cos(a) * 12, z0 = p.Z + Math.Sin(a) * 12;
                 Lane(x0, z0, p.X - Math.Cos(a) * 12, p.Z - Math.Sin(a) * 12, 1.8, 1.2, 1.5, He ? "His dead run" : "Her dead run", School.Frost);
             }
@@ -559,7 +572,7 @@ public sealed class Grimtunnel : ArenaBoss
             Signature(ganger ? "It bursts up: the ground caves in!" : "He bursts up: the ground caves in!", SignatureLead, () =>
             {
                 double bx = E.X, bz = E.Z;
-                var b = B.Tell("pull", E, bx, bz, CaveScale);
+                var b = B.Tell("pull", E, bx, bz, CaveScale, damageMul: A.KitMul);
                 Hold(b?.Delay ?? 1.2, () =>
                 {
                     under = false;
@@ -764,7 +777,7 @@ public sealed class RedHand : ArenaBoss
     void TollRing()
     {
         var p = B.Player;
-        if (B.Tell("ring", E, p.X, p.Z, TollScale, damageMul: TollBlood) is not { } ring) return;
+        if (B.Tell("ring", E, p.X, p.Z, TollScale, damageMul: TollBlood * A.KitMul) is not { } ring) return;
         var kit = ring.After;
         ring.After = bb =>
         {

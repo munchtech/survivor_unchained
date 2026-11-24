@@ -90,6 +90,8 @@ public static class Ev
         public double X, Z, Amount; public School School; public string Source = ""; public bool Dodged, Blocked;
         /// <summary>The marked blow that landed, by its label (a boss's Lunge, the Pack's turn), if it was one.</summary>
         public string? Label;
+        /// <summary>The kit tell whose blow landed (a charge's lane, a pull), if it was one (the harness splits a foe's tells from its bites).</summary>
+        public string? Tell;
         /// <summary>Damage over time (poison, burning), said once a second: quieter than a blow.</summary>
         public bool Dot;
     }

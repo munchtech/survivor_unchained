@@ -172,7 +172,7 @@ public sealed class RunMeter
             {
                 case Ev.PlayerHit { Dodged: true }: recent.Enqueue((t, "dodged")); break;
                 case Ev.PlayerHit h when h.Amount > 0 || h.Blocked:
-                    { string k = h.Label != null ? "[" + h.Label + "]" : h.Source; taken[k] = taken.GetValueOrDefault(k) + h.Amount / Math.Max(1, b.MaxHp); }
+                    { string k = h.Label != null ? "[" + h.Label + "]" : h.Tell != null ? "{" + h.Tell + "} " + h.Source : h.Source; taken[k] = taken.GetValueOrDefault(k) + h.Amount / Math.Max(1, b.MaxHp); }
                     recent.Enqueue((t, $"{(h.Blocked ? "blocked " : "")}{h.Amount:0} {h.Source}{(h.Label != null ? "[" + h.Label + "]" : h.Dot ? "(dot)" : "(unmarked)")}")); break;
                 case Ev.Dash: recent.Enqueue((t, "DASH")); break;
                 case Ev.Telegraph { Phase: TellPhase.Land, Tell: { } kind } tl:
