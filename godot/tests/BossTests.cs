@@ -497,4 +497,32 @@ public class BossTests
         }
         Assert.True(pairs >= 10, $"the Pack-Mother held a windup for only {pairs} ticks of 12 s of her den fight");
     }
+
+    /// <summary>(23 Nov, the owner: all bosses) The same for a boss that is not the den's: the Red Hand's holds in the Roost carry their time left too.</summary>
+    [Fact]
+    public void Every_bosss_hold_says_when_it_ends()
+    {
+        MapRun? zone = null;
+        MapSim.ZoneTap = z => zone = z;
+        var held = new System.Collections.Generic.List<double>();
+        MapSim.Tap = (t, evs, b, up) =>
+        {
+            var e = zone?.Boss;
+            held.Add(e != null && e.State == EnemyState.Windup && zone!.BossScript is not null and not PackMother ? e.StateT : double.NaN);
+        };
+        try { MapSim.Play(new MapRunSpec(1, "warden", 1, DungeonGen.Get("roost")!.People, 7, 1, [], "deft", 12, "roost", AtBoss: true)); }
+        finally { MapSim.Tap = null; MapSim.ZoneTap = null; }
+        // Every two frames in a row of one hold: its time left falls by a tick (a stale value sits still; a new hold starts higher).
+        int pairs = 0;
+        for (int k = 1; k < held.Count; k++)
+        {
+            double a = held[k - 1], c = held[k];
+            if (double.IsNaN(a) || double.IsNaN(c) || c > a) continue;
+            pairs++;
+            Assert.True(a > 0 || c == 0, $"his hold's StateT is {a:0.000} (stale), not the time left");
+            if (c == a) continue; // a frame the sim held still, or a kit charge's own windup: only a stale negative value is wrong
+            Assert.True(a - c is > 0.005 and < 1 / 60.0 + 0.05, $"his hold's StateT went {a:0.000} -> {c:0.000} in one tick (stale: it should fall by about dt)");
+        }
+        Assert.True(pairs >= 10, $"the Red Hand held a windup for only {pairs} ticks of 12 s of his Roost fight");
+    }
 }
