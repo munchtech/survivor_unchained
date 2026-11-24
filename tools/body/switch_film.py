@@ -13,7 +13,8 @@ Output: godot/.shots/switch/<tag>/ (git-ignored):
   sheet_<set>.jpg          a contact sheet of the stills
 The run (every switch is an existing one, no game code): the den start (Args.DenTest) under --auto idle, --seed fixed, --fixed-fps 30,
 --press (ScriptedPress.cs) for the walk, two skills and the dash, --die T (Game.cs) for the death. Stills are cut from the --write-movie
-AVI at frames worked out from the log's `skill press frame N ... t T` lines (the game's frame counter against its play clock).
+AVI (MJPEG: 8x8 block noise at the 1-2 px level) or, with --lossless, from a PNG sequence packed into a lossless RGB
+movie (libx264rgb -qp 0, <set>.mkv; the PNGs are deleted after packing) at frames worked out from the log's `skill press frame N ... t T` lines (the game's frame counter against its play clock).
 One godot turn per run (tools/turn.py).
 """
 import argparse, json, os, re, shutil, subprocess, sys, time
@@ -26,38 +27,66 @@ TURN = ROOT / "tools" / "turn.py"
 KIT = "kit_pauldrons,kit_bodice,sol_corset,kit_brief,kit_belt,kit_vambraces,kit_gloves,kit_boots"  # (gilt_harness + gilt_boots wear lists, items.json: the den kit as the game equips it)
 FPS = 30
 DEN = ["--quick", "warden", "--sex", "female", "--zone", "map", "--dungeon", "hollow", "--veteran", "9"]   # Args.DenTest
+# --fx-fixed (Game.FxFixed): particles and flame flicker the same on every run, so two bodies' runs differ only in her
+# (Marionette's judge, 24 Nov: hit particles and fire flicker differed between the sides)
+FIXED = ["--fx-fixed"]
 LOG_RE = r"p1:|gear:|wear:|her tuck|PushError|SameRest|WARNING|ERROR|SCRIPT ERROR"
 
 # The script, in Journey.Playtime seconds (ScriptedPress: slot:t:dx,dz[:hold=S]; walk:t:dx,dz:hold=S; dash:t:dx,dz).
 # Idle to 5.0 (the den's title card shows to about 4), walk 5-8, skill 1 (Sunder) 9.0, skill 2 (Heroic Leap) 11.5, walk + dash 13.5-14.5,
-# skill 3 (Bladestorm) 16.5, the fight film to FIGHT_END. The death is its own run (DEATH_PRESS-free, --die DIE at the start spot):
+# skill 3 (Bladestorm) 16.5, the fight film to FIGHT_END. The death is its own run (DEATH_PRESS, then --die DIE near the start):
 # the fight walks her +x into the den's roots, which hid the round-1 death on both bodies (judge, 24 Nov: "cannot be judged").
-PRESS = os.environ.get("SWITCH_PRESS", "walk:5:8,0:hold=3;1:9:6,0;2:11.5:6,0;walk:13.5:8,0:hold=2;dash:14.5:8,0;3:16.5:6,0")
+# (24 Nov: the walk halved and the Leap, walk, dash and Bladestorm turned back -x, toward the start: the old +x run took her
+# under the den's roots, where the Leap's landing could not be seen on either body)
+PRESS = os.environ.get("SWITCH_PRESS", "walk:5:8,0:hold=1.5;1:9:6,0;2:11.5:-6,0;walk:13.5:-8,0:hold=1;dash:14.5:-8,0;3:16.5:-6,0")
+# The death run: a short walk toward the camera first (+z: she faces it; the still run_front), then the death where she stops.
+DEATH_PRESS = os.environ.get("SWITCH_DEATH_PRESS", "walk:4.2:0,8:hold=0.8")
+T_FRONT = 4.6
+DEATH_AT = (0.5, 0.8, 1.0, 1.2, 1.6)   # 1.6: the slumped hold (Marionette's judge, 24 Nov)
 DIE = float(os.environ.get("SWITCH_DIE", "6"))
 FIGHT_END = 19.5
 LEN = FIGHT_END + 1
 DEATH_LEN = DIE + 3
-T_IDLE, T_RUN = 4.0, 6.5
+T_IDLE, T_RUN = 4.0, 6.0
 CLOSE_PRESS = "walk:5:8,0:hold=3"
 CLOSE_LEN = 8.0
 
 
+LOSSLESS = False   # --lossless (judge round 2, 24 Nov: MJPEG stills cannot show 1-2 px paint or outline flaws)
+
+
+def pack_png(seq, mkv):
+    """Godot's PNG sequence (frame00000000.png ...) -> one lossless RGB movie; the PNGs then go."""
+    pngs = sorted(seq.glob("*.png"))
+    if not pngs: return
+    stem = pngs[0].stem
+    digits = len(stem) - len(stem.rstrip("0123456789"))
+    pat = str(seq / (stem[:-digits] + f"%0{digits}d.png"))
+    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-framerate", str(FPS), "-start_number", str(int(stem[-digits:])), "-i", pat,
+                    "-c:v", "libx264rgb", "-qp", "0", "-preset", "ultrafast", str(mkv)], check=True)
+    shutil.rmtree(seq, ignore_errors=True)
+
+
 def run_godot(out, name, wear, extra, press, secs, seed):
     out.mkdir(parents=True, exist_ok=True)
-    avi = out / f"{name}.avi"
+    avi = out / f"{name}.{'mkv' if LOSSLESS else 'avi'}"
+    seq = out / f"_{name}_png"
+    target = seq / "frame.png" if LOSSLESS else avi
     frames = int((secs + 6) * FPS)
-    g = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi), "--fixed-fps", str(FPS),
-         "--audio-driver", "Dummy", "--quit-after", str(frames), "--"] + DEN + ["--seed", str(seed), "--nocine", "--clip",
+    g = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(target), "--fixed-fps", str(FPS),
+         "--audio-driver", "Dummy", "--quit-after", str(frames), "--"] + DEN + FIXED + ["--seed", str(seed), "--nocine", "--clip",
          "--shot", "switch", "--seconds", str(secs + 3), "--auto", "idle"] + (["--press", press] if press else []) + extra
     if wear: g += ["--wear", wear]
     label = f"body-switch: switch_film {name}"
     t0 = time.time()
     cmd = [sys.executable, str(TURN), "run", "godot", label, "--wait", "1800", "--tail", "0", "--", *g]
-    for attempt in range(3):   # the engine crashes now and then in CelLib.Drain (4.7.2 mono, InstanceFromId): the run is shot again
+    for attempt in range(3):
+        if LOSSLESS: shutil.rmtree(seq, ignore_errors=True); seq.mkdir(parents=True)   # the engine crashes now and then in CelLib.Drain (4.7.2 mono, InstanceFromId): the run is shot again
         r = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
         log = r.stdout + "\n" + r.stderr
         if r.returncode == 0: break
         print(f"{name}: exit {r.returncode} (attempt {attempt + 1}), again", flush=True)
+    if LOSSLESS: pack_png(seq, avi)
     q = re.search(r"logged to (\S+\.log)", log)   # quiet.py keeps the whole Godot log in a file; stdout has only a tail
     if q and Path(q[1]).exists(): log = Path(q[1]).read_text(encoding="utf-8", errors="replace")
     (out / f"log_{name}.txt").write_text(log, encoding="utf-8")
@@ -104,7 +133,10 @@ def main():
     ap.add_argument("--no-kit", action="store_true", help="the starting set only")
     ap.add_argument("--no-close", action="store_true"); ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--keep-avi", action="store_true")
+    ap.add_argument("--lossless", action="store_true", help="stills from a PNG sequence (lossless), not the MJPEG AVI")
     a = ap.parse_args()
+    global LOSSLESS
+    LOSSLESS = a.lossless
     base = ROOT / "godot" / ".shots" / "switch" / a.tag
     base.mkdir(parents=True, exist_ok=True)
     ov = ROOT / "godot" / "override.cfg"
@@ -115,7 +147,7 @@ def main():
     for name, wear in sets:
         press = PRESS
         avi, log = run_godot(base, name, wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []), press, LEN, a.seed)
-        davi, dlog = run_godot(base, f"{name}_death", wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--die", str(DIE)], None, DEATH_LEN, a.seed)
+        davi, dlog = run_godot(base, f"{name}_death", wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--die", str(DIE)], DEATH_PRESS, DEATH_LEN, a.seed)
         anc = anchors(log)
         summary.append(f"[{name}] press anchors (frame, t): {anc}")
         if not avi.exists() or not anc:
@@ -134,16 +166,16 @@ def main():
         for k, (nm, n) in enumerate(shots, 1):
             grab(avi, n, d / f"{k:02d}_{nm}_f{n}.png")
         # the death run has no press line: movie frame = play clock x fps (as the close runs)
-        dshots = [(f"death_p{dt}s", round((DIE + dt) * FPS)) for dt in (0.5, 0.8, 1.0, 1.2)]   # (the den wakes her at the mouth about 1.4 s after the fall: t_death, 24 Nov)
+        dshots = [("run_front", round(T_FRONT * FPS))] + [(f"death_p{dt}s", round((DIE + dt) * FPS)) for dt in DEATH_AT]
         if davi.exists():
             for k, (nm, n) in enumerate(dshots, len(shots) + 1):
                 grab(davi, n, d / f"{k:02d}_{nm}_f{n}.png")
         else: summary.append(f"[{name}_death] NO MOVIE")
         sheet(d, base / f"sheet_{name}.jpg")
-        # the film: the fight (4 s to FIGHT_END) then the death run (DIE - 1 to DIE + 3), one file
+        # the film: the fight (4 s to FIGHT_END) then the death run (4 s, the walk to the camera, to DIE + 2.5), one file
         fin = ["-ss", "4", "-t", f"{FIGHT_END - 4:.1f}", "-i", str(avi)]
         if davi.exists():
-            fin += ["-ss", f"{DIE - 1:.1f}", "-t", "4", "-i", str(davi)]
+            fin += ["-ss", "4", "-t", f"{DIE + 2.5 - 4:.1f}", "-i", str(davi)]
             fx = ["-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]"]
         else: fx = []
         subprocess.run([FFMPEG, "-y", "-loglevel", "error", *fin, *fx, "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-an", str(base / f"film_{name}.mp4")], check=True)

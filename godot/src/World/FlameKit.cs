@@ -60,6 +60,7 @@ public partial class Flame : Node3D
     /// <summary>One of the card shader's parameters, on every card (a lamp's own look: LampIron.Fire).</summary>
     public void SetCard(string param, Variant value) { foreach (var m in mats) m.SetShaderParameter(param, value); }
 
+    static readonly bool FxFixed = SurvivorUnchained.Args.Has("fx-fixed");
     /// <summary>Its light's energy before the flicker.</summary>
     public float Energy { get => energy; set => energy = value; }
 
@@ -99,7 +100,8 @@ public partial class Flame : Node3D
         // The card is as wide as the atlas's cell is in the world (the flame fills its cell's width).
         float w = h * FlameShader.Aspect;
         // Neighbours never in step: a phase from where it stands and who it is.
-        phase = Mathf.PosMod(Position.X * 0.731f + Position.Z * 0.377f + (GetInstanceId() % 997) * 0.6180339f, 1f);
+        // (--fx-fixed, pictures only: no instance id, which differs between two runs that build different things, Game.FxFixed)
+        phase = Mathf.PosMod(Position.X * 0.731f + Position.Z * 0.377f + (FxFixed ? 0 : GetInstanceId() % 997) * 0.6180339f, 1f);
         var shader = GD.Load<Shader>(cel != null ? "res://shaders/fx_cel_flame.gdshader" : FlameShader.Path);
         (Vector3 At, float W, float H, float Ph)[] cards = kind == FlameKind.Camp
             ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.27f, 0, 0.1f), 0.85f, 0.72f, 0.37f), (new(0.25f, 0, -0.08f), 0.9f, 0.8f, 0.71f) }
