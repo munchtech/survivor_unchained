@@ -84,7 +84,6 @@ public sealed class NpcDef
 }
 
 public sealed class Speaker { public string Name = "", Title = "", Glyph = ""; }
-public sealed class Guard { public double X, Z, Facing; public string Line = ""; }
 
 public sealed class ShopLine { public string Id = ""; public int? Rarity, Qty; public Cond? When; public double? Chance; }
 
@@ -205,7 +204,6 @@ public static class Lore
     {
         public Dictionary<string, NpcDef> Npcs = new(), Outsiders = new();
         public Dictionary<string, Speaker> Speakers = new();
-        public List<Guard> Guards = new();
     }
 
     sealed class FolkFile
@@ -251,7 +249,6 @@ public static class Lore
     public static Dictionary<string, NpcDef> Npcs => N.Npcs;
     public static Dictionary<string, NpcDef> Outsiders => N.Outsiders;
     public static Dictionary<string, Speaker> Speakers => N.Speakers;
-    public static List<Guard> Guards => N.Guards;
     public static Dictionary<string, ShopDef> Shops => shops ??= Json.Parse<Dictionary<string, ShopDef>>(Json.ReadContent("shops.json"));
     static FolkFile F => folk ??= Json.Parse<FolkFile>(Json.ReadContent("folk.json"));
     public static List<FolkLook> FolkLooks => F.Looks;

@@ -22,15 +22,6 @@ public sealed class Waystation : ZoneRuntime
     public override bool Combat => false;
     public override bool ClockRuns => true;
 
-    /// <summary>What the stall-keepers shout.</summary>
-    static readonly Dictionary<string, string[]> StallCalls = new()
-    {
-        ["produce"] = ["Apples! Morrow pippins, crisp as frost!", "Turnips, onions, the last of the beans!", "Two for a copper, and I'm robbing myself!"],
-        ["cloth"] = ["Wool from the south, warm as a bed!", "Mend your cloak, traveler? It needs it.", "Dyed in the Morrow, never fades!"],
-        ["herbs"] = ["Feverfew, woundwort, sleep-easy!", "Wenna's not the only one who knows a leaf.", "Something for the cough? Everyone's got the cough."],
-        ["pots"] = ["Pots! Pans! Things to put things in!", "Fired in Low Kiln, sound as a bell. Hear that?", "You look like someone who needs a pot."],
-    };
-
     /// <summary>Who is out and about, given what has happened.</summary>
     static readonly Dictionary<string, string> Present = new()
     {
@@ -70,11 +61,9 @@ public sealed class Waystation : ZoneRuntime
         ("barracks", "holloway", "Watch House"), ("toll", "vonnra", "The Toll Tower"),
     ];
 
-    readonly List<NpcActor> guards = new(), keepers = new();
     readonly Dictionary<string, XZ> doors = new();
     readonly int[] braziers;
     readonly HashSet<string> placed = new();
-    Folk folk = null!;
     bool nightNow;
     double trackT;
 
@@ -134,108 +123,8 @@ public sealed class Waystation : ZoneRuntime
         var look = G.Look;
         foreach (var def in Lore.Npcs.Values.Append(Lore.Outsiders["jory"]).Append(Lore.Outsiders["wayfinder"]))
             Wire(Actors[def.Id] = new NpcActor(def, look, G.Rng), () => Dark);
-        for (int i = 0; i < Lore.Guards.Count; i++)
-        {
-            var g = Lore.Guards[i];
-            // The Watch's leathers and hood and a sword (their shields stay in the barracks in town), at ease.
-            guards.Add(new NpcActor(new NpcDef
-            {
-                Id = $"guard{i}", Name = "Watchman", Title = "The Waystation Watch", Role = "Watch", Model = "knight",
-                Show = ["Knight_Helmet", "1H_Sword"], Tint = "#8a98b0", Idle = "Idle_Armed",
-                Spot = new Spot { X = g.X, Z = g.Z, Facing = g.Facing }, Barks = [g.Line],
-                Person = Folk.Person(FolkRole.Watch, Lore.WatchLook, G.Rng), Arms = new Held { Right = "viking_sword" },
-            }, look, G.Rng));
-        }
-        // Behind every stall, someone selling; they pack up at dusk.
-        var stalls = Meta.Refs.GetProperty("stalls").EnumerateArray().ToList();
-        for (int i = 0; i < stalls.Count; i++)
-        {
-            var st = stalls[i];
-            double x = st.GetProperty("x").GetDouble(), z = st.GetProperty("z").GetDouble(), rot = st.GetProperty("rot").GetDouble();
-            var kind = st.GetProperty("kind").GetString()!;
-            var l = Lore.FolkLooks[(i * 3 + 1) % Lore.FolkLooks.Count];
-            keepers.Add(new NpcActor(new NpcDef
-            {
-                Id = $"keeper{i}", Name = "Stall-keeper", Model = l.Model, Show = l.Show, Tint = l.Tint, Scale = l.Scale,
-                Idle = i % 2 == 1 ? "Idle_Talking_Loop" : "Idle_FoldArms_Loop", Person = Folk.Person(FolkRole.Adult, l, G.Rng),
-                Spot = new Spot { X = x - Math.Sin(rot) * 0.35, Z = z - Math.Cos(rot) * 0.35, Facing = rot },
-                Barks = StallCalls.TryGetValue(kind, out var calls) ? [.. calls] : ["Come and look!"],
-            }, look, G.Rng));
-        }
         foreach (var (id, a) in Actors)
             Interactables.Add(new() { Id = $"talk:{id}", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = a.Def.Name, When = () => !a.Hidden, Act = () => G.Talk(id) });
-        MakeFolk(stalls);
-    }
-
-    void MakeFolk(List<System.Text.Json.JsonElement> stalls)
-    {
-        // Where the town walks: the lanes, and what is at the end of them.
-        FolkNode Node(string id, double x, double z, FolkKind kind = FolkKind.Path, bool square = false, XZ? face = null, bool tavern = false) =>
-            new() { Id = id, X = x, Z = z, Kind = kind, Square = square, Face = face, Tavern = tavern };
-        FolkNode Door(string id, string key, double out_ = 0.5, bool tavern = false)
-        {
-            var d = doors[key];
-            // Stand on the step, not in the wall: half a pace out from the door.
-            XZ? b = key.StartsWith("home") ? null : Way(key);
-            double x = d.X, z = d.Z;
-            if (b is XZ bb)
-            {
-                double l = Math.Sqrt((d.X - bb.X) * (d.X - bb.X) + (d.Z - bb.Z) * (d.Z - bb.Z));
-                if (l == 0) l = 1;
-                x += (d.X - bb.X) / l * out_; z += (d.Z - bb.Z) / l * out_;
-            }
-            return Node(id, x, z, FolkKind.Door, face: b, tavern: tavern);
-        }
-        var board = Way("board");
-        var nodes = new List<FolkNode>
-        {
-            Node("gS", 0, 33, FolkKind.Gate), Node("s3", 0, 27.5), Node("s1", 0, 20), Node("s2", 0, 12),
-            Node("sL", -5, 25.3), Node("sR", 5, 25.3), Node("swL", -14.5, 25), Node("seL", 14.5, 25),
-            Node("sqSW", -3.6, 3.2, square: true), Node("sqSE", 4.4, 4.2, square: true),
-            Node("sqNW", -4.4, -4.6, square: true), Node("board", 4.2, -3.2, FolkKind.Board, true, board),
-            Node("well", -1.75, 0.9, FolkKind.Well, true, new XZ(0, 0)),
-            Node("n1", 0, -12.5), Node("n2", 0, -23.5), Node("e1", 12, 0.6), Node("e2", 24, 0.6), Node("gE", 33, 0, FolkKind.Gate),
-            Node("innL", -6, 9.5), Node("innN", -11.5, 15.5), Node("tavL", -6, -9.5), Node("wN", -9, -3), Node("trS", 8.5, -15), Node("smL", 6, 10.5), Node("trL", 5, -10.2),
-            Node("w1", -18, 17.5), Node("wW", -19, -5.5), Node("sh0", -6, -16), Node("sh1", -14, -19.5), Node("shF", -20.5, -23.5), Node("ne0", 10, -19), Node("ne1", 17, -23.5), Node("eS", 25, 5),
-            Door("inn", "inn"), Door("tavern", "tavern", tavern: true), Door("smithy", "smithy"), Door("trading", "trading"), Door("shrine", "shrine", 0),
-        };
-        for (int i = 0; i < 12; i++) nodes.Add(Door($"home{i}", $"home{i}"));
-        for (int i = 0; i < stalls.Count; i++)
-        {
-            var st = stalls[i];
-            double x = st.GetProperty("x").GetDouble(), z = st.GetProperty("z").GetDouble(), rot = st.GetProperty("rot").GetDouble();
-            nodes.Add(Node($"stall{i}", x + Math.Sin(rot) * 2.1, z + Math.Cos(rot) * 2.1, FolkKind.Stall, true, new XZ(x, z)));
-        }
-        (string, string)[] edges =
-        [
-            ("gS", "s3"), ("s3", "s1"), ("s3", "sL"), ("s3", "sR"), ("sL", "home5"), ("sR", "home4"), ("sL", "swL"), ("swL", "home7"), ("sR", "seL"), ("seL", "home8"), ("s1", "s2"),
-            ("s2", "sqSW"), ("s2", "sqSE"), ("sqSW", "well"), ("sqSW", "sqNW"), ("well", "sqNW"), ("sqSE", "board"), ("sqSE", "e1"), ("board", "e1"), ("board", "n1"), ("sqNW", "n1"),
-            ("n1", "n2"), ("n2", "home11"), ("e1", "e2"), ("e2", "gE"), ("e2", "eS"), ("eS", "home6"),
-            ("s2", "innL"), ("innL", "inn"), ("inn", "innN"), ("innN", "w1"), ("w1", "home9"), ("w1", "home7"),
-            ("sqNW", "tavL"), ("tavL", "tavern"), ("sqNW", "wN"), ("wN", "wW"), ("wW", "home2"), ("wW", "home3"),
-            ("sqSE", "smL"), ("s2", "smL"), ("smL", "smithy"), ("n1", "trL"), ("trL", "trading"), ("trading", "trS"), ("trL", "trS"), ("trS", "ne0"), ("ne0", "ne1"), ("ne1", "home0"), ("ne1", "home1"),
-            ("n1", "sh0"), ("sh0", "sh1"), ("sh1", "shF"), ("shF", "shrine"), ("e2", "home10"),
-            ("innL", "stall0"), ("smL", "stall1"), ("tavL", "stall2"), ("sqNW", "stall2"), ("trL", "stall3"),
-        ];
-        folk = new Folk(new Folk.Options
-        {
-            Nodes = nodes, Edges = edges.ToList(), Col = B!.Collision, Look = G.Look,
-            Plan = () => W.Time switch
-            {
-                TimeOfDay.Night => new FolkPlan(2, 0, true), TimeOfDay.Dusk => new FolkPlan(5, 0, true),
-                TimeOfDay.Dawn => new FolkPlan(3, 0, false), _ => new FolkPlan(8, 1, false),
-            },
-            Dark = () => Dark,
-            Lines = role =>
-            {
-                bool died = G.Journey.Ch.Stats.Deaths > 0;
-                return Lore.FolkLines.Where(l => (role == FolkRole.Child ? l.Child == true : role == FolkRole.Watch ? l.Watch == true : l.Child != true && l.Watch != true)
-                    && (l.Night == null || l.Night == Dark) && (l.Died != true || died) && Rules.Test(l.When, C)).ToList();
-            },
-            Round = ["gS", "s2", "sqSW", "sqNW", "n1", "n2", "n1", "board", "e1", "e2", "gE", "e2", "e1", "sqSE", "s2", "s1"],
-        }, G.Rng);
-        // (the town's standing people: walkers keep their distance from them too, NPC 17 r3)
-        foreach (var a in Actors.Values.Concat(guards).Concat(keepers)) folk.Fixed.Add((a.X, a.Z));
     }
 
     void MakeInteractables()
@@ -518,10 +407,6 @@ public sealed class Waystation : ZoneRuntime
         double px = B.Player.X, pz = B.Player.Z;
         SquareLamp(px, pz);
         foreach (var a in Actors.Values) a.Update(dt, px, pz);
-        foreach (var a in guards) a.Update(dt, px, pz);
-        foreach (var a in keepers) { a.Hidden = Dark; a.Update(dt, px, pz); }
-        folk.Clear = KeepClear;
-        folk.Update(dt, px, pz);
         trackT -= dt;
         if (trackT <= 0)
         {
@@ -578,15 +463,12 @@ public sealed class Waystation : ZoneRuntime
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["folk"] = folk.Count, ["out"] = folk.Spacing(), ["lanes"] = string.Join("|", folk.Validate()), ["night"] = nightNow,
+        ["night"] = nightNow,
     };
 
     public override void Dispose()
     {
         base.Dispose();
-        foreach (var a in guards) a.Dispose();
-        foreach (var a in keepers) a.Dispose();
-        folk?.Dispose();
         G.Look.Plates(new());
         G.SetObjectives(new());
     }
