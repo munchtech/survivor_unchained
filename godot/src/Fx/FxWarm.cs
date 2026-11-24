@@ -478,7 +478,7 @@ public static partial class FxWarm
     {
         switch (mesh)
         {
-            case ArrayMesh am: return ((ulong)am.SurfaceGetFormat(s), (long)am.SurfaceGetPrimitiveType(s));
+            case ArrayMesh am: return ((ulong)am.SurfaceGetFormat(s) | FormatVersion, (long)am.SurfaceGetPrimitiveType(s));
             case PrimitiveMesh pm:
                 string key = pm.GetClass() + (pm.AddUV2 ? "+uv2" : "");
                 if (!primKinds.TryGetValue(key, out var k)) primKinds[key] = k = PrimKind(pm);
@@ -494,8 +494,11 @@ public static partial class FxWarm
         var prim = pm is PointMesh ? Mesh.PrimitiveType.Points : Mesh.PrimitiveType.Triangles;
         using var t = new ArrayMesh();
         t.AddSurfaceFromArrays(prim, arr);
-        return t.GetSurfaceCount() > 0 ? ((ulong)t.SurfaceGetFormat(0), (long)prim) : null;
+        return t.GetSurfaceCount() > 0 ? ((ulong)t.SurfaceGetFormat(0) | FormatVersion, (long)prim) : null;
     }
+    // (the server's copy of a format carries RS::ARRAY_FLAG_FORMAT_CURRENT_VERSION, bit 35; the resource's does not: the
+    // library's keys were made from the server's, so it is added. Checked: the seed-2 census keyed without it, 24 Nov)
+    const ulong FormatVersion = 1UL << 35;
 
     static string MatKey(Material? m)
     {
