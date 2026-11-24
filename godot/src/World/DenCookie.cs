@@ -15,7 +15,7 @@ namespace SurvivorUnchained.View;
 public static class DenCookie
 {
     public const int Variants = 4;
-    const int Px = 256;
+    static readonly int Px = (int)SurvivorUnchained.Args.Num("den-rl-cookie-px", 384f);   // (256 with mipmaps landed soft all round: DungeonLight sets the projectors' filter to linear, no mipmaps)
     static readonly ImageTexture?[] made = new ImageTexture?[Variants];
 
     public static ImageTexture Get(int v)
@@ -41,7 +41,8 @@ public static class DenCookie
         // that cross the gap as shadows over the pool, a few dapples just outside the rim, and a core hotter than the rim
         var fine = new FastNoiseLite { Seed = 57 + v, NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 6f, FractalOctaves = 2 };
         float jag = SurvivorUnchained.Args.Num("den-rl-cookie-jag", 0.03f), rim = SurvivorUnchained.Args.Num("den-rl-cookie-rim", 0.85f);   // (judge 3: 0.6 was a spot's falloff, hot in the middle; 0.85: an even fill, the outline carries the shape)
-        float rootsK = SurvivorUnchained.Args.Num("den-rl-cookie-roots", 1f), dapK = SurvivorUnchained.Args.Num("den-rl-cookie-dapples", 1f);
+        float rootsK = SurvivorUnchained.Args.Num("den-rl-cookie-roots", 1f), dapK = SurvivorUnchained.Args.Num("den-rl-cookie-dapples", 0f);   // (cool shade lane: off. Small they do not read at the game camera (judge 3); large they are stray coins beside a cut-out pool)
+        float rootW = SurvivorUnchained.Args.Num("den-rl-cookie-root-w", 0.7f);
         float Sdf(Vector2 p)
         {
             float f = 1e9f;
@@ -64,7 +65,7 @@ public static class DenCookie
             float a0 = (rng.Randf() < 0.5f ? 0.5f : 1.5f) * Mathf.Pi + (rng.Randf() - 0.5f) * 1.2f;
             var o = mid + new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * 0.8f;
             float at = a0 + Mathf.Pi + (rng.Randf() - 0.5f) * 0.2f;   // at the middle, within a tenth of the cone's radius
-            ro[0] = o; rd[0] = new Vector2(Mathf.Cos(at), Mathf.Sin(at)); rw[0] = 0.075f + 0.02f * rng.Randf(); bend[0] = (rng.Randf() - 0.5f) * 0.12f; len[0] = 1.45f + 0.2f * rng.Randf(); ph[0] = rng.Randf() * Mathf.Tau;
+            ro[0] = o; rd[0] = new Vector2(Mathf.Cos(at), Mathf.Sin(at)); rw[0] = (0.075f + 0.02f * rng.Randf()) * rootW; bend[0] = (rng.Randf() - 0.5f) * 0.12f; len[0] = 1.45f + 0.2f * rng.Randf(); ph[0] = rng.Randf() * Mathf.Tau;
             for (int i = 1; i < nr; i++)
             {
                 float sAt = i == 1 ? 0.5f + 0.15f * rng.Randf() : 0.85f + 0.1f * rng.Randf(), side = rng.Randf() < 0.5f ? 1f : -1f;
@@ -72,7 +73,7 @@ public static class DenCookie
                 if (i == 2) side = -Mathf.Sign(rd[1].Dot(perp));   // the second fork on the other side
                 ro[i] = o + rd[0] * sAt + perp * (bend[0] * sAt * sAt + 0.035f * Mathf.Sin(sAt * 6.5f + ph[0]));
                 float ai = at + side * (0.55f + 0.3f * rng.Randf());
-                rd[i] = new Vector2(Mathf.Cos(ai), Mathf.Sin(ai)); rw[i] = 0.045f + 0.015f * rng.Randf();
+                rd[i] = new Vector2(Mathf.Cos(ai), Mathf.Sin(ai)); rw[i] = (0.045f + 0.015f * rng.Randf()) * rootW;
                 bend[i] = (rng.Randf() - 0.5f) * 0.3f; len[i] = 0.55f + 0.25f * rng.Randf(); ph[i] = rng.Randf() * Mathf.Tau;
             }
         }
@@ -81,7 +82,7 @@ public static class DenCookie
         for (int i = 0; i < 90 && dap.Count < (dapK > 0f ? 3 : 0); i++)
         {
             var q = new Vector2(rng.Randf() * 1.6f - 0.8f, rng.Randf() * 1.6f - 0.8f);
-            float fq = Sdf(q), r = 0.06f + 0.035f * rng.Randf();   // (judge 3: 12-18 px across, or they do not read at the game camera)
+            float fq = Sdf(q), r = SurvivorUnchained.Args.Num("den-rl-cookie-dapple-r", 0.05f) * (0.75f + 0.5f * rng.Randf());   // (judge 3: 12-18 px across, or they do not read at the game camera)
             if (fq > r + 0.03f && fq < r + 0.14f && q.Length() + r < 0.86f && !dap.Exists(d0 => new Vector2(d0.X, d0.Y).DistanceTo(q) < 0.3f)) dap.Add(new Vector3(q.X, q.Y, r));
         }
         var px = new byte[Px * Px * 4];

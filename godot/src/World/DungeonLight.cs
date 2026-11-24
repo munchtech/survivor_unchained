@@ -31,7 +31,10 @@ public static class DungeonLight
     // painted floor pool x --den-rl-lair-paint (judge 3: "the yellow comes from today's painted pool there, and the real light
     // multiplies it").
     static readonly float RlSoft = DenShade.Num("den-rl-soft", 1f, 1f), RlLairSoft = DenShade.Num("den-rl-lair-soft", 1f, 1f),
-        RlLairPaint = DenShade.Num("den-rl-lair-paint", 0.5f, 0.5f);
+        RlLairPaint = DenShade.Num("den-rl-lair-paint", 0.5f, 0.5f),
+        // (cool shade lane) --den-rl-paint 0: no painted pool on the floor under the real light (the decals still fade inside the
+        // pools). Under the cool shade the painted pool is an albedo gain lit by violet: a pink-lilac halo round the gold.
+        RlPaint = DenShade.Num("den-rl-paint", 0f, 1f);
     static int realN;
     static readonly System.Collections.Generic.List<Vector3> realFeet = new();
 
@@ -50,6 +53,9 @@ public static class DungeonLight
             HoleMap = new Vector3(-z.Half - 0.5f * z.Step, -z.Half - 0.5f * z.Step, 1f / (z.Res * z.Step));
         }
         int i = 0; fanN = 0; realN = 0; realFeet.Clear(); Pools.Clear();
+        // (cool shade lane) the projected gap keeps its crisp stretch: linear, no mipmaps (with them every edge landed 20+ px soft
+        // at the game camera). Only the den's pools use a light projector (--den-rl-proj-filter 3: the engine's default).
+        if (Real) RenderingServer.LightProjectorsSetFilter((RenderingServer.LightProjectorFilter)(int)SurvivorUnchained.Args.Num("den-rl-proj-filter", 1f));
         // (den r16 B2, R15f item 2) the lair's painted hollows are no holes: the fans keep off them and mask them (--den-shaft-hollows 0: not)
         Hollows = Fan > 0f && SurvivorUnchained.Args.Num("den-shaft-hollows", 1f) > 0f ? DungeonDress.HollowsFor(z) : new();
         var feet = new System.Collections.Generic.List<Vector2>();   // (den r16 B) every shaft's foot: the corridors' spacing, the log
@@ -267,7 +273,7 @@ public static class DungeonLight
             if (m?.Shader == null || !m.Shader.ResourcePath.EndsWith("dungeon_floor.gdshader")) continue;
             var arr = new Vector4[64]; int n = System.Math.Min(64, Pools.Count);
             for (int q = 0; q < n; q++) arr[q] = Pools[q];
-            m.SetShaderParameter("sp", arr); m.SetShaderParameter("sp_n", n);
+            m.SetShaderParameter("sp", arr); m.SetShaderParameter("sp_n", Real && RlPaint <= 0f ? 0 : n);
             m.SetShaderParameter("sp_lean", new Vector2(-Axis.X, -Axis.Z).Normalized());
             m.SetShaderParameter("sp_gain", SurvivorUnchained.Args.Num("den-pool-gain", Smooth ? 2.0f : 2.1f));   // (den r17 lead, from l7c: 1.5 -> 1.95, pools dL +.11 at s11 room)   // (den r17 L2, R16 item 2: 2.1 with ref .09: l7f at 2.2 dL +.15-.28)
             m.SetShaderParameter("sp_edge", SurvivorUnchained.Args.Num("den-pool-edge", 0.3f));
