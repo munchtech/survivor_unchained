@@ -16,11 +16,16 @@ import time
 
 import psutil
 
+# the GPU counters every Nth sample (a read takes ~1-2 s); MEMRUN_GPU_EVERY=1 for a short probe
+GPU_EVERY = max(1, int(os.environ.get("MEMRUN_GPU_EVERY", "10")))
+
 
 def gpu(pid):
     """(Windows) The process's GPU memory in MB: dedicated (the card's own) and shared (system RAM the card uses)."""
-    ps = (rf"(Get-Counter '\GPU Process Memory(pid_{pid}_*)\Dedicated Usage','\GPU Process Memory(pid_{pid}_*)\Shared Usage'"
-          r" -ErrorAction SilentlyContinue).CounterSamples | ForEach-Object { $_.Path.Split([char]92)[-1] + '=' + [int]($_.CookedValue/1MB) }")
+    # (the instance is "pid_N_luid_..._phys_0", one per adapter: list them, then read; a wildcard path returned nothing)
+    ps = (rf"$p = (Get-Counter -ListSet 'GPU Process Memory').PathsWithInstances | Where-Object {{ $_ -like '*pid_{pid}_*' -and "
+          r"($_ -like '*\Dedicated Usage' -or $_ -like '*\Shared Usage') }; if ($p) { (Get-Counter $p -ErrorAction SilentlyContinue)"
+          r".CounterSamples | ForEach-Object { $_.Path.Split([char]92)[-1].Replace(' ', '') + '=' + [int]($_.CookedValue/1MB) } }")
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=20)
     except Exception:
@@ -59,7 +64,7 @@ def main():
                         if m.rss > ws: ws, pv, big = m.rss, getattr(m, "private", m.vms), q
                     except psutil.Error:
                         pass
-                g = gpu(big.pid) if len(rows) % 10 == 5 else (None, None)
+                g = gpu(big.pid) if len(rows) % GPU_EVERY == GPU_EVERY // 2 else (None, None)
                 rows.append((round(time.time() - t0, 1), round(ws / 1048576), round(pv / 1048576), g[0], g[1]))
                 time.sleep(2)
         finally:
