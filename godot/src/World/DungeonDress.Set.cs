@@ -21,9 +21,9 @@ public static partial class DungeonDress
 {
     public static readonly int SetMode = (int)SurvivorUnchained.Args.Num("den-set", 2f);
     static readonly float SetScale = SurvivorUnchained.Args.Num("den-set-scale", 1f);
-    static readonly float SetGain = SurvivorUnchained.Args.Num("den-set-gain", 0.85f);   // (r11 1.1 -> 1.0: lit tone 156 against 134)   // (r10d 1.25 -> 1.1: the lit root tops measured (166,122,100) against (134,95,73))
+    static readonly float SetGain = DenShade.Num("den-set-gain", 1.15f, 0.85f);   // (r11 1.1 -> 1.0: lit tone 156 against 134)   // (r10d 1.25 -> 1.1: the lit root tops measured (166,122,100) against (134,95,73))
     static readonly float SetObjGain = SurvivorUnchained.Args.Num("den-set-obj-gain", 1f);
-    static readonly float SetSat = SurvivorUnchained.Args.Num("den-set-sat", 0.5f);   // (r11 0.7 -> 0.5 with shade-hi 0.15: satShade .34 -> .18, cool 15 -> 25 %, as den_room.png)
+    static readonly float SetSat = DenShade.Num("den-set-sat", 0.12f, 0.5f);   // (r11 0.7 -> 0.5 with shade-hi 0.15: satShade .34 -> .18, cool 15 -> 25 %, as den_room.png)
     static readonly float SetBoulderScale = SurvivorUnchained.Args.Num("den-set-boulder", 1f);
     static readonly float SetCool = SurvivorUnchained.Args.Num("den-set-cool", 0.4f);   // (r13 1 -> 0.4 with shade-tint 1,.95,.85: the banks' darks h 233-331 (mauve) -> 7-17, lane E Banks band warm umber)   // (r10b) the paintings' shade to cool grey (den_set.gdshader shade_k)
 
@@ -43,7 +43,7 @@ public static partial class DungeonDress
     static int lairPits;   // (den r13 rooms) lair holes met so far
     static readonly float SetPitCells = SurvivorUnchained.Args.Num("den-pit-cells", 1f);   // (den r16 A, R15f item 1) the lair pits as glowing cracks in a dark pit (SetMat); 0: the r15 strokes
     static Vector3 setBossC;   // (r12) the lair's centre x, z and radius for the set's gloom (0: none), taken where the set is built
-    internal static readonly float SetBossGloom = SurvivorUnchained.Args.Num("den-boss-gloom", 1.2f);
+    internal static readonly float SetBossGloom = DenShade.Num("den-boss-gloom", 0.5f, 1.2f);
     static readonly float SetSpurLift = SurvivorUnchained.Args.Num("den-spur-lift", 1f);   // (den r16 G2, R15f item 11) the lair gloom taken off the set by its root spurs (DungeonGen.LairSpurs): spur banks as the rooms' banks (0: gloomed as the rim)
     static readonly Vector4[] setSpurSeg = new Vector4[16];
     static readonly float[] setSpurR = new float[16];
@@ -72,7 +72,7 @@ public static partial class DungeonDress
         // (r11) the roots and shade read pink-mauve: the paintings' mids warmed (less blue), the shade's cool narrowed to the
         // deepest darks and turned blue-teal (den_room.png: warm brown in the light, cool only down in the hollows)
         mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
-        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(1.0f, 0.95f, 0.85f)));
+        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", DenShade.On ? new Vector3(0.95f, 0.95f, 0.95f) : new Vector3(1.0f, 0.95f, 0.85f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
         // (den r15 helper D) the bone piles' shade warm umber (hue 40-60), not the grey-violet the judge measured (hue ~210, C .02)
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));
@@ -82,7 +82,7 @@ public static partial class DungeonDress
         if (sheet == "O6") { mat.SetShaderParameter("tint", V3("den-fur-tint", new Vector3(1f, 0.97f, 0.72f))); mat.SetShaderParameter("shade_tint", V3("den-fur-shade", new Vector3(1f, 0.95f, 0.6f))); }   // (den r16 lead, R15f item 10) the set's warm tint made the fur cream in light (C .05-.09); neutral here
         if (sheet == "O2" && SetLogSat != 1f) mat.SetShaderParameter("sat", SetSat * SetLogSat);   // (den r16 D, R15f item 8)
         if (sheet == "O2" && SetLogTint != Vector3.One) mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)) * SetLogTint);
-        if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", SurvivorUnchained.Args.Num("den-near-hi", 0.72f));
+        if (sheet is "B2" or "B2b") mat.SetShaderParameter("hi_roll", DenShade.Num("den-near-hi", 1f, 0.72f));
         if (sheet == "O9")   // (den r19 B, R18b item 2) the carcasses read red flesh with pale fur: the set's half saturation and warm tint left them pink-grey
         {
             mat.SetShaderParameter("sat", SurvivorUnchained.Args.Num("den-carc-sat", 1.0f));
@@ -217,7 +217,7 @@ public static partial class DungeonDress
     static readonly float SetCorners = SurvivorUnchained.Args.Num("den-set-corners", 0f);    // (r10c) B4/B4R_2 where a far run meets a wall's (r11 1 -> 0: the corner's arm drew a straight seam and a dark band across the room's top, c_p13)
     static readonly float SetSpills = SurvivorUnchained.Args.Num("den-set-spills", 1f);      // (r10c) B6 spills on the floor at the banks' feet and pits
     static readonly float SetDark = SurvivorUnchained.Args.Num("den-set-dark", 0.02f); // (r11 0.008 -> 0.02)      // (r10c) the paintings' darks lit at least this (cool)
-    static readonly float SetAmb = SurvivorUnchained.Args.Num("den-set-amb", 0.25f); // (r11 0.2 -> 0.25)        // (r10c) and at least this share of their painted value
+    static readonly float SetAmb = DenShade.Num("den-set-amb", 0.27f, 0.25f); // (r11 0.2 -> 0.25)        // (r10c) and at least this share of their painted value
     // (r10c) the objects in one mesh per sheet (they were a node each: ~137 draws) and the boulders' shadow hulls in one
     static readonly Dictionary<string, SetBuf> objBufs = new();
     static readonly List<Transform3D> hulls = new();

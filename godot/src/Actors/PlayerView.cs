@@ -2144,7 +2144,7 @@ public partial class PlayerView : Node3D
     // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
     // Rendering r2 (judge r1 D1, a pale cream disc larger than the camp fire's): 2500K #ffa868, falloff 2, 0.75x the reach,
     // and from shoulder height (1.7, --ember-h) now that the folk light, not the pool, lights her: a tight pool, the fire's the larger.
-    static readonly float EmberFlareCap = SurvivorUnchained.Args.Num("ember-flare-cap", 2.2f);
+    static readonly float EmberFlareCap = DenShade.Num("ember-flare-cap", 3.8f, 2.2f);   // (cool shade lane: under --den-shade 1 her lamp's ground share is 0.4 (hero_den 38), so the Flare on the ground needs the rig's whole ember; 2.2 everywhere else, as it was)
     /// <summary>Her carried light's own colour; --ember-color C over it and over the air's (pictures).</summary>
     static readonly Color EmberOwn = new("#ffa868");
     static readonly Color? EmberArg = SurvivorUnchained.Args.Get("ember-color") is string ec ? new Color(ec) : null;
