@@ -26,6 +26,14 @@ KEYS (keyboard and mouse)
   Pause / settings ......... Esc
   A gamepad works too. Keys can be changed in Settings (Esc).
 
+FIRST LAUNCH
+  The very first start prepares the graphics for your card and can take
+  about half a minute before the den appears; later starts are quick.
+  The game draws with Direct3D 12. If it will not start on your machine,
+  run it once from a command prompt as:
+    SurvivorUnchained.exe --rendering-driver vulkan
+  and tell us it needed that.
+
 IF SOMETHING GOES WRONG
   Please tell us what you were doing, and send the log:
   %APPDATA%\Godot\app_userdata\Survivor Unchained\logs\godot.log
