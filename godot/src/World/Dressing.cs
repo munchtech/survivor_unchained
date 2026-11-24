@@ -81,6 +81,7 @@ public static class Dressing
     static List<(Mesh Mesh, Transform3D Local)> PartsOf(string kit, string piece)
     {
         var key = $"{kit}/{piece}";
+        partsAsked.Add(key);
         if (parts.TryGetValue(key, out var list)) return list;
         list = new();
         var scene = GD.Load<PackedScene>(FileOf(kit, piece)).Instantiate<Node3D>();
@@ -122,17 +123,16 @@ public static class Dressing
     }
 
     static readonly Dictionary<string, Mesh> looked = new();
-    /// <summary>(PlaceCache) The pieces and looked meshes no MultiMesh or node draws any more dropped.</summary>
-    internal static int LetGoOfPlace()
-    {
-        return PlaceCache.Prune(parts, l => l.Any(p => PlaceCache.Held(p.Mesh))) + PlaceCache.Prune(looked, PlaceCache.Held);
-    }
+    /// <summary>(PlaceCache) The pieces and looked meshes nothing asked for since the last place change dropped.</summary>
+    internal static int LetGoOfPlace() => partsAsked.Prune(parts) + lookedAsked.Prune(looked);
+    static readonly PlaceCache.Asked partsAsked = new(), lookedAsked = new();
 
     /// <summary>A piece's mesh with its kind's look (KitLook): one copy per
     /// mesh and look, its surfaces' materials swapped.</summary>
     static Mesh Looked(Mesh mesh, KitLook.Look look, bool foot = false)
     {
         var key = $"{mesh.GetInstanceId()}|{look}|{foot}";
+        lookedAsked.Add(key);
         if (looked.TryGetValue(key, out var m)) return m;
         m = (Mesh)mesh.Duplicate();
         for (int i = 0; i < m.GetSurfaceCount(); i++)

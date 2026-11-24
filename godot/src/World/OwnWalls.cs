@@ -43,8 +43,9 @@ public sealed class OwnWalls
     readonly List<(Vector3 At, float Foot)> feet = new();
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data, int House, bool Roof)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
-    /// <summary>(PlaceCache) The house pieces nothing draws any more dropped.</summary>
-    internal static int LetGoOfPlace() => PlaceCache.Prune(parts, l => l.Any(p => PlaceCache.Held(p.Mesh)));
+    /// <summary>(PlaceCache) The house pieces nothing asked for since the last place change dropped.</summary>
+    static readonly PlaceCache.Asked asked = new();
+    internal static int LetGoOfPlace() => asked.Prune(parts);
 
     /// <summary>The zone's own walls, or null if it has none (or --walls-kit, --props-own-off).</summary>
     public static OwnWalls? For(ZoneData z)
@@ -602,6 +603,7 @@ public sealed class OwnWalls
 
     static List<(Mesh Mesh, Transform3D Local)> PartsOf(string preset)
     {
+        asked.Add(preset);
         if (parts.TryGetValue(preset, out var list)) return list;
         list = new();
         var scene = GD.Load<PackedScene>($"{Dir}/{preset}.glb").Instantiate<Node3D>();
