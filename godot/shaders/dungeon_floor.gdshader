@@ -164,7 +164,7 @@ void fragment() {
 	vec2 f = texture(field, fuv).rg;
 	float inside = f.x;
 	float hole = f.y;
-	float big = fbm(wpos.xz * 0.09);
+	float big = fbm(wpos.xz * 0.09 + vec2(-301.004, 22.973));   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 	float mid = fbm(wpos.xz * 0.45 + 17.0);
 	vec3 col;
 	float blr = 1.0;   // (den r18 L4, R18 item 3) the painted floor's lum blurred (lod sp_blur_lod, no band) over its lum: the pool's flattening factor
@@ -185,7 +185,7 @@ void fragment() {
 		float w_pf = steep * (1.0 - smoothstep(0.0, 2.0, hole));
 		float hb[6];
 		vec3 cb[6];
-		float tw = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.06 + 7.0));
+		float tw = smoothstep(0.35, 0.65, fbm(wpos.xz * 0.06 + vec2(207.030, -342.241)));   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 		const mat2 R1 = mat2(vec2(0.616, 0.788), vec2(-0.788, 0.616));
 		for (int i = 0; i < 6; i++) {
 			vec2 u0 = wpos.xz / den_m[i];
@@ -215,7 +215,7 @@ void fragment() {
 			if (set_k > 0.5) {
 				// each tile read twice at two turns, the two switched by the slow field (no repeat reads); the painting's own grain
 				vec2 s0 = wpos.xz / 4.0, s1 = R1 * wpos.xz / 4.0 + 0.37;
-				float twf = fbm(wpos.xz * 0.06 + 7.0);
+				float twf = fbm(wpos.xz * 0.06 + vec2(207.030, -342.241));   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov) (the same field as tw)
 				float tws = mix(tw, smoothstep(0.47, 0.53, twf), set_sharp);
 				float bi = -0.6 * set_sharp;
 				vec4 t1 = mix(texture(set_floor, vec3(s0, 0.0), bi), texture(set_floor, vec3(s1, 0.0), bi), tws);
@@ -224,13 +224,13 @@ void fragment() {
 				vec4 t4 = mix(texture(set_floor, vec3(s0 + 0.25, 3.0), bi), texture(set_floor, vec3(s1 + 0.25, 3.0), bi), tws);
 				// (r11) a second base earth (F6) in patches 6-12 m across, switched in by its high shapes
 				vec4 t5 = mix(texture(set_floor, vec3(s0 + 0.62, 4.0), bi), texture(set_floor, vec3(s1 + 0.62, 4.0), bi), tws);
-				float k5 = smoothstep(0.0, 1.0, (fbm(wpos.xz * 0.09 + 31.0) - 0.5) * 9.0 + 0.5 + 0.8 * (t5.a - t1.a));
+				float k5 = smoothstep(0.0, 1.0, (fbm(wpos.xz * 0.09 + vec2(-385.233, -126.283)) - 0.5) * 9.0 + 0.5 + 0.8 * (t5.a - t1.a));   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 				t1 = mix(t1, t5, k5);
 				// (r10b) the frame's macro value structure: worn ways wandering through the open (F2, lighter) and damp
 				// patches in the hollows between them (F3, darker and cool), 3-8 m across, besides the walls' vignette
-				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + 13.0) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);
+				float path = (1.0 - smoothstep(0.04, 0.15, abs(fbm(wpos.xz * 0.05 + vec2(-97.914, -123.086)) - 0.5) + 0.05 * (mid - 0.5))) * smoothstep(0.8, 2.5, inside);   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 				float wtr = set_trod * clamp(w_tr * mix(1.0, 0.55, set_paths) + set_paths * path, 0.0, 1.0);
-				float wdp = max(max(w_dk, w_li * 0.5), set_paths * set_damp * smoothstep(0.52, 0.76, fbm(wpos.xz * 0.11 + 77.0)) * (1.0 - path) * smoothstep(0.3, 1.5, inside));
+				float wdp = max(max(w_dk, w_li * 0.5), set_paths * set_damp * smoothstep(0.52, 0.76, fbm(wpos.xz * 0.11 + vec2(260.019, -17.196))) * (1.0 - path) * smoothstep(0.3, 1.5, inside));   // (pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 				float inb = boss_c.z > 0.0 ? 1.0 - smoothstep(boss_c.z * 0.85, boss_c.z * 1.05, distance(wpos.xz, boss_c.xy)) : 0.0;
 				wdp *= 1.0 - boss_dry * inb;
 				// height blend: a layer's high shapes (its alpha) come through first as its weight rises
@@ -266,7 +266,7 @@ void fragment() {
 		col *= mix(1.0, mix(0.86, 1.08, smoothstep(0.3, 0.7, big)), cl);
 		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:
 		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
-		float m1 = fbm(wpos.xz * 0.075 + 23.0), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);
+		float m1 = fbm(wpos.xz * 0.075 + vec2(-151.967, 196.961)), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);   // (m1's pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
 		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85 * cl);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
