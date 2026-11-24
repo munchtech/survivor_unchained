@@ -4,7 +4,7 @@ outside (tools/perf/memrun.py) and fails if it is over budget:
 
     python tools/perf/memcheck.py EXE [den|town|denloop ...] [--seconds 150] [--out DIR]
 
-denloop (24 Nov) goes round the den about 6 times (450 s) and prints each loop's RAM and VRAM; it fails if they climb.
+denloop (24 Nov) goes round the den about 16 times (960 s) and prints each loop's RAM and VRAM; it fails if they climb.
 
 Budgets (the coordinator, 23 Nov): RAM (den < 3 GB, town < 4 GB), read as commit less the card's own memory (private bytes
 minus GPU dedicated, at the samples that read the GPU): the working set is the same number on a quiet machine (den, tester1:
@@ -38,8 +38,12 @@ BUDGET = {  # MB
     "town": {"ws": 4096, "gpu": 3072, "private": 8192},
 }
 BUDGET["denloop"] = BUDGET["den"]
-LOOP_SECS = 450.0  # denloop's default run: about 6 full loops (a loop is ~55 s: 45 s in the den, the page, the load)
-LOOP_GROWTH = 50.0  # MB a loop: a loop's median RAM and VRAM over the loops after the first, least-squares
+# (24 Nov, session 3: on D3D12 the loop medians rise for ~8 loops, then hold: L3, 16 loops, RAM 3324 -> ~3850 from loop 9 on,
+# VRAM ~3880-3940: the engine's and driver's upload pools filling to their caps, not a leak; a 7-loop run reads only the rise.
+# So the run is 16 loops and growth is judged on its second half.)
+LOOP_SECS = 960.0  # denloop's default run: about 16 full loops (a loop is ~55-60 s: 45 s in the den, the page, the load)
+LOOPS_MIN = 12
+LOOP_GROWTH = 20.0  # MB a loop: the loop medians' RAM and VRAM over the second half of the loops, least-squares
 # The game's own window: a run with args other than --shot/--perf goes fullscreen at the monitor's size (src/Game/Settings.cs
 # ApplyWindow), as a tester's does; on this machine that is 2560x1440, stricter than a tester's 1080p (23 Nov: GPU dedicated
 # 3,469 MB at 1440p vs 3,180-3,250 at 1080p). --resolution alone does not change it (a vram probe, 8d9cda78b).
@@ -96,14 +100,17 @@ def loops(rows, log):
         ram = sorted(r[2] - r[3] for r in g); vr = sorted(r[3] for r in g)
         per.append((n, ram[len(ram) // 2], ram[-1], vr[len(vr) // 2], vr[-1]))
         print(f"  loop {n}: RAM median {per[-1][1]} peak {per[-1][2]} MB, VRAM median {per[-1][3]} peak {per[-1][4]} MB ({len(g)} samples)")
-    def slope(col):
-        p = per[1:]
+    def slope(col, p=None):
+        p = per[1:] if p is None else p
         if len(p) < 2: return 0.0
         mx = sum(q[0] for q in p) / len(p); my = sum(q[col] for q in p) / len(p)
         return sum((q[0] - mx) * (q[col] - my) for q in p) / sum((q[0] - mx) ** 2 for q in p)
     sr, sv = slope(1), slope(3)
-    print(f"  loops ended {len(ends)}; past the first, RAM {sr:+.0f} MB a loop, VRAM {sv:+.0f} MB a loop (limit {LOOP_GROWTH:+.0f})")
-    return [("loops", len(ends) >= 4), ("loop growth", sr < LOOP_GROWTH and sv < LOOP_GROWTH)]
+    late = per[len(per) // 2:]
+    lr, lv = slope(1, late), slope(3, late)
+    print(f"  loops ended {len(ends)}; past the first, RAM {sr:+.0f} MB a loop, VRAM {sv:+.0f} MB a loop; "
+          f"the second half (loops {late[0][0] if late else '-'}-{late[-1][0] if late else '-'}), RAM {lr:+.0f}, VRAM {lv:+.0f} (limit {LOOP_GROWTH:+.0f})")
+    return [("loops", len(ends) >= LOOPS_MIN), ("loop growth", lr < LOOP_GROWTH and lv < LOOP_GROWTH)]
 
 
 def main():
