@@ -23,8 +23,8 @@ public static class DungeonLight
     // right?"): the rig, the rooms' wash and the painted fan rays stay as they are (--den-rl-wash, --den-rl-fan scale them); and so
     // does the floor's painted pool (sp_*; --den-rl-mask 0 drops it: the lair's floor then changes well outside the light).
     static readonly bool Real = SurvivorUnchained.Args.Num("den-real-light", 0f) > 0f;
-    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 13f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.9f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
-        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 1f);
+    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 12f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.65f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
+        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 0.8f);
     static int realN;
     static readonly System.Collections.Generic.List<Vector3> realFeet = new();
 
