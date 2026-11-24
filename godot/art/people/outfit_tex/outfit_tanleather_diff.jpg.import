@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bi18i2bk675sm"
-path="res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.ctex"
+path.bptc="res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.bptc.ctex"
+path.astc="res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_tanleather_diff.jpg"
-dest_files=["res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.ctex"]
+dest_files=["res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.bptc.ctex", "res://.godot/imported/outfit_tanleather_diff.jpg-d36b05497ab07486488516f7ea2dcdb9.astc.ctex"]
 
 [params]
 

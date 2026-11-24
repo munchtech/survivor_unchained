@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c374xankp5s25"
-path="res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.ctex"
+path.bptc="res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.bptc.ctex"
+path.astc="res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_head_sunborn.jpg"
-dest_files=["res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.ctex"]
+dest_files=["res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.bptc.ctex", "res://.godot/imported/heroine_head_sunborn.jpg-05d07c13bbdd43db7597da95f0855695.astc.ctex"]
 
 [params]
 

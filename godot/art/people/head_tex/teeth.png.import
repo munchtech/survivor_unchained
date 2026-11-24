@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfhkph5gxnuri"
-path="res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.ctex"
+path.bptc="res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.bptc.ctex"
+path.astc="res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/teeth.png"
-dest_files=["res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.ctex"]
+dest_files=["res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.bptc.ctex", "res://.godot/imported/teeth.png-1fd1e37002dad9a34e01cdc574129367.astc.ctex"]
 
 [params]
 

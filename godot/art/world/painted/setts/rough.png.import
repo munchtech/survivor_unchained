@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://sb4vu1g2n11j"
-path="res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.ctex"
+path.bptc="res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.bptc.ctex"
+path.astc="res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/painted/setts/rough.png"
-dest_files=["res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.ctex"]
+dest_files=["res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.bptc.ctex", "res://.godot/imported/rough.png-303f974b4e0665fc1b7bf6d5f8acf6de.astc.ctex"]
 
 [params]
 

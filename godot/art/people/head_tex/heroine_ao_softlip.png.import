@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btdqoragvxu6e"
-path="res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.ctex"
+path.bptc="res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.bptc.ctex"
+path.astc="res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_ao_softlip.png"
-dest_files=["res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.ctex"]
+dest_files=["res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.bptc.ctex", "res://.godot/imported/heroine_ao_softlip.png-2c100c5b4b8c181956be013a87ffdebb.astc.ctex"]
 
 [params]
 

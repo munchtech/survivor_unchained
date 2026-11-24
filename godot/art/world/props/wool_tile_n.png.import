@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://puwji7ddbjo5"
-path="res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.ctex"
+path.bptc="res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.bptc.ctex"
+path.astc="res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/props/wool_tile_n.png"
-dest_files=["res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.ctex"]
+dest_files=["res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.bptc.ctex", "res://.godot/imported/wool_tile_n.png-2c886dc6366acfb8bb0f88512691fe0a.astc.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://4mafiaqsme3j"
-path="res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.ctex"
+path.bptc="res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.bptc.ctex"
+path.astc="res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_amethyst_diff.jpg"
-dest_files=["res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.ctex"]
+dest_files=["res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.bptc.ctex", "res://.godot/imported/outfit_amethyst_diff.jpg-8b43435aef456757a0e5f82f37468daa.astc.ctex"]
 
 [params]
 

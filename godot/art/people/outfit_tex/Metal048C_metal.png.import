@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp81leqylnmc8"
-path="res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.ctex"
+path.bptc="res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.bptc.ctex"
+path.astc="res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/Metal048C_metal.png"
-dest_files=["res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.ctex"]
+dest_files=["res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.bptc.ctex", "res://.godot/imported/Metal048C_metal.png-fd9e20ec1930328a92df2075f6f0fd66.astc.ctex"]
 
 [params]
 

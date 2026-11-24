@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://df0j8mer3jp4r"
-path="res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.ctex"
+path.bptc="res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.bptc.ctex"
+path.astc="res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/boulders_paint.png"
-dest_files=["res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.ctex"]
+dest_files=["res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.bptc.ctex", "res://.godot/imported/boulders_paint.png-55aaf7a139ef7e072c7551ac2e883b37.astc.ctex"]
 
 [params]
 

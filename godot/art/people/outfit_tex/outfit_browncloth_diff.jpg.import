@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://o71h0wjwjr4c"
-path="res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.ctex"
+path.bptc="res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.bptc.ctex"
+path.astc="res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_browncloth_diff.jpg"
-dest_files=["res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.ctex"]
+dest_files=["res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.bptc.ctex", "res://.godot/imported/outfit_browncloth_diff.jpg-4eec32231ea51af90a9da02f51f6b4af.astc.ctex"]
 
 [params]
 

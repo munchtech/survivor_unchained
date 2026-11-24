@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://crfdkasrc5ogi"
-path="res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.ctex"
+path.bptc="res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.bptc.ctex"
+path.astc="res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_down_diff.jpg"
-dest_files=["res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.ctex"]
+dest_files=["res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.bptc.ctex", "res://.godot/imported/outfit_down_diff.jpg-68188e38c734f46618b36785a06327ed.astc.ctex"]
 
 [params]
 

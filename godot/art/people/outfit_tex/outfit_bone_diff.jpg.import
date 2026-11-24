@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0yred7t7au08"
-path="res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.ctex"
+path.bptc="res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.bptc.ctex"
+path.astc="res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_bone_diff.jpg"
-dest_files=["res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.ctex"]
+dest_files=["res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.bptc.ctex", "res://.godot/imported/outfit_bone_diff.jpg-595f030a070127c5168c49b14e4f378e.astc.ctex"]
 
 [params]
 

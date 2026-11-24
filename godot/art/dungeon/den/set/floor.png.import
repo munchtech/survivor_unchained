@@ -3,15 +3,17 @@
 importer="2d_array_texture"
 type="CompressedTexture2DArray"
 uid="uid://rgvmgp261si2"
-path="res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.ctexarray"
+path.bptc="res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.bptc.ctexarray"
+path.astc="res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.astc.ctexarray"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/set/floor.png"
-dest_files=["res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.ctexarray"]
+dest_files=["res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.bptc.ctexarray", "res://.godot/imported/floor.png-640f22502bcdb3abc5a7ee3f023ef36f.astc.ctexarray"]
 
 [params]
 

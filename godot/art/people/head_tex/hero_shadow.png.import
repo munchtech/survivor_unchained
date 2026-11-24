@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cukvlcwxkuskm"
-path="res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.ctex"
+path.bptc="res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.bptc.ctex"
+path.astc="res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/hero_shadow.png"
-dest_files=["res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.ctex"]
+dest_files=["res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.bptc.ctex", "res://.godot/imported/hero_shadow.png-e6fc24f8a5d6a189fe28a1a103e21c17.astc.ctex"]
 
 [params]
 

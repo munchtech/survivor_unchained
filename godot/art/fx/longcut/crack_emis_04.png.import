@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://duepmhxkndyid"
-path="res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.ctex"
+path.bptc="res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.bptc.ctex"
+path.astc="res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/fx/longcut/crack_emis_04.png"
-dest_files=["res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.ctex"]
+dest_files=["res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.bptc.ctex", "res://.godot/imported/crack_emis_04.png-933b484ad704cc7ba9d6c54c138e4da3.astc.ctex"]
 
 [params]
 

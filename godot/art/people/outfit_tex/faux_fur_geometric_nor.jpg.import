@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cu068m3h3taw8"
-path="res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.ctex"
+path.bptc="res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.bptc.ctex"
+path.astc="res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/faux_fur_geometric_nor.jpg"
-dest_files=["res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.ctex"]
+dest_files=["res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.bptc.ctex", "res://.godot/imported/faux_fur_geometric_nor.jpg-f635ef93f9bfae19ced84b1149463450.astc.ctex"]
 
 [params]
 

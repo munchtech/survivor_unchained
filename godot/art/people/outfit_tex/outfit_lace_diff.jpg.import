@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bwyfc05vy7pwb"
-path="res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.ctex"
+path.bptc="res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.bptc.ctex"
+path.astc="res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_lace_diff.jpg"
-dest_files=["res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.ctex"]
+dest_files=["res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.bptc.ctex", "res://.godot/imported/outfit_lace_diff.jpg-0b52d477d3208eb2e399ddbf7da72cec.astc.ctex"]
 
 [params]
 

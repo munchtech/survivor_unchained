@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cedo2vmgdiuvh"
-path="res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.ctex"
+path.bptc="res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.bptc.ctex"
+path.astc="res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/floor_preview.jpg"
-dest_files=["res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.ctex"]
+dest_files=["res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.bptc.ctex", "res://.godot/imported/floor_preview.jpg-0cc8dd0fbedf63a474052243dc08dfab.astc.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dwsn3r0fby2ki"
-path="res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.ctex"
+path.bptc="res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.bptc.ctex"
+path.astc="res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/hair_fine_strands.png"
-dest_files=["res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.ctex"]
+dest_files=["res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.bptc.ctex", "res://.godot/imported/hair_fine_strands.png-df860c4a4907e331f7778e8cd04eea2f.astc.ctex"]
 
 [params]
 

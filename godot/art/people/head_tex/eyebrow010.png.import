@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://4vhu1lfy88yd"
-path="res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.ctex"
+path.bptc="res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.bptc.ctex"
+path.astc="res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/eyebrow010.png"
-dest_files=["res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.ctex"]
+dest_files=["res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.bptc.ctex", "res://.godot/imported/eyebrow010.png-6cee16ff9960b1dc83f0be88b5bd04b1.astc.ctex"]
 
 [params]
 

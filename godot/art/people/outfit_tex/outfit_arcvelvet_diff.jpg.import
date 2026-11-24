@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dr4vrvp2616ki"
-path="res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.ctex"
+path.bptc="res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.bptc.ctex"
+path.astc="res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_arcvelvet_diff.jpg"
-dest_files=["res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.ctex"]
+dest_files=["res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.bptc.ctex", "res://.godot/imported/outfit_arcvelvet_diff.jpg-0fd2a2b933513295268d916b669301b7.astc.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6vewadfi5d1r"
-path="res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.ctex"
+path.bptc="res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.bptc.ctex"
+path.astc="res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/flora/bracken_atlas.png"
-dest_files=["res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.ctex"]
+dest_files=["res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.bptc.ctex", "res://.godot/imported/bracken_atlas.png-e4b2a970233045b47601fa844fad3787.astc.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://q62exlfmk81j"
-path="res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.ctex"
+path.bptc="res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.bptc.ctex"
+path.astc="res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/pit_preview.jpg"
-dest_files=["res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.ctex"]
+dest_files=["res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.bptc.ctex", "res://.godot/imported/pit_preview.jpg-79ef062c6898ea9119dd7ba9178a33ce.astc.ctex"]
 
 [params]
 

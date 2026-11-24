@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5jihmd24sro7"
-path="res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.ctex"
+path.bptc="res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.bptc.ctex"
+path.astc="res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_lashes.png"
-dest_files=["res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.ctex"]
+dest_files=["res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.bptc.ctex", "res://.godot/imported/heroine_lashes.png-57fc6c6830d881797cf723b533a0215d.astc.ctex"]
 
 [params]
 

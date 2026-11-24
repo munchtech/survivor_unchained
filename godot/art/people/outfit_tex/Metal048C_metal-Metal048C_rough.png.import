@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dk34dyw4ipx1a"
-path="res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.ctex"
+path.bptc="res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.bptc.ctex"
+path.astc="res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/Metal048C_metal-Metal048C_rough.png"
-dest_files=["res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.ctex"]
+dest_files=["res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.bptc.ctex", "res://.godot/imported/Metal048C_metal-Metal048C_rough.png-d2e1a461b9bb5a6e66f5eb72d4bae19b.astc.ctex"]
 
 [params]
 

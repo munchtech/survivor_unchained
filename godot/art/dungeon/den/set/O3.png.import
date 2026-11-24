@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dyjbyjqjwfhvk"
-path="res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.ctex"
+path.bptc="res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.bptc.ctex"
+path.astc="res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/set/O3.png"
-dest_files=["res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.ctex"]
+dest_files=["res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.bptc.ctex", "res://.godot/imported/O3.png-737fb69261d4700c33ae98dd1e4efbf3.astc.ctex"]
 
 [params]
 

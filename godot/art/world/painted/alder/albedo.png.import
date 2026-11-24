@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6xps32cnx0oi"
-path="res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.ctex"
+path.bptc="res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.bptc.ctex"
+path.astc="res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/painted/alder/albedo.png"
-dest_files=["res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.ctex"]
+dest_files=["res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.bptc.ctex", "res://.godot/imported/albedo.png-827b113ecc6d91f80d8c233029472aa9.astc.ctex"]
 
 [params]
 

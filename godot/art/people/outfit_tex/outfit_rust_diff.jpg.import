@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bd82k3xfsdfqp"
-path="res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.ctex"
+path.bptc="res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.bptc.ctex"
+path.astc="res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_rust_diff.jpg"
-dest_files=["res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.ctex"]
+dest_files=["res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.bptc.ctex", "res://.godot/imported/outfit_rust_diff.jpg-c577adc9ae8abc73e58234098f53c67b.astc.ctex"]
 
 [params]
 

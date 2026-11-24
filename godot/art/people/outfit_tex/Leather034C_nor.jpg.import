@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://wpaelh7u0j1w"
-path="res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.ctex"
+path.bptc="res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.bptc.ctex"
+path.astc="res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/Leather034C_nor.jpg"
-dest_files=["res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.ctex"]
+dest_files=["res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.bptc.ctex", "res://.godot/imported/Leather034C_nor.jpg-55dc1ec8181e467b40302ef8a9503e59.astc.ctex"]
 
 [params]
 

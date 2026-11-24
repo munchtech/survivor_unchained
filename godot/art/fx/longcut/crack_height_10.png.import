@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5v011h4woha2"
-path="res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.ctex"
+path.bptc="res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.bptc.ctex"
+path.astc="res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/fx/longcut/crack_height_10.png"
-dest_files=["res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.ctex"]
+dest_files=["res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.bptc.ctex", "res://.godot/imported/crack_height_10.png-1ee2837fbfa5097ed18616227fd03ed8.astc.ctex"]
 
 [params]
 

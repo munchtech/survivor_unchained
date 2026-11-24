@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://16he206yu2so"
-path="res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.ctex"
+path.bptc="res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.bptc.ctex"
+path.astc="res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/rough_linen_nor.jpg"
-dest_files=["res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.ctex"]
+dest_files=["res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.bptc.ctex", "res://.godot/imported/rough_linen_nor.jpg-baac77f79a0d90ffe50c4b36159f4b47.astc.ctex"]
 
 [params]
 

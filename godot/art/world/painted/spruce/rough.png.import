@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cl1mett3fqi36"
-path="res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.ctex"
+path.bptc="res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.bptc.ctex"
+path.astc="res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/painted/spruce/rough.png"
-dest_files=["res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.ctex"]
+dest_files=["res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.bptc.ctex", "res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.astc.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3yl7vs8d2or"
-path="res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.ctex"
+path.bptc="res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.bptc.ctex"
+path.astc="res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_skin_zones.png"
-dest_files=["res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.ctex"]
+dest_files=["res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.bptc.ctex", "res://.godot/imported/heroine_skin_zones.png-93fdb88a21a50b295629229edfb4feb9.astc.ctex"]
 
 [params]
 

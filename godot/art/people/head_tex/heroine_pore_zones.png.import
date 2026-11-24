@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0kypgwej3xl2"
-path="res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.ctex"
+path.bptc="res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.bptc.ctex"
+path.astc="res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_pore_zones.png"
-dest_files=["res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.ctex"]
+dest_files=["res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.bptc.ctex", "res://.godot/imported/heroine_pore_zones.png-866a4051a7cfe1df63729f2a824587a9.astc.ctex"]
 
 [params]
 

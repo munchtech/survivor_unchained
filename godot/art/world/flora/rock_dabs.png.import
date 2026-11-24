@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ccpknnwipts7a"
-path="res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.ctex"
+path.bptc="res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.bptc.ctex"
+path.astc="res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/flora/rock_dabs.png"
-dest_files=["res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.ctex"]
+dest_files=["res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.bptc.ctex", "res://.godot/imported/rock_dabs.png-187b5a049314ad015631391c34ecba05.astc.ctex"]
 
 [params]
 

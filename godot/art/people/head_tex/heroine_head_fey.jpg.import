@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvq0qfiiujuvo"
-path="res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.ctex"
+path.bptc="res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.bptc.ctex"
+path.astc="res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_head_fey.jpg"
-dest_files=["res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.ctex"]
+dest_files=["res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.bptc.ctex", "res://.godot/imported/heroine_head_fey.jpg-59f1bf1418ca2d39d4eb43d6606274c8.astc.ctex"]
 
 [params]
 

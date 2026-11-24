@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfa5lp34gyhgv"
-path="res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.ctex"
+path.bptc="res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.bptc.ctex"
+path.astc="res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_tancloth_diff.jpg"
-dest_files=["res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.ctex"]
+dest_files=["res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.bptc.ctex", "res://.godot/imported/outfit_tancloth_diff.jpg-ad2df2d39dcb022ed99ded873c8e59fe.astc.ctex"]
 
 [params]
 

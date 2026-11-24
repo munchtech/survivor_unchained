@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddk4w7pq7rg0o"
-path="res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.ctex"
+path.bptc="res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.bptc.ctex"
+path.astc="res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_iron_diff.jpg"
-dest_files=["res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.ctex"]
+dest_files=["res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.bptc.ctex", "res://.godot/imported/outfit_iron_diff.jpg-c1245ee8f23b9060c4a605bdaf4e6cc3.astc.ctex"]
 
 [params]
 

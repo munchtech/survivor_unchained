@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://djagptjlyuomh"
-path="res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.ctex"
+path.bptc="res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.bptc.ctex"
+path.astc="res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/fx/longcut/crack_albedo_06.png"
-dest_files=["res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.ctex"]
+dest_files=["res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.bptc.ctex", "res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa98e53508.astc.ctex"]
 
 [params]
 

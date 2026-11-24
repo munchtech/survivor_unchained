@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c84r8l3eki8js"
-path="res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.ctex"
+path.bptc="res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.bptc.ctex"
+path.astc="res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/set/B5.png"
-dest_files=["res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.ctex"]
+dest_files=["res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.bptc.ctex", "res://.godot/imported/B5.png-785cf6b9418d94f495d44977527d92c9.astc.ctex"]
 
 [params]
 

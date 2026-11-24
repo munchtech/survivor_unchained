@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cemkxo28tf2u1"
-path="res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.ctex"
+path.bptc="res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.bptc.ctex"
+path.astc="res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/painted/spruce/normal.png"
-dest_files=["res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.ctex"]
+dest_files=["res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.bptc.ctex", "res://.godot/imported/normal.png-7e2f00cb72e334dc2c642488820ac23a.astc.ctex"]
 
 [params]
 

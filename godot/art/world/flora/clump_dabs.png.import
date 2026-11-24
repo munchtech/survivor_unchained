@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgodj1ifiays2"
-path="res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.ctex"
+path.bptc="res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.bptc.ctex"
+path.astc="res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/flora/clump_dabs.png"
-dest_files=["res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.ctex"]
+dest_files=["res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.bptc.ctex", "res://.godot/imported/clump_dabs.png-2795426c6680339b735bcaa6aef50e10.astc.ctex"]
 
 [params]
 

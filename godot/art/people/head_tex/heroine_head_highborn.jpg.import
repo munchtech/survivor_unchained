@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bsgqjnp0b44j2"
-path="res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.ctex"
+path.bptc="res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.bptc.ctex"
+path.astc="res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_head_highborn.jpg"
-dest_files=["res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.ctex"]
+dest_files=["res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.bptc.ctex", "res://.godot/imported/heroine_head_highborn.jpg-b102a14d1a18274f851f49ba62b8d16d.astc.ctex"]
 
 [params]
 

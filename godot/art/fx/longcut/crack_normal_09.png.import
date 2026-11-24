@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bkes18ovrgswy"
-path="res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.ctex"
+path.bptc="res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.bptc.ctex"
+path.astc="res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/fx/longcut/crack_normal_09.png"
-dest_files=["res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.ctex"]
+dest_files=["res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.bptc.ctex", "res://.godot/imported/crack_normal_09.png-5484234453d2a3c66c892c455d31a6b1.astc.ctex"]
 
 [params]
 

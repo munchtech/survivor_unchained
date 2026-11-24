@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://7qavm31wcjjg"
-path="res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.ctex"
+path.bptc="res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.bptc.ctex"
+path.astc="res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/bank_arh.png"
-dest_files=["res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.ctex"]
+dest_files=["res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.bptc.ctex", "res://.godot/imported/bank_arh.png-9bc9638168df15055b944b64e76d5584.astc.ctex"]
 
 [params]
 

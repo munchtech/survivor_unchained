@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6iopxxy4tnf3"
-path="res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.ctex"
+path.bptc="res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.bptc.ctex"
+path.astc="res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/roots_preview.jpg"
-dest_files=["res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.ctex"]
+dest_files=["res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.bptc.ctex", "res://.godot/imported/roots_preview.jpg-39193c7faba9cfa28ca8adaa8ff56e6a.astc.ctex"]
 
 [params]
 

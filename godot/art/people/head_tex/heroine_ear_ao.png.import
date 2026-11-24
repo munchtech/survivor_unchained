@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chen0nos3j2jk"
-path="res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.ctex"
+path.bptc="res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.bptc.ctex"
+path.astc="res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_ear_ao.png"
-dest_files=["res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.ctex"]
+dest_files=["res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.bptc.ctex", "res://.godot/imported/heroine_ear_ao.png-1f1c03ec1c3b6c6e6ccc5ca6bf3a1b9d.astc.ctex"]
 
 [params]
 
