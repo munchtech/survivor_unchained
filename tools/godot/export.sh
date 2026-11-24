@@ -2,6 +2,7 @@
 # Desktop builds of the Godot game, into release/godot/<platform>/.
 #
 #   tools/godot/export.sh [windows|linux|macos|all]    (default: all)
+#   tools/godot/export.sh den-test       the den test (preset "Windows (den test)", baked shaders) + memcheck den and town
 #   tools/godot/export.sh windows-demo   the demo testers download (preset "Windows Demo", feature demo) and its
 #                                        proof twin ("Windows Demo (proof)", + perf: the autopilot's switches are read),
 #                                        then release/godot/SurvivorUnchained_Demo_<yyyymmdd>_<sha>.zip (the demo alone)
@@ -57,8 +58,20 @@ demo_zip() {
 }
 # The first export imports anything new.
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
+# The standing memory check (tools/perf/memcheck.py, the tester lane 23 Nov: a tester's build reached 6.8 GB and crashed):
+# the build just made, run ~150 s on each route, fails the export over budget (RAM, VRAM, commit, growth). SU_MEMCHECK=0
+# skips it (say why in the handoff); it takes a godot turn of its own.
+memcheck() {
+  [ "${SU_MEMCHECK:-1}" = 0 ] && { echo "  memcheck skipped (SU_MEMCHECK=0)"; return 0; }
+  local exe="$ROOT/release/godot/$1/SurvivorUnchained.exe"; shift
+  python "$ROOT/tools/turn.py" run godot "export: memcheck $*" -- python "$ROOT/tools/perf/memcheck.py" "$exe" "$@" \
+    --out "$ROOT/release/godot/memcheck" || { echo "memcheck FAILED: over budget or no run (release/godot/memcheck)" >&2; exit 1; }
+}
 case "$want" in
-  windows-demo) stamp demo; build "Windows Demo" windows-demo SurvivorUnchained.exe; build "Windows Demo (proof)" windows-demo-proof SurvivorUnchained.exe; demo_zip; exit 0 ;;
+  windows-demo) stamp demo; build "Windows Demo" windows-demo SurvivorUnchained.exe; build "Windows Demo (proof)" windows-demo-proof SurvivorUnchained.exe; memcheck windows-demo-proof den; demo_zip; exit 0 ;;
+  # The den test testers download (preset "Windows (den test)": the den only, the shader baker on, so exported windowed).
+  den-test) stamp dentest; SU_BAKE=1 build "Windows (den test)" den-test SurvivorUnchained.exe
+    cp "$ROOT/tools/perf/den_test_README.txt" "$ROOT/release/godot/den-test/README.txt"; memcheck den-test den town; exit 0 ;;
 esac
 stamp full
 case "$want" in
