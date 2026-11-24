@@ -32,6 +32,7 @@ public partial class MemLog : Node
         if (texAt >= 0 && Time.GetTicksMsec() / 1000.0 >= texAt && !texDone) { texDone = true; Viewports(GetTree().Root); Textures(GetTree().Root); }
         if (probeAt >= 0 && Time.GetTicksMsec() / 1000.0 >= probeAt) Probe();
         FreshTick(delta);
+        StripTick();
         if ((t += delta) < every) return;
         t = 0;
         Line(GetParent() is Play.Game g ? g.Zone?.Id ?? "-" : "-");
