@@ -30,10 +30,13 @@ LOG_RE = r"p1:|gear:|wear:|her tuck|PushError|SameRest|WARNING|ERROR|SCRIPT ERRO
 
 # The script, in Journey.Playtime seconds (ScriptedPress: slot:t:dx,dz[:hold=S]; walk:t:dx,dz:hold=S; dash:t:dx,dz).
 # Idle to 5.0 (the den's title card shows to about 4), walk 5-8, skill 1 (Sunder) 9.0, skill 2 (Heroic Leap) 11.5, walk + dash 13.5-14.5,
-# skill 3 (Bladestorm) 16.5, death at DIE.
+# skill 3 (Bladestorm) 16.5, the fight film to FIGHT_END. The death is its own run (DEATH_PRESS-free, --die DIE at the start spot):
+# the fight walks her +x into the den's roots, which hid the round-1 death on both bodies (judge, 24 Nov: "cannot be judged").
 PRESS = os.environ.get("SWITCH_PRESS", "walk:5:8,0:hold=3;1:9:6,0;2:11.5:6,0;walk:13.5:8,0:hold=2;dash:14.5:8,0;3:16.5:6,0")
-DIE = float(os.environ.get("SWITCH_DIE", "19"))
-LEN = float(os.environ.get("SWITCH_LEN", "24"))
+DIE = float(os.environ.get("SWITCH_DIE", "6"))
+FIGHT_END = 19.5
+LEN = FIGHT_END + 1
+DEATH_LEN = DIE + 3
 T_IDLE, T_RUN = 4.0, 6.5
 CLOSE_PRESS = "walk:5:8,0:hold=3"
 CLOSE_LEN = 8.0
@@ -45,7 +48,7 @@ def run_godot(out, name, wear, extra, press, secs, seed):
     frames = int((secs + 6) * FPS)
     g = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi), "--fixed-fps", str(FPS),
          "--audio-driver", "Dummy", "--quit-after", str(frames), "--"] + DEN + ["--seed", str(seed), "--nocine", "--clip",
-         "--shot", "switch", "--seconds", str(secs + 3), "--auto", "idle", "--press", press] + extra
+         "--shot", "switch", "--seconds", str(secs + 3), "--auto", "idle"] + (["--press", press] if press else []) + extra
     if wear: g += ["--wear", wear]
     label = f"body-switch: switch_film {name}"
     t0 = time.time()
@@ -111,7 +114,8 @@ def main():
     t0 = time.time()
     for name, wear in sets:
         press = PRESS
-        avi, log = run_godot(base, name, wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--die", str(DIE)], press, LEN, a.seed)
+        avi, log = run_godot(base, name, wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []), press, LEN, a.seed)
+        davi, dlog = run_godot(base, f"{name}_death", wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--die", str(DIE)], None, DEATH_LEN, a.seed)
         anc = anchors(log)
         summary.append(f"[{name}] press anchors (frame, t): {anc}")
         if not avi.exists() or not anc:
@@ -127,13 +131,25 @@ def main():
             if abs(t - 9.0) < 0.5: shots.append(("skill1_sunder_press", n)); shots.append(("skill1_sunder_hit", hit(n, "sunder_ring", 6)))
             elif abs(t - 11.5) < 0.5: shots.append(("skill2_leap_press", n)); shots.append(("skill2_leap_hit", hit(n, "leap_land", 18)))
             elif abs(t - 14.5) < 0.5: shots.append(("dash_mid", n + 4))
-        for dt in (0.5, 1.0, 1.5, 2.0): shots.append((f"death_p{dt}s", frame_at(anc, DIE + dt)))
         for k, (nm, n) in enumerate(shots, 1):
             grab(avi, n, d / f"{k:02d}_{nm}_f{n}.png")
+        # the death run has no press line: movie frame = play clock x fps (as the close runs)
+        dshots = [(f"death_p{dt}s", round((DIE + dt) * FPS)) for dt in (0.5, 0.8, 1.0, 1.2)]   # (the den wakes her at the mouth about 1.4 s after the fall: t_death, 24 Nov)
+        if davi.exists():
+            for k, (nm, n) in enumerate(dshots, len(shots) + 1):
+                grab(davi, n, d / f"{k:02d}_{nm}_f{n}.png")
+        else: summary.append(f"[{name}_death] NO MOVIE")
         sheet(d, base / f"sheet_{name}.jpg")
-        subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", str(avi), "-ss", "4", "-t", f"{DIE + 3.0 - 4:.1f}", "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-an", str(base / f"film_{name}.mp4")], check=True)
-        if not a.keep_avi: avi.unlink()
-        summary.append(f"[{name}] stills: {[s[0] + '@' + str(s[1]) for s in shots]}")
+        # the film: the fight (4 s to FIGHT_END) then the death run (DIE - 1 to DIE + 3), one file
+        fin = ["-ss", "4", "-t", f"{FIGHT_END - 4:.1f}", "-i", str(avi)]
+        if davi.exists():
+            fin += ["-ss", f"{DIE - 1:.1f}", "-t", "4", "-i", str(davi)]
+            fx = ["-filter_complex", "[0:v][1:v]concat=n=2:v=1[v]", "-map", "[v]"]
+        else: fx = []
+        subprocess.run([FFMPEG, "-y", "-loglevel", "error", *fin, *fx, "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-an", str(base / f"film_{name}.mp4")], check=True)
+        if not a.keep_avi:
+            avi.unlink(); davi.unlink(missing_ok=True)
+        summary.append(f"[{name}] stills: {[s[0] + '@' + str(s[1]) for s in shots + dshots]}")
     if not a.no_close:
         for name, wear in sets:
             avi, log = run_godot(base, f"{name}_close", wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--cam", "12.5"], CLOSE_PRESS, CLOSE_LEN, a.seed)
