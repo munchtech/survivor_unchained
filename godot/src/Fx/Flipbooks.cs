@@ -80,6 +80,9 @@ public partial class Flipbooks : Node3D
         return atlases[name] = t;
     }
 
+    /// <summary>(MemLog's census) the atlases taken so far this game, of those on disk.</summary>
+    public static string UsedReport() => $"{atlases.Count} of {asked.Count + atlases.Count} atlases used: {string.Join(",", atlases.Keys)}";
+
     public static bool Has(string name) => FileAccess.FileExists($"res://art/fx/fb/{name}.json");
 
     Book? Of(string name)

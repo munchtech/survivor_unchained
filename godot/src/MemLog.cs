@@ -261,7 +261,12 @@ public partial class MemLog : Node
             using var d = DirAccess.Open(dir);
             if (d == null) return;
             foreach (var sub in d.GetDirectories()) { if (sub.StartsWith(".") || sub == "addons") continue; Scan((dir.EndsWith("/") ? dir : dir + "/") + sub, depth + 1); }
-            foreach (var f in d.GetFiles())
+            // (an exported build lists NAME.png.import / NAME.tres.remap, not NAME.png: the name is taken back off them,
+            // each file once; Godot's loader maps the bare path to the imported one. Session 4: the scan read 0 on exports)
+            var names = new System.Collections.Generic.HashSet<string>();
+            foreach (var raw in d.GetFiles())
+                names.Add(raw.EndsWith(".import") ? raw[..^7] : raw.EndsWith(".remap") ? raw[..^6] : raw);
+            foreach (var f in names)
             {
                 string e = f.GetExtension().ToLowerInvariant();
                 if (e is not ("png" or "jpg" or "jpeg" or "webp" or "exr" or "hdr" or "tga" or "bmp" or "ktx" or "dds" or "svg" or "res" or "tres" or "ctex")) continue;
@@ -283,6 +288,7 @@ public partial class MemLog : Node
         Scan("res://", 0);
         if (into != null) return;
         static string Mb(long b) => $"{b / 1048576.0:0.0} MB";
+        GD.Print($"mem tex flipbooks: {View.Flipbooks.UsedReport()}");
         GD.Print($"mem tex cache-only: {found.Count} textures in the resource cache that the tree does not reach, {Mb(found.Sum(v => v.B))} (scanned {files} files)");
         foreach (var g in found.GroupBy(v => string.Join("/", v.Path[6..].Split('/')[..^1].Take(4))).OrderByDescending(g => g.Sum(v => v.B)).Take(25))
             GD.Print($"mem tex cache-only dir: {Mb(g.Sum(v => v.B))} {g.Count()} {g.Key}");
