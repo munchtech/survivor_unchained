@@ -1344,7 +1344,7 @@ public static class People
             {
                 var rn = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName;
                 if (rn == "skin_head") isHead = true;
-                if (rn == "Material_0.001" || rn == "skin_graft") isBody = true;
+                if (rn == "Material_0.001" || rn == "skin" || rn == "skin_graft") isBody = true;
             }
             if (isHead ? on.Contains("headnocast") : isBody ? on.Contains("bodynocast") : on.Contains("othernocast") || on.Contains("nocast:" + mi.Name))
             {
@@ -3042,7 +3042,9 @@ public static class People
             "skin_graft" => "res://art/people/head_tex/heroine_freckles_graft.png",
             // (P1's body B is one surface on our UVs: its bake carries the graft's layer onto them, blue = her neck's
             // mask (neck_pull, grain, edge), so her throat under the head's seam takes the graft's treatment, as A's)
-            "Material_0.001" when P1Body.On => P1Body.Dir + "freckles.png",
+            // (her body by its role, whichever body she wears: B's export named it "Material_0.001", the shared-mesh copy "skin";
+            // each body's own map in its own folder, on its own UVs; body-switch 24 Nov. Her path only: who == "heroine".)
+            "Material_0.001" or "skin" when P1Body.On => P1Body.Dir + "freckles.png",
             _ => null,
         };
         return f != null && ResourceLoader.Exists(f) ? f : null;

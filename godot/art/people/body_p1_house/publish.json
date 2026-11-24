@@ -17,6 +17,7 @@
   "rig_helpers.json",
   "blend_base.json"
  ],
+ "maps": [],
  "dropped": {
   "correctives": {
    "rows": 4,

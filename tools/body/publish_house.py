@@ -14,7 +14,8 @@ dressed.glb (reference only, not copied), skeleton_check.json, manifest.json (sh
 Writes (derivation: what each B file is and whether it is right on the copy):
   body_p1_house/   body.glb from the package. NO play.glb: one tier on purpose, so P1Body.Load runs with no play tier.
                    Copied unchanged from body_p1: clips.res, her_clips.res, a_skeleton.json, rig_helpers.json, blend_base.json
-                   (bone-space data of the same 124 bones). NOT copied: any .png, pieces.glb, pieces.json, play.glb,
+                   (bone-space data of the same 124 bones). From the package when present: freckles.png, cavity.png
+                   (the copy's own UVs; PKG_MAPS). NOT copied from B: any .png, pieces.glb, pieces.json, play.glb,
                    play_rig.json, bake.json (B's UV maps or B's mesh data: wrong on the copy).
                    rig.json = B's with "correctives" removed (the copy has no corrective shapes; the owner agreed to drop B's
                    30 joint correctives in the game) and "close_meshes" [] (no head piece closes the copy).
@@ -46,6 +47,10 @@ B_GEAR = os.path.join(ROOT, "godot", "art", "gear", "out", "body_p1")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe"
 TURN = p1.TURN
 FROM_B = ("clips.res", "her_clips.res", "a_skeleton.json", "rig_helpers.json", "blend_base.json")
+# Maps on the copy's own UVs, taken from the package when it ships them (the game loads each from P1Body.Dir only if it
+# exists): freckles.png (People.FreckleFile: freckles + blue = her neck's mask) and cavity.png (P1Body.ApplySkin's cavity_map).
+# Their .import comes from B's same file (same texture settings), so the copy's map imports as B's does.
+PKG_MAPS = ("freckles.png", "cavity.png")
 NO_TUCK = ("kit_helm",)
 
 
@@ -176,6 +181,21 @@ def publish(pkg, root):
     for f in FROM_B:
         shutil.copy2(os.path.join(B_PEOPLE, f), os.path.join(pub, f))
         files[f] = p1.sha1(os.path.join(pub, f))
+    maps = []
+    for f in PKG_MAPS:
+        src, dst, imp = os.path.join(pkg, f), os.path.join(pub, f), os.path.join(pub, f + ".import")
+        if not os.path.exists(src):
+            if os.path.exists(imp): os.remove(imp)   # no map this time: no stale import left behind
+            continue
+        shutil.copy2(src, dst)
+        files[f] = p1.sha1(dst)
+        maps.append(f)
+        bimp = os.path.join(B_PEOPLE, f + ".import")
+        if not os.path.exists(imp) and os.path.exists(bimp):
+            lines = open(bimp, encoding="utf-8").read().split("\n")
+            lines = [l.replace("body_p1/", "body_p1_house/") for l in lines if not l.startswith("uid=")]
+            with open(imp, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write("\n".join(lines))
     rig = json.load(open(os.path.join(B_PEOPLE, "rig.json"), encoding="utf-8"))
     rows = rig.pop("correctives", [])
     shapes = sum(len(r.get("shapes", [])) for r in rows)
@@ -194,7 +214,7 @@ def publish(pkg, root):
             with open(gi, "w", encoding="utf-8", newline="\n") as f:
                 f.write("\n".join(lines))
     params = p1.import_params()
-    out = {"source": pkg.replace("\\", "/"), "manifest_sha1": msha, "files": files, "from_b": list(FROM_B),
+    out = {"source": pkg.replace("\\", "/"), "manifest_sha1": msha, "files": files, "from_b": list(FROM_B), "maps": maps,
            "dropped": {"correctives": {"rows": len(rows), "shapes": shapes},
                        "why": "the copy has no corrective shapes (0 morphs); the owner agreed to drop B's joint correctives in the game"},
            "skin": bpub.get("skin"),
