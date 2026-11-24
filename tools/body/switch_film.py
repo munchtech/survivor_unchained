@@ -96,7 +96,7 @@ def sheet(folder, out):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--p1-dir", required=True); ap.add_argument("--tag", required=True)
+    ap.add_argument("--p1-dir", default=None, help="her body folder; omitted: the game default (data/body/her_body.json dir)"); ap.add_argument("--tag", required=True)
     ap.add_argument("--kit", action="store_true", help="the den kit only (default: both sets)")
     ap.add_argument("--no-kit", action="store_true", help="the starting set only")
     ap.add_argument("--no-close", action="store_true"); ap.add_argument("--seed", type=int, default=1)
@@ -111,7 +111,7 @@ def main():
     t0 = time.time()
     for name, wear in sets:
         press = PRESS
-        avi, log = run_godot(base, name, wear, ["--p1-dir", a.p1_dir, "--die", str(DIE)], press, LEN, a.seed)
+        avi, log = run_godot(base, name, wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--die", str(DIE)], press, LEN, a.seed)
         anc = anchors(log)
         summary.append(f"[{name}] press anchors (frame, t): {anc}")
         if not avi.exists() or not anc:
@@ -136,7 +136,7 @@ def main():
         summary.append(f"[{name}] stills: {[s[0] + '@' + str(s[1]) for s in shots]}")
     if not a.no_close:
         for name, wear in sets:
-            avi, log = run_godot(base, f"{name}_close", wear, ["--p1-dir", a.p1_dir, "--cam", "12.5"], CLOSE_PRESS, CLOSE_LEN, a.seed)
+            avi, log = run_godot(base, f"{name}_close", wear, (["--p1-dir", a.p1_dir] if a.p1_dir else []) + ["--cam", "12.5"], CLOSE_PRESS, CLOSE_LEN, a.seed)
             anc = anchors(log)
             if not avi.exists(): summary.append(f"[{name}_close] NO MOVIE"); continue
             d = base / f"{name}_close"; shutil.rmtree(d, ignore_errors=True); d.mkdir()
