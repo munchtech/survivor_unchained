@@ -91,9 +91,18 @@ void vertex() {
 	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
+// (tester lane, 23 Nov, coordinator option a) An integer hash (pcg2d, Jarzynski & Olano 2020) in place of fract(sin(dot) * 43758.5):
+// sin of arguments near 10^4 and a fused or split multiply-add differ by GPU and driver, so the old pattern was not the same on
+// D3D12 and Vulkan (parity round 2: the den floor busier on D3D12), nor (inference) across GPU makers. The input is quantized to
+// 1/256 first (integer cells stay exact; a fraction an ulp apart only flips at a 1/256 step), out uniform in [0, 1) as before.
 vec2 hash22(vec2 p) {
-	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-	return fract(sin(p) * 43758.5453);
+	uvec2 v = uvec2(ivec2(floor(p * 256.0 + 0.5)));
+	v = v * 1664525u + 1013904223u;
+	v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+	v = v ^ (v >> 16u);
+	v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+	v = v ^ (v >> 16u);
+	return vec2(v >> 8u) * (1.0 / 16777216.0);
 }
 // Gradient noise (no value noise's square blobs), and a rotated fbm of it.
 float gnoise(vec2 p) {
