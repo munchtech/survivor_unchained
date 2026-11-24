@@ -95,7 +95,9 @@ void fragment() {
 		vec3 L = normalize(VIEW + lamp_down * down);
 		vec3 n = NORMAL;
 		if (has_normal) {
-			vec3 t = texture(normal_tex, UV).rgb * 2.0 - 1.0;
+			// (z rebuilt from xy, as the engine's NORMAL_MAP does: a map imported as a normal map is RG only, its blue 0)
+			vec3 t = vec3(texture(normal_tex, UV).rg * 2.0 - 1.0, 0.0);
+			t.z = sqrt(max(0.0, 1.0 - dot(t.xy, t.xy)));
 			t.xy *= normal_strength;
 			n = normalize(TANGENT * t.x + BINORMAL * t.y + NORMAL * t.z);
 		}
