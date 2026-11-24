@@ -122,6 +122,11 @@ public static class Dressing
     }
 
     static readonly Dictionary<string, Mesh> looked = new();
+    /// <summary>(PlaceCache) The pieces and looked meshes no MultiMesh or node draws any more dropped.</summary>
+    internal static int LetGoOfPlace()
+    {
+        return PlaceCache.Prune(parts, l => l.Any(p => PlaceCache.Held(p.Mesh))) + PlaceCache.Prune(looked, PlaceCache.Held);
+    }
 
     /// <summary>A piece's mesh with its kind's look (KitLook): one copy per
     /// mesh and look, its surfaces' materials swapped.</summary>

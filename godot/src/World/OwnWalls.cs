@@ -43,6 +43,8 @@ public sealed class OwnWalls
     readonly List<(Vector3 At, float Foot)> feet = new();
     readonly Dictionary<(string Preset, int X, int Z), List<(Transform3D At, Color Data, int House, bool Roof)>> groups = new();
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
+    /// <summary>(PlaceCache) The house pieces nothing draws any more dropped.</summary>
+    internal static int LetGoOfPlace() => PlaceCache.Prune(parts, l => l.Any(p => PlaceCache.Held(p.Mesh)));
 
     /// <summary>The zone's own walls, or null if it has none (or --walls-kit, --props-own-off).</summary>
     public static OwnWalls? For(ZoneData z)

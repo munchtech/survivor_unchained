@@ -317,6 +317,8 @@ public static class KitLook
     }
 
     static readonly List<ShaderMaterial> roofs = new();
+    /// <summary>(PlaceCache) The kit materials nothing draws with any more dropped.</summary>
+    internal static int LetGoOfPlace() => PlaceCache.Prune(cache, PlaceCache.Held) + walls.RemoveAll(m => !PlaceCache.Held(m)) + roofs.RemoveAll(m => !PlaceCache.Held(m));
     static Vector4[] chimneys = new Vector4[32];
 
     /// <summary>The chimneys' tops (world space; at most 32) for the soot round them on our own roofs (OwnWalls.Build).</summary>

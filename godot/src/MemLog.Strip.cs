@@ -96,6 +96,8 @@ public partial class MemLog
                 q.Enqueue(($"freed {what}", 0, () => { if (IsInstanceValid(g)) g.QueueFree(); }));
                 q.Enqueue(($"  then a collection", 0, Collect));
             }
+            // (--mem-statics: then what still holds each texture: MemLog.Statics)
+            if (Args.Has("mem-statics")) q.Enqueue(("the statics census", 0, () => Statics(GetTree().Root)));
             return;
         }
         q.Enqueue(("a garbage collection (before)", 0, Collect));

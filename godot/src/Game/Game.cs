@@ -1079,7 +1079,7 @@ public partial class Game : Node, IZoneHost
             ulong builtAt = Time.GetTicksUsec();
             // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
             // only once the frames come smooth again, so no hitch shows through the fade-in)
-            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(); WhenSmooth(() =>
+            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(ahead == null || ahead.Done); WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
@@ -1102,9 +1102,12 @@ public partial class Game : Node, IZoneHost
     // 16 loops alone (dt8a vs dt7): GC committed 1150 -> 520 MB at each load, steady RAM per loop 2192-2577 MB against
     // 2652-3353, second-half growth +19.4 MB/min; the collection 89-125 ms against Forced's 83-285.
     static readonly bool Aggressive = !Args.Has("gc-forced");
-    static void LetGoOfLast()
+    // (the tester lane, 24 Nov: and first the place caches, PlaceCache, when nothing is being built ahead: its worker
+    // threads read those caches)
+    static void LetGoOfLast(bool caches)
     {
         ulong t = Time.GetTicksUsec();
+        if (caches) SurvivorUnchained.View.PlaceCache.LetGo();
         long before = GC.GetTotalMemory(false);
         System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(2, GCCollectionMode.Forced, true, true);
