@@ -56,6 +56,10 @@ public partial class MemLog : Node
     static void Fresh(Node root)
     {
         var (tex, shaders) = Reach(root);
+        // (and the resource cache's textures the tree does not reach: a flipbook, a warm-up's, a static's; 24 Nov, session 3)
+        int reached = tex.Count;
+        CachedOnly(tex.Keys.ToHashSet(), tex);
+        GD.Print($"mem fresh cache: {tex.Count - reached} cache-only textures ({tex.Values.Where(v => v.Where.StartsWith("cache ")).Sum(v => v.B) >> 20} MB)");
         var k = Perf.PipesKinds();
         string pipes = string.Join("/", k.Select((v, i) => (int)(v - freshPipes[i])));
         k.CopyTo(freshPipes, 0);
@@ -64,7 +68,14 @@ public partial class MemLog : Node
                  $"{made.Count(v => v.B > 64 << 20)} over 64 MB, {made.Count(v => v.B > 32 << 20)} over 32 MB; {shaders.Count} Shader objects; pipelines since c/m/s/d/sp {pipes}");
         foreach (var v in made.OrderByDescending(v => v.B).Take(8)) GD.Print($"mem fresh big: {v.B / 1048576.0:0.0} MB {v.What} {v.Where}");
         lastTex = tex.Keys.ToHashSet();
+        // (the Shader objects made again since the last place: each compiles its pipelines again; by file, or by its code's first line)
+        var newSh = lastShaders == null ? new() : shaders.Where(e => !lastShaders.Contains(e.Key)).Select(e => e.Value).ToList();
+        GD.Print($"mem fresh shaders: {newSh.Count} of {shaders.Count} Shader objects made since the last place");
+        foreach (var g in newSh.GroupBy(v => v.S.ResourcePath.Length > 0 && !v.S.ResourcePath.Contains("::") ? v.S.ResourcePath : "code " + (v.S.Code.Length > 0 ? (uint)v.S.Code.GetHashCode() : 0) + " " + v.Where.Split('>')[0]).OrderByDescending(g => g.Count()).Take(30))
+            GD.Print($"mem fresh shader: {g.Count()} x {g.Key}");
+        lastShaders = shaders.Keys.ToHashSet();
     }
+    static System.Collections.Generic.HashSet<ulong>? lastShaders;
 
     static (double Tex, double Buf, double Vid) Mon() => (Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed) / 1048576.0,
         Performance.GetMonitor(Performance.Monitor.RenderBufferMemUsed) / 1048576.0, Performance.GetMonitor(Performance.Monitor.RenderVideoMemUsed) / 1048576.0);
@@ -238,7 +249,9 @@ public partial class MemLog : Node
     /// <summary>(--mem-tex) The textures the resource cache holds that the tree does not reach (held by a static, a warm-up's
     /// material, a dictionary): every texture file under res:// asked of ResourceLoader.HasCached, then Load (a cache hit costs
     /// nothing). Listed by folder (not added to the tree census's total).</summary>
-    static void CachedOnly(System.Collections.Generic.HashSet<Rid> known)
+    static void CachedOnly(System.Collections.Generic.HashSet<Rid> known) => CachedOnly(known, null);
+
+    static void CachedOnly(System.Collections.Generic.HashSet<Rid> known, System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)>? into)
     {
         var found = new System.Collections.Generic.List<(long B, string What, string Path)>();
         int files = 0;
@@ -264,9 +277,11 @@ public partial class MemLog : Node
                 try { fm = RenderingServer.TextureGetFormat(t.GetRid()); } catch { }
                 long b = (long)(w * (double)h * layers * Bpp(fm) * 1.333);
                 found.Add((b, $"{w}x{h}{(layers > 1 ? "x" + layers : "")} {fm} {t.GetClass()}", path));
+                into?.TryAdd(t.GetRid(), (b, $"{w}x{h}{(layers > 1 ? "x" + layers : "")} {fm} {t.GetClass()}", "cache " + path));
             }
         }
         Scan("res://", 0);
+        if (into != null) return;
         static string Mb(long b) => $"{b / 1048576.0:0.0} MB";
         GD.Print($"mem tex cache-only: {found.Count} textures in the resource cache that the tree does not reach, {Mb(found.Sum(v => v.B))} (scanned {files} files)");
         foreach (var g in found.GroupBy(v => string.Join("/", v.Path[6..].Split('/')[..^1].Take(4))).OrderByDescending(g => g.Sum(v => v.B)).Take(25))

@@ -43,7 +43,10 @@ LOOP_GROWTH = 50.0  # MB a loop: a loop's median RAM and VRAM over the loops aft
 # The game's own window: a run with args other than --shot/--perf goes fullscreen at the monitor's size (src/Game/Settings.cs
 # ApplyWindow), as a tester's does; on this machine that is 2560x1440, stricter than a tester's 1080p (23 Nov: GPU dedicated
 # 3,469 MB at 1440p vs 3,180-3,250 at 1080p). --resolution alone does not change it (a vram probe, 8d9cda78b).
-ENGINE = []
+# (MEMCHECK_ENGINE / MEMCHECK_GAME: extra engine / game args, space-split, for a leg: e.g. MEMCHECK_ENGINE="--rendering-driver vulkan",
+# MEMCHECK_GAME="--mem-fresh"; the tester lane's loop check, 24 Nov)
+ENGINE = os.environ.get("MEMCHECK_ENGINE", "").split()
+GAME = os.environ.get("MEMCHECK_GAME", "").split()
 GROWTH = 20.0  # MB/min, the working set over the second half
 SETTLE = 45.0  # s
 
@@ -51,7 +54,7 @@ SETTLE = 45.0  # s
 def check(exe, route, secs, out):
     os.environ.setdefault("MEMRUN_GPU_EVERY", "5")
     memrun.GPU_EVERY = int(os.environ["MEMRUN_GPU_EVERY"])
-    rows, exited = memrun.run(os.path.join(out, route), secs, [exe] + ENGINE + ["--"] + ROUTES[route] + ["--mem-log", "10"])
+    rows, exited = memrun.run(os.path.join(out, route), secs, [exe] + ENGINE + ["--"] + ROUTES[route] + ["--mem-log", "10"] + GAME)
     late = [r for r in rows if r[0] >= SETTLE]
     if not late or exited is not None:
         print(f"memcheck {route}: NO RUN (exit {exited}, {len(rows)} samples; {os.path.join(out, route, 'log.txt')})")
