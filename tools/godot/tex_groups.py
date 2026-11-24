@@ -12,7 +12,7 @@ import argparse, json, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 GODOT = os.path.abspath(os.path.join(HERE, "..", "..", "godot"))
 TABLE = os.path.join(HERE, "tex_groups.json")
-IMPORTERS = ("texture", "2d_array_texture")
+IMPORTERS = ("texture", "2d_array_texture", "scene")
 SKIP_DIRS = {".godot", ".shots", ".git"}
 
 
@@ -29,7 +29,8 @@ def _rx(glob):
 
 def load():
     t = json.load(open(TABLE, encoding="utf-8"))
-    never = [_rx(g) for n in t["never"] for g in n["globs"]]
+    # (a never entry's "except" globs: paths it hands back to the groups, e.g. the NPC packages' glbs)
+    never = [(_rx(g), [_rx(x) for x in n.get("except", [])]) for n in t["never"] for g in n["globs"]]
     groups = []
     for g in t["groups"]:
         groups.append(dict(g, _in=[_rx(x) for x in g["globs"]], _ex=[_rx(x) for x in g.get("exclude", [])]))
@@ -38,7 +39,7 @@ def load():
 
 def find_group(rel, never=None, groups=None):
     if never is None: never, groups = load()
-    if any(r.match(rel) for r in never): return None
+    if any(r.match(rel) and not any(x.match(rel) for x in ex) for r, ex in never): return None
     for g in groups:
         if any(r.match(rel) for r in g["_in"]) and not any(r.match(rel) for r in g["_ex"]):
             return g
@@ -100,7 +101,7 @@ def scan():
             g = find_group(rel, never, groups)
             if not g: continue
             raw, imp = read_import(p)
-            if imp not in IMPORTERS: continue
+            if imp not in IMPORTERS or (imp == "scene") != bool(g.get("scene")): continue
             yield g, rel, p, raw, imp
 
 

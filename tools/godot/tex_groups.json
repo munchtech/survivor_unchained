@@ -12,7 +12,10 @@
         "**/*.glb",
         "**/*.gltf"
       ],
-      "reason": "scene imports are out of scope"
+      "reason": "scene imports are out of scope, except the NPC packages' glbs (group npc_packages)",
+      "except": [
+        "art/npc/npc_*/*.glb"
+      ]
     },
     {
       "globs": [
@@ -22,6 +25,20 @@
     }
   ],
   "groups": [
+    {
+      "name": "npc_packages",
+      "scene": true,
+      "globs": [
+        "art/npc/npc_*/*.glb"
+      ],
+      "exclude": [
+        "art/npc/npc_risen_*/*.glb"
+      ],
+      "params": {
+        "gltf/embedded_image_handling": 2
+      },
+      "why": "The Marionette NPC packages' embedded maps (3 x 2048 each: about 67 MB a body uncompressed with mipmaps) embedded as Basis Universal, VRAM compressed at load. Her body is not a package (art/people/body_p1: never). The risen are den foes, not seen compressed by a judge yet."
+    },
     {
       "name": "den",
       "globs": [
