@@ -2223,6 +2223,11 @@ public partial class Game : Node, IZoneHost
         new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
     };
     bool leaveDone, clearDone;
+    // --loop-maps: --clear and --leave come again on every map, timed from that map's start (the den test's loop
+    // check: testers go round the den again and again, and memory must not climb from one to the next)
+    ZoneRuntime? loopZone;
+    double loopT0;
+    int loopN;
     int dieIx;
     double blastT = 0.5, marksT = 1;
     int lootI, hoardI;
@@ -2353,14 +2358,19 @@ public partial class Game : Node, IZoneHost
         }
         // --clear T: on a map, T seconds in, every pack, keeper and its ruler felled by her hand and the
         // gold drawn in (pictures of what a whole map pays; then --leave).
-        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime >= Args.Num("clear", 3))
+        if (Args.Has("loop-maps") && zone is MapRun && Battle != null && !ReferenceEquals(zone, loopZone))
+        {
+            loopZone = zone; loopT0 = Journey.Playtime; clearDone = leaveDone = false;
+            GD.Print($"loop-maps: map {++loopN} begun at {loopT0:0.0} s of play");
+        }
+        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime - loopT0 >= Args.Num("clear", 3))
         {
             clearDone = true;
             cm.ClearNow();
         }
         // --leave T: a won arena or a cleared map left by its way out T seconds in (pictures of the real
         // tally: --minute 95 --won --leave 4 is an hour and five minutes stayed past the win).
-        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime >= Args.Num("leave", 4))
+        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime - loopT0 >= Args.Num("leave", 4))
         {
             leaveDone = true;
             if (zone is ArenaRun lr) lr.Leave();

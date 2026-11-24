@@ -65,7 +65,9 @@ def run(out, secs, cmd, env=None):
                     except psutil.Error:
                         pass
                 g = gpu(big.pid) if len(rows) % GPU_EVERY == GPU_EVERY // 2 else (None, None)
-                rows.append((round(time.time() - t0, 1), round(ws / 1048576), round(pv / 1048576), g[0], g[1]))
+                # (log_bytes: how far the game's log had got at this sample, so a line in it can be placed in time:
+                # memcheck's denloop route splits its samples by the log's "auto: map over #N" lines)
+                rows.append((round(time.time() - t0, 1), round(ws / 1048576), round(pv / 1048576), g[0], g[1], os.fstat(lf.fileno()).st_size))
                 time.sleep(2)
         finally:
             exited = proc.poll()
@@ -76,7 +78,7 @@ def run(out, secs, cmd, env=None):
                     pass
     with open(os.path.join(out, "mem.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["t_s", "working_set_mb", "private_mb", "gpu_dedicated_mb", "gpu_shared_mb"])
+        w.writerow(["t_s", "working_set_mb", "private_mb", "gpu_dedicated_mb", "gpu_shared_mb", "log_bytes"])
         w.writerows(rows)
     return rows, exited
 

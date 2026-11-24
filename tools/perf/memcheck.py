@@ -2,7 +2,9 @@
 really need to optimize don't we - thats really too much"). Runs an exported build for SECONDS on one route, samples it from
 outside (tools/perf/memrun.py) and fails if it is over budget:
 
-    python tools/perf/memcheck.py EXE [den|town ...] [--seconds 150] [--out DIR]
+    python tools/perf/memcheck.py EXE [den|town|denloop ...] [--seconds 150] [--out DIR]
+
+denloop (24 Nov) goes round the den about 6 times (450 s) and prints each loop's RAM and VRAM; it fails if they climb.
 
 Budgets (the coordinator, 23 Nov): RAM (den < 3 GB, town < 4 GB), read as commit less the card's own memory (private bytes
 minus GPU dedicated, at the samples that read the GPU): the working set is the same number on a quiet machine (den, tester1:
@@ -25,12 +27,19 @@ import memrun  # noqa: E402
 
 ROUTES = {
     "den": ["--quick", "warden", "--sex", "female", "--zone", "map", "--dungeon", "hollow", "--veteran", "9", "--seed", "1"],
+    # The den again and again, as a tester goes round it (the coordinator, 24 Nov): each map cleared at 30 s of it, left by its
+    # way out at 45 s, its page read and Confirmed, a fresh den (src/Game/Game.cs --loop-maps); split per loop below.
+    "denloop": ["--quick", "warden", "--sex", "female", "--zone", "map", "--dungeon", "hollow", "--veteran", "9", "--seed", "1",
+                "--auto", "idle", "--clear", "30", "--leave", "45", "--loop-maps"],
     "town": ["--quick", "warden", "--sex", "female", "--zone", "waystation", "--veteran", "9", "--seed", "1"],
 }
 BUDGET = {  # MB
     "den": {"ws": 3072, "gpu": 3072, "private": 8192},
     "town": {"ws": 4096, "gpu": 3072, "private": 8192},
 }
+BUDGET["denloop"] = BUDGET["den"]
+LOOP_SECS = 450.0  # denloop's default run: about 6 full loops (a loop is ~55 s: 45 s in the den, the page, the load)
+LOOP_GROWTH = 50.0  # MB a loop: a loop's median RAM and VRAM over the loops after the first, least-squares
 # The game's own window: a run with args other than --shot/--perf goes fullscreen at the monitor's size (src/Game/Settings.cs
 # ApplyWindow), as a tester's does; on this machine that is 2560x1440, stricter than a tester's 1080p (23 Nov: GPU dedicated
 # 3,469 MB at 1440p vs 3,180-3,250 at 1080p). --resolution alone does not change it (a vram probe, 8d9cda78b).
@@ -54,11 +63,44 @@ def check(exe, route, secs, out):
         print(f"memcheck {route}: NO GPU SAMPLE (the GPU counters read nothing; {os.path.join(out, route)})")
         return 2
     grow = memrun.slope_mb_min(rows, 2)
-    fails = [n for n, ok in (("RAM", ram < b["ws"]), ("VRAM", gpu < b["gpu"]), ("commit", pv < b["private"]), ("growth", grow < GROWTH)) if not ok]
+    checks = [("RAM", ram < b["ws"]), ("VRAM", gpu < b["gpu"]), ("commit", pv < b["private"])]
+    if route == "denloop":
+        checks += loops(rows, os.path.join(out, route, "log.txt"))
+    else:
+        checks.append(("growth", grow < GROWTH))
+    fails = [n for n, ok in checks if not ok]
     print(f"memcheck {route}: {'PASS' if not fails else 'FAIL ' + ', '.join(fails)}; RAM (private - GPU dedicated) peak {ram} / {b['ws']} MB (working set peak {ws}), "
           f"VRAM (GPU dedicated) peak {gpu} / {b['gpu']} MB, commit (private) peak {pv} / {b['private']} MB, "
           f"growth {grow:+.1f} / {GROWTH:+.0f} MB/min ({len(rows)} samples, {rows[-1][0]:.0f} s; {os.path.join(out, route)})", flush=True)
     return 1 if fails else 0
+
+
+def loops(rows, log):
+    """Per loop of the denloop route: its samples are those logged before its "auto: map over #N" line and after the last
+    one's (memrun's log_bytes column). Prints each loop's RAM and VRAM (median and peak at the GPU-read samples) and fails
+    "loop growth" if, past the first loop (its warm-up), the medians climb by LOOP_GROWTH MB a loop or more, or if fewer
+    than 4 loops ended."""
+    data = open(log, "rb").read()
+    ends, at = [], 0
+    while (i := data.find(b"auto: map over #", at)) >= 0:
+        at = data.find(b"\n", i) + 1 or len(data); ends.append(at)
+    per, lo = [], 0
+    for n, hi in enumerate(ends, 1):
+        g = [r for r in rows if len(r) > 5 and lo <= r[5] < hi and r[3]]
+        lo = hi
+        if not g:
+            continue
+        ram = sorted(r[2] - r[3] for r in g); vr = sorted(r[3] for r in g)
+        per.append((n, ram[len(ram) // 2], ram[-1], vr[len(vr) // 2], vr[-1]))
+        print(f"  loop {n}: RAM median {per[-1][1]} peak {per[-1][2]} MB, VRAM median {per[-1][3]} peak {per[-1][4]} MB ({len(g)} samples)")
+    def slope(col):
+        p = per[1:]
+        if len(p) < 2: return 0.0
+        mx = sum(q[0] for q in p) / len(p); my = sum(q[col] for q in p) / len(p)
+        return sum((q[0] - mx) * (q[col] - my) for q in p) / sum((q[0] - mx) ** 2 for q in p)
+    sr, sv = slope(1), slope(3)
+    print(f"  loops ended {len(ends)}; past the first, RAM {sr:+.0f} MB a loop, VRAM {sv:+.0f} MB a loop (limit {LOOP_GROWTH:+.0f})")
+    return [("loops", len(ends) >= 4), ("loop growth", sr < LOOP_GROWTH and sv < LOOP_GROWTH)]
 
 
 def main():
@@ -66,10 +108,10 @@ def main():
     if not a or a[0].startswith("-"):
         print(__doc__); sys.exit(2)
     exe = os.path.abspath(a.pop(0))
-    secs = float(a[a.index("--seconds") + 1]) if "--seconds" in a else 150.0
+    secs = float(a[a.index("--seconds") + 1]) if "--seconds" in a else None
     out = a[a.index("--out") + 1] if "--out" in a else os.path.join(os.path.dirname(exe), ".memcheck")
     routes = [r for r in a if r in ROUTES] or ["den"]
-    sys.exit(max(check(exe, r, secs, out) for r in routes))
+    sys.exit(max(check(exe, r, secs or (LOOP_SECS if r == "denloop" else 150.0), out) for r in routes))
 
 
 if __name__ == "__main__":
