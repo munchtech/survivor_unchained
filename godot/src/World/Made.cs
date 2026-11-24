@@ -61,6 +61,9 @@ public static class Made
     };
 
     static readonly Dictionary<string, StandardMaterial3D> surfaces = new();
+    /// <summary>(PlaceCache) The surfaces nothing asked for since the place's build began dropped.</summary>
+    static readonly PlaceCache.Asked asked = new();
+    internal static int LetGoOfPlace() => asked.Prune(surfaces);
 
     /// <summary>A photographed surface (art/materials/ID: its colour, its
     /// relief, and ambient occlusion and roughness in one sheet), laid on by
@@ -69,6 +72,7 @@ public static class Made
     public static StandardMaterial3D Surface(string id, float metres, string? tint = null)
     {
         var key = $"{id}|{metres}|{tint}";
+        asked.Add(key);
         if (surfaces.TryGetValue(key, out var m)) return m;
         string dir = $"res://art/materials/{id}";
         var orm = GD.Load<Texture2D>(ResourceLoader.Exists($"{dir}/arm.jpg") ? $"{dir}/arm.jpg" : $"{dir}/arh.jpg");

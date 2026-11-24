@@ -240,7 +240,14 @@ public partial class Game
             }
         if ((doubleCheck -= dt) > 0 || Journey == null || scene?.Battle == null || Args.Has("no-double-ahead")) return;
         doubleCheck = 1;
-        if (!(cineZones ??= CineZones()).TryGetValue(scene.Data.Id, out var here)) return;
+        if (!(cineZones ??= CineZones()).TryGetValue(scene.Data.Id, out var here))
+        {
+            // (a place with no cinematics, the den: the last place's cast and her double for it let go, made again where
+            // one plays. The tester lane, 24 Nov: the town's cast files and her double, off the tree, held in the den)
+            if (castAheadZone != null) { DropCast(); Prefetch.DropCast(); castAheadZone = null; }
+            if (doubleAhead is { IsCompleted: true }) { doublesDropped.Add(doubleAhead); doubleAhead = null; doubleKey = null; }
+            return;
+        }
         if (castAheadZone != scene.Data.Id) { DropCast(); castAheadZone = scene.Data.Id; CastAhead(here); }
         if (doubleAhead is { IsCompleted: false }) return;
         if (HerWear.Dressing) return;

@@ -25,12 +25,22 @@ public static class PlaceCache
         return gone.Count;
     }
 
+    /// <summary>A cache by place id: the other places' entries removed; how many.</summary>
+    public static int Others<V>(Dictionary<string, V> d, string? here)
+    {
+        var gone = d.Keys.Where(k => k != here).ToList();
+        foreach (var k in gone) d.Remove(k);
+        return gone.Count;
+    }
+
     /// <summary>A cache's keys asked for since the last place change (any thread): Prune drops the rest. A cache's entries can
     /// hold each other (a mesh's surface holds a kit material), so a reference count alone keeps them all (24 Nov, measured:
     /// den after town, 54 of ~420 MB let go by counts alone).</summary>
     public sealed class Asked
     {
         readonly HashSet<object> keys = new();
+        public Asked() { lock (all) all.Add(this); }
+        internal void Clear() { lock (keys) keys.Clear(); }
         public void Add(object k) { lock (keys) keys.Add(k); }
         public int Prune<K, V>(Dictionary<K, V> d) where K : notnull
         {
@@ -38,17 +48,24 @@ public static class PlaceCache
             {
                 var gone = d.Keys.Where(k => !keys.Contains(k)).ToList();
                 foreach (var k in gone) d.Remove(k);
-                keys.Clear();
-                return gone.Count;
+                return gone.Count;   // (the keys stay till the next place's build begins: Begin; one Asked may prune two caches)
             }
         }
     }
 
-    /// <summary>Every place cache pruned; a log line with the counts.</summary>
-    public static void LetGo()
+    static readonly List<Asked> all = new();
+
+    /// <summary>A place's build begins (Game.Stage, Game.Prepare): what every cache was asked for till now forgotten, so
+    /// LetGo keeps only what this place asks (the tester lane, 24 Nov: started in the town, the den's first LetGo let go of
+    /// nothing: every ask since the game began still counted).</summary>
+    public static void Begin() { lock (all) foreach (var a in all) a.Clear(); }
+
+    /// <summary>Every place cache pruned (<paramref name="here"/>: the place now shown); a log line with the counts.</summary>
+    public static void LetGo(string? here)
     {
         if (Args.Has("place-cache-keep")) return;   // (dev A/B: the caches as before)
         int npc = NpcPackage.LetGoOfPlace(), dye = NpcDye.LetGoOfPlace(), dress = Dressing.LetGoOfPlace(), kit = KitLook.LetGoOfPlace(), walls = OwnWalls.LetGoOfPlace();
-        GD.Print($"load: place caches let go: npc {npc}, dye {dye}, dressing {dress}, kit {kit}, own walls {walls}");
+        int made = Made.LetGoOfPlace(), grade = Atmosphere.LetGoOfPlace(), maps = SurvivorUnchained.Ui.MapScreen.LetGoOfPlace(here) + SurvivorUnchained.Ui.Minimap.LetGoOfPlace(here);
+        GD.Print($"load: place caches let go: npc {npc}, dye {dye}, dressing {dress}, kit {kit}, own walls {walls}, made {made}, grade luts {grade}, map drawings {maps}");
     }
 }

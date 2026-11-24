@@ -33,14 +33,8 @@ public static class NpcPackage
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
     /// <summary>The scenes asked for since the last place change (PlaceCache: the others are dropped then).</summary>
-    static readonly HashSet<string> askedSince = new();
-    internal static int LetGoOfPlace()
-    {
-        var gone = scenes.Keys.Where(f => !askedSince.Contains(f)).ToList();
-        foreach (var f in gone) scenes.Remove(f);
-        askedSince.Clear();
-        return gone.Count + PlaceCache.Prune(trimmed, PlaceCache.Held);
-    }
+    static readonly PlaceCache.Asked askedSince = new();
+    internal static int LetGoOfPlace() => askedSince.Prune(scenes) + PlaceCache.Prune(trimmed, PlaceCache.Held);
     /// <summary>The body's meshes with the pieces' skin dropped, by package and mesh (made once a session).</summary>
     static readonly Dictionary<(string, ulong), ArrayMesh> trimmed = new();
 

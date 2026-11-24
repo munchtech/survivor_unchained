@@ -822,6 +822,8 @@ public partial class Game : Node, IZoneHost
     WorldScene Stage(string id)
     {
         LeaveZone();
+        // (what the place caches are asked for from here is this place's: PlaceCache; one built ahead began at Prepare)
+        if (ahead == null || aheadId != id) SurvivorUnchained.View.PlaceCache.Begin();
         // An arena is made from its seed each time it is entered.
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
@@ -928,6 +930,7 @@ public partial class Game : Node, IZoneHost
         if (aheadId == id || scene?.Data.Id == id || id is "arena" or "map") return;
         aheadId = id;
         aheadScene = null;
+        SurvivorUnchained.View.PlaceCache.Begin();
         ahead = new Slices(BuildAhead(id));
     }
 
@@ -1085,7 +1088,7 @@ public partial class Game : Node, IZoneHost
             ulong builtAt = Time.GetTicksUsec();
             // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
             // only once the frames come smooth again, so no hitch shows through the fade-in)
-            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(ahead == null || ahead.Done); WhenSmooth(() =>
+            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(ahead == null || ahead.Done, scene?.Data.Id); WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
@@ -1110,10 +1113,10 @@ public partial class Game : Node, IZoneHost
     static readonly bool Aggressive = !Args.Has("gc-forced");
     // (the tester lane, 24 Nov: and first the place caches, PlaceCache, when nothing is being built ahead: its worker
     // threads read those caches)
-    static void LetGoOfLast(bool caches)
+    static void LetGoOfLast(bool caches, string? here)
     {
         ulong t = Time.GetTicksUsec();
-        if (caches) SurvivorUnchained.View.PlaceCache.LetGo();
+        if (caches) SurvivorUnchained.View.PlaceCache.LetGo(here);
         long before = GC.GetTotalMemory(false);
         double texBefore = Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed);
         System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;

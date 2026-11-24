@@ -178,6 +178,8 @@ public partial class Minimap : Control
     }
 
     static readonly Dictionary<string, ImageTexture> keeps = new();
+    /// <summary>(PlaceCache) The road keeps of other places than <paramref name="here"/> dropped (built again on the way back).</summary>
+    internal static int LetGoOfPlace(string? here) => SurvivorUnchained.View.PlaceCache.Others(keeps, here);
 
     /// <summary>The zone's road keep (S2), built once on the CPU from the drawing's pixels as the shader classifies them.</summary>
     ImageTexture KeepFor(string id, Texture2D drawing)

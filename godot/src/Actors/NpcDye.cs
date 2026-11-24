@@ -35,7 +35,7 @@ public static class NpcDye
     static readonly Dictionary<string, ShaderMaterial?> mats = new();
     /// <summary>(PlaceCache) The dyed materials nothing asked for since the last place change dropped.</summary>
     static readonly PlaceCache.Asked asked = new();
-    internal static int LetGoOfPlace() => asked.Prune(mats);
+    internal static int LetGoOfPlace() => asked.Prune(mats) + asked.Prune(defs);
     static readonly Dictionary<string, Shader> shaders = new();
     static string? code;
     static int copies;

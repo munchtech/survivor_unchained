@@ -178,6 +178,9 @@ public static class Prefetch
 
     static List<Resource> castHeld = new();
 
+    /// <summary>The cast's files let go (a place with no cinematics: Game.DoubleAhead).</summary>
+    public static void DropCast() => castHeld = new();
+
     /// <summary>The files a place's cinematics cast their people from, loaded on a worker thread and held (Game.CastAhead;
     /// the place's before let go).</summary>
     public static void CastAhead(IEnumerable<string> paths)
