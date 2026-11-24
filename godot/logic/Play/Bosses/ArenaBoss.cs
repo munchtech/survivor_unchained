@@ -376,6 +376,10 @@ public abstract class ArenaBoss
         {
             e.State = Channel != null ? EnemyState.Casting : EnemyState.Windup;
             e.Anim = EnemyAnim.Windup;
+            // (P3, the den's cut) A hold's windup says when it ends, as a creature's lunge windup does (Ai.Run's StateT): left stale
+            // (-0.02), it read as a lunge landing now, renewed each tick, and a late player's hands that weigh the most urgent
+            // threat first never saw her Drive's lane laid in it (the den human bar: 162 of 182 Drives caught unseen).
+            if (A.DenCut) e.StateT = Math.Max(0, move.Dur - move.T);
         }
         bool go = move.Each?.Invoke(move.T) ?? true;
         // The move ended itself (a channel broken from inside it): nothing is left to finish.

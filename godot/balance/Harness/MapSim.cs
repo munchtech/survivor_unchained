@@ -201,6 +201,8 @@ public static class MapSim
         double fRoom = 0, fBoss = 0, lastMk = 0, lastMkRoom = 0, lastMkBoss = 0, bossUp = 0, lastHvRoom = 0, lastHvBoss = 0;
         var dg = map.Dungeon;
         DungeonRoom? inRoom = null; RoleStat? rs = null; bool visitMarked = false;
+        // (P3 den human bar, measuring only) DEN_TRACE=file: the ruler's fight as she lived it (Harness/DenTrace.cs).
+        var denTrace = DenTrace.File != null ? new DenTrace(spec, dg, human) : null;
         int step = 0;
         while (t < spec.Cap * 60 && !zone.Over)
         {
@@ -266,6 +268,7 @@ public static class MapSim
             Tap?.Invoke(t, evs, b, zone.Boss != null);
             bool fighting = RunMeter.Fighting(b);
             meter.Step(b, t, Dt, evs, fighting);
+            denTrace?.Step(t, Dt, b, zone.Boss, evs, quaff);
             fighting |= zone.Boss != null;
             {
                 bool bossNow = zone.Boss != null;
@@ -335,6 +338,7 @@ public static class MapSim
             double bl = b.BossHealthBy.Values.Sum();
             if (bl > 0) foreach (var (k, v) in b.BossHealthBy) r.BossShare[k] = 100 * v / bl;
         }
+        denTrace?.Finish(t, zone.Cleared, p.Alive, zone.BossScript);
         r.Cleared = zone.Cleared;
         r.Closed = !zone.Cleared && (zone.Falls >= MapRun.FallsAllowed || !p.Alive);
         r.Minutes = (clearedAt >= 0 ? clearedAt : t) / 60;
