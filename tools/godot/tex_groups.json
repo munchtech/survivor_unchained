@@ -71,16 +71,7 @@
         "compress/high_quality": true,
         "mipmaps/generate": true
       },
-      "why": "Outfit and head textures: VRAM compressed with mipmaps. Normal maps flagged as normal maps (BC5/RGTC, same 8 bpp as BC7: a quality fix, not a memory one; judge a54a554ad332862b7's follow-up, 24 Nov).",
-      "normal_match": [
-        "_nor.",
-        "normal",
-        "_nrm",
-        "_n."
-      ],
-      "normal_params": {
-        "compress/normal_map": 1
-      }
+      "why": "Outfit and head textures: VRAM compressed with mipmaps."
     },
     {
       "name": "world",
@@ -94,16 +85,7 @@
         "compress/high_quality": true,
         "mipmaps/generate": true
       },
-      "why": "World textures: VRAM compressed with mipmaps. Normal maps flagged as normal maps (BC5/RGTC, same 8 bpp as BC7: a quality fix, not a memory one; judge a54a554ad332862b7's follow-up, 24 Nov).",
-      "normal_match": [
-        "_nor.",
-        "normal",
-        "_nrm",
-        "_n."
-      ],
-      "normal_params": {
-        "compress/normal_map": 1
-      }
+      "why": "World textures: VRAM compressed with mipmaps."
     },
     {
       "name": "fx_longcut_hot",
