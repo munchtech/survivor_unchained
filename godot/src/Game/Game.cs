@@ -1079,7 +1079,7 @@ public partial class Game : Node, IZoneHost
             ulong builtAt = Time.GetTicksUsec();
             // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
             // only once the frames come smooth again, so no hitch shows through the fade-in)
-            Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
+            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(); WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
@@ -1089,8 +1089,24 @@ public partial class Game : Node, IZoneHost
                 GD.Print($"load: {leg}: control {(now - askedAt) / 1e6:0.00} s after the ask (dark {(darkAt - askedAt) / 1e6:0.00} s, the place stood up and saved in {(builtAt - darkAt) / 1e6:0.00} s, then {(now - builtAt) / 1e6:0.00} s to smooth frames)");
                 fadingIn = true;
                 Wait(1.4, () => fadingIn = false);
-            }));
+            }); });
         }));
+    }
+
+    /// <summary>The last place given back while the screen is still dark: a full, compacting collection, then the
+    /// finalizers, then again. The place's C# side (its meshes' and textures' wrappers, its walls' arrays) lives on
+    /// until the GC finds it, and a Godot resource a C# wrapper holds is freed only when that wrapper is (the tester
+    /// lane's loop check, 24 Nov: a den again and again climbed +222 MB of RAM and +109 MB of VRAM a loop, the managed
+    /// heap's floor 0.5 -> 1 GB and its tops to 2.25 GB, the card's buffers with it).</summary>
+    static void LetGoOfLast()
+    {
+        ulong t = Time.GetTicksUsec();
+        long before = GC.GetTotalMemory(false);
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Forced, true, true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(2, GCCollectionMode.Forced, true, true);
+        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
     }
 
     /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
