@@ -459,15 +459,42 @@ public static partial class FxWarm
 
     static bool MeshKey(Mesh mesh, Func<int, Material?> mat, StringBuilder sb)
     {
-        var rid = mesh.GetRid();
         for (int s = 0; s < mesh.GetSurfaceCount(); s++)
         {
-            var d = RenderingServer.MeshGetSurface(rid, s);
-            ulong format = d.TryGetValue("format", out var f) ? f.AsUInt64() : 0;
-            long prim = d.TryGetValue("primitive", out var p) ? p.AsInt64() : -1;
-            sb.Append($"|s{format:x}p{prim}:").Append(MatKey(mat(s)));
+            if (SurfaceKind(mesh, s) is var (format, prim)) sb.Append($"|s{format:x}p{prim}:");
+            else sb.Append("|s?").Append(mesh.GetClass()).Append(':');
+            sb.Append(MatKey(mat(s)));
         }
         return true;
+    }
+
+    // A surface's vertex format and primitive, read from the mesh resource on the CPU (the same numbers the rendering server
+    // holds). Never RenderingServer.MeshGetSurface here: it copies every buffer of the surface back from the GPU (a stall per
+    // call, for every drawable at every census walk), and on D3D12 that copy failed to allocate and crashed the seed-2 den
+    // census (24 Nov, access violation in MeshGetSurface after "Parameter mem_new is null").
+    // An ArrayMesh tells its own. A PrimitiveMesh's format is fixed by its class and add_uv2: built once from its CPU arrays.
+    // Null: no getter (an ImmediateMesh, rebuilt every frame by one code site with one attribute set: its material tells it).
+    static (ulong format, long prim)? SurfaceKind(Mesh mesh, int s)
+    {
+        switch (mesh)
+        {
+            case ArrayMesh am: return ((ulong)am.SurfaceGetFormat(s), (long)am.SurfaceGetPrimitiveType(s));
+            case PrimitiveMesh pm:
+                string key = pm.GetClass() + (pm.AddUV2 ? "+uv2" : "");
+                if (!primKinds.TryGetValue(key, out var k)) primKinds[key] = k = PrimKind(pm);
+                return k;
+            default: return null;
+        }
+    }
+    static readonly Dictionary<string, (ulong, long)?> primKinds = new();
+    static (ulong, long)? PrimKind(PrimitiveMesh pm)
+    {
+        var arr = pm.GetMeshArrays();
+        if (arr.Count <= (int)Mesh.ArrayType.Vertex || arr[(int)Mesh.ArrayType.Vertex].VariantType == Variant.Type.Nil) return null;
+        var prim = pm is PointMesh ? Mesh.PrimitiveType.Points : Mesh.PrimitiveType.Triangles;
+        using var t = new ArrayMesh();
+        t.AddSurfaceFromArrays(prim, arr);
+        return t.GetSurfaceCount() > 0 ? ((ulong)t.SurfaceGetFormat(0), (long)prim) : null;
     }
 
     static string MatKey(Material? m)
@@ -611,6 +638,7 @@ public static partial class FxWarm
     }
 
     // Each surface cut to its first primitive, every array kept (so the vertex format is the same), its material scrubbed.
+    // (reads the surface back from the GPU: once per NEW kind, never per walk; see SurfaceKind)
     static Mesh TinyMesh(Mesh mesh, Dictionary<ulong, GodotObject> memo)
     {
         var o = new ArrayMesh();
