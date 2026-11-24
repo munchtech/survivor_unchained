@@ -429,14 +429,7 @@ public partial class Game : Node, IZoneHost
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
         // --dungeon ID [--seed N]: a dungeon (hollow, roost) as the map, its seed N or a fresh one.
-        if (z == "map" && Args.Get("dungeon") is string dgId && SurvivorUnchained.Maps.DungeonGen.Get(dgId) is { } dgDef)
-            World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(dgDef, Args.Has("seed") ? (int)Args.Num("seed", 1) : System.Random.Shared.Next(), Journey.Ch.Level);
-        else if (z == "map")
-            World.Map = new SurvivorUnchained.Maps.Chart
-            {
-                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
-                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
-            };
+        if (z == "map") World.Map = ChartFromArgs();
         // --at boss: on a map, at the edge of its ruler's clearing (pictures of the ruler's fight).
         // --at boss-mid: in its middle (the den's pits in frame; dungeon look, 15 Nov).
         if (z == "map" && Args.Get("at") is "boss" or "boss-mid")
@@ -507,9 +500,11 @@ public partial class Game : Node, IZoneHost
         foreach (var hop in Args.Get("prepare")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Prepare(onTo));
+        // (a hop to "map" from a place no offer was taken in, the town: the chart --zone map would have, the tester lane, 24 Nov:
+        // a NullReference in Stage, World.Map was null)
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
-                Wait(secs, () => Travel(onTo));
+                Wait(secs, () => { if (onTo == "map" && World.Map == null) World.Map = ChartFromArgs(); Travel(onTo); });
         // --enter ZONE@S: entered S seconds in as a loaded save is, not travelled to (SU-021's check: with
         // --prepare ZONE@S' just before, the place is still being built ahead).
         foreach (var hop in Args.Get("enter")?.Split(',') ?? [])
@@ -527,6 +522,17 @@ public partial class Game : Node, IZoneHost
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
     }
+
+    /// <summary>(dev) The map a run's flags ask for: --dungeon ID [--seed N] a dungeon (hollow, roost), its seed N or a fresh one;
+    /// else a Wayfinder's map, --tier T --people ID --mods a+b --seed N.</summary>
+    SurvivorUnchained.Maps.Chart ChartFromArgs() =>
+        Args.Get("dungeon") is string dgId && SurvivorUnchained.Maps.DungeonGen.Get(dgId) is { } dgDef
+            ? SurvivorUnchained.Maps.Chart.ForDungeon(dgDef, Args.Has("seed") ? (int)Args.Num("seed", 1) : System.Random.Shared.Next(), Journey.Ch.Level)
+            : new SurvivorUnchained.Maps.Chart
+            {
+                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
+                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
+            };
 
     /// <summary>A journey begun: the character, the world, a slot to keep it in.</summary>
     void Begin(CreationChoice c)
