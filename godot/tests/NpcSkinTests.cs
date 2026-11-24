@@ -52,6 +52,11 @@ public sealed class NpcSkinTests(ITestOutputHelper log)
         var run = Run(exe, $"--headless --path \"{dir}\" -s res://tools_scenes/npc_skin_check.gd -- \"{report}\"", dir, 10);
         foreach (var line in run.Out.Split('\n')) if (line.StartsWith("npc_skin")) log.WriteLine(line.TrimEnd());
         Assert.True(run.Code == 0 && File.Exists(report), $"the check failed (exit {run.Code}):\n{run.Out}");
+        // (24 Nov, the tester lane: integration's checkout failed skin_zones here with no code fault: the texture groups moved
+        // head_tex to VRAM compressed, the checkout's .godot was never reimported, so GD.Load of the zone map returned null and
+        // the parameter stayed unset. A stale import cache is said as that, not as a skin assert.)
+        var stale = run.Out.Split('\n').Where(l => l.Contains("Failed loading resource")).Select(l => l.Trim()).Distinct().ToList();
+        Assert.True(stale.Count == 0, $"the project's import cache is stale (reimport: Godot --headless --path \"{dir}\" --import):\n{string.Join("\n", stale)}");
         var rows = new Dictionary<string, JsonElement>();
         foreach (var line in File.ReadAllLines(report).Where(l => l.StartsWith("npc_skin ")))
         {
