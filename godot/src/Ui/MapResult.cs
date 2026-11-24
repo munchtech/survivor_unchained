@@ -278,8 +278,8 @@ public partial class AtlasStone : Control
         else
         {
             // (on the atlas's paper, an empty pair is a ring of ink; on the dark page, a dark stone)
-            DrawPolyline(Diamond(6).Append(c + new Vector2(0, -6)).ToArray(), paper ? new Color("#5a4126") with { A = 0.7f } : Style.GoldDim with { A = 0.6f }, paper ? 1.4f : 1, true);
+            DrawPolyline(Diamond(6).Append(c + new Vector2(0, -6)).ToArray(), paper ? new Color("#5a4126") with { A = 0.7f } : Style.GoldDim with { A = 0.6f }, Aa.W(paper ? 1.4f : 1), true);
         }
-        if (here) DrawArc(c, 11, 0, Mathf.Tau, 28, paper ? new Color("#8a2a18") : Style.GoldHi, 1.5f, true);
+        if (here) DrawArc(c, 11, 0, Mathf.Tau, 28, paper ? new Color("#8a2a18") : Style.GoldHi, Aa.W(1.5f), true);
     }
 }

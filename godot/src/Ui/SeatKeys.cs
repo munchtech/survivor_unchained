@@ -195,7 +195,7 @@ public partial class Socket
         if (!keyed || !filled) return;
         if (st.Union)
         {
-            DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = 0.92f }, 2, true);
+            DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = 0.92f }, Aa.W(2), true);
             if (st.ClaspLeft) Clasp(c);
             if (st.Rings) LinkedRings(c + new Vector2(-0.7071f, -0.7071f) * (DgPanel.SeatR - 3));
         }
@@ -205,9 +205,9 @@ public partial class Socket
             // clockwise from 12 o'clock as Value / cost
             // (M4 lead 11: it sits in a dark groove, with a ghost of the part still to fill)
             float ar = hr - 4.5f;
-            DrawArc(c, ar, 0, Mathf.Tau, 64, new Color(0.02f, 0.015f, 0.01f, 0.9f), 4, true);
-            DrawArc(c, ar, 0, Mathf.Tau, 64, Color.Color8(200, 138, 48) with { A = 0.26f }, 2, true);
-            if (st.Cost > 0.005f) DrawArc(c, ar, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(200, 138, 48), 2, true);
+            DrawArc(c, ar, 0, Mathf.Tau, 64, new Color(0.02f, 0.015f, 0.01f, 0.9f), Aa.W(4), true);
+            DrawArc(c, ar, 0, Mathf.Tau, 64, Color.Color8(200, 138, 48) with { A = 0.26f }, Aa.W(2), true);
+            if (st.Cost > 0.005f) DrawArc(c, ar, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(200, 138, 48), Aa.W(2), true);
             // (bd-ui W7: the cost, 13 px in the resource's colour at 6 o'clock inside the bezel)
             if (st.CostNum > 0)
             {
@@ -279,7 +279,7 @@ public partial class Socket
         }
         DrawColoredPolygon(pts, new Color(0, 0, 0, SeatLook.WipeAlpha));
         var dir = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0));
-        DrawLine(c + dir * hr * SeatLook.EdgeFrom, c + dir * (hr - 0.5f), new Color("#F2E6C8") with { A = 0.9f }, 2, true);
+        DrawLine(c + dir * hr * SeatLook.EdgeFrom, c + dir * (hr - 0.5f), new Color("#F2E6C8") with { A = 0.9f }, Aa.W(2), true);
     }
 
     /// <summary>The wait's seconds over a wiped icon: bold, 19 px, white, a 2 px dark outline (bd-ui W7).</summary>
@@ -298,7 +298,7 @@ public partial class Socket
         float k = size / 16f;
         var m = mid + new Vector2(0, -4 * k);
         ci.DrawRect(new Rect2(m.X - 6 * k, m.Y, 12 * k, 9 * k), col, true);
-        ci.DrawArc(new Vector2(m.X, m.Y - k), 4f * k, Mathf.Pi, Mathf.Tau, 16, col, Math.Max(1.5f, 2 * k), true);
+        ci.DrawArc(new Vector2(m.X, m.Y - k), 4f * k, Mathf.Pi, Mathf.Tau, 16, col, Aa.W(Math.Max(1.5f, 2 * k)), true);
         ci.DrawLine(new Vector2(m.X - 4 * k, m.Y - k), new Vector2(m.X - 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
         ci.DrawLine(new Vector2(m.X + 4 * k, m.Y - k), new Vector2(m.X + 4 * k, m.Y), col, Math.Max(1.5f, 2 * k));
     }
@@ -341,10 +341,10 @@ public partial class Socket
     void LinkedRings(Vector2 at)
     {
         var dark = new Color(0.04f, 0.03f, 0.02f, 0.9f);
-        DrawArc(at + new Vector2(-2.3f, 0), 3.6f, 0, Mathf.Tau, 20, dark, 3.2f, true);
-        DrawArc(at + new Vector2(2.3f, 0), 3.6f, 0, Mathf.Tau, 20, dark, 3.2f, true);
-        DrawArc(at + new Vector2(-2.3f, 0), 3.6f, 0, Mathf.Tau, 20, DgMeters.Gold, 1.4f, true);
-        DrawArc(at + new Vector2(2.3f, 0), 3.6f, 0, Mathf.Tau, 20, DgMeters.Gold, 1.4f, true);
+        DrawArc(at + new Vector2(-2.3f, 0), 3.6f, 0, Mathf.Tau, 20, dark, Aa.W(3.2f), true);
+        DrawArc(at + new Vector2(2.3f, 0), 3.6f, 0, Mathf.Tau, 20, dark, Aa.W(3.2f), true);
+        DrawArc(at + new Vector2(-2.3f, 0), 3.6f, 0, Mathf.Tau, 20, DgMeters.Gold, Aa.W(1.4f), true);
+        DrawArc(at + new Vector2(2.3f, 0), 3.6f, 0, Mathf.Tau, 20, DgMeters.Gold, Aa.W(1.4f), true);
     }
 }
 
@@ -385,40 +385,40 @@ public partial class SeatFx : Control
                 for (int i = 0; i < 6; i++)
                 {
                     float a0 = -Mathf.Pi / 2 - 1.2f + i * 0.2f;
-                    DrawArc(c, hr + 2.5f, a0, a0 + 0.21f, 6, Spin.Lerp(Head, i / 5f) with { A = 0.15f + 0.17f * i }, 3, true);
+                    DrawArc(c, hr + 2.5f, a0, a0 + 0.21f, 6, Spin.Lerp(Head, i / 5f) with { A = 0.15f + 0.17f * i }, Aa.W(3), true);
                 }
-                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, 3.5f, true);
+                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, Aa.W(3.5f), true);
                 break;
             case Mode.Press:
                 // the key down: the well warm, the ring fully lit (added light)
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * (hr + 1f), Vector2.One * (hr + 1f) * 2), false, new Color(1f, 0.66f, 0.28f, 0.6f));
-                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, 4, true);
+                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, Aa.W(4), true);
                 break;
             case Mode.Held when Wide:
                 // M4 lead 14 (r3c S6): held under the cost: a 2 px ink gap outside the arc's groove, then the plain gold
                 // ring 2 px further out (no tail, no bead: the arc's head is the one bright point)
-                DrawArc(c, hr + 2.25f, 0, Mathf.Tau, 64, new Color(0.03f, 0.02f, 0.01f, 0.9f), 2.5f, true);
-                DrawArc(c, hr + 4.5f, 0, Mathf.Tau, 64, HeldGold, 2.5f, true);
+                DrawArc(c, hr + 2.25f, 0, Mathf.Tau, 64, new Color(0.03f, 0.02f, 0.01f, 0.9f), Aa.W(2.5f), true);
+                DrawArc(c, hr + 4.5f, 0, Mathf.Tau, 64, HeldGold, Aa.W(2.5f), true);
                 break;
             case Mode.Held:
                 // M4 lead 9 (fix A2): the held ring in NORMAL blend (added to the lit bronze it clipped to lemon): the bar's
                 // gold #ffcd5a at full alpha, above every added layer; its head bead white-gold #fff4d6 with a tail of 46
                 // degrees fading to the ring's gold. Nothing here is brighter than the bead.
-                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, HeldGold, 2.5f, true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, HeldGold, Aa.W(2.5f), true);
                 for (int i = 0; i < 6; i++)
                 {
                     float a0 = -Mathf.Pi / 2 - 0.05f - 0.8f + i * (0.8f / 6);
-                    DrawArc(c, hr + 2.5f, a0, a0 + 0.8f / 6 + 0.01f, 4, HeldGold.Lerp(HeldBead, (i + 1) / 7f), 2.5f + 1f * (i + 1) / 6f, true);
+                    DrawArc(c, hr + 2.5f, a0, a0 + 0.8f / 6 + 0.01f, 4, HeldGold.Lerp(HeldBead, (i + 1) / 7f), Aa.W(2.5f + 1f * (i + 1) / 6f), true);
                 }
-                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, 3.5f, true);
+                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, Aa.W(3.5f), true);
                 break;
             case Mode.Bond:
                 // the second key's "press now": a gold light in the well and a bright ring, breathing (the seat's Modulate)
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, Style.Gold with { A = 0.55f });
-                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Head with { A = 0.9f }, 2.5f, true);
-                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.4f }, 4, true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Head with { A = 0.9f }, Aa.W(2.5f), true);
+                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.4f }, Aa.W(4), true);
                 // (bd-ui W13: the break key's pulse: a ring growing 0 -> 6 px outward and fading, every 0.8 s)
-                DrawArc(c, hr + 5f + 6 * Pulse, 0, Mathf.Tau, 64, Head with { A = 0.7f * (1 - Pulse) }, 2, true);
+                DrawArc(c, hr + 5f + 6 * Pulse, 0, Mathf.Tau, 64, Head with { A = 0.7f * (1 - Pulse) }, Aa.W(2), true);
                 break;
         }
     }

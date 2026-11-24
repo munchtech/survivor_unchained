@@ -83,14 +83,14 @@ public partial class GroundLabels : Control
             {
                 var r = new Rect2(box.Position.X, box.Position.Y + (box.Size.Y - 14) / 2, 14, 14);
                 if (link != null) DrawTextureRect(link, r, false, l.Color);
-                else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, 2, true);
+                else DrawArc(r.GetCenter(), 5, 0, Mathf.Tau, 16, l.Color, Aa.W(2), true);
             }
             // (bd-ui2) A gift's name: its skill's line glyph in a round dark seal with a bronze-gold rim, left of the name.
             if (l.Glyph != null)
             {
                 var c = new Vector2(box.Position.X + seal / 2, box.Position.Y + box.Size.Y / 2);
                 DrawCircle(c, seal / 2, new Color("#2A1E12"));
-                DrawArc(c, seal / 2 - 1, 0, Mathf.Tau, 32, new Color("#B8862E"), 2, true);
+                DrawArc(c, seal / 2 - 1, 0, Mathf.Tau, 32, new Color("#B8862E"), Aa.W(2), true);
                 float g = seal * 0.7f;
                 DrawTextureRect(l.Glyph, new Rect2(c - new Vector2(g, g) / 2, new Vector2(g, g)), false, new Color("#F2C66B"));
             }
@@ -117,7 +117,7 @@ public partial class GroundLabels : Control
         var under = new Vector2[outline.Length + 1];
         for (int i = 0; i < outline.Length; i++) under[i] = outline[i];
         under[^1] = outline[0];
-        DrawPolyline(under, new Color(0.03f, 0.02f, 0.02f, 0.9f), 3.2f, true);
+        DrawPolyline(under, new Color(0.03f, 0.02f, 0.02f, 0.9f), Aa.W(3.2f), true);
         var cr = right ?? c;
         if (right == null) DrawColoredPolygon(outline, c);
         else

@@ -77,10 +77,10 @@ public partial class GemSocket : Control
     {
         Vector2 P(float x, float y) => c + new Vector2(x, y) * w;
         var outline = new[] { P(-.3f, -.36f), P(.3f, -.36f), P(.5f, -.08f), P(0, .44f), P(-.5f, -.08f), P(-.3f, -.36f) };
-        ci.DrawPolyline(outline, ink, line, true);
-        ci.DrawLine(P(-.5f, -.08f), P(.5f, -.08f), ink, line, true);
-        ci.DrawLine(P(-.3f, -.36f), P(-.14f, -.08f), ink, line * .8f, true); ci.DrawLine(P(.3f, -.36f), P(.14f, -.08f), ink, line * .8f, true);
-        ci.DrawLine(P(-.14f, -.08f), P(0, .44f), ink, line * .8f, true); ci.DrawLine(P(.14f, -.08f), P(0, .44f), ink, line * .8f, true);
+        ci.DrawPolyline(outline, ink, Aa.W(line), true);
+        ci.DrawLine(P(-.5f, -.08f), P(.5f, -.08f), ink, Aa.W(line), true);
+        ci.DrawLine(P(-.3f, -.36f), P(-.14f, -.08f), ink, Aa.W(line * .8f), true); ci.DrawLine(P(.3f, -.36f), P(.14f, -.08f), ink, Aa.W(line * .8f), true);
+        ci.DrawLine(P(-.14f, -.08f), P(0, .44f), ink, Aa.W(line * .8f), true); ci.DrawLine(P(.14f, -.08f), P(0, .44f), ink, Aa.W(line * .8f), true);
     }
 
     public override void _Draw()
@@ -114,7 +114,7 @@ public partial class GemSocket : Control
             DrawProfile(this, c, 24 * s, cream with { A = 0.35f });
         // the one bezel: bronze 3 px, light at the top left to dark at the bottom right, a 1 px dark line inside
         bool hot = Selected;
-        if (hot) for (int i = 6; i >= 1; i--) DrawArc(c, r + 1.5f + i * 0.5f, 0, Mathf.Tau, 48, Style.Ember with { A = 0.07f + 0.02f * (6 - i) }, 1.5f + i, true);
+        if (hot) for (int i = 6; i >= 1; i--) DrawArc(c, r + 1.5f + i * 0.5f, 0, Mathf.Tau, 48, Style.Ember with { A = 0.07f + 0.02f * (6 - i) }, Aa.W(1.5f + i), true);
         const int n = 48;
         var pts = new Vector2[n + 1]; var cols = new Color[n + 1];
         var dark = look == Look.Closed ? new Color("#4A4440") : new Color("#8A6A3C"); var lite = look == Look.Closed ? new Color("#6A625A") : new Color("#C9A266");
@@ -128,7 +128,7 @@ public partial class GemSocket : Control
             if (hot && hover) col = Style.EmberHi;
             cols[i] = col with { A = col.A * k };
         }
-        DrawPolylineColors(pts, cols, 3, true);
-        DrawArc(c, r - 1.5f, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.7f), 1, true);
+        DrawPolylineColors(pts, cols, Aa.W(3), true);
+        DrawArc(c, r - 1.5f, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.7f), Aa.W(1), true);
     }
 }

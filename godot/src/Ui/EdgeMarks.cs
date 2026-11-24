@@ -100,7 +100,7 @@ public partial class EdgeMarks : Control
             DrawColoredPolygon(new[] { tip, p + dir * 14 + side, p + dir * 14 - side }, c);
             // The disc with its glyph.
             DrawCircle(p, 17, new Color(0.04f, 0.03f, 0.05f, 0.9f * a));
-            DrawArc(p, 17, 0, Mathf.Tau, 32, c, 2.5f, true);
+            DrawArc(p, 17, 0, Mathf.Tau, 32, c, Aa.W(2.5f), true);
             var tex = Glyphs.Texture(m.Glyph, 48, m.Color);
             DrawTextureRect(tex, new Rect2(p - new Vector2(12, 12), new Vector2(24, 24)), false, Colors.White with { A = a });
         }

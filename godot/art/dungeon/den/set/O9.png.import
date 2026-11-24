@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://djhkqkf08itj"
+path="res://.godot/imported/O9.png-812a48b642f9b22071e01d7bb6fca752.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/dungeon/den/set/O9.png"
+dest_files=["res://.godot/imported/O9.png-812a48b642f9b22071e01d7bb6fca752.ctex"]
 
 [params]
 

@@ -83,7 +83,7 @@ public partial class Coal : Control
             float a = Hash(Seed, 20 + i) * Mathf.Tau;
             var p0 = c + new Vector2(Mathf.Cos(a) * rx * 0.2f, Mathf.Sin(a) * ry * 0.2f);
             var p1 = c + new Vector2(Mathf.Cos(a + 2.1f) * rx * 0.75f, Mathf.Sin(a + 2.1f) * ry * 0.6f);
-            DrawLine(p0, p1, hot with { A = 0.85f }, 1.3f * Scale, true);
+            DrawLine(p0, p1, hot with { A = 0.85f }, Aa.W(1.3f * Scale), true);
         }
         DrawCircle(c, 3.2f * Scale, hot);
         DrawCircle(c, 1.6f * Scale, new Color(1f, 0.85f, 0.55f) with { A = Mathf.Clamp(b - 0.2f, 0, 1) });
@@ -244,7 +244,7 @@ public partial class CoalDish : Control
         DrawSetTransform(c, 0, new Vector2(1, 0.38f));
         DrawCircle(Vector2.Zero, 34, new Color("#3a3638"));
         DrawCircle(new Vector2(0, 3), 29, new Color("#161314"));
-        DrawArc(Vector2.Zero, 33.5f, Mathf.Pi * 1.1f, Mathf.Pi * 1.9f, 24, new Color("#7a7068"), 1.6f, true);
+        DrawArc(Vector2.Zero, 33.5f, Mathf.Pi * 1.1f, Mathf.Pi * 1.9f, 24, new Color("#7a7068"), Aa.W(1.6f), true);
         DrawSetTransform(Vector2.Zero);
     }
 
@@ -259,7 +259,7 @@ public partial class CoalDish : Control
             if (UiArt.Art("coal/dish_rim.png") is { } art) { DrawTexture(art, c - art.GetSize() / 2); return; }
             if (UiArt.Art("coal/dish.png") != null) return;
             DrawSetTransform(c, 0, new Vector2(1, 0.38f));
-            DrawArc(Vector2.Zero, 33, 0.25f, Mathf.Pi - 0.25f, 24, new Color("#4a4446"), 5, true);
+            DrawArc(Vector2.Zero, 33, 0.25f, Mathf.Pi - 0.25f, 24, new Color("#4a4446"), Aa.W(5), true);
             DrawSetTransform(Vector2.Zero);
         }
     }

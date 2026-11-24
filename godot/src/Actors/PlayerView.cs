@@ -480,7 +480,7 @@ public partial class PlayerView : Node3D
                     moveBack = true;
                     goto skip2D;
                 }
-                var two = new AnimationNodeBlendSpace2D { MinSpace = new Vector2(-Mathf.Max(runSpeed, sprintSpeed), -Mathf.Max(runSpeed, sprintSpeed)), MaxSpace = new Vector2(Mathf.Max(runSpeed, sprintSpeed), Mathf.Max(runSpeed, sprintSpeed)), Sync = true };
+                var two = new AnimationNodeBlendSpace2D { MinSpace = new Vector2(-Mathf.Max(runSpeed, sprintSpeed), -Mathf.Max(runSpeed, sprintSpeed)), MaxSpace = new Vector2(Mathf.Max(runSpeed, sprintSpeed), Mathf.Max(runSpeed, sprintSpeed)), SyncMode = AnimationNodeBlendSpace2D.SyncModeEnum.Independent };
                 walkNode = new AnimationNodeAnimation { Animation = own.Prefix + wb };
                 SyncAn();
                 two.AddBlendPoint(idleNode, new Vector2(0, 0));

@@ -475,11 +475,11 @@ public partial class Cuff : Control
                 float lit = Mathf.Clamp(-d.Y * 0.55f - d.X * 0.3f, -1, 1);
                 cols[j] = Iron(0.16f + 0.24f * bulge + 0.32f * lit * bulge);
             }
-            ci.DrawPolylineColors(pts, cols, band / rings + 0.9f, true);
+            ci.DrawPolylineColors(pts, cols, Aa.W(band / rings + 0.9f), true);
         }
-        ci.DrawArc(c, ro, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.85f), 1.4f, true);
-        ci.DrawArc(c, r + 0.6f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.95f), 2.2f, true);
-        ci.DrawArc(c, ro - 1.3f, Mathf.Pi * 1.08f, Mathf.Pi * 1.62f, 32, new Color(1, 0.94f, 0.82f, 0.22f), 1.1f, true);
+        ci.DrawArc(c, ro, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.85f), Aa.W(1.4f), true);
+        ci.DrawArc(c, r + 0.6f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.95f), Aa.W(2.2f), true);
+        ci.DrawArc(c, ro - 1.3f, Mathf.Pi * 1.08f, Mathf.Pi * 1.62f, 32, new Color(1, 0.94f, 0.82f, 0.22f), Aa.W(1.1f), true);
     }
 
     /// <summary>The iron's colour at a light (0 dark to 1 bright): a warm grey-black.</summary>
@@ -706,21 +706,21 @@ public partial class Socket : Control
         DrawSeatMarks(c, hr);
         // (bd-ui W7: the stance she wears REPLACES the inner ring: 2.5 px, full opacity, every open seat in every state; drawn
         // after the marks, since the cost arc's groove used to cover it on the one seat that was short)
-        if (keyed && st.Tint.A > 0.01f && (filled || !locked)) DrawArc(c, hr - 1.25f, 0, Mathf.Tau, 64, st.Tint with { A = 1f }, 2.5f, true);
+        if (keyed && st.Tint.A > 0.01f && (filled || !locked)) DrawArc(c, hr - 1.25f, 0, Mathf.Tau, 64, st.Tint with { A = 1f }, Aa.W(2.5f), true);
         if (!filled && locked && keyed) DrawLocked(c);
         if (target)
         {
             // (bd-ui W14: the level card points here and holds: a 2 px gold ring, alpha 0.4 -> 1.0 -> 0.4 over 1.2 s)
             float pa = 0.7f - 0.3f * Mathf.Cos((float)(t % 1.2 / 1.2) * Mathf.Tau);
-            DrawArc(c, hr + 1f, 0, Mathf.Tau, 64, Style.Gold with { A = pa }, 2, true);
+            DrawArc(c, hr + 1f, 0, Mathf.Tau, 64, Style.Gold with { A = pa }, Aa.W(2), true);
         }
         if (filled && (evolved || ripe))
         {
             if (ripe && !evolved)
             {
                 float a = 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
-                DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
-                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+                DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, Aa.W(2), true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, Aa.W(3), true);
             }
             // (bd-ui W14: no crown pip for an evolved skill: it reads unexplained; the evolution shows in the tooltip and the Arts page)
         }

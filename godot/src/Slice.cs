@@ -114,9 +114,9 @@ public partial class Slice : Node3D
         shown = i;
         var l = looks[i];
         if (l.Mute is float m) air!.Mute = m;
-        if (l.GlowIntensity is float gi) air!.Env.GlowIntensity = gi;
+        if (l.GlowIntensity is float gi) air!.SetGlow(gi, l.GlowBloom ?? 0.04f);
         if (l.GlowThreshold is float gt) air!.Env.GlowHdrThreshold = gt;
-        if (l.GlowBloom is float gb) air!.Env.GlowBloom = gb;
+        else if (l.GlowBloom is float gb) air!.SetGlow(0.7f, gb);
         if (l.FogVolume is float fv) air!.Env.VolumetricFogDensity = fv;
         air!.Set(l.Preset);
     }

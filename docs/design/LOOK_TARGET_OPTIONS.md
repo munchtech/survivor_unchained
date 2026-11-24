@@ -317,6 +317,138 @@ The two measures of her disagree on what the game does. `measure5.py`'s box puts
 - Pictures as downloaded: `raw5\`. Fitted: `fit5\`. Every prompt as sent: `prompts.md` and `prompts5\`. Scripts: `scripts5\`. Prop-by-prop tiles: `props5\`.
 - State and the wording lessons: the top block of `...\scratch_look\STATE.md`.
 
+## Round 6 on option C, scripted local fixes (sixth lead, 22-23 Nov night): three judged rounds, none passed
+
+Branch `look-target-6`. The owner, 22 Nov night, on the open questions: "yes, plain, scripted local fixes". So: a light pool may be brighter than her, the floor stays plain, and round 5's last set (`fit5\C5_f1_v5w.png`, `C5_f2_v8w.png`, `C5_f3_v6w.png`) is repaired in place by Python scripts, region by region. No picture was regenerated. ChatGPT was not used and its lock was never taken.
+
+**The verdict.** Three sets were built. Each went to a fresh max-effort judge who was not told the owner's reactions or any earlier verdict. All three said FAIL. The cap was three rounds, so the lane stopped. **No paint-over is shown: none passed the judge.**
+
+The checklist had ten lines, with the landing boxes and value targets fixed as numbers before round 1: 1 finished painted cel; 2 heroine first read (her warm median L at least 46); 3 pools land where the game's beams land and read as light; 4 bands; 5 nothing floats; 6 foes; 7 true to the game frame; 8 floor plain; 9 glows; 10 the frames agree.
+
+| Judged round | Set | Verdict | What failed |
+|---|---|---|---|
+| 1 | `fit6\C6_fN_v1.png` | FAIL | every number passed; the five pools read as flat ochre mats; frame 2 had a warm halo round her and wolves rimmed all round; glows too small; band tops cut hard; small faults |
+| 2 | `fit6\C6_fN_v2.png` | FAIL | the shade side passed in all three frames (floor, roots, rocks, foe bodies, palette, ink, wolf blobs); the pools still read as beige mats; frame 3 had four dropped or ghosted bone groups; frame 1's band top; lamp glows a flat disc with a muddy ring; frame 2's rims |
+| 3 | `fit6\C6_fN_v3.png` | FAIL | lines 1, 3, 6 (frame 3), 7 (one smear), 9, 10. Passed: 4 bands, 5 nothing floats, 8 floor, pool placement and every pool number, her numbers (median L 48.0 / 47.9 / 47.9), frames 1 and 2's rims |
+
+**What round 3's judge found** (its file marks each point measured, reading or could not tell):
+- Blocks: all five pools read as "a beige sand mat with a pink glow round it". Measured by the judge: the inside is 3 to 8 times busier than the shade floor round it, and a magenta ring sits 10 to 20 px outside each edge.
+- Blocks: frame 3's pool outline is a lumpy traced contour (frame 2's pool B, milder).
+- Blocks: frame 3's big wolf has its pale rim round 67% of its outline (frames 1 and 2 keep it on the light-facing edges).
+- Blocks: frame 2's lamp is a flat orange disc in a magenta wash. Should fix: frame 1's lamp (a ragged brown spray in a maroon ring), frame 3's campfire (barely lights its floor), a see-through smear in frame 1 at x 1135-1180, y 555-605, and frame 3's heroine is not the first read.
+
+**The wall, stated plainly.** The pools failed all three rounds, and the three judges asked for opposite repairs:
+- Round 1: the outline is a noisy traced contour and the fill has sponge spots. Make it clean.
+- Round 2: the fill is constant and flatter than the floor, the outline is a smooth regular blob. Give it texture (inside at least as busy as the floor) and an irregular outline with shade bites.
+- Round 3: the inside is busier than the floor and reads as another material. Keep the floor plain inside the pool, carry it with a smooth gradient (core L 50-54 down to about 40 at the edge), smooth the outline to two or three broad lobes, and use one 4 to 8 px falloff with no ring.
+
+The lead's reading (not a ruling, not measured): an opaque warm shape with a hard edge, laid on a floor that is plain by choice, has nothing of the floor's own to carry through it, so a fresh eye reads it as a thing lying on the floor whatever its texture or outline. Round 3's judge points to the one handling not yet tried here: a plain inside with a smooth value gradient and a single short falloff. That is a cheap next try, but it is a fourth recipe for the same shape, and the owner's rule applies first ("remember when we keep hitting walls to see how successful games have done it"): the next brief should start from how shipped cel-look games light a floor (the lead's understanding, not checked against footage in this lane: light added over a floor that keeps its own features, so the same marks run through light and shade).
+
+**The owner's two points, where they stand.**
+- *"some things appear to be floating"*: **fixed by the judges' reading in rounds 2 and 3.** Every wolf has a blob under it (measured: the floor under each is 5.0 to 9.1 L and 49 to 65% darker than the floor further out); things in the pools cast cool shadows; props sit on the floor. Round 3's judge notes the blob reads slightly as an even dark halo on the loose wolves.
+- *"a little more detail perhaps in the floor?"*: answered by the owner ("plain"). The floor is plain and passed line 8 in rounds 2 and 3.
+
+**What was tried on the pools and failed (do not retry).** Three flat tones cut from the game's ground detail (sponge spots). The landing's half-max contour traced as it comes (a map outline). The contour opened with a big disc and blurred (a regular blob). A constant fill with low grain (flatter than the floor). Chroma 30 to 34 (sand). Long horizontal dry-brush streaks (wood plank). Short sparse strokes plus the game's ground forms (round 3: another material). A two-step falloff ring in rose and plum (round 3: a pink glow round a sticker). A fresh solver's route, not judged: the game's own ground repainted as strokes (sponge or camouflage by the lead's reading at 1:1). On the glows: a lift with no radius limit (flattened the floor's grain over the frame), a colour weight by the lift's square root (a disc edge), a straight blend from warm to violet (a muddy grey ring), and a blend through magenta (round 3: a magenta wash).
+
+**What the next one costs.** The scripts rebuild all three frames from round 5's set in about two minutes and measure them in one: `s0_props.py`, `masks6.py`, `s1_pools.py`, `s2_figs.py v3`, then `measure6.py v3 <folder>`, `sheet6.py`, `tiles6.py` (18 tiles at 1:1, game beside paint). The figure and wolf masks, the landing boxes, the band fits, the blob, rim, bone and glow steps are reusable as they are, and the shade side has passed two judges, so a next lane touches only the light: the pool fill and edge in `s1_pools.py` (one function), the lamp and campfire profile in `s2_figs.py` (one block), frame 3's rim (the frame-2 rim rule applied to frame 3's wolf), and one smear. `measure6.py` measures the pools on the builder's own masks, so it cannot say whether a pool reads as light: only a judge's eye does.
+
+**Where it is kept** (under `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`):
+- Sets: `fit6\C6_f1_v1.png` to `C6_f3_v3.png`. Sheets, each with a half-size copy: `sheets6\C6_r1_sheet.png`, `C6_r2_sheet.png`, `C6_r3_sheet.png`.
+- The judges' findings, numbers and tiles: `judge6_r1\round1_findings.md`, `judge6_r2\round2_findings.md`, `judge6_r3\round3_findings.md`; `numbers.txt` and `tiles\` in each folder; `judge6_r1\landing_boxes.json` and `bands.json`.
+- Scripts: `scripts6\` (the judged round-1 and round-2 versions are kept as `*_v1.py` and `s1_pools_v2.py`; the one-off patch scripts `_patch_r2*.py` and `_patch_r3a.py` to `_patch_r3e.py` record each step).
+- State: the top block of `...\scratch_look\STATE.md` (down to `=== END SIXTH ===`).
+
+## Round 7 on option C, a written light spec (seventh lead, Fable, 23 Nov): three judged rounds, none passed
+
+Branch `look-target-7`. The owner, 23 Nov: "try fable for the failed look target I suppose". The earlier words still hold: "yes, plain, scripted local fixes" (22 Nov), and on option C "you may continue work on that till you pass it" (22 Nov). The rule on walls, 22 Nov: "remember when we keep hitting walls to see how successful games have done it". Round 6's last set was repaired in place by Python scripts. No picture was regenerated. ChatGPT was not used and its lock was never taken.
+
+**The verdict.** Three sets were built (`C7 v1`, `v2`, `v3`). Each went to a fresh max-effort judge who was not told the owner's reactions or any earlier verdict. All three said FAIL. The cap was three rounds, so the lane stopped. **No paint-over is shown: none passed the judge.**
+
+| Round | Set | Judge | Verdict | What blocked |
+|---|---|---|---|---|
+| 1 | v1 | `a991ff0cea2804fc6` | FAIL | Shade fell on the floor only: pool cores (L 53-56) were darker than the bones lying in shade (L 59-63), so no pool could read as light. Lamps: a flat disc, the game's lamp object dropped, a rust glow. Campfire: a maroon disc with a rose fringe. In frame 3 a wolf's blob ate the pool's edge and the heroine was not the first read. |
+| 2 | v2 | `aa4cab8902c5431a8` | FAIL | Every glow ended in a hard circle at r 114 with a gray wash inside it (a bug of mine: the tail never reached the floor's own color). No pool read as light: a khaki core (L 56) darker than the lit pale things inside it (L 67-72). |
+| 3 | v3 | `a2107e46203ecb879` | FAIL | The shafts' bands are flat, hard-edged stripes (edges 1-3 px, dead flat inside). A magenta ring round both lamps and the fire (r 75-95). Pool f3A reads as a tan sheet. |
+
+**What was changed in the approach** (the brief's three items).
+
+1. *How shipped games draw floor light.* The evidence is thin and is marked. PUBLIC: Hi-Fi RUSH (GDC 2024 toon rendering talk) draws floor light as a projected light with a flat cut-out shape that multiplies the floor's own color; Gurney on dappled light: the surface's own marks stay readable through the light. RECALL, not checked against a source: lamps and torches in top-down action games are a smooth radial falloff with no disc. INFERENCE (mine): a sun shaft from a roof about 10 m up has an edge about 5 px wide at this camera. The rule taken from it: light is a gain over the paint's own shade, never an opaque shape.
+2. *A written spec with numbers in every judge's checklist.* `LIGHT SPEC v7.1` to `v7.3` (lines S1, P1-P6, G1-G4) are in `judge7_r1\brief.md`, `judge7_r2\brief.md` and `judge7_r3\brief.md`. Each judge ruled on the spec and on the bar separately and said where the spec itself was wrong. This worked as a tool: each judge returned replacement lines with numbers, and the next set met them.
+3. *Round 6's other faults.* Measured or ruled by the judges of rounds 2 and 3: nothing floats (line 5, passed twice); foes are one family with a toned-down rim in shade (line 6, passed twice); true to the game frame (line 7, passed twice); the floor is plain (line 8, passed in round 3); the frames agree (line 10, passed twice); the heroine is the first read (line 2, passed in round 2; in round 3 it failed on my wording only: the cyan mushrooms sit at L 72-80 and the line named only the cyan cracks; the judge's reading is that they do not beat her).
+
+**What moved, measured.**
+- Shade on things (new line S1). Pale things in shade: L 59-63 in v1, median 41.6-42.6 in v3 (highest 53.6). Foes' rims in shade: highest 54.9. Colored things in shade (leaves, sticks, blood): median L 14-19, C 17; the same kind in a pool is 25 L or more brighter.
+- Pools. Core L 53-56 (v1, v2) to 74.7-75.3, a pale gold (hue 80, C 21) in v3; six px inside the edge L 45.6-48.9; penumbra 5.1-6.7 px; texture inside 0.61-0.94 (shade floor 0.22-0.26); area 1.00-1.01 of the game's landing and centroid within 3 px by my measure.
+- Glows. Floor at r 30: L 29.8-31.8; back to the floor by r 100; no step over 0.48 L between 1 px rings beyond r 60. The lamp object is the game's own again, 30 px at L 88 or more.
+- Her warm pixels' median L: 50.1 / 49.9 / 49.9.
+
+**Where the pools stand** (judge 3's reading at 1:1). f1A and f2A read as light. f1B and f2B read as lit patches with a "toasted" orange inner rim, a should-fix. f3A reads as a tan sheet: a near-straight top edge, grain streaks of its own, and the bone fragments on its edge stay unlit. So round 6's wall (all five pools read as flat mats) is partly down: two of five pass a judge's eye, two are close, one fails.
+
+**What failed and why** (the next lead should read this before touching anything).
+- *The glows' fade from warm to violet has now failed four ways.* A path through neutral gave an olive-gray outline (v2, first try; never judged). A dull crossing as wide as the tail gave the gray wash and the r 114 rim (v2, judged). A short dull crossing read as a brown disc's edge, and a deep dip read as a gray ring (v3 tries; my reading, never judged). The plum tail (the floor's chroma turned 13 degrees toward the red) is the magenta ring judge 3 failed. Judge 3's replacement: below a lift of 8, a straight Lab line to the floor over 25-30 px, lowest C 14-16 at the rose crossing, never more than 5 degrees redder than the floor. Not built.
+- *The judges' numbers for that fade disagree.* Judge 2 asked for rose hues on no more than 8 px of radius at C 8 or less. Judge 3 asks for C 14-16 at the rose crossing over 25-30 px. Both cannot be met. My reading, not a ruling: this fade is a taste call each fresh judge sets differently, and a cap of three fresh judges may not converge on it.
+- *The bands failed on what I changed last.* Judge 2 passed the bands (cool lavender) with a should-fix that they read as a different thing from their warm pools. I turned them to a dusty mauve in v3. Judge 3 failed them as flat, hard-edged runners, and f1A's band was missed by my rule and stayed gray. The bands' flat shape is older than this round; the new color made it show (my reading). Judge 3's new line B1: a 10-90% edge of 5-7 px at the pool and 10-16 px at the far end; +6 to +8 L near the pool fading to +2 or +3; 2-4 streaks along the axis; one color for all bands (hue 306-310, C 22-26).
+- *The pool core.* Judge 1 said to keep the core at L 53-56. Judge 2 said 72-78: the floor in the light must not be darker than the lit things lying on it. Judge 2's line was taken and judge 3 did not fault it.
+- *Should-fix left from round 3.* Two sticks in frame 2 and the moss on frame 3's big rock are too bright for shade (my check left out green hues). The pools' deep warm ramp runs 25-30 px and should reach within 8 L of the core by 15 px inside the edge. Small bends in the glow profile at a few radii. The lamp's two facets are built but cannot be made out at 1:1.
+
+**Do not retry.** A color path through pure neutral for any crossing from violet to warm (olive-gray outline). Blurred masks for the shade pass (thin bones stay half shaded; per-pixel weights replaced them). A glow tail taken against each pixel's own base L (the r 114 rim). A crossing of 6 px or less from warm to violet (a disc's edge). A chroma dip deeper than about a half in the glow's crossing (a gray ring). A tail redder than the floor at full chroma (the magenta ring). Bands at full chroma turned 16 degrees (a purple stripe).
+
+**What the next one costs.** The scripts rebuild all three frames in about two minutes and measure them in one. Judge 3's list is concrete and all scripted: B1 for the bands (soft edges, a falloff along the axis, streaks, one color), the straight-line glow fade, f3A's top edge and its edge fragments, a narrower warm ramp in the big pools, greens in the shade pass, the line-2 wording. That is an hour or two of work. Unknown: whether a fourth fresh judge passes it. My reading: each judge failed things the judge before had passed or had not raised, so the count of open faults fell each round (round 1: the recipe's base; round 2: two bugs; round 3: bands, the glow's last 20 px, one pool of five) but never reached none.
+
+**Where it is kept** (under `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`):
+- Sets: `fit7\C7_f1_v1.png` to `C7_f3_v3.png`. Sheets: `sheets7\C7_r1_sheet.png`, `C7_r2_sheet.png`, `C7_r3_sheet.png`.
+- The judges' briefs (with the spec), findings, numbers and tiles: `judge7_r1\`, `judge7_r2\`, `judge7_r3\` (`brief.md`, `roundN_findings.md`, `numbers.txt`, `numbers_spec.txt`, `numbers_s1.txt`, `tiles\`; each judge's own scripts and crops in `j\`).
+- Scripts: `scripts7\` (`s1_pools.py`, `s2_figs.py v3`, then `measure6.py`, `measure7.py`, `measure7s.py`, `sheet6.py`, `tiles6.py`; the versions that built v1 and v2 are kept as `*_v1.py.bak` and `*_v2.py.bak`; the one-off patch scripts `_patch7a.py` to `_patch7f.py` record each step).
+- State: the top block of `...\scratch_look\STATE.md` (down to `=== END SEVENTH ===`).
+
+## Round 8 on option C, frozen base and masked fixes (eighth lead, Fable, 23 Nov): three judged rounds, none passed
+
+Branch `look-target-8`. The owner, 23 Nov: "Yes, round 8". The earlier words still hold: "yes, plain, scripted local fixes" (22 Nov), and the rule on walls, "remember when we keep hitting walls to see how successful games have done it" (22 Nov).
+
+**The verdict.** Three sets were built on round 7's set v3 (`C8 v3`, `v4`, `v5`). Each went to a fresh max-effort judge who was not told the owner's reactions or any earlier verdict. All three said FAIL. The cap was three rounds, so the lane stopped. **No paint-over is shown: none passed the judge.**
+
+| Round | Set | Judge | Verdict | Lines passed (of 10) | What blocked |
+|---|---|---|---|---|---|
+| 1 | v3 | `a1f4c2fcefa807845` | FAIL | 2, 4, 5, 6, 7, 8, 9 | All five pools read as beige-tan cut-outs with a brown rim (the warm ramp toward the edge shades them like objects). Moss on frame 2's boulder too bright (L 35.9, C 19.1). |
+| 2 | v4 | `a271bd1d59936ca64` | FAIL | 2, 6, 7, 8 | Pools f1A, f1B, f3A read as cream decals. Things lying in the pools lost their read. Frame 2: lavender gaps and a near-black blob in pool f2A's leaf cluster, a ghost line beside pool f2B. The campfire's glow: an orange disc with a maroon rim. |
+| 3 | v5 | `a128374ec7b043ebf` | FAIL | 6, 8 | The pools read as sand patches, not light. A dusty-pink line round all five pools. A seam across pool f3A. The f2A leaf cluster sits on a blue slab. She is not the first read in frames 1 and 3. Band edges out of spec. |
+
+**The four changes of method, and how each did.**
+
+1. *Freeze what passed.* Worked as a tool. The round 8 scripts, run unchanged, rebuild round 7's v3 byte for byte. `mkallow8.py` builds a mask of where round 8 may differ (the bands, the three glows, the pools, a few named boxes: 10.5 to 12.3% of each frame) and puts round 7's pixels back everywhere else. `freeze8.py` printed "0 outside" for every judged set. It did not stop lines from flipping: a fresh judge re-rules on frozen pixels too (below).
+2. *No late change unchecked.* Half kept. Before round 3 the 1:1 check caught two defects and both were fixed at the source: a floor seam under pool f2A that the new mark rule had turned into a brown bar 14 px tall, and an old soft blob under a wolf's paws in pool f2B. It missed the same kind of seam in pool f3A, and before round 2 it missed that the lit things in the pools had lost their read. A number of mine also sat over its spec line unread (the pink line, below).
+3. *One fixed glow fade.* The fade is a straight Lab line from the warm to the floor's own violet, with L, a* and b* each only falling or only rising and no third color. The evidence: PUBLIC, Hi-Fi RUSH's floor light is a projected light that multiplies the floor's own color (GDC 2024 talk, via a write-up). RECALL, not re-checked: a renderer sums a lamp onto the ambient-lit surface in linear light. INFERENCE, mine: so the floor's color moves on one straight line between two colors along the lamp's radius. Judge 1 accepted it ("keep the fixed line"). Judge 2 called the fire's glow an orange disc with a maroon rim and asked for a longer crossing (lift 10 to 1, 40 px), which v5 has. Judge 3 failed line 9 again: the falloff and the two lamps passed by its own measure, and the fire still read as "an orange disc with a dusky rim".
+4. *Line 2's wording.* Fixed (the cyan cracks and mushrooms sit at L 72-80).
+
+**What moved, measured.**
+- Bands (line B1, built once in round 1 and frozen): a veil of light added in linear light, 7 L of lift beside the pool falling to 2.5 at the far end, soft edges, streaks, one color. Judge 1 passed them.
+- Shade on things: moss on four boulders and a log to median L 26-27, C 8-11; two sticks in frame 2 dulled; frame 1's stump and frame 3's bleached log off pink to hue 295.
+- Pools in v5: six px inside the edge L 71.6-72.2, the brightest 3% L 75.8-80.0, C 42, hue 72; edge 10-90% width 7.9-8.1 px by my measure (judge 3's coarse measure: about 5.5); the floor 14-20 px outside is 2.1-2.5 L over the floor 30-45 px out; all five edges monotone.
+- Her warm pixels' median L: 50.1 / 49.9 / 49.9 (unchanged, frozen).
+
+**What failed and why** (the next lead should read this before touching anything).
+- *The pool's fill has now had four recipes from four fresh judges, and each recipe was built and failed by the next.* Round 7's judge 3: a pale gold (L 75, C 21) with a warm ramp toward the edge; the small pools read as light, the large ones "toasted". Round 8's judge 1 failed that ramp and asked for an even pale gold (L 78-86, C 26-34, hue 74-82). Built exactly (v4); judge 2 called it cream decals and asked for a deeper gold (L 72-78, C 38-46, hue 68-76) with stronger floor marks (texture 1.6-2.4) and a wider edge. Built exactly (v5); judge 3 called it sand and asked for weaker marks (0.8-1.2). My reading, not a ruling: the fill is not what is missing, and another fill recipe will fail the same way.
+- *Judge 3's new diagnosis is the one worth keeping.* The floor is L 12-15 and the pool is L 72: a step of about 60 L. The band lifts 5-7 L and the bounce about 3.5 L, so nothing in the air carries the light, and the pool reads as a patch laid on the floor. The judge asks for a haze of +8 L at the edge falling to 0 by 50 px and a band of about 12 L over the last 40 px above the pool. This has not been tried. Unknown: whether it reads as light or as a glow sticker.
+- *Lines flipped between judges on pixels that did not change.* The bands passed in round 1, failed in round 2 on a ghost line and a wash over frame 1's rock, and failed in round 3 on edge widths (19-48 px at several stations in my own numbers, against about 6 to 13 in the spec). The glow fade was accepted in round 1, then failed twice on how the fire reads. Line 2 (she is the first read) passed twice and failed in round 3. A cap of three fresh judges cannot converge while that happens.
+- *The spec contradicts itself in two places* (judge 3). Line 2 says she is the first read, and the pools may be brighter than her: with pools at L 72 against her L 50 the pools pull the eye first in frames 1 and 3. And the fixed glow fade passes the rose hues at C 15-16, which the pools' edge rule (C 9 or less at rose) forbids.
+- *My misses in v5.* The pink line: the linear-light edge passes rose at C 11-16 in my own numbers, over the spec's 9, and I did not hold the number against the line after changing the mix. The f3A seam at (650-750, 466-478): the same floor step I removed under f2A, not swept for in the other pools. The f2A leaf cluster: recoloring the old black blob made a blue slab; the leaves need redrawing from the game's. Moss low right in frame 1 (1340-1525, 990-1080) was outside my boxes (L 36, C 19); frame 1's ferns are L 33-34.
+- *Round 2's "things in pools not lit" was not a pipeline fault.* Measured: the lit faces were L 74-78 in round 7's set, v3 and v4 alike. The judge measured their cast shadows, and the things had lost their read against a floor as light as they are.
+- *Not done:* the wolf blobs' shape (70% down-right) and the wash of f1A's band over the rock, both should-fix from round 2.
+
+**Two questions this round raises for the owner** (they change the spec, so no lead can settle them):
+1. May a light pool pull the eye before her? If not, the pools are capped at about L 64-68 (judge 3's number), under the lit things lying in them unless those are capped too.
+2. The floor stays plain: may the air over a pool carry a visible warm haze (about 50 px round it)? That is the untried fix above.
+
+**Do not retry.** A warm ramp toward the pool's edge (reads as an object's shading). An even pale gold fill at L 80, C 31 (cream decal). A deeper gold with the floor's marks strengthened inside the light (sand). A Lab-mix edge with a chroma dip on a pool of L 80 (a gray outline). Marks clipped at -5 L (a floor crack becomes a brown streak). Any mark rule that works on luminance ratio without first removing the floor's steps and seams (on a floor of L 13 a 2.5 L step becomes a 17 L bar). Un-tinting frame 3's round rock by a delta or a palette (yellow, then gray). A moss or stick rule without a knee (a step). Recoloring a blob under a leaf cluster instead of redrawing the leaves. Round 7's list still stands.
+
+**What the next one costs.** The scripts rebuild all three frames, check the freeze and measure them in a few minutes. Judge 3's list is scripted except the f2A leaves (re-cut from the game frame, or one masked ChatGPT region). My reading: a ninth round of the same form is not worth its cost before the two questions above are answered, and the wall here is the method. A paint-over script is imitating a renderer by hand (a light summed in linear light, its bounce, its haze), and the rounds on option C have kept failing on those three. The shipped-games answer is to let the engine do it: a projected warm light on the plain floor with a shaft and a little fog, judged on a game frame. That would also be the thing the paint-over is a target for. Unknown: what that costs in the den's scene; no engine work was in this lane's brief.
+
+**Where it is kept** (under `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`):
+- Sets: `fit8\C8_f1_v3.png` to `C8_f3_v5.png`, and the freeze reference `C8_fN_r7.png`. Sheets: `sheets8\C8_r1_sheet.png`, `C8_r2_sheet.png`, `C8_r3_sheet.png`.
+- The judges' briefs (with `LIGHT SPEC v8`, `v8.1`, `v8.2`), findings, numbers and tiles: `judge8_r1\`, `judge8_r2\`, `judge8_r3\` (`brief.md`, `roundN_findings.md`, `numbers*.txt`, `tiles\`; each judge's own scripts in `j\`).
+- Scripts: `scripts8\`. Build: `s1_pools.py`, `s2_figs.py v1b`, `s3_bands.py v1b v1c`, `s4_small.py v1c v1d`, `mkallow8.py v1d v5`, `freeze8.py v5`. Measure: `measure6.py`, `measure7.py`, `measure7s.py`, `glowprof8.py`, `bandmeas8.py`; then `sheet6.py`, `tiles6.py`. The versions that built v3 and v4 are kept as `*_r8v3.py.bak` and `*_r8v4.py.bak`.
+- State: the top block of `...\scratch_look\STATE.md` (the eighth lead's).
+
 ## Questions for the owner (yes/no)
 
 1. **Answered 22 Nov: "Dark, pale rim, ink line (Recommended)".** May foes stay darker than the floor if they get a strong rim and an ink outline? (D3 as written says no.)

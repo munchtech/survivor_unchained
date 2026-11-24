@@ -2,6 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://c1n13uvvc2o7d"
+path="res://.godot/imported/O4.png-94344ba8b28634199f692e0f47a816fe.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/dungeon/den/set/O4.png"
+dest_files=["res://.godot/imported/O4.png-94344ba8b28634199f692e0f47a816fe.ctex"]
 
 [params]
 
