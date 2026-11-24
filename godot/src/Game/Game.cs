@@ -1115,13 +1115,27 @@ public partial class Game : Node, IZoneHost
         ulong t = Time.GetTicksUsec();
         if (caches) SurvivorUnchained.View.PlaceCache.LetGo();
         long before = GC.GetTotalMemory(false);
+        double texBefore = Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed);
         System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(2, GCCollectionMode.Forced, true, true);
         GC.WaitForPendingFinalizers();
+        // (and again while each round frees Godot objects, at most --gc-rounds (6): a wrapper's finalizer lets go of its
+        // resource, which only then lets go of the ones it holds, whose wrappers the NEXT collection can take: a scene's mesh,
+        // its material, its texture, a round each. The tester lane, 24 Nov: in the den after the town, 335 MB of town
+        // textures went at the census's first collection, after this one had run)
+        int rounds = 1, most = Args.Has("gc-rounds") ? (int)Args.Num("gc-rounds", 6) : 6;
+        for (double objs = Performance.GetMonitor(Performance.Monitor.ObjectCount); rounds < most; rounds++)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, false);
+            GC.WaitForPendingFinalizers();
+            double now = Performance.GetMonitor(Performance.Monitor.ObjectCount);
+            if (objs - now < 50) break;
+            objs = now;
+        }
         long committed = GC.GetGCMemoryInfo().TotalCommittedBytes;
         // (the GC kept ~1.15 GB committed for ~520 MB live across a den loop; Aggressive also hands its free memory back to the OS)
         GC.Collect(2, Aggressive ? GCCollectionMode.Aggressive : GCCollectionMode.Forced, true, true);
-        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB, GC committed {committed >> 20} -> {GC.GetGCMemoryInfo().TotalCommittedBytes >> 20} MB{(Aggressive ? " (aggressive)" : "")} in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
+        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB, GC committed {committed >> 20} -> {GC.GetGCMemoryInfo().TotalCommittedBytes >> 20} MB{(Aggressive ? " (aggressive)" : "")}, {rounds} rounds, textures {texBefore / 1048576:0} -> {Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed) / 1048576:0} MB in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
     }
 
     /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while

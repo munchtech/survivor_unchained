@@ -29,9 +29,13 @@ public partial class MemLog
                 if (v == null) continue;
                 var mine = new Dictionary<Rid, long>();
                 var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+                outOfTree.Clear();
                 try { Hold(v, mine, seen, 0); } catch (Exception e) { GD.Print($"mem statics: {t.Name}.{f.Name} walk failed: {e.GetType().Name}"); }
                 if (mine.Count == 0) continue;
                 rows.Add(($"{t.FullName}.{f.Name}", mine.Values.Sum(), mine.Count));
+                // (nodes a field reaches that are in no tree: never freed, or kept to be used again; by their top node's name)
+                if (outOfTree.Count > 0)
+                    GD.Print($"mem statics out of the tree: {t.FullName}.{f.Name}: {outOfTree.Count} nodes: " + string.Join(", ", outOfTree.GroupBy(n => n).OrderByDescending(g => g.Count()).Take(8).Select(g => $"{g.Key} x{g.Count()}")));
                 foreach (var kv in mine) union.TryAdd(kv.Key, kv.Value);
             }
         }
@@ -47,6 +51,14 @@ public partial class MemLog
             GD.Print($"mem statics cache dir: {Mb(g.Sum(v => v.B))} {g.Count()} {g.Key}");
     }
 
+    static readonly List<string> outOfTree = new();
+    static string TopOf(Node n)
+    {
+        var top = n;
+        while (top.GetParent() is { } pa) top = pa;
+        return $"{top.Name}({top.GetClass()})";
+    }
+
     /// <summary>The textures an object reaches (bytes by RID, mips assumed), depth-capped.</summary>
     static void Hold(object? o, Dictionary<Rid, long> into, HashSet<object> seen, int depth)
     {
@@ -56,7 +68,7 @@ public partial class MemLog
         if (o is GodotObject go)
         {
             if (!GodotObject.IsInstanceValid(go)) return;
-            if (go is Node n) { foreach (var kv in Reach(n).Tex) into.TryAdd(kv.Key, kv.Value.B); return; }
+            if (go is Node n) { if (!n.IsInsideTree()) outOfTree.Add(TopOf(n)); foreach (var kv in Reach(n).Tex) into.TryAdd(kv.Key, kv.Value.B); return; }
             if (go is Texture tx) { AddTex(tx, into); return; }
             if (go is PackedScene ps && ps.Get("_bundled").AsGodotDictionary() is { } b && b.TryGetValue("variants", out var vs))
                 foreach (var x in vs.AsGodotArray()) Hold(x, into, seen, depth + 1);

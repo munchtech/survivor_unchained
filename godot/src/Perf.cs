@@ -81,11 +81,24 @@ public partial class Perf : Node
     /// took since the last lap; `start` begins a new run of laps.</summary>
     public static void Lap(string what, bool start = false)
     {
+        Breathe(what);
         if (!On) return;
         long now = Stopwatch.GetTimestamp();
         if (!start) GD.Print($"perf lap {what}: {(now - lapFrom) * TickMs:0} ms");
         lapFrom = Stopwatch.GetTimestamp();
     }
+
+    /// <summary>Between a load's build phases (every Lap is one): once the managed heap passes --gc-breathe MB (1200; 0 = never),
+    /// a blocking collection, so a place's load garbage does not pile on the last place's still held (the tester lane, 24 Nov:
+    /// managed reached 1.1-1.4 GB by the end of a den load, ~500 MB of it live; RAM peaks at the load). Lap marks the loads only.</summary>
+    static void Breathe(string what)
+    {
+        if (BreatheMb <= 0 || GC.GetTotalMemory(false) < BreatheMb << 20) return;
+        long before = GC.GetTotalMemory(false), t = Stopwatch.GetTimestamp();
+        GC.Collect(2, GCCollectionMode.Forced, true, false);
+        GD.Print($"load: collected at '{what}': managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB in {(Stopwatch.GetTimestamp() - t) * TickMs:0} ms");
+    }
+    static readonly long BreatheMb = Args.Has("gc-breathe") ? (long)Args.Num("gc-breathe", 1200) : 1200;
 
     /// <summary>A part timed to the end of a block (`using var _ = new Perf.Span(...)`).</summary>
     public readonly struct Span : IDisposable
