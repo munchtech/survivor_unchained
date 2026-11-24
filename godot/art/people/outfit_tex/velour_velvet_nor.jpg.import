@@ -15,8 +15,8 @@ dest_files=["res://.godot/imported/velour_velvet_nor.jpg-434a2802b16162e6bb68398
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

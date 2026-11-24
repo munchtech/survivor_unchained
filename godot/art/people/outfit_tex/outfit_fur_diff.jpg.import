@@ -15,8 +15,8 @@ dest_files=["res://.godot/imported/outfit_fur_diff.jpg-6dd9aebd6ce7f415fe71b7a1b
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

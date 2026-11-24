@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7c
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -15,8 +15,8 @@ dest_files=["res://.godot/imported/crack_albedo_06.png-9ccb2fd6c8e77a2d3498cdfa9
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

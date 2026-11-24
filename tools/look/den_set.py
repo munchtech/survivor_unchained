@@ -182,6 +182,13 @@ def write_import(path, layered=0):
                "process/channel_remap/alpha=3\nprocess/fix_alpha_border=true\nprocess/premult_alpha=false\n"
                "process/normal_map_invert_y=false\nprocess/hdr_as_srgb=false\nprocess/hdr_clamp_exposure=false\n"
                "process/size_limit=0\ndetect_3d/compress_to=0\n")
+    # the import group (tools/godot/tex_groups.json) owns the compression keys; a rebuild must not undo it
+    sys.path.insert(0, os.path.join(ROOT, "tools", "godot"))
+    import tex_groups
+    rel = os.path.relpath(path, os.path.join(ROOT, "godot")).replace("\\", "/")
+    want = tex_groups.group_params(rel, "2d_array_texture" if layered else "texture")
+    if want:
+        txt = tex_groups.merge(txt, want)
     if os.path.exists(imp):   # keep Godot's uid and path once it has written them; only the params are ours
         old = open(imp, encoding="utf-8").read()
         if "[params]" in old and old.split("[params]")[1].strip() == txt.split("[params]")[1].strip():
