@@ -42,6 +42,8 @@ public partial class PostScreen : Overlay
             foreach (var grp in PostMenu.Travel(w, post))
                 foreach (var p in grp.Posts)
                 {
+                    // (the den test build offers no other zone: its art is not in the build, Core.DenTest)
+                    if (Core.DenTest.On && p.Zone != post.Zone) continue;
                     var to = p;
                     menu.Add(p.Name, () => G.PostTravel(post, to), grp.Name);
                 }

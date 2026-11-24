@@ -34,6 +34,7 @@ public partial class Game
         CloseOverlay();
         if (inTransit || zone == null || scene == null) return;
         if (PostMenu.TravelRefused(Battle, from) is { } no) { Toast(new Toast(ToastKind.Warning, no)); return; }
+        if (Core.DenTest.On && to.Zone != zone.Id) return;   // (the den test build: no other zone, Core.DenTest)
         LampBook.SetLastPost(World, to.Zone, to.Id);
         if (to.Zone != zone.Id)
         {

@@ -84,6 +84,9 @@ public partial class Game : Node, IZoneHost
         // The demo flavor (export feature `demo`, or --demo in a dev run): data/content/demo.json's cuts (Core.Demo).
         Core.Demo.On = OS.HasFeature("demo") || Args.Has("demo");
         if (Core.Demo.On) GD.Print("demo: the demo flavor is on (data/content/demo.json)");
+        // The den test build (export feature `den_test`, or --den-loop): the den, again and again (Core.DenTest).
+        Core.DenTest.On = OS.HasFeature("den_test") || Args.Has("den-loop");
+        if (Core.DenTest.On) GD.Print("den test: the den loops, no other place is offered");
         AddChild(new ClipRecorder());
         AddChild(new BugReporter(this));
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
@@ -766,8 +769,14 @@ public partial class Game : Node, IZoneHost
     public void LeaveMap(MapResult r)
     {
         bool leaving = !inTransit;
+        // (the den test build: a fresh den, its seed new, not the town: Core.DenTest)
+        if (Core.DenTest.On && r.Chart.Dungeon != "" && SurvivorUnchained.Maps.DungeonGen.Get(r.Chart.Dungeon) is { } again)
+        {
+            World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(again, DungeonSeed(), Journey.Ch.Level);
+            Travel("map", World.Map.Name, r.Cleared ? "Cleared. Again" : "Again");
+        }
         // A dungeon returns to where it was entered; a map, to the Waystation.
-        if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
+        else if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
         else Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
         // A fall closed it: she arrives whole (Travel's Capture took the fall's 1 HP).
         if (!r.Cleared) Journey.RiseWhole();
