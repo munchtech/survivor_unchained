@@ -31,9 +31,39 @@ public partial class MemLog : Node
     {
         if (texAt >= 0 && Time.GetTicksMsec() / 1000.0 >= texAt && !texDone) { texDone = true; Viewports(GetTree().Root); Textures(GetTree().Root); }
         if (probeAt >= 0 && Time.GetTicksMsec() / 1000.0 >= probeAt) Probe();
+        FreshTick(delta);
         if ((t += delta) < every) return;
         t = 0;
         Line(GetParent() is Play.Game g ? g.Zone?.Id ?? "-" : "-");
+    }
+
+    // --mem-fresh (dev, the tester lane's den loop, 24 Nov): 8 s into each new place, the textures the tree reaches that the
+    // last place's census did not (made again, so uploaded again: each upload passes through a staging buffer of the
+    // engine's that grows to its biggest upload and is never given back), and the pipelines compiled since, by kind.
+    static readonly bool fresh = Args.Has("mem-fresh");
+    static System.Collections.Generic.HashSet<Rid>? lastTex;
+    static readonly double[] freshPipes = new double[5];
+    object? freshZone;
+    double freshT = -1;
+
+    void FreshTick(double delta)
+    {
+        if (!fresh) return;
+        if (GetParent() is Play.Game gz && gz.Zone != null && gz.Zone != freshZone) { freshZone = gz.Zone; freshT = 8; }
+        if (freshT > 0 && (freshT -= delta) <= 0) Fresh(GetTree().Root);
+    }
+
+    static void Fresh(Node root)
+    {
+        var (tex, shaders) = Reach(root);
+        var k = Perf.PipesKinds();
+        string pipes = string.Join("/", k.Select((v, i) => (int)(v - freshPipes[i])));
+        k.CopyTo(freshPipes, 0);
+        var made = lastTex == null ? new() : tex.Where(e => !lastTex.Contains(e.Key)).Select(e => e.Value).ToList();
+        GD.Print($"mem fresh: {tex.Count} textures reached ({tex.Values.Sum(v => v.B) >> 20} MB), {made.Count} made since the last place ({made.Sum(v => v.B) >> 20} MB), " +
+                 $"{made.Count(v => v.B > 64 << 20)} over 64 MB, {made.Count(v => v.B > 32 << 20)} over 32 MB; {shaders.Count} Shader objects; pipelines since c/m/s/d/sp {pipes}");
+        foreach (var v in made.OrderByDescending(v => v.B).Take(8)) GD.Print($"mem fresh big: {v.B / 1048576.0:0.0} MB {v.What} {v.Where}");
+        lastTex = tex.Keys.ToHashSet();
     }
 
     static (double Tex, double Buf, double Vid) Mon() => (Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed) / 1048576.0,
@@ -132,7 +162,8 @@ public partial class MemLog : Node
     /// a texture; the engine's own list is not exposed to scripts): imported ones by folder, runtime ones (no path) by the node
     /// that holds them. Bytes are width x height x the format's bytes per pixel, x 4/3 for mipmaps
     /// (an upper bound: mipmaps assumed), x layers.</summary>
-    public static void Textures(Node root)
+    /// <summary>What the tree reaches: its textures (by RID: size, kind, path or holder) and its Shader objects.</summary>
+    static (System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)> Tex, System.Collections.Generic.Dictionary<ulong, (Shader S, string Where)> Shaders) Reach(Node root)
     {
         var seen = new System.Collections.Generic.HashSet<ulong>();
         var tex = new System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)>();
@@ -176,6 +207,12 @@ public partial class MemLog : Node
             foreach (var k in n.GetChildren(true)) Walk(k);
         }
         Walk(root);
+        return (tex, shaders);
+    }
+
+    public static void Textures(Node root)
+    {
+        var (tex, shaders) = Reach(root);
         CachedOnly(tex.Keys.ToHashSet());
         long total = tex.Values.Sum(v => v.B), runtime = tex.Values.Where(v => !v.Where.StartsWith("res://")).Sum(v => v.B);
         static string Mb(long b) => $"{b / 1048576.0:0.0} MB";
