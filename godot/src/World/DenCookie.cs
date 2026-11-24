@@ -15,15 +15,15 @@ namespace SurvivorUnchained.View;
 public static class DenCookie
 {
     public const int Variants = 4;
-    static readonly int Px = (int)SurvivorUnchained.Args.Num("den-rl-cookie-px", 384f);   // (256 with mipmaps landed soft all round: DungeonLight sets the projectors' filter to linear, no mipmaps)
+    static readonly int Px = (int)SurvivorUnchained.Args.Num("den-rl-cookie-px", 512f);   // (256 with mipmaps landed soft all round: DungeonLight sets the projectors' filter to linear, no mipmaps)
     static readonly ImageTexture?[] made = new ImageTexture?[Variants];
 
     public static ImageTexture Get(int v)
     {
         v = ((v % Variants) + Variants) % Variants;
         if (made[v] is { } t && GodotObject.IsInstanceValid(t)) return t;
-        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.03f), 0.004f), soft = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-soft", 0.045f), edge), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.10f);
-        float arc = Mathf.DegToRad(SurvivorUnchained.Args.Num("den-rl-cookie-arc", 75f));   // the crisp stretch: this far either side of the cookie's +x
+        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.01f), 0.004f), soft = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-soft", 0.02f), edge), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.10f);
+        float arc = Mathf.DegToRad(SurvivorUnchained.Args.Num("den-rl-cookie-arc", 60f));   // the crisp stretch: this far either side of the cookie's +x
         var rng = new RandomNumberGenerator { Seed = (ulong)(7919 * (v + 1)) };
         int n = 2 + (v % 2);
         var c = new Vector2[n]; var rad = new Vector2[n]; var rot = new float[n];
@@ -32,7 +32,7 @@ public static class DenCookie
             // the first lobe at the middle, the others leaning out of it: always one connected opening
             float a = rng.Randf() * Mathf.Tau, d = i == 0 ? 0f : 0.26f + 0.12f * rng.Randf();
             c[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
-            rad[i] = new Vector2(0.42f + 0.12f * rng.Randf(), 0.30f + 0.10f * rng.Randf()) * (i == 0 ? 1f : 0.8f);
+            rad[i] = new Vector2(0.46f + 0.08f * rng.Randf(), 0.22f + 0.06f * rng.Randf()) * (i == 0 ? 1f : 0.8f);   // (judge 1: "an angular gap about 2:1, not a round blob")
             rot[i] = rng.Randf() * Mathf.Pi;
         }
         var noise = new FastNoiseLite { Seed = 31 + v, NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 1.6f, FractalOctaves = 2 };
@@ -41,15 +41,17 @@ public static class DenCookie
         // that cross the gap as shadows over the pool, a few dapples just outside the rim, and a core hotter than the rim
         var fine = new FastNoiseLite { Seed = 57 + v, NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 6f, FractalOctaves = 2 };
         float jag = SurvivorUnchained.Args.Num("den-rl-cookie-jag", 0.03f), rim = SurvivorUnchained.Args.Num("den-rl-cookie-rim", 0.85f);   // (judge 3: 0.6 was a spot's falloff, hot in the middle; 0.85: an even fill, the outline carries the shape)
-        float rootsK = SurvivorUnchained.Args.Num("den-rl-cookie-roots", 1f), dapK = SurvivorUnchained.Args.Num("den-rl-cookie-dapples", 0f);   // (cool shade lane: off. Small they do not read at the game camera (judge 3); large they are stray coins beside a cut-out pool)
-        float rootW = SurvivorUnchained.Args.Num("den-rl-cookie-root-w", 0.7f);
+        float rootsK = SurvivorUnchained.Args.Num("den-rl-cookie-roots", 0.7f), dapK = SurvivorUnchained.Args.Num("den-rl-cookie-dapples", 0f);   // (cool shade lane: off. Small they do not read at the game camera (judge 3); large they are stray coins beside a cut-out pool)
+        float rootW = SurvivorUnchained.Args.Num("den-rl-cookie-root-w", 0.45f), ang = SurvivorUnchained.Args.Num("den-rl-cookie-angular", 0.75f);
         float Sdf(Vector2 p)
         {
             float f = 1e9f;
             for (int i = 0; i < n; i++)
             {
                 var q = (p - c[i]).Rotated(-rot[i]);
-                f = Mathf.Min(f, ((q / rad[i]).Length() - 1f) * Mathf.Min(rad[i].X, rad[i].Y));
+                var u = (q / rad[i]).Abs();
+                float poly = Mathf.Max(Mathf.Max(u.X, u.Y), (u.X + u.Y) * 0.72f);   // a cut shape: flats and corners, the ellipse only a share
+                f = Mathf.Min(f, (Mathf.Lerp(u.Length(), poly, ang) - 1f) * Mathf.Min(rad[i].X, rad[i].Y));
             }
             return f + warp * noise.GetNoise2D(p.X, p.Y) + jag * fine.GetNoise2D(p.X, p.Y);
         }

@@ -25,13 +25,13 @@ public static class DungeonLight
     // (cool shade lane, 23 Nov: the owner said yes to the den's shade going cool violet) --den-shade 1 (DenShade) turns the real
     // light on with it, unless --den-real-light 0 says otherwise: the pool reads as sun by its temperature, not by its energy.
     static readonly bool Real = SurvivorUnchained.Args.Num("den-real-light", DenShade.On ? 1f : 0f) > 0f;
-    static readonly float RlEnergy = DenShade.Num("den-rl-energy", 30f, 12f), RlR = DenShade.Num("den-rl-r", 2.1f, 1.65f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
-        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = DenShade.Num("den-rl-lair", 0.5f, 0.65f);   // (judge 3: 0.8 -> 0.65)
+    static readonly float RlEnergy = DenShade.Num("den-rl-energy", 22f, 12f), RlR = DenShade.Num("den-rl-r", 2.1f, 1.65f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
+        RlWash = DenShade.Num("den-rl-wash", 0f, 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = DenShade.Num("den-rl-lair", 1f, 0.65f);   // (judge 3: 0.8 -> 0.65)
     // (cool shade lane) under the real light: today's soft spot x --den-rl-soft (the lair's x --den-rl-lair-soft) and the lair's
     // painted floor pool x --den-rl-lair-paint (judge 3: "the yellow comes from today's painted pool there, and the real light
     // multiplies it").
     static readonly float RlSoft = DenShade.Num("den-rl-soft", 0f, 1f), RlLairSoft = DenShade.Num("den-rl-lair-soft", 0f, 1f),   // (under the shade a warm soft glow on violet is a pink halo: none)
-        RlLairPaint = DenShade.Num("den-rl-lair-paint", 0.5f, 0.5f),
+        RlLairPaint = DenShade.Num("den-rl-lair-paint", 0f, 0.5f),
         // (cool shade lane) --den-rl-paint 0: no painted pool on the floor under the real light (the decals still fade inside the
         // pools). Under the cool shade the painted pool is an albedo gain lit by violet: a pink-lilac halo round the gold.
         RlPaint = DenShade.Num("den-rl-paint", 0f, 1f);
@@ -138,7 +138,7 @@ public static class DungeonLight
             {
                 Name = "shaft_light",
                 Transform = new Transform3D(basis.Rotated(Axis, CookieTurn(basis, v, lair)), top),   // each pool's gap turned its own way, its crisp stretch where it is seen
-                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? (DenShade.On ? "ffe330" : "fff4e6")),   // (under the shade the light carries the gold: near-white on the violet-lit floor landed pink, hue 358)
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? (DenShade.On ? "ffd048" : "fff4e6")),   // (under the shade the light carries the gold: near-white on the violet-lit floor landed pink, hue 358)
                 LightEnergy = RlEnergy * (lair ? RlLair : 1f),
                 SpotRange = Height + 12f,   // the floor well inside the range's roll-off: the pool is even
                 SpotAngle = Mathf.RadToDeg(Mathf.Atan(r * 1.25f / Height)),
@@ -201,7 +201,7 @@ public static class DungeonLight
         if (HoleTex != null) { mat.SetShaderParameter("hole_tex", HoleTex); mat.SetShaderParameter("hole_map", HoleMap); }
         if (!lair) mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-room-veil") ?? "c8dcf0"));   // (r15: yellow-white, h 60-70, so the room pools move toward ochre)
         // (den r15 lead: at .5 / x1.6 and b4ecff the streak cores were cyan lasers, +.24-.34 L at C .07-.09; now +.09-.15, C .03, h 216-245)
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.26f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-strength", 0.26f) * (lair ? DenShade.Num("den-lair-shaft", 0.66f, 1.1f) : 1f));   // (r12: the lair's beams did not read over its bright floor)
         var mid = foot - Axis * (Height * 0.5f);
         // CylinderMesh stands along +y: turn +y to the shaft's upward axis (-Axis).
         var up = -Axis;
@@ -464,8 +464,8 @@ public static class DungeonLight
         // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
         // (den r17 L, R16 item 2) the rays' added light neutral-cool and only added (ext 0): ext .12 took a share of the warm bank
         // behind them, so the shaft's change tracked the albedo (h 35-45, C .05); the old look: --den-shaft-tint d6dce2 --den-shaft-ext .12
-        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Real ? SurvivorUnchained.Args.Get("den-rl-fan-tint") ?? (DenShade.On ? "fff0b0" : "ffe6c4") : Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
-        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f) * (Real ? RlFan : 1f));
+        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Real ? SurvivorUnchained.Args.Get("den-rl-fan-tint") ?? "ffe6c4" : Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
+        mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? DenShade.Num("den-lair-shaft", 0.66f, 1.1f) : 1f) * (Real ? RlFan : 1f));
         mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0f));
         mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
         mat.SetShaderParameter("gap_tint", new Color(SurvivorUnchained.Args.Get("den-shaft-gap-tint") ?? (Smooth ? "d4f0f2" : "eeeae2")));

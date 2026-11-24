@@ -72,7 +72,7 @@ public static partial class DungeonDress
         // (r11) the roots and shade read pink-mauve: the paintings' mids warmed (less blue), the shade's cool narrowed to the
         // deepest darks and turned blue-teal (den_room.png: warm brown in the light, cool only down in the hollows)
         mat.SetShaderParameter("tint", V3("den-set-tint", new Vector3(1f, 0.98f, 0.81f)));
-        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", new Vector3(1.0f, 0.95f, 0.85f)));
+        mat.SetShaderParameter("shade_tint", V3("den-set-shade-tint", DenShade.On ? new Vector3(0.8f, 0.78f, 1.4f) : new Vector3(1.0f, 0.95f, 0.85f)));
         mat.SetShaderParameter("shade_hi", SurvivorUnchained.Args.Num("den-set-shade-hi", 0.15f));
         // (den r15 helper D) the bone piles' shade warm umber (hue 40-60), not the grey-violet the judge measured (hue ~210, C .02)
         if (sheet == "O3") mat.SetShaderParameter("shade_tint", V3("den-bone-shade", new Vector3(1.0f, 0.80f, 0.55f)));

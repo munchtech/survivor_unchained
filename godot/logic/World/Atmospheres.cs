@@ -410,7 +410,7 @@ public static class Atmospheres
         "rig_den" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#3a2618", PaintShadowK = 0.45, PaintVib = 1.2, PaintHi = 0.6 },
         // (cool shade lane, 23 Nov: option C in the den, rigs.json "den_cool") the den's grade with a violet paint shadow: the shade
         // is cool, the warmth is the light's. Used only under --den-shade 1 (View.DenShade).
-        "rig_den_cool" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#2a1e78", PaintShadowK = 0.8, PaintVib = 1.2, PaintHi = 0.6 },
+        "rig_den_cool" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#2a1e78", PaintShadowK = 1.2, PaintVib = 1.2, PaintHi = 0.6 },
         _ => null,
     };
 
