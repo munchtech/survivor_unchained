@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bq6ri07takfr0"
-path="res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.ctex"
+path.bptc="res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.bptc.ctex"
+path.astc="res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_ao.png"
-dest_files=["res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.ctex"]
+dest_files=["res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.bptc.ctex", "res://.godot/imported/heroine_ao.png-d2d150b63e941ea1bbcc209bbee24e0c.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

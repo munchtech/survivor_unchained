@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcx5xxju4qal7"
-path="res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.ctex"
+path.bptc="res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.bptc.ctex"
+path.astc="res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_glovepipe_diff.jpg"
-dest_files=["res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.ctex"]
+dest_files=["res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.bptc.ctex", "res://.godot/imported/outfit_glovepipe_diff.jpg-4726e2daed1d0ec6a155841804c42f4e.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

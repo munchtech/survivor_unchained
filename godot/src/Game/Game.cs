@@ -439,14 +439,7 @@ public partial class Game : Node, IZoneHost
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
         // --dungeon ID [--seed N]: a dungeon (hollow, roost) as the map, its seed N or a fresh one.
-        if (z == "map" && Args.Get("dungeon") is string dgId && SurvivorUnchained.Maps.DungeonGen.Get(dgId) is { } dgDef)
-            World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(dgDef, Args.Has("seed") ? (int)Args.Num("seed", 1) : System.Random.Shared.Next(), Journey.Ch.Level);
-        else if (z == "map")
-            World.Map = new SurvivorUnchained.Maps.Chart
-            {
-                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
-                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
-            };
+        if (z == "map") World.Map = ChartFromArgs();
         // --at boss: on a map, at the edge of its ruler's clearing (pictures of the ruler's fight).
         // --at boss-mid: in its middle (the den's pits in frame; dungeon look, 15 Nov).
         if (z == "map" && Args.Get("at") is "boss" or "boss-mid")
@@ -517,9 +510,11 @@ public partial class Game : Node, IZoneHost
         foreach (var hop in Args.Get("prepare")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Prepare(onTo));
+        // (a hop to "map" from a place no offer was taken in, the town: the chart --zone map would have, the tester lane, 24 Nov:
+        // a NullReference in Stage, World.Map was null)
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
-                Wait(secs, () => Travel(onTo));
+                Wait(secs, () => { if (onTo == "map" && World.Map == null) World.Map = ChartFromArgs(); Travel(onTo); });
         // --enter ZONE@S: entered S seconds in as a loaded save is, not travelled to (SU-021's check: with
         // --prepare ZONE@S' just before, the place is still being built ahead).
         foreach (var hop in Args.Get("enter")?.Split(',') ?? [])
@@ -537,6 +532,17 @@ public partial class Game : Node, IZoneHost
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
     }
+
+    /// <summary>(dev) The map a run's flags ask for: --dungeon ID [--seed N] a dungeon (hollow, roost), its seed N or a fresh one;
+    /// else a Wayfinder's map, --tier T --people ID --mods a+b --seed N.</summary>
+    SurvivorUnchained.Maps.Chart ChartFromArgs() =>
+        Args.Get("dungeon") is string dgId && SurvivorUnchained.Maps.DungeonGen.Get(dgId) is { } dgDef
+            ? SurvivorUnchained.Maps.Chart.ForDungeon(dgDef, Args.Has("seed") ? (int)Args.Num("seed", 1) : System.Random.Shared.Next(), Journey.Ch.Level)
+            : new SurvivorUnchained.Maps.Chart
+            {
+                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
+                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
+            };
 
     /// <summary>A journey begun: the character, the world, a slot to keep it in.</summary>
     void Begin(CreationChoice c)
@@ -826,6 +832,8 @@ public partial class Game : Node, IZoneHost
     WorldScene Stage(string id)
     {
         LeaveZone();
+        // (what the place caches are asked for from here is this place's: PlaceCache; one built ahead began at Prepare)
+        if (ahead == null || aheadId != id) SurvivorUnchained.View.PlaceCache.Begin();
         // An arena is made from its seed each time it is entered.
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
@@ -932,6 +940,7 @@ public partial class Game : Node, IZoneHost
         if (aheadId == id || scene?.Data.Id == id || id is "arena" or "map") return;
         aheadId = id;
         aheadScene = null;
+        SurvivorUnchained.View.PlaceCache.Begin();
         ahead = new Slices(BuildAhead(id));
     }
 
@@ -1039,7 +1048,7 @@ public partial class Game : Node, IZoneHost
         RehearseDraft(b);
         // (P2 task 5, session 3) every kind of drawable the census saw first drawn in play, drawn once now behind the load
         // (FxWarm); --fx-census: the census itself, watching this play.
-        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}");
+        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}", SurvivorUnchained.Fx.FxWarm.PlaceKey(z.Id, z is SurvivorUnchained.Play.Zones.MapRun { IsDungeon: true } dmr ? dmr.Chart.Dungeon : null));
         if (SurvivorUnchained.Fx.FxWarm.CensusNode() is { } census) AddChild(census);
     }
 
@@ -1089,7 +1098,7 @@ public partial class Game : Node, IZoneHost
             ulong builtAt = Time.GetTicksUsec();
             // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
             // only once the frames come smooth again, so no hitch shows through the fade-in)
-            Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
+            Wait(caption != null ? 1.4 : 0.2, () => { LetGoOfLast(ahead == null || ahead.Done, scene?.Data.Id); WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
@@ -1099,8 +1108,47 @@ public partial class Game : Node, IZoneHost
                 GD.Print($"load: {leg}: control {(now - askedAt) / 1e6:0.00} s after the ask (dark {(darkAt - askedAt) / 1e6:0.00} s, the place stood up and saved in {(builtAt - darkAt) / 1e6:0.00} s, then {(now - builtAt) / 1e6:0.00} s to smooth frames)");
                 fadingIn = true;
                 Wait(1.4, () => fadingIn = false);
-            }));
+            }); });
         }));
+    }
+
+    /// <summary>The last place given back while the screen is still dark: a full, compacting collection, then the
+    /// finalizers, then again. The place's C# side (its meshes' and textures' wrappers, its walls' arrays) lives on
+    /// until the GC finds it, and a Godot resource a C# wrapper holds is freed only when that wrapper is (the tester
+    /// lane's loop check, 24 Nov: a den again and again climbed +222 MB of RAM and +109 MB of VRAM a loop, the managed
+    /// heap's floor 0.5 -> 1 GB and its tops to 2.25 GB, the card's buffers with it).</summary>
+    // (the tester lane, 24 Nov: Aggressive by default; --gc-forced for the old Forced collection) Measured on the den loop export,
+    // 16 loops alone (dt8a vs dt7): GC committed 1150 -> 520 MB at each load, steady RAM per loop 2192-2577 MB against
+    // 2652-3353, second-half growth +19.4 MB/min; the collection 89-125 ms against Forced's 83-285.
+    static readonly bool Aggressive = !Args.Has("gc-forced");
+    // (the tester lane, 24 Nov: and first the place caches, PlaceCache, when nothing is being built ahead: its worker
+    // threads read those caches)
+    static void LetGoOfLast(bool caches, string? here)
+    {
+        ulong t = Time.GetTicksUsec();
+        if (caches) SurvivorUnchained.View.PlaceCache.LetGo(here);
+        long before = GC.GetTotalMemory(false);
+        double texBefore = Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed);
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Forced, true, true);
+        GC.WaitForPendingFinalizers();
+        // (and again while each round frees Godot objects, at most --gc-rounds (6): a wrapper's finalizer lets go of its
+        // resource, which only then lets go of the ones it holds, whose wrappers the NEXT collection can take: a scene's mesh,
+        // its material, its texture, a round each. The tester lane, 24 Nov: in the den after the town, 335 MB of town
+        // textures went at the census's first collection, after this one had run)
+        int rounds = 1, most = Args.Has("gc-rounds") ? (int)Args.Num("gc-rounds", 6) : 6;
+        for (double objs = Performance.GetMonitor(Performance.Monitor.ObjectCount); rounds < most; rounds++)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, false);
+            GC.WaitForPendingFinalizers();
+            double now = Performance.GetMonitor(Performance.Monitor.ObjectCount);
+            if (objs - now < 50) break;
+            objs = now;
+        }
+        long committed = GC.GetGCMemoryInfo().TotalCommittedBytes;
+        // (the GC kept ~1.15 GB committed for ~520 MB live across a den loop; Aggressive also hands its free memory back to the OS)
+        GC.Collect(2, Aggressive ? GCCollectionMode.Aggressive : GCCollectionMode.Forced, true, true);
+        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB, GC committed {committed >> 20} -> {GC.GetGCMemoryInfo().TotalCommittedBytes >> 20} MB{(Aggressive ? " (aggressive)" : "")}, {rounds} rounds, textures {texBefore / 1048576:0} -> {Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed) / 1048576:0} MB in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
     }
 
     /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
@@ -2233,6 +2281,11 @@ public partial class Game : Node, IZoneHost
         new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
     };
     bool leaveDone, clearDone;
+    // --loop-maps: --clear and --leave come again on every map, timed from that map's start (the den test's loop
+    // check: testers go round the den again and again, and memory must not climb from one to the next)
+    ZoneRuntime? loopZone;
+    double loopT0;
+    int loopN;
     int dieIx;
     double blastT = 0.5, marksT = 1;
     int lootI, hoardI;
@@ -2363,14 +2416,19 @@ public partial class Game : Node, IZoneHost
         }
         // --clear T: on a map, T seconds in, every pack, keeper and its ruler felled by her hand and the
         // gold drawn in (pictures of what a whole map pays; then --leave).
-        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime >= Args.Num("clear", 3))
+        if (Args.Has("loop-maps") && zone is MapRun && Battle != null && !ReferenceEquals(zone, loopZone))
+        {
+            loopZone = zone; loopT0 = Journey.Playtime; clearDone = leaveDone = false;
+            GD.Print($"loop-maps: map {++loopN} begun at {loopT0:0.0} s of play");
+        }
+        if (!clearDone && Args.Has("clear") && zone is MapRun cm && Battle != null && Journey.Playtime - loopT0 >= Args.Num("clear", 3))
         {
             clearDone = true;
             cm.ClearNow();
         }
         // --leave T: a won arena or a cleared map left by its way out T seconds in (pictures of the real
         // tally: --minute 95 --won --leave 4 is an hour and five minutes stayed past the win).
-        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime >= Args.Num("leave", 4))
+        if (!leaveDone && Args.Has("leave") && Battle != null && Journey.Playtime - loopT0 >= Args.Num("leave", 4))
         {
             leaveDone = true;
             if (zone is ArenaRun lr) lr.Leave();

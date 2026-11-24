@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://tpssq6gwd7jr"
-path="res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.ctex"
+path.bptc="res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.bptc.ctex"
+path.astc="res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/set/B6.png"
-dest_files=["res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.ctex"]
+dest_files=["res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.bptc.ctex", "res://.godot/imported/B6.png-33e35bc29918221affeb7edc3d135bdb.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

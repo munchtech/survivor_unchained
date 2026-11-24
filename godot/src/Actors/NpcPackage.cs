@@ -32,6 +32,9 @@ public static class NpcPackage
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
+    /// <summary>The scenes asked for since the last place change (PlaceCache: the others are dropped then).</summary>
+    static readonly PlaceCache.Asked askedSince = new();
+    internal static int LetGoOfPlace() => askedSince.Prune(scenes) + PlaceCache.Prune(trimmed, PlaceCache.Held);
     /// <summary>The body's meshes with the pieces' skin dropped, by package and mesh (made once a session).</summary>
     static readonly Dictionary<(string, ulong), ArrayMesh> trimmed = new();
 
@@ -129,6 +132,7 @@ public static class NpcPackage
 
     static PackedScene? Scene(string file)
     {
+        askedSince.Add(file);
         if (scenes.TryGetValue(file, out var ps)) return ps;
         if (file.StartsWith("res://art/npc/") && file["res://art/npc/".Length..].Split('/', 2) is { Length: 2 } nf && Overlay(nf[0]) is string ov
             && System.IO.File.Exists($"{ov}/{nf[1]}"))

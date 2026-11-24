@@ -3,27 +3,29 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgrfeshcpm2r0"
-path="res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.ctex"
+path.bptc="res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.bptc.ctex"
+path.astc="res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/world/house/roof_aux.png"
-dest_files=["res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.ctex"]
+dest_files=["res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.bptc.ctex", "res://.godot/imported/roof_aux.png-3d53f03b2eb6881f5a735a7f22542e7f.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

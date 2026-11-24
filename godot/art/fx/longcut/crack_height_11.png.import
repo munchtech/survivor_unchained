@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c15j1e01gkxgn"
-path="res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.ctex"
+path.bptc="res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.bptc.ctex"
+path.astc="res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/fx/longcut/crack_height_11.png"
-dest_files=["res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.ctex"]
+dest_files=["res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.bptc.ctex", "res://.godot/imported/crack_height_11.png-a9beaf48c76f06d413bd9d1307930a26.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

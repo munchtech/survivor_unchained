@@ -39,6 +39,10 @@ public partial class Flipbooks : Node3D
     sealed class Book
     {
         public required MultiMeshInstance3D Node;
+        public required ShaderMaterial Mat;
+        /// <summary>The atlas's path while it is still being read on the loader's threads (null once it is in).</summary>
+        public string? Waiting;
+        public ulong AskedMs;
         public readonly List<Play> Plays = new();
         public float[] Buffer = new float[64 * Stride];
     }
@@ -48,12 +52,16 @@ public partial class Flipbooks : Node3D
 
     public Flipbooks() { Name = "Flipbooks"; }
 
-    // Every atlas read ahead on the loader's threads as the first fight's effects stand up, and the
-    // shader readied with a first material: read on its first use, the first level-up's blast held
-    // its frame 30-90 ms (MR4, the hub at 12 s). Kept for the game's life (38 MB on disk, 21 atlases).
+    // The shader readied with a first material as the first fight's effects stand up (making it is the costly part).
+    // Each atlas is read on the loader's threads when it is first wanted (Want, or its first Spawn), never on the main
+    // thread: read there on its first use, the first level-up's blast held its frame 30-90 ms (MR4). A take spawned
+    // before its atlas is in waits, unaged and undrawn, and then plays whole. Every atlas used to be read ahead at the
+    // first fight and kept: 106 MB of video memory, of which a den run used 2 atlases (lc_dust, smoke_puff; the tester
+    // lane, 24 Nov). Kept for the game's life once read (5.3 MB each).
     static Shader? shader;
     static readonly Dictionary<string, Texture2D?> atlases = new();
     static readonly HashSet<string> asked = new();
+    static readonly bool fbLog = Args.Has("fb-log");
 
     static string AtlasPath(string name) => $"res://art/fx/fb/{name}.png";
 
@@ -63,22 +71,35 @@ public partial class Flipbooks : Node3D
         shader = GD.Load<Shader>("res://shaders/flipbook.gdshader");
         // (the shader's first material made here, off the fight: making it is the costly part)
         _ = new ShaderMaterial { Shader = shader };
-        foreach (var f in DirAccess.GetFilesAt("res://art/fx/fb"))
-        {
-            if (!f.EndsWith(".json")) continue;
-            var path = AtlasPath(f[..^5]);
-            if (ResourceLoader.Exists(path) && ResourceLoader.LoadThreadedRequest(path) == Error.Ok) asked.Add(path);
-        }
     }
 
-    static Texture2D? Atlas(string name)
+    /// <summary>Start reading an atlas on the loader's threads ahead of its first take (a caller that knows it is coming).</summary>
+    public static void Want(string name)
     {
-        if (atlases.TryGetValue(name, out var t)) return t;
+        if (atlases.ContainsKey(name)) return;
         var path = AtlasPath(name);
-        // (asked ahead: taken from the loader, waited for if it is not in yet)
-        t = asked.Remove(path) ? ResourceLoader.LoadThreadedGet(path) as Texture2D : GD.Load<Texture2D>(path);
+        if (asked.Contains(path) || !ResourceLoader.Exists(path)) return;
+        if (ResourceLoader.LoadThreadedRequest(path) == Error.Ok) asked.Add(path);
+    }
+
+    /// <summary>The atlas if it is in (taken from the loader when its read is done); null while it is still being read.</summary>
+    static Texture2D? Ready(string name, out bool failed)
+    {
+        failed = false;
+        if (atlases.TryGetValue(name, out var t)) { failed = t == null; return t; }
+        var path = AtlasPath(name);
+        if (!asked.Contains(path)) Want(name);
+        if (!asked.Contains(path)) { failed = true; return atlases[name] = null; }
+        var st = ResourceLoader.LoadThreadedGetStatus(path);
+        if (st == ResourceLoader.ThreadLoadStatus.InProgress) return null;
+        asked.Remove(path);
+        t = st == ResourceLoader.ThreadLoadStatus.Loaded ? ResourceLoader.LoadThreadedGet(path) as Texture2D : null;
+        failed = t == null;
         return atlases[name] = t;
     }
+
+    /// <summary>(MemLog's census) the atlases taken so far this game, of those on disk.</summary>
+    public static string UsedReport() => $"{atlases.Count} atlases read ({asked.Count} still being read): {string.Join(",", atlases.Keys)}";
 
     public static bool Has(string name) => FileAccess.FileExists($"res://art/fx/fb/{name}.json");
 
@@ -89,7 +110,7 @@ public partial class Flipbooks : Node3D
         var meta = Core.Json.Parse<Dictionary<string, object>>(FileAccess.GetFileAsString($"res://art/fx/fb/{name}.json"));
         int grid = System.Convert.ToInt32(meta["grid"].ToString()), frames = System.Convert.ToInt32(meta["frames"].ToString());
         var mat = new ShaderMaterial { Shader = shader ??= GD.Load<Shader>("res://shaders/flipbook.gdshader") };
-        mat.SetShaderParameter("atlas", Atlas(name));
+        Want(name);
         mat.SetShaderParameter("grid", grid);
         mat.SetShaderParameter("frames", frames);
         var (add, soft) = Looks.TryGetValue(name, out var l) ? l : (0.7f, 0.5f);
@@ -106,7 +127,7 @@ public partial class Flipbooks : Node3D
             },
         };
         AddChild(node);
-        b = new Book { Node = node };
+        b = new Book { Node = node, Mat = mat, Waiting = name, AskedMs = Time.GetTicksMsec() };
         books[name] = b;
         return b;
     }
@@ -130,11 +151,24 @@ public partial class Flipbooks : Node3D
         return true;
     }
 
+    /// <summary>True once the book's atlas is in and set (or failed: its takes are then dropped).</summary>
+    bool Take(Book b)
+    {
+        var t = Ready(b.Waiting!, out bool failed);
+        if (t == null && !failed) return false;
+        if (fbLog) GD.Print($"flipbook {b.Waiting}: atlas {(failed ? "FAILED" : "in")} {Time.GetTicksMsec() - b.AskedMs} ms after its first want, frame {Engine.GetFramesDrawn()}, {b.Plays.Count} takes waited");
+        if (failed) b.Plays.Clear(); else b.Mat.SetShaderParameter("atlas", t);
+        b.Waiting = null;
+        return !failed;
+    }
+
     public void Step(float dt)
     {
         foreach (var b in books.Values)
         {
             if (b == null) continue;
+            // (its atlas still being read: its takes wait, unaged and undrawn)
+            if (b.Waiting != null && !Take(b)) continue;
             var plays = b.Plays;
             int n = 0;
             for (int i = 0; i < plays.Count; i++)

@@ -1019,6 +1019,9 @@ public partial class Atmosphere : Node3D
 
     const int LutSize = 32;
     static readonly Dictionary<string, ImageTexture3D> luts = new();
+    /// <summary>(PlaceCache) The grade LUTs nothing asked for since the place's build began dropped.</summary>
+    static readonly SurvivorUnchained.View.PlaceCache.Asked lutsAsked = new();
+    internal static int LetGoOfPlace() => lutsAsked.Prune(luts);
 
     /// <summary>The web game's grade (render/grade.ts) as a lookup table:
     /// sRGB in (what Godot hands its colour correction after tone mapping),
@@ -1027,6 +1030,7 @@ public partial class Atmosphere : Node3D
     {
         if (Try?.Mute is float tm) mute = tm;
         var key = $"{SurvivorUnchained.Core.Json.Write(g)}|{mute}|{skinGuard}|{shadeHue}|{skinCool}";
+        lutsAsked.Add(key);
         if (luts.TryGetValue(key, out var hit)) return hit;
         static Vector3 Hex(string h) { var c = new Color(h); return new Vector3(c.R, c.G, c.B); }
         var lift = new Vector3((float)g.Lift[0], (float)g.Lift[1], (float)g.Lift[2]);

@@ -17,7 +17,7 @@ public static class CanopyCookie
     public const float Tile = 32f;
     // (L1 lead 9, B1: 1024 stepped 6-8 px at 1:1 under the arena's 80 m tile; 4096 steps under 2 px)
     const int TilePx = 4096;
-    static ImageTexture? leaf;
+    static ImageTexture? leaf, blank;
     /// <summary>A canopy mask stands for this zone (the dapple can show).</summary>
     public static bool Shown { get; private set; }
     /// <summary>The ground's mean height under the mask (the crowns' height is over it).</summary>
@@ -124,7 +124,18 @@ public static class CanopyCookie
     {
         Shown = false;
         Floored = c.Floored;
-        if (c.Mask == null) return;
+        // (a place with no canopy, the den: the last place's mask and the leaf tile let go, the globals on a blank; the
+        // dapple is off here (Shown), and the leaf is made again where a canopy stands. The tester lane, 24 Nov: 21 MB
+        // of the town's leaf held in the den)
+        if (c.Mask == null)
+        {
+            if (leaf == null) return;
+            blank ??= ImageTexture.CreateFromImage(Image.CreateEmpty(1, 1, false, Image.Format.L8));
+            RenderingServer.GlobalShaderParameterSet("cel_canopy", blank);
+            RenderingServer.GlobalShaderParameterSet("cel_cookie", blank);
+            leaf = null;
+            return;
+        }
         RenderingServer.GlobalShaderParameterSet("cel_canopy", c.Mask);
         RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
         RenderingServer.GlobalShaderParameterSet("cel_canopy_r", c.Rect);

@@ -1,0 +1,132 @@
+{
+  "_doc": "Source of truth for how texture groups import. First matching group wins. `apply` writes it into the .import files, `check` verifies, generators read it (tools/godot/tex_groups.py: group_params). Only the listed keys are set; every other key in a .import is left alone.",
+  "never": [
+    {
+      "globs": [
+        "art/people/body_p1/**"
+      ],
+      "reason": "her body maps: another lane is replacing her body"
+    },
+    {
+      "globs": [
+        "**/*.glb",
+        "**/*.gltf"
+      ],
+      "reason": "scene imports are out of scope, except the NPC packages' glbs (group npc_packages)",
+      "except": [
+        "art/npc/npc_*/*.glb"
+      ]
+    },
+    {
+      "globs": [
+        "art/ui/**"
+      ],
+      "reason": "2D UI stays lossless"
+    }
+  ],
+  "groups": [
+    {
+      "name": "npc_packages",
+      "scene": true,
+      "globs": [
+        "art/npc/npc_*/*.glb"
+      ],
+      "exclude": [
+        "art/npc/npc_risen_*/*.glb"
+      ],
+      "params": {
+        "gltf/embedded_image_handling": 2
+      },
+      "why": "The Marionette NPC packages' embedded maps (3 x 2048 each: about 67 MB a body uncompressed with mipmaps) embedded as Basis Universal, VRAM compressed at load. Her body is not a package (art/people/body_p1: never). The risen are den foes, not seen compressed by a judge yet."
+    },
+    {
+      "name": "den",
+      "globs": [
+        "art/dungeon/den/**/*.png",
+        "art/dungeon/den/**/*.jpg"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 2,
+        "compress/high_quality": true,
+        "mipmaps/generate": true
+      },
+      "normal_match": [
+        "normal",
+        "_nrm",
+        "_n."
+      ],
+      "normal_params": {
+        "compress/normal_map": 1
+      },
+      "why": "Den floor, bank, decals: VRAM compressed (BPTC) with mipmaps; normal maps flagged as normal maps (texture importer only; 2d_array_texture has no such key)."
+    },
+    {
+      "name": "people_spark",
+      "globs": [
+        "art/people/head_tex/heroine_spark.png"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 2,
+        "compress/high_quality": true,
+        "mipmaps/generate": false
+      },
+      "why": "Her skin spark map is sampled filter_linear (shaders/heroine_skin.gdshader spark_map): mipmaps would never be used (judge a54a554ad332862b7, 24 Nov)."
+    },
+    {
+      "name": "people",
+      "globs": [
+        "art/people/outfit_tex/**/*.png",
+        "art/people/outfit_tex/**/*.jpg",
+        "art/people/head_tex/**/*.png",
+        "art/people/head_tex/**/*.jpg"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 2,
+        "compress/high_quality": true,
+        "mipmaps/generate": true
+      },
+      "why": "Outfit and head textures: VRAM compressed with mipmaps."
+    },
+    {
+      "name": "world",
+      "globs": [
+        "art/world/**/*.png",
+        "art/world/**/*.jpg"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 2,
+        "compress/high_quality": true,
+        "mipmaps/generate": true
+      },
+      "why": "World textures: VRAM compressed with mipmaps."
+    },
+    {
+      "name": "fx_longcut_hot",
+      "globs": [
+        "art/fx/longcut/crack_emis_*.png"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 0
+      },
+      "why": "The long cut's hot edge (decal path, lit only in each crack tile's first frames) was not seen by the compression judge (24 Nov): kept lossless, ~7 MB VRAM, until a judge sees it compressed."
+    },
+    {
+      "name": "fx_longcut",
+      "globs": [
+        "art/fx/longcut/**/*.png",
+        "art/fx/longcut/**/*.jpg"
+      ],
+      "exclude": [],
+      "params": {
+        "compress/mode": 2,
+        "compress/high_quality": true
+      },
+      "why": "Longcut fx sheets: VRAM compressed; mipmaps left as each file has them."
+    }
+  ]
+}

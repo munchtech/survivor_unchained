@@ -71,6 +71,8 @@ public static class Graphics
         "quality" => 1 / 1.5f, "balanced" => 1 / 1.7f, "performance" => 0.5f, _ => 1f,
     };
 
+    static RenderingServer.ShadowQuality? sunFilterSet, lampFilterSet;
+
     /// <summary>What the quality and resolution say, applied now (cheap when nothing changed).</summary>
     public static void Apply(Settings s, Atmosphere air, Viewport vp, WorldScene? scene)
     {
@@ -81,8 +83,12 @@ public static class Graphics
         RenderingServer.EnvironmentSetSsaoQuality(t.SsaoQuality, true, 0.5f, 2, 50, 300);
         env.VolumetricFogEnabled = t.VolumetricFog;
         RenderingServer.DirectionalShadowAtlasSetSize(t.SunShadowSize, true);
-        RenderingServer.DirectionalSoftShadowFilterSetQuality(t.SunFilter);
-        RenderingServer.PositionalSoftShadowFilterSetQuality(t.LampFilter);
+        // Only when they change: Godot (4.7.2, renderer_scene_render_rd.cpp, both setters) re-specializes every shader on each
+        // call even with the same quality, which throws away every pipeline compiled so far. Set at each place's Stage, that
+        // recompiled ~1,100 pipelines a den (the tester lane, 24 Nov: the same 81 Shader objects, 422 mesh + 526 surface + ~110
+        // at draw time + ~135 specializations again each den; the draw-time ones are hitches) and the warm-up's record said warm.
+        if (sunFilterSet != t.SunFilter) { sunFilterSet = t.SunFilter; RenderingServer.DirectionalSoftShadowFilterSetQuality(t.SunFilter); }
+        if (lampFilterSet != t.LampFilter) { lampFilterSet = t.LampFilter; RenderingServer.PositionalSoftShadowFilterSetQuality(t.LampFilter); }
         Sun(air, t);
         RenderingServer.SubSurfaceScatteringSetQuality(t.Skin);
         vp.MeshLodThreshold = t.LodThreshold;

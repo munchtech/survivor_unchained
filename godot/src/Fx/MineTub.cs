@@ -16,7 +16,7 @@ public static class MineTub
     /// <summary>Hull's floor and lip, and its half-sizes at each (x across, z along).</summary>
     const float Floor = 0.34f, Lip = 1.0f, BotX = 0.47f, BotZ = 0.66f, TopX = 0.6f, TopZ = 0.82f, Wall = 0.05f;
 
-    public static Node3D Make(int seed)
+    public static Node3D Make(int seed, bool fold = true)
     {
         Materials();
         var root = new Node3D { Name = "MineTub" };
@@ -92,6 +92,9 @@ public static class MineTub
             Position = new Vector3(TopX - 0.06f, Lip + 0.5f, TopZ + 0.1f), LightColor = new Color(1.0f, 0.62f, 0.3f),
             LightEnergy = 1.4f, OmniRange = 4.5f, OmniAttenuation = 1.6f, ShadowEnabled = false,
         });
+        // Its 65 pieces folded into one mesh, a surface per material (24 Nov: on D3D12 each piece's buffers took 64 KB apiece,
+        // about 12 MB a tub and 4 tubs in every place; nothing moves a piece on its own).
+        if (fold) MeshMerge.Fold(root);
         return root;
     }
 

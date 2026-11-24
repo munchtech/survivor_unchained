@@ -29,6 +29,77 @@ public partial class FxAfter : CanvasLayer
     static FxAfter? one;
 
     SubViewport vp = null!;
+    TextureRect rect = null!;
+
+    // (the tester lane, 24 Nov: this layer's window-sized 3D viewport holds ~216 MB of the card at 1080p, 255 at 1440p, measured
+    // by taking it out of the live picture) Asleep while none of the effects put on it has been visible for SleepAfter s: the
+    // viewport shrunk to 2 x 2 (its render buffers given back), not drawn, not laid over; the first visible effect wakes it in
+    // the same frame (an Adopt wakes it at once). OFF by default: --fx-after-sleep on. Measured (editor den, --auto, 24 Nov): asleep
+    // only between fights (2-5 s of a 60 s run; video -127 MB then), awake in every fight, so the peak is unchanged, and each
+    // fight's first effect re-makes the buffers (hitch unmeasured). A real peak cut is a smaller layer (a look change, judged).
+    static readonly bool sleepOn = SurvivorUnchained.Args.Get("fx-after-sleep") == "on";
+    const double SleepAfter = 3.0;
+    static readonly System.Collections.Generic.List<GeometryInstance3D> adopted = new();
+    static bool wakeNow;
+    static readonly bool sleepLog = SurvivorUnchained.Args.Has("fx-after-sleep-log");
+    static int sleepLogged;
+    bool asleep;
+    double unseen, lookIn;
+
+    /// <summary>Whether any effect on the layer is shown now (the dead ones dropped from the list).</summary>
+    static bool AnyShown()
+    {
+        bool any = false;
+        // (on screen only: the den's campfire flames sit on the layer all the time, mostly far behind her)
+        var planes = Engine.GetMainLoop() is SceneTree st && st.Root.GetCamera3D() is { } c ? c.GetFrustum() : null;
+        for (int i = adopted.Count - 1; i >= 0; i--)
+        {
+            var g = adopted[i];
+            if (!IsInstanceValid(g)) { adopted.RemoveAt(i); continue; }
+            if (any || !g.IsInsideTree() || !g.IsVisibleInTree()) continue;
+            // (a batch of effects, a multimesh, shows nothing while its count is 0)
+            if (g is MultiMeshInstance3D mm && (mm.Multimesh is not { } m || (m.VisibleInstanceCount < 0 ? m.InstanceCount : m.VisibleInstanceCount) == 0)) continue;
+            if (planes != null && !InFrustum(g.GlobalTransform * g.GetAabb(), planes)) continue;
+            any = true;
+            if (sleepLog && (sleepLogged++ % 40) == 0) GD.Print($"fxafter: kept awake by {g.GetPath()} ({g.GetClass()}, mesh {(g as MeshInstance3D)?.Mesh?.GetClass()}, shader {(g.MaterialOverride as ShaderMaterial)?.Shader?.ResourcePath})");
+        }
+        return any;
+    }
+
+    /// <summary>Whether a box reaches into the camera's frustum (outside no plane by its whole extent).</summary>
+    static bool InFrustum(Aabb box, Godot.Collections.Array<Plane> planes)
+    {
+        Vector3 c = box.GetCenter(), h = box.Size * 0.5f;
+        foreach (var p in planes)
+        {
+            var n = p.Normal;
+            float r = h.X * Mathf.Abs(n.X) + h.Y * Mathf.Abs(n.Y) + h.Z * Mathf.Abs(n.Z);
+            if (p.DistanceTo(c) > r + 0.5f) return false;
+        }
+        return true;
+    }
+
+    /// <summary>Asleep or awake, from what the layer has shown lately (checked each frame asleep, every 0.25 s awake).</summary>
+    void Sleepy(double dt)
+    {
+        if (!sleepOn) return;
+        if (asleep)
+        {
+            if (wakeNow || AnyShown()) { asleep = false; unseen = 0; rect.Visible = true; GD.Print($"fxafter: awake ({adopted.Count} effects held)"); }
+            wakeNow = false;
+            return;
+        }
+        wakeNow = false;
+        if ((lookIn -= dt) > 0) { unseen += dt; return; }
+        lookIn = 0.25;
+        if (AnyShown()) { unseen = 0; return; }
+        if ((unseen += dt) < SleepAfter) return;
+        asleep = true;
+        rect.Visible = false;
+        vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled;
+        vp.Size = new Vector2I(2, 2);
+        GD.Print($"fxafter: asleep ({adopted.Count} effects held, none shown for {SleepAfter:0} s)");
+    }
     Camera3D cam = null!;
     public static readonly bool MarksOver = SurvivorUnchained.Args.Get("fx-marks-over") != "off";
     ShaderMaterial comp = null!;
@@ -50,6 +121,8 @@ void fragment() {
     public static void Adopt(GeometryInstance3D g)
     {
         g.Layers = RenderLayer;
+        adopted.Add(g);
+        wakeNow = true;
         if (one != null && IsInstanceValid(one)) return;
         one = new FxAfter { Name = "FxAfter" };
         if (Engine.GetMainLoop() is SceneTree t) t.Root.CallDeferred(Node.MethodName.AddChild, one);
@@ -194,7 +267,7 @@ void fragment() {
         vp.AddChild(cam);
         AddChild(vp);
         comp = new ShaderMaterial { Shader = new Shader { Code = CompositeCode } };
-        var rect = new TextureRect
+        rect = new TextureRect
         {
             Texture = vp.GetTexture(), MouseFilter = Control.MouseFilterEnum.Ignore,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
@@ -222,6 +295,7 @@ void fragment() {
     {
         var root = GetTree().Root;
         if (root.GetCamera3D() is not { } main) { vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled; return null; }
+        if (asleep) return null;
         vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
         if (vp.Size != root.Size) vp.Size = root.Size;
         main.CullMask &= ~RenderLayer;
@@ -248,6 +322,7 @@ void fragment() {
 
     public override void _Process(double delta)
     {
+        Sleepy(delta);
         if (!Perf.On) { Step(); return; }
         long q = System.Diagnostics.Stopwatch.GetTimestamp();
         Step();

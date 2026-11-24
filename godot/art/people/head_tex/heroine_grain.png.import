@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6066mgajt423"
-path="res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.ctex"
+path.bptc="res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.bptc.ctex"
+path.astc="res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/head_tex/heroine_grain.png"
-dest_files=["res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.ctex"]
+dest_files=["res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.bptc.ctex", "res://.godot/imported/heroine_grain.png-8570fd777310bdbb10c39dc4966f86f6.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

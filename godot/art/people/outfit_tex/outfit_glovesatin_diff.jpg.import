@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dei1lyja474a5"
-path="res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.ctex"
+path.bptc="res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.bptc.ctex"
+path.astc="res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/outfit_tex/outfit_glovesatin_diff.jpg"
-dest_files=["res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.ctex"]
+dest_files=["res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.bptc.ctex", "res://.godot/imported/outfit_glovesatin_diff.jpg-28c5d18b9940f319a428c348a8748ea6.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

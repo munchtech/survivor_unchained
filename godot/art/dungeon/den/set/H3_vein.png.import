@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dss6nr5j6igba"
-path="res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.ctex"
+path.bptc="res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.bptc.ctex"
+path.astc="res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/dungeon/den/set/H3_vein.png"
-dest_files=["res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.ctex"]
+dest_files=["res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.bptc.ctex", "res://.godot/imported/H3_vein.png-7583126d6a74d102bb0792bd353713ca.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

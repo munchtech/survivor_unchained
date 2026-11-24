@@ -206,16 +206,19 @@ public partial class BattleFx : Node3D
         wallTex ??= GroundTexture(5);
         laneFillTex ??= GroundTexture(6);
         if (Args.Has("fx-tex-check")) CallDeferred(nameof(TexCheck));   // (dev: the parallel textures against the SetPixel ones)
-        if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));   // (dev: every weapon's make as numbers, Arms.Check)
+        if (Args.Has("arms-check")) CallDeferred(nameof(ArmsCheck));
+        if (Args.Has("mesh-merge-check")) for (int i = 0; i < 4; i++) GD.Print($"tub {17 + i * 7}: " + MeshMerge.Check(MineTub.Make(17 + i * 7, false), MineTub.Make(17 + i * 7)));   // (dev: the folded tub is the same triangles)   // (dev: every weapon's make as numbers, Arms.Check)
         if (Args.Has("glyphs-check")) Callable.From(() => { GD.Print(SurvivorUnchained.Fx.GlyphsCheck.Run(Args.Get("glyphs-check") == "full")); GetTree().Quit(); }).CallDeferred();   // (dev: glyph textures as hashes and a call's cost, GlyphsCheck)
         if (Args.Get("glyphs-arrow") is string arrowPng) Callable.From(() => SurvivorUnchained.Fx.GlyphsCheck.Arrow(this, arrowPng)).CallDeferred();   // (dev: the edge arrows' picture)
         if (!P7Off) _ = WgHengeMat;   // (henge: the stones' material and its two files made at load: 43 ms at the first Heroic Leap landing with the Henge lit)
         if (!MarkPassOff) markPass.Warm();   // (P2 task 5: its shader compiled at load, not on the first red mark's frame)
         var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
+        // (one mesh for the 20: each its own buffers at 64 KB apiece on D3D12, 24 Nov)
+        var beamMesh = new CylinderMesh { TopRadius = 1, BottomRadius = 1, Height = 1, RadialSegments = 16, CapTop = false, CapBottom = false };
         for (int i = 0; i < 20; i++)
         {
             var mat = new ShaderMaterial { Shader = beamShader };
-            var m = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 1, BottomRadius = 1, Height = 1, RadialSegments = 16, CapTop = false, CapBottom = false }, MaterialOverride = mat, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            var m = new MeshInstance3D { Mesh = beamMesh, MaterialOverride = mat, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
             AddChild(m);
             beams.Add((m, mat, 1, 1));
         }

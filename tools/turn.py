@@ -10,12 +10,17 @@ job and give it back the moment the job ends; while you wait, do light work
   python tools/turn.py give gpu                       # also frees ComfyUI's models
   python tools/turn.py show
   python tools/turn.py run godot "face: shots" [--wait 8] [--tail 30] -- <godot command>  # take, run via quiet.py, give
+  python tools/turn.py run godot "tester: memcheck" --alone --wait 30 -- <godot command>  # a measurement: Godot alone
 
 gpu:     one holder. ComfyUI, TRELLIS and MoGe: they share one server and most
          of the card's memory, and swapping their models thrashes 20 GB.
 blender: three holders (each needs 6 GB of RAM free). Blender builds, bakes and
          renders: mostly CPU, a few GB each.
 godot:   four holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
+         --alone (24 Nov, tester lane: a memory check ran beside two other Godot jobs and measured them too): a
+         measurement that must run with no other Godot. Granted only when no godot turn is held, no Godot process
+         runs and no one asked before; it holds EVERY godot slot (so an older turn.py is refused too), and while
+         an alone job waits at the head of the queue, nobody takes a godot turn ahead of it.
 While the gpu turn is held, blender and godot also need 4 GB of the card's memory
 free: on 10 October a Godot shot took VRAM mid-TRELLIS and hung it for 80 minutes.
 
@@ -52,7 +57,7 @@ SAMPLE_GAP = 5 * 60
 FRESH = 90  # seconds a place in the queue lasts without being asked again
 
 
-def queue(kind, who):
+def queue(kind, who, alone=False):
     """Records that `who` is waiting for `kind` and returns the waiters, oldest
     first. (The fastest to ask used to win: one lead polling every few seconds
     took the GPU straight back while others waited an hour.)"""
@@ -64,7 +69,7 @@ def queue(kind, who):
         first = json.loads(me.read_text())["first"]
     except (OSError, ValueError, KeyError):
         first = now
-    me.write_text(json.dumps({"who": who, "first": first, "last": now}))
+    me.write_text(json.dumps({"who": who, "first": first, "last": now, "alone": alone}))
     out = []
     for f in q.glob("*.json"):
         try:
@@ -74,8 +79,20 @@ def queue(kind, who):
         if now - w.get("last", 0) > FRESH:
             f.unlink(missing_ok=True)
         else:
-            out.append((w["first"], w["who"], f))
+            out.append((w["first"], w["who"], w.get("alone", False)))
     return sorted(out)
+
+
+def godot_processes():
+    """(pid, name, memory) of every running Godot process (an editor or a game, with or without a turn)."""
+    import csv
+    import io
+    import subprocess
+    try:
+        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, timeout=20).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return [(r[1], r[0], r[4]) for r in csv.reader(io.StringIO(out)) if len(r) >= 5 and r[0].lower().startswith("godot")]
 
 
 def leave_queue(kind, who):
@@ -170,7 +187,7 @@ def holders(kind):
     return out
 
 
-def try_take(kind, who):
+def try_take(kind, who, alone=False):
     HOME.mkdir(parents=True, exist_ok=True)
     smi_ok = sample_gpu() is not None if kind == "gpu" else False  # no reading, no idle takeover
     for d, w in holders(kind):
@@ -182,16 +199,44 @@ def try_take(kind, who):
             print(f"taking over a stale turn from {w['who']} ({(time.time() - w['since']) / 3600:.1f} h old)")
             (d / "who.json").unlink(missing_ok=True)
             d.rmdir()
+    if any(w.get("alone") and w["who"] != who for _, w in holders(kind)):
+        queue(kind, who, alone)
+        return "held ALONE (a measurement) by " + next(w["who"] for _, w in holders(kind) if w.get("alone"))
     if free_ram_gb() < LEAST_RAM[kind]:
-        queue(kind, who)
+        queue(kind, who, alone)
         return f"only {free_ram_gb():.1f} GB of RAM free"
     if kind in LEAST_VRAM and holders("gpu"):
         vram = free_vram_gb()
         if vram is not None and vram < LEAST_VRAM[kind]:
-            queue(kind, who)
+            queue(kind, who, alone)
             return f"only {vram:.1f} GB of the card free while the gpu turn is held"
-    names = [w for _, w, _ in queue(kind, who)]
+    waiting = queue(kind, who, alone)
+    names = [w for _, w, _ in waiting]
     ahead = names[:names.index(who)] if who in names else []
+    if alone:
+        if ahead:
+            return "queued behind " + ", ".join(ahead)
+        if hs := holders(kind):
+            return "waiting to run alone: held by " + "; ".join(
+                f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs)
+        if procs := godot_processes():
+            return "waiting to run alone: Godot running without a turn: " + ", ".join(f"pid {p} ({mb})" for p, _, mb in procs)
+        made = []
+        for i in range(SLOTS[kind]):
+            d = HOME / f"{kind}.{i}"
+            try:
+                d.mkdir()
+            except FileExistsError:  # someone took a slot between the check and now: undo, wait
+                for m in made:
+                    (m / "who.json").unlink(missing_ok=True)
+                    m.rmdir()
+                return "waiting to run alone: a turn was just taken"
+            (d / "who.json").write_text(json.dumps({"who": who, "since": time.time(), "alone": True}))
+            made.append(d)
+        leave_queue(kind, who)
+        return None
+    if alone_ahead := [w for _, w, al in waiting[:len(ahead)] if al]:
+        return "queued behind a measurement that must run alone: " + ", ".join(alone_ahead)
     if len(ahead) >= SLOTS[kind] - len(holders(kind)):
         return "queued behind " + ", ".join(ahead) if ahead else "held by " + "; ".join(
             f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in holders(kind))
@@ -213,7 +258,8 @@ def give(kind, who=None):
     mine = [d for d, w in hs if w["who"] == who] or ([d for d, _ in hs] if who is None and len(hs) == 1 else [])
     if not mine and hs:
         sys.exit(f"{kind}: name the turn to give back, as you took it: " + "; ".join(w["who"] for _, w in hs))
-    for d in mine[:1]:
+    alone = any(w.get("alone") for d, w in hs if d in mine)  # an alone turn holds every slot: all go back
+    for d in mine if alone else mine[:1]:
         (d / "who.json").unlink(missing_ok=True)
         d.rmdir()
     if kind == "gpu":
@@ -232,8 +278,10 @@ def show():
     for kind in SLOTS:
         hs = holders(kind)
         util = sample_gpu() if kind == "gpu" else None
+        seen = set()  # an alone turn's slots on one line
+        hs = [(d, w) for d, w in hs if not w.get("alone") or not (w["who"] in seen or seen.add(w["who"]))]
         print(f"{kind}: " + ("free" if not hs else "; ".join(
-            f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs))
+            f"{w['who']}{' ALONE' if w.get('alone') else ''} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs))
             + (f" (GPU {util}%)" if util is not None else ""))
         q = HOME / f"want_{kind}"
         ws = []
@@ -249,8 +297,12 @@ def show():
 
 
 def do_take(a):
-    """`take <kind> "<who>"` [--wait N] [--stale-ok] [--root R]: 0 = yours, 1 = busy, 2 = stale art."""
+    """`take <kind> "<who>"` [--wait N] [--alone] [--stale-ok] [--root R]: 0 = yours, 1 = busy, 2 = stale art."""
     kind, who = a[1], (a[2] if len(a) > 2 and not a[2].startswith("--") else "someone")
+    alone = "--alone" in a
+    if alone and kind != "godot":
+        print("--alone is for godot turns")
+        return 1
     if kind in ("godot", "blender") and "--stale-ok" not in a:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from freshness import check, toplevel  # 14 Oct: judges were shown the old body; free, local check
@@ -277,7 +329,7 @@ def do_take(a):
             print(f"freshness: UI texture warning not run ({type(e).__name__}: {e})")
     wait = float(a[a.index("--wait") + 1]) * 60 if "--wait" in a else 0
     end = time.time() + wait
-    while (why := try_take(kind, who)) and time.time() < end:
+    while (why := try_take(kind, who, alone)) and time.time() < end:
         time.sleep(20)
     print(f"{kind}: yours" if not why else f"{kind}: busy, {why}. Do light work and try again.")
     return 0 if not why else 1
@@ -293,7 +345,7 @@ if __name__ == "__main__":
         # 13 Nov: take the turn, run the command through tools/quiet.py (full log to a file, summary + errors to
         # stdout), give the turn back even if the command fails. `run <kind> "<who>: <job>" [--wait N] [--tail N] -- cmd`
         if "--" not in a:
-            print('usage: turn.py run <gpu|blender|godot> "<who>: <job>" [--wait N] [--stale-ok] [--tail N] -- <command>')
+            print('usage: turn.py run <gpu|blender|godot> "<who>: <job>" [--wait N] [--alone] [--stale-ok] [--tail N] -- <command>')
             sys.exit(2)
         pre, cmd = a[:a.index("--")], a[a.index("--") + 1:]
         qflags = ["--tail", pre[pre.index("--tail") + 1]] if "--tail" in pre else []

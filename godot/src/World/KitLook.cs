@@ -115,6 +115,7 @@ public static class KitLook
         if (src is not StandardMaterial3D s) return src;
         var foliage = Foliage.IsMatch(s.ResourceName);
         var key = $"{s.GetInstanceId()}|{look}|{foot}";
+        asked.Add(key);
         if (cache.TryGetValue(key, out var m)) return m;
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
@@ -317,6 +318,9 @@ public static class KitLook
     }
 
     static readonly List<ShaderMaterial> roofs = new();
+    /// <summary>(PlaceCache) The kit materials nothing asked for since the last place change dropped (walls and roofs: only the list holds them).</summary>
+    static readonly PlaceCache.Asked asked = new();
+    internal static int LetGoOfPlace() => asked.Prune(cache) + walls.RemoveAll(m => !PlaceCache.Held(m)) + roofs.RemoveAll(m => !PlaceCache.Held(m));
     static Vector4[] chimneys = new Vector4[32];
 
     /// <summary>The chimneys' tops (world space; at most 32) for the soot round them on our own roofs (OwnWalls.Build).</summary>

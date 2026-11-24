@@ -33,6 +33,9 @@ public static class NpcDye
     static readonly string[] Uniforms = { "dye_a", "dye_b", "dye_h", "dye_c" };
     static readonly Dictionary<string, Def?> defs = new();
     static readonly Dictionary<string, ShaderMaterial?> mats = new();
+    /// <summary>(PlaceCache) The dyed materials nothing asked for since the last place change dropped.</summary>
+    static readonly PlaceCache.Asked asked = new();
+    internal static int LetGoOfPlace() => asked.Prune(mats) + asked.Prune(defs);
     static readonly Dictionary<string, Shader> shaders = new();
     static string? code;
     static int copies;
@@ -138,6 +141,7 @@ public static class NpcDye
     /// feature the dye shader does not copy.</summary>
     static ShaderMaterial? Material(string pkg, StandardMaterial3D src, Def def)
     {
+        asked.Add(pkg);
         if (mats.TryGetValue(pkg, out var have)) return have;
         mats[pkg] = null;
         string? why = src.Transparency != BaseMaterial3D.TransparencyEnum.Disabled ? "transparency"

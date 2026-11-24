@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3c4l2ejx3686"
-path.s3tc="res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.s3tc.ctex"
-path.etc2="res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.etc2.ctex"
+path.bptc="res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.bptc.ctex"
+path.astc="res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,12 +13,12 @@ metadata={
 [deps]
 
 source_file="res://art/people/head_tex/heroine_features.png"
-dest_files=["res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.s3tc.ctex", "res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.etc2.ctex"]
+dest_files=["res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.bptc.ctex", "res://.godot/imported/heroine_features.png-89cf33d81d9970ff13ecea7cf3829926.astc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

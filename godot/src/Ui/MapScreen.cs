@@ -29,6 +29,8 @@ public partial class MapScreen : Overlay
     public override Act? Toggle => Act.Map;
     const int W = 1600;
     static readonly Dictionary<string, ImageTexture> drawings = new();
+    /// <summary>(PlaceCache) The drawings of other places than <paramref name="here"/> dropped (drawn again on the way back).</summary>
+    internal static int LetGoOfPlace(string? here) => SurvivorUnchained.View.PlaceCache.Others(drawings, here);
     float zoom = 1;
     Vector2 pan;
     bool dragging;
