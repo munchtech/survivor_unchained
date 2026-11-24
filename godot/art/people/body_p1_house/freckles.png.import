@@ -3,20 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbn6j4kia1dch"
-path="res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.ctex"
+path.bptc="res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.bptc.ctex"
+path.astc="res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/body_p1_house/freckles.png"
-dest_files=["res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.ctex"]
+dest_files=["res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.bptc.ctex", "res://.godot/imported/freckles.png-adc39d6f4b93dc4d18f0792f393f143b.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dj86altvwm1sp"
-path="res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.ctex"
+path.bptc="res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.bptc.ctex"
+path.astc="res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/people/paint/brows.png"
-dest_files=["res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.ctex"]
+dest_files=["res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.bptc.ctex", "res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.astc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
