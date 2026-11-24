@@ -1,6 +1,6 @@
 {
  "body": "body_p1_house",
- "body_hash": "e7abff9c3574266f415b9c6b74afaa0a2d953b3a",
+ "body_hash": "f1146585faff984b636feebd2d8389bd821572c0",
  "rows": [
   {
    "id": "arcanist.boots",
@@ -1106,7 +1106,7 @@
  ],
  "house": {
   "package": "C:/Users/munch/Desktop/Marionette_house2/generated/h2/switch_r3",
-  "manifest_sha1": "a3321346fc823734f06f519d70560efe8ec42525",
+  "manifest_sha1": "0e9bd826912bc9fee047d4407e31e0431b269abb",
   "rows_tucked": [
    "warden.belt",
    "warden.boots",
