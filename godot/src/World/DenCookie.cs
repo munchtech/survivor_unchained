@@ -57,7 +57,7 @@ public static class DenCookie
         var ro = new Vector2[nr]; var rd = new Vector2[nr]; var rw = new float[nr]; var bend = new float[nr]; var len = new float[nr]; var ph = new float[nr];
         {
             float a0 = rng.Randf() * Mathf.Tau;
-            var o = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * 0.8f;
+            var o = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * 0.62f;
             float spread = 0.5f + 0.3f * rng.Randf(), lean = (rng.Randf() - 0.5f) * 0.5f;
             for (int i = 0; i < nr; i++)
             {
@@ -80,7 +80,7 @@ public static class DenCookie
             {
                 var p = new Vector2((x + 0.5f) / Px * 2f - 1f, (y + 0.5f) / Px * 2f - 1f);
                 float f = Sdf(p);
-                float e = edge * (1f + 2.5f * (0.5f + 0.5f * noise.GetNoise2D(p.X * 0.6f + 9f, p.Y * 0.6f - 4f)));   // crisp here, soft there
+                float e = edge * (1f + 1.2f * (0.5f + 0.5f * noise.GetNoise2D(p.X * 0.6f + 9f, p.Y * 0.6f - 4f)));   // crisp here, soft there
                 float val = 1f - Mathf.SmoothStep(-e, e, f);
                 val *= Mathf.Lerp(rim, 1f, Mathf.SmoothStep(0f, 0.22f, -f));   // the rim at --den-rl-cookie-rim of the core
                 foreach (var dp in dap)
@@ -91,7 +91,7 @@ public static class DenCookie
                     float along = q.Dot(rd[i]);
                     if (along < 0f || along > len[i]) continue;
                     float across = Mathf.Abs(q.Dot(new Vector2(-rd[i].Y, rd[i].X)) - bend[i] * along * along - 0.035f * Mathf.Sin(along * 6.5f + ph[i]) - 0.03f * noise.GetNoise2D(along * 1.5f + 20f * i, ph[i]));
-                    float w = rw[i] * (1f - along / len[i]);
+                    float w = rw[i] * (1f - 0.55f * along / len[i]);   // thinner toward the tip, never to a hair: a hair does not read at the game camera
                     val *= Mathf.Lerp(1f, Mathf.SmoothStep(w * 0.7f, w + 0.02f, across), rootsK * Mathf.SmoothStep(0f, 0.12f, len[i] - along));
                 }
                 val *= 1f - Mathf.SmoothStep(0.88f, 0.97f, p.Length());   // nothing at the cone's own rim
