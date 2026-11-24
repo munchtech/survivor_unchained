@@ -9,65 +9,109 @@ namespace SurvivorUnchained;
 /// textures and buffers?) At S s (default 40), one way, never for play:
 /// 1. a calibration: 2000 one-triangle meshes made, then freed: the video memory one small buffer really takes beside what
 ///    the buffer counter says (a D3D12 buffer is placed at 64 KB unless the driver packs it tighter);
-/// 2. the place taken apart: the tree cut into its biggest groups (no group holds the camera), each freed in turn, biggest
-///    first, and the monitors read 30 frames later: what each group's textures, buffers and "other" were.
+/// 2. (--mem-strip-ribbons N) N idle trail meshes (Fx/Ribbons) made, then freed: what one costs beside what it is counted;
+/// 3. the place taken apart: the tree cut into its biggest groups (no group holds the camera), each freed in turn, biggest
+///    first, and the monitors read 30 frames later: what each group's textures, buffers and "other" were;
+/// 4. (--mem-strip-under NAME instead of 3) a garbage collection, then that node's children a class at a time, a collection, the
+///    node itself, a collection: what its children held, what only its C# fields held, and what its freeing let go.
+/// Read it with care: a step's line is whatever changed in its 30 frames, so a load still running or an engine pool that lets go
+/// on its own lands on whichever step it falls in (24 Nov: one -52 MB drop landed on Ribbons, then on another group the next run).
 /// Each line: "mem strip: ..." with the change since the last line, in MB.</summary>
 public partial class MemLog
 {
     readonly double stripAt = Args.Has("mem-strip") ? Args.Num("mem-strip", 40) : -1;
-    int stripStep = -1, stripWait;
+    int stripWait;
+    bool stripDone;
     (double Tex, double Buf, double Vid) stripPrev;
-    readonly List<ArrayMesh> stripMeshes = new();
-    List<Node>? stripGroups;
+    // The steps still to run: each is the name its line is printed under (the change it caused) and what it does.
+    Queue<(string Name, int Count, Action? Do)>? stripSteps;
 
     void StripTick()
     {
-        if (stripAt < 0 || Time.GetTicksMsec() / 1000.0 < stripAt || stripStep == int.MaxValue) return;
+        if (stripAt < 0 || stripDone || Time.GetTicksMsec() / 1000.0 < stripAt) return;
         if (stripWait-- > 0) return;
         var m = Mon();
-        string Line(string what, int n = 0) =>
-            $"mem strip: {what}: texture {m.Tex - stripPrev.Tex:+0.0;-0.0;0}, buffers {m.Buf - stripPrev.Buf:+0.0;-0.0;0}, " +
-            $"video {m.Vid - stripPrev.Vid:+0.0;-0.0;0}, other {(m.Vid - m.Tex - m.Buf) - (stripPrev.Vid - stripPrev.Tex - stripPrev.Buf):+0.0;-0.0;0} MB" +
-            (n > 0 ? $" ({(m.Vid - stripPrev.Vid) * 1024 / n:0.0} KB video and {(m.Buf - stripPrev.Buf) * 1048576 / n:0} B buffers each)" : "") +
-            $" | now video {m.Vid:0} texture {m.Tex:0} buffers {m.Buf:0} other {m.Vid - m.Tex - m.Buf:0}";
         stripWait = 30;
-        switch (stripStep++)
+        if (stripSteps == null)
         {
-            case -1:
-                GD.Print($"mem strip: start | video {m.Vid:0} texture {m.Tex:0} buffers {m.Buf:0} other {m.Vid - m.Tex - m.Buf:0} MB");
-                for (int i = 0; i < 2000; i++)
-                {
-                    var a = new Godot.Collections.Array();
-                    a.Resize((int)Mesh.ArrayType.Max);
-                    a[(int)Mesh.ArrayType.Vertex] = new[] { new Vector3(i, 0, 0), new Vector3(i, 1, 0), new Vector3(i, 0, 1) };
-                    var mesh = new ArrayMesh();
-                    mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a);
-                    stripMeshes.Add(mesh);
-                }
-                break;
-            case 0:
-                GD.Print(Line("2000 one-triangle meshes made", 2000));
-                foreach (var x in stripMeshes) x.Dispose();
-                stripMeshes.Clear();
-                break;
-            case 1:
-                GD.Print(Line("the 2000 freed", 2000));
-                stripGroups = Groups();
-                GD.Print($"mem strip: {stripGroups.Count} groups: " + string.Join(", ", stripGroups.Select(g => $"{Short(g)} ({Count(g)})")));
-                goto default;
-            default:
-                if (stripGroups == null) { stripStep = int.MaxValue; return; }
-                int k = stripStep - 2;
-                if (k > 0) GD.Print(Line($"freed {stripName}"));
-                if (k >= stripGroups.Count) { GD.Print("mem strip: done"); stripStep = int.MaxValue; return; }
-                var g = stripGroups[k];
-                stripName = IsInstanceValid(g) ? $"{Short(g)} ({Count(g)} nodes, {Surfaces(g)} unique mesh surfaces, {Mats(g)} unique materials)" : "(gone)";
-                if (IsInstanceValid(g)) g.QueueFree();
-                break;
+            GD.Print($"mem strip: start | video {m.Vid:0} texture {m.Tex:0} buffers {m.Buf:0} other {m.Vid - m.Tex - m.Buf:0} MB");
+            stripSteps = new();
+            Plan(stripSteps);
         }
+        else if (stripLast is var (name, n))
+            GD.Print($"mem strip: {name}: texture {m.Tex - stripPrev.Tex:+0.0;-0.0;0}, buffers {m.Buf - stripPrev.Buf:+0.0;-0.0;0}, " +
+                $"video {m.Vid - stripPrev.Vid:+0.0;-0.0;0}, other {(m.Vid - m.Tex - m.Buf) - (stripPrev.Vid - stripPrev.Tex - stripPrev.Buf):+0.0;-0.0;0} MB" +
+                (n > 0 ? $" ({(m.Vid - stripPrev.Vid) * 1024 / n:0.0} KB video and {(m.Buf - stripPrev.Buf) * 1048576 / n:0} B buffers each)" : "") +
+                $" | now video {m.Vid:0} texture {m.Tex:0} buffers {m.Buf:0} other {m.Vid - m.Tex - m.Buf:0}");
         stripPrev = m;
+        if (stripSteps.Count == 0) { GD.Print("mem strip: done"); stripDone = true; return; }
+        var step = stripSteps.Dequeue();
+        stripLast = (step.Name, step.Count);
+        step.Do?.Invoke();
     }
-    string stripName = "";
+    (string, int)? stripLast;
+
+    void Plan(Queue<(string, int, Action?)> q)
+    {
+        // 1. one small buffer: 2000 one-triangle meshes made, then freed
+        var tiny = new List<ArrayMesh>();
+        q.Enqueue(("2000 one-triangle meshes made", 2000, () =>
+        {
+            for (int i = 0; i < 2000; i++)
+            {
+                var a = new Godot.Collections.Array();
+                a.Resize((int)Mesh.ArrayType.Max);
+                a[(int)Mesh.ArrayType.Vertex] = new[] { new Vector3(i, 0, 0), new Vector3(i, 1, 0), new Vector3(i, 0, 1) };
+                var mesh = new ArrayMesh();
+                mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, a);
+                tiny.Add(mesh);
+            }
+        }));
+        q.Enqueue(("the 2000 freed", 2000, () => { foreach (var x in tiny) x.Dispose(); tiny.Clear(); }));
+        // 2. --mem-strip-ribbons N: N trail meshes (Fx/Ribbons, two dynamic meshes of 9000 vertices each) made idle, then freed
+        int nr = Args.Has("mem-strip-ribbons") ? (int)Args.Num("mem-strip-ribbons", 4) : 0;
+        var rib = new List<Node>();
+        if (nr > 0)
+        {
+            q.Enqueue(($"{nr} idle Ribbons made", nr, () => { for (int i = 0; i < nr; i++) { var r = new View.Ribbons(); rib.Add(r); GetParent().AddChild(r); } }));
+            q.Enqueue(($"the {nr} Ribbons freed", nr, () => { foreach (var r in rib) r.QueueFree(); rib.Clear(); }));
+        }
+        // (two steps that free nothing: what moves on its own in 30 frames)
+        q.Enqueue(("nothing freed (a control)", 0, null));
+        q.Enqueue(("nothing freed (a control)", 0, null));
+        // 3. the place taken apart, biggest group first; under a node (--mem-strip-under), a collection first, then its children
+        //    freed a class at a time (its MeshInstance3Ds, then its MultiMeshInstance3Ds, ...), each class's line naming them
+        var groups = Groups(out var under);
+        if (under == null)
+        {
+            GD.Print($"mem strip: {groups.Count} groups: " + string.Join(", ", groups.Select(g => $"{Short(g)} ({Count(g)})")));
+            // each group freed, then a collection: a mesh or material a script made is held by its C# wrapper until the
+            // collector finalizes it, so the freeing alone lets go of little (24 Nov: BattleFx's children freed, 0; a collection
+            // after, -60 MB, in town and den alike)
+            q.Enqueue(("a garbage collection (before)", 0, Collect));
+            foreach (var g in groups)
+            {
+                string what = $"{Short(g)} ({Count(g)} nodes, {Surfaces(g)} unique mesh surfaces, {Mats(g)} unique materials)";
+                q.Enqueue(($"freed {what}", 0, () => { if (IsInstanceValid(g)) g.QueueFree(); }));
+                q.Enqueue(($"  then a collection", 0, Collect));
+            }
+            return;
+        }
+        q.Enqueue(("a garbage collection (before)", 0, Collect));
+        foreach (var kind in groups.GroupBy(g => g.GetClass()).OrderByDescending(k => k.Sum(Count)))
+        {
+            var list = kind.ToList();
+            string names = string.Join(", ", list.Take(8).Select(g => g.Name.ToString())) + (list.Count > 8 ? $", ... {list.Count - 8} more" : "");
+            q.Enqueue(($"freed {Short(under)}'s {list.Count} {kind.Key} ({list.Sum(Count)} nodes, {list.Sum(Surfaces)} unique mesh surfaces, {list.Sum(Mats)} materials: {names})",
+                0, () => { foreach (var g in list) if (IsInstanceValid(g)) g.QueueFree(); }));
+        }
+        // 4. what the node itself still holds once its children are gone: a collection frees what only a C# field held, then the node
+        q.Enqueue(("a garbage collection (what only C# held)", 0, Collect));
+        q.Enqueue(($"freed {Short(under)} itself", 0, () => { if (IsInstanceValid(under)) under.QueueFree(); }));
+        q.Enqueue(("a garbage collection after", 0, Collect));
+    }
+
+    static void Collect() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }
 
     static int Count(Node n) { int c = 1; foreach (var k in n.GetChildren()) c += Count(k); return c; }
     string Short(Node n) => GetParent() is { } gp && gp.IsAncestorOf(n) ? gp.GetPathTo(n).ToString() : n.GetPath().ToString();
@@ -107,14 +151,18 @@ public partial class MemLog
 
     // The game node's subtrees, the biggest split into its children while it holds over 400 nodes, up to 18 groups; none holds
     // the camera in use or this node; biggest first.
-    List<Node> Groups()
+    List<Node> Groups(out Node? under)
     {
+        under = null;
         var cam = GetViewport().GetCamera3D();
         bool Ok(Node n) => n != this && !n.IsAncestorOf(this) && (cam == null || (n != cam && !n.IsAncestorOf(cam)));
         var game = GetParent();
-        // --mem-strip-under NAME: the children of the first node so named under the game, one group each (up to 40, biggest first)
-        if (Args.Get("mem-strip-under") is { Length: > 0 } under && game.FindChild(under, true, false) is { } u)
-            return u.GetChildren().Where(Ok).OrderByDescending(Count).Take(40).ToList();
+        // --mem-strip-under NAME: every child of the first node so named under the game, one group each (biggest first), then the node
+        if (Args.Get("mem-strip-under") is { Length: > 0 } name && game.FindChild(name, true, false) is { } u)
+        {
+            under = u;
+            return u.GetChildren().Where(Ok).OrderByDescending(Count).ToList();
+        }
         var groups = game.GetChildren().Where(n => n != this).ToList();
         for (int guard = 0; guard < 40; guard++)
         {
