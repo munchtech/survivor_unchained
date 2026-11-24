@@ -2336,7 +2336,8 @@ public static class People
         baseHeadVerts = 0;
         try
         {
-            var inst = GD.Load<PackedScene>(P1Body.Dir + "body.glb")?.Instantiate();
+            // (B's file whichever body she wears: the NPC fold map is on B's UVs)
+            var inst = GD.Load<PackedScene>(P1Body.DefaultDir + "body.glb")?.Instantiate();
             if (inst != null)
             {
                 var stack = new Stack<Node>();
