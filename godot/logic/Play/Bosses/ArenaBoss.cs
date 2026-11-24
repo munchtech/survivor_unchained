@@ -31,6 +31,9 @@ public interface IBossArena
     /// <summary>(P3, DEN_ROSTER.md) The den's own cut of its ruler (MapRun in the hollow): arena nights and story fights keep the
     /// table's fight, so this is false everywhere else.</summary>
     bool DenCut => false;
+    /// <summary>(P3) Its kit tells' blows (the Pack-Mother's Drive, a pull, a toll: shares of her life, not off its Damage), over the
+    /// table's: a dungeon's ruler reads DungeonFights.BossKit; 1 everywhere else.</summary>
+    double KitMul => 1;
     /// <summary>The fight is won (Grimtunnel goes back down rather than dying).</summary>
     void Won(double x, double z);
 }

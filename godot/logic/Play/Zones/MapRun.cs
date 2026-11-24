@@ -663,6 +663,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         e.Named = new Named { Title = people.BossName };
         double mul = BossHealth * Content.DungeonFights.Of(Chart.Dungeon).BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
         e.MaxHp = e.Hp = e.MaxHp * mul;
+        e.Damage *= Content.DungeonFights.Of(Chart.Dungeon).BossDamage;
         // Its blows as its people's champion's, not the night's ruler's third more: a day build carries
         // none of the ember's mending, and her bites took a level-ten warden from full in eight seconds.
         if (script != null)
@@ -687,6 +688,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     string IBossArena.BossName => people.BossName;
     bool IBossArena.Spare => false;
     bool IBossArena.DenCut => DenRoster.For(Chart.Dungeon);
+    double IBossArena.KitMul => Content.DungeonFights.Of(Chart.Dungeon).BossKit;
     bool IBossArena.Sworn(string oath) => Chart.Has(oath);
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style)

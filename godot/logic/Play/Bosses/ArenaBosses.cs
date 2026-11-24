@@ -130,7 +130,7 @@ public sealed class PackMother : ArenaBoss
         Signature(He ? "He drops his head: the Drive!" : "She drops her head: the Drive!", SignatureLead, () =>
         {
             var pp = B.Player;
-            if (B.Tell("charge", E, pp.X, pp.Z, DriveScale) != null) HoldForCharge();
+            if (B.Tell("charge", E, pp.X, pp.Z, DriveScale, damageMul: A.KitMul) != null) HoldForCharge();
         });
     }
     /// <summary>The Drive's size over the kit's charge.</summary>
@@ -572,7 +572,7 @@ public sealed class Grimtunnel : ArenaBoss
             Signature(ganger ? "It bursts up: the ground caves in!" : "He bursts up: the ground caves in!", SignatureLead, () =>
             {
                 double bx = E.X, bz = E.Z;
-                var b = B.Tell("pull", E, bx, bz, CaveScale);
+                var b = B.Tell("pull", E, bx, bz, CaveScale, damageMul: A.KitMul);
                 Hold(b?.Delay ?? 1.2, () =>
                 {
                     under = false;
@@ -777,7 +777,7 @@ public sealed class RedHand : ArenaBoss
     void TollRing()
     {
         var p = B.Player;
-        if (B.Tell("ring", E, p.X, p.Z, TollScale, damageMul: TollBlood) is not { } ring) return;
+        if (B.Tell("ring", E, p.X, p.Z, TollScale, damageMul: TollBlood * A.KitMul) is not { } ring) return;
         var kit = ring.After;
         ring.After = bb =>
         {

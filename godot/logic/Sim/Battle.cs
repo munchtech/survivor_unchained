@@ -1669,7 +1669,7 @@ public sealed partial class Battle
     /* ========================================================= damage out == */
 
     /// <summary>The label of the marked blow being dealt now, for the hit it makes (the harness reads it).</summary>
-    string? blowLabel;
+    string? blowLabel, blowTell;
 
     /// <summary>A creature's blow on the survivor, after dodge, block and
     /// armour. A telegraphed blow (a lunge after its wind-up, a missile, a
@@ -2004,7 +2004,7 @@ public sealed partial class Battle
             // capped by rhythm rather than by how many creatures touch you.
             p.HurtT = 0.3;
             p.Iframes = Math.Max(p.Iframes, 0.45);
-            Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source, Label = blowLabel });
+            Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source, Label = blowLabel, Tell = blowTell });
             Fire(TriggerEvent.Hurt, new ProcCtx { X = p.X, Z = p.Z, Damage = dmg });
         }
         if ((from != null ? new Shot(from.Def, from.Damage) : shotFrom) is { } by)
@@ -2556,9 +2556,9 @@ public sealed partial class Battle
                 if (b.Kind == TelegraphKind.Blow && !b.OwnMark) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
-                    blowLabel = b.Label;
+                    blowLabel = b.Label; blowTell = b.Tell;
                     if (b.Damage > 0 && (b.Dealt = HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true)) > 0 && b.From?.Boss == true) BossBlowsTaken++;
-                    blowLabel = null;
+                    blowLabel = blowTell = null;
                     // A leapt, dodged or blocked blow lames no one (SU-065): its slow rides its damage, or, with none, the control rule.
                     if (b.Slow > 0 && (b.Damage > 0 ? b.Dealt > 0 : ControlReaches())) SlowPlayer(b.Slow, b.SlowFor);
                 }
