@@ -1,0 +1,48 @@
+{
+ "source": "C:/Users/munch/Desktop/Marionette/generated/to_game/switch_b_r3",
+ "manifest_sha1": "49182694defbceedb606e7eb4ba2df62d799f464",
+ "files": {
+  "body.glb": "f1146585faff984b636feebd2d8389bd821572c0",
+  "clips.res": "a0ea154c21a2f5a8611eabe6e57268525a3c2881",
+  "her_clips.res": "1608c1a373b2bf0d1f005ebe78a193a010438c5d",
+  "a_skeleton.json": "5576cd619fbdd5a5f0efe7b8e3cc3b54b75af331",
+  "rig_helpers.json": "d84b6ee1c7b821b9861aa7d0bad1445fe2f37318",
+  "blend_base.json": "30bd6eab13207d4595edf2207ff598a77aa478da",
+  "freckles.png": "ec6a4ac05d115b0921c86d43e2401611fc714475",
+  "cavity.png": "8984a97daa3e8aa5bf1029fc6c687bf99352e543",
+  "rig.json": "508f71a8f1e53d639aaafceb9b6ed26d3f344ee7"
+ },
+ "from_b": [
+  "clips.res",
+  "her_clips.res",
+  "a_skeleton.json",
+  "rig_helpers.json",
+  "blend_base.json"
+ ],
+ "maps": [
+  "freckles.png",
+  "cavity.png"
+ ],
+ "dropped": {
+  "correctives": {
+   "rows": 4,
+   "shapes": 17
+  },
+  "why": "the copy has no corrective shapes (0 morphs); the owner agreed to drop B's joint correctives in the game"
+ },
+ "skin": {
+  "cavity_bounce": 0.0
+ },
+ "import": {
+  "from": "godot/art/people/heroine.glb.import",
+  "params": {
+   "meshes/ensure_tangents": "true",
+   "meshes/generate_lods": "false",
+   "meshes/create_shadow_meshes": "true",
+   "meshes/force_disable_compression": "true",
+   "import_script/path": "\"res://tools_scenes/import_mipmaps.gd\"",
+   "gltf/embedded_image_handling": "3"
+  },
+  "changed": {}
+ }
+}

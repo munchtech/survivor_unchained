@@ -320,6 +320,27 @@ public partial class PlayerView : Node3D
     readonly StanceHands stanceHands = new();
     StanceCarry? stanceCarry;
     static readonly bool CarryLog = Args.Has("carry-log"); int carryLogT = -1;
+    // --death-log: every frame, after her skeleton's pose is final (SkeletonUpdated), who drives it (tree active, the player's
+    // clip and position) and the largest bone turn from rest, in degrees (body-switch 24 Nov: a near-rest pose 0.4-0.7 s into
+    // her death). Diagnostics only.
+    static readonly bool DeathLog = Args.Has("death-log"); bool deathHooked;    void DeathLogStep()
+    {
+        var sk = person.Skeleton;
+        float worst = 0, sum = 0, major = 0; int wb = -1, nMajor = 0; double sig = 0;
+        for (int i = 0; i < sk.GetBoneCount(); i++)
+        {
+            var q = sk.GetBonePoseRotation(i); var r = sk.GetBoneRest(i).Basis.GetRotationQuaternion();
+            float a = Mathf.RadToDeg(q.AngleTo(r));
+            sum += a; sig += (i + 1) * (q.X * 3 + q.Y * 5 + q.Z * 7 + q.W * 11);
+            var bn = sk.GetBoneName(i);
+            if (bn is "pelvis" or "spine_01" or "spine_02" or "spine_03" or "neck_01" or "head" or "upperarm_l" or "upperarm_r" or "lowerarm_l" or "lowerarm_r"
+                or "thigh_l" or "thigh_r" or "calf_l" or "calf_r") { major += a; nMajor++; }
+            if (a > worst) { worst = a; wb = i; }
+        }
+        GD.Print($"deathlog pose f {Engine.GetProcessFrames()} mean {sum / Mathf.Max(1, sk.GetBoneCount()):0.00} major {(nMajor > 0 ? major / nMajor : -1):0.00} n {nMajor} sig {sig:0.000000}");
+        var an = person.Anim;
+        GD.Print($"deathlog f {Engine.GetProcessFrames()} t {time:0.000} dt {probeDt:0.0000} dead {dead} tree {tree.Active} anim {an.CurrentAnimation} pos {(an.IsPlaying() || an.CurrentAnimation != "" ? an.CurrentAnimationPosition : -1):0.000} playing {an.IsPlaying()} maxturn {worst:0.0} bone {(wb >= 0 ? sk.GetBoneName(wb) : "-")}");
+    }
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     /// <summary>The full shot is a soft one that gave way to her moving and is only fading out (it holds nothing).</summary>
@@ -1191,7 +1212,13 @@ public partial class PlayerView : Node3D
         time += dt;
         probeDt = dt; probeFight = fightTime;
         if (GripProbe && mine) Probe();
-        if (mine) { Xfade(); ActTick(dt); P7Tick(dt); tree.Advance(dt); }
+        if (DeathLog && mine && !deathHooked) { deathHooked = true; person.Skeleton.SkeletonUpdated += DeathLogStep; }
+        if (DeathLog && mine) GD.Print($"deathlog upd f {Engine.GetProcessFrames()} t {time:0.000} tree {tree.Active} advance {tree.Active}");
+        // (body-switch 24 Nov, --death-log) The tree steps only while it is active: Advance writes her skeleton even when the tree is
+        // not, so at a death, once her death clip had played out (1.33 s) and the player stopped writing, the tree stood her up again
+        // in its idle until the revive (measured: 36 frames standing while dead). Inactive = the player alone owns her pose (death,
+        // --hold, --clip-tour); Revive makes the tree active again.
+        if (mine) { Xfade(); ActTick(dt); P7Tick(dt); if (tree.Active) tree.Advance(dt); }
         // The arm-hold crossfade, on the frame the tree first shows what Carry set last frame.
         if (armMod != null)
         {
@@ -1318,6 +1345,7 @@ public partial class PlayerView : Node3D
                     death = own.Prefix + "death_back";
                 onBack = death.EndsWith("death_back");
                 person.Anim.Play(death, 0.1);
+                if (DeathLog) GD.Print($"deathlog DIE f {Engine.GetProcessFrames()} t {time:0.000} clip {death} len {person.Anim.GetAnimation(death)?.Length ?? -1:0.000}");
                 if (person.Pose != null) person.Pose.Native = death.StartsWith(own.Prefix) ? 1 : 0;
                 if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
             }

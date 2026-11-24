@@ -21,7 +21,8 @@ public partial class NpcSkinCheck : Node
     {
         var args = OS.GetCmdlineUserArgs();
         var outPath = args.Length > 0 ? args[0] : "npc_skin_check.txt";
-        var scene = GD.Load<PackedScene>(P1Body.Dir + "body.glb");
+        // B's file, not her current body: NPC skins sit on B's head and body topology (People.BaseHeadVerts) whichever body she wears
+        var scene = GD.Load<PackedScene>(P1Body.DefaultDir + "body.glb");
         var root = scene.Instantiate();
         Mesh? headMesh = null, bodyMesh = null;
         var stack = new Stack<Node>();

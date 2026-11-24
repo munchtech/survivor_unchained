@@ -1,0 +1,1175 @@
+{
+ "body": "body_p1_house",
+ "body_hash": "f1146585faff984b636feebd2d8389bd821572c0",
+ "rows": [
+  {
+   "id": "arcanist.boots",
+   "outfit": "arcanist",
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots"
+   ],
+   "meshes": [
+    "arcanist.boots.blackleather",
+    "arcanist.boots.darkleather",
+    "arcanist.boots.darkpurple",
+    "arcanist.boots.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.boots.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.boots.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "arcanist.bottom",
+   "outfit": "arcanist",
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom"
+   ],
+   "meshes": [
+    "arcanist.bottom.darkpurple",
+    "arcanist.bottom.plumleather",
+    "arcanist.bottom.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.bottom.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.bottom.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "arcanist.gloves",
+   "outfit": "arcanist",
+   "slot": "gloves",
+   "layer": 1,
+   "covers": [
+    "gloves"
+   ],
+   "meshes": [
+    "arcanist.gloves.glovepipe",
+    "arcanist.gloves.glovesatin"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.gloves.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.gloves.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "arcanist.head",
+   "outfit": "arcanist",
+   "slot": "head",
+   "layer": 3,
+   "covers": [
+    "head"
+   ],
+   "meshes": [
+    "arcanist.head.darkpurple",
+    "arcanist.head.plumleather"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.head.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.head.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "arcanist.legwear",
+   "outfit": "arcanist",
+   "slot": "legwear",
+   "layer": 1,
+   "covers": [
+    "legwear"
+   ],
+   "meshes": [
+    "arcanist.legwear.satin",
+    "arcanist.legwear.stocking"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.legwear.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.legwear.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "arcanist.lod",
+   "outfit": "arcanist",
+   "slot": null,
+   "lod": true,
+   "meshes": [
+    "lod_amethyst",
+    "lod_blackleather",
+    "lod_claspgold",
+    "lod_darkleather",
+    "lod_darkpurple",
+    "lod_glovepipe",
+    "lod_glovesatin",
+    "lod_plumleather",
+    "lod_satin",
+    "lod_stocking",
+    "lod_thread",
+    "lod_shadow"
+   ],
+   "a_file": "godot/art/people/heroine_outfit_arcanist_lod.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.lod.npz",
+   "fit": "ok"
+  },
+  {
+   "id": "arcanist.top",
+   "outfit": "arcanist",
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "arcanist.top.amethyst",
+    "arcanist.top.claspgold",
+    "arcanist.top.darkpurple",
+    "arcanist.top.plumleather",
+    "arcanist.top.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "under": [
+    "plate_gstring_plain"
+   ],
+   "a_file": "godot/art/people/heroine_outfit_arcanist.gltf",
+   "file": "res://art/gear/out/body_p1/arcanist.top.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/arcanist.top.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/arcanist.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.belt",
+   "outfit": "ranger",
+   "slot": "belt",
+   "layer": 2,
+   "covers": [
+    "belt"
+   ],
+   "meshes": [
+    "ranger.belt.bronze",
+    "ranger.belt.brownleather",
+    "ranger.belt.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.belt.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.belt.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.boots",
+   "outfit": "ranger",
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots"
+   ],
+   "meshes": [
+    "ranger.boots.bootleather",
+    "ranger.boots.darkleather",
+    "ranger.boots.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.boots.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.boots.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.bottom",
+   "outfit": "ranger",
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom",
+    "legwear"
+   ],
+   "meshes": [
+    "ranger.bottom.bronze",
+    "ranger.bottom.browncloth",
+    "ranger.bottom.brownleather",
+    "ranger.bottom.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.bottom.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.bottom.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.bracers",
+   "outfit": "ranger",
+   "slot": "bracers",
+   "layer": 2,
+   "covers": [
+    "bracers"
+   ],
+   "meshes": [
+    "ranger.bracers.bronze",
+    "ranger.bracers.brownleather",
+    "ranger.bracers.iron"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.bracers.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.bracers.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.gloves",
+   "outfit": "ranger",
+   "slot": "gloves",
+   "layer": 1,
+   "covers": [
+    "gloves"
+   ],
+   "meshes": [
+    "ranger.gloves.forestleather",
+    "ranger.gloves.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.gloves.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.gloves.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.lod",
+   "outfit": "ranger",
+   "slot": null,
+   "lod": true,
+   "meshes": [
+    "lod_blackleather",
+    "lod_bootleather",
+    "lod_bronze",
+    "lod_browncloth",
+    "lod_brownleather",
+    "lod_darkleather",
+    "lod_forestleather",
+    "lod_iron",
+    "lod_rivetbronze",
+    "lod_thread",
+    "lod_shadow"
+   ],
+   "a_file": "godot/art/people/heroine_outfit_ranger_lod.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.lod.npz",
+   "fit": "ok"
+  },
+  {
+   "id": "ranger.pauldrons",
+   "outfit": "ranger",
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "ranger.pauldrons.bronze",
+    "ranger.pauldrons.darkleather",
+    "ranger.pauldrons.forestleather",
+    "ranger.pauldrons.rivetbronze",
+    "ranger.pauldrons.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.pauldrons.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.pauldrons.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "ranger.top",
+   "outfit": "ranger",
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "ranger.top.blackleather",
+    "ranger.top.bronze",
+    "ranger.top.darkleather",
+    "ranger.top.forestleather",
+    "ranger.top.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_ranger.gltf",
+   "file": "res://art/gear/out/body_p1/ranger.top.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/ranger.top.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/ranger.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.belt",
+   "outfit": "reaver",
+   "slot": "belt",
+   "layer": 2,
+   "covers": [
+    "belt"
+   ],
+   "meshes": [
+    "reaver.belt.darkleather",
+    "reaver.belt.oldleather",
+    "reaver.belt.rust",
+    "reaver.belt.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.belt.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.belt.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.boots",
+   "outfit": "reaver",
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots"
+   ],
+   "meshes": [
+    "reaver.boots.blackleather",
+    "reaver.boots.darkleather",
+    "reaver.boots.fur",
+    "reaver.boots.hide",
+    "reaver.boots.rawhide",
+    "reaver.boots.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.boots.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.boots.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.bottom",
+   "outfit": "reaver",
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom"
+   ],
+   "meshes": [
+    "reaver.bottom.blackleather",
+    "reaver.bottom.oldleather",
+    "reaver.bottom.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.bottom.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.bottom.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.bracers",
+   "outfit": "reaver",
+   "slot": "bracers",
+   "layer": 2,
+   "covers": [
+    "bracers"
+   ],
+   "meshes": [
+    "reaver.bracers.darkleather",
+    "reaver.bracers.fur",
+    "reaver.bracers.oldleather",
+    "reaver.bracers.rust",
+    "reaver.bracers.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.bracers.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.bracers.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.cloak",
+   "outfit": "reaver",
+   "slot": "cloak",
+   "layer": 3,
+   "covers": [
+    "cloak"
+   ],
+   "meshes": [
+    "reaver.cloak.fur"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.cloak.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.cloak.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.collar",
+   "outfit": "reaver",
+   "slot": "collar",
+   "layer": 2,
+   "covers": [
+    "collar"
+   ],
+   "meshes": [
+    "reaver.collar.blackleather",
+    "reaver.collar.bone"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.collar.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.collar.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.ink",
+   "outfit": "reaver",
+   "slot": "ink",
+   "layer": 0,
+   "covers": [
+    "ink"
+   ],
+   "meshes": [
+    "reaver.ink.ink"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.ink.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.ink.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.lod",
+   "outfit": "reaver",
+   "slot": null,
+   "lod": true,
+   "meshes": [
+    "lod_blackleather",
+    "lod_bone",
+    "lod_burnished",
+    "lod_darkleather",
+    "lod_fur",
+    "lod_hide",
+    "lod_ink",
+    "lod_oldleather",
+    "lod_rawhide",
+    "lod_rust",
+    "lod_thread",
+    "lod_shadow"
+   ],
+   "a_file": "godot/art/people/heroine_outfit_reaver_lod.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.lod.npz",
+   "fit": "ok"
+  },
+  {
+   "id": "reaver.skirt",
+   "outfit": "reaver",
+   "slot": "skirt",
+   "layer": 2,
+   "covers": [
+    "skirt"
+   ],
+   "meshes": [
+    "reaver.skirt.burnished",
+    "reaver.skirt.oldleather"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.skirt.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.skirt.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "reaver.top",
+   "outfit": "reaver",
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "reaver.top.darkleather",
+    "reaver.top.oldleather",
+    "reaver.top.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_reaver.gltf",
+   "file": "res://art/gear/out/body_p1/reaver.top.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/reaver.top.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/reaver.lod.gltf",
+   "tuck": null,
+   "tuck_count": 0
+  },
+  {
+   "id": "warden.belt",
+   "outfit": "warden",
+   "slot": "belt",
+   "layer": 2,
+   "covers": [
+    "belt"
+   ],
+   "meshes": [
+    "warden.belt.darkleather",
+    "warden.belt.gold",
+    "warden.belt.steel",
+    "warden.belt.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.belt.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.belt.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.belt.bin",
+   "tuck_count": 20,
+   "cover_count": 95
+  },
+  {
+   "id": "warden.boots",
+   "outfit": "warden",
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots"
+   ],
+   "meshes": [
+    "warden.boots.darkleather",
+    "warden.boots.gold",
+    "warden.boots.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.boots.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.boots.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.boots.bin",
+   "tuck_count": 388,
+   "cover_count": 840
+  },
+  {
+   "id": "warden.bottom",
+   "outfit": "warden",
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom"
+   ],
+   "meshes": [
+    "warden.bottom.darkleather",
+    "warden.bottom.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.bottom.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.bottom.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.bottom.bin",
+   "tuck_count": 60,
+   "cover_count": 64
+  },
+  {
+   "id": "warden.bracers",
+   "outfit": "warden",
+   "slot": "bracers",
+   "layer": 2,
+   "covers": [
+    "bracers"
+   ],
+   "meshes": [
+    "warden.bracers.gold",
+    "warden.bracers.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.bracers.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.bracers.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.bracers.bin",
+   "tuck_count": 280,
+   "cover_count": 317
+  },
+  {
+   "id": "warden.greaves",
+   "outfit": "warden",
+   "slot": "greaves",
+   "layer": 2,
+   "covers": [
+    "greaves"
+   ],
+   "meshes": [
+    "warden.greaves.darkleather",
+    "warden.greaves.gold",
+    "warden.greaves.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.greaves.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.greaves.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.greaves.bin",
+   "tuck_count": 557,
+   "cover_count": 644
+  },
+  {
+   "id": "warden.lod",
+   "outfit": "warden",
+   "slot": null,
+   "lod": true,
+   "meshes": [
+    "lod_darkleather",
+    "lod_darksteel",
+    "lod_gold",
+    "lod_steel",
+    "lod_thread",
+    "lod_shadow"
+   ],
+   "a_file": "godot/art/people/heroine_outfit_warden_lod.gltf",
+   "file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.lod.npz",
+   "fit": "ok"
+  },
+  {
+   "id": "warden.pauldrons",
+   "outfit": "warden",
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "warden.pauldrons.gold",
+    "warden.pauldrons.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.pauldrons.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.pauldrons.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.pauldrons.bin",
+   "tuck_count": 72,
+   "cover_count": 174
+  },
+  {
+   "id": "warden.skirt",
+   "outfit": "warden",
+   "slot": "skirt",
+   "layer": 2,
+   "covers": [
+    "skirt"
+   ],
+   "meshes": [
+    "warden.skirt.darksteel",
+    "warden.skirt.gold",
+    "warden.skirt.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.skirt.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.skirt.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.skirt.bin",
+   "tuck_count": 99,
+   "cover_count": 207
+  },
+  {
+   "id": "warden.top",
+   "outfit": "warden",
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "warden.top.darkleather",
+    "warden.top.gold",
+    "warden.top.steel",
+    "warden.top.thread"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "hold": {
+    "amount": 0.55,
+    "squash": 0
+   },
+   "a_file": "godot/art/people/heroine_outfit_warden.gltf",
+   "file": "res://art/gear/out/body_p1/warden.top.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/warden.top.npz",
+   "fit": "ok",
+   "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
+   "tuck": "armor_tuck/warden.top.bin",
+   "tuck_count": 212,
+   "cover_count": 239
+  },
+  {
+   "id": "plate_pauldrons_warden",
+   "outfit": null,
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "plate_pauldrons_warden.pauldrons.darkleather",
+    "plate_pauldrons_warden.pauldrons.gold",
+    "plate_pauldrons_warden.pauldrons.steel"
+   ],
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/gear/out/body_p1/plate_pauldrons_warden.gltf",
+   "tier": 1,
+   "cover_grow": [
+    0.02,
+    0.025
+   ],
+   "base": "plate_pauldrons_plain",
+   "replaces": "warden.pauldrons",
+   "a_file": "res://art/armor/plate_pauldrons_warden.gltf",
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "binding": "godot/art/gear/bind/plate_pauldrons_warden.npz",
+   "fit": "ok",
+   "sockets": "res://art/gear/out/body_p1/plate_pauldrons_warden.sockets.json",
+   "tuck": "armor_tuck/plate_pauldrons_warden.bin",
+   "tuck_count": 14,
+   "tuck_depth_mm": 18.0,
+   "cover_count": 171
+  },
+  {
+   "id": "kit_belt",
+   "outfit": null,
+   "slot": "belt",
+   "layer": 2,
+   "covers": [
+    "belt",
+    "skirt"
+   ],
+   "meshes": [
+    "kit_belt.belt.brownleather",
+    "kit_belt.belt.gold",
+    "kit_belt.belt.steel"
+   ],
+   "tuck": "armor_tuck/kit_belt.bin",
+   "tuck_count": 69,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_belt.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_belt.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 206
+  },
+  {
+   "id": "kit_bodice",
+   "outfit": null,
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "kit_bodice.top.darkleather",
+    "kit_bodice.top.gold",
+    "kit_bodice.top.steel"
+   ],
+   "tuck": "armor_tuck/kit_bodice.bin",
+   "tuck_count": 860,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "hold": {
+    "amount": 0.55,
+    "squash": 0,
+    "rest": "bind"
+   },
+   "file": "res://art/armor/body_p1/kit_bodice.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_bodice.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 813
+  },
+  {
+   "id": "kit_boots",
+   "outfit": null,
+   "slot": "boots",
+   "layer": 2,
+   "covers": [
+    "boots",
+    "greaves"
+   ],
+   "meshes": [
+    "kit_boots.boots.darkleather",
+    "kit_boots.boots.gold",
+    "kit_boots.boots.steel"
+   ],
+   "tuck": "armor_tuck/kit_boots.bin",
+   "tuck_count": 977,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_boots.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_boots.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 2040
+  },
+  {
+   "id": "kit_brief",
+   "outfit": null,
+   "slot": "bottom",
+   "layer": 1,
+   "covers": [
+    "bottom"
+   ],
+   "meshes": [
+    "kit_brief.bottom.gold",
+    "kit_brief.bottom.steel"
+   ],
+   "tuck": "armor_tuck/kit_brief.bin",
+   "tuck_count": 114,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_brief.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_brief.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 189
+  },
+  {
+   "id": "kit_gloves",
+   "outfit": null,
+   "slot": "gloves",
+   "layer": 1,
+   "covers": [
+    "gloves"
+   ],
+   "meshes": [
+    "kit_gloves.gloves.darkleather",
+    "kit_gloves.gloves.gold"
+   ],
+   "tuck": "armor_tuck/kit_gloves.bin",
+   "tuck_count": 725,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_gloves.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_gloves.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 1006
+  },
+  {
+   "id": "kit_helm",
+   "outfit": null,
+   "slot": "head",
+   "layer": 3,
+   "covers": [
+    "head"
+   ],
+   "meshes": [
+    "kit_helm.head.gold",
+    "kit_helm.head.steel"
+   ],
+   "tuck": null,
+   "tuck_count": 0,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_helm.gltf",
+   "tier": 2,
+   "rigid": true,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_helm.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 0
+  },
+  {
+   "id": "kit_pauldrons",
+   "outfit": null,
+   "slot": "pauldrons",
+   "layer": 3,
+   "covers": [
+    "pauldrons"
+   ],
+   "meshes": [
+    "kit_pauldrons.pauldrons.darkleather",
+    "kit_pauldrons.pauldrons.gold",
+    "kit_pauldrons.pauldrons.steel"
+   ],
+   "tuck": "armor_tuck/kit_pauldrons.bin",
+   "tuck_count": 48,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_pauldrons.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_pauldrons.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 178
+  },
+  {
+   "id": "kit_vambraces",
+   "outfit": null,
+   "slot": "bracers",
+   "layer": 2,
+   "covers": [
+    "bracers"
+   ],
+   "meshes": [
+    "kit_vambraces.bracers.darkleather",
+    "kit_vambraces.bracers.gold",
+    "kit_vambraces.bracers.steel"
+   ],
+   "tuck": "armor_tuck/kit_vambraces.bin",
+   "tuck_count": 109,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "file": "res://art/armor/body_p1/kit_vambraces.gltf",
+   "tier": 2,
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "sockets": "res://art/armor/body_p1/kit_vambraces.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
+   "cover_count": 241
+  },
+  {
+   "id": "sol_corset",
+   "outfit": null,
+   "slot": "top",
+   "layer": 1,
+   "covers": [
+    "top"
+   ],
+   "meshes": [
+    "sol_corset.top.brownleather",
+    "sol_corset.top.gold",
+    "sol_corset.top.redleather",
+    "sol_corset.top.steel"
+   ],
+   "tuck": "armor_tuck/sol_corset.bin",
+   "tuck_count": 950,
+   "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
+   "hold": {
+    "amount": 0.55,
+    "squash": 0
+   },
+   "file": "res://art/armor/body_p1/sol_corset.gltf",
+   "tier": 2,
+   "rigid": true,
+   "tuck_law": {
+    "tuck_depth_mm": 22,
+    "tuck_back_mm": 24,
+    "tuck_full_mm": 30,
+    "tuck_zero_mm": 40,
+    "tuck_slope": 1.0,
+    "tuck_step": 1.0
+   },
+   "source": "mesh",
+   "body_glb": "e37f5a0c",
+   "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
+   "tuck_depth_mm": 22.0,
+   "cover_count": 768,
+   "sockets": "res://art/armor/body_p1/sol_corset.sockets.json",
+   "fit": "ok",
+   "native": true,
+   "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d"
+  }
+ ],
+ "house": {
+  "package": "C:/Users/munch/Desktop/Marionette/generated/to_game/switch_b_r3",
+  "manifest_sha1": "49182694defbceedb606e7eb4ba2df62d799f464",
+  "rows_tucked": [
+   "warden.belt",
+   "warden.boots",
+   "warden.bottom",
+   "warden.bracers",
+   "warden.greaves",
+   "warden.pauldrons",
+   "warden.skirt",
+   "warden.top",
+   "plate_pauldrons_warden",
+   "kit_belt",
+   "kit_bodice",
+   "kit_boots",
+   "kit_brief",
+   "kit_gloves",
+   "kit_pauldrons",
+   "kit_vambraces",
+   "sol_corset"
+  ],
+  "rows_untucked": [
+   "arcanist.boots",
+   "arcanist.bottom",
+   "arcanist.gloves",
+   "arcanist.head",
+   "arcanist.legwear",
+   "arcanist.top",
+   "ranger.belt",
+   "ranger.boots",
+   "ranger.bottom",
+   "ranger.bracers",
+   "ranger.gloves",
+   "ranger.pauldrons",
+   "ranger.top",
+   "reaver.belt",
+   "reaver.boots",
+   "reaver.bottom",
+   "reaver.bracers",
+   "reaver.cloak",
+   "reaver.collar",
+   "reaver.ink",
+   "reaver.skirt",
+   "reaver.top",
+   "kit_helm"
+  ],
+  "rows_covered": [
+   "warden.belt",
+   "warden.boots",
+   "warden.bottom",
+   "warden.bracers",
+   "warden.greaves",
+   "warden.pauldrons",
+   "warden.skirt",
+   "warden.top",
+   "plate_pauldrons_warden",
+   "kit_belt",
+   "kit_bodice",
+   "kit_boots",
+   "kit_brief",
+   "kit_gloves",
+   "kit_helm",
+   "kit_pauldrons",
+   "kit_vambraces",
+   "sol_corset"
+  ]
+ }
+}

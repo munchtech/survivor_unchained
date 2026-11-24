@@ -74,6 +74,12 @@ public partial class Game : Node, IZoneHost
     double autosaveT, fogT, hudT, draftWait, reportT, shareT;
     Autopilot? auto;
 
+    static void FxFixed(Node n)
+    {
+        if (n is GpuParticles3D g) { g.UseFixedSeed = true; g.Seed = 7; }
+        else if (n is CpuParticles3D c) { c.UseFixedSeed = true; c.Seed = 7; }
+    }
+
     public override void _Ready()
     {
         // Data through Godot's file access from the first frame: skills.json and items.json are read
@@ -88,6 +94,10 @@ public partial class Game : Node, IZoneHost
         Core.DenTest.On = OS.HasFeature("den_test") || Args.Has("den-loop");
         if (Core.DenTest.On) GD.Print("den test: the den loops, no other place is offered");
         AddChild(new ClipRecorder());
+        // --fx-fixed (pictures only): every particle emitter's randomness fixed (one seed for all), so two runs that differ in one
+        // thing (body-switch, 24 Nov: today's body B against the shared-mesh copy, judged side by side) differ in nothing else on
+        // screen. FlameKit's flicker phase drops its instance id under the same switch.
+        if (Args.Has("fx-fixed")) GetTree().NodeAdded += FxFixed;
         AddChild(new BugReporter(this));
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");

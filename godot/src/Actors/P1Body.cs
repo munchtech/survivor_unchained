@@ -20,16 +20,32 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class P1Body
 {
-    /// <summary>B's published folder. Pictures-only switch `--p1-dir res://art/people/body_p1_var/<name>/` (P1 R1 sliders): a slider
-    /// variant's build, published by tools/body/publish_p1.py --dest, loads from its own folder (body, play, rigs, clips, blend base,
-    /// pieces, cavity, freckles, spring samples); default the gate body's.</summary>
+    /// <summary>Her body's published folder. `--p1-dir res://art/people/body_p1_var/<name>/` (P1 R1 sliders) loads a folder of its own
+    /// (body, play, rigs, clips, blend base, pieces, cavity, freckles, spring samples); with no --p1-dir, "dir" of
+    /// data/body/her_body.json (the house body's folder, tools/body/publish_house.py); else DefaultDir, B's. A chosen folder with no
+    /// body.glb (not published yet) falls back to DefaultDir, said once.</summary>
     public static readonly string Dir = PickDir();
     public const string DefaultDir = "res://art/people/body_p1/";
     static string PickDir()
     {
         var d = Args.Get("p1-dir");
+        if (string.IsNullOrEmpty(d))
+        {
+            const string path = "res://data/body/her_body.json";
+            if (FileAccess.FileExists(path))
+            {
+                using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(path));
+                if (doc.RootElement.TryGetProperty("dir", out var e)) d = e.GetString();
+            }
+        }
         if (string.IsNullOrEmpty(d)) return DefaultDir;
-        return d.EndsWith("/") ? d : d + "/";
+        if (!d.EndsWith("/")) d += "/";
+        if (d != DefaultDir && !ResourceLoader.Exists(d + "body.glb"))
+        {
+            GD.Print($"P1Body: {d}body.glb is not there; her body loads from {DefaultDir}");
+            return DefaultDir;
+        }
+        return d;
     }
     /// <summary>B is her body: `--body p1` (always, even for a hidden calling), or no --body at all and data/body/her_body.json's
     /// default is "p1" (any other --body value, a, woman, hero, keeps its meaning) unless the current calling is hidden on B
