@@ -20,7 +20,7 @@ public static class DenCookie
     {
         v = ((v % Variants) + Variants) % Variants;
         if (made[v] is { } t && GodotObject.IsInstanceValid(t)) return t;
-        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.05f), 0.004f), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.07f);
+        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.02f), 0.004f), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.07f);
         var rng = new RandomNumberGenerator { Seed = (ulong)(7919 * (v + 1)) };
         int n = 2 + (v % 2);
         var c = new Vector2[n]; var rad = new Vector2[n]; var rot = new float[n];

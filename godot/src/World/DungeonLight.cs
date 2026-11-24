@@ -19,10 +19,12 @@ public static class DungeonLight
     // it can have paint but an actual light too") --den-real-light 1: a pool is what a real light does to the floor. The shaft's
     // spot carries the roof gap as a projected texture (DenCookie) and casts shadows, so what stands in the pool throws one;
     // the air in the shaft is a cone of fog the same light scatters in (the volumetric fog the High tier already pays for).
-    // Off under it: the floor shader's pool mask (sp_*, an albedo gain), the rooms' warm wash and the fan card (--den-rl-fan).
+    // The light is ADDED (the owner's check, 23 Nov: "the new lighting isn't coming at the cost of having other things painted
+    // right?"): the rig, the rooms' wash and the painted fan rays stay as they are (--den-rl-wash, --den-rl-fan scale them); and so
+    // does the floor's painted pool (sp_*; --den-rl-mask 0 drops it: the lair's floor then changes well outside the light).
     static readonly bool Real = SurvivorUnchained.Args.Num("den-real-light", 0f) > 0f;
-    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 27f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.9f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
-        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 0f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0.3f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 1f);
+    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 12f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.9f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
+        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 1f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0.03f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 0.5f);
     static int realN;
 
     public static Node3D? Build(ZoneData z)
@@ -71,7 +73,7 @@ public static class DungeonLight
         AddCorridorFans(root, z, feet);
         var fl = new System.Text.StringBuilder(); foreach (var f in feet) fl.Append($" ({f.X:F1},{f.Y:F1})");
         GD.Print($"DungeonLight fans: {roomFans} in rooms, {feet.Count - roomFans} in corridors:{fl}");
-        if (PoolFloor > 0f && Fan > 0f && !Real) root.TreeEntered += () => FloorPools(root);
+        if (PoolFloor > 0f && Fan > 0f && (!Real || SurvivorUnchained.Args.Num("den-rl-mask", 1f) > 0f)) root.TreeEntered += () => FloorPools(root);
         // (round 8, 15 Nov) The pack reads in the den's light: the wolves' dark fur under a dim key read as black
         // silhouettes (round 7's "black fragments" by the big pit were the resting pack). A fill from the camera's side,
         // high, that reaches the crowd's own layer only (PlayerView.CrowdLayer): the floor, the banks and HER take none of
@@ -132,7 +134,7 @@ public static class DungeonLight
                 LightVolumetricFogEnergy = RlFog,
             });
             AddFogShaft(root, foot, r * 1.25f);
-            return;
+            // (no return: today's soft spot below stays, the broad glow round the pool is its; the gap's light is added to it)
         }
         var spot = new SpotLight3D
         {
@@ -183,14 +185,14 @@ public static class DungeonLight
     static void AddFogShaft(Node3D root, Vector3 foot, float rFoot)
     {
         if (RlShaft <= 0f) return;
-        float h = Mathf.Min(SurvivorUnchained.Args.Num("den-rl-shaft-h", Height), Height);
+        float h = Mathf.Min(SurvivorUnchained.Args.Num("den-rl-shaft-h", 9f), Height);
         var up = -Axis;
         var side = up.Cross(Vector3.Back).Normalized();
         var b = new Basis(side, up, side.Cross(up).Normalized());
         var mat = new FogMaterial
         {
             Density = RlShaft, Albedo = new Color(SurvivorUnchained.Args.Get("den-rl-shaft-albedo") ?? "ffffff"),
-            EdgeFade = SurvivorUnchained.Args.Num("den-rl-shaft-edge", 0.3f), HeightFalloff = SurvivorUnchained.Args.Num("den-rl-shaft-fall", 0f),
+            EdgeFade = SurvivorUnchained.Args.Num("den-rl-shaft-edge", 0.15f), HeightFalloff = SurvivorUnchained.Args.Num("den-rl-shaft-fall", 0f),
         };
         // (a cone of the full height, its tip at the light; cut short it would be a blunt cylinder end in the air)
         root.AddChild(new FogVolume
