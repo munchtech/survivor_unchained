@@ -17,6 +17,23 @@ import time
 import psutil
 
 
+def gpu(pid):
+    """(Windows) The process's GPU memory in MB: dedicated (the card's own) and shared (system RAM the card uses)."""
+    ps = (rf"(Get-Counter '\GPU Process Memory(pid_{pid}_*)\Dedicated Usage','\GPU Process Memory(pid_{pid}_*)\Shared Usage'"
+          r" -ErrorAction SilentlyContinue).CounterSamples | ForEach-Object { $_.Path.Split([char]92)[-1] + '=' + [int]($_.CookedValue/1MB) }")
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=20)
+    except Exception:
+        return 0, 0
+    d = s = 0
+    for line in r.stdout.split():
+        k, _, v = line.partition("=")
+        if v.isdigit():
+            if k.startswith("dedicated"): d += int(v)
+            elif k.startswith("shared"): s += int(v)
+    return d, s
+
+
 def tree(p):
     try:
         return [p] + p.children(recursive=True)
@@ -34,15 +51,16 @@ def main():
         ps = psutil.Process(proc.pid)
         try:
             while time.time() - t0 < secs and proc.poll() is None:
-                ws = pv = 0
+                ws = pv = 0; big = ps
                 for q in tree(ps):
                     try:
                         m = q.memory_info()
                         # (the game is the biggest of the tree: the console wrapper is a few MB)
-                        if m.rss > ws: ws, pv = m.rss, getattr(m, "private", m.vms)
+                        if m.rss > ws: ws, pv, big = m.rss, getattr(m, "private", m.vms), q
                     except psutil.Error:
                         pass
-                rows.append((round(time.time() - t0, 1), round(ws / 1048576), round(pv / 1048576)))
+                g = gpu(big.pid) if len(rows) % 10 == 5 else (None, None)
+                rows.append((round(time.time() - t0, 1), round(ws / 1048576), round(pv / 1048576), g[0], g[1]))
                 time.sleep(2)
         finally:
             exited = proc.poll()
@@ -53,7 +71,7 @@ def main():
                     pass
     with open(os.path.join(out, "mem.csv"), "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["t_s", "working_set_mb", "private_mb"])
+        w.writerow(["t_s", "working_set_mb", "private_mb", "gpu_dedicated_mb", "gpu_shared_mb"])
         w.writerows(rows)
     if not rows:
         print("memrun: no samples"); return
@@ -64,7 +82,8 @@ def main():
         den = sum((r[0] - mx) ** 2 for r in half)
         slope = sum((r[0] - mx) * (r[1] - my) for r in half) / den * 60 if den else 0
     print(f"memrun: {len(rows)} samples over {rows[-1][0]:.0f} s, exit {exited}; working set peak {max(r[1] for r in rows)} MB, "
-          f"end {rows[-1][1]} MB; private peak {max(r[2] for r in rows)} MB; second-half growth {slope:+.1f} MB/min")
+          f"end {rows[-1][1]} MB; private peak {max(r[2] for r in rows)} MB; second-half growth {slope:+.1f} MB/min; "
+          f"gpu dedicated peak {max((r[3] or 0) for r in rows)} MB, shared peak {max((r[4] or 0) for r in rows)} MB")
 
 
 if __name__ == "__main__":
