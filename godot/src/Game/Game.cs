@@ -840,7 +840,9 @@ public partial class Game : Node, IZoneHost
         MapScreen.DrawSoon(data);
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
-        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        // (no townsfolk in an arena or a map (a dungeon's, a Wayfinder's): their whole wardrobe is not decoded for nothing, the
+        // tester lane, 23 Nov: the den decoded every townsperson's textures at its load)
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena" && id != "map");
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
