@@ -23,9 +23,9 @@ CAM = "s01 s03 s04 s13 p01 p03".split()
 ROLL = "s08 s09 p08".split()
 # name: (folder, flags, takes). The fixes are added one cause at a time, in the order of the baseline's worst numbers.
 STEPS = {
-    "before": ("mv_before", "", ALL),
-    "cam": ("mv_a_cam", "--move-cam-lock", CAM),
-    "ramps": ("mv_bc_ramps", "--move-cam-lock --move-start 2 --move-stop 2", CAM + ["s05"]),
+    "before": ("mv_before", "--move-old", ALL),   # (new is the default since 23 Nov)
+    "cam": ("mv_a_cam", "--move-old --move-cam-lock", CAM),
+    "ramps": ("mv_bc_ramps", "--move-old --move-cam-lock --move-start 2 --move-stop 2", CAM + ["s05"]),
     "after": ("mv_after", "--move-new", ALL + ["s12d"]),
     "after_b": ("mv_after_b", "--move-new", ["s12d"]),
     "roll55": ("mv_roll55", "--move-new --move-roll 0.45", ROLL),

@@ -488,6 +488,16 @@ public sealed partial class Battle
         }
     }
 
+    /// <summary>(iron-vow-a) Goads one foe to her until `seconds` from now (Iron Vow's own warcry, PressedWarden.VowGoad): it
+    /// drops the thing it was after; what it was winding up it finishes (not an interrupt; come_then's is).</summary>
+    internal void Goad(Enemy e, double seconds)
+    {
+        var k = Lifetime.Of(e);
+        double until = Time + seconds;
+        if (!goaded.TryGetValue(k, out var t) || t < until) goaded[k] = until;
+        e.Target = -1;
+    }
+
     /// <summary>The AI's want (Ai): a goaded thing rushes her, an archer or a caster too.</summary>
     internal bool RuleGoaded(Enemy e) => goaded.Count > 0 && goaded.TryGetValue(Lifetime.Of(e), out var t) && Time < t;
 

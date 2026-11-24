@@ -169,6 +169,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("probe")) Probe = new MotionProbe();
         // --moves12 TAKE: the movement baseline's scripted input and logs (dev, shots only; MoveShots)
         if (Args.Has("moves12")) AddChild(new MoveShots(() => Battle, () => scene, () => camera, () => cam, controls));
+        // --mem-log N: the memory monitors every N s (MemLog, tools/perf/memrun.py)
+        if (Args.Has("mem-log")) AddChild(new MemLog(Args.Num("mem-log", 10)));
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
         if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()} bt {Battle?.Time ?? 0:0.000}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
             // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him

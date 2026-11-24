@@ -3,10 +3,16 @@ using System;
 namespace SurvivorUnchained.Sim;
 
 /// <summary>The movement fixes of GAME_PLAN tasks 3 and 4 (the Path of Exile 2 benchmark), one switch each, so the measuring
-/// harness (--moves12) and the owner can run old against new on the same takes. All off: the game as it was. The game
-/// sets them from its flags (--move-new for all, or each alone); the sim's tests leave them off.</summary>
+/// harness (--moves12) and the owner can run old against new on the same takes. All on by default since 23 November (the
+/// owner played the A/B and picked the new, with the dash, not the roll): the game, the sim and every harness run what ships.
+/// --move-old turns every fix off (the game as it was before); MoveFlagsTests turn them off to pin each fix alone.</summary>
 public static class MoveFlags
 {
+    static MoveFlags() { Shipped(); }
+
+    /// <summary>What ships: every fix on, the dash (no roll).</summary>
+    public static void Shipped() { All(true); RollTime = RollLength = 0; }
+
     /// <summary>The camera rides her own motion exactly: no lead ahead of her run, no trail after a stop.</summary>
     public static bool CamLock;
     /// <summary>Steps (1/60 s) from rest to her full run, and from a full run to rest. 0: the old eased ramp (14/s).</summary>
