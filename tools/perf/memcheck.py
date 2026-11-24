@@ -64,7 +64,7 @@ SETTLE = 45.0  # s
 def check(exe, route, secs, out):
     os.environ.setdefault("MEMRUN_GPU_EVERY", "5")
     memrun.GPU_EVERY = int(os.environ["MEMRUN_GPU_EVERY"])
-    rows, exited = memrun.run(os.path.join(out, route), secs, [exe] + ENGINE + ["--"] + ROUTES[route] + ["--mem-log", "10"] + GAME)
+    rows, exited = memrun.run(os.path.join(out, route), secs, [exe] + ENGINE + ["--"] + ROUTES[route] + ["--mem-log", os.environ.get("MEMCHECK_MEMLOG", "10")] + GAME)
     late = [r for r in rows if r[0] >= SETTLE]
     if not late or exited is not None:
         print(f"memcheck {route}: NO RUN (exit {exited}, {len(rows)} samples; {os.path.join(out, route, 'log.txt')})")
