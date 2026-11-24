@@ -442,15 +442,20 @@ uniform float moss_any = 0.5;     // moss in patches on every slope's lower cour
 uniform float ridge_soot = 0.0;
 uniform float clay_sat = 1.0;
 uniform float eave_moss = 0.0;
-varying float v_lx;
+// (Godot 4.7.2 upgrade) The roof's three scalars ride one vec3: 4.7 refuses a shader over 32 varyings (the roof variant
+// counted 33 with the engine's own) where 4.5 let it through. The same values, the same interpolation; the names stay.
+varying vec3 v_roof;
+#define v_lx v_roof.x
+#define v_rh v_roof.y
+#define v_lz v_roof.z
 varying vec3 v_wn;
-varying float v_rh;
-varying float v_lz;
 #endif
 
-varying float v_up;
-varying float v_jit;
-varying float v_y;
+// (the same, for every variant: headroom under the limit)
+varying vec3 v_ujy;
+#define v_up v_ujy.x
+#define v_jit v_ujy.y
+#define v_y v_ujy.z
 
 const vec3 LW = vec3(0.2126, 0.7152, 0.0722);
 

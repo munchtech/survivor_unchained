@@ -1509,13 +1509,13 @@ public partial class GameHud : CanvasLayer
         {
             Vector2[] p = [new(2, 2), new(22, 2), new(22, 13), new(19, 20), new(12, 26), new(5, 20), new(2, 13)];
             Vector2[] ring = [.. p, p[0]];
-            DrawPolyline(ring, new Color(0.02f, 0.015f, 0.01f, 0.9f), 5, true);
+            DrawPolyline(ring, new Color(0.02f, 0.015f, 0.01f, 0.9f), Aa.W(5), true);
             Color hi = new("#eef2f7"), mid = new("#aeb8c6"), lo = new("#6b7686");
             DrawPolygon(p, [hi, hi, mid, lo, lo, lo, mid]);
             // the lit left face and the ridge between the faces
             DrawColoredPolygon([new(2, 2), new(12, 2), new(12, 26), new(5, 20), new(2, 13)], new Color(1, 1, 1, 0.22f));
             DrawLine(new Vector2(12, 3), new Vector2(12, 25), new Color(0.16f, 0.19f, 0.24f, 0.55f), 1);
-            DrawPolyline(ring, new Color("#c9a15c"), 1.6f, true);
+            DrawPolyline(ring, new Color("#c9a15c"), Aa.W(1.6f), true);
         }
     }
 
@@ -2303,8 +2303,8 @@ public partial class StepMark : Control
         var c = new Vector2(6, 10.5f);
         if (optional && !done)
         {
-            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, new Color(0.02f, 0.015f, 0.01f, 0.8f), 3, true);
-            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, ink, 1.3f, true);
+            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, new Color(0.02f, 0.015f, 0.01f, 0.8f), Aa.W(3), true);
+            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, ink, Aa.W(1.3f), true);
             return;
         }
         var d = new[] { c + new Vector2(0, -5), c + new Vector2(5, 0), c + new Vector2(0, 5), c + new Vector2(-5, 0), c + new Vector2(0, -5) };
@@ -2312,11 +2312,11 @@ public partial class StepMark : Control
         {
             // A tick: a short stroke down, a long one up, ~10x8 px, gold, 2 px.
             Vector2 a = c + new Vector2(-5, 0.5f), b = c + new Vector2(-1.5f, 4), e = c + new Vector2(5, -4);
-            DrawLine(a, b, new Color(0.02f, 0.015f, 0.01f, 0.8f), 4, true); DrawLine(b, e, new Color(0.02f, 0.015f, 0.01f, 0.8f), 4, true);
-            DrawLine(a, b, doneInk, 2, true); DrawLine(b, e, doneInk, 2, true);
+            DrawLine(a, b, new Color(0.02f, 0.015f, 0.01f, 0.8f), Aa.W(4), true); DrawLine(b, e, new Color(0.02f, 0.015f, 0.01f, 0.8f), Aa.W(4), true);
+            DrawLine(a, b, doneInk, Aa.W(2), true); DrawLine(b, e, doneInk, Aa.W(2), true);
             return;
         }
-        DrawPolyline(d, new Color(0.02f, 0.015f, 0.01f, 0.8f), 3, true);
-        DrawPolyline(d, ink, 1.3f, true);
+        DrawPolyline(d, new Color(0.02f, 0.015f, 0.01f, 0.8f), Aa.W(3), true);
+        DrawPolyline(d, ink, Aa.W(1.3f), true);
     }
 }

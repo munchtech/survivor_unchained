@@ -469,6 +469,11 @@ public partial class Perf : Node
     /// <summary>Every pipeline compiled so far, of every kind (the opening's warm-up waits for it to settle).</summary>
     public static double PipesNow() => Pipes();
 
+    /// <summary>The pipeline counters by kind (canvas, mesh, surface, draw, specialization), as they stand: the warm-up's report.</summary>
+    public static double[] PipesKinds() => new[] { Performance.GetMonitor(Performance.Monitor.PipelineCompilationsCanvas), Performance.GetMonitor(Performance.Monitor.PipelineCompilationsMesh),
+        Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSurface), Performance.GetMonitor(Performance.Monitor.PipelineCompilationsDraw),
+        Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSpecialization) };
+
     static double Pipes() =>
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsCanvas) + Performance.GetMonitor(Performance.Monitor.PipelineCompilationsMesh) +
         Performance.GetMonitor(Performance.Monitor.PipelineCompilationsSurface) + Performance.GetMonitor(Performance.Monitor.PipelineCompilationsDraw) +

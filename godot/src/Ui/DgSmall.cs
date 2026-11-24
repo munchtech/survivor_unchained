@@ -129,7 +129,7 @@ public partial class DgSmall : Control
         if (DgRiver.Ring(RingOf) is { } ring) DrawTextureRect(ring, new Rect2(c - Vector2.One * RingD / 2, Vector2.One * RingD), false);
         // the form's wait coming round: a hair of gold on the ring's inner edge from the top
         if (o.Form >= 0 && o.Form < 1)
-            DrawArc(c, hr + 1.2f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Form, 48, DgMeters.Gold with { A = 0.75f }, 1.6f, true);
+            DrawArc(c, hr + 1.2f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Form, 48, DgMeters.Gold with { A = 0.75f }, Aa.W(1.6f), true);
         // the charges: pearls set in the ring's lower wrap either side of the key's link, lit when held, the one
         // coming back ringed as it fills; they fill from the left
         int m = Math.Clamp(o.Max, 1, 6);
@@ -150,7 +150,7 @@ public partial class DgSmall : Control
             else if (i == o.Count && o.Recharge > 0)
             {
                 DrawCircle(p, 4.2f, new Color(0.90f, 0.86f, 0.77f, 0.25f + 0.35f * o.Recharge), true, -1, true);
-                DrawArc(p, 5.8f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Recharge, 20, new Color(1f, 0.86f, 0.55f, 0.95f), 1.3f, true);
+                DrawArc(p, 5.8f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * o.Recharge, 20, new Color(1f, 0.86f, 0.55f, 0.95f), Aa.W(1.3f), true);
             }
         }
     }

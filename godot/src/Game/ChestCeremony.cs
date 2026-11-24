@@ -448,8 +448,8 @@ public partial class ChestCeremony : Control
             float k = (float)(t / 0.6);
             var c = Size / 2;
             float r = Size.X * (0.18f + 0.3f * (1 - (1 - k) * (1 - k)));
-            DrawArc(c, r, 0, Mathf.Tau, 64, Colour with { A = 0.85f * (1 - k) }, 3 + 4 * (1 - k), true);
-            DrawArc(c, r * 0.82f, 0, Mathf.Tau, 64, Colour.Lightened(0.4f) with { A = 0.4f * (1 - k) }, 1.5f, true);
+            DrawArc(c, r, 0, Mathf.Tau, 64, Colour with { A = 0.85f * (1 - k) }, Aa.W(3 + 4 * (1 - k)), true);
+            DrawArc(c, r * 0.82f, 0, Mathf.Tau, 64, Colour.Lightened(0.4f) with { A = 0.4f * (1 - k) }, Aa.W(1.5f), true);
         }
     }
 }

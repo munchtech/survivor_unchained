@@ -113,10 +113,10 @@ public partial class OrnateBox : StyleBox
         foreach (var (cx, cy, sx, sy) in new[] { (x0, y0, 1f, 1f), (x1, y0, -1f, 1f), (x0, y1, 1f, -1f), (x1, y1, -1f, -1f) })
         {
             var o = new Vector2(cx + 3 * sx, cy + 3 * sy);
-            RenderingServer.CanvasItemAddLine(ci, o, o + new Vector2(c * sx, 0), Accent, 2.5f, true);
-            RenderingServer.CanvasItemAddLine(ci, o, o + new Vector2(0, c * sy), Accent, 2.5f, true);
-            RenderingServer.CanvasItemAddLine(ci, o + new Vector2(c * sx, 0), o + new Vector2(c * sx - 5 * sx, 4 * sy), Accent, 1.5f, true);
-            RenderingServer.CanvasItemAddLine(ci, o + new Vector2(0, c * sy), o + new Vector2(4 * sx, c * sy - 5 * sy), Accent, 1.5f, true);
+            RenderingServer.CanvasItemAddLine(ci, o, o + new Vector2(c * sx, 0), Accent, Aa.W(2.5f), true);
+            RenderingServer.CanvasItemAddLine(ci, o, o + new Vector2(0, c * sy), Accent, Aa.W(2.5f), true);
+            RenderingServer.CanvasItemAddLine(ci, o + new Vector2(c * sx, 0), o + new Vector2(c * sx - 5 * sx, 4 * sy), Accent, Aa.W(1.5f), true);
+            RenderingServer.CanvasItemAddLine(ci, o + new Vector2(0, c * sy), o + new Vector2(4 * sx, c * sy - 5 * sy), Accent, Aa.W(1.5f), true);
             Stone(ci, o + new Vector2(2 * sx, 2 * sy), 4.5f, hi);
         }
         if (Look == Kind.Banner || Look == Kind.Card && Crest > 0)
@@ -209,7 +209,7 @@ public partial class Plaque : Control
                 DrawTextureRect(art, new Rect2(0, y - h / 2, w, h), false);
                 return;
             }
-            DrawLine(new Vector2(8, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, 1.5f, true);
+            DrawLine(new Vector2(8, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, Aa.W(1.5f), true);
             foreach (var x in new[] { 8f, w - 8 })
                 DrawColoredPolygon(new[] { new Vector2(x, y - 3), new Vector2(x + 3, y), new Vector2(x, y + 3), new Vector2(x - 3, y) }, Style.Gold);
             DrawColoredPolygon(new[] { new Vector2(w / 2, y - 6), new Vector2(w / 2 + 6, y), new Vector2(w / 2, y + 6), new Vector2(w / 2 - 6, y) }, Style.Ember);
@@ -227,8 +227,8 @@ public partial class Plaque : Control
             DrawTextureRect(rule, new Rect2(l - len, y - h / 2, -len, h), false);
             return;
         }
-        DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);
-        DrawLine(new Vector2(r + 10, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, 1.5f, true);
+        DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, Aa.W(1.5f), true);
+        DrawLine(new Vector2(r + 10, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, Aa.W(1.5f), true);
         foreach (var x in new[] { 8f, l - 10, r + 10, w - 8 })
             DrawColoredPolygon(new[] { new Vector2(x, y - 3), new Vector2(x + 3, y), new Vector2(x, y + 3), new Vector2(x - 3, y) }, Style.Gold);
         foreach (var x in new[] { l, r })
@@ -303,15 +303,15 @@ public partial class Medallion : Control
         {
             // The painted ring over the box, its middle open on the core; its school or rarity
             // kept as a hairline just inside it.
-            DrawArc(c, r * 0.76f, 0, Mathf.Tau, 64, Ring with { A = 0.8f }, 2, true);
+            DrawArc(c, r * 0.76f, 0, Mathf.Tau, 64, Ring with { A = 0.8f }, Aa.W(2), true);
             DrawTextureRect(ring, new Rect2(Vector2.Zero, new Vector2(size, size)), false);
-            if (Arc > 0) DrawArc(c, r * 0.88f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, 4, true);
+            if (Arc > 0) DrawArc(c, r * 0.88f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, Aa.W(4), true);
         }
         else
         {
-            DrawArc(c, r - 2, 0, Mathf.Tau, 64, Ring, 3.5f, true);
-            DrawArc(c, r - 8, 0, Mathf.Tau, 64, Ring with { A = 0.35f }, 1, true);
-            if (Arc > 0) DrawArc(c, r - 2, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, 5, true);
+            DrawArc(c, r - 2, 0, Mathf.Tau, 64, Ring, Aa.W(3.5f), true);
+            DrawArc(c, r - 8, 0, Mathf.Tau, 64, Ring with { A = 0.35f }, Aa.W(1), true);
+            if (Arc > 0) DrawArc(c, r - 2, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, Aa.W(5), true);
             // Four studs on the ring.
             for (int i = 0; i < 4; i++)
             {

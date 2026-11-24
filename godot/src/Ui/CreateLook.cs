@@ -327,14 +327,14 @@ public partial class Bead : Button
             DrawCircle(c + new Vector2(-4.5f, -4.5f), r * 0.32f, colour.Lightened(kind == Kind.Cloth ? 0.06f : 0.14f));
             if (kind == Kind.Hair)
                 // A lock's sheen: a band across it, as light lies along hair.
-                DrawArc(c + new Vector2(0, 5), r * 0.78f, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 24, colour.Lightened(0.35f) with { A = 0.7f }, 2.2f, true);
+                DrawArc(c + new Vector2(0, 5), r * 0.78f, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 24, colour.Lightened(0.35f) with { A = 0.7f }, Aa.W(2.2f), true);
             else if (kind == Kind.Skin)
                 DrawCircle(c + new Vector2(-5, -6), 2.2f, new Color(1, 1, 1, 0.35f));
         }
-        else DrawArc(c, r - 0.5f, 0, Mathf.Tau, 48, new Color(0.02f, 0.02f, 0.03f, 0.8f), 2, true);
+        else DrawArc(c, r - 0.5f, 0, Mathf.Tau, 48, new Color(0.02f, 0.02f, 0.03f, 0.8f), Aa.W(2), true);
         // (the choice made: a plain gold ring, no glow; the focus, drawn by Nav, is the louder)
         var edge = on ? Style.GoldHi : hover ? Style.LineHi : new Color(0, 0, 0, 0.85f);
-        DrawArc(c, r + (on ? 2f : 0.5f), 0, Mathf.Tau, 48, edge, on ? 2f : 1.2f, true);
+        DrawArc(c, r + (on ? 2f : 0.5f), 0, Mathf.Tau, 48, edge, Aa.W(on ? 2f : 1.2f), true);
     }
 }
 
@@ -366,7 +366,7 @@ public partial class Chevron : Button
         var ink = IsHovered() || lit ? Style.EmberHi : Kit.Ink2;
         var pts = new[] { c + new Vector2(-3.5f * dir, -8), c + new Vector2(4 * dir, 0), c + new Vector2(-3.5f * dir, 8) };
         // (a soft shade under it, so it holds over a bright world through the panel's ground)
-        DrawPolyline(pts.Select(p => p + new Vector2(0, 1.5f)).ToArray(), new Color(0, 0, 0, 0.55f), 3.2f, true);
-        DrawPolyline(pts, ink, 2.2f, true);
+        DrawPolyline(pts.Select(p => p + new Vector2(0, 1.5f)).ToArray(), new Color(0, 0, 0, 0.55f), Aa.W(3.2f), true);
+        DrawPolyline(pts, ink, Aa.W(2.2f), true);
     }
 }

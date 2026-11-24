@@ -172,8 +172,8 @@ public partial class LampPointers : Control
             var c = Chevron with { A = s.A };
             var d = s.Dir; var side = new Vector2(-d.Y, d.X);
             var tip = s.At + d * 50; // scaled 1.25x with the mark (30 x 40)
-            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, new Color(0.02f, 0.05f, 0.1f, 0.75f * s.A), 9, true);
-            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, c, 4.5f, true);
+            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, new Color(0.02f, 0.05f, 0.1f, 0.75f * s.A), Aa.W(9), true);
+            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, c, Aa.W(4.5f), true);
         }
     }
 }

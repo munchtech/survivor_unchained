@@ -45,6 +45,34 @@ public static partial class FxWarm
         host.AddChild(new Run(why));
     }
 
+    // (frame pacing, session 4) The early start: the library's load runs on a loader thread while the map builds; Run takes it.
+    static bool preBegun, preRequested;
+    static long preT0;
+
+    /// <summary>Primes the renderer and requests the library on a loader thread (idempotent; not with --no-fx-warm, --fx-census or --no-fx-pre).</summary>
+    public static void Pre(Node host)
+    {
+        if (Args.Has("no-fx-warm") || Args.Has("fx-census") || Args.Has("no-fx-pre")) return;
+        if (preBegun || !ResourceLoader.Exists(Library)) return;
+        preBegun = true;
+        if (!Args.Has("no-fx-pre-draw"))
+        {
+            // (a frame before the library exists: the renderer switches its shader groups on at the first scene render, and every shader alive then is rebuilt for the new group on the main thread)
+            var vp = host.GetViewport();
+            Camera3D? tmp = null;
+            if (vp.GetCamera3D() == null) { tmp = new Camera3D { Name = "FxWarmPrimer" }; host.AddChild(tmp); tmp.MakeCurrent(); }
+            long d0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            RenderingServer.ForceDraw(false);
+            double ms = System.Diagnostics.Stopwatch.GetElapsedTime(d0).TotalMilliseconds;
+            if (tmp != null) { host.RemoveChild(tmp); tmp.QueueFree(); }
+            GD.Print($"load: fx pre-warm: primer frame {ms:0} ms (temp camera: {tmp != null})");
+        }
+        var err = ResourceLoader.LoadThreadedRequest(Library, "", true);
+        preT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        preRequested = err == Error.Ok;
+        GD.Print($"load: fx pre-warm: library requested on a loader thread ({err})");
+    }
+
     /// <summary>True while a place's warm-up is drawing (the travel's black waits for it: Game.WhenSmooth).</summary>
     public static bool Busy => running > 0;
     static int running;
@@ -55,6 +83,9 @@ public static partial class FxWarm
         long t0;
         int frames, drawn, still, entries, skipped;
         double lastPipes = -1, pipes0;
+        double[] kinds0 = new double[5];
+        double worstMs;
+        long lastTick;
         CanvasLayer? canvas;
         Camera3D? cam;
         Node3D? mirror;
@@ -68,10 +99,20 @@ public static partial class FxWarm
         {
             t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             pipes0 = Perf.PipesNow();
-            var lib = GD.Load<PackedScene>(Library);
+            kinds0 = Perf.PipesKinds();
+            canvas = new CanvasLayer { Layer = -64, Name = "FxWarm2D" };
+            PackedScene? lib;
+            if (preRequested)
+            {
+                var st = ResourceLoader.LoadThreadedGetStatus(Library);
+                long w0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                lib = ResourceLoader.LoadThreadedGet(Library) as PackedScene;
+                GD.Print($"load: fx pre-warm: library taken {System.Diagnostics.Stopwatch.GetElapsedTime(preT0).TotalSeconds:0.00} s after the request, status then {st}, waited {System.Diagnostics.Stopwatch.GetElapsedTime(w0).TotalMilliseconds:0} ms");
+                preRequested = false;
+            }
+            else lib = GD.Load<PackedScene>(Library);
             var root = lib?.Instantiate();
             if (root == null) { Done("library did not load"); return; }
-            canvas = new CanvasLayer { Layer = -64, Name = "FxWarm2D" };
             AddChild(canvas);
             foreach (var k in root.GetChildren().ToList())
             {
@@ -122,6 +163,9 @@ public static partial class FxWarm
         public override void _Process(double delta)
         {
             frames++;
+            long tick = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (lastTick != 0) worstMs = Math.Max(worstMs, System.Diagnostics.Stopwatch.GetElapsedTime(lastTick, tick).TotalMilliseconds);
+            lastTick = tick;
             double p = Perf.PipesNow();
             still = p == lastPipes ? still + 1 : 0;
             lastPipes = p;
@@ -145,8 +189,9 @@ public static partial class FxWarm
         {
             double secs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
             if (end.Length == 0) { end = placeEnd; warmSecs = secs; }
+            var k1 = Perf.PipesKinds();
             Report = $"{entries} stand-ins drawn ({skipped} warmed before), {Perf.PipesNow() - pipes0:0} pipelines compiled, {drawn} frames in view, " +
-                     $"{warmSecs:0.00} s, ended by {end}; then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd}";
+                     $"{warmSecs:0.00} s, ended by {end} (in view from {Time.GetTicksMsec() / 1000.0 - secs:0.0} s, done {Time.GetTicksMsec() / 1000.0:0.0} s after the engine started); then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd} (canvas/mesh/surface/draw/specialization {(int)(k1[0] - kinds0[0])}/{(int)(k1[1] - kinds0[1])}/{(int)(k1[2] - kinds0[2])}/{(int)(k1[3] - kinds0[3])}/{(int)(k1[4] - kinds0[4])}; worst frame {worstMs:0} ms)";
             GD.Print($"load: fx warm-up ({why}): {Report}");
             SetProcess(false);
             QueueFree();

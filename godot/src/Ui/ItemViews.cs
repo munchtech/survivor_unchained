@@ -683,10 +683,10 @@ public partial class TileMark : Control
                 break;
             case Kind.Link:
                 // Two links of chain, the second through the first.
-                DrawArc(new Vector2(s * 0.36f, s * 0.42f), s * 0.28f, 0, Mathf.Tau, 20, shade, 3.2f * s / 14, true);
-                DrawArc(new Vector2(s * 0.64f, s * 0.6f), s * 0.28f, 0, Mathf.Tau, 20, shade, 3.2f * s / 14, true);
-                DrawArc(new Vector2(s * 0.36f, s * 0.4f), s * 0.28f, 0, Mathf.Tau, 20, colour, 2 * s / 14, true);
-                DrawArc(new Vector2(s * 0.64f, s * 0.58f), s * 0.28f, Mathf.Pi * 1.1f, Mathf.Pi * 2.9f, 20, colour, 2 * s / 14, true);
+                DrawArc(new Vector2(s * 0.36f, s * 0.42f), s * 0.28f, 0, Mathf.Tau, 20, shade, Aa.W(3.2f * s / 14), true);
+                DrawArc(new Vector2(s * 0.64f, s * 0.6f), s * 0.28f, 0, Mathf.Tau, 20, shade, Aa.W(3.2f * s / 14), true);
+                DrawArc(new Vector2(s * 0.36f, s * 0.4f), s * 0.28f, 0, Mathf.Tau, 20, colour, Aa.W(2 * s / 14), true);
+                DrawArc(new Vector2(s * 0.64f, s * 0.58f), s * 0.28f, Mathf.Pi * 1.1f, Mathf.Pi * 2.9f, 20, colour, Aa.W(2 * s / 14), true);
                 break;
         }
     }

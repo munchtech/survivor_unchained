@@ -232,6 +232,63 @@ public partial class Atmosphere : Node3D
     /// <summary>--grade-off: no colour grade (the frame as AgX leaves it), to design the grade outside the game.</summary>
     static readonly bool GradeOff = SurvivorUnchained.Args.Has("grade-off");
 
+    // The engine look match (docs/team/GODOT_UPGRADE.md "The look"). Godot 4.6 changed two things under our picture.
+    // (1) AgX became another curve (a power toe and a Reinhard shoulder where 4.5 had a polynomial sigmoid): darks came
+    //     out lifted, lower mids about 4% darker, upper mids brighter. No setting of its contrast and white flattens
+    //     that, so the grade's table is fed the colour 4.5.1 would have shown (Agx45, exact): every look tuned on 4.5.1
+    //     keeps its tones.
+    // (2) Soft-light glow is now blended on linear values with a linear glow; 4.5 blended sRGB-encoded values with an
+    //     sRGB-encoded glow, which lifted a faint glow about twelvefold. Nothing puts that back exactly; intensity x3
+    //     and bloom x2 give the same added light over the frame and the same halo ring by ring round a light point (measured, den take s01, tools/scratch/godot47/halo.py; x4.7 and x1.3 matched by tone but left the halo wider and redder). Glow set anywhere goes through SetGlow.
+    // (Set by name, not by property, so the file still builds against 4.5.1 for an A/B.)
+    // --look47 map=0,glow=1,bloom=1: the engine's own picture, or other numbers to try (tools/scratch/godot47/look_sweep.sh).
+    static readonly bool Engine46 = Engine.GetVersionInfo() is { } ev && ((int)ev["major"] > 4 || (int)ev["minor"] >= 6);
+    static readonly Dictionary<string, float> Look47 = (SurvivorUnchained.Args.Get("look47") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(kv => kv.Split('=')).ToDictionary(kv => kv[0], kv => float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture));
+    static float L47(string key, float tuned) => Look47.TryGetValue(key, out float v) ? v : tuned;
+    static readonly float GlowIntensityScale = Engine46 ? L47("glow", 3f) : 1f, GlowBloomScale = Engine46 ? L47("bloom", 2f) : 1f;
+    /// <summary>The engine's own AgX defaults, which Agx47Back undoes: set outright so a later engine's defaults cannot move them.</summary>
+    const double Agx47Contrast = 1.25, Agx47White = 16.29;
+    static readonly bool AgxMap = Engine46 && L47("map", 1f) > 0;
+    // Godot 4.7.2's tonemap_agx (the same file at the 4.7.2-stable tag): its two matrices (row-major, as AgxInset below;
+    // they differ from 4.5.1's in the fourth digit) around the "allenwp" curve.
+    static readonly float[] Agx47Inset = { 0.544814746488245f, 0.373787398372697f, 0.0813978551390581f, 0.140416948464053f, 0.754137554567394f, 0.105445496968552f, 0.0888104196149096f, 0.178871756420858f, 0.732317823964232f };
+    static readonly float[] Agx47Outset = { 1.96488741169489f, -0.855988495690215f, -0.108898916004672f, -0.299313364904742f, 1.32639796461980f, -0.0270845997150571f, -0.164352742528393f, -0.238183969428088f, 1.40253671195648f };
+    static readonly float[] Agx47InsetInv = Inv3(Agx47Inset), Agx47OutsetInv = Inv3(Agx47Outset);
+    /// <summary>This engine's AgX output (linear sRGB) back to its input: undo the outset, then the curve per channel (a
+    /// power toe under 0.18 and a Reinhard shoulder above, both closed form; servers/rendering/storage/environment_storage.cpp
+    /// gives its numbers from contrast and white), then the inset. At Agx47Contrast and Agx47White.</summary>
+    internal static Vector3 Agx47Back(Vector3 c)
+    {
+        const double cp = 0.18, shMax = 1 - cp, con = Agx47Contrast, white = Agx47White;
+        double toeA = (1 / cp - 1) * Math.Pow(cp, con), den = Math.Pow(cp, con) + toeA;
+        double slope = con * Math.Pow(cp, con - 1) * toeA / (den * den), w = (white - cp) * (white - cp) / shMax * slope;
+        var t = Mul3(Agx47OutsetInv, c);
+        Vector3 v = default;
+        for (int i = 0; i < 3; i++)
+        {
+            double y = Math.Clamp(t[i], 0, 1);
+            if (y < cp) v[i] = (float)Math.Pow(toeA * y / (1 - y), 1 / con);
+            else
+            {
+                double sp = y - cp, bq = slope - sp * slope / shMax, aq = slope / w;
+                v[i] = (float)(cp + (-bq + Math.Sqrt(bq * bq + 4 * aq * sp)) / (2 * aq));
+            }
+        }
+        return Max0(Mul3(Agx47InsetInv, v));
+    }
+    /// <summary>The colour 4.5.1's AgX gave where this engine's AgX gives <paramref name="shown"/> (both sRGB-encoded,
+    /// 0-1). The grade's table is fed this, so every look tuned on 4.5.1 keeps its tones exactly, and the grade's own
+    /// AgxBack still reads the scene right.</summary>
+    static Vector3 Agx45(Vector3 shown)
+    {
+        var o = AgxForward(Agx47Back(Lin(shown)));
+        static float E(float v) => Mathf.Clamp(v <= 0.0031308f ? 12.92f * Mathf.Max(v, 0) : 1.055f * Mathf.Pow(v, 1 / 2.4f) - 0.055f, 0, 1);
+        return new(E(o.X), E(o.Y), E(o.Z));
+    }
+    /// <summary>Glow as tuned on 4.5.1 (intensity, bloom), turned into what draws the same on this engine.</summary>
+    public void SetGlow(float intensity, float bloom) { Env.GlowIntensity = intensity * GlowIntensityScale; Env.GlowBloom = bloom * GlowBloomScale; }
+
     public Atmosphere()
     {
         Name = "Atmosphere";
@@ -260,6 +317,8 @@ public partial class Atmosphere : Node3D
         };
         float[] glow = { 0, 0.6f, 1, 0.5f, 0.15f, 0, 0 };
         for (int i = 0; i < glow.Length; i++) Env.SetGlowLevel(i, glow[i]);
+        SetGlow(Env.GlowIntensity, Env.GlowBloom);
+        if (Engine46) { Env.Set("tonemap_agx_contrast", (float)Agx47Contrast); Env.Set("tonemap_agx_white", (float)Agx47White); }
         AddChild(new WorldEnvironment { Environment = Env });
         Key = new DirectionalLight3D
         {
@@ -998,6 +1057,7 @@ public partial class Atmosphere : Node3D
                 for (int r = 0; r < LutSize; r++)
                 {
                     var input = new Vector3((r + 0.5f) / LutSize, (gi + 0.5f) / LutSize, (b + 0.5f) / LutSize);
+                    if (AgxMap) input = Agx45(input);
                     var c = Lin(input);
                     var p = Pow(c, 1 / 2.2f);
                     p = gain * (p + lift * (Vector3.One - p));

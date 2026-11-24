@@ -175,6 +175,8 @@ public partial class Game : Node, IZoneHost
             if (ev == "low" && Args.Has("cast-low")) courtCastAt = Journey.Playtime + Args.Num("cast-low", 1); };
         Settings.Current.ApplyWindow();
         ApplySettings();
+        // (frame pacing, session 4) the warm-up's stand-ins enter the world out of view before the map is built: their pipelines compile on the worker pool meanwhile
+        SurvivorUnchained.Fx.FxWarm.Pre(this);
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
         else if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Get("storybook") is string sbId) StoryAlone(sbId);
@@ -943,6 +945,8 @@ public partial class Game : Node, IZoneHost
 
     public void EnterZone(string id, string? from, Arrival? at = null)
     {
+        // (frame pacing, session 4) the warm-up's stand-ins enter the world out of view before the map is built: their pipelines compile on the worker pool meanwhile
+        SurvivorUnchained.Fx.FxWarm.Pre(this);
         // The title's stage is the prologue's place: begun there, it is kept.
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;

@@ -537,12 +537,12 @@ public partial class DyeSwatch : Control
                 float k = i / 6f;
                 DrawCircle(c + new Vector2(-4, -4) * k - new Vector2(1, 1), r * 0.7f * (1 - k) + 1, new Color(1, 1, 1, 0.35f / 6f * 1.5f));
             }
-        DrawArc(c, r, 0, Mathf.Tau, 40, new Color(1, 0.94f, 0.86f, 0.22f), 1, true);
-        if (AsMade) DrawLine(c + new Vector2(-r * 0.7f, r * 0.7f), c + new Vector2(r * 0.7f, -r * 0.7f), new Color(0.95f, 0.92f, 0.85f, 0.9f), 1.2f, true);
+        DrawArc(c, r, 0, Mathf.Tau, 40, new Color(1, 0.94f, 0.86f, 0.22f), Aa.W(1), true);
+        if (AsMade) DrawLine(c + new Vector2(-r * 0.7f, r * 0.7f), c + new Vector2(r * 0.7f, -r * 0.7f), new Color(0.95f, 0.92f, 0.85f, 0.9f), Aa.W(1.2f), true);
         if (Set)
         {
-            DrawArc(c, r + 2, 0, Mathf.Tau, 48, new Color("#120d0a"), 2, true);
-            DrawArc(c, r + 4, 0, Mathf.Tau, 48, Style.Ember, 2.5f, true);
+            DrawArc(c, r + 2, 0, Mathf.Tau, 48, new Color("#120d0a"), Aa.W(2), true);
+            DrawArc(c, r + 4, 0, Mathf.Tau, 48, Style.Ember, Aa.W(2.5f), true);
         }
     }
 }
@@ -558,8 +558,8 @@ public partial class TickBox : Control
         DrawRect(new Rect2(0.5f, 0.5f, Size.X - 1, Size.Y - 1), On ? Style.Ember : Kit.Dim, false, 1.5f);
         if (On)
         {
-            DrawLine(new Vector2(4, 9.5f), new Vector2(7.7f, 13), Style.Ember, 2.2f, true);
-            DrawLine(new Vector2(7.7f, 13), new Vector2(14, 5), Style.Ember, 2.2f, true);
+            DrawLine(new Vector2(4, 9.5f), new Vector2(7.7f, 13), Style.Ember, Aa.W(2.2f), true);
+            DrawLine(new Vector2(7.7f, 13), new Vector2(14, 5), Style.Ember, Aa.W(2.2f), true);
         }
     }
 }
@@ -574,8 +574,8 @@ public partial class EyeBadge : Control
         var pts = new List<Vector2>();
         for (int i = 0; i <= 8; i++) { float t = i / 8f * 2 - 1; pts.Add(c + new Vector2(t * 6.5f * k, -3.2f * k * (1 - t * t))); }
         for (int i = 1; i <= 8; i++) { float t = 1 - i / 8f * 2; pts.Add(c + new Vector2(t * 6.5f * k, 3.2f * k * (1 - t * t))); }
-        DrawPolyline(pts.ToArray(), Kit.Ink, 1.2f, true);
+        DrawPolyline(pts.ToArray(), Kit.Ink, Aa.W(1.2f), true);
         DrawCircle(c, 1.6f * k, Kit.Ink);
-        DrawLine(new Vector2(2.5f, 13.5f) * k, new Vector2(13.5f, 2.5f) * k, Style.Ember, 1.6f, true);
+        DrawLine(new Vector2(2.5f, 13.5f) * k, new Vector2(13.5f, 2.5f) * k, Style.Ember, Aa.W(1.6f), true);
     }
 }

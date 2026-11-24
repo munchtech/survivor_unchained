@@ -357,14 +357,14 @@ public partial class LevelCard : Control
             {
                 // (a stance's is the block's disc: the mid-tone field, the stance's color for its bezel)
                 for (int i = 0; i < 10; i++) DrawCircle(wc, WellD / 2 * (1 - 0.85f * i / 10), FieldRim.Lerp(FieldIn, i / 9f), true, -1, true);
-                DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, StanceBlock.ColorOf(s.StanceId) is var sc && sc != Colors.Transparent ? sc : Ring, 2, true);
+                DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, StanceBlock.ColorOf(s.StanceId) is var sc && sc != Colors.Transparent ? sc : Ring, Aa.W(2), true);
             }
             else
             {
                 // the seats' round well: an ink disc, a bronze ring, a hair of gold on its upper rim
                 DrawCircle(wc, WellD / 2, WellInk);
-                DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, 2, true);
-                DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, 1, true);
+                DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, Aa.W(2), true);
+                DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, Aa.W(1), true);
             }
             if (glyph != null && s.Kind == LevelCardKind.NewKey)
             {

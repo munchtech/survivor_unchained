@@ -221,7 +221,7 @@ public partial class StanceBlock : Control
             DrawCircle(c, r * (1 - 0.85f * i / N), FieldRim.Lerp(FieldIn, t) with { A = a }, true, -1, true);
         }
         if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
-        DrawArc(c, r - 0.75f, 0, Mathf.Tau, 48, col with { A = a }, 1.5f, true);
+        DrawArc(c, r - 0.75f, 0, Mathf.Tau, 48, col with { A = a }, Aa.W(1.5f), true);
         if (openedAt >= 0 && set == AutoRowModel.CardSet) DrawCircle(c, r, new Color(1f, 0.80f, 0.45f, 0.5f * (float)Math.Max(0, 1 - (now - openedAt) / 0.6)), true, -1, true);
         // (the back disc: the strike a swap fires now, a 3.5 px ring filled clockwise from 12 as it comes ready; a white flash when it does)
         if (isBack)
@@ -232,10 +232,10 @@ public partial class StanceBlock : Control
             var rc = col;
             float sh = share[set];
             bool rdy = sh >= 0.996f;
-            DrawArc(c, rr, 0, Mathf.Tau, 48, rc with { A = (rdy ? 1f : 0.4f) * a }, RingW, true);
-            if (!rdy && sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), rc with { A = a }, RingW, true);
+            DrawArc(c, rr, 0, Mathf.Tau, 48, rc with { A = (rdy ? 1f : 0.4f) * a }, Aa.W(RingW), true);
+            if (!rdy && sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), rc with { A = a }, Aa.W(RingW), true);
             double since = now - readyAt[set];
-            if (readyAt[set] >= 0 && since < ReadyFlash) DrawArc(c, rr, 0, Mathf.Tau, 48, Colors.White with { A = (float)(1 - since / ReadyFlash) }, RingW, true);
+            if (readyAt[set] >= 0 && since < ReadyFlash) DrawArc(c, rr, 0, Mathf.Tau, 48, Colors.White with { A = (float)(1 - since / ReadyFlash) }, Aa.W(RingW), true);
             else if (readyAt[set] >= 0) readyAt[set] = -1;
         }
     }
