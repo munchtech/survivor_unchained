@@ -3,9 +3,10 @@ using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Play;
 
-/// <summary>The movement fixes' switches (Sim/MoveFlags) from the game's flags: --move-new (all of them), or each alone:
+/// <summary>The movement fixes' switches (Sim/MoveFlags) from the game's flags. No flag: the new movement, all fixes on, the
+/// dash (the owner's pick, 23 November). --move-old: every fix off (the game as it was), then each alone may be put back:
 /// --move-cam-lock, --move-start N, --move-stop N (steps of 1/60 s), --move-stop-hold, --move-dash-held, --move-dash-exit.
-/// With --move-ab, F9 in play swaps all new for all old (the owner's A/B; the log says which). No flag: the game as it was.</summary>
+/// With --move-ab, F9 in play swaps all new for all old (the owner's A/B; the log says which); never in a tester's launcher.</summary>
 public static class MoveSwitch
 {
     static bool read, ab, wasDown, on;
@@ -14,7 +15,8 @@ public static class MoveSwitch
     {
         if (read) return;
         read = true;
-        if (Args.Has("move-new")) MoveFlags.All(true);
+        MoveFlags.Shipped();
+        if (Args.Has("move-old")) MoveFlags.All(false);
         if (Args.Has("move-cam-lock")) MoveFlags.CamLock = true;
         if (Args.Has("move-start")) MoveFlags.StartFrames = (int)Args.Num("move-start", 2);
         if (Args.Has("move-stop")) MoveFlags.StopFrames = (int)Args.Num("move-stop", 2);

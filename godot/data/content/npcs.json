@@ -2071,25 +2071,5 @@
    "title": "Dusk",
    "glyph": "moon"
   }
- },
- "guards": [
-  {
-   "x": -4.6,
-   "z": 34.6,
-   "facing": 3.141592653589793,
-   "line": "Dawn arrivals. We don't get many that live."
-  },
-  {
-   "x": 4.6,
-   "z": 34.6,
-   "facing": 3.141592653589793,
-   "line": "Keep your weapon sheathed in town."
-  },
-  {
-   "x": 36.4,
-   "z": -4.6,
-   "facing": -1.5707963267948966,
-   "line": "East road. Mind the wolves."
-  }
- ]
+ }
 }

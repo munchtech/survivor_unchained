@@ -9,14 +9,15 @@ namespace SurvivorUnchained.Tests;
 [CollectionDefinition("MoveFlags", DisableParallelization = true)]
 public class MoveFlagsCollection { }
 
-/// <summary>The movement fixes behind MoveFlags (GAME_PLAN tasks 3 and 4): each is off by default, each does what it says when on.</summary>
+/// <summary>The movement fixes behind MoveFlags (GAME_PLAN tasks 3 and 4): all on by default (what ships, 23 November); each
+/// test turns them all off, then on one at a time, and each does what it says when on.</summary>
 [Collection("MoveFlags")]
 public sealed class MoveFlagsTests : IDisposable
 {
     const double Dt = 1 / 60.0;
 
     public MoveFlagsTests() { MoveFlags.All(false); MoveFlags.RollTime = MoveFlags.RollLength = 0; }
-    public void Dispose() { MoveFlags.All(false); MoveFlags.RollTime = MoveFlags.RollLength = 0; }
+    public void Dispose() => MoveFlags.Shipped();
 
     static Battle Make() => new(new BattleSetup
     {
@@ -43,6 +44,18 @@ public sealed class MoveFlagsTests : IDisposable
         var b = Make();
         Run(b, 120, 1, 0);
         return b;
+    }
+
+    /// <summary>What ships (the owner's pick, 23 November): every fix on, the dash, no roll.</summary>
+    [Fact]
+    public void Shipped_IsAllNew_TheDash()
+    {
+        MoveFlags.Shipped();
+        Assert.True(MoveFlags.CamLock && MoveFlags.StopHold && MoveFlags.DashHeld && MoveFlags.DashExit);
+        Assert.Equal(2, MoveFlags.StartFrames);
+        Assert.Equal(2, MoveFlags.StopFrames);
+        Assert.Equal(0, MoveFlags.RollTime);
+        Assert.Equal(0, MoveFlags.RollLength);
     }
 
     [Fact]

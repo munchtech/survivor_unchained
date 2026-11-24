@@ -33,6 +33,8 @@ public static class DenFeel
         /// <summary>The most of the pack that fell inside one Window (a share of its size).</summary>
         public double Together;
         public readonly List<double> Deaths = new();
+        /// <summary>(re-tune) Each death's kind and time, in order: which kind holds a pack's last seconds.</summary>
+        public readonly List<(string Def, double T)> DeathKinds = new();
         /// <summary>(diagnostic) At the first area blow: each live melee member's kind and its distance from the blow's centre.</summary>
         public readonly List<(string Def, double D)> AtFirst = new();
         /// <summary>A first blow that is a Bladestorm: the share of the melee members live at its start that came inside AreaR
@@ -126,7 +128,7 @@ public static class DenFeel
                         if (row.Woke < 0 && m.E.Roused) { row.Woke = t; row.Walled = b.Collision.Raycast(p.X, p.Z, m.E.HomeX, m.E.HomeZ, 0.3) != null; }
                         if (row.FirstHit < 0 && m.E.Hp < m.E.MaxHp) row.FirstHit = t;
                     }
-                    else if (dead.Add((m.E, m.Seed))) { row.Deaths.Add(t); if (m.E.Seed == m.Seed && Melee(m.E.Def)) fell.Add(m.E); }
+                    else if (dead.Add((m.E, m.Seed))) { row.Deaths.Add(t); row.DeathKinds.Add((m.E.Def.Id, t)); if (m.E.Seed == m.Seed && Melee(m.E.Def)) fell.Add(m.E); }
                 }
                 if (row.Woke >= 0 && anyLive)
                 {
@@ -273,6 +275,27 @@ public static class DenFeel
         sb.AppendLine("By recipe (all bots): | recipe/grade | killed | TTK blow p50 | inside p50 | together p50 |");
         foreach (var g in runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0).GroupBy(p => $"{p.Recipe}/{p.Grade}").OrderBy(g => g.Key))
             sb.AppendLine($"| {g.Key} | {g.Count()} | {Q(g.Select(p => p.LastDeath - p.FirstHit), .5):0.0} | {Q(g.Where(p => p.Inside >= 0).Select(p => p.Inside), .5):0.00} | {Q(g.Select(p => p.Together), .5):0.00} |");
+        // (re-tune) Where a normal pack's seconds go: the test's number (grade 0, every recipe, first blow to last death), the
+        // same pack timed to its second-last death, and which kind dies last and how long after the one before it.
+        sb.AppendLine();
+        sb.AppendLine("Normal packs (grade 0), by bot: | bot | n | TTK blow p25/p50/p75 | to second-last death p50 | tail (last - second-last) p50/p75 |");
+        foreach (var g in runs.GroupBy(r => r.Label).OrderBy(g => g.Key))
+        {
+            var k = g.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0 && p.Grade == 0).ToList();
+            var ttk = k.Select(p => p.LastDeath - p.FirstHit).ToList();
+            var two = k.Where(p => p.Deaths.Count >= 2).Select(p => p.Deaths.OrderBy(x => x).ToList()).ToList();
+            sb.AppendLine($"| {g.Key} | {k.Count} | {Q(ttk, .25):0.0}/{Q(ttk, .5):0.0}/{Q(ttk, .75):0.0} | {Q(k.Where(p => p.Deaths.Count >= 2).Select(p => p.Deaths.OrderBy(x => x).ToList()[^2] - p.FirstHit), .5):0.0} | {Q(two.Select(d => d[^1] - d[^2]), .5):0.0}/{Q(two.Select(d => d[^1] - d[^2]), .75):0.0} |");
+        }
+        sb.AppendLine("Normal packs, the last to die by recipe and kind (all bots): | recipe | kind | packs where it died last | its tail p50/p75 s | its death after the first blow p50 |");
+        foreach (var g in runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0 && p.Grade == 0 && p.DeathKinds.Count >= 2)
+                     .GroupBy(p => (p.Recipe, Kind: p.DeathKinds.OrderBy(x => x.T).Last().Def)).OrderBy(g => g.Key.Recipe).ThenByDescending(g => g.Count()))
+        {
+            var tails = g.Select(p => { var d = p.DeathKinds.OrderBy(x => x.T).ToList(); return d[^1].T - d[^2].T; }).ToList();
+            sb.AppendLine($"| {g.Key.Recipe} | {g.Key.Kind} | {g.Count()} | {Q(tails, .5):0.0}/{Q(tails, .75):0.0} | {Q(g.Select(p => p.LastDeath - p.FirstHit), .5):0.0} |");
+        }
+        sb.AppendLine("Normal packs, each kind's death after the first blow (all bots): | kind | n | p25/p50/p75 s |");
+        foreach (var g in runs.SelectMany(r => r.Packs).Where(p => p.Killed && p.FirstHit >= 0 && p.Grade == 0).SelectMany(p => p.DeathKinds.Select(d => (d.Def, S: d.T - p.FirstHit))).GroupBy(x => x.Def).OrderBy(g => g.Key))
+            sb.AppendLine($"| {g.Key} | {g.Count()} | {Q(g.Select(x => x.S), .25):0.0}/{Q(g.Select(x => x.S), .5):0.0}/{Q(g.Select(x => x.S), .75):0.0} |");
         sb.Append(DenCause.Report(runs));
         return sb.ToString();
     }

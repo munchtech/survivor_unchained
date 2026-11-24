@@ -22,8 +22,11 @@ public partial class ClipRecorder : Node
     const int RingMax = (int)(Seconds * Fps);
 
     /// <summary>On while the setting is on (and --no-bug-clip is not given). Off in the demo flavor unless --bug-clip is given
-    /// (the owner, 19 Nov: "TURN IT OFF FOR DEMO BUILD": its 2 MB readback 15 times a second cost a large-object GC about every 10 s).</summary>
-    public bool Enabled => !Args.Has("no-bug-clip") && Settings.Current.BugClip && (!SurvivorUnchained.Core.Demo.On || Args.Has("bug-clip"));
+    /// (the owner, 19 Nov: "TURN IT OFF FOR DEMO BUILD": its 2 MB readback 15 times a second cost a large-object GC about every 10 s).
+    /// Off in the den test build too, a tester's build of the demo's den (24 Nov, the RAM lane: its garbage was the managed heap's
+    /// 0.5 -> 1.25 GB sawtooth in the den and the town, about 0.7 GB of the den's RAM peak over its 3 GB budget).</summary>
+    public bool Enabled => !Args.Has("no-bug-clip") && Settings.Current.BugClip
+        && (!(SurvivorUnchained.Core.Demo.On || SurvivorUnchained.Core.DenTest.On) || Args.Has("bug-clip"));
 
     bool Frozen;
     SubViewport? sub;

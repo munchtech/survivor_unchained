@@ -418,6 +418,9 @@ public sealed class FlowField
     readonly List<List<int>> bucketsByDist = new();
     public bool Ready;
 
+    /// <summary>How many cells round a blocked start the flood looks for open ground she can see (Update).</summary>
+    public const int BoxedReach = 2;
+
     public FlowField(CollisionWorld world, int radius = 44)
     {
         this.world = world;
@@ -447,6 +450,22 @@ public sealed class FlowField
         int start = Radius * W + Radius;
         dist[start] = 0;
         Push(start, 0);
+        // Pressed into a wall's corner, her own cell and every one round it can read as blocked (the grid keeps 0.42 m off
+        // the walls at each cell's centre), and a flood from there reached nothing: in the den's rock every foe, the ruler
+        // too, walked straight at her into the stone (hollow seed 1: "flow none" over the whole window for minutes). Then
+        // the flood starts as well from the open cells she can see within BoxedReach cells, at the grid's own cost.
+        if (world.IsNavBlocked(ti, tj))
+            for (int dj = -BoxedReach; dj <= BoxedReach; dj++)
+                for (int di = -BoxedReach; di <= BoxedReach; di++)
+                {
+                    if (di == 0 && dj == 0 || world.IsNavBlocked(ti + di, tj + dj)) continue;
+                    double cxw = -h + ti + di + 0.5, czw = -h + tj + dj + 0.5;
+                    if (world.Raycast(x, z, cxw, czw, 0) != null) continue;
+                    int ai = Math.Abs(di), aj = Math.Abs(dj);
+                    int sd = 10 * Math.Max(ai, aj) + 4 * Math.Min(ai, aj);
+                    int sidx = (Radius + dj) * W + Radius + di;
+                    if (sd < dist[sidx]) { dist[sidx] = (ushort)sd; Push(sidx, sd); }
+                }
         for (int d = 0; d < bucketsByDist.Count; d++)
         {
             var b = bucketsByDist[d];

@@ -75,7 +75,6 @@ public static class VoiceLines
     public static string Dialogue(string npc, string node, int variant) => $"dlg.{npc}.{node}.{variant}";
     public static string Bark(string npc, bool night, int i) => $"bark.{npc}.{(night ? "night" : "day")}.{i}";
     public static string Folk(int i) => $"folk.{i}";
-    public static string Guard(int i) => $"guard.{i}";
     /// <summary>A line written in the zone code: its text's hash.</summary>
     public static string Said(string text) => $"say.{Hash(text)}";
     public static string FightBark(string text) => $"cbark.{Hash(text)}";

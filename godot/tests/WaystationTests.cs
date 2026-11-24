@@ -50,11 +50,13 @@ public class WaystationTests
         Assert.Same(Atmospheres.WaystationDay, s.Host.Air);
         Assert.True(s.Zone.Actors.Count >= 10);
         Run(s, 20);
-        Assert.True(s.Host.FakeLook.Walkers >= 8, $"{s.Host.FakeLook.Walkers} walkers");
+        // Only the named: no walking crowd, no generic watchmen, no stall-keepers (the owner, 23 Nov).
+        Assert.Equal(0, s.Host.FakeLook.Walkers);
+        Assert.All(new[] { "rook", "holloway", "chid", "rav", "harlan", "wenna", "brannoc", "vonnra", "wayfinder" }, id => Assert.Contains(id, s.Zone.Actors.Keys));
+        Assert.All(s.Zone.Actors.Values, a => Assert.NotEqual("Watchman", a.Def.Name));
+        Assert.All(s.Zone.Actors.Values, a => Assert.NotEqual("Stall-keeper", a.Def.Name));
         Assert.Contains(s.Host.Said, l => l.StartsWith("The Waystation"));
         Assert.NotEmpty(s.Host.FakeLook.LastPlates);
-        // The lanes the town walks run clear of every wall.
-        Assert.Equal("", (string)s.Zone.Debug()["lanes"]!);
     }
 
     [Fact]

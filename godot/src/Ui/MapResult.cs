@@ -148,7 +148,9 @@ public partial class MapResultScreen : TellingScreen
         v.AddChild(Kit.RuleH());
         if (atlasOn) v.AddChild(Beat(Style.Label(after, Style.TextItalic, 18, Kit.Ink2, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
         // (a dungeon goes back to its mouth, Chart.ReturnZone (the den: Thornhollow Verge); a Wayfinder's map to the Waystation)
-        v.AddChild(OnwardWord($"Back to {SurvivorUnchained.Play.PostMenu.ZoneName(r.Chart.ReturnZone ?? "waystation")}", () => G.LeaveMap(r)));
+        // (the den test build: into a fresh den, Core.DenTest)
+        v.AddChild(OnwardWord(Core.DenTest.On && r.Chart.Dungeon != "" ? "Into the den again"
+            : $"Back to {SurvivorUnchained.Play.PostMenu.ZoneName(r.Chart.ReturnZone ?? "waystation")}", () => G.LeaveMap(r)));
     }
 
     /// <summary>The head's count: "5 pieces and a chart", "a chart", "12 pieces and 2 charts".</summary>

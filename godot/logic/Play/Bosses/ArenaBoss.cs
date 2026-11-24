@@ -28,6 +28,12 @@ public interface IBossArena
     /// <summary>The horde comes back when the boss grows wild (the table's); a map or a story night keeps it off,
     /// so the words must not promise it.</summary>
     bool HordeReturns => true;
+    /// <summary>(P3, DEN_ROSTER.md) The den's own cut of its ruler (MapRun in the hollow): arena nights and story fights keep the
+    /// table's fight, so this is false everywhere else.</summary>
+    bool DenCut => false;
+    /// <summary>(P3) Its kit tells' blows (the Pack-Mother's Drive, a pull, a toll: shares of her life, not off its Damage), over the
+    /// table's: a dungeon's ruler reads DungeonFights.BossKit; 1 everywhere else.</summary>
+    double KitMul => 1;
     /// <summary>The fight is won (Grimtunnel goes back down rather than dying).</summary>
     void Won(double x, double z);
 }
@@ -370,6 +376,10 @@ public abstract class ArenaBoss
         {
             e.State = Channel != null ? EnemyState.Casting : EnemyState.Windup;
             e.Anim = EnemyAnim.Windup;
+            // (P3, the den's cut; every boss, the owner 23 Nov) A hold's windup says when it ends, as a creature's lunge windup does (Ai.Run's StateT): left stale
+            // (-0.02), it read as a lunge landing now, renewed each tick, and a late player's hands that weigh the most urgent
+            // threat first never saw her Drive's lane laid in it (the den human bar: 162 of 182 Drives caught unseen).
+            e.StateT = Math.Max(0, move.Dur - move.T);
         }
         bool go = move.Each?.Invoke(move.T) ?? true;
         // The move ended itself (a channel broken from inside it): nothing is left to finish.

@@ -53,8 +53,7 @@ def run_leg(tag, exe, leg, take, move_new):
     out.mkdir(parents=True, exist_ok=True)
     boot = ["--quick", "warden", "--zone", "map", "--dungeon", "hollow", "--seed", "1", "--at", "boss-mid", "--at-off", "0,0",
             "--facing-mode", "always", "--nocine", "--flare", "the_long_cut"]
-    if move_new:
-        boot.append("--move-new")
+    boot.append("--move-new" if move_new else "--move-old")   # (new is the default since 23 Nov)
     boot += os.environ.get("FLARE_EXTRA", "").split()
     tail = ["--moves12", take, "--moves12-input", "kbm", "--moves12-out", str(out)]
     common = ["--resolution", "1920x1080", "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", "9000"]

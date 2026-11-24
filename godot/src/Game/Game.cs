@@ -84,6 +84,9 @@ public partial class Game : Node, IZoneHost
         // The demo flavor (export feature `demo`, or --demo in a dev run): data/content/demo.json's cuts (Core.Demo).
         Core.Demo.On = OS.HasFeature("demo") || Args.Has("demo");
         if (Core.Demo.On) GD.Print("demo: the demo flavor is on (data/content/demo.json)");
+        // The den test build (export feature `den_test`, or --den-loop): the den, again and again (Core.DenTest).
+        Core.DenTest.On = OS.HasFeature("den_test") || Args.Has("den-loop");
+        if (Core.DenTest.On) GD.Print("den test: the den loops, no other place is offered");
         AddChild(new ClipRecorder());
         AddChild(new BugReporter(this));
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
@@ -169,6 +172,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("probe")) Probe = new MotionProbe();
         // --moves12 TAKE: the movement baseline's scripted input and logs (dev, shots only; MoveShots)
         if (Args.Has("moves12")) AddChild(new MoveShots(() => Battle, () => scene, () => camera, () => cam, controls));
+        // --mem-log N: the memory monitors every N s (MemLog, tools/perf/memrun.py)
+        if (Args.Has("mem-log")) AddChild(new MemLog(Args.Num("mem-log", 10)));
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
         if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()} bt {Battle?.Time ?? 0:0.000}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
             // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him
@@ -764,8 +769,14 @@ public partial class Game : Node, IZoneHost
     public void LeaveMap(MapResult r)
     {
         bool leaving = !inTransit;
+        // (the den test build: a fresh den, its seed new, not the town: Core.DenTest)
+        if (Core.DenTest.On && r.Chart.Dungeon != "" && SurvivorUnchained.Maps.DungeonGen.Get(r.Chart.Dungeon) is { } again)
+        {
+            World.Map = SurvivorUnchained.Maps.Chart.ForDungeon(again, DungeonSeed(), Journey.Ch.Level);
+            Travel("map", World.Map.Name, r.Cleared ? "Cleared. Again" : "Again");
+        }
         // A dungeon returns to where it was entered; a map, to the Waystation.
-        if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
+        else if (r.Chart.ReturnZone != null) Travel(r.Chart.ReturnZone, r.Chart.Name, r.Cleared ? "Cleared" : "The map closes", new Arrival(r.Chart.ReturnX, r.Chart.ReturnZ, r.Chart.ReturnFacing));
         else Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes");
         // A fall closed it: she arrives whole (Travel's Capture took the fall's 1 HP).
         if (!r.Cleared) Journey.RiseWhole();
@@ -829,7 +840,9 @@ public partial class Game : Node, IZoneHost
         MapScreen.DrawSoon(data);
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
-        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        // (no townsfolk in an arena or a map (a dungeon's, a Wayfinder's): their whole wardrobe is not decoded for nothing, the
+        // tester lane, 23 Nov: the den decoded every townsperson's textures at its load)
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena" && id != "map");
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);

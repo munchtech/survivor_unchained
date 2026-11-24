@@ -216,10 +216,27 @@ public sealed partial class Battle
         if (Braced != null || FireFrom != null || Refiring) return false;
         var p = Player;
         Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = BraceSecondsOf(w), Heavy = HeavyBy == w };
+        VowGoad(w, Braced.Plant + Braced.T);
         RuleBraceBegin(w, Braced.Plant + Braced.T);
         p.Vx = p.Vz = 0;
         Events.Emit(new Ev.Brace { Phase = BracePhase.Start, X = p.X, Z = p.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5) });
         return true;
+    }
+
+    /// <summary>(iron-vow-a, 22 Nov; the owner picked Round 10 option A, "a warcry vow") The press is a warcry: every lesser foe
+    /// (Enemy.Elite and Enemy.Boss false; a captain or a named one is lesser unless it is also elite) within Goad m of her,
+    /// a fixed reach as the skill's text gives it, rushes her for the plant and the brace (an archer or a caster too), so the
+    /// brace has blows to store. Elites and bosses keep their own minds.</summary>
+    void VowGoad(WeaponInst w, double seconds)
+    {
+        double reach = w.Num(s => s.Goad) ?? 0;
+        if (reach <= 0) return;
+        var p = Player;
+        foreach (var e in HostilesInRadius(p.X, p.Z, reach))
+        {
+            if (!e.Alive || e.State == EnemyState.Dying || e.Elite || e.Boss) continue;
+            Goad(e, seconds);
+        }
     }
 
     /// <summary>A blow on her, its final amount (HurtPlayer): bracing, a share is stored (before the halving) and it lands
@@ -251,10 +268,14 @@ public sealed partial class Battle
         v.T -= dt;
         if (v.T > 0) return;
         Braced = null;
+        goaded.Clear(); // the goad lasts the brace (TickRules clears it too, but only with a lamp rule lit)
         var w = v.Weapon;
         var p = Player;
         double r = Firing.AreaOf(this, w, RuleBurstRadius(v, RuleVowRadius(w, w.Num(s => s.Radius) ?? 5))), kb = w.Num(s => s.Knockback) ?? 1.2, stun = w.Num(s => s.Stun) ?? 0.4;
-        double dmg = (w.Damage + v.Stored * WkOver(w, "iron_vow.old_grudge", "storeMul", w.Num(s => s.StoreMul) ?? 3)) * RuleDamageMul(w);
+        // (iron-vow-a) The floor: a burst never under Floor x its Damage (1.5: a bare burst today, nothing stored, was 62% of
+        // the den's at L9, and the mean was 1.57 x the base); the store still lifts it past that.
+        double raw = w.Damage + v.Stored * WkOver(w, "iron_vow.old_grudge", "storeMul", w.Num(s => s.StoreMul) ?? 3);
+        double dmg = Math.Max(raw, w.Damage * (w.Num(s => s.Floor) ?? 1)) * RuleDamageMul(w);
         var status = Firing.StatusWith(this, w);
         var ring = HostilesInRadius(p.X, p.Z, r);
         Events.Emit(new Ev.Brace { Phase = BracePhase.Burst, X = p.X, Z = p.Z, Radius = r, Stored = v.Stored, Hit = ring.Count });

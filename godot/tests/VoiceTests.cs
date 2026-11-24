@@ -43,8 +43,8 @@ public class VoiceTests
     static string? TextOf(string id, Lazy<HashSet<string>> code)
     {
         var p = id.Split('.');
-        // Takes of the same words by a woman and a man: folk.12.f, guard.0.m.
-        if (p[0] is "folk" or "guard" && p.Length == 3 && p[2] is "f" or "m") p = p[..2];
+        // Takes of the same words by a woman and a man: folk.12.f.
+        if (p[0] is "folk" && p.Length == 3 && p[2] is "f" or "m") p = p[..2];
         switch (p[0])
         {
             case "dlg":
@@ -56,9 +56,6 @@ public class VoiceTests
                 var list = p[2] switch { "night" => npc?.NightBarks, "said" => npc?.Said?.Select(l => l.Text).ToList(), _ => npc?.Barks };
                 int b = int.Parse(p[3]);
                 return list != null && b < list.Count ? list[b] : null;
-            case "guard":
-                int g = int.Parse(p[1]);
-                return g < Lore.Guards.Count ? Lore.Guards[g].Line : null;
             case "folk":
                 int f = int.Parse(p[1]);
                 return f < Lore.FolkLines.Count ? Lore.FolkLines[f].Text : null;

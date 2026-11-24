@@ -234,6 +234,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         ForgetFogOfOtherLayout(G.Journey.World, Chart);
         b.Rules = Chart.Rules();
         b.InBounds = map.CanStand;
+        // (P3, the den's ruler) A dungeon is rock: a pack's foe (its ruler too) held up by stone on its way to its slot round her
+        // goes round by the flow field (Battle.PackRoundCover, as the arena's director has it). Without it the Pack-Mother stood
+        // pressed into the rock 7 m from her for minutes (hollow seed 1), the flow field leading round it 8 m.
+        if (IsDungeon) b.PackRoundCover = true;
         // What the gear inscribes works here, and only here (the scars' kit carries coals).
         var kit = Character.Kit(G.Journey.Ch);
         b.Wear(kit.Marks, kit.SkillMods);
@@ -659,6 +663,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         e.Named = new Named { Title = people.BossName };
         double mul = BossHealth * Content.DungeonFights.Of(Chart.Dungeon).BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
         e.MaxHp = e.Hp = e.MaxHp * mul;
+        e.Damage *= Content.DungeonFights.Of(Chart.Dungeon).BossDamage;
         // Its blows as its people's champion's, not the night's ruler's third more: a day build carries
         // none of the ember's mending, and her bites took a level-ten warden from full in eight seconds.
         if (script != null)
@@ -682,6 +687,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     int IBossArena.Tier => BossTier;
     string IBossArena.BossName => people.BossName;
     bool IBossArena.Spare => false;
+    bool IBossArena.DenCut => DenRoster.For(Chart.Dungeon);
+    double IBossArena.KitMul => Content.DungeonFights.Of(Chart.Dungeon).BossKit;
     bool IBossArena.Sworn(string oath) => Chart.Has(oath);
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style)

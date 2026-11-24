@@ -195,7 +195,19 @@ float lair_gloom(vec3 p) {
 	return boss_gloom * smoothstep(boss_c.z * 0.3, boss_c.z * 0.75, d) * (1.0 - smoothstep(boss_c.z * 1.2, boss_c.z * 1.5, d)) * (1.0 - spur_lift * near);
 }
 vec3 gloom_col(vec3 c, float g) { return mix(c, vec3(dot(c, vec3(0.3, 0.55, 0.15))) * vec3(0.8, 0.95, 1.25), 0.7 * g) * (1.0 - 0.55 * g); }
-vec2 pg_h2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+// (tester lane, 23 Nov, coordinator option a) An integer hash (pcg2d, Jarzynski & Olano 2020) in place of fract(sin(dot) * 43758.5):
+// sin of arguments near 10^4 and a fused or split multiply-add differ by GPU and driver, so the old pattern was not the same on
+// D3D12 and Vulkan (parity round 2: the den floor busier on D3D12), nor (inference) across GPU makers. The input is quantized to
+// 1/256 first (integer cells stay exact; a fraction an ulp apart only flips at a 1/256 step), out uniform in [0, 1) as before.
+vec2 pg_h2(vec2 p) {
+	uvec2 v = uvec2(ivec2(floor(p * 256.0 + 0.5)));
+	v = v * 1664525u + 1013904223u;
+	v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+	v = v ^ (v >> 16u);
+	v.x += v.y * 1664525u; v.y += v.x * 1664525u;
+	v = v ^ (v >> 16u);
+	return vec2(v >> 8u) * (1.0 / 16777216.0);
+}
 float pg_vn(vec2 p) {
 	vec2 i = floor(p), f = fract(p);
 	f = f * f * (3.0 - 2.0 * f);

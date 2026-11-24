@@ -17,14 +17,30 @@ namespace SurvivorUnchained;
 /// </summary>
 public static class Args
 {
-    static readonly Viewer.ArgTable table = new(() => Dev ? OS.GetCmdlineUserArgs() : System.Array.Empty<string>());
+    static readonly Viewer.ArgTable table = new(Source);
+
+    /// <summary>The den test build's start (export preset "Windows (den test)", feature "den_test", 23 Nov): a tester
+    /// double-clicks the exe and plays the den as the owner's play builds do (the Warden, her, level 9). The new movement
+    /// is the default (MoveSwitch); the A/B (--move-ab) is left out on purpose.</summary>
+    public static readonly string[] DenTest = ["--quick", "warden", "--sex", "female", "--zone", "map", "--dungeon", "hollow", "--veteran", "9"];
+
+    /// <summary>True while the switches in force are the den test build's own start, not a command line's.</summary>
+    static bool denDefaults;
+
+    static IReadOnlyList<string> Source()
+    {
+        if (!Dev) return System.Array.Empty<string>();
+        var cmd = OS.GetCmdlineUserArgs();
+        denDefaults = cmd.Length == 0 && OS.HasFeature("den_test");
+        return denDefaults ? DenTest : cmd;
+    }
 
     /// <summary>Whether the developer's switches are read at all: in the
     /// editor and debug builds and the measuring build (export preset "Windows (perf)", feature "perf"), never in the player's release build. Every switch
     /// (--quick, --zone, --body, --gold, --shot, --perf...) comes through
     /// here, so a player's copy cannot be talked into a place, a body or a
     /// view the game does not offer (the legal brief, issue 3).</summary>
-    public static bool Dev => OS.IsDebugBuild() || OS.HasFeature("perf");
+    public static bool Dev => OS.IsDebugBuild() || OS.HasFeature("perf") || OS.HasFeature("den_test");
 
     static Dictionary<string, string> All() => table.All();
 
@@ -41,8 +57,9 @@ public static class Args
         float.TryParse(Get(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
     public static bool Has(string key) => All().ContainsKey(key);
     /// <summary>A run given any switch at all (a harness, the autopilot, a shot, a clip, a measure): a tool's run, never
-    /// the owner's play, which passes none (B1, 10 Nov: tool runs kept the owner's profile, Settings.File).</summary>
-    public static bool Tool => All().Count > 0;
+    /// the owner's play, which passes none (B1, 10 Nov: tool runs kept the owner's profile, Settings.File). The den test
+    /// build's own start (DenTest) is a player's play, not a tool's: she faces the cursor, the player's profile is kept.</summary>
+    public static bool Tool => All().Count > 0 && !(denDefaults && !table.Overridden);
 }
 
 public partial class Shots : Node

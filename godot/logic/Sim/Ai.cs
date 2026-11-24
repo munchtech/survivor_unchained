@@ -327,7 +327,7 @@ public static class Ai
             case Behavior.Ranged:
             case Behavior.Caster:
             {
-                double r = def.Ranged?.Range ?? 8;
+                double r = def.Ranged?.Range ?? (def.KeepOff > 0 ? def.KeepOff : 8);
                 if (dist < r * 0.55) { wantX = -wantX; wantZ = -wantZ; speed *= 0.9; }
                 else if (dist < r * 0.85)
                 {
