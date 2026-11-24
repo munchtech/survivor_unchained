@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-KEYS = {"mute", "vib", "skin", "shadow", "shadowk", "lift", "hi"}
+KEYS = {"mute", "vib", "skin", "shadow", "shadowk", "lift", "hi", "win"}
 
 
 def lin(c):
@@ -62,7 +62,9 @@ def parse(spec):
         if k not in KEYS:
             print(f"grade-try: unknown key '{k}' ignored", file=sys.stderr)
             continue
-        if k == "shadow":
+        if k == "win":   # win=a:b:c:d, the painted shadow's window in Oklab L (GradeSettings.PaintShadowWin)
+            p[k] = [float(x) for x in v.split(":")]
+        elif k == "shadow":
             if v.startswith("_"):
                 v = "#" + v[1:]
             h = v.lstrip("#")
@@ -103,9 +105,12 @@ def apply_lin(out_lin, p):
         L = np.minimum(L + p["lift"] * (1 - smooth(0, 0.35, L)), 1)
     if p["shadow"] is not None and p["shadowk"] != 0:
         ls, cs, hs = oklab(lin(p["shadow"]))
-        dark = 1 - smooth(0.12, 0.45, L)
-        fade_black = smooth(0, 0.08, L)
-        own = 1 - smooth(0.02, 0.07, C)
+        win = list(p.get("win") or (0, 0.08, 0.12, 0.45))
+        w0, w1, w2, w3 = win[:4]
+        c0, c1 = win[4:6] if len(win) >= 6 else (0.02, 0.07)
+        dark = 1 - smooth(w2, w3, L)
+        fade_black = smooth(w0, w1, L)
+        own = 1 - smooth(c0, c1, C)
         w = np.clip(p["shadowk"] * dark * own * fade_black, 0, 1)
         ct = cs * np.minimum(L / max(float(ls), 0.05), 1)
         hsr = np.radians(hs)

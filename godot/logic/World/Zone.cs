@@ -116,6 +116,13 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// her shaded skin, the blue lerp passed through red and violet on the way: deep skin's shade side went from h 40-55 to
     /// 20-43, brick-red and purple patches with hard edges where her shade crossed its L and C thresholds.</summary>
     public double PaintShadowSkin { get; init; }
+    /// <summary>(cool shade lane, round 3) The painted shadow's window in Oklab L: fades in from [0] to [1], out from [2] to [3].
+    /// Null: 0, 0.08, 0.12, 0.45 (the darker the pixel, the more of the shadow's hue: every grade before this one). The den's cool
+    /// shade starts above the pack's dark tone and holds through the mid-tones, so the floor and the roots take the violet
+    /// evenly and the foes' and her darks keep their own tone. Two more values, [4] and [5]: the pixel's own chroma (Oklab C) the
+    /// shadow spares, from none at [4] to all at [5] (0.02 and 0.07 without them): lower, and anything with a little colour of
+    /// its own (the boss's slate coat, ferns, the pack's warm tone) keeps it while the grey floor and roots take the violet.</summary>
+    public double[]? PaintShadowWin { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
     /// <summary>(L1 W2) The tone curve on Oklab L, last in the grade: (in, out) pairs from 0 to 1, flattened, through which a
