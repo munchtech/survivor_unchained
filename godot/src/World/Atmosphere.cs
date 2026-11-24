@@ -1440,6 +1440,7 @@ public partial class Atmosphere : Node3D
     {
         public float? Mute, Vib, Skin, ShadowK, Lift, Hi, ShadowSkin, Scene, Late;
         public string? Shadow;
+        public double[]? Win;   // win=a:b:c:d or a:b:c:d:e:f (GradeSettings.PaintShadowWin)
 
         public static GradeTry? Parse(string? spec)
         {
@@ -1452,6 +1453,7 @@ public partial class Atmosphere : Node3D
                 if (eq < 0) { GD.PushWarning($"--grade-try: no value in '{part}'"); continue; }
                 string k = part[..eq].Trim().ToLowerInvariant(), v = part[(eq + 1)..].Trim();
                 if (k == "shadow") { t.Shadow = v.StartsWith('_') ? "#" + v[1..] : v; continue; }
+                if (k == "win") { try { t.Win = Array.ConvertAll(v.Split(':'), x => double.Parse(x, inv)); } catch (FormatException) { GD.PushWarning($"--grade-try: bad window '{part}'"); } continue; }
                 if (!float.TryParse(v, System.Globalization.NumberStyles.Float, inv, out float f)) { GD.PushWarning($"--grade-try: bad number '{part}'"); continue; }
                 switch (k)
                 {
@@ -1477,6 +1479,7 @@ public partial class Atmosphere : Node3D
         readonly float vib, skin, shadowK, lift, hi, vibDark, shadowSkin;
         readonly bool hasShadow;
         readonly float ls, cs, hs;
+        readonly float w0 = 0, w1 = 0.08f, w2 = 0.12f, w3 = 0.45f, c0 = 0.02f, c1 = 0.07f;   // (cool shade lane) the shadow's window in Oklab L and the own chroma it spares (GradeSettings.PaintShadowWin)
         public bool On => vib != 0 || hi != 0 || lift != 0 || (hasShadow && shadowK != 0);
 
         public Paint(GradeSettings g, GradeTry? t)
@@ -1485,6 +1488,11 @@ public partial class Atmosphere : Node3D
             shadowK = t?.ShadowK ?? (float)g.PaintShadowK; skin = t?.Skin ?? 1; vibDark = (float)g.PaintVibDark;
             shadowSkin = t?.ShadowSkin ?? (float)g.PaintShadowSkin;
             string hex = t?.Shadow ?? g.PaintShadow;
+            if ((t?.Win ?? g.PaintShadowWin) is { Length: >= 4 } win)
+            {
+                w0 = (float)win[0]; w1 = (float)win[1]; w2 = (float)win[2]; w3 = (float)win[3];
+                if (win.Length >= 6) { c0 = (float)win[4]; c1 = (float)win[5]; }
+            }
             hasShadow = hex != "";
             ls = cs = hs = 0;
             if (hasShadow)
@@ -1520,7 +1528,7 @@ public partial class Atmosphere : Node3D
             if (lift != 0) L = Mathf.Min(L + lift * (1 - Smooth(0, 0.35f, L)), 1);
             if (hasShadow && shadowK != 0)
             {
-                float dark = 1 - Smooth(0.12f, 0.45f, L), fadeBlack = Smooth(0, 0.08f, L), own = 1 - Smooth(0.02f, 0.07f, C);
+                float dark = 1 - Smooth(w2, w3, L), fadeBlack = Smooth(w0, w1, L), own = 1 - Smooth(c0, c1, C);
                 float w = Mathf.Clamp(shadowK * dark * own * fadeBlack, 0, 1);
                 // (skin's hues spared by PaintShadowSkin: the lerp to blue ran her shade through red and violet)
                 if (shadowSkin != 0) w *= 1 - shadowSkin * skinHue * Smooth(0.012f, 0.025f, C);

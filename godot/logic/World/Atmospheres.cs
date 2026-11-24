@@ -312,7 +312,7 @@ public static class Atmospheres
             PaintVib = Lerp(a.Grade.PaintVib, b.Grade.PaintVib, t), PaintHi = Lerp(a.Grade.PaintHi, b.Grade.PaintHi, t),
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
             PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
-            PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
+            PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintShadowWin = t < 0.5 ? a.Grade.PaintShadowWin : b.Grade.PaintShadowWin, PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
             Curve = CurveMix(a.Grade.Curve, b.Grade.Curve, t), WarmKeep = Lerp(a.Grade.WarmKeep, b.Grade.WarmKeep, t),
             WarmHue = Lerp(a.Grade.WarmHue, b.Grade.WarmHue, t), WarmWidth = Lerp(a.Grade.WarmWidth, b.Grade.WarmWidth, t),
         })
@@ -382,6 +382,10 @@ public static class Atmospheres
     public static GradeSettings? GradeNamed(string name) => name.IndexOf('@') is var at and > 0
         && double.TryParse(name[(at + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var k)
         && GradeNamed(name[..at]) is { } g ? g with { Contrast = g.Contrast * k } : GradeNamed0(name);
+    /// <summary>(cool shade lane, round 3) rig_den_cool's paint shadow window (GradeSettings.PaintShadowWin): in from Oklab L 0.10
+    /// to 0.16 (her darkest tones stay neutral), out from 0.50 to 0.60 (the pools and the Flare stay gold); own chroma spared
+    /// from 0.014 to 0.026 (the boss's slate coat keeps its colour, the grey floor and roots take the violet).</summary>
+    static readonly double[] DenCoolWin = { 0.10, 0.16, 0.50, 0.60, 0.014, 0.026 };
     static GradeSettings? GradeNamed0(string name) => name switch
     {
         "night" => NightGrade, "play_night" => PlayNightGrade, "lowford_night" => LowFordNight.Grade, "town_night" => NightTown.Grade,
@@ -410,7 +414,7 @@ public static class Atmospheres
         "rig_den" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#3a2618", PaintShadowK = 0.45, PaintVib = 1.2, PaintHi = 0.6 },
         // (cool shade lane, 23 Nov: option C in the den, rigs.json "den_cool") the den's grade with a violet paint shadow: the shade
         // is cool, the warmth is the light's. Used only under --den-shade 1 (View.DenShade).
-        "rig_den_cool" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#2a1e78", PaintShadowK = 1.2, PaintVib = 1.2, PaintHi = 0.6 },
+        "rig_den_cool" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#2a245e", PaintShadowK = 1, PaintShadowSkin = 1, PaintShadowWin = DenCoolWin, PaintVib = 1.2, PaintHi = 0.6 },   // (round 3) the violet is the grade's: a window from above her darkest tones through the mid-tones, anything warm or with a little colour of its own spared
         _ => null,
     };
 

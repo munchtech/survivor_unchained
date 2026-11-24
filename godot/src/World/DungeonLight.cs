@@ -25,8 +25,8 @@ public static class DungeonLight
     // (cool shade lane, 23 Nov: the owner said yes to the den's shade going cool violet) --den-shade 1 (DenShade) turns the real
     // light on with it, unless --den-real-light 0 says otherwise: the pool reads as sun by its temperature, not by its energy.
     static readonly bool Real = SurvivorUnchained.Args.Num("den-real-light", DenShade.On ? 1f : 0f) > 0f;
-    static readonly float RlEnergy = DenShade.Num("den-rl-energy", 22f, 12f), RlR = DenShade.Num("den-rl-r", 2.1f, 1.65f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
-        RlWash = DenShade.Num("den-rl-wash", 0f, 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = DenShade.Num("den-rl-lair", 1f, 0.65f);   // (judge 3: 0.8 -> 0.65)
+    static readonly float RlEnergy = DenShade.Num("den-rl-energy", 28f, 12f), RlR = DenShade.Num("den-rl-r", 2.1f, 1.65f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
+        RlWash = DenShade.Num("den-rl-wash", 0f, 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = DenShade.Num("den-rl-lair", 1.5f, 0.65f);   // (judge 3: 0.8 -> 0.65)
     // (cool shade lane) under the real light: today's soft spot x --den-rl-soft (the lair's x --den-rl-lair-soft) and the lair's
     // painted floor pool x --den-rl-lair-paint (judge 3: "the yellow comes from today's painted pool there, and the real light
     // multiplies it").
@@ -138,7 +138,7 @@ public static class DungeonLight
             {
                 Name = "shaft_light",
                 Transform = new Transform3D(basis.Rotated(Axis, CookieTurn(basis, v, lair)), top),   // each pool's gap turned its own way, its crisp stretch where it is seen
-                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? (DenShade.On ? "ffd048" : "fff4e6")),   // (under the shade the light carries the gold: near-white on the violet-lit floor landed pink, hue 358)
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? (DenShade.On ? "ff900c" : "fff4e6")),   // (under the shade the light carries the gold: near-white on the violet-lit floor landed pink, hue 358)
                 LightEnergy = RlEnergy * (lair ? RlLair : 1f),
                 SpotRange = Height + 12f,   // the floor well inside the range's roll-off: the pool is even
                 SpotAngle = Mathf.RadToDeg(Mathf.Atan(r * 1.25f / Height)),
