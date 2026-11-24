@@ -266,7 +266,7 @@ void fragment() {
 		col *= mix(1.0, mix(0.86, 1.08, smoothstep(0.3, 0.7, big)), cl);
 		// (lead 6, round 5) value and colour masses on a 6-15 m scale, so no stretch of plain grain is wider than ~4 m:
 		// damp dark earth in broad pools, moss creeping out from the banks' feet in tongues, leaf litter in drifts.
-		float m1 = fbm(wpos.xz * 0.075 + vec2(-151.967, 196.961)), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);   // (m1's pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
+		float m1 = fbm(wpos.xz * 0.075 + vec2(-167.021, -233.915)), m2 = fbm(wpos.xz * 0.11 - 61.0), m3 = fbm(wpos.xz * 0.16 + 5.0);   // (m1's pcg2d offset chosen to match the old fract(sin) field, tester lane 23 Nov)
 		float damp = smoothstep(0.5, 0.66, m1 + 0.12 * (mid - 0.5));
 		col = mix(col, col * vec3(0.5, 0.48, 0.5), damp * 0.85 * cl);
 		float mossm = smoothstep(0.42, 0.62, m2 + 0.35 * (1.0 - smoothstep(0.5, 4.0, inside)) - 0.18) * (1.0 - smoothstep(4.5, 7.0, inside));
