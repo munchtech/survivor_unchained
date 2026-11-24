@@ -11,7 +11,7 @@ public static class DenShade
     public static readonly bool On = SurvivorUnchained.Args.Num("den-shade", 0f) > 0f;
 
     /// <summary>The floor's tint under the shade (dungeon_floor's den_tint; --den-tint r,g,b still wins).</summary>
-    public static readonly Godot.Vector3 Tint = new(1.2f, 1.1f, 1.05f);
+    public static readonly Godot.Vector3 Tint = new(0.56f, 0.55f, 0.56f);   // (neutral and low: the rig's violet key is strong so the walls read, the floor is held at L* 13)
 
     /// <summary>A den number that has its own default under the shade: --name wins, else <paramref name="shade"/> under
     /// --den-shade 1, else <paramref name="today"/>.</summary>

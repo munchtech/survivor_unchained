@@ -22,7 +22,7 @@ public static class DenCookie
     {
         v = ((v % Variants) + Variants) % Variants;
         if (made[v] is { } t && GodotObject.IsInstanceValid(t)) return t;
-        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.03f), 0.004f), soft = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-soft", 0.12f), edge), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.10f);
+        float edge = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-edge", 0.03f), 0.004f), soft = Mathf.Max(SurvivorUnchained.Args.Num("den-rl-cookie-soft", 0.045f), edge), warp = SurvivorUnchained.Args.Num("den-rl-cookie-warp", 0.10f);
         float arc = Mathf.DegToRad(SurvivorUnchained.Args.Num("den-rl-cookie-arc", 75f));   // the crisp stretch: this far either side of the cookie's +x
         var rng = new RandomNumberGenerator { Seed = (ulong)(7919 * (v + 1)) };
         int n = 2 + (v % 2);
