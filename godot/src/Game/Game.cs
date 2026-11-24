@@ -1098,6 +1098,7 @@ public partial class Game : Node, IZoneHost
     /// until the GC finds it, and a Godot resource a C# wrapper holds is freed only when that wrapper is (the tester
     /// lane's loop check, 24 Nov: a den again and again climbed +222 MB of RAM and +109 MB of VRAM a loop, the managed
     /// heap's floor 0.5 -> 1 GB and its tops to 2.25 GB, the card's buffers with it).</summary>
+    static readonly bool Aggressive = Args.Has("gc-aggressive");
     static void LetGoOfLast()
     {
         ulong t = Time.GetTicksUsec();
@@ -1105,8 +1106,11 @@ public partial class Game : Node, IZoneHost
         System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(2, GCCollectionMode.Forced, true, true);
         GC.WaitForPendingFinalizers();
-        GC.Collect(2, GCCollectionMode.Forced, true, true);
-        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
+        long committed = GC.GetGCMemoryInfo().TotalCommittedBytes;
+        // (--gc-aggressive, the tester lane's A/B, 24 Nov: the GC kept ~1.15 GB committed for ~520 MB live across a den loop;
+        // Aggressive also hands its free memory back to the OS)
+        GC.Collect(2, Aggressive ? GCCollectionMode.Aggressive : GCCollectionMode.Forced, true, true);
+        GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB, GC committed {committed >> 20} -> {GC.GetGCMemoryInfo().TotalCommittedBytes >> 20} MB{(Aggressive ? " (aggressive)" : "")} in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
     }
 
     /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s; never while
