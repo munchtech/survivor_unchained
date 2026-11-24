@@ -1542,8 +1542,9 @@
       "access": ["warden"],
       "bossDamage": 1.2,
       "art": "iron_vow",
-      "description": "You plant your feet and swear it: for 2 s every blow on you lands at half, and a fifth of each is kept. Then it all comes back out of you in a ring.",
-      "base": { "cooldown": 10, "damage": 30, "radius": 5, "knockback": 1.2, "stun": 0.4, "brace": 2, "plant": 0.3, "store": 0.2, "storeMul": 3, "halve": 0.5 },
+      "description": "You plant your feet and swear it, and the lesser foes within 6 m come at you: for 2 s every blow on you lands at half, and a fifth of each is kept. Then it all comes back out of you in a ring, never less than half again its damage.",
+      "_doc": "(iron-vow-a, 22 Nov; the owner picked BUILD_DIRECTION Round 10 option A, a warcry vow) goad: the press goads the lesser foes (not elite, not boss) within 6 m to her for the plant and the brace (PressedWarden.VowGoad; no interrupt, come_then keeps its 12 m interrupting call). floor: the burst never under 1.5 x its damage (IronVowWarcryTests: in the den at L9 before it, 33 of 53 bursts stored nothing, the mean burst was 1.57 x base, p75 1.47, p90 3.11).",
+      "base": { "cooldown": 10, "damage": 30, "radius": 5, "knockback": 1.2, "stun": 0.4, "brace": 2, "plant": 0.3, "store": 0.2, "storeMul": 3, "halve": 0.5, "goad": 6, "floor": 1.5 },
       "evolutions": []
     },
     {

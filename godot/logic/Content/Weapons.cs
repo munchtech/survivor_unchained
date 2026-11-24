@@ -104,6 +104,10 @@ public sealed class WeaponStats
     /// holds land at Halve, and Store of each (before the halving) is stored; it ends in a burst of Radius for Damage plus
     /// the store times StoreMul, Knockback outward, a lesser foe stunned Stun seconds.</summary>
     public double? Brace, Plant, Store, StoreMul, Halve;
+    /// <summary>Brace (iron-vow-a, 22 Nov; the owner's pick of BUILD_DIRECTION Round 10 option A, "a warcry vow"): the press
+    /// goads the lesser foes (not an elite, not a boss) within Goad m to her for the plant and the brace; the burst strikes
+    /// for at least Floor times its Damage, whatever was stored.</summary>
+    public double? Goad, Floor;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
