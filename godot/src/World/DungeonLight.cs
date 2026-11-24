@@ -23,9 +23,10 @@ public static class DungeonLight
     // right?"): the rig, the rooms' wash and the painted fan rays stay as they are (--den-rl-wash, --den-rl-fan scale them); and so
     // does the floor's painted pool (sp_*; --den-rl-mask 0 drops it: the lair's floor then changes well outside the light).
     static readonly bool Real = SurvivorUnchained.Args.Num("den-real-light", 0f) > 0f;
-    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 12f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.9f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
-        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 1f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0.03f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 0.5f);
+    static readonly float RlEnergy = SurvivorUnchained.Args.Num("den-rl-energy", 13f), RlR = SurvivorUnchained.Args.Num("den-rl-r", 1.9f), RlFog = SurvivorUnchained.Args.Num("den-rl-fog", 1f),
+        RlWash = SurvivorUnchained.Args.Num("den-rl-wash", 1f), RlFan = SurvivorUnchained.Args.Num("den-rl-fan", 0.8f), RlShaft = SurvivorUnchained.Args.Num("den-rl-shaft", 0f), RlLair = SurvivorUnchained.Args.Num("den-rl-lair", 1f);
     static int realN;
+    static readonly System.Collections.Generic.List<Vector3> realFeet = new();
 
     public static Node3D? Build(ZoneData z)
     {
@@ -41,7 +42,7 @@ public static class DungeonLight
             HoleTex = ImageTexture.CreateFromImage(Image.CreateFromData(z.Res, z.Res, false, Image.Format.R8, px));
             HoleMap = new Vector3(-z.Half - 0.5f * z.Step, -z.Half - 0.5f * z.Step, 1f / (z.Res * z.Step));
         }
-        int i = 0; fanN = 0; realN = 0; Pools.Clear();
+        int i = 0; fanN = 0; realN = 0; realFeet.Clear(); Pools.Clear();
         // (den r16 B2, R15f item 2) the lair's painted hollows are no holes: the fans keep off them and mask them (--den-shaft-hollows 0: not)
         Hollows = Fan > 0f && SurvivorUnchained.Args.Num("den-shaft-hollows", 1f) > 0f ? DungeonDress.HollowsFor(z) : new();
         var feet = new System.Collections.Generic.List<Vector2>();   // (den r16 B) every shaft's foot: the corridors' spacing, the log
@@ -113,15 +114,18 @@ public static class DungeonLight
     {
         var top = foot - Axis * Height;
         var basis = Basis.LookingAt(Axis, Mathf.Abs(Axis.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
-        if (Real)
+        // (judge 1) one gap, one projected light: the lair's two shafts land half a metre apart, and two outlines laid over each
+        // other are a pool with no edge (115-170 px against a room's 25-55)
+        if (Real && !realFeet.Exists(f => f.DistanceTo(foot) < SurvivorUnchained.Args.Num("den-rl-apart", 2f)))
         {
+            realFeet.Add(foot);
             int v = ++realN;
             float r = RlR * (0.9f + 0.25f * Hash(v, 5, 41));
             root.AddChild(new SpotLight3D
             {
                 Name = "shaft_light",
                 Transform = new Transform3D(basis.Rotated(Axis, Hash(v, 6, 42) * Mathf.Tau), top),   // each pool's gap turned its own way
-                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? "ffc878"),
+                LightColor = new Color(SurvivorUnchained.Args.Get("den-rl-colour") ?? "fff4e6"),
                 LightEnergy = RlEnergy * (lair ? RlLair : 1f),
                 SpotRange = Height + 12f,   // the floor well inside the range's roll-off: the pool is even
                 SpotAngle = Mathf.RadToDeg(Mathf.Atan(r * 1.25f / Height)),
@@ -433,7 +437,7 @@ public static class DungeonLight
         // (den r16 B2: B's c6dce6 at .3, ext .3 read as cyan lasers, cores +.30-.46 L, the gap a cyan blob; soft rays, near-neutral, lower)
         // (den r17 L, R16 item 2) the rays' added light neutral-cool and only added (ext 0): ext .12 took a share of the warm bank
         // behind them, so the shaft's change tracked the albedo (h 35-45, C .05); the old look: --den-shaft-tint d6dce2 --den-shaft-ext .12
-        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
+        mat.SetShaderParameter("tint", new Color(SurvivorUnchained.Args.Get("den-shaft-tint") ?? (Real ? SurvivorUnchained.Args.Get("den-rl-fan-tint") ?? "ffe6c4" : Smooth ? (lair ? "a0dcea" : "a0e0ea") : "c8d8f0")));
         mat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("den-shaft-fan-k", 0.15f) * (lair ? SurvivorUnchained.Args.Num("den-lair-shaft", 1.1f) : 1f) * (Real ? RlFan : 1f));
         mat.SetShaderParameter("ext", SurvivorUnchained.Args.Num("den-shaft-ext", 0f));
         mat.SetShaderParameter("haze", SurvivorUnchained.Args.Num("den-shaft-haze", 0.3f));
