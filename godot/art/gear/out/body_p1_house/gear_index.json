@@ -805,8 +805,8 @@
    "fit": "ok",
    "lod_file": "res://art/gear/out/body_p1/warden.lod.gltf",
    "tuck": "armor_tuck/warden.top.bin",
-   "tuck_count": 98,
-   "cover_count": 237
+   "tuck_count": 212,
+   "cover_count": 239
   },
   {
    "id": "plate_pauldrons_warden",
@@ -882,7 +882,7 @@
     "kit_bodice.top.steel"
    ],
    "tuck": "armor_tuck/kit_bodice.bin",
-   "tuck_count": 561,
+   "tuck_count": 860,
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
@@ -898,7 +898,7 @@
    "fit": "ok",
    "native": true,
    "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
-   "cover_count": 811
+   "cover_count": 813
   },
   {
    "id": "kit_boots",
@@ -1076,7 +1076,7 @@
     "sol_corset.top.steel"
    ],
    "tuck": "armor_tuck/sol_corset.bin",
-   "tuck_count": 408,
+   "tuck_count": 950,
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
@@ -1097,7 +1097,7 @@
    "body_glb": "e37f5a0c",
    "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
    "tuck_depth_mm": 22.0,
-   "cover_count": 756,
+   "cover_count": 768,
    "sockets": "res://art/armor/body_p1/sol_corset.sockets.json",
    "fit": "ok",
    "native": true,
@@ -1105,8 +1105,8 @@
   }
  ],
  "house": {
-  "package": "C:/Users/munch/Desktop/Marionette/generated/to_game/switch_b",
-  "manifest_sha1": "39bd9e432499d5bddb66debe9d2eb53bf9ba3a7d",
+  "package": "C:/Users/munch/Desktop/Marionette_house2/generated/h2/switch_r3",
+  "manifest_sha1": "a3321346fc823734f06f519d70560efe8ec42525",
   "rows_tucked": [
    "warden.belt",
    "warden.boots",
