@@ -299,7 +299,7 @@ public static class P1Body
     /// (lod_p1_body, hidden till HerLod's rule), the skeleton marked as B's.</summary>
     public static Node3D Load(out Skeleton3D skel)
     {
-        close ??= GD.Load<PackedScene>(Dir + "body.glb");
+        if (close == null) { close = GD.Load<PackedScene>(Dir + "body.glb"); Unsampled(close); }
         var root = close.Instantiate<Node3D>();
         skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         skel.SetMeta("p1_b", true);
@@ -326,6 +326,30 @@ public static class P1Body
         }
         GD.Print($"p1: B native ({meshes} meshes, {skel.GetBoneCount()} bones at {root.GetPathTo(skel)}; play tier {tier})");
         return root;
+    }
+
+    /// <summary>The maps body.glb carries that none of her materials samples, let go once at the first load (the tester lane,
+    /// 24 Nov: the town's texture census, "mem tex undrawn", found them reached only through her meshes' own surface materials,
+    /// which her override materials replace: the skin's roughness map, 2048 Rgb8, 21 MB, her skin shader takes the albedo and
+    /// the normal map only; the eyes' 1024 paint, 5 MB, People.HerPart's eye shader paints from head_tex's heroine_eye and
+    /// iris). Her materials are built from these shared materials, so the maps go from them, for every later instance too.
+    /// --p1-keep-maps keeps them (the pixel A/B).</summary>
+    static void Unsampled(PackedScene scene)
+    {
+        if (Args.Has("p1-keep-maps")) return;
+        var inst = scene.Instantiate<Node>();
+        var seen = new HashSet<ulong>();
+        long bytes = 0;
+        static long B(Texture2D? t) => t == null ? 0 : (long)t.GetWidth() * t.GetHeight() * 4;
+        foreach (var mi in inst.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D m || !seen.Add(m.GetInstanceId())) continue;
+                if (m.ResourceName == "skin" && m.RoughnessTexture != null) { bytes += B(m.RoughnessTexture); m.RoughnessTexture = null; }
+                if (m.ResourceName == "eyes" && m.AlbedoTexture != null) { bytes += B(m.AlbedoTexture); m.AlbedoTexture = null; }
+            }
+        inst.Free();
+        if (bytes > 0) GD.Print($"p1: body.glb's unsampled maps let go ({bytes >> 20} MB before mipmaps)");
     }
 
     /// <summary>play.glb's rests against body.glb's (one skeleton for both tiers): 0.1 mm, 0.01 deg.</summary>

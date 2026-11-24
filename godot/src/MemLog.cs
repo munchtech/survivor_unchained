@@ -79,6 +79,21 @@ public partial class MemLog : Node
     }
     static System.Collections.Generic.HashSet<ulong>? lastShaders;
 
+    // --keep-shaders (dev, the tester lane's pipeline A/B, 24 Nov: the owner asked whether the den loop's native RAM steps
+    // come from the ~263 pipelines compiled again at each den load): every Shader object the tree reaches as a place is left
+    // is held for good, so the next place's loads find the same objects (by path, or a scene's sub-resource path) and their
+    // compiled pipelines instead of compiling them again. A test, not the fix: what it holds only grows.
+    static readonly bool keepShaders = Args.Has("keep-shaders");
+    static readonly System.Collections.Generic.HashSet<Shader> keptShaders = new();
+    public static void KeepShaders(Node root)
+    {
+        if (!keepShaders) return;
+        var (_, shaders) = Reach(root);
+        int before = keptShaders.Count;
+        foreach (var v in shaders.Values) keptShaders.Add(v.S);
+        GD.Print($"mem keep: {keptShaders.Count - before} Shader objects kept now ({shaders.Count} reached), {keptShaders.Count} kept in all; pipelines {Perf.PipesNow():0}");
+    }
+
     static (double Tex, double Buf, double Vid) Mon() => (Performance.GetMonitor(Performance.Monitor.RenderTextureMemUsed) / 1048576.0,
         Performance.GetMonitor(Performance.Monitor.RenderBufferMemUsed) / 1048576.0, Performance.GetMonitor(Performance.Monitor.RenderVideoMemUsed) / 1048576.0);
 
@@ -175,8 +190,11 @@ public partial class MemLog : Node
     /// a texture; the engine's own list is not exposed to scripts): imported ones by folder, runtime ones (no path) by the node
     /// that holds them. Bytes are width x height x the format's bytes per pixel, x 4/3 for mipmaps
     /// (an upper bound: mipmaps assumed), x layers.</summary>
-    /// <summary>What the tree reaches: its textures (by RID: size, kind, path or holder) and its Shader objects.</summary>
-    static (System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)> Tex, System.Collections.Generic.Dictionary<ulong, (Shader S, string Where)> Shaders) Reach(Node root)
+    /// <summary>What the tree reaches: its textures (by RID: size, kind, path or holder) and its Shader objects.
+    /// (drawnOnly, 24 Nov, the tester lane: what a mesh holds but never draws) a MeshInstance3D's mesh is entered surface by
+    /// surface, and a surface with an override material (or under a material_override) is skipped: its own material is
+    /// held by the mesh but not drawn.</summary>
+    static (System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)> Tex, System.Collections.Generic.Dictionary<ulong, (Shader S, string Where)> Shaders) Reach(Node root, bool drawnOnly = false)
     {
         var seen = new System.Collections.Generic.HashSet<ulong>();
         var tex = new System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)>();
@@ -184,11 +202,15 @@ public partial class MemLog : Node
         void Visit(GodotObject o, string where, int depth)
         {
             if (depth > 6 || !seen.Add(o.GetInstanceId())) return;
+            if (drawnOnly && o is MeshInstance3D dm && dm.Mesh is Mesh mesh)
+                for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+                    if (dm.MaterialOverride == null && dm.GetSurfaceOverrideMaterial(s) == null && mesh.SurfaceGetMaterial(s) is Material sm) Visit(sm, $"{where}>mesh>surf{s}", depth + 1);
             foreach (var pr in o.GetPropertyList())
             {
                 if ((Variant.Type)pr["type"].AsInt32() != Variant.Type.Object) continue;
                 var name = pr["name"].AsString();
                 if (name is "script" or "owner") continue;
+                if (drawnOnly && o is MeshInstance3D && name == "mesh") continue;
                 GodotObject? v;
                 try { v = o.Get(name).AsGodotObject(); } catch { continue; }
                 if (v == null || v is Node) continue;
@@ -241,6 +263,11 @@ public partial class MemLog : Node
         var byHolder = tex.Values.Where(v => !v.Where.StartsWith("res://")).GroupBy(v => System.Text.RegularExpressions.Regex.Replace(v.Where, "[0-9]+", "#") + " | " + v.What);
         foreach (var g in byHolder.OrderByDescending(g => g.Sum(v => v.B)).Take(40)) GD.Print($"mem tex runtime: {Mb(g.Sum(v => v.B))} {g.Count()} x {g.Key}");
         foreach (var v in tex.Values.OrderByDescending(v => v.B).Take(25)) GD.Print($"mem tex big: {Mb(v.B)} {v.What} {v.Where}");
+        // (held, not drawn: reached only through a mesh's own surface material where an override draws instead)
+        var drawn = Reach(root, true).Tex;
+        var held = tex.Where(kv => !drawn.ContainsKey(kv.Key)).Select(kv => kv.Value).ToList();
+        GD.Print($"mem tex undrawn: {held.Count} textures held only by overridden surfaces' own materials, {Mb(held.Sum(v => v.B))}");
+        foreach (var v in held.OrderByDescending(v => v.B).Take(20)) GD.Print($"mem tex undrawn big: {Mb(v.B)} {v.What} {v.Where}");
         // (each Shader object compiles its own pipelines, even when its code is another's: copies of one code are pipelines twice)
         var byCode = shaders.Values.GroupBy(v => v.S.Code.GetHashCode()).ToList();
         GD.Print($"mem shaders: {shaders.Count} Shader objects reached from the tree, {byCode.Count} distinct codes, {shaders.Values.Count(v => v.S.ResourcePath.Length == 0)} made in code");

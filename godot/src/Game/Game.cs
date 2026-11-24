@@ -977,6 +977,8 @@ public partial class Game : Node, IZoneHost
 
     public void EnterZone(string id, string? from, Arrival? at = null)
     {
+        // (--keep-shaders, dev: the pipeline A/B; the place being left still stands in the tree)
+        SurvivorUnchained.MemLog.KeepShaders(GetTree().Root);
         // (frame pacing, session 4) the warm-up's stand-ins enter the world out of view before the map is built: their pipelines compile on the worker pool meanwhile
         SurvivorUnchained.Fx.FxWarm.Pre(this);
         // The title's stage is the prologue's place: begun there, it is kept.
