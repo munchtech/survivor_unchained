@@ -82,6 +82,7 @@ public partial class MemLog
         // 3. the place taken apart, biggest group first; under a node (--mem-strip-under), a collection first, then its children
         //    freed a class at a time (its MeshInstance3Ds, then its MultiMeshInstance3Ds, ...), each class's line naming them
         var groups = Groups(out var under);
+        if (Args.Has("mem-strip-list")) foreach (var g in groups.Take(2)) ListMeshes(g);
         if (under == null)
         {
             GD.Print($"mem strip: {groups.Count} groups: " + string.Join(", ", groups.Select(g => $"{Short(g)} ({Count(g)})")));
@@ -109,6 +110,36 @@ public partial class MemLog
         q.Enqueue(("a garbage collection (what only C# held)", 0, Collect));
         q.Enqueue(($"freed {Short(under)} itself", 0, () => { if (IsInstanceValid(under)) under.QueueFree(); }));
         q.Enqueue(("a garbage collection after", 0, Collect));
+    }
+
+    // --mem-strip-list (dev): a group's unique meshes by where they come from (a file's folder, or "made: " the node's name
+    // without its numbers and the mesh's class): how many, their surfaces, vertices, and the instances that draw them. On D3D12
+    // each surface's vertex, attribute and index buffers are placed at 64 KB apiece, so many small surfaces cost far more than
+    // their bytes.
+    static void ListMeshes(Node root)
+    {
+        var rows = new Dictionary<string, (HashSet<ulong> Meshes, int Surf, long Verts, int Inst)>();
+        foreach (var n in All(root))
+        {
+            Mesh? m = n switch { MeshInstance3D mi => mi.Mesh, MultiMeshInstance3D mm => mm.Multimesh?.Mesh, _ => null };
+            if (m == null) continue;
+            string key = m.ResourcePath is { Length: > 0 } rp && !rp.Contains("::")
+                ? System.IO.Path.GetDirectoryName(rp.Replace("res://", ""))?.Replace(System.IO.Path.DirectorySeparatorChar, '/') ?? rp
+                : m.ResourcePath.Contains("::") ? "in " + m.ResourcePath[..m.ResourcePath.IndexOf("::")].Replace("res://", "")
+                : $"made: {System.Text.RegularExpressions.Regex.Replace(n.Name.ToString(), @"[@\d_]+", "")} {m.GetClass()}";
+            rows.TryGetValue(key, out var r);
+            r.Meshes ??= new HashSet<ulong>();
+            r.Inst++;
+            if (r.Meshes.Add(m.GetInstanceId()))
+            {
+                r.Surf += m.GetSurfaceCount();
+                if (m is ArrayMesh am) for (int s = 0; s < am.GetSurfaceCount(); s++) r.Verts += am.SurfaceGetArrayLen(s);
+            }
+            rows[key] = r;
+        }
+        GD.Print($"mem strip list {root.Name}: {rows.Sum(r => r.Value.Meshes.Count)} unique meshes, {rows.Sum(r => r.Value.Surf)} surfaces, {rows.Sum(r => r.Value.Inst)} instances");
+        foreach (var (k, r) in rows.OrderByDescending(r => r.Value.Surf).Take(30))
+            GD.Print($"mem strip list {root.Name}: {r.Surf} surfaces, {r.Meshes.Count} meshes, {r.Verts} vertices, {r.Inst} instances: {k}");
     }
 
     static void Collect() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }
