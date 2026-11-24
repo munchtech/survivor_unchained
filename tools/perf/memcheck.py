@@ -39,10 +39,16 @@ BUDGET = {  # MB
 }
 BUDGET["denloop"] = BUDGET["den"]
 # (24 Nov, session 3: on D3D12 the loop medians rise for ~8 loops, then hold: L3, 16 loops, RAM 3324 -> ~3850 from loop 9 on,
-# VRAM ~3880-3940: the engine's and driver's upload pools filling to their caps, not a leak; a 7-loop run reads only the rise.
-# So the run is 16 loops and growth is judged on its second half.)
+# VRAM ~3880-3940; a 7-loop run reads only the rise. So the run is 16 loops and growth is judged on its second half, and the last
+# loop's median may stand at most LOOP_RISE_CAP over the first's (the coordinator, 24 Nov: a plateau check alone hides a slow
+# leak or a big one-off rise). UNPROVEN reading of the rise: the engine's upload staging pools fill to their caps and are never
+# given back (Godot 4.7.2 rendering_device.cpp: each transfer worker's staging buffer grows to the next power of two of its
+# biggest single upload, one worker per CPU thread, freed at shutdown; the frame staging blocks up to
+# rendering/rendering_device/staging_buffer/max_size_mb), with the D3D12 driver's heaps; on Vulkan RAM rose +10 MB a loop
+# (L1_vk), and GPU shared memory stepped +64/+128 MB at some loops on D3D12 only.)
 LOOP_SECS = 960.0  # denloop's default run: about 16 full loops (a loop is ~55-60 s: 45 s in the den, the page, the load)
 LOOPS_MIN = 12
+LOOP_RISE_CAP = 700.0  # MB, the last loop's median over the first's, RAM and VRAM each
 LOOP_GROWTH = 20.0  # MB a loop: the loop medians' RAM and VRAM over the second half of the loops, least-squares
 # The game's own window: a run with args other than --shot/--perf goes fullscreen at the monitor's size (src/Game/Settings.cs
 # ApplyWindow), as a tester's does; on this machine that is 2560x1440, stricter than a tester's 1080p (23 Nov: GPU dedicated
@@ -110,7 +116,10 @@ def loops(rows, log):
     lr, lv = slope(1, late), slope(3, late)
     print(f"  loops ended {len(ends)}; past the first, RAM {sr:+.0f} MB a loop, VRAM {sv:+.0f} MB a loop; "
           f"the second half (loops {late[0][0] if late else '-'}-{late[-1][0] if late else '-'}), RAM {lr:+.0f}, VRAM {lv:+.0f} (limit {LOOP_GROWTH:+.0f})")
-    return [("loops", len(ends) >= LOOPS_MIN), ("loop growth", lr < LOOP_GROWTH and lv < LOOP_GROWTH)]
+    rise_r = per[-1][1] - per[0][1] if per else 0; rise_v = per[-1][3] - per[0][3] if per else 0
+    print(f"  the last loop over the first: RAM {rise_r:+d} MB, VRAM {rise_v:+d} MB (cap {LOOP_RISE_CAP:+.0f})")
+    return [("loops", len(ends) >= LOOPS_MIN), ("loop growth", lr < LOOP_GROWTH and lv < LOOP_GROWTH),
+            ("loop rise", rise_r <= LOOP_RISE_CAP and rise_v <= LOOP_RISE_CAP)]
 
 
 def main():
