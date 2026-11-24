@@ -122,7 +122,7 @@ public partial class Game
     {
         if (scene == null || zone == null) return;
         var s = Settings.Current;
-        closeUp.IdleOn = s.IdleClose;
+        closeUp.IdleOn = Args.Has("idle-close"); // the owner, 24 Nov: "there is no more close-up camera"; dev flag only
         closeUp.IdleAfter = Args.Has("idle-after") ? Args.Num("idle-after", 60) : s.IdleCloseAfter;
         bool taken = InCinematic || showing || scene.CameraHeld;
         bool held = taken || Mode != "play" || hudMode != null || screens.Current != null || inTransit || camSaved != null

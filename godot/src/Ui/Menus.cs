@@ -94,7 +94,6 @@ public static class SettingsPanel
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
-        v.AddChild(Row("Idle close-up", ["on", "off"], s.IdleClose ? "on" : "off", x => s.IdleClose = x == "on"));
         v.AddChild(Row("Pad rumble", ["full", "low", "off"], s.Rumble, x => s.Rumble = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
         v.AddChild(Row("Tips", ["on", "off"], s.Tips ? "on" : "off", x => s.Tips = x == "on"));

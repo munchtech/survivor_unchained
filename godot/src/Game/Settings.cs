@@ -20,7 +20,7 @@ public sealed class Settings
     public string Motion = "full";
     /// <summary>Left alone a while with nothing hostile near, the view eases in close on her (CloseUp), after so
     /// many seconds; off, never.</summary>
-    public bool IdleClose = true;
+    public bool IdleClose = false; // unused in play since 24 Nov (no close-up camera); kept so old settings files load
     public double IdleCloseAfter = 60;
     /// <summary>The pad's rumble: full, low or off (S-14).</summary>
     public string Rumble = "full";
