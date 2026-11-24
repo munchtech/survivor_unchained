@@ -49,6 +49,7 @@ public partial class MemLog : Node
     {
         var seen = new System.Collections.Generic.HashSet<ulong>();
         var tex = new System.Collections.Generic.Dictionary<Rid, (long B, string What, string Where)>();
+        var shaders = new System.Collections.Generic.Dictionary<ulong, (Shader S, string Where)>();
         void Visit(GodotObject o, string where, int depth)
         {
             if (depth > 6 || !seen.Add(o.GetInstanceId())) return;
@@ -61,6 +62,7 @@ public partial class MemLog : Node
                 try { v = o.Get(name).AsGodotObject(); } catch { continue; }
                 if (v == null || v is Node) continue;
                 if (v is Texture t) Add(t, $"{where}:{name}");
+                else if (v is Shader sh) { if (!shaders.ContainsKey(sh.GetInstanceId())) shaders[sh.GetInstanceId()] = (sh, where); }
                 else if (v is Material or Mesh or Resource) Visit(v, $"{where}>{name}", depth + 1);
             }
         }
@@ -95,6 +97,11 @@ public partial class MemLog : Node
         var byHolder = tex.Values.Where(v => !v.Where.StartsWith("res://")).GroupBy(v => System.Text.RegularExpressions.Regex.Replace(v.Where, "[0-9]+", "#") + " | " + v.What);
         foreach (var g in byHolder.OrderByDescending(g => g.Sum(v => v.B)).Take(40)) GD.Print($"mem tex runtime: {Mb(g.Sum(v => v.B))} {g.Count()} x {g.Key}");
         foreach (var v in tex.Values.OrderByDescending(v => v.B).Take(25)) GD.Print($"mem tex big: {Mb(v.B)} {v.What} {v.Where}");
+        // (each Shader object compiles its own pipelines, even when its code is another's: copies of one code are pipelines twice)
+        var byCode = shaders.Values.GroupBy(v => v.S.Code.GetHashCode()).ToList();
+        GD.Print($"mem shaders: {shaders.Count} Shader objects reached from the tree, {byCode.Count} distinct codes, {shaders.Values.Count(v => v.S.ResourcePath.Length == 0)} made in code");
+        foreach (var g in byCode.Where(g => g.Count() > 1).OrderByDescending(g => g.Count()).Take(30))
+            GD.Print($"mem shaders dup: {g.Count()} copies of one code ({g.First().S.ResourcePath}{(g.First().S.ResourcePath.Length == 0 ? "code" : "")}), e.g. {string.Join(", ", g.Take(3).Select(v => System.Text.RegularExpressions.Regex.Replace(v.Where, "[0-9]+", "#")))}");
     }
 
     static double Bpp(Image.Format f) => f switch
