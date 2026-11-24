@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/crack_emis_02.png-26e6da4778e21043991e9cb0ab7
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
