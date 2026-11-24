@@ -1,6 +1,6 @@
 {
  "body": "body_p1_house",
- "body_hash": "b5772cfc53d3dbb2ff33e24bdcfe9d0d378b873f",
+ "body_hash": "e7abff9c3574266f415b9c6b74afaa0a2d953b3a",
  "rows": [
   {
    "id": "arcanist.boots",
@@ -1075,8 +1075,8 @@
     "sol_corset.top.redleather",
     "sol_corset.top.steel"
    ],
-   "tuck": null,
-   "tuck_count": 0,
+   "tuck": "armor_tuck/sol_corset.bin",
+   "tuck_count": 408,
    "body_hash": "a7c899fd45e4307d7bd0c55a50663bf3226d66c3",
    "hold": {
     "amount": 0.55,
@@ -1097,6 +1097,7 @@
    "body_glb": "e37f5a0c",
    "built_on": "98efddd3bdf26513b6748925c507011512ca5107",
    "tuck_depth_mm": 22.0,
+   "cover_count": 756,
    "sockets": "res://art/armor/body_p1/sol_corset.sockets.json",
    "fit": "ok",
    "native": true,
@@ -1105,7 +1106,7 @@
  ],
  "house": {
   "package": "C:/Users/munch/Desktop/Marionette/generated/to_game/switch_b",
-  "manifest_sha1": "ff83ff1b5678c06825d9ed0ed2c05ca3b6606567",
+  "manifest_sha1": "39bd9e432499d5bddb66debe9d2eb53bf9ba3a7d",
   "rows_tucked": [
    "warden.belt",
    "warden.boots",
@@ -1122,7 +1123,8 @@
    "kit_brief",
    "kit_gloves",
    "kit_pauldrons",
-   "kit_vambraces"
+   "kit_vambraces",
+   "sol_corset"
   ],
   "rows_untucked": [
    "arcanist.boots",
@@ -1147,8 +1149,7 @@
    "reaver.ink",
    "reaver.skirt",
    "reaver.top",
-   "kit_helm",
-   "sol_corset"
+   "kit_helm"
   ],
   "rows_covered": [
    "warden.belt",
@@ -1167,7 +1168,8 @@
    "kit_gloves",
    "kit_helm",
    "kit_pauldrons",
-   "kit_vambraces"
+   "kit_vambraces",
+   "sol_corset"
   ]
  }
 }
