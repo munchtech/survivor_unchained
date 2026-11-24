@@ -556,6 +556,8 @@ public partial class Atmosphere : Node3D
         if (rigsLoaded) return;
         rigsLoaded = true;
         SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString(SurvivorUnchained.Args.Get("rigs-file") ?? "res://data/look/rigs.json"));
+        // (cool shade lane, --den-shade 1) the den is lit by its cool rig: "den_cool" stands in for "den", here and nowhere else
+        if (DenShade.On && SurvivorUnchained.Look.Rigs.Current["den_cool"] is { } cool) SurvivorUnchained.Look.Rigs.Current.Rigs["den"] = cool;
     }
     /// <summary>(L1 lead 14, S1) The standing material's tones as a texture, 8 x 3 (a family a row: stone, leaf, bark): texels
     /// 0-6 the tone as scene light (contact, side, body, top, rim, fire mid, fire top: the sRGB color at its largest channel 1

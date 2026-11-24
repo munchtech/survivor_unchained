@@ -408,6 +408,9 @@ public static class Atmospheres
         // midC 0.041, banks C 0.005, grey); PaintLate lays it after. The shadow is warm umber, never the day's violet #403878 (late, it
         // measured shH 264 and cold 62%: the mauve of round 10). Measured against den_room/den_boss (LOOK_BIBLE "The demo frame: the den").)
         "rig_den" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#3a2618", PaintShadowK = 0.45, PaintVib = 1.2, PaintHi = 0.6 },
+        // (cool shade lane, 23 Nov: option C in the den, rigs.json "den_cool") the den's grade with a violet paint shadow: the shade
+        // is cool, the warmth is the light's. Used only under --den-shade 1 (View.DenShade).
+        "rig_den_cool" => WaystationDay.Grade with { HighlightTint = "#bcbcbc", PaintLate = 1, PaintShadow = "#2a1e78", PaintShadowK = 0.8, PaintVib = 1.2, PaintHi = 0.6 },
         _ => null,
     };
 
