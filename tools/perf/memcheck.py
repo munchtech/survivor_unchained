@@ -31,9 +31,10 @@ BUDGET = {  # MB
     "den": {"ws": 3072, "gpu": 3072, "private": 8192},
     "town": {"ws": 4096, "gpu": 3072, "private": 8192},
 }
-# A 1920x1080 window: the window-sized render targets (the main view, FxAfter's after-layer, the brush mask) scale with it,
-# so a 4K-class monitor's default window would read as more than a tester's 1080p screen (23 Nov: the census window was 3413x1920).
-ENGINE = ["--resolution", "1920x1080"]
+# The game's own window: a run with args other than --shot/--perf goes fullscreen at the monitor's size (src/Game/Settings.cs
+# ApplyWindow), as a tester's does; on this machine that is 2560x1440, stricter than a tester's 1080p (23 Nov: GPU dedicated
+# 3,469 MB at 1440p vs 3,180-3,250 at 1080p). --resolution alone does not change it (a vram probe, 8d9cda78b).
+ENGINE = []
 GROWTH = 20.0  # MB/min, the working set over the second half
 SETTLE = 45.0  # s
 
