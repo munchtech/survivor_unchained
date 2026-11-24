@@ -77,7 +77,7 @@ public static class DungeonFloor
                 mat.SetShaderParameter("boss_tint", DungeonDress.V3("den-boss-tint", new Vector3(0.94f, 0.92f, 0.74f)));   // (den r15 lead: x0.92, lair Lp50 .386 -> .375, lit h 49.8 kept; lane E: the lair too bright)
                 if (Args.Get("den-tint") == null) mat.SetShaderParameter("den_tint", SurvivorUnchained.View.DenShade.On ? SurvivorUnchained.View.DenShade.Tint : new Vector3(0.82f, 0.79f, 0.74f));   // (r11 judge: lit (146,104,85) -> (134,95,73))
                   // (r11) the lit floor (150,105,86) against den_room.png (134,95,73): (0.93,0.92,0.96) read pink
-                mat.SetShaderParameter("den_sat", SurvivorUnchained.View.DenShade.Num("den-sat", 0.3f, 0.75f));   // (cool shade lane: the earth's own orange down under the violet shade, or it reads brown-pink)   // (r11 0.68 -> 0.75: 0.55 read pink-grey; the warmth is the lit earth's, den_room.png)   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
+                mat.SetShaderParameter("den_sat", SurvivorUnchained.View.DenShade.Num("den-sat", 0.15f, 0.75f));   // (cool shade lane: the earth's own orange down under the violet shade, or it reads brown-pink)   // (r11 0.68 -> 0.75: 0.55 read pink-grey; the warmth is the lit earth's, den_room.png)   // (r10d 0.55 -> 0.68: the pools' ground read grey-mauve, not warm earth)
             }
         }
         return mat;
