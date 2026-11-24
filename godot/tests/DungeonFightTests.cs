@@ -12,7 +12,9 @@ namespace SurvivorUnchained.Tests;
 /// the harness (`dotnet run --project godot/balance -- dungeon --seeds 50`): hollow human 88% deft 98% standing 0%, roost human 86%
 /// deft 98% standing 0% (seeds 1-50; 51-100: 88/98, 84/98; castMove off). Here the rule in three seeds: a bot that never moves falls, the deft one clears.
 /// (P3, 22 Nov, the den's own roster, DEN_ROSTER.md) hollow seeds 1-50 at den-roster eb0a397c7: human 96% deft 100% standing 2% (the human's
-/// 96% predates P3: 96% at 0c62da9bb); its clear feel by `denfeel --seeds 20`: a normal pack p50 11-13 s, the hunting pack 6.4-6.9 s.</summary>
+/// 96% predates P3: 96% at 0c62da9bb); its clear feel by `denfeel --seeds 20`: a normal pack p50 11-13 s, the hunting pack 6.4-6.9 s.
+/// (P3, 23 Nov, 7a8f97ea3) hollow seeds 1-50 after the ruler's holds read true (ArenaBoss StateT, a4fdfb286) and bossKit 1.4:
+/// deft/human/standing L9 gear 2 (the owner's) 90/84/2%, L6 gear 1 90/86/2%; ruler TTK 114-125 s.</summary>
 public class DungeonFightTests
 {
     readonly ITestOutputHelper _out;
