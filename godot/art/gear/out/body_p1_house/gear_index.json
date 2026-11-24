@@ -1005,7 +1005,7 @@
    "fit": "ok",
    "native": true,
    "play_hash": "9445e0adaaa896cd5490e0837efd48cb02d4693d",
-   "cover_count": 1111
+   "cover_count": 0
   },
   {
    "id": "kit_pauldrons",
@@ -1105,8 +1105,8 @@
   }
  ],
  "house": {
-  "package": "C:/Users/munch/Desktop/Marionette_house2/generated/h2/switch_r3",
-  "manifest_sha1": "0e9bd826912bc9fee047d4407e31e0431b269abb",
+  "package": "C:/Users/munch/Desktop/Marionette/generated/to_game/switch_b_r3",
+  "manifest_sha1": "49182694defbceedb606e7eb4ba2df62d799f464",
   "rows_tucked": [
    "warden.belt",
    "warden.boots",
