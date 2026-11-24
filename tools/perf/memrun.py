@@ -46,13 +46,13 @@ def tree(p):
         return [p]
 
 
-def main():
-    out, secs, cmd = sys.argv[1], float(sys.argv[2]), sys.argv[3:]
+def run(out, secs, cmd, env=None):
+    """Runs cmd for secs, sampling it; writes out/mem.csv and out/log.txt; returns (rows, exit code or None)."""
     os.makedirs(out, exist_ok=True)
     rows = []
     t0 = time.time()
     with open(os.path.join(out, "log.txt"), "w", encoding="utf-8", errors="replace") as lf:
-        proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, env=env)
         ps = psutil.Process(proc.pid)
         try:
             while time.time() - t0 < secs and proc.poll() is None:
@@ -78,14 +78,26 @@ def main():
         w = csv.writer(f)
         w.writerow(["t_s", "working_set_mb", "private_mb", "gpu_dedicated_mb", "gpu_shared_mb"])
         w.writerows(rows)
-    if not rows:
-        print("memrun: no samples"); return
+    return rows, exited
+
+
+def slope_mb_min(rows, col=1):
+    """Growth per minute of a column over the run's second half (least squares)."""
     half = [r for r in rows if r[0] >= rows[-1][0] / 2]
     slope = 0.0
     if len(half) > 2:
-        n = len(half); mx = sum(r[0] for r in half) / n; my = sum(r[1] for r in half) / n
+        n = len(half); mx = sum(r[0] for r in half) / n; my = sum(r[col] for r in half) / n
         den = sum((r[0] - mx) ** 2 for r in half)
-        slope = sum((r[0] - mx) * (r[1] - my) for r in half) / den * 60 if den else 0
+        slope = sum((r[0] - mx) * (r[col] - my) for r in half) / den * 60 if den else 0
+    return slope
+
+
+def main():
+    out, secs, cmd = sys.argv[1], float(sys.argv[2]), sys.argv[3:]
+    rows, exited = run(out, secs, cmd)
+    if not rows:
+        print("memrun: no samples"); return
+    slope = slope_mb_min(rows)
     print(f"memrun: {len(rows)} samples over {rows[-1][0]:.0f} s, exit {exited}; working set peak {max(r[1] for r in rows)} MB, "
           f"end {rows[-1][1]} MB; private peak {max(r[2] for r in rows)} MB; second-half growth {slope:+.1f} MB/min; "
           f"gpu dedicated peak {max((r[3] or 0) for r in rows)} MB, shared peak {max((r[4] or 0) for r in rows)} MB")
