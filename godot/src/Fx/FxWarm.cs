@@ -116,16 +116,37 @@ public static partial class FxWarm
             pipes0 = Perf.PipesNow();
             kinds0 = Perf.PipesKinds();
             canvas = new CanvasLayer { Layer = -64, Name = "FxWarm2D" };
-            PackedScene? lib;
             if (preRequested)
             {
-                var st = ResourceLoader.LoadThreadedGetStatus(Library);
-                long w0 = System.Diagnostics.Stopwatch.GetTimestamp();
-                lib = ResourceLoader.LoadThreadedGet(Library) as PackedScene;
-                GD.Print($"load: fx pre-warm: library taken {System.Diagnostics.Stopwatch.GetElapsedTime(preT0).TotalSeconds:0.00} s after the request, status then {st}, waited {System.Diagnostics.Stopwatch.GetElapsedTime(w0).TotalMilliseconds:0} ms");
-                preRequested = false;
+                // (the tester lane, 24 Nov) Never wait for the loader here: a main-thread LoadThreadedGet that waits flushes the
+                // deferred-call queue inside the place's _ready, while the root is still busy readying its children, so every
+                // queued Root.AddChild fails ("Parent node is busy setting up children") and that node is lost for the session:
+                // on the den_test6 export (p7/den: status InProgress, waited 1670 ms) two root adds failed, and the den held 174 MB
+                // less texture and 39 MB less buffers than the same export's denloop: by its size and its queued Root.AddChild, most
+                // likely FxAfter's after-grade layer (a full-screen SubViewport), gone for the session. Still loading: _Process
+                // takes it the frame it is ready.
+                waitFrom = System.Diagnostics.Stopwatch.GetTimestamp();
+                if (ResourceLoader.LoadThreadedGetStatus(Library) == ResourceLoader.ThreadLoadStatus.InProgress || Args.Has("fx-warm-take-late")) { waiting = true; return; }   // (--fx-warm-take-late, dev: the polled path even when it is ready)
+                Take();
             }
-            else lib = GD.Load<PackedScene>(Library);
+            else Begin(GD.Load<PackedScene>(Library));
+        }
+
+        bool waiting;
+        long waitFrom;
+
+        void Take()
+        {
+            var st = ResourceLoader.LoadThreadedGetStatus(Library);
+            var lib = ResourceLoader.LoadThreadedGet(Library) as PackedScene;
+            GD.Print($"load: fx pre-warm: library taken {System.Diagnostics.Stopwatch.GetElapsedTime(preT0).TotalSeconds:0.00} s after the request, status then {st}, waited {System.Diagnostics.Stopwatch.GetElapsedTime(waitFrom).TotalMilliseconds:0} ms ({(waiting ? "polled from _Process" : "ready at _Ready")})");
+            preRequested = false;
+            waiting = false;
+            Begin(lib);
+        }
+
+        void Begin(PackedScene? lib)
+        {
             var root = lib?.Instantiate();
             if (root == null) { Done("library did not load"); return; }
             AddChild(canvas);
@@ -185,6 +206,12 @@ public static partial class FxWarm
         int settle;
         public override void _Process(double delta)
         {
+            if (waiting)
+            {
+                if (ResourceLoader.LoadThreadedGetStatus(Library) == ResourceLoader.ThreadLoadStatus.InProgress) return;
+                Take();
+                return;
+            }
             frames++;
             long tick = System.Diagnostics.Stopwatch.GetTimestamp();
             if (lastTick != 0) worstMs = Math.Max(worstMs, System.Diagnostics.Stopwatch.GetElapsedTime(lastTick, tick).TotalMilliseconds);

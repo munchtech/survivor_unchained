@@ -33,6 +33,7 @@ public partial class MemLog : Node
         if (probeAt >= 0 && Time.GetTicksMsec() / 1000.0 >= probeAt) Probe();
         FreshTick(delta);
         StripTick();
+        JumpTick(delta);
         if ((t += delta) < every) return;
         t = 0;
         Line(GetParent() is Play.Game g ? g.Zone?.Id ?? "-" : "-");
