@@ -53,9 +53,12 @@ public partial class ZoneView
             var glass = new MeshInstance3D
             {
                 Name = "glass",
-                Mesh = new CylinderMesh { TopRadius = 0.118f * s, BottomRadius = 0.112f * s, Height = 0.29f * s, RadialSegments = 6, Rings = 1, CapTop = false, CapBottom = false },
+                // one mesh for every lamp, scaled (the tester lane, 24 Nov: on D3D12 each surface's buffers take 64 KB however small;
+                // the glass shader reads only NORMAL and VIEW, so a uniform scale draws the same)
+                Mesh = WallGlassMesh ??= new CylinderMesh { TopRadius = 0.118f, BottomRadius = 0.112f, Height = 0.29f, RadialSegments = 6, Rings = 1, CapTop = false, CapBottom = false },
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 Position = mid,
+                Scale = Vector3.One * s,
             };
             glass.SetSurfaceOverrideMaterial(0, WallGlass ??= WallGlassOf());   // (a surface override: Lamps.SetLit finds its glass by it)
             holder.AddChild(glass);
@@ -217,6 +220,7 @@ public partial class ZoneView
     /// pale grey-white against the stone, lit and unlit), its albedo times this.</summary>
     static readonly float WallLampIron = SurvivorUnchained.Args.Num("wall-lamp-iron", 0.3f);
     static ShaderMaterial? WallGlass;
+    static CylinderMesh? WallGlassMesh;
     /// <summary>The lamps' warm glass with a fainter fresnel edge: on the narrow six-sided pane the edges stood as white streaks at dawn.</summary>
     static ShaderMaterial WallGlassOf()
     {
