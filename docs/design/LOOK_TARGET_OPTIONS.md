@@ -484,3 +484,28 @@ Round 5's three judges pulled the patch's lightness three ways (see "Where the t
 **What the next one costs on the ChatGPT route.** One image takes about a minute to generate and about three tool calls to drive, in the owner's Chrome with the extension connected; a one-thing correction in the same chat costs the same. Reusable as they are, in `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_look\gpt\`: the prompts (`prompts.md`), the padding and reference cuts (`scripts\prep_up.py`), the registration back onto the game frame (`scripts\register.py`), the gates (`scripts\gates.py`), the sheet builder (`scripts\sheets.py`) and the judge's measures (`judge\measure.py`). So a fixed C is about three images and a few minutes of checks. What it does not have is a judged round.
 
 **What the next one costs on the local route.** The colour pre-grade, the masks-by-value step and the gates (edge sharpness, the blur-8 margin, the brightest share, the palette gamut) are reusable, and they measure any future paint-over in minutes. The figure masks would become exact and free with an actors-only render pass. The floor is the one piece that needs a painter, or a model we don't have.
+
+## Round 9: the den's light pools as a real light (23 Nov 2026, branch look-real-light)
+
+The owner, 23 Nov: "so use what real shipped games would use and stop trying to force the light.  it can have paint but an actual light too". And, the same day: "the new lighting isn't coming at the cost of having other things painted right?" (no: the light is added, the paint stays).
+
+**Verdict: three judged rounds, none passed. Closed as known unless the owner reopens it. The flag `--den-real-light 1` is off by default, so the den the player sees is unchanged.** Her sheet (her standing in a pool) passed in rounds 2 and 3; the room and the lair failed each time.
+
+**What is built** (`godot/src/World/DungeonLight.cs`, `godot/src/World/DenCookie.cs`): each shaft gets a SpotLight3D with a projected roof-gap texture (Godot's light projector: the same feature as Unreal's light functions and Unity's light cookies) and shadows, ADDED to today's den. Today's soft spot, the floor's painted pool, the room wash and the painted fan-ray card all stay; under the real light the fan card is tinted to the light (ffe6c4 at x0.8, today's luminance). No shared shader and no global environment setting is changed. Levers: `--den-rl-energy` 12, `--den-rl-colour` fff4e6, `--den-rl-r` 1.65, `--den-rl-lair` 0.8, `--den-rl-fan` 0.8, `--den-rl-fan-tint`, `--den-rl-apart` 2, `--den-rl-cookie-edge/-warp/-jag/-rim/-roots/-dapples`, `--den-rl-shaft` (fog cone, 0).
+
+**Measured** (1920x1080, with against without, same frame): pixels darker by more than 6/255: 0.12% room, 0.04% lair, 0.01% her in a pool (the fight's particles and the campfire). Her darkest 5% L* 1.8 -> 1.9. Foes under a beam L* 19.0 -> 19.1. On D3D12: 0.15% / 0.04% / 0.01% (unjudged frames; D3D12 differs from Vulkan by the same amount with and without the light: mean 2.25/255).
+
+**Cost:** median GPU +0.17 to +0.23 ms in a room, +0.09 to +0.18 ms in the lair (Vulkan and D3D12 alike; shadow draws 133 -> 210 in the room). Under the 0.5 ms line. Whole-frame medians drifted 2-3 ms run to run with other lanes on the machine, so frames over 16.7 ms cannot be read from these runs.
+
+**What failed, so nobody retries it:**
+- A cone of volumetric fog for the beam: it veils her and the foes (her darkest 5% L* 1.8 -> 22.6). The camera looks through the cone even if it starts above head height. The beam is the painted card.
+- Replacing today's soft spot with the projected one: 10% of the frame got darker. Dropping the floor's painted pool: the lair's floor changes well outside the light.
+- An orange light (ffc878): an orange oval, a stage spot. A blue-white light to pull the chroma down (c8dcff): the pool goes pink with blue shadow edges.
+- Two straight root shadows across a pool: a crosshair. One forking root from the rim: it lands on the pool's rim and does not show.
+- Two projected lights on the lair's two shafts (half a metre apart): a pool with no edge.
+
+**What the last judge says is still wrong** (verdicts: `survivorsunchained_inputs/scratch_look/rl/judge1_verdict.md` .. `judge3_verdict.md`): the room's lower-right pool is a hot soft glow (core clips, edge soft all round, the gap's inside does not show in it); the lair pool is mustard yellow (today's painted pool there is already hue 74, the light multiplies it). The judge's fixes, all with the levers above: rim-to-core 0.6 -> 0.85 and less energy; turn each light's gap texture so the root crosses the middle of its pool; one crisp stretch of edge on the sun side; the lair's painted pool lower under the real light and the lair scale 0.65.
+
+**Two things the light cannot do without a shared change (not made; the owner's say first):** the den's shade going cool violet (the den rig and grade: it darkens everything outside the light, walls L* 13 -> 8 in the test; frames `rl_base_02.png` against `rl_e1_02.png`), and foes taking the pool's light (the pack's look in `shaders/vat.gdshaderinc` pulls every foe to one dark tone with a rim; the last judge found foes acceptable as they are).
+
+**What the next one costs:** one session if reopened: the three fixes above are small changes in DenCookie.cs and two numbers, then a judged round. Every judge said the same thing about the shade: the pool only stands out from a warm brown shade by brightness and saturation, so it needs energy to read and with energy it drifts into glow. A cooler shade would make a pass easier; the last judge held it is not needed.
