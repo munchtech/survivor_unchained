@@ -1098,7 +1098,10 @@ public partial class Game : Node, IZoneHost
     /// until the GC finds it, and a Godot resource a C# wrapper holds is freed only when that wrapper is (the tester
     /// lane's loop check, 24 Nov: a den again and again climbed +222 MB of RAM and +109 MB of VRAM a loop, the managed
     /// heap's floor 0.5 -> 1 GB and its tops to 2.25 GB, the card's buffers with it).</summary>
-    static readonly bool Aggressive = Args.Has("gc-aggressive");
+    // (the tester lane, 24 Nov: Aggressive by default; --gc-forced for the old Forced collection) Measured on the den loop export,
+    // 16 loops alone (dt8a vs dt7): GC committed 1150 -> 520 MB at each load, steady RAM per loop 2192-2577 MB against
+    // 2652-3353, second-half growth +19.4 MB/min; the collection 89-125 ms against Forced's 83-285.
+    static readonly bool Aggressive = !Args.Has("gc-forced");
     static void LetGoOfLast()
     {
         ulong t = Time.GetTicksUsec();
@@ -1107,8 +1110,7 @@ public partial class Game : Node, IZoneHost
         GC.Collect(2, GCCollectionMode.Forced, true, true);
         GC.WaitForPendingFinalizers();
         long committed = GC.GetGCMemoryInfo().TotalCommittedBytes;
-        // (--gc-aggressive, the tester lane's A/B, 24 Nov: the GC kept ~1.15 GB committed for ~520 MB live across a den loop;
-        // Aggressive also hands its free memory back to the OS)
+        // (the GC kept ~1.15 GB committed for ~520 MB live across a den loop; Aggressive also hands its free memory back to the OS)
         GC.Collect(2, Aggressive ? GCCollectionMode.Aggressive : GCCollectionMode.Forced, true, true);
         GD.Print($"load: the last place let go: managed {before >> 20} -> {GC.GetTotalMemory(false) >> 20} MB, GC committed {committed >> 20} -> {GC.GetGCMemoryInfo().TotalCommittedBytes >> 20} MB{(Aggressive ? " (aggressive)" : "")} in {(Time.GetTicksUsec() - t) / 1e3:0} ms");
     }
