@@ -18,18 +18,31 @@ namespace SurvivorUnchained.Fx;
 /// A stand-in is the same engine class with the same switches, a mesh of the same format cut to one primitive, and every
 /// texture swapped for a 4x4 one of the same kind: no art, no script, small. The census writes them to <see cref="Library"/>.
 ///
-/// At each place's load (Game.EnterPlay) <see cref="Begin"/> puts every stand-in not yet warmed this session a few
+/// At each place's load (Game.EnterPlay) <see cref="Begin"/> puts every stand-in of THIS place not yet warmed this session a few
 /// millimetres in front of the camera, shrunk to nothing, for the frames it takes the pipeline counters to settle, then
 /// frees the nodes and keeps their materials (a built-in material's shader lives only while a material of its kind does).
 /// Then Perf's first-draw check is armed: a frame in play that still compiles a pipeline is told by name, and the run's
 /// end says PASS or FAIL (Perf.FirstDrawsVerdict). A new effect is covered by the next census run: nothing to list.
-/// --no-fx-warm: not run (to measure against).
+/// --no-fx-warm: not run (to measure against). --fx-warm-all: every stand-in of the library, as before (to measure against).
+///
+/// What is warmed (the tester lane, 24 Nov): the library holds the kinds of every place the census has watched (257), and
+/// warming all of them at every place held about 1000 pipelines the den never drew (about 0.6 GB RAM on D3D12). So each
+/// stand-in carries the places the census saw its kind in (meta "fxwarm_places", keys from <see cref="PlaceKey"/>: "dungeon:den",
+/// "zone:verge"), and a place's warm-up draws only those. A place no stand-in names (no census has seen it) warms all, as before.
+/// A place is covered by running the census there (--fx-census, played in that place). The trade: an effect the census never
+/// saw in that place (for example a skill outside the census build) compiles at its first draw, and Perf's first-draw check names it.
+/// A stand-in's meta "fxwarm_mirror" says a negative-scale instance of its kind was seen: only those get a mirrored copy.
 /// </summary>
 public static partial class FxWarm
 {
     /// <summary>The census's stand-ins (res:// so the export packs it).</summary>
     public const string Library = "res://data/fx_warm/warm.scn";
-    const string SigMeta = "fxwarm_sig";
+    const string SigMeta = "fxwarm_sig", PlacesMeta = "fxwarm_places", MirrorMeta = "fxwarm_mirror";
+
+    /// <summary>The key of a place: "dungeon:&lt;dungeon id&gt;" for a dungeon's map, else "zone:&lt;zone id&gt;" (built in Game.EnterPlay).</summary>
+    public static string PlaceKey(string zoneId, string? dungeonId) => string.IsNullOrEmpty(dungeonId) ? $"zone:{zoneId}" : $"dungeon:{dungeonId}";
+    /// <summary>The place Begin was last called for (the census tags what it sees with it).</summary>
+    public static string CurrentPlace { get; private set; } = "";
 
     static readonly HashSet<string> warmed = new();
     static readonly List<Resource> held = new();
@@ -38,11 +51,12 @@ public static partial class FxWarm
 
     /// <summary>Starts the warm-up under `host` (a node of the place: the stand-ins follow the active camera). Returns at
     /// once; the warm-up runs over the next frames and arms Perf's first-draw check when done.</summary>
-    public static void Begin(Node host, string why)
+    public static void Begin(Node host, string why, string place)
     {
+        CurrentPlace = place;
         if (Args.Has("no-fx-warm") || Args.Has("fx-census")) { Perf.ArmFirstDraws($"{why}: no warm-up (--{(Args.Has("fx-census") ? "fx-census" : "no-fx-warm")})"); return; }
         if (!ResourceLoader.Exists(Library)) { GD.Print($"load: fx warm-up: no library at {Library}"); Perf.ArmFirstDraws($"{why}: no library"); return; }
-        host.AddChild(new Run(why));
+        host.AddChild(new Run(why, place));
     }
 
     // (frame pacing, session 4) The early start: the library's load runs on a loader thread while the map builds; Run takes it.
@@ -79,9 +93,10 @@ public static partial class FxWarm
 
     sealed partial class Run : Node3D
     {
-        readonly string why;
+        readonly string why, place;
         long t0;
-        int frames, drawn, still, entries, skipped;
+        int frames, drawn, still, entries, skipped, notHere, mirrored;
+        bool tagged;
         double lastPipes = -1, pipes0;
         double[] kinds0 = new double[5];
         double worstMs;
@@ -90,7 +105,7 @@ public static partial class FxWarm
         Camera3D? cam;
         Node3D? mirror;
 
-        public Run(string why) { this.why = why; Name = "FxWarm"; }
+        public Run(string why, string place) { this.why = why; this.place = place; Name = "FxWarm"; }
 
         public override void _EnterTree() => running++;
         public override void _ExitTree() => running--;
@@ -114,8 +129,12 @@ public static partial class FxWarm
             var root = lib?.Instantiate();
             if (root == null) { Done("library did not load"); return; }
             AddChild(canvas);
-            foreach (var k in root.GetChildren().ToList())
+            bool all = Args.Has("fx-warm-all");
+            var kids = root.GetChildren().ToList();
+            tagged = !all && kids.Any(k => InPlace(k, place));
+            foreach (var k in kids)
             {
+                if (tagged && !InPlace(k, place)) { notHere++; continue; }
                 string sig = k.HasMeta(SigMeta) ? k.GetMeta(SigMeta).AsString() : k.Name;
                 if (!warmed.Add(sig)) { skipped++; continue; }
                 root.RemoveChild(k);
@@ -132,10 +151,11 @@ public static partial class FxWarm
                 if (k is Node3D n3) n3.Transform = Transform3D.Identity;
                 if (k is GpuParticles3D gp) { gp.Emitting = true; gp.Amount = 1; }
                 // (a mirrored copy too: a negative-scale instance draws with the other cull mode, its own pipeline)
-                if (k is Node3D && !Args.Has("fx-warm-flat"))
+                if (k is Node3D && !Args.Has("fx-warm-flat") && (!tagged || k.HasMeta(MirrorMeta) && k.GetMeta(MirrorMeta).AsBool()))
                 {
                     if (mirror == null) AddChild(mirror = new Node3D { Name = "Mirrored", Scale = new Vector3(-1, 1, 1) });
                     mirror.AddChild((Node)k.Duplicate());
+                    mirrored++;
                 }
                 entries++;
             }
@@ -144,6 +164,9 @@ public static partial class FxWarm
             if (entries == 0) { end = "everything already warmed"; return; }
             Follow();
         }
+
+        static bool InPlace(Node k, string place) =>
+            k.HasMeta(PlacesMeta) && k.GetMeta(PlacesMeta).AsStringArray().Contains(place);
 
         // Its stand-ins a hair in front of the lens, shrunk to nothing: inside the view (so they are drawn), seen by no one.
         void Follow()
@@ -190,7 +213,7 @@ public static partial class FxWarm
             double secs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds;
             if (end.Length == 0) { end = placeEnd; warmSecs = secs; }
             var k1 = Perf.PipesKinds();
-            Report = $"{entries} stand-ins drawn ({skipped} warmed before), {Perf.PipesNow() - pipes0:0} pipelines compiled, {drawn} frames in view, " +
+            Report = $"place {place} ({(tagged ? "tagged" : "untagged: all warmed")}), {entries} stand-ins drawn ({skipped} warmed before, {notHere} skipped as not seen here, {mirrored} mirrored copies), {Perf.PipesNow() - pipes0:0} pipelines compiled, {drawn} frames in view, " +
                      $"{warmSecs:0.00} s, ended by {end} (in view from {Time.GetTicksMsec() / 1000.0 - secs:0.0} s, done {Time.GetTicksMsec() / 1000.0:0.0} s after the engine started); then {settle} frames, {secs - warmSecs:0.00} s, till {placeEnd} (canvas/mesh/surface/draw/specialization {(int)(k1[0] - kinds0[0])}/{(int)(k1[1] - kinds0[1])}/{(int)(k1[2] - kinds0[2])}/{(int)(k1[3] - kinds0[3])}/{(int)(k1[4] - kinds0[4])}; worst frame {worstMs:0} ms)";
             GD.Print($"load: fx warm-up ({why}): {Report}");
             SetProcess(false);
@@ -302,16 +325,36 @@ public static partial class FxWarm
             if (sig == null) return;
             // (what was in view at the first walk is kept too: a kind drawn at load can be drawn again in play into another
             // framebuffer, e.g. the page backdrop, check2 498.96 s, 86 ms; warming a kind already drawn costs nothing)
-            if (lib.ContainsKey(sig)) return;
+            bool mirrorSeen = n is Node3D a3 && a3.GlobalTransform.Basis.Determinant() < 0;
+            if (lib.TryGetValue(sig, out var have))
+            {
+                if (Mark(have, mirrorSeen)) dirty = true;
+                return;
+            }
             Node? stand = null;
             try { stand = StandIn(n); } catch (Exception e) { GD.PrintErr($"fx census: {n.GetPath()}: {e.Message}"); }
             if (stand == null) { refused++; return; }
             stand.SetMeta(SigMeta, sig);
+            Mark(stand, mirrorSeen);
             stand.Name = $"k{lib.Count:0000}";
             lib[sig] = stand;
             added++;
             dirty = true;
             GD.Print($"fx census: +{n.GetClass()} {n.GetPath()} :: {sig}");
+        }
+
+        // The place this run is in joins the stand-in's places; a mirrored drawable seen marks it. True: something changed.
+        static bool Mark(Node stand, bool mirrorSeen)
+        {
+            bool changed = false;
+            string place = CurrentPlace;
+            if (place.Length > 0)
+            {
+                var have = stand.HasMeta(PlacesMeta) ? stand.GetMeta(PlacesMeta).AsStringArray() : [];
+                if (!have.Contains(place)) { stand.SetMeta(PlacesMeta, have.Append(place).ToArray()); changed = true; }
+            }
+            if (mirrorSeen && !(stand.HasMeta(MirrorMeta) && stand.GetMeta(MirrorMeta).AsBool())) { stand.SetMeta(MirrorMeta, true); changed = true; }
+            return changed;
         }
 
         void Save()

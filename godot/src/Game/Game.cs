@@ -1029,7 +1029,7 @@ public partial class Game : Node, IZoneHost
         RehearseDraft(b);
         // (P2 task 5, session 3) every kind of drawable the census saw first drawn in play, drawn once now behind the load
         // (FxWarm); --fx-census: the census itself, watching this play.
-        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}");
+        SurvivorUnchained.Fx.FxWarm.Begin(scene.Fx, $"zone {z.Id}", SurvivorUnchained.Fx.FxWarm.PlaceKey(z.Id, z is SurvivorUnchained.Play.Zones.MapRun { IsDungeon: true } dmr ? dmr.Chart.Dungeon : null));
         if (SurvivorUnchained.Fx.FxWarm.CensusNode() is { } census) AddChild(census);
     }
 
