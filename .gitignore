@@ -63,6 +63,8 @@ godot/art/people/body_p1_var/
 # (the four callings' units, gear_index.json and their .import files; the retired plate pieces and _check/ stay out))
 !/godot/art/gear/out/body_p1/
 /godot/art/gear/out/body_p1/_*/
+!/godot/art/gear/out/body_p1_house/
+/godot/art/gear/out/body_p1_house/_*/
 
 # tools/armor/gear_fit.py bind output: regenerable in ~3 min, a build output (the P2 lead 2, coordinator 9 Nov); `gear_fit.py stale` fails when they are stale
 /godot/art/gear/bind/
