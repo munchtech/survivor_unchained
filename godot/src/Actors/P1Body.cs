@@ -330,7 +330,7 @@ public static class P1Body
 
     /// <summary>The maps body.glb carries that none of her materials samples, let go once at the first load (the tester lane,
     /// 24 Nov: the town's texture census, "mem tex undrawn", found them reached only through her meshes' own surface materials,
-    /// which her override materials replace: the skin's roughness map, 2048 Rgb8, 21 MB, her skin shader takes the albedo and
+    /// which her override materials replace: the skin's roughness map (also its metallic and occlusion slots), 2048, 21 MB uncompressed, her skin shader takes the albedo and
     /// the normal map only; the eyes' 1024 paint, 5 MB, People.HerPart's eye shader paints from head_tex's heroine_eye and
     /// iris). Her materials are built from these shared materials, so the maps go from them, for every later instance too.
     /// --p1-keep-maps keeps them (the pixel A/B).</summary>
@@ -345,7 +345,15 @@ public static class P1Body
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
                 if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D m || !seen.Add(m.GetInstanceId())) continue;
-                if (m.ResourceName == "skin" && m.RoughnessTexture != null) { bytes += B(m.RoughnessTexture); m.RoughnessTexture = null; }
+                // (the glTF's metallic-roughness image is the roughness AND the metallic map, and the occlusion map if it has one:
+                // den_test11's census, 24 Nov, still found it held through the metallic slot once the roughness went)
+                if (m.ResourceName == "skin")
+                {
+                    var orm = new HashSet<ulong>();
+                    foreach (var t in new[] { m.RoughnessTexture, m.MetallicTexture, m.AOTexture })
+                        if (t != null && orm.Add(t.GetInstanceId())) bytes += B(t);
+                    m.RoughnessTexture = null; m.MetallicTexture = null; m.AOTexture = null;
+                }
                 if (m.ResourceName == "eyes" && m.AlbedoTexture != null) { bytes += B(m.AlbedoTexture); m.AlbedoTexture = null; }
             }
         inst.Free();
