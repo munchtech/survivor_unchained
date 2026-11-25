@@ -124,18 +124,22 @@ public partial class Game
     /// screen changes its view while open (the Lamps' Open wide: the book's frame goes, the play camera holds).</summary>
     public void Reframe(Overlay o)
     {
+        // (screens keep the play camera: the owner, 24 Nov, "there is no more close-up camera", and on the equipment
+        // screen's zoom: "they shouldn't be showing right?"; the old near frames stay behind a dev flag)
+        bool near = Args.Has("screen-close");
+        var frame = near ? o.CameraFrame : null;
         cam.ScreenShift = o.CameraShift;
-        cam.ScreenNear = o.CameraNear;
-        cam.ScreenFrame = o.CameraFrame;
+        cam.ScreenNear = near ? o.CameraNear : 1;
+        cam.ScreenFrame = frame;
         // (framed so, she turns to the view, a little toward the panel she reads: in the town and the ember's
         // arenas only; in the field she stands as she was, the owner 17 October)
         if (scene?.Player is { } pv)
         {
-            bool pose = zone != null && closeUp.PoseFor(o.CameraFrame != null, !zone.Combat, zone.Ember) == CloseUp.Pose.ToTheView;
+            bool pose = zone != null && closeUp.PoseFor(frame != null, !zone.Combat, zone.Ember) == CloseUp.Pose.ToTheView;
             pv.Turned = pose ? cam.Yaw + 0.35f : null;
             pv.Watch = pose ? cam.Camera : null;
             // (by day her carried light is dimmed while the book frames her: the sun models her face)
-            pv.LampScale = o.CameraFrame != null && scene.View.Night != true ? BookLampByDay : 1;
+            pv.LampScale = frame != null && scene.View.Night != true ? BookLampByDay : 1;
         }
     }
 
